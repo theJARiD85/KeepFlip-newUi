@@ -76,6 +76,9 @@ type ScannerToolCarouselProps = {
 const CONTROL_SIZE = 86;
 const COMPACT_SCALE = 0.54;
 const RAIL_Y = 80;
+const RAIL_LAYER = 20;
+const FOREGROUND_LAYER = 40;
+const RAIL_CROSSOVER_DEPTH = 0.56;
 const DRAG_DISTANCE = 140;
 const TOOL_COUNT = scannerTools.length;
 const SPRING = {
@@ -93,12 +96,14 @@ function modulo(value: number, divisor: number) {
   return ((value % divisor) + divisor) % divisor;
 }
 
+type ToolControlLayer = 'foreground' | 'rail';
+
 function ToolControl({
   badge,
   disabled,
   index,
+  layer,
   onActivate,
-  onSelect,
   position,
   wheelRadius,
   hidden,
@@ -108,8 +113,8 @@ function ToolControl({
   badge?: number;
   disabled: boolean;
   index: number;
+  layer: ToolControlLayer;
   onActivate: () => void;
-  onSelect: () => void;
   position: SharedValue<number>;
   wheelRadius: number;
   hidden: boolean;
@@ -126,10 +131,20 @@ function ToolControl({
     const depth = Math.cos(angle);
     const orbitX = Math.sin(angle) * wheelRadius * direction;
     const orbitY = (1 - depth) * RAIL_Y;
+    const orbitOpacity = interpolate(
+      depth,
+      [-1, -0.55, 0, 1],
+      [0, 0, 0.78, 1],
+      'clamp',
+    );
+    const layerOpacity =
+      layer === 'rail'
+        ? interpolate(depth, [RAIL_CROSSOVER_DEPTH, 0.76], [1, 0], 'clamp')
+        : interpolate(depth, [0.42, RAIL_CROSSOVER_DEPTH, 0.82, 1], [0, 0.18, 0.9, 1], 'clamp');
 
     return {
-      opacity: interpolate(depth, [-1, -0.55, 0, 1], [0, 0, 0.78, 1], 'clamp'),
-      zIndex: Math.round(interpolate(depth, [-1, 1], [1, 100], 'clamp')),
+      opacity: orbitOpacity * layerOpacity,
+      zIndex: layer === 'foreground' ? FOREGROUND_LAYER : 1,
       transform: [
         { translateX: orbitX },
         { translateY: orbitY },
@@ -139,7 +154,7 @@ function ToolControl({
         },
       ],
     };
-  }, [direction, index, wheelRadius]);
+  }, [direction, index, layer, wheelRadius]);
 
   const animatedGlowStyle = useAnimatedStyle(() => {
     const rawDelta = index - position.value;
@@ -154,18 +169,20 @@ function ToolControl({
     };
   }, [index]);
 
+  const concealedByRail = layer === 'rail' || hidden || !selected;
+
   return (
     <Animated.View
-      accessibilityElementsHidden={hidden}
-      importantForAccessibility={hidden ? 'no-hide-descendants' : 'auto'}
-      pointerEvents={hidden ? 'none' : 'auto'}
+      accessibilityElementsHidden={concealedByRail}
+      importantForAccessibility={concealedByRail ? 'no-hide-descendants' : 'auto'}
+      pointerEvents={concealedByRail ? 'none' : 'auto'}
       style={[styles.controlPosition, animatedStyle]}>
       <Pressable
-        accessibilityLabel={selected ? `${tool.label}, activate` : `Select ${tool.label}`}
+        accessibilityLabel={`${tool.label}, activate`}
         accessibilityRole="button"
-        accessibilityState={{ disabled: disabled || hidden, selected }}
-        disabled={disabled || hidden}
-        onPress={selected ? onActivate : onSelect}
+        accessibilityState={{ disabled: disabled || concealedByRail, selected }}
+        disabled={disabled || concealedByRail}
+        onPress={onActivate}
         style={({ pressed }) => [
           styles.control,
           {
@@ -283,8 +300,31 @@ export function ScannerToolCarousel({
     <GestureDetector gesture={pan}>
       <Animated.View style={[styles.root, disabled && styles.rootDisabled]}>
         <View pointerEvents="none" style={styles.rail}>
-          <View style={styles.railHighlight} />
           <View style={styles.railOrbit} />
+          <View style={styles.railWheelCanvas}>
+            {scannerTools.map((tool, index) => {
+              const offset = modulo(index - Math.max(0, selectedIndex), TOOL_COUNT);
+              const hidden = offset === TOOL_COUNT / 2;
+
+              return (
+                <ToolControl
+                  badge={badges?.[tool.id]}
+                  disabled
+                  hidden={hidden}
+                  index={index}
+                  key={`rail-${tool.id}`}
+                  layer="rail"
+                  onActivate={() => undefined}
+                  position={position}
+                  selected={false}
+                  tool={tool}
+                  wheelRadius={wheelRadius}
+                />
+              );
+            })}
+          </View>
+          <View style={styles.railShade} />
+          <View style={styles.railHighlight} />
           <View style={styles.railNotch} />
         </View>
 
@@ -299,11 +339,8 @@ export function ScannerToolCarousel({
               hidden={hidden}
               index={index}
               key={tool.id}
+              layer="foreground"
               onActivate={() => onActivate(tool.id)}
-              onSelect={() => {
-                selectionHaptic();
-                onSelect(tool.id);
-              }}
               position={position}
               selected={tool.id === selectedTool}
               tool={tool}
@@ -327,7 +364,8 @@ const styles = StyleSheet.create({
   },
   rail: {
     position: 'absolute',
-    top: 80,
+    top: RAIL_Y,
+    zIndex: RAIL_LAYER,
     width: '100%',
     maxWidth: 330,
     height: 68,
@@ -347,6 +385,7 @@ const styles = StyleSheet.create({
     top: 0,
     right: 24,
     left: 24,
+    zIndex: 4,
     height: 1,
     experimental_backgroundImage:
       'linear-gradient(90deg, transparent 0%, rgba(242, 211, 138, 0.58) 50%, transparent 100%)',
@@ -362,9 +401,26 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(242, 211, 138, 0.18)',
     transform: [{ scaleY: 0.64 }],
   },
+  railWheelCanvas: {
+    position: 'absolute',
+    top: -RAIL_Y,
+    right: 0,
+    left: 0,
+    zIndex: 2,
+    height: 152,
+    alignItems: 'center',
+  },
+  railShade: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 3,
+    experimental_backgroundImage: `
+      linear-gradient(180deg, rgba(0, 0, 0, 0.48) 0%, transparent 34%, rgba(0, 0, 0, 0.26) 100%)
+    `,
+  },
   railNotch: {
     position: 'absolute',
     top: 8,
+    zIndex: 4,
     alignSelf: 'center',
     width: 30,
     height: 3,
@@ -396,7 +452,7 @@ const styles = StyleSheet.create({
     bottom: -1,
     left: -1,
     borderRadius: CONTROL_SIZE / 2,
-    borderWidth: 1,
+    borderWidth: 3,
   },
   controlCore: {
     width: 64,

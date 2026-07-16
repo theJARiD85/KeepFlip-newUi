@@ -134,6 +134,14 @@ export type ItemMarketResearch = {
   searchedAt: string | null;
   comparableCount: number;
   comps: ItemSoldComparable[];
+  quality?: {
+    confidence: 'high' | 'medium' | 'low';
+    exactComparableCount: number;
+    comparableCount: number;
+    warnings: string[];
+    searchRoute?: 'identifier' | 'hybrid' | 'descriptor';
+    searchIntent?: 'sold_comps' | 'visual_recently_sold';
+  };
   error?: {
     code: string;
     message: string;

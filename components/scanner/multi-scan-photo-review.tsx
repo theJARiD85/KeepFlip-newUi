@@ -18,13 +18,18 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 
 type MultiScanPhotoStackProps = {
+  accentColor?: string;
+  accessibilityContext?: string;
   disabled?: boolean;
   onOpen: () => void;
   photos: MultiScanPhoto[];
 };
 
 type MultiScanPhotoReviewProps = {
+  accentColor?: string;
+  accessibilityContext?: string;
   bottomInset: number;
+  eyebrow?: string;
   onClose: () => void;
   onDelete: (photoId: string) => void;
   photos: MultiScanPhoto[];
@@ -44,6 +49,8 @@ export function toDisplayUri(path: string) {
 }
 
 export function MultiScanPhotoStack({
+  accentColor = theme.colors.scannerCyan,
+  accessibilityContext = 'multi-scan',
   disabled = false,
   onOpen,
   photos,
@@ -55,8 +62,8 @@ export function MultiScanPhotoStack({
   return (
     <Animated.View entering={FadeInUp.duration(190)} exiting={FadeOut.duration(140)}>
       <Pressable
-        accessibilityHint="Opens every photo captured for this item"
-        accessibilityLabel={`Review ${photos.length} multi-scan photo${photos.length === 1 ? '' : 's'}`}
+        accessibilityHint="Opens every selected photo for this item"
+        accessibilityLabel={`Review ${photos.length} ${accessibilityContext} photo${photos.length === 1 ? '' : 's'}`}
         accessibilityRole="button"
         disabled={disabled}
         hitSlop={8}
@@ -78,6 +85,8 @@ export function MultiScanPhotoStack({
               style={[
                 styles.stackPhoto,
                 {
+                  borderColor: accentColor,
+                  boxShadow: `0 8px 20px rgba(0, 0, 0, 0.55), 0 0 14px ${accentColor}`,
                   zIndex: index + 1,
                   transform: [
                     { translateX: -depth * 7 },
@@ -99,8 +108,10 @@ export function MultiScanPhotoStack({
           );
         })}
 
-        <View pointerEvents="none" style={styles.stackCount}>
-          <Text style={styles.stackCountText}>{photos.length > 99 ? '99+' : photos.length}</Text>
+        <View pointerEvents="none" style={[styles.stackCount, { borderColor: accentColor }]}>
+          <Text style={[styles.stackCountText, { color: accentColor }]}>
+            {photos.length > 99 ? '99+' : photos.length}
+          </Text>
         </View>
       </Pressable>
     </Animated.View>
@@ -108,7 +119,10 @@ export function MultiScanPhotoStack({
 }
 
 export function MultiScanPhotoReview({
+  accentColor = theme.colors.scannerCyan,
+  accessibilityContext = 'multi-scan',
   bottomInset,
+  eyebrow = 'MULTI-SCAN SESSION',
   onClose,
   onDelete,
   photos,
@@ -131,17 +145,21 @@ export function MultiScanPhotoReview({
         ]}>
         <View style={styles.reviewHeader}>
           <View style={styles.reviewTitleGroup}>
-            <Text style={styles.reviewEyebrow}>MULTI-SCAN SESSION</Text>
+            <Text style={[styles.reviewEyebrow, { color: accentColor }]}>{eyebrow}</Text>
             <Text style={styles.reviewTitle}>
               {photos.length} photo{photos.length === 1 ? '' : 's'}
             </Text>
           </View>
           <Pressable
-            accessibilityLabel="Close multi-scan photo review"
+            accessibilityLabel={`Close ${accessibilityContext} photo review`}
             accessibilityRole="button"
             onPress={onClose}
-            style={({ pressed }) => [styles.doneButton, pressed && styles.doneButtonPressed]}>
-            <Text style={styles.doneButtonText}>Done</Text>
+            style={({ pressed }) => [
+              styles.doneButton,
+              { borderColor: accentColor },
+              pressed && styles.doneButtonPressed,
+            ]}>
+            <Text style={[styles.doneButtonText, { color: accentColor }]}>Done</Text>
           </Pressable>
         </View>
 
@@ -173,7 +191,7 @@ export function MultiScanPhotoReview({
                   <Text style={styles.photoNumberText}>{index + 1}</Text>
                 </View>
                 <Pressable
-                  accessibilityLabel={`Remove multi-scan photo ${index + 1} of ${photos.length}`}
+                  accessibilityLabel={`Remove ${accessibilityContext} photo ${index + 1} of ${photos.length}`}
                   accessibilityRole="button"
                   hitSlop={8}
                   onPress={() => onDelete(photo.id)}

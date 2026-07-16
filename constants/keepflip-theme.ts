@@ -1,4 +1,7 @@
 export const keepFlipTheme = {
+  fonts: {
+    analysis: 'LucidaConsole',
+  },
   colors: {
     background: '#030305',
     backgroundDeep: '#010102',

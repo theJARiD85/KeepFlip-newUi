@@ -4,7 +4,7 @@
     "slug": "keepflip",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/icon (2).png",
     "scheme": "keepflip",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
@@ -22,13 +22,13 @@
       ],
       "adaptiveIcon": {
         "backgroundColor": "#030305",
-        "foregroundImage": "./assets/images/icon.png"
+        "foregroundImage": "./assets/images/icon (2).png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/icon.png"
+      "favicon": "./assets/images/icon (2).png"
     },
     "plugins": [
       "expo-router",

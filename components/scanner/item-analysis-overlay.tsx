@@ -3,7 +3,8 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
+  Text as NativeText,
+  type TextProps,
   View,
 } from 'react-native';
 import Animated, {
@@ -21,6 +22,12 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+
+const analysisTextStyle = { fontFamily: theme.fonts.analysis } as const;
+
+function Text({ style, ...props }: TextProps) {
+  return <NativeText {...props} style={[analysisTextStyle, style]} />;
+}
 
 export type AnalysisSuggestedPhoto = {
   description?: string;

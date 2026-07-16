@@ -1,4 +1,19 @@
-import { Account, Client, Functions, Storage } from 'react-native-appwrite';
+import {
+  Account,
+  Client,
+  Functions,
+  Realtime,
+  Storage,
+  TablesDB,
+} from 'react-native-appwrite';
+
+export {
+  ExecutionMethod,
+  ID,
+  Permission,
+  Query,
+  Role,
+} from 'react-native-appwrite';
 
 export const APPWRITE_CORE_REQUIRED_ENVIRONMENT_VARIABLES = [
   'EXPO_PUBLIC_APPWRITE_ENDPOINT',
@@ -70,6 +85,55 @@ function cleanEnvironmentValue(value: string | undefined) {
   const cleaned = value?.trim();
   return cleaned ? cleaned : undefined;
 }
+
+function publicEnvironmentValue(value: string | undefined) {
+  return cleanEnvironmentValue(value) ?? '';
+}
+
+// Compatibility map for the proven services migrated from the previous app.
+// Values remain public resource IDs only; every privileged credential stays in
+// its Appwrite Function. Keep the reads explicit so Expo can inline them.
+export const APPWRITE = {
+  endpoint: publicEnvironmentValue(process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT),
+  projectId: publicEnvironmentValue(process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID),
+  databaseId: publicEnvironmentValue(process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID),
+  itemsTableId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_ITEMS_COLLECTION_ID,
+  ),
+  itemPhotosTableId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_ITEM_PHOTOS_COLLECTION_ID,
+  ),
+  marketplaceListingsTableId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_MARKETPLACE_LISTINGS_TABLE_ID,
+  ),
+  marketplaceInquiriesTableId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_MARKETPLACE_INQUIRIES_TABLE_ID,
+  ),
+  itemImagesBucketId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_ITEM_IMAGES_BUCKET_ID,
+  ),
+  profileImagesBucketId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_PROFILE_IMAGES_BUCKET_ID,
+  ),
+  itemAiFunctionId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_ITEM_AI_FUNCTION_ID,
+  ),
+  googleLensVisualSearchFunctionId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_GOOGLE_LENS_FUNCTION_ID,
+  ),
+  ebaySoldCompsFunctionId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_EBAY_SOLD_COMPS_FUNCTION_ID,
+  ),
+  listingGeneratorFunctionId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_LISTING_GENERATOR_FUNCTION_ID,
+  ),
+  repairAssistFunctionId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_REPAIR_ASSIST_FUNCTION_ID,
+  ),
+  partsResearchFunctionId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_PARTS_RESEARCH_FUNCTION_ID,
+  ),
+} as const;
 
 export function getAppwriteCoreConfigurationStatus(): AppwriteCoreConfigurationStatus {
   // Expo statically replaces EXPO_PUBLIC_ access, so keep these reads explicit.
@@ -212,3 +276,49 @@ export function getAppwriteServices(): AppwriteServices {
 
   return cachedServices;
 }
+
+type LegacyDataServices = {
+  client: Client;
+  tablesDB: TablesDB;
+  realtime: Realtime;
+};
+
+let cachedLegacyDataServices: LegacyDataServices | null = null;
+
+function getLegacyDataServices() {
+  const { client } = getAppwriteCoreServices();
+  if (cachedLegacyDataServices?.client === client) {
+    return cachedLegacyDataServices;
+  }
+
+  cachedLegacyDataServices = {
+    client,
+    tablesDB: new TablesDB(client),
+    realtime: new Realtime(client),
+  };
+  return cachedLegacyDataServices;
+}
+
+function lazyService<T extends object>(resolve: () => T): T {
+  return new Proxy({} as T, {
+    get(_target, property) {
+      const service = resolve();
+      const value = Reflect.get(service, property, service);
+      return typeof value === 'function' ? value.bind(service) : value;
+    },
+  });
+}
+
+// Legacy service modules import these shared instances directly. Proxies keep
+// that API intact without constructing Appwrite clients before configuration
+// and authentication screens have had a chance to render.
+export const functions = lazyService(
+  () => getAppwriteServices().functions,
+);
+export const storage = lazyService(() => getAppwriteServices().storage);
+export const tablesDB = lazyService(
+  () => getLegacyDataServices().tablesDB,
+);
+export const realtime = lazyService(
+  () => getLegacyDataServices().realtime,
+);

@@ -1,8 +1,11 @@
 import 'react-native-url-polyfill/auto';
 
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router/stack';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
@@ -11,6 +14,8 @@ import {
   useKeepFlipAuth,
 } from '@/components/auth/keepflip-auth-context';
 import { keepFlipTheme } from '@/constants/keepflip-theme';
+
+void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 function ProtectedRootStack() {
   const { status } = useKeepFlipAuth();
@@ -39,6 +44,20 @@ function ProtectedRootStack() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts({
+    LucidaConsole: require('../assets/fonts/LucidaConsole.ttf'),
+  });
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      void SplashScreen.hideAsync();
+    }
+  }, [fontError, fontsLoaded]);
+
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
+
   const navigationTheme = {
     ...DarkTheme,
     colors: {

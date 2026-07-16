@@ -983,6 +983,17 @@ function buildSearchPlan(
   };
 }
 
+export function buildStrictEbaySearchQuery(
+  profile: StrictMarketValueProfile
+) {
+  const model = getPreferredModel(profile);
+  const condition = normalizeCondition(
+    profile.condition,
+    profile.conditionNotes
+  );
+  return buildSearchPlan(profile, model, condition).query;
+}
+
 function compConditionBucket(comp: EbaySoldComp): ConditionBucket {
   return normalizeCondition(comp.condition || "", comp.title);
 }
@@ -1208,15 +1219,52 @@ function buildQuality(
   };
 }
 
+export function selectStrictEbaySoldComps(
+  profile: StrictMarketValueProfile,
+  comps: EbaySoldComp[]
+) {
+  const model = getPreferredModel(profile);
+  const targetCondition = normalizeCondition(
+    profile.condition,
+    profile.conditionNotes
+  );
+  const plan = buildSearchPlan(profile, model, targetCondition);
+  const individualSales = comps.filter((comp) =>
+    isUsableIndividualSale(comp, targetCondition)
+  );
+  const exact = individualSales.filter(
+    (comp) =>
+      identityMatches(comp, profile, model, true, plan) &&
+      exactConditionMatches(targetCondition, comp)
+  );
+  const compatible = individualSales.filter(
+    (comp) =>
+      identityMatches(comp, profile, model, false, plan) &&
+      compatibleConditionMatches(targetCondition, comp)
+  );
+  const selected = removePriceOutliers(
+    dedupeComps(exact.length >= 3 ? exact : [...exact, ...compatible])
+  );
+
+  return {
+    comps: selected,
+    query: plan.query,
+    quality: buildQuality(
+      profile,
+      model,
+      plan,
+      exact.length,
+      selected.length
+    ),
+  };
+}
+
 export async function runStrictEbaySoldComps(
   profile: StrictMarketValueProfile,
   limit = 100
 ): Promise<EbaySoldCompsResult> {
   const title = profile.title.trim();
-  const model = getPreferredModel(profile);
-  const targetCondition = normalizeCondition(profile.condition, profile.conditionNotes);
-  const plan = buildSearchPlan(profile, model, targetCondition);
-  const query = plan.query;
+  const query = buildStrictEbaySearchQuery(profile);
 
   if (query.length < 3 || !title) {
     throw new Error("Add at least an item title before researching its market value.");
@@ -1227,27 +1275,9 @@ export async function runStrictEbaySoldComps(
     Math.max(100, Math.min(limit, 250))
   );
 
-  const individualSales = raw.comps.filter((comp) =>
-    isUsableIndividualSale(comp, targetCondition)
-  );
+  const selected = selectStrictEbaySoldComps(profile, raw.comps);
 
-  const exact = individualSales.filter(
-    (comp) =>
-      identityMatches(comp, profile, model, true, plan) &&
-      exactConditionMatches(targetCondition, comp)
-  );
-
-  const compatible = individualSales.filter(
-    (comp) =>
-      identityMatches(comp, profile, model, false, plan) &&
-      compatibleConditionMatches(targetCondition, comp)
-  );
-
-  const selected = removePriceOutliers(
-    dedupeComps(exact.length >= 3 ? exact : [...exact, ...compatible])
-  );
-
-  if (!selected.length) {
+  if (!selected.comps.length) {
     throw new Error(
       "KeepFlip could not find usable individual sold listings for this item. Try a more specific model number or title."
     );
@@ -1256,14 +1286,8 @@ export async function runStrictEbaySoldComps(
   return {
     ...raw,
     query,
-    comps: selected,
-    summary: makeSummary(selected),
-    valuation: buildQuality(
-      profile,
-      model,
-      plan,
-      exact.length,
-      selected.length
-    ),
+    comps: selected.comps,
+    summary: makeSummary(selected.comps),
+    valuation: selected.quality,
   };
 }

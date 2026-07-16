@@ -11,11 +11,24 @@ import {
 } from 'react-native-appwrite';
 
 import {
+  APPWRITE,
   AppwriteSetupError,
   getAppwriteServices,
 } from '@/lib/appwrite';
 import {
+  buildStrictEbaySearchQuery,
+  selectStrictEbaySoldComps,
+  type StrictMarketValueProfile,
+} from '@/services/ebaySoldCompsService';
+import {
+  getItemIdentificationGuidance,
+  identifyItemWithAI,
+  type ItemIdentificationGuidance,
+  type KeepFlipIdentification,
+} from '@/services/itemAiService';
+import {
   ITEM_ANALYSIS_CONTRACT_VERSION,
+  ITEM_ANALYSIS_VERSION,
   type AnalyzeItemPhotosInput,
   type AnalyzeItemPhotosOptions,
   type ItemAnalysisEvidenceSource,
@@ -39,7 +52,7 @@ export type {
   ItemAnalysisSuccess,
 } from '@/types/item-analysis';
 
-const MAX_ANALYSIS_PHOTOS = 4;
+export const MAX_ANALYSIS_PHOTOS = 4;
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
 const MAX_TOTAL_PHOTO_BYTES = 24 * 1024 * 1024;
 const MAX_USER_NOTES_CHARACTERS = 4_000;
@@ -229,7 +242,7 @@ function isVision(value: unknown) {
   });
 }
 
-function isValuation(value: unknown) {
+function isValuation(value: unknown): value is ItemValuation {
   if (!isRecord(value)) return false;
   return (
     ['ready', 'limited_comps', 'needs_comps'].includes(String(value.status)) &&
@@ -352,7 +365,7 @@ type EbayCompletedResponse = {
   runId: string;
   query: string;
   comps: ItemSoldComparable[];
-  valuation: ItemValuation;
+  valuation?: ItemValuation;
   searchedAt: string;
 };
 
@@ -405,11 +418,38 @@ function parseEbayFunctionResponse(responseBody: string): EbayFunctionResponse {
     );
   }
 
-  if (!isRecord(parsed) || parsed.ok !== true || typeof parsed.phase !== 'string') {
+  if (!isRecord(parsed) || parsed.ok !== true) {
     throw new ItemAnalysisError(
       'The eBay sold-comps service returned an unexpected response.',
       'INVALID_EBAY_COMPS_RESPONSE',
     );
+  }
+
+  if (
+    Array.isArray(parsed.comps) &&
+    parsed.comps.every(isSoldComparable) &&
+    (parsed.valuation === undefined || isValuation(parsed.valuation))
+  ) {
+    const completed: EbayCompletedResponse = {
+      ok: true,
+      phase: 'completed',
+      runId:
+        typeof parsed.runId === 'string'
+          ? parsed.runId
+          : typeof parsed.id === 'string'
+            ? parsed.id
+            : 'completed',
+      query: typeof parsed.query === 'string' ? parsed.query : '',
+      comps: parsed.comps,
+      searchedAt:
+        typeof parsed.searchedAt === 'string'
+          ? parsed.searchedAt
+          : new Date().toISOString(),
+    };
+    if (isValuation(parsed.valuation)) {
+      completed.valuation = parsed.valuation;
+    }
+    return completed;
   }
 
   if (
@@ -418,18 +458,6 @@ function parseEbayFunctionResponse(responseBody: string): EbayFunctionResponse {
     typeof parsed.query === 'string'
   ) {
     return parsed as EbayStartedResponse | EbayRunningResponse;
-  }
-
-  if (
-    parsed.phase === 'completed' &&
-    typeof parsed.runId === 'string' &&
-    typeof parsed.query === 'string' &&
-    typeof parsed.searchedAt === 'string' &&
-    Array.isArray(parsed.comps) &&
-    parsed.comps.every(isSoldComparable) &&
-    isValuation(parsed.valuation)
-  ) {
-    return parsed as EbayCompletedResponse;
   }
 
   throw new ItemAnalysisError(
@@ -498,28 +526,129 @@ async function executeEbayFunction(
   return parseEbayFunctionResponse(execution.responseBody);
 }
 
-function appendUniqueQueryPart(parts: string[], value: string | null | undefined) {
-  const cleaned = value?.replace(/\s+/g, ' ').trim();
-  if (!cleaned) return;
-  const normalized = cleaned.toLocaleLowerCase();
-  if (parts.some((part) => part.toLocaleLowerCase() === normalized)) return;
-  parts.push(cleaned);
+function confidencePercent(value: number) {
+  const normalized = value <= 1 ? value * 100 : value;
+  return Math.max(0, Math.min(100, Math.round(normalized)));
 }
 
-function buildEbaySoldCompsQuery(result: ItemAnalysisSuccess) {
+function buildStrictMarketProfile(
+  result: ItemAnalysisSuccess,
+): StrictMarketValueProfile {
   const identity = result.analysis.identification;
-  const parts: string[] = [];
-  appendUniqueQueryPart(parts, identity.brand);
-  appendUniqueQueryPart(parts, identity.model);
-  appendUniqueQueryPart(parts, identity.variant);
-  appendUniqueQueryPart(parts, identity.itemType);
+  const signals = result.analysis.valuationSignals;
+  const title = [
+    identity.brand,
+    identity.model,
+    identity.variant,
+    identity.itemType,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+  const visibleMarks = result.analysis.evidence
+    .filter((entry) =>
+      ['photo_text', 'google_vision'].includes(entry.source),
+    )
+    .map((entry) => entry.value);
 
-  if (parts.length === 0) {
-    appendUniqueQueryPart(parts, result.analysis.valuationSignals.searchTerms[0]);
-    appendUniqueQueryPart(parts, identity.category);
+  return {
+    title: title || identity.category || 'Unclear item',
+    brand: identity.brand,
+    model: identity.model,
+    condition: result.analysis.condition.grade,
+    conditionNotes: result.analysis.condition.notes.join(' '),
+    photoCount: result.input.imageCount,
+    valuationSignals: {
+      objectType: identity.itemType,
+      subcategory: signals.category ?? identity.category,
+      style: identity.variant ? [identity.variant] : [],
+      materials: [],
+      colors: identity.color ? [identity.color] : [],
+      era: identity.era ? [identity.era] : [],
+      motifs: [],
+      shape: null,
+      construction: [],
+      conditionSignals: [
+        ...result.analysis.condition.notes,
+        ...signals.positiveFactors,
+        ...signals.negativeFactors,
+      ],
+      visibleMarks: [
+        ...visibleMarks,
+        ...(identity.serialNumber ? [identity.serialNumber] : []),
+      ],
+      descriptorSummary: result.analysis.summary,
+      searchQueries: signals.searchTerms,
+      negativeKeywords: [],
+      uncertainty: result.analysis.ambiguities,
+      suggestedPhotoAngles: result.analysis.suggestedPhotos,
+      confidence: confidencePercent(result.analysis.confidence.overall),
+    },
+  };
+}
+
+function percentile(sortedValues: number[], percentileValue: number) {
+  if (sortedValues.length === 1) return sortedValues[0];
+  const position = (sortedValues.length - 1) * percentileValue;
+  const lowerIndex = Math.floor(position);
+  const upperIndex = Math.ceil(position);
+  if (lowerIndex === upperIndex) return sortedValues[lowerIndex];
+  const weight = position - lowerIndex;
+  return (
+    sortedValues[lowerIndex] * (1 - weight) +
+    sortedValues[upperIndex] * weight
+  );
+}
+
+function roundMoney(value: number) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+function valuationFromSelectedComps(
+  selected: ItemSoldComparable[],
+  suppliedCount: number,
+): ItemValuation {
+  const currencyCounts = new Map<string, number>();
+  for (const comp of selected) {
+    const currency = comp.currency.toUpperCase();
+    currencyCounts.set(currency, (currencyCounts.get(currency) ?? 0) + 1);
+  }
+  const currency = [...currencyCounts.entries()].sort(
+    (left, right) => right[1] - left[1],
+  )[0]?.[0];
+  const prices = selected
+    .filter((comp) => comp.currency.toUpperCase() === currency)
+    .map((comp) => comp.totalPrice)
+    .filter((price) => Number.isFinite(price) && price > 0)
+    .sort((left, right) => left - right);
+
+  if (!currency || prices.length === 0) {
+    return {
+      status: 'needs_comps',
+      currency: null,
+      suppliedCount,
+      usedCount: 0,
+      rejectedCount: suppliedCount,
+      median: null,
+      p20: null,
+      p80: null,
+      methodology: 'none',
+      source: 'ebay_sold',
+    };
   }
 
-  return parts.join(' ').slice(0, 180).trim();
+  return {
+    status: prices.length >= 3 ? 'ready' : 'limited_comps',
+    currency,
+    suppliedCount,
+    usedCount: prices.length,
+    rejectedCount: Math.max(0, suppliedCount - prices.length),
+    median: roundMoney(percentile(prices, 0.5)),
+    p20: roundMoney(percentile(prices, 0.2)),
+    p80: roundMoney(percentile(prices, 0.8)),
+    methodology: 'median_linear_p20_p80_mad_outlier_filter_v1',
+    source: 'ebay_sold',
+  };
 }
 
 function marketResearchFailure(
@@ -545,7 +674,8 @@ async function researchEbaySoldComps(
   functionId: string,
   signal?: AbortSignal,
 ): Promise<ItemAnalysisSuccess> {
-  const query = buildEbaySoldCompsQuery(result);
+  const profile = buildStrictMarketProfile(result);
+  const query = buildStrictEbaySearchQuery(profile).slice(0, 180).trim();
   if (result.status !== 'identified' || query.length < 3) {
     return {
       ...result,
@@ -562,10 +692,43 @@ async function researchEbaySoldComps(
   const started = await executeEbayFunction(
     functions,
     functionId,
-    { action: 'start', query, limit: EBAY_COMPS_LIMIT },
+    {
+      action: 'start',
+      purpose: 'sold_comps',
+      query,
+      limit: EBAY_COMPS_LIMIT,
+    },
     signal,
   );
-  if (started.phase !== 'started') {
+
+  const applyCompletedResult = (
+    completed: EbayCompletedResponse,
+  ): ItemAnalysisSuccess => {
+    const selected = selectStrictEbaySoldComps(profile, completed.comps);
+    const valuation = valuationFromSelectedComps(
+      selected.comps,
+      completed.comps.length,
+    );
+    return {
+      ...result,
+      valuation,
+      marketResearch: {
+        provider: 'ebay',
+        status: 'completed',
+        query: selected.query || completed.query,
+        searchedAt: completed.searchedAt,
+        comparableCount: valuation.usedCount,
+        comps: selected.comps,
+        quality: selected.quality,
+      },
+    };
+  };
+
+  if (started.phase === 'completed') {
+    return applyCompletedResult(started);
+  }
+
+  if (started.phase !== 'started' && started.phase !== 'running') {
     throw new ItemAnalysisError(
       'The eBay sold-comps service did not start a research run.',
       'EBAY_COMPS_START_FAILED',
@@ -579,6 +742,7 @@ async function researchEbaySoldComps(
       functionId,
       {
         action: 'status',
+        purpose: 'sold_comps',
         runId: started.runId,
         query: started.query,
         limit: EBAY_COMPS_LIMIT,
@@ -587,24 +751,256 @@ async function researchEbaySoldComps(
     );
 
     if (status.phase !== 'completed') continue;
-    return {
-      ...result,
-      valuation: { ...status.valuation, source: 'ebay_sold' },
-      marketResearch: {
-        provider: 'ebay',
-        status: 'completed',
-        query: status.query,
-        searchedAt: status.searchedAt,
-        comparableCount: status.valuation.usedCount,
-        comps: status.comps,
-      },
-    };
+    return applyCompletedResult(status);
   }
 
   throw new ItemAnalysisError(
     'eBay sold-comps research took too long. The item identification is still available.',
     'EBAY_COMPS_TIMEOUT',
   );
+}
+
+function normalizedLegacyScore(value: number) {
+  return Math.max(0, Math.min(1, value > 1 ? value / 100 : value));
+}
+
+function emptyMarketValuation(): ItemValuation {
+  return {
+    status: 'needs_comps',
+    currency: null,
+    suppliedCount: 0,
+    usedCount: 0,
+    rejectedCount: 0,
+    median: null,
+    p20: null,
+    p80: null,
+    methodology: 'none',
+    source: 'none',
+  };
+}
+
+function emptyVisionResult() {
+  return {
+    enabled: false,
+    succeeded: false,
+    images: [],
+    warnings: [],
+  };
+}
+
+function legacyIdentificationResult(
+  identification: KeepFlipIdentification,
+  imageCount: number,
+): ItemAnalysisSuccess {
+  const sourceMap: Record<
+    KeepFlipIdentification['identityEvidence'][number]['source'],
+    ItemAnalysisEvidenceSource
+  > = {
+    photo_text: 'photo_text',
+    visual_design: 'photo_visual',
+    user_notes: 'user_notes',
+    external_evidence: 'user_notes',
+  };
+  const signals = identification.valuationSignals;
+  const itemType =
+    signals.objectType ||
+    (identification.title.toLowerCase() === 'unclear item'
+      ? null
+      : identification.title);
+  const status =
+    identification.identificationBasis === 'insufficient_evidence'
+      ? 'insufficient_evidence'
+      : 'identified';
+
+  return {
+    ok: true,
+    contractVersion: ITEM_ANALYSIS_CONTRACT_VERSION,
+    version: `${ITEM_ANALYSIS_VERSION}-keepflip-item-ai-fallback`,
+    status,
+    input: {
+      imageCount,
+      source: 'appwrite_storage',
+    },
+    analysis: {
+      summary:
+        identification.conditionNotes ||
+        `${identification.title} identified from the uploaded photo evidence.`,
+      identification: {
+        itemType,
+        category: identification.category,
+        brand: identification.brand,
+        model: identification.model,
+        variant: null,
+        color: signals.colors[0] ?? null,
+        era: signals.era[0] ?? null,
+        serialNumber: null,
+      },
+      condition: {
+        grade: identification.condition,
+        confidence: normalizedLegacyScore(
+          identification.confidenceBreakdown.condition,
+        ),
+        notes: identification.conditionNotes
+          ? [identification.conditionNotes]
+          : signals.conditionSignals,
+      },
+      confidence: {
+        overall: normalizedLegacyScore(identification.confidence),
+        itemType: normalizedLegacyScore(
+          identification.confidenceBreakdown.itemType,
+        ),
+        brand: normalizedLegacyScore(
+          identification.confidenceBreakdown.brand,
+        ),
+        model: normalizedLegacyScore(
+          identification.confidenceBreakdown.model,
+        ),
+        condition: normalizedLegacyScore(
+          identification.confidenceBreakdown.condition,
+        ),
+      },
+      evidence: identification.identityEvidence.map((entry) => ({
+        claim: entry.field,
+        value: entry.value,
+        source: sourceMap[entry.source],
+        imageIndex: null,
+        strength:
+          entry.confidence >= 75
+            ? 'high'
+            : entry.confidence >= 45
+              ? 'medium'
+              : 'low',
+        rationale: entry.explanation,
+      })),
+      ambiguities: identification.ambiguityNotes,
+      suggestedPhotos: identification.suggestedPhotos,
+      valuationSignals: {
+        searchTerms: signals.searchQueries.length
+          ? signals.searchQueries
+          : [identification.productSearchQuery].filter(Boolean),
+        category: signals.subcategory ?? identification.category,
+        conditionAdjustment:
+          identification.conditionNotes ||
+          'No supported condition adjustment is available.',
+        positiveFactors: signals.conditionSignals,
+        negativeFactors: signals.uncertainty,
+      },
+    },
+    vision: emptyVisionResult(),
+    valuation: emptyMarketValuation(),
+  };
+}
+
+function legacyGuidanceResult(
+  guidance: ItemIdentificationGuidance,
+  imageCount: number,
+): ItemAnalysisSuccess {
+  return {
+    ok: true,
+    contractVersion: ITEM_ANALYSIS_CONTRACT_VERSION,
+    version: `${ITEM_ANALYSIS_VERSION}-keepflip-item-ai-guidance`,
+    status: 'insufficient_evidence',
+    input: { imageCount, source: 'appwrite_storage' },
+    analysis: {
+      summary: guidance.message,
+      identification: {
+        itemType: null,
+        category: null,
+        brand: null,
+        model: null,
+        variant: null,
+        color: null,
+        era: null,
+        serialNumber: null,
+      },
+      condition: {
+        grade: 'unknown',
+        confidence: 0,
+        notes: [],
+      },
+      confidence: {
+        overall: 0,
+        itemType: 0,
+        brand: 0,
+        model: 0,
+        condition: 0,
+      },
+      evidence: [],
+      ambiguities: [guidance.message],
+      suggestedPhotos: guidance.tips,
+      valuationSignals: {
+        searchTerms: [],
+        category: null,
+        conditionAdjustment: 'Condition cannot be assessed from the current evidence.',
+        positiveFactors: [],
+        negativeFactors: [],
+      },
+    },
+    vision: emptyVisionResult(),
+    valuation: emptyMarketValuation(),
+  };
+}
+
+function shouldTryLegacyItemAi(error: unknown) {
+  if (!APPWRITE.itemAiFunctionId) return false;
+  if (!(error instanceof ItemAnalysisError)) return false;
+  return /provider|openai|vision|timeout|function_execution|analysis_request|invalid_function_response/i.test(
+    error.code,
+  );
+}
+
+async function executePrimaryAnalysis(
+  functions: Functions,
+  functionId: string,
+  request: ItemAnalysisFunctionRequest,
+  signal?: AbortSignal,
+) {
+  throwIfAborted(signal);
+  const execution = await functions.createExecution({
+    functionId,
+    body: JSON.stringify(request),
+    async: false,
+    method: ExecutionMethod.POST,
+    headers: { 'content-type': 'application/json' },
+  });
+  throwIfAborted(signal);
+
+  if (
+    execution.status !== 'completed' ||
+    execution.responseStatusCode < 200 ||
+    execution.responseStatusCode >= 300
+  ) {
+    const functionFailure = parseBoundedFunctionFailure(
+      execution.responseBody,
+    );
+    if (functionFailure) {
+      throw new ItemAnalysisError(
+        functionFailure.error.message,
+        functionFailure.error.code,
+        functionFailure.error.details,
+      );
+    }
+
+    throw new ItemAnalysisError(
+      'The analysis function did not complete successfully.',
+      'FUNCTION_EXECUTION_FAILED',
+      {
+        executionId: execution.$id,
+        executionStatus: execution.status,
+        responseStatusCode: execution.responseStatusCode,
+      },
+    );
+  }
+
+  const response = parseFunctionResponse(execution.responseBody);
+  if (!response.ok) {
+    throw new ItemAnalysisError(
+      response.error.message,
+      response.error.code,
+      response.error.details,
+    );
+  }
+  return response;
 }
 
 function normalizePhotoUri(uri: string) {
@@ -908,53 +1304,41 @@ export async function analyzeItemPhotos(
     };
 
     reportStage(options.onStage, 'analyzing');
-    throwIfAborted(options.signal);
-    const execution = await functions.createExecution({
-      functionId: configuration.analyzeFunctionId,
-      body: JSON.stringify(request),
-      async: false,
-      method: ExecutionMethod.POST,
-      headers: { 'content-type': 'application/json' },
-    });
-    throwIfAborted(options.signal);
-
-    if (
-      execution.status !== 'completed' ||
-      execution.responseStatusCode < 200 ||
-      execution.responseStatusCode >= 300
-    ) {
-      const functionFailure = parseBoundedFunctionFailure(
-        execution.responseBody,
+    try {
+      result = await executePrimaryAnalysis(
+        functions,
+        configuration.analyzeFunctionId,
+        request,
+        options.signal,
       );
-      if (functionFailure) {
-        throw new ItemAnalysisError(
-          functionFailure.error.message,
-          functionFailure.error.code,
-          functionFailure.error.details,
-        );
+    } catch (primaryAnalysisError) {
+      if (!shouldTryLegacyItemAi(primaryAnalysisError)) {
+        throw primaryAnalysisError;
       }
 
-      throw new ItemAnalysisError(
-        'The analysis function did not complete successfully.',
-        'FUNCTION_EXECUTION_FAILED',
-        {
-          executionId: execution.$id,
-          executionStatus: execution.status,
-          responseStatusCode: execution.responseStatusCode,
-        },
-      );
+      try {
+        const legacyIdentification = await identifyItemWithAI(
+          uploadedFileIds,
+          input.userNotes,
+        );
+        throwIfAborted(options.signal);
+        result = legacyIdentificationResult(
+          legacyIdentification,
+          uploadedFileIds.length,
+        );
+      } catch (legacyError) {
+        throwIfAborted(options.signal);
+        const guidance = getItemIdentificationGuidance(legacyError);
+        if (guidance) {
+          result = legacyGuidanceResult(
+            guidance,
+            uploadedFileIds.length,
+          );
+        } else {
+          throw primaryAnalysisError;
+        }
+      }
     }
-
-    const response = parseFunctionResponse(execution.responseBody);
-    if (!response.ok) {
-      throw new ItemAnalysisError(
-        response.error.message,
-        response.error.code,
-        response.error.details,
-      );
-    }
-
-    result = response;
   } catch (error) {
     primaryError = error;
   } finally {
@@ -1001,7 +1385,9 @@ export async function analyzeItemPhotos(
           'unavailable',
           'EBAY_COMPS_NOT_CONFIGURED',
           'Add EXPO_PUBLIC_APPWRITE_EBAY_SOLD_COMPS_FUNCTION_ID to enable sold-comp valuation.',
-          buildEbaySoldCompsQuery(identifiedResult) || null,
+          buildStrictEbaySearchQuery(
+            buildStrictMarketProfile(identifiedResult),
+          ) || null,
         ),
       };
     }
@@ -1016,7 +1402,10 @@ export async function analyzeItemPhotos(
       );
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') throw error;
-      const query = buildEbaySoldCompsQuery(identifiedResult) || null;
+      const query =
+        buildStrictEbaySearchQuery(
+          buildStrictMarketProfile(identifiedResult),
+        ) || null;
       return {
         ...identifiedResult,
         marketResearch: marketResearchFailure(

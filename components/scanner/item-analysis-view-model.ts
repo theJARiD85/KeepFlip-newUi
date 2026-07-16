@@ -68,6 +68,10 @@ function resultTitle(result: ItemAnalysisSuccess) {
 function valuationReadiness(result: ItemAnalysisSuccess): ItemAnalysisOverlayResult['valuationReadiness'] {
   const valuation = result.valuation;
   const market = result.marketResearch;
+  const quality = market?.quality;
+  const qualityDetail = quality
+    ? `${titleCase(quality.confidence)} confidence${quality.searchRoute ? ` ${quality.searchRoute.replaceAll('_', ' ')} search` : ''}. ${quality.warnings[0] ?? ''}`.trim()
+    : '';
 
   if (market?.status === 'failed' || market?.status === 'unavailable') {
     return {
@@ -83,7 +87,7 @@ function valuationReadiness(result: ItemAnalysisSuccess): ItemAnalysisOverlayRes
     if (valuation.source === 'ebay_sold') {
       return {
         label: 'eBay sold range ready',
-        reason: `${valuation.usedCount} completed eBay sale${valuation.usedCount === 1 ? '' : 's'} remained after currency validation, duplicate removal, and outlier filtering${market?.query ? ` for “${market.query}”` : ''}.`,
+        reason: `${valuation.usedCount} completed eBay sale${valuation.usedCount === 1 ? '' : 's'} remained after identity, condition, currency, duplicate, and outlier filtering${market?.query ? ` for “${market.query}”` : ''}. ${qualityDetail}`.trim(),
         status: 'ready',
       };
     }
@@ -98,7 +102,7 @@ function valuationReadiness(result: ItemAnalysisSuccess): ItemAnalysisOverlayRes
     if (valuation.source === 'ebay_sold') {
       return {
         label: 'Limited eBay market signal',
-        reason: `Only ${valuation.usedCount} matching completed sale${valuation.usedCount === 1 ? '' : 's'} remained after validation. Treat this as an early signal, not a firm list price.`,
+        reason: `Only ${valuation.usedCount} matching completed sale${valuation.usedCount === 1 ? '' : 's'} remained after validation. Treat this as an early signal, not a firm list price. ${qualityDetail}`.trim(),
         status: 'limited',
       };
     }

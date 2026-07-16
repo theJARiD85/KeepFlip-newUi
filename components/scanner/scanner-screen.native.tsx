@@ -1,5 +1,6 @@
 import { useIsFocused } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -42,10 +43,10 @@ import {
   type MultiScanPhoto,
 } from '@/components/scanner/multi-scan-photo-review';
 import {
-  ItemAnalysisOverlay,
   type AnalysisStep,
   type ItemAnalysisState,
 } from '@/components/scanner/item-analysis-overlay';
+import { ItemAnalysisBubbles } from '@/components/scanner/item-analysis-bubbles';
 import { toItemAnalysisState } from '@/components/scanner/item-analysis-view-model';
 import { useKeepFlipMenu } from '@/components/navigation/keepflip-menu-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -55,6 +56,7 @@ import {
   analyzeItemPhotos,
   AppwriteSetupError,
   ItemAnalysisError,
+  MAX_ANALYSIS_PHOTOS,
   type ItemAnalysisStage,
 } from '@/services/item-analysis-service';
 
@@ -115,24 +117,27 @@ function analysisProgressState(stage: ItemAnalysisStage): ItemAnalysisState {
 }
 
 function selectMultiScanEvidence(photos: MultiScanPhoto[]) {
-  if (photos.length <= 4) return photos.map((photo) => photo.path);
+  if (photos.length <= MAX_ANALYSIS_PHOTOS) return photos.map((photo) => photo.path);
 
   // Preserve the establishing shot and favor the latest detail/label views.
-  return [photos[0].path, ...photos.slice(-3).map((photo) => photo.path)];
+  return [
+    photos[0].path,
+    ...photos.slice(-(MAX_ANALYSIS_PHOTOS - 1)).map((photo) => photo.path),
+  ];
 }
 
 function scannerToolHeaderCopy({
   batchCount,
   hasSinglePhoto,
-  hasUploadedPhoto,
   multiCount,
   tool,
+  uploadedCount,
 }: {
   batchCount: number;
   hasSinglePhoto: boolean;
-  hasUploadedPhoto: boolean;
   multiCount: number;
   tool: ScannerToolId;
+  uploadedCount: number;
 }) {
   if (tool === 'single') {
     return {
@@ -164,10 +169,11 @@ function scannerToolHeaderCopy({
   }
 
   return {
-    title: 'Upload a photo',
-    hint: hasUploadedPhoto
-      ? 'Photo ready. Tap the upload tool to replace it.'
-      : 'Choose an existing image from your library.',
+    title: 'Upload item photos',
+    hint:
+      uploadedCount > 0
+        ? `${uploadedCount} of ${MAX_ANALYSIS_PHOTOS} photos ready. Tap the photo stack to review.`
+        : `Choose up to ${MAX_ANALYSIS_PHOTOS} images of the same item.`,
   };
 }
 
@@ -178,6 +184,7 @@ export default function ScannerScreen() {
   const cameraRef = useRef<Camera>(null);
   const captureLockRef = useRef(false);
   const multiScanSequenceRef = useRef(0);
+  const uploadSequenceRef = useRef(0);
   const analysisAbortControllerRef = useRef<AbortController | null>(null);
   const atmosphereTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { hasPermission, requestPermission } = useCameraPermission();
@@ -191,14 +198,17 @@ export default function ScannerScreen() {
   const [isPickingPhoto, setIsPickingPhoto] = useState(false);
   const [appState, setAppState] = useState(AppState.currentState);
   const [message, setMessage] = useState('Center one item inside the frame');
+  const [captureFeedback, setCaptureFeedback] = useState<string | null>(null);
   const [atmospherePhase, setAtmospherePhase] = useState<ScannerAtmospherePhase>('idle');
   const [selectedTool, setSelectedTool] = useState<ScannerToolId>('single');
   const [singlePhotoUri, setSinglePhotoUri] = useState<string | null>(null);
   const [multiScanPhotos, setMultiScanPhotos] = useState<MultiScanPhoto[]>([]);
   const [isMultiReviewOpen, setIsMultiReviewOpen] = useState(false);
   const [batchScanPhotos, setBatchScanPhotos] = useState<string[]>([]);
-  const [uploadedPhotoUri, setUploadedPhotoUri] = useState<string | null>(null);
+  const [uploadedPhotos, setUploadedPhotos] = useState<MultiScanPhoto[]>([]);
+  const [isUploadReviewOpen, setIsUploadReviewOpen] = useState(false);
   const [analysisState, setAnalysisState] = useState<ItemAnalysisState | null>(null);
+  const [analysisBackdropUri, setAnalysisBackdropUri] = useState<string | null>(null);
   const renderedAtmospherePhase: ScannerAtmospherePhase =
     analysisState?.status === 'analyzing' ? 'analyzing' : atmospherePhase;
   const canRequestPermission = permissionStatus === 'not-determined';
@@ -208,8 +218,8 @@ export default function ScannerScreen() {
       ? [singlePhotoUri]
       : selectedTool === 'multi'
         ? selectMultiScanEvidence(multiScanPhotos)
-        : selectedTool === 'upload' && uploadedPhotoUri
-          ? [uploadedPhotoUri]
+        : selectedTool === 'upload'
+          ? uploadedPhotos.map((photo) => photo.path)
           : [];
   const canAnalyzeCurrentTool = analysisPhotoUris.length > 0;
   const selectedToolAppearance =
@@ -217,11 +227,13 @@ export default function ScannerScreen() {
   const selectedToolHeader = scannerToolHeaderCopy({
     batchCount: batchScanPhotos.length,
     hasSinglePhoto: singlePhotoUri != null,
-    hasUploadedPhoto: uploadedPhotoUri != null,
     multiCount: multiScanPhotos.length,
     tool: selectedTool,
+    uploadedCount: uploadedPhotos.length,
   });
-  const isScannerOverlayOpen = isMultiReviewOpen || analysisState != null;
+  const isPhotoReviewOpen = isMultiReviewOpen || isUploadReviewOpen;
+  const isScannerOverlayOpen = isPhotoReviewOpen || analysisState != null;
+  const isScannerUiHidden = isScannerOverlayOpen;
   const isCameraActive =
     hasPermission &&
     device != null &&
@@ -239,6 +251,15 @@ export default function ScannerScreen() {
       ],
     }),
     [isScannerOverlayOpen],
+  );
+  const scannerChromeAnimatedStyle = useAnimatedStyle(
+    () => ({
+      opacity: withTiming(isScannerUiHidden ? 0 : 1, { duration: 170 }),
+      transform: [
+        { scale: withTiming(isScannerUiHidden ? 0.97 : 1, { duration: 190 }) },
+      ],
+    }),
+    [isScannerUiHidden],
   );
 
   const clearAtmosphereTimer = useCallback(() => {
@@ -284,8 +305,10 @@ export default function ScannerScreen() {
   }, [isCameraActive]);
 
   useEffect(() => {
-    if (isMenuPresented && isMultiReviewOpen) setIsMultiReviewOpen(false);
-  }, [isMenuPresented, isMultiReviewOpen]);
+    if (!isMenuPresented) return;
+    if (isMultiReviewOpen) setIsMultiReviewOpen(false);
+    if (isUploadReviewOpen) setIsUploadReviewOpen(false);
+  }, [isMenuPresented, isMultiReviewOpen, isUploadReviewOpen]);
 
   useEffect(() => {
     if (!isMenuPresented || analysisState == null) return;
@@ -296,6 +319,7 @@ export default function ScannerScreen() {
     analysisAbortControllerRef.current?.abort();
     analysisAbortControllerRef.current = null;
     setAnalysisState(null);
+    setAnalysisBackdropUri(null);
   }, [analysisState, closeMenu, isMenuPresented]);
 
   useEffect(() => {
@@ -305,15 +329,22 @@ export default function ScannerScreen() {
   }, [isMultiReviewOpen, multiScanPhotos.length]);
 
   useEffect(() => {
-    if (!isMultiReviewOpen || Platform.OS !== 'android') return;
+    if (isUploadReviewOpen && uploadedPhotos.length === 0) {
+      setIsUploadReviewOpen(false);
+    }
+  }, [isUploadReviewOpen, uploadedPhotos.length]);
+
+  useEffect(() => {
+    if (!isPhotoReviewOpen || Platform.OS !== 'android') return;
 
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
       setIsMultiReviewOpen(false);
+      setIsUploadReviewOpen(false);
       return true;
     });
 
     return () => subscription.remove();
-  }, [isMultiReviewOpen]);
+  }, [isPhotoReviewOpen]);
 
   useEffect(() => {
     if (analysisState == null || Platform.OS !== 'android') return;
@@ -323,18 +354,45 @@ export default function ScannerScreen() {
       analysisAbortControllerRef.current?.abort();
       analysisAbortControllerRef.current = null;
       setAnalysisState(null);
+      setAnalysisBackdropUri(null);
       return true;
     });
 
     return () => subscription.remove();
   }, [analysisState]);
 
-  const acceptPickedPhoto = useCallback(
-    (uri: string) => {
-      setUploadedPhotoUri(uri);
+  const acceptPickedPhotos = useCallback(
+    (assets: readonly ImagePicker.ImagePickerAsset[]) => {
+      const selectedUris = assets
+        .map((asset) => asset.uri?.trim())
+        .filter((uri): uri is string => Boolean(uri));
+      if (selectedUris.length === 0) return;
+
+      setUploadedPhotos((currentPhotos) => {
+        const knownUris = new Set(currentPhotos.map((photo) => photo.path));
+        const additions = selectedUris
+          .filter((uri) => {
+            if (knownUris.has(uri)) return false;
+            knownUris.add(uri);
+            return true;
+          })
+          .map((uri) => {
+            uploadSequenceRef.current += 1;
+            return {
+              createdAt: Date.now(),
+              id: `upload-${Date.now()}-${uploadSequenceRef.current}`,
+              path: uri,
+              uri: toDisplayUri(uri),
+            } satisfies MultiScanPhoto;
+          });
+        const nextPhotos = [...currentPhotos, ...additions].slice(0, MAX_ANALYSIS_PHOTOS);
+        setMessage(
+          `${nextPhotos.length} of ${MAX_ANALYSIS_PHOTOS} uploaded photo${nextPhotos.length === 1 ? '' : 's'} ready for AI analysis.`,
+        );
+        return nextPhotos;
+      });
       setSelectedTool('upload');
       setAtmospherePhase('captured');
-      setMessage('Uploaded photo ready for AI analysis');
       scheduleAtmosphereReset();
     },
     [scheduleAtmosphereReset],
@@ -354,8 +412,8 @@ export default function ScannerScreen() {
           return;
         }
 
-        if (!pendingResult.canceled && pendingResult.assets[0]) {
-          acceptPickedPhoto(pendingResult.assets[0].uri);
+        if (!pendingResult.canceled && pendingResult.assets.length > 0) {
+          acceptPickedPhotos(pendingResult.assets);
         }
       } catch {
         if (isMounted) setMessage('Could not restore the selected photo. Please choose it again.');
@@ -366,7 +424,7 @@ export default function ScannerScreen() {
     return () => {
       isMounted = false;
     };
-  }, [acceptPickedPhoto]);
+  }, [acceptPickedPhotos]);
 
   const handlePermissionAction = async () => {
     if (canRequestPermission) {
@@ -380,6 +438,14 @@ export default function ScannerScreen() {
 
   const handleUploadPhoto = useCallback(async () => {
     if (isPickingPhoto) return;
+    const remainingSlots = MAX_ANALYSIS_PHOTOS - uploadedPhotos.length;
+    if (remainingSlots <= 0) {
+      setMessage(
+        `The ${MAX_ANALYSIS_PHOTOS}-photo analysis set is full. Remove a photo before adding another.`,
+      );
+      setIsUploadReviewOpen(true);
+      return;
+    }
 
     clearAtmosphereTimer();
     setIsPickingPhoto(true);
@@ -390,8 +456,10 @@ export default function ScannerScreen() {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: false,
-        allowsMultipleSelection: false,
-        quality: 1,
+        allowsMultipleSelection: true,
+        orderedSelection: true,
+        quality: 0.85,
+        selectionLimit: remainingSlots,
       });
 
       if (result.canceled) {
@@ -400,25 +468,26 @@ export default function ScannerScreen() {
         return;
       }
 
-      const asset = result.assets[0];
-      if (!asset) {
+      if (result.assets.length === 0) {
         setAtmospherePhase('idle');
-        setMessage('No photo was selected. Please try again.');
+        setMessage('No photos were selected. Please try again.');
         return;
       }
 
-      acceptPickedPhoto(asset.uri);
+      acceptPickedPhotos(result.assets);
     } catch {
       setAtmospherePhase('idle');
       setMessage('Could not open your photos. Please try again.');
     } finally {
       setIsPickingPhoto(false);
     }
-  }, [acceptPickedPhoto, clearAtmosphereTimer, isPickingPhoto]);
+  }, [acceptPickedPhotos, clearAtmosphereTimer, isPickingPhoto, uploadedPhotos.length]);
 
   const capturePhoto = useCallback(async (): Promise<string | null> => {
     if (!cameraRef.current || !isCameraActive || !isCameraReady) {
-      setMessage('Camera is getting ready. Try again in a moment.');
+      const feedback = 'Camera is getting ready. Try again in a moment.';
+      setMessage(feedback);
+      setCaptureFeedback(feedback);
       return null;
     }
 
@@ -428,6 +497,7 @@ export default function ScannerScreen() {
     setIsCapturing(true);
     setAtmospherePhase('scanning');
     setMessage('Capturing item...');
+    setCaptureFeedback('Capturing item...');
 
     try {
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
@@ -435,11 +505,14 @@ export default function ScannerScreen() {
       if (!photo.path) throw new Error('VisionCamera returned an empty photo path.');
 
       setAtmospherePhase('captured');
+      setCaptureFeedback(null);
       scheduleAtmosphereReset();
       return photo.path;
     } catch {
+      const feedback = 'Could not capture. Hold steady and try again.';
       setAtmospherePhase('idle');
-      setMessage('Could not capture. Hold steady and try again.');
+      setMessage(feedback);
+      setCaptureFeedback(feedback);
       return null;
     } finally {
       captureLockRef.current = false;
@@ -479,9 +552,37 @@ export default function ScannerScreen() {
     void Haptics.selectionAsync().catch(() => undefined);
   }, []);
 
+  const openUploadReview = useCallback(() => {
+    if (
+      uploadedPhotos.length === 0 ||
+      captureLockRef.current ||
+      isCapturing ||
+      isPickingPhoto ||
+      isMenuPresented
+    ) {
+      return;
+    }
+
+    setIsUploadReviewOpen(true);
+    void Haptics.selectionAsync().catch(() => undefined);
+  }, [isCapturing, isMenuPresented, isPickingPhoto, uploadedPhotos.length]);
+
+  const closeUploadReview = useCallback(() => {
+    setIsUploadReviewOpen(false);
+    void Haptics.selectionAsync().catch(() => undefined);
+  }, []);
+
+  const deleteUploadedPhoto = useCallback((photoId: string) => {
+    setUploadedPhotos((currentPhotos) =>
+      currentPhotos.filter((photo) => photo.id !== photoId),
+    );
+    void Haptics.selectionAsync().catch(() => undefined);
+  }, []);
+
   const handleToolSelect = (tool: ScannerToolId) => {
     if (isCapturing || isPickingPhoto || isMenuPresented) return;
 
+    setCaptureFeedback(null);
     setSelectedTool(tool);
   };
 
@@ -496,7 +597,8 @@ export default function ScannerScreen() {
 
     if (tool === 'single') {
       setSinglePhotoUri(photoPath);
-      setMessage('Center the item in the frame.');
+      setMessage('Photo captured. Starting analysis...');
+      await runAnalysis([photoPath]);
       return;
     }
 
@@ -531,13 +633,13 @@ export default function ScannerScreen() {
     analysisAbortControllerRef.current?.abort();
     analysisAbortControllerRef.current = null;
     setAnalysisState(null);
+    setAnalysisBackdropUri(null);
   };
 
-  const handleAnalyzeItem = async () => {
+  async function runAnalysis(photoUris: string[]) {
     if (
-      analysisPhotoUris.length === 0 ||
+      photoUris.length === 0 ||
       analysisAbortControllerRef.current != null ||
-      isCapturing ||
       isPickingPhoto ||
       isMenuPresented
     ) {
@@ -546,12 +648,13 @@ export default function ScannerScreen() {
 
     const controller = new AbortController();
     analysisAbortControllerRef.current = controller;
+    setAnalysisBackdropUri(toDisplayUri(photoUris[0]));
     setAnalysisState(analysisProgressState('authenticating'));
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
 
     try {
       const result = await analyzeItemPhotos(
-        { photoUris: analysisPhotoUris },
+        { photoUris },
         {
           onStage: (stage) => {
             if (!controller.signal.aborted) setAnalysisState(analysisProgressState(stage));
@@ -599,10 +702,12 @@ export default function ScannerScreen() {
         analysisAbortControllerRef.current = null;
       }
     }
-  };
+  }
+
+  const handleAnalyzeItem = () => runAnalysis(analysisPhotoUris);
 
   const analysisButton =
-    canAnalyzeCurrentTool && analysisState == null && !isMultiReviewOpen ? (
+    canAnalyzeCurrentTool && analysisState == null && !isPhotoReviewOpen ? (
       <Animated.View
         entering={FadeIn.duration(180)}
         exiting={FadeOut.duration(130)}
@@ -626,7 +731,9 @@ export default function ScannerScreen() {
             <Text style={styles.analyzeButtonText}>
               {selectedTool === 'multi'
                 ? `Analyze ${analysisPhotoUris.length} views`
-                : 'Analyze item'}
+                : selectedTool === 'upload'
+                  ? `Analyze ${analysisPhotoUris.length} photo${analysisPhotoUris.length === 1 ? '' : 's'}`
+                  : 'Analyze item'}
             </Text>
           </View>
           <Text style={styles.analyzeButtonArrow}>›</Text>
@@ -635,7 +742,7 @@ export default function ScannerScreen() {
     ) : null;
 
   const analysisOverlay = analysisState ? (
-    <ItemAnalysisOverlay
+    <ItemAnalysisBubbles
       bottomInset={insets.bottom}
       doneLabel="Done"
       onDone={closeAnalysis}
@@ -654,13 +761,35 @@ export default function ScannerScreen() {
     />
   ) : null;
 
+  const photoReviewOverlay = isMultiReviewOpen ? (
+    <MultiScanPhotoReview
+      bottomInset={insets.bottom}
+      onClose={closeMultiReview}
+      onDelete={deleteMultiPhoto}
+      photos={multiScanPhotos}
+      topInset={insets.top}
+    />
+  ) : isUploadReviewOpen ? (
+    <MultiScanPhotoReview
+      accentColor={theme.colors.cream}
+      accessibilityContext="uploaded"
+      bottomInset={insets.bottom}
+      eyebrow="UPLOADED PHOTO SET"
+      onClose={closeUploadReview}
+      onDelete={deleteUploadedPhoto}
+      photos={uploadedPhotos}
+      topInset={insets.top}
+    />
+  ) : null;
+
   if (!hasPermission) {
     return (
       <KeepFlipBackground contentStyle={styles.centeredState}>
         <View style={styles.permissionAtmosphere}>
           <ScannerAtmosphere phase={renderedAtmospherePhase} />
         </View>
-        <View style={styles.permissionCard}>
+        {analysisState == null ? (
+          <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(140)} style={styles.permissionCard}>
           <View style={styles.permissionIcon}>
             <IconSymbol name="camera.fill" size={30} color={theme.colors.goldBright} />
           </View>
@@ -676,7 +805,7 @@ export default function ScannerScreen() {
             </Text>
           </Pressable>
           <Pressable
-            accessibilityLabel="Upload an item photo instead"
+            accessibilityLabel="Upload item photos instead"
             disabled={isPickingPhoto}
             onPress={() => void handleUploadPhoto()}
             style={({ pressed }) => [
@@ -690,12 +819,29 @@ export default function ScannerScreen() {
               color={theme.colors.cream}
             />
             <Text style={styles.secondaryButtonText}>
-              {isPickingPhoto ? 'Opening photos...' : 'Upload a photo instead'}
+              {isPickingPhoto
+                ? 'Opening photos...'
+                : uploadedPhotos.length > 0
+                  ? `Add photos (${uploadedPhotos.length}/${MAX_ANALYSIS_PHOTOS})`
+                  : 'Upload photos instead'}
             </Text>
           </Pressable>
+          {uploadedPhotos.length > 0 && !isUploadReviewOpen ? (
+            <MultiScanPhotoStack
+              accentColor={theme.colors.cream}
+              accessibilityContext="uploaded"
+              disabled={isPickingPhoto || isMenuPresented}
+              onOpen={openUploadReview}
+              photos={uploadedPhotos}
+            />
+          ) : null}
           {analysisButton}
-          {uploadedPhotoUri ? <Text style={styles.permissionStatus}>{message}</Text> : null}
-        </View>
+          {uploadedPhotos.length > 0 ? (
+            <Text style={styles.permissionStatus}>{message}</Text>
+          ) : null}
+          </Animated.View>
+        ) : null}
+        {photoReviewOverlay}
         {analysisOverlay}
       </KeepFlipBackground>
     );
@@ -707,12 +853,13 @@ export default function ScannerScreen() {
         <View style={styles.permissionAtmosphere}>
           <ScannerAtmosphere phase={renderedAtmospherePhase} />
         </View>
-        <View style={styles.permissionCard}>
+        {analysisState == null ? (
+          <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(140)} style={styles.permissionCard}>
           <ActivityIndicator color={theme.colors.scannerCyan} />
           <Text style={styles.permissionTitle}>Starting camera</Text>
           <Text style={styles.deviceStateText}>Looking for a back camera...</Text>
           <Pressable
-            accessibilityLabel="Upload an item photo instead"
+            accessibilityLabel="Upload item photos instead"
             disabled={isPickingPhoto}
             onPress={() => void handleUploadPhoto()}
             style={({ pressed }) => [
@@ -726,12 +873,29 @@ export default function ScannerScreen() {
               color={theme.colors.cream}
             />
             <Text style={styles.secondaryButtonText}>
-              {isPickingPhoto ? 'Opening photos...' : 'Upload a photo instead'}
+              {isPickingPhoto
+                ? 'Opening photos...'
+                : uploadedPhotos.length > 0
+                  ? `Add photos (${uploadedPhotos.length}/${MAX_ANALYSIS_PHOTOS})`
+                  : 'Upload photos instead'}
             </Text>
           </Pressable>
+          {uploadedPhotos.length > 0 && !isUploadReviewOpen ? (
+            <MultiScanPhotoStack
+              accentColor={theme.colors.cream}
+              accessibilityContext="uploaded"
+              disabled={isPickingPhoto || isMenuPresented}
+              onOpen={openUploadReview}
+              photos={uploadedPhotos}
+            />
+          ) : null}
           {analysisButton}
-          {uploadedPhotoUri ? <Text style={styles.permissionStatus}>{message}</Text> : null}
-        </View>
+          {uploadedPhotos.length > 0 ? (
+            <Text style={styles.permissionStatus}>{message}</Text>
+          ) : null}
+          </Animated.View>
+        ) : null}
+        {photoReviewOverlay}
         {analysisOverlay}
       </KeepFlipBackground>
     );
@@ -744,32 +908,60 @@ export default function ScannerScreen() {
         device={device}
         enableZoomGesture
         isActive={isCameraActive}
-        onInitialized={() => setIsCameraReady(true)}
-        onStarted={() => setIsCameraReady(true)}
+        onInitialized={() => {
+          setIsCameraReady(true);
+          setCaptureFeedback(null);
+        }}
+        onStarted={() => {
+          setIsCameraReady(true);
+          setCaptureFeedback(null);
+        }}
         onStopped={() => setIsCameraReady(false)}
         onError={(error) => {
+          const feedback = error.message || 'Camera unavailable. Try reopening the scanner.';
           setIsCameraReady(false);
           setTorchEnabled(false);
-          setMessage(error.message || 'Camera unavailable. Try reopening the scanner.');
+          setMessage(feedback);
+          setCaptureFeedback(feedback);
         }}
         photo
         style={StyleSheet.absoluteFill}
         torch={torchEnabled && canUseTorch ? 'on' : 'off'}
       />
-      <View pointerEvents="none" style={styles.cameraScrim} />
-      {isMultiReviewOpen ? (
-        <MultiScanPhotoReview
-          bottomInset={insets.bottom}
-          onClose={closeMultiReview}
-          onDelete={deleteMultiPhoto}
-          photos={multiScanPhotos}
-          topInset={insets.top}
-        />
+      {analysisBackdropUri ? (
+        <Animated.View
+          entering={FadeIn.duration(180)}
+          exiting={FadeOut.duration(160)}
+          pointerEvents="none"
+          style={StyleSheet.absoluteFill}>
+          <Image
+            cachePolicy="memory-disk"
+            contentFit="cover"
+            source={{ uri: analysisBackdropUri }}
+            style={StyleSheet.absoluteFill}
+            transition={120}
+          />
+        </Animated.View>
       ) : null}
-      <View
+      <View pointerEvents="none" style={styles.cameraScrim} />
+      {analysisState?.status === 'analyzing' ? (
+        <Animated.View
+          entering={FadeIn.duration(220)}
+          exiting={FadeOut.duration(180)}
+          pointerEvents="none"
+          style={styles.analysisAtmosphereHost}>
+          <ScannerAtmosphere phase="analyzing" />
+        </Animated.View>
+      ) : null}
+      {photoReviewOverlay}
+      <Animated.View
+        accessibilityElementsHidden={isScannerUiHidden}
+        importantForAccessibility={isScannerUiHidden ? 'no-hide-descendants' : 'auto'}
+        pointerEvents={isScannerUiHidden ? 'none' : 'auto'}
         style={[
           styles.content,
           { paddingTop: insets.top + 14, paddingBottom: insets.bottom + 10 },
+          scannerChromeAnimatedStyle,
         ]}>
         <View style={styles.topBar}>
           <View style={styles.headerCopy}>
@@ -787,8 +979,11 @@ export default function ScannerScreen() {
                   size={14}
                 />
                 <Text
-                  style={[styles.headerHint, { color: theme.colors.text }]}>
-                  {selectedToolHeader.hint}
+                  style={[
+                    styles.headerHint,
+                    { color: captureFeedback ? selectedToolAppearance.accent : theme.colors.text },
+                  ]}>
+                  {captureFeedback ?? selectedToolHeader.hint}
                 </Text>
               </View>
             </Animated.View>
@@ -831,11 +1026,23 @@ export default function ScannerScreen() {
               />
             </View>
           ) : null}
+          {selectedTool === 'upload' && uploadedPhotos.length > 0 && !isUploadReviewOpen ? (
+            <View style={styles.multiStackAnchor}>
+              <MultiScanPhotoStack
+                accentColor={theme.colors.cream}
+                accessibilityContext="uploaded"
+                disabled={isCapturing || isPickingPhoto || isMenuPresented}
+                onOpen={openUploadReview}
+                photos={uploadedPhotos}
+              />
+            </View>
+          ) : null}
           {analysisButton ? (
             <View
               style={[
                 styles.analysisActionAnchor,
-                selectedTool === 'multi' && styles.analysisActionAnchorWithStack,
+                (selectedTool === 'multi' || selectedTool === 'upload') &&
+                  styles.analysisActionAnchorWithStack,
               ]}>
               {analysisButton}
             </View>
@@ -851,7 +1058,7 @@ export default function ScannerScreen() {
             badges={{
               single: singlePhotoUri ? 1 : 0,
               batch: batchScanPhotos.length,
-              upload: uploadedPhotoUri ? 1 : 0,
+              upload: uploadedPhotos.length,
             }}
             disabled={isCapturing || isPickingPhoto || isMenuPresented}
             onActivate={(tool) => void handleToolActivate(tool)}
@@ -859,7 +1066,7 @@ export default function ScannerScreen() {
             selectedTool={selectedTool}
           />
         </Animated.View>
-      </View>
+      </Animated.View>
       {analysisOverlay}
     </View>
   );
@@ -885,6 +1092,11 @@ const styles = StyleSheet.create({
       radial-gradient(circle at 24% 62%, rgba(141, 114, 255, 0.10) 0%, transparent 38%),
       linear-gradient(to bottom, rgba(2, 2, 4, 0.94) 0%, rgba(3, 3, 7, 0.12) 44%, rgba(6, 4, 10, 0.90) 100%)
     `,
+  },
+  analysisAtmosphereHost: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 3,
+    opacity: 0.88,
   },
   permissionCard: {
     width: '100%',
@@ -1029,10 +1241,13 @@ const styles = StyleSheet.create({
   },
   scanFrame: {
     width: '100%',
-    aspectRatio: 0.82,
-    maxHeight: 475,
+    aspectRatio: 0.9,
+    maxHeight: 325,
     borderRadius: theme.radii.large,
     backgroundColor: 'rgba(3, 3, 6, 0.33)',
+    alignSelf: 'center',
+    justifyContent: 'flex-start',
+    bottom: 40
   },
   frameColorWash: {
     position: 'absolute',
