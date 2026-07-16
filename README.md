@@ -1,50 +1,65 @@
-# Welcome to your Expo app 👋
+# KeepFlip
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+KeepFlip is an Expo/React Native item scanner with Appwrite authentication,
+private photo uploads, and evidence-backed AI identification.
 
-## Get started
+## Local setup
 
-1. Install dependencies
+1. Install dependencies:
 
-   ```bash
+   ```powershell
    npm install
    ```
 
-2. Start the app
+2. Copy `.env.example` to `.env` and provide the public Appwrite project IDs.
+   `.env` is ignored by Git. Never place OpenAI, Google Cloud, or Appwrite
+   server API keys in an `EXPO_PUBLIC_` variable.
 
-   ```bash
-   npx expo start
+3. In Appwrite, add a React Native platform for `com.keepflip.app` and enable
+   Email/Password authentication. The app supports sign-in, account creation,
+   persisted registered sessions, foreground session verification, and sign-out.
+
+4. Follow the Function and private Storage checklist in
+   [`backend/functions/analyze-item/README.md`](backend/functions/analyze-item/README.md),
+   then configure sold-comp research using
+   [`backend/functions/ebay-sold-comps/README.md`](backend/functions/ebay-sold-comps/README.md).
+
+5. Start the native development build:
+
+   ```powershell
+   npx expo start --dev-client
    ```
 
-In the output, you'll find options to open the app in a
+`react-native-vision-camera` and the native Three.js scanner atmosphere require
+a development build; they are not expected to run inside Expo Go.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Route boundary
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+The root Expo Router stack uses protected groups:
 
-## Get a fresh project
+- `(auth)` is available only while signed out, misconfigured, or unable to
+  verify the current session.
+- `(app)` contains the scanner, inventory, slide-down menu, and account screen,
+  and is mounted only for a verified non-anonymous Appwrite session.
+- While session state is being checked, KeepFlip renders a branded bootstrap
+  screen instead of mounting the camera route.
 
-When you're ready, run:
+## Verification
 
-```bash
-npm run reset-project
+```powershell
+npx tsc --noEmit
+npx expo lint
+npx expo export --platform android
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Backend checks:
 
-## Learn more
+```powershell
+cd backend/functions/analyze-item
+npm run check
+npm test
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+cd ../ebay-sold-comps
+npm run check
+npm test
+```

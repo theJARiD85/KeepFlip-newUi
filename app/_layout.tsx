@@ -1,24 +1,64 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
+import 'react-native-url-polyfill/auto';
+
+import { DarkTheme, ThemeProvider } from '@react-navigation/native';
+import { Stack } from 'expo-router/stack';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import {
+  KeepFlipAuthProvider,
+  useKeepFlipAuth,
+} from '@/components/auth/keepflip-auth-context';
+import { keepFlipTheme } from '@/constants/keepflip-theme';
 
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
-
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
+function ProtectedRootStack() {
+  const { status } = useKeepFlipAuth();
+  const isChecking = status === 'checking';
+  const isSignedIn = status === 'signed-in';
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <Stack
+      screenOptions={{
+        animation: 'fade',
+        contentStyle: { backgroundColor: keepFlipTheme.colors.backgroundDeep },
+        headerShown: false,
+      }}>
+      <Stack.Protected guard={isChecking}>
+        <Stack.Screen name="auth-check" />
+      </Stack.Protected>
+      <Stack.Protected guard={!isChecking && !isSignedIn}>
+        <Stack.Screen name="(auth)" />
+      </Stack.Protected>
+      <Stack.Protected guard={isSignedIn}>
+        <Stack.Screen name="(app)" />
+        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+      </Stack.Protected>
+    </Stack>
+  );
+}
+
+export default function RootLayout() {
+  const navigationTheme = {
+    ...DarkTheme,
+    colors: {
+      ...DarkTheme.colors,
+      background: keepFlipTheme.colors.background,
+      card: keepFlipTheme.colors.backgroundRaised,
+      border: keepFlipTheme.colors.surfaceSoft,
+      primary: keepFlipTheme.colors.gold,
+      text: keepFlipTheme.colors.text,
+    },
+  };
+
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider value={navigationTheme}>
+        <KeepFlipAuthProvider>
+          <ProtectedRootStack />
+        </KeepFlipAuthProvider>
+        <StatusBar style="light" />
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
