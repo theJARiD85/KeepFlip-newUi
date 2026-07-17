@@ -116,15 +116,9 @@ function normalizedCondition(value: string | null | undefined) {
     .toLowerCase()
     .replace(/[\s-]+/g, '_');
 
-  return [
-    'new',
-    'like_new',
-    'excellent',
-    'good',
-    'fair',
-    'poor',
-    'unknown',
-  ].includes(normalized)
+  if (normalized === 'excellent') return 'like_new';
+
+  return ['new', 'like_new', 'good', 'fair', 'poor', 'unknown'].includes(normalized)
     ? normalized
     : 'unknown';
 }

@@ -2,9 +2,11 @@ import { useIsFocused } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   AppState,
   BackHandler,
   Linking,
@@ -47,6 +49,7 @@ import {
 } from '@/components/scanner/item-analysis-overlay';
 import { ItemAnalysisBubbles } from '@/components/scanner/item-analysis-bubbles';
 import { toItemAnalysisState } from '@/components/scanner/item-analysis-view-model';
+import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { useKeepFlipMenu } from '@/components/navigation/keepflip-menu-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
@@ -58,7 +61,9 @@ import {
   ItemAnalysisError,
   MAX_ANALYSIS_PHOTOS,
   type ItemAnalysisStage,
+  type ItemAnalysisSuccess,
 } from '@/services/item-analysis-service';
+import { saveAnalyzedItemToInventory } from '@/services/inventory-service';
 
 const ANALYSIS_STAGES: Record<
   ItemAnalysisStage,
@@ -186,6 +191,8 @@ function scannerToolHeaderCopy({
 }
 
 export default function ScannerScreen() {
+  const router = useRouter();
+  const { user } = useKeepFlipAuth();
   const {
     contentWidth,
     controlDockWidth,
@@ -232,6 +239,9 @@ export default function ScannerScreen() {
   const [isUploadReviewOpen, setIsUploadReviewOpen] = useState(false);
   const [analysisState, setAnalysisState] = useState<ItemAnalysisState | null>(null);
   const [analysisBackdropUri, setAnalysisBackdropUri] = useState<string | null>(null);
+  const [completedAnalysis, setCompletedAnalysis] = useState<ItemAnalysisSuccess | null>(null);
+  const [completedPhotoUris, setCompletedPhotoUris] = useState<string[]>([]);
+  const [isSavingToInventory, setIsSavingToInventory] = useState(false);
   const renderedAtmospherePhase: ScannerAtmospherePhase =
     analysisState?.status === 'analyzing' ? 'analyzing' : atmospherePhase;
   const canRequestPermission = permissionStatus === 'not-determined';
@@ -652,12 +662,79 @@ export default function ScannerScreen() {
     });
   };
 
+  const resetScannerSession = useCallback(() => {
+    analysisAbortControllerRef.current?.abort();
+    analysisAbortControllerRef.current = null;
+    clearAtmosphereTimer();
+    captureLockRef.current = false;
+    multiScanSequenceRef.current = 0;
+    uploadSequenceRef.current = 0;
+    setSinglePhotoUri(null);
+    setMultiScanPhotos([]);
+    setBatchScanPhotos([]);
+    setUploadedPhotos([]);
+    setIsMultiReviewOpen(false);
+    setIsUploadReviewOpen(false);
+    setAnalysisState(null);
+    setAnalysisBackdropUri(null);
+    setCompletedAnalysis(null);
+    setCompletedPhotoUris([]);
+    setSelectedTool('single');
+    setMessage('Center one item inside the frame');
+    setCaptureFeedback(null);
+    setAtmospherePhase('idle');
+    setTorchEnabled(false);
+  }, [clearAtmosphereTimer]);
+
   const closeAnalysis = () => {
+    if (analysisState?.status === 'result') {
+      resetScannerSession();
+      return;
+    }
+
     analysisAbortControllerRef.current?.abort();
     analysisAbortControllerRef.current = null;
     setAnalysisState(null);
     setAnalysisBackdropUri(null);
+    setCompletedAnalysis(null);
+    setCompletedPhotoUris([]);
   };
+
+  const saveCompletedAnalysis = useCallback(async () => {
+    if (!completedAnalysis || isSavingToInventory) return;
+    if (!user?.$id) {
+      Alert.alert('Sign in required', 'Sign in before saving an item to inventory.');
+      return;
+    }
+
+    setIsSavingToInventory(true);
+    try {
+      const saved = await saveAnalyzedItemToInventory({
+        analysis: completedAnalysis,
+        ownerId: user.$id,
+        photoUris: completedPhotoUris,
+      });
+      resetScannerSession();
+      router.push('/inventory');
+      if (saved.photoWarning) {
+        Alert.alert('Item saved', saved.photoWarning);
+      }
+    } catch (error) {
+      Alert.alert(
+        'Could not save item',
+        error instanceof Error ? error.message : 'KeepFlip could not save this item.',
+      );
+    } finally {
+      setIsSavingToInventory(false);
+    }
+  }, [
+    completedAnalysis,
+    completedPhotoUris,
+    isSavingToInventory,
+    resetScannerSession,
+    router,
+    user?.$id,
+  ]);
 
   async function runAnalysis(photoUris: string[]) {
     if (
@@ -669,6 +746,8 @@ export default function ScannerScreen() {
       return;
     }
 
+    setCompletedAnalysis(null);
+    setCompletedPhotoUris([]);
     const controller = new AbortController();
     analysisAbortControllerRef.current = controller;
     setAnalysisBackdropUri(toDisplayUri(photoUris[0]));
@@ -687,6 +766,8 @@ export default function ScannerScreen() {
       );
 
       if (controller.signal.aborted) return;
+      setCompletedAnalysis(result);
+      setCompletedPhotoUris([...photoUris]);
       setAnalysisState(toItemAnalysisState(result));
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
         () => undefined,
@@ -784,8 +865,9 @@ export default function ScannerScreen() {
   const analysisOverlay = analysisState ? (
     <ItemAnalysisBubbles
       bottomInset={insets.bottom}
-      doneLabel="Done"
+      doneLabel={analysisState.status === 'result' ? 'Start new scan' : 'Done'}
       onDone={closeAnalysis}
+      onSave={analysisState.status === 'result' ? () => void saveCompletedAnalysis() : undefined}
       onRetry={() => {
         if (analysisState.status === 'insufficient-evidence') {
           closeAnalysis();
@@ -796,6 +878,8 @@ export default function ScannerScreen() {
       retryLabel={
         analysisState.status === 'insufficient-evidence' ? 'Add another photo' : undefined
       }
+      saveLabel="Save to inventory"
+      saving={isSavingToInventory}
       state={analysisState}
       topInset={insets.top}
     />

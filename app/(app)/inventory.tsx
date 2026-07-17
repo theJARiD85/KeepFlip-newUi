@@ -50,7 +50,7 @@ function InventoryCard({ item }: { item: InventoryItem }) {
     <View style={styles.card}>
       <View style={styles.cardTopRow}>
         <View style={styles.cardIcon}>
-          <IconSymbol color={theme.colors.goldBright} name="cube.fill" size={22} />
+          <IconSymbol color={theme.colors.goldBright} name="shippingbox.fill" size={22} />
         </View>
         <View style={styles.cardTitleCopy}>
           <Text numberOfLines={2} selectable style={styles.cardTitle}>
@@ -96,7 +96,7 @@ function InventoryCard({ item }: { item: InventoryItem }) {
       <View style={styles.cardFooter}>
         <Text style={styles.footerText}>{formatDate(item.createdAt)}</Text>
         <View style={styles.photoCount}>
-          <IconSymbol color={theme.colors.scannerCyan} name="photo.fill" size={13} />
+          <IconSymbol color={theme.colors.scannerCyan} name="photo.on.rectangle.angled" size={13} />
           <Text style={styles.photoCountText}>{item.photoCount}</Text>
         </View>
       </View>
