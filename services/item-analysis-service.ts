@@ -1489,11 +1489,7 @@ function legacyGuidanceResult(
 function shouldTryLegacyItemAi(error: unknown) {
   if (!APPWRITE.itemAiFunctionId) return false;
   if (!(error instanceof ItemAnalysisError)) return false;
-  const details = isRecord(error.details) ? error.details : null;
-  if (/timeout/i.test(error.code) || Number(details?.responseStatusCode) === 408) {
-    return false;
-  }
-  return /provider|openai|vision|function_execution|analysis_request|invalid_function_response/i.test(
+  return /provider|openai|vision|timeout|function_execution|analysis_request|invalid_function_response/i.test(
     error.code,
   );
 }
