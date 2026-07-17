@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo } from 'react';
-import { I18nManager, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { I18nManager, Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   cancelAnimation,
@@ -14,6 +14,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 
 export type ScannerToolId = 'single' | 'multi' | 'batch' | 'upload';
 
@@ -73,13 +74,28 @@ type ScannerToolCarouselProps = {
   selectedTool: ScannerToolId;
 };
 
-const CONTROL_SIZE = 86;
+type ToolControlLayer = 'foreground' | 'rail';
+
+type ToolControlProps = {
+  badge?: number;
+  controlCoreSize: number;
+  controlSize: number;
+  disabled: boolean;
+  hidden: boolean;
+  index: number;
+  layer: ToolControlLayer;
+  onActivate: () => void;
+  position: SharedValue<number>;
+  railY: number;
+  selected: boolean;
+  tool: ScannerTool;
+  wheelRadius: number;
+};
+
 const COMPACT_SCALE = 0.54;
-const RAIL_Y = 80;
 const RAIL_LAYER = 20;
 const FOREGROUND_LAYER = 40;
 const RAIL_CROSSOVER_DEPTH = 0.56;
-const DRAG_DISTANCE = 140;
 const TOOL_COUNT = scannerTools.length;
 const SPRING = {
   damping: 20,
@@ -96,31 +112,21 @@ function modulo(value: number, divisor: number) {
   return ((value % divisor) + divisor) % divisor;
 }
 
-type ToolControlLayer = 'foreground' | 'rail';
-
 function ToolControl({
   badge,
+  controlCoreSize,
+  controlSize,
   disabled,
+  hidden,
   index,
   layer,
   onActivate,
   position,
-  wheelRadius,
-  hidden,
+  railY,
   selected,
   tool,
-}: {
-  badge?: number;
-  disabled: boolean;
-  index: number;
-  layer: ToolControlLayer;
-  onActivate: () => void;
-  position: SharedValue<number>;
-  wheelRadius: number;
-  hidden: boolean;
-  selected: boolean;
-  tool: ScannerTool;
-}) {
+  wheelRadius,
+}: ToolControlProps) {
   const direction = I18nManager.isRTL ? -1 : 1;
   const animatedStyle = useAnimatedStyle(() => {
     const rawDelta = index - position.value;
@@ -130,7 +136,7 @@ function ToolControl({
     const angle = wrappedDelta * ((Math.PI * 2) / TOOL_COUNT);
     const depth = Math.cos(angle);
     const orbitX = Math.sin(angle) * wheelRadius * direction;
-    const orbitY = (1 - depth) * RAIL_Y;
+    const orbitY = (1 - depth) * railY;
     const orbitOpacity = interpolate(
       depth,
       [-1, -0.55, 0, 1],
@@ -140,7 +146,12 @@ function ToolControl({
     const layerOpacity =
       layer === 'rail'
         ? interpolate(depth, [RAIL_CROSSOVER_DEPTH, 0.76], [1, 0], 'clamp')
-        : interpolate(depth, [0.42, RAIL_CROSSOVER_DEPTH, 0.82, 1], [0, 0.18, 0.9, 1], 'clamp');
+        : interpolate(
+            depth,
+            [0.42, RAIL_CROSSOVER_DEPTH, 0.82, 1],
+            [0, 0.18, 0.9, 1],
+            'clamp',
+          );
 
     return {
       opacity: orbitOpacity * layerOpacity,
@@ -154,7 +165,7 @@ function ToolControl({
         },
       ],
     };
-  }, [direction, index, layer, wheelRadius]);
+  }, [direction, index, layer, railY, wheelRadius]);
 
   const animatedGlowStyle = useAnimatedStyle(() => {
     const rawDelta = index - position.value;
@@ -170,13 +181,18 @@ function ToolControl({
   }, [index]);
 
   const concealedByRail = layer === 'rail' || hidden || !selected;
+  const badgeSize = Math.max(22, controlSize * 0.26);
 
   return (
     <Animated.View
       accessibilityElementsHidden={concealedByRail}
       importantForAccessibility={concealedByRail ? 'no-hide-descendants' : 'auto'}
       pointerEvents={concealedByRail ? 'none' : 'auto'}
-      style={[styles.controlPosition, animatedStyle]}>
+      style={[
+        styles.controlPosition,
+        { width: controlSize, height: controlSize },
+        animatedStyle,
+      ]}>
       <Pressable
         accessibilityLabel={`${tool.label}, activate`}
         accessibilityRole="button"
@@ -186,6 +202,9 @@ function ToolControl({
         style={({ pressed }) => [
           styles.control,
           {
+            width: controlSize,
+            height: controlSize,
+            borderRadius: controlSize / 2,
             borderColor: tool.accent,
             backgroundColor: tool.surface,
             boxShadow: `0 0 12px ${tool.glow}`,
@@ -197,6 +216,7 @@ function ToolControl({
           style={[
             styles.focusGlow,
             {
+              borderRadius: controlSize / 2,
               borderColor: tool.accent,
               boxShadow: `0 0 30px ${tool.glow}, inset 0 0 18px ${tool.surface}`,
             },
@@ -205,12 +225,34 @@ function ToolControl({
         />
         <View
           pointerEvents="none"
-          style={[styles.controlCore, { borderColor: tool.accent, backgroundColor: tool.surface }]}>
-          <IconSymbol color={tool.accent} name={tool.icon} size={40} />
+          style={[
+            styles.controlCore,
+            {
+              width: controlCoreSize,
+              height: controlCoreSize,
+              borderRadius: controlCoreSize / 2,
+              borderColor: tool.accent,
+              backgroundColor: tool.surface,
+            },
+          ]}>
+          <IconSymbol
+            color={tool.accent}
+            name={tool.icon}
+            size={Math.round(controlCoreSize * 0.62)}
+          />
         </View>
 
         {badge ? (
-          <View pointerEvents="none" style={[styles.badge, { borderColor: tool.accent }]}>
+          <View
+            pointerEvents="none"
+            style={[
+              styles.badge,
+              {
+                minWidth: badgeSize,
+                height: badgeSize,
+                borderColor: tool.accent,
+              },
+            ]}>
             <Animated.Text style={styles.badgeText}>{badge > 99 ? '99+' : badge}</Animated.Text>
           </View>
         ) : null}
@@ -226,13 +268,25 @@ export function ScannerToolCarousel({
   onSelect,
   selectedTool,
 }: ScannerToolCarouselProps) {
-  const { width } = useWindowDimensions();
+  const {
+    controlDockWidth,
+    moderateScale,
+    scannerCarouselHeight,
+    scannerControlSize,
+    scannerRailHeight,
+    scannerRailTop,
+    scannerRailWidth,
+    scannerWheelRadius,
+  } = useResponsiveLayout();
   const selectedIndex = scannerTools.findIndex((tool) => tool.id === selectedTool);
   const committedPosition = useSharedValue(Math.max(0, selectedIndex));
   const position = useSharedValue(Math.max(0, selectedIndex));
   const dragStart = useSharedValue(Math.max(0, selectedIndex));
-  const wheelRadius = Math.min(104, Math.max(82, (width - 190) / 2));
   const direction = I18nManager.isRTL ? -1 : 1;
+  const controlCoreSize = scannerControlSize * 0.744;
+  const dragDistance = moderateScale(140, 0.65);
+  const dragThreshold = moderateScale(44, 0.45);
+  const velocityThreshold = moderateScale(650, 0.25);
 
   useEffect(() => {
     const nextIndex = Math.max(0, scannerTools.findIndex((tool) => tool.id === selectedTool));
@@ -274,13 +328,14 @@ export function ScannerToolCarousel({
         .onUpdate(({ translationX }) => {
           const progress = Math.min(
             1,
-            Math.max(-1, -(direction * translationX) / DRAG_DISTANCE),
+            Math.max(-1, -(direction * translationX) / dragDistance),
           );
           position.value = dragStart.value + progress;
         })
         .onEnd(({ translationX, velocityX }) => {
           const intent = -direction * (translationX + velocityX * 0.12);
-          const passed = Math.abs(translationX) > 44 || Math.abs(velocityX) > 650;
+          const passed =
+            Math.abs(translationX) > dragThreshold || Math.abs(velocityX) > velocityThreshold;
           const step = passed ? (intent > 0 ? 1 : -1) : 0;
           const previousPosition = committedPosition.value;
           const nextPosition = previousPosition + step;
@@ -293,21 +348,70 @@ export function ScannerToolCarousel({
         .onFinalize((_event, success) => {
           if (!success) position.value = withSpring(committedPosition.value, SPRING);
         }),
-    [commitMode, committedPosition, direction, disabled, dragStart, position],
+    [
+      commitMode,
+      committedPosition,
+      direction,
+      disabled,
+      dragDistance,
+      dragStart,
+      dragThreshold,
+      position,
+      velocityThreshold,
+    ],
   );
+
+  const controlProps = {
+    controlCoreSize,
+    controlSize: scannerControlSize,
+    position,
+    railY: scannerRailTop,
+    wheelRadius: scannerWheelRadius,
+  } as const;
 
   return (
     <GestureDetector gesture={pan}>
-      <Animated.View style={[styles.root, disabled && styles.rootDisabled]}>
-        <View pointerEvents="none" style={styles.rail}>
-          <View style={styles.railOrbit} />
-          <View style={styles.railWheelCanvas}>
+      <Animated.View
+        style={[
+          styles.root,
+          { width: controlDockWidth, height: scannerCarouselHeight },
+          disabled && styles.rootDisabled,
+        ]}>
+        <View
+          pointerEvents="none"
+          style={[
+            styles.rail,
+            {
+              top: scannerRailTop,
+              width: scannerRailWidth,
+              height: scannerRailHeight,
+            },
+          ]}>
+          <View
+            style={[
+              styles.railOrbit,
+              {
+                top: -scannerRailHeight * 0.62,
+                width: scannerRailWidth * 0.82,
+                height: scannerRailHeight * 1.6,
+              },
+            ]}
+          />
+          <View
+            style={[
+              styles.railWheelCanvas,
+              {
+                top: -scannerRailTop,
+                height: scannerCarouselHeight,
+              },
+            ]}>
             {scannerTools.map((tool, index) => {
               const offset = modulo(index - Math.max(0, selectedIndex), TOOL_COUNT);
               const hidden = offset === TOOL_COUNT / 2;
 
               return (
                 <ToolControl
+                  {...controlProps}
                   badge={badges?.[tool.id]}
                   disabled
                   hidden={hidden}
@@ -315,10 +419,8 @@ export function ScannerToolCarousel({
                   key={`rail-${tool.id}`}
                   layer="rail"
                   onActivate={() => undefined}
-                  position={position}
                   selected={false}
                   tool={tool}
-                  wheelRadius={wheelRadius}
                 />
               );
             })}
@@ -334,6 +436,7 @@ export function ScannerToolCarousel({
 
           return (
             <ToolControl
+              {...controlProps}
               badge={badges?.[tool.id]}
               disabled={disabled}
               hidden={hidden}
@@ -341,10 +444,8 @@ export function ScannerToolCarousel({
               key={tool.id}
               layer="foreground"
               onActivate={() => onActivate(tool.id)}
-              position={position}
               selected={tool.id === selectedTool}
               tool={tool}
-              wheelRadius={wheelRadius}
             />
           );
         })}
@@ -355,8 +456,6 @@ export function ScannerToolCarousel({
 
 const styles = StyleSheet.create({
   root: {
-    width: '100%',
-    height: 152,
     alignItems: 'center',
   },
   rootDisabled: {
@@ -364,11 +463,7 @@ const styles = StyleSheet.create({
   },
   rail: {
     position: 'absolute',
-    top: RAIL_Y,
     zIndex: RAIL_LAYER,
-    width: '100%',
-    maxWidth: 330,
-    height: 68,
     overflow: 'hidden',
     borderRadius: theme.radii.pill,
     borderWidth: 1,
@@ -392,10 +487,7 @@ const styles = StyleSheet.create({
   },
   railOrbit: {
     position: 'absolute',
-    top: -42,
     alignSelf: 'center',
-    width: 270,
-    height: 108,
     borderRadius: theme.radii.pill,
     borderWidth: 1,
     borderColor: 'rgba(242, 211, 138, 0.18)',
@@ -403,11 +495,9 @@ const styles = StyleSheet.create({
   },
   railWheelCanvas: {
     position: 'absolute',
-    top: -RAIL_Y,
     right: 0,
     left: 0,
     zIndex: 2,
-    height: 152,
     alignItems: 'center',
   },
   railShade: {
@@ -430,15 +520,10 @@ const styles = StyleSheet.create({
   controlPosition: {
     position: 'absolute',
     top: 0,
-    width: CONTROL_SIZE,
-    height: CONTROL_SIZE,
   },
   control: {
-    width: CONTROL_SIZE,
-    height: CONTROL_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: CONTROL_SIZE / 2,
     borderWidth: 1,
   },
   controlPressed: {
@@ -451,23 +536,17 @@ const styles = StyleSheet.create({
     right: -1,
     bottom: -1,
     left: -1,
-    borderRadius: CONTROL_SIZE / 2,
     borderWidth: 3,
   },
   controlCore: {
-    width: 64,
-    height: 64,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 32,
     borderWidth: 1,
   },
   badge: {
     position: 'absolute',
     top: -2,
     right: -2,
-    minWidth: 22,
-    height: 22,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 5,

@@ -14,7 +14,6 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Camera,
   useCameraDevice,
@@ -52,6 +51,7 @@ import { useKeepFlipMenu } from '@/components/navigation/keepflip-menu-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import {
   analyzeItemPhotos,
   AppwriteSetupError,
@@ -186,7 +186,22 @@ function scannerToolHeaderCopy({
 }
 
 export default function ScannerScreen() {
-  const insets = useSafeAreaInsets();
+  const {
+    contentWidth,
+    controlDockWidth,
+    insets,
+    isCompactHeight,
+    moderateScale,
+    pageGutter,
+    responsiveFont,
+    scannerHeight,
+    scannerWidth,
+    verticalScale,
+  } = useResponsiveLayout();
+  const scannerCornerSize = moderateScale(54, 0.65);
+  const torchButtonSize = moderateScale(35, 0.65);
+  const permissionCardWidth = Math.min(contentWidth, 480);
+  const analysisButtonWidth = Math.min(controlDockWidth, 360);
   const isFocused = useIsFocused();
   const { closeMenu, isMenuPresented } = useKeepFlipMenu();
   const cameraRef = useRef<Camera>(null);
@@ -720,7 +735,7 @@ export default function ScannerScreen() {
       <Animated.View
         entering={FadeIn.duration(180)}
         exiting={FadeOut.duration(130)}
-        style={styles.analyzeButtonShell}>
+        style={[styles.analyzeButtonShell, { maxWidth: analysisButtonWidth }]}>
         <Pressable
           accessibilityHint={`Uses ${analysisPhotoUris.length} selected photo${analysisPhotoUris.length === 1 ? '' : 's'} to identify and value this item`}
           accessibilityLabel="Analyze item with KeepFlip AI"
@@ -732,12 +747,22 @@ export default function ScannerScreen() {
             pressed && styles.analyzeButtonPressed,
             (isCapturing || isPickingPhoto || isMenuPresented) && styles.buttonDisabled,
           ]}>
-          <View style={styles.analyzeReticle}>
+          <View
+            style={[
+              styles.analyzeReticle,
+              {
+                width: moderateScale(38, 0.7),
+                height: moderateScale(38, 0.7),
+                borderRadius: moderateScale(19, 0.7),
+              },
+            ]}>
             <View style={styles.analyzeReticleDot} />
           </View>
           <View style={styles.analyzeButtonCopy}>
-            <Text style={styles.analyzeButtonEyebrow}>KEEPFLIP INTELLIGENCE</Text>
-            <Text style={styles.analyzeButtonText}>
+            <Text style={[styles.analyzeButtonEyebrow, { fontSize: responsiveFont(8) }]}>
+              KEEPFLIP INTELLIGENCE
+            </Text>
+            <Text style={[styles.analyzeButtonText, { fontSize: responsiveFont(15) }]}>
               {selectedTool === 'multi'
                 ? `Analyze ${analysisPhotoUris.length} views`
                 : selectedTool === 'upload'
@@ -745,7 +770,13 @@ export default function ScannerScreen() {
                   : 'Analyze item'}
             </Text>
           </View>
-          <Text style={styles.analyzeButtonArrow}>›</Text>
+          <Text
+            style={[
+              styles.analyzeButtonArrow,
+              { fontSize: responsiveFont(27), lineHeight: responsiveFont(30) },
+            ]}>
+            ›
+          </Text>
         </Pressable>
       </Animated.View>
     ) : null;
@@ -793,17 +824,42 @@ export default function ScannerScreen() {
 
   if (!hasPermission) {
     return (
-      <KeepFlipBackground contentStyle={styles.centeredState}>
+      <KeepFlipBackground
+        contentStyle={[styles.centeredState, { paddingHorizontal: pageGutter }]}>
         <View style={styles.permissionAtmosphere}>
           <ScannerAtmosphere phase={renderedAtmospherePhase} />
         </View>
         {analysisState == null ? (
-          <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(140)} style={styles.permissionCard}>
-          <View style={styles.permissionIcon}>
-            <IconSymbol name="camera.fill" size={30} color={theme.colors.goldBright} />
+          <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(140)} style={[
+              styles.permissionCard,
+              {
+                width: permissionCardWidth,
+                maxWidth: permissionCardWidth,
+                gap: moderateScale(14, 0.55),
+                padding: moderateScale(28, 0.55),
+              },
+            ]}>
+          <View
+              style={[
+                styles.permissionIcon,
+                {
+                  width: moderateScale(62, 0.65),
+                  height: moderateScale(62, 0.65),
+                  borderRadius: moderateScale(31, 0.65),
+                },
+              ]}>
+            <IconSymbol
+                name="camera.fill"
+                size={Math.round(moderateScale(30, 0.6))}
+                color={theme.colors.goldBright}
+              />
           </View>
-          <Text style={styles.permissionTitle}>Camera access</Text>
-          <Text style={styles.permissionBody}>
+          <Text style={[styles.permissionTitle, { fontSize: responsiveFont(25) }]}>Camera access</Text>
+          <Text
+              style={[
+                styles.permissionBody,
+                { fontSize: responsiveFont(15), lineHeight: responsiveFont(22) },
+              ]}>
             {canRequestPermission
               ? 'KeepFlip uses your camera to identify an item and estimate its resale value.'
               : 'Camera access is disabled. Open system settings to allow KeepFlip to scan items.'}
@@ -858,14 +914,23 @@ export default function ScannerScreen() {
 
   if (device == null) {
     return (
-      <KeepFlipBackground contentStyle={styles.centeredState}>
+      <KeepFlipBackground
+        contentStyle={[styles.centeredState, { paddingHorizontal: pageGutter }]}>
         <View style={styles.permissionAtmosphere}>
           <ScannerAtmosphere phase={renderedAtmospherePhase} />
         </View>
         {analysisState == null ? (
-          <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(140)} style={styles.permissionCard}>
+          <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(140)} style={[
+              styles.permissionCard,
+              {
+                width: permissionCardWidth,
+                maxWidth: permissionCardWidth,
+                gap: moderateScale(14, 0.55),
+                padding: moderateScale(28, 0.55),
+              },
+            ]}>
           <ActivityIndicator color={theme.colors.scannerCyan} />
-          <Text style={styles.permissionTitle}>Starting camera</Text>
+          <Text style={[styles.permissionTitle, { fontSize: responsiveFont(25) }]}>Starting camera</Text>
           <Text style={styles.deviceStateText}>Looking for a back camera...</Text>
           <Pressable
             accessibilityLabel="Upload item photos instead"
@@ -969,18 +1034,48 @@ export default function ScannerScreen() {
         pointerEvents={isScannerUiHidden ? 'none' : 'auto'}
         style={[
           styles.content,
-          { paddingTop: insets.top + 14, paddingBottom: insets.bottom + 10 },
+          {
+            paddingHorizontal: pageGutter,
+            paddingTop: insets.top + verticalScale(14, 0.5),
+            paddingBottom:
+              insets.bottom + verticalScale(isCompactHeight ? 4 : 10, 0.5),
+          },
           scannerChromeAnimatedStyle,
         ]}>
-        <View style={styles.topBar}>
+        <View
+          style={[
+            styles.topBar,
+            {
+              marginBottom: verticalScale(12, 0.55),
+              paddingRight: moderateScale(60, 0.35),
+            },
+          ]}>
           <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>KEEPFLIP AI</Text>
+            <Text
+              style={[
+                styles.eyebrow,
+                {
+                  fontSize: responsiveFont(11),
+                  letterSpacing: moderateScale(2.4, 0.28),
+                },
+              ]}>
+              KEEPFLIP AI
+            </Text>
             <Animated.View
               accessibilityLiveRegion="polite"
               entering={FadeIn.duration(180)}
               key={selectedTool}
               style={styles.toolHeaderContent}>
-              <Text style={styles.title}>{selectedToolHeader.title}</Text>
+              <Text
+                style={[
+                  styles.title,
+                  {
+                    fontSize: responsiveFont(25),
+                    lineHeight: responsiveFont(30),
+                  },
+                ]}>
+                {selectedToolHeader.title}
+              </Text>
               <View style={styles.headerHintRow}>
                 <IconSymbol
                   color={selectedToolAppearance.accent}
@@ -990,7 +1085,13 @@ export default function ScannerScreen() {
                 <Text
                   style={[
                     styles.headerHint,
-                    { color: captureFeedback ? selectedToolAppearance.accent : theme.colors.text },
+                    {
+                      color: captureFeedback
+                        ? selectedToolAppearance.accent
+                        : theme.colors.text,
+                      fontSize: responsiveFont(12),
+                      lineHeight: responsiveFont(16),
+                    },
                   ]}>
                   {captureFeedback ?? selectedToolHeader.hint}
                 </Text>
@@ -1000,13 +1101,47 @@ export default function ScannerScreen() {
         </View>
 
         <View style={styles.scannerArea}>
-          <View style={styles.scanFrame}>
+          <View
+            style={[
+              styles.scanFrame,
+              {
+                width: scannerWidth,
+                height: scannerHeight,
+                maxHeight: undefined,
+                aspectRatio: undefined,
+                bottom: 0,
+              },
+            ]}>
             <View pointerEvents="none" style={styles.frameColorWash} />
             <ScannerAtmosphere phase={renderedAtmospherePhase} />
-            <View style={[styles.corner, styles.topLeft]} />
-            <View style={[styles.corner, styles.topRight]} />
-            <View style={[styles.corner, styles.bottomLeft]} />
-            <View style={[styles.corner, styles.bottomRight]} />
+            <View
+              style={[
+                styles.corner,
+                styles.topLeft,
+                { width: scannerCornerSize, height: scannerCornerSize },
+              ]}
+            />
+            <View
+              style={[
+                styles.corner,
+                styles.topRight,
+                { width: scannerCornerSize, height: scannerCornerSize },
+              ]}
+            />
+            <View
+              style={[
+                styles.corner,
+                styles.bottomLeft,
+                { width: scannerCornerSize, height: scannerCornerSize },
+              ]}
+            />
+            <View
+              style={[
+                styles.corner,
+                styles.bottomRight,
+                { width: scannerCornerSize, height: scannerCornerSize },
+              ]}
+            />
             <Pressable
             accessibilityLabel="Toggle flashlight"
             accessibilityState={{ disabled: !canUseTorch }}
@@ -1014,16 +1149,32 @@ export default function ScannerScreen() {
             onPress={() => setTorchEnabled((current) => !current)}
             style={[
               styles.iconButton,
+              {
+                width: torchButtonSize,
+                height: torchButtonSize,
+                marginLeft: moderateScale(20, 0.5),
+                marginTop: moderateScale(20, 0.5),
+                borderRadius: torchButtonSize / 2,
+              },
               torchEnabled && styles.iconButtonActive,
               !canUseTorch && styles.iconButtonDisabled,
             ]}>
             <IconSymbol
               name={torchEnabled ? 'bolt.fill' : 'bolt.slash.fill'}
-              size={22}
+              size={Math.round(moderateScale(22, 0.6))}
               color={torchEnabled ? theme.colors.background : theme.colors.goldBright}
             />
           </Pressable>
-            <View style={styles.scanLine} />
+            <View
+              style={[
+                styles.scanLine,
+                {
+                  left: moderateScale(18, 0.55),
+                  right: moderateScale(18, 0.55),
+                  height: Math.max(2, moderateScale(2, 0.5)),
+                },
+              ]}
+            />
 
           </View>
           {selectedTool === 'multi' && multiScanPhotos.length > 0 && !isMultiReviewOpen ? (
@@ -1062,7 +1213,7 @@ export default function ScannerScreen() {
           accessibilityElementsHidden={isScannerOverlayOpen}
           importantForAccessibility={isScannerOverlayOpen ? 'no-hide-descendants' : 'auto'}
           pointerEvents={isScannerOverlayOpen ? 'none' : 'auto'}
-          style={[styles.bottomPanel, toolbarAnimatedStyle]}>
+          style={[styles.bottomPanel, { width: controlDockWidth }, toolbarAnimatedStyle]}>
           <ScannerToolCarousel
             badges={{
               single: singlePhotoUri ? 1 : 0,
