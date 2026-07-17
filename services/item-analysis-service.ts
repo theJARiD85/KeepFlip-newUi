@@ -870,12 +870,25 @@ function confidencePercent(value: number) {
   return Math.max(0, Math.min(100, Math.round(normalized)));
 }
 
+function identifiedTitleFromSummary(summary: string) {
+  return summary
+    .split(/\r?\n/)[0]
+    .split(/[.!?](?:\s|$)/)[0]
+    .replace(
+      /^(?:(?:this|the)\s+item|it)\s+(?:appears|looks|seems)\s+to\s+be\s+(?:an?\s+)?/i,
+      '',
+    )
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 220);
+}
+
 function buildStrictMarketProfile(
   result: ItemAnalysisSuccess,
 ): StrictMarketValueProfile {
   const identity = result.analysis.identification;
   const signals = result.analysis.valuationSignals;
-  const title = [
+  const structuredTitle = [
     identity.brand,
     identity.model,
     identity.variant,
@@ -884,6 +897,10 @@ function buildStrictMarketProfile(
     .filter(Boolean)
     .join(' ')
     .trim();
+  const summaryTitle = identifiedTitleFromSummary(result.analysis.summary);
+  const title = identity.model?.trim()
+    ? structuredTitle
+    : summaryTitle || structuredTitle;
   const visibleMarks = result.analysis.evidence
     .filter((entry) =>
       ['photo_text', 'google_vision'].includes(entry.source),
