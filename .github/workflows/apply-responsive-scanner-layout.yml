@@ -1,0 +1,41 @@
+name: Apply responsive scanner layout
+
+on:
+  push:
+    branches:
+      - responsive-scanner-layout
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: responsive-scanner-layout
+          fetch-depth: 0
+
+      - name: Apply responsive layout
+        run: node scripts/apply-responsive-scanner-layout.cjs
+
+      - name: Remove one-time migration files
+        run: |
+          rm scripts/apply-responsive-scanner-layout.cjs
+          rm .github/workflows/apply-responsive-scanner-layout.yml
+
+      - name: Commit responsive scanner changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add components/scanner/scanner-screen.native.tsx components/scanner/scanner-screen.tsx scripts/apply-responsive-scanner-layout.cjs .github/workflows/apply-responsive-scanner-layout.yml
+          if git diff --cached --quiet; then
+            echo "No responsive scanner changes were produced."
+            exit 0
+          fi
+          git commit -m "Apply responsive scanner layout"
+          git push origin HEAD:responsive-scanner-layout
