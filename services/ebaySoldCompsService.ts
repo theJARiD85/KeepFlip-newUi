@@ -1052,6 +1052,7 @@ const STOP_WORDS = new Set([
   "a", "an", "and", "the", "with", "for", "from", "edition",
   "model", "series", "version", "new", "pre-owned", "good", "condition",
   "item", "original", "authentic", "genuine",
+  "inch", "notebook", "laptop", "computer", "pc",
 ]);
 
 function strictText(value: string | null | undefined) {
@@ -1416,7 +1417,22 @@ function identityMatches(
   }
 
   if (modelVariants.length) {
-    if (!modelVariants.some((variant) => compact.includes(variant))) return false;
+    const modelTokens = uniqueWords(model || "").filter(
+      (token) =>
+        (/[a-z]/.test(token) && /\d/.test(token)) ||
+        /^\d{3,}$/.test(token)
+    );
+    const compTokens = new Set(uniqueWords(comp.title));
+    const compactModelMatch = modelVariants.some((variant) =>
+      compact.includes(variant)
+    );
+    const tokenModelMatch =
+      modelTokens.length > 0 &&
+      modelTokens.every(
+        (token) => compTokens.has(token) || compact.includes(token)
+      );
+
+    if (!compactModelMatch && !tokenModelMatch) return false;
   } else if (plan.route === "identifier") {
     const titleTokens = uniqueWords(profile.title);
     const overlap = titleTokens.filter((token) => title.includes(token));
