@@ -35,7 +35,10 @@ type ItemAnalysisBubblesProps = {
   doneLabel?: string;
   onDone: () => void;
   onRetry: () => void;
+  onSave?: () => void;
   retryLabel?: string;
+  saveLabel?: string;
+  saving?: boolean;
   state: ItemAnalysisState;
   topInset: number;
 };
@@ -128,11 +131,13 @@ function BubbleEyebrow({ accent, children }: { accent: string; children: ReactNo
 
 function BubbleButton({
   accent,
+  disabled = false,
   label,
   onPress,
   secondary = false,
 }: {
   accent: string;
+  disabled?: boolean;
   label: string;
   onPress: () => void;
   secondary?: boolean;
@@ -140,6 +145,8 @@ function BubbleButton({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
         styles.actionButton,
@@ -148,7 +155,8 @@ function BubbleButton({
           backgroundColor: secondary ? 'rgba(5, 5, 8, 0.82)' : withAlpha(accent, 0.9),
           boxShadow: `0 8px 22px rgba(0, 0, 0, 0.38), 0 0 16px ${withAlpha(accent, 0.18)}`,
         },
-        pressed && styles.pressed,
+        pressed && !disabled && styles.pressed,
+        disabled && styles.disabled,
       ]}>
       <Text style={[styles.actionButtonText, { color: secondary ? accent : theme.colors.backgroundDeep }]}>
         {label}
@@ -527,7 +535,10 @@ export function ItemAnalysisBubbles({
   doneLabel = 'Done',
   onDone,
   onRetry,
+  onSave,
   retryLabel,
+  saveLabel = 'Save to inventory',
+  saving = false,
   state,
   topInset,
 }: ItemAnalysisBubblesProps) {
@@ -585,8 +596,14 @@ export function ItemAnalysisBubbles({
           <Pressable
             accessibilityLabel="Close item analysis"
             accessibilityRole="button"
+            accessibilityState={{ disabled: saving }}
+            disabled={saving}
             onPress={onDone}
-            style={({ pressed }) => [styles.closeBubble, pressed && styles.pressed]}>
+            style={({ pressed }) => [
+              styles.closeBubble,
+              pressed && !saving && styles.pressed,
+              saving && styles.disabled,
+            ]}>
             <IconSymbol color={theme.colors.cream} name="xmark" size={19} />
           </Pressable>
         ) : null}
@@ -622,11 +639,20 @@ export function ItemAnalysisBubbles({
               {!isResult ? (
                 <BubbleButton accent={accent} label={resolvedRetryLabel} onPress={onRetry} />
               ) : null}
+              {isResult && onSave ? (
+                <BubbleButton
+                  accent={theme.colors.goldBright}
+                  disabled={saving}
+                  label={saving ? 'Saving…' : saveLabel}
+                  onPress={onSave}
+                />
+              ) : null}
               <BubbleButton
                 accent={isResult ? theme.colors.goldBright : accent}
+                disabled={saving}
                 label={doneLabel}
                 onPress={onDone}
-                secondary={!isResult}
+                secondary={!isResult || Boolean(onSave)}
               />
             </View>
           </Animated.View>
@@ -682,6 +708,7 @@ const styles = StyleSheet.create({
     boxShadow: '0 8px 20px rgba(0, 0, 0, 0.42)',
   },
   pressed: { opacity: 0.7, transform: [{ scale: 0.95 }] },
+  disabled: { opacity: 0.52 },
   analyzingContent: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
   progressBubbles: { width: '100%', maxWidth: 390, alignItems: 'center', gap: 12 },
   progressHero: {
