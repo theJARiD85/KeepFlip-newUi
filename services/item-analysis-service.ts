@@ -1,4 +1,6 @@
 import { File } from 'expo-file-system';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
+import { Image } from 'react-native';
 import {
   AppwriteException,
   ExecutionMethod,
@@ -36,11 +38,16 @@ import {
   type ItemAnalysisFailure,
   type ItemAnalysisFunctionRequest,
   type ItemMarketResearch,
+  type ItemMarketProviderStatus,
+  type ItemMarketSignal,
   type ItemAnalysisStage,
   type ItemAnalysisSuccess,
   type ItemAnalysisResponse,
   type ItemSoldComparable,
   type ItemValuation,
+  type MarketEvidenceClass,
+  type MarketProviderId,
+  type MarketProviderRunStatus,
 } from '@/types/item-analysis';
 
 export { AppwriteSetupError } from '@/lib/appwrite';
@@ -55,6 +62,9 @@ export type {
 export const MAX_ANALYSIS_PHOTOS = 4;
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
 const MAX_TOTAL_PHOTO_BYTES = 24 * 1024 * 1024;
+const MAX_SOURCE_PHOTO_BYTES = 32 * 1024 * 1024;
+const TARGET_PREPARED_PHOTO_BYTES = 1_500_000;
+const TARGET_TOTAL_PREPARED_PHOTO_BYTES = 4_000_000;
 const MAX_USER_NOTES_CHARACTERS = 4_000;
 const MAX_OCR_CHARACTERS = 12_000;
 const MAX_COMPARABLES = 100;
@@ -63,7 +73,8 @@ const MAX_FUNCTION_ERROR_CHARACTERS = 16_384;
 const MAX_FUNCTION_RESPONSE_CHARACTERS = 1_000_000;
 const EBAY_COMPS_LIMIT = 12;
 const EBAY_POLL_INTERVAL_MS = 1_500;
-const EBAY_RESEARCH_TIMEOUT_MS = 90_000;
+const EBAY_RESEARCH_TIMEOUT_MS = 180_000;
+const MAX_VALUATION_COMPS_PER_PROVIDER = 8;
 
 export class ItemAnalysisError extends Error {
   constructor(
@@ -74,6 +85,78 @@ export class ItemAnalysisError extends Error {
   ) {
     super(message, options);
     this.name = 'ItemAnalysisError';
+  }
+}
+
+type AnalysisDiagnosticValue = boolean | number | string | null | undefined;
+
+function createAnalysisDiagnosticId() {
+  return `kf-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function boundedDiagnosticMessage(value: unknown) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.replace(/\s+/g, ' ').trim();
+  return normalized ? normalized.slice(0, 240) : null;
+}
+
+function appwriteErrorDiagnostics(error: unknown) {
+  if (!(error instanceof AppwriteException)) {
+    return {
+      errorName: error instanceof Error ? error.name : typeof error,
+      errorMessage:
+        error instanceof Error ? boundedDiagnosticMessage(error.message) : null,
+    };
+  }
+
+  return {
+    appwriteCode: error.code,
+    appwriteType: boundedDiagnosticMessage(error.type),
+    errorMessage: boundedDiagnosticMessage(error.message),
+  };
+}
+
+function fileDiagnosticRef(fileId: string) {
+  return fileId.length <= 8 ? fileId : fileId.slice(-8);
+}
+
+function identifierDiagnosticRef(value: string) {
+  return value.length <= 10
+    ? value
+    : `${value.slice(0, 4)}...${value.slice(-4)}`;
+}
+
+function endpointDiagnosticHost(endpoint: string) {
+  try {
+    return new URL(endpoint).host;
+  } catch {
+    return boundedDiagnosticMessage(endpoint);
+  }
+}
+
+function logAnalysisDiagnostic(
+  diagnosticId: string,
+  event: string,
+  startedAt: number,
+  details: Record<string, AnalysisDiagnosticValue> = {},
+  level: 'error' | 'info' | 'warn' = 'info',
+) {
+  const payload = Object.fromEntries(
+    Object.entries({
+      diagnosticId,
+      event,
+      elapsedMs: Math.max(0, Date.now() - startedAt),
+      ...details,
+    }).filter(([, value]) => value !== undefined),
+  );
+  const message = `[KeepFlip analysis] ${JSON.stringify(payload)}`;
+
+  if (level === 'error') {
+    console.error(message);
+  } else if (level === 'warn') {
+    console.warn(message);
+  } else {
+    console.info(message);
   }
 }
 
@@ -257,7 +340,9 @@ function isValuation(value: unknown): value is ItemValuation {
       String(value.methodology),
     ) &&
     (value.source === undefined ||
-      ['caller_supplied', 'ebay_sold', 'none'].includes(String(value.source)))
+      ['caller_supplied', 'ebay_sold', 'multi_market_sold', 'none'].includes(
+        String(value.source),
+      ))
   );
 }
 
@@ -345,55 +430,285 @@ function parseBoundedFunctionFailure(
   }
 }
 
-type EbayStartedResponse = {
+type MarketStartedResponse = {
   ok: true;
-  phase: 'started';
-  runId: string;
+  phase: 'started' | 'running';
+  runId?: string;
+  jobId?: string;
+  jobToken?: string;
   query: string;
+  providers: ItemMarketProviderStatus[];
 };
 
-type EbayRunningResponse = {
-  ok: true;
-  phase: 'running';
-  runId: string;
-  query: string;
-};
-
-type EbayCompletedResponse = {
+type MarketCompletedResponse = {
   ok: true;
   phase: 'completed';
-  runId: string;
+  runId?: string;
+  jobId?: string;
+  jobToken?: string;
   query: string;
   comps: ItemSoldComparable[];
+  providers: ItemMarketProviderStatus[];
+  signals: ItemMarketSignal[];
+  partial: boolean;
   valuation?: ItemValuation;
   searchedAt: string;
 };
 
-type EbayFunctionResponse =
-  | EbayStartedResponse
-  | EbayRunningResponse
-  | EbayCompletedResponse;
+type MarketFunctionResponse = MarketStartedResponse | MarketCompletedResponse;
 
-function isSoldComparable(value: unknown): value is ItemSoldComparable {
-  if (!isRecord(value)) return false;
-  return (
-    typeof value.title === 'string' &&
-    isFiniteNumber(value.soldPrice) &&
-    isFiniteNumber(value.shipping) &&
-    isFiniteNumber(value.totalPrice) &&
-    typeof value.currency === 'string' &&
-    isStringOrNull(value.condition) &&
-    isStringOrNull(value.soldDate) &&
-    isStringOrNull(value.imageUrl) &&
-    isStringOrNull(value.listingUrl)
-  );
+const MARKET_PROVIDER_ALIASES: Record<string, MarketProviderId> = {
+  ebay: 'ebay',
+  mercari: 'mercari',
+  poshmark: 'poshmark',
+  grailed: 'grailed',
+  stockx: 'stockx',
+  pricecharting: 'pricecharting',
+  price_charting: 'pricecharting',
+  tcgplayer: 'tcgplayer',
+  tcg_player: 'tcgplayer',
+  reverb: 'reverb',
+  discogs: 'discogs',
+  bricklink: 'bricklink',
+  brick_link: 'bricklink',
+  yahoo: 'yahoo_japan',
+  yahoo_japan: 'yahoo_japan',
+  yahoo_auctions_japan: 'yahoo_japan',
+  'yahoo-auctions-japan': 'yahoo_japan',
+};
+
+const MARKET_EVIDENCE_CLASSES: MarketEvidenceClass[] = [
+  'confirmed_transaction',
+  'platform_last_sale',
+  'platform_sold_aggregate',
+  'sold_status_last_ask',
+  'inferred_sale',
+  'active_ask',
+];
+
+function optionalString(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
-function parseEbayFunctionResponse(responseBody: string): EbayFunctionResponse {
+function optionalNumber(value: unknown) {
+  if (isFiniteNumber(value)) return value;
+  if (typeof value !== 'string' || !value.trim()) return null;
+  const parsed = Number(value.replace(/,/g, '').replace(/[^\d.-]/g, ''));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeProviderId(
+  value: unknown,
+  fallback: MarketProviderId = 'unknown',
+): MarketProviderId {
+  const normalized = optionalString(value)
+    ?.toLowerCase()
+    .replace(/[\s/]+/g, '_');
+  return (normalized && MARKET_PROVIDER_ALIASES[normalized]) || fallback;
+}
+
+function normalizeEvidenceClass(value: unknown) {
+  const normalized = optionalString(value)?.toLowerCase();
+  return MARKET_EVIDENCE_CLASSES.includes(normalized as MarketEvidenceClass)
+    ? (normalized as MarketEvidenceClass)
+    : null;
+}
+
+function normalizeSoldComparable(
+  value: unknown,
+  allowLegacyEbayEvidence: boolean,
+): ItemSoldComparable | null {
+  if (!isRecord(value)) return null;
+
+  const explicitProvider = optionalString(
+    value.provider ?? value.marketplace ?? value.source,
+  );
+  const provider = normalizeProviderId(
+    explicitProvider,
+    allowLegacyEbayEvidence ? 'ebay' : 'unknown',
+  );
+  const evidenceClass =
+    normalizeEvidenceClass(value.evidenceClass ?? value.evidence_class) ??
+    (allowLegacyEbayEvidence && provider === 'ebay'
+      ? 'confirmed_transaction'
+      : 'inferred_sale');
+  const soldPrice = optionalNumber(
+    value.soldPrice ?? value.price ?? value.finalPrice ?? value.amount,
+  );
+  const shipping =
+    optionalNumber(
+      value.shipping ?? value.shippingCost ?? value.shippingPrice ?? value.postage,
+    ) ?? 0;
+  const totalPrice =
+    optionalNumber(value.totalPrice ?? value.total) ??
+    (soldPrice === null ? null : soldPrice + shipping);
+  const title = optionalString(value.title ?? value.name ?? value.itemTitle);
+
+  if (!title || soldPrice === null || totalPrice === null) return null;
+
+  const soldDateConfidence = optionalString(value.soldDateConfidence);
+  const shippingSemantics = optionalString(value.shippingSemantics);
+
+  return {
+    provider,
+    marketplace:
+      optionalString(value.marketplace) ??
+      (provider === 'unknown' ? 'unknown' : provider),
+    evidenceClass,
+    title,
+    soldPrice: roundMoney(soldPrice),
+    shipping: roundMoney(shipping),
+    totalPrice: roundMoney(totalPrice),
+    currency: optionalString(value.currency)?.toUpperCase() ?? 'USD',
+    condition: optionalString(value.condition ?? value.conditionDisplayName),
+    soldDate: optionalString(
+      value.soldDate ?? value.soldAt ?? value.dateSold ?? value.completedDate,
+    ),
+    imageUrl: optionalString(
+      value.imageUrl ?? value.image ?? value.thumbnail ?? value.thumbnailUrl,
+    ),
+    listingUrl: optionalString(
+      value.listingUrl ?? value.url ?? value.itemUrl ?? value.link,
+    ),
+    sourceListingId: optionalString(
+      value.sourceListingId ?? value.listingId ?? value.itemId ?? value.id,
+    ),
+    soldDateConfidence: ['exact', 'approximate', 'unknown'].includes(
+      soldDateConfidence ?? '',
+    )
+      ? (soldDateConfidence as 'exact' | 'approximate' | 'unknown')
+      : 'unknown',
+    shippingSemantics: ['included', 'separate', 'unknown'].includes(
+      shippingSemantics ?? '',
+    )
+      ? (shippingSemantics as 'included' | 'separate' | 'unknown')
+      : 'unknown',
+  };
+}
+
+function normalizeProviderStatus(value: unknown, providerKey?: string) {
+  const record = isRecord(value) ? value : {};
+  const rawStatus = (
+    optionalString(isRecord(value) ? record.status : value) ?? 'pending'
+  )
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
+  const statusAliases: Record<string, MarketProviderRunStatus> = {
+    ready: 'queued',
+    queued: 'queued',
+    pending: 'pending',
+    started: 'running',
+    running: 'running',
+    success: 'completed',
+    succeeded: 'completed',
+    completed: 'completed',
+    partial: 'partial',
+    skipped: 'skipped',
+    unavailable: 'unavailable',
+    failed: 'failed',
+    error: 'failed',
+    timed_out: 'timed_out',
+    timeout: 'timed_out',
+  };
+  const rawError = isRecord(record.error) ? record.error : null;
+  const errorMessage =
+    optionalString(rawError?.message) ??
+    optionalString(record.error) ??
+    optionalString(record.message);
+  const comparableCount =
+    optionalNumber(
+      record.comparableCount ?? record.compCount ?? record.count,
+    ) ?? 0;
+  const signalCount = optionalNumber(record.signalCount) ?? 0;
+  const providerStatus: ItemMarketProviderStatus = {
+    provider: normalizeProviderId(record.provider ?? record.id ?? providerKey),
+    status: statusAliases[rawStatus] ?? 'pending',
+    query: optionalString(record.query),
+    comparableCount: Math.max(0, Math.trunc(comparableCount)),
+    signalCount: Math.max(0, Math.trunc(signalCount)),
+    searchedAt: optionalString(record.searchedAt ?? record.completedAt),
+    warnings: [
+      ...(isStringArray(record.warnings) ? record.warnings : []),
+      ...(optionalString(record.warning)
+        ? [optionalString(record.warning) as string]
+        : []),
+    ],
+  };
+
+  if (errorMessage) {
+    providerStatus.error = {
+      code: optionalString(rawError?.code ?? record.errorCode) ?? 'PROVIDER_FAILED',
+      message: errorMessage,
+    };
+  }
+
+  return providerStatus;
+}
+
+function normalizeProviderStatuses(value: unknown) {
+  if (Array.isArray(value)) {
+    return value.map((entry) => normalizeProviderStatus(entry));
+  }
+  if (isRecord(value)) {
+    return Object.entries(value).map(([provider, entry]) =>
+      normalizeProviderStatus(entry, provider),
+    );
+  }
+  return [];
+}
+
+function normalizeMarketSignal(value: unknown): ItemMarketSignal | null {
+  if (!isRecord(value)) return null;
+  const explicitEvidenceClass = normalizeEvidenceClass(
+    value.evidenceClass ?? value.evidence_class,
+  );
+  const suppliedType = optionalString(value.type ?? value.kind ?? value.signal);
+  const type =
+    suppliedType ?? explicitEvidenceClass ?? 'market_signal';
+  const normalizedType = type.toLowerCase();
+  const defaultEvidenceClass: MarketEvidenceClass = normalizedType.includes(
+    'last_sale',
+  )
+    ? 'platform_last_sale'
+    : normalizedType.includes('active') || normalizedType.includes('ask')
+      ? 'active_ask'
+      : 'platform_sold_aggregate';
+
+  return {
+    provider: normalizeProviderId(value.provider ?? value.marketplace),
+    evidenceClass:
+      explicitEvidenceClass ??
+      defaultEvidenceClass,
+    type,
+    label: optionalString(value.label ?? value.title ?? value.name),
+    currency: optionalString(value.currency)?.toUpperCase() ?? null,
+    value: optionalNumber(value.value ?? value.amount ?? value.lastSale),
+    low: optionalNumber(value.low ?? value.min ?? value.priceLow),
+    median: optionalNumber(value.median ?? value.medianPrice),
+    high: optionalNumber(value.high ?? value.max ?? value.priceHigh),
+    sampleSize: optionalNumber(value.sampleSize ?? value.count),
+    observedAt: optionalString(
+      value.observedAt ?? value.searchedAt ?? value.scrapedAt,
+    ),
+    sourceUrl: optionalString(
+      value.sourceUrl ?? value.listingUrl ?? value.url,
+    ),
+    note: optionalString(value.note ?? value.description),
+  };
+}
+
+function normalizeMarketSignals(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map(normalizeMarketSignal)
+    .filter((signal): signal is ItemMarketSignal => signal !== null);
+}
+
+function parseMarketFunctionResponse(responseBody: string): MarketFunctionResponse {
   if (!responseBody || responseBody.length > MAX_FUNCTION_RESPONSE_CHARACTERS) {
     throw new ItemAnalysisError(
-      'The eBay sold-comps service returned an unexpected response.',
-      'INVALID_EBAY_COMPS_RESPONSE',
+      'The market-research service returned an unexpected response.',
+      'INVALID_MARKET_RESEARCH_RESPONSE',
     );
   }
 
@@ -402,49 +717,68 @@ function parseEbayFunctionResponse(responseBody: string): EbayFunctionResponse {
     parsed = JSON.parse(responseBody);
   } catch (error) {
     throw new ItemAnalysisError(
-      'The eBay sold-comps service returned unreadable data.',
-      'INVALID_EBAY_COMPS_RESPONSE',
+      'The market-research service returned unreadable data.',
+      'INVALID_MARKET_RESEARCH_RESPONSE',
       undefined,
       { cause: error },
     );
   }
 
   if (isRecord(parsed) && parsed.ok === false) {
+    const rawError = isRecord(parsed.error) ? parsed.error : null;
     throw new ItemAnalysisError(
-      typeof parsed.error === 'string'
-        ? parsed.error
-        : 'KeepFlip could not research eBay sold comps.',
-      'EBAY_COMPS_REQUEST_FAILED',
+      optionalString(rawError?.message) ??
+        optionalString(parsed.error) ??
+        'KeepFlip could not research marketplace sold comps.',
+      optionalString(rawError?.code) ?? 'MARKET_RESEARCH_REQUEST_FAILED',
     );
   }
 
   if (!isRecord(parsed) || parsed.ok !== true) {
     throw new ItemAnalysisError(
-      'The eBay sold-comps service returned an unexpected response.',
-      'INVALID_EBAY_COMPS_RESPONSE',
+      'The market-research service returned an unexpected response.',
+      'INVALID_MARKET_RESEARCH_RESPONSE',
     );
   }
 
+  const phase = optionalString(parsed.phase)?.toLowerCase();
+  const jobId = optionalString(parsed.jobId) ?? undefined;
+  const runId = optionalString(parsed.runId ?? parsed.id) ?? undefined;
+  const jobToken = optionalString(parsed.jobToken) ?? undefined;
+  const providers = normalizeProviderStatuses(
+    parsed.providers ?? parsed.providerResults ?? parsed.providerStatuses,
+  );
+  const signals = normalizeMarketSignals(parsed.signals ?? parsed.marketSignals);
+  const allowLegacyEbayEvidence = !jobId && providers.length === 0 && signals.length === 0;
+  const rawComps = Array.isArray(parsed.comps)
+    ? parsed.comps
+    : Array.isArray(parsed.items)
+      ? parsed.items
+      : [];
+  const comps = rawComps
+    .map((entry) => normalizeSoldComparable(entry, allowLegacyEbayEvidence))
+    .filter((comp): comp is ItemSoldComparable => comp !== null);
+
   if (
-    Array.isArray(parsed.comps) &&
-    parsed.comps.every(isSoldComparable) &&
-    (parsed.valuation === undefined || isValuation(parsed.valuation))
+    phase === 'completed' ||
+    Array.isArray(parsed.comps) ||
+    Array.isArray(parsed.items)
   ) {
-    const completed: EbayCompletedResponse = {
+    const completed: MarketCompletedResponse = {
       ok: true,
       phase: 'completed',
-      runId:
-        typeof parsed.runId === 'string'
-          ? parsed.runId
-          : typeof parsed.id === 'string'
-            ? parsed.id
-            : 'completed',
-      query: typeof parsed.query === 'string' ? parsed.query : '',
-      comps: parsed.comps,
+      ...(runId ? { runId } : {}),
+      ...(jobId ? { jobId } : {}),
+      ...(jobToken ? { jobToken } : {}),
+      query: optionalString(parsed.query) ?? '',
+      comps,
+      providers,
+      signals,
+      partial: parsed.partial === true || providers.some((entry) =>
+        ['failed', 'timed_out', 'unavailable', 'partial'].includes(entry.status),
+      ),
       searchedAt:
-        typeof parsed.searchedAt === 'string'
-          ? parsed.searchedAt
-          : new Date().toISOString(),
+        optionalString(parsed.searchedAt) ?? new Date().toISOString(),
     };
     if (isValuation(parsed.valuation)) {
       completed.valuation = parsed.valuation;
@@ -452,17 +786,21 @@ function parseEbayFunctionResponse(responseBody: string): EbayFunctionResponse {
     return completed;
   }
 
-  if (
-    (parsed.phase === 'started' || parsed.phase === 'running') &&
-    typeof parsed.runId === 'string' &&
-    typeof parsed.query === 'string'
-  ) {
-    return parsed as EbayStartedResponse | EbayRunningResponse;
+  if ((phase === 'started' || phase === 'running') && (jobId || runId)) {
+    return {
+      ok: true,
+      phase,
+      ...(runId ? { runId } : {}),
+      ...(jobId ? { jobId } : {}),
+      ...(jobToken ? { jobToken } : {}),
+      query: optionalString(parsed.query) ?? '',
+      providers,
+    };
   }
 
   throw new ItemAnalysisError(
-    'The eBay sold-comps service returned an unexpected response.',
-    'INVALID_EBAY_COMPS_RESPONSE',
+    'The market-research service returned an unexpected response.',
+    'INVALID_MARKET_RESEARCH_RESPONSE',
   );
 }
 
@@ -481,7 +819,7 @@ function waitForDelay(milliseconds: number, signal?: AbortSignal) {
   });
 }
 
-async function executeEbayFunction(
+async function executeMarketFunction(
   functions: Functions,
   functionId: string,
   body: Record<string, unknown>,
@@ -513,8 +851,9 @@ async function executeEbayFunction(
     }
 
     throw new ItemAnalysisError(
-      providerMessage || 'The eBay sold-comps function did not complete successfully.',
-      'EBAY_COMPS_EXECUTION_FAILED',
+      providerMessage ||
+        'The marketplace sold-comps function did not complete successfully.',
+      'MARKET_RESEARCH_EXECUTION_FAILED',
       {
         executionId: execution.$id,
         executionStatus: execution.status,
@@ -523,7 +862,7 @@ async function executeEbayFunction(
     );
   }
 
-  return parseEbayFunctionResponse(execution.responseBody);
+  return parseMarketFunctionResponse(execution.responseBody);
 }
 
 function confidencePercent(value: number) {
@@ -587,6 +926,103 @@ function buildStrictMarketProfile(
   };
 }
 
+function boundedMarketText(value: string | null | undefined, maximum: number) {
+  const normalized = value?.replace(/\s+/g, ' ').trim();
+  return normalized ? normalized.slice(0, maximum) : null;
+}
+
+function boundedMarketList(
+  values: Array<string | null | undefined>,
+  maximumItems: number,
+  maximumCharacters: number,
+) {
+  return values
+    .map((value) => boundedMarketText(value, maximumCharacters))
+    .filter((value): value is string => Boolean(value))
+    .filter((value, index, all) =>
+      all.findIndex((candidate) => candidate.toLowerCase() === value.toLowerCase()) ===
+      index,
+    )
+    .slice(0, maximumItems);
+}
+
+function groundedProviderHints(result: ItemAnalysisSuccess) {
+  const groundedValues = result.analysis.evidence
+    .filter(
+      (entry) =>
+        entry.strength !== 'low' &&
+        ['photo_text', 'google_vision', 'user_notes'].includes(entry.source),
+    )
+    .map((entry) => entry.value);
+  const stockXProductSlugs: string[] = [];
+  const priceChartingProducts: string[] = [];
+  let brickLinkItemId: string | null = null;
+
+  for (const value of groundedValues) {
+    for (const match of value.matchAll(
+      /https?:\/\/(?:www\.)?stockx\.com\/([^\s?#]+)/gi,
+    )) {
+      const slug = match[1]?.replace(/^\/+|\/+$/g, '').split('/')[0];
+      if (slug && !stockXProductSlugs.includes(slug)) {
+        stockXProductSlugs.push(slug.slice(0, 180));
+      }
+    }
+
+    for (const match of value.matchAll(
+      /https?:\/\/(?:www\.)?pricecharting\.com\/(?:game|product)\/[^\s<>"]+/gi,
+    )) {
+      const product = match[0].replace(/[),.;]+$/g, '').slice(0, 500);
+      if (!priceChartingProducts.includes(product)) {
+        priceChartingProducts.push(product);
+      }
+    }
+
+    const brickLinkMatch = value.match(
+      /bricklink\.com\/[^\s]*[?&](?:S|P|M)=((?:\d{3,7}(?:-\d+)?|sw\d{3,8}))/i,
+    );
+    if (!brickLinkItemId && brickLinkMatch?.[1]) {
+      brickLinkItemId = brickLinkMatch[1].slice(0, 80);
+    }
+  }
+
+  const providerHints = {
+    ...(stockXProductSlugs.length
+      ? { stockXProductSlugs: stockXProductSlugs.slice(0, 3) }
+      : {}),
+    ...(priceChartingProducts.length
+      ? { priceChartingProducts: priceChartingProducts.slice(0, 4) }
+      : {}),
+    ...(brickLinkItemId ? { brickLinkItemId } : {}),
+  };
+  return Object.keys(providerHints).length ? providerHints : null;
+}
+
+function buildMarketProviderProfile(
+  result: ItemAnalysisSuccess,
+  profile: StrictMarketValueProfile,
+) {
+  const identification = result.analysis.identification;
+  const signals = result.analysis.valuationSignals;
+  const providerHints = groundedProviderHints(result);
+  return {
+    title: boundedMarketText(profile.title, 220),
+    brand: boundedMarketText(identification.brand, 100),
+    model: boundedMarketText(identification.model, 140),
+    itemType: boundedMarketText(identification.itemType, 100),
+    category: boundedMarketText(identification.category, 120),
+    subcategory: boundedMarketText(signals.category, 120),
+    condition: boundedMarketText(result.analysis.condition.grade, 100),
+    descriptorSummary: boundedMarketText(result.analysis.summary, 400),
+    searchTerms: boundedMarketList(signals.searchTerms, 8, 180),
+    negativeKeywords: boundedMarketList(
+      profile.valuationSignals?.negativeKeywords ?? [],
+      20,
+      80,
+    ),
+    ...(providerHints ? { providerHints } : {}),
+  };
+}
+
 function percentile(sortedValues: number[], percentileValue: number) {
   if (sortedValues.length === 1) return sortedValues[0];
   const position = (sortedValues.length - 1) * percentileValue;
@@ -604,22 +1040,94 @@ function roundMoney(value: number) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
+function isConfirmedTransaction(comp: ItemSoldComparable) {
+  return comp.evidenceClass === 'confirmed_transaction';
+}
+
+function preferredCurrency(comps: ItemSoldComparable[]) {
+  if (comps.some((comp) => comp.currency.toUpperCase() === 'USD')) {
+    return 'USD';
+  }
+
+  const counts = new Map<string, number>();
+  for (const comp of comps) {
+    const currency = comp.currency.toUpperCase();
+    counts.set(currency, (counts.get(currency) ?? 0) + 1);
+  }
+  return [...counts.entries()].sort((left, right) => right[1] - left[1])[0]?.[0];
+}
+
+function capProviderContribution(comps: ItemSoldComparable[]) {
+  const byProvider = new Map<MarketProviderId, ItemSoldComparable[]>();
+  for (const comp of comps) {
+    const group = byProvider.get(comp.provider) ?? [];
+    group.push(comp);
+    byProvider.set(comp.provider, group);
+  }
+
+  return [...byProvider.values()].flatMap((providerComps) =>
+    providerComps
+      .map((comp, index) => ({ comp, index }))
+      .sort((left, right) => {
+        const leftTime = Date.parse(left.comp.soldDate ?? '');
+        const rightTime = Date.parse(right.comp.soldDate ?? '');
+        if (Number.isFinite(leftTime) && Number.isFinite(rightTime)) {
+          return rightTime - leftTime;
+        }
+        return left.index - right.index;
+      })
+      .slice(0, MAX_VALUATION_COMPS_PER_PROVIDER)
+      .map(({ comp }) => comp),
+  );
+}
+
+function removeMadOutliers(comps: ItemSoldComparable[]) {
+  if (comps.length < 5) return comps;
+  const prices = comps
+    .map((comp) => comp.totalPrice)
+    .sort((left, right) => left - right);
+  const center = percentile(prices, 0.5);
+  const deviations = prices
+    .map((price) => Math.abs(price - center))
+    .sort((left, right) => left - right);
+  const mad = percentile(deviations, 0.5);
+
+  // A zero MAD is a legitimate tightly clustered market. There is no stable
+  // robust z-score denominator, so retain the records instead of inventing a
+  // percentage-based substitute while claiming MAD methodology.
+  if (!Number.isFinite(mad) || mad <= 0) return comps;
+
+  return comps.filter(
+    (comp) => (0.67448975 * Math.abs(comp.totalPrice - center)) / mad <= 3.5,
+  );
+}
+
+function selectValuationComps(comps: ItemSoldComparable[]) {
+  const confirmed = comps.filter(
+    (comp) =>
+      isConfirmedTransaction(comp) &&
+      Number.isFinite(comp.totalPrice) &&
+      comp.totalPrice > 0,
+  );
+  const currency = preferredCurrency(confirmed);
+  if (!currency) return [];
+
+  return removeMadOutliers(
+    capProviderContribution(
+      confirmed.filter((comp) => comp.currency.toUpperCase() === currency),
+    ),
+  );
+}
+
 function valuationFromSelectedComps(
   selected: ItemSoldComparable[],
   suppliedCount: number,
+  source: 'ebay_sold' | 'multi_market_sold',
 ): ItemValuation {
-  const currencyCounts = new Map<string, number>();
-  for (const comp of selected) {
-    const currency = comp.currency.toUpperCase();
-    currencyCounts.set(currency, (currencyCounts.get(currency) ?? 0) + 1);
-  }
-  const currency = [...currencyCounts.entries()].sort(
-    (left, right) => right[1] - left[1],
-  )[0]?.[0];
-  const prices = selected
-    .filter((comp) => comp.currency.toUpperCase() === currency)
+  const valuationComps = selectValuationComps(selected);
+  const currency = valuationComps[0]?.currency.toUpperCase();
+  const prices = valuationComps
     .map((comp) => comp.totalPrice)
-    .filter((price) => Number.isFinite(price) && price > 0)
     .sort((left, right) => left - right);
 
   if (!currency || prices.length === 0) {
@@ -633,7 +1141,7 @@ function valuationFromSelectedComps(
       p20: null,
       p80: null,
       methodology: 'none',
-      source: 'ebay_sold',
+      source,
     };
   }
 
@@ -647,7 +1155,7 @@ function valuationFromSelectedComps(
     p20: roundMoney(percentile(prices, 0.2)),
     p80: roundMoney(percentile(prices, 0.8)),
     methodology: 'median_linear_p20_p80_mad_outlier_filter_v1',
-    source: 'ebay_sold',
+    source,
   };
 }
 
@@ -656,9 +1164,10 @@ function marketResearchFailure(
   code: string,
   message: string,
   query: string | null,
+  provider: ItemMarketResearch['provider'] = 'multi_market',
 ): ItemMarketResearch {
   return {
-    provider: 'ebay',
+    provider,
     status,
     query,
     searchedAt: null,
@@ -668,7 +1177,21 @@ function marketResearchFailure(
   };
 }
 
-async function researchEbaySoldComps(
+function completedResearchProvider(completed: MarketCompletedResponse) {
+  const sourceProviders = new Set<MarketProviderId>([
+    ...completed.comps.map((comp) => comp.provider),
+    ...completed.providers.map((entry) => entry.provider),
+    ...completed.signals.map((signal) => signal.provider),
+  ]);
+  sourceProviders.delete('unknown');
+  return completed.jobId ||
+    sourceProviders.size > 1 ||
+    [...sourceProviders].some((provider) => provider !== 'ebay')
+    ? 'multi_market'
+    : 'ebay';
+}
+
+async function researchMarketSoldComps(
   result: ItemAnalysisSuccess,
   functions: Functions,
   functionId: string,
@@ -689,7 +1212,7 @@ async function researchEbaySoldComps(
   }
 
   const startedAt = Date.now();
-  const started = await executeEbayFunction(
+  const started = await executeMarketFunction(
     functions,
     functionId,
     {
@@ -697,28 +1220,38 @@ async function researchEbaySoldComps(
       purpose: 'sold_comps',
       query,
       limit: EBAY_COMPS_LIMIT,
+      targetCurrency: 'USD',
+      profile: buildMarketProviderProfile(result, profile),
     },
     signal,
   );
 
   const applyCompletedResult = (
-    completed: EbayCompletedResponse,
+    completed: MarketCompletedResponse,
   ): ItemAnalysisSuccess => {
-    const selected = selectStrictEbaySoldComps(profile, completed.comps);
+    const confirmedComps = completed.comps.filter(isConfirmedTransaction);
+    const selected = selectStrictEbaySoldComps(profile, confirmedComps);
+    const provider = completedResearchProvider(completed);
+    const valuationComps = selectValuationComps(selected.comps);
     const valuation = valuationFromSelectedComps(
-      selected.comps,
+      valuationComps,
       completed.comps.length,
+      provider === 'multi_market' ? 'multi_market_sold' : 'ebay_sold',
     );
     return {
       ...result,
       valuation,
       marketResearch: {
-        provider: 'ebay',
+        provider,
         status: 'completed',
+        ...(completed.jobId ? { jobId: completed.jobId } : {}),
+        partial: completed.partial,
         query: selected.query || completed.query,
         searchedAt: completed.searchedAt,
         comparableCount: valuation.usedCount,
-        comps: selected.comps,
+        comps: valuationComps,
+        providers: completed.providers,
+        signals: completed.signals,
         quality: selected.quality,
       },
     };
@@ -730,33 +1263,45 @@ async function researchEbaySoldComps(
 
   if (started.phase !== 'started' && started.phase !== 'running') {
     throw new ItemAnalysisError(
-      'The eBay sold-comps service did not start a research run.',
-      'EBAY_COMPS_START_FAILED',
+      'The marketplace sold-comps service did not start a research job.',
+      'MARKET_RESEARCH_START_FAILED',
     );
   }
 
+  let currentJobId = started.jobId;
+  let currentRunId = started.runId;
+  let currentJobToken = started.jobToken;
+  let currentQuery = started.query;
+
   while (Date.now() - startedAt < EBAY_RESEARCH_TIMEOUT_MS) {
     await waitForDelay(EBAY_POLL_INTERVAL_MS, signal);
-    const status = await executeEbayFunction(
+    const status = await executeMarketFunction(
       functions,
       functionId,
       {
         action: 'status',
         purpose: 'sold_comps',
-        runId: started.runId,
-        query: started.query,
+        ...(currentJobId ? { jobId: currentJobId } : {}),
+        ...(currentJobToken ? { jobToken: currentJobToken } : {}),
+        ...(currentRunId ? { runId: currentRunId } : {}),
+        query: currentQuery,
         limit: EBAY_COMPS_LIMIT,
       },
       signal,
     );
+
+    currentJobId = status.jobId ?? currentJobId;
+    currentRunId = status.runId ?? currentRunId;
+    currentJobToken = status.jobToken ?? currentJobToken;
+    currentQuery = status.query || currentQuery;
 
     if (status.phase !== 'completed') continue;
     return applyCompletedResult(status);
   }
 
   throw new ItemAnalysisError(
-    'eBay sold-comps research took too long. The item identification is still available.',
-    'EBAY_COMPS_TIMEOUT',
+    'Marketplace sold-comps research took too long. The item identification is still available.',
+    'MARKET_RESEARCH_TIMEOUT',
   );
 }
 
@@ -944,7 +1489,11 @@ function legacyGuidanceResult(
 function shouldTryLegacyItemAi(error: unknown) {
   if (!APPWRITE.itemAiFunctionId) return false;
   if (!(error instanceof ItemAnalysisError)) return false;
-  return /provider|openai|vision|timeout|function_execution|analysis_request|invalid_function_response/i.test(
+  const details = isRecord(error.details) ? error.details : null;
+  if (/timeout/i.test(error.code) || Number(details?.responseStatusCode) === 408) {
+    return false;
+  }
+  return /provider|openai|vision|function_execution|analysis_request|invalid_function_response/i.test(
     error.code,
   );
 }
@@ -953,17 +1502,78 @@ async function executePrimaryAnalysis(
   functions: Functions,
   functionId: string,
   request: ItemAnalysisFunctionRequest,
+  analysisStartedAt: number,
   signal?: AbortSignal,
 ) {
   throwIfAborted(signal);
-  const execution = await functions.createExecution({
-    functionId,
-    body: JSON.stringify(request),
-    async: false,
-    method: ExecutionMethod.POST,
-    headers: { 'content-type': 'application/json' },
-  });
+  const executionStartedAt = Date.now();
+  logAnalysisDiagnostic(
+    request.diagnosticId,
+    'function_execution_started',
+    analysisStartedAt,
+    {
+      functionId,
+      bucketId: request.bucketId,
+      imageCount: request.fileIds.length,
+    },
+  );
+
+  let execution;
+  try {
+    execution = await functions.createExecution({
+      functionId,
+      body: JSON.stringify(request),
+      async: false,
+      method: ExecutionMethod.POST,
+      headers: { 'content-type': 'application/json' },
+    });
+  } catch (error) {
+    const appwriteDiagnostics = appwriteErrorDiagnostics(error);
+    const isSynchronousTimeout =
+      error instanceof AppwriteException && error.code === 408;
+    logAnalysisDiagnostic(
+      request.diagnosticId,
+      'function_execution_failed',
+      analysisStartedAt,
+      {
+        functionId,
+        executionElapsedMs: Math.max(0, Date.now() - executionStartedAt),
+        ...appwriteDiagnostics,
+      },
+      'error',
+    );
+    throw new ItemAnalysisError(
+      isSynchronousTimeout
+        ? 'Item analysis exceeded Appwrite\'s 30-second synchronous limit.'
+        : 'KeepFlip could not start the analysis Function.',
+      isSynchronousTimeout
+        ? 'FUNCTION_EXECUTION_TIMEOUT'
+        : 'FUNCTION_EXECUTION_REQUEST_FAILED',
+      {
+        diagnosticId: request.diagnosticId,
+        functionId,
+        executionElapsedMs: Math.max(0, Date.now() - executionStartedAt),
+        ...appwriteDiagnostics,
+      },
+      { cause: error },
+    );
+  }
   throwIfAborted(signal);
+
+  logAnalysisDiagnostic(
+    request.diagnosticId,
+    'function_execution_returned',
+    analysisStartedAt,
+    {
+      executionId: execution.$id,
+      deploymentId: execution.deploymentId,
+      executionStatus: execution.status,
+      responseStatusCode: execution.responseStatusCode,
+      durationSeconds: execution.duration,
+      executionElapsedMs: Math.max(0, Date.now() - executionStartedAt),
+    },
+    execution.status === 'completed' ? 'info' : 'warn',
+  );
 
   if (
     execution.status !== 'completed' ||
@@ -974,10 +1584,29 @@ async function executePrimaryAnalysis(
       execution.responseBody,
     );
     if (functionFailure) {
+      logAnalysisDiagnostic(
+        request.diagnosticId,
+        'function_response_error',
+        analysisStartedAt,
+        {
+          executionId: execution.$id,
+          deploymentId: execution.deploymentId,
+          responseStatusCode: execution.responseStatusCode,
+          functionErrorCode: functionFailure.error.code,
+        },
+        'error',
+      );
       throw new ItemAnalysisError(
         functionFailure.error.message,
         functionFailure.error.code,
-        functionFailure.error.details,
+        {
+          diagnosticId: request.diagnosticId,
+          executionId: execution.$id,
+          deploymentId: execution.deploymentId,
+          executionStatus: execution.status,
+          responseStatusCode: execution.responseStatusCode,
+          functionDetails: functionFailure.error.details,
+        },
       );
     }
 
@@ -985,7 +1614,9 @@ async function executePrimaryAnalysis(
       'The analysis function did not complete successfully.',
       'FUNCTION_EXECUTION_FAILED',
       {
+        diagnosticId: request.diagnosticId,
         executionId: execution.$id,
+        deploymentId: execution.deploymentId,
         executionStatus: execution.status,
         responseStatusCode: execution.responseStatusCode,
       },
@@ -994,10 +1625,28 @@ async function executePrimaryAnalysis(
 
   const response = parseFunctionResponse(execution.responseBody);
   if (!response.ok) {
+    logAnalysisDiagnostic(
+      request.diagnosticId,
+      'function_response_error',
+      analysisStartedAt,
+      {
+        executionId: execution.$id,
+        deploymentId: execution.deploymentId,
+        responseStatusCode: execution.responseStatusCode,
+        functionErrorCode: response.error.code,
+      },
+      'error',
+    );
     throw new ItemAnalysisError(
       response.error.message,
       response.error.code,
-      response.error.details,
+      {
+        diagnosticId: request.diagnosticId,
+        executionId: execution.$id,
+        deploymentId: execution.deploymentId,
+        responseStatusCode: execution.responseStatusCode,
+        functionDetails: response.error.details,
+      },
     );
   }
   return response;
@@ -1033,6 +1682,240 @@ function mimeTypeForFile(file: File) {
         'UNSUPPORTED_PHOTO_TYPE',
         { fileName: file.name, declaredType: file.type || null },
       );
+  }
+}
+
+type AnalysisPhotoCompressionAttempt = {
+  compress: number;
+  maxDimension: number;
+};
+
+function analysisPhotoCompressionAttempts(photoCount: number) {
+  const primary: AnalysisPhotoCompressionAttempt =
+    photoCount <= 1
+      ? { compress: 0.84, maxDimension: 2_048 }
+      : photoCount === 2
+        ? { compress: 0.82, maxDimension: 1_800 }
+        : { compress: 0.8, maxDimension: 1_600 };
+
+  return [
+    primary,
+    { compress: 0.68, maxDimension: Math.min(primary.maxDimension, 1_440) },
+    { compress: 0.58, maxDimension: 1_280 },
+  ];
+}
+
+function targetPreparedPhotoBytes(photoCount: number) {
+  return Math.min(
+    TARGET_PREPARED_PHOTO_BYTES,
+    Math.floor(TARGET_TOTAL_PREPARED_PHOTO_BYTES / Math.max(1, photoCount)),
+  );
+}
+
+function imageDimensions(uri: string) {
+  return new Promise<{ height: number; width: number }>((resolve, reject) => {
+    Image.getSize(
+      uri,
+      (width, height) => resolve({ height, width }),
+      (error) => reject(error),
+    );
+  });
+}
+
+function deleteLocalFileBestEffort(uri: string) {
+  try {
+    const file = new File(uri);
+    if (file.exists) file.delete();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function prepareAnalysisPhoto(
+  uri: string,
+  index: number,
+  photoCount: number,
+  diagnosticId: string,
+  analysisStartedAt: number,
+  signal?: AbortSignal,
+) {
+  const preparationStartedAt = Date.now();
+  let sourceFile: File;
+
+  try {
+    sourceFile = new File(normalizePhotoUri(uri));
+  } catch (error) {
+    throw new ItemAnalysisError(
+      `Photo ${index + 1} could not be opened.`,
+      'PHOTO_UNREADABLE',
+      { index },
+      { cause: error },
+    );
+  }
+
+  if (!sourceFile.exists || !Number.isFinite(sourceFile.size) || sourceFile.size <= 0) {
+    throw new ItemAnalysisError(
+      `Photo ${index + 1} is missing or empty.`,
+      'PHOTO_NOT_FOUND',
+      { index },
+    );
+  }
+
+  if (sourceFile.size > MAX_SOURCE_PHOTO_BYTES) {
+    throw new ItemAnalysisError(
+      `Photo ${index + 1} is too large to prepare safely. Choose an image under 32 MB.`,
+      'PHOTO_SOURCE_TOO_LARGE',
+      {
+        index,
+        maximumBytes: MAX_SOURCE_PHOTO_BYTES,
+        receivedBytes: sourceFile.size,
+      },
+    );
+  }
+
+  throwIfAborted(signal);
+  const sourceDimensions = await imageDimensions(sourceFile.uri).catch((error) => {
+    throw new ItemAnalysisError(
+      `Photo ${index + 1} could not be decoded.`,
+      'PHOTO_DECODE_FAILED',
+      { index },
+      { cause: error },
+    );
+  });
+  throwIfAborted(signal);
+
+  const attempts = analysisPhotoCompressionAttempts(photoCount);
+  const targetBytes = targetPreparedPhotoBytes(photoCount);
+  const generatedUris: string[] = [];
+
+  logAnalysisDiagnostic(
+    diagnosticId,
+    'photo_preparation_started',
+    analysisStartedAt,
+    {
+      photoIndex: index,
+      sourceBytes: sourceFile.size,
+      sourceWidth: sourceDimensions.width,
+      sourceHeight: sourceDimensions.height,
+      targetBytes,
+    },
+  );
+
+  try {
+    for (const [attemptIndex, attempt] of attempts.entries()) {
+      throwIfAborted(signal);
+      const context = ImageManipulator.manipulate(sourceFile.uri);
+      const longestEdge = Math.max(sourceDimensions.width, sourceDimensions.height);
+
+      if (longestEdge > attempt.maxDimension) {
+        context.resize(
+          sourceDimensions.width >= sourceDimensions.height
+            ? { width: attempt.maxDimension }
+            : { height: attempt.maxDimension },
+        );
+      }
+
+      const rendered = await context.renderAsync();
+      throwIfAborted(signal);
+      const saved = await rendered.saveAsync({
+        compress: attempt.compress,
+        format: SaveFormat.JPEG,
+      });
+      generatedUris.push(saved.uri);
+      throwIfAborted(signal);
+
+      const preparedFile = new File(saved.uri);
+      if (
+        !preparedFile.exists ||
+        !Number.isFinite(preparedFile.size) ||
+        preparedFile.size <= 0
+      ) {
+        throw new ItemAnalysisError(
+          `Photo ${index + 1} could not be saved after compression.`,
+          'PHOTO_PREPARATION_FAILED',
+          { index, attempt: attemptIndex + 1 },
+        );
+      }
+
+      const isLastAttempt = attemptIndex === attempts.length - 1;
+      if (preparedFile.size <= targetBytes || isLastAttempt) {
+        for (const intermediateUri of generatedUris.slice(0, -1)) {
+          deleteLocalFileBestEffort(intermediateUri);
+        }
+
+        logAnalysisDiagnostic(
+          diagnosticId,
+          'photo_preparation_completed',
+          analysisStartedAt,
+          {
+            photoIndex: index,
+            attempt: attemptIndex + 1,
+            sourceBytes: sourceFile.size,
+            preparedBytes: preparedFile.size,
+            preparedWidth: saved.width,
+            preparedHeight: saved.height,
+            maxDimension: attempt.maxDimension,
+            jpegQuality: attempt.compress,
+            compressionRatio:
+              Math.round((preparedFile.size / sourceFile.size) * 1_000) / 1_000,
+            targetMet: preparedFile.size <= targetBytes,
+            preparationElapsedMs: Math.max(0, Date.now() - preparationStartedAt),
+          },
+        );
+
+        return saved.uri;
+      }
+    }
+  } catch (error) {
+    for (const generatedUri of generatedUris) {
+      deleteLocalFileBestEffort(generatedUri);
+    }
+    if (
+      error instanceof ItemAnalysisError ||
+      (error instanceof Error && error.name === 'AbortError')
+    ) {
+      throw error;
+    }
+    throw new ItemAnalysisError(
+      `Photo ${index + 1} could not be compressed.`,
+      'PHOTO_PREPARATION_FAILED',
+      { index },
+      { cause: error },
+    );
+  }
+
+  throw new ItemAnalysisError(
+    `Photo ${index + 1} could not be compressed.`,
+    'PHOTO_PREPARATION_FAILED',
+    { index },
+  );
+}
+
+function deletePreparedPhotoFiles(
+  uris: string[],
+  diagnosticId: string,
+  analysisStartedAt: number,
+) {
+  let deletedCount = 0;
+  let failedCount = 0;
+
+  for (const uri of uris) {
+    if (deleteLocalFileBestEffort(uri)) {
+      deletedCount += 1;
+    } else {
+      failedCount += 1;
+    }
+  }
+
+  if (uris.length > 0) {
+    logAnalysisDiagnostic(
+      diagnosticId,
+      'photo_cache_cleanup_completed',
+      analysisStartedAt,
+      { requestedCount: uris.length, deletedCount, failedCount },
+      failedCount > 0 ? 'warn' : 'info',
+    );
   }
 }
 
@@ -1115,17 +1998,54 @@ async function deleteUploadedFiles(
   storage: Storage,
   bucketId: string,
   fileIds: string[],
+  diagnosticId: string,
+  analysisStartedAt: number,
 ) {
-  for (const fileId of fileIds) {
+  let deletedCount = 0;
+  let missingCount = 0;
+  let failedCount = 0;
+
+  for (const [fileIndex, fileId] of fileIds.entries()) {
     try {
       await storage.deleteFile({ bucketId, fileId });
+      deletedCount += 1;
     } catch (error) {
       // A 404 means the temporary upload is already gone. Other cleanup
       // failures are deliberately best-effort: a successful paid analysis
       // must remain usable and must not encourage the user to pay for a retry.
-      if (error instanceof AppwriteException && error.code === 404) continue;
+      if (error instanceof AppwriteException && error.code === 404) {
+        missingCount += 1;
+        continue;
+      }
+      failedCount += 1;
+      logAnalysisDiagnostic(
+        diagnosticId,
+        'cleanup_file_failed',
+        analysisStartedAt,
+        {
+          bucketId,
+          fileIndex,
+          fileRef: fileDiagnosticRef(fileId),
+          ...appwriteErrorDiagnostics(error),
+        },
+        'warn',
+      );
     }
   }
+
+  logAnalysisDiagnostic(
+    diagnosticId,
+    'cleanup_completed',
+    analysisStartedAt,
+    {
+      bucketId,
+      requestedCount: fileIds.length,
+      deletedCount,
+      missingCount,
+      failedCount,
+    },
+    failedCount > 0 ? 'warn' : 'info',
+  );
 }
 
 function validateInput(input: AnalyzeItemPhotosInput) {
@@ -1216,26 +2136,13 @@ export async function analyzeItemPhotos(
   input: AnalyzeItemPhotosInput,
   options: AnalyzeItemPhotosOptions = {},
 ): Promise<ItemAnalysisSuccess> {
+  const analysisStartedAt = Date.now();
+  const diagnosticId = createAnalysisDiagnosticId();
   validateInput(input);
   throwIfAborted(options.signal);
 
   const { account, configuration, functions, storage } = getAppwriteServices();
-  const uploadFiles = input.photoUris.map(localUploadFile);
-  const totalPhotoBytes = uploadFiles.reduce(
-    (total, file) => total + file.size,
-    0,
-  );
-  if (totalPhotoBytes > MAX_TOTAL_PHOTO_BYTES) {
-    throw new ItemAnalysisError(
-      'The selected photos total more than 24 MB. Use smaller images.',
-      'PHOTOS_TOO_LARGE',
-      {
-        maximumBytes: MAX_TOTAL_PHOTO_BYTES,
-        receivedBytes: totalPhotoBytes,
-      },
-    );
-  }
-
+  const preparedPhotoUris: string[] = [];
   const uploadedFileIds: string[] = [];
   let result: ItemAnalysisSuccess | undefined;
   let primaryError: unknown;
@@ -1243,24 +2150,102 @@ export async function analyzeItemPhotos(
   try {
     reportStage(options.onStage, 'authenticating');
     const userId = await ensureAuthenticatedUserId(account, options.signal);
+    logAnalysisDiagnostic(
+      diagnosticId,
+      'authentication_completed',
+      analysisStartedAt,
+      { userRef: fileDiagnosticRef(userId) },
+    );
     throwIfAborted(options.signal);
 
     reportStage(options.onStage, 'uploading');
+    const uploadFiles: ReturnType<typeof localUploadFile>[] = [];
+    for (const [photoIndex, photoUri] of input.photoUris.entries()) {
+      const preparedUri = await prepareAnalysisPhoto(
+        photoUri,
+        photoIndex,
+        input.photoUris.length,
+        diagnosticId,
+        analysisStartedAt,
+        options.signal,
+      );
+      preparedPhotoUris.push(preparedUri);
+      uploadFiles.push(localUploadFile(preparedUri, photoIndex));
+    }
+
+    const totalPhotoBytes = uploadFiles.reduce(
+      (total, file) => total + file.size,
+      0,
+    );
+    logAnalysisDiagnostic(
+      diagnosticId,
+      'request_validated',
+      analysisStartedAt,
+      {
+        imageCount: uploadFiles.length,
+        totalPhotoBytes,
+        bucketId: configuration.scanBucketId,
+        functionId: configuration.analyzeFunctionId,
+      },
+    );
+    if (totalPhotoBytes > MAX_TOTAL_PHOTO_BYTES) {
+      throw new ItemAnalysisError(
+        'The prepared photos total more than 24 MB. Use smaller images.',
+        'PHOTOS_TOO_LARGE',
+        {
+          maximumBytes: MAX_TOTAL_PHOTO_BYTES,
+          receivedBytes: totalPhotoBytes,
+        },
+      );
+    }
+
     for (const [photoIndex, file] of uploadFiles.entries()) {
       throwIfAborted(options.signal);
+      const uploadStartedAt = Date.now();
+      const requestedPermissions = [
+        Permission.read(Role.user(userId)),
+        Permission.update(Role.user(userId)),
+        Permission.delete(Role.user(userId)),
+      ];
+      logAnalysisDiagnostic(
+        diagnosticId,
+        'storage_upload_started',
+        analysisStartedAt,
+        {
+          bucketId: configuration.scanBucketId,
+          photoIndex,
+          photoBytes: file.size,
+          mimeType: file.type,
+        },
+      );
       const uploaded = await storage.createFile({
         bucketId: configuration.scanBucketId,
         fileId: ID.unique(),
         file,
-        permissions: [
-          Permission.read(Role.user(userId)),
-          Permission.update(Role.user(userId)),
-          Permission.delete(Role.user(userId)),
-        ],
+        permissions: requestedPermissions,
       });
       uploadedFileIds.push(uploaded.$id);
+      const returnedPermissions = Array.isArray(uploaded.$permissions)
+        ? uploaded.$permissions
+        : [];
+      logAnalysisDiagnostic(
+        diagnosticId,
+        'storage_upload_completed',
+        analysisStartedAt,
+        {
+          bucketId: configuration.scanBucketId,
+          photoIndex,
+          fileRef: fileDiagnosticRef(uploaded.$id),
+          uploadElapsedMs: Math.max(0, Date.now() - uploadStartedAt),
+          permissionCount: returnedPermissions.length,
+          hasExpectedUserRead: returnedPermissions.includes(requestedPermissions[0]),
+          chunksUploaded: uploaded.chunksUploaded,
+          chunksTotal: uploaded.chunksTotal,
+        },
+      );
 
       try {
+        const readbackStartedAt = Date.now();
         const verified = await storage.getFile({
           bucketId: configuration.scanBucketId,
           fileId: uploaded.$id,
@@ -1268,11 +2253,37 @@ export async function analyzeItemPhotos(
         if (verified.$id !== uploaded.$id) {
           throw new Error('Appwrite returned mismatched file metadata.');
         }
+        logAnalysisDiagnostic(
+          diagnosticId,
+          'storage_readback_completed',
+          analysisStartedAt,
+          {
+            bucketId: configuration.scanBucketId,
+            photoIndex,
+            fileRef: fileDiagnosticRef(uploaded.$id),
+            readbackElapsedMs: Math.max(0, Date.now() - readbackStartedAt),
+            sizeOriginal: verified.sizeOriginal,
+            mimeType: verified.mimeType,
+          },
+        );
       } catch (error) {
+        logAnalysisDiagnostic(
+          diagnosticId,
+          'storage_readback_failed',
+          analysisStartedAt,
+          {
+            bucketId: configuration.scanBucketId,
+            photoIndex,
+            fileRef: fileDiagnosticRef(uploaded.$id),
+            ...appwriteErrorDiagnostics(error),
+          },
+          'error',
+        );
         throw new ItemAnalysisError(
           'KeepFlip uploaded a photo but could not read it back. Enable File Security on the item_images bucket and preserve the user file permissions.',
           'PHOTO_UPLOAD_NOT_READABLE',
           {
+            diagnosticId,
             photoIndex,
             bucketId: configuration.scanBucketId,
             statusCode:
@@ -1286,6 +2297,7 @@ export async function analyzeItemPhotos(
 
     const request: ItemAnalysisFunctionRequest = {
       bucketId: configuration.scanBucketId,
+      diagnosticId,
       fileIds: uploadedFileIds,
       ...(input.ocr === undefined ? {} : { ocr: input.ocr }),
       ...(input.userNotes === undefined
@@ -1309,6 +2321,7 @@ export async function analyzeItemPhotos(
         functions,
         configuration.analyzeFunctionId,
         request,
+        analysisStartedAt,
         options.signal,
       );
     } catch (primaryAnalysisError) {
@@ -1320,6 +2333,7 @@ export async function analyzeItemPhotos(
         const legacyIdentification = await identifyItemWithAI(
           uploadedFileIds,
           input.userNotes,
+          diagnosticId,
         );
         throwIfAborted(options.signal);
         result = legacyIdentificationResult(
@@ -1348,11 +2362,31 @@ export async function analyzeItemPhotos(
         storage,
         configuration.scanBucketId,
         uploadedFileIds,
+        diagnosticId,
+        analysisStartedAt,
       );
     }
+    deletePreparedPhotoFiles(
+      preparedPhotoUris,
+      diagnosticId,
+      analysisStartedAt,
+    );
   }
 
   if (primaryError) {
+    logAnalysisDiagnostic(
+      diagnosticId,
+      'analysis_failed',
+      analysisStartedAt,
+      {
+        errorCode:
+          primaryError instanceof ItemAnalysisError
+            ? primaryError.code
+            : undefined,
+        ...appwriteErrorDiagnostics(primaryError),
+      },
+      'error',
+    );
     if (
       primaryError instanceof AppwriteSetupError ||
       primaryError instanceof ItemAnalysisError ||
@@ -1364,12 +2398,25 @@ export async function analyzeItemPhotos(
     throw new ItemAnalysisError(
       'KeepFlip could not reach the analysis service. Check your connection and try again.',
       'ANALYSIS_REQUEST_FAILED',
-      undefined,
+      {
+        diagnosticId,
+        ...appwriteErrorDiagnostics(primaryError),
+      },
       { cause: primaryError },
     );
   }
 
   if (result) {
+    logAnalysisDiagnostic(
+      diagnosticId,
+      'identification_completed',
+      analysisStartedAt,
+      {
+        status: result.status,
+        evidenceCount: result.analysis.evidence.length,
+        imageCount: result.input.imageCount,
+      },
+    );
     const identifiedResult: ItemAnalysisSuccess = {
       ...result,
       valuation: {
@@ -1377,14 +2424,23 @@ export async function analyzeItemPhotos(
         source: result.valuation.usedCount > 0 ? 'caller_supplied' : 'none',
       },
     };
-    const ebayFunctionId = configuration.ebaySoldCompsFunctionId;
-    if (!ebayFunctionId) {
+    const marketResearchFunctionId =
+      configuration.marketResearchFunctionId ??
+      configuration.ebaySoldCompsFunctionId;
+    if (!marketResearchFunctionId) {
+      logAnalysisDiagnostic(
+        diagnosticId,
+        'analysis_completed_without_comps',
+        analysisStartedAt,
+        { reason: 'market_research_function_not_configured' },
+        'warn',
+      );
       return {
         ...identifiedResult,
         marketResearch: marketResearchFailure(
           'unavailable',
-          'EBAY_COMPS_NOT_CONFIGURED',
-          'Add EXPO_PUBLIC_APPWRITE_EBAY_SOLD_COMPS_FUNCTION_ID to enable sold-comp valuation.',
+          'MARKET_RESEARCH_NOT_CONFIGURED',
+          'Add EXPO_PUBLIC_APPWRITE_MARKET_COMPS_FUNCTION_ID (or the legacy EXPO_PUBLIC_APPWRITE_EBAY_SOLD_COMPS_FUNCTION_ID) to enable sold-comp valuation.',
           buildStrictEbaySearchQuery(
             buildStrictMarketProfile(identifiedResult),
           ) || null,
@@ -1393,15 +2449,62 @@ export async function analyzeItemPhotos(
     }
 
     reportStage(options.onStage, 'researching_comps');
+    const marketFunctionDiagnostics = {
+      functionId: marketResearchFunctionId,
+      endpointHost: endpointDiagnosticHost(configuration.endpoint),
+      projectRef: identifierDiagnosticRef(configuration.projectId),
+    };
+    logAnalysisDiagnostic(
+      diagnosticId,
+      'sold_comps_execution_started',
+      analysisStartedAt,
+      marketFunctionDiagnostics,
+    );
     try {
-      return await researchEbaySoldComps(
+      const researchedResult = await researchMarketSoldComps(
         identifiedResult,
         functions,
-        ebayFunctionId,
+        marketResearchFunctionId,
         options.signal,
       );
+      logAnalysisDiagnostic(
+        diagnosticId,
+        'analysis_completed',
+        analysisStartedAt,
+        {
+          compStatus: researchedResult.marketResearch?.status,
+          compCount: researchedResult.marketResearch?.comps.length,
+          signalCount: researchedResult.marketResearch?.signals?.length ?? 0,
+          partial: researchedResult.marketResearch?.partial ?? false,
+          providerDiagnostics: researchedResult.marketResearch?.providers
+            ? JSON.stringify(
+                researchedResult.marketResearch.providers.map((provider) => ({
+                  provider: provider.provider,
+                  status: provider.status,
+                  comparableCount: provider.comparableCount,
+                  signalCount: provider.signalCount,
+                  warnings: provider.warnings,
+                  errorCode: provider.error?.code,
+                })),
+              ).slice(0, 2_000)
+            : undefined,
+        },
+      );
+      return researchedResult;
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') throw error;
+      logAnalysisDiagnostic(
+        diagnosticId,
+        'sold_comps_failed',
+        analysisStartedAt,
+        {
+          errorCode:
+            error instanceof ItemAnalysisError ? error.code : undefined,
+          ...marketFunctionDiagnostics,
+          ...appwriteErrorDiagnostics(error),
+        },
+        'warn',
+      );
       const query =
         buildStrictEbaySearchQuery(
           buildStrictMarketProfile(identifiedResult),
@@ -1412,10 +2515,10 @@ export async function analyzeItemPhotos(
           'failed',
           error instanceof ItemAnalysisError
             ? error.code
-            : 'EBAY_COMPS_REQUEST_FAILED',
+            : 'MARKET_RESEARCH_REQUEST_FAILED',
           error instanceof Error
             ? error.message
-            : 'KeepFlip could not research eBay sold comps.',
+            : 'KeepFlip could not research marketplace sold comps.',
           query,
         ),
       };

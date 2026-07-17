@@ -85,9 +85,9 @@ const ANALYSIS_STAGES: Record<
     stage: 'Protecting your photos',
   },
   researching_comps: {
-    detail: 'Searching completed eBay sales that match the identified item.',
+    detail: 'Searching completed marketplace sales that match the identified item.',
     progress: 0.94,
-    stage: 'Researching sold comps',
+    stage: 'Researching the sold market',
   },
 };
 
@@ -96,7 +96,7 @@ const ANALYSIS_STEP_LABELS = [
   'Upload private photo evidence',
   'Identify and evaluate the item',
   'Remove temporary cloud copies',
-  'Research completed eBay sales',
+  'Research completed marketplace sales',
 ] as const;
 
 function analysisProgressState(stage: ItemAnalysisStage): ItemAnalysisState {
@@ -114,6 +114,14 @@ function analysisProgressState(stage: ItemAnalysisStage): ItemAnalysisState {
   }));
 
   return { ...ANALYSIS_STAGES[stage], status: 'analyzing', steps };
+}
+
+function analysisDiagnosticId(error: unknown) {
+  if (!(error instanceof ItemAnalysisError)) return null;
+  const details = error.details;
+  if (!details || typeof details !== 'object' || Array.isArray(details)) return null;
+  const value = (details as { diagnosticId?: unknown }).diagnosticId;
+  return typeof value === 'string' && value ? value : null;
 }
 
 function selectMultiScanEvidence(photos: MultiScanPhoto[]) {
@@ -686,11 +694,12 @@ export default function ScannerScreen() {
         return;
       }
 
+      const diagnosticId = analysisDiagnosticId(error);
       setAnalysisState({
         code: error instanceof ItemAnalysisError ? error.code : 'ANALYSIS_FAILED',
         message:
           error instanceof Error
-            ? error.message
+            ? `${error.message}${diagnosticId ? ` Diagnostic reference: ${diagnosticId}.` : ''}`
             : 'KeepFlip could not complete this analysis. Please try again.',
         status: 'error',
       });

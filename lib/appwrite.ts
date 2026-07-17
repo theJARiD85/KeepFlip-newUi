@@ -45,6 +45,7 @@ export type AppwriteCoreConfiguration = {
 export type AppwriteConfiguration = AppwriteCoreConfiguration & {
   scanBucketId: string;
   analyzeFunctionId: string;
+  marketResearchFunctionId?: string;
   ebaySoldCompsFunctionId?: string;
 };
 
@@ -121,6 +122,16 @@ export const APPWRITE = {
   googleLensVisualSearchFunctionId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_GOOGLE_LENS_FUNCTION_ID,
   ),
+  marketResearchFunctionId:
+    publicEnvironmentValue(
+      process.env.EXPO_PUBLIC_APPWRITE_MARKET_COMPS_FUNCTION_ID,
+    ) ||
+    publicEnvironmentValue(
+      process.env.EXPO_PUBLIC_APPWRITE_MARKET_RESEARCH_FUNCTION_ID,
+    ) ||
+    publicEnvironmentValue(
+      process.env.EXPO_PUBLIC_APPWRITE_EBAY_SOLD_COMPS_FUNCTION_ID,
+    ),
   ebaySoldCompsFunctionId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_EBAY_SOLD_COMPS_FUNCTION_ID,
   ),
@@ -175,9 +186,18 @@ export function getAppwriteConfigurationStatus(): AppwriteConfigurationStatus {
   const analyzeFunctionId = cleanEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_ANALYZE_FUNCTION_ID,
   );
+  const configuredMarketResearchFunctionId =
+    cleanEnvironmentValue(
+      process.env.EXPO_PUBLIC_APPWRITE_MARKET_COMPS_FUNCTION_ID,
+    ) ??
+    cleanEnvironmentValue(
+      process.env.EXPO_PUBLIC_APPWRITE_MARKET_RESEARCH_FUNCTION_ID,
+    );
   const ebaySoldCompsFunctionId = cleanEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_EBAY_SOLD_COMPS_FUNCTION_ID,
   );
+  const marketResearchFunctionId =
+    configuredMarketResearchFunctionId ?? ebaySoldCompsFunctionId;
 
   const missingKeys: AppwriteRequiredEnvironmentVariable[] = [
     ...coreStatus.missingKeys,
@@ -197,6 +217,7 @@ export function getAppwriteConfigurationStatus(): AppwriteConfigurationStatus {
       ...coreStatus.configuration,
       scanBucketId,
       analyzeFunctionId,
+      ...(marketResearchFunctionId ? { marketResearchFunctionId } : {}),
       ...(ebaySoldCompsFunctionId ? { ebaySoldCompsFunctionId } : {}),
     },
     missingKeys: [],

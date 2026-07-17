@@ -806,7 +806,8 @@ export function formatItemIdentificationGuidance(
 
 export async function identifyItemWithAI(
   fileIds: string[],
-  notes = ""
+  notes = "",
+  diagnosticId?: string,
 ): Promise<KeepFlipIdentification> {
   if (!fileIds.length) {
     throw new Error("Upload at least one item photo before identifying it.");
@@ -817,6 +818,7 @@ export async function identifyItemWithAI(
     body: JSON.stringify({
       fileIds,
       notes: buildIdentificationNotes(notes),
+      ...(diagnosticId ? { diagnosticId } : {}),
     }),
     async: false,
     method: ExecutionMethod.POST,

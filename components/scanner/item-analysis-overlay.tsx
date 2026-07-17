@@ -82,7 +82,7 @@ export type AnalysisValuation = {
   low: number;
   median: number;
   query?: string;
-  source?: 'ebay' | 'supplied';
+  source?: 'ebay' | 'multi_market' | 'supplied';
 };
 
 export type ItemAnalysisResult = {
@@ -146,7 +146,7 @@ type ItemAnalysisOverlayProps = {
 const DEFAULT_ANALYSIS_STEPS: AnalysisStep[] = [
   { label: 'Reading visual and label evidence', status: 'active' },
   { label: 'Resolving exact item identity', status: 'pending' },
-  { label: 'Reviewing condition and supplied comparables', status: 'pending' },
+  { label: 'Reviewing condition and sold-market evidence', status: 'pending' },
   { label: 'Calibrating valuation range', status: 'pending' },
 ];
 
@@ -171,6 +171,25 @@ function formatMoney(value: number, currency = 'USD') {
   } catch {
     return `$${Math.round(value).toLocaleString('en-US')}`;
   }
+}
+
+function valuationSectionTitle(source?: AnalysisValuation['source']) {
+  return source === 'ebay' || source === 'multi_market'
+    ? 'SOLD MARKET VALUATION'
+    : 'SUPPLIED PRICE STATISTICS';
+}
+
+function valuationComparableLabel(
+  source: AnalysisValuation['source'],
+  count: number,
+) {
+  if (source === 'multi_market') {
+    return `confirmed sold comp${count === 1 ? '' : 's'}`;
+  }
+  if (source === 'ebay') {
+    return `completed sold comp${count === 1 ? '' : 's'}`;
+  }
+  return `supplied price sample${count === 1 ? '' : 's'}`;
 }
 
 function StateHeader({ accent, eyebrow, title }: { accent: string; eyebrow: string; title: string }) {
@@ -681,8 +700,10 @@ function ValuationCard({ valuation }: { valuation: AnalysisValuation }) {
           {valuation.comparableCount != null ? (
             <Text selectable style={styles.valuationBasisStrong}>
               {valuation.comparableCount}{' '}
-              {valuation.source === 'ebay' ? 'eBay sold comp' : 'supplied price sample'}
-              {valuation.comparableCount === 1 ? '' : 's'}
+              {valuationComparableLabel(
+                valuation.source,
+                valuation.comparableCount,
+              )}
             </Text>
           ) : null}
           {valuation.query ? (
@@ -755,7 +776,7 @@ function ResultState({ result }: { result: ItemAnalysisResult }) {
       </Section>
 
       {result.valuation ? (
-        <Section title={result.valuation.source === 'ebay' ? 'EBAY SOLD VALUATION' : 'SUPPLIED PRICE STATISTICS'}>
+        <Section title={valuationSectionTitle(result.valuation.source)}>
           <ValuationCard valuation={result.valuation} />
         </Section>
       ) : null}

@@ -3,9 +3,19 @@ import {
   ExecutionMethod,
   functions,
 } from "../lib/appwrite";
+import type {
+  ItemMarketProviderStatus,
+  ItemMarketSignal,
+  MarketEvidenceClass,
+  MarketProviderId,
+  MarketProviderRunStatus,
+} from "../types/item-analysis";
 import type { ItemValuationSignals } from "./itemAiService";
 
 export type EbaySoldComp = {
+  provider: MarketProviderId;
+  marketplace: string;
+  evidenceClass: MarketEvidenceClass;
   title: string;
   soldPrice: number;
   shipping: number;
@@ -15,6 +25,9 @@ export type EbaySoldComp = {
   soldDate: string | null;
   imageUrl: string | null;
   listingUrl: string | null;
+  sourceListingId?: string | null;
+  soldDateConfidence?: "exact" | "approximate" | "unknown";
+  shippingSemantics?: "included" | "separate" | "unknown";
 };
 
 export type MarketValueConfidence = "high" | "medium" | "low";
@@ -35,6 +48,7 @@ export type EbaySoldCompsResult = {
   phase: "completed";
   purpose: "sold_comps";
   runId: string;
+  jobId?: string;
   query: string;
   comps: EbaySoldComp[];
   summary: {
@@ -46,6 +60,9 @@ export type EbaySoldCompsResult = {
     currency: string;
   };
   searchedAt: string;
+  partial?: boolean;
+  providers?: ItemMarketProviderStatus[];
+  signals?: ItemMarketSignal[];
   valuation?: MarketValueQuality;
 };
 
@@ -75,14 +92,9 @@ export type EbayBarcodeLookupResult = {
 
 type JsonRecord = Record<string, unknown>;
 
-type StartedSearch = {
-  runId: string;
-  query: string;
-  barcode?: string;
-};
-
 const POLL_INTERVAL_MS = 2500;
 const MAX_WAIT_MS = 180000;
+const MAX_VALUATION_COMPS_PER_PROVIDER = 8;
 
 function sleep(milliseconds: number) {
   return new Promise<void>((resolve) => {
@@ -116,6 +128,66 @@ function asNumber(value: unknown): number {
   }
 
   return 0;
+}
+
+function optionalNumber(value: unknown): number | null {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(
+      value.replace(/,/g, "").replace(/[^\d.-]/g, "")
+    );
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+}
+
+const PROVIDER_ALIASES: Record<string, MarketProviderId> = {
+  ebay: "ebay",
+  mercari: "mercari",
+  poshmark: "poshmark",
+  grailed: "grailed",
+  stockx: "stockx",
+  pricecharting: "pricecharting",
+  price_charting: "pricecharting",
+  tcgplayer: "tcgplayer",
+  tcg_player: "tcgplayer",
+  reverb: "reverb",
+  discogs: "discogs",
+  bricklink: "bricklink",
+  yahoo_japan: "yahoo_japan",
+  yahoojapan: "yahoo_japan",
+  yahoo: "yahoo_japan",
+};
+
+const EVIDENCE_CLASSES = new Set<MarketEvidenceClass>([
+  "confirmed_transaction",
+  "platform_last_sale",
+  "platform_sold_aggregate",
+  "sold_status_last_ask",
+  "inferred_sale",
+  "active_ask",
+]);
+
+function normalizeProviderId(
+  value: unknown,
+  fallback: MarketProviderId = "unknown"
+) {
+  const key = asString(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return PROVIDER_ALIASES[key] ?? fallback;
+}
+
+function normalizeEvidenceClass(value: unknown) {
+  const normalized = asString(value)
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_") as MarketEvidenceClass;
+  return EVIDENCE_CLASSES.has(normalized) ? normalized : null;
 }
 
 function normalizeBarcode(value: string) {
@@ -177,8 +249,25 @@ function toNullableString(value: unknown): string | null {
   return normalized || null;
 }
 
-function normalizeComp(value: unknown): EbaySoldComp {
+function normalizeComp(
+  value: unknown,
+  allowLegacyEbayEvidence: boolean
+): EbaySoldComp {
   const source = asRecord(value) || {};
+
+  const explicitProvider =
+    source.provider ?? source.marketplace ?? source.source;
+  const provider = normalizeProviderId(
+    explicitProvider,
+    allowLegacyEbayEvidence ? "ebay" : "unknown"
+  );
+  const evidenceClass =
+    normalizeEvidenceClass(
+      source.evidenceClass ?? source.evidence_class
+    ) ??
+    (allowLegacyEbayEvidence && provider === "ebay"
+      ? "confirmed_transaction"
+      : "inferred_sale");
 
   const soldPrice = asNumber(
     source.soldPrice ??
@@ -196,7 +285,19 @@ function normalizeComp(value: unknown): EbaySoldComp {
 
   const totalPrice = asNumber(source.totalPrice) || soldPrice + shipping;
 
+  const soldDateConfidence = asString(
+    source.soldDateConfidence
+  );
+  const shippingSemantics = asString(
+    source.shippingSemantics
+  );
+
   return {
+    provider,
+    marketplace:
+      asString(source.marketplace) ||
+      (provider === "unknown" ? "unknown" : provider),
+    evidenceClass,
     title:
       asString(
         source.title ??
@@ -228,6 +329,22 @@ function normalizeComp(value: unknown): EbaySoldComp {
         source.itemUrl ??
         source.link
     ),
+    sourceListingId: toNullableString(
+      source.sourceListingId ??
+        source.listingId ??
+        source.itemId ??
+        source.id
+    ),
+    soldDateConfidence: ["exact", "approximate", "unknown"].includes(
+      soldDateConfidence
+    )
+      ? (soldDateConfidence as "exact" | "approximate" | "unknown")
+      : "unknown",
+    shippingSemantics: ["included", "separate", "unknown"].includes(
+      shippingSemantics
+    )
+      ? (shippingSemantics as "included" | "separate" | "unknown")
+      : "unknown",
   };
 }
 
@@ -239,21 +356,257 @@ function readComps(payload: JsonRecord): EbaySoldComp[] {
     (Array.isArray(payload.results) && payload.results) ||
     [];
 
+  const hasGenericContract =
+    Boolean(asString(payload.jobId)) ||
+    Array.isArray(payload.providers) ||
+    Boolean(asRecord(payload.providers)) ||
+    Array.isArray(payload.signals);
+  const allowLegacyEbayEvidence = !hasGenericContract;
+
   return rawComps
-    .map(normalizeComp)
+    .map((comp) => normalizeComp(comp, allowLegacyEbayEvidence))
     .filter((comp) => comp.title !== "Untitled eBay item");
 }
 
+function normalizeProviderStatus(
+  value: unknown,
+  providerKey?: string
+): ItemMarketProviderStatus {
+  const record = asRecord(value) || {};
+  const rawStatus = asString(
+    asRecord(value) ? record.status : value
+  )
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+  const aliases: Record<string, MarketProviderRunStatus> = {
+    ready: "queued",
+    queued: "queued",
+    pending: "pending",
+    started: "running",
+    running: "running",
+    success: "completed",
+    succeeded: "completed",
+    completed: "completed",
+    partial: "partial",
+    skipped: "skipped",
+    unavailable: "unavailable",
+    failed: "failed",
+    error: "failed",
+    timed_out: "timed_out",
+    timeout: "timed_out",
+  };
+  const rawError = asRecord(record.error);
+  const errorMessage =
+    asString(rawError?.message) ||
+    asString(record.error) ||
+    asString(record.message);
+  const result: ItemMarketProviderStatus = {
+    provider: normalizeProviderId(
+      record.provider ?? record.id ?? providerKey
+    ),
+    status: aliases[rawStatus] ?? "pending",
+    query: toNullableString(record.query),
+    comparableCount: Math.max(
+      0,
+      Math.trunc(
+        asNumber(
+          record.comparableCount ?? record.compCount ?? record.count
+        )
+      )
+    ),
+    signalCount: Math.max(
+      0,
+      Math.trunc(asNumber(record.signalCount))
+    ),
+    searchedAt: toNullableString(
+      record.searchedAt ?? record.completedAt
+    ),
+    warnings: [
+      ...(Array.isArray(record.warnings)
+        ? record.warnings.filter(
+            (warning): warning is string => typeof warning === "string"
+          )
+        : []),
+      ...(asString(record.warning) ? [asString(record.warning)] : []),
+    ],
+  };
+
+  if (errorMessage) {
+    result.error = {
+      code:
+        asString(rawError?.code ?? record.errorCode) ||
+        "PROVIDER_FAILED",
+      message: errorMessage,
+    };
+  }
+
+  return result;
+}
+
+function readProviderStatuses(payload: JsonRecord) {
+  const value =
+    payload.providers ??
+    payload.providerResults ??
+    payload.providerStatuses;
+  if (Array.isArray(value)) {
+    return value.map((entry) => normalizeProviderStatus(entry));
+  }
+  const record = asRecord(value);
+  return record
+    ? Object.entries(record).map(([provider, entry]) =>
+        normalizeProviderStatus(entry, provider)
+      )
+    : [];
+}
+
+function normalizeMarketSignal(value: unknown): ItemMarketSignal | null {
+  const source = asRecord(value);
+  if (!source) return null;
+  const explicitEvidenceClass = normalizeEvidenceClass(
+    source.evidenceClass ?? source.evidence_class
+  );
+  const type =
+    asString(source.type ?? source.kind ?? source.signal) ||
+    explicitEvidenceClass ||
+    "market_signal";
+  const normalizedType = type.toLowerCase();
+  const defaultEvidenceClass: MarketEvidenceClass =
+    normalizedType.includes("last_sale")
+      ? "platform_last_sale"
+      : normalizedType.includes("active") || normalizedType.includes("ask")
+        ? "active_ask"
+        : "platform_sold_aggregate";
+
+  return {
+    provider: normalizeProviderId(
+      source.provider ?? source.marketplace
+    ),
+    evidenceClass:
+      explicitEvidenceClass ?? defaultEvidenceClass,
+    type,
+    label: toNullableString(
+      source.label ?? source.title ?? source.name
+    ),
+    currency:
+      toNullableString(source.currency)?.toUpperCase() ?? null,
+    value: optionalNumber(
+      source.value ?? source.amount ?? source.lastSale
+    ),
+    low: optionalNumber(source.low ?? source.min ?? source.priceLow),
+    median: optionalNumber(source.median ?? source.medianPrice),
+    high: optionalNumber(source.high ?? source.max ?? source.priceHigh),
+    sampleSize: optionalNumber(source.sampleSize ?? source.count),
+    observedAt: toNullableString(
+      source.observedAt ?? source.searchedAt ?? source.scrapedAt
+    ),
+    sourceUrl: toNullableString(
+      source.sourceUrl ?? source.listingUrl ?? source.url
+    ),
+    note: toNullableString(source.note ?? source.description),
+  };
+}
+
+function readMarketSignals(payload: JsonRecord) {
+  const value = payload.signals ?? payload.marketSignals;
+  if (!Array.isArray(value)) return [];
+  return value
+    .map(normalizeMarketSignal)
+    .filter((signal): signal is ItemMarketSignal => signal !== null);
+}
+
+function preferredCurrency(comps: EbaySoldComp[]) {
+  if (comps.some((comp) => comp.currency.toUpperCase() === "USD")) {
+    return "USD";
+  }
+
+  const counts = new Map<string, number>();
+  for (const comp of comps) {
+    const currency = comp.currency.toUpperCase();
+    counts.set(currency, (counts.get(currency) ?? 0) + 1);
+  }
+  return [...counts.entries()].sort(
+    (left, right) => right[1] - left[1]
+  )[0]?.[0];
+}
+
+function capProviderContribution(comps: EbaySoldComp[]) {
+  const groups = new Map<MarketProviderId, EbaySoldComp[]>();
+  for (const comp of comps) {
+    const group = groups.get(comp.provider) ?? [];
+    group.push(comp);
+    groups.set(comp.provider, group);
+  }
+
+  return [...groups.values()].flatMap((providerComps) =>
+    providerComps
+      .map((comp, index) => ({ comp, index }))
+      .sort((left, right) => {
+        const leftTime = Date.parse(left.comp.soldDate ?? "");
+        const rightTime = Date.parse(right.comp.soldDate ?? "");
+        if (Number.isFinite(leftTime) && Number.isFinite(rightTime)) {
+          return rightTime - leftTime;
+        }
+        return left.index - right.index;
+      })
+      .slice(0, MAX_VALUATION_COMPS_PER_PROVIDER)
+      .map(({ comp }) => comp)
+  );
+}
+
+function rawMedian(values: number[]) {
+  if (!values.length) return 0;
+  const sorted = [...values].sort((left, right) => left - right);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2
+    ? sorted[middle]
+    : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+function removeMadOutliers(comps: EbaySoldComp[]) {
+  if (comps.length < 5) return comps;
+  const prices = comps.map((comp) => comp.totalPrice);
+  const center = rawMedian(prices);
+  const mad = rawMedian(
+    prices.map((price) => Math.abs(price - center))
+  );
+
+  if (!Number.isFinite(mad) || mad <= 0) return comps;
+  return comps.filter(
+    (comp) =>
+      (0.67448975 * Math.abs(comp.totalPrice - center)) / mad <= 3.5
+  );
+}
+
+function selectValuationComps(comps: EbaySoldComp[]) {
+  const confirmed = comps.filter(
+    (comp) =>
+      comp.evidenceClass === "confirmed_transaction" &&
+      Number.isFinite(comp.totalPrice) &&
+      comp.totalPrice > 0
+  );
+  const currency = preferredCurrency(confirmed);
+  if (!currency) return [];
+
+  return removeMadOutliers(
+    capProviderContribution(
+      confirmed.filter(
+        (comp) => comp.currency.toUpperCase() === currency
+      )
+    )
+  );
+}
+
 function makeSummary(comps: EbaySoldComp[]) {
-  const values = comps
+  const selected = selectValuationComps(comps);
+  const values = selected
     .map((comp) => comp.totalPrice)
     .filter((value) => Number.isFinite(value) && value > 0);
 
   const currency =
-    comps.find((comp) => comp.currency)?.currency || "USD";
+    selected.find((comp) => comp.currency)?.currency || "USD";
 
   return {
-    count: comps.length,
+    count: selected.length,
     low:
       values.length >= 5
         ? percentile(values, 0.2)
@@ -290,8 +643,12 @@ function looksRunning(payload: JsonRecord) {
   const status = asString(payload.status).toUpperCase();
 
   return (
+    phase === "queued" ||
+    phase === "pending" ||
     phase === "started" ||
     phase === "running" ||
+    status === "QUEUED" ||
+    status === "PENDING" ||
     status === "READY" ||
     status === "RUNNING"
   );
@@ -308,8 +665,17 @@ function getPayloadError(payload: JsonRecord) {
 async function callEbayFunction(
   body: JsonRecord
 ): Promise<JsonRecord> {
+  const functionId =
+    APPWRITE.marketResearchFunctionId ||
+    APPWRITE.ebaySoldCompsFunctionId;
+  if (!functionId) {
+    throw new Error(
+      "Configure EXPO_PUBLIC_APPWRITE_MARKET_COMPS_FUNCTION_ID (or the legacy EXPO_PUBLIC_APPWRITE_EBAY_SOLD_COMPS_FUNCTION_ID) before researching sold comps."
+    );
+  }
+
   const execution = await functions.createExecution({
-    functionId: APPWRITE.ebaySoldCompsFunctionId,
+    functionId,
     async: false,
     method: ExecutionMethod.POST,
     headers: {
@@ -322,7 +688,7 @@ async function callEbayFunction(
 
   if (!rawBody) {
     throw new Error(
-      "eBay research completed without a response. Check the Appwrite Function execution log."
+      "Market research completed without a response. Check the Appwrite Function execution log."
     );
   }
 
@@ -332,7 +698,7 @@ async function callEbayFunction(
     parsed = JSON.parse(rawBody);
   } catch {
     throw new Error(
-      `eBay research returned invalid JSON: ${rawBody.slice(0, 250)}`
+      `Market research returned invalid JSON: ${rawBody.slice(0, 250)}`
     );
   }
 
@@ -340,7 +706,7 @@ async function callEbayFunction(
 
   if (!payload) {
     throw new Error(
-      "eBay research returned an unexpected response format."
+      "Market research returned an unexpected response format."
     );
   }
 
@@ -352,7 +718,7 @@ async function callEbayFunction(
   ) {
     throw new Error(
       errorMessage ||
-        "KeepFlip could not complete the eBay search."
+        "KeepFlip could not complete the marketplace search."
     );
   }
 
@@ -388,13 +754,13 @@ async function waitForResult(
     return startedPayload;
   }
 
-  const runId = asString(
-    startedPayload.runId ?? startedPayload.id
-  );
+  let jobId = asString(startedPayload.jobId);
+  let runId = asString(startedPayload.runId ?? startedPayload.id);
+  let jobToken = asString(startedPayload.jobToken);
 
-  if (!runId) {
+  if (!jobId && !runId) {
     throw new Error(
-      "eBay research started but did not return a run ID."
+      "Market research started but did not return a job ID."
     );
   }
 
@@ -406,10 +772,16 @@ async function waitForResult(
     const progress = await callEbayFunction({
       action: "status",
       purpose,
-      runId,
+      ...(jobId ? { jobId } : {}),
+      ...(jobToken ? { jobToken } : {}),
+      ...(runId ? { runId } : {}),
       query,
       barcode,
     });
+
+    jobId = asString(progress.jobId) || jobId;
+    runId = asString(progress.runId ?? progress.id) || runId;
+    jobToken = asString(progress.jobToken) || jobToken;
 
     if (looksCompleted(progress)) {
       return progress;
@@ -434,6 +806,8 @@ function toSoldCompsResult(
   query: string
 ): EbaySoldCompsResult {
   const comps = readComps(payload);
+  const providers = readProviderStatuses(payload);
+  const signals = readMarketSignals(payload);
 
   if (!comps.length) {
     throw new Error(
@@ -441,34 +815,30 @@ function toSoldCompsResult(
     );
   }
 
-  const rawSummary = asRecord(payload.summary);
   const fallbackSummary = makeSummary(comps);
+  const jobId = asString(payload.jobId);
 
   return {
     ok: true,
     phase: "completed",
     purpose: "sold_comps",
     runId: asString(payload.runId ?? payload.id) || "completed",
+    ...(jobId ? { jobId } : {}),
     query: asString(payload.query) || query,
     comps,
-    summary: {
-      count: asNumber(rawSummary?.count) || fallbackSummary.count,
-      low:
-        asNumber(rawSummary?.low) || fallbackSummary.low,
-      median:
-        asNumber(rawSummary?.median) || fallbackSummary.median,
-      average:
-        asNumber(rawSummary?.average) ||
-        fallbackSummary.average,
-      high:
-        asNumber(rawSummary?.high) || fallbackSummary.high,
-      currency:
-        asString(rawSummary?.currency) ||
-        fallbackSummary.currency,
-    },
+    summary: fallbackSummary,
     searchedAt:
       asString(payload.searchedAt) ||
       new Date().toISOString(),
+    partial:
+      payload.partial === true ||
+      providers.some((entry) =>
+        ["failed", "timed_out", "unavailable", "partial"].includes(
+          entry.status
+        )
+      ),
+    providers,
+    signals,
   };
 }
 
@@ -1099,6 +1469,7 @@ function identityMatches(
 }
 
 function isUsableIndividualSale(comp: EbaySoldComp, target: ConditionBucket) {
+  if (comp.evidenceClass !== "confirmed_transaction") return false;
   if (!comp.totalPrice || comp.totalPrice <= 0) return false;
   if (BULK_OR_MULTI_ITEM_PATTERN.test(comp.title)) return false;
 
@@ -1124,22 +1495,6 @@ function dedupeComps(comps: EbaySoldComp[]) {
     seen.add(key);
     return true;
   });
-}
-
-function removePriceOutliers(comps: EbaySoldComp[]) {
-  if (comps.length < 5) return comps;
-
-  const values = comps
-    .map((comp) => comp.totalPrice)
-    .filter((value) => Number.isFinite(value) && value > 0)
-    .sort((left, right) => left - right);
-
-  const middle = median(values);
-  if (!middle) return comps;
-
-  return comps.filter(
-    (comp) => comp.totalPrice >= middle * 0.45 && comp.totalPrice <= middle * 2.2
-  );
 }
 
 function addWarning(warnings: string[], warning: string) {
@@ -1242,7 +1597,7 @@ export function selectStrictEbaySoldComps(
       identityMatches(comp, profile, model, false, plan) &&
       compatibleConditionMatches(targetCondition, comp)
   );
-  const selected = removePriceOutliers(
+  const selected = selectValuationComps(
     dedupeComps(exact.length >= 3 ? exact : [...exact, ...compatible])
   );
 

@@ -69,53 +69,63 @@ function valuationReadiness(result: ItemAnalysisSuccess): ItemAnalysisOverlayRes
   const valuation = result.valuation;
   const market = result.marketResearch;
   const quality = market?.quality;
+  const valuationSource = String(valuation.source ?? 'none');
+  const usesMultiMarketSales = valuationSource === 'multi_market_sold';
+  const usesLegacyEbaySales = valuationSource === 'ebay_sold';
+  const usesSoldMarketData = usesMultiMarketSales || usesLegacyEbaySales;
+  const soldEvidenceLabel = usesMultiMarketSales
+    ? `confirmed marketplace sale${valuation.usedCount === 1 ? '' : 's'}`
+    : `completed marketplace sale${valuation.usedCount === 1 ? '' : 's'}`;
   const qualityDetail = quality
     ? `${titleCase(quality.confidence)} confidence${quality.searchRoute ? ` ${quality.searchRoute.replaceAll('_', ' ')} search` : ''}. ${quality.warnings[0] ?? ''}`.trim()
     : '';
 
   if (market?.status === 'failed' || market?.status === 'unavailable') {
     return {
-      label: market.status === 'failed' ? 'eBay research interrupted' : 'eBay research not configured',
+      label:
+        market.status === 'failed'
+          ? 'Sold-market research interrupted'
+          : 'Sold-market research not configured',
       reason:
         market.error?.message ??
-        'KeepFlip completed the identification but could not retrieve sold comps.',
+        'KeepFlip completed the identification but could not retrieve marketplace sold comps.',
       status: 'not-ready',
     };
   }
 
   if (valuation.status === 'ready') {
-    if (valuation.source === 'ebay_sold') {
+    if (usesSoldMarketData) {
       return {
-        label: 'eBay sold range ready',
-        reason: `${valuation.usedCount} completed eBay sale${valuation.usedCount === 1 ? '' : 's'} remained after identity, condition, currency, duplicate, and outlier filtering${market?.query ? ` for “${market.query}”` : ''}. ${qualityDetail}`.trim(),
+        label: 'Sold-market range ready',
+        reason: `${valuation.usedCount} ${soldEvidenceLabel} remained after identity, condition, currency, duplicate, and outlier filtering${market?.query ? ` for “${market.query}”` : ''}. ${qualityDetail}`.trim(),
         status: 'ready',
       };
     }
     return {
       label: 'Supplied-price range ready',
-      reason: `${valuation.usedCount} caller-supplied prices remained after validation and outlier filtering. Their marketplace provenance has not been independently verified.`,
+      reason: `${valuation.usedCount} caller-supplied prices remained after validation and outlier filtering. Their marketplace provenance has not been independently confirmed.`,
       status: 'ready',
     };
   }
 
   if (valuation.status === 'limited_comps') {
-    if (valuation.source === 'ebay_sold') {
+    if (usesSoldMarketData) {
       return {
-        label: 'Limited eBay market signal',
-        reason: `Only ${valuation.usedCount} matching completed sale${valuation.usedCount === 1 ? '' : 's'} remained after validation. Treat this as an early signal, not a firm list price. ${qualityDetail}`.trim(),
+        label: 'Limited sold-market signal',
+        reason: `Only ${valuation.usedCount} matching ${soldEvidenceLabel} remained after validation. Treat this as an early signal, not a firm list price. ${qualityDetail}`.trim(),
         status: 'limited',
       };
     }
     return {
       label: 'Early market signal',
-      reason: `Only ${valuation.usedCount} caller-supplied price${valuation.usedCount === 1 ? '' : 's'} passed validation. Add verified sold comps before pricing the item.`,
+      reason: `Only ${valuation.usedCount} caller-supplied price${valuation.usedCount === 1 ? '' : 's'} passed validation. Add confirmed sold comps before pricing the item.`,
       status: 'limited',
     };
   }
 
-  if (valuation.source === 'ebay_sold' && market?.status === 'completed') {
+  if (usesSoldMarketData && market?.status === 'completed') {
     return {
-      label: 'No matching eBay sales found',
+      label: 'No matching sold-market transactions found',
       reason: market.query
         ? `The completed-listing search for “${market.query}” did not return enough usable sold comps to calculate a range.`
         : 'The completed-listing search did not return enough usable sold comps to calculate a range.',
@@ -126,7 +136,7 @@ function valuationReadiness(result: ItemAnalysisSuccess): ItemAnalysisOverlayRes
   return {
     label: 'Market comps needed',
     reason:
-      'KeepFlip identified the item without inventing a price. Add verified sold comparables to calculate a defensible range.',
+      'KeepFlip identified the item without inventing a price. Add confirmed sold comparables to calculate a defensible range.',
     status: 'not-ready',
   };
 }
@@ -135,6 +145,7 @@ export function toItemAnalysisResult(result: ItemAnalysisSuccess): ItemAnalysisO
   const identity = result.analysis.identification;
   const confidence = result.analysis.confidence;
   const valuation = result.valuation;
+  const valuationSource = String(valuation.source ?? 'none');
   const canShowValuation =
     valuation.p20 != null && valuation.median != null && valuation.p80 != null;
 
@@ -172,7 +183,12 @@ export function toItemAnalysisResult(result: ItemAnalysisSuccess): ItemAnalysisO
           low: valuation.p20!,
           median: valuation.median!,
           query: result.marketResearch?.query ?? undefined,
-          source: valuation.source === 'ebay_sold' ? 'ebay' : 'supplied',
+          source:
+            valuationSource === 'multi_market_sold'
+              ? 'multi_market'
+              : valuationSource === 'ebay_sold'
+                ? 'ebay'
+                : 'supplied',
         }
       : undefined,
     valuationReadiness: valuationReadiness(result),

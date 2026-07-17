@@ -112,10 +112,76 @@ export type ItemValuation = {
   p20: number | null;
   p80: number | null;
   methodology: 'median_linear_p20_p80_mad_outlier_filter_v1' | 'none';
-  source?: 'caller_supplied' | 'ebay_sold' | 'none';
+  source?: 'caller_supplied' | 'ebay_sold' | 'multi_market_sold' | 'none';
+};
+
+export type MarketProviderId =
+  | 'ebay'
+  | 'mercari'
+  | 'poshmark'
+  | 'grailed'
+  | 'stockx'
+  | 'pricecharting'
+  | 'tcgplayer'
+  | 'reverb'
+  | 'discogs'
+  | 'bricklink'
+  | 'yahoo_japan'
+  | 'unknown';
+
+export type MarketEvidenceClass =
+  | 'confirmed_transaction'
+  | 'platform_last_sale'
+  | 'platform_sold_aggregate'
+  | 'sold_status_last_ask'
+  | 'inferred_sale'
+  | 'active_ask';
+
+export type MarketProviderRunStatus =
+  | 'queued'
+  | 'pending'
+  | 'running'
+  | 'completed'
+  | 'partial'
+  | 'skipped'
+  | 'unavailable'
+  | 'failed'
+  | 'timed_out';
+
+export type ItemMarketProviderStatus = {
+  provider: MarketProviderId;
+  status: MarketProviderRunStatus;
+  query: string | null;
+  comparableCount: number;
+  signalCount: number;
+  searchedAt: string | null;
+  warnings: string[];
+  error?: {
+    code: string;
+    message: string;
+  };
+};
+
+export type ItemMarketSignal = {
+  provider: MarketProviderId;
+  evidenceClass: MarketEvidenceClass;
+  type: string;
+  label: string | null;
+  currency: string | null;
+  value: number | null;
+  low: number | null;
+  median: number | null;
+  high: number | null;
+  sampleSize: number | null;
+  observedAt: string | null;
+  sourceUrl: string | null;
+  note?: string | null;
 };
 
 export type ItemSoldComparable = {
+  provider: MarketProviderId;
+  marketplace: string;
+  evidenceClass: MarketEvidenceClass;
   title: string;
   soldPrice: number;
   shipping: number;
@@ -125,15 +191,22 @@ export type ItemSoldComparable = {
   soldDate: string | null;
   imageUrl: string | null;
   listingUrl: string | null;
+  sourceListingId?: string | null;
+  soldDateConfidence?: 'exact' | 'approximate' | 'unknown';
+  shippingSemantics?: 'included' | 'separate' | 'unknown';
 };
 
 export type ItemMarketResearch = {
-  provider: 'ebay';
+  provider: 'ebay' | 'multi_market';
   status: 'completed' | 'unavailable' | 'failed';
+  jobId?: string;
+  partial?: boolean;
   query: string | null;
   searchedAt: string | null;
   comparableCount: number;
   comps: ItemSoldComparable[];
+  providers?: ItemMarketProviderStatus[];
+  signals?: ItemMarketSignal[];
   quality?: {
     confidence: 'high' | 'medium' | 'low';
     exactComparableCount: number;
@@ -208,6 +281,7 @@ export type AnalyzeItemPhotosOptions = {
 
 export type ItemAnalysisFunctionRequest = {
   bucketId: string;
+  diagnosticId: string;
   fileIds: string[];
   ocr?: ItemAnalysisOcrInput;
   userNotes?: string;

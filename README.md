@@ -21,8 +21,11 @@ private photo uploads, and evidence-backed AI identification.
 
 4. Follow the Function and private Storage checklist in
    [`backend/functions/analyze-item/README.md`](backend/functions/analyze-item/README.md),
-   then configure sold-comp research using
+   then configure asynchronous multi-market sold-comp research using
    [`backend/functions/ebay-sold-comps/README.md`](backend/functions/ebay-sold-comps/README.md).
+   New clients use `EXPO_PUBLIC_APPWRITE_MARKET_COMPS_FUNCTION_ID`; the legacy
+   eBay Function ID remains an upgrade fallback. Apify credentials, actor
+   settings, spend limits, and the job-signing secret belong only in Appwrite.
 
 5. Start the native development build:
 

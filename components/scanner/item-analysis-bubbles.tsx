@@ -23,7 +23,10 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import type { ItemAnalysisState } from '@/components/scanner/item-analysis-overlay';
+import type {
+  AnalysisValuation,
+  ItemAnalysisState,
+} from '@/components/scanner/item-analysis-overlay';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 
@@ -75,6 +78,25 @@ function formatMoney(value: number, currency = 'USD') {
   } catch {
     return `$${value.toFixed(value >= 100 ? 0 : 2)}`;
   }
+}
+
+function valuationHeading(source?: AnalysisValuation['source']) {
+  return source === 'ebay' || source === 'multi_market'
+    ? 'SOLD MARKET VALUATION'
+    : 'VALUATION RANGE';
+}
+
+function valuationComparableSummary(
+  source: AnalysisValuation['source'],
+  count: number,
+) {
+  if (source === 'multi_market') {
+    return `${count} confirmed sold comp${count === 1 ? '' : 's'} used`;
+  }
+  if (source === 'ebay') {
+    return `${count} completed sold comp${count === 1 ? '' : 's'} used`;
+  }
+  return `${count} supplied price sample${count === 1 ? '' : 's'} used`;
 }
 
 function GlassBubble({
@@ -324,7 +346,7 @@ function ResultBubbles({ state }: { state: Extract<ItemAnalysisState, { status: 
       {result.valuation ? (
         <GlassBubble accent={theme.colors.goldBright} delay={80} style={styles.valuationBubble}>
           <BubbleEyebrow accent={theme.colors.goldBright}>
-            {result.valuation.source === 'ebay' ? 'EBAY SOLD VALUATION' : 'VALUATION RANGE'}
+            {valuationHeading(result.valuation.source)}
           </BubbleEyebrow>
           <View style={styles.valuationRow}>
             {[
@@ -349,8 +371,10 @@ function ResultBubbles({ state }: { state: Extract<ItemAnalysisState, { status: 
           </View>
           {result.valuation.comparableCount != null ? (
             <Text selectable style={styles.valuationFootnote}>
-              {result.valuation.comparableCount} verified sold comp
-              {result.valuation.comparableCount === 1 ? '' : 's'} used
+              {valuationComparableSummary(
+                result.valuation.source,
+                result.valuation.comparableCount,
+              )}
             </Text>
           ) : null}
         </GlassBubble>
