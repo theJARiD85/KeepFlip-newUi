@@ -4,14 +4,37 @@ import { ScannerAtmosphere } from '@/components/scanner/scanner-atmosphere';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 
 export default function ScannerScreen() {
+  const {
+    contentWidth,
+    isCompactHeight,
+    moderateScale,
+    pageGutter,
+    responsiveFont,
+    verticalScale,
+  } = useResponsiveLayout();
+
   return (
     <KeepFlipBackground>
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={styles.content}>
-        <View style={styles.preview}>
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingHorizontal: pageGutter,
+            paddingVertical: verticalScale(isCompactHeight ? 24 : 40, 0.55),
+          },
+        ]}>
+        <View
+          style={[
+            styles.preview,
+            {
+              width: contentWidth,
+              minHeight: verticalScale(isCompactHeight ? 480 : 560, 0.45),
+            },
+          ]}>
           <View pointerEvents="none" style={styles.colorWash} />
           <ScannerAtmosphere phase="scanning" />
 
@@ -26,15 +49,30 @@ export default function ScannerScreen() {
           <View style={[styles.corner, styles.bottomRight]} />
           <View pointerEvents="none" style={styles.scanLine} />
 
-          <View style={styles.card}>
+          <View style={[
+              styles.card,
+              {
+                gap: moderateScale(20, 0.5),
+                padding: moderateScale(28, 0.5),
+              },
+            ]}>
             <View style={styles.iconRing}>
               <IconSymbol name="camera.fill" size={30} color={theme.colors.goldBright} />
             </View>
 
             <View style={styles.copy}>
-              <Text selectable style={styles.eyebrow}>KEEPFLIP VISION</Text>
-              <Text selectable style={styles.title}>Live scanner on mobile</Text>
-              <Text selectable style={styles.body}>
+              <Text selectable style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>
+                KEEPFLIP VISION
+              </Text>
+              <Text selectable style={[styles.title, { fontSize: responsiveFont(25) }]}>
+                Live scanner on mobile
+              </Text>
+              <Text
+                selectable
+                style={[
+                  styles.body,
+                  { fontSize: responsiveFont(14), lineHeight: responsiveFont(21) },
+                ]}>
                 Camera scanning runs in the KeepFlip iOS or Android development build. The web
                 preview keeps the scanner interface available without requesting camera access.
               </Text>
