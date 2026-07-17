@@ -150,7 +150,6 @@ const PROVIDER_ALIASES: Record<string, MarketProviderId> = {
   mercari: "mercari",
   poshmark: "poshmark",
   grailed: "grailed",
-  stockx: "stockx",
   pricecharting: "pricecharting",
   price_charting: "pricecharting",
   tcgplayer: "tcgplayer",

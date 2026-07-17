@@ -120,7 +120,6 @@ export type MarketProviderId =
   | 'mercari'
   | 'poshmark'
   | 'grailed'
-  | 'stockx'
   | 'pricecharting'
   | 'tcgplayer'
   | 'reverb'

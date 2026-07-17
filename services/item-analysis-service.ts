@@ -462,7 +462,6 @@ const MARKET_PROVIDER_ALIASES: Record<string, MarketProviderId> = {
   mercari: 'mercari',
   poshmark: 'poshmark',
   grailed: 'grailed',
-  stockx: 'stockx',
   pricecharting: 'pricecharting',
   price_charting: 'pricecharting',
   tcgplayer: 'tcgplayer',
@@ -971,19 +970,10 @@ function groundedProviderHints(result: ItemAnalysisSuccess) {
         ['photo_text', 'google_vision', 'user_notes'].includes(entry.source),
     )
     .map((entry) => entry.value);
-  const stockXProductSlugs: string[] = [];
   const priceChartingProducts: string[] = [];
   let brickLinkItemId: string | null = null;
 
   for (const value of groundedValues) {
-    for (const match of value.matchAll(
-      /https?:\/\/(?:www\.)?stockx\.com\/([^\s?#]+)/gi,
-    )) {
-      const slug = match[1]?.replace(/^\/+|\/+$/g, '').split('/')[0];
-      if (slug && !stockXProductSlugs.includes(slug)) {
-        stockXProductSlugs.push(slug.slice(0, 180));
-      }
-    }
 
     for (const match of value.matchAll(
       /https?:\/\/(?:www\.)?pricecharting\.com\/(?:game|product)\/[^\s<>"]+/gi,
@@ -1003,9 +993,6 @@ function groundedProviderHints(result: ItemAnalysisSuccess) {
   }
 
   const providerHints = {
-    ...(stockXProductSlugs.length
-      ? { stockXProductSlugs: stockXProductSlugs.slice(0, 3) }
-      : {}),
     ...(priceChartingProducts.length
       ? { priceChartingProducts: priceChartingProducts.slice(0, 4) }
       : {}),

@@ -1298,42 +1298,7 @@ export default function ScannerScreen() {
           importantForAccessibility={isScannerOverlayOpen ? 'no-hide-descendants' : 'auto'}
           pointerEvents={isScannerOverlayOpen ? 'none' : 'auto'}
           style={[styles.bottomPanel, { width: controlDockWidth }, toolbarAnimatedStyle]}>
-          <ScannerToolCarousel
-            badges={{
-              single: singlePhotoUri ? 1 : 0,
-              batch: batchScanPhotos.length,
-              upload: uploadedPhotos.length,
-            }}
-            disabled={isCapturing || isPickingPhoto || isMenuPresented}
-            onActivate={(tool) => void handleToolActivate(tool)}
-            onSelect={handleToolSelect}
-            selectedTool={selectedTool}
-          />
-        </Animated.View>
-      </Animated.View>
-      {analysisOverlay}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: theme.colors.background },
-  content: { flex: 1, paddingHorizontal: 22 },
-  centeredState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  cameraScrim: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    experimental_backgroundImage: `
-      radial-gradient(circle at 72% 44%, rgba(88, 223, 232, 0.09) 0%, transparent 34%),
-      radial-gradient(circle at 24% 62%, rgba(141, 114, 255, 0.10) 0%, transparent 38%),
+gba(141, 114, 255, 0.10) 0%, transparent 38%),
       linear-gradient(to bottom, rgba(2, 2, 4, 0.94) 0%, rgba(3, 3, 7, 0.12) 44%, rgba(6, 4, 10, 0.90) 100%)
     `,
   },
