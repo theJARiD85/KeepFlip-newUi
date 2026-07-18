@@ -39,7 +39,10 @@ jobs:
           if [ -f modules/keepflip-local-vision/expo-module.config.json ]; then
             echo "On-device fast analysis is already applied."
           else
-            base64 --decode scripts/on-device-fast-analysis.patch.gz.b64 | gzip --decompress > /tmp/on-device-fast-analysis.patch
+            cat scripts/on-device-fast-analysis-parts/part-* > /tmp/on-device-fast-analysis.patch.gz.b64
+            echo "51487ffc6e810dc40c3035c25ef13d2d5779e4581b19385b30d3d2eda1f68217  /tmp/on-device-fast-analysis.patch.gz.b64" | sha256sum --check
+            base64 --decode /tmp/on-device-fast-analysis.patch.gz.b64 | gzip --decompress > /tmp/on-device-fast-analysis.patch
+            echo "0a2d5c44dce42e512bdb7143b4d956dafdbd67009ad5fe09bbac92a9674cf3da  /tmp/on-device-fast-analysis.patch" | sha256sum --check
             git apply --check /tmp/on-device-fast-analysis.patch
             git apply /tmp/on-device-fast-analysis.patch
           fi
