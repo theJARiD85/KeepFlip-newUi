@@ -118,19 +118,22 @@ internal object KeepFlipAppodealNativeCoordinator : NativeCallbacks {
       .forEach { view -> view.notifyLoadFailed("native_load_failed") }
   }
 
-  override fun onNativeShown(nativeAd: NativeAd) {
+  override fun onNativeShown(nativeAd: NativeAd?) {
+    nativeAd ?: return
     snapshotViews()
       .filter { view -> view.hasAd(nativeAd) }
       .forEach { view -> view.notifyShown() }
   }
 
-  override fun onNativeShowFailed(nativeAd: NativeAd) {
+  override fun onNativeShowFailed(nativeAd: NativeAd?) {
+    nativeAd ?: return
     snapshotViews()
       .filter { view -> view.hasAd(nativeAd) }
       .forEach { view -> view.notifyShowFailed() }
   }
 
-  override fun onNativeClicked(nativeAd: NativeAd) {
+  override fun onNativeClicked(nativeAd: NativeAd?) {
+    nativeAd ?: return
     snapshotViews()
       .filter { view -> view.hasAd(nativeAd) }
       .forEach { view -> view.notifyClicked() }
