@@ -31,6 +31,7 @@
       "favicon": "./assets/images/icon (2).png"
     },
     "plugins": [
+      "./plugins/with-appodeal-repository",
       "expo-router",
       [
         "expo-image-picker",
