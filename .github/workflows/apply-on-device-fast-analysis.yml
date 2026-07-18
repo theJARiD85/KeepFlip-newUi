@@ -62,10 +62,10 @@ jobs:
       - name: Generate Android project
         run: npx expo prebuild --platform android --no-install
 
-      - name: Compile Android Kotlin
+      - name: Compile local vision Kotlin
         id: compile
         continue-on-error: true
-        run: cd android && ./gradlew :app:compileDebugKotlin --no-daemon > ../android-compile-output.txt 2>&1
+        run: cd android && ./gradlew :keepflip-local-vision:compileDebugKotlin --no-daemon > ../android-compile-output.txt 2>&1
 
       - name: Upload Android compiler output
         if: always()
