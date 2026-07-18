@@ -1,0 +1,75 @@
+name: Apply on-device fast analysis
+
+on:
+  push:
+    branches:
+      - on-device-fast-analysis
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: on-device-fast-analysis
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Apply app changes
+        run: |
+          if [ -f modules/keepflip-local-vision/expo-module.config.json ]; then
+            echo "On-device fast analysis is already applied."
+          else
+            base64 --decode scripts/on-device-fast-analysis.patch.gz.b64 | gzip --decompress > /tmp/on-device-fast-analysis.patch
+            git apply --check /tmp/on-device-fast-analysis.patch
+            git apply /tmp/on-device-fast-analysis.patch
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Expo lint
+        run: npm run lint
+
+      - name: Run TypeScript checks
+        run: npx tsc --noEmit
+
+      - name: Verify Expo module autolinking
+        run: npx expo-modules-autolinking search --platform android | grep keepflip-local-vision
+
+      - name: Generate Android project
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Compile Android Kotlin
+        run: cd android && ./gradlew :app:compileDebugKotlin --no-daemon
+
+      - name: Commit validated app code
+        run: |
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "No app changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add services/item-analysis-service.ts services/local-vision-service.types.ts services/local-vision-heuristics.ts services/local-vision-service.android.ts services/local-vision-service.ts modules/keepflip-local-vision
+          git commit -m "Add on-device AI fast analysis"
+          git push origin on-device-fast-analysis
