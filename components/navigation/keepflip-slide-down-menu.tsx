@@ -1,7 +1,7 @@
-import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
 import { type Href, usePathname, useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   BackHandler,
   Pressable,
@@ -48,15 +48,38 @@ export function KeepFlipSlideDownMenu() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
-  const { closeMenu, isMenuOpen, isMenuPresented, toggleMenu } = useKeepFlipMenu();
+  const {
+    closeMenu,
+    isMenuOpen,
+    toggleMenu,
+  } = useKeepFlipMenu();
   const progress = useSharedValue(0);
+  const [isMenuMounted, setIsMenuMounted] = useState(isMenuOpen);
   const panelHeight = Math.min(548, Math.max(430, height - insets.bottom - 84));
 
   useEffect(() => {
-    progress.value = withTiming(isMenuOpen ? 1 : 0, {
-      duration: MENU_CLOSE_DURATION_MS,
-      easing: isMenuOpen ? Easing.out(Easing.cubic) : Easing.inOut(Easing.cubic),
-    });
+    let unmountTimer: ReturnType<typeof setTimeout> | undefined;
+
+    if (isMenuOpen) {
+      setIsMenuMounted(true);
+      progress.value = withTiming(1, {
+        duration: MENU_CLOSE_DURATION_MS,
+        easing: Easing.out(Easing.cubic),
+      });
+    } else {
+      progress.value = withTiming(0, {
+        duration: MENU_CLOSE_DURATION_MS,
+        easing: Easing.inOut(Easing.cubic),
+      });
+
+      unmountTimer = setTimeout(() => {
+        setIsMenuMounted(false);
+      }, MENU_CLOSE_DURATION_MS);
+    }
+
+    return () => {
+      if (unmountTimer != null) clearTimeout(unmountTimer);
+    };
   }, [isMenuOpen, progress]);
 
   useEffect(() => {
@@ -78,11 +101,6 @@ export function KeepFlipSlideDownMenu() {
     transform: [{ translateY: -(panelHeight + 24) * (1 - progress.value) }],
   }));
 
-  const triggerStyle = useAnimatedStyle(() => ({
-    opacity: 1 - progress.value,
-    transform: [{ scale: 1 - progress.value * 0.08 }],
-  }));
-
   const handleToggle = () => {
     hapticSelection();
     toggleMenu();
@@ -102,25 +120,35 @@ export function KeepFlipSlideDownMenu() {
   };
 
   return (
-    <View pointerEvents="box-none" style={styles.overlayRoot}>
-      <Animated.View
-        pointerEvents={isMenuPresented ? 'auto' : 'none'}
-        style={[styles.backdrop, backdropStyle]}>
-        <Pressable
-          accessibilityLabel="Close navigation menu"
-          accessibilityRole="button"
-          disabled={!isMenuOpen}
-          onPress={closeMenu}
-          style={StyleSheet.absoluteFill}
-        />
-      </Animated.View>
+    <View
+      collapsable={false}
+      pointerEvents="box-none"
+      style={styles.overlayRoot}
+    >
+      {isMenuMounted ? (
+        <>
+          <Animated.View
+            pointerEvents={isMenuOpen ? 'auto' : 'none'}
+            style={[styles.backdrop, backdropStyle]}>
+            <Pressable
+              accessibilityLabel="Close navigation menu"
+              accessibilityRole="button"
+              disabled={!isMenuOpen}
+              onPress={closeMenu}
+              style={StyleSheet.absoluteFill}
+            />
+          </Animated.View>
 
-      <Animated.View
-        accessibilityElementsHidden={!isMenuOpen}
-        accessibilityViewIsModal={isMenuOpen}
-        importantForAccessibility={isMenuOpen ? 'yes' : 'no-hide-descendants'}
-        pointerEvents={isMenuPresented ? 'auto' : 'none'}
-        style={[styles.panel, { height: panelHeight, paddingTop: insets.top + 14 }, panelStyle]}>
+          <Animated.View
+            accessibilityElementsHidden={!isMenuOpen}
+            accessibilityViewIsModal={isMenuOpen}
+            importantForAccessibility={isMenuOpen ? 'yes' : 'no-hide-descendants'}
+            pointerEvents={isMenuOpen ? 'auto' : 'none'}
+            style={[
+              styles.panel,
+              { height: panelHeight, paddingTop: insets.top + 14 },
+              panelStyle,
+            ]}>
         <ScrollView
           bounces={false}
           contentContainerStyle={styles.panelContent}
@@ -211,36 +239,52 @@ export function KeepFlipSlideDownMenu() {
             </View>
             <Text style={styles.systemStatusCode}>KF//01</Text>
           </View>
-        </ScrollView>
-      </Animated.View>
+            </ScrollView>
+          </Animated.View>
+        </>
+      ) : null}
 
-      <Animated.View
-        pointerEvents={isMenuPresented ? 'none' : 'auto'}
-        style={[styles.triggerWrap, { top: insets.top + 12 }, triggerStyle]}>
+      <View
+        pointerEvents={isMenuOpen ? 'none' : 'auto'}
+        style={[
+          styles.triggerWrap,
+          {
+            top: insets.top + 12,
+            opacity: isMenuOpen ? 0 : 1,
+            transform: [{ scale: isMenuOpen ? 0.92 : 1 }],
+          },
+        ]}>
         <Pressable
           accessibilityLabel="Open navigation menu"
           accessibilityRole="button"
+          disabled={isMenuOpen}
+          hitSlop={10}
           onPress={handleToggle}
           style={({ pressed }) => [styles.trigger, pressed && styles.controlPressed]}>
           <IconSymbol name="line.3.horizontal" size={22} color={theme.colors.goldBright} />
           <View pointerEvents="none" style={styles.triggerStatusDot} />
         </Pressable>
-      </Animated.View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   overlayRoot: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 100,
+    ...StyleSheet.absoluteFill,
+    zIndex: 10000,
+    elevation: 10000,
   },
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
+    zIndex: 10000,
+    elevation: 10000,
     backgroundColor: 'rgba(1, 1, 2, 0.68)',
   },
   panel: {
     position: 'absolute',
+    zIndex: 10001,
+    elevation: 10001,
     top: 0,
     right: 0,
     left: 0,
@@ -447,6 +491,8 @@ const styles = StyleSheet.create({
   triggerWrap: {
     position: 'absolute',
     right: 20,
+    zIndex: 10002,
+    elevation: 10002,
   },
   trigger: {
     width: 48,
