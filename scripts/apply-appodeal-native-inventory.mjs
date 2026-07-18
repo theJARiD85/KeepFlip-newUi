@@ -27,7 +27,7 @@ replaceOnce(
 
 replaceOnce(
   `}\n\nexport default function InventoryScreen() {`,
-  `}\n\ntype InventoryFeedRow =\n  | { id: string; item: InventoryItem; kind: 'item' }\n  | { id: string; kind: 'native-ad' };\n\nfunction buildInventoryFeed(items: InventoryItem[]): InventoryFeedRow[] {\n  return items.flatMap((item, index) => {\n    const rows: InventoryFeedRow[] = [\n      { id: item.id, item, kind: 'item' },\n    ];\n\n    if ((index + 1) % 5 === 0) {\n      rows.push({\n        id: \\`inventory-native-ad-\\${Math.floor((index + 1) / 5)}\\`,\n        kind: 'native-ad',\n      });\n    }\n\n    return rows;\n  });\n}\n\nexport default function InventoryScreen() {`,
+  `}\n\ntype InventoryFeedRow =\n  | { id: string; item: InventoryItem; kind: 'item' }\n  | { id: string; kind: 'native-ad' };\n\nfunction buildInventoryFeed(items: InventoryItem[]): InventoryFeedRow[] {\n  return items.flatMap((item, index) => {\n    const rows: InventoryFeedRow[] = [\n      { id: item.id, item, kind: 'item' },\n    ];\n\n    if ((index + 1) % 5 === 0) {\n      rows.push({\n        id: 'inventory-native-ad-' + Math.floor((index + 1) / 5),\n        kind: 'native-ad',\n      });\n    }\n\n    return rows;\n  });\n}\n\nexport default function InventoryScreen() {`,
   'inventory feed row helpers',
 );
 
