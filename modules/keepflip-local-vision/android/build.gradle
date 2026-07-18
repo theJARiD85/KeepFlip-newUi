@@ -1,0 +1,25 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.keepfliplocalvision'
+version = '0.1.0'
+
+android {
+  namespace "expo.modules.keepfliplocalvision"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+  lintOptions {
+    abortOnError false
+  }
+}
+
+dependencies {
+  // Bundled models are available immediately and do not require a first-run download.
+  implementation 'com.google.mlkit:text-recognition:16.0.1'
+  implementation 'com.google.mlkit:image-labeling:17.0.9'
+  implementation 'com.google.mlkit:barcode-scanning:17.3.0'
+}

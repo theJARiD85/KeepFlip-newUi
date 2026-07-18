@@ -29,6 +29,10 @@ import {
   type KeepFlipIdentification,
 } from '@/services/itemAiService';
 import {
+  analyzePhotosLocally,
+  type LocalVisionSignals,
+} from '@/services/local-vision-service';
+import {
   ITEM_ANALYSIS_CONTRACT_VERSION,
   ITEM_ANALYSIS_VERSION,
   type AnalyzeItemPhotosInput,
@@ -63,17 +67,22 @@ export const MAX_ANALYSIS_PHOTOS = 4;
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
 const MAX_TOTAL_PHOTO_BYTES = 24 * 1024 * 1024;
 const MAX_SOURCE_PHOTO_BYTES = 32 * 1024 * 1024;
-const TARGET_PREPARED_PHOTO_BYTES = 1_500_000;
-const TARGET_TOTAL_PREPARED_PHOTO_BYTES = 4_000_000;
+const TARGET_PREPARED_PHOTO_BYTES = 850_000;
+const TARGET_TOTAL_PREPARED_PHOTO_BYTES = 2_500_000;
 const MAX_USER_NOTES_CHARACTERS = 4_000;
 const MAX_OCR_CHARACTERS = 12_000;
 const MAX_COMPARABLES = 100;
 const MAX_COMPARABLE_PRICE = 10_000_000;
 const MAX_FUNCTION_ERROR_CHARACTERS = 16_384;
 const MAX_FUNCTION_RESPONSE_CHARACTERS = 1_000_000;
-const EBAY_COMPS_LIMIT = 12;
-const EBAY_POLL_INTERVAL_MS = 1_500;
-const EBAY_RESEARCH_TIMEOUT_MS = 180_000;
+const EBAY_COMPS_LIMIT = 8;
+const EBAY_POLL_INTERVAL_MS = 650;
+const EBAY_RESEARCH_TIMEOUT_MS = 11_000;
+const TOTAL_ANALYSIS_BUDGET_MS = 28_000;
+const LOCAL_VISION_TIMEOUT_MS = 4_500;
+const PRIMARY_ANALYSIS_MAX_MS = 12_000;
+const LEGACY_ANALYSIS_MAX_MS = 6_000;
+const CLEANUP_DELAY_AFTER_PRIMARY_TIMEOUT_MS = 35_000;
 const MAX_VALUATION_COMPS_PER_PROVIDER = 8;
 
 export class ItemAnalysisError extends Error {
@@ -168,6 +177,82 @@ function createAbortError() {
 
 function throwIfAborted(signal?: AbortSignal) {
   if (signal?.aborted) throw createAbortError();
+}
+
+function remainingAnalysisMs(deadlineAt: number) {
+  return Math.max(0, deadlineAt - Date.now());
+}
+
+function withTimeLimit<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  code: string,
+  message: string,
+  signal?: AbortSignal,
+): Promise<T> {
+  throwIfAborted(signal);
+  const boundedTimeout = Math.max(1, Math.floor(timeoutMs));
+  return new Promise<T>((resolve, reject) => {
+    let settled = false;
+    const finish = (callback: () => void) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      signal?.removeEventListener('abort', onAbort);
+      callback();
+    };
+    const onAbort = () => finish(() => reject(createAbortError()));
+    const timeout = setTimeout(
+      () =>
+        finish(() =>
+          reject(
+            new ItemAnalysisError(message, code, {
+              timeoutMs: boundedTimeout,
+            }),
+          ),
+        ),
+      boundedTimeout,
+    );
+    signal?.addEventListener('abort', onAbort, { once: true });
+    promise.then(
+      (value) => finish(() => resolve(value)),
+      (error) => finish(() => reject(error)),
+    );
+  });
+}
+
+function withinAnalysisDeadline<T>(
+  promise: Promise<T>,
+  deadlineAt: number,
+  code: string,
+  message: string,
+  signal?: AbortSignal,
+  maximumMs?: number,
+) {
+  const remaining = remainingAnalysisMs(deadlineAt);
+  const timeoutMs = maximumMs == null ? remaining : Math.min(remaining, maximumMs);
+  return withTimeLimit(promise, timeoutMs, code, message, signal);
+}
+
+async function mapWithConcurrency<T, R>(
+  values: T[],
+  concurrency: number,
+  worker: (value: T, index: number) => Promise<R>,
+) {
+  const results = new Array<R>(values.length);
+  let cursor = 0;
+  const workers = Array.from(
+    { length: Math.min(Math.max(1, concurrency), values.length) },
+    async () => {
+      while (cursor < values.length) {
+        const index = cursor;
+        cursor += 1;
+        results[index] = await worker(values[index], index);
+      }
+    },
+  );
+  await Promise.all(workers);
+  return results;
 }
 
 function reportStage(
@@ -823,15 +908,26 @@ async function executeMarketFunction(
   functionId: string,
   body: Record<string, unknown>,
   signal?: AbortSignal,
+  deadlineAt?: number,
 ) {
   throwIfAborted(signal);
-  const execution = await functions.createExecution({
+  const executionPromise = functions.createExecution({
     functionId,
     body: JSON.stringify(body),
     async: false,
     method: ExecutionMethod.POST,
     headers: { 'content-type': 'application/json' },
   });
+  const execution = deadlineAt
+    ? await withinAnalysisDeadline(
+        executionPromise,
+        deadlineAt,
+        'MARKET_RESEARCH_TIMEOUT',
+        'KeepFlip stopped waiting for market research so the scan could finish on time.',
+        signal,
+        6_000,
+      )
+    : await executionPromise;
   throwIfAborted(signal);
 
   if (
@@ -1199,7 +1295,8 @@ async function researchMarketSoldComps(
   result: ItemAnalysisSuccess,
   functions: Functions,
   functionId: string,
-  signal?: AbortSignal,
+  signal: AbortSignal | undefined,
+  deadlineAt: number,
 ): Promise<ItemAnalysisSuccess> {
   const profile = buildStrictMarketProfile(result);
   const query = buildStrictEbaySearchQuery(profile).slice(0, 180).trim();
@@ -1216,6 +1313,10 @@ async function researchMarketSoldComps(
   }
 
   const startedAt = Date.now();
+  const marketDeadlineAt = Math.min(
+    deadlineAt,
+    startedAt + EBAY_RESEARCH_TIMEOUT_MS,
+  );
   const started = await executeMarketFunction(
     functions,
     functionId,
@@ -1225,9 +1326,11 @@ async function researchMarketSoldComps(
       query,
       limit: EBAY_COMPS_LIMIT,
       targetCurrency: 'USD',
+      fastMode: true,
       profile: buildMarketProviderProfile(result, profile),
     },
     signal,
+    marketDeadlineAt,
   );
 
   const applyCompletedResult = (
@@ -1277,7 +1380,7 @@ async function researchMarketSoldComps(
   let currentJobToken = started.jobToken;
   let currentQuery = started.query;
 
-  while (Date.now() - startedAt < EBAY_RESEARCH_TIMEOUT_MS) {
+  while (Date.now() + EBAY_POLL_INTERVAL_MS < marketDeadlineAt) {
     await waitForDelay(EBAY_POLL_INTERVAL_MS, signal);
     const status = await executeMarketFunction(
       functions,
@@ -1292,6 +1395,7 @@ async function researchMarketSoldComps(
         limit: EBAY_COMPS_LIMIT,
       },
       signal,
+      marketDeadlineAt,
     );
 
     currentJobId = status.jobId ?? currentJobId;
@@ -1335,6 +1439,280 @@ function emptyVisionResult() {
     images: [],
     warnings: [],
   };
+}
+
+function localVisionStrength(confidence: number): ItemAnalysisEvidenceStrength {
+  if (confidence >= 0.75) return 'high';
+  if (confidence >= 0.45) return 'medium';
+  return 'low';
+}
+
+function localVisionFallbackResult(
+  localVision: LocalVisionSignals,
+  imageCount: number,
+): ItemAnalysisSuccess {
+  const candidateTitle = localVision.candidateTitle?.trim() || null;
+  const identified = Boolean(
+    candidateTitle &&
+      (localVision.brand ||
+        localVision.model ||
+        localVision.barcodes.length > 0 ||
+        localVision.confidence >= 0.55),
+  );
+  const barcodeValue =
+    localVision.barcodes[0]?.rawValue ||
+    localVision.barcodes[0]?.displayValue ||
+    null;
+  const evidence = [
+    ...localVision.ocrTexts.slice(0, 6).map((value, index) => ({
+      claim: index === 0 ? 'visible_product_text' : 'visible_text',
+      value,
+      source: 'photo_text' as const,
+      imageIndex: null,
+      strength: localVisionStrength(localVision.confidence),
+      rationale: 'Read locally on the device before the cloud request started.',
+    })),
+    ...localVision.labels.slice(0, 4).map((label) => ({
+      claim: 'on_device_image_label',
+      value: label.text,
+      source: 'photo_visual' as const,
+      imageIndex: null,
+      strength: localVisionStrength(label.confidence),
+      rationale: 'Generated by the bundled on-device image-labeling model.',
+    })),
+    ...(barcodeValue
+      ? [
+          {
+            claim: 'barcode',
+            value: barcodeValue,
+            source: 'photo_text' as const,
+            imageIndex: null,
+            strength: 'high' as const,
+            rationale: 'Decoded locally from the captured image.',
+          },
+        ]
+      : []),
+  ];
+  const title =
+    candidateTitle ||
+    localVision.itemType ||
+    localVision.category ||
+    'Unclear item';
+  const summary = identified
+    ? `${title} identified from on-device text, barcode, and image-label clues.`
+    : 'The on-device scan found some clues, but not enough to identify this item confidently.';
+
+  return {
+    ok: true,
+    contractVersion: ITEM_ANALYSIS_CONTRACT_VERSION,
+    version: `${ITEM_ANALYSIS_VERSION}-on-device-fallback`,
+    status: identified ? 'identified' : 'insufficient_evidence',
+    input: { imageCount, source: 'direct' },
+    analysis: {
+      summary,
+      identification: {
+        itemType: localVision.itemType,
+        category: localVision.category,
+        brand: localVision.brand,
+        model: localVision.model,
+        variant: null,
+        color: null,
+        era: null,
+        serialNumber: null,
+      },
+      condition: {
+        grade: 'unknown',
+        confidence: 0,
+        notes: [
+          'Condition could not be confirmed locally; review the photos before listing.',
+        ],
+      },
+      confidence: {
+        overall: localVision.confidence,
+        itemType: localVision.itemType ? Math.min(0.9, localVision.confidence) : 0,
+        brand: localVision.brand ? Math.min(0.95, localVision.confidence + 0.05) : 0,
+        model: localVision.model ? Math.min(0.92, localVision.confidence) : 0,
+        condition: 0,
+      },
+      evidence,
+      ambiguities: identified
+        ? ["Cloud verification did not finish inside KeepFlip's time budget."]
+        : ['Capture a clear model label, logo, barcode, or full product view.'],
+      suggestedPhotos: identified
+        ? []
+        : [
+            'Photograph the product label or model number.',
+            'Capture the full item with the brand logo visible.',
+          ],
+      valuationSignals: {
+        searchTerms: localVision.searchTerms,
+        category: localVision.category,
+        conditionAdjustment:
+          'No condition adjustment was applied because the local fallback did not grade condition.',
+        positiveFactors: localVision.notes,
+        negativeFactors: localVision.warnings,
+      },
+    },
+    vision: {
+      enabled: localVision.available,
+      succeeded: localVision.available,
+      images: localVision.available
+        ? [
+            {
+              imageIndex: 0,
+              text: localVision.ocrTexts.join('\n').slice(0, 4_000) || null,
+              labels: localVision.labels.map((label) => ({
+                description: label.text,
+                score: label.confidence,
+              })),
+              objects: [],
+            },
+          ]
+        : [],
+      warnings: localVision.warnings,
+    },
+    valuation: emptyMarketValuation(),
+  };
+}
+
+function mergedOcrInput(
+  input: AnalyzeItemPhotosInput['ocr'],
+  localVision: LocalVisionSignals,
+) {
+  const supplied = input === undefined ? [] : Array.isArray(input) ? input : [input];
+  const localText = localVision.ocrTexts.join('\n').trim();
+  const entries = [...supplied, ...(localText ? [localText] : [])]
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .slice(0, MAX_ANALYSIS_PHOTOS);
+
+  let remainingCharacters = MAX_OCR_CHARACTERS;
+  const bounded = entries
+    .map((entry) => {
+      const value = entry.slice(0, remainingCharacters);
+      remainingCharacters -= value.length;
+      return value;
+    })
+    .filter(Boolean);
+  return bounded.length ? bounded : undefined;
+}
+
+function mergedUserNotes(
+  suppliedNotes: string | undefined,
+  localVision: LocalVisionSignals,
+) {
+  const localContext = [
+    localVision.candidateTitle
+      ? `On-device candidate: ${localVision.candidateTitle}`
+      : '',
+    localVision.brand ? `Brand clue: ${localVision.brand}` : '',
+    localVision.model ? `Model clue: ${localVision.model}` : '',
+    localVision.category ? `Category clue: ${localVision.category}` : '',
+    localVision.labels.length
+      ? `Image labels: ${localVision.labels
+          .slice(0, 6)
+          .map((label) => `${label.text} ${Math.round(label.confidence * 100)}%`)
+          .join(', ')}`
+      : '',
+    localVision.barcodes.length
+      ? `Barcode: ${
+          localVision.barcodes[0].rawValue ||
+          localVision.barcodes[0].displayValue
+        }`
+      : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
+  const combined = [suppliedNotes?.trim(), localContext && `[ON-DEVICE AI]\n${localContext}`]
+    .filter(Boolean)
+    .join('\n\n')
+    .slice(0, MAX_USER_NOTES_CHARACTERS);
+  return combined || undefined;
+}
+
+function identityCompatible(
+  localResult: ItemAnalysisSuccess,
+  confirmedResult: ItemAnalysisSuccess,
+) {
+  const local = localResult.analysis.identification;
+  const confirmed = confirmedResult.analysis.identification;
+  if (
+    local.brand &&
+    confirmed.brand &&
+    local.brand.toLowerCase() !== confirmed.brand.toLowerCase()
+  ) {
+    return false;
+  }
+  if (local.model && confirmed.model) {
+    const compactLocal = local.model.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const compactConfirmed = confirmed.model
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '');
+    if (
+      compactLocal &&
+      compactConfirmed &&
+      !compactLocal.includes(compactConfirmed) &&
+      !compactConfirmed.includes(compactLocal)
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function mergeMarketOutcome(
+  identifiedResult: ItemAnalysisSuccess,
+  researchedResult: ItemAnalysisSuccess,
+): ItemAnalysisSuccess {
+  return {
+    ...identifiedResult,
+    valuation:
+      researchedResult.valuation.usedCount > 0
+        ? researchedResult.valuation
+        : identifiedResult.valuation,
+    marketResearch: researchedResult.marketResearch,
+  };
+}
+
+function scheduleAnalysisCleanup({
+  analysisStartedAt,
+  bucketId,
+  delayMs,
+  diagnosticId,
+  preparedPhotoUris,
+  storage,
+  uploadedFileIds,
+}: {
+  analysisStartedAt: number;
+  bucketId: string;
+  delayMs: number;
+  diagnosticId: string;
+  preparedPhotoUris: string[];
+  storage: Storage;
+  uploadedFileIds: string[];
+}) {
+  const cleanup = async () => {
+    if (uploadedFileIds.length > 0) {
+      await deleteUploadedFiles(
+        storage,
+        bucketId,
+        uploadedFileIds,
+        diagnosticId,
+        analysisStartedAt,
+      );
+    }
+    deletePreparedPhotoFiles(
+      preparedPhotoUris,
+      diagnosticId,
+      analysisStartedAt,
+    );
+  };
+
+  if (delayMs > 0) {
+    setTimeout(() => void cleanup(), delayMs);
+  } else {
+    void cleanup();
+  }
 }
 
 function legacyIdentificationResult(
@@ -1693,15 +2071,14 @@ type AnalysisPhotoCompressionAttempt = {
 function analysisPhotoCompressionAttempts(photoCount: number) {
   const primary: AnalysisPhotoCompressionAttempt =
     photoCount <= 1
-      ? { compress: 0.84, maxDimension: 2_048 }
+      ? { compress: 0.78, maxDimension: 1_600 }
       : photoCount === 2
-        ? { compress: 0.82, maxDimension: 1_800 }
-        : { compress: 0.8, maxDimension: 1_600 };
+        ? { compress: 0.74, maxDimension: 1_440 }
+        : { compress: 0.72, maxDimension: 1_280 };
 
   return [
     primary,
-    { compress: 0.68, maxDimension: Math.min(primary.maxDimension, 1_440) },
-    { compress: 0.58, maxDimension: 1_280 },
+    { compress: 0.62, maxDimension: Math.min(primary.maxDimension, 1_080) },
   ];
 }
 
@@ -2137,6 +2514,7 @@ export async function analyzeItemPhotos(
   options: AnalyzeItemPhotosOptions = {},
 ): Promise<ItemAnalysisSuccess> {
   const analysisStartedAt = Date.now();
+  const deadlineAt = analysisStartedAt + TOTAL_ANALYSIS_BUDGET_MS;
   const diagnosticId = createAnalysisDiagnosticId();
   validateInput(input);
   throwIfAborted(options.signal);
@@ -2146,21 +2524,27 @@ export async function analyzeItemPhotos(
   const uploadedFileIds: string[] = [];
   let result: ItemAnalysisSuccess | undefined;
   let primaryError: unknown;
+  let primaryTimedOut = false;
+  let cleanupScheduled = false;
 
-  try {
-    reportStage(options.onStage, 'authenticating');
-    const userId = await ensureAuthenticatedUserId(account, options.signal);
-    logAnalysisDiagnostic(
-      diagnosticId,
-      'authentication_completed',
-      analysisStartedAt,
-      { userRef: fileDiagnosticRef(userId) },
-    );
-    throwIfAborted(options.signal);
-
-    reportStage(options.onStage, 'uploading');
-    const uploadFiles: ReturnType<typeof localUploadFile>[] = [];
-    for (const [photoIndex, photoUri] of input.photoUris.entries()) {
+  reportStage(options.onStage, 'authenticating');
+  const localVisionPromise = analyzePhotosLocally(input.photoUris, {
+    signal: options.signal,
+    timeoutMs: LOCAL_VISION_TIMEOUT_MS,
+  });
+  const authOutcomePromise = withinAnalysisDeadline(
+    ensureAuthenticatedUserId(account, options.signal),
+    deadlineAt,
+    'AUTHENTICATION_TIMEOUT',
+    'KeepFlip could not verify the signed-in session quickly enough.',
+    options.signal,
+    5_500,
+  ).then(
+    (value) => ({ ok: true as const, value }),
+    (error: unknown) => ({ ok: false as const, error }),
+  );
+  const preparationOutcomePromise = withinAnalysisDeadline(
+    mapWithConcurrency(input.photoUris, 2, async (photoUri, photoIndex) => {
       const preparedUri = await prepareAnalysisPhoto(
         photoUri,
         photoIndex,
@@ -2169,10 +2553,102 @@ export async function analyzeItemPhotos(
         analysisStartedAt,
         options.signal,
       );
-      preparedPhotoUris.push(preparedUri);
-      uploadFiles.push(localUploadFile(preparedUri, photoIndex));
-    }
+      preparedPhotoUris[photoIndex] = preparedUri;
+      return preparedUri;
+    }),
+    deadlineAt,
+    'PHOTO_PREPARATION_TIMEOUT',
+    'KeepFlip stopped preparing photos so the scan could finish on time.',
+    options.signal,
+    8_500,
+  ).then(
+    (value) => ({ ok: true as const, value }),
+    (error: unknown) => ({ ok: false as const, error }),
+  );
 
+  const localVision = await localVisionPromise;
+  logAnalysisDiagnostic(
+    diagnosticId,
+    'on_device_vision_completed',
+    analysisStartedAt,
+    {
+      available: localVision.available,
+      elapsedMs: localVision.elapsedMs,
+      ocrClueCount: localVision.ocrTexts.length,
+      labelCount: localVision.labels.length,
+      barcodeCount: localVision.barcodes.length,
+      candidateTitle: localVision.candidateTitle,
+      confidence: localVision.confidence,
+      warnings: localVision.warnings.join(',') || undefined,
+    },
+    localVision.available ? 'info' : 'warn',
+  );
+  const localFallback = localVisionFallbackResult(
+    localVision,
+    input.photoUris.length,
+  );
+
+  const authOutcome = await authOutcomePromise;
+  if (!authOutcome.ok) throw authOutcome.error;
+  const userId = authOutcome.value;
+  logAnalysisDiagnostic(
+    diagnosticId,
+    'authentication_completed',
+    analysisStartedAt,
+    { userRef: fileDiagnosticRef(userId) },
+  );
+
+  const marketResearchFunctionId =
+    configuration.marketResearchFunctionId ??
+    configuration.ebaySoldCompsFunctionId;
+  let preliminaryMarketPromise: Promise<ItemAnalysisSuccess | null> | null = null;
+  if (
+    marketResearchFunctionId &&
+    localFallback.status === 'identified' &&
+    localVision.confidence >= 0.5 &&
+    remainingAnalysisMs(deadlineAt) > 4_000
+  ) {
+    logAnalysisDiagnostic(
+      diagnosticId,
+      'fast_market_research_started_from_local_clues',
+      analysisStartedAt,
+      {
+        query: buildStrictEbaySearchQuery(
+          buildStrictMarketProfile(localFallback),
+        ).slice(0, 180),
+      },
+    );
+    preliminaryMarketPromise = researchMarketSoldComps(
+      localFallback,
+      functions,
+      marketResearchFunctionId,
+      options.signal,
+      deadlineAt,
+    ).catch((error) => {
+      if (error instanceof Error && error.name === 'AbortError') return null;
+      logAnalysisDiagnostic(
+        diagnosticId,
+        'fast_market_research_failed',
+        analysisStartedAt,
+        {
+          errorCode:
+            error instanceof ItemAnalysisError ? error.code : undefined,
+          ...appwriteErrorDiagnostics(error),
+        },
+        'warn',
+      );
+      return null;
+    });
+  }
+
+  try {
+    const preparationOutcome = await preparationOutcomePromise;
+    if (!preparationOutcome.ok) throw preparationOutcome.error;
+
+    reportStage(options.onStage, 'uploading');
+    const uploadFiles = preparationOutcome.value.map((uri, index) =>
+      localUploadFile(uri, index),
+    );
     const totalPhotoBytes = uploadFiles.reduce(
       (total, file) => total + file.size,
       0,
@@ -2199,115 +2675,77 @@ export async function analyzeItemPhotos(
       );
     }
 
-    for (const [photoIndex, file] of uploadFiles.entries()) {
-      throwIfAborted(options.signal);
-      const uploadStartedAt = Date.now();
-      const requestedPermissions = [
-        Permission.read(Role.user(userId)),
-        Permission.update(Role.user(userId)),
-        Permission.delete(Role.user(userId)),
-      ];
-      logAnalysisDiagnostic(
-        diagnosticId,
-        'storage_upload_started',
-        analysisStartedAt,
-        {
-          bucketId: configuration.scanBucketId,
-          photoIndex,
-          photoBytes: file.size,
-          mimeType: file.type,
-        },
-      );
-      const uploaded = await storage.createFile({
-        bucketId: configuration.scanBucketId,
-        fileId: ID.unique(),
-        file,
-        permissions: requestedPermissions,
-      });
-      uploadedFileIds.push(uploaded.$id);
-      const returnedPermissions = Array.isArray(uploaded.$permissions)
-        ? uploaded.$permissions
-        : [];
-      logAnalysisDiagnostic(
-        diagnosticId,
-        'storage_upload_completed',
-        analysisStartedAt,
-        {
-          bucketId: configuration.scanBucketId,
-          photoIndex,
-          fileRef: fileDiagnosticRef(uploaded.$id),
-          uploadElapsedMs: Math.max(0, Date.now() - uploadStartedAt),
-          permissionCount: returnedPermissions.length,
-          hasExpectedUserRead: returnedPermissions.includes(requestedPermissions[0]),
-          chunksUploaded: uploaded.chunksUploaded,
-          chunksTotal: uploaded.chunksTotal,
-        },
-      );
-
-      try {
-        const readbackStartedAt = Date.now();
-        const verified = await storage.getFile({
-          bucketId: configuration.scanBucketId,
-          fileId: uploaded.$id,
-        });
-        if (verified.$id !== uploaded.$id) {
-          throw new Error('Appwrite returned mismatched file metadata.');
-        }
-        logAnalysisDiagnostic(
-          diagnosticId,
-          'storage_readback_completed',
-          analysisStartedAt,
-          {
-            bucketId: configuration.scanBucketId,
-            photoIndex,
-            fileRef: fileDiagnosticRef(uploaded.$id),
-            readbackElapsedMs: Math.max(0, Date.now() - readbackStartedAt),
-            sizeOriginal: verified.sizeOriginal,
-            mimeType: verified.mimeType,
-          },
-        );
-      } catch (error) {
-        logAnalysisDiagnostic(
-          diagnosticId,
-          'storage_readback_failed',
-          analysisStartedAt,
-          {
-            bucketId: configuration.scanBucketId,
-            photoIndex,
-            fileRef: fileDiagnosticRef(uploaded.$id),
-            ...appwriteErrorDiagnostics(error),
-          },
-          'error',
-        );
-        throw new ItemAnalysisError(
-          'KeepFlip uploaded a photo but could not read it back. Enable File Security on the item_images bucket and preserve the user file permissions.',
-          'PHOTO_UPLOAD_NOT_READABLE',
-          {
+    const requestedPermissions = [
+      Permission.read(Role.user(userId)),
+      Permission.update(Role.user(userId)),
+      Permission.delete(Role.user(userId)),
+    ];
+    await withinAnalysisDeadline(
+      Promise.all(
+        uploadFiles.map(async (file, photoIndex) => {
+          throwIfAborted(options.signal);
+          const uploadStartedAt = Date.now();
+          logAnalysisDiagnostic(
             diagnosticId,
-            photoIndex,
+            'storage_upload_started',
+            analysisStartedAt,
+            {
+              bucketId: configuration.scanBucketId,
+              photoIndex,
+              photoBytes: file.size,
+              mimeType: file.type,
+            },
+          );
+          const uploaded = await storage.createFile({
             bucketId: configuration.scanBucketId,
-            statusCode:
-              error instanceof AppwriteException ? error.code : undefined,
-          },
-          { cause: error },
-        );
-      }
-      throwIfAborted(options.signal);
-    }
+            fileId: ID.unique(),
+            file,
+            permissions: requestedPermissions,
+          });
+          uploadedFileIds[photoIndex] = uploaded.$id;
+          const returnedPermissions = Array.isArray(uploaded.$permissions)
+            ? uploaded.$permissions
+            : [];
+          logAnalysisDiagnostic(
+            diagnosticId,
+            'storage_upload_completed',
+            analysisStartedAt,
+            {
+              bucketId: configuration.scanBucketId,
+              photoIndex,
+              fileRef: fileDiagnosticRef(uploaded.$id),
+              uploadElapsedMs: Math.max(0, Date.now() - uploadStartedAt),
+              permissionCount: returnedPermissions.length,
+              hasExpectedUserRead: returnedPermissions.includes(
+                requestedPermissions[0],
+              ),
+              chunksUploaded: uploaded.chunksUploaded,
+              chunksTotal: uploaded.chunksTotal,
+            },
+          );
+          return uploaded.$id;
+        }),
+      ),
+      deadlineAt,
+      'PHOTO_UPLOAD_TIMEOUT',
+      'KeepFlip stopped uploading photos so the scan could finish on time.',
+      options.signal,
+      7_000,
+    );
 
     const request: ItemAnalysisFunctionRequest = {
       bucketId: configuration.scanBucketId,
       diagnosticId,
-      fileIds: uploadedFileIds,
-      ...(input.ocr === undefined ? {} : { ocr: input.ocr }),
-      ...(input.userNotes === undefined
-        ? {}
-        : { userNotes: input.userNotes }),
+      fileIds: uploadedFileIds.filter(Boolean),
+      ...(mergedOcrInput(input.ocr, localVision)
+        ? { ocr: mergedOcrInput(input.ocr, localVision) }
+        : {}),
+      ...(mergedUserNotes(input.userNotes, localVision)
+        ? { userNotes: mergedUserNotes(input.userNotes, localVision) }
+        : {}),
       ...(input.comps === undefined
         ? {}
         : {
-            // Valuation consumes only numeric sold prices and currency. Do not
-            // send unused listing metadata or URLs to the analysis Function.
             comps: input.comps.map(({ price, currency }) => ({
               price,
               ...(currency === undefined ? {} : { currency }),
@@ -2315,218 +2753,271 @@ export async function analyzeItemPhotos(
           }),
     };
 
-    reportStage(options.onStage, 'analyzing');
-    try {
-      result = await executePrimaryAnalysis(
-        functions,
-        configuration.analyzeFunctionId,
-        request,
-        analysisStartedAt,
-        options.signal,
-      );
-    } catch (primaryAnalysisError) {
-      if (!shouldTryLegacyItemAi(primaryAnalysisError)) {
-        throw primaryAnalysisError;
-      }
+    const reserveForMarketMs = preliminaryMarketPromise ? 1_500 : 7_000;
+    const primaryBudgetMs = Math.min(
+      PRIMARY_ANALYSIS_MAX_MS,
+      Math.max(1, remainingAnalysisMs(deadlineAt) - reserveForMarketMs),
+    );
 
+    if (primaryBudgetMs >= 1_500) {
+      reportStage(options.onStage, 'analyzing');
       try {
-        const legacyIdentification = await identifyItemWithAI(
-          uploadedFileIds,
-          input.userNotes,
-          diagnosticId,
+        result = await withTimeLimit(
+          executePrimaryAnalysis(
+            functions,
+            configuration.analyzeFunctionId,
+            request,
+            analysisStartedAt,
+            options.signal,
+          ),
+          primaryBudgetMs,
+          'PRIMARY_ANALYSIS_BUDGET_EXCEEDED',
+          'Cloud verification did not finish inside KeepFlip\'s fast analysis budget.',
+          options.signal,
         );
-        throwIfAborted(options.signal);
-        result = legacyIdentificationResult(
-          legacyIdentification,
-          uploadedFileIds.length,
-        );
-      } catch (legacyError) {
-        throwIfAborted(options.signal);
-        const guidance = getItemIdentificationGuidance(legacyError);
-        if (guidance) {
-          result = legacyGuidanceResult(
-            guidance,
-            uploadedFileIds.length,
-          );
+      } catch (primaryAnalysisError) {
+        primaryError = primaryAnalysisError;
+        primaryTimedOut =
+          primaryAnalysisError instanceof ItemAnalysisError &&
+          primaryAnalysisError.code === 'PRIMARY_ANALYSIS_BUDGET_EXCEEDED';
+
+        if (localFallback.status === 'identified') {
+          result = localFallback;
+        } else if (
+          shouldTryLegacyItemAi(primaryAnalysisError) &&
+          remainingAnalysisMs(deadlineAt) > 2_500
+        ) {
+          try {
+            const legacyIdentification = await withinAnalysisDeadline(
+              identifyItemWithAI(
+                uploadedFileIds.filter(Boolean),
+                mergedUserNotes(input.userNotes, localVision),
+                diagnosticId,
+              ),
+              deadlineAt,
+              'LEGACY_ANALYSIS_TIMEOUT',
+              'KeepFlip stopped the backup cloud analysis so the scan could finish on time.',
+              options.signal,
+              LEGACY_ANALYSIS_MAX_MS,
+            );
+            result = legacyIdentificationResult(
+              legacyIdentification,
+              uploadedFileIds.filter(Boolean).length,
+            );
+          } catch (legacyError) {
+            const guidance = getItemIdentificationGuidance(legacyError);
+            result = guidance
+              ? legacyGuidanceResult(
+                  guidance,
+                  uploadedFileIds.filter(Boolean).length,
+                )
+              : localFallback;
+          }
         } else {
-          throw primaryAnalysisError;
+          result = localFallback;
         }
       }
+    } else {
+      primaryTimedOut = true;
+      primaryError = new ItemAnalysisError(
+        'Cloud verification was skipped to preserve time for the market estimate.',
+        'PRIMARY_ANALYSIS_BUDGET_EXCEEDED',
+      );
+      result = localFallback;
     }
   } catch (error) {
     primaryError = error;
+    result = localFallback;
   } finally {
-    if (uploadedFileIds.length > 0) {
-      reportStage(options.onStage, 'cleaning');
-      await deleteUploadedFiles(
-        storage,
-        configuration.scanBucketId,
-        uploadedFileIds,
-        diagnosticId,
-        analysisStartedAt,
-      );
-    }
-    deletePreparedPhotoFiles(
-      preparedPhotoUris,
-      diagnosticId,
+    scheduleAnalysisCleanup({
       analysisStartedAt,
-    );
+      bucketId: configuration.scanBucketId,
+      delayMs: primaryTimedOut
+        ? CLEANUP_DELAY_AFTER_PRIMARY_TIMEOUT_MS
+        : 0,
+      diagnosticId,
+      preparedPhotoUris: preparedPhotoUris.filter(Boolean),
+      storage,
+      uploadedFileIds: uploadedFileIds.filter(Boolean),
+    });
+    cleanupScheduled = true;
+  }
+
+  if (!cleanupScheduled) {
+    scheduleAnalysisCleanup({
+      analysisStartedAt,
+      bucketId: configuration.scanBucketId,
+      delayMs: 0,
+      diagnosticId,
+      preparedPhotoUris: preparedPhotoUris.filter(Boolean),
+      storage,
+      uploadedFileIds: uploadedFileIds.filter(Boolean),
+    });
   }
 
   if (primaryError) {
     logAnalysisDiagnostic(
       diagnosticId,
-      'analysis_failed',
+      'cloud_analysis_fell_back',
       analysisStartedAt,
       {
+        fallbackStatus: result?.status,
         errorCode:
           primaryError instanceof ItemAnalysisError
             ? primaryError.code
             : undefined,
         ...appwriteErrorDiagnostics(primaryError),
       },
-      'error',
-    );
-    if (
-      primaryError instanceof AppwriteSetupError ||
-      primaryError instanceof ItemAnalysisError ||
-      (primaryError instanceof Error && primaryError.name === 'AbortError')
-    ) {
-      throw primaryError;
-    }
-
-    throw new ItemAnalysisError(
-      'KeepFlip could not reach the analysis service. Check your connection and try again.',
-      'ANALYSIS_REQUEST_FAILED',
-      {
-        diagnosticId,
-        ...appwriteErrorDiagnostics(primaryError),
-      },
-      { cause: primaryError },
+      'warn',
     );
   }
 
-  if (result) {
-    logAnalysisDiagnostic(
-      diagnosticId,
-      'identification_completed',
-      analysisStartedAt,
-      {
-        status: result.status,
-        evidenceCount: result.analysis.evidence.length,
-        imageCount: result.input.imageCount,
-      },
-    );
-    const identifiedResult: ItemAnalysisSuccess = {
-      ...result,
-      valuation: {
-        ...result.valuation,
-        source: result.valuation.usedCount > 0 ? 'caller_supplied' : 'none',
-      },
-    };
-    const marketResearchFunctionId =
-      configuration.marketResearchFunctionId ??
-      configuration.ebaySoldCompsFunctionId;
-    if (!marketResearchFunctionId) {
-      logAnalysisDiagnostic(
-        diagnosticId,
-        'analysis_completed_without_comps',
-        analysisStartedAt,
-        { reason: 'market_research_function_not_configured' },
-        'warn',
-      );
-      return {
-        ...identifiedResult,
-        marketResearch: marketResearchFailure(
-          'unavailable',
-          'MARKET_RESEARCH_NOT_CONFIGURED',
-          'Add EXPO_PUBLIC_APPWRITE_MARKET_COMPS_FUNCTION_ID (or the legacy EXPO_PUBLIC_APPWRITE_EBAY_SOLD_COMPS_FUNCTION_ID) to enable sold-comp valuation.',
-          buildStrictEbaySearchQuery(
-            buildStrictMarketProfile(identifiedResult),
-          ) || null,
-        ),
-      };
-    }
+  const resolvedResult = result ?? localFallback;
+  logAnalysisDiagnostic(
+    diagnosticId,
+    'identification_completed',
+    analysisStartedAt,
+    {
+      status: resolvedResult.status,
+      evidenceCount: resolvedResult.analysis.evidence.length,
+      imageCount: resolvedResult.input.imageCount,
+      usedOnDeviceFallback: resolvedResult.version.includes('on-device-fallback'),
+    },
+  );
+  const identifiedResult: ItemAnalysisSuccess = {
+    ...resolvedResult,
+    valuation: {
+      ...resolvedResult.valuation,
+      source: resolvedResult.valuation.usedCount > 0 ? 'caller_supplied' : 'none',
+    },
+  };
 
-    reportStage(options.onStage, 'researching_comps');
-    const marketFunctionDiagnostics = {
-      functionId: marketResearchFunctionId,
-      endpointHost: endpointDiagnosticHost(configuration.endpoint),
-      projectRef: identifierDiagnosticRef(configuration.projectId),
+  if (identifiedResult.status !== 'identified') {
+    return {
+      ...identifiedResult,
+      marketResearch: marketResearchFailure(
+        'unavailable',
+        'IDENTIFICATION_NOT_READY_FOR_COMPS',
+        'KeepFlip needs a clearer product identity before estimating the sold market.',
+        null,
+      ),
     };
-    logAnalysisDiagnostic(
-      diagnosticId,
-      'sold_comps_execution_started',
-      analysisStartedAt,
-      marketFunctionDiagnostics,
-    );
-    try {
-      const researchedResult = await researchMarketSoldComps(
-        identifiedResult,
-        functions,
-        marketResearchFunctionId,
-        options.signal,
-      );
+  }
+
+  if (!marketResearchFunctionId) {
+    return {
+      ...identifiedResult,
+      marketResearch: marketResearchFailure(
+        'unavailable',
+        'MARKET_RESEARCH_NOT_CONFIGURED',
+        'Add the market-comps Function ID to enable sold-market valuation.',
+        buildStrictEbaySearchQuery(
+          buildStrictMarketProfile(identifiedResult),
+        ) || null,
+      ),
+    };
+  }
+
+  reportStage(options.onStage, 'researching_comps');
+  const marketFunctionDiagnostics = {
+    functionId: marketResearchFunctionId,
+    endpointHost: endpointDiagnosticHost(configuration.endpoint),
+    projectRef: identifierDiagnosticRef(configuration.projectId),
+  };
+
+  if (preliminaryMarketPromise) {
+    const preliminary = await preliminaryMarketPromise;
+    if (
+      preliminary?.marketResearch?.status === 'completed' &&
+      identityCompatible(localFallback, identifiedResult)
+    ) {
+      const merged = mergeMarketOutcome(identifiedResult, preliminary);
       logAnalysisDiagnostic(
         diagnosticId,
         'analysis_completed',
         analysisStartedAt,
         {
-          compStatus: researchedResult.marketResearch?.status,
-          compCount: researchedResult.marketResearch?.comps.length,
-          signalCount: researchedResult.marketResearch?.signals?.length ?? 0,
-          partial: researchedResult.marketResearch?.partial ?? false,
-          providerDiagnostics: researchedResult.marketResearch?.providers
-            ? JSON.stringify(
-                researchedResult.marketResearch.providers.map((provider) => ({
-                  provider: provider.provider,
-                  status: provider.status,
-                  comparableCount: provider.comparableCount,
-                  signalCount: provider.signalCount,
-                  warnings: provider.warnings,
-                  errorCode: provider.error?.code,
-                })),
-              ).slice(0, 2_000)
-            : undefined,
+          elapsedMs: Date.now() - analysisStartedAt,
+          compStatus: merged.marketResearch?.status,
+          compCount: merged.marketResearch?.comps.length,
+          fastLane: true,
         },
       );
-      return researchedResult;
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') throw error;
-      logAnalysisDiagnostic(
-        diagnosticId,
-        'sold_comps_failed',
-        analysisStartedAt,
-        {
-          errorCode:
-            error instanceof ItemAnalysisError ? error.code : undefined,
-          ...marketFunctionDiagnostics,
-          ...appwriteErrorDiagnostics(error),
-        },
-        'warn',
-      );
-      const query =
-        buildStrictEbaySearchQuery(
-          buildStrictMarketProfile(identifiedResult),
-        ) || null;
-      return {
-        ...identifiedResult,
-        marketResearch: marketResearchFailure(
-          'failed',
-          error instanceof ItemAnalysisError
-            ? error.code
-            : 'MARKET_RESEARCH_REQUEST_FAILED',
-          error instanceof Error
-            ? error.message
-            : 'KeepFlip could not research marketplace sold comps.',
-          query,
-        ),
-      };
+      return merged;
     }
   }
 
-  throw new ItemAnalysisError(
-    'The analysis service completed without a result.',
-    'EMPTY_ANALYSIS_RESULT',
+  if (remainingAnalysisMs(deadlineAt) < 1_000) {
+    return {
+      ...identifiedResult,
+      marketResearch: marketResearchFailure(
+        'failed',
+        'MARKET_RESEARCH_TIMEOUT',
+        'KeepFlip finished identification but stopped waiting for market comps at the 30-second limit.',
+        buildStrictEbaySearchQuery(
+          buildStrictMarketProfile(identifiedResult),
+        ) || null,
+      ),
+    };
+  }
+
+  logAnalysisDiagnostic(
+    diagnosticId,
+    'sold_comps_execution_started',
+    analysisStartedAt,
+    marketFunctionDiagnostics,
   );
+  try {
+    const researchedResult = await researchMarketSoldComps(
+      identifiedResult,
+      functions,
+      marketResearchFunctionId,
+      options.signal,
+      deadlineAt,
+    );
+    logAnalysisDiagnostic(
+      diagnosticId,
+      'analysis_completed',
+      analysisStartedAt,
+      {
+        elapsedMs: Date.now() - analysisStartedAt,
+        compStatus: researchedResult.marketResearch?.status,
+        compCount: researchedResult.marketResearch?.comps.length,
+        signalCount: researchedResult.marketResearch?.signals?.length ?? 0,
+        partial: researchedResult.marketResearch?.partial ?? false,
+      },
+    );
+    return researchedResult;
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') throw error;
+    logAnalysisDiagnostic(
+      diagnosticId,
+      'sold_comps_failed',
+      analysisStartedAt,
+      {
+        errorCode:
+          error instanceof ItemAnalysisError ? error.code : undefined,
+        ...marketFunctionDiagnostics,
+        ...appwriteErrorDiagnostics(error),
+      },
+      'warn',
+    );
+    const query =
+      buildStrictEbaySearchQuery(
+        buildStrictMarketProfile(identifiedResult),
+      ) || null;
+    return {
+      ...identifiedResult,
+      marketResearch: marketResearchFailure(
+        'failed',
+        error instanceof ItemAnalysisError
+          ? error.code
+          : 'MARKET_RESEARCH_REQUEST_FAILED',
+        error instanceof Error
+          ? error.message
+          : 'KeepFlip could not research marketplace sold comps.',
+        query,
+      ),
+    };
+  }
 }
