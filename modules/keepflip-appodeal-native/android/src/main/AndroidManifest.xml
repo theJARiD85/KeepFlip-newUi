@@ -12,5 +12,9 @@
         tools:node="remove" />
 
     <application
-        android:networkSecurityConfig="@xml/keepflip_appodeal_network_security_config" />
+        android:networkSecurityConfig="@xml/keepflip_appodeal_network_security_config">
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-2625792494063556~2174963113" />
+    </application>
 </manifest>
