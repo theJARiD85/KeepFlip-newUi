@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon (2).png",
     "scheme": "keepflip",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.keepflip.app",
