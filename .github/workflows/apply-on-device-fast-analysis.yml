@@ -1,22 +1,19 @@
-name: Apply on-device fast analysis
+name: Clean on-device fast analysis branch
 
 on:
   push:
     branches:
       - on-device-fast-analysis
-  pull_request:
-    branches:
-      - master
 
 concurrency:
-  group: on-device-fast-analysis
+  group: on-device-fast-analysis-cleanup
   cancel-in-progress: true
 
 permissions:
   contents: write
 
 jobs:
-  apply-and-validate:
+  cleanup:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,73 +23,17 @@ jobs:
           ref: on-device-fast-analysis
           fetch-depth: 0
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Apply app changes
+      - name: Remove generated and temporary files
         run: |
-          if [ -f modules/keepflip-local-vision/expo-module.config.json ]; then
-            echo "On-device fast analysis is already applied."
-          else
-            cat scripts/on-device-fast-analysis-parts/part-* > /tmp/on-device-fast-analysis.patch.gz.b64
-            echo "51487ffc6e810dc40c3035c25ef13d2d5779e4581b19385b30d3d2eda1f68217  /tmp/on-device-fast-analysis.patch.gz.b64" | sha256sum --check
-            base64 --decode /tmp/on-device-fast-analysis.patch.gz.b64 | gzip --decompress > /tmp/on-device-fast-analysis.patch
-            echo "0a2d5c44dce42e512bdb7143b4d956dafdbd67009ad5fe09bbac92a9674cf3da  /tmp/on-device-fast-analysis.patch" | sha256sum --check
-            git apply --check /tmp/on-device-fast-analysis.patch
-            git apply /tmp/on-device-fast-analysis.patch
-          fi
-          sed -i 's/import com.google.mlkit.vision.barcode.Barcode$/import com.google.mlkit.vision.barcode.common.Barcode/' modules/keepflip-local-vision/android/src/main/java/expo/modules/keepfliplocalvision/KeepFlipLocalVisionModule.kt
+          rm -rf modules/keepflip-local-vision/android/build
+          rm -rf scripts/on-device-fast-analysis-parts
+          rm -f scripts/on-device-fast-analysis.patch.gz.b64
+          rm -f .github/workflows/apply-on-device-fast-analysis.yml
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run Expo lint
-        run: npm run lint
-
-      - name: Run TypeScript checks
-        run: npx tsc --noEmit
-
-      - name: Verify Expo module autolinking
-        run: npx expo-modules-autolinking search --platform android | grep keepflip-local-vision
-
-      - name: Generate Android project
-        run: npx expo prebuild --platform android --no-install
-
-      - name: Compile local vision Kotlin
-        id: compile
-        continue-on-error: true
-        run: cd android && ./gradlew :keepflip-local-vision:compileDebugKotlin --no-daemon > ../android-compile-output.txt 2>&1
-
-      - name: Upload Android compiler output
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-compile-output
-          path: android-compile-output.txt
-
-      - name: Enforce Android compilation
-        if: steps.compile.outcome == 'failure'
+      - name: Commit clean source tree
         run: |
-          tail -n 180 android-compile-output.txt
-          exit 1
-
-      - name: Commit validated app code
-        run: |
-          if git diff --quiet && git diff --cached --quiet; then
-            echo "No app changes to commit."
-            exit 0
-          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add services/item-analysis-service.ts services/local-vision-service.types.ts services/local-vision-heuristics.ts services/local-vision-service.android.ts services/local-vision-service.ts modules/keepflip-local-vision
-          git commit -m "Add on-device AI fast analysis"
+          git add -A
+          git commit -m "Remove fast-analysis build artifacts and temporary tooling"
           git push origin on-device-fast-analysis
