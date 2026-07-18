@@ -1,0 +1,11 @@
+// Appodeal SDK 4.x keeps ad-network adapters separate from the SDK core.
+// In Appodeal Dashboard, open Android > Configure Mediated Networks,
+// select Native plus the networks you intend to use, and paste only the
+// generated `implementation ...` lines inside this dependencies block.
+//
+// Example shape only — do not guess adapter versions:
+// implementation 'com.appodeal.ads.sdk.adapters:admob:X.X.X.X'
+
+dependencies {
+  // Generated Appodeal mediation adapter dependencies go here.
+}
