@@ -50,6 +50,7 @@ jobs:
             git apply --check /tmp/on-device-fast-analysis.patch
             git apply /tmp/on-device-fast-analysis.patch
           fi
+          sed -i 's/import com.google.mlkit.vision.barcode.Barcode$/import com.google.mlkit.vision.barcode.common.Barcode/' modules/keepflip-local-vision/android/src/main/java/expo/modules/keepfliplocalvision/KeepFlipLocalVisionModule.kt
 
       - name: Install dependencies
         run: npm ci
