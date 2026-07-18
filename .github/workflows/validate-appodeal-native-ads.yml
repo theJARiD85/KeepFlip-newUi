@@ -57,7 +57,22 @@ jobs:
         run: npx expo prebuild --platform android --no-install
 
       - name: Compile Appodeal native module
-        run: cd android && ./gradlew :keepflip-appodeal-native:compileDebugKotlin --no-daemon
+        id: compile
+        continue-on-error: true
+        run: cd android && ./gradlew :keepflip-appodeal-native:compileDebugKotlin --no-daemon > ../appodeal-native-compile.txt 2>&1
+
+      - name: Upload Appodeal compiler output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: appodeal-native-compile-output
+          path: appodeal-native-compile.txt
+
+      - name: Enforce Appodeal compilation
+        if: steps.compile.outcome == 'failure'
+        run: |
+          tail -n 240 appodeal-native-compile.txt
+          exit 1
 
       - name: Commit validated Inventory integration
         run: |
