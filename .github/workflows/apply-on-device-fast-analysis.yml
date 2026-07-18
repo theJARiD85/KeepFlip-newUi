@@ -63,7 +63,22 @@ jobs:
         run: npx expo prebuild --platform android --no-install
 
       - name: Compile Android Kotlin
-        run: cd android && ./gradlew :app:compileDebugKotlin --no-daemon
+        id: compile
+        continue-on-error: true
+        run: cd android && ./gradlew :app:compileDebugKotlin --no-daemon > ../android-compile-output.txt 2>&1
+
+      - name: Upload Android compiler output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-compile-output
+          path: android-compile-output.txt
+
+      - name: Enforce Android compilation
+        if: steps.compile.outcome == 'failure'
+        run: |
+          tail -n 180 android-compile-output.txt
+          exit 1
 
       - name: Commit validated app code
         run: |
