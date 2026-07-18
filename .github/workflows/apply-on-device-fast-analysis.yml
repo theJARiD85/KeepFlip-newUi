@@ -8,6 +8,10 @@ on:
     branches:
       - master
 
+concurrency:
+  group: on-device-fast-analysis
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
