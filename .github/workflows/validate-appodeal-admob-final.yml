@@ -4,9 +4,12 @@ on:
   push:
     branches:
       - appodeal-custom-native-ads
+  pull_request:
+    branches:
+      - master
 
 concurrency:
-  group: appodeal-admob-final
+  group: appodeal-admob-final-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
