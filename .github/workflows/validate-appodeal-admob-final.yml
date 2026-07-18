@@ -44,9 +44,24 @@ jobs:
         run: npx expo prebuild --platform android --no-install
 
       - name: Validate Appodeal module and merged manifest
+        id: validate_android
+        continue-on-error: true
         run: |
           cd android
           ./gradlew \
             :keepflip-appodeal-native:compileDebugKotlin \
             :app:processDebugMainManifest \
-            --no-daemon
+            --no-daemon > ../appodeal-admob-final.txt 2>&1
+
+      - name: Upload final Android diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: appodeal-admob-final-output
+          path: appodeal-admob-final.txt
+
+      - name: Enforce final Android validation
+        if: steps.validate_android.outcome == 'failure'
+        run: |
+          tail -n 260 appodeal-admob-final.txt
+          exit 1
