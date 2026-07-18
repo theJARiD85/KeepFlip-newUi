@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router/stack';
+import { Stack } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { KeepFlipMenuProvider } from '@/components/navigation/keepflip-menu-context';
