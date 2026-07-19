@@ -22,6 +22,13 @@ export type KeepFlipLocalVisionResult = {
 
 export type KeepFlipLocalVisionModuleEvents = Record<string, never>;
 
+export type KeepFlipSubjectContour = {
+  maskHeight: number;
+  maskWidth: number;
+  points: number[];
+  processingMs: number;
+};
+
 export type KeepFlipYuvFrame = {
   height: number;
   rotationDegrees: number;

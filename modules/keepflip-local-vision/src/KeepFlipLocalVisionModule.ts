@@ -4,11 +4,13 @@ import type {
   KeepFlipLocalVisionModuleEvents,
   KeepFlipLiveObjectDetection,
   KeepFlipLocalVisionResult,
+  KeepFlipSubjectContour,
   KeepFlipYuvFrame,
 } from './KeepFlipLocalVision.types';
 
 declare class KeepFlipLocalVisionNativeModule extends NativeModule<KeepFlipLocalVisionModuleEvents> {
   analyzeImage(sourceUri: string): Promise<KeepFlipLocalVisionResult>;
+  traceImage(sourceUri: string): Promise<KeepFlipSubjectContour>;
   detectYuvFrame(
     width: number,
     height: number,
@@ -26,6 +28,9 @@ const nativeModule = requireNativeModule<KeepFlipLocalVisionNativeModule>(
 const KeepFlipLocalVisionModule = {
   analyzeImage(sourceUri: string) {
     return nativeModule.analyzeImage(sourceUri);
+  },
+  traceImage(sourceUri: string) {
+    return nativeModule.traceImage(sourceUri);
   },
   detectYuvFrame(frame: KeepFlipYuvFrame) {
     return nativeModule.detectYuvFrame(

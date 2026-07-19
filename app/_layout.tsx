@@ -20,7 +20,7 @@ void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 function ProtectedRootStack() {
   const { status } = useKeepFlipAuth();
   const isChecking = status === 'checking';
-  const isSignedIn = status === 'signed-in';
+  const isSignedIn = status === 'signed-in' || __DEV__;
 
   return (
     <Stack

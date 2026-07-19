@@ -14,6 +14,9 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.google.mlkit.vision.objects.ObjectDetection
 import com.google.mlkit.vision.objects.ObjectDetector
 import com.google.mlkit.vision.objects.defaults.ObjectDetectorOptions
+import com.google.mlkit.vision.segmentation.subject.SubjectSegmentation
+import com.google.mlkit.vision.segmentation.subject.SubjectSegmenter
+import com.google.mlkit.vision.segmentation.subject.SubjectSegmenterOptions
 import expo.modules.kotlin.Promise
 import expo.modules.kotlin.exception.CodedException
 import expo.modules.kotlin.functions.Coroutine
@@ -37,6 +40,14 @@ class KeepFlipLocalVisionModule : Module() {
     )
   }
   private val liveObjectDetector: ObjectDetector by liveObjectDetectorDelegate
+  private val subjectSegmenterDelegate = lazy {
+    SubjectSegmentation.getClient(
+      SubjectSegmenterOptions.Builder()
+        .enableForegroundConfidenceMask()
+        .build()
+    )
+  }
+  private val subjectSegmenter: SubjectSegmenter by subjectSegmenterDelegate
 
   private fun normalizedRawBoundingBox(
     box: Rect,
@@ -109,6 +120,9 @@ class KeepFlipLocalVisionModule : Module() {
       if (liveObjectDetectorDelegate.isInitialized()) {
         liveObjectDetector.close()
       }
+      if (subjectSegmenterDelegate.isInitialized()) {
+        subjectSegmenter.close()
+      }
     }
 
     AsyncFunction("detectYuvFrame") Coroutine {
@@ -149,6 +163,50 @@ class KeepFlipLocalVisionModule : Module() {
           }
         )
       }
+    }
+
+    AsyncFunction("traceImage") Coroutine { sourceUri: String ->
+      val context = appContext.reactContext
+        ?: throw LocalVisionException("The Android application context is unavailable.")
+      val startedAt = System.currentTimeMillis()
+      val image = try {
+        val parsedUri = if (sourceUri.contains("://")) {
+          Uri.parse(sourceUri)
+        } else {
+          Uri.fromFile(File(sourceUri))
+        }
+        InputImage.fromFilePath(context, parsedUri)
+      } catch (error: Throwable) {
+        throw LocalVisionException(
+          "KeepFlip could not open this image for subject outlining.",
+          error
+        )
+      }
+
+      val result = try {
+        withContext(Dispatchers.IO) {
+          Tasks.await(subjectSegmenter.initTask)
+          Tasks.await(subjectSegmenter.process(image))
+        }
+      } catch (error: Throwable) {
+        throw LocalVisionException(
+          "KeepFlip could not separate the item from its background.",
+          error
+        )
+      }
+
+      val points = result.foregroundConfidenceMask?.let { mask ->
+        withContext(Dispatchers.Default) {
+          extractSubjectContour(mask, image.width, image.height)
+        }
+      } ?: emptyList()
+
+      mapOf(
+        "points" to points,
+        "maskWidth" to image.width,
+        "maskHeight" to image.height,
+        "processingMs" to (System.currentTimeMillis() - startedAt).toDouble()
+      )
     }
 
     AsyncFunction("analyzeImage") { sourceUri: String, promise: Promise ->

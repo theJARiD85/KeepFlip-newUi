@@ -883,7 +883,7 @@ export function ItemAnalysisOverlay({
 
 const styles = StyleSheet.create({
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 44,
     backgroundColor: 'rgba(2, 2, 4, 0.985)',
     experimental_backgroundImage: `
