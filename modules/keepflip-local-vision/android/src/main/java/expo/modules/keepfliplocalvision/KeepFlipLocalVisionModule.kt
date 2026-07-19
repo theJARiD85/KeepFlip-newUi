@@ -25,6 +25,7 @@ import expo.modules.kotlin.modules.ModuleDefinition
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.opencv.android.OpenCVLoader
 
 private class LocalVisionException(message: String, cause: Throwable? = null) :
   CodedException("ERR_KEEPFLIP_LOCAL_VISION", message, cause)
@@ -49,6 +50,10 @@ class KeepFlipLocalVisionModule : Module() {
   }
   private val subjectSegmenter: SubjectSegmenter by subjectSegmenterDelegate
 
+  private val isOpenCvReady by lazy {
+    OpenCVLoader.initLocal()
+  }
+  
   private fun normalizedRawBoundingBox(
     box: Rect,
     rotationDegrees: Int,
