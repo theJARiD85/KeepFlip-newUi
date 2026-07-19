@@ -56,8 +56,6 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout } from "@/hooks/use-responsive-layout";
-import { PhotogrammetryAPI } from "@/services/photogrammetry-api";
-import { MeshViewer } from "@/components/scanner/mesh-viewer";
 import {
   analyzeItemPhotos,
   AppwriteSetupError,
@@ -71,7 +69,7 @@ import { KeepFlipObjectOverlay } from "@/components/scanner/keepflip-object-line
 import {
   detectObjectsInCapturedPhoto,
   type CapturedObjectTraceResult,
-} from "@/services/captured-object-detection";
+} from "@/services/captured-object-detection.native";
 
 const CAMERA_PHOTO_RESOLUTION = Object.freeze({
   width: 1920,
@@ -281,8 +279,6 @@ export default function ScannerScreen() {
     useState<ItemAnalysisSuccess | null>(null);
   const [completedPhotoUris, setCompletedPhotoUris] = useState<string[]>([]);
   const [isSavingToInventory, setIsSavingToInventory] = useState(false);
-  const [meshViewerUrl, setMeshViewerUrl] = useState<string | null>(null);
-  const [isProcessingMesh, setIsProcessingMesh] = useState(false);
   const renderedAtmospherePhase: ScannerAtmospherePhase =
     analysisState?.status === "analyzing" ? "analyzing" : atmospherePhase;
   const canUseTorch = device?.hasTorch === true;
@@ -724,7 +720,6 @@ export default function ScannerScreen() {
       setCapturedObjectTrace(result);
       if (__DEV__) {
         console.info("[KeepFlip captured vision] Photo trace ready.", {
-          contours: result.contours.length,
           detections: result.detections.length,
           frame: `${result.frameWidth}x${result.frameHeight}`,
         });
@@ -819,34 +814,6 @@ export default function ScannerScreen() {
       return;
     }
 
-    if (tool === "3d-scan") {
-      setSinglePhotoUri(photoPath);
-      setIsProcessingMesh(true);
-      setMessage("Uploading images for 3D Mesh Generation...");
-      try {
-        const jobId = await PhotogrammetryAPI.uploadImageSequence([photoPath]);
-        setMessage("Processing 3D Mesh. This may take a moment...");
-        let status = await PhotogrammetryAPI.getJobStatus(jobId);
-        
-        while (status.status === 'processing') {
-          await new Promise(r => setTimeout(r, 2000));
-          status = await PhotogrammetryAPI.getJobStatus(jobId);
-        }
-        
-        if (status.status === 'completed' && status.modelUrl) {
-          setMeshViewerUrl(status.modelUrl);
-          setMessage("3D Mesh ready! You can now view and rotate it.");
-        } else {
-          setMessage("3D Mesh generation failed.");
-        }
-      } catch (err) {
-        setMessage("Error generating 3D mesh.");
-      } finally {
-        setIsProcessingMesh(false);
-      }
-      return;
-    }
-
     if (tool === "multi") {
       setMultiScanPhotos((photos) => {
         multiScanSequenceRef.current += 1;
@@ -893,8 +860,6 @@ export default function ScannerScreen() {
     setCapturedObjectTrace(null);
     setCompletedAnalysis(null);
     setCompletedPhotoUris([]);
-    setMeshViewerUrl(null);
-    setIsProcessingMesh(false);
     setSelectedTool("single");
     setMessage("Center one item inside the frame");
     setCaptureFeedback(null);
@@ -1391,20 +1356,19 @@ export default function ScannerScreen() {
             style={StyleSheet.absoluteFill}
             transition={120}
           />
+          {capturedObjectTrace ? (
+            <KeepFlipObjectOverlay
+              key={capturedObjectTrace.sourceUri}
+              detections={capturedObjectTrace.detections}
+              frameHeight={capturedObjectTrace.frameHeight}
+              frameWidth={capturedObjectTrace.frameWidth}
+              viewHeight={screenHeight}
+              viewWidth={screenWidth}
+            />
+          ) : null}
         </Animated.View>
       ) : null}
       <View pointerEvents="none" style={styles.cameraScrim} />
-      {analysisBackdropUri && capturedObjectTrace ? (
-        <KeepFlipObjectOverlay
-          key={capturedObjectTrace.sourceUri}
-          contours={capturedObjectTrace.contours}
-          detections={capturedObjectTrace.detections}
-          frameHeight={capturedObjectTrace.frameHeight}
-          frameWidth={capturedObjectTrace.frameWidth}
-          viewHeight={screenHeight}
-          viewWidth={screenWidth}
-        />
-      ) : null}
       {analysisState?.status === "analyzing" ? (
         <Animated.View
           entering={FadeIn.duration(220)}
@@ -1518,17 +1482,8 @@ export default function ScannerScreen() {
               },
             ]}
           >
-            {meshViewerUrl ? (
-              <MeshViewer modelUrl={meshViewerUrl} />
-            ) : isProcessingMesh ? (
-              <View style={[StyleSheet.absoluteFill, { backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }]}>
-                <ActivityIndicator size="large" color="#00FFD2" />
-                <Text style={{ color: '#00FFD2', marginTop: 16 }}>Reconstructing 3D Model...</Text>
-              </View>
-            ) : (
-              <>
-                <View pointerEvents="none" style={styles.frameColorWash} />
-                <ScannerAtmosphere phase={renderedAtmospherePhase} />
+            <View pointerEvents="none" style={styles.frameColorWash} />
+            <ScannerAtmosphere phase={renderedAtmospherePhase} />
             <View
               style={[
                 styles.corner,
@@ -1600,7 +1555,6 @@ export default function ScannerScreen() {
                 }
               />
             </Pressable>
-            />
             <View
               style={[
                 styles.scanLine,
@@ -1611,8 +1565,6 @@ export default function ScannerScreen() {
                 },
               ]}
             />
-          </>
-          )}
           </View>
           {selectedTool === "multi" &&
           multiScanPhotos.length > 0 &&

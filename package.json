@@ -14,15 +14,12 @@
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
     "@infinitered/react-native-mlkit-object-detection": "^5.0.0",
-    "@react-three/drei": "^10.7.7",
-    "@react-three/fiber": "^9.6.1",
     "@shopify/react-native-skia": "2.6.2",
     "expo": "^56.0.16",
     "expo-constants": "~56.0.21",
     "expo-dev-client": "~56.0.23",
     "expo-file-system": "~56.0.8",
     "expo-font": "~56.0.7",
-    "expo-gl": "~56.0.6",
     "expo-haptics": "~56.0.3",
     "expo-image": "~56.0.11",
     "expo-image-manipulator": "~56.0.22",
@@ -50,8 +47,7 @@
     "react-native-vision-camera-worklets": "5.0.11",
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.8.3",
-    "react-native-worklets-core": "^1.6.3",
-    "three": "^0.185.1"
+    "react-native-worklets-core": "^1.6.3"
   },
   "devDependencies": {
     "@types/react": "~19.2.10",
