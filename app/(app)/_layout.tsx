@@ -23,6 +23,7 @@ export default function AppShellLayout() {
           <Stack.Screen name="inventory" />
           <Stack.Screen name="account" />
           <Stack.Screen name="explore" />
+          <Stack.Screen name="object-outliner" />
         </Stack>
         <KeepFlipSlideDownMenu />
       </View>

@@ -19,26 +19,12 @@ import expo.modules.kotlin.exception.CodedException
 import expo.modules.kotlin.functions.Coroutine
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
-import expo.modules.kotlin.records.Field
-import expo.modules.kotlin.records.Record
 import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private class LocalVisionException(message: String, cause: Throwable? = null) :
   CodedException("ERR_KEEPFLIP_LOCAL_VISION", message, cause)
-
-private class KeepFlipYuvFrameRecord : Record {
-  @Field var width: Int = 0
-  @Field var height: Int = 0
-  @Field var rotationDegrees: Int = 0
-  @Field var y: ByteArray = byteArrayOf()
-  @Field var u: ByteArray = byteArrayOf()
-  @Field var v: ByteArray = byteArrayOf()
-  @Field var yRowStride: Int = 0
-  @Field var uRowStride: Int = 0
-  @Field var vRowStride: Int = 0
-  @Field var uPixelStride: Int = 0
-  @Field var vPixelStride: Int = 0
-}
 
 class KeepFlipLocalVisionModule : Module() {
   private val liveObjectDetectorDelegate = lazy {
@@ -83,38 +69,33 @@ class KeepFlipLocalVisionModule : Module() {
     )
   }
 
-  private fun yuv420ToNv21(frame: KeepFlipYuvFrameRecord): ByteArray {
-    require(frame.width > 0 && frame.height > 0) { "Frame dimensions must be positive." }
-    require(frame.yRowStride > 0 && frame.uRowStride > 0 && frame.vRowStride > 0) {
-      "Frame row strides must be positive."
-    }
-    require(frame.uPixelStride > 0 && frame.vPixelStride > 0) {
-      "Frame pixel strides must be positive."
-    }
+  private fun yuv420ToNv21(
+    width: Int,
+    height: Int,
+    y: ByteArray,
+    u: ByteArray,
+    v: ByteArray
+  ): ByteArray {
+    require(width > 0 && height > 0) { "Frame dimensions must be positive." }
+    require(width % 2 == 0 && height % 2 == 0) { "YUV frame dimensions must be even." }
 
-    val ySize = frame.width * frame.height
-    val chromaWidth = (frame.width + 1) / 2
-    val chromaHeight = (frame.height + 1) / 2
+    val ySize = width * height
+    val chromaWidth = width / 2
+    val chromaHeight = height / 2
+    val chromaSize = chromaWidth * chromaHeight
+    require(y.size >= ySize) { "The Y plane is shorter than the frame dimensions require." }
+    require(u.size >= chromaSize) { "The U plane is shorter than the frame dimensions require." }
+    require(v.size >= chromaSize) { "The V plane is shorter than the frame dimensions require." }
+
     val nv21 = ByteArray(ySize + chromaWidth * chromaHeight * 2)
-
-    for (row in 0 until frame.height) {
-      val sourceRow = row * frame.yRowStride
-      val destinationRow = row * frame.width
-      for (column in 0 until frame.width) {
-        val sourceIndex = sourceRow + column
-        if (sourceIndex < frame.y.size) {
-          nv21[destinationRow + column] = frame.y[sourceIndex]
-        }
-      }
-    }
+    y.copyInto(nv21, destinationOffset = 0, startIndex = 0, endIndex = ySize)
 
     for (row in 0 until chromaHeight) {
       for (column in 0 until chromaWidth) {
         val destinationIndex = ySize + (row * chromaWidth + column) * 2
-        val vIndex = row * frame.vRowStride + column * frame.vPixelStride
-        val uIndex = row * frame.uRowStride + column * frame.uPixelStride
-        if (vIndex < frame.v.size) nv21[destinationIndex] = frame.v[vIndex]
-        if (uIndex < frame.u.size) nv21[destinationIndex + 1] = frame.u[uIndex]
+        val sourceIndex = row * chromaWidth + column
+        nv21[destinationIndex] = v[sourceIndex]
+        nv21[destinationIndex + 1] = u[sourceIndex]
       }
     }
 
@@ -130,23 +111,34 @@ class KeepFlipLocalVisionModule : Module() {
       }
     }
 
-    AsyncFunction("detectYuvFrame") Coroutine { frame: KeepFlipYuvFrameRecord ->
+    AsyncFunction("detectYuvFrame") Coroutine {
+        width: Int,
+        height: Int,
+        rotationDegrees: Int,
+        y: ByteArray,
+        u: ByteArray,
+        v: ByteArray ->
+      val normalizedRotation = ((rotationDegrees % 360) + 360) % 360
       val input = InputImage.fromByteArray(
-        yuv420ToNv21(frame),
-        frame.width,
-        frame.height,
-        ((frame.rotationDegrees % 360) + 360) % 360,
+        yuv420ToNv21(width, height, y, u, v),
+        width,
+        height,
+        normalizedRotation,
         InputImage.IMAGE_FORMAT_NV21
       )
 
-      Tasks.await(liveObjectDetector.process(input)).map { detectedObject ->
+      val detectedObjects = withContext(Dispatchers.IO) {
+        Tasks.await(liveObjectDetector.process(input))
+      }
+
+      detectedObjects.map { detectedObject ->
         mapOf(
           "trackingId" to detectedObject.trackingId,
           "boundingBox" to normalizedRawBoundingBox(
             detectedObject.boundingBox,
-            frame.rotationDegrees,
-            frame.width,
-            frame.height
+            normalizedRotation,
+            width,
+            height
           ),
           "labels" to detectedObject.labels.map { label ->
             mapOf(

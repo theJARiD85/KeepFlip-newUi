@@ -2,7 +2,7 @@ import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { useIsFocused, useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -16,19 +16,18 @@ import {
   View,
 } from "react-native";
 import {
+  Camera,
+  type CameraRef,
   useCameraDevice,
   useCameraPermission,
   usePhotoOutput,
 } from 'react-native-vision-camera';
-import { SkiaCamera } from 'react-native-vision-camera-skia';
 import Animated, {
   FadeIn,
   FadeOut,
   useAnimatedStyle,
-  useSharedValue,
   withTiming,
 } from "react-native-reanimated";
-import { scheduleOnRN } from "react-native-worklets";
 
 import {
   ScannerAtmosphere,
@@ -66,14 +65,16 @@ import {
   type ItemAnalysisSuccess,
 } from "@/services/item-analysis-service";
 import { saveAnalyzedItemToInventory } from "@/services/inventory-service";
-import { drawDetectedObjectOutlines } from "@/components/scanner/keepflip-object-line-effect";
+import { KeepFlipObjectOverlay } from "@/components/scanner/keepflip-object-line-effect";
 import {
-  detectLiveObjects,
-  type KeepFlipYuvFrame,
-} from "@/services/live-object-detection";
+  detectObjectsInCapturedPhoto,
+  type CapturedObjectTraceResult,
+} from "@/services/captured-object-detection.native";
 
-const LIVE_OBJECT_DETECTION_ENABLED = Platform.OS === "android";
-const LIVE_OBJECT_DETECTION_FRAME_INTERVAL = 12;
+const CAMERA_PHOTO_RESOLUTION = Object.freeze({
+  width: 1920,
+  height: 1440,
+});
 
 const ANALYSIS_STAGES: Record<
   ItemAnalysisStage,
@@ -216,6 +217,7 @@ export default function ScannerScreen() {
   const {
     contentWidth,
     controlDockWidth,
+    height: screenHeight,
     insets,
     isCompactHeight,
     moderateScale,
@@ -224,6 +226,7 @@ export default function ScannerScreen() {
     scannerHeight,
     scannerWidth,
     verticalScale,
+    width: screenWidth,
   } = useResponsiveLayout();
   const scannerCornerSize = moderateScale(54, 0.65);
   const torchButtonSize = moderateScale(35, 0.65);
@@ -231,22 +234,24 @@ export default function ScannerScreen() {
   const analysisButtonWidth = Math.min(controlDockWidth, 360);
   const isFocused = useIsFocused();
   const { closeMenu, isMenuPresented } = useKeepFlipMenu();
+  const cameraRef = useRef<CameraRef>(null);
   const captureLockRef = useRef(false);
   const multiScanSequenceRef = useRef(0);
   const uploadSequenceRef = useRef(0);
+  const torchRequestSequenceRef = useRef(0);
+  const capturedObjectTraceRequestRef = useRef(0);
   const analysisAbortControllerRef = useRef<AbortController | null>(null);
   const atmosphereTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const device = useCameraDevice("back");
-  const photoOutput = usePhotoOutput();
-  const liveObjectDetections = useSharedValue<
-    Awaited<ReturnType<typeof detectLiveObjects>>
-  >([]);
-  const isLiveObjectDetectionBusy = useSharedValue(false);
-  const liveObjectDetectionFrameCounter = useSharedValue(0);
+  const photoOutput = usePhotoOutput({
+    targetResolution: CAMERA_PHOTO_RESOLUTION,
+  });
+  const cameraOutputs = useMemo(() => [photoOutput], [photoOutput]);
 
   const { hasPermission, canRequestPermission, requestPermission } =
     useCameraPermission();
   const [torchEnabled, setTorchEnabled] = useState(false);
+  const [isTorchUpdating, setIsTorchUpdating] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [isPickingPhoto, setIsPickingPhoto] = useState(false);
@@ -268,6 +273,8 @@ export default function ScannerScreen() {
   const [analysisBackdropUri, setAnalysisBackdropUri] = useState<string | null>(
     null,
   );
+  const [capturedObjectTrace, setCapturedObjectTrace] =
+    useState<CapturedObjectTraceResult | null>(null);
   const [completedAnalysis, setCompletedAnalysis] =
     useState<ItemAnalysisSuccess | null>(null);
   const [completedPhotoUris, setCompletedPhotoUris] = useState<string[]>([]);
@@ -304,33 +311,53 @@ export default function ScannerScreen() {
     !isMenuPresented &&
     !isPickingPhoto &&
     !isScannerOverlayOpen;
-  const processLiveObjectFrame = useCallback(
-    async (frame: KeepFlipYuvFrame) => {
-      try {
-        liveObjectDetections.value = await detectLiveObjects(frame);
-      } catch (error) {
-        liveObjectDetections.value = [];
-        if (__DEV__) {
-          console.warn("Live object detection failed.", error);
-        }
-      } finally {
-        isLiveObjectDetectionBusy.value = false;
-      }
-    },
-    [isLiveObjectDetectionBusy, liveObjectDetections],
-  );
 
-  useEffect(() => {
-    if (isCameraActive) return;
-    liveObjectDetections.value = [];
-    isLiveObjectDetectionBusy.value = false;
-    liveObjectDetectionFrameCounter.value = 0;
+  const handleToggleTorch = useCallback(async () => {
+    if (
+      !canUseTorch ||
+      !isCameraActive ||
+      !isCameraReady ||
+      isTorchUpdating
+    ) {
+      return;
+    }
+
+    const controller = cameraRef.current?.controller;
+    if (controller == null) return;
+
+    const requestId = ++torchRequestSequenceRef.current;
+    const nextTorchEnabled = !torchEnabled;
+    setIsTorchUpdating(true);
+
+    try {
+      await controller.setTorchMode(nextTorchEnabled ? "on" : "off");
+      if (requestId !== torchRequestSequenceRef.current) return;
+      setTorchEnabled(nextTorchEnabled);
+    } catch (error) {
+      if (requestId !== torchRequestSequenceRef.current) return;
+
+      setTorchEnabled(false);
+      const message = error instanceof Error ? error.message : String(error);
+      const wasCanceledByCameraReconfiguration =
+        message.includes("OperationCanceledException") ||
+        message.includes("new enableTorch");
+
+      if (__DEV__ && !wasCanceledByCameraReconfiguration) {
+        console.warn("Unable to update the camera torch.", error);
+      }
+    } finally {
+      if (requestId === torchRequestSequenceRef.current) {
+        setIsTorchUpdating(false);
+      }
+    }
   }, [
+    canUseTorch,
     isCameraActive,
-    isLiveObjectDetectionBusy,
-    liveObjectDetectionFrameCounter,
-    liveObjectDetections,
+    isCameraReady,
+    isTorchUpdating,
+    torchEnabled,
   ]);
+
   const toolbarAnimatedStyle = useAnimatedStyle(
     () => ({
       opacity: withTiming(isScannerOverlayOpen ? 0 : 1, { duration: 170 }),
@@ -409,6 +436,7 @@ export default function ScannerScreen() {
   useEffect(
     () => () => {
       analysisAbortControllerRef.current?.abort();
+      capturedObjectTraceRequestRef.current += 1;
       clearAtmosphereTimer();
     },
     [clearAtmosphereTimer],
@@ -419,12 +447,11 @@ export default function ScannerScreen() {
   }, [device?.id]);
 
   useEffect(() => {
-    if (!canUseTorch) setTorchEnabled(false);
-  }, [canUseTorch]);
-
-  useEffect(() => {
-    if (!isCameraActive) setTorchEnabled(false);
-  }, [isCameraActive]);
+    if (canUseTorch && isCameraActive) return;
+    torchRequestSequenceRef.current += 1;
+    setIsTorchUpdating(false);
+    setTorchEnabled(false);
+  }, [canUseTorch, isCameraActive]);
 
   useEffect(() => {
     if (!isMenuPresented) return;
@@ -440,8 +467,10 @@ export default function ScannerScreen() {
     }
     analysisAbortControllerRef.current?.abort();
     analysisAbortControllerRef.current = null;
+    capturedObjectTraceRequestRef.current += 1;
     setAnalysisState(null);
     setAnalysisBackdropUri(null);
+    setCapturedObjectTrace(null);
   }, [analysisState, closeMenu, isMenuPresented]);
 
   useEffect(() => {
@@ -480,8 +509,10 @@ export default function ScannerScreen() {
         if (analysisState.status === "analyzing") return true;
         analysisAbortControllerRef.current?.abort();
         analysisAbortControllerRef.current = null;
+        capturedObjectTraceRequestRef.current += 1;
         setAnalysisState(null);
         setAnalysisBackdropUri(null);
+        setCapturedObjectTrace(null);
         return true;
       },
     );
@@ -678,6 +709,34 @@ export default function ScannerScreen() {
     scheduleAtmosphereReset,
   ]);
 
+  const traceCapturedPhoto = useCallback(async (source: string) => {
+    const requestId = ++capturedObjectTraceRequestRef.current;
+    setCapturedObjectTrace(null);
+
+    try {
+      const result = await detectObjectsInCapturedPhoto(source);
+      if (requestId !== capturedObjectTraceRequestRef.current) return;
+
+      setCapturedObjectTrace(result);
+      if (__DEV__) {
+        console.info("[KeepFlip captured vision] Photo trace ready.", {
+          detections: result.detections.length,
+          frame: `${result.frameWidth}x${result.frameHeight}`,
+        });
+      }
+    } catch (error) {
+      if (requestId !== capturedObjectTraceRequestRef.current) return;
+
+      setCapturedObjectTrace(null);
+      if (__DEV__) {
+        console.warn(
+          "[KeepFlip captured vision] Photo trace unavailable.",
+          error,
+        );
+      }
+    }
+  }, []);
+
   const openMultiReview = useCallback(() => {
     if (
       multiScanPhotos.length === 0 ||
@@ -789,6 +848,7 @@ export default function ScannerScreen() {
     captureLockRef.current = false;
     multiScanSequenceRef.current = 0;
     uploadSequenceRef.current = 0;
+    capturedObjectTraceRequestRef.current += 1;
     setSinglePhotoUri(null);
     setMultiScanPhotos([]);
     setBatchScanPhotos([]);
@@ -797,6 +857,7 @@ export default function ScannerScreen() {
     setIsUploadReviewOpen(false);
     setAnalysisState(null);
     setAnalysisBackdropUri(null);
+    setCapturedObjectTrace(null);
     setCompletedAnalysis(null);
     setCompletedPhotoUris([]);
     setSelectedTool("single");
@@ -814,8 +875,10 @@ export default function ScannerScreen() {
 
     analysisAbortControllerRef.current?.abort();
     analysisAbortControllerRef.current = null;
+    capturedObjectTraceRequestRef.current += 1;
     setAnalysisState(null);
     setAnalysisBackdropUri(null);
+    setCapturedObjectTrace(null);
     setCompletedAnalysis(null);
     setCompletedPhotoUris([]);
   };
@@ -876,6 +939,7 @@ export default function ScannerScreen() {
     const controller = new AbortController();
     analysisAbortControllerRef.current = controller;
     setAnalysisBackdropUri(toDisplayUri(photoUris[0]));
+    void traceCapturedPhoto(photoUris[0]);
     setAnalysisState(analysisProgressState("authenticating"));
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
       () => undefined,
@@ -1242,104 +1306,33 @@ export default function ScannerScreen() {
   return (
     <View style={styles.screen}>
       <View pointerEvents="none" style={styles.cameraLayer}>
-        <SkiaCamera
-  device={device}
-  isActive={isCameraActive}
-  outputs={[photoOutput]}
-  pixelFormat="yuv"
-  enablePreviewSizedOutputBuffers
-  torchMode={
-    isCameraActive && isCameraReady
-      ? torchEnabled
-        ? 'on'
-        : 'off'
-      : undefined
-  }
-  onStarted={() => {
-    setIsCameraReady(true);
-    setCaptureFeedback(null);
-  }}
-  onStopped={() => {
-    setIsCameraReady(false);
-    setTorchEnabled(false);
-  }}
-  onError={(error) => {
-    const feedback =
-      error.message ||
-      'Camera unavailable. Try reopening the scanner.';
+        <Camera
+          ref={cameraRef}
+          device={device}
+          implementationMode="compatible"
+          isActive={isCameraActive}
+          outputs={cameraOutputs}
+          resizeMode="cover"
+          onPreviewStarted={() => {
+            setIsCameraReady(true);
+            setCaptureFeedback(null);
+          }}
+          onPreviewStopped={() => {
+            torchRequestSequenceRef.current += 1;
+            setIsCameraReady(false);
+            setIsTorchUpdating(false);
+            setTorchEnabled(false);
+          }}
+          onError={(error) => {
+            const feedback =
+              error.message ||
+              "Camera unavailable. Try reopening the scanner.";
 
-    setIsCameraReady(false);
-    setTorchEnabled(false);
-    setMessage(feedback);
-    setCaptureFeedback(feedback);
-  }}
-onFrame={(frame, render) => {
-  "worklet";
-
-  try {
-    liveObjectDetectionFrameCounter.value =
-      (liveObjectDetectionFrameCounter.value + 1) %
-      LIVE_OBJECT_DETECTION_FRAME_INTERVAL;
-
-    if (
-      LIVE_OBJECT_DETECTION_ENABLED &&
-      liveObjectDetectionFrameCounter.value === 0 &&
-      !isLiveObjectDetectionBusy.value &&
-      frame.isPlanar
-    ) {
-      const planes = frame.getPlanes();
-      if (planes.length >= 3) {
-        const yPlane = planes[0];
-        const uPlane = planes[1];
-        const vPlane = planes[2];
-        isLiveObjectDetectionBusy.value = true;
-
-        try {
-          scheduleOnRN(processLiveObjectFrame, {
-            width: frame.width,
-            height: frame.height,
-            rotationDegrees:
-              frame.orientation === "right"
-                ? 90
-                : frame.orientation === "down"
-                  ? 180
-                  : frame.orientation === "left"
-                    ? 270
-                    : 0,
-            y: new Uint8Array(yPlane.getPixelBuffer()).slice(),
-            u: new Uint8Array(uPlane.getPixelBuffer()).slice(),
-            v: new Uint8Array(vPlane.getPixelBuffer()).slice(),
-            yRowStride: yPlane.bytesPerRow,
-            uRowStride: uPlane.bytesPerRow,
-            vRowStride: vPlane.bytesPerRow,
-            uPixelStride: Math.max(
-              1,
-              Math.round(uPlane.bytesPerRow / uPlane.width),
-            ),
-            vPixelStride: Math.max(
-              1,
-              Math.round(vPlane.bytesPerRow / vPlane.width),
-            ),
-          });
-        } catch {
-          isLiveObjectDetectionBusy.value = false;
-        }
-      }
-    }
-
-    render(({ canvas, frameTexture }) => {
-      canvas.drawImage(frameTexture, 0, 0);
-      drawDetectedObjectOutlines(
-        canvas,
-        frame.width,
-        frame.height,
-        liveObjectDetections.value,
-      );
-    });
-  } finally {
-    frame.dispose();
-  }
-}}
+            setIsCameraReady(false);
+            setTorchEnabled(false);
+            setMessage(feedback);
+            setCaptureFeedback(feedback);
+          }}
           style={StyleSheet.absoluteFill}
         />
       </View>
@@ -1363,6 +1356,16 @@ onFrame={(frame, render) => {
             style={StyleSheet.absoluteFill}
             transition={120}
           />
+          {capturedObjectTrace ? (
+            <KeepFlipObjectOverlay
+              key={capturedObjectTrace.sourceUri}
+              detections={capturedObjectTrace.detections}
+              frameHeight={capturedObjectTrace.frameHeight}
+              frameWidth={capturedObjectTrace.frameWidth}
+              viewHeight={screenHeight}
+              viewWidth={screenWidth}
+            />
+          ) : null}
         </Animated.View>
       ) : null}
       <View pointerEvents="none" style={styles.cameraScrim} />
@@ -1512,13 +1515,19 @@ onFrame={(frame, render) => {
             <Pressable
               accessibilityLabel="Toggle flashlight"
               accessibilityState={{
-                disabled: !canUseTorch || !isCameraActive || !isCameraReady,
+                disabled:
+                  !canUseTorch ||
+                  !isCameraActive ||
+                  !isCameraReady ||
+                  isTorchUpdating,
               }}
-              disabled={!canUseTorch || !isCameraActive || !isCameraReady}
-              onPress={() => {
-                if (!canUseTorch || !isCameraActive || !isCameraReady) return;
-                setTorchEnabled((current) => !current);
-              }}
+              disabled={
+                !canUseTorch ||
+                !isCameraActive ||
+                !isCameraReady ||
+                isTorchUpdating
+              }
+              onPress={() => void handleToggleTorch()}
               style={[
                 styles.iconButton,
                 {
@@ -1529,7 +1538,10 @@ onFrame={(frame, render) => {
                   borderRadius: torchButtonSize / 2,
                 },
                 torchEnabled && styles.iconButtonActive,
-                (!canUseTorch || !isCameraActive || !isCameraReady) &&
+                (!canUseTorch ||
+                  !isCameraActive ||
+                  !isCameraReady ||
+                  isTorchUpdating) &&
                   styles.iconButtonDisabled,
               ]}
             >
@@ -1640,7 +1652,7 @@ const styles = StyleSheet.create({
   },
   cameraLayer: {
     ...StyleSheet.absoluteFill,
-    zIndex: 10,
+    zIndex: 20,
     elevation: 0,
   },
   interfaceLayer: {
@@ -1654,7 +1666,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
     width: "100%",
     height: "100%",
-    zIndex: 80,
+    zIndex: 100,
     elevation: 80,
   },
   analysisOverlayHost: {

@@ -25,14 +25,14 @@ export type KeepFlipLocalVisionModuleEvents = Record<string, never>;
 export type KeepFlipYuvFrame = {
   height: number;
   rotationDegrees: number;
-  u: Uint8Array;
+  u: ArrayBuffer;
   uPixelStride: number;
   uRowStride: number;
-  v: Uint8Array;
+  v: ArrayBuffer;
   vPixelStride: number;
   vRowStride: number;
   width: number;
-  y: Uint8Array;
+  y: ArrayBuffer;
   yRowStride: number;
 };
 
