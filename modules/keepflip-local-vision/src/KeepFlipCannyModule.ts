@@ -6,11 +6,21 @@ export type KeepFlipCannyEdgeResult = {
   height: number;
   pixels: Uint8Array;
   processingMs: number;
+  subjectFound: boolean;
   width: number;
 };
 
 declare class KeepFlipCannyNativeModule extends NativeModule<KeepFlipCannyEvents> {
   detectYPlane(
+    width: number,
+    height: number,
+    rowStride: number,
+    yPlane: Uint8Array,
+    lowThreshold: number,
+    highThreshold: number,
+  ): Promise<KeepFlipCannyEdgeResult>;
+
+  detectCenteredSubjectYPlane(
     width: number,
     height: number,
     rowStride: number,
