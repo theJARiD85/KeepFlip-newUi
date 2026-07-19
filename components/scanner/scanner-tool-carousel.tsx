@@ -16,7 +16,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 
-export type ScannerToolId = 'single' | 'multi' | 'batch' | 'upload' | '3d-scan';
+export type ScannerToolId = 'single' | 'multi' | 'batch' | 'upload';
 
 type ScannerTool = {
   accent: string;
@@ -25,8 +25,7 @@ type ScannerTool = {
     | 'viewfinder'
     | 'rectangle.stack.fill'
     | 'square.grid.2x2.fill'
-    | 'photo.on.rectangle.angled'
-    | 'cube.transparent';
+    | 'photo.on.rectangle.angled';
   id: ScannerToolId;
   label: string;
   surface: string;
@@ -40,14 +39,6 @@ export const scannerTools: ScannerTool[] = [
     accent: theme.colors.goldBright,
     surface: 'rgba(215, 168, 74, 0.18)',
     glow: 'rgba(215, 168, 74, 0.38)',
-  },
-  {
-    id: '3d-scan',
-    label: '3D Mesh',
-    icon: 'cube.transparent',
-    accent: '#00FFD2',
-    surface: 'rgba(0, 255, 210, 0.18)',
-    glow: 'rgba(0, 255, 210, 0.38)',
   },
   {
     id: 'multi',
