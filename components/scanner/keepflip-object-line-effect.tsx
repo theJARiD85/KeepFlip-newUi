@@ -1,1 +1,1 @@
-export { KeepFlipObjectOverlay } from "./keepflip-object-line-effect.base";
+export { KeepFlipObjectOverlay } from "@/components/scanner/keepflip-object-line-effect.base";
