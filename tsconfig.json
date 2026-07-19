@@ -3,6 +3,9 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
+      "@/components/scanner/keepflip-object-line-effect": [
+        "./components/scanner/keepflip-object-line-effect.native.tsx"
+      ],
       "@/*": [
         "./*"
       ]
@@ -12,6 +15,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts"
-, "components/scanner/ObjectOutlinerV5.jsx"  ]
+    "expo-env.d.ts",
+    "components/scanner/ObjectOutlinerV5.jsx"
+  ]
 }
