@@ -1,45 +1,86 @@
-import { RNMLKitDefaultObjectDetector } from '@infinitered/react-native-mlkit-object-detection';
-import { Canvas, Rect } from '@shopify/react-native-skia';
-import { File } from 'expo-file-system';
+import {
+  AlphaType,
+  Blur,
+  Canvas,
+  ColorType,
+  Image as SkiaImage,
+  Skia,
+} from '@shopify/react-native-skia';
 import { useIsFocused } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import {
   Camera,
   useCameraDevice,
   useCameraPermission,
+  useFrameOutput,
 } from 'react-native-vision-camera';
+import { useSharedValue } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
-const DETECTION_INTERVAL_MS = 900;
-const DETECTION_IMAGE_MAX_EDGE = 640;
+import KeepFlipCannyModule from '@/modules/keepflip-local-vision/src/KeepFlipCannyModule';
 
-const objectDetector = new RNMLKitDefaultObjectDetector({
-  detectorMode: 'singleImage',
-  shouldEnableClassification: true,
-  shouldEnableMultipleObjects: true,
-});
+const EDGE_OUTPUT_TARGET = Object.freeze({ width: 320, height: 240 });
+const PROCESS_EVERY_NTH_FRAME = 5;
+const LOW_THRESHOLD = 55;
+const HIGH_THRESHOLD = 135;
+const EDGE_COLOR = Object.freeze({ red: 0, green: 255, blue: 210 });
+
+function makeEdgeImage(edgeFrame) {
+  if (edgeFrame == null) return null;
+
+  const { height, pixels: mask, width } = edgeFrame;
+  if (!(mask instanceof Uint8Array)) return null;
+  if (width <= 0 || height <= 0 || mask.length !== width * height) return null;
+
+  const rgba = new Uint8Array(width * height * 4);
+  for (let source = 0, target = 0; source < mask.length; source += 1) {
+    const alpha = mask[source];
+    rgba[target] = EDGE_COLOR.red;
+    rgba[target + 1] = EDGE_COLOR.green;
+    rgba[target + 2] = EDGE_COLOR.blue;
+    rgba[target + 3] = alpha;
+    target += 4;
+  }
+
+  return Skia.Image.MakeImage(
+    {
+      width,
+      height,
+      alphaType: AlphaType.Unpremul,
+      colorType: ColorType.RGBA_8888,
+    },
+    Skia.Data.fromBytes(rgba),
+    width * 4,
+  );
+}
 
 export default function ObjectOutlinerV5() {
-  const cameraRef = useRef(null);
-  const detectionBusyRef = useRef(false);
   const mountedRef = useRef(true);
+  const processingRef = useRef(false);
+  const requestSequenceRef = useRef(0);
+  const hasReceivedEdgesRef = useRef(false);
+  const lastStatusUpdateRef = useRef(0);
+  const frameSequence = useSharedValue(0);
+  const frameErrorCount = useSharedValue(0);
   const isFocused = useIsFocused();
   const { width: viewWidth, height: viewHeight } = useWindowDimensions();
   const { hasPermission, requestPermission } = useCameraPermission();
   const device = useCameraDevice('back');
   const [isPreviewReady, setIsPreviewReady] = useState(false);
-  const [isDetectorReady, setIsDetectorReady] = useState(false);
-  const [detections, setDetections] = useState([]);
-  const [detectionImageSize, setDetectionImageSize] = useState({
-    width: 0,
-    height: 0,
-  });
-  const [status, setStatus] = useState('Loading object detector…');
+  const [edgeFrame, setEdgeFrame] = useState(null);
+  const [status, setStatus] = useState('Starting native edge trace…');
 
   useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      requestSequenceRef.current += 1;
     };
   }, []);
 
@@ -50,100 +91,169 @@ export default function ObjectOutlinerV5() {
     });
   }, [hasPermission, requestPermission]);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    void objectDetector
-      .load()
-      .then(() => {
-        if (cancelled || !mountedRef.current) return;
-        setIsDetectorReady(true);
-        setStatus('Point the camera at an object.');
-      })
-      .catch((error) => {
-        if (cancelled || !mountedRef.current) return;
-        setStatus(`Object detector unavailable: ${error.message}`);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const detectCurrentPreview = useCallback(async () => {
-    if (
-      detectionBusyRef.current ||
-      !isDetectorReady ||
-      !isPreviewReady ||
-      !isFocused ||
-      cameraRef.current == null
-    ) {
-      return;
-    }
-
-    detectionBusyRef.current = true;
-    let snapshot;
-    let detectionImage;
-    let temporaryPath;
-
-    try {
-      snapshot = await cameraRef.current.takeSnapshot();
-      const scale = Math.min(
-        1,
-        DETECTION_IMAGE_MAX_EDGE / Math.max(snapshot.width, snapshot.height),
-      );
-      detectionImage =
-        scale < 1
-          ? await snapshot.resizeAsync(
-              Math.round(snapshot.width * scale),
-              Math.round(snapshot.height * scale),
-            )
-          : snapshot;
-      temporaryPath = await detectionImage.saveToTemporaryFileAsync('jpg', 72);
-      const nextDetections = await objectDetector.detectObjects(temporaryPath);
-
-      if (!mountedRef.current) return;
-      setDetections(nextDetections);
-      setDetectionImageSize({
-        width: detectionImage.width,
-        height: detectionImage.height,
-      });
-      setStatus(
-        nextDetections.length === 0
-          ? 'No object found yet.'
-          : `${nextDetections.length} object${nextDetections.length === 1 ? '' : 's'} found`,
-      );
-    } catch (error) {
-      if (mountedRef.current) {
-        setStatus(`Detection skipped: ${error.message}`);
+  const processYPlane = useCallback(
+    async (yPlane, width, height, rowStride) => {
+      if (
+        !mountedRef.current ||
+        processingRef.current ||
+        !(yPlane instanceof Uint8Array) ||
+        width < 8 ||
+        height < 8 ||
+        rowStride < width ||
+        yPlane.length < rowStride * height
+      ) {
+        return;
       }
-    } finally {
-      if (temporaryPath != null) {
-        try {
-          const temporaryFile = new File(temporaryPath);
-          if (temporaryFile.exists) temporaryFile.delete();
-        } catch {
-          // The native temporary directory can clean up this file later.
+
+      processingRef.current = true;
+      const requestId = ++requestSequenceRef.current;
+
+      try {
+        const result = await KeepFlipCannyModule.detectYPlane(
+          width,
+          height,
+          rowStride,
+          yPlane,
+          LOW_THRESHOLD,
+          HIGH_THRESHOLD,
+        );
+
+        if (!mountedRef.current || requestId !== requestSequenceRef.current) {
+          return;
+        }
+
+        const pixels =
+          result.pixels instanceof Uint8Array
+            ? result.pixels
+            : new Uint8Array(result.pixels);
+
+        if (pixels.length !== result.width * result.height) {
+          throw new Error('Native Canny returned an invalid edge mask.');
+        }
+
+        setEdgeFrame({ ...result, pixels });
+
+        const now = Date.now();
+        if (
+          !hasReceivedEdgesRef.current ||
+          now - lastStatusUpdateRef.current >= 1000
+        ) {
+          hasReceivedEdgesRef.current = true;
+          lastStatusUpdateRef.current = now;
+          setStatus(
+            `Tracing visible edges • ${Math.round(result.processingMs)} ms`,
+          );
+        }
+      } catch (error) {
+        if (!mountedRef.current || requestId !== requestSequenceRef.current) {
+          return;
+        }
+
+        setStatus(
+          error instanceof Error
+            ? error.message
+            : 'Native edge tracing could not process this frame.',
+        );
+      } finally {
+        if (requestId === requestSequenceRef.current) {
+          processingRef.current = false;
         }
       }
-      if (detectionImage != null && detectionImage !== snapshot) {
-        detectionImage.dispose();
+    },
+    [],
+  );
+
+  const reportFrameError = useCallback((message) => {
+    if (!mountedRef.current) return;
+    setStatus(message || 'The camera returned an unsupported frame.');
+  }, []);
+
+  const frameOutput = useFrameOutput({
+    targetResolution: EDGE_OUTPUT_TARGET,
+    pixelFormat: 'yuv',
+    dropFramesWhileBusy: true,
+    enablePhysicalBufferRotation: true,
+    onFrame(frame) {
+      'worklet';
+
+      frameSequence.value += 1;
+      const shouldProcess =
+        frameSequence.value === 1 ||
+        frameSequence.value % PROCESS_EVERY_NTH_FRAME === 0;
+
+      if (!shouldProcess) {
+        frame.dispose();
+        return;
       }
-      snapshot?.dispose();
-      detectionBusyRef.current = false;
-    }
-  }, [isDetectorReady, isFocused, isPreviewReady]);
 
-  useEffect(() => {
-    if (!isDetectorReady || !isFocused || !isPreviewReady) return;
+      try {
+        if (!frame.isPlanar) {
+          frameErrorCount.value += 1;
+          if (frameErrorCount.value <= 2) {
+            scheduleOnRN(
+              reportFrameError,
+              `Expected YUV but received ${frame.pixelFormat}.`,
+            );
+          }
+          return;
+        }
 
-    void detectCurrentPreview();
-    const interval = setInterval(() => {
-      void detectCurrentPreview();
-    }, DETECTION_INTERVAL_MS);
+        const planes = frame.getPlanes();
+        if (planes.length === 0) {
+          frameErrorCount.value += 1;
+          if (frameErrorCount.value <= 2) {
+            scheduleOnRN(reportFrameError, 'The camera returned no Y plane.');
+          }
+          return;
+        }
 
-    return () => clearInterval(interval);
-  }, [detectCurrentPreview, isDetectorReady, isFocused, isPreviewReady]);
+        const plane = planes[0];
+        const width = plane.width;
+        const height = plane.height;
+        const rowStride = plane.bytesPerRow;
+        const source = new Uint8Array(plane.getPixelBuffer());
+
+        if (
+          width < 8 ||
+          height < 8 ||
+          rowStride < width ||
+          source.length < rowStride * height
+        ) {
+          frameErrorCount.value += 1;
+          if (frameErrorCount.value <= 2) {
+            scheduleOnRN(reportFrameError, 'The Y plane was incomplete.');
+          }
+          return;
+        }
+
+        // The Frame buffer becomes invalid as soon as frame.dispose() runs.
+        // Copy only the low-resolution luminance plane and release the camera
+        // buffer immediately; OpenCV processes this owned copy asynchronously.
+        const ownedYPlane = new Uint8Array(rowStride * height);
+        ownedYPlane.set(source.subarray(0, rowStride * height));
+
+        frameErrorCount.value = 0;
+        scheduleOnRN(processYPlane, ownedYPlane, width, height, rowStride);
+      } catch {
+        frameErrorCount.value += 1;
+        if (frameErrorCount.value <= 2) {
+          scheduleOnRN(reportFrameError, 'Could not read the camera luminance plane.');
+        }
+      } finally {
+        frame.dispose();
+      }
+    },
+  });
+
+  const cameraOutputs = useMemo(() => [frameOutput], [frameOutput]);
+  const edgeImage = useMemo(() => makeEdgeImage(edgeFrame), [edgeFrame]);
+
+  useEffect(
+    () => () => {
+      edgeImage?.dispose();
+    },
+    [edgeImage],
+  );
 
   if (!hasPermission) {
     return <Text style={styles.fallback}>Waiting for camera permission…</Text>;
@@ -153,46 +263,61 @@ export default function ObjectOutlinerV5() {
     return <Text style={styles.fallback}>No back camera found.</Text>;
   }
 
-  const scaleX =
-    detectionImageSize.width > 0 ? viewWidth / detectionImageSize.width : 0;
-  const scaleY =
-    detectionImageSize.height > 0 ? viewHeight / detectionImageSize.height : 0;
-
   return (
     <View style={styles.screen}>
       <Camera
-        ref={cameraRef}
         device={device}
         implementationMode="compatible"
         isActive={isFocused}
-        onPreviewStarted={() => setIsPreviewReady(true)}
-        onPreviewStopped={() => {
-          setIsPreviewReady(false);
-          setDetections([]);
+        onPreviewStarted={() => {
+          setIsPreviewReady(true);
+          setStatus('Center the item and hold the camera steady.');
         }}
+        onPreviewStopped={() => {
+          requestSequenceRef.current += 1;
+          processingRef.current = false;
+          hasReceivedEdgesRef.current = false;
+          setIsPreviewReady(false);
+          setEdgeFrame(null);
+          setStatus('Camera paused.');
+        }}
+        outputs={cameraOutputs}
         resizeMode="cover"
         style={StyleSheet.absoluteFill}
       />
 
-      <Canvas pointerEvents="none" style={StyleSheet.absoluteFill}>
-        {detections.map((object, index) => {
-          const frame = object.frame;
-          if (frame == null) return null;
+      {isPreviewReady && edgeImage != null ? (
+        <Canvas pointerEvents="none" style={StyleSheet.absoluteFill}>
+          <SkiaImage
+            image={edgeImage}
+            x={0}
+            y={0}
+            width={viewWidth}
+            height={viewHeight}
+            fit="cover"
+            opacity={0.38}
+          >
+            <Blur blur={2.2} mode="clamp" />
+          </SkiaImage>
+          <SkiaImage
+            image={edgeImage}
+            x={0}
+            y={0}
+            width={viewWidth}
+            height={viewHeight}
+            fit="cover"
+            opacity={0.96}
+          />
+        </Canvas>
+      ) : null}
 
-          return (
-            <Rect
-              key={`${object.trackingID ?? 'object'}-${index}`}
-              x={frame.origin.x * scaleX}
-              y={frame.origin.y * scaleY}
-              width={frame.size.x * scaleX}
-              height={frame.size.y * scaleY}
-              color="#27F3FF"
-              style="stroke"
-              strokeWidth={5}
-            />
-          );
-        })}
-      </Canvas>
+      <View pointerEvents="none" style={styles.scanWindow}>
+        <View style={[styles.corner, styles.topLeft]} />
+        <View style={[styles.corner, styles.topRight]} />
+        <View style={[styles.corner, styles.bottomLeft]} />
+        <View style={[styles.corner, styles.bottomRight]} />
+        <View style={styles.centerDot} />
+      </View>
 
       <View pointerEvents="none" style={styles.statusPill}>
         <Text style={styles.statusText}>{status}</Text>
@@ -212,6 +337,57 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
     textAlign: 'center',
     textAlignVertical: 'center',
+  },
+  scanWindow: {
+    position: 'absolute',
+    left: '9%',
+    right: '9%',
+    top: '17%',
+    bottom: '21%',
+  },
+  corner: {
+    position: 'absolute',
+    width: 48,
+    height: 48,
+    borderColor: '#00FFD2',
+  },
+  topLeft: {
+    left: 0,
+    top: 0,
+    borderLeftWidth: 2,
+    borderTopWidth: 2,
+  },
+  topRight: {
+    right: 0,
+    top: 0,
+    borderRightWidth: 2,
+    borderTopWidth: 2,
+  },
+  bottomLeft: {
+    left: 0,
+    bottom: 0,
+    borderLeftWidth: 2,
+    borderBottomWidth: 2,
+  },
+  bottomRight: {
+    right: 0,
+    bottom: 0,
+    borderRightWidth: 2,
+    borderBottomWidth: 2,
+  },
+  centerDot: {
+    position: 'absolute',
+    left: '50%',
+    top: '50%',
+    width: 5,
+    height: 5,
+    marginLeft: -2.5,
+    marginTop: -2.5,
+    borderRadius: 3,
+    backgroundColor: '#00FFD2',
+    shadowColor: '#00FFD2',
+    shadowOpacity: 0.9,
+    shadowRadius: 8,
   },
   statusPill: {
     position: 'absolute',
