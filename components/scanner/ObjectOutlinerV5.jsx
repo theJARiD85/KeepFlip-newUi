@@ -25,10 +25,10 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import KeepFlipCannyModule from '@/modules/keepflip-local-vision/src/KeepFlipCannyModule';
 
-const EDGE_OUTPUT_TARGET = Object.freeze({ width: 320, height: 240 });
-const PROCESS_EVERY_NTH_FRAME = 5;
-const LOW_THRESHOLD = 55;
-const HIGH_THRESHOLD = 135;
+const EDGE_OUTPUT_TARGET = Object.freeze({ width: 640, height: 480 });
+const PROCESS_EVERY_NTH_FRAME = 12;
+const LOW_THRESHOLD = 48;
+const HIGH_THRESHOLD = 118;
 const EDGE_COLOR = Object.freeze({ red: 0, green: 255, blue: 210 });
 
 function makeEdgeImage(edgeFrame) {
@@ -74,7 +74,7 @@ export default function ObjectOutlinerV5() {
   const device = useCameraDevice('back');
   const [isPreviewReady, setIsPreviewReady] = useState(false);
   const [edgeFrame, setEdgeFrame] = useState(null);
-  const [status, setStatus] = useState('Starting native edge trace…');
+  const [status, setStatus] = useState('Preparing centered-item tracing…');
 
   useEffect(() => {
     mountedRef.current = true;
@@ -109,7 +109,7 @@ export default function ObjectOutlinerV5() {
       const requestId = ++requestSequenceRef.current;
 
       try {
-        const result = await KeepFlipCannyModule.detectYPlane(
+        const result = await KeepFlipCannyModule.detectCenteredSubjectYPlane(
           width,
           height,
           rowStride,
@@ -122,13 +122,19 @@ export default function ObjectOutlinerV5() {
           return;
         }
 
+        if (!result.subjectFound) {
+          setEdgeFrame(null);
+          setStatus('Center one item on the reticle and keep the background clear.');
+          return;
+        }
+
         const pixels =
           result.pixels instanceof Uint8Array
             ? result.pixels
             : new Uint8Array(result.pixels);
 
         if (pixels.length !== result.width * result.height) {
-          throw new Error('Native Canny returned an invalid edge mask.');
+          throw new Error('Native subject trace returned an invalid edge mask.');
         }
 
         setEdgeFrame({ ...result, pixels });
@@ -141,7 +147,7 @@ export default function ObjectOutlinerV5() {
           hasReceivedEdgesRef.current = true;
           lastStatusUpdateRef.current = now;
           setStatus(
-            `Tracing visible edges • ${Math.round(result.processingMs)} ms`,
+            `Tracing centered item only • ${Math.round(result.processingMs)} ms`,
           );
         }
       } catch (error) {
@@ -149,10 +155,11 @@ export default function ObjectOutlinerV5() {
           return;
         }
 
+        setEdgeFrame(null);
         setStatus(
           error instanceof Error
             ? error.message
-            : 'Native edge tracing could not process this frame.',
+            : 'Centered-item tracing could not process this frame.',
         );
       } finally {
         if (requestId === requestSequenceRef.current) {
@@ -226,9 +233,6 @@ export default function ObjectOutlinerV5() {
           return;
         }
 
-        // The Frame buffer becomes invalid as soon as frame.dispose() runs.
-        // Copy only the low-resolution luminance plane and release the camera
-        // buffer immediately; OpenCV processes this owned copy asynchronously.
         const ownedYPlane = new Uint8Array(rowStride * height);
         ownedYPlane.set(source.subarray(0, rowStride * height));
 
@@ -237,7 +241,10 @@ export default function ObjectOutlinerV5() {
       } catch {
         frameErrorCount.value += 1;
         if (frameErrorCount.value <= 2) {
-          scheduleOnRN(reportFrameError, 'Could not read the camera luminance plane.');
+          scheduleOnRN(
+            reportFrameError,
+            'Could not read the camera luminance plane.',
+          );
         }
       } finally {
         frame.dispose();
@@ -271,7 +278,7 @@ export default function ObjectOutlinerV5() {
         isActive={isFocused}
         onPreviewStarted={() => {
           setIsPreviewReady(true);
-          setStatus('Center the item and hold the camera steady.');
+          setStatus('Center one item on the reticle and hold steady.');
         }}
         onPreviewStopped={() => {
           requestSequenceRef.current += 1;
@@ -295,9 +302,8 @@ export default function ObjectOutlinerV5() {
             width={viewWidth}
             height={viewHeight}
             fit="cover"
-            opacity={0.38}
-          >
-            <Blur blur={2.2} mode="clamp" />
+            opacity={0.42}>
+            <Blur blur={2.1} mode="clamp" />
           </SkiaImage>
           <SkiaImage
             image={edgeImage}
@@ -306,16 +312,15 @@ export default function ObjectOutlinerV5() {
             width={viewWidth}
             height={viewHeight}
             fit="cover"
-            opacity={0.96}
+            opacity={0.98}
           />
         </Canvas>
       ) : null}
 
-      <View pointerEvents="none" style={styles.scanWindow}>
-        <View style={[styles.corner, styles.topLeft]} />
-        <View style={[styles.corner, styles.topRight]} />
-        <View style={[styles.corner, styles.bottomLeft]} />
-        <View style={[styles.corner, styles.bottomRight]} />
+      <View pointerEvents="none" style={styles.reticle}>
+        <View style={styles.reticleRing} />
+        <View style={styles.reticleHorizontal} />
+        <View style={styles.reticleVertical} />
         <View style={styles.centerDot} />
       </View>
 
@@ -338,51 +343,40 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textAlignVertical: 'center',
   },
-  scanWindow: {
-    position: 'absolute',
-    left: '9%',
-    right: '9%',
-    top: '17%',
-    bottom: '21%',
-  },
-  corner: {
-    position: 'absolute',
-    width: 48,
-    height: 48,
-    borderColor: '#00FFD2',
-  },
-  topLeft: {
-    left: 0,
-    top: 0,
-    borderLeftWidth: 2,
-    borderTopWidth: 2,
-  },
-  topRight: {
-    right: 0,
-    top: 0,
-    borderRightWidth: 2,
-    borderTopWidth: 2,
-  },
-  bottomLeft: {
-    left: 0,
-    bottom: 0,
-    borderLeftWidth: 2,
-    borderBottomWidth: 2,
-  },
-  bottomRight: {
-    right: 0,
-    bottom: 0,
-    borderRightWidth: 2,
-    borderBottomWidth: 2,
-  },
-  centerDot: {
+  reticle: {
     position: 'absolute',
     left: '50%',
     top: '50%',
+    width: 44,
+    height: 44,
+    marginLeft: -22,
+    marginTop: -22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reticleRing: {
+    position: 'absolute',
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 1.5,
+    borderColor: 'rgba(0, 255, 210, 0.78)',
+  },
+  reticleHorizontal: {
+    position: 'absolute',
+    width: 42,
+    height: 1,
+    backgroundColor: 'rgba(0, 255, 210, 0.66)',
+  },
+  reticleVertical: {
+    position: 'absolute',
+    width: 1,
+    height: 42,
+    backgroundColor: 'rgba(0, 255, 210, 0.66)',
+  },
+  centerDot: {
     width: 5,
     height: 5,
-    marginLeft: -2.5,
-    marginTop: -2.5,
     borderRadius: 3,
     backgroundColor: '#00FFD2',
     shadowColor: '#00FFD2',
@@ -404,5 +398,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.72)',
     borderRadius: 18,
     fontSize: 13,
+    textAlign: 'center',
   },
 });
