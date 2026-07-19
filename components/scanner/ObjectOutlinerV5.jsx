@@ -6,9 +6,13 @@ import {
   Image as SkiaImage,
   Skia,
 } from '@shopify/react-native-skia';
+import { File } from 'expo-file-system';
+import { Image as ExpoImage } from 'expo-image';
 import { useIsFocused } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
+  Pressable,
   StyleSheet,
   Text,
   useWindowDimensions,
@@ -18,18 +22,30 @@ import {
   Camera,
   useCameraDevice,
   useCameraPermission,
-  useFrameOutput,
 } from 'react-native-vision-camera';
-import { useSharedValue } from 'react-native-reanimated';
-import { scheduleOnRN } from 'react-native-worklets';
 
-import KeepFlipCannyModule from '@/modules/keepflip-local-vision/src/KeepFlipCannyModule';
+import KeepFlipImageTraceModule from '@/modules/keepflip-local-vision/src/KeepFlipImageTraceModule';
 
-const EDGE_OUTPUT_TARGET = Object.freeze({ width: 640, height: 480 });
-const PROCESS_EVERY_NTH_FRAME = 12;
 const LOW_THRESHOLD = 48;
 const HIGH_THRESHOLD = 118;
 const EDGE_COLOR = Object.freeze({ red: 0, green: 255, blue: 210 });
+
+function toFileUri(source) {
+  const trimmed = String(source ?? '').trim();
+  if (/^[a-z][a-z\d+.-]*:\/\//i.test(trimmed)) return trimmed;
+  return `file://${trimmed.replaceAll('\\', '/')}`;
+}
+
+function deleteTemporaryFile(path) {
+  if (!path) return;
+
+  try {
+    const file = new File(path);
+    if (file.exists) file.delete();
+  } catch {
+    // Expo's cache directory can remove an abandoned capture later.
+  }
+}
 
 function makeEdgeImage(edgeFrame) {
   if (edgeFrame == null) return null;
@@ -61,26 +77,36 @@ function makeEdgeImage(edgeFrame) {
 }
 
 export default function ObjectOutlinerV5() {
+  const cameraRef = useRef(null);
   const mountedRef = useRef(true);
-  const processingRef = useRef(false);
-  const requestSequenceRef = useRef(0);
-  const hasReceivedEdgesRef = useRef(false);
-  const lastStatusUpdateRef = useRef(0);
-  const frameSequence = useSharedValue(0);
-  const frameErrorCount = useSharedValue(0);
+  const capturedPathRef = useRef(null);
   const isFocused = useIsFocused();
   const { width: viewWidth, height: viewHeight } = useWindowDimensions();
   const { hasPermission, requestPermission } = useCameraPermission();
   const device = useCameraDevice('back');
   const [isPreviewReady, setIsPreviewReady] = useState(false);
+  const [isTracing, setIsTracing] = useState(false);
+  const [capturedUri, setCapturedUri] = useState(null);
   const [edgeFrame, setEdgeFrame] = useState(null);
-  const [status, setStatus] = useState('Preparing centered-item tracing…');
+  const [status, setStatus] = useState(
+    'Center one item on the reticle, then tap TRACE ITEM.',
+  );
+
+  const clearCapturedResult = useCallback(() => {
+    const previousPath = capturedPathRef.current;
+    capturedPathRef.current = null;
+    deleteTemporaryFile(previousPath);
+    setCapturedUri(null);
+    setEdgeFrame(null);
+    setStatus('Center one item on the reticle, then tap TRACE ITEM.');
+  }, []);
 
   useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
-      requestSequenceRef.current += 1;
+      deleteTemporaryFile(capturedPathRef.current);
+      capturedPathRef.current = null;
     };
   }, []);
 
@@ -91,168 +117,84 @@ export default function ObjectOutlinerV5() {
     });
   }, [hasPermission, requestPermission]);
 
-  const processYPlane = useCallback(
-    async (yPlane, width, height, rowStride) => {
-      if (
-        !mountedRef.current ||
-        processingRef.current ||
-        !(yPlane instanceof Uint8Array) ||
-        width < 8 ||
-        height < 8 ||
-        rowStride < width ||
-        yPlane.length < rowStride * height
-      ) {
+  const traceCurrentItem = useCallback(async () => {
+    if (
+      isTracing ||
+      !isPreviewReady ||
+      cameraRef.current == null ||
+      capturedUri != null
+    ) {
+      return;
+    }
+
+    setIsTracing(true);
+    setEdgeFrame(null);
+    setStatus('Capturing a full-color image…');
+
+    let snapshot;
+    let temporaryPath;
+
+    try {
+      snapshot = await cameraRef.current.takeSnapshot();
+      temporaryPath = await snapshot.saveToTemporaryFileAsync('jpg', 92);
+
+      if (!mountedRef.current) {
+        deleteTemporaryFile(temporaryPath);
         return;
       }
 
-      processingRef.current = true;
-      const requestId = ++requestSequenceRef.current;
+      setStatus('Separating the centered item from the background…');
 
-      try {
-        const result = await KeepFlipCannyModule.detectCenteredSubjectYPlane(
-          width,
-          height,
-          rowStride,
-          yPlane,
-          LOW_THRESHOLD,
-          HIGH_THRESHOLD,
+      const result = await KeepFlipImageTraceModule.traceCenteredSubjectImage(
+        temporaryPath,
+        LOW_THRESHOLD,
+        HIGH_THRESHOLD,
+      );
+
+      if (!mountedRef.current) {
+        deleteTemporaryFile(temporaryPath);
+        return;
+      }
+
+      if (!result.subjectFound) {
+        deleteTemporaryFile(temporaryPath);
+        setStatus(
+          'No centered item was isolated. Move the item onto the reticle and use a clearer background.',
         );
+        return;
+      }
 
-        if (!mountedRef.current || requestId !== requestSequenceRef.current) {
-          return;
-        }
+      const pixels =
+        result.pixels instanceof Uint8Array
+          ? result.pixels
+          : new Uint8Array(result.pixels);
 
-        if (!result.subjectFound) {
-          setEdgeFrame(null);
-          setStatus('Center one item on the reticle and keep the background clear.');
-          return;
-        }
+      if (pixels.length !== result.width * result.height) {
+        throw new Error('The native trace returned an invalid edge mask.');
+      }
 
-        const pixels =
-          result.pixels instanceof Uint8Array
-            ? result.pixels
-            : new Uint8Array(result.pixels);
-
-        if (pixels.length !== result.width * result.height) {
-          throw new Error('Native subject trace returned an invalid edge mask.');
-        }
-
-        setEdgeFrame({ ...result, pixels });
-
-        const now = Date.now();
-        if (
-          !hasReceivedEdgesRef.current ||
-          now - lastStatusUpdateRef.current >= 1000
-        ) {
-          hasReceivedEdgesRef.current = true;
-          lastStatusUpdateRef.current = now;
-          setStatus(
-            `Tracing centered item only • ${Math.round(result.processingMs)} ms`,
-          );
-        }
-      } catch (error) {
-        if (!mountedRef.current || requestId !== requestSequenceRef.current) {
-          return;
-        }
-
-        setEdgeFrame(null);
+      capturedPathRef.current = temporaryPath;
+      temporaryPath = null;
+      setCapturedUri(toFileUri(capturedPathRef.current));
+      setEdgeFrame({ ...result, pixels });
+      setStatus(
+        `Centered item traced • ${Math.round(result.processingMs)} ms`,
+      );
+    } catch (error) {
+      deleteTemporaryFile(temporaryPath);
+      if (mountedRef.current) {
         setStatus(
           error instanceof Error
-            ? error.message
-            : 'Centered-item tracing could not process this frame.',
+            ? `Trace failed: ${error.message}`
+            : 'Trace failed before an item outline could be produced.',
         );
-      } finally {
-        if (requestId === requestSequenceRef.current) {
-          processingRef.current = false;
-        }
       }
-    },
-    [],
-  );
+    } finally {
+      snapshot?.dispose();
+      if (mountedRef.current) setIsTracing(false);
+    }
+  }, [capturedUri, isPreviewReady, isTracing]);
 
-  const reportFrameError = useCallback((message) => {
-    if (!mountedRef.current) return;
-    setStatus(message || 'The camera returned an unsupported frame.');
-  }, []);
-
-  const frameOutput = useFrameOutput({
-    targetResolution: EDGE_OUTPUT_TARGET,
-    pixelFormat: 'yuv',
-    dropFramesWhileBusy: true,
-    enablePhysicalBufferRotation: true,
-    onFrame(frame) {
-      'worklet';
-
-      frameSequence.value += 1;
-      const shouldProcess =
-        frameSequence.value === 1 ||
-        frameSequence.value % PROCESS_EVERY_NTH_FRAME === 0;
-
-      if (!shouldProcess) {
-        frame.dispose();
-        return;
-      }
-
-      try {
-        if (!frame.isPlanar) {
-          frameErrorCount.value += 1;
-          if (frameErrorCount.value <= 2) {
-            scheduleOnRN(
-              reportFrameError,
-              `Expected YUV but received ${frame.pixelFormat}.`,
-            );
-          }
-          return;
-        }
-
-        const planes = frame.getPlanes();
-        if (planes.length === 0) {
-          frameErrorCount.value += 1;
-          if (frameErrorCount.value <= 2) {
-            scheduleOnRN(reportFrameError, 'The camera returned no Y plane.');
-          }
-          return;
-        }
-
-        const plane = planes[0];
-        const width = plane.width;
-        const height = plane.height;
-        const rowStride = plane.bytesPerRow;
-        const source = new Uint8Array(plane.getPixelBuffer());
-
-        if (
-          width < 8 ||
-          height < 8 ||
-          rowStride < width ||
-          source.length < rowStride * height
-        ) {
-          frameErrorCount.value += 1;
-          if (frameErrorCount.value <= 2) {
-            scheduleOnRN(reportFrameError, 'The Y plane was incomplete.');
-          }
-          return;
-        }
-
-        const ownedYPlane = new Uint8Array(rowStride * height);
-        ownedYPlane.set(source.subarray(0, rowStride * height));
-
-        frameErrorCount.value = 0;
-        scheduleOnRN(processYPlane, ownedYPlane, width, height, rowStride);
-      } catch {
-        frameErrorCount.value += 1;
-        if (frameErrorCount.value <= 2) {
-          scheduleOnRN(
-            reportFrameError,
-            'Could not read the camera luminance plane.',
-          );
-        }
-      } finally {
-        frame.dispose();
-      }
-    },
-  });
-
-  const cameraOutputs = useMemo(() => [frameOutput], [frameOutput]);
   const edgeImage = useMemo(() => makeEdgeImage(edgeFrame), [edgeFrame]);
 
   useEffect(
@@ -273,27 +215,28 @@ export default function ObjectOutlinerV5() {
   return (
     <View style={styles.screen}>
       <Camera
+        ref={cameraRef}
         device={device}
         implementationMode="compatible"
-        isActive={isFocused}
+        isActive={isFocused && capturedUri == null}
         onPreviewStarted={() => {
           setIsPreviewReady(true);
-          setStatus('Center one item on the reticle and hold steady.');
+          setStatus('Center one item on the reticle, then tap TRACE ITEM.');
         }}
-        onPreviewStopped={() => {
-          requestSequenceRef.current += 1;
-          processingRef.current = false;
-          hasReceivedEdgesRef.current = false;
-          setIsPreviewReady(false);
-          setEdgeFrame(null);
-          setStatus('Camera paused.');
-        }}
-        outputs={cameraOutputs}
+        onPreviewStopped={() => setIsPreviewReady(false)}
         resizeMode="cover"
         style={StyleSheet.absoluteFill}
       />
 
-      {isPreviewReady && edgeImage != null ? (
+      {capturedUri != null ? (
+        <ExpoImage
+          contentFit="cover"
+          source={{ uri: capturedUri }}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : null}
+
+      {capturedUri != null && edgeImage != null ? (
         <Canvas pointerEvents="none" style={StyleSheet.absoluteFill}>
           <SkiaImage
             image={edgeImage}
@@ -302,7 +245,7 @@ export default function ObjectOutlinerV5() {
             width={viewWidth}
             height={viewHeight}
             fit="cover"
-            opacity={0.42}>
+            opacity={0.46}>
             <Blur blur={2.1} mode="clamp" />
           </SkiaImage>
           <SkiaImage
@@ -312,20 +255,56 @@ export default function ObjectOutlinerV5() {
             width={viewWidth}
             height={viewHeight}
             fit="cover"
-            opacity={0.98}
+            opacity={1}
           />
         </Canvas>
       ) : null}
 
-      <View pointerEvents="none" style={styles.reticle}>
-        <View style={styles.reticleRing} />
-        <View style={styles.reticleHorizontal} />
-        <View style={styles.reticleVertical} />
-        <View style={styles.centerDot} />
+      {capturedUri == null ? (
+        <View pointerEvents="none" style={styles.reticle}>
+          <View style={styles.reticleRing} />
+          <View style={styles.reticleHorizontal} />
+          <View style={styles.reticleVertical} />
+          <View style={styles.centerDot} />
+        </View>
+      ) : null}
+
+      <View pointerEvents="none" style={styles.instructions}>
+        <Text style={styles.instructionsTitle}>INSTANT OBJECT TRACE</Text>
+        <Text style={styles.instructionsText}>
+          Keep the item centered and separated from background objects.
+        </Text>
       </View>
 
-      <View pointerEvents="none" style={styles.statusPill}>
-        <Text style={styles.statusText}>{status}</Text>
+      <View style={styles.controls}>
+        <View style={styles.statusPill}>
+          {isTracing ? <ActivityIndicator size="small" color="#00FFD2" /> : null}
+          <Text style={styles.statusText}>{status}</Text>
+        </View>
+
+        {capturedUri == null ? (
+          <Pressable
+            disabled={!isPreviewReady || isTracing}
+            onPress={traceCurrentItem}
+            style={({ pressed }) => [
+              styles.traceButton,
+              (!isPreviewReady || isTracing) && styles.buttonDisabled,
+              pressed && styles.buttonPressed,
+            ]}>
+            <Text style={styles.traceButtonText}>
+              {isTracing ? 'TRACING…' : 'TRACE ITEM'}
+            </Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            onPress={clearCapturedResult}
+            style={({ pressed }) => [
+              styles.retakeButton,
+              pressed && styles.buttonPressed,
+            ]}>
+            <Text style={styles.retakeButtonText}>RETAKE</Text>
+          </Pressable>
+        )}
       </View>
     </View>
   );
@@ -343,61 +322,127 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textAlignVertical: 'center',
   },
+  instructions: {
+    position: 'absolute',
+    top: 42,
+    left: 24,
+    right: 24,
+    alignItems: 'center',
+  },
+  instructionsTitle: {
+    color: '#00FFD2',
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 1.8,
+  },
+  instructionsText: {
+    marginTop: 7,
+    color: 'rgba(255,255,255,0.82)',
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
+  },
   reticle: {
     position: 'absolute',
     left: '50%',
     top: '50%',
-    width: 44,
-    height: 44,
-    marginLeft: -22,
-    marginTop: -22,
+    width: 58,
+    height: 58,
+    marginLeft: -29,
+    marginTop: -29,
     alignItems: 'center',
     justifyContent: 'center',
   },
   reticleRing: {
     position: 'absolute',
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    borderWidth: 1.5,
-    borderColor: 'rgba(0, 255, 210, 0.78)',
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 2,
+    borderColor: 'rgba(0, 255, 210, 0.88)',
   },
   reticleHorizontal: {
     position: 'absolute',
-    width: 42,
-    height: 1,
-    backgroundColor: 'rgba(0, 255, 210, 0.66)',
+    width: 56,
+    height: 1.5,
+    backgroundColor: 'rgba(0, 255, 210, 0.72)',
   },
   reticleVertical: {
     position: 'absolute',
-    width: 1,
-    height: 42,
-    backgroundColor: 'rgba(0, 255, 210, 0.66)',
+    width: 1.5,
+    height: 56,
+    backgroundColor: 'rgba(0, 255, 210, 0.72)',
   },
   centerDot: {
-    width: 5,
-    height: 5,
+    width: 6,
+    height: 6,
     borderRadius: 3,
     backgroundColor: '#00FFD2',
     shadowColor: '#00FFD2',
-    shadowOpacity: 0.9,
-    shadowRadius: 8,
+    shadowOpacity: 0.95,
+    shadowRadius: 9,
   },
-  statusPill: {
+  controls: {
     position: 'absolute',
     left: 20,
     right: 20,
-    bottom: 40,
+    bottom: 34,
+    alignItems: 'stretch',
+    gap: 14,
+  },
+  statusPill: {
+    minHeight: 48,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0, 0, 0, 0.78)',
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
   },
   statusText: {
-    overflow: 'hidden',
-    paddingHorizontal: 14,
-    paddingVertical: 9,
+    flexShrink: 1,
     color: '#fff',
-    backgroundColor: 'rgba(0, 0, 0, 0.72)',
-    borderRadius: 18,
     fontSize: 13,
+    lineHeight: 18,
     textAlign: 'center',
+  },
+  traceButton: {
+    minHeight: 58,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: '#00FFD2',
+    backgroundColor: 'rgba(0, 255, 210, 0.16)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  traceButtonText: {
+    color: '#EFFFFB',
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+  },
+  retakeButton: {
+    minHeight: 54,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.72)',
+    backgroundColor: 'rgba(0,0,0,0.62)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  retakeButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 1.3,
+  },
+  buttonDisabled: {
+    opacity: 0.45,
+  },
+  buttonPressed: {
+    transform: [{ scale: 0.985 }],
+    opacity: 0.8,
   },
 });
