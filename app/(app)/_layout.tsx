@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router/stack';
+import { Stack } from 'expo-router';
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -39,6 +39,8 @@ export default function AppShellLayout() {
           <Stack.Screen name="inventory" />
           <Stack.Screen name="account" />
           <Stack.Screen name="explore" />
+          <Stack.Screen name="object-outliner" />
+          <Stack.Screen name="instant-object-trace" />
         </Stack>
         <KeepFlipSlideDownMenu />
       </View>

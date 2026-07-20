@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon (2).png",
     "scheme": "keepflip",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.keepflip.app",
@@ -43,8 +42,8 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/icon.png",
-          "imageWidth": 350,
+          "image": "./assets/images/icon (2).png",
+          "imageWidth": 225,
           "resizeMode": "contain",
           "backgroundColor": "#030305",
           "dark": {

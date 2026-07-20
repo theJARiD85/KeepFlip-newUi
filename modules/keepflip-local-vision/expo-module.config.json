@@ -1,6 +1,10 @@
 {
   "platforms": ["android"],
   "android": {
-    "modules": ["expo.modules.keepfliplocalvision.KeepFlipLocalVisionModule"]
+    "modules": [
+      "expo.modules.keepfliplocalvision.KeepFlipLocalVisionModule",
+      "expo.modules.keepfliplocalvision.KeepFlipCannyModule",
+      "expo.modules.keepfliplocalvision.KeepFlipImageTraceModule"
+    ]
   }
 }

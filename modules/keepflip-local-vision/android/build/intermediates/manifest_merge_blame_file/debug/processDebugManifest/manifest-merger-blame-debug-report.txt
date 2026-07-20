@@ -1,0 +1,17 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="expo.modules.keepfliplocalvision" >
+4
+5    <uses-sdk android:minSdkVersion="26" />
+6
+7    <application>
+7-->C:\Users\theja\KeepFlip\modules\keepflip-local-vision\android\src\main\AndroidManifest.xml:2:3-6:17
+8        <meta-data
+8-->C:\Users\theja\KeepFlip\modules\keepflip-local-vision\android\src\main\AndroidManifest.xml:3:5-5:41
+9            android:name="com.google.mlkit.vision.DEPENDENCIES"
+9-->C:\Users\theja\KeepFlip\modules\keepflip-local-vision\android\src\main\AndroidManifest.xml:4:7-58
+10            android:value="subject_segment" />
+10-->C:\Users\theja\KeepFlip\modules\keepflip-local-vision\android\src\main\AndroidManifest.xml:5:7-38
+11    </application>
+12
+13</manifest>

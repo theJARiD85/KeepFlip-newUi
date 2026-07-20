@@ -1,77 +1,68 @@
 import {
   createContext,
   type PropsWithChildren,
-  use,
   useCallback,
-  useEffect,
+  useContext,
   useMemo,
-  useRef,
   useState,
 } from 'react';
 
-export const MENU_CLOSE_DURATION_MS = 260;
+export const MENU_CLOSE_DURATION_MS = 240;
 
 type KeepFlipMenuContextValue = {
-  closeMenu: () => void;
   isMenuOpen: boolean;
   isMenuPresented: boolean;
   openMenu: () => void;
+  closeMenu: () => void;
   toggleMenu: () => void;
 };
 
-const noOp = () => undefined;
-const fallbackMenuContext: KeepFlipMenuContextValue = {
-  closeMenu: noOp,
-  isMenuOpen: false,
-  isMenuPresented: false,
-  openMenu: noOp,
-  toggleMenu: noOp,
-};
+const KeepFlipMenuContext =
+  createContext<KeepFlipMenuContextValue | null>(null);
 
-const KeepFlipMenuContext = createContext<KeepFlipMenuContextValue>(fallbackMenuContext);
-
-export function KeepFlipMenuProvider({ children }: PropsWithChildren) {
+export function KeepFlipMenuProvider({
+  children,
+}: PropsWithChildren) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isMenuPresented, setIsMenuPresented] = useState(false);
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const clearCloseTimer = useCallback(() => {
-    if (closeTimer.current) {
-      clearTimeout(closeTimer.current);
-      closeTimer.current = null;
-    }
-  }, []);
 
   const openMenu = useCallback(() => {
-    clearCloseTimer();
-    setIsMenuPresented(true);
     setIsMenuOpen(true);
-  }, [clearCloseTimer]);
+  }, []);
 
   const closeMenu = useCallback(() => {
-    clearCloseTimer();
     setIsMenuOpen(false);
-    closeTimer.current = setTimeout(() => {
-      setIsMenuPresented(false);
-      closeTimer.current = null;
-    }, MENU_CLOSE_DURATION_MS);
-  }, [clearCloseTimer]);
+  }, []);
 
   const toggleMenu = useCallback(() => {
-    if (isMenuOpen) closeMenu();
-    else openMenu();
-  }, [closeMenu, isMenuOpen, openMenu]);
+    setIsMenuOpen((current) => !current);
+  }, []);
 
-  useEffect(() => clearCloseTimer, [clearCloseTimer]);
-
-  const value = useMemo(
-    () => ({ closeMenu, isMenuOpen, isMenuPresented, openMenu, toggleMenu }),
-    [closeMenu, isMenuOpen, isMenuPresented, openMenu, toggleMenu],
+  const value = useMemo<KeepFlipMenuContextValue>(
+    () => ({
+      isMenuOpen,
+      isMenuPresented: isMenuOpen,
+      openMenu,
+      closeMenu,
+      toggleMenu,
+    }),
+    [closeMenu, isMenuOpen, openMenu, toggleMenu],
   );
 
-  return <KeepFlipMenuContext value={value}>{children}</KeepFlipMenuContext>;
+  return (
+    <KeepFlipMenuContext.Provider value={value}>
+      {children}
+    </KeepFlipMenuContext.Provider>
+  );
 }
 
 export function useKeepFlipMenu() {
-  return use(KeepFlipMenuContext);
+  const context = useContext(KeepFlipMenuContext);
+
+  if (context == null) {
+    throw new Error(
+      'useKeepFlipMenu must be used inside KeepFlipMenuProvider.',
+    );
+  }
+
+  return context;
 }

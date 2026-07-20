@@ -1,5 +1,5 @@
-import { useFocusEffect } from '@react-navigation/native';
-import { useCallback, useMemo, useState } from 'react';
+import { useFocusEffect } from "expo-router";
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
