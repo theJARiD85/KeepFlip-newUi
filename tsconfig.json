@@ -15,7 +15,6 @@
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts",
-    "components/scanner/ObjectOutlinerV5.jsx"
+    "expo-env.d.ts"
   ]
 }
