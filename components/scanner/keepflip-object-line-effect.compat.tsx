@@ -1,41 +1,18 @@
-import { memo, useSyncExternalStore } from "react";
-
-import { KeepFlipObjectOverlay as KeepFlipObjectOverlayBase } from "@/components/scanner/keepflip-object-line-effect.base";
-import type { KeepFlipLiveObjectDetection } from "@/services/live-object-detection";
-import {
-  getLatestCapturedObjectContours,
-  subscribeToCapturedObjectContours,
-} from "@/services/captured-object-contour-store";
-
 type KeepFlipObjectOverlayProps = {
-  detections: KeepFlipLiveObjectDetection[];
+  detections: readonly unknown[];
   frameHeight: number;
   frameWidth: number;
   viewHeight: number;
   viewWidth: number;
 };
 
-export const KeepFlipObjectOverlay = memo(function KeepFlipObjectOverlay({
-  detections,
-  frameHeight,
-  frameWidth,
-  viewHeight,
-  viewWidth,
-}: KeepFlipObjectOverlayProps) {
-  const contours = useSyncExternalStore(
-    subscribeToCapturedObjectContours,
-    getLatestCapturedObjectContours,
-    getLatestCapturedObjectContours,
-  );
-
-  return (
-    <KeepFlipObjectOverlayBase
-      contours={contours}
-      detections={detections}
-      frameHeight={frameHeight}
-      frameWidth={frameWidth}
-      viewHeight={viewHeight}
-      viewWidth={viewWidth}
-    />
-  );
-});
+/**
+ * Compatibility shim retained until the scanner screen is next refactored.
+ * Tripo now provides the generated 3D model, so KeepFlip no longer draws a
+ * locally inferred contour or wireframe over the captured photo.
+ */
+export function KeepFlipObjectOverlay(
+  _props: KeepFlipObjectOverlayProps,
+): null {
+  return null;
+}
