@@ -65,11 +65,11 @@ import {
   type ItemAnalysisSuccess,
 } from "@/services/item-analysis-service";
 import { saveAnalyzedItemToInventory } from "@/services/inventory-service";
-import { KeepFlipObjectOverlay } from "@/components/scanner/keepflip-object-line-effect";
+import { MeshViewer } from "@/components/scanner/mesh-viewer";
 import {
-  detectObjectsInCapturedPhoto,
-  type CapturedObjectTraceResult,
-} from "@/services/captured-object-detection.native";
+  createTripo3dModelFromImage,
+  type Tripo3dModelResult,
+} from "@/services/tripo3d-model-api";
 
 const CAMERA_PHOTO_RESOLUTION = Object.freeze({
   width: 1920,
@@ -239,7 +239,11 @@ export default function ScannerScreen() {
   const multiScanSequenceRef = useRef(0);
   const uploadSequenceRef = useRef(0);
   const torchRequestSequenceRef = useRef(0);
-  const capturedObjectTraceRequestRef = useRef(0);
+  const modelGenerationRequestRef = useRef(0);
+  const modelSourceUriRef = useRef<string | null>(null);
+  const modelGenerationStateRef = useRef<"idle" | "loading" | "ready">(
+    "idle",
+  );
   const analysisAbortControllerRef = useRef<AbortController | null>(null);
   const atmosphereTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const device = useCameraDevice("back");
@@ -247,7 +251,12 @@ export default function ScannerScreen() {
     targetResolution: CAMERA_PHOTO_RESOLUTION,
   });
   const cameraOutputs = useMemo(() => [photoOutput], [photoOutput]);
-
+  const [isGeneratingModel, setIsGeneratingModel] = useState(false);
+  const [generatedModel, setGeneratedModel] =
+    useState<Tripo3dModelResult | null>(null);
+  const [modelGenerationError, setModelGenerationError] = useState<string | null>(
+    null,
+  );
   const { hasPermission, canRequestPermission, requestPermission } =
     useCameraPermission();
   const [torchEnabled, setTorchEnabled] = useState(false);
@@ -270,11 +279,9 @@ export default function ScannerScreen() {
   const [analysisState, setAnalysisState] = useState<ItemAnalysisState | null>(
     null,
   );
-  const [analysisBackdropUri, setAnalysisBackdropUri] = useState<string | null>(
-    null,
+  const [analysisBackdropUri, setAnalysisBackdropUri] = useState<string | null>(    null,
   );
-  const [capturedObjectTrace, setCapturedObjectTrace] =
-    useState<CapturedObjectTraceResult | null>(null);
+
   const [completedAnalysis, setCompletedAnalysis] =
     useState<ItemAnalysisSuccess | null>(null);
   const [completedPhotoUris, setCompletedPhotoUris] = useState<string[]>([]);
@@ -384,6 +391,72 @@ export default function ScannerScreen() {
     [isScannerUiHidden],
   );
 
+  const startModelGeneration = useCallback(
+    async (imageUri: string) => {
+      const normalizedUri = imageUri.trim();
+      if (!normalizedUri) return;
+
+      if (!user?.$id) {
+        setModelGenerationError(
+          "Sign in before generating a 3D model for this scan.",
+        );
+        return;
+      }
+
+      if (
+        modelSourceUriRef.current === normalizedUri &&
+        modelGenerationStateRef.current !== "idle"
+      ) {
+        return;
+      }
+
+      const requestId = ++modelGenerationRequestRef.current;
+      modelSourceUriRef.current = normalizedUri;
+      modelGenerationStateRef.current = "loading";
+      setGeneratedModel(null);
+      setModelGenerationError(null);
+      setIsGeneratingModel(true);
+
+      try {
+        const result = await createTripo3dModelFromImage({
+          imageUri: normalizedUri,
+          userId: user.$id,
+        });
+
+        if (requestId !== modelGenerationRequestRef.current) return;
+        modelGenerationStateRef.current = "ready";
+        setGeneratedModel(result);
+        void Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Success,
+        ).catch(() => undefined);
+      } catch (error) {
+        if (requestId !== modelGenerationRequestRef.current) return;
+
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "KeepFlip could not generate the 3D model.";
+        modelGenerationStateRef.current = "idle";
+        setModelGenerationError(errorMessage);
+
+        if (__DEV__) {
+          console.error("[KeepFlip Tripo3D] Model generation failed.", error);
+        }
+      } finally {
+        if (requestId === modelGenerationRequestRef.current) {
+          setIsGeneratingModel(false);
+        }
+      }
+    },
+    [user?.$id],
+  );
+
+  const handleModelViewerError = useCallback((message: string) => {
+    modelGenerationStateRef.current = "idle";
+    setGeneratedModel(null);
+    setModelGenerationError(message);
+  }, []);
+
   const clearAtmosphereTimer = useCallback(() => {
     if (atmosphereTimerRef.current == null) return;
     clearTimeout(atmosphereTimerRef.current);
@@ -436,7 +509,7 @@ export default function ScannerScreen() {
   useEffect(
     () => () => {
       analysisAbortControllerRef.current?.abort();
-      capturedObjectTraceRequestRef.current += 1;
+      modelGenerationRequestRef.current += 1;
       clearAtmosphereTimer();
     },
     [clearAtmosphereTimer],
@@ -467,10 +540,14 @@ export default function ScannerScreen() {
     }
     analysisAbortControllerRef.current?.abort();
     analysisAbortControllerRef.current = null;
-    capturedObjectTraceRequestRef.current += 1;
+    modelGenerationRequestRef.current += 1;
+    modelSourceUriRef.current = null;
+    modelGenerationStateRef.current = "idle";
+    setIsGeneratingModel(false);
+    setGeneratedModel(null);
+    setModelGenerationError(null);
     setAnalysisState(null);
     setAnalysisBackdropUri(null);
-    setCapturedObjectTrace(null);
   }, [analysisState, closeMenu, isMenuPresented]);
 
   useEffect(() => {
@@ -509,10 +586,8 @@ export default function ScannerScreen() {
         if (analysisState.status === "analyzing") return true;
         analysisAbortControllerRef.current?.abort();
         analysisAbortControllerRef.current = null;
-        capturedObjectTraceRequestRef.current += 1;
         setAnalysisState(null);
         setAnalysisBackdropUri(null);
-        setCapturedObjectTrace(null);
         return true;
       },
     );
@@ -646,6 +721,10 @@ export default function ScannerScreen() {
       }
 
       acceptPickedPhotos(result.assets);
+      const firstUri = result.assets[0]?.uri?.trim();
+      if (firstUri) {
+        void startModelGeneration(firstUri);
+      }
     } catch {
       setAtmospherePhase("idle");
       setMessage("Could not open your photos. Please try again.");
@@ -656,6 +735,7 @@ export default function ScannerScreen() {
     acceptPickedPhotos,
     clearAtmosphereTimer,
     isPickingPhoto,
+    startModelGeneration,
     uploadedPhotos.length,
   ]);
 
@@ -708,34 +788,6 @@ export default function ScannerScreen() {
     photoOutput,
     scheduleAtmosphereReset,
   ]);
-
-  const traceCapturedPhoto = useCallback(async (source: string) => {
-    const requestId = ++capturedObjectTraceRequestRef.current;
-    setCapturedObjectTrace(null);
-
-    try {
-      const result = await detectObjectsInCapturedPhoto(source);
-      if (requestId !== capturedObjectTraceRequestRef.current) return;
-
-      setCapturedObjectTrace(result);
-      if (__DEV__) {
-        console.info("[KeepFlip captured vision] Photo trace ready.", {
-          detections: result.detections.length,
-          frame: `${result.frameWidth}x${result.frameHeight}`,
-        });
-      }
-    } catch (error) {
-      if (requestId !== capturedObjectTraceRequestRef.current) return;
-
-      setCapturedObjectTrace(null);
-      if (__DEV__) {
-        console.warn(
-          "[KeepFlip captured vision] Photo trace unavailable.",
-          error,
-        );
-      }
-    }
-  }, []);
 
   const openMultiReview = useCallback(() => {
     if (
@@ -809,12 +861,17 @@ export default function ScannerScreen() {
 
     if (tool === "single") {
       setSinglePhotoUri(photoPath);
-      setMessage("Photo captured. Starting analysis...");
+      setMessage("Photo captured. Building 3D model and starting analysis...");
+      void startModelGeneration(photoPath);
       await runAnalysis([photoPath]);
       return;
     }
 
     if (tool === "multi") {
+      if (multiScanPhotos.length === 0) {
+        void startModelGeneration(photoPath);
+      }
+
       setMultiScanPhotos((photos) => {
         multiScanSequenceRef.current += 1;
         const photo: MultiScanPhoto = {
@@ -848,7 +905,12 @@ export default function ScannerScreen() {
     captureLockRef.current = false;
     multiScanSequenceRef.current = 0;
     uploadSequenceRef.current = 0;
-    capturedObjectTraceRequestRef.current += 1;
+    modelGenerationRequestRef.current += 1;
+    modelSourceUriRef.current = null;
+    modelGenerationStateRef.current = "idle";
+    setIsGeneratingModel(false);
+    setGeneratedModel(null);
+    setModelGenerationError(null);
     setSinglePhotoUri(null);
     setMultiScanPhotos([]);
     setBatchScanPhotos([]);
@@ -857,7 +919,6 @@ export default function ScannerScreen() {
     setIsUploadReviewOpen(false);
     setAnalysisState(null);
     setAnalysisBackdropUri(null);
-    setCapturedObjectTrace(null);
     setCompletedAnalysis(null);
     setCompletedPhotoUris([]);
     setSelectedTool("single");
@@ -875,10 +936,14 @@ export default function ScannerScreen() {
 
     analysisAbortControllerRef.current?.abort();
     analysisAbortControllerRef.current = null;
-    capturedObjectTraceRequestRef.current += 1;
+    modelGenerationRequestRef.current += 1;
+    modelSourceUriRef.current = null;
+    modelGenerationStateRef.current = "idle";
+    setIsGeneratingModel(false);
+    setGeneratedModel(null);
+    setModelGenerationError(null);
     setAnalysisState(null);
     setAnalysisBackdropUri(null);
-    setCapturedObjectTrace(null);
     setCompletedAnalysis(null);
     setCompletedPhotoUris([]);
   };
@@ -934,12 +999,13 @@ export default function ScannerScreen() {
       return;
     }
 
+    void startModelGeneration(photoUris[0]);
+
     setCompletedAnalysis(null);
     setCompletedPhotoUris([]);
     const controller = new AbortController();
     analysisAbortControllerRef.current = controller;
     setAnalysisBackdropUri(toDisplayUri(photoUris[0]));
-    void traceCapturedPhoto(photoUris[0]);
     setAnalysisState(analysisProgressState("authenticating"));
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
       () => undefined,
@@ -1002,7 +1068,12 @@ export default function ScannerScreen() {
     }
   }
 
-  const handleAnalyzeItem = () => runAnalysis(analysisPhotoUris);
+  const handleAnalyzeItem = () => {
+    if (analysisPhotoUris[0]) {
+      void startModelGeneration(analysisPhotoUris[0]);
+    }
+    return runAnalysis(analysisPhotoUris);
+  };
 
   const analysisButton =
     canAnalyzeCurrentTool && analysisState == null && !isPhotoReviewOpen ? (
@@ -1343,33 +1414,79 @@ export default function ScannerScreen() {
         style={styles.interfaceLayer}
       >
         {analysisBackdropUri ? (
-        <Animated.View
-          entering={FadeIn.duration(180)}
-          exiting={FadeOut.duration(160)}
-          pointerEvents="none"
-          style={StyleSheet.absoluteFill}
-        >
-          <Image
-            cachePolicy="memory-disk"
-            contentFit="cover"
-            source={{ uri: analysisBackdropUri }}
+          <Animated.View
+            entering={FadeIn.duration(180)}
+            exiting={FadeOut.duration(160)}
+            pointerEvents="none"
             style={StyleSheet.absoluteFill}
-            transition={120}
-          />
-          {capturedObjectTrace ? (
-            <KeepFlipObjectOverlay
-              key={capturedObjectTrace.sourceUri}
-              detections={capturedObjectTrace.detections}
-              frameHeight={capturedObjectTrace.frameHeight}
-              frameWidth={capturedObjectTrace.frameWidth}
-              viewHeight={screenHeight}
-              viewWidth={screenWidth}
-            />
-          ) : null}
-        </Animated.View>
-      ) : null}
-      <View pointerEvents="none" style={styles.cameraScrim} />
-      {analysisState?.status === "analyzing" ? (
+          >
+            {generatedModel ? (
+              <MeshViewer
+                jwt={generatedModel.modelJwt}
+                modelUrl={generatedModel.modelUrl}
+                onError={handleModelViewerError}
+                projectId={generatedModel.modelProjectId}
+                style={StyleSheet.absoluteFill}
+              />
+            ) : (
+                <Image
+                  cachePolicy="memory-disk"
+                  contentFit="cover"
+                  source={{ uri: analysisBackdropUri }}
+                  style={StyleSheet.absoluteFill}
+                  transition={120}
+                />
+            )}
+          </Animated.View>
+        ) : null}
+        <View
+          pointerEvents="none"
+          style={[
+            styles.cameraScrim,
+            generatedModel && styles.cameraScrimWithModel,
+          ]}
+        />
+        {analysisState &&
+        (isGeneratingModel || generatedModel || modelGenerationError) ? (
+          <Animated.View
+            entering={FadeIn.duration(180)}
+            exiting={FadeOut.duration(140)}
+            pointerEvents="none"
+            style={[
+              styles.modelStatusBadge,
+              { top: insets.top + verticalScale(78, 0.45) },
+              modelGenerationError && styles.modelStatusBadgeError,
+            ]}
+          >
+            {isGeneratingModel ? (
+              <ActivityIndicator
+                color={theme.colors.scannerCyan}
+                size="small"
+              />
+            ) : (
+              <View
+                style={[
+                  styles.modelStatusDot,
+                  modelGenerationError && styles.modelStatusDotError,
+                ]}
+              />
+            )}
+            <Text
+              numberOfLines={1}
+              style={[
+                styles.modelStatusText,
+                modelGenerationError && styles.modelStatusTextError,
+              ]}
+            >
+              {generatedModel
+                ? "3D MODEL READY • AUTO-ROTATING"
+                : isGeneratingModel
+                  ? "BUILDING 3D MODEL IN PARALLEL"
+                  : "3D MODEL UNAVAILABLE"}
+            </Text>
+          </Animated.View>
+        ) : null}
+        {analysisState?.status === "analyzing" && !generatedModel ? (
         <Animated.View
           entering={FadeIn.duration(220)}
           exiting={FadeOut.duration(180)}
@@ -1694,6 +1811,50 @@ const styles = StyleSheet.create({
       radial-gradient(circle at 24% 62%, rgba(141, 114, 255, 0.10) 0%, transparent 38%),
       linear-gradient(to bottom, rgba(2, 2, 4, 0.94) 0%, rgba(3, 3, 7, 0.12) 44%, rgba(6, 4, 10, 0.90) 100%)
     `,
+  },
+  cameraScrimWithModel: {
+    opacity: 0.48,
+  },
+  modelStatusBadge: {
+    position: "absolute",
+    right: 18,
+    left: 18,
+    zIndex: 32,
+    minHeight: 36,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 9,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+    borderRadius: theme.radii.pill,
+    borderWidth: 1,
+    borderColor: "rgba(88, 223, 232, 0.42)",
+    backgroundColor: "rgba(5, 7, 11, 0.86)",
+  },
+  modelStatusBadgeError: {
+    borderColor: "rgba(242, 211, 138, 0.42)",
+  },
+  modelStatusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: theme.colors.scannerCyan,
+    boxShadow: "0 0 10px rgba(88, 223, 232, 0.92)",
+  },
+  modelStatusDotError: {
+    backgroundColor: theme.colors.goldBright,
+    boxShadow: "0 0 10px rgba(242, 211, 138, 0.70)",
+  },
+  modelStatusText: {
+    flexShrink: 1,
+    color: theme.colors.scannerCyan,
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 1.25,
+  },
+  modelStatusTextError: {
+    color: theme.colors.goldBright,
   },
   analysisAtmosphereHost: {
     ...StyleSheet.absoluteFill,
