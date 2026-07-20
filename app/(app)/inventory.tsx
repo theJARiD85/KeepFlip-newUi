@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 
+import { KeepFlipNativeAdCard } from '@/components/ads/keepflip-native-ad-card';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
@@ -104,6 +105,27 @@ function InventoryCard({ item }: { item: InventoryItem }) {
   );
 }
 
+type InventoryFeedRow =
+  | { id: string; item: InventoryItem; kind: 'item' }
+  | { id: string; kind: 'native-ad' };
+
+function buildInventoryFeed(items: InventoryItem[]): InventoryFeedRow[] {
+  return items.flatMap((item, index) => {
+    const rows: InventoryFeedRow[] = [
+      { id: item.id, item, kind: 'item' },
+    ];
+
+    if ((index + 1) % 5 === 0) {
+      rows.push({
+        id: 'inventory-native-ad-' + Math.floor((index + 1) / 5),
+        kind: 'native-ad',
+      });
+    }
+
+    return rows;
+  });
+}
+
 export default function InventoryScreen() {
   const { user } = useKeepFlipAuth();
   const { contentWidth, insets, pageGutter, responsiveFont } = useResponsiveLayout();
@@ -111,6 +133,7 @@ export default function InventoryScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const feedRows = useMemo(() => buildInventoryFeed(items), [items]);
 
   const loadItems = useCallback(
     async (refresh = false) => {
@@ -158,8 +181,8 @@ export default function InventoryScreen() {
             paddingTop: insets.top + 24,
           },
         ]}
-        data={items}
-        keyExtractor={(item) => item.id}
+        data={feedRows}
+        keyExtractor={(row) => row.id}
         ListHeaderComponent={
           <View style={[styles.header, { width: contentWidth }]}> 
             <Text style={styles.eyebrow}>YOUR ITEMS</Text>
@@ -202,11 +225,17 @@ export default function InventoryScreen() {
             tintColor={theme.colors.goldBright}
           />
         }
-        renderItem={({ item }) => (
-          <View style={{ width: contentWidth }}>
-            <InventoryCard item={item} />
-          </View>
-        )}
+        renderItem={({ item: row }) =>
+          row.kind === 'native-ad' ? (
+            <View style={{ width: contentWidth }}>
+              <KeepFlipNativeAdCard placement="inventory_feed" />
+            </View>
+          ) : (
+            <View style={[styles.feedItem, { width: contentWidth }]}>
+              <InventoryCard item={row.item} />
+            </View>
+          )
+        }
         showsVerticalScrollIndicator={false}
         style={styles.list}
       />
@@ -219,11 +248,13 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     alignItems: 'center',
-    gap: 14,
   },
   header: {
     gap: 7,
-    marginBottom: 8,
+    marginBottom: 22,
+  },
+  feedItem: {
+    marginBottom: 14,
   },
   eyebrow: {
     color: theme.colors.gold,
