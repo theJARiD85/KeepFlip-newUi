@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router/stack';
+import { Stack } from 'expo-router';
 
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 

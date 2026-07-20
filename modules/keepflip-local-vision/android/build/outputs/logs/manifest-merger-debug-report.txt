@@ -1,0 +1,24 @@
+-- Merging decision tree log ---
+manifest
+ADDED from C:\Users\theja\KeepFlip\modules\keepflip-local-vision\android\src\main\AndroidManifest.xml:1:1-7:12
+INJECTED from C:\Users\theja\KeepFlip\modules\keepflip-local-vision\android\src\main\AndroidManifest.xml:1:1-7:12
+	package
+		INJECTED from C:\Users\theja\KeepFlip\modules\keepflip-local-vision\android\src\main\AndroidManifest.xml
+	xmlns:android
+		ADDED from C:\Users\theja\KeepFlip\modules\keepflip-local-vision\android\src\main\AndroidManifest.xml:1:11-69
+application
+ADDED from C:\Users\theja\KeepFlip\modules\keepflip-local-vision\android\src\main\AndroidManifest.xml:2:3-6:17
+meta-data#com.google.mlkit.vision.DEPENDENCIES
+ADDED from C:\Users\theja\KeepFlip\modules\keepflip-local-vision\android\src\main\AndroidManifest.xml:3:5-5:41
+	android:value
+		ADDED from C:\Users\theja\KeepFlip\modules\keepflip-local-vision\android\src\main\AndroidManifest.xml:5:7-38
+	android:name
+		ADDED from C:\Users\theja\KeepFlip\modules\keepflip-local-vision\android\src\main\AndroidManifest.xml:4:7-58
+uses-sdk
+INJECTED from C:\Users\theja\KeepFlip\modules\keepflip-local-vision\android\src\main\AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from C:\Users\theja\KeepFlip\modules\keepflip-local-vision\android\src\main\AndroidManifest.xml
+INJECTED from C:\Users\theja\KeepFlip\modules\keepflip-local-vision\android\src\main\AndroidManifest.xml
+	android:targetSdkVersion
+		INJECTED from C:\Users\theja\KeepFlip\modules\keepflip-local-vision\android\src\main\AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from C:\Users\theja\KeepFlip\modules\keepflip-local-vision\android\src\main\AndroidManifest.xml

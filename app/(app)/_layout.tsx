@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router/stack';
+import { Stack } from 'expo-router';
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 

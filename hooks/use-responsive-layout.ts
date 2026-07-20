@@ -62,12 +62,12 @@ export function useResponsiveLayout() {
   const captureButtonSize = clamp(shortestSide * 0.18, 72, isTablet ? 108 : 92);
   const controlDockWidth = clamp(contentWidth, 300, isTablet ? 560 : 420);
   const scannerControlSize = clamp(moderateScale(86, 0.72), 78, isTablet ? 108 : 96);
-  const scannerCarouselHeight = clamp(verticalScale(152, 0.55), 142, isTablet ? 190 : 170);
+  const scannerCarouselHeight = clamp(verticalScale(152, 1), 142, isTablet ? 190 : 170);
   const scannerRailTop = clamp(verticalScale(80, 0.55), 72, isTablet ? 104 : 92);
   const scannerRailHeight = clamp(moderateScale(68, 0.55), 62, isTablet ? 82 : 74);
   const scannerRailWidth = clamp(controlDockWidth - moderateScale(44), 286, isTablet ? 470 : 380);
   const scannerWheelRadius = clamp(
-    (scannerRailWidth - scannerControlSize) / 2,
+    (scannerRailWidth - scannerControlSize) / 2.25,
     82,
     isTablet ? 152 : 118,
   );
