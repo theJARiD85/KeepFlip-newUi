@@ -14,7 +14,7 @@ import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { getAppwriteCoreServices } from '@/lib/appwrite';
 
 const TEST_MODEL_URL =
-  'https://sfo.cloud.appwrite.io/v1/storage/buckets/glb_models/files/6a5f29ed0031eacdfd37/view?project=6a35bcae000cf7c40b0a';
+  '@/assets/models/VisionCamera_8975123418007050576.glb';
 const TEST_PROJECT_ID = '6a35bcae000cf7c40b0a';
 
 export default function MeshTestScreen() {

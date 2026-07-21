@@ -1,5 +1,4 @@
-import { fetch } from "expo/fetch";
-import { File, Paths } from "expo-file-system";
+import { Asset } from "expo-asset";
 import {
   Component,
   Suspense,
@@ -17,8 +16,8 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { Canvas } from "@react-three/fiber/native";
 import { OrbitControls, useGLTF } from "@react-three/drei/native";
+import { Canvas } from "@react-three/fiber/native";
 import * as THREE from "three";
 
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
@@ -51,31 +50,6 @@ type ErrorBoundaryProps = {
 type ErrorBoundaryState = {
   error: Error | null;
 };
-
-function safeDelete(file: File | null) {
-  if (!file?.exists) return;
-
-  try {
-    file.delete();
-  } catch {
-    // Cache cleanup is best-effort.
-  }
-}
-
-function assertGlb(bytes: Uint8Array) {
-  const hasGlbHeader =
-    bytes.byteLength >= 12 &&
-    bytes[0] === 0x67 &&
-    bytes[1] === 0x6c &&
-    bytes[2] === 0x54 &&
-    bytes[3] === 0x46;
-
-  if (!hasGlbHeader) {
-    throw new Error(
-      "The downloaded file is not a valid binary GLB model.",
-    );
-  }
-}
 
 function modelTransform(scene: THREE.Object3D): ModelTransform {
   scene.updateMatrixWorld(true);
@@ -133,7 +107,7 @@ class ModelErrorBoundary extends Component<
 
   componentDidCatch(error: Error) {
     this.props.onError(
-      error.message || "The generated GLB could not be rendered.",
+      error.message || "The bundled GLB could not be rendered.",
     );
   }
 
@@ -153,9 +127,6 @@ class ModelErrorBoundary extends Component<
 }
 
 export function MeshViewer({
-  jwt,
-  modelUrl,
-  projectId,
   style,
   onError,
   onLoad,
@@ -163,7 +134,6 @@ export function MeshViewer({
   const [localModelUri, setLocalModelUri] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isModelLoaded, setIsModelLoaded] = useState(false);
-  const modelFileRef = useRef<File | null>(null);
   const onErrorRef = useRef(onError);
   const onLoadRef = useRef(onLoad);
 
@@ -175,94 +145,52 @@ export function MeshViewer({
     onLoadRef.current = onLoad;
   }, [onLoad]);
 
-  const cacheKey = useMemo(() => {
-    let hash = 0;
-    const value = `${projectId}:${modelUrl}`;
-
-    for (let index = 0; index < value.length; index += 1) {
-      hash = (hash * 31 + value.charCodeAt(index)) | 0;
-    }
-
-    return Math.abs(hash).toString(36);
-  }, [modelUrl, projectId]);
-
   useEffect(() => {
     let cancelled = false;
-    let downloadedFile: File | null = null;
 
     setLocalModelUri(null);
     setLoadError(null);
     setIsModelLoaded(false);
 
-    const downloadModel = async () => {
+    const resolveBundledModel = async () => {
       try {
-        const response = await fetch(modelUrl, {
-          headers: {
-            "X-Appwrite-JWT": jwt,
-            "X-Appwrite-Project": projectId,
-          },
-        });
+        const asset = Asset.fromModule(
+          require("../../assets/models/VisionCamera_8975123418007050576.glb"),
+        );
 
-        if (!response.ok) {
+        if (!asset.localUri) {
+          await asset.downloadAsync();
+        }
+
+        const uri = asset.localUri ?? asset.uri;
+        if (!uri) {
           throw new Error(
-            `Appwrite returned HTTP ${response.status} while downloading the generated model.`,
+            "Expo could not resolve the bundled GLB asset URI.",
           );
         }
 
-        const bytes = await response.bytes();
-        if (bytes.byteLength === 0) {
-          throw new Error("Appwrite returned an empty GLB model.");
+        if (!cancelled) {
+          setLocalModelUri(uri);
         }
-
-        assertGlb(bytes);
-
-        downloadedFile = new File(
-          Paths.cache,
-          `keepflip-${cacheKey}.glb`,
-        );
-        downloadedFile.create({
-          intermediates: true,
-          overwrite: true,
-        });
-        downloadedFile.write(bytes);
-
-        if (cancelled) {
-          safeDelete(downloadedFile);
-          return;
-        }
-
-        safeDelete(modelFileRef.current);
-        modelFileRef.current = downloadedFile;
-        setLocalModelUri(downloadedFile.uri);
       } catch (error) {
-        safeDelete(downloadedFile);
-
         if (cancelled) return;
 
         const message =
           error instanceof Error
             ? error.message
-            : "The generated 3D model could not be downloaded.";
+            : "The bundled 3D model could not be prepared.";
 
         setLoadError(message);
         onErrorRef.current?.(message);
       }
     };
 
-    void downloadModel();
+    void resolveBundledModel();
 
     return () => {
       cancelled = true;
     };
-  }, [cacheKey, jwt, modelUrl, projectId]);
-
-  useEffect(
-    () => () => {
-      safeDelete(modelFileRef.current);
-      modelFileRef.current = null;
-    },
-    [],
-  );
+  }, []);
 
   const handleModelLoaded = () => {
     setLoadError(null);
@@ -290,6 +218,7 @@ export function MeshViewer({
               near: 0.01,
               position: [0, 0.35, 4],
             }}
+            dpr={[1, 1.5]}
             gl={{
               alpha: true,
               antialias: true,
@@ -343,8 +272,8 @@ export function MeshViewer({
           />
           <Text style={styles.loadingText}>
             {localModelUri
-              ? "RENDERING 3D MODEL"
-              : "DOWNLOADING 3D MODEL"}
+              ? "RENDERING LOCAL 3D MODEL"
+              : "LOADING LOCAL 3D MODEL"}
           </Text>
         </View>
       ) : null}
