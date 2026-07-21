@@ -44,6 +44,7 @@ export type WaitForTripo3dModelInput = {
 
 function requiredConfiguration() {
   const missing = [
+    !APPWRITE.endpoint ? "EXPO_PUBLIC_APPWRITE_ENDPOINT" : null,
     !APPWRITE.databaseId ? "EXPO_PUBLIC_APPWRITE_DATABASE_ID" : null,
     !APPWRITE.modelFilesTableId
       ? "EXPO_PUBLIC_APPWRITE_MODEL_FILES_COLLECTION_ID"
@@ -63,6 +64,7 @@ function requiredConfiguration() {
   }
 
   return {
+    endpoint: APPWRITE.endpoint.replace(/\/+$/, ""),
     databaseId: APPWRITE.databaseId,
     modelFilesTableId: APPWRITE.modelFilesTableId,
     modelBucketId: APPWRITE.modelFilesBucketId,
@@ -86,17 +88,15 @@ function sleep(milliseconds: number) {
   });
 }
 
-function createModelViewUrl(bucketId: string, fileId: string) {
-  const value = storage.getFileView({ bucketId, fileId });
-  const url = String(value);
-
-  if (!/^https?:\/\//i.test(url)) {
-    throw new Error(
-      "The generated model was saved, but KeepFlip could not create its Appwrite view URL.",
-    );
-  }
-
-  return url;
+function createModelViewUrl(
+  endpoint: string,
+  bucketId: string,
+  fileId: string,
+) {
+  return (
+    `${endpoint}/storage/buckets/${encodeURIComponent(bucketId)}` +
+    `/files/${encodeURIComponent(fileId)}/view`
+  );
 }
 
 async function executeImageToModelFunction(
@@ -153,8 +153,8 @@ async function waitForReadyModelRow(
 
 /**
  * scanner-screen.native.tsx has already uploaded the source image and created
- * the item_photos row. The app now explicitly invokes the Function with that
- * row ID, then waits for the matching model_files row to become ready.
+ * the item_photos row. The app explicitly invokes the Function with that row
+ * ID, then waits for the matching model_files row to become ready.
  */
 export async function waitForTripo3dModel({
   itemPhotoId,
@@ -189,6 +189,7 @@ export async function waitForTripo3dModel({
     fileId: modelFileId,
   })) as AppwriteFile;
   const modelUrl = createModelViewUrl(
+    configuration.endpoint,
     configuration.modelBucketId,
     modelFileId,
   );
