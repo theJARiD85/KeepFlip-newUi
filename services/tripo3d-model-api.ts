@@ -9,6 +9,8 @@ import {
 
 const MODEL_POLL_INTERVAL_MS = 2_500;
 const MODEL_TIMEOUT_MS = 14 * 60 * 1_000;
+const LOCAL_TEST_MODEL_FILE =
+  "VisionCamera_8975123418007050576.glb";
 
 type ModelFileRow = {
   $id: string;
@@ -23,12 +25,6 @@ type AppwriteFile = {
   name?: string;
   mimeType?: string;
   sizeOriginal?: number;
-};
-
-type ExistingModelLocation = {
-  bucketId: string;
-  fileId: string;
-  url: string;
 };
 
 export type Tripo3dModelResult = {
@@ -48,17 +44,27 @@ export type WaitForTripo3dModelInput = {
   itemPhotoId: string;
 };
 
-function cleanEnvironmentValue(value: string | undefined) {
-  const cleaned = value?.trim();
-  return cleaned ? cleaned : "";
-}
-
 function modelGenerationIsDisabled() {
   return (
-    cleanEnvironmentValue(
-      process.env.EXPO_PUBLIC_APPWRITE_SKIP_MODEL_GENERATION,
-    ).toLowerCase() === "true"
+    process.env.EXPO_PUBLIC_APPWRITE_SKIP_MODEL_GENERATION
+      ?.trim()
+      .toLowerCase() === "true"
   );
+}
+
+function localModelResult(itemPhotoId: string): Tripo3dModelResult {
+  return {
+    itemPhotoId,
+    sourceFileId: itemPhotoId,
+    modelBucketId: "bundled-assets",
+    modelFileId: LOCAL_TEST_MODEL_FILE,
+    modelFileName: LOCAL_TEST_MODEL_FILE,
+    modelMimeType: "model/gltf-binary",
+    modelSizeBytes: 0,
+    modelUrl: "keepflip://bundled-model",
+    modelProjectId: "local",
+    modelJwt: "local",
+  };
 }
 
 function requiredConfiguration() {
@@ -88,47 +94,6 @@ function requiredConfiguration() {
     modelFilesTableId: APPWRITE.modelFilesTableId,
     modelBucketId: APPWRITE.modelFilesBucketId,
     functionId: APPWRITE.imageToModelFunctionId,
-  };
-}
-
-function existingModelLocation(): ExistingModelLocation {
-  const rawUrl = cleanEnvironmentValue(
-    process.env.EXPO_PUBLIC_APPWRITE_TEST_MODEL_URL,
-  );
-
-  if (!rawUrl) {
-    throw new Error(
-      "Model generation is disabled, but EXPO_PUBLIC_APPWRITE_TEST_MODEL_URL is missing.",
-    );
-  }
-
-  let url: URL;
-  try {
-    url = new URL(rawUrl);
-  } catch {
-    throw new Error("EXPO_PUBLIC_APPWRITE_TEST_MODEL_URL is not a valid URL.");
-  }
-
-  const match = url.pathname.match(
-    /\/storage\/buckets\/([^/]+)\/files\/([^/]+)\/view\/?$/,
-  );
-
-  if (!match) {
-    throw new Error(
-      "EXPO_PUBLIC_APPWRITE_TEST_MODEL_URL must be an Appwrite Storage file view URL.",
-    );
-  }
-
-  url.searchParams.delete("impersonateuserid");
-  url.searchParams.delete("mode");
-  if (!url.searchParams.has("project") && APPWRITE.projectId) {
-    url.searchParams.set("project", APPWRITE.projectId);
-  }
-
-  return {
-    bucketId: decodeURIComponent(match[1]),
-    fileId: decodeURIComponent(match[2]),
-    url: url.toString(),
   };
 }
 
@@ -171,26 +136,6 @@ async function createModelJwt() {
   }
 
   return modelJwt;
-}
-
-async function existingModelResult(
-  itemPhotoId: string,
-): Promise<Tripo3dModelResult> {
-  const location = existingModelLocation();
-  const modelJwt = await createModelJwt();
-
-  return {
-    itemPhotoId,
-    sourceFileId: itemPhotoId,
-    modelBucketId: location.bucketId,
-    modelFileId: location.fileId,
-    modelFileName: `${location.fileId}.glb`,
-    modelMimeType: "model/gltf-binary",
-    modelSizeBytes: 0,
-    modelUrl: location.url,
-    modelProjectId: APPWRITE.projectId,
-    modelJwt,
-  };
 }
 
 async function executeImageToModelFunction(
@@ -246,10 +191,8 @@ async function waitForReadyModelRow(
 }
 
 /**
- * scanner-screen.native.tsx has already uploaded the source image and created
- * the item_photos row. In normal mode the app invokes the image-to-model
- * Function and waits for its model_files row. Temporary test mode skips that
- * execution and reuses one existing Appwrite GLB URL.
+ * Temporary local-preview mode returns immediately and mounts the bundled GLB.
+ * Normal mode invokes the image-to-model Function and waits for Appwrite.
  */
 export async function waitForTripo3dModel({
   itemPhotoId,
@@ -260,7 +203,7 @@ export async function waitForTripo3dModel({
   }
 
   if (modelGenerationIsDisabled()) {
-    return existingModelResult(cleanedItemPhotoId);
+    return localModelResult(cleanedItemPhotoId);
   }
 
   const configuration = requiredConfiguration();
