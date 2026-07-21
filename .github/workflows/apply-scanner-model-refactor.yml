@@ -1,11 +1,13 @@
 name: Apply scanner model refactor
 
 on:
-  push:
+  pull_request:
     branches:
       - master
-    paths:
-      - .github/workflows/apply-scanner-model-refactor.yml
+    types:
+      - opened
+      - reopened
+      - synchronize
 
 permissions:
   contents: write
@@ -14,9 +16,10 @@ jobs:
   apply:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
+      - name: Check out master
         uses: actions/checkout@v4
         with:
+          ref: master
           fetch-depth: 0
 
       - name: Apply refactor
