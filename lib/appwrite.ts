@@ -119,6 +119,9 @@ export const APPWRITE = {
   modelFilesBucketId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_MODEL_BUCKET_ID,
   ),
+  imageToModelFunctionId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_IMAGE_TO_MODEL_FUNCTION_ID,
+  ),
   profileImagesBucketId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_PROFILE_IMAGES_BUCKET_ID,
   ),
@@ -153,7 +156,6 @@ export const APPWRITE = {
 } as const;
 
 export function getAppwriteCoreConfigurationStatus(): AppwriteCoreConfigurationStatus {
-  // Expo statically replaces EXPO_PUBLIC_ access, so keep these reads explicit.
   const endpoint = cleanEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT,
   );
@@ -185,7 +187,6 @@ export function getAppwriteCoreConfigurationStatus(): AppwriteCoreConfigurationS
 
 export function getAppwriteConfigurationStatus(): AppwriteConfigurationStatus {
   const coreStatus = getAppwriteCoreConfigurationStatus();
-  // Keep these reads explicit so Expo can statically replace them as well.
   const scanBucketId = cleanEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_SCAN_BUCKET_ID,
   );
@@ -336,9 +337,6 @@ function lazyService<T extends object>(resolve: () => T): T {
   });
 }
 
-// Legacy service modules import these shared instances directly. Proxies keep
-// that API intact without constructing Appwrite clients before configuration
-// and authentication screens have had a chance to render.
 export const functions = lazyService(
   () => getAppwriteServices().functions,
 );
