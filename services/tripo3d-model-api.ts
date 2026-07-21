@@ -57,65 +57,11 @@ function requiredConfiguration() {
     );
   }
 
-  return value;
-}
-
-function requiredSourceBucketId(missing: string[]) {
-  const value = process.env.EXPO_PUBLIC_APPWRITE_ITEM_IMAGES_BUCKET_ID?.trim();
-
-  if (!value) {
-    throw new Error(
-      `KeepFlip 3D model loading needs Appwrite configuration: ${missing.join(", ")}`,
-    );
-  }
-
-  return value;
-}
-
-function requiredModelBucketId() {
-  const value = process.env.EXPO_PUBLIC_APPWRITE_MODEL_BUCKET_ID?.trim();
-
-  if (!value) {
-    throw new Error(
-      "Missing EXPO_PUBLIC_APPWRITE_MODEL_BUCKET_ID in .env",
-    );
-  }
-
-  return value;
-}
-
-function normalizeLocalUri(uri: string) {
-  const trimmed = uri.trim();
-
-  if (
-    trimmed.startsWith("file://") ||
-    trimmed.startsWith("content://") ||
-    trimmed.startsWith("ph://")
-  ) {
-    return trimmed;
-  }
-
-  if (trimmed.startsWith("/")) {
-    return `file://${trimmed}`;
-  }
-
-  return trimmed;
-}
-
-function createUploadFile(imageUri: string) {
-  const file = new ExpoFile(normalizeLocalUri(imageUri));
-
-  if (!file.exists) {
-    throw new Error(
-      "The selected source image no longer exists on this device.",
-    );
-  }
-
-  if (file.size <= 0) {
-    throw new Error("KeepFlip could not determine the source image file size.");
-  }
-
-  return file;
+  return {
+    databaseId: APPWRITE.databaseId,
+    modelFilesTableId: APPWRITE.modelFilesTableId,
+    modelBucketId: APPWRITE.modelFilesBucketId,
+  };
 }
 
 function errorCode(error: unknown) {
