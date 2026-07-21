@@ -770,7 +770,9 @@ export default function ScannerScreen() {
       setAtmospherePhase("captured");
       setCaptureFeedback(null);
       scheduleAtmosphereReset();
+      console.log("Photo filepath:", { photo})
       return photo.filePath;
+
     } catch {
       const feedback = "Could not capture. Hold steady and try again.";
       setAtmospherePhase("idle");
