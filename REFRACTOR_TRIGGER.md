@@ -1,3 +1,3 @@
 This temporary pull request triggers the one-time scanner persistence refactor workflow.
 
-Validation run.
+Focused validation run.
