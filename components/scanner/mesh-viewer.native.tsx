@@ -836,7 +836,30 @@ export function MeshViewer({
                 uri={localModelUri}
               />
             </Suspense>
+            <Suspense fallback={null}>
+              <HologramModel
+                compact={isScannerPreview}
+                key={localModelUri}
+                onLoad={handleModelLoaded}
+                uri={localModelUri}
+              />
+            </Suspense>
 
+            <OrbitControls
+              autoRotate
+              autoRotateSpeed={2}
+              dampingFactor={0.08}
+              enableDamping
+              enablePan={false}
+              enableZoom={!isScannerPreview}
+              makeDefault
+              maxDistance={8}
+              minDistance={1.4}
+              target={[0, 0, 0]}
+            />
+          </Canvas>
+        </ModelErrorBoundary>
+      ) : null}
             <OrbitControls
               autoRotate
               autoRotateSpeed={2}
@@ -875,12 +898,21 @@ export function MeshViewer({
           </Text>
         </View>
       ) : null}
+      {loadError ? (
+        <View pointerEvents="none" style={styles.loadingOverlay}>
+          <Text style={styles.errorTitle}>3D VIEW UNAVAILABLE</Text>
+          <Text selectable style={styles.errorMessage}>
+            {loadError}
+          </Text>
+        </View>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     flex: 1,
     overflow: "hidden",
     backgroundColor: "rgba(3, 1, 12, 0.82)",
