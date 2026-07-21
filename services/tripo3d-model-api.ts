@@ -116,17 +116,6 @@ function createUploadFile(imageUri: string) {
   }
 
   return file;
-=======
-      `KeepFlip 3D model loading needs Appwrite configuration: ${missing.join(", ")}`,
-    );
-  }
-
-  return {
-    databaseId: APPWRITE.databaseId,
-    modelFilesTableId: APPWRITE.modelFilesTableId,
-    modelBucketId: APPWRITE.modelFilesBucketId,
-  };
->>>>>>> 8515a51a53ec72f4611501a13ed1594c48cc6061
 }
 
 function errorCode(error: unknown) {
