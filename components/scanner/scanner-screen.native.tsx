@@ -65,7 +65,7 @@ import {
   type ItemAnalysisSuccess,
 } from "@/services/item-analysis-service";
 import { saveAnalyzedItemToInventory } from "@/services/inventory-service";
-import { MeshViewer } from "@/components/scanner/mesh-viewer";
+import { MeshViewer } from "@/components/scanner/mesh-viewer.native";
 import {
   createScanId,
   saveScannerPhoto,
