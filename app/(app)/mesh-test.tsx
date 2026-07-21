@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 
-import { MeshViewer } from '@/components/scanner/mesh-viewer';
+import { MeshViewer } from '@/components/scanner/mesh-viewer.native';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { getAppwriteCoreServices } from '@/lib/appwrite';
 
