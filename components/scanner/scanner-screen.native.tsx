@@ -1039,7 +1039,7 @@ export default function ScannerScreen() {
         setAnalysisState({
           message: error.message,
           requirements: [
-            "Add the public Appwrite endpoint and project ID to .env.local.",
+            "Add the public Appwrite endpoint and project ID to .env",
             "Create a private scan-photo bucket and add its ID.",
             "Deploy the analyze-item Function and add its Function ID.",
             ...error.missingKeys.map((key) => `Missing: ${key}`),

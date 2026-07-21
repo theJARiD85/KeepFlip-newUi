@@ -54,7 +54,7 @@ function requiredFunctionId() {
 
   if (!value) {
     throw new Error(
-      "Missing EXPO_PUBLIC_APPWRITE_IMAGE_TO_MODEL_FUNCTION_ID in .env.local.",
+      "Missing EXPO_PUBLIC_APPWRITE_IMAGE_TO_MODEL_FUNCTION_ID in .env",
     );
   }
 
@@ -66,7 +66,7 @@ function requiredSourceBucketId() {
 
   if (!value) {
     throw new Error(
-      "Missing EXPO_PUBLIC_APPWRITE_ITEM_IMAGES_BUCKET_ID in .env.local.",
+      "Missing EXPO_PUBLIC_APPWRITE_ITEM_IMAGES_BUCKET_ID in .env",
     );
   }
 
@@ -78,7 +78,7 @@ function requiredModelBucketId() {
 
   if (!value) {
     throw new Error(
-      "Missing EXPO_PUBLIC_APPWRITE_MODEL_BUCKET_ID in .env.local.",
+      "Missing EXPO_PUBLIC_APPWRITE_MODEL_BUCKET_ID in .env",
     );
   }
 
