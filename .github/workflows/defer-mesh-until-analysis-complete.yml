@@ -1,0 +1,96 @@
+name: Defer mesh until analysis completes
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - .github/workflows/defer-mesh-until-analysis-complete.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out master
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Keep animated mesh out of the analysis budget
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          scanner = Path('components/scanner/scanner-screen.native.tsx')
+          text = scanner.read_text(encoding='utf-8')
+
+          old = '''            {generatedModel ? (
+              <MeshViewer
+                jwt={generatedModel.modelJwt}
+                modelUrl={generatedModel.modelUrl}
+                onError={handleModelViewerError}
+                projectId={generatedModel.modelProjectId}
+                style={StyleSheet.absoluteFill}
+              />
+            ) : (
+                <Image
+                  cachePolicy="memory-disk"
+                  contentFit="cover"
+                  source={{ uri: analysisBackdropUri }}
+                  style={StyleSheet.absoluteFill}
+                  transition={120}
+                />
+            )}'''
+
+          new = '''            {generatedModel && analysisState?.status === "result" ? (
+              <MeshViewer
+                jwt={generatedModel.modelJwt}
+                modelUrl={generatedModel.modelUrl}
+                onError={handleModelViewerError}
+                projectId={generatedModel.modelProjectId}
+                style={StyleSheet.absoluteFill}
+              />
+            ) : (
+              <Image
+                cachePolicy="memory-disk"
+                contentFit="cover"
+                source={{ uri: analysisBackdropUri }}
+                style={StyleSheet.absoluteFill}
+                transition={120}
+              />
+            )}'''
+
+          if old not in text:
+              raise SystemExit('Expected scanner mesh backdrop block was not found; refusing an approximate patch.')
+
+          text = text.replace(old, new, 1)
+
+          old_scrim = '''            generatedModel && styles.cameraScrimWithModel,'''
+          new_scrim = '''            generatedModel &&
+              analysisState?.status === "result" &&
+              styles.cameraScrimWithModel,'''
+
+          if old_scrim not in text:
+              raise SystemExit('Expected scanner model scrim condition was not found.')
+
+          text = text.replace(old_scrim, new_scrim, 1)
+          scanner.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Commit recovery patch and remove workflow
+        shell: bash
+        run: |
+          rm .github/workflows/defer-mesh-until-analysis-complete.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add components/scanner/scanner-screen.native.tsx .github/workflows/defer-mesh-until-analysis-complete.yml
+          git commit -m "Defer animated mesh until analysis completes"
+          git push origin master
