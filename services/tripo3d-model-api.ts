@@ -1,4 +1,9 @@
-import { APPWRITE, account, storage, tablesDB } from "@/lib/appwrite";
+import {
+  APPWRITE,
+  getAppwriteCoreServices,
+  storage,
+  tablesDB,
+} from "@/lib/appwrite";
 
 const MODEL_POLL_INTERVAL_MS = 2_500;
 const MODEL_TIMEOUT_MS = 14 * 60 * 1_000;
@@ -160,6 +165,7 @@ export async function waitForTripo3dModel({
     modelFileId,
   );
 
+  const { account } = getAppwriteCoreServices();
   const jwtResult = await account.createJWT({ duration: 900 });
   const modelJwt = jwtResult.jwt?.trim();
   if (!modelJwt) {
