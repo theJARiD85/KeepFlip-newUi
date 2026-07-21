@@ -1,0 +1,13 @@
+file:///home/runner/work/KeepFlip-newUi/KeepFlip-newUi/scripts/apply-scanner-model-refactor.mjs:21
+  const matches = [...content.matchAll(pattern)];
+                              ^
+
+TypeError: String.prototype.matchAll called with a non-global RegExp argument
+    at String.matchAll (<anonymous>)
+    at replaceRegexOnce (file:///home/runner/work/KeepFlip-newUi/KeepFlip-newUi/scripts/apply-scanner-model-refactor.mjs:21:31)
+    at file:///home/runner/work/KeepFlip-newUi/KeepFlip-newUi/scripts/apply-scanner-model-refactor.mjs:66:11
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+
+Node.js v22.23.1
