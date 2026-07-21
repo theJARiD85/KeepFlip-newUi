@@ -23,9 +23,9 @@ import * as THREE from "three";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 
 type MeshViewerProps = {
-  jwt: string;
-  modelUrl: string;
-  projectId: string;
+  jwt?: string;
+  modelUrl?: string;
+  projectId?: string;
   style?: StyleProp<ViewStyle>;
   onError?: (message: string) => void;
   onLoad?: () => void;
@@ -34,11 +34,6 @@ type MeshViewerProps = {
 type GeneratedModelProps = {
   uri: string;
   onLoad: () => void;
-};
-
-type ModelTransform = {
-  position: [number, number, number];
-  scale: number;
 };
 
 type ErrorBoundaryProps = {
@@ -51,13 +46,13 @@ type ErrorBoundaryState = {
   error: Error | null;
 };
 
-function modelTransform(scene: THREE.Object3D): ModelTransform {
+function modelTransform(scene: THREE.Object3D) {
   scene.updateMatrixWorld(true);
 
   const bounds = new THREE.Box3().setFromObject(scene);
   if (bounds.isEmpty()) {
     return {
-      position: [0, 0, 0],
+      position: [0, 0, 0] as [number, number, number],
       scale: 1,
     };
   }
@@ -67,7 +62,11 @@ function modelTransform(scene: THREE.Object3D): ModelTransform {
   const largestDimension = Math.max(size.x, size.y, size.z, 0.0001);
 
   return {
-    position: [-center.x, -center.y, -center.z],
+    position: [-center.x, -center.y, -center.z] as [
+      number,
+      number,
+      number,
+    ],
     scale: 2.4 / largestDimension,
   };
 }
@@ -127,10 +126,14 @@ class ModelErrorBoundary extends Component<
 }
 
 export function MeshViewer({
+  jwt,
+  modelUrl,
+  projectId,
   style,
   onError,
   onLoad,
 }: MeshViewerProps) {
+  const isScannerPreview = Boolean(jwt || modelUrl || projectId);
   const [localModelUri, setLocalModelUri] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isModelLoaded, setIsModelLoaded] = useState(false);
@@ -147,10 +150,6 @@ export function MeshViewer({
 
   useEffect(() => {
     let cancelled = false;
-
-    setLocalModelUri(null);
-    setLoadError(null);
-    setIsModelLoaded(false);
 
     const resolveBundledModel = async () => {
       try {
@@ -185,6 +184,9 @@ export function MeshViewer({
       }
     };
 
+    setLocalModelUri(null);
+    setLoadError(null);
+    setIsModelLoaded(false);
     void resolveBundledModel();
 
     return () => {
@@ -205,95 +207,116 @@ export function MeshViewer({
   };
 
   return (
-    <View style={[styles.container, style]}>
-      {localModelUri && !loadError ? (
-        <ModelErrorBoundary
-          onError={handleRenderError}
-          resetKey={localModelUri}
-        >
-          <Canvas
-            camera={{
-              far: 100,
-              fov: 42,
-              near: 0.01,
-              position: [0, 0.35, 4],
-            }}
-            dpr={[1, 1.5]}
-            gl={{
-              alpha: true,
-              antialias: true,
-            }}
-            style={styles.canvas}
+    <View style={[styles.host, style]}>
+      <View
+        style={[
+          styles.container,
+          isScannerPreview && styles.scannerPreviewContainer,
+        ]}
+      >
+        {localModelUri && !loadError ? (
+          <ModelErrorBoundary
+            onError={handleRenderError}
+            resetKey={localModelUri}
           >
-            <ambientLight intensity={1.4} />
-            <hemisphereLight
-              color="#ffffff"
-              groundColor="#202038"
-              intensity={1.1}
-            />
-            <directionalLight
-              intensity={2.2}
-              position={[4, 6, 5]}
-            />
-            <directionalLight
-              intensity={0.85}
-              position={[-4, 2, -3]}
-            />
-
-            <Suspense fallback={null}>
-              <GeneratedModel
-                key={localModelUri}
-                onLoad={handleModelLoaded}
-                uri={localModelUri}
+            <Canvas
+              camera={{
+                far: 100,
+                fov: 42,
+                near: 0.01,
+                position: [0, 0.35, 4],
+              }}
+              dpr={[1, 1.5]}
+              gl={{
+                alpha: true,
+                antialias: true,
+              }}
+              style={styles.canvas}
+            >
+              <ambientLight intensity={1.4} />
+              <hemisphereLight
+                color="#ffffff"
+                groundColor="#202038"
+                intensity={1.1}
               />
-            </Suspense>
+              <directionalLight
+                intensity={2.2}
+                position={[4, 6, 5]}
+              />
+              <directionalLight
+                intensity={0.85}
+                position={[-4, 2, -3]}
+              />
 
-            <OrbitControls
-              autoRotate
-              autoRotateSpeed={2}
-              dampingFactor={0.08}
-              enableDamping
-              enablePan={false}
-              enableZoom
-              makeDefault
-              maxDistance={8}
-              minDistance={1.4}
-              target={[0, 0, 0]}
+              <Suspense fallback={null}>
+                <GeneratedModel
+                  key={localModelUri}
+                  onLoad={handleModelLoaded}
+                  uri={localModelUri}
+                />
+              </Suspense>
+
+              <OrbitControls
+                autoRotate
+                autoRotateSpeed={2}
+                dampingFactor={0.08}
+                enableDamping
+                enablePan={false}
+                enableZoom
+                makeDefault
+                maxDistance={8}
+                minDistance={1.4}
+                target={[0, 0, 0]}
+              />
+            </Canvas>
+          </ModelErrorBoundary>
+        ) : null}
+
+        {!isModelLoaded && !loadError ? (
+          <View pointerEvents="none" style={styles.loadingOverlay}>
+            <ActivityIndicator
+              color={theme.colors.scannerCyan}
+              size="small"
             />
-          </Canvas>
-        </ModelErrorBoundary>
-      ) : null}
+            <Text style={styles.loadingText}>
+              {localModelUri
+                ? "RENDERING LOCAL 3D MODEL"
+                : "LOADING LOCAL 3D MODEL"}
+            </Text>
+          </View>
+        ) : null}
 
-      {!isModelLoaded && !loadError ? (
-        <View pointerEvents="none" style={styles.loadingOverlay}>
-          <ActivityIndicator
-            color={theme.colors.scannerCyan}
-            size="small"
-          />
-          <Text style={styles.loadingText}>
-            {localModelUri
-              ? "RENDERING LOCAL 3D MODEL"
-              : "LOADING LOCAL 3D MODEL"}
-          </Text>
-        </View>
-      ) : null}
-
-      {loadError ? (
-        <View pointerEvents="none" style={styles.loadingOverlay}>
-          <Text style={styles.errorTitle}>3D VIEW UNAVAILABLE</Text>
-          <Text selectable style={styles.errorMessage}>
-            {loadError}
-          </Text>
-        </View>
-      ) : null}
+        {loadError ? (
+          <View pointerEvents="none" style={styles.loadingOverlay}>
+            <Text style={styles.errorTitle}>3D VIEW UNAVAILABLE</Text>
+            <Text selectable style={styles.errorMessage}>
+              {loadError}
+            </Text>
+          </View>
+        ) : null}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  host: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "transparent",
+  },
   container: {
+    width: "100%",
+    height: "100%",
     overflow: "hidden",
     backgroundColor: "rgba(3, 3, 7, 0.96)",
+  },
+  scannerPreviewContainer: {
+    width: "50%",
+    height: "50%",
+    borderRadius: theme.radii.large,
+    backgroundColor: "transparent",
   },
   canvas: {
     flex: 1,
