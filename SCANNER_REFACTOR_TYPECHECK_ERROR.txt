@@ -1,0 +1,18 @@
+app/(app)/inventory.tsx(136,20): error TS2304: Cannot find name 'useMemo'.
+components/auth/keepflip-auth-screen.tsx(446,19): error TS2551: Property 'absoluteFillObject' does not exist on type 'typeof StyleSheet'. Did you mean 'absoluteFill'?
+components/parallax-scroll-view.tsx(55,30): error TS7053: Element implicitly has an 'any' type because expression of type 'ColorSchemeName' can't be used to index type '{ dark: string; light: string; }'.
+  Property 'unspecified' does not exist on type '{ dark: string; light: string; }'.
+components/scanner/item-analysis-bubbles.tsx(667,19): error TS2551: Property 'absoluteFillObject' does not exist on type 'typeof StyleSheet'. Did you mean 'absoluteFill'?
+components/scanner/mesh-viewer.native.tsx(269,19): error TS2551: Property 'absoluteFillObject' does not exist on type 'typeof StyleSheet'. Did you mean 'absoluteFill'?
+components/scanner/multi-scan-photo-review.tsx(257,19): error TS2551: Property 'absoluteFillObject' does not exist on type 'typeof StyleSheet'. Did you mean 'absoluteFill'?
+components/scanner/scanner-screen.native.tsx(68,28): error TS2307: Cannot find module '@/components/scanner/mesh-viewer' or its corresponding type declarations.
+components/scanner/scanner-screen.tsx(114,19): error TS2551: Property 'absoluteFillObject' does not exist on type 'typeof StyleSheet'. Did you mean 'absoluteFill'?
+components/scanner/scanner-tool-carousel.tsx(504,19): error TS2551: Property 'absoluteFillObject' does not exist on type 'typeof StyleSheet'. Did you mean 'absoluteFill'?
+components/ui/icon-symbol.tsx(8,27): error TS2344: Type 'SFSymbols7_0 | { ios?: SFSymbols7_0 | undefined; android?: "function" | "pending" | "cleaning" | "style" | "accessible" | "error" | "percent" | "source" | ... 4047 more ... | undefined; web?: "function" | ... 4054 more ... | undefined; }' does not satisfy the constraint 'string | number | symbol'.
+  Type '{ ios?: SFSymbols7_0 | undefined; android?: "function" | "pending" | "cleaning" | "style" | "accessible" | "error" | "percent" | "source" | "title" | "light" | "uppercase" | ... 4044 more ... | undefined; web?: "function" | ... 4054 more ... | undefined; }' is not assignable to type 'string | number | symbol'.
+components/ui/icon-symbol.tsx(60,65): error TS2538: Type '{ ios?: SFSymbols7_0 | undefined; android?: "function" | "pending" | "cleaning" | "style" | "accessible" | "error" | "percent" | "source" | "title" | "light" | "uppercase" | ... 4044 more ... | undefined; web?: "function" | ... 4054 more ... | undefined; }' cannot be used as an index type.
+hooks/use-theme-color.ts(14,26): error TS7053: Element implicitly has an 'any' type because expression of type 'ColorSchemeName' can't be used to index type '{ light?: string | undefined; dark?: string | undefined; }'.
+  Property 'unspecified' does not exist on type '{ light?: string | undefined; dark?: string | undefined; }'.
+hooks/use-theme-color.ts(19,12): error TS7053: Element implicitly has an 'any' type because expression of type 'ColorSchemeName' can't be used to index type '{ light: { text: string; background: string; tint: string; icon: string; tabIconDefault: string; tabIconSelected: string; }; dark: { text: string; background: string; tint: string; icon: string; tabIconDefault: string; tabIconSelected: string; }; }'.
+  Property 'unspecified' does not exist on type '{ light: { text: string; background: string; tint: string; icon: string; tabIconDefault: string; tabIconSelected: string; }; dark: { text: string; background: string; tint: string; icon: string; tabIconDefault: string; tabIconSelected: string; }; }'.
+services/tripo3d-model-api.ts(1,20): error TS2305: Module '"@/lib/appwrite"' has no exported member 'account'.
