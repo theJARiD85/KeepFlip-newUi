@@ -53,19 +53,18 @@ function requiredConfiguration() {
 
   if (missing.length > 0) {
     throw new Error(
-      "Missing EXPO_PUBLIC_APPWRITE_IMAGE_TO_MODEL_FUNCTION_ID in .env",
+      `KeepFlip 3D model loading needs Appwrite configuration: ${missing.join(", ")}`,
     );
   }
 
   return value;
 }
 
-function requiredSourceBucketId() {
+function requiredSourceBucketId(missing: string[]) {
   const value = process.env.EXPO_PUBLIC_APPWRITE_ITEM_IMAGES_BUCKET_ID?.trim();
 
   if (!value) {
     throw new Error(
-      "Missing EXPO_PUBLIC_APPWRITE_ITEM_IMAGES_BUCKET_ID in .env",
       `KeepFlip 3D model loading needs Appwrite configuration: ${missing.join(", ")}`,
     );
   }
