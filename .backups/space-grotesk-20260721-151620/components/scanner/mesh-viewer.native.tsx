@@ -8,13 +8,19 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { ActivityIndicator, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 import { OrbitControls, useGLTF } from "@react-three/drei/native";
 import { Canvas, useFrame } from "@react-three/fiber/native";
 import * as THREE from "three";
 
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
-import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 
 type MeshViewerProps = {
   jwt?: string;

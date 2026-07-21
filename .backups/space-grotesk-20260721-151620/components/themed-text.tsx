@@ -1,7 +1,6 @@
-import { StyleSheet, type TextProps } from 'react-native';
+import { StyleSheet, Text, type TextProps } from 'react-native';
 
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 
 export type ThemedTextProps = TextProps & {
   lightColor?: string;

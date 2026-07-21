@@ -1,11 +1,17 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, SafeAreaView, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { MeshViewer } from '@/components/scanner/mesh-viewer.native';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { getAppwriteCoreServices } from '@/lib/appwrite';
-import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 
 const TEST_MODEL_URL =
   '@/assets/models/VisionCamera_8975123418007050576.glb';

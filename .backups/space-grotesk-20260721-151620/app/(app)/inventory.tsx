@@ -1,6 +1,14 @@
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState, useMemo } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { KeepFlipNativeAdCard } from '@/components/ads/keepflip-native-ad-card';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
@@ -12,7 +20,6 @@ import {
   listInventoryItems,
   type InventoryItem,
 } from '@/services/inventory-service';
-import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 
 function formatMoney(value: number | null, currency: string) {
   if (value == null) return 'Value pending';

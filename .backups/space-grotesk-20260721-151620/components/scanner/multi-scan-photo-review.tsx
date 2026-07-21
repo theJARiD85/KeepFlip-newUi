@@ -1,5 +1,12 @@
 import { Image } from 'expo-image';
-import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import Animated, {
   FadeIn,
   FadeInUp,
@@ -9,7 +16,6 @@ import Animated, {
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 
 type MultiScanPhotoStackProps = {
   accentColor?: string;

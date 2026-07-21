@@ -3,7 +3,18 @@ import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { useIsFocused, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, AppState, BackHandler, Linking, Platform, Pressable, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  AppState,
+  BackHandler,
+  Linking,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import {
   Camera,
   type CameraRef,
@@ -65,7 +76,6 @@ import {
   waitForTripo3dModel,
   type Tripo3dModelResult,
 } from "@/services/tripo3d-model-api";
-import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 
 const CAMERA_PHOTO_RESOLUTION = Object.freeze({
   width: 1920,

@@ -1,11 +1,10 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ScannerAtmosphere } from '@/components/scanner/scanner-atmosphere';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 
 export default function ScannerScreen() {
   const {

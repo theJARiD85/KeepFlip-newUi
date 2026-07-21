@@ -3,7 +3,18 @@ import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { useIsFocused, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, AppState, BackHandler, Linking, Platform, Pressable, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  AppState,
+  BackHandler,
+  Linking,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import {
   Camera,
   type CameraRef,
@@ -38,7 +49,6 @@ import {
   type ItemAnalysisState,
 } from "@/components/scanner/item-analysis-overlay";
 import { ItemAnalysisBubbles } from "@/components/scanner/item-analysis-bubbles";
-import { ItemAnalysisResultStage } from "@/components/scanner/item-analysis-result-stage";
 import { toItemAnalysisState } from "@/components/scanner/item-analysis-view-model";
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { useKeepFlipMenu } from "@/components/navigation/keepflip-menu-context";
@@ -65,7 +75,6 @@ import {
   waitForTripo3dModel,
   type Tripo3dModelResult,
 } from "@/services/tripo3d-model-api";
-import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 
 const CAMERA_PHOTO_RESOLUTION = Object.freeze({
   width: 1920,
@@ -1204,39 +1213,32 @@ export default function ScannerScreen() {
     ) : null;
 
   const analysisOverlay = analysisState ? (
-    analysisState.status === "result" ? (
-      <ItemAnalysisResultStage
-        bottomInset={insets.bottom}
-        doneLabel="Start new scan"
-        onDone={closeAnalysis}
-        onSave={() => void saveCompletedAnalysis()}
-        saveLabel="Save to inventory"
-        saving={isSavingToInventory}
-        state={analysisState}
-        topInset={insets.top}
-      />
-    ) : (
-      <ItemAnalysisBubbles
-        bottomInset={insets.bottom}
-        doneLabel="Done"
-        onDone={closeAnalysis}
-        onRetry={() => {
-          if (analysisState.status === "insufficient-evidence") {
-            closeAnalysis();
-            return;
-          }
-          void handleAnalyzeItem();
-        }}
-        retryLabel={
-          analysisState.status === "insufficient-evidence"
-            ? "Add another photo"
-            : undefined
+    <ItemAnalysisBubbles
+      bottomInset={insets.bottom}
+      doneLabel={analysisState.status === "result" ? "Start new scan" : "Done"}
+      onDone={closeAnalysis}
+      onSave={
+        analysisState.status === "result"
+          ? () => void saveCompletedAnalysis()
+          : undefined
+      }
+      onRetry={() => {
+        if (analysisState.status === "insufficient-evidence") {
+          closeAnalysis();
+          return;
         }
-        saving={isSavingToInventory}
-        state={analysisState}
-        topInset={insets.top}
-      />
-    )
+        void handleAnalyzeItem();
+      }}
+      retryLabel={
+        analysisState.status === "insufficient-evidence"
+          ? "Add another photo"
+          : undefined
+      }
+      saveLabel="Save to inventory"
+      saving={isSavingToInventory}
+      state={analysisState}
+      topInset={insets.top}
+    />
   ) : null;
 
   const photoReviewOverlay = isMultiReviewOpen ? (
@@ -1517,6 +1519,46 @@ export default function ScannerScreen() {
               styles.cameraScrimWithModel,
           ]}
         />
+        {analysisState &&
+        (isGeneratingModel || generatedModel || modelGenerationError) ? (
+          <Animated.View
+            entering={FadeIn.duration(180)}
+            exiting={FadeOut.duration(140)}
+            pointerEvents="none"
+            style={[
+              styles.modelStatusBadge,
+              { top: insets.top + verticalScale(78, 0.45) },
+              modelGenerationError && styles.modelStatusBadgeError,
+            ]}
+          >
+            {isGeneratingModel ? (
+              <ActivityIndicator
+                color={theme.colors.scannerCyan}
+                size="small"
+              />
+            ) : (
+              <View
+                style={[
+                  styles.modelStatusDot,
+                  modelGenerationError && styles.modelStatusDotError,
+                ]}
+              />
+            )}
+            <Text
+              numberOfLines={1}
+              style={[
+                styles.modelStatusText,
+                modelGenerationError && styles.modelStatusTextError,
+              ]}
+            >
+              {generatedModel
+                ? "3D MODEL READY • AUTO-ROTATING"
+                : isGeneratingModel
+                  ? "BUILDING 3D MODEL IN PARALLEL"
+                  : "3D MODEL UNAVAILABLE"}
+            </Text>
+          </Animated.View>
+        ) : null}
         {analysisState?.status === "analyzing" ? (
         <Animated.View
           entering={FadeIn.duration(220)}
@@ -1845,6 +1887,47 @@ const styles = StyleSheet.create({
   },
   cameraScrimWithModel: {
     opacity: 0.48,
+  },
+  modelStatusBadge: {
+    position: "absolute",
+    right: 18,
+    left: 18,
+    zIndex: 32,
+    minHeight: 36,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 9,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+    borderRadius: theme.radii.pill,
+    borderWidth: 1,
+    borderColor: "rgba(88, 223, 232, 0.42)",
+    backgroundColor: "rgba(5, 7, 11, 0.86)",
+  },
+  modelStatusBadgeError: {
+    borderColor: "rgba(242, 211, 138, 0.42)",
+  },
+  modelStatusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: theme.colors.scannerCyan,
+    boxShadow: "0 0 10px rgba(88, 223, 232, 0.92)",
+  },
+  modelStatusDotError: {
+    backgroundColor: theme.colors.goldBright,
+    boxShadow: "0 0 10px rgba(242, 211, 138, 0.70)",
+  },
+  modelStatusText: {
+    flexShrink: 1,
+    color: theme.colors.scannerCyan,
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 1.25,
+  },
+  modelStatusTextError: {
+    color: theme.colors.goldBright,
   },
   analysisAtmosphereHost: {
     ...StyleSheet.absoluteFill,

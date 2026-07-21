@@ -8,13 +8,19 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { ActivityIndicator, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 import { OrbitControls, useGLTF } from "@react-three/drei/native";
 import { Canvas, useFrame } from "@react-three/fiber/native";
 import * as THREE from "three";
 
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
-import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 
 type MeshViewerProps = {
   jwt?: string;
@@ -214,8 +220,7 @@ function HologramModel({
 
     if (groupRef.current) {
       groupRef.current.position.y =
-        (compact ? 0.34 : 0.1) +
-        Math.sin(elapsed * 1.15) * 0.065;
+        0.1 + Math.sin(elapsed * 1.15) * 0.065;
     }
 
     if (violetWireframeRef.current) {
@@ -253,12 +258,12 @@ function HologramModel({
     }
   });
 
-  const presentationScale = transform.scale * (compact ? 0.68 : 1);
+  const presentationScale = transform.scale * (compact ? 0.5 : 1);
 
   return (
     <group
       ref={groupRef}
-      position={[0, compact ? 0.34 : 0.1, 0]}
+      position={[0, 0.1, 0]}
       scale={presentationScale}
     >
       <primitive object={baseScene} position={transform.position} />

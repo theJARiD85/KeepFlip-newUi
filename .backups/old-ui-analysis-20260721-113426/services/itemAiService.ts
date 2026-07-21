@@ -42,12 +42,28 @@ export type ItemIdentificationGuidance = {
   tips: string[];
 };
 
+export type IdentificationEvidence = {
+  field: "item_type" | "brand" | "model" | "variant" | "condition";
+  value: string;
+  source: "photo_text" | "visual_design" | "user_notes" | "external_evidence";
+  confidence: number;
+  explanation: string;
+};
+
+export type IdentificationConfidenceBreakdown = {
+  itemType: number;
+  brand: number;
+  model: number;
+  condition: number;
+};
+
 export type KeepFlipIdentification = {
   title: string;
   brand: string | null;
   model: string | null;
   category:
     | "Audio"
+    | "Appliances"
     | "Electronics"
     | "Tools"
     | "Furniture"
@@ -67,6 +83,10 @@ export type KeepFlipIdentification = {
     | "visual_category_only"
     | "insufficient_evidence";
   confidence: number;
+  confidenceBreakdown: IdentificationConfidenceBreakdown;
+  valuationReadiness: "ready" | "directional" | "needs_evidence";
+  ambiguityNotes: string[];
+  identityEvidence: IdentificationEvidence[];
   productSearchQuery: string;
   needsMorePhotos: boolean;
   suggestedPhotos: string[];
@@ -108,6 +128,7 @@ type RawIdentification = Partial<
 
 const VALID_CATEGORIES: KeepFlipIdentification["category"][] = [
   "Audio",
+  "Appliances",
   "Electronics",
   "Tools",
   "Furniture",
@@ -141,9 +162,9 @@ const VALUATION_SIGNAL_INSTRUCTIONS = [
   "- Preserve brand/model/MPN/serial identifiers when visible or supplied; they are the preferred high-confidence valuation path.",
   "- When exact identifiers are unavailable or weak, return valuationSignals for descriptor-based valuation.",
   "- valuationSignals should include objectType, subcategory, style, materials, colors, era, motifs, shape, construction, conditionSignals, visibleMarks, descriptorSummary, searchQueries, negativeKeywords, uncertainty, suggestedPhotoAngles, and confidence.",
-  "- searchQueries should be marketplace-ready phrases ordered from most specific to broadest, using visual descriptors such as style, material, era, motif, shape, and color.",
-  '- For antiques, decor, furniture, jewelry, art, lamps, fashion, collectibles, and other visually identified items without a strong model number, include at least one query that would work with image/search results plus the phrase "recently sold".',
-  '- Example descriptor query shape: "vintage brass lotus flower lamp recently sold" or "sterling silver turquoise squash blossom necklace recently sold".',
+  "- searchQueries should be clean item-identity phrases ordered from most specific to broadest, using visual descriptors such as style, material, era, motif, shape, and color.",
+  '- Do not add "recently sold", "sold", "price", "value", marketplace names, or transaction intent. The downstream service already searches completed sales.',
+  '- Example descriptor query shape: "vintage brass lotus flower lamp" or "sterling silver turquoise squash blossom necklace".',
   "- Include likely premium maker/attribution names only in uncertainty or visibleMarks unless there is readable evidence. Do not invent a brand.",
   "- Use cautious language for guesses. Mark uncertain materials, eras, gemstones, metals, makers, and authenticity as uncertainty rather than fact.",
 ].join("\n");
@@ -265,6 +286,76 @@ function asConfidence(value: unknown, fallback = 0) {
   const scaled = parsed > 0 && parsed <= 1 ? parsed * 100 : parsed;
 
   return Math.max(0, Math.min(100, Math.round(scaled)));
+}
+
+function normalizeConfidenceBreakdown(
+  value: unknown,
+  fallback: number,
+  hasModel: boolean
+): IdentificationConfidenceBreakdown {
+  const source = asRecord(value) || {};
+
+  return {
+    itemType: asConfidence(source.itemType, fallback),
+    brand: asConfidence(source.brand, fallback),
+    model: asConfidence(source.model, hasModel ? fallback : 0),
+    condition: asConfidence(source.condition, fallback),
+  };
+}
+
+function normalizeValuationReadiness(
+  value: unknown,
+  fallback: KeepFlipIdentification["valuationReadiness"]
+): KeepFlipIdentification["valuationReadiness"] {
+  const normalized = asString(value);
+
+  return normalized === "ready" || normalized === "directional"
+    ? normalized
+    : fallback;
+}
+
+function normalizeIdentityEvidence(value: unknown): IdentificationEvidence[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const fields = new Set<IdentificationEvidence["field"]>([
+    "item_type",
+    "brand",
+    "model",
+    "variant",
+    "condition",
+  ]);
+  const sources = new Set<IdentificationEvidence["source"]>([
+    "photo_text",
+    "visual_design",
+    "user_notes",
+    "external_evidence",
+  ]);
+
+  return value
+    .map((entry) => {
+      const source = asRecord(entry);
+      const field = asString(source?.field) as IdentificationEvidence["field"];
+      const evidenceSource = asString(
+        source?.source
+      ) as IdentificationEvidence["source"];
+      const evidenceValue = asString(source?.value);
+
+      if (!source || !fields.has(field) || !sources.has(evidenceSource) || !evidenceValue) {
+        return null;
+      }
+
+      return {
+        field,
+        value: evidenceValue,
+        source: evidenceSource,
+        confidence: asConfidence(source.confidence, 0),
+        explanation: asString(source.explanation),
+      };
+    })
+    .filter((entry): entry is IdentificationEvidence => Boolean(entry))
+    .slice(0, 10);
 }
 
 function normalizeCategory(value: unknown): KeepFlipIdentification["category"] {
@@ -508,7 +599,7 @@ function fieldsFromValuationSignals(
         .filter(Boolean)
         .join(", "),
       signals.confidence,
-      "Visual descriptors make marketplace search work for items without brand or model identifiers.",
+      "Visual descriptors make comparable-sale research work for items without brand or model identifiers.",
       "Add close-ups of patterns, hardware, clasp, shade, base, or distinctive silhouette."
     ),
     makeSignalField(
@@ -541,10 +632,12 @@ function normalizeIdentification(
       })
     : [];
 
+  const confidence = asConfidence(rawIdentification.confidence, 0);
+  const model = asNullableString(rawIdentification.model);
   const base = {
     title: asString(rawIdentification.title) || "Unknown item",
     brand: asNullableString(rawIdentification.brand),
-    model: asNullableString(rawIdentification.model),
+    model,
     category: normalizeCategory(rawIdentification.category),
     condition: normalizeCondition(rawIdentification.condition),
     conditionNotes: asString(rawIdentification.conditionNotes),
@@ -552,7 +645,24 @@ function normalizeIdentification(
     identificationBasis: normalizeIdentificationBasis(
       rawIdentification.identificationBasis
     ),
-    confidence: asConfidence(rawIdentification.confidence, 0),
+    confidence,
+    confidenceBreakdown: normalizeConfidenceBreakdown(
+      rawIdentification.confidenceBreakdown,
+      confidence,
+      Boolean(model)
+    ),
+    valuationReadiness: normalizeValuationReadiness(
+      rawIdentification.valuationReadiness,
+      model && confidence >= 80
+        ? "ready"
+        : confidence >= 45
+          ? "directional"
+          : "needs_evidence"
+    ),
+    ambiguityNotes: asStringArray(rawIdentification.ambiguityNotes),
+    identityEvidence: normalizeIdentityEvidence(
+      rawIdentification.identityEvidence
+    ),
     productSearchQuery: asString(rawIdentification.productSearchQuery),
     needsMorePhotos: Boolean(rawIdentification.needsMorePhotos),
     suggestedPhotos: asStringArray(rawIdentification.suggestedPhotos),
@@ -586,6 +696,50 @@ function normalizeIdentification(
     evidenceFields,
     valuationSignals,
   };
+}
+
+function identificationEvidenceScore(
+  identification: KeepFlipIdentification
+) {
+  const basisScore = {
+    model_number: 500,
+    brand_and_distinctive_design: 360,
+    brand_only: 230,
+    visual_category_only: 120,
+    insufficient_evidence: 0,
+  }[identification.identificationBasis];
+  const directModelEvidence = identification.identityEvidence.some(
+    (evidence) =>
+      evidence.field === "model" &&
+      (evidence.source === "photo_text" || evidence.source === "user_notes") &&
+      evidence.confidence >= 70
+  );
+  const readinessScore = {
+    ready: 120,
+    directional: 55,
+    needs_evidence: 0,
+  }[identification.valuationReadiness];
+
+  return (
+    basisScore +
+    readinessScore +
+    identification.confidence +
+    identification.confidenceBreakdown.itemType * 0.4 +
+    identification.confidenceBreakdown.brand * 0.35 +
+    identification.confidenceBreakdown.model * 0.65 +
+    identification.detectedText.length * 5 +
+    (directModelEvidence ? 120 : 0) -
+    identification.ambiguityNotes.length * 12
+  );
+}
+
+export function selectStrongerIdentification(
+  first: KeepFlipIdentification,
+  second: KeepFlipIdentification
+) {
+  return identificationEvidenceScore(second) > identificationEvidenceScore(first)
+    ? second
+    : first;
 }
 
 function buildPhotoGuidance(
@@ -652,7 +806,8 @@ export function formatItemIdentificationGuidance(
 
 export async function identifyItemWithAI(
   fileIds: string[],
-  notes = ""
+  notes = "",
+  diagnosticId?: string,
 ): Promise<KeepFlipIdentification> {
   if (!fileIds.length) {
     throw new Error("Upload at least one item photo before identifying it.");
@@ -663,6 +818,7 @@ export async function identifyItemWithAI(
     body: JSON.stringify({
       fileIds,
       notes: buildIdentificationNotes(notes),
+      ...(diagnosticId ? { diagnosticId } : {}),
     }),
     async: false,
     method: ExecutionMethod.POST,

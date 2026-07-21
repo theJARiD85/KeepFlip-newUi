@@ -2,7 +2,15 @@ import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { type Href, usePathname, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { BackHandler, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import {
+  BackHandler,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -17,7 +25,6 @@ import {
 } from '@/components/navigation/keepflip-menu-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 
 type MenuDestination = {
   eyebrow: string;
