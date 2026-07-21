@@ -1,4 +1,3 @@
-import { fetch } from "expo/fetch";
 import { File, Paths } from "expo-file-system";
 import {
   Component,
@@ -22,6 +21,7 @@ import { OrbitControls, useGLTF } from "@react-three/drei/native";
 import * as THREE from "three";
 
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { storage } from "@/lib/appwrite";
 
 type MeshViewerProps = {
   jwt: string;
@@ -32,25 +32,9 @@ type MeshViewerProps = {
   onLoad?: () => void;
 };
 
-type GeneratedModelProps = {
-  uri: string;
-  onLoad: () => void;
-};
-
-type ModelTransform = {
-  position: [number, number, number];
-  scale: number;
-};
-
-type ErrorBoundaryProps = {
-  children: ReactNode;
-  resetKey: string | null;
-  onError: (message: string) => void;
-};
-
-type ErrorBoundaryState = {
-  error: Error | null;
-};
+type ViewerMessage =
+  | { type: "loaded" }
+  | { type: "error"; message?: string };
 
 function safeDelete(file: File | null) {
   if (!file?.exists) return;
@@ -62,98 +46,65 @@ function safeDelete(file: File | null) {
   }
 }
 
-function assertGlb(bytes: Uint8Array) {
-  const hasGlbHeader =
-    bytes.byteLength >= 12 &&
-    bytes[0] === 0x67 &&
-    bytes[1] === 0x6c &&
-    bytes[2] === 0x54 &&
-    bytes[3] === 0x46;
+function viewerHtml(modelFileName: string) {
+  const safeFileName = JSON.stringify(`./${modelFileName}`);
 
-  if (!hasGlbHeader) {
-    throw new Error(
-      "The downloaded file is not a valid binary GLB model.",
-    );
-  }
-}
-
-function modelTransform(scene: THREE.Object3D): ModelTransform {
-  scene.updateMatrixWorld(true);
-
-  const bounds = new THREE.Box3().setFromObject(scene);
-  if (bounds.isEmpty()) {
-    return {
-      position: [0, 0, 0],
-      scale: 1,
-    };
-  }
-
-  const size = bounds.getSize(new THREE.Vector3());
-  const center = bounds.getCenter(new THREE.Vector3());
-  const largestDimension = Math.max(size.x, size.y, size.z, 0.0001);
-
-  return {
-    position: [-center.x, -center.y, -center.z],
-    scale: 2.4 / largestDimension,
-  };
-}
-
-function GeneratedModel({ uri, onLoad }: GeneratedModelProps) {
-  const gltf = useGLTF(uri);
-  const notifiedRef = useRef(false);
-
-  const scene = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
-  const transform = useMemo(() => modelTransform(scene), [scene]);
-
-  useEffect(() => {
-    if (notifiedRef.current) return;
-
-    notifiedRef.current = true;
-    onLoad();
-  }, [onLoad]);
-
-  return (
-    <group scale={transform.scale}>
-      <primitive object={scene} position={transform.position} />
-    </group>
-  );
-}
-
-class ModelErrorBoundary extends Component<
-  ErrorBoundaryProps,
-  ErrorBoundaryState
-> {
-  state: ErrorBoundaryState = {
-    error: null,
-  };
-
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { error };
-  }
-
-  componentDidCatch(error: Error) {
-    this.props.onError(
-      error.message || "The generated GLB could not be rendered.",
-    );
-  }
-
-  componentDidUpdate(previousProps: ErrorBoundaryProps) {
-    if (
-      this.state.error &&
-      previousProps.resetKey !== this.props.resetKey
-    ) {
-      this.setState({ error: null });
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: transparent;
     }
-  }
-
-  render() {
-    if (this.state.error) return null;
-    return this.props.children;
-  }
+    model-viewer {
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      --poster-color: transparent;
+      --progress-bar-color: #58dfe8;
+    }
+  </style>
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.3.1/model-viewer.min.js"></script>
+</head>
+<body>
+  <model-viewer
+    id="viewer"
+    alt="Generated 3D model of the scanned item"
+    src=${safeFileName}
+    loading="eager"
+    reveal="auto"
+    camera-controls
+    auto-rotate
+    auto-rotate-delay="0"
+    rotation-per-second="18deg"
+    interaction-prompt="none"
+    shadow-intensity="0.8"
+    shadow-softness="0.85"
+    exposure="1.05"
+    tone-mapping="aces"
+    touch-action="pan-y"
+  ></model-viewer>
+  <script>
+    const viewer = document.getElementById('viewer');
+    viewer.addEventListener('load', () => {
+      window.ReactNativeWebView?.postMessage(JSON.stringify({ type: 'loaded' }));
+    });
+    viewer.addEventListener('error', (event) => {
+      const message = event?.detail?.message || 'The generated GLB could not be rendered.';
+      window.ReactNativeWebView?.postMessage(JSON.stringify({ type: 'error', message }));
+    });
+  </script>
+</body>
+</html>`;
 }
 
 export function MeshViewer({
-  jwt,
   modelUrl,
   projectId,
   style,
@@ -205,7 +156,7 @@ export function MeshViewer({
 
         if (!response.ok) {
           throw new Error(
-            `Appwrite returned HTTP ${response.status} while downloading the generated model.`,
+            `Appwrite returned ${response.status} while loading the generated model.`,
           );
         }
 
@@ -254,7 +205,7 @@ export function MeshViewer({
     return () => {
       cancelled = true;
     };
-  }, [cacheKey, jwt, modelUrl, projectId]);
+  }, [cacheKey, jwt, modelUrl, onError, projectId]);
 
   useEffect(
     () => () => {
