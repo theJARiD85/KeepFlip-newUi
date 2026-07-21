@@ -1,24 +1,19 @@
-import { File as ExpoFile } from "expo-file-system";
-
 import {
-  ExecutionMethod,
-  ID,
-  Permission,
-  Role,
   APPWRITE,
-  account,
-  functions,
+  getAppwriteCoreServices,
   storage,
+  tablesDB,
 } from "@/lib/appwrite";
 
 const MODEL_POLL_INTERVAL_MS = 2_500;
 const MODEL_TIMEOUT_MS = 14 * 60 * 1_000;
-const COMPLETED_MODEL_GRACE_MS = 20_000;
 
-type AppwriteExecution = {
+type ModelFileRow = {
   $id: string;
+  sourceFileId?: string;
+  fileId?: string | null;
   status?: string;
-  errors?: string;
+  errorMessage?: string | null;
 };
 
 type AppwriteFile = {
@@ -29,8 +24,7 @@ type AppwriteFile = {
 };
 
 export type Tripo3dModelResult = {
-  executionId: string;
-  sourceBucketId: string;
+  itemPhotoId: string;
   sourceFileId: string;
   modelBucketId: string;
   modelFileId: string;
@@ -42,17 +36,22 @@ export type Tripo3dModelResult = {
   modelJwt: string;
 };
 
-export type CreateTripo3dModelInput = {
-  imageUri: string;
-  userId: string;
-  itemId?: string;
+export type WaitForTripo3dModelInput = {
+  itemPhotoId: string;
 };
 
-function requiredFunctionId() {
-  const value =
-    process.env.EXPO_PUBLIC_APPWRITE_IMAGE_TO_MODEL_FUNCTION_ID?.trim();
+function requiredConfiguration() {
+  const missing = [
+    !APPWRITE.databaseId ? "EXPO_PUBLIC_APPWRITE_DATABASE_ID" : null,
+    !APPWRITE.modelFilesTableId
+      ? "EXPO_PUBLIC_APPWRITE_MODEL_FILES_COLLECTION_ID"
+      : null,
+    !APPWRITE.modelFilesBucketId
+      ? "EXPO_PUBLIC_APPWRITE_MODEL_BUCKET_ID"
+      : null,
+  ].filter((value): value is string => Boolean(value));
 
-  if (!value) {
+  if (missing.length > 0) {
     throw new Error(
       "Missing EXPO_PUBLIC_APPWRITE_IMAGE_TO_MODEL_FUNCTION_ID in .env",
     );
@@ -67,6 +66,7 @@ function requiredSourceBucketId() {
   if (!value) {
     throw new Error(
       "Missing EXPO_PUBLIC_APPWRITE_ITEM_IMAGES_BUCKET_ID in .env",
+      `KeepFlip 3D model loading needs Appwrite configuration: ${missing.join(", ")}`,
     );
   }
 
@@ -117,6 +117,17 @@ function createUploadFile(imageUri: string) {
   }
 
   return file;
+=======
+      `KeepFlip 3D model loading needs Appwrite configuration: ${missing.join(", ")}`,
+    );
+  }
+
+  return {
+    databaseId: APPWRITE.databaseId,
+    modelFilesTableId: APPWRITE.modelFilesTableId,
+    modelBucketId: APPWRITE.modelFilesBucketId,
+  };
+>>>>>>> 8515a51a53ec72f4611501a13ed1594c48cc6061
 }
 
 function errorCode(error: unknown) {
@@ -136,148 +147,91 @@ function sleep(milliseconds: number) {
 }
 
 function createModelViewUrl(bucketId: string, fileId: string) {
-  try {
-    const value = storage.getFileView({ bucketId, fileId });
-    const url = String(value);
+  const value = storage.getFileView({ bucketId, fileId });
+  const url = String(value);
 
-    return /^https?:\/\//i.test(url) ? url : undefined;
-  } catch {
-    return undefined;
+  if (!/^https?:\/\//i.test(url)) {
+    throw new Error(
+      "The generated model was saved, but KeepFlip could not create its Appwrite view URL.",
+    );
   }
+
+  return url;
 }
 
-async function getExecutionIfVisible(
-  functionId: string,
-  executionId: string,
-): Promise<AppwriteExecution | null> {
-  try {
-    return (await functions.getExecution({
-      functionId,
-      executionId,
-    })) as AppwriteExecution;
-  } catch (error) {
-    // Async executions can briefly return 404 before the execution record is
-    // visible. The generated model file is the authoritative completion signal.
-    if (isNotFound(error)) return null;
-    throw error;
-  }
-}
-
-async function waitForGeneratedModel({
-  functionId,
-  executionId,
-  modelBucketId,
-  modelFileId,
-}: {
-  functionId: string;
-  executionId: string;
-  modelBucketId: string;
-  modelFileId: string;
-}): Promise<AppwriteFile> {
+async function waitForReadyModelRow(
+  databaseId: string,
+  modelFilesTableId: string,
+  itemPhotoId: string,
+): Promise<ModelFileRow> {
   const startedAt = Date.now();
-  let completedAt: number | null = null;
 
   while (Date.now() - startedAt < MODEL_TIMEOUT_MS) {
     try {
-      return (await storage.getFile({
-        bucketId: modelBucketId,
-        fileId: modelFileId,
-      })) as AppwriteFile;
-    } catch (error) {
-      if (!isNotFound(error)) throw error;
-    }
+      const row = (await tablesDB.getRow({
+        databaseId,
+        tableId: modelFilesTableId,
+        rowId: itemPhotoId,
+      })) as unknown as ModelFileRow;
+      const status = row.status?.trim().toLowerCase();
 
-    const execution = await getExecutionIfVisible(functionId, executionId);
-    const status = execution?.status?.toLowerCase();
+      if (status === "ready" && row.fileId?.trim()) return row;
 
-    if (status === "failed" || status === "canceled") {
-      throw new Error(
-        execution?.errors?.trim() ||
-          `The image-to-model Function ${status}. Check its Appwrite execution log.`,
-      );
-    }
-
-    if (status === "completed") {
-      completedAt ??= Date.now();
-      if (Date.now() - completedAt > COMPLETED_MODEL_GRACE_MS) {
+      if (status === "failed") {
         throw new Error(
-          "The image-to-model Function completed, but the expected GLB file was not saved to the model bucket.",
+          row.errorMessage?.trim() ||
+            "The image-to-model Function could not generate this 3D model.",
         );
       }
+    } catch (error) {
+      if (!isNotFound(error)) throw error;
     }
 
     await sleep(MODEL_POLL_INTERVAL_MS);
   }
 
   throw new Error(
-    "Tripo3D is still processing after 14 minutes. Check the Appwrite execution log before trying again.",
+    "Tripo3D is still processing after 14 minutes. Check the image-to-model Function execution log.",
   );
 }
 
-export async function createTripo3dModelFromImage({
-  imageUri,
-  userId,
-  itemId,
-}: CreateTripo3dModelInput): Promise<Tripo3dModelResult> {
-  const functionId = requiredFunctionId();
-  const sourceBucketId = requiredSourceBucketId();
-  const modelBucketId = requiredModelBucketId();
-  const uploadFile = createUploadFile(imageUri);
+/**
+ * scanner-screen.native.tsx has already uploaded the source image and created
+ * the item_photos row. That row-create event triggers the backend Function.
+ * This client only waits for the matching model_files row to become ready.
+ */
+export async function waitForTripo3dModel({
+  itemPhotoId,
+}: WaitForTripo3dModelInput): Promise<Tripo3dModelResult> {
+  const cleanedItemPhotoId = itemPhotoId.trim();
+  if (!cleanedItemPhotoId) {
+    throw new Error("An item photo row ID is required to load its 3D model.");
+  }
 
-  // This is the permanent scan image. It intentionally remains in the item
-  // images bucket instead of being deleted after Tripo3D starts.
-  const uploadedSource = await storage.createFile({
-    bucketId: sourceBucketId,
-    fileId: ID.unique(),
-    file: uploadFile as any,
-    permissions: [
-      Permission.read(Role.user(userId)),
-      Permission.update(Role.user(userId)),
-      Permission.delete(Role.user(userId)),
-    ],
-  });
+  const configuration = requiredConfiguration();
+  const modelRow = await waitForReadyModelRow(
+    configuration.databaseId,
+    configuration.modelFilesTableId,
+    cleanedItemPhotoId,
+  );
+  const modelFileId = modelRow.fileId?.trim();
 
-  // The client chooses the final model file ID before starting the async
-  // Function. That lets the app poll Storage directly. Appwrite does not retain
-  // async Function response bodies, so the GLB file itself is the completion
-  // signal.
-  const modelFileId = ID.unique();
-
-  const startedExecution = (await functions.createExecution({
-    functionId,
-    body: JSON.stringify({
-      sourceFileId: uploadedSource.$id,
-      modelFileId,
-      ...(itemId?.trim() ? { itemId: itemId.trim() } : {}),
-    }),
-    async: true,
-    method: ExecutionMethod.POST,
-    headers: {
-      "content-type": "application/json",
-    },
-  })) as AppwriteExecution;
-
-  const executionId = startedExecution.$id?.trim();
-  if (!executionId) {
+  if (!modelFileId) {
     throw new Error(
-      "Appwrite accepted the model request but did not return an execution ID.",
+      "The model record is ready, but it does not contain a GLB file ID.",
     );
   }
 
-  const modelFile = await waitForGeneratedModel({
-    functionId,
-    executionId,
-    modelBucketId,
+  const modelFile = (await storage.getFile({
+    bucketId: configuration.modelBucketId,
+    fileId: modelFileId,
+  })) as AppwriteFile;
+  const modelUrl = createModelViewUrl(
+    configuration.modelBucketId,
     modelFileId,
-  });
+  );
 
-  const modelUrl = createModelViewUrl(modelBucketId, modelFileId);
-  if (!modelUrl) {
-    throw new Error(
-      "The generated model was saved, but KeepFlip could not create its Appwrite view URL.",
-    );
-  }
-
+  const { account } = getAppwriteCoreServices();
   const jwtResult = await account.createJWT({ duration: 900 });
   const modelJwt = jwtResult.jwt?.trim();
   if (!modelJwt) {
@@ -287,10 +241,9 @@ export async function createTripo3dModelFromImage({
   }
 
   return {
-    executionId,
-    sourceBucketId,
-    sourceFileId: uploadedSource.$id,
-    modelBucketId,
+    itemPhotoId: cleanedItemPhotoId,
+    sourceFileId: modelRow.sourceFileId?.trim() || cleanedItemPhotoId,
+    modelBucketId: configuration.modelBucketId,
     modelFileId,
     modelFileName: modelFile.name || `${modelFileId}.glb`,
     modelMimeType: modelFile.mimeType || "model/gltf-binary",

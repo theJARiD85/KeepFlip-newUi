@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
