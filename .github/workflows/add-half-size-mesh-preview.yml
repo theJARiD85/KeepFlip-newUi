@@ -128,3 +128,5 @@ jobs:
           git add -A
           git commit -m "Show half-size rotating mesh in scanner analysis"
           git push origin HEAD:master
+
+# trigger: 2
