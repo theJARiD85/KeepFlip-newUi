@@ -1,5 +1,7 @@
 import {
   APPWRITE,
+  ExecutionMethod,
+  functions,
   getAppwriteCoreServices,
   storage,
   tablesDB,
@@ -23,6 +25,12 @@ type AppwriteFile = {
   sizeOriginal?: number;
 };
 
+type ExistingModelLocation = {
+  bucketId: string;
+  fileId: string;
+  url: string;
+};
+
 export type Tripo3dModelResult = {
   itemPhotoId: string;
   sourceFileId: string;
@@ -40,14 +48,31 @@ export type WaitForTripo3dModelInput = {
   itemPhotoId: string;
 };
 
+function cleanEnvironmentValue(value: string | undefined) {
+  const cleaned = value?.trim();
+  return cleaned ? cleaned : "";
+}
+
+function modelGenerationIsDisabled() {
+  return (
+    cleanEnvironmentValue(
+      process.env.EXPO_PUBLIC_APPWRITE_SKIP_MODEL_GENERATION,
+    ).toLowerCase() === "true"
+  );
+}
+
 function requiredConfiguration() {
   const missing = [
+    !APPWRITE.endpoint ? "EXPO_PUBLIC_APPWRITE_ENDPOINT" : null,
     !APPWRITE.databaseId ? "EXPO_PUBLIC_APPWRITE_DATABASE_ID" : null,
     !APPWRITE.modelFilesTableId
       ? "EXPO_PUBLIC_APPWRITE_MODEL_FILES_COLLECTION_ID"
       : null,
     !APPWRITE.modelFilesBucketId
       ? "EXPO_PUBLIC_APPWRITE_MODEL_BUCKET_ID"
+      : null,
+    !APPWRITE.imageToModelFunctionId
+      ? "EXPO_PUBLIC_APPWRITE_IMAGE_TO_MODEL_FUNCTION_ID"
       : null,
   ].filter((value): value is string => Boolean(value));
 
@@ -58,9 +83,52 @@ function requiredConfiguration() {
   }
 
   return {
+    endpoint: APPWRITE.endpoint.replace(/\/+$/, ""),
     databaseId: APPWRITE.databaseId,
     modelFilesTableId: APPWRITE.modelFilesTableId,
     modelBucketId: APPWRITE.modelFilesBucketId,
+    functionId: APPWRITE.imageToModelFunctionId,
+  };
+}
+
+function existingModelLocation(): ExistingModelLocation {
+  const rawUrl = cleanEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_TEST_MODEL_URL,
+  );
+
+  if (!rawUrl) {
+    throw new Error(
+      "Model generation is disabled, but EXPO_PUBLIC_APPWRITE_TEST_MODEL_URL is missing.",
+    );
+  }
+
+  let url: URL;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    throw new Error("EXPO_PUBLIC_APPWRITE_TEST_MODEL_URL is not a valid URL.");
+  }
+
+  const match = url.pathname.match(
+    /\/storage\/buckets\/([^/]+)\/files\/([^/]+)\/view\/?$/,
+  );
+
+  if (!match) {
+    throw new Error(
+      "EXPO_PUBLIC_APPWRITE_TEST_MODEL_URL must be an Appwrite Storage file view URL.",
+    );
+  }
+
+  url.searchParams.delete("impersonateuserid");
+  url.searchParams.delete("mode");
+  if (!url.searchParams.has("project") && APPWRITE.projectId) {
+    url.searchParams.set("project", APPWRITE.projectId);
+  }
+
+  return {
+    bucketId: decodeURIComponent(match[1]),
+    fileId: decodeURIComponent(match[2]),
+    url: url.toString(),
   };
 }
 
@@ -80,17 +148,65 @@ function sleep(milliseconds: number) {
   });
 }
 
-function createModelViewUrl(bucketId: string, fileId: string) {
-  const value = storage.getFileView({ bucketId, fileId });
-  const url = String(value);
+function createModelViewUrl(
+  endpoint: string,
+  bucketId: string,
+  fileId: string,
+) {
+  return (
+    `${endpoint}/storage/buckets/${encodeURIComponent(bucketId)}` +
+    `/files/${encodeURIComponent(fileId)}/view`
+  );
+}
 
-  if (!/^https?:\/\//i.test(url)) {
+async function createModelJwt() {
+  const { account } = getAppwriteCoreServices();
+  const jwtResult = await account.createJWT({ duration: 900 });
+  const modelJwt = jwtResult.jwt?.trim();
+
+  if (!modelJwt) {
     throw new Error(
-      "The generated model was saved, but KeepFlip could not create its Appwrite view URL.",
+      "KeepFlip could not authorize the 3D viewer with Appwrite.",
     );
   }
 
-  return url;
+  return modelJwt;
+}
+
+async function existingModelResult(
+  itemPhotoId: string,
+): Promise<Tripo3dModelResult> {
+  const location = existingModelLocation();
+  const modelJwt = await createModelJwt();
+
+  return {
+    itemPhotoId,
+    sourceFileId: itemPhotoId,
+    modelBucketId: location.bucketId,
+    modelFileId: location.fileId,
+    modelFileName: `${location.fileId}.glb`,
+    modelMimeType: "model/gltf-binary",
+    modelSizeBytes: 0,
+    modelUrl: location.url,
+    modelProjectId: APPWRITE.projectId,
+    modelJwt,
+  };
+}
+
+async function executeImageToModelFunction(
+  functionId: string,
+  itemPhotoId: string,
+) {
+  await functions.createExecution({
+    functionId,
+    body: JSON.stringify({ itemPhotoId }),
+    async: true,
+    path: "/",
+    method: ExecutionMethod.POST,
+    headers: {
+      "content-type": "application/json",
+    },
+  });
 }
 
 async function waitForReadyModelRow(
@@ -131,8 +247,9 @@ async function waitForReadyModelRow(
 
 /**
  * scanner-screen.native.tsx has already uploaded the source image and created
- * the item_photos row. That row-create event triggers the backend Function.
- * This client only waits for the matching model_files row to become ready.
+ * the item_photos row. In normal mode the app invokes the image-to-model
+ * Function and waits for its model_files row. Temporary test mode skips that
+ * execution and reuses one existing Appwrite GLB URL.
  */
 export async function waitForTripo3dModel({
   itemPhotoId,
@@ -142,7 +259,17 @@ export async function waitForTripo3dModel({
     throw new Error("An item photo row ID is required to load its 3D model.");
   }
 
+  if (modelGenerationIsDisabled()) {
+    return existingModelResult(cleanedItemPhotoId);
+  }
+
   const configuration = requiredConfiguration();
+
+  await executeImageToModelFunction(
+    configuration.functionId,
+    cleanedItemPhotoId,
+  );
+
   const modelRow = await waitForReadyModelRow(
     configuration.databaseId,
     configuration.modelFilesTableId,
@@ -161,18 +288,11 @@ export async function waitForTripo3dModel({
     fileId: modelFileId,
   })) as AppwriteFile;
   const modelUrl = createModelViewUrl(
+    configuration.endpoint,
     configuration.modelBucketId,
     modelFileId,
   );
-
-  const { account } = getAppwriteCoreServices();
-  const jwtResult = await account.createJWT({ duration: 900 });
-  const modelJwt = jwtResult.jwt?.trim();
-  if (!modelJwt) {
-    throw new Error(
-      "The generated model was saved, but KeepFlip could not authorize the 3D viewer.",
-    );
-  }
+  const modelJwt = await createModelJwt();
 
   return {
     itemPhotoId: cleanedItemPhotoId,

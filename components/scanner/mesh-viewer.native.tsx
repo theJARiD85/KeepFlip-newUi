@@ -1,6 +1,14 @@
 import { fetch } from "expo/fetch";
 import { File, Paths } from "expo-file-system";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Component,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   ActivityIndicator,
   StyleSheet,
@@ -9,7 +17,9 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { WebView, type WebViewMessageEvent } from "react-native-webview";
+import { Canvas } from "@react-three/fiber/native";
+import { OrbitControls, useGLTF } from "@react-three/drei/native";
+import * as THREE from "three";
 
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 
@@ -22,9 +32,25 @@ type MeshViewerProps = {
   onLoad?: () => void;
 };
 
-type ViewerMessage =
-  | { type: "loaded" }
-  | { type: "error"; message?: string };
+type GeneratedModelProps = {
+  uri: string;
+  onLoad: () => void;
+};
+
+type ModelTransform = {
+  position: [number, number, number];
+  scale: number;
+};
+
+type ErrorBoundaryProps = {
+  children: ReactNode;
+  resetKey: string | null;
+  onError: (message: string) => void;
+};
+
+type ErrorBoundaryState = {
+  error: Error | null;
+};
 
 function safeDelete(file: File | null) {
   if (!file?.exists) return;
@@ -36,62 +62,94 @@ function safeDelete(file: File | null) {
   }
 }
 
-function viewerHtml(modelFileName: string) {
-  const safeFileName = JSON.stringify(`./${modelFileName}`);
+function assertGlb(bytes: Uint8Array) {
+  const hasGlbHeader =
+    bytes.byteLength >= 12 &&
+    bytes[0] === 0x67 &&
+    bytes[1] === 0x6c &&
+    bytes[2] === 0x54 &&
+    bytes[3] === 0x46;
 
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <style>
-    html, body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      overflow: hidden;
-      background: transparent;
+  if (!hasGlbHeader) {
+    throw new Error(
+      "The downloaded file is not a valid binary GLB model.",
+    );
+  }
+}
+
+function modelTransform(scene: THREE.Object3D): ModelTransform {
+  scene.updateMatrixWorld(true);
+
+  const bounds = new THREE.Box3().setFromObject(scene);
+  if (bounds.isEmpty()) {
+    return {
+      position: [0, 0, 0],
+      scale: 1,
+    };
+  }
+
+  const size = bounds.getSize(new THREE.Vector3());
+  const center = bounds.getCenter(new THREE.Vector3());
+  const largestDimension = Math.max(size.x, size.y, size.z, 0.0001);
+
+  return {
+    position: [-center.x, -center.y, -center.z],
+    scale: 2.4 / largestDimension,
+  };
+}
+
+function GeneratedModel({ uri, onLoad }: GeneratedModelProps) {
+  const gltf = useGLTF(uri);
+  const notifiedRef = useRef(false);
+
+  const scene = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
+  const transform = useMemo(() => modelTransform(scene), [scene]);
+
+  useEffect(() => {
+    if (notifiedRef.current) return;
+
+    notifiedRef.current = true;
+    onLoad();
+  }, [onLoad]);
+
+  return (
+    <group scale={transform.scale}>
+      <primitive object={scene} position={transform.position} />
+    </group>
+  );
+}
+
+class ModelErrorBoundary extends Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
+  state: ErrorBoundaryState = {
+    error: null,
+  };
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { error };
+  }
+
+  componentDidCatch(error: Error) {
+    this.props.onError(
+      error.message || "The generated GLB could not be rendered.",
+    );
+  }
+
+  componentDidUpdate(previousProps: ErrorBoundaryProps) {
+    if (
+      this.state.error &&
+      previousProps.resetKey !== this.props.resetKey
+    ) {
+      this.setState({ error: null });
     }
-    model-viewer {
-      width: 100%;
-      height: 100%;
-      background: transparent;
-      --poster-color: transparent;
-      --progress-bar-color: #58dfe8;
-    }
-  </style>
-  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.3.1/model-viewer.min.js"></script>
-</head>
-<body>
-  <model-viewer
-    id="viewer"
-    alt="Generated 3D model of the scanned item"
-    src=${safeFileName}
-    loading="eager"
-    reveal="auto"
-    camera-controls
-    auto-rotate
-    auto-rotate-delay="0"
-    rotation-per-second="18deg"
-    interaction-prompt="none"
-    shadow-intensity="0.8"
-    shadow-softness="0.85"
-    exposure="1.05"
-    tone-mapping="aces"
-    touch-action="pan-y"
-  ></model-viewer>
-  <script>
-    const viewer = document.getElementById('viewer');
-    viewer.addEventListener('load', () => {
-      window.ReactNativeWebView?.postMessage(JSON.stringify({ type: 'loaded' }));
-    });
-    viewer.addEventListener('error', (event) => {
-      const message = event?.detail?.message || 'The generated GLB could not be rendered.';
-      window.ReactNativeWebView?.postMessage(JSON.stringify({ type: 'error', message }));
-    });
-  </script>
-</body>
-</html>`;
+  }
+
+  render() {
+    if (this.state.error) return null;
+    return this.props.children;
+  }
 }
 
 export function MeshViewer({
@@ -102,13 +160,20 @@ export function MeshViewer({
   onError,
   onLoad,
 }: MeshViewerProps) {
-  const [viewerUri, setViewerUri] = useState<string | null>(null);
+  const [localModelUri, setLocalModelUri] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isModelLoaded, setIsModelLoaded] = useState(false);
-  const filesRef = useRef<{ html: File | null; model: File | null }>({
-    html: null,
-    model: null,
-  });
+  const modelFileRef = useRef<File | null>(null);
+  const onErrorRef = useRef(onError);
+  const onLoadRef = useRef(onLoad);
+
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
+
+  useEffect(() => {
+    onLoadRef.current = onLoad;
+  }, [onLoad]);
 
   const cacheKey = useMemo(() => {
     let hash = 0;
@@ -123,15 +188,13 @@ export function MeshViewer({
 
   useEffect(() => {
     let cancelled = false;
+    let downloadedFile: File | null = null;
 
-    setViewerUri(null);
+    setLocalModelUri(null);
     setLoadError(null);
     setIsModelLoaded(false);
 
-    const prepareViewer = async () => {
-      let modelFile: File | null = null;
-      let htmlFile: File | null = null;
-
+    const downloadModel = async () => {
       try {
         const response = await fetch(modelUrl, {
           headers: {
@@ -142,7 +205,7 @@ export function MeshViewer({
 
         if (!response.ok) {
           throw new Error(
-            `Appwrite returned ${response.status} while loading the generated model.`,
+            `Appwrite returned HTTP ${response.status} while downloading the generated model.`,
           );
         }
 
@@ -151,105 +214,148 @@ export function MeshViewer({
           throw new Error("Appwrite returned an empty GLB model.");
         }
 
-        modelFile = new File(Paths.cache, `keepflip-${cacheKey}.glb`);
-        modelFile.create({ intermediates: true, overwrite: true });
-        modelFile.write(bytes);
+        assertGlb(bytes);
 
-        htmlFile = new File(Paths.cache, `keepflip-${cacheKey}.html`);
-        htmlFile.create({ intermediates: true, overwrite: true });
-        htmlFile.write(viewerHtml(modelFile.name));
+        downloadedFile = new File(
+          Paths.cache,
+          `keepflip-${cacheKey}.glb`,
+        );
+        downloadedFile.create({
+          intermediates: true,
+          overwrite: true,
+        });
+        downloadedFile.write(bytes);
 
         if (cancelled) {
-          safeDelete(htmlFile);
-          safeDelete(modelFile);
+          safeDelete(downloadedFile);
           return;
         }
 
-        safeDelete(filesRef.current.html);
-        safeDelete(filesRef.current.model);
-        filesRef.current = { html: htmlFile, model: modelFile };
-        setViewerUri(htmlFile.uri);
+        safeDelete(modelFileRef.current);
+        modelFileRef.current = downloadedFile;
+        setLocalModelUri(downloadedFile.uri);
       } catch (error) {
-        safeDelete(htmlFile);
-        safeDelete(modelFile);
+        safeDelete(downloadedFile);
 
         if (cancelled) return;
+
         const message =
           error instanceof Error
             ? error.message
-            : "The generated 3D model could not be prepared.";
+            : "The generated 3D model could not be downloaded.";
+
         setLoadError(message);
-        onError?.(message);
+        onErrorRef.current?.(message);
       }
     };
 
-    void prepareViewer();
+    void downloadModel();
 
     return () => {
       cancelled = true;
     };
-  }, [cacheKey, jwt, modelUrl, onError, projectId]);
+  }, [cacheKey, jwt, modelUrl, projectId]);
 
   useEffect(
     () => () => {
-      safeDelete(filesRef.current.html);
-      safeDelete(filesRef.current.model);
-      filesRef.current = { html: null, model: null };
+      safeDelete(modelFileRef.current);
+      modelFileRef.current = null;
     },
     [],
   );
 
-  const handleMessage = (event: WebViewMessageEvent) => {
-    let message: ViewerMessage;
+  const handleModelLoaded = () => {
+    setLoadError(null);
+    setIsModelLoaded(true);
+    onLoadRef.current?.();
+  };
 
-    try {
-      message = JSON.parse(event.nativeEvent.data) as ViewerMessage;
-    } catch {
-      return;
-    }
-
-    if (message.type === "loaded") {
-      setIsModelLoaded(true);
-      onLoad?.();
-      return;
-    }
-
-    const errorMessage =
-      message.message || "The generated GLB could not be rendered.";
-    setLoadError(errorMessage);
-    onError?.(errorMessage);
+  const handleRenderError = (message: string) => {
+    setLoadError(message);
+    setIsModelLoaded(false);
+    onErrorRef.current?.(message);
   };
 
   return (
     <View style={[styles.container, style]}>
-      {viewerUri ? (
-        <WebView
-          allowFileAccess
-          allowUniversalAccessFromFileURLs
-          androidLayerType="hardware"
-          domStorageEnabled
-          javaScriptEnabled
-          mixedContentMode="always"
-          onMessage={handleMessage}
-          originWhitelist={["*"]}
-          overScrollMode="never"
-          scrollEnabled={false}
-          setSupportMultipleWindows={false}
-          source={{ uri: viewerUri }}
-          style={styles.webView}
-        />
+      {localModelUri && !loadError ? (
+        <ModelErrorBoundary
+          onError={handleRenderError}
+          resetKey={localModelUri}
+        >
+          <Canvas
+            camera={{
+              far: 100,
+              fov: 42,
+              near: 0.01,
+              position: [0, 0.35, 4],
+            }}
+            dpr={[1, 1.5]}
+            gl={{
+              alpha: true,
+              antialias: true,
+            }}
+            style={styles.canvas}
+          >
+            <ambientLight intensity={1.4} />
+            <hemisphereLight
+              color="#ffffff"
+              groundColor="#202038"
+              intensity={1.1}
+            />
+            <directionalLight
+              intensity={2.2}
+              position={[4, 6, 5]}
+            />
+            <directionalLight
+              intensity={0.85}
+              position={[-4, 2, -3]}
+            />
+
+            <Suspense fallback={null}>
+              <GeneratedModel
+                key={localModelUri}
+                onLoad={handleModelLoaded}
+                uri={localModelUri}
+              />
+            </Suspense>
+
+            <OrbitControls
+              autoRotate
+              autoRotateSpeed={2}
+              dampingFactor={0.08}
+              enableDamping
+              enablePan={false}
+              enableZoom
+              makeDefault
+              maxDistance={8}
+              minDistance={1.4}
+              target={[0, 0, 0]}
+            />
+          </Canvas>
+        </ModelErrorBoundary>
       ) : null}
 
       {!isModelLoaded && !loadError ? (
         <View pointerEvents="none" style={styles.loadingOverlay}>
-          <ActivityIndicator color={theme.colors.scannerCyan} size="small" />
-          <Text style={styles.loadingText}>PREPARING 3D VIEW</Text>
+          <ActivityIndicator
+            color={theme.colors.scannerCyan}
+            size="small"
+          />
+          <Text style={styles.loadingText}>
+            {localModelUri
+              ? "RENDERING 3D MODEL"
+              : "DOWNLOADING 3D MODEL"}
+          </Text>
         </View>
       ) : null}
 
       {loadError ? (
         <View pointerEvents="none" style={styles.loadingOverlay}>
-          <Text style={styles.errorText}>3D VIEW UNAVAILABLE</Text>
+          <Text style={styles.errorTitle}>3D VIEW UNAVAILABLE</Text>
+          <Text selectable style={styles.errorMessage}>
+            {loadError}
+          </Text>
         </View>
       ) : null}
     </View>
@@ -261,7 +367,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     backgroundColor: "rgba(3, 3, 7, 0.96)",
   },
-  webView: {
+  canvas: {
     flex: 1,
     backgroundColor: "transparent",
   },
@@ -270,6 +376,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
+    paddingHorizontal: 24,
     backgroundColor: "rgba(3, 3, 7, 0.76)",
   },
   loadingText: {
@@ -278,10 +385,16 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     letterSpacing: 1.5,
   },
-  errorText: {
+  errorTitle: {
     color: theme.colors.cream,
     fontSize: 10,
     fontWeight: "900",
     letterSpacing: 1.3,
+  },
+  errorMessage: {
+    color: "rgba(255, 248, 231, 0.72)",
+    fontSize: 11,
+    lineHeight: 16,
+    textAlign: "center",
   },
 });
