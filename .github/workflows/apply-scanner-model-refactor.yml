@@ -20,10 +20,17 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: master
-          fetch-depth: 0
+          fetch-depth: 1
+          show-progress: false
 
       - name: Apply refactor
-        run: node scripts/apply-scanner-model-refactor.mjs
+        shell: bash
+        run: |
+          set +e
+          output="$(node scripts/apply-scanner-model-refactor.mjs 2>&1)"
+          status=$?
+          printf '%s\n' "$output"
+          exit $status
 
       - name: Commit refactor
         run: |
