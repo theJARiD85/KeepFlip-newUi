@@ -1,12 +1,9 @@
-import { File } from 'expo-file-system';
-
 import {
   APPWRITE,
   ID,
   Permission,
   Query,
   Role,
-  storage,
   tablesDB,
 } from '@/lib/appwrite';
 import type { ItemAnalysisSuccess } from '@/types/item-analysis';
@@ -48,10 +45,20 @@ type InventoryRow = {
   createdAt?: string | null;
 };
 
+type ItemPhotoRow = {
+  $id: string;
+  ownerId: string;
+  scanId: string;
+  itemId?: string | null;
+  fileId: string;
+  sortOrder: number;
+  isPrimary: boolean;
+};
+
 export type SaveAnalyzedItemInput = {
   analysis: ItemAnalysisSuccess;
   ownerId: string;
-  photoUris: readonly string[];
+  scanId: string;
 };
 
 export type SaveAnalyzedItemResult = {
@@ -82,9 +89,11 @@ function titleFromAnalysis(result: ItemAnalysisSuccess) {
   ]
     .map(cleanText)
     .filter((value): value is string => Boolean(value))
-    .filter((value, index, all) =>
-      all.findIndex((candidate) => candidate.toLowerCase() === value.toLowerCase()) ===
-      index,
+    .filter(
+      (value, index, all) =>
+        all.findIndex(
+          (candidate) => candidate.toLowerCase() === value.toLowerCase(),
+        ) === index,
     )
     .join(' ')
     .trim();
@@ -118,7 +127,9 @@ function normalizedCondition(value: string | null | undefined) {
 
   if (normalized === 'excellent') return 'like_new';
 
-  return ['new', 'like_new', 'good', 'fair', 'poor', 'unknown'].includes(normalized)
+  return ['new', 'like_new', 'good', 'fair', 'poor', 'unknown'].includes(
+    normalized,
+  )
     ? normalized
     : 'unknown';
 }
@@ -129,7 +140,9 @@ function displayCondition(value: string | null | undefined) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-function normalizedStatus(value: string | null | undefined): InventoryItemStatus {
+function normalizedStatus(
+  value: string | null | undefined,
+): InventoryItemStatus {
   return value === 'keep' || value === 'flip' || value === 'undecided'
     ? value
     : 'undecided';
@@ -165,128 +178,123 @@ function rowToInventoryItem(row: InventoryRow): InventoryItem {
 function assertInventoryConfigured() {
   const missing = [
     !APPWRITE.databaseId ? 'EXPO_PUBLIC_APPWRITE_DATABASE_ID' : null,
-    !APPWRITE.itemsTableId ? 'EXPO_PUBLIC_APPWRITE_ITEMS_COLLECTION_ID' : null,
+    !APPWRITE.itemsTableId
+      ? 'EXPO_PUBLIC_APPWRITE_ITEMS_COLLECTION_ID'
+      : null,
+    !APPWRITE.itemPhotosTableId
+      ? 'EXPO_PUBLIC_APPWRITE_ITEM_PHOTOS_COLLECTION_ID'
+      : null,
   ].filter((value): value is string => Boolean(value));
 
   if (missing.length) {
-    throw new Error(`KeepFlip inventory needs Appwrite configuration: ${missing.join(', ')}`);
+    throw new Error(
+      `KeepFlip inventory needs Appwrite configuration: ${missing.join(', ')}`,
+    );
   }
 }
 
-function normalizePhotoUri(uri: string) {
-  const trimmed = uri.trim();
-  if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return trimmed;
-  return `file://${trimmed.startsWith('/') ? '' : '/'}${trimmed}`;
-}
-
-function inventoryUploadFile(uri: string, index: number) {
-  const file = new File(normalizePhotoUri(uri));
-  if (!file.exists || !Number.isFinite(file.size) || file.size <= 0) {
-    throw new Error(`Photo ${index + 1} is no longer available.`);
-  }
-
-  const extension = file.extension || '.jpg';
-  const declaredType = file.type?.toLowerCase();
-  const type =
-    declaredType === 'image/png' ||
-    declaredType === 'image/webp' ||
-    declaredType === 'image/jpeg'
-      ? declaredType
-      : extension.toLowerCase() === '.png'
-        ? 'image/png'
-        : extension.toLowerCase() === '.webp'
-          ? 'image/webp'
-          : 'image/jpeg';
-
-  return {
-    name: `keepflip-inventory-${Date.now()}-${index + 1}${extension}`,
-    type,
-    size: file.size,
-    uri: file.uri,
-  };
-}
-
-async function attachInventoryPhotos({
+async function attachExistingScan({
   itemId,
   ownerId,
-  photoUris,
+  scanId,
 }: {
   itemId: string;
   ownerId: string;
-  photoUris: readonly string[];
+  scanId: string;
 }) {
-  if (!APPWRITE.itemImagesBucketId || !APPWRITE.itemPhotosTableId) {
-    return {
-      fileIds: [] as string[],
-      warning:
-        photoUris.length > 0
-          ? 'The item was saved, but persistent inventory photo storage is not configured.'
-          : null,
-    };
-  }
+  const response = await tablesDB.listRows({
+    databaseId: APPWRITE.databaseId,
+    tableId: APPWRITE.itemPhotosTableId,
+    queries: [
+      Query.equal('ownerId', [ownerId]),
+      Query.equal('scanId', [scanId]),
+      Query.orderAsc('sortOrder'),
+      Query.limit(21),
+    ],
+  });
 
-  const fileIds: string[] = [];
+  const photos = response.rows as unknown as ItemPhotoRow[];
   const failures: string[] = [];
 
-  for (const [index, photoUri] of photoUris.slice(0, 4).entries()) {
+  for (const photo of photos) {
     try {
-      const uploaded = await storage.createFile({
-        bucketId: APPWRITE.itemImagesBucketId,
-        fileId: ID.unique(),
-        file: inventoryUploadFile(photoUri, index),
-        permissions: ownerPermissions(ownerId),
-      });
-
-      await tablesDB.createRow({
+      await tablesDB.updateRow({
         databaseId: APPWRITE.databaseId,
         tableId: APPWRITE.itemPhotosTableId,
-        rowId: ID.unique(),
-        data: {
-          ownerId,
-          itemId,
-          fileId: uploaded.$id,
-          sortOrder: fileIds.length,
-          isPrimary: fileIds.length === 0,
-          createdAt: new Date().toISOString(),
-        },
-        permissions: ownerPermissions(ownerId),
+        rowId: photo.$id,
+        data: { itemId },
       });
-
-      fileIds.push(uploaded.$id);
     } catch (error) {
-      failures.push(error instanceof Error ? error.message : `Photo ${index + 1} failed to save.`);
+      failures.push(
+        error instanceof Error
+          ? error.message
+          : `Photo row ${photo.$id} could not be linked.`,
+      );
     }
   }
 
-  if (fileIds.length > 0) {
-    await tablesDB.updateRow({
-      databaseId: APPWRITE.databaseId,
-      tableId: APPWRITE.itemsTableId,
-      rowId: itemId,
-      data: {
-        coverPhotoId: fileIds[0],
-        photoCount: fileIds.length,
-        updatedAt: new Date().toISOString(),
-      },
-    });
+  const primaryPhoto =
+    photos.find((photo) => photo.isPrimary) ?? photos[0] ?? null;
+
+  if (primaryPhoto && APPWRITE.modelFilesTableId) {
+    try {
+      await tablesDB.updateRow({
+        databaseId: APPWRITE.databaseId,
+        tableId: APPWRITE.modelFilesTableId,
+        rowId: primaryPhoto.$id,
+        data: { itemId, updatedAt: new Date().toISOString() },
+      });
+    } catch (error) {
+      const code = Number(
+        error && typeof error === 'object' && 'code' in error
+          ? (error as { code?: unknown }).code
+          : NaN,
+      );
+      if (code !== 404) {
+        failures.push(
+          error instanceof Error
+            ? error.message
+            : 'The generated model could not be linked to the inventory item.',
+        );
+      }
+    }
   }
 
+  await tablesDB.updateRow({
+    databaseId: APPWRITE.databaseId,
+    tableId: APPWRITE.itemsTableId,
+    rowId: itemId,
+    data: {
+      coverPhotoId: primaryPhoto?.fileId || null,
+      photoCount: photos.length,
+      updatedAt: new Date().toISOString(),
+    },
+  });
+
   return {
-    fileIds,
+    coverPhotoId: primaryPhoto?.fileId || null,
+    photoCount: photos.length,
     warning:
-      failures.length > 0
-        ? `The item was saved, but ${failures.length} photo${failures.length === 1 ? '' : 's'} could not be attached.`
-        : null,
+      photos.length === 0
+        ? 'The item was saved, but no saved scanner photos matched this scan.'
+        : failures.length > 0
+          ? `The item was saved, but ${failures.length} related record${
+              failures.length === 1 ? '' : 's'
+            } could not be linked.`
+          : null,
   };
 }
 
 export async function saveAnalyzedItemToInventory({
   analysis,
   ownerId,
-  photoUris,
+  scanId,
 }: SaveAnalyzedItemInput): Promise<SaveAnalyzedItemResult> {
   assertInventoryConfigured();
-  if (!ownerId.trim()) throw new Error('Sign in before saving an item.');
+  const cleanOwnerId = ownerId.trim();
+  const cleanScanId = scanId.trim();
+  if (!cleanOwnerId) throw new Error('Sign in before saving an item.');
+  if (!cleanScanId) throw new Error('The completed scan ID is missing.');
   if (analysis.status !== 'identified') {
     throw new Error('Only successfully identified items can be saved to inventory.');
   }
@@ -311,9 +319,10 @@ export async function saveAnalyzedItemToInventory({
     tableId: APPWRITE.itemsTableId,
     rowId: ID.unique(),
     data: {
-      ownerId,
+      ownerId: cleanOwnerId,
       title: titleFromAnalysis(analysis),
-      category: cleanText(identity.category) || cleanText(identity.itemType) || 'Other',
+      category:
+        cleanText(identity.category) || cleanText(identity.itemType) || 'Other',
       brand: cleanText(identity.brand),
       model: cleanText(identity.model),
       serialNumber: cleanText(identity.serialNumber),
@@ -333,26 +342,40 @@ export async function saveAnalyzedItemToInventory({
       createdAt: now,
       updatedAt: now,
     },
-    permissions: ownerPermissions(ownerId),
+    permissions: ownerPermissions(cleanOwnerId),
   })) as unknown as InventoryRow;
 
-  const attached = await attachInventoryPhotos({
-    itemId: created.$id,
-    ownerId,
-    photoUris,
-  });
+  let attached;
+  try {
+    attached = await attachExistingScan({
+      itemId: created.$id,
+      ownerId: cleanOwnerId,
+      scanId: cleanScanId,
+    });
+  } catch (error) {
+    attached = {
+      coverPhotoId: null,
+      photoCount: 0,
+      warning:
+        error instanceof Error
+          ? `The item was saved, but its scanner photos could not be linked: ${error.message}`
+          : 'The item was saved, but its scanner photos could not be linked.',
+    };
+  }
 
   return {
     item: rowToInventoryItem({
       ...created,
-      coverPhotoId: attached.fileIds[0] || null,
-      photoCount: attached.fileIds.length,
+      coverPhotoId: attached.coverPhotoId,
+      photoCount: attached.photoCount,
     }),
     photoWarning: attached.warning,
   };
 }
 
-export async function listInventoryItems(ownerId: string): Promise<InventoryItem[]> {
+export async function listInventoryItems(
+  ownerId: string,
+): Promise<InventoryItem[]> {
   assertInventoryConfigured();
   if (!ownerId.trim()) return [];
 
