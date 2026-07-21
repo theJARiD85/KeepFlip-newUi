@@ -67,7 +67,12 @@ import {
 import { saveAnalyzedItemToInventory } from "@/services/inventory-service";
 import { MeshViewer } from "@/components/scanner/mesh-viewer";
 import {
-  createTripo3dModelFromImage,
+  createScanId,
+  saveScannerPhoto,
+  type SavedScanPhoto,
+} from "@/services/scan-photo-service";
+import {
+  waitForTripo3dModel,
   type Tripo3dModelResult,
 } from "@/services/tripo3d-model-api";
 
@@ -240,7 +245,8 @@ export default function ScannerScreen() {
   const uploadSequenceRef = useRef(0);
   const torchRequestSequenceRef = useRef(0);
   const modelGenerationRequestRef = useRef(0);
-  const modelSourceUriRef = useRef<string | null>(null);
+  const scanIdRef = useRef(createScanId());
+  const modelSourcePhotoIdRef = useRef<string | null>(null);
   const modelGenerationStateRef = useRef<"idle" | "loading" | "ready">(
     "idle",
   );
@@ -284,7 +290,7 @@ export default function ScannerScreen() {
 
   const [completedAnalysis, setCompletedAnalysis] =
     useState<ItemAnalysisSuccess | null>(null);
-  const [completedPhotoUris, setCompletedPhotoUris] = useState<string[]>([]);
+  const [completedScanId, setCompletedScanId] = useState<string | null>(null);
   const [isSavingToInventory, setIsSavingToInventory] = useState(false);
   const renderedAtmospherePhase: ScannerAtmospherePhase =
     analysisState?.status === "analyzing" ? "analyzing" : atmospherePhase;
@@ -392,9 +398,9 @@ export default function ScannerScreen() {
   );
 
   const startModelGeneration = useCallback(
-    async (imageUri: string) => {
-      const normalizedUri = imageUri.trim();
-      if (!normalizedUri) return;
+    async (itemPhotoId: string) => {
+      const normalizedItemPhotoId = itemPhotoId.trim();
+      if (!normalizedItemPhotoId) return;
 
       if (!user?.$id) {
         setModelGenerationError(
@@ -404,23 +410,22 @@ export default function ScannerScreen() {
       }
 
       if (
-        modelSourceUriRef.current === normalizedUri &&
+        modelSourcePhotoIdRef.current === normalizedItemPhotoId &&
         modelGenerationStateRef.current !== "idle"
       ) {
         return;
       }
 
       const requestId = ++modelGenerationRequestRef.current;
-      modelSourceUriRef.current = normalizedUri;
+      modelSourcePhotoIdRef.current = normalizedItemPhotoId;
       modelGenerationStateRef.current = "loading";
       setGeneratedModel(null);
       setModelGenerationError(null);
       setIsGeneratingModel(true);
 
       try {
-        const result = await createTripo3dModelFromImage({
-          imageUri: normalizedUri,
-          userId: user.$id,
+        const result = await waitForTripo3dModel({
+          itemPhotoId: normalizedItemPhotoId,
         });
 
         if (requestId !== modelGenerationRequestRef.current) return;
@@ -541,7 +546,7 @@ export default function ScannerScreen() {
     analysisAbortControllerRef.current?.abort();
     analysisAbortControllerRef.current = null;
     modelGenerationRequestRef.current += 1;
-    modelSourceUriRef.current = null;
+    modelSourcePhotoIdRef.current = null;
     modelGenerationStateRef.current = "idle";
     setIsGeneratingModel(false);
     setGeneratedModel(null);
@@ -635,6 +640,51 @@ export default function ScannerScreen() {
     [scheduleAtmosphereReset],
   );
 
+  const persistPickedPhotos = useCallback(
+    async (assets: readonly ImagePicker.ImagePickerAsset[]) => {
+      if (!user?.$id) {
+        throw new Error("Sign in before saving scanner photos.");
+      }
+
+      const knownUris = new Set(uploadedPhotos.map((photo) => photo.path));
+      const remainingSlots = MAX_ANALYSIS_PHOTOS - uploadedPhotos.length;
+      const selectedAssets = assets
+        .filter((asset) => {
+          const uri = asset.uri?.trim();
+          if (!uri || knownUris.has(uri)) return false;
+          knownUris.add(uri);
+          return true;
+        })
+        .slice(0, remainingSlots);
+
+      if (selectedAssets.length === 0) return;
+
+      const firstSortOrder = uploadedPhotos.length;
+      const savedPhotos: SavedScanPhoto[] = [];
+      for (const [index, asset] of selectedAssets.entries()) {
+        const saved = await saveScannerPhoto({
+          imageUri: asset.uri,
+          ownerId: user.$id,
+          scanId: scanIdRef.current,
+          sortOrder: firstSortOrder + index,
+          isPrimary: firstSortOrder + index === 0,
+        });
+        savedPhotos.push(saved);
+      }
+
+      acceptPickedPhotos(selectedAssets);
+      if (firstSortOrder === 0 && savedPhotos[0]) {
+        void startModelGeneration(savedPhotos[0].itemPhotoId);
+      }
+    },
+    [
+      acceptPickedPhotos,
+      startModelGeneration,
+      uploadedPhotos,
+      user?.$id,
+    ],
+  );
+
   useEffect(() => {
     if (Platform.OS !== "android") return;
 
@@ -652,7 +702,7 @@ export default function ScannerScreen() {
         }
 
         if (!pendingResult.canceled && pendingResult.assets.length > 0) {
-          acceptPickedPhotos(pendingResult.assets);
+          await persistPickedPhotos(pendingResult.assets);
         }
       } catch {
         if (isMounted)
@@ -666,7 +716,7 @@ export default function ScannerScreen() {
     return () => {
       isMounted = false;
     };
-  }, [acceptPickedPhotos]);
+  }, [persistPickedPhotos]);
 
   const handlePermissionAction = async () => {
     if (canRequestPermission) {
@@ -720,11 +770,7 @@ export default function ScannerScreen() {
         return;
       }
 
-      acceptPickedPhotos(result.assets);
-      const firstUri = result.assets[0]?.uri?.trim();
-      if (firstUri) {
-        void startModelGeneration(firstUri);
-      }
+      await persistPickedPhotos(result.assets);
     } catch {
       setAtmospherePhase("idle");
       setMessage("Could not open your photos. Please try again.");
@@ -732,64 +778,92 @@ export default function ScannerScreen() {
       setIsPickingPhoto(false);
     }
   }, [
-    acceptPickedPhotos,
     clearAtmosphereTimer,
     isPickingPhoto,
-    startModelGeneration,
+    persistPickedPhotos,
     uploadedPhotos.length,
   ]);
 
-  const capturePhoto = useCallback(async (): Promise<string | null> => {
-    if (!isCameraActive || !isCameraReady) {
-      const feedback = "Camera is getting ready. Try again in a moment.";
-      setMessage(feedback);
-      setCaptureFeedback(feedback);
-      return null;
-    }
-
-    if (captureLockRef.current) return null;
-    captureLockRef.current = true;
-    clearAtmosphereTimer();
-    setIsCapturing(true);
-    setAtmospherePhase("scanning");
-    setMessage("Capturing item...");
-    setCaptureFeedback("Capturing item...");
-
-    try {
-      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(
-        () => undefined,
-      );
-      const photo = await photoOutput.capturePhotoToFile(
-        { flashMode: "off" },
-        {},
-      );
-      if (!photo.filePath) {
-        throw new Error("VisionCamera returned an empty photo file path.");
+  const capturePhoto = useCallback(
+    async ({
+      scanId,
+      sortOrder,
+      isPrimary,
+    }: {
+      scanId: string;
+      sortOrder: number;
+      isPrimary: boolean;
+    }): Promise<{ path: string; saved: SavedScanPhoto } | null> => {
+      if (!isCameraActive || !isCameraReady) {
+        const feedback = "Camera is getting ready. Try again in a moment.";
+        setMessage(feedback);
+        setCaptureFeedback(feedback);
+        return null;
       }
 
-      setAtmospherePhase("captured");
-      setCaptureFeedback(null);
-      scheduleAtmosphereReset();
-      console.log("Photo filepath:", { photo})
-      return photo.filePath;
+      if (!user?.$id) {
+        const feedback = "Sign in before capturing an item.";
+        setMessage(feedback);
+        setCaptureFeedback(feedback);
+        return null;
+      }
 
-    } catch {
-      const feedback = "Could not capture. Hold steady and try again.";
-      setAtmospherePhase("idle");
-      setMessage(feedback);
-      setCaptureFeedback(feedback);
-      return null;
-    } finally {
-      captureLockRef.current = false;
-      setIsCapturing(false);
-    }
-  }, [
-    clearAtmosphereTimer,
-    isCameraActive,
-    isCameraReady,
-    photoOutput,
-    scheduleAtmosphereReset,
-  ]);
+      if (captureLockRef.current) return null;
+      captureLockRef.current = true;
+      clearAtmosphereTimer();
+      setIsCapturing(true);
+      setAtmospherePhase("scanning");
+      setMessage("Capturing item...");
+      setCaptureFeedback("Capturing item...");
+
+      try {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(
+          () => undefined,
+        );
+        const photo = await photoOutput.capturePhotoToFile(
+          { flashMode: "off" },
+          {},
+        );
+        if (!photo.filePath) {
+          throw new Error("VisionCamera returned an empty photo file path.");
+        }
+
+        setMessage("Saving scanner image...");
+        const saved = await saveScannerPhoto({
+          imageUri: photo.filePath,
+          ownerId: user.$id,
+          scanId,
+          sortOrder,
+          isPrimary,
+        });
+
+        setAtmospherePhase("captured");
+        setCaptureFeedback(null);
+        scheduleAtmosphereReset();
+        return { path: photo.filePath, saved };
+      } catch (error) {
+        const feedback =
+          error instanceof Error
+            ? error.message
+            : "Could not capture and save this item.";
+        setAtmospherePhase("idle");
+        setMessage(feedback);
+        setCaptureFeedback(feedback);
+        return null;
+      } finally {
+        captureLockRef.current = false;
+        setIsCapturing(false);
+      }
+    },
+    [
+      clearAtmosphereTimer,
+      isCameraActive,
+      isCameraReady,
+      photoOutput,
+      scheduleAtmosphereReset,
+      user?.$id,
+    ],
+  );
 
   const openMultiReview = useCallback(() => {
     if (
@@ -858,33 +932,37 @@ export default function ScannerScreen() {
       return;
     }
 
-    const photoPath = await capturePhoto();
-    if (!photoPath) return;
+    const scanId = tool === "batch" ? createScanId() : scanIdRef.current;
+    const sortOrder = tool === "multi" ? multiScanPhotos.length : 0;
+    const isPrimary = tool !== "multi" || multiScanPhotos.length === 0;
+    const captured = await capturePhoto({ scanId, sortOrder, isPrimary });
+    if (!captured) return;
 
+    const photoPath = captured.path;
     if (tool === "single") {
       setSinglePhotoUri(photoPath);
-      setMessage("Photo captured. Building 3D model and starting analysis...");
-      void startModelGeneration(photoPath);
+      setMessage("Photo saved. Building 3D model and starting analysis...");
+      void startModelGeneration(captured.saved.itemPhotoId);
       await runAnalysis([photoPath]);
       return;
     }
 
     if (tool === "multi") {
-      if (multiScanPhotos.length === 0) {
-        void startModelGeneration(photoPath);
+      if (captured.saved.isPrimary) {
+        void startModelGeneration(captured.saved.itemPhotoId);
       }
 
       setMultiScanPhotos((photos) => {
         multiScanSequenceRef.current += 1;
         const photo: MultiScanPhoto = {
           createdAt: Date.now(),
-          id: `${Date.now()}-${multiScanSequenceRef.current}`,
+          id: captured.saved.itemPhotoId,
           path: photoPath,
           uri: toDisplayUri(photoPath),
         };
         const nextPhotos = [...photos, photo];
         setMessage(
-          `${nextPhotos.length} view${nextPhotos.length === 1 ? "" : "s"} added. Keep scanning or tap the photo stack to analyze.`,
+          `${nextPhotos.length} view${nextPhotos.length === 1 ? "" : "s"} saved. Keep scanning or tap the photo stack to analyze.`,
         );
         return nextPhotos;
       });
@@ -894,7 +972,7 @@ export default function ScannerScreen() {
     setBatchScanPhotos((photos) => {
       const nextPhotos = [...photos, photoPath];
       setMessage(
-        `Batch-scan - ${nextPhotos.length} item${nextPhotos.length === 1 ? "" : "s"} captured`,
+        `Batch-scan - ${nextPhotos.length} item${nextPhotos.length === 1 ? "" : "s"} saved`,
       );
       return nextPhotos;
     });
@@ -907,8 +985,9 @@ export default function ScannerScreen() {
     captureLockRef.current = false;
     multiScanSequenceRef.current = 0;
     uploadSequenceRef.current = 0;
+    scanIdRef.current = createScanId();
     modelGenerationRequestRef.current += 1;
-    modelSourceUriRef.current = null;
+    modelSourcePhotoIdRef.current = null;
     modelGenerationStateRef.current = "idle";
     setIsGeneratingModel(false);
     setGeneratedModel(null);
@@ -922,7 +1001,7 @@ export default function ScannerScreen() {
     setAnalysisState(null);
     setAnalysisBackdropUri(null);
     setCompletedAnalysis(null);
-    setCompletedPhotoUris([]);
+    setCompletedScanId(null);
     setSelectedTool("single");
     setMessage("Center one item inside the frame");
     setCaptureFeedback(null);
@@ -939,7 +1018,7 @@ export default function ScannerScreen() {
     analysisAbortControllerRef.current?.abort();
     analysisAbortControllerRef.current = null;
     modelGenerationRequestRef.current += 1;
-    modelSourceUriRef.current = null;
+    modelSourcePhotoIdRef.current = null;
     modelGenerationStateRef.current = "idle";
     setIsGeneratingModel(false);
     setGeneratedModel(null);
@@ -947,11 +1026,11 @@ export default function ScannerScreen() {
     setAnalysisState(null);
     setAnalysisBackdropUri(null);
     setCompletedAnalysis(null);
-    setCompletedPhotoUris([]);
+    setCompletedScanId(null);
   };
 
   const saveCompletedAnalysis = useCallback(async () => {
-    if (!completedAnalysis || isSavingToInventory) return;
+    if (!completedAnalysis || !completedScanId || isSavingToInventory) return;
     if (!user?.$id) {
       Alert.alert(
         "Sign in required",
@@ -965,7 +1044,7 @@ export default function ScannerScreen() {
       const saved = await saveAnalyzedItemToInventory({
         analysis: completedAnalysis,
         ownerId: user.$id,
-        photoUris: completedPhotoUris,
+        scanId: completedScanId,
       });
       resetScannerSession();
       router.push("/inventory");
@@ -984,7 +1063,7 @@ export default function ScannerScreen() {
     }
   }, [
     completedAnalysis,
-    completedPhotoUris,
+    completedScanId,
     isSavingToInventory,
     resetScannerSession,
     router,
@@ -1001,10 +1080,8 @@ export default function ScannerScreen() {
       return;
     }
 
-    void startModelGeneration(photoUris[0]);
-
     setCompletedAnalysis(null);
-    setCompletedPhotoUris([]);
+    setCompletedScanId(null);
     const controller = new AbortController();
     analysisAbortControllerRef.current = controller;
     setAnalysisBackdropUri(toDisplayUri(photoUris[0]));
@@ -1027,7 +1104,7 @@ export default function ScannerScreen() {
 
       if (controller.signal.aborted) return;
       setCompletedAnalysis(result);
-      setCompletedPhotoUris([...photoUris]);
+      setCompletedScanId(scanIdRef.current);
       setAnalysisState(toItemAnalysisState(result));
       void Haptics.notificationAsync(
         Haptics.NotificationFeedbackType.Success,
@@ -1070,12 +1147,7 @@ export default function ScannerScreen() {
     }
   }
 
-  const handleAnalyzeItem = () => {
-    if (analysisPhotoUris[0]) {
-      void startModelGeneration(analysisPhotoUris[0]);
-    }
-    return runAnalysis(analysisPhotoUris);
-  };
+  const handleAnalyzeItem = () => runAnalysis(analysisPhotoUris);
 
   const analysisButton =
     canAnalyzeCurrentTool && analysisState == null && !isPhotoReviewOpen ? (

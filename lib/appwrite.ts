@@ -104,6 +104,9 @@ export const APPWRITE = {
   itemPhotosTableId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_ITEM_PHOTOS_COLLECTION_ID,
   ),
+  modelFilesTableId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_MODEL_FILES_COLLECTION_ID,
+  ),
   marketplaceListingsTableId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_MARKETPLACE_LISTINGS_TABLE_ID,
   ),
@@ -112,6 +115,9 @@ export const APPWRITE = {
   ),
   itemImagesBucketId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_ITEM_IMAGES_BUCKET_ID,
+  ),
+  modelFilesBucketId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_MODEL_BUCKET_ID,
   ),
   profileImagesBucketId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_PROFILE_IMAGES_BUCKET_ID,
