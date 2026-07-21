@@ -1,5 +1,7 @@
 import {
   APPWRITE,
+  ExecutionMethod,
+  functions,
   getAppwriteCoreServices,
   storage,
   tablesDB,
@@ -49,6 +51,9 @@ function requiredConfiguration() {
     !APPWRITE.modelFilesBucketId
       ? "EXPO_PUBLIC_APPWRITE_MODEL_BUCKET_ID"
       : null,
+    !APPWRITE.imageToModelFunctionId
+      ? "EXPO_PUBLIC_APPWRITE_IMAGE_TO_MODEL_FUNCTION_ID"
+      : null,
   ].filter((value): value is string => Boolean(value));
 
   if (missing.length > 0) {
@@ -61,6 +66,7 @@ function requiredConfiguration() {
     databaseId: APPWRITE.databaseId,
     modelFilesTableId: APPWRITE.modelFilesTableId,
     modelBucketId: APPWRITE.modelFilesBucketId,
+    functionId: APPWRITE.imageToModelFunctionId,
   };
 }
 
@@ -91,6 +97,22 @@ function createModelViewUrl(bucketId: string, fileId: string) {
   }
 
   return url;
+}
+
+async function executeImageToModelFunction(
+  functionId: string,
+  itemPhotoId: string,
+) {
+  await functions.createExecution({
+    functionId,
+    body: JSON.stringify({ itemPhotoId }),
+    async: true,
+    path: "/",
+    method: ExecutionMethod.POST,
+    headers: {
+      "content-type": "application/json",
+    },
+  });
 }
 
 async function waitForReadyModelRow(
@@ -131,18 +153,24 @@ async function waitForReadyModelRow(
 
 /**
  * scanner-screen.native.tsx has already uploaded the source image and created
- * the item_photos row. That row-create event triggers the backend Function.
- * This client only waits for the matching model_files row to become ready.
+ * the item_photos row. The app now explicitly invokes the Function with that
+ * row ID, then waits for the matching model_files row to become ready.
  */
 export async function waitForTripo3dModel({
   itemPhotoId,
 }: WaitForTripo3dModelInput): Promise<Tripo3dModelResult> {
   const cleanedItemPhotoId = itemPhotoId.trim();
   if (!cleanedItemPhotoId) {
-    throw new Error("An item photo row ID is required to load its 3D model.");
+    throw new Error("An item photo row ID is required to generate its 3D model.");
   }
 
   const configuration = requiredConfiguration();
+
+  await executeImageToModelFunction(
+    configuration.functionId,
+    cleanedItemPhotoId,
+  );
+
   const modelRow = await waitForReadyModelRow(
     configuration.databaseId,
     configuration.modelFilesTableId,
