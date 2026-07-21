@@ -443,7 +443,7 @@ export function KeepFlipAuthScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   authGlow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     experimental_backgroundImage: `
       radial-gradient(circle at 50% 16%, rgba(224, 172, 75, 0.13) 0%, transparent 31%),
       radial-gradient(circle at 12% 82%, rgba(88, 223, 232, 0.055) 0%, transparent 32%),

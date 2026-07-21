@@ -146,7 +146,7 @@ async function executeImageToModelFunction(
     functionId,
     body: JSON.stringify({ itemPhotoId }),
     async: true,
-    path: "/",
+    xpath: "/",
     method: ExecutionMethod.POST,
     headers: {
       "content-type": "application/json",

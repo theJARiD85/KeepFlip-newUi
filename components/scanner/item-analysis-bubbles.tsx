@@ -664,7 +664,7 @@ export function ItemAnalysisBubbles({
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 44,
     backgroundColor: 'rgba(1, 1, 3, 0.16)',
     experimental_backgroundImage: `

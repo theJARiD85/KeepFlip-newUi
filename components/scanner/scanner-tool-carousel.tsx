@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   railShade: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 3,
     experimental_backgroundImage: `
       linear-gradient(180deg, rgba(0, 0, 0, 0.48) 0%, transparent 34%, rgba(0, 0, 0, 0.26) 100%)

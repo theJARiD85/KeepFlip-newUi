@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   reviewBackdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 30,
     backgroundColor: 'rgba(2, 2, 4, 0.97)',
     experimental_backgroundImage: `

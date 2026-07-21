@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     boxShadow: '0 28px 80px rgba(0, 0, 0, 0.58), 0 0 42px rgba(88, 223, 232, 0.07)',
   },
   colorWash: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     experimental_backgroundImage: `
       radial-gradient(circle at 18% 22%, rgba(141, 114, 255, 0.18) 0%, transparent 36%),
       radial-gradient(circle at 82% 76%, rgba(88, 223, 232, 0.14) 0%, transparent 38%),

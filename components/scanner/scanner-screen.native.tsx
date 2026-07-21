@@ -238,7 +238,7 @@ export default function ScannerScreen() {
   const permissionCardWidth = Math.min(contentWidth, 480);
   const analysisButtonWidth = Math.min(controlDockWidth, 360);
   const isFocused = useIsFocused();
-  const { closeMenu, isMenuPresented } = useKeepFlipMenu();
+  const { closeMenu, isMenuOpen } = useKeepFlipMenu();
   const cameraRef = useRef<CameraRef>(null);
   const captureLockRef = useRef(false);
   const multiScanSequenceRef = useRef(0);
@@ -321,7 +321,7 @@ export default function ScannerScreen() {
     device != null &&
     isFocused &&
     appState === "active" &&
-    !isMenuPresented &&
+    !isMenuOpen &&
     !isPickingPhoto &&
     !isScannerOverlayOpen;
 
@@ -481,16 +481,13 @@ export default function ScannerScreen() {
     return () => subscription.remove();
   }, []);
 
-  useEffect(() => {
-    if (!isFocused || !isMenuPresented) return;
-    closeMenu();
-  }, [closeMenu, isFocused, isMenuPresented]);
+
 
   useEffect(() => {
     if (
       !isFocused ||
       appState !== "active" ||
-      isMenuPresented ||
+      isMenuOpen ||
       hasPermission ||
       !canRequestPermission
     ) {
@@ -507,7 +504,7 @@ export default function ScannerScreen() {
     canRequestPermission,
     hasPermission,
     isFocused,
-    isMenuPresented,
+    isMenuOpen,
     requestPermission,
   ]);
 
@@ -532,13 +529,13 @@ export default function ScannerScreen() {
   }, [canUseTorch, isCameraActive]);
 
   useEffect(() => {
-    if (!isMenuPresented) return;
+    if (!isMenuOpen) return;
     if (isMultiReviewOpen) setIsMultiReviewOpen(false);
     if (isUploadReviewOpen) setIsUploadReviewOpen(false);
-  }, [isMenuPresented, isMultiReviewOpen, isUploadReviewOpen]);
+  }, [isMenuOpen, isMultiReviewOpen, isUploadReviewOpen]);
 
   useEffect(() => {
-    if (!isMenuPresented || analysisState == null) return;
+    if (!isMenuOpen || analysisState == null) return;
     if (analysisState.status === "analyzing") {
       closeMenu();
       return;
@@ -553,7 +550,7 @@ export default function ScannerScreen() {
     setModelGenerationError(null);
     setAnalysisState(null);
     setAnalysisBackdropUri(null);
-  }, [analysisState, closeMenu, isMenuPresented]);
+  }, [analysisState, closeMenu, isMenuOpen]);
 
   useEffect(() => {
     if (isMultiReviewOpen && multiScanPhotos.length === 0) {
@@ -871,14 +868,14 @@ export default function ScannerScreen() {
       captureLockRef.current ||
       isCapturing ||
       isPickingPhoto ||
-      isMenuPresented
+      isMenuOpen
     ) {
       return;
     }
 
     setIsMultiReviewOpen(true);
     void Haptics.selectionAsync().catch(() => undefined);
-  }, [isCapturing, isMenuPresented, isPickingPhoto, multiScanPhotos.length]);
+  }, [isCapturing, isMenuOpen, isPickingPhoto, multiScanPhotos.length]);
 
   const closeMultiReview = useCallback(() => {
     setIsMultiReviewOpen(false);
@@ -898,14 +895,14 @@ export default function ScannerScreen() {
       captureLockRef.current ||
       isCapturing ||
       isPickingPhoto ||
-      isMenuPresented
+      isMenuOpen
     ) {
       return;
     }
 
     setIsUploadReviewOpen(true);
     void Haptics.selectionAsync().catch(() => undefined);
-  }, [isCapturing, isMenuPresented, isPickingPhoto, uploadedPhotos.length]);
+  }, [isCapturing, isMenuOpen, isPickingPhoto, uploadedPhotos.length]);
 
   const closeUploadReview = useCallback(() => {
     setIsUploadReviewOpen(false);
@@ -920,7 +917,7 @@ export default function ScannerScreen() {
   }, []);
 
   const handleToolSelect = (tool: ScannerToolId) => {
-    if (isCapturing || isPickingPhoto || isMenuPresented) return;
+    if (isCapturing || isPickingPhoto || isMenuOpen) return;
 
     setCaptureFeedback(null);
     setSelectedTool(tool);
@@ -1075,7 +1072,7 @@ export default function ScannerScreen() {
       photoUris.length === 0 ||
       analysisAbortControllerRef.current != null ||
       isPickingPhoto ||
-      isMenuPresented
+      isMenuOpen
     ) {
       return;
     }
@@ -1160,12 +1157,12 @@ export default function ScannerScreen() {
           accessibilityHint={`Uses ${analysisPhotoUris.length} selected photo${analysisPhotoUris.length === 1 ? "" : "s"} to identify and value this item`}
           accessibilityLabel="Analyze item with KeepFlip AI"
           accessibilityRole="button"
-          disabled={isCapturing || isPickingPhoto || isMenuPresented}
+          disabled={isCapturing || isPickingPhoto || isMenuOpen}
           onPress={() => void handleAnalyzeItem()}
           style={({ pressed }) => [
             styles.analyzeButton,
             pressed && styles.analyzeButtonPressed,
-            (isCapturing || isPickingPhoto || isMenuPresented) &&
+            (isCapturing || isPickingPhoto || isMenuOpen) &&
               styles.buttonDisabled,
           ]}
         >
@@ -1356,7 +1353,7 @@ export default function ScannerScreen() {
               <MultiScanPhotoStack
                 accentColor={theme.colors.cream}
                 accessibilityContext="uploaded"
-                disabled={isPickingPhoto || isMenuPresented}
+                disabled={isPickingPhoto || isMenuOpen}
                 onOpen={openUploadReview}
                 photos={uploadedPhotos}
               />
@@ -1431,7 +1428,7 @@ export default function ScannerScreen() {
               <MultiScanPhotoStack
                 accentColor={theme.colors.cream}
                 accessibilityContext="uploaded"
-                disabled={isPickingPhoto || isMenuPresented}
+                disabled={isPickingPhoto || isMenuOpen}
                 onOpen={openUploadReview}
                 photos={uploadedPhotos}
               />
@@ -1494,7 +1491,7 @@ export default function ScannerScreen() {
             pointerEvents="none"
             style={StyleSheet.absoluteFill}
           >
-            {generatedModel ? (
+            {generatedModel && analysisState?.status === "result" ? (
               <MeshViewer
                 jwt={generatedModel.modelJwt}
                 modelUrl={generatedModel.modelUrl}
@@ -1517,7 +1514,9 @@ export default function ScannerScreen() {
           pointerEvents="none"
           style={[
             styles.cameraScrim,
-            generatedModel && styles.cameraScrimWithModel,
+            generatedModel &&
+              analysisState?.status === "result" &&
+              styles.cameraScrimWithModel,
           ]}
         />
         {analysisState &&
@@ -1560,7 +1559,7 @@ export default function ScannerScreen() {
             </Text>
           </Animated.View>
         ) : null}
-        {analysisState?.status === "analyzing" && !generatedModel ? (
+        {analysisState?.status === "analyzing" ? (
         <Animated.View
           entering={FadeIn.duration(220)}
           exiting={FadeOut.duration(180)}
@@ -1762,7 +1761,7 @@ export default function ScannerScreen() {
           !isMultiReviewOpen ? (
             <View style={styles.multiStackAnchor}>
               <MultiScanPhotoStack
-                disabled={isCapturing || isPickingPhoto || isMenuPresented}
+                disabled={isCapturing || isPickingPhoto || isMenuOpen}
                 onOpen={openMultiReview}
                 photos={multiScanPhotos}
               />
@@ -1775,7 +1774,7 @@ export default function ScannerScreen() {
               <MultiScanPhotoStack
                 accentColor={theme.colors.cream}
                 accessibilityContext="uploaded"
-                disabled={isCapturing || isPickingPhoto || isMenuPresented}
+                disabled={isCapturing || isPickingPhoto || isMenuOpen}
                 onOpen={openUploadReview}
                 photos={uploadedPhotos}
               />
@@ -1812,7 +1811,7 @@ export default function ScannerScreen() {
               batch: batchScanPhotos.length,
               upload: uploadedPhotos.length,
             }}
-            disabled={isCapturing || isPickingPhoto || isMenuPresented}
+            disabled={isCapturing || isPickingPhoto || isMenuOpen}
             onActivate={(tool) => void handleToolActivate(tool)}
             onSelect={handleToolSelect}
             selectedTool={selectedTool}
