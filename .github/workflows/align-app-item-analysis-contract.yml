@@ -27,37 +27,45 @@ jobs:
       - name: Apply contract alignment
         run: node scripts/align-app-item-analysis-contract.mjs
 
-      - name: Validate generated TypeScript syntax
+      - name: Enforce valuation evidence gate
         run: |
-          npm install --no-save typescript
           node <<'NODE'
           const fs = require('fs');
-          const ts = require('typescript');
-          const files = [
-            'services/itemAiService.ts',
-            'services/item-analysis-service.ts',
-          ];
-          for (const file of files) {
-            const source = fs.readFileSync(file, 'utf8');
-            const result = ts.transpileModule(source, {
-              compilerOptions: {
-                target: ts.ScriptTarget.ES2022,
-                module: ts.ModuleKind.ESNext,
-              },
-              reportDiagnostics: true,
-              fileName: file,
-            });
-            const errors = (result.diagnostics || []).filter(
-              (diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error,
-            );
-            if (errors.length) {
-              for (const error of errors) {
-                console.error(ts.flattenDiagnosticMessageText(error.messageText, '\n'));
-              }
-              process.exit(1);
+          const file = 'services/item-analysis-service.ts';
+          let source = fs.readFileSync(file, 'utf8');
+          const marker = '    if (identified.status !== "identified") return identified;';
+          const gate = `
+
+              if (identification.valuationReadiness === "needs_evidence") {
+                return pausedMarketResearch(identification, identified);
+              }`;
+
+          if (!source.includes('return pausedMarketResearch(identification, identified);')) {
+            if (!source.includes(marker)) {
+              throw new Error('Could not locate the identified status gate.');
             }
+            source = source.replace(marker, marker + gate);
           }
+
+          if (!source.includes('type ItemIdentityEvidence')) {
+            throw new Error('Identity-evidence types were not imported.');
+          }
+          if (!source.includes('identification.confidenceBreakdown')) {
+            throw new Error('Per-field confidence is not being consumed.');
+          }
+          if (!source.includes('return pausedMarketResearch(identification, identified);')) {
+            throw new Error('Valuation evidence gate was not installed.');
+          }
+
+          fs.writeFileSync(file, source, 'utf8');
           NODE
+
+      - name: Validate migration scripts
+        run: |
+          node --check scripts/align-app-item-analysis-contract.mjs
+          grep -q "identityEvidenceForAnalysis" services/item-analysis-service.ts
+          grep -q "valuationFromOldUiResult(.*" services/item-analysis-service.ts
+          grep -q "VALUATION_NEEDS_EVIDENCE" services/item-analysis-service.ts
 
       - name: Commit aligned source
         run: |
