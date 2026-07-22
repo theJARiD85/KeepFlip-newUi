@@ -652,6 +652,10 @@ export async function analyzeItemPhotos(
 
     if (identified.status !== "identified") return identified;
 
+    if (identification.valuationReadiness === "needs_evidence") {
+      return pausedMarketResearch(identification, identified);
+    }
+
     throwIfAborted(options.signal);
     reportStage(options.onStage, "researching_comps");
 
