@@ -83,6 +83,27 @@ type StartedSearch = {
 
 const POLL_INTERVAL_MS = 2500;
 
+const TERMINAL_EBAY_EXECUTION_STATUSES = new Set(["completed", "failed"]);
+
+async function waitForEbayFunctionExecution(initialExecution: any) {
+  let execution = initialExecution;
+
+  while (true) {
+    const status = String(execution?.status || "").toLowerCase();
+
+    if (TERMINAL_EBAY_EXECUTION_STATUSES.has(status)) {
+      return execution;
+    }
+
+    await sleep(POLL_INTERVAL_MS);
+    execution = await functions.getExecution({
+      functionId: APPWRITE.ebaySoldCompsFunctionId,
+      executionId: execution.$id,
+    });
+  }
+}
+
+
 function sleep(milliseconds: number) {
   return new Promise<void>((resolve) => {
     setTimeout(resolve, milliseconds);
@@ -277,9 +298,9 @@ function getPayloadError(payload: JsonRecord) {
 async function callEbayFunction(
   body: JsonRecord
 ): Promise<JsonRecord> {
-  const execution = await functions.createExecution({
+  const startedExecution = await functions.createExecution({
     functionId: APPWRITE.ebaySoldCompsFunctionId,
-    async: false,
+    async: true,
     method: ExecutionMethod.POST,
     headers: {
       "content-type": "application/json",
@@ -287,11 +308,16 @@ async function callEbayFunction(
     body: JSON.stringify(body),
   });
 
+  const execution = await waitForEbayFunctionExecution(startedExecution);
+
   const rawBody = execution.responseBody?.trim() || "";
 
   if (!rawBody) {
+    const executionError =
+      typeof execution.errors === "string" ? execution.errors.trim() : "";
     throw new Error(
-      "eBay research completed without a response. Check the Appwrite Function execution log."
+      executionError ||
+        "eBay research completed without a response. Check the Appwrite Function execution log."
     );
   }
 
