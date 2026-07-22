@@ -1,0 +1,73 @@
+name: Align app item analysis contract
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "services/itemAiService.ts"
+      - "scripts/align-app-item-analysis-contract.mjs"
+      - ".github/workflows/align-app-item-analysis-contract.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  align:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Apply contract alignment
+        run: node scripts/align-app-item-analysis-contract.mjs
+
+      - name: Validate generated TypeScript syntax
+        run: |
+          npm install --no-save typescript
+          node <<'NODE'
+          const fs = require('fs');
+          const ts = require('typescript');
+          const files = [
+            'services/itemAiService.ts',
+            'services/item-analysis-service.ts',
+          ];
+          for (const file of files) {
+            const source = fs.readFileSync(file, 'utf8');
+            const result = ts.transpileModule(source, {
+              compilerOptions: {
+                target: ts.ScriptTarget.ES2022,
+                module: ts.ModuleKind.ESNext,
+              },
+              reportDiagnostics: true,
+              fileName: file,
+            });
+            const errors = (result.diagnostics || []).filter(
+              (diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error,
+            );
+            if (errors.length) {
+              for (const error of errors) {
+                console.error(ts.flattenDiagnosticMessageText(error.messageText, '\n'));
+              }
+              process.exit(1);
+            }
+          }
+          NODE
+
+      - name: Commit aligned source
+        run: |
+          if git diff --quiet -- services/item-analysis-service.ts; then
+            echo "No source changes were required."
+            exit 0
+          fi
+
+          git config user.name "KeepFlip Automation"
+          git config user.email "thejarid85@gmail.com"
+          git add services/itemAiService.ts services/item-analysis-service.ts
+          git commit -m "Consume item AI evidence and calibrated confidence [skip ci]"
+          git push origin master
