@@ -1,15 +1,16 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useEffect, useRef, useState, type ComponentProps } from 'react';
-import { AccessibilityInfo, ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, type TextInputProps } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
+import { KeepFlipText as Text, KeepFlipTextInput as TextInput } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
+import { useRouter } from "expo-router";
 
 type AuthMode = 'sign-in' | 'create-account';
 type IconName = ComponentProps<typeof IconSymbol>['name'];
@@ -103,6 +104,7 @@ function SetupNotice({ missingKeys }: { missingKeys: string[] }) {
 
 export function KeepFlipAuthScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const {
     errorMessage,
     isBusy,
@@ -201,7 +203,7 @@ export function KeepFlipAuthScreen() {
         <ScrollView
           contentContainerStyle={[
             styles.scrollContent,
-            { paddingTop: insets.top + 22, paddingBottom: insets.bottom + 30 },
+            { paddingTop: insets.top, paddingBottom: insets.bottom + 30 },
           ]}
           contentInsetAdjustmentBehavior="automatic"
           keyboardShouldPersistTaps="handled"
@@ -415,10 +417,34 @@ export function KeepFlipAuthScreen() {
                 )}
               </Pressable>
 
+              {mode === "create-account" ? (
+                <Text style={styles.legalConsentText}>
+                  By creating an account, you agree to KeepFlip&apos;s{" "}
+                  <Text
+                    accessibilityHint="Opens KeepFlip's Terms of Service"
+                    accessibilityRole="link"
+                    onPress={() => router.push("/terms")}
+                    style={styles.legalLink}
+                  >
+                    Terms of Service
+                  </Text>{" "}
+                  and{" "}
+                  <Text
+                    accessibilityHint="Opens KeepFlip's Privacy Policy"
+                    accessibilityRole="link"
+                    onPress={() => router.push("/privacy")}
+                    style={styles.legalLink}
+                  >
+                    Privacy Policy
+                  </Text>
+                  .
+                </Text>
+              ) : null}
+
               <View style={styles.securityLine}>
                 <IconSymbol color={theme.colors.scannerCyan} name="lock.fill" size={14} />
                 <Text style={styles.securityText}>
-                  Appwrite manages the session. Provider keys never enter the app.
+                  All sessions are managed by Appwrite. Private information is never shared without your consent.
                 </Text>
               </View>
             </Animated.View>
@@ -443,7 +469,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
   },
   shell: { width: '100%', maxWidth: 520, gap: 25 },
   brandSection: { alignItems: 'center', gap: 8, paddingHorizontal: 12 },
@@ -453,7 +479,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: theme.radii.pill,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: 'rgba(224, 172, 75, 0.18)',
     backgroundColor: 'rgba(5, 4, 5, 0.44)',
     boxShadow: '0 0 44px rgba(224, 172, 75, 0.15)',
@@ -461,6 +487,7 @@ const styles = StyleSheet.create({
   logo: { width: 126, height: 126 },
   brandEyebrow: {
     color: theme.colors.gold,
+    fontFamily: theme.fonts.medium,
     fontSize: 10,
     fontWeight: '900',
     letterSpacing: 2.2,
@@ -576,6 +603,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '900',
     letterSpacing: 1.1,
+  },
+  legalConsentText: {
+    paddingHorizontal: 8,
+    color: theme.colors.textMuted,
+    fontSize: 10,
+    lineHeight: 16,
+    textAlign: "center",
+  },
+  legalLink: {
+    color: theme.colors.goldBright,
+    fontWeight: "800",
+    textDecorationLine: "underline",
   },
   securityLine: {
     flexDirection: 'row',

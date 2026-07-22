@@ -1,11 +1,11 @@
 export const keepFlipTheme = {
   fonts: {
     analysis: 'LucidaConsole',
-    body: 'SpaceGrotesk-Regular',
-    medium: 'SpaceGrotesk-Medium',
-    semibold: 'SpaceGrotesk-SemiBold',
-    bold: 'SpaceGrotesk-Bold',
-    display: 'SpaceGrotesk-Bold',
+    body: 'SpaceGroteskRegular',
+    medium: 'SpaceGroteskMedium',
+    semibold: 'SpaceGroteskSemiBold',
+    bold: 'SpaceGroteskBold',
+    display: 'SpaceGroteskBold',
   },
   colors: {
     background: '#030305',

@@ -20,7 +20,7 @@ void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 function ProtectedRootStack() {
   const { status } = useKeepFlipAuth();
   const isChecking = status === 'checking';
-  const isSignedIn = status === 'signed-in' || __DEV__;
+  const isSignedIn = status === 'signed-in';
 
   return (
     <Stack
@@ -39,6 +39,8 @@ function ProtectedRootStack() {
         <Stack.Screen name="(app)" />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack.Protected>
+      <Stack.Screen name="terms" />
+      <Stack.Screen name="privacy" />
     </Stack>
   );
 }
@@ -46,11 +48,12 @@ function ProtectedRootStack() {
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     LucidaConsole: require('../assets/fonts/LucidaConsole.ttf'),
-    SpaceGroteskSemiBold: require('../assets/fonts/SpaceGroteskSemiBold.ttf'),
-    SpaceGroteskBold: require('../assets/fonts/SpaceGroteskBold.ttf'),
-    SpaceGroteskRegular: require('../assets/fonts/SpaceGroteskRegular.ttf'),
-    SpaceGroteskMedium: require('../assets/fonts/SpaceGroteskMedium.ttf'),
-
+    SpaceGroteskSemiBold: require('../assets/fonts/SpaceGroteskSemiBold.otf'),
+    SpaceGroteskBold: require('../assets/fonts/SpaceGroteskBold.otf'),
+    SpaceGroteskRegular: require('../assets/fonts/SpaceGroteskRegular.otf'),
+    SpaceGroteskMedium: require('../assets/fonts/SpaceGroteskMedium.otf'),
+    FlexiIBMVGAFalse: require('../assets/fonts/FlexiIBMVGAFalse.ttf'),
+    FlexiIBMVGAFalse437: require('../assets/fonts/FlexiIBMVGAFalse437.ttf'),
   
     'SpaceGrotesk-Regular': require('../assets/fonts/SpaceGroteskBold.otf'),
     'SpaceGrotesk-Medium': require('../assets/fonts/SpaceGroteskBold.otf'),

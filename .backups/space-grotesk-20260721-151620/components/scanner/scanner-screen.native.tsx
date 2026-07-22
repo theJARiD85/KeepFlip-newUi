@@ -1960,6 +1960,7 @@ const styles = StyleSheet.create({
   headerCopy: { flex: 1, minWidth: 0 },
   eyebrow: {
     color: theme.colors.gold,
+    fontFamily: theme.font.display,
     fontSize: 11,
     fontWeight: "900",
     letterSpacing: 2.4,
@@ -1967,6 +1968,7 @@ const styles = StyleSheet.create({
   toolHeaderContent: { gap: 3 },
   title: {
     color: theme.colors.cream,
+    fontFamily: theme.font.display,
     fontSize: 25,
     fontWeight: "800",
     letterSpacing: -0.6,
@@ -1975,6 +1977,7 @@ const styles = StyleSheet.create({
     minHeight: 32,
     flexDirection: "row",
     alignItems: "flex-start",
+    fontFamily: theme.font.display,
     gap: 7,
     paddingTop: 1,
   },
