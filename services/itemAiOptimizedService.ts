@@ -231,6 +231,34 @@ const DEFAULT_IDENTIFICATION_TIPS = [
   "Add close-ups of damage, wear, included accessories, ports, and the underside or back.",
 ];
 
+const FUNCTION_EXECUTION_POLL_INTERVAL_MS = 2500;
+const TERMINAL_FUNCTION_STATUSES = new Set(["completed", "failed"]);
+
+function sleep(milliseconds: number) {
+  return new Promise<void>((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
+}
+
+async function waitForItemAiExecution(initialExecution: any) {
+  let execution = initialExecution;
+
+  while (true) {
+    const status = String(execution?.status || "").toLowerCase();
+
+    if (TERMINAL_FUNCTION_STATUSES.has(status)) {
+      return execution;
+    }
+
+    await sleep(FUNCTION_EXECUTION_POLL_INTERVAL_MS);
+    execution = await functions.getExecution({
+      functionId: APPWRITE.itemAiFunctionId,
+      executionId: execution.$id,
+    });
+  }
+}
+
+
 export class ItemIdentificationGuidanceError extends Error {
   guidance: ItemIdentificationGuidance;
 
@@ -741,19 +769,20 @@ export async function identifyItemWithAI(
     );
   }
 
-  const execution = await functions.createExecution({
+  const startedExecution = await functions.createExecution({
     functionId: APPWRITE.itemAiFunctionId,
     body: JSON.stringify({
       fileIds,
       notes: notes.trim(),
     }),
-    async: false,
+    async: true,
     method: ExecutionMethod.POST,
     headers: {
       "content-type": "application/json",
     },
   });
 
+  const execution = await waitForItemAiExecution(startedExecution);
   let payload: IdentifyItemResponse;
 
   try {
@@ -774,6 +803,7 @@ export async function identifyItemWithAI(
 
   const fallbackMessage =
     payload.error ||
+    (typeof execution.errors === "string" ? execution.errors.trim() : "") ||
     "KeepFlip could not get enough visual evidence from this photo.";
 
   const isOperationalFailure =
@@ -787,8 +817,9 @@ export async function identifyItemWithAI(
     );
 
   if (
-    execution.responseStatusCode >= 400 &&
-    (!isPhotoReadFailure || isOperationalFailure)
+    String(execution.status || "").toLowerCase() === "failed" ||
+    (execution.responseStatusCode >= 400 &&
+      (!isPhotoReadFailure || isOperationalFailure))
   ) {
     throw new Error(fallbackMessage);
   }

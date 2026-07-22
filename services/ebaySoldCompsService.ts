@@ -82,7 +82,6 @@ type StartedSearch = {
 };
 
 const POLL_INTERVAL_MS = 2500;
-const MAX_WAIT_MS = 180000;
 
 function sleep(milliseconds: number) {
   return new Promise<void>((resolve) => {
@@ -368,18 +367,21 @@ async function waitForResult(
     );
   }
 
-  const deadline = Date.now() + MAX_WAIT_MS;
+  let jobToken = asString(startedPayload.jobToken);
 
-  while (Date.now() < deadline) {
+  while (true) {
     await sleep(POLL_INTERVAL_MS);
 
     const progress = await callEbayFunction({
       action: "status",
       purpose,
       runId,
+      jobToken,
       query,
       barcode,
     });
+
+    jobToken = asString(progress.jobToken) || jobToken;
 
     if (looksCompleted(progress)) {
       return progress;
@@ -394,9 +396,6 @@ async function waitForResult(
     }
   }
 
-  throw new Error(
-    "The eBay search is taking longer than expected. Please try again."
-  );
 }
 
 function toSoldCompsResult(
@@ -1164,7 +1163,7 @@ function buildQuality(
 
 export async function runStrictEbaySoldComps(
   profile: StrictMarketValueProfile,
-  limit = 30
+  limit = 100
 ): Promise<EbaySoldCompsResult> {
   const title = profile.title.trim();
   const model = getPreferredModel(profile);
@@ -1178,10 +1177,13 @@ export async function runStrictEbaySoldComps(
 
   const raw = await runEbaySoldComps(
     query,
-    Math.max(25, Math.min(limit, 50))
+    Math.max(1, Math.floor(limit) || 100)
   );
 
-  const individualSales = raw.comps.filter((comp) =>
+  const positiveSales = raw.comps.filter(
+    (comp) => Number.isFinite(comp.totalPrice) && comp.totalPrice > 0
+  );
+  const individualSales = positiveSales.filter((comp) =>
     isUsableIndividualSale(comp, targetCondition)
   );
 
@@ -1197,14 +1199,23 @@ export async function runStrictEbaySoldComps(
       compatibleConditionMatches(targetCondition, comp)
   );
 
-  const selected = removePriceOutliers(
-    dedupeComps(exact.length >= 3 ? exact : [...exact, ...compatible])
-  );
+  const preferred = exact.length >= 3
+    ? exact
+    : compatible.length > 0
+      ? [...exact, ...compatible]
+      : individualSales.length > 0
+        ? individualSales
+        : positiveSales;
+  const selected = dedupeComps(preferred);
 
   if (!selected.length) {
-    throw new Error(
-      "KeepFlip could not find usable individual sold listings for this item. Try a more specific model number or title."
-    );
+    return {
+      ...raw,
+      query,
+      comps: raw.comps,
+      summary: raw.summary,
+      valuation: buildQuality(profile, model, plan, 0, raw.comps.length),
+    };
   }
 
   return {

@@ -347,7 +347,7 @@ function identificationResult(
         variant: findVariant(identification),
         color: signals.colors[0] ?? null,
         era: signals.era[0] ?? null,
-        serialNumber: null,
+        serialNumber: identification.serialNumber,
       },
       condition: {
         grade: identification.condition,
@@ -649,12 +649,6 @@ export async function analyzeItemPhotos(
       uploadedFileIds,
     );
     cleaned = true;
-
-    if (identified.status !== "identified") return identified;
-
-    if (identification.valuationReadiness === "needs_evidence") {
-      return pausedMarketResearch(identification, identified);
-    }
 
     throwIfAborted(options.signal);
     reportStage(options.onStage, "researching_comps");
