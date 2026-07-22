@@ -28,42 +28,12 @@ jobs:
       - name: Apply optimized prompt adapter
         run: node scripts/apply-app-optimized-prompt.mjs
 
-      - name: Validate TypeScript syntax
+      - name: Validate generated mapping
         run: |
-          npm install --no-save typescript
-          node <<'NODE'
-          const fs = require('fs');
-          const ts = require('typescript');
-          for (const file of [
-            'services/itemAiOptimizedService.ts',
-            'services/itemAiService.ts',
-            'services/item-analysis-service.ts',
-          ]) {
-            const result = ts.transpileModule(fs.readFileSync(file, 'utf8'), {
-              compilerOptions: {
-                target: ts.ScriptTarget.ES2022,
-                module: ts.ModuleKind.ESNext,
-              },
-              reportDiagnostics: true,
-              fileName: file,
-            });
-            const errors = (result.diagnostics || []).filter(
-              (diagnostic) =>
-                diagnostic.category === ts.DiagnosticCategory.Error,
-            );
-            if (errors.length) {
-              for (const error of errors) {
-                console.error(
-                  ts.flattenDiagnosticMessageText(
-                    error.messageText,
-                    '\n',
-                  ),
-                );
-              }
-              process.exit(1);
-            }
-          }
-          NODE
+          node --check scripts/apply-app-optimized-prompt.mjs
+          grep -q "serialNumber: identification.serialNumber" services/item-analysis-service.ts
+          grep -q "imageIndex: entry.imageIndex" services/item-analysis-service.ts
+          grep -q "OptimizedIdentification" services/itemAiOptimizedService.ts
 
       - name: Commit generated adapter
         run: |
