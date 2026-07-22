@@ -268,8 +268,9 @@ function isExecutionNotFound(error: unknown) {
 }
 
 async function waitForItemAiExecution(initialExecution: any) {
-  let execution = initialExecution;
-  const executionId = String(initialExecution?.$id || "").trim();
+async function waitForItemAiExecution(startedExecution: any) {
+  let execution = startedExecution;
+  const executionId = String(startedExecution?.$id || "").trim();
   let notFoundAttempts = 0;
   let pollAttempt = 0;
 
@@ -278,8 +279,6 @@ async function waitForItemAiExecution(initialExecution: any) {
       "Appwrite started item analysis without returning an execution ID.",
     );
   }
-async function waitForItemAiExecution(startedExecution: any) {
-  let execution = startedExecution;
 
   while (true) {
     const status = String(execution?.status || "").toLowerCase();

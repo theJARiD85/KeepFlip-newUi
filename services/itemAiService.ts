@@ -1,13 +1,13 @@
 import {
   identifyItemWithAI as identifyOptimizedItemWithAI,
   type KeepFlipIdentification,
-} from "./itemAiOptimizedService";
+} from "@/services/itemAiOptimizedService";
 
 export {
   ItemIdentificationGuidanceError,
   formatItemIdentificationGuidance,
   getItemIdentificationGuidance,
-} from "./itemAiOptimizedService";
+} from "@/services/itemAiOptimizedService";
 
 export type {
   ItemCandidateMatch,
@@ -18,7 +18,7 @@ export type {
   ItemValuationReadiness,
   ItemValuationSignals,
   KeepFlipIdentification,
-} from "./itemAiOptimizedService";
+} from "@/services/itemAiOptimizedService";
 
 function uniqueStrings(values: string[]) {
   const seen = new Set<string>();
