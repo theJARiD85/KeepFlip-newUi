@@ -1,0 +1,65 @@
+name: Retry missing item AI execution
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "scripts/retry-missing-item-ai-execution.mjs"
+      - ".github/workflows/retry-missing-item-ai-execution.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Apply execution polling retry
+        run: node scripts/retry-missing-item-ai-execution.mjs
+
+      - name: Validate TypeScript syntax
+        run: |
+          npm install --no-save typescript
+          node <<'NODE'
+          const fs = require('fs');
+          const ts = require('typescript');
+          const file = 'services/itemAiOptimizedService.ts';
+          const result = ts.transpileModule(fs.readFileSync(file, 'utf8'), {
+            compilerOptions: {
+              target: ts.ScriptTarget.ES2022,
+              module: ts.ModuleKind.ESNext,
+            },
+            reportDiagnostics: true,
+            fileName: file,
+          });
+          const errors = (result.diagnostics || []).filter(
+            diagnostic => diagnostic.category === ts.DiagnosticCategory.Error,
+          );
+          if (errors.length) {
+            for (const error of errors) {
+              console.error(ts.flattenDiagnosticMessageText(error.messageText, '\n'));
+            }
+            process.exit(1);
+          }
+          NODE
+
+      - name: Commit generated source
+        run: |
+          if git diff --quiet -- services/itemAiOptimizedService.ts; then
+            echo "No source changes were required."
+            exit 0
+          fi
+          git config user.name "KeepFlip Automation"
+          git config user.email "thejarid85@gmail.com"
+          git add services/itemAiOptimizedService.ts
+          git commit -m "Retry transient item AI execution lookup failures [skip ci]"
+          git push origin master
