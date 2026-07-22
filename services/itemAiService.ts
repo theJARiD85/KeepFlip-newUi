@@ -36,6 +36,38 @@ export type ItemValuationSignals = {
   confidence: number;
 };
 
+export type ItemConfidenceBreakdown = {
+  itemType: number;
+  brand: number;
+  model: number;
+  condition: number;
+};
+
+export type ItemValuationReadiness =
+  | "ready"
+  | "directional"
+  | "needs_evidence";
+
+export type ItemIdentityEvidence = {
+  field: "item_type" | "brand" | "model" | "variant" | "condition";
+  value: string;
+  source:
+    | "photo_text"
+    | "visual_design"
+    | "user_notes"
+    | "external_evidence";
+  confidence: number;
+  explanation: string;
+};
+
+export type ItemCandidateMatch = {
+  name: string;
+  brand: string | null;
+  model: string | null;
+  confidence: number;
+  reason: string;
+};
+
 export type ItemIdentificationGuidance = {
   title: string;
   message: string;
@@ -48,6 +80,7 @@ export type KeepFlipIdentification = {
   model: string | null;
   category:
     | "Audio"
+    | "Appliances"
     | "Electronics"
     | "Tools"
     | "Furniture"
@@ -67,25 +100,25 @@ export type KeepFlipIdentification = {
     | "visual_category_only"
     | "insufficient_evidence";
   confidence: number;
+  confidenceBreakdown: ItemConfidenceBreakdown;
+  valuationReadiness: ItemValuationReadiness;
+  ambiguityNotes: string[];
+  identityEvidence: ItemIdentityEvidence[];
   productSearchQuery: string;
   needsMorePhotos: boolean;
   suggestedPhotos: string[];
-  candidateMatches: Array<{
-    name: string;
-    brand: string | null;
-    model: string | null;
-    confidence: number;
-    reason: string;
-  }>;
+  candidateMatches: ItemCandidateMatch[];
   evidenceFields: ItemEvidenceField[];
   valuationSignals: ItemValuationSignals;
 };
+
+type JsonRecord = Record<string, unknown>;
 
 type IdentifyItemResponse = {
   ok: boolean;
   error?: string;
   analyzedFileIds?: string[];
-  identification?: RawIdentification;
+  identification?: JsonRecord;
   guidance?: unknown;
   photoGuidance?: unknown;
   suggestedPhotos?: unknown;
@@ -94,20 +127,9 @@ type IdentifyItemResponse = {
   issues?: unknown;
 };
 
-type JsonRecord = Record<string, unknown>;
-
-type RawIdentification = Partial<
-  Omit<KeepFlipIdentification, "valuationSignals">
-> &
-  JsonRecord & {
-    valuationSignals?: Partial<ItemValuationSignals> & JsonRecord;
-    appraisalProfile?: Partial<ItemValuationSignals> & JsonRecord;
-    visualValuationProfile?: Partial<ItemValuationSignals> & JsonRecord;
-    searchQueries?: unknown;
-  };
-
 const VALID_CATEGORIES: KeepFlipIdentification["category"][] = [
   "Audio",
+  "Appliances",
   "Electronics",
   "Tools",
   "Furniture",
@@ -136,30 +158,31 @@ const VALID_IDENTIFICATION_BASES: KeepFlipIdentification["identificationBasis"][
   "insufficient_evidence",
 ];
 
-const VALUATION_SIGNAL_INSTRUCTIONS = [
-  "KeepFlip valuation routing instructions:",
-  "- Preserve brand/model/MPN/serial identifiers when visible or supplied; they are the preferred high-confidence valuation path.",
-  "- When exact identifiers are unavailable or weak, return valuationSignals for descriptor-based valuation.",
-  "- valuationSignals should include objectType, subcategory, style, materials, colors, era, motifs, shape, construction, conditionSignals, visibleMarks, descriptorSummary, searchQueries, negativeKeywords, uncertainty, suggestedPhotoAngles, and confidence.",
-  "- searchQueries should be marketplace-ready phrases ordered from most specific to broadest, using visual descriptors such as style, material, era, motif, shape, and color.",
-  '- For antiques, decor, furniture, jewelry, art, lamps, fashion, collectibles, and other visually identified items without a strong model number, include at least one query that would work with image/search results plus the phrase "recently sold".',
-  '- Example descriptor query shape: "vintage brass lotus flower lamp recently sold" or "sterling silver turquoise squash blossom necklace recently sold".',
-  "- Include likely premium maker/attribution names only in uncertainty or visibleMarks unless there is readable evidence. Do not invent a brand.",
-  "- Use cautious language for guesses. Mark uncertain materials, eras, gemstones, metals, makers, and authenticity as uncertainty rather than fact.",
-].join("\n");
+const VALID_READINESS: ItemValuationReadiness[] = [
+  "ready",
+  "directional",
+  "needs_evidence",
+];
 
-const PHOTO_READ_INSTRUCTIONS = [
-  "Photo-read fallback instructions:",
-  "- Do not fail only because the product cannot be confidently identified.",
-  '- If the photos are unclear, return ok true with an identification object using title "Unclear item", identificationBasis "insufficient_evidence", condition "unknown", confidence 0-40, needsMorePhotos true, and suggestedPhotos.',
-  "- Base suggestedPhotos on the uploaded photos, not generic advice. Mention specific blockers when visible: too dark, glare, blur, cropped item, label hidden, logo covered, hands blocking marks, packaging covering model details, reflective surfaces, missing underside/back/tag/serial plate/accessories.",
-  "- If the item type is visible but brand/model is not, identify the broad visual category and explain exactly which close-up would improve the read.",
-].join("\n");
+const VALID_EVIDENCE_FIELDS: ItemIdentityEvidence["field"][] = [
+  "item_type",
+  "brand",
+  "model",
+  "variant",
+  "condition",
+];
+
+const VALID_EVIDENCE_SOURCES: ItemIdentityEvidence["source"][] = [
+  "photo_text",
+  "visual_design",
+  "user_notes",
+  "external_evidence",
+];
 
 const DEFAULT_IDENTIFICATION_TIPS = [
-  "Retake the item in bright, even light so edges, labels, logos, and controls are visible.",
-  "Uncover the full item and move hands, packaging, cases, cords, or clutter away from brand marks, ports, tags, serial plates, and model labels.",
-  "Add one full-item photo plus sharp close-ups of the label, underside/back, damage, included accessories, and any text or maker mark.",
+  "Retake the complete item in bright, even light with all edges visible.",
+  "Add a sharp close-up of the logo, maker mark, model/MPN label, or settings/about screen.",
+  "Add clear condition photos of damage, wear, missing parts, and included accessories.",
 ];
 
 export class ItemIdentificationGuidanceError extends Error {
@@ -170,16 +193,6 @@ export class ItemIdentificationGuidanceError extends Error {
     this.name = "ItemIdentificationGuidanceError";
     this.guidance = guidance;
   }
-}
-
-function buildIdentificationNotes(notes: string) {
-  return [
-    notes.trim(),
-    VALUATION_SIGNAL_INSTRUCTIONS,
-    PHOTO_READ_INSTRUCTIONS,
-  ]
-    .filter(Boolean)
-    .join("\n\n");
 }
 
 function asRecord(value: unknown): JsonRecord | null {
@@ -202,23 +215,21 @@ function asStringArray(value: unknown): string[] {
     return value
       .map((item) => {
         if (typeof item === "string") return item.trim();
+
         const record = asRecord(item);
         return asString(
           record?.value ??
             record?.label ??
             record?.name ??
             record?.description ??
-            record?.text
+            record?.text,
         );
       })
       .filter(Boolean);
   }
 
   const normalized = asString(value);
-
-  if (!normalized) {
-    return [];
-  }
+  if (!normalized) return [];
 
   return normalized
     .split(/[,;\n]/)
@@ -226,31 +237,23 @@ function asStringArray(value: unknown): string[] {
     .filter(Boolean);
 }
 
-function uniqueStrings(values: string[]) {
+function uniqueStrings(values: string[], maximum = 20): string[] {
   const seen = new Set<string>();
 
-  return values.filter((value) => {
-    const key = value.toLowerCase();
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  return values
+    .filter((value) => {
+      const normalized = value.trim();
+      if (!normalized) return false;
+
+      const key = normalized.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, maximum);
 }
 
-function readNestedStringArray(
-  source: unknown,
-  keys: string[]
-): string[] {
-  const record = asRecord(source);
-
-  if (!record) {
-    return [];
-  }
-
-  return keys.flatMap((key) => asStringArray(record[key]));
-}
-
-function asConfidence(value: unknown, fallback = 0) {
+function asConfidence(value: unknown, fallback = 0): number {
   const parsed =
     typeof value === "number"
       ? value
@@ -258,180 +261,160 @@ function asConfidence(value: unknown, fallback = 0) {
         ? Number(value)
         : fallback;
 
-  if (!Number.isFinite(parsed)) {
-    return fallback;
-  }
+  if (!Number.isFinite(parsed)) return fallback;
 
   const scaled = parsed > 0 && parsed <= 1 ? parsed * 100 : parsed;
-
   return Math.max(0, Math.min(100, Math.round(scaled)));
 }
 
 function normalizeCategory(value: unknown): KeepFlipIdentification["category"] {
   const normalized = asString(value);
-  const match = VALID_CATEGORIES.find(
-    (category) => category.toLowerCase() === normalized.toLowerCase()
+  return (
+    VALID_CATEGORIES.find(
+      (category) => category.toLowerCase() === normalized.toLowerCase(),
+    ) ?? "Other"
   );
-
-  return match || "Other";
 }
 
 function normalizeCondition(value: unknown): KeepFlipIdentification["condition"] {
-  const normalized = asString(value)
-    .toLowerCase()
-    .replace(/\s+/g, "_");
+  const normalized = asString(value).toLowerCase().replace(/\s+/g, "_");
 
-  const match = VALID_CONDITIONS.find(
-    (condition) => condition === normalized
+  return (
+    VALID_CONDITIONS.find((condition) => condition === normalized) ?? "unknown"
   );
-
-  return match || "unknown";
 }
 
 function normalizeIdentificationBasis(
-  value: unknown
+  value: unknown,
 ): KeepFlipIdentification["identificationBasis"] {
   const normalized = asString(value);
-  const match = VALID_IDENTIFICATION_BASES.find(
-    (basis) => basis === normalized
-  );
 
-  return match || "insufficient_evidence";
-}
-
-function readSignalSource(raw: RawIdentification) {
   return (
-    asRecord(raw.valuationSignals) ||
-    asRecord(raw.visualValuationProfile) ||
-    asRecord(raw.appraisalProfile) ||
-    {}
+    VALID_IDENTIFICATION_BASES.find((basis) => basis === normalized) ??
+    "insufficient_evidence"
   );
 }
 
-function normalizeValuationSignals(
-  raw: RawIdentification,
-  base: Pick<
-    KeepFlipIdentification,
-    | "title"
-    | "category"
-    | "conditionNotes"
-    | "detectedText"
-    | "productSearchQuery"
-    | "suggestedPhotos"
-    | "confidence"
-  >
-): ItemValuationSignals {
-  const source = readSignalSource(raw);
-  const objectType =
-    asNullableString(source.objectType) ||
-    asNullableString(source.itemType) ||
-    asNullableString(source.categoryLabel) ||
-    asNullableString(base.title) ||
-    base.category;
+function normalizeReadiness(value: unknown): ItemValuationReadiness {
+  const normalized = asString(value);
 
-  const searchQueries = uniqueStrings([
-    ...asStringArray(source.searchQueries),
-    ...asStringArray(raw.searchQueries),
-    asString(source.primarySearchQuery),
-    base.productSearchQuery,
-  ]).filter((query) => query.length >= 3);
+  return (
+    VALID_READINESS.find((readiness) => readiness === normalized) ??
+    "needs_evidence"
+  );
+}
+
+function normalizeConfidenceBreakdown(
+  value: unknown,
+  overall: number,
+  brand: string | null,
+  model: string | null,
+  condition: KeepFlipIdentification["condition"],
+): ItemConfidenceBreakdown {
+  const record = asRecord(value) ?? {};
 
   return {
-    objectType,
-    subcategory:
-      asNullableString(source.subcategory) ||
-      asNullableString(source.subCategory),
-    style: uniqueStrings([
-      ...asStringArray(source.style),
-      ...asStringArray(source.styles),
-      ...asStringArray(source.visualStyle),
-    ]),
-    materials: uniqueStrings([
-      ...asStringArray(source.materials),
-      ...asStringArray(source.materialGuesses),
-      ...asStringArray(source.materialsGuess),
-    ]),
-    colors: uniqueStrings([
-      ...asStringArray(source.colors),
-      ...asStringArray(source.color),
-    ]),
-    era: uniqueStrings([
-      ...asStringArray(source.era),
-      ...asStringArray(source.period),
-      ...asStringArray(source.likelyPeriod),
-    ]),
-    motifs: uniqueStrings([
-      ...asStringArray(source.motifs),
-      ...asStringArray(source.patterns),
-      ...asStringArray(source.designMotifs),
-    ]),
-    shape:
-      asNullableString(source.shape) ||
-      asNullableString(source.formFactor) ||
-      null,
-    construction: uniqueStrings([
-      ...asStringArray(source.construction),
-      ...asStringArray(source.technique),
-      ...asStringArray(source.buildDetails),
-    ]),
-    conditionSignals: uniqueStrings([
-      ...asStringArray(source.conditionSignals),
-      ...asStringArray(source.conditionNotes),
-      base.conditionNotes,
-    ]),
-    visibleMarks: uniqueStrings([
-      ...asStringArray(source.visibleMarks),
-      ...asStringArray(source.markings),
-      ...base.detectedText,
-    ]),
-    descriptorSummary:
-      asString(source.descriptorSummary) ||
-      asString(source.summary) ||
-      base.conditionNotes,
-    searchQueries,
-    negativeKeywords: uniqueStrings([
-      ...asStringArray(source.negativeKeywords),
-      ...asStringArray(source.excludeTerms),
-    ]),
-    uncertainty: uniqueStrings([
-      ...asStringArray(source.uncertainty),
-      ...asStringArray(source.uncertainties),
-      ...asStringArray(source.valuationWarnings),
-    ]),
-    suggestedPhotoAngles: uniqueStrings([
-      ...asStringArray(source.suggestedPhotoAngles),
-      ...asStringArray(source.neededPhotos),
-      ...base.suggestedPhotos,
-    ]),
-    confidence: asConfidence(source.confidence, base.confidence),
+    itemType: asConfidence(record.itemType, overall),
+    brand: brand ? asConfidence(record.brand, overall) : 0,
+    model: model ? asConfidence(record.model, overall) : 0,
+    condition:
+      condition === "unknown" ? 0 : asConfidence(record.condition, overall),
   };
+}
+
+function normalizeIdentityEvidence(value: unknown): ItemIdentityEvidence[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((entry): ItemIdentityEvidence | null => {
+      const record = asRecord(entry);
+      if (!record) return null;
+
+      const field = asString(record.field) as ItemIdentityEvidence["field"];
+      const source = asString(record.source) as ItemIdentityEvidence["source"];
+      const evidenceValue = asString(record.value);
+      const explanation = asString(record.explanation);
+
+      if (
+        !VALID_EVIDENCE_FIELDS.includes(field) ||
+        !VALID_EVIDENCE_SOURCES.includes(source) ||
+        !evidenceValue ||
+        !explanation
+      ) {
+        return null;
+      }
+
+      return {
+        field,
+        value: evidenceValue,
+        source,
+        confidence: asConfidence(record.confidence, 0),
+        explanation,
+      };
+    })
+    .filter((entry): entry is ItemIdentityEvidence => Boolean(entry))
+    .sort((left, right) => right.confidence - left.confidence)
+    .slice(0, 10);
+}
+
+function normalizeCandidateMatches(value: unknown): ItemCandidateMatch[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((candidate): ItemCandidateMatch | null => {
+      const record = asRecord(candidate);
+      if (!record) return null;
+
+      const name = asString(record.name);
+      const reason = asString(record.reason);
+      if (!name || !reason) return null;
+
+      return {
+        name,
+        brand: asNullableString(record.brand),
+        model: asNullableString(record.model),
+        confidence: asConfidence(record.confidence, 0),
+        reason,
+      };
+    })
+    .filter((candidate): candidate is ItemCandidateMatch => Boolean(candidate))
+    .sort((left, right) => right.confidence - left.confidence)
+    .slice(0, 3);
 }
 
 function normalizeEvidenceField(value: unknown): ItemEvidenceField | null {
   const field = asRecord(value);
+  if (!field) return null;
 
-  if (!field) {
-    return null;
-  }
-
-  const key = asString(field.key);
+  const key = asString(field.key)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
   const label = asString(field.label);
   const inputType = asString(field.inputType);
   const importance = asString(field.importance);
+  const fieldValue = asString(field.value);
 
-  if (!key || !label) {
-    return null;
-  }
+  if (!key || !label) return null;
+
+  const normalizedInputType: ItemEvidenceField["inputType"] =
+    inputType === "choice" || inputType === "boolean" ? inputType : "text";
+
+  const options =
+    normalizedInputType === "choice"
+      ? uniqueStrings([...asStringArray(field.options), fieldValue], 8)
+      : [];
 
   return {
     key,
     label,
-    inputType:
-      inputType === "choice" || inputType === "boolean"
-        ? inputType
-        : "text",
-    value: asString(field.value),
-    options: asStringArray(field.options),
+    inputType: normalizedInputType,
+    value:
+      normalizedInputType === "boolean" &&
+      !["yes", "no", ""].includes(fieldValue.toLowerCase())
+        ? ""
+        : fieldValue,
+    options,
     importance: importance === "critical" ? "critical" : "helpful",
     confidence: asConfidence(field.confidence, 0),
     reason: asString(field.reason),
@@ -439,203 +422,159 @@ function normalizeEvidenceField(value: unknown): ItemEvidenceField | null {
   };
 }
 
-function makeSignalField(
-  key: string,
-  label: string,
-  value: string,
-  confidence: number,
-  reason: string,
-  photoHint: string
-): ItemEvidenceField | null {
-  const normalizedValue = value.trim();
-
-  if (!normalizedValue) {
-    return null;
-  }
-
+function emptyValuationSignals(): ItemValuationSignals {
   return {
-    key,
-    label,
-    inputType: "text",
-    value: normalizedValue,
-    options: [],
-    importance: "helpful",
-    confidence,
-    reason,
-    photoHint,
+    objectType: null,
+    subcategory: null,
+    style: [],
+    materials: [],
+    colors: [],
+    era: [],
+    motifs: [],
+    shape: null,
+    construction: [],
+    conditionSignals: [],
+    visibleMarks: [],
+    descriptorSummary: "",
+    searchQueries: [],
+    negativeKeywords: [],
+    uncertainty: [],
+    suggestedPhotoAngles: [],
+    confidence: 0,
   };
 }
 
-function fieldsFromValuationSignals(
-  signals: ItemValuationSignals,
-  existingFields: ItemEvidenceField[]
-) {
-  const existingKeys = new Set(existingFields.map((field) => field.key));
-  const candidates = [
-    makeSignalField(
-      "visual_object_type",
-      "Visual item type",
-      [signals.objectType, signals.subcategory].filter(Boolean).join(" / "),
-      signals.confidence,
-      "Item type anchors broad comparable-search terms when no model number is visible.",
-      "Add a full item photo from the front and side."
-    ),
-    makeSignalField(
-      "visual_style_period",
-      "Style or period",
-      [...signals.style, ...signals.era].join(", "),
-      signals.confidence,
-      "Style and era terms help value antiques, decor, fashion, and collectibles without model numbers.",
-      "Add photos of decorative details, joinery, clasp, base, or maker marks."
-    ),
-    makeSignalField(
-      "visual_materials",
-      "Visible materials",
-      signals.materials.join(", "),
-      signals.confidence,
-      "Material guesses can materially change comparable sales and should be verified when possible.",
-      "Add a close-up of texture, underside, hallmark, tag, or worn edges."
-    ),
-    makeSignalField(
-      "visual_descriptors",
-      "Search descriptors",
-      [
-        ...signals.colors,
-        ...signals.motifs,
-        signals.shape,
-        ...signals.construction,
-      ]
-        .filter(Boolean)
-        .join(", "),
-      signals.confidence,
-      "Visual descriptors make marketplace search work for items without brand or model identifiers.",
-      "Add close-ups of patterns, hardware, clasp, shade, base, or distinctive silhouette."
-    ),
-    makeSignalField(
-      "visible_marks",
-      "Visible text or marks",
-      signals.visibleMarks.join(", "),
-      signals.confidence,
-      "Readable marks can turn a broad visual estimate into a maker-specific estimate.",
-      "Add sharp close-ups of labels, stamps, hallmarks, signatures, and underside markings."
-    ),
-  ].filter((field): field is ItemEvidenceField => Boolean(field));
+function normalizeValuationSignals(value: unknown): ItemValuationSignals {
+  const source = asRecord(value);
+  if (!source) return emptyValuationSignals();
 
-  return candidates.filter((field) => !existingKeys.has(field.key));
+  return {
+    objectType: asNullableString(source.objectType),
+    subcategory: asNullableString(source.subcategory),
+    style: uniqueStrings(asStringArray(source.style), 10),
+    materials: uniqueStrings(asStringArray(source.materials), 10),
+    colors: uniqueStrings(asStringArray(source.colors), 10),
+    era: uniqueStrings(asStringArray(source.era), 10),
+    motifs: uniqueStrings(asStringArray(source.motifs), 10),
+    shape: asNullableString(source.shape),
+    construction: uniqueStrings(asStringArray(source.construction), 10),
+    conditionSignals: uniqueStrings(asStringArray(source.conditionSignals), 10),
+    visibleMarks: uniqueStrings(asStringArray(source.visibleMarks), 10),
+    descriptorSummary: asString(source.descriptorSummary),
+    searchQueries: uniqueStrings(asStringArray(source.searchQueries), 5),
+    negativeKeywords: uniqueStrings(asStringArray(source.negativeKeywords), 10),
+    uncertainty: uniqueStrings(asStringArray(source.uncertainty), 10),
+    suggestedPhotoAngles: uniqueStrings(
+      asStringArray(source.suggestedPhotoAngles),
+      8,
+    ),
+    confidence: asConfidence(source.confidence, 0),
+  };
 }
 
-function normalizeIdentification(
-  rawIdentification: RawIdentification
-): KeepFlipIdentification {
-  const candidateMatches = Array.isArray(rawIdentification.candidateMatches)
-    ? rawIdentification.candidateMatches.map((candidate) => {
-        const record = asRecord(candidate) || {};
-
-        return {
-          name: asString(record.name),
-          brand: asNullableString(record.brand),
-          model: asNullableString(record.model),
-          confidence: asConfidence(record.confidence, 0),
-          reason: asString(record.reason),
-        };
-      })
+function normalizeIdentification(raw: JsonRecord): KeepFlipIdentification {
+  const title = asString(raw.title) || "Unknown item";
+  const brand = asNullableString(raw.brand);
+  const model = asNullableString(raw.model);
+  const category = normalizeCategory(raw.category);
+  const condition = normalizeCondition(raw.condition);
+  const confidence = asConfidence(raw.confidence, 0);
+  const valuationSignals = normalizeValuationSignals(raw.valuationSignals);
+  const searchQueries = valuationSignals.searchQueries;
+  const productSearchQuery =
+    searchQueries[0] ?? asString(raw.productSearchQuery);
+  const suggestedPhotos = uniqueStrings(asStringArray(raw.suggestedPhotos), 6);
+  const evidenceFields = Array.isArray(raw.evidenceFields)
+    ? raw.evidenceFields
+        .map(normalizeEvidenceField)
+        .filter((field): field is ItemEvidenceField => Boolean(field))
+        .slice(0, 6)
     : [];
 
-  const base = {
-    title: asString(rawIdentification.title) || "Unknown item",
-    brand: asNullableString(rawIdentification.brand),
-    model: asNullableString(rawIdentification.model),
-    category: normalizeCategory(rawIdentification.category),
-    condition: normalizeCondition(rawIdentification.condition),
-    conditionNotes: asString(rawIdentification.conditionNotes),
-    detectedText: asStringArray(rawIdentification.detectedText),
-    identificationBasis: normalizeIdentificationBasis(
-      rawIdentification.identificationBasis
-    ),
-    confidence: asConfidence(rawIdentification.confidence, 0),
-    productSearchQuery: asString(rawIdentification.productSearchQuery),
-    needsMorePhotos: Boolean(rawIdentification.needsMorePhotos),
-    suggestedPhotos: asStringArray(rawIdentification.suggestedPhotos),
-    candidateMatches,
-    evidenceFields: Array.isArray(rawIdentification.evidenceFields)
-      ? rawIdentification.evidenceFields
-          .map(normalizeEvidenceField)
-          .filter((field): field is ItemEvidenceField => Boolean(field))
-      : [],
-  };
-
-  const valuationSignals = normalizeValuationSignals(rawIdentification, base);
-  const evidenceFields = [
-    ...base.evidenceFields,
-    ...fieldsFromValuationSignals(valuationSignals, base.evidenceFields),
-  ];
-
   return {
-    ...base,
-    productSearchQuery:
-      base.productSearchQuery ||
-      valuationSignals.searchQueries[0] ||
-      [base.brand, base.model, base.title].filter(Boolean).join(" "),
+    title,
+    brand,
+    model,
+    category,
+    condition,
+    conditionNotes: asString(raw.conditionNotes),
+    detectedText: uniqueStrings(asStringArray(raw.detectedText), 20),
+    identificationBasis: normalizeIdentificationBasis(raw.identificationBasis),
+    confidence,
+    confidenceBreakdown: normalizeConfidenceBreakdown(
+      raw.confidenceBreakdown,
+      confidence,
+      brand,
+      model,
+      condition,
+    ),
+    valuationReadiness: normalizeReadiness(raw.valuationReadiness),
+    ambiguityNotes: uniqueStrings(asStringArray(raw.ambiguityNotes), 10),
+    identityEvidence: normalizeIdentityEvidence(raw.identityEvidence),
+    productSearchQuery,
+    needsMorePhotos: Boolean(raw.needsMorePhotos),
     suggestedPhotos:
-      base.suggestedPhotos.length > 0
-        ? base.suggestedPhotos
-        : valuationSignals.suggestedPhotoAngles,
-    needsMorePhotos:
-      base.needsMorePhotos ||
-      valuationSignals.suggestedPhotoAngles.length > 0,
+      suggestedPhotos.length > 0
+        ? suggestedPhotos
+        : uniqueStrings(valuationSignals.suggestedPhotoAngles, 6),
+    candidateMatches: normalizeCandidateMatches(raw.candidateMatches),
     evidenceFields,
     valuationSignals,
   };
 }
 
+function readNestedStringArray(source: unknown, keys: string[]): string[] {
+  const record = asRecord(source);
+  if (!record) return [];
+
+  return keys.flatMap((key) => asStringArray(record[key]));
+}
+
 function buildPhotoGuidance(
   payload: Partial<IdentifyItemResponse>,
-  fallbackMessage: string
+  fallbackMessage: string,
 ): ItemIdentificationGuidance {
-  const tips = uniqueStrings([
-    ...asStringArray(payload.suggestedPhotos),
-    ...asStringArray(payload.suggestions),
-    ...asStringArray(payload.tips),
-    ...asStringArray(payload.issues),
-    ...readNestedStringArray(payload.guidance, [
-      "tips",
-      "suggestions",
-      "suggestedPhotos",
-      "issues",
-      "photoIssues",
-    ]),
-    ...readNestedStringArray(payload.photoGuidance, [
-      "tips",
-      "suggestions",
-      "suggestedPhotos",
-      "issues",
-      "photoIssues",
-    ]),
-    ...DEFAULT_IDENTIFICATION_TIPS,
-  ]).slice(0, 4);
+  const tips = uniqueStrings(
+    [
+      ...asStringArray(payload.suggestedPhotos),
+      ...asStringArray(payload.suggestions),
+      ...asStringArray(payload.tips),
+      ...asStringArray(payload.issues),
+      ...readNestedStringArray(payload.guidance, [
+        "tips",
+        "suggestions",
+        "suggestedPhotos",
+        "issues",
+        "photoIssues",
+      ]),
+      ...readNestedStringArray(payload.photoGuidance, [
+        "tips",
+        "suggestions",
+        "suggestedPhotos",
+        "issues",
+        "photoIssues",
+      ]),
+      ...DEFAULT_IDENTIFICATION_TIPS,
+    ],
+    4,
+  );
 
   const guidanceRecord =
-    asRecord(payload.photoGuidance) || asRecord(payload.guidance);
-
-  const title =
-    asString(guidanceRecord?.title) ||
-    "Try a clearer item photo";
-
-  const message =
-    asString(guidanceRecord?.message) ||
-    asString(guidanceRecord?.summary) ||
-    fallbackMessage ||
-    "KeepFlip needs a clearer photo before it can make a confident read.";
+    asRecord(payload.photoGuidance) ?? asRecord(payload.guidance);
 
   return {
-    title,
-    message,
+    title: asString(guidanceRecord?.title) || "Try a clearer item photo",
+    message:
+      asString(guidanceRecord?.message) ||
+      asString(guidanceRecord?.summary) ||
+      fallbackMessage ||
+      "KeepFlip needs clearer evidence before it can make a reliable identification.",
     tips,
   };
 }
 
 export function getItemIdentificationGuidance(
-  error: unknown
+  error: unknown,
 ): ItemIdentificationGuidance | null {
   return error instanceof ItemIdentificationGuidanceError
     ? error.guidance
@@ -643,7 +582,7 @@ export function getItemIdentificationGuidance(
 }
 
 export function formatItemIdentificationGuidance(
-  guidance: ItemIdentificationGuidance
+  guidance: ItemIdentificationGuidance,
 ) {
   return [guidance.message, ...guidance.tips.map((tip) => `- ${tip}`)]
     .filter(Boolean)
@@ -652,7 +591,7 @@ export function formatItemIdentificationGuidance(
 
 export async function identifyItemWithAI(
   fileIds: string[],
-  notes = ""
+  notes = "",
 ): Promise<KeepFlipIdentification> {
   if (!fileIds.length) {
     throw new Error("Upload at least one item photo before identifying it.");
@@ -662,7 +601,7 @@ export async function identifyItemWithAI(
     functionId: APPWRITE.itemAiFunctionId,
     body: JSON.stringify({
       fileIds,
-      notes: buildIdentificationNotes(notes),
+      notes: notes.trim(),
     }),
     async: false,
     method: ExecutionMethod.POST,
@@ -677,7 +616,7 @@ export async function identifyItemWithAI(
     payload = JSON.parse(execution.responseBody || "{}");
   } catch {
     throw new Error(
-      "KeepFlip received an unreadable response from the item identifier."
+      "KeepFlip received an unreadable response from the item identifier.",
     );
   }
 
@@ -687,16 +626,16 @@ export async function identifyItemWithAI(
 
   const fallbackMessage =
     payload.error ||
-    "KeepFlip could not get enough visual evidence from this photo.";
+    "KeepFlip could not get enough reliable evidence from these photos.";
 
   const isOperationalFailure =
     /sign in|signed in|permission|unauthor|unsupported|too large|provide at least|retrieve|unreadable|valid json|environment variable|function key|use post/i.test(
-      fallbackMessage
+      fallbackMessage,
     );
 
   const isPhotoReadFailure =
     /could not identify|identification failed|no identification|visual evidence|photo|image is unclear|too dark|glare|blur|insufficient evidence|unclear/i.test(
-      fallbackMessage
+      fallbackMessage,
     );
 
   if (
@@ -706,13 +645,7 @@ export async function identifyItemWithAI(
     throw new Error(fallbackMessage);
   }
 
-  if (!payload.ok || isPhotoReadFailure) {
-    throw new ItemIdentificationGuidanceError(
-      buildPhotoGuidance(payload, fallbackMessage)
-    );
-  }
-
   throw new ItemIdentificationGuidanceError(
-    buildPhotoGuidance(payload, fallbackMessage)
+    buildPhotoGuidance(payload, fallbackMessage),
   );
 }
