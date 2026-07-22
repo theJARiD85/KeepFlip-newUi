@@ -9,8 +9,6 @@ import {
 
 const MODEL_POLL_INTERVAL_MS = 2_500;
 const MODEL_TIMEOUT_MS = 14 * 60 * 1_000;
-const LOCAL_TEST_MODEL_FILE =
-  "VisionCamera_8975123418007050576.glb";
 
 type ModelFileRow = {
   $id: string;
@@ -43,29 +41,6 @@ export type Tripo3dModelResult = {
 export type WaitForTripo3dModelInput = {
   itemPhotoId: string;
 };
-
-function modelGenerationIsDisabled() {
-  return (
-    process.env.EXPO_PUBLIC_APPWRITE_SKIP_MODEL_GENERATION
-      ?.trim()
-      .toLowerCase() === "true"
-  );
-}
-
-function localModelResult(itemPhotoId: string): Tripo3dModelResult {
-  return {
-    itemPhotoId,
-    sourceFileId: itemPhotoId,
-    modelBucketId: "bundled-assets",
-    modelFileId: LOCAL_TEST_MODEL_FILE,
-    modelFileName: LOCAL_TEST_MODEL_FILE,
-    modelMimeType: "model/gltf-binary",
-    modelSizeBytes: 0,
-    modelUrl: "keepflip://bundled-model",
-    modelProjectId: "local",
-    modelJwt: "local",
-  };
-}
 
 function requiredConfiguration() {
   const missing = [
@@ -191,8 +166,7 @@ async function waitForReadyModelRow(
 }
 
 /**
- * Temporary local-preview mode returns immediately and mounts the bundled GLB.
- * Normal mode invokes the image-to-model Function and waits for Appwrite.
+ * Invokes the image-to-model Function and waits for its durable Appwrite GLB.
  */
 export async function waitForTripo3dModel({
   itemPhotoId,
@@ -200,10 +174,6 @@ export async function waitForTripo3dModel({
   const cleanedItemPhotoId = itemPhotoId.trim();
   if (!cleanedItemPhotoId) {
     throw new Error("An item photo row ID is required to load its 3D model.");
-  }
-
-  if (modelGenerationIsDisabled()) {
-    return localModelResult(cleanedItemPhotoId);
   }
 
   const configuration = requiredConfiguration();
