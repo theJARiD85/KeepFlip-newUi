@@ -46,16 +46,10 @@ function ProtectedRootStack() {
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     LucidaConsole: require('../assets/fonts/LucidaConsole.ttf'),
-    SpaceGroteskSemiBold: require('../assets/fonts/SpaceGroteskSemiBold.ttf'),
-    SpaceGroteskBold: require('../assets/fonts/SpaceGroteskBold.ttf'),
-    SpaceGroteskRegular: require('../assets/fonts/SpaceGroteskRegular.ttf'),
-    SpaceGroteskMedium: require('../assets/fonts/SpaceGroteskMedium.ttf'),
-
-  
-    'SpaceGrotesk-Regular': require('../assets/fonts/SpaceGroteskBold.otf'),
-    'SpaceGrotesk-Medium': require('../assets/fonts/SpaceGroteskBold.otf'),
-    'SpaceGrotesk-SemiBold': require('../assets/fonts/SpaceGroteskBold.otf'),
-    'SpaceGrotesk-Bold': require('../assets/fonts/SpaceGroteskBold.otf'),
+    SpaceGroteskSemiBold: require('../assets/fonts/SpaceGroteskSemiBold.otf'),
+    SpaceGroteskBold: require('../assets/fonts/SpaceGroteskBold.otf'),
+    SpaceGroteskRegular: require('../assets/fonts/SpaceGroteskRegular.otf'),
+    SpaceGroteskMedium: require('../assets/fonts/SpaceGroteskMedium.otf'),
   });
 
   useEffect(() => {
