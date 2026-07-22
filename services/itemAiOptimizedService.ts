@@ -267,7 +267,6 @@ function isExecutionNotFound(error: unknown) {
   );
 }
 
-async function waitForItemAiExecution(initialExecution: any) {
 async function waitForItemAiExecution(startedExecution: any) {
   let execution = startedExecution;
   const executionId = String(startedExecution?.$id || "").trim();
