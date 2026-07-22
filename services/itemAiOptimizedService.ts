@@ -278,6 +278,8 @@ async function waitForItemAiExecution(initialExecution: any) {
       "Appwrite started item analysis without returning an execution ID.",
     );
   }
+async function waitForItemAiExecution(startedExecution: any) {
+  let execution = startedExecution;
 
   while (true) {
     const status = String(execution?.status || "").toLowerCase();
