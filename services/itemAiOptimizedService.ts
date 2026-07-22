@@ -838,20 +838,19 @@ export async function identifyItemWithAI(
     );
   }
 
-  const startedExecution = await functions.createExecution({
+  const execution = await functions.createExecution({
     functionId: APPWRITE.itemAiFunctionId,
     body: JSON.stringify({
       fileIds,
       notes: notes.trim(),
     }),
-    async: true,
+    async: false,
     method: ExecutionMethod.POST,
     headers: {
       "content-type": "application/json",
     },
   });
 
-  const execution = await waitForItemAiExecution(startedExecution);
   let payload: IdentifyItemResponse;
 
   try {
