@@ -117,6 +117,28 @@ function asNumber(value: unknown): number {
   return 0;
 }
 
+function isSynchronousExecutionTimeout(error: unknown) {
+  const details = asRecord(error);
+  const code = asNumber(details?.code ?? details?.status);
+  const message = asString(details?.message);
+
+  return (
+    code === 408 ||
+    /synchronous function execution timed out/i.test(message)
+  );
+}
+
+function statusStillRunningPayload(body: JsonRecord): JsonRecord {
+  return {
+    ok: true,
+    phase: "running",
+    status: "RUNNING",
+    runId: asString(body.runId),
+    jobToken: asString(body.jobToken),
+    query: asString(body.query),
+  };
+}
+
 function normalizeBarcode(value: string) {
   return value.trim().replace(/\s+/g, "");
 }
@@ -280,15 +302,49 @@ async function callEbayFunction(
   // Each Appwrite invocation only starts or checks the long-running Apify job.
   // Wait for this short wrapper response directly; the job itself remains
   // asynchronous and is polled below with its signed jobToken.
-  const execution = await functions.createExecution({
-    functionId: APPWRITE.ebaySoldCompsFunctionId,
-    async: false,
-    method: ExecutionMethod.POST,
-    headers: {
-      "content-type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
+  const action = asString(body.action).toLowerCase();
+  let execution;
+
+  try {
+    execution = await functions.createExecution({
+      functionId: APPWRITE.ebaySoldCompsFunctionId,
+      async: false,
+      method: ExecutionMethod.POST,
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+  } catch (error) {
+    /*
+      Appwrite stops a synchronous caller after 30 seconds even when the
+      Function keeps running and completes normally. A status request is
+      idempotent, so preserve its signed job state and let waitForResult()
+      check again. Never do this for "start": retrying start could launch
+      duplicate paid Apify runs.
+    */
+    if (
+      action === "status" &&
+      isSynchronousExecutionTimeout(error)
+    ) {
+      console.warn(
+        "KeepFlip market status check exceeded Appwrite's response window; continuing to wait.",
+        {
+          runId: asString(body.runId),
+        },
+      );
+      return statusStillRunningPayload(body);
+    }
+
+    throw error;
+  }
+
+  if (
+    action === "status" &&
+    execution.responseStatusCode === 408
+  ) {
+    return statusStillRunningPayload(body);
+  }
 
   const rawBody = execution.responseBody?.trim() || "";
 
