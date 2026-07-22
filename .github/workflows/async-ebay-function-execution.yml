@@ -1,0 +1,45 @@
+name: Use async eBay function execution
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "scripts/async-ebay-function-execution.mjs"
+      - ".github/workflows/async-ebay-function-execution.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Convert eBay execution to asynchronous polling
+        run: node scripts/async-ebay-function-execution.mjs
+
+      - name: Validate generated service
+        run: |
+          node --check scripts/async-ebay-function-execution.mjs
+          grep -q "waitForEbayFunctionExecution" services/ebaySoldCompsService.ts
+          grep -q "async: true" services/ebaySoldCompsService.ts
+
+      - name: Commit patched service
+        run: |
+          if git diff --quiet -- services/ebaySoldCompsService.ts; then
+            echo "No source changes were required."
+            exit 0
+          fi
+          git config user.name "KeepFlip Automation"
+          git config user.email "thejarid85@gmail.com"
+          git add services/ebaySoldCompsService.ts
+          git commit -m "Run eBay Function calls asynchronously [skip ci]"
+          git push origin master
