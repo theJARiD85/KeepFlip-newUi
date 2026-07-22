@@ -54,11 +54,6 @@ export default function RootLayout() {
     SpaceGroteskMedium: require('../assets/fonts/SpaceGroteskMedium.otf'),
     FlexiIBMVGAFalse: require('../assets/fonts/FlexiIBMVGAFalse.ttf'),
     FlexiIBMVGAFalse437: require('../assets/fonts/FlexiIBMVGAFalse437.ttf'),
-  
-    'SpaceGrotesk-Regular': require('../assets/fonts/SpaceGroteskBold.otf'),
-    'SpaceGrotesk-Medium': require('../assets/fonts/SpaceGroteskBold.otf'),
-    'SpaceGrotesk-SemiBold': require('../assets/fonts/SpaceGroteskBold.otf'),
-    'SpaceGrotesk-Bold': require('../assets/fonts/SpaceGroteskBold.otf'),
   });
 
   useEffect(() => {

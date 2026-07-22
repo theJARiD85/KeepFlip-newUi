@@ -13,6 +13,8 @@ import {
   getItemIdentificationGuidance,
   identifyItemWithAI,
   type ItemIdentificationGuidance,
+  type ItemIdentityEvidence,
+  type ItemValuationReadiness,
   type KeepFlipIdentification,
 } from "@/services/itemAiService";
 import {
@@ -25,6 +27,7 @@ import {
   ITEM_ANALYSIS_VERSION,
   type AnalyzeItemPhotosInput,
   type AnalyzeItemPhotosOptions,
+  type ItemAnalysisEvidenceSource,
   type ItemAnalysisEvidenceStrength,
   type ItemAnalysisStage,
   type ItemAnalysisSuccess,
@@ -151,7 +154,10 @@ function toComparable(comp: EbaySoldComp): ItemSoldComparable {
   };
 }
 
-function valuationFromOldUiResult(result: EbaySoldCompsResult): ItemValuation {
+function valuationFromOldUiResult(
+  result: EbaySoldCompsResult,
+  readiness: ItemValuationReadiness,
+): ItemValuation {
   const prices = result.comps
     .map((comp) => comp.totalPrice)
     .filter((value) => Number.isFinite(value) && value > 0)
@@ -173,7 +179,10 @@ function valuationFromOldUiResult(result: EbaySoldCompsResult): ItemValuation {
   }
 
   return {
-    status: prices.length >= 3 ? "ready" : "limited_comps",
+    status:
+      prices.length >= 3 && readiness === "ready"
+        ? "ready"
+        : "limited_comps",
     currency: result.summary.currency || result.comps[0]?.currency || "USD",
     suppliedCount: result.comps.length,
     usedCount: prices.length,
@@ -186,52 +195,146 @@ function valuationFromOldUiResult(result: EbaySoldCompsResult): ItemValuation {
   };
 }
 
-function identificationResult(
+function sourceFromIdentityEvidence(
+  source: ItemIdentityEvidence["source"],
+): ItemAnalysisEvidenceSource {
+  switch (source) {
+    case "photo_text":
+      return "photo_text";
+    case "user_notes":
+      return "user_notes";
+    case "external_evidence":
+      return "google_vision";
+    case "visual_design":
+    default:
+      return "photo_visual";
+  }
+}
+
+function findVariant(identification: KeepFlipIdentification) {
+  return (
+    identification.identityEvidence
+      .filter((entry) => entry.field === "variant")
+      .sort((left, right) => right.confidence - left.confidence)[0]?.value ??
+    null
+  );
+}
+
+function identityEvidenceForAnalysis(
   identification: KeepFlipIdentification,
-  imageCount: number,
-): ItemAnalysisSuccess {
-  const overall = confidence01(identification.confidence);
-  const signals = identification.valuationSignals;
-  const status =
-    identification.identificationBasis === "insufficient_evidence"
-      ? "insufficient_evidence"
-      : "identified";
-
-  const textEvidence = identification.detectedText.map((value) => ({
-    claim: "visible_text",
-    value,
-    source: "photo_text" as const,
+) {
+  return identification.identityEvidence.map((entry) => ({
+    claim: entry.field,
+    value: entry.value,
+    source: sourceFromIdentityEvidence(entry.source),
     imageIndex: null,
-    strength: strengthFromConfidence(identification.confidence),
-    rationale: "Read from the uploaded item photos by the proven old-UI item AI service.",
+    strength: strengthFromConfidence(entry.confidence),
+    rationale: entry.explanation,
   }));
+}
 
-  const fieldEvidence = identification.evidenceFields
+function visibleTextEvidence(identification: KeepFlipIdentification) {
+  const directlyRepresented = new Set(
+    identification.identityEvidence
+      .filter((entry) => entry.source === "photo_text")
+      .map((entry) => entry.value.toLowerCase()),
+  );
+
+  return identification.detectedText
+    .filter((value) => !directlyRepresented.has(value.toLowerCase()))
+    .map((value) => ({
+      claim: "visible_text",
+      value,
+      source: "photo_text" as const,
+      imageIndex: null,
+      strength: strengthFromConfidence(
+        identification.confidenceBreakdown.model ||
+          identification.confidenceBreakdown.brand ||
+          identification.confidenceBreakdown.itemType,
+      ),
+      rationale: "Text transcribed from the uploaded item photos.",
+    }));
+}
+
+function fieldEvidenceForAnalysis(identification: KeepFlipIdentification) {
+  return identification.evidenceFields
     .filter((field) => field.value.trim())
     .map((field) => ({
-      claim: field.key || field.label,
+      claim: field.key,
       value: field.value,
       source: "photo_visual" as const,
       imageIndex: null,
       strength: strengthFromConfidence(field.confidence),
       rationale:
         field.reason ||
-        "Derived from the uploaded item photos by the old-UI identification service.",
+        "A product-specific detail extracted from the uploaded item photos.",
     }));
+}
+
+function ambiguityList(identification: KeepFlipIdentification) {
+  const candidates = identification.candidateMatches.map(
+    (candidate) =>
+      `Possible match (${candidate.confidence}%): ${candidate.name}. ${candidate.reason}`,
+  );
+
+  return Array.from(
+    new Set(
+      [
+        ...identification.ambiguityNotes,
+        ...identification.valuationSignals.uncertainty,
+        ...candidates,
+      ].filter(Boolean),
+    ),
+  ).slice(0, 15);
+}
+
+function resultSummary(identification: KeepFlipIdentification) {
+  if (identification.identificationBasis === "insufficient_evidence") {
+    return (
+      identification.conditionNotes ||
+      "KeepFlip could not establish a reliable item identity from the current photos."
+    );
+  }
+
+  const certainty =
+    identification.valuationReadiness === "ready"
+      ? "The identity is specific enough for narrow sold-comparable research."
+      : identification.valuationReadiness === "directional"
+        ? "The item is identified directionally; exact variant or condition evidence is still limited."
+        : "The item type is recognizable, but more evidence is required before valuation.";
+
+  return [identification.title, identification.conditionNotes, certainty]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function identificationResult(
+  identification: KeepFlipIdentification,
+  imageCount: number,
+): ItemAnalysisSuccess {
+  const status =
+    identification.identificationBasis === "insufficient_evidence"
+      ? "insufficient_evidence"
+      : "identified";
+  const signals = identification.valuationSignals;
+  const breakdown = identification.confidenceBreakdown;
+  const evidence = [
+    ...identityEvidenceForAnalysis(identification),
+    ...visibleTextEvidence(identification),
+    ...fieldEvidenceForAnalysis(identification),
+  ].slice(0, 30);
 
   return {
     ok: true,
     contractVersion: ITEM_ANALYSIS_CONTRACT_VERSION,
-    version: `${ITEM_ANALYSIS_VERSION}-old-ui-services`,
+    version: `${ITEM_ANALYSIS_VERSION}-evidence-aligned`,
     status,
     input: {
       imageCount,
       source: "appwrite_storage",
     },
     analysis: {
-      summary:
-        identification.conditionNotes ||
-        `${identification.title} identified from the uploaded item photos.`,
+      summary: resultSummary(identification),
       identification: {
         itemType:
           signals.objectType ||
@@ -241,30 +344,33 @@ function identificationResult(
         category: identification.category,
         brand: identification.brand,
         model: identification.model,
-        variant: null,
+        variant: findVariant(identification),
         color: signals.colors[0] ?? null,
         era: signals.era[0] ?? null,
-        serialNumber: null,
+        serialNumber: identification.serialNumber,
       },
       condition: {
         grade: identification.condition,
         confidence:
-          identification.condition === "unknown" ? 0 : Math.min(1, overall),
+          identification.condition === "unknown"
+            ? 0
+            : confidence01(breakdown.condition),
         notes: identification.conditionNotes
           ? [identification.conditionNotes]
           : signals.conditionSignals,
       },
       confidence: {
-        overall,
-        itemType:
-          signals.objectType || identification.title ? overall : 0,
-        brand: identification.brand ? overall : 0,
-        model: identification.model ? overall : 0,
+        overall: confidence01(identification.confidence),
+        itemType: confidence01(breakdown.itemType),
+        brand: identification.brand ? confidence01(breakdown.brand) : 0,
+        model: identification.model ? confidence01(breakdown.model) : 0,
         condition:
-          identification.condition === "unknown" ? 0 : overall,
+          identification.condition === "unknown"
+            ? 0
+            : confidence01(breakdown.condition),
       },
-      evidence: [...textEvidence, ...fieldEvidence].slice(0, 30),
-      ambiguities: signals.uncertainty,
+      evidence,
+      ambiguities: ambiguityList(identification),
       suggestedPhotos: identification.suggestedPhotos,
       valuationSignals: {
         searchTerms:
@@ -274,7 +380,7 @@ function identificationResult(
         category: signals.subcategory ?? identification.category,
         conditionAdjustment:
           identification.conditionNotes ||
-          "The selected condition was used when filtering sold listings.",
+          "Only visibly supported condition evidence should affect comparable selection.",
         positiveFactors: signals.conditionSignals,
         negativeFactors: signals.uncertainty,
       },
@@ -290,10 +396,14 @@ function identificationResult(
           objects: [],
         },
       ],
-      warnings:
-        status === "identified"
-          ? []
-          : ["The old-UI item service requested clearer photo evidence."],
+      warnings: [
+        ...(identification.needsMorePhotos
+          ? ["Additional photos would materially improve this result."]
+          : []),
+        ...(identification.valuationReadiness === "needs_evidence"
+          ? ["Valuation research is paused until stronger identity evidence is available."]
+          : []),
+      ],
     },
     valuation: {
       status: "needs_comps",
@@ -317,7 +427,7 @@ function guidanceResult(
   return {
     ok: true,
     contractVersion: ITEM_ANALYSIS_CONTRACT_VERSION,
-    version: `${ITEM_ANALYSIS_VERSION}-old-ui-guidance`,
+    version: `${ITEM_ANALYSIS_VERSION}-evidence-guidance`,
     status: "insufficient_evidence",
     input: { imageCount, source: "appwrite_storage" },
     analysis: {
@@ -412,6 +522,31 @@ function validateInput(input: AnalyzeItemPhotosInput) {
   }
 }
 
+function pausedMarketResearch(
+  identification: KeepFlipIdentification,
+  identified: ItemAnalysisSuccess,
+): ItemAnalysisSuccess {
+  return {
+    ...identified,
+    marketResearch: {
+      provider: "ebay",
+      status: "unavailable",
+      query:
+        identification.productSearchQuery ||
+        identification.valuationSignals.searchQueries[0] ||
+        null,
+      searchedAt: null,
+      comparableCount: 0,
+      comps: [],
+      error: {
+        code: "VALUATION_NEEDS_EVIDENCE",
+        message:
+          "KeepFlip paused sold-comparable research because the current identity evidence would produce a noisy or misleading value range.",
+      },
+    },
+  };
+}
+
 export async function analyzeItemPhotos(
   input: AnalyzeItemPhotosInput,
   options: AnalyzeItemPhotosOptions = {},
@@ -495,8 +630,8 @@ export async function analyzeItemPhotos(
       throw new ItemAnalysisError(
         error instanceof Error
           ? error.message
-          : "The old-UI item identifier could not analyze these photos.",
-        "OLD_UI_IDENTIFICATION_FAILED",
+          : "The item identifier could not analyze these photos.",
+        "ITEM_IDENTIFICATION_FAILED",
         undefined,
         { cause: error },
       );
@@ -515,8 +650,6 @@ export async function analyzeItemPhotos(
     );
     cleaned = true;
 
-    if (identified.status !== "identified") return identified;
-
     throwIfAborted(options.signal);
     reportStage(options.onStage, "researching_comps");
 
@@ -534,7 +667,10 @@ export async function analyzeItemPhotos(
       const comps = sold.comps.map(toComparable);
       return {
         ...identified,
-        valuation: valuationFromOldUiResult(sold),
+        valuation: valuationFromOldUiResult(
+          sold,
+          identification.valuationReadiness,
+        ),
         marketResearch: {
           provider: "ebay",
           status: "completed",
@@ -564,11 +700,11 @@ export async function analyzeItemPhotos(
           comparableCount: 0,
           comps: [],
           error: {
-            code: "OLD_UI_VALUATION_FAILED",
+            code: "VALUATION_FAILED",
             message:
               error instanceof Error
                 ? error.message
-                : "The old-UI eBay sold-comps service could not complete valuation.",
+                : "The eBay sold-comps service could not complete valuation.",
           },
         },
       };
