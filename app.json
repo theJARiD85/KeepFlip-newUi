@@ -51,7 +51,11 @@
           }
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      "react-native-fast-tflite",
+      {
+        "enableAndroidGpuLibraries": true
+      }
     ],
     "experiments": {
       "typedRoutes": true,
@@ -63,6 +67,6 @@
         "projectId": "0315149c-e182-4952-a160-67480953d5f7"
       }
     },
-    "owner": "thejarid"
+    "owner": "thejarid",
   }
 }
