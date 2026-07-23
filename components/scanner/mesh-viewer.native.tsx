@@ -811,7 +811,7 @@ export function MeshViewer({
               <hemisphereLight
                 color="#fff6dc"
                 groundColor={DEEP_VIOLET}
-                intensity={1.35}
+                intensity={2.35}
               />
               <directionalLight
                 color="#ffffff"
@@ -820,15 +820,6 @@ export function MeshViewer({
               />
 
               <HologramBackdrop />
-
-              <Suspense fallback={null}>
-                <HologramModel
-                  compact={isScannerPreview}
-                  key={localModelUri}
-                  onLoad={handleModelLoaded}
-                  uri={localModelUri}
-                />
-              </Suspense>
               <Suspense fallback={null}>
                 <HologramModel
                   compact={isScannerPreview}

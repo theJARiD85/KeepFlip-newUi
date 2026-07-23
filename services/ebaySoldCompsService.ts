@@ -915,7 +915,7 @@ function appendRecentlySoldIntent(query: string) {
     return trimmed;
   }
 
-  return `${trimmed} recently sold`;
+  return `${trimmed}`;
 }
 
 function buildDescriptorSearchQuery(
