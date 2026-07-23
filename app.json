@@ -52,10 +52,12 @@
         }
       ],
       "expo-asset",
-      "react-native-fast-tflite",
-      {
-        "enableAndroidGpuLibraries": true
-      }
+      [
+        "react-native-fast-tflite",
+        {
+          "enableAndroidGpuLibraries": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
