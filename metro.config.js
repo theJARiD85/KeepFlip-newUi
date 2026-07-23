@@ -1,8 +1,8 @@
-const { getDefaultConfig } = require('expo/metro-config'); // if using Expo
+const { getDefaultConfig } = require("expo/metro-config");
 const config = getDefaultConfig(__dirname);
 
-config.resolver.assetExts.push('glb');
-config.resolver.assetExts.push('gltf');
-config.resolver.assetExts.push('tflite');
+config.resolver.assetExts = [
+  ...new Set([...config.resolver.assetExts, "glb", "gltf", "tflite"]),
+];
 
 module.exports = config;

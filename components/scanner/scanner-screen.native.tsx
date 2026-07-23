@@ -23,6 +23,10 @@ import {
   type ScannerAtmospherePhase,
 } from "@/components/scanner/scanner-atmosphere";
 import {
+  MagicTouchTraceOverlay,
+  useMagicTouchTrace,
+} from "@/components/scanner/magic-touch-trace.native";
+import {
   ScannerToolCarousel,
   scannerTools,
   type ScannerToolId,
@@ -247,7 +251,6 @@ export default function ScannerScreen() {
   const photoOutput = usePhotoOutput({
     targetResolution: CAMERA_PHOTO_RESOLUTION,
   });
-  const cameraOutputs = useMemo(() => [photoOutput], [photoOutput]);
   const [isGeneratingModel, setIsGeneratingModel] = useState(false);
   const [generatedModel, setGeneratedModel] =
     useState<Tripo3dModelResult | null>(null);
@@ -315,6 +318,15 @@ export default function ScannerScreen() {
     !isMenuOpen &&
     !isPickingPhoto &&
     !isScannerOverlayOpen;
+  const {
+    frameOutput: traceFrameOutput,
+    segments: traceSegments,
+    status: traceStatus,
+  } = useMagicTouchTrace(isCameraActive);
+  const cameraOutputs = useMemo(
+    () => [photoOutput, traceFrameOutput],
+    [photoOutput, traceFrameOutput],
+  );
 
   const handleToggleTorch = useCallback(async () => {
     if (
@@ -1632,6 +1644,12 @@ export default function ScannerScreen() {
           >
             <View pointerEvents="none" style={styles.frameColorWash} />
             <ScannerAtmosphere phase={renderedAtmospherePhase} />
+            <MagicTouchTraceOverlay
+              height={scannerHeight}
+              segments={traceSegments}
+              status={traceStatus}
+              width={scannerWidth}
+            />
             <View
               style={[
                 styles.corner,
