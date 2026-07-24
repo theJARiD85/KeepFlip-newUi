@@ -1,11 +1,13 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useState,
   type ComponentType,
   type ReactNode,
 } from "react";
 import { useTensorflowModel } from "react-native-fast-tflite";
+import { NitroModules } from "react-native-nitro-modules";
 import {
   type CameraFrameOutput,
   useAsyncRunner,
@@ -86,56 +88,56 @@ function isRadarCategory(classId: number) {
   "worklet";
 
   switch (classId) {
-    case 1: // bicycle
-    case 2: // car
-    case 3: // motorcycle
-    case 7: // truck
-    case 8: // boat
-    case 14: // bench
-    case 26: // backpack
-    case 27: // umbrella
-    case 30: // handbag
-    case 31: // tie
-    case 32: // suitcase
-    case 33: // frisbee
-    case 34: // skis
-    case 35: // snowboard
-    case 36: // sports ball
-    case 37: // kite
-    case 38: // baseball bat
-    case 39: // baseball glove
-    case 40: // skateboard
-    case 41: // surfboard
-    case 42: // tennis racket
-    case 43: // bottle
-    case 45: // wine glass
-    case 46: // cup
-    case 47: // fork
-    case 48: // knife
-    case 49: // spoon
-    case 50: // bowl
-    case 61: // chair
-    case 62: // couch
-    case 63: // potted plant
-    case 64: // bed
-    case 66: // dining table
-    case 71: // tv
-    case 72: // laptop
-    case 73: // mouse
-    case 74: // remote
-    case 75: // keyboard
-    case 76: // cell phone
-    case 77: // microwave
-    case 78: // oven
-    case 79: // toaster
-    case 81: // refrigerator
-    case 83: // book
-    case 84: // clock
-    case 85: // vase
-    case 86: // scissors
-    case 87: // teddy bear
-    case 88: // hair dryer
-    case 89: // toothbrush
+    case 1:
+    case 2:
+    case 3:
+    case 7:
+    case 8:
+    case 14:
+    case 26:
+    case 27:
+    case 30:
+    case 31:
+    case 32:
+    case 33:
+    case 34:
+    case 35:
+    case 36:
+    case 37:
+    case 38:
+    case 39:
+    case 40:
+    case 41:
+    case 42:
+    case 43:
+    case 45:
+    case 46:
+    case 47:
+    case 48:
+    case 49:
+    case 50:
+    case 61:
+    case 62:
+    case 63:
+    case 64:
+    case 66:
+    case 71:
+    case 72:
+    case 73:
+    case 74:
+    case 75:
+    case 76:
+    case 77:
+    case 78:
+    case 79:
+    case 81:
+    case 83:
+    case 84:
+    case 85:
+    case 86:
+    case 87:
+    case 88:
+    case 89:
       return true;
     default:
       return false;
@@ -217,9 +219,6 @@ export function useValueRadar(
   const publishedHeight = useSharedValue(0);
   const workerErrorActive = useSharedValue(false);
 
-  // Worker runtimes cannot safely capture React callbacks through a nested
-  // worklet. They publish plain data here; a UI-runtime reaction forwards it
-  // to the RN runtime below.
   const bridgeSequence = useSharedValue(0);
   const bridgeKind = useSharedValue(0);
   const bridgePayload = useSharedValue<number[]>([]);
@@ -313,6 +312,7 @@ export function useValueRadar(
       return;
     }
 
+    setInferenceError(false);
     setMarker({
       classId: Math.round(classId),
       height,
@@ -363,6 +363,20 @@ export function useValueRadar(
   const resizer =
     resizerState.state === "ready" ? resizerState.resizer : undefined;
 
+  /*
+   * The AsyncRunner owns a separate JS runtime. Nitro HybridObjects must be
+   * boxed on the RN runtime and unboxed inside that worker runtime so their
+   * native methods remain callable there.
+   */
+  const boxedModel = useMemo(
+    () => (model == null ? undefined : NitroModules.box(model)),
+    [model],
+  );
+  const boxedResizer = useMemo(
+    () => (resizer == null ? undefined : NitroModules.box(resizer)),
+    [resizer],
+  );
+
   const frameOutput = useFrameOutput({
     targetResolution: RADAR_FRAME_RESOLUTION,
     pixelFormat: "yuv",
@@ -375,8 +389,8 @@ export function useValueRadar(
       frameCounter.value += 1;
       const shouldRun =
         enabled &&
-        model != null &&
-        resizer != null &&
+        boxedModel != null &&
+        boxedResizer != null &&
         frameCounter.value % FRAMES_BETWEEN_INFERENCES === 0;
 
       if (!shouldRun) {
@@ -388,16 +402,21 @@ export function useValueRadar(
         "worklet";
 
         let resized:
-          | ReturnType<NonNullable<typeof resizer>["resize"]>
+          | ReturnType<ReturnType<typeof boxedResizer.unbox>["resize"]>
           | undefined;
+        let stage = "unbox";
 
         try {
+          const workerModel = boxedModel.unbox();
+          const workerResizer = boxedResizer.unbox();
           const sourceWidth = Math.max(frame.width, 1);
           const sourceHeight = Math.max(frame.height, 1);
 
-          resized = resizer.resize(frame);
-          const pixels = new Uint8Array(resized.getPixelBuffer());
+          stage = "resize";
+          resized = workerResizer.resize(frame);
 
+          stage = "pixel-buffer";
+          const pixels = new Uint8Array(resized.getPixelBuffer());
           if (pixels.byteLength !== MODEL_INPUT_BYTES) {
             throw new Error(
               `EfficientDet expected ${MODEL_INPUT_BYTES} input bytes but received ${pixels.byteLength}.`,
@@ -416,7 +435,8 @@ export function useValueRadar(
           resized.dispose();
           resized = undefined;
 
-          const outputs = model.runSync([inputBuffer]);
+          stage = "tflite";
+          const outputs = workerModel.runSync([inputBuffer]);
           if (
             outputs[0] == null ||
             outputs[1] == null ||
@@ -426,12 +446,10 @@ export function useValueRadar(
             throw new Error("EfficientDet returned an incomplete result.");
           }
 
-          if (workerErrorActive.value) {
-            workerErrorActive.value = false;
-            bridgeKind.value = BRIDGE_EVENT_CLEAR_ERROR;
-            bridgeSequence.value += 1;
-          }
+          const hadWorkerError = workerErrorActive.value;
+          workerErrorActive.value = false;
 
+          stage = "parse";
           const boxes = new Float32Array(outputs[0]);
           const classes = new Float32Array(outputs[1]);
           const scores = new Float32Array(outputs[2]);
@@ -538,6 +556,7 @@ export function useValueRadar(
             bestHeight = detectionHeight;
           }
 
+          stage = "publish";
           if (bestClass < 0) {
             misses.value += 1;
             if (
@@ -547,6 +566,9 @@ export function useValueRadar(
               hasPublishedMarker.value = false;
               publishedClass.value = -1;
               bridgeKind.value = BRIDGE_EVENT_CLEAR_MARKER;
+              bridgeSequence.value += 1;
+            } else if (hadWorkerError) {
+              bridgeKind.value = BRIDGE_EVENT_CLEAR_ERROR;
               bridgeSequence.value += 1;
             }
             return;
@@ -563,7 +585,13 @@ export function useValueRadar(
             publishedClass.value !== bestClass ||
             publishedMovement >= PUBLISH_MOVEMENT_THRESHOLD;
 
-          if (!shouldPublish) return;
+          if (!shouldPublish) {
+            if (hadWorkerError) {
+              bridgeKind.value = BRIDGE_EVENT_CLEAR_ERROR;
+              bridgeSequence.value += 1;
+            }
+            return;
+          }
 
           publishedClass.value = bestClass;
           publishedX.value = bestX;
@@ -586,10 +614,11 @@ export function useValueRadar(
         } catch (caughtError) {
           if (!workerErrorActive.value) {
             workerErrorActive.value = true;
-            bridgeMessage.value =
+            const detail =
               caughtError instanceof Error
                 ? caughtError.message
-                : "Unknown asynchronous on-device inference error.";
+                : String(caughtError);
+            bridgeMessage.value = `[${stage}] ${detail}`;
             bridgeKind.value = BRIDGE_EVENT_ERROR;
             bridgeSequence.value += 1;
           }
