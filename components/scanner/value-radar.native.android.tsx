@@ -69,80 +69,11 @@ type ValueRadarOverlayProps = {
   width: number;
 };
 
-/*
- * Android resolves this module before value-radar.native.tsx. Keep the
- * existing static HUD presentation while replacing only its frame processor.
- */
 const radarPresentation = require("./value-radar.native.tsx") as {
   ValueRadarOverlay: ComponentType<ValueRadarOverlayProps>;
 };
 
 export const ValueRadarOverlay = radarPresentation.ValueRadarOverlay;
-
-function clamp(value: number, minimum: number, maximum: number) {
-  "worklet";
-  return Math.min(Math.max(value, minimum), maximum);
-}
-
-function isRadarCategory(classId: number) {
-  "worklet";
-
-  switch (classId) {
-    case 1:
-    case 2:
-    case 3:
-    case 7:
-    case 8:
-    case 14:
-    case 26:
-    case 27:
-    case 30:
-    case 31:
-    case 32:
-    case 33:
-    case 34:
-    case 35:
-    case 36:
-    case 37:
-    case 38:
-    case 39:
-    case 40:
-    case 41:
-    case 42:
-    case 43:
-    case 45:
-    case 46:
-    case 47:
-    case 48:
-    case 49:
-    case 50:
-    case 61:
-    case 62:
-    case 63:
-    case 64:
-    case 66:
-    case 71:
-    case 72:
-    case 73:
-    case 74:
-    case 75:
-    case 76:
-    case 77:
-    case 78:
-    case 79:
-    case 81:
-    case 83:
-    case 84:
-    case 85:
-    case 86:
-    case 87:
-    case 88:
-    case 89:
-      return true;
-    default:
-      return false;
-  }
-}
 
 function radarCategoryLabel(classId: number) {
   const labels: Record<number, string> = {
@@ -312,11 +243,12 @@ export function useValueRadar(
       return;
     }
 
+    const roundedClassId = Math.round(classId);
     setInferenceError(false);
     setMarker({
-      classId: Math.round(classId),
+      classId: roundedClassId,
       height,
-      label: radarCategoryLabel(Math.round(classId)),
+      label: radarCategoryLabel(roundedClassId),
       score,
       sourceHeight,
       sourceWidth,
@@ -363,11 +295,6 @@ export function useValueRadar(
   const resizer =
     resizerState.state === "ready" ? resizerState.resizer : undefined;
 
-  /*
-   * The AsyncRunner owns a separate JS runtime. Nitro HybridObjects must be
-   * boxed on the RN runtime and unboxed inside that worker runtime so their
-   * native methods remain callable there.
-   */
   const boxedModel = useMemo(
     () => (model == null ? undefined : NitroModules.box(model)),
     [model],
@@ -453,7 +380,7 @@ export function useValueRadar(
           const hadWorkerError = workerErrorActive.value;
           workerErrorActive.value = false;
 
-          stage = "parse";
+          stage = "parse-output";
           const boxes = new Float32Array(outputs[0]);
           const classes = new Float32Array(outputs[1]);
           const scores = new Float32Array(outputs[2]);
@@ -492,41 +419,106 @@ export function useValueRadar(
           let bestWidth = 0;
           let bestHeight = 0;
 
+          stage = "filter-detections";
           for (let index = 0; index < count; index += 1) {
             const score = scores[index] ?? 0;
             const classId = Math.round(classes[index] ?? -1);
 
+            let isAllowedCategory = false;
+            switch (classId) {
+              case 1:
+              case 2:
+              case 3:
+              case 7:
+              case 8:
+              case 14:
+              case 26:
+              case 27:
+              case 30:
+              case 31:
+              case 32:
+              case 33:
+              case 34:
+              case 35:
+              case 36:
+              case 37:
+              case 38:
+              case 39:
+              case 40:
+              case 41:
+              case 42:
+              case 43:
+              case 45:
+              case 46:
+              case 47:
+              case 48:
+              case 49:
+              case 50:
+              case 61:
+              case 62:
+              case 63:
+              case 64:
+              case 66:
+              case 71:
+              case 72:
+              case 73:
+              case 74:
+              case 75:
+              case 76:
+              case 77:
+              case 78:
+              case 79:
+              case 81:
+              case 83:
+              case 84:
+              case 85:
+              case 86:
+              case 87:
+              case 88:
+              case 89:
+                isAllowedCategory = true;
+                break;
+              default:
+                break;
+            }
+
             if (
               score < MIN_DETECTION_SCORE ||
               score <= bestScore ||
-              !isRadarCategory(classId)
+              !isAllowedCategory
             ) {
               continue;
             }
 
+            stage = "map-detection-box";
             const boxOffset = index * 4;
-            const top = clamp(boxes[boxOffset] ?? 0, 0, 1);
-            const left = clamp(boxes[boxOffset + 1] ?? 0, 0, 1);
-            const bottom = clamp(boxes[boxOffset + 2] ?? 0, 0, 1);
-            const right = clamp(boxes[boxOffset + 3] ?? 0, 0, 1);
-            const sourceLeft = clamp(
-              (cropLeft + left * cropSide) / sourceWidth,
-              0,
+            const top = Math.min(Math.max(boxes[boxOffset] ?? 0, 0), 1);
+            const left = Math.min(
+              Math.max(boxes[boxOffset + 1] ?? 0, 0),
               1,
             );
-            const sourceTop = clamp(
-              (cropTop + top * cropSide) / sourceHeight,
-              0,
+            const bottom = Math.min(
+              Math.max(boxes[boxOffset + 2] ?? 0, 0),
               1,
             );
-            const sourceRight = clamp(
-              (cropLeft + right * cropSide) / sourceWidth,
-              0,
+            const right = Math.min(
+              Math.max(boxes[boxOffset + 3] ?? 0, 0),
               1,
             );
-            const sourceBottom = clamp(
-              (cropTop + bottom * cropSide) / sourceHeight,
-              0,
+            const sourceLeft = Math.min(
+              Math.max((cropLeft + left * cropSide) / sourceWidth, 0),
+              1,
+            );
+            const sourceTop = Math.min(
+              Math.max((cropTop + top * cropSide) / sourceHeight, 0),
+              1,
+            );
+            const sourceRight = Math.min(
+              Math.max((cropLeft + right * cropSide) / sourceWidth, 0),
+              1,
+            );
+            const sourceBottom = Math.min(
+              Math.max((cropTop + bottom * cropSide) / sourceHeight, 0),
               1,
             );
             const detectionWidth = sourceRight - sourceLeft;
