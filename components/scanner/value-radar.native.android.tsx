@@ -387,28 +387,32 @@ export function useValueRadar(
       "worklet";
 
       frameCounter.value += 1;
-      const shouldRun =
-        enabled &&
-        boxedModel != null &&
-        boxedResizer != null &&
+      const isInferenceFrame =
         frameCounter.value % FRAMES_BETWEEN_INFERENCES === 0;
 
-      if (!shouldRun) {
+      if (
+        !enabled ||
+        boxedModel == null ||
+        boxedResizer == null ||
+        !isInferenceFrame
+      ) {
         frame.dispose();
         return;
       }
 
+      const modelBox = boxedModel;
+      const resizerBox = boxedResizer;
       const wasHandled = asyncRunner.runAsync(() => {
         "worklet";
 
         let resized:
-          | ReturnType<ReturnType<typeof boxedResizer.unbox>["resize"]>
+          | ReturnType<NonNullable<typeof resizer>["resize"]>
           | undefined;
         let stage = "unbox";
 
         try {
-          const workerModel = boxedModel.unbox();
-          const workerResizer = boxedResizer.unbox();
+          const workerModel = modelBox.unbox();
+          const workerResizer = resizerBox.unbox();
           const sourceWidth = Math.max(frame.width, 1);
           const sourceHeight = Math.max(frame.height, 1);
 
