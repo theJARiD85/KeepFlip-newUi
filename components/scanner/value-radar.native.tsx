@@ -5,15 +5,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   ValueRadarOverlay as ValueRadarVisualOverlay,
   useValueRadar,
-} from "./value-radar-visual.native";
+} from "@/components/scanner/value-radar-visual.native";
 
 export type {
   ValueRadarMarker,
   ValueRadarStatus,
   ValueRadarViewport,
-} from "./value-radar-visual.native";
+} from "@/components/scanner/value-radar-visual.native";
 
-export { useValueRadar };
+export { useValueRadar }; 
 
 type ValueRadarOverlayProps = ComponentProps<
   typeof ValueRadarVisualOverlay

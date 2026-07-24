@@ -80,11 +80,11 @@ export default function RootLayout() {
 
   return (
       <GestureHandlerRootView style={{ flex: 1 }}>
-          <ThemeProvider value={navigationTheme}>
-        <KeepFlipAuthProvider>
-          <ProtectedRootStack />
-        </KeepFlipAuthProvider>
-        <StatusBar style="light" />
+        <ThemeProvider value={navigationTheme}>
+          <KeepFlipAuthProvider>
+            <ProtectedRootStack />
+          </KeepFlipAuthProvider>
+          <StatusBar style="light" />
         </ThemeProvider>
       </GestureHandlerRootView>
 
