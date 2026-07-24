@@ -1,0 +1,129 @@
+name: Apply Value Radar chrome split
+
+on:
+  push:
+    paths:
+      - ".github/workflows/apply-value-radar-chrome-split.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Patch scanner layout
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = 'components/scanner/scanner-screen.native.tsx';
+          let source = fs.readFileSync(path, 'utf8');
+
+          const oldImport = `import {
+            ValueRadarOverlay,
+            useValueRadar,
+            type ValueRadarViewport,
+          } from "@/components/scanner/value-radar.native";`;
+          const newImport = `import {
+            useValueRadar,
+            type ValueRadarViewport,
+          } from "@/components/scanner/value-radar.native";
+          import {
+            ValueRadarBar,
+            ValueRadarBubble,
+            ValueRadarTargetOverlay,
+          } from "@/components/scanner/value-radar-chrome.native";`;
+
+          if (!source.includes(oldImport)) {
+            throw new Error('Could not find the current Value Radar import block.');
+          }
+          source = source.replace(oldImport, newImport);
+
+          if (!source.includes('<ValueRadarOverlay\n')) {
+            throw new Error('Could not find ValueRadarOverlay usage.');
+          }
+          source = source.replace('<ValueRadarOverlay\n', '<ValueRadarTargetOverlay\n');
+
+          const scannerAreaMarker = `        </View>
+
+        <View style={styles.scannerArea}>`;
+          const scannerAreaReplacement = `        </View>
+
+        {!isScannerOverlayOpen ? (
+          <View pointerEvents="none" style={styles.radarBubbleSlot}>
+            <ValueRadarBubble
+              status={radarStatus}
+              width={Math.min(194, Math.max(154, scannerWidth * 0.54))}
+            />
+          </View>
+        ) : null}
+
+        <View style={styles.scannerArea}>`;
+
+          if (!source.includes(scannerAreaMarker)) {
+            throw new Error('Could not find scanner area insertion point.');
+          }
+          source = source.replace(scannerAreaMarker, scannerAreaReplacement);
+
+          const carouselMarker = `          <ScannerToolCarousel
+`;
+          const carouselReplacement = `          {!isScannerOverlayOpen ? (
+            <View pointerEvents="none" style={styles.radarBarSlot}>
+              <ValueRadarBar
+                marker={radarMarker}
+                status={radarStatus}
+                width={Math.min(
+                  224,
+                  Math.max(168, controlDockWidth - moderateScale(28, 0.4)),
+                )}
+              />
+            </View>
+          ) : null}
+          <ScannerToolCarousel
+`;
+
+          if (!source.includes(carouselMarker)) {
+            throw new Error('Could not find ScannerToolCarousel insertion point.');
+          }
+          source = source.replace(carouselMarker, carouselReplacement);
+
+          const styleMarker = `  scannerArea: {
+`;
+          const styleReplacement = `  radarBubbleSlot: {
+    width: "100%",
+    alignItems: "flex-end",
+    paddingBottom: 8,
+    zIndex: 12,
+  },
+  radarBarSlot: {
+    width: "100%",
+    alignItems: "center",
+    paddingBottom: 7,
+  },
+  scannerArea: {
+`;
+
+          if (!source.includes(styleMarker)) {
+            throw new Error('Could not find scannerArea style insertion point.');
+          }
+          source = source.replace(styleMarker, styleReplacement);
+
+          fs.writeFileSync(path, source);
+          NODE
+
+      - name: Commit scanner integration
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add components/scanner/scanner-screen.native.tsx
+          if git diff --cached --quiet; then
+            echo "No scanner changes were needed."
+            exit 0
+          fi
+          git commit -m "Render Value Radar bubble and bar outside camera overlay"
+          git push origin master
