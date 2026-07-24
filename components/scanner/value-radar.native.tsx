@@ -236,7 +236,7 @@ export function ValueRadarOverlay({
 const styles = StyleSheet.create({
   staticHeaderBand: {
     position: "absolute",
-    height: 70,
+    height: 128,
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: "rgba(88, 223, 232, 0.12)",
