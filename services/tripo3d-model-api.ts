@@ -2,7 +2,6 @@ import {
   APPWRITE,
   ExecutionMethod,
   functions,
-  getAppwriteCoreServices,
   storage,
   tablesDB,
 } from "@/lib/appwrite";
@@ -34,8 +33,6 @@ export type Tripo3dModelResult = {
   modelMimeType: string;
   modelSizeBytes: number;
   modelUrl: string;
-  modelProjectId: string;
-  modelJwt: string;
 };
 
 export type WaitForTripo3dModelInput = {
@@ -44,8 +41,9 @@ export type WaitForTripo3dModelInput = {
 
 function requiredConfiguration() {
   const missing = [
-    !APPWRITE.endpoint ? "EXPO_PUBLIC_APPWRITE_ENDPOINT" : null,
-    !APPWRITE.databaseId ? "EXPO_PUBLIC_APPWRITE_DATABASE_ID" : null,
+    !APPWRITE.databaseId
+      ? "EXPO_PUBLIC_APPWRITE_DATABASE_ID"
+      : null,
     !APPWRITE.modelFilesTableId
       ? "EXPO_PUBLIC_APPWRITE_MODEL_FILES_COLLECTION_ID"
       : null,
@@ -55,27 +53,45 @@ function requiredConfiguration() {
     !APPWRITE.imageToModelFunctionId
       ? "EXPO_PUBLIC_APPWRITE_IMAGE_TO_MODEL_FUNCTION_ID"
       : null,
-  ].filter((value): value is string => Boolean(value));
+  ].filter(
+    (value): value is string => Boolean(value),
+  );
 
   if (missing.length > 0) {
     throw new Error(
-      `KeepFlip 3D model loading needs Appwrite configuration: ${missing.join(", ")}`,
+      `KeepFlip 3D model loading needs Appwrite configuration: ${missing.join(
+        ", ",
+      )}`,
     );
   }
 
   return {
-    endpoint: APPWRITE.endpoint.replace(/\/+$/, ""),
     databaseId: APPWRITE.databaseId,
-    modelFilesTableId: APPWRITE.modelFilesTableId,
-    modelBucketId: APPWRITE.modelFilesBucketId,
-    functionId: APPWRITE.imageToModelFunctionId,
+    modelFilesTableId:
+      APPWRITE.modelFilesTableId,
+    modelBucketId:
+      APPWRITE.modelFilesBucketId,
+    functionId:
+      APPWRITE.imageToModelFunctionId,
   };
 }
 
 function errorCode(error: unknown) {
-  if (!error || typeof error !== "object" || !("code" in error)) return null;
-  const value = Number((error as { code?: unknown }).code);
-  return Number.isFinite(value) ? value : null;
+  if (
+    !error ||
+    typeof error !== "object" ||
+    !("code" in error)
+  ) {
+    return null;
+  }
+
+  const value = Number(
+    (error as { code?: unknown }).code,
+  );
+
+  return Number.isFinite(value)
+    ? value
+    : null;
 }
 
 function isNotFound(error: unknown) {
@@ -88,38 +104,15 @@ function sleep(milliseconds: number) {
   });
 }
 
-function createModelViewUrl(
-  endpoint: string,
-  bucketId: string,
-  fileId: string,
-) {
-  return (
-    `${endpoint}/storage/buckets/${encodeURIComponent(bucketId)}` +
-    `/files/${encodeURIComponent(fileId)}/view`
-  );
-}
-
-async function createModelJwt() {
-  const { account } = getAppwriteCoreServices();
-  const jwtResult = await account.createJWT({ duration: 900 });
-  const modelJwt = jwtResult.jwt?.trim();
-
-  if (!modelJwt) {
-    throw new Error(
-      "KeepFlip could not authorize the 3D viewer with Appwrite.",
-    );
-  }
-
-  return modelJwt;
-}
-
 async function executeImageToModelFunction(
   functionId: string,
   itemPhotoId: string,
 ) {
   await functions.createExecution({
     functionId,
-    body: JSON.stringify({ itemPhotoId }),
+    body: JSON.stringify({
+      itemPhotoId,
+    }),
     async: true,
     xpath: "/",
     method: ExecutionMethod.POST,
@@ -136,16 +129,29 @@ async function waitForReadyModelRow(
 ): Promise<ModelFileRow> {
   const startedAt = Date.now();
 
-  while (Date.now() - startedAt < MODEL_TIMEOUT_MS) {
+  while (
+    Date.now() - startedAt <
+    MODEL_TIMEOUT_MS
+  ) {
     try {
-      const row = (await tablesDB.getRow({
-        databaseId,
-        tableId: modelFilesTableId,
-        rowId: itemPhotoId,
-      })) as unknown as ModelFileRow;
-      const status = row.status?.trim().toLowerCase();
+      const row =
+        (await tablesDB.getRow({
+          databaseId,
+          tableId: modelFilesTableId,
+          rowId: itemPhotoId,
+        })) as unknown as ModelFileRow;
 
-      if (status === "ready" && row.fileId?.trim()) return row;
+      const status = row.status
+        ?.trim()
+        .toLowerCase();
+
+        if (
+          status === "ready" &&
+          row.fileId?.trim() &&
+          row.errorMessage?.trim()
+        ) {
+          return row;
+        }
 
       if (status === "failed") {
         throw new Error(
@@ -154,7 +160,9 @@ async function waitForReadyModelRow(
         );
       }
     } catch (error) {
-      if (!isNotFound(error)) throw error;
+      if (!isNotFound(error)) {
+        throw error;
+      }
     }
 
     await sleep(MODEL_POLL_INTERVAL_MS);
@@ -166,29 +174,41 @@ async function waitForReadyModelRow(
 }
 
 /**
- * Invokes the image-to-model Function and waits for its durable Appwrite GLB.
+ * Invokes the image-to-model Function, then reads
+ * Tripo's direct model URL from the durable
+ * model-files row written by the asynchronous Function.
  */
 export async function waitForTripo3dModel({
   itemPhotoId,
 }: WaitForTripo3dModelInput): Promise<Tripo3dModelResult> {
-  const cleanedItemPhotoId = itemPhotoId.trim();
+  const cleanedItemPhotoId =
+    itemPhotoId.trim();
+
   if (!cleanedItemPhotoId) {
-    throw new Error("An item photo row ID is required to load its 3D model.");
+    throw new Error(
+      "An item photo row ID is required to load its 3D model.",
+    );
   }
 
-  const configuration = requiredConfiguration();
+  const configuration =
+    requiredConfiguration();
 
   await executeImageToModelFunction(
     configuration.functionId,
     cleanedItemPhotoId,
   );
 
-  const modelRow = await waitForReadyModelRow(
-    configuration.databaseId,
-    configuration.modelFilesTableId,
-    cleanedItemPhotoId,
-  );
-  const modelFileId = modelRow.fileId?.trim();
+  const modelRow =
+    await waitForReadyModelRow(
+      configuration.databaseId,
+      configuration.modelFilesTableId,
+      cleanedItemPhotoId,
+    );
+
+  const modelFileId =
+    modelRow.fileId?.trim();
+
+    const modelUrl = modelRow.errorMessage?.trim();
 
   if (!modelFileId) {
     throw new Error(
@@ -196,27 +216,64 @@ export async function waitForTripo3dModel({
     );
   }
 
-  const modelFile = (await storage.getFile({
-    bucketId: configuration.modelBucketId,
-    fileId: modelFileId,
-  })) as AppwriteFile;
-  const modelUrl = createModelViewUrl(
-    configuration.endpoint,
-    configuration.modelBucketId,
+  if (!modelUrl) {
+    throw new Error(
+      "The model record is ready, but it does not contain Tripo's direct model URL.",
+    );
+  }
+
+  let parsedModelUrl: URL;
+
+  try {
+    parsedModelUrl = new URL(modelUrl);
+  } catch {
+    throw new Error(
+      "Tripo returned an invalid direct model URL.",
+    );
+  }
+
+  if (
+    parsedModelUrl.protocol !== "https:" &&
+    parsedModelUrl.protocol !== "http:"
+  ) {
+    throw new Error(
+      "Tripo returned an unsupported model URL.",
+    );
+  }
+
+  const modelFile =
+    (await storage.getFile({
+      bucketId:
+        configuration.modelBucketId,
+      fileId: modelFileId,
+    })) as AppwriteFile;
+
+  console.log(
+    "[KeepFlip Tripo3D] Model file:",
     modelFileId,
   );
-  const modelJwt = await createModelJwt();
+
+  console.log(
+    "[KeepFlip Tripo3D] Direct model URL:",
+    modelUrl,
+  );
 
   return {
     itemPhotoId: cleanedItemPhotoId,
-    sourceFileId: modelRow.sourceFileId?.trim() || cleanedItemPhotoId,
-    modelBucketId: configuration.modelBucketId,
+    sourceFileId:
+      modelRow.sourceFileId?.trim() ||
+      cleanedItemPhotoId,
+    modelBucketId:
+      configuration.modelBucketId,
     modelFileId,
-    modelFileName: modelFile.name || `${modelFileId}.glb`,
-    modelMimeType: modelFile.mimeType || "model/gltf-binary",
-    modelSizeBytes: modelFile.sizeOriginal || 0,
+    modelFileName:
+      modelFile.name ||
+      `${modelFileId}.glb`,
+    modelMimeType:
+      modelFile.mimeType ||
+      "model/gltf-binary",
+    modelSizeBytes:
+      modelFile.sizeOriginal || 0,
     modelUrl,
-    modelProjectId: APPWRITE.projectId,
-    modelJwt,
   };
 }

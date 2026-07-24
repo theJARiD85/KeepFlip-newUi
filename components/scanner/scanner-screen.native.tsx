@@ -10,7 +10,7 @@ import {
   useCameraDevice,
   useCameraPermission,
   usePhotoOutput,
-} from 'react-native-vision-camera';
+} from "react-native-vision-camera";
 import Animated, {
   FadeIn,
   FadeOut,
@@ -22,10 +22,6 @@ import {
   ScannerAtmosphere,
   type ScannerAtmospherePhase,
 } from "@/components/scanner/scanner-atmosphere";
-import {
-  MagicTouchTraceOverlay,
-  useMagicTouchTrace,
-} from "@/components/scanner/magic-touch-trace.native";
 import {
   ScannerToolCarousel,
   scannerTools,
@@ -44,6 +40,7 @@ import {
 import { ItemAnalysisBubbles } from "@/components/scanner/item-analysis-bubbles";
 import { ItemAnalysisResultStage } from "@/components/scanner/item-analysis-result-stage";
 import { toItemAnalysisState } from "@/components/scanner/item-analysis-view-model";
+import ModelProjectionScanner from "@/components/scanner/model-projection-scanner.native";
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { useKeepFlipMenu } from "@/components/navigation/keepflip-menu-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -59,7 +56,6 @@ import {
   type ItemAnalysisSuccess,
 } from "@/services/item-analysis-service";
 import { saveAnalyzedItemToInventory } from "@/services/inventory-service";
-import { MeshViewer } from "@/components/scanner/mesh-viewer.native";
 import {
   createScanId,
   saveScannerPhoto,
@@ -318,14 +314,9 @@ export default function ScannerScreen() {
     !isMenuOpen &&
     !isPickingPhoto &&
     !isScannerOverlayOpen;
-  const {
-    frameOutput: traceFrameOutput,
-    segments: traceSegments,
-    status: traceStatus,
-  } = useMagicTouchTrace(isCameraActive);
   const cameraOutputs = useMemo(
-    () => [photoOutput, traceFrameOutput],
-    [photoOutput, traceFrameOutput],
+    () => [photoOutput],
+    [photoOutput],
   );
 
   const handleToggleTorch = useCallback(async () => {
@@ -459,10 +450,18 @@ export default function ScannerScreen() {
     [user?.$id],
   );
 
-  const handleModelViewerError = useCallback((message: string) => {
+  const handleModelProjectionError = useCallback((message: string) => {
     modelGenerationStateRef.current = "idle";
-    setGeneratedModel(null);
     setModelGenerationError(message);
+  
+    console.error(
+      "[KeepFlip Tripo3D] Model projection failed:",
+      message,
+    );
+  
+    // Do not clear generatedModel here.
+    // Clearing it unmounts ModelProjectionScanner
+    // and restores the uploaded cover photo.
   }, []);
 
   const clearAtmosphereTimer = useCallback(() => {
@@ -1502,13 +1501,10 @@ export default function ScannerScreen() {
             style={StyleSheet.absoluteFill}
           >
             {generatedModel && analysisState?.status === "result" ? (
-              <MeshViewer
-                jwt={generatedModel.modelJwt}
-                modelUrl={generatedModel.modelUrl}
-                onError={handleModelViewerError}
-                projectId={generatedModel.modelProjectId}
-                style={StyleSheet.absoluteFill}
-              />
+                <ModelProjectionScanner
+                  modelUrl={generatedModel.modelUrl}
+                  onError={handleModelProjectionError}
+                />
             ) : (
                 <Image
                   cachePolicy="memory-disk"
@@ -1526,7 +1522,7 @@ export default function ScannerScreen() {
             styles.cameraScrim,
             generatedModel &&
               analysisState?.status === "result" &&
-              styles.cameraScrimWithModel,
+              styles.cameraScrimWithProjection,
           ]}
         />
         {analysisState?.status === "analyzing" ? (
@@ -1644,12 +1640,6 @@ export default function ScannerScreen() {
           >
             <View pointerEvents="none" style={styles.frameColorWash} />
             <ScannerAtmosphere phase={renderedAtmospherePhase} />
-            <MagicTouchTraceOverlay
-              height={scannerHeight}
-              segments={traceSegments}
-              status={traceStatus}
-              width={scannerWidth}
-            />
             <View
               style={[
                 styles.corner,
@@ -1861,7 +1851,7 @@ const styles = StyleSheet.create({
       linear-gradient(to bottom, rgba(2, 2, 4, 0.94) 0%, rgba(3, 3, 7, 0.12) 44%, rgba(6, 4, 10, 0.90) 100%)
     `,
   },
-  cameraScrimWithModel: {
+  cameraScrimWithProjection: {
     opacity: 0.48,
   },
   analysisAtmosphereHost: {

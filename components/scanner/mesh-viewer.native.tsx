@@ -731,7 +731,7 @@ export function MeshViewer({
     const resolveBundledModel = async () => {
       try {
         const asset = Asset.fromModule(
-          require("../../assets/models/VisionCamera_8975123418007050576.glb"),
+          modelUrl,
         );
 
         if (!asset.localUri) {
@@ -823,9 +823,9 @@ export function MeshViewer({
               <Suspense fallback={null}>
                 <HologramModel
                   compact={isScannerPreview}
-                  key={localModelUri}
+                  key={modelUrl}
                   onLoad={handleModelLoaded}
-                  uri={localModelUri}
+                  uri={modelUrl}
                 />
               </Suspense>
 
