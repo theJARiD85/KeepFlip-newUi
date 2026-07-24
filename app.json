@@ -4,7 +4,7 @@
     "slug": "keepflip",
     "version": "1.0.7",
     "orientation": "portrait",
-    "icon": "./assets/images/icon (2).png",
+    "icon": "./assets/images/icon.png",
     "scheme": "keepflip",
     "userInterfaceStyle": "dark",
     "ios": {
@@ -21,13 +21,13 @@
       ],
       "adaptiveIcon": {
         "backgroundColor": "#030305",
-        "foregroundImage": "./assets/images/icon (2).png"
+        "foregroundImage": "./assets/images/icon.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/icon (2).png"
+      "favicon": "./assets/images/icon.png"
     },
     "plugins": [
       "./plugins/with-appodeal-repository",

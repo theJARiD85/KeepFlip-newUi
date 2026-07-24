@@ -1,8 +1,14 @@
 import {
   Canvas as SkiaCanvas,
   BlurMask,
+  Group,
+  LinearGradient,
+  Line,
+  Oval,
   Path,
+  RadialGradient,
   Rect,
+  vec,
 } from "@shopify/react-native-skia";
 import {
   Canvas as ThreeCanvas,
@@ -27,7 +33,9 @@ import {
   type ViewStyle,
 } from "react-native";
 import {
+  cancelAnimation,
   Easing,
+  useDerivedValue,
   useSharedValue,
   withRepeat,
   withTiming,
@@ -37,8 +45,42 @@ import {
   GLTFLoader,
 } from "three/examples/jsm/loaders/GLTFLoader.js";
 
-const MAX_PROJECTED_TRIANGLES = 6000;
+import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+
+const MAX_PROJECTED_TRIANGLES = 3000;
 const PROJECTION_UPDATES_PER_SECOND = 6;
+
+type WireframeDepthPaths = {
+  far: string;
+  mid: string;
+  near: string;
+};
+
+type ProjectedTriangle = {
+  depth: number;
+  path: string;
+};
+
+type PerspectiveGridLine = {
+  color: string;
+  key: string;
+  opacity: number;
+  p1: {
+    x: number;
+    y: number;
+  };
+  p2: {
+    x: number;
+    y: number;
+  };
+  strokeWidth: number;
+};
+
+const EMPTY_WIREFRAME_DEPTH_PATHS: WireframeDepthPaths = {
+  far: "",
+  mid: "",
+  near: "",
+};
 
 type ModelProjectionScannerProps = {
   modelUrl: string;
@@ -51,7 +93,7 @@ type ModelProjectorProps = Pick<
   "modelUrl" | "onError"
 > & {
   onProjectionUpdate: (
-    svgPathString: string,
+    depthPaths: WireframeDepthPaths,
   ) => void;
 };
 
@@ -129,7 +171,9 @@ function ModelProjector({
     let cancelled = false;
 
     setLoadedScene(null);
-    onProjectionUpdate("");
+    onProjectionUpdate(
+      EMPTY_WIREFRAME_DEPTH_PATHS,
+    );
 
     async function loadModel() {
       try {
@@ -469,7 +513,8 @@ function ModelProjector({
 
       projectionElapsedRef.current = 0;
 
-      const pathParts: string[] = [];
+      const projectedTriangles:
+        ProjectedTriangle[] = [];
 
       const projectedVertex =
         new THREE.Vector3();
@@ -519,6 +564,7 @@ const mesh =
           ) {
             const coordinates: number[] =
               [];
+            let depth = 0;
 
             for (
               let corner = 0;
@@ -548,6 +594,9 @@ const mesh =
                 camera,
               );
 
+              depth +=
+                projectedVertex.z;
+
               coordinates.push(
                 (projectedVertex.x *
                   0.5 +
@@ -560,18 +609,91 @@ const mesh =
               );
             }
 
-            pathParts.push(
-              `M ${coordinates[0]} ${coordinates[1]} ` +
+            projectedTriangles.push({
+              depth: depth / 3,
+              path:
+                `M ${coordinates[0]} ${coordinates[1]} ` +
                 `L ${coordinates[2]} ${coordinates[3]} ` +
                 `L ${coordinates[4]} ${coordinates[5]} Z`,
-            );
+            });
           }
         },
       );
 
-      onProjectionUpdate(
-        pathParts.join(" "),
+      if (
+        projectedTriangles.length === 0
+      ) {
+        onProjectionUpdate(
+          EMPTY_WIREFRAME_DEPTH_PATHS,
+        );
+        return;
+      }
+
+      let minimumDepth =
+        Number.POSITIVE_INFINITY;
+      let maximumDepth =
+        Number.NEGATIVE_INFINITY;
+
+      for (
+        const triangle of
+        projectedTriangles
+      ) {
+        minimumDepth = Math.min(
+          minimumDepth,
+          triangle.depth,
+        );
+        maximumDepth = Math.max(
+          maximumDepth,
+          triangle.depth,
+        );
+      }
+
+      const depthRange = Math.max(
+        maximumDepth - minimumDepth,
+        0.0001,
       );
+
+      const farPaths: string[] = [];
+      const midPaths: string[] = [];
+      const nearPaths: string[] = [];
+
+      for (
+        const triangle of
+        projectedTriangles
+      ) {
+        const normalizedDepth =
+          (triangle.depth -
+            minimumDepth) /
+          depthRange;
+
+        /*
+         * Projected NDC depth increases
+         * away from the camera. Separating
+         * the mesh here lets Skia express
+         * real atmospheric perspective.
+         */
+        if (normalizedDepth < 0.34) {
+          nearPaths.push(
+            triangle.path,
+          );
+        } else if (
+          normalizedDepth < 0.7
+        ) {
+          midPaths.push(
+            triangle.path,
+          );
+        } else {
+          farPaths.push(
+            triangle.path,
+          );
+        }
+      }
+
+      onProjectionUpdate({
+        far: farPaths.join(" "),
+        mid: midPaths.join(" "),
+        near: nearPaths.join(" "),
+      });
     },
   );
 
@@ -611,33 +733,143 @@ export default function ModelProjectionScanner({
     });
 
   const [
-    wireframePath,
-    setWireframePath,
-  ] = useState("");
+    wireframeDepthPaths,
+    setWireframeDepthPaths,
+  ] = useState<WireframeDepthPaths>(
+    EMPTY_WIREFRAME_DEPTH_PATHS,
+  );
 
   const scanProgress =
     useSharedValue(0);
 
-    const handleLayout = useCallback(
-      (event: LayoutChangeEvent) => {
-        const { height, width } =
-          event.nativeEvent.layout;
-    
-        console.log(
-          "[KeepFlip Tripo3D] Projection layout:",
-          {
-            height,
-            width,
-          },
-        );
-    
-        setLayout({
+  const scanGlowY =
+    useDerivedValue(
+      () => scanProgress.value - 8,
+    );
+
+  const perspectiveGridLines =
+    useMemo<PerspectiveGridLine[]>(
+      () => {
+        if (
+          layout.width <= 0 ||
+          layout.height <= 0
+        ) {
+          return [];
+        }
+
+        const lines:
+          PerspectiveGridLine[] = [];
+        const horizonY =
+          layout.height * 0.66;
+        const vanishingX =
+          layout.width * 0.52;
+
+        for (
+          let index = 0;
+          index < 7;
+          index += 1
+        ) {
+          const progress =
+            (index + 1) / 7;
+          const y =
+            horizonY +
+            (layout.height -
+              horizonY) *
+              progress *
+              progress;
+
+          lines.push({
+            color:
+              index % 2 === 0
+                ? theme.colors
+                    .scannerCyan
+                : theme.colors
+                    .scannerViolet,
+            key: `floor-horizontal-${index}`,
+            opacity:
+              0.025 +
+              progress * 0.075,
+            p1: vec(0, y),
+            p2: vec(
+              layout.width,
+              y,
+            ),
+            strokeWidth:
+              0.4 +
+              progress * 0.35,
+          });
+        }
+
+        for (
+          let index = 0;
+          index < 7;
+          index += 1
+        ) {
+          const progress =
+            index / 6;
+
+          lines.push({
+            color:
+              index === 3
+                ? theme.colors.gold
+                : theme.colors
+                    .scannerViolet,
+            key: `floor-ray-${index}`,
+            opacity:
+              index === 3
+                ? 0.07
+                : 0.045,
+            p1: vec(
+              layout.width *
+                progress,
+              layout.height,
+            ),
+            p2: vec(
+              vanishingX,
+              horizonY,
+            ),
+            strokeWidth:
+              index === 3
+                ? 0.75
+                : 0.55,
+          });
+        }
+
+        return lines;
+      },
+      [
+        layout.height,
+        layout.width,
+      ],
+    );
+
+  const hasWireframe =
+    Boolean(
+      wireframeDepthPaths.far ||
+        wireframeDepthPaths.mid ||
+        wireframeDepthPaths.near,
+    );
+
+  const handleLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      const { height, width } =
+        event.nativeEvent.layout;
+
+      console.log(
+        "[KeepFlip Tripo3D] Projection layout:",
+        {
           height,
           width,
-        });
-      },
-      [],
-    );
+        },
+      );
+
+      setLayout({
+        height,
+        width,
+      });
+    },
+    [],
+  );
 
   useEffect(() => {
     if (layout.height <= 0) {
@@ -659,6 +891,12 @@ export default function ModelProjectionScanner({
       -1,
       true,
     );
+
+    return () => {
+      cancelAnimation(
+        scanProgress,
+      );
+    };
   }, [
     layout.height,
     scanProgress,
@@ -682,8 +920,8 @@ export default function ModelProjectionScanner({
             styles.hiddenThreeContainer
           }
         >
-        <ThreeCanvas
-          frameloop="always"
+          <ThreeCanvas
+            frameloop="always"
             camera={{
               far: 100,
               fov: 45,
@@ -691,13 +929,13 @@ export default function ModelProjectionScanner({
               position: [0, 0, 4],
             }}
           >
-          <ModelProjector
-            modelUrl={modelUrl}
-            onError={onError}
-            onProjectionUpdate={
-              setWireframePath
-            }
-          />
+            <ModelProjector
+              modelUrl={modelUrl}
+              onError={onError}
+              onProjectionUpdate={
+                setWireframeDepthPaths
+              }
+            />
           </ThreeCanvas>
         </View>
       </ProjectionErrorBoundary>
@@ -714,46 +952,365 @@ export default function ModelProjectionScanner({
           ]}
         >
           <Rect
-            color="#010702"
             height={layout.height}
-            opacity={0.2}
             width={layout.width}
             x={0}
             y={0}
-          />
+          >
+            <LinearGradient
+              colors={[
+                "#0C0912",
+                theme.colors
+                  .backgroundDeep,
+                "#06040A",
+              ]}
+              end={vec(
+                layout.width,
+                layout.height,
+              )}
+              positions={[
+                0,
+                0.52,
+                1,
+              ]}
+              start={vec(0, 0)}
+            />
+          </Rect>
 
-          {wireframePath ? (
-            <>
-              <Path
-                color="#00ff66"
-                opacity={0.85}
-                path={wireframePath}
-                strokeWidth={4}
-                style="stroke"
-              >
-                <BlurMask
-                  blur={6}
-                  style="outer"
+          <Rect
+            height={layout.height}
+            width={layout.width}
+            x={0}
+            y={0}
+          >
+            <RadialGradient
+              c={vec(
+                layout.width * 0.76,
+                layout.height * 0.32,
+              )}
+              colors={[
+                "rgba(88, 223, 232, 0.17)",
+                "rgba(88, 223, 232, 0.045)",
+                "rgba(88, 223, 232, 0)",
+              ]}
+              positions={[
+                0,
+                0.38,
+                1,
+              ]}
+              r={
+                Math.max(
+                  layout.width,
+                  layout.height,
+                ) * 0.72
+              }
+            />
+          </Rect>
+
+          <Rect
+            height={layout.height}
+            width={layout.width}
+            x={0}
+            y={0}
+          >
+            <RadialGradient
+              c={vec(
+                layout.width * 0.16,
+                layout.height * 0.58,
+              )}
+              colors={[
+                "rgba(141, 114, 255, 0.15)",
+                "rgba(141, 114, 255, 0.04)",
+                "rgba(141, 114, 255, 0)",
+              ]}
+              positions={[
+                0,
+                0.42,
+                1,
+              ]}
+              r={
+                Math.max(
+                  layout.width,
+                  layout.height,
+                ) * 0.68
+              }
+            />
+          </Rect>
+
+          <Rect
+            height={layout.height}
+            width={layout.width}
+            x={0}
+            y={0}
+          >
+            <RadialGradient
+              c={vec(
+                layout.width * 0.54,
+                layout.height * 0.8,
+              )}
+              colors={[
+                "rgba(215, 168, 74, 0.13)",
+                "rgba(215, 168, 74, 0.025)",
+                "rgba(215, 168, 74, 0)",
+              ]}
+              positions={[
+                0,
+                0.35,
+                1,
+              ]}
+              r={
+                Math.max(
+                  layout.width,
+                  layout.height,
+                ) * 0.56
+              }
+            />
+          </Rect>
+
+          <Group>
+            {perspectiveGridLines.map(
+              (line) => (
+                <Line
+                  key={line.key}
+                  color={line.color}
+                  opacity={
+                    line.opacity
+                  }
+                  p1={line.p1}
+                  p2={line.p2}
+                  strokeWidth={
+                    line.strokeWidth
+                  }
                 />
-              </Path>
+              ),
+            )}
+          </Group>
 
-              <Path
-                color="#d2ffd9"
-                opacity={0.8}
-                path={wireframePath}
-                strokeWidth={1}
-                style="stroke"
-              />
+          <Rect
+            height={2}
+            opacity={0.2}
+            width={layout.width}
+            x={0}
+            y={
+              layout.height * 0.66 -
+              1
+            }
+          >
+            <LinearGradient
+              colors={[
+                "rgba(88, 223, 232, 0)",
+                theme.colors
+                  .scannerCyan,
+                theme.colors.goldBright,
+                theme.colors
+                  .scannerViolet,
+                "rgba(141, 114, 255, 0)",
+              ]}
+              end={vec(
+                layout.width,
+                layout.height * 0.66,
+              )}
+              positions={[
+                0,
+                0.28,
+                0.52,
+                0.72,
+                1,
+              ]}
+              start={vec(
+                0,
+                layout.height * 0.66,
+              )}
+            />
+            <BlurMask
+              blur={6}
+              style="normal"
+            />
+          </Rect>
+
+          <Oval
+            color="rgba(0, 0, 0, 0.72)"
+            height={
+              layout.height * 0.11
+            }
+            width={
+              layout.width * 0.66
+            }
+            x={
+              layout.width * 0.17
+            }
+            y={
+              layout.height * 0.755
+            }
+          >
+            <BlurMask
+              blur={22}
+              style="normal"
+            />
+          </Oval>
+
+          <Oval
+            color="rgba(88, 223, 232, 0.11)"
+            height={
+              layout.height * 0.055
+            }
+            width={
+              layout.width * 0.48
+            }
+            x={
+              layout.width * 0.26
+            }
+            y={
+              layout.height * 0.78
+            }
+          >
+            <BlurMask
+              blur={16}
+              style="normal"
+            />
+          </Oval>
+
+          {hasWireframe ? (
+            <>
+              {wireframeDepthPaths.far ? (
+                <Path
+                  color={
+                    theme.colors
+                      .scannerViolet
+                  }
+                  opacity={0.28}
+                  path={
+                    wireframeDepthPaths.far
+                  }
+                  strokeCap="round"
+                  strokeJoin="round"
+                  strokeWidth={0.6}
+                  style="stroke"
+                />
+              ) : null}
+
+              {wireframeDepthPaths.mid ? (
+                <Path
+                  color={
+                    theme.colors
+                      .scannerCyan
+                  }
+                  opacity={0.54}
+                  path={
+                    wireframeDepthPaths.mid
+                  }
+                  strokeCap="round"
+                  strokeJoin="round"
+                  strokeWidth={0.84}
+                  style="stroke"
+                />
+              ) : null}
+
+              {wireframeDepthPaths.near ? (
+                <>
+                  <Path
+                    color={
+                      theme.colors.gold
+                    }
+                    opacity={0.24}
+                    path={
+                      wireframeDepthPaths.near
+                    }
+                    strokeWidth={3.6}
+                    style="stroke"
+                  >
+                    <BlurMask
+                      blur={5.5}
+                      style="outer"
+                    />
+                  </Path>
+
+                  <Path
+                    color={
+                      theme.colors
+                        .goldBright
+                    }
+                    opacity={0.9}
+                    path={
+                      wireframeDepthPaths.near
+                    }
+                    strokeCap="round"
+                    strokeJoin="round"
+                    strokeWidth={1.2}
+                    style="stroke"
+                  />
+                </>
+              ) : null}
             </>
           ) : null}
 
           <Rect
-            color="#00ff66"
-            height={2}
+            height={16}
+            opacity={0.22}
+            width={layout.width}
+            x={0}
+            y={scanGlowY}
+          >
+            <LinearGradient
+              colors={[
+                "rgba(88, 223, 232, 0)",
+                theme.colors
+                  .scannerCyan,
+                theme.colors.goldBright,
+                theme.colors
+                  .scannerViolet,
+                "rgba(141, 114, 255, 0)",
+              ]}
+              end={vec(
+                layout.width,
+                0,
+              )}
+              positions={[
+                0,
+                0.24,
+                0.5,
+                0.76,
+                1,
+              ]}
+              start={vec(0, 0)}
+            />
+            <BlurMask
+              blur={6}
+              style="normal"
+            />
+          </Rect>
+
+          <Rect
+            height={1.5}
+            opacity={0.94}
             width={layout.width}
             x={0}
             y={scanProgress}
-          />
+          >
+            <LinearGradient
+              colors={[
+                "rgba(88, 223, 232, 0)",
+                theme.colors
+                  .scannerCyan,
+                theme.colors.goldBright,
+                theme.colors
+                  .scannerViolet,
+                "rgba(141, 114, 255, 0)",
+              ]}
+              end={vec(
+                layout.width,
+                0,
+              )}
+              positions={[
+                0,
+                0.26,
+                0.5,
+                0.74,
+                1,
+              ]}
+              start={vec(0, 0)}
+            />
+          </Rect>
         </SkiaCanvas>
       ) : null}
     </View>
@@ -763,7 +1320,8 @@ export default function ModelProjectionScanner({
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: '#000',
+    backgroundColor:
+      theme.colors.backgroundDeep,
     opacity: 1,
   },
   hiddenThreeContainer: {

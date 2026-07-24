@@ -23,6 +23,11 @@ import {
   type ScannerAtmospherePhase,
 } from "@/components/scanner/scanner-atmosphere";
 import {
+  ValueRadarOverlay,
+  useValueRadar,
+  type ValueRadarViewport,
+} from "@/components/scanner/value-radar.native";
+import {
   ScannerToolCarousel,
   scannerTools,
   type ScannerToolId,
@@ -231,6 +236,7 @@ export default function ScannerScreen() {
   const isFocused = useIsFocused();
   const { closeMenu, isMenuOpen } = useKeepFlipMenu();
   const cameraRef = useRef<CameraRef>(null);
+  const scanFrameRef = useRef<View>(null);
   const captureLockRef = useRef(false);
   const multiScanSequenceRef = useRef(0);
   const uploadSequenceRef = useRef(0);
@@ -263,6 +269,8 @@ export default function ScannerScreen() {
   const [appState, setAppState] = useState(AppState.currentState);
   const [message, setMessage] = useState("Center one item inside the frame");
   const [captureFeedback, setCaptureFeedback] = useState<string | null>(null);
+  const [radarViewport, setRadarViewport] =
+    useState<ValueRadarViewport | null>(null);
   const [atmospherePhase, setAtmospherePhase] =
     useState<ScannerAtmospherePhase>("idle");
   const [selectedTool, setSelectedTool] = useState<ScannerToolId>("single");
@@ -314,10 +322,48 @@ export default function ScannerScreen() {
     !isMenuOpen &&
     !isPickingPhoto &&
     !isScannerOverlayOpen;
+  const {
+    frameOutput: radarFrameOutput,
+    marker: radarMarker,
+    status: radarStatus,
+  } = useValueRadar(isCameraActive, radarViewport ?? undefined);
   const cameraOutputs = useMemo(
-    () => [photoOutput],
-    [photoOutput],
+    () => [photoOutput, radarFrameOutput],
+    [photoOutput, radarFrameOutput],
   );
+
+  const handleScanFrameLayout = useCallback(() => {
+    requestAnimationFrame(() => {
+      scanFrameRef.current?.measureInWindow((x, y, width, height) => {
+        if (width <= 0 || height <= 0) return;
+
+        setRadarViewport((current) => {
+          const next = {
+            height,
+            previewHeight: screenHeight,
+            previewWidth: screenWidth,
+            width,
+            x,
+            y,
+          };
+
+          if (
+            current &&
+            Math.abs(current.x - next.x) < 0.5 &&
+            Math.abs(current.y - next.y) < 0.5 &&
+            Math.abs(current.width - next.width) < 0.5 &&
+            Math.abs(current.height - next.height) < 0.5 &&
+            current.previewWidth === next.previewWidth &&
+            current.previewHeight === next.previewHeight
+          ) {
+            return current;
+          }
+
+          return next;
+        });
+      });
+    });
+  }, [screenHeight, screenWidth]);
 
   const handleToggleTorch = useCallback(async () => {
     if (
@@ -1525,6 +1571,31 @@ export default function ScannerScreen() {
               styles.cameraScrimWithProjection,
           ]}
         />
+        {!isScannerOverlayOpen ? (
+          <View pointerEvents="box-none" style={styles.radarOverlayHost}>
+            <ValueRadarOverlay
+              disabled={
+                isCapturing ||
+                isPickingPhoto ||
+                isMenuOpen ||
+                !isCameraReady
+              }
+              focusBounds={radarViewport}
+              height={screenHeight}
+              marker={radarMarker}
+              onMarkerPress={() => {
+                setSelectedTool("single");
+                setMessage(
+                  "Potential find locked. Capturing for full KeepFlip analysis...",
+                );
+                void Haptics.selectionAsync().catch(() => undefined);
+                void handleToolActivate("single");
+              }}
+              status={radarStatus}
+              width={screenWidth}
+            />
+          </View>
+        ) : null}
         {analysisState?.status === "analyzing" ? (
         <Animated.View
           entering={FadeIn.duration(220)}
@@ -1627,6 +1698,8 @@ export default function ScannerScreen() {
 
         <View style={styles.scannerArea}>
           <View
+            ref={scanFrameRef}
+            onLayout={handleScanFrameLayout}
             style={[
               styles.scanFrame,
               {
@@ -1639,35 +1712,6 @@ export default function ScannerScreen() {
             ]}
           >
             <View pointerEvents="none" style={styles.frameColorWash} />
-            <ScannerAtmosphere phase={renderedAtmospherePhase} />
-            <View
-              style={[
-                styles.corner,
-                styles.topLeft,
-                { width: scannerCornerSize, height: scannerCornerSize },
-              ]}
-            />
-            <View
-              style={[
-                styles.corner,
-                styles.topRight,
-                { width: scannerCornerSize, height: scannerCornerSize },
-              ]}
-            />
-            <View
-              style={[
-                styles.corner,
-                styles.bottomLeft,
-                { width: scannerCornerSize, height: scannerCornerSize },
-              ]}
-            />
-            <View
-              style={[
-                styles.corner,
-                styles.bottomRight,
-                { width: scannerCornerSize, height: scannerCornerSize },
-              ]}
-            />
             <Pressable
               accessibilityLabel="Toggle flashlight"
               accessibilityState={{
@@ -1711,16 +1755,7 @@ export default function ScannerScreen() {
                 }
               />
             </Pressable>
-            <View
-              style={[
-                styles.scanLine,
-                {
-                  left: moderateScale(18, 0.55),
-                  right: moderateScale(18, 0.55),
-                  height: Math.max(2, moderateScale(2, 0.5)),
-                },
-              ]}
-            />
+
           </View>
           {selectedTool === "multi" &&
           multiScanPhotos.length > 0 &&
@@ -1852,7 +1887,11 @@ const styles = StyleSheet.create({
     `,
   },
   cameraScrimWithProjection: {
-    opacity: 0.48,
+    opacity: 0.36,
+  },
+  radarOverlayHost: {
+    ...StyleSheet.absoluteFill,
+    zIndex: 14,
   },
   analysisAtmosphereHost: {
     ...StyleSheet.absoluteFill,
