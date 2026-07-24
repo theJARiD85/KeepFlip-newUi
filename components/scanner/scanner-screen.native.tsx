@@ -1593,6 +1593,49 @@ export default function ScannerScreen() {
               }}
               status={radarStatus}
               width={screenWidth}
+              flashButton={
+                <Pressable
+                  accessibilityLabel="Toggle flashlight"
+                  accessibilityState={{
+                    disabled:
+                      !canUseTorch ||
+                      !isCameraActive ||
+                      !isCameraReady ||
+                      isTorchUpdating,
+                  }}
+                  disabled={
+                    !canUseTorch ||
+                    !isCameraActive ||
+                    !isCameraReady ||
+                    isTorchUpdating
+                  }
+                  onPress={() => void handleToggleTorch()}
+                  style={[
+                    styles.iconButton,
+                    {
+                      width: torchButtonSize,
+                      height: torchButtonSize,
+                      borderRadius: torchButtonSize / 2,
+                    },
+                    torchEnabled && styles.iconButtonActive,
+                    (!canUseTorch ||
+                      !isCameraActive ||
+                      !isCameraReady ||
+                      isTorchUpdating) &&
+                      styles.iconButtonDisabled,
+                  ]}
+                >
+                  <IconSymbol
+                    name={torchEnabled ? "bolt.fill" : "bolt.slash.fill"}
+                    size={Math.round(moderateScale(22, 0.6))}
+                    color={
+                      torchEnabled
+                        ? theme.colors.background
+                        : theme.colors.goldBright
+                    }
+                  />
+                </Pressable>
+              }
             />
           </View>
         ) : null}
@@ -1712,49 +1755,6 @@ export default function ScannerScreen() {
             ]}
           >
             <View pointerEvents="none" style={styles.frameColorWash} />
-            <Pressable
-              accessibilityLabel="Toggle flashlight"
-              accessibilityState={{
-                disabled:
-                  !canUseTorch ||
-                  !isCameraActive ||
-                  !isCameraReady ||
-                  isTorchUpdating,
-              }}
-              disabled={
-                !canUseTorch ||
-                !isCameraActive ||
-                !isCameraReady ||
-                isTorchUpdating
-              }
-              onPress={() => void handleToggleTorch()}
-              style={[
-                styles.iconButton,
-                {
-                  width: torchButtonSize,
-                  height: torchButtonSize,
-                  marginLeft: moderateScale(20, 0.5),
-                  marginTop: moderateScale(20, 0.5),
-                  borderRadius: torchButtonSize / 2,
-                },
-                torchEnabled && styles.iconButtonActive,
-                (!canUseTorch ||
-                  !isCameraActive ||
-                  !isCameraReady ||
-                  isTorchUpdating) &&
-                  styles.iconButtonDisabled,
-              ]}
-            >
-              <IconSymbol
-                name={torchEnabled ? "bolt.fill" : "bolt.slash.fill"}
-                size={Math.round(moderateScale(22, 0.6))}
-                color={
-                  torchEnabled
-                    ? theme.colors.background
-                    : theme.colors.goldBright
-                }
-              />
-            </Pressable>
 
           </View>
           {selectedTool === "multi" &&

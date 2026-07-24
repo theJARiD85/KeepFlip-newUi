@@ -12,11 +12,17 @@ const MODEL_SIZE = 320;
 const MODEL_INPUT_BYTES = MODEL_SIZE * MODEL_SIZE * 3;
 const MAX_DETECTIONS = 25;
 const MIN_DETECTION_SCORE = 0.48;
-const FRAMES_BETWEEN_INFERENCES = 8;
+const FRAMES_BETWEEN_INFERENCES = 5;
 const STABLE_HITS_REQUIRED = 2;
 const MISSES_BEFORE_CLEAR = 4;
 const TRACK_MATCH_TOLERANCE = 0.28;
-const PUBLISH_MOVEMENT_THRESHOLD = 0.035;
+const PUBLISH_MOVEMENT_THRESHOLD = 0.0035;
+/**
+ * If a single inference takes longer than this budget, skip extra frames
+ * so the GC has room to run (prevents SuspendAll timeout on slower SoCs).
+ */
+const INFERENCE_TIME_BUDGET_MS = 55;
+const COOLDOWN_FRAMES = 24;
 
 const RADAR_FRAME_RESOLUTION = {
   width: 640,
@@ -220,6 +226,8 @@ export function useValueRadar(
   const publishedWidth = useSharedValue(0);
   const publishedHeight = useSharedValue(0);
   const errorReported = useSharedValue(false);
+  const lastInferenceMs = useSharedValue(0);
+  const cooldownRemaining = useSharedValue(0);
 
   const detector = useTensorflowModel(
     require("../../assets/models/efficientdet_lite0.tflite"),
@@ -351,15 +359,34 @@ export function useValueRadar(
 
       try {
         frameCounter.value += 1;
+
+        // --- Adaptive cooldown: back off after a heavy inference -----------
+        if (cooldownRemaining.value > 0) {
+          cooldownRemaining.value -= 1;
+          frame.dispose();
+          return;
+        }
+
         const shouldRun =
           enabled &&
           model != null &&
           resizer != null &&
           frameCounter.value % FRAMES_BETWEEN_INFERENCES === 0;
 
-        if (!shouldRun) return;
+        if (!shouldRun) {
+          frame.dispose();
+          return;
+        }
+
+        // --- Time the entire resize + inference pass ----------------------
+        const inferenceStart = Date.now();
 
         resized = resizer.resize(frame);
+        const sourceWidth = Math.max(frame.width, 1);
+        const sourceHeight = Math.max(frame.height, 1);
+        // Dispose the camera frame now — we only need the resized copy
+        frame.dispose();
+
         const pixels = new Uint8Array(resized.getPixelBuffer());
 
         if (pixels.byteLength !== MODEL_INPUT_BYTES) {
@@ -368,6 +395,8 @@ export function useValueRadar(
           );
         }
 
+        // Reuse the backing ArrayBuffer directly when possible (avoids a
+        // .slice() copy that creates GC pressure on the camera thread).
         const inputBuffer =
           pixels.byteOffset === 0 &&
           pixels.byteLength === pixels.buffer.byteLength
@@ -381,6 +410,15 @@ export function useValueRadar(
         resized = undefined;
 
         const outputs = model.runSync([inputBuffer]);
+
+        // --- Measure and apply adaptive cooldown --------------------------
+        const elapsed = Date.now() - inferenceStart;
+        lastInferenceMs.value = elapsed;
+        if (elapsed > INFERENCE_TIME_BUDGET_MS) {
+          // Give the GC breathing room on slower SoCs
+          cooldownRemaining.value = COOLDOWN_FRAMES;
+        }
+
         if (
           outputs[0] == null ||
           outputs[1] == null ||
@@ -407,8 +445,6 @@ export function useValueRadar(
           scheduleOnRN(clearInferenceError);
         }
 
-        const sourceWidth = Math.max(frame.width, 1);
-        const sourceHeight = Math.max(frame.height, 1);
         const cropSide = Math.min(sourceWidth, sourceHeight);
         const cropLeft = (sourceWidth - cropSide) / 2;
         const cropTop = (sourceHeight - cropSide) / 2;
@@ -603,7 +639,6 @@ export function useValueRadar(
         }
       } finally {
         resized?.dispose();
-        frame.dispose();
       }
     },
   });
