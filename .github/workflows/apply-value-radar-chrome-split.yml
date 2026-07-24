@@ -127,3 +127,5 @@ jobs:
           fi
           git commit -m "Render Value Radar bubble and bar outside camera overlay"
           git push origin master
+
+# trigger: 2026-07-24
