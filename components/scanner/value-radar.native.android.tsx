@@ -36,9 +36,11 @@ const MODEL_SIZE = 320;
 const MODEL_INPUT_BYTES = MODEL_SIZE * MODEL_SIZE * 3;
 const MAX_DETECTIONS = 25;
 const MIN_DETECTION_SCORE = 0.48;
-const FRAMES_BETWEEN_INFERENCES = 12;
-const MISSES_BEFORE_CLEAR = 3;
-const PUBLISH_MOVEMENT_THRESHOLD = 0.015;
+
+// Keep the camera thread feather-light. At 30 FPS this requests inference
+// roughly once per second, and the single-flight gate below prevents a second
+// request while the worker runtime is still processing the first one.
+const FRAMES_BETWEEN_INFERENCES = 30;
 
 const BRIDGE_EVENT_MARKER = 1;
 const BRIDGE_EVENT_CLEAR_MARKER = 2;
@@ -67,6 +69,11 @@ type ValueRadarOverlayProps = {
   onMarkerPress: (marker: ValueRadarMarker) => void;
   status: ValueRadarStatus;
   width: number;
+};
+
+type ResizedFrame = {
+  dispose(): void;
+  getPixelBuffer(): ArrayBuffer;
 };
 
 const radarPresentation = require("./value-radar.native.tsx") as {
@@ -141,14 +148,12 @@ export function useValueRadar(
 
   const asyncRunner = useAsyncRunner();
   const frameCounter = useSharedValue(0);
-  const misses = useSharedValue(0);
-  const hasPublishedMarker = useSharedValue(false);
-  const publishedClass = useSharedValue(-1);
-  const publishedX = useSharedValue(0);
-  const publishedY = useSharedValue(0);
-  const publishedWidth = useSharedValue(0);
-  const publishedHeight = useSharedValue(0);
-  const workerErrorActive = useSharedValue(false);
+
+  // This gate is intentionally owned by the camera/worklet runtimes rather
+  // than React state. Calling runAsync while its runtime mutex is already held
+  // can block com.margelo.camera.frame. A true value means every incoming frame
+  // must be discarded before runAsync is touched.
+  const workerBusy = useSharedValue(false);
 
   const bridgeSequence = useSharedValue(0);
   const bridgeKind = useSharedValue(0);
@@ -191,31 +196,20 @@ export function useValueRadar(
   useEffect(() => {
     if (enabled) return;
 
-    const resetFrame = requestAnimationFrame(() => {
-      setMarker(null);
-      setInferenceError(false);
-    });
-
+    setMarker(null);
+    setInferenceError(false);
     frameCounter.value = 0;
-    misses.value = 0;
-    hasPublishedMarker.value = false;
-    publishedClass.value = -1;
-    workerErrorActive.value = false;
+    workerBusy.value = false;
     bridgeKind.value = 0;
     bridgePayload.value = [];
     bridgeMessage.value = "";
-
-    return () => cancelAnimationFrame(resetFrame);
   }, [
     bridgeKind,
     bridgeMessage,
     bridgePayload,
     enabled,
     frameCounter,
-    hasPublishedMarker,
-    misses,
-    publishedClass,
-    workerErrorActive,
+    workerBusy,
   ]);
 
   const commitMarker = useCallback((payload: number[]) => {
@@ -321,20 +315,24 @@ export function useValueRadar(
         !enabled ||
         boxedModel == null ||
         boxedResizer == null ||
-        !isInferenceFrame
+        !isInferenceFrame ||
+        workerBusy.value
       ) {
         frame.dispose();
         return;
       }
+
+      // Set this before touching runAsync. This is the critical difference from
+      // the previous implementation: no later frame may attempt to enter the
+      // worker runtime while its recursive mutex is owned by inference.
+      workerBusy.value = true;
 
       const modelBox = boxedModel;
       const resizerBox = boxedResizer;
       const wasHandled = asyncRunner.runAsync(() => {
         "worklet";
 
-        let resized:
-          | ReturnType<NonNullable<typeof resizer>["resize"]>
-          | undefined;
+        let resized: ResizedFrame | undefined;
         let stage = "unbox";
 
         try {
@@ -344,14 +342,12 @@ export function useValueRadar(
           const sourceHeight = Math.max(frame.height, 1);
 
           stage = "resize";
-          resized = workerResizer.resize(frame);
+          resized = workerResizer.resize(frame) as ResizedFrame;
 
           stage = "pixel-buffer";
           const pixels = new Uint8Array(resized.getPixelBuffer());
           if (pixels.byteLength !== MODEL_INPUT_BYTES) {
-            throw new Error(
-              `EfficientDet expected ${MODEL_INPUT_BYTES} input bytes but received ${pixels.byteLength}.`,
-            );
+            throw new Error("EfficientDet input buffer size mismatch.");
           }
 
           const inputBuffer =
@@ -377,9 +373,6 @@ export function useValueRadar(
             throw new Error("EfficientDet returned an incomplete result.");
           }
 
-          const hadWorkerError = workerErrorActive.value;
-          workerErrorActive.value = false;
-
           stage = "parse-output";
           const boxes = new Float32Array(outputs[0]);
           const classes = new Float32Array(outputs[1]);
@@ -397,20 +390,20 @@ export function useValueRadar(
           const cropLeft = (sourceWidth - cropSide) / 2;
           const cropTop = (sourceHeight - cropSide) / 2;
           const previewScale =
-            viewport != null
-              ? Math.max(
+            viewport == null
+              ? 0
+              : Math.max(
                   viewport.previewWidth / sourceWidth,
                   viewport.previewHeight / sourceHeight,
-                )
-              : 0;
+                );
           const previewOffsetX =
-            viewport != null
-              ? (viewport.previewWidth - sourceWidth * previewScale) / 2
-              : 0;
+            viewport == null
+              ? 0
+              : (viewport.previewWidth - sourceWidth * previewScale) / 2;
           const previewOffsetY =
-            viewport != null
-              ? (viewport.previewHeight - sourceHeight * previewScale) / 2
-              : 0;
+            viewport == null
+              ? 0
+              : (viewport.previewHeight - sourceHeight * previewScale) / 2;
 
           let bestClass = -1;
           let bestScore = 0;
@@ -483,9 +476,9 @@ export function useValueRadar(
             }
 
             if (
+              !isAllowedCategory ||
               score < MIN_DETECTION_SCORE ||
-              score <= bestScore ||
-              !isAllowedCategory
+              score <= bestScore
             ) {
               continue;
             }
@@ -505,6 +498,7 @@ export function useValueRadar(
               Math.max(boxes[boxOffset + 3] ?? 0, 0),
               1,
             );
+
             const sourceLeft = Math.min(
               Math.max((cropLeft + left * cropSide) / sourceWidth, 0),
               1,
@@ -535,13 +529,15 @@ export function useValueRadar(
                 previewOffsetX + sourceCenterX * previewScale;
               const previewCenterY =
                 previewOffsetY + sourceCenterY * previewScale;
-              const isInsideFocusBounds =
-                previewCenterX >= viewport.x &&
-                previewCenterX <= viewport.x + viewport.width &&
-                previewCenterY >= viewport.y &&
-                previewCenterY <= viewport.y + viewport.height;
 
-              if (!isInsideFocusBounds) continue;
+              if (
+                previewCenterX < viewport.x ||
+                previewCenterX > viewport.x + viewport.width ||
+                previewCenterY < viewport.y ||
+                previewCenterY > viewport.y + viewport.height
+              ) {
+                continue;
+              }
             }
 
             bestClass = classId;
@@ -554,47 +550,11 @@ export function useValueRadar(
 
           stage = "publish";
           if (bestClass < 0) {
-            misses.value += 1;
-            if (
-              misses.value >= MISSES_BEFORE_CLEAR &&
-              hasPublishedMarker.value
-            ) {
-              hasPublishedMarker.value = false;
-              publishedClass.value = -1;
-              bridgeKind.value = BRIDGE_EVENT_CLEAR_MARKER;
-              bridgeSequence.value += 1;
-            } else if (hadWorkerError) {
-              bridgeKind.value = BRIDGE_EVENT_CLEAR_ERROR;
-              bridgeSequence.value += 1;
-            }
+            bridgeKind.value = BRIDGE_EVENT_CLEAR_MARKER;
+            bridgeSequence.value += 1;
             return;
           }
 
-          misses.value = 0;
-          const publishedMovement =
-            Math.abs(bestX - publishedX.value) +
-            Math.abs(bestY - publishedY.value) +
-            Math.abs(bestWidth - publishedWidth.value) +
-            Math.abs(bestHeight - publishedHeight.value);
-          const shouldPublish =
-            !hasPublishedMarker.value ||
-            publishedClass.value !== bestClass ||
-            publishedMovement >= PUBLISH_MOVEMENT_THRESHOLD;
-
-          if (!shouldPublish) {
-            if (hadWorkerError) {
-              bridgeKind.value = BRIDGE_EVENT_CLEAR_ERROR;
-              bridgeSequence.value += 1;
-            }
-            return;
-          }
-
-          publishedClass.value = bestClass;
-          publishedX.value = bestX;
-          publishedY.value = bestY;
-          publishedWidth.value = bestWidth;
-          publishedHeight.value = bestHeight;
-          hasPublishedMarker.value = true;
           bridgePayload.value = [
             bestX,
             bestY,
@@ -607,24 +567,24 @@ export function useValueRadar(
           ];
           bridgeKind.value = BRIDGE_EVENT_MARKER;
           bridgeSequence.value += 1;
-        } catch (caughtError) {
-          if (!workerErrorActive.value) {
-            workerErrorActive.value = true;
-            const detail =
-              caughtError instanceof Error
-                ? caughtError.message
-                : String(caughtError);
-            bridgeMessage.value = `[${stage}] ${detail}`;
-            bridgeKind.value = BRIDGE_EVENT_ERROR;
+
+          if (inferenceError) {
+            bridgeKind.value = BRIDGE_EVENT_CLEAR_ERROR;
             bridgeSequence.value += 1;
           }
+        } catch (_caughtError) {
+          bridgeMessage.value = `[${stage}] asynchronous inference failed.`;
+          bridgeKind.value = BRIDGE_EVENT_ERROR;
+          bridgeSequence.value += 1;
         } finally {
           resized?.dispose();
           frame.dispose();
+          workerBusy.value = false;
         }
       });
 
       if (!wasHandled) {
+        workerBusy.value = false;
         frame.dispose();
       }
     },
