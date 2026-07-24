@@ -12,7 +12,10 @@ import {
   useFrameOutput,
 } from "react-native-vision-camera";
 import { useResizer } from "react-native-vision-camera-resizer";
-import { useSharedValue } from "react-native-reanimated";
+import {
+  useAnimatedReaction,
+  useSharedValue,
+} from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
 import type {
@@ -34,6 +37,11 @@ const MIN_DETECTION_SCORE = 0.48;
 const FRAMES_BETWEEN_INFERENCES = 12;
 const MISSES_BEFORE_CLEAR = 3;
 const PUBLISH_MOVEMENT_THRESHOLD = 0.015;
+
+const BRIDGE_EVENT_MARKER = 1;
+const BRIDGE_EVENT_CLEAR_MARKER = 2;
+const BRIDGE_EVENT_ERROR = 3;
+const BRIDGE_EVENT_CLEAR_ERROR = 4;
 
 const RADAR_FRAME_RESOLUTION = {
   width: 320,
@@ -61,8 +69,7 @@ type ValueRadarOverlayProps = {
 
 /*
  * Android resolves this module before value-radar.native.tsx. Keep the
- * existing static HUD presentation, but replace its frame processor with the
- * non-blocking Android implementation below.
+ * existing static HUD presentation while replacing only its frame processor.
  */
 const radarPresentation = require("./value-radar.native.tsx") as {
   ValueRadarOverlay: ComponentType<ValueRadarOverlayProps>;
@@ -208,7 +215,15 @@ export function useValueRadar(
   const publishedY = useSharedValue(0);
   const publishedWidth = useSharedValue(0);
   const publishedHeight = useSharedValue(0);
-  const errorReported = useSharedValue(false);
+  const workerErrorActive = useSharedValue(false);
+
+  // Worker runtimes cannot safely capture React callbacks through a nested
+  // worklet. They publish plain data here; a UI-runtime reaction forwards it
+  // to the RN runtime below.
+  const bridgeSequence = useSharedValue(0);
+  const bridgeKind = useSharedValue(0);
+  const bridgePayload = useSharedValue<number[]>([]);
+  const bridgeMessage = useSharedValue("");
 
   const detector = useTensorflowModel(
     require("../../assets/models/efficientdet_lite0.tflite"),
@@ -255,16 +270,22 @@ export function useValueRadar(
     misses.value = 0;
     hasPublishedMarker.value = false;
     publishedClass.value = -1;
-    errorReported.value = false;
+    workerErrorActive.value = false;
+    bridgeKind.value = 0;
+    bridgePayload.value = [];
+    bridgeMessage.value = "";
 
     return () => cancelAnimationFrame(resetFrame);
   }, [
+    bridgeKind,
+    bridgeMessage,
+    bridgePayload,
     enabled,
-    errorReported,
     frameCounter,
     hasPublishedMarker,
     misses,
     publishedClass,
+    workerErrorActive,
   ]);
 
   const commitMarker = useCallback((payload: number[]) => {
@@ -318,6 +339,25 @@ export function useValueRadar(
     setInferenceError(true);
     setMarker(null);
   }, []);
+
+  useAnimatedReaction(
+    () => bridgeSequence.value,
+    (sequence, previousSequence) => {
+      if (sequence === 0 || sequence === previousSequence) return;
+
+      const kind = bridgeKind.value;
+      if (kind === BRIDGE_EVENT_MARKER) {
+        scheduleOnRN(commitMarker, bridgePayload.value);
+      } else if (kind === BRIDGE_EVENT_CLEAR_MARKER) {
+        scheduleOnRN(clearMarker);
+      } else if (kind === BRIDGE_EVENT_ERROR) {
+        scheduleOnRN(reportInferenceError, bridgeMessage.value);
+      } else if (kind === BRIDGE_EVENT_CLEAR_ERROR) {
+        scheduleOnRN(clearInferenceError);
+      }
+    },
+    [clearInferenceError, clearMarker, commitMarker, reportInferenceError],
+  );
 
   const model = detector.state === "loaded" ? detector.model : undefined;
   const resizer =
@@ -386,9 +426,10 @@ export function useValueRadar(
             throw new Error("EfficientDet returned an incomplete result.");
           }
 
-          if (errorReported.value) {
-            errorReported.value = false;
-            scheduleOnRN(clearInferenceError);
+          if (workerErrorActive.value) {
+            workerErrorActive.value = false;
+            bridgeKind.value = BRIDGE_EVENT_CLEAR_ERROR;
+            bridgeSequence.value += 1;
           }
 
           const boxes = new Float32Array(outputs[0]);
@@ -505,7 +546,8 @@ export function useValueRadar(
             ) {
               hasPublishedMarker.value = false;
               publishedClass.value = -1;
-              scheduleOnRN(clearMarker);
+              bridgeKind.value = BRIDGE_EVENT_CLEAR_MARKER;
+              bridgeSequence.value += 1;
             }
             return;
           }
@@ -529,8 +571,7 @@ export function useValueRadar(
           publishedWidth.value = bestWidth;
           publishedHeight.value = bestHeight;
           hasPublishedMarker.value = true;
-
-          scheduleOnRN(commitMarker, [
+          bridgePayload.value = [
             bestX,
             bestY,
             bestWidth,
@@ -539,15 +580,18 @@ export function useValueRadar(
             bestScore,
             sourceWidth,
             sourceHeight,
-          ]);
+          ];
+          bridgeKind.value = BRIDGE_EVENT_MARKER;
+          bridgeSequence.value += 1;
         } catch (caughtError) {
-          if (!errorReported.value) {
-            errorReported.value = true;
-            const message =
+          if (!workerErrorActive.value) {
+            workerErrorActive.value = true;
+            bridgeMessage.value =
               caughtError instanceof Error
                 ? caughtError.message
                 : "Unknown asynchronous on-device inference error.";
-            scheduleOnRN(reportInferenceError, message);
+            bridgeKind.value = BRIDGE_EVENT_ERROR;
+            bridgeSequence.value += 1;
           }
         } finally {
           resized?.dispose();
