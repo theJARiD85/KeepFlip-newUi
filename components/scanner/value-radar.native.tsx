@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import Animated, {
   cancelAnimation,
   Easing,
@@ -21,10 +21,10 @@ import { scheduleOnRN } from "react-native-worklets";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 
-const MODEL_SIZE = 1000;
+const MODEL_SIZE = 320;
 const MAX_DETECTIONS = 500;
 const MIN_DETECTION_SCORE = 0.48;
-const FRAMES_BETWEEN_INFERENCES = 5;
+const FRAMES_BETWEEN_INFERENCES = 8;
 const STABLE_HITS_REQUIRED = 2;
 const MISSES_BEFORE_CLEAR = 4;
 const TRACK_MATCH_TOLERANCE = 0.28;
@@ -32,8 +32,8 @@ const PUBLISH_MOVEMENT_THRESHOLD = 0.035;
 const DIAGNOSTIC_FRAME_INTERVAL = 150;
 
 const RADAR_FRAME_RESOLUTION = {
-  width: 768,
-  height: 1024,
+  width: 640,
+  height: 480,
 } as const;
 
 const TFLITE_DELEGATES: [] = [];
@@ -391,7 +391,11 @@ export function useValueRadar(
         const scores = new Float32Array(outputs[2]);
         const detectedCount = new Float32Array(outputs[3]);
         const count = Math.min(
-          Math.max(Math.floor(detectedCount[0] ?? 0), 0)
+          Math.max(Math.floor(detectedCount[0] ?? 0), 0),
+          MAX_DETECTIONS,
+          Math.floor(boxes.length / 4),
+          classes.length,
+          scores.length,
         );
         if (errorReported.value) {
           errorReported.value = false;

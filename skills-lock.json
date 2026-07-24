@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "skills": {
+    "expo-native-ui": {
+      "source": "expo/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/expo/skills/expo-native-ui/SKILL.md",
+      "computedHash": "a346f058aca167915cf049ad7f24e6ca96b6c4086792363048a8049fa27277e2"
+    },
+    "expo-ui": {
+      "source": "expo/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/expo/skills/expo-ui/SKILL.md",
+      "computedHash": "93c08a128fc09c0685aac82628821ab1fd3648f707a0cdca61d4b6dfbdc3f5e6"
+    },
+    "react-native-best-practices": {
+      "source": "callstackincubator/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/react-native-best-practices/SKILL.md",
+      "computedHash": "35ef1d9d1d78def668b784ebc7a371a3b5e3374c428552da570507e6c4f2b50c"
+    }
+  }
+}
