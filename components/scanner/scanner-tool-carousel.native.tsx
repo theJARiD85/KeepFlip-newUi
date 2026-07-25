@@ -80,16 +80,14 @@ type ScannerToolCarouselProps = {
   selectedTool: ScannerToolId;
 };
 
-type ToolControlLayer = "foreground" | "rear";
-
 type ToolControlProps = {
   badge?: number;
   controlCoreSize: number;
   controlSize: number;
   disabled: boolean;
   hidden: boolean;
+  housingTopY: number;
   index: number;
-  layer: ToolControlLayer;
   onActivate: () => void;
   position: SharedValue<number>;
   railY: number;
@@ -99,10 +97,8 @@ type ToolControlProps = {
 };
 
 const COMPACT_SCALE = 0.54;
-const REAR_LAYER = 10;
-const FOREGROUND_LAYER = 20;
+const TOOL_LAYER_BASE = 10;
 const HOUSING_TOP_LAYER = 30;
-const REAR_CROSSOVER_DEPTH = 0.56;
 const TOOL_COUNT = scannerTools.length;
 const TOOL_TOP_OFFSET = 12;
 const SPRING = {
@@ -132,8 +128,8 @@ function ToolControl({
   controlSize,
   disabled,
   hidden,
+  housingTopY,
   index,
-  layer,
   onActivate,
   position,
   railY,
@@ -153,40 +149,49 @@ function ToolControl({
     const depth = Math.cos(angle);
     const orbitX = Math.sin(angle) * wheelRadius * direction;
     const orbitY = (1 - depth) * railY;
-    const orbitOpacity = interpolate(
+    const scale = interpolate(
       depth,
-      [-1, -0.55, 0, 1],
-      [0, 0, 0.78, 1],
+      [-1, 0, 1],
+      [0.28, COMPACT_SCALE, 1],
       "clamp",
     );
-    const layerOpacity =
-      layer === "rear"
-        ? interpolate(depth, [REAR_CROSSOVER_DEPTH, 0.76], [1, 0], "clamp")
-        : interpolate(
-            depth,
-            [0.42, REAR_CROSSOVER_DEPTH, 0.82, 1],
-            [0, 0.18, 0.9, 1],
-            "clamp",
-          );
+
+    // The selected tool intentionally hangs about 75% above the housing.
+    // Once an orbiting tool sinks farther than that, fade it over a very
+    // short band at the SVG lip instead of letting it drift down the panel.
+    const toolBottom = TOOL_TOP_OFFSET + orbitY + controlSize * scale;
+    const allowedHousingInset = controlSize * 0.26;
+    const fadeDistance = controlSize * 0.16;
+    const lipOpacity = interpolate(
+      toolBottom,
+      [
+        housingTopY + allowedHousingInset,
+        housingTopY + allowedHousingInset + fadeDistance,
+      ],
+      [1, 0],
+      "clamp",
+    );
 
     return {
-      opacity: orbitOpacity * layerOpacity,
-      zIndex: layer === "foreground" ? FOREGROUND_LAYER : REAR_LAYER,
+      opacity: hidden ? 0 : lipOpacity,
+      zIndex: TOOL_LAYER_BASE + Math.round(Math.max(depth, 0) * 10),
       transform: [
         { translateX: orbitX },
         { translateY: orbitY },
         { rotateZ: `${wrappedDelta * 8 * direction}deg` },
-        {
-          scale: interpolate(
-            depth,
-            [-1, 0, 1],
-            [0.28, COMPACT_SCALE, 1],
-            "clamp",
-          ),
-        },
+        { scale },
       ],
     };
-  }, [direction, index, layer, railY, wheelRadius]);
+  }, [
+    controlSize,
+    direction,
+    hidden,
+    housingTopY,
+    index,
+    position,
+    railY,
+    wheelRadius,
+  ]);
 
   const animatedGlowStyle = useAnimatedStyle(() => {
     const rawDelta = index - position.value;
@@ -198,11 +203,11 @@ function ToolControl({
     const depth = Math.cos(angle);
 
     return {
-      opacity: interpolate(depth, [0.5, 0.82, 1], [0, 0.28, 1], "clamp"),
+      opacity: interpolate(depth, [0.72, 0.9, 1], [0, 0.34, 1], "clamp"),
     };
   }, [index, position]);
 
-  const concealedByHousing = layer === "rear" || hidden || !selected;
+  const concealedByHousing = hidden || !selected;
   const badgeSize = Math.max(20, controlSize * 0.24);
 
   return (
@@ -323,6 +328,7 @@ export function ScannerToolCarousel({
   const velocityThreshold = moderateScale(650, 0.25);
   const selected = scannerTools[Math.max(0, selectedIndex)] ?? scannerTools[0];
   const housingHeight = scannerCarouselHeight * 0.5;
+  const housingTopY = scannerCarouselHeight - housingHeight;
 
   useEffect(() => {
     publishScannerHudSnapshot({
@@ -432,6 +438,7 @@ export function ScannerToolCarousel({
   const controlProps = {
     controlCoreSize,
     controlSize: scannerControlSize,
+    housingTopY,
     position,
     railY: scannerRailTop,
     wheelRadius: scannerWheelRadius,
@@ -468,34 +475,10 @@ export function ScannerToolCarousel({
             <ToolControl
               {...controlProps}
               badge={badges?.[tool.id]}
-              disabled
-              hidden={hidden}
-              index={index}
-              key={`rear-${tool.id}`}
-              layer="rear"
-              onActivate={() => undefined}
-              selected={false}
-              tool={tool}
-            />
-          );
-        })}
-
-        {scannerTools.map((tool, index) => {
-          const offset = modulo(
-            index - Math.max(0, selectedIndex),
-            TOOL_COUNT,
-          );
-          const hidden = offset === TOOL_COUNT / 2;
-
-          return (
-            <ToolControl
-              {...controlProps}
-              badge={badges?.[tool.id]}
               disabled={disabled}
               hidden={hidden}
               index={index}
               key={tool.id}
-              layer="foreground"
               onActivate={activateSelected}
               selected={tool.id === selectedTool}
               tool={tool}
