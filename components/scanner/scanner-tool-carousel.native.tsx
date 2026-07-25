@@ -104,6 +104,7 @@ const FOREGROUND_LAYER = 20;
 const HOUSING_TOP_LAYER = 30;
 const REAR_CROSSOVER_DEPTH = 0.56;
 const TOOL_COUNT = scannerTools.length;
+const TOOL_TOP_OFFSET = 12;
 const SPRING = {
   damping: 20,
   stiffness: 240,
@@ -321,6 +322,7 @@ export function ScannerToolCarousel({
   const dragThreshold = moderateScale(44, 0.45);
   const velocityThreshold = moderateScale(650, 0.25);
   const selected = scannerTools[Math.max(0, selectedIndex)] ?? scannerTools[0];
+  const housingHeight = scannerCarouselHeight * 0.5;
 
   useEffect(() => {
     publishScannerHudSnapshot({
@@ -449,7 +451,10 @@ export function ScannerToolCarousel({
           contentFit="fill"
           pointerEvents="none"
           source={require("@/assets/tool-carousel-bottom.svg")}
-          style={styles.housingBottom}
+          style={[
+            styles.housingBottom,
+            { height: housingHeight, width: controlDockWidth },
+          ]}
         />
 
         {scannerTools.map((tool, index) => {
@@ -503,7 +508,10 @@ export function ScannerToolCarousel({
           contentFit="fill"
           pointerEvents="none"
           source={require("@/assets/tool-carousel-top.svg")}
-          style={styles.housingTop}
+          style={[
+            styles.housingTop,
+            { height: housingHeight, width: controlDockWidth },
+          ]}
         />
       </Animated.View>
     </GestureDetector>
@@ -518,16 +526,22 @@ const styles = StyleSheet.create({
     opacity: 0.58,
   },
   housingBottom: {
-    ...StyleSheet.absoluteFillObject,
+    position: "absolute",
+    right: 0,
+    bottom: 0,
+    left: 0,
     zIndex: 0,
   },
   housingTop: {
-    ...StyleSheet.absoluteFillObject,
+    position: "absolute",
+    right: 0,
+    bottom: 0,
+    left: 0,
     zIndex: HOUSING_TOP_LAYER,
   },
   controlPosition: {
     position: "absolute",
-    top: 0,
+    top: TOOL_TOP_OFFSET,
   },
   control: {
     alignItems: "center",
