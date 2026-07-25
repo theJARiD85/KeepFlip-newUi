@@ -1,6 +1,12 @@
 import type { ReactNode } from "react";
 import { useEffect } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 import Animated, {
   cancelAnimation,
   Easing,
@@ -21,16 +27,18 @@ import type {
   ValueRadarViewport,
 } from "./value-radar-visual.native";
 
-export {
-  ValueRadarBar,
-  ValueRadarBubble,
-  ValueRadarOverlay,
-} from "./value-radar-chrome.native.tsx";
-export type {
-  ValueRadarBarProps,
-  ValueRadarBubbleProps,
-  ValueRadarOverlayProps,
-} from "./value-radar-chrome.native.tsx";
+export type ValueRadarBubbleProps = {
+  status: ValueRadarStatus;
+  style?: StyleProp<ViewStyle>;
+  width?: number;
+};
+
+export type ValueRadarBarProps = {
+  marker: ValueRadarMarker | null;
+  status: ValueRadarStatus;
+  style?: StyleProp<ViewStyle>;
+  width?: number;
+};
 
 export type ValueRadarTargetOverlayProps = {
   disabled?: boolean;
@@ -43,8 +51,107 @@ export type ValueRadarTargetOverlayProps = {
   width: number;
 };
 
+export type ValueRadarOverlayProps = ValueRadarTargetOverlayProps;
+
+const READY_COLOR = "#67F7A5";
+
 function clamp(value: number, minimum: number, maximum: number) {
   return Math.min(Math.max(value, minimum), maximum);
+}
+
+function statusPresentation(status: ValueRadarStatus) {
+  if (status === "ready") {
+    return {
+      color: READY_COLOR,
+      label: "ONLINE",
+      meta: "MODEL READY",
+      glow: "0 0 10px rgba(103, 247, 165, 0.9)",
+    };
+  }
+
+  if (status === "error") {
+    return {
+      color: theme.colors.danger,
+      label: "OFFLINE",
+      meta: "MODEL RETRY",
+      glow: "0 0 10px rgba(232, 97, 88, 0.82)",
+    };
+  }
+
+  return {
+    color: theme.colors.goldBright,
+    label: "CALIBRATING",
+    meta: "MODEL LOADING",
+    glow: "0 0 10px rgba(242, 211, 138, 0.8)",
+  };
+}
+
+export function ValueRadarBubble({
+  status,
+  style,
+  width = 194,
+}: ValueRadarBubbleProps) {
+  const cue = statusPresentation(status);
+
+  return (
+    <View
+      pointerEvents="none"
+      style={[styles.readinessCue, { maxWidth: width }, style]}
+    >
+      <View
+        style={[
+          styles.readinessLight,
+          { backgroundColor: cue.color, boxShadow: cue.glow },
+        ]}
+      />
+      <Text style={styles.readinessName}>VALUE RADAR</Text>
+      <Text style={styles.readinessSeparator}>{"//"}</Text>
+      <Text style={[styles.readinessState, { color: cue.color }]}> 
+        {cue.label}
+      </Text>
+      <View style={styles.signalBars}>
+        <View style={[styles.signalBar, styles.signalBarLow, { backgroundColor: cue.color }]} />
+        <View style={[styles.signalBar, styles.signalBarMid, { backgroundColor: cue.color }]} />
+        <View style={[styles.signalBar, styles.signalBarHigh, { backgroundColor: cue.color }]} />
+      </View>
+    </View>
+  );
+}
+
+export function ValueRadarBar({
+  marker,
+  status,
+  style,
+  width = 224,
+}: ValueRadarBarProps) {
+  const cue = statusPresentation(status);
+  const targetCopy =
+    status === "ready"
+      ? marker
+        ? "TARGET LOCKED"
+        : "MODEL READY"
+      : cue.meta;
+
+  return (
+    <View
+      pointerEvents="none"
+      style={[styles.modelCue, { maxWidth: width }, style]}
+    >
+      <Text style={[styles.modelCueIndex, { color: cue.color }]}> 
+        {marker && status === "ready" ? "T-01" : "VR"}
+      </Text>
+      <View style={styles.modelCueLine} />
+      <View
+        style={[
+          styles.modelCueLight,
+          { backgroundColor: cue.color, boxShadow: cue.glow },
+        ]}
+      />
+      <Text numberOfLines={1} style={styles.modelCueText}>
+        {targetCopy} {"//"} {cue.label}
+      </Text>
+    </View>
+  );
 }
 
 export function ValueRadarTargetOverlay({
@@ -183,22 +290,6 @@ export function ValueRadarTargetOverlay({
     [targetHeight],
   );
 
-  const panelWidth = Math.min(238, Math.max(154, focusWidth - 18));
-  const panelHeight = 78;
-  const panelLeft = clamp(
-    targetLeft + targetWidth / 2 - panelWidth / 2,
-    focusX + 8,
-    Math.max(focusX + 8, focusX + focusWidth - panelWidth - 8),
-  );
-  const canPlacePanelAbove = targetTop - panelHeight - 12 >= focusY + 8;
-  const panelTop = clamp(
-    canPlacePanelAbove
-      ? targetTop - panelHeight - 12
-      : targetTop + targetHeight + 12,
-    focusY + 8,
-    Math.max(focusY + 8, focusY + focusHeight - panelHeight - 8),
-  );
-
   const flashTop = clamp(focusY + 18, 8, Math.max(8, height - 60));
   const flashLeft = clamp(focusX + 18, 8, Math.max(8, width - 60));
 
@@ -220,110 +311,172 @@ export function ValueRadarTargetOverlay({
       ) : null}
 
       {marker && status === "ready" ? (
-        <>
-          <Animated.View
-            entering={FadeIn.duration(220)}
-            exiting={FadeOut.duration(140)}
-            pointerEvents="none"
-            style={[
-              styles.targetHost,
-              {
-                height: targetHeight,
-                left: targetLeft,
-                top: targetTop,
-                width: targetWidth,
-              },
-            ]}
-          >
-            <Animated.View style={[styles.targetHalo, pulseAnimatedStyle]} />
-            <Animated.View
-              style={[
-                styles.targetOrbit,
-                {
-                  height: orbitSize,
-                  left: (targetWidth - orbitSize) / 2,
-                  top: (targetHeight - orbitSize) / 2,
-                  width: orbitSize,
-                },
-                orbitAnimatedStyle,
-              ]}
-            />
-            <View style={styles.targetInnerRing} />
-            <View style={[styles.targetCorner, styles.targetCornerTopLeft]} />
-            <View style={[styles.targetCorner, styles.targetCornerTopRight]} />
-            <View style={[styles.targetCorner, styles.targetCornerBottomLeft]} />
-            <View style={[styles.targetCorner, styles.targetCornerBottomRight]} />
-            <View style={styles.crosshairHorizontal} />
-            <View style={styles.crosshairVertical} />
-            <View style={styles.targetCore}>
-              <View style={styles.targetCoreDot} />
-            </View>
-            <Animated.View
-              style={[styles.targetScanBeam, scanBeamAnimatedStyle]}
-            />
-            <View style={styles.targetId}>
-              <Text style={styles.targetIdText}>T-01</Text>
-            </View>
-          </Animated.View>
+        <Animated.View
+          entering={FadeIn.duration(220)}
+          exiting={FadeOut.duration(140)}
+          style={[
+            styles.targetHost,
+            {
+              height: targetHeight,
+              left: targetLeft,
+              top: targetTop,
+              width: targetWidth,
+            },
+          ]}
+        >
+          <Pressable
+            accessibilityHint="Captures this item for full KeepFlip identification and current market analysis"
+            accessibilityLabel={`Analyze potential ${marker.label}`}
+            accessibilityRole="button"
+            disabled={disabled}
+            onPress={() => onMarkerPress(marker)}
+            style={StyleSheet.absoluteFill}
+          />
 
           <Animated.View
-            entering={FadeIn.delay(70).duration(220)}
-            exiting={FadeOut.duration(120)}
+            pointerEvents="none"
+            style={[styles.targetHalo, pulseAnimatedStyle]}
+          />
+          <Animated.View
+            pointerEvents="none"
             style={[
-              styles.markerPanelHost,
+              styles.targetOrbit,
               {
-                left: panelLeft,
-                top: panelTop,
-                width: panelWidth,
+                height: orbitSize,
+                left: (targetWidth - orbitSize) / 2,
+                top: (targetHeight - orbitSize) / 2,
+                width: orbitSize,
               },
+              orbitAnimatedStyle,
             ]}
-          >
-            <Pressable
-              accessibilityHint="Captures this item for full KeepFlip identification and current market analysis"
-              accessibilityLabel={`Analyze potential ${marker.label}`}
-              accessibilityRole="button"
-              disabled={disabled}
-              onPress={() => onMarkerPress(marker)}
-              style={({ pressed }) => [
-                styles.markerPanel,
-                pressed && styles.markerPanelPressed,
-                disabled && styles.markerPanelDisabled,
-              ]}
-            >
-              <View style={styles.markerPanelAccent} />
-              <View style={styles.markerPanelHeading}>
-                <View style={styles.lockGlyph}>
-                  <View style={styles.lockGlyphCore} />
-                </View>
-                <Text style={styles.markerEyebrow}>POTENTIAL FIND</Text>
-                <View style={styles.confidencePill}>
-                  <Text style={styles.confidenceText}>
-                    {Math.round(marker.score * 100)
-                      .toString()
-                      .padStart(2, "0")}
-                    % LOCK
-                  </Text>
-                </View>
-              </View>
-              <Text numberOfLines={1} style={styles.markerLabel}>
-                {marker.label}
-              </Text>
-              <View style={styles.markerPanelFooter}>
-                <Text numberOfLines={1} style={styles.markerAction}>
-                  CLASS {marker.classId.toString().padStart(2, "0")} {"//"} TAP
-                  TO ANALYZE VALUE
-                </Text>
-                <Text style={styles.markerChevron}>›</Text>
-              </View>
-            </Pressable>
-          </Animated.View>
-        </>
+          />
+          <View pointerEvents="none" style={styles.targetInnerRing} />
+          <View
+            pointerEvents="none"
+            style={[styles.targetCorner, styles.targetCornerTopLeft]}
+          />
+          <View
+            pointerEvents="none"
+            style={[styles.targetCorner, styles.targetCornerTopRight]}
+          />
+          <View
+            pointerEvents="none"
+            style={[styles.targetCorner, styles.targetCornerBottomLeft]}
+          />
+          <View
+            pointerEvents="none"
+            style={[styles.targetCorner, styles.targetCornerBottomRight]}
+          />
+          <View pointerEvents="none" style={styles.crosshairHorizontal} />
+          <View pointerEvents="none" style={styles.crosshairVertical} />
+          <View pointerEvents="none" style={styles.targetCore}>
+            <View style={styles.targetCoreDot} />
+          </View>
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.targetScanBeam, scanBeamAnimatedStyle]}
+          />
+          <View pointerEvents="none" style={styles.targetCaption}>
+            <Text numberOfLines={1} style={styles.targetCaptionLabel}>
+              {marker.label.toUpperCase()}
+            </Text>
+            <Text style={styles.targetCaptionScore}>
+              {Math.round(marker.score * 100)}% LOCK
+            </Text>
+          </View>
+        </Animated.View>
       ) : null}
     </View>
   );
 }
 
+export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
+  return <ValueRadarTargetOverlay {...props} />;
+}
+
 const styles = StyleSheet.create({
+  readinessCue: {
+    minHeight: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  readinessLight: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  readinessName: {
+    color: theme.colors.text,
+    fontFamily: theme.fonts.analysis,
+    fontSize: 8.5,
+    lineHeight: 10,
+    letterSpacing: 1.15,
+  },
+  readinessSeparator: {
+    color: theme.colors.scannerViolet,
+    fontFamily: theme.fonts.analysis,
+    fontSize: 8,
+    lineHeight: 10,
+  },
+  readinessState: {
+    fontFamily: theme.fonts.analysis,
+    fontSize: 7.5,
+    lineHeight: 9,
+    letterSpacing: 0.8,
+  },
+  signalBars: {
+    marginLeft: 2,
+    height: 10,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 2,
+  },
+  signalBar: {
+    width: 2,
+    borderRadius: 1,
+  },
+  signalBarLow: {
+    height: 3,
+    opacity: 0.45,
+  },
+  signalBarMid: {
+    height: 6,
+    opacity: 0.7,
+  },
+  signalBarHigh: {
+    height: 9,
+  },
+  modelCue: {
+    minHeight: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+  modelCueIndex: {
+    fontFamily: theme.fonts.analysis,
+    fontSize: 7.5,
+    lineHeight: 9,
+    letterSpacing: 0.8,
+  },
+  modelCueLine: {
+    width: 25,
+    height: 1,
+    backgroundColor: "rgba(88, 223, 232, 0.42)",
+  },
+  modelCueLight: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  modelCueText: {
+    flexShrink: 1,
+    color: "rgba(247, 242, 232, 0.7)",
+    fontFamily: theme.fonts.analysis,
+    fontSize: 7,
+    lineHeight: 9,
+    letterSpacing: 0.72,
+  },
   flashButtonHost: {
     position: "absolute",
     zIndex: 80,
@@ -434,133 +587,35 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.scannerCyan,
     boxShadow: "0 0 8px rgba(88, 223, 232, 0.82)",
   },
-  targetId: {
+  targetCaption: {
     position: "absolute",
-    top: 5,
-    left: 6,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderRadius: 3,
-    backgroundColor: "rgba(3, 7, 12, 0.76)",
-    borderWidth: 0.5,
-    borderColor: "rgba(88, 223, 232, 0.34)",
-  },
-  targetIdText: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.analysis,
-    fontSize: 6,
-    lineHeight: 7,
-    letterSpacing: 0.6,
-  },
-  markerPanelHost: {
-    position: "absolute",
-    zIndex: 12,
-  },
-  markerPanel: {
-    width: "100%",
-    minHeight: 78,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 9,
-    borderCurve: "continuous",
-    borderWidth: 1,
-    borderColor: "rgba(88, 223, 232, 0.52)",
-    backgroundColor: "rgba(3, 7, 12, 0.94)",
-    experimental_backgroundImage: `
-      radial-gradient(circle at 100% 0%, rgba(141, 114, 255, 0.17) 0%, transparent 44%),
-      linear-gradient(115deg, rgba(88, 223, 232, 0.10) 0%, rgba(3, 7, 12, 0.02) 54%)
-    `,
-    boxShadow:
-      "0 0 28px rgba(88, 223, 232, 0.18), 0 8px 22px rgba(0, 0, 0, 0.52)",
-    gap: 3,
-  },
-  markerPanelAccent: {
-    position: "absolute",
-    top: 9,
-    bottom: 9,
-    left: 0,
-    width: 2,
-    borderRadius: 2,
-    backgroundColor: theme.colors.scannerCyan,
-    boxShadow: "0 0 8px rgba(88, 223, 232, 0.82)",
-  },
-  markerPanelHeading: {
+    right: 8,
+    bottom: 8,
+    left: 8,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     gap: 6,
   },
-  lockGlyph: {
-    width: 10,
-    height: 10,
-    borderWidth: 1,
-    borderColor: theme.colors.scannerCyan,
-    transform: [{ rotate: "45deg" }],
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: "0 0 7px rgba(88, 223, 232, 0.46)",
-  },
-  lockGlyphCore: {
-    width: 3,
-    height: 3,
-    backgroundColor: theme.colors.goldBright,
-  },
-  markerEyebrow: {
-    flex: 1,
-    minWidth: 0,
-    color: theme.colors.scannerCyan,
+  targetCaptionLabel: {
+    flexShrink: 1,
+    color: theme.colors.text,
     fontFamily: theme.fonts.analysis,
-    fontSize: 7.5,
+    fontSize: 7,
     lineHeight: 9,
-    letterSpacing: 1.1,
+    letterSpacing: 0.8,
+    textShadowColor: "rgba(0, 0, 0, 0.92)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
-  confidencePill: {
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: 3,
-    borderWidth: 0.5,
-    borderColor: "rgba(242, 211, 138, 0.38)",
-    backgroundColor: "rgba(242, 211, 138, 0.08)",
-  },
-  confidenceText: {
+  targetCaptionScore: {
     color: theme.colors.goldBright,
     fontFamily: theme.fonts.analysis,
     fontSize: 6.5,
     lineHeight: 8,
-    fontVariant: ["tabular-nums"],
     letterSpacing: 0.35,
-  },
-  markerLabel: {
-    color: theme.colors.text,
-    fontSize: 17,
-    lineHeight: 21,
-    fontWeight: "800",
-    letterSpacing: -0.25,
-  },
-  markerPanelFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  markerAction: {
-    flex: 1,
-    minWidth: 0,
-    color: "rgba(247, 242, 232, 0.5)",
-    fontFamily: theme.fonts.analysis,
-    fontSize: 6.5,
-    lineHeight: 8,
-    letterSpacing: 0.48,
-  },
-  markerChevron: {
-    color: theme.colors.scannerViolet,
-    fontSize: 16,
-    lineHeight: 16,
-    fontWeight: "800",
-  },
-  markerPanelPressed: {
-    opacity: 0.86,
-    transform: [{ scale: 0.985 }],
-  },
-  markerPanelDisabled: {
-    opacity: 0.46,
+    textShadowColor: "rgba(0, 0, 0, 0.92)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
 });
