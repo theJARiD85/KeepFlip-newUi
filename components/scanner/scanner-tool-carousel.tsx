@@ -1,4 +1,5 @@
 import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo } from 'react';
 import { I18nManager, Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -74,7 +75,7 @@ type ScannerToolCarouselProps = {
   selectedTool: ScannerToolId;
 };
 
-type ToolControlLayer = 'foreground' | 'rail';
+type ToolControlLayer = 'foreground' | 'rear';
 
 type ToolControlProps = {
   badge?: number;
@@ -93,9 +94,10 @@ type ToolControlProps = {
 };
 
 const COMPACT_SCALE = 0.54;
-const RAIL_LAYER = 20;
-const FOREGROUND_LAYER = 40;
-const RAIL_CROSSOVER_DEPTH = 0.56;
+const REAR_LAYER = 10;
+const FOREGROUND_LAYER = 20;
+const HOUSING_TOP_LAYER = 30;
+const REAR_CROSSOVER_DEPTH = 0.56;
 const TOOL_COUNT = scannerTools.length;
 const SPRING = {
   damping: 20,
@@ -144,18 +146,18 @@ function ToolControl({
       'clamp',
     );
     const layerOpacity =
-      layer === 'rail'
-        ? interpolate(depth, [RAIL_CROSSOVER_DEPTH, 0.76], [1, 0], 'clamp')
+      layer === 'rear'
+        ? interpolate(depth, [REAR_CROSSOVER_DEPTH, 0.76], [1, 0], 'clamp')
         : interpolate(
             depth,
-            [0.42, RAIL_CROSSOVER_DEPTH, 0.82, 1],
+            [0.42, REAR_CROSSOVER_DEPTH, 0.82, 1],
             [0, 0.18, 0.9, 1],
             'clamp',
           );
 
     return {
       opacity: orbitOpacity * layerOpacity,
-      zIndex: layer === 'foreground' ? FOREGROUND_LAYER : 1,
+      zIndex: layer === 'foreground' ? FOREGROUND_LAYER : REAR_LAYER,
       transform: [
         { translateX: orbitX },
         { translateY: orbitY },
@@ -178,16 +180,16 @@ function ToolControl({
     return {
       opacity: interpolate(depth, [0.5, 0.82, 1], [0, 0.28, 1], 'clamp'),
     };
-  }, [index]);
+  }, [index, position]);
 
-  const concealedByRail = layer === 'rail' || hidden || !selected;
+  const concealedByHousing = layer === 'rear' || hidden || !selected;
   const badgeSize = Math.max(22, controlSize * 0.26);
 
   return (
     <Animated.View
-      accessibilityElementsHidden={concealedByRail}
-      importantForAccessibility={concealedByRail ? 'no-hide-descendants' : 'auto'}
-      pointerEvents={concealedByRail ? 'none' : 'auto'}
+      accessibilityElementsHidden={concealedByHousing}
+      importantForAccessibility={concealedByHousing ? 'no-hide-descendants' : 'auto'}
+      pointerEvents={concealedByHousing ? 'none' : 'auto'}
       style={[
         styles.controlPosition,
         { width: controlSize, height: controlSize },
@@ -196,8 +198,8 @@ function ToolControl({
       <Pressable
         accessibilityLabel={`${tool.label}, activate`}
         accessibilityRole="button"
-        accessibilityState={{ disabled: disabled || concealedByRail, selected }}
-        disabled={disabled || concealedByRail}
+        accessibilityState={{ disabled: disabled || concealedByHousing, selected }}
+        disabled={disabled || concealedByHousing}
         onPress={onActivate}
         style={({ pressed }) => [
           styles.control,
@@ -273,9 +275,7 @@ export function ScannerToolCarousel({
     moderateScale,
     scannerCarouselHeight,
     scannerControlSize,
-    scannerRailHeight,
     scannerRailTop,
-    scannerRailWidth,
     scannerWheelRadius,
   } = useResponsiveLayout();
   const selectedIndex = scannerTools.findIndex((tool) => tool.id === selectedTool);
@@ -377,58 +377,33 @@ export function ScannerToolCarousel({
           { width: controlDockWidth, height: scannerCarouselHeight },
           disabled && styles.rootDisabled,
         ]}>
-        <View
+        <Image
+          accessibilityIgnoresInvertColors
+          contentFit="fill"
           pointerEvents="none"
-          style={[
-            styles.rail,
-            {
-              top: scannerRailTop,
-              width: scannerRailWidth,
-              height: scannerRailHeight,
-            },
-          ]}>
-          <View
-            style={[
-              styles.railOrbit,
-              {
-                top: -scannerRailHeight * 0.62,
-                width: scannerRailWidth * 0.82,
-                height: scannerRailHeight * 1.6,
-              },
-            ]}
-          />
-          <View
-            style={[
-              styles.railWheelCanvas,
-              {
-                top: -scannerRailTop,
-                height: scannerCarouselHeight,
-              },
-            ]}>
-            {scannerTools.map((tool, index) => {
-              const offset = modulo(index - Math.max(0, selectedIndex), TOOL_COUNT);
-              const hidden = offset === TOOL_COUNT / 2;
+          source={require('@/assets/tool-carousel-bottom.svg')}
+          style={styles.housingBottom}
+        />
 
-              return (
-                <ToolControl
-                  {...controlProps}
-                  badge={badges?.[tool.id]}
-                  disabled
-                  hidden={hidden}
-                  index={index}
-                  key={`rail-${tool.id}`}
-                  layer="rail"
-                  onActivate={() => undefined}
-                  selected={false}
-                  tool={tool}
-                />
-              );
-            })}
-          </View>
-          <View style={styles.railShade} />
-          <View style={styles.railHighlight} />
-          <View style={styles.railNotch} />
-        </View>
+        {scannerTools.map((tool, index) => {
+          const offset = modulo(index - Math.max(0, selectedIndex), TOOL_COUNT);
+          const hidden = offset === TOOL_COUNT / 2;
+
+          return (
+            <ToolControl
+              {...controlProps}
+              badge={badges?.[tool.id]}
+              disabled
+              hidden={hidden}
+              index={index}
+              key={`rear-${tool.id}`}
+              layer="rear"
+              onActivate={() => undefined}
+              selected={false}
+              tool={tool}
+            />
+          );
+        })}
 
         {scannerTools.map((tool, index) => {
           const offset = modulo(index - Math.max(0, selectedIndex), TOOL_COUNT);
@@ -449,6 +424,14 @@ export function ScannerToolCarousel({
             />
           );
         })}
+
+        <Image
+          accessibilityIgnoresInvertColors
+          contentFit="fill"
+          pointerEvents="none"
+          source={require('@/assets/tool-carousel-top.svg')}
+          style={styles.housingTop}
+        />
       </Animated.View>
     </GestureDetector>
   );
@@ -461,61 +444,13 @@ const styles = StyleSheet.create({
   rootDisabled: {
     opacity: 0.58,
   },
-  rail: {
-    position: 'absolute',
-    zIndex: RAIL_LAYER,
-    overflow: 'hidden',
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(215, 168, 74, 0.26)',
-    backgroundColor: 'rgba(5, 5, 9, 0.90)',
-    experimental_backgroundImage: `
-      radial-gradient(circle at 50% 0%, rgba(215, 168, 74, 0.10) 0%, transparent 42%),
-      linear-gradient(180deg, rgba(17, 14, 21, 0.96) 0%, rgba(3, 3, 6, 0.98) 100%)
-    `,
-    boxShadow: 'inset 0 0 22px rgba(0, 0, 0, 0.58), 0 10px 28px rgba(0, 0, 0, 0.42)',
+  housingBottom: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 0,
   },
-  railHighlight: {
-    position: 'absolute',
-    top: 0,
-    right: 24,
-    left: 24,
-    zIndex: 4,
-    height: 1,
-    experimental_backgroundImage:
-      'linear-gradient(90deg, transparent 0%, rgba(242, 211, 138, 0.58) 50%, transparent 100%)',
-  },
-  railOrbit: {
-    position: 'absolute',
-    alignSelf: 'center',
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.18)',
-    transform: [{ scaleY: 0.64 }],
-  },
-  railWheelCanvas: {
-    position: 'absolute',
-    right: 0,
-    left: 0,
-    zIndex: 2,
-    alignItems: 'center',
-  },
-  railShade: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 3,
-    experimental_backgroundImage: `
-      linear-gradient(180deg, rgba(0, 0, 0, 0.48) 0%, transparent 34%, rgba(0, 0, 0, 0.26) 100%)
-    `,
-  },
-  railNotch: {
-    position: 'absolute',
-    top: 8,
-    zIndex: 4,
-    alignSelf: 'center',
-    width: 30,
-    height: 3,
-    borderRadius: theme.radii.pill,
-    backgroundColor: 'rgba(215, 168, 74, 0.16)',
+  housingTop: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: HOUSING_TOP_LAYER,
   },
   controlPosition: {
     position: 'absolute',
