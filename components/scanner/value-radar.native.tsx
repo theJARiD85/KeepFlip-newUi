@@ -1,7 +1,7 @@
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, View } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
-
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 
@@ -97,6 +97,7 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
     focusY + 8,
     Math.max(focusY + 8, focusY + focusHeight - targetHeight - 8),
   );
+  const insets = useSafeAreaInsets();
 
   const panelWidth = Math.min(238, Math.max(164, focusWidth - 18));
   const panelHeight = 78;
@@ -116,21 +117,6 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
 
   return (
     <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
-      <Image
-        accessibilityIgnoresInvertColors
-        contentFit="fill"
-        pointerEvents="none"
-        source={require("@/assets/images/hud-border.svg")}
-        style={[
-          styles.hudFrame,
-          {
-            height: focusHeight,
-            left: focusX,
-            top: focusY,
-            width: focusWidth,
-          },
-        ]}
-      />
 
       <ValueRadarTargetOverlay {...props} />
 
@@ -147,6 +133,18 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
             },
           ]}
         >
+            <Image
+              source={require("@/assets/potential-find.svg")}
+              contentFit="fill"
+              transition={100}
+              pointerEvents="none"
+              style={[
+                {
+                  height: 80,
+                  width: panelWidth,
+                },
+              ]}
+            />
           <Pressable
             accessibilityHint="Captures this item for full KeepFlip identification and current market analysis"
             accessibilityLabel={`Analyze potential ${marker.label}`}

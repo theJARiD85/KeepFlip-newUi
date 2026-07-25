@@ -11,6 +11,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useTensorflowModel } from "react-native-fast-tflite";
+import { Image } from 'expo-image';
 import {
   type CameraFrameOutput,
   useFrameOutput,
@@ -978,6 +979,19 @@ export function ValueRadarOverlay({
               },
             ]}
           >
+            <Image
+              source={require("@/assets/potential-find.svg")}
+              contentFit="fill"
+              transition={100}
+              pointerEvents="none"
+              style={[
+                {
+                  flex: 1,
+                  height: '100%',
+                  width: '100%',
+                },
+              ]}
+            />
             <Pressable
               accessibilityHint="Captures this item for full KeepFlip identification and current market analysis"
               accessibilityLabel={`Analyze potential ${marker.label}`}
