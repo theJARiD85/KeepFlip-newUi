@@ -1,6 +1,6 @@
 import type { ComponentProps } from "react";
 
-import { ValueRadarPresentationOverlay } from "./value-radar-presentation.native.android";
+import { ValueRadarCommandHud } from "./value-radar-command-hud.native.android";
 import { useValueRadar } from "./value-radar-visual.native";
 
 export type {
@@ -12,9 +12,9 @@ export type {
 export { useValueRadar };
 
 export type ValueRadarOverlayProps = ComponentProps<
-  typeof ValueRadarPresentationOverlay
+  typeof ValueRadarCommandHud
 >;
 
 export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
-  return <ValueRadarPresentationOverlay {...props} />;
+  return <ValueRadarCommandHud {...props} />;
 }
