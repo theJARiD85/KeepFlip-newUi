@@ -62,39 +62,20 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
   const sourceWidth = Math.max(marker?.sourceWidth ?? width, 1);
   const sourceHeight = Math.max(marker?.sourceHeight ?? height, 1);
   const previewScale = Math.max(width / sourceWidth, height / sourceHeight);
-  const renderedWidth = sourceWidth * previewScale;
   const renderedHeight = sourceHeight * previewScale;
-  const previewOffsetX = (width - renderedWidth) / 2;
   const previewOffsetY = (height - renderedHeight) / 2;
-  const rawMarkerLeft = marker
-    ? previewOffsetX + marker.x * renderedWidth
-    : focusX;
   const rawMarkerTop = marker
     ? previewOffsetY + marker.y * renderedHeight
     : focusY;
-  const rawMarkerWidth = marker ? marker.width * renderedWidth : 0;
   const rawMarkerHeight = marker ? marker.height * renderedHeight : 0;
-  const markerCenterX = rawMarkerLeft + rawMarkerWidth / 2;
   const markerCenterY = rawMarkerTop + rawMarkerHeight / 2;
 
-  const maxTargetWidth = Math.max(56, Math.min(196, focusWidth - 18));
   const maxTargetHeight = Math.max(56, Math.min(184, focusHeight - 18));
-  const minTargetWidth = Math.min(92, maxTargetWidth);
   const minTargetHeight = Math.min(92, maxTargetHeight);
-  const targetWidth = clamp(
-    rawMarkerWidth + 26,
-    minTargetWidth,
-    maxTargetWidth,
-  );
   const targetHeight = clamp(
     rawMarkerHeight + 26,
     minTargetHeight,
     maxTargetHeight,
-  );
-  const targetLeft = clamp(
-    markerCenterX - targetWidth / 2,
-    focusX + 8,
-    Math.max(focusX + 8, focusX + focusWidth - targetWidth - 8),
   );
   const targetTop = clamp(
     markerCenterY - targetHeight / 2,
