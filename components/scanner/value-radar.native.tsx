@@ -1,7 +1,7 @@
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, View } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 
@@ -20,6 +20,8 @@ export type {
 export { useValueRadar };
 
 export type ValueRadarOverlayProps = ValueRadarTargetOverlayProps;
+
+const POTENTIAL_FIND_ASPECT_RATIO = 323.56247 / 165.70309;
 
 function clamp(value: number, minimum: number, maximum: number) {
   return Math.min(Math.max(value, minimum), maximum);
@@ -97,10 +99,9 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
     focusY + 8,
     Math.max(focusY + 8, focusY + focusHeight - targetHeight - 8),
   );
-  const insets = useSafeAreaInsets();
 
-  const panelWidth = Math.min(238, Math.max(164, focusWidth - 18));
-  const panelHeight = 78;
+  const panelWidth = Math.min(300, Math.max(180, focusWidth - 18));
+  const panelHeight = panelWidth / POTENTIAL_FIND_ASPECT_RATIO;
   const panelLeft = clamp(
     targetLeft + targetWidth / 2 - panelWidth / 2,
     focusX + 8,
@@ -117,7 +118,6 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
 
   return (
     <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
-
       <ValueRadarTargetOverlay {...props} />
 
       {marker && status === "ready" ? (
@@ -127,24 +127,13 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
           style={[
             styles.markerPanelHost,
             {
+              height: panelHeight,
               left: panelLeft,
               top: panelTop,
               width: panelWidth,
             },
           ]}
         >
-            <Image
-              source={require("@/assets/potential-find.svg")}
-              contentFit="fill"
-              transition={100}
-              pointerEvents="none"
-              style={[
-                {
-                  height: 80,
-                  width: panelWidth,
-                },
-              ]}
-            />
           <Pressable
             accessibilityHint="Captures this item for full KeepFlip identification and current market analysis"
             accessibilityLabel={`Analyze potential ${marker.label}`}
@@ -157,13 +146,17 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
               disabled && styles.markerPanelDisabled,
             ]}
           >
-            <View pointerEvents="none" style={styles.markerPanelAccent} />
-            <View style={styles.markerPanelHeading}>
-              <View style={styles.lockGlyph}>
-                <View style={styles.lockGlyphCore} />
-              </View>
-              <Text style={styles.markerEyebrow}>POTENTIAL FIND</Text>
-              <View style={styles.confidencePill}>
+            <Image
+              accessibilityIgnoresInvertColors
+              contentFit="fill"
+              pointerEvents="none"
+              source={require("@/assets/potential-find.svg")}
+              style={StyleSheet.absoluteFill}
+            />
+
+            <View pointerEvents="none" style={styles.markerContent}>
+              <View style={styles.markerHeading}>
+                <Text style={styles.markerEyebrow}>POTENTIAL FIND</Text>
                 <Text style={styles.confidenceText}>
                   {Math.round(marker.score * 100)
                     .toString()
@@ -171,18 +164,18 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
                   % LOCK
                 </Text>
               </View>
-            </View>
 
-            <Text numberOfLines={1} style={styles.markerLabel}>
-              {marker.label}
-            </Text>
-
-            <View style={styles.markerPanelFooter}>
-              <Text numberOfLines={1} style={styles.markerAction}>
-                CLASS {marker.classId.toString().padStart(2, "0")} {"//"} TAP
-                TO ANALYZE VALUE
+              <Text numberOfLines={1} style={styles.markerLabel}>
+                {marker.label}
               </Text>
-              <Text style={styles.markerChevron}>›</Text>
+
+              <View style={styles.markerFooter}>
+                <Text numberOfLines={1} style={styles.markerAction}>
+                  CLASS {marker.classId.toString().padStart(2, "0")} {"//"} TAP
+                  TO ANALYZE VALUE
+                </Text>
+                <Text style={styles.markerChevron}>›</Text>
+              </View>
             </View>
           </Pressable>
         </Animated.View>
@@ -192,113 +185,77 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
 }
 
 const styles = StyleSheet.create({
-  hudFrame: {
-    position: "absolute",
-    opacity: 0.88,
-    zIndex: 10,
-  },
   markerPanelHost: {
     position: "absolute",
     zIndex: 22,
     elevation: 22,
+    boxShadow:
+      "0 9px 24px rgba(0, 0, 0, 0.44), 0 0 18px rgba(88, 223, 232, 0.10)",
   },
   markerPanel: {
-    width: "100%",
-    minHeight: 78,
-    gap: 3,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 9,
-    borderCurve: "continuous",
-    borderWidth: 1,
-    borderColor: "rgba(88, 223, 232, 0.52)",
-    backgroundColor: "rgba(3, 7, 12, 0.94)",
-    boxShadow:
-      "0 0 22px rgba(88, 223, 232, 0.14), 0 8px 22px rgba(0, 0, 0, 0.48)",
+    flex: 1,
+    overflow: "hidden",
   },
-  markerPanelAccent: {
-    position: "absolute",
-    top: 9,
-    bottom: 9,
-    left: 0,
-    width: 2,
-    borderRadius: 2,
-    backgroundColor: theme.colors.scannerCyan,
-    boxShadow: "0 0 8px rgba(88, 223, 232, 0.82)",
+  markerContent: {
+    flex: 1,
+    justifyContent: "center",
+    gap: 5,
+    paddingTop: 22,
+    paddingRight: 28,
+    paddingBottom: 20,
+    paddingLeft: 28,
   },
-  markerPanelHeading: {
+  markerHeading: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-  },
-  lockGlyph: {
-    width: 10,
-    height: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: theme.colors.scannerCyan,
-    transform: [{ rotate: "45deg" }],
-  },
-  lockGlyphCore: {
-    width: 3,
-    height: 3,
-    backgroundColor: theme.colors.goldBright,
+    gap: 10,
   },
   markerEyebrow: {
     flex: 1,
     minWidth: 0,
     color: theme.colors.scannerCyan,
     fontFamily: theme.fonts.analysis,
-    fontSize: 7.5,
-    lineHeight: 9,
-    letterSpacing: 1.1,
-  },
-  confidencePill: {
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: 3,
-    borderWidth: 0.5,
-    borderColor: "rgba(242, 211, 138, 0.38)",
-    backgroundColor: "rgba(242, 211, 138, 0.08)",
+    fontSize: 8,
+    lineHeight: 10,
+    letterSpacing: 1.25,
   },
   confidenceText: {
     color: theme.colors.goldBright,
     fontFamily: theme.fonts.analysis,
-    fontSize: 6.5,
-    lineHeight: 8,
+    fontSize: 7,
+    lineHeight: 9,
     fontVariant: ["tabular-nums"],
-    letterSpacing: 0.35,
+    letterSpacing: 0.45,
   },
   markerLabel: {
     color: theme.colors.text,
-    fontSize: 17,
-    lineHeight: 21,
+    fontSize: 18,
+    lineHeight: 22,
     fontWeight: "800",
-    letterSpacing: -0.25,
+    letterSpacing: -0.3,
   },
-  markerPanelFooter: {
+  markerFooter: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 6,
   },
   markerAction: {
     flex: 1,
     minWidth: 0,
-    color: "rgba(247, 242, 232, 0.5)",
+    color: "rgba(247, 242, 232, 0.52)",
     fontFamily: theme.fonts.analysis,
     fontSize: 6.5,
     lineHeight: 8,
-    letterSpacing: 0.48,
+    letterSpacing: 0.5,
   },
   markerChevron: {
     color: theme.colors.scannerViolet,
-    fontSize: 16,
-    lineHeight: 16,
+    fontSize: 18,
+    lineHeight: 18,
     fontWeight: "800",
   },
   markerPanelPressed: {
-    opacity: 0.86,
+    opacity: 0.84,
     transform: [{ scale: 0.985 }],
   },
   markerPanelDisabled: {
