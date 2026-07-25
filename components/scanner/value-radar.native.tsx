@@ -22,6 +22,8 @@ export { useValueRadar };
 export type ValueRadarOverlayProps = ValueRadarTargetOverlayProps;
 
 const POTENTIAL_FIND_ASPECT_RATIO = 323.56247 / 165.70309;
+const PANEL_GAP = 12;
+const PANEL_MARGIN = 10;
 
 function clamp(value: number, minimum: number, maximum: number) {
   return Math.min(Math.max(value, minimum), maximum);
@@ -103,18 +105,29 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
   const panelWidth = Math.min(300, Math.max(180, focusWidth - 18));
   const panelHeight = panelWidth / POTENTIAL_FIND_ASPECT_RATIO;
   const panelLeft = clamp(
-    targetLeft + targetWidth / 2 - panelWidth / 2,
-    focusX + 8,
-    Math.max(focusX + 8, focusX + focusWidth - panelWidth - 8),
+    focusX + focusWidth / 2 - panelWidth / 2,
+    PANEL_MARGIN,
+    Math.max(PANEL_MARGIN, width - panelWidth - PANEL_MARGIN),
   );
-  const canPlacePanelAbove = targetTop - panelHeight - 12 >= focusY + 8;
-  const panelTop = clamp(
-    canPlacePanelAbove
-      ? targetTop - panelHeight - 12
-      : targetTop + targetHeight + 12,
-    focusY + 8,
-    Math.max(focusY + 8, focusY + focusHeight - panelHeight - 8),
+
+  const belowFocusTop = focusY + focusHeight + PANEL_GAP;
+  const aboveFocusTop = focusY - panelHeight - PANEL_GAP;
+  const canPlaceBelow =
+    belowFocusTop + panelHeight <= height - PANEL_MARGIN;
+  const canPlaceAbove = aboveFocusTop >= PANEL_MARGIN;
+  const topDock = PANEL_MARGIN;
+  const bottomDock = Math.max(
+    PANEL_MARGIN,
+    height - panelHeight - PANEL_MARGIN,
   );
+  const targetCenterY = targetTop + targetHeight / 2;
+  const panelTop = canPlaceBelow
+    ? belowFocusTop
+    : canPlaceAbove
+      ? aboveFocusTop
+      : targetCenterY < height / 2
+        ? bottomDock
+        : topDock;
 
   return (
     <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
