@@ -1593,49 +1593,6 @@ export default function ScannerScreen() {
               }}
               status={radarStatus}
               width={screenWidth}
-              flashButton={
-                <Pressable
-                  accessibilityLabel="Toggle flashlight"
-                  accessibilityState={{
-                    disabled:
-                      !canUseTorch ||
-                      !isCameraActive ||
-                      !isCameraReady ||
-                      isTorchUpdating,
-                  }}
-                  disabled={
-                    !canUseTorch ||
-                    !isCameraActive ||
-                    !isCameraReady ||
-                    isTorchUpdating
-                  }
-                  onPress={() => void handleToggleTorch()}
-                  style={[
-                    styles.iconButton,
-                    {
-                      width: torchButtonSize,
-                      height: torchButtonSize,
-                      borderRadius: torchButtonSize / 2,
-                    },
-                    torchEnabled && styles.iconButtonActive,
-                    (!canUseTorch ||
-                      !isCameraActive ||
-                      !isCameraReady ||
-                      isTorchUpdating) &&
-                      styles.iconButtonDisabled,
-                  ]}
-                >
-                  <IconSymbol
-                    name={torchEnabled ? "bolt.fill" : "bolt.slash.fill"}
-                    size={Math.round(moderateScale(22, 0.6))}
-                    color={
-                      torchEnabled
-                        ? theme.colors.background
-                        : theme.colors.goldBright
-                    }
-                  />
-                </Pressable>
-              }
             />
           </View>
         ) : null}
@@ -1740,6 +1697,49 @@ export default function ScannerScreen() {
         </View>
 
         <View style={styles.scannerArea}>
+          <View style={styles.flashButtonContainer}>
+            <Pressable
+                  accessibilityLabel="Toggle flashlight"
+                  accessibilityState={{
+                    disabled:
+                      !canUseTorch ||
+                      !isCameraActive ||
+                      !isCameraReady ||
+                      isTorchUpdating,
+                  }}
+                  disabled={
+                    !canUseTorch ||
+                    !isCameraActive ||
+                    !isCameraReady ||
+                    isTorchUpdating
+                  }
+                  onPress={() => void handleToggleTorch()}
+                  style={[
+                    styles.iconButton,
+                    {
+                      width: torchButtonSize,
+                      height: torchButtonSize,
+                      borderRadius: torchButtonSize / 2,
+                    },
+                    torchEnabled && styles.iconButtonActive,
+                    (!canUseTorch ||
+                      !isCameraActive ||
+                      !isCameraReady ||
+                      isTorchUpdating) &&
+                      styles.iconButtonDisabled,
+                  ]}
+                >
+                  <IconSymbol
+                    name={torchEnabled ? "bolt.fill" : "bolt.slash.fill"}
+                    size={Math.round(moderateScale(22, 0.6))}
+                    color={
+                      torchEnabled
+                        ? theme.colors.background
+                        : theme.colors.goldBright
+                    }
+                  />
+            </Pressable>
+          </View>
           <View
             ref={scanFrameRef}
             onLayout={handleScanFrameLayout}
@@ -2022,11 +2022,17 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     fontWeight: "700",
   },
+  flashButtonContainer: {
+    position: "absolute",
+    top: 0,
+    left: 10,
+    zIndex: 3,
+  },
   iconButton: {
     width: 35,
     height: 35,
-    marginLeft: 20,
-    marginTop: 20,
+    marginLeft: 0,
+    marginTop: 0,
     borderRadius: theme.radii.pill,
     alignItems: "center",
     justifyContent: "center",
@@ -2041,7 +2047,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 0,
     width: '100%',
-    height: '70%',
+    height: '100%',
     alignItems: "center",
     justifyContent: "center",
     zIndex: 5,
