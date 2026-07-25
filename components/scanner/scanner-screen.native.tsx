@@ -2040,6 +2040,8 @@ const styles = StyleSheet.create({
   scannerArea: {
     flex: 1,
     minHeight: 0,
+    width: '100%',
+    height: '70%',
     alignItems: "center",
     justifyContent: "center",
     zIndex: 5,
@@ -2067,7 +2069,7 @@ const styles = StyleSheet.create({
     aspectRatio: 0.9,
     maxHeight: 325,
     borderRadius: theme.radii.large,
-    backgroundColor: "rgba(3, 3, 6, 0.33)",
+    backgroundColor: "rgba(3, 3, 6, 0.17)",
     alignSelf: "center",
     justifyContent: "flex-start",
     bottom: 40,

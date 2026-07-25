@@ -189,8 +189,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     zIndex: 22,
     elevation: 22,
-    boxShadow:
-      "0 9px 24px rgba(0, 0, 0, 0.44), 0 0 18px rgba(88, 223, 232, 0.10)",
   },
   markerPanel: {
     flex: 1,
@@ -203,7 +201,7 @@ const styles = StyleSheet.create({
     paddingTop: 22,
     paddingRight: 28,
     paddingBottom: 20,
-    paddingLeft: 28,
+    paddingLeft: 35,
   },
   markerHeading: {
     flexDirection: "row",

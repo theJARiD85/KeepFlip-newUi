@@ -1356,7 +1356,7 @@ const styles = StyleSheet.create({
   },
   markerPanel: {
     width: "100%",
-    minHeight: 78,
+    minHeight: 55,
     paddingHorizontal: 12,
     paddingVertical: 9,
     borderRadius: 9,

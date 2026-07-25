@@ -24,13 +24,13 @@ import type {
   ValueRadarMarker,
   ValueRadarStatus,
   ValueRadarViewport,
-} from "./value-radar-visual.native";
+} from "@/components/scanner/value-radar-visual.native";
 
 export type {
   ValueRadarMarker,
   ValueRadarStatus,
   ValueRadarViewport,
-} from "./value-radar-visual.native";
+} from "@/components/scanner/value-radar-visual.native";
 
 const MODEL_SIZE = 320;
 const MODEL_INPUT_BYTES = MODEL_SIZE * MODEL_SIZE * 3;
