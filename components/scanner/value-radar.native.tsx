@@ -40,24 +40,38 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
     width,
   } = props;
 
+  const horizontalInset = 4;
+  const fallbackFocusTop = Math.max(68, height * 0.1);
+  const fallbackFocusBottom = 18;
+  
   const focusScaleX =
     focusBounds != null
       ? width / Math.max(focusBounds.previewWidth, 1)
       : 1;
+  
   const focusScaleY =
     focusBounds != null
       ? height / Math.max(focusBounds.previewHeight, 1)
       : 1;
-  const focusX = focusBounds ? focusBounds.x * focusScaleX : 12;
+  
+  const focusX = focusBounds
+    ? focusBounds.x * focusScaleX
+    : horizontalInset;
+  
   const focusY = focusBounds
     ? focusBounds.y * focusScaleY
-    : Math.max(96, height * 0.22);
+    : fallbackFocusTop;
+  
   const focusWidth = focusBounds
     ? focusBounds.width * focusScaleX
-    : width - 24;
+    : Math.max(0, width - horizontalInset * 2);
+  
   const focusHeight = focusBounds
     ? focusBounds.height * focusScaleY
-    : Math.min(360, height * 0.48);
+    : Math.max(
+        120,
+        height - fallbackFocusTop - fallbackFocusBottom,
+      );
 
   const sourceWidth = Math.max(marker?.sourceWidth ?? width, 1);
   const sourceHeight = Math.max(marker?.sourceHeight ?? height, 1);

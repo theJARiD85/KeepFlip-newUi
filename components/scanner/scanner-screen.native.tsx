@@ -4,6 +4,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useIsFocused, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, AppState, BackHandler, Linking, Platform, Pressable, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Camera,
   type CameraRef,
@@ -1695,10 +1696,8 @@ export default function ScannerScreen() {
             </Animated.View>
           </View>
         </View>
-
         <View style={styles.scannerArea}>
-          <View style={styles.flashButtonContainer}>
-            <Pressable
+        <Pressable
                   accessibilityLabel="Toggle flashlight"
                   accessibilityState={{
                     disabled:
@@ -1738,8 +1737,7 @@ export default function ScannerScreen() {
                         : theme.colors.goldBright
                     }
                   />
-            </Pressable>
-          </View>
+                </Pressable>
           <View
             ref={scanFrameRef}
             onLayout={handleScanFrameLayout}
@@ -1892,6 +1890,7 @@ const styles = StyleSheet.create({
   radarOverlayHost: {
     ...StyleSheet.absoluteFill,
     zIndex: 14,
+    bottom: 60,
   },
   analysisAtmosphereHost: {
     ...StyleSheet.absoluteFill,
@@ -2022,17 +2021,12 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     fontWeight: "700",
   },
-  flashButtonContainer: {
-    position: "absolute",
-    top: 0,
-    left: 10,
-    zIndex: 3,
-  },
   iconButton: {
-    width: 35,
-    height: 35,
-    marginLeft: 0,
-    marginTop: 0,
+    position: 'absolute',
+    top: -30, 
+    left: 10,
+    width: 30,
+    height: 30,
     borderRadius: theme.radii.pill,
     alignItems: "center",
     justifyContent: "center",
@@ -2046,11 +2040,10 @@ const styles = StyleSheet.create({
   scannerArea: {
     flex: 1,
     minHeight: 0,
-    width: '100%',
-    height: '100%',
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-start",
     zIndex: 5,
+    marginTop: 30,
   },
   multiStackAnchor: {
     position: "absolute",
@@ -2075,7 +2068,6 @@ const styles = StyleSheet.create({
     aspectRatio: 0.9,
     maxHeight: 325,
     borderRadius: theme.radii.large,
-    backgroundColor: "rgba(3, 3, 6, 0.17)",
     alignSelf: "center",
     justifyContent: "flex-start",
     bottom: 40,

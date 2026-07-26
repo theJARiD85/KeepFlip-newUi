@@ -765,11 +765,17 @@ export function ValueRadarOverlay({
   const rawMarkerHeight = marker ? marker.height * renderedHeight : 0;
   const rawMarkerCenterX = rawMarkerLeft + rawMarkerWidth / 2;
   const rawMarkerCenterY = rawMarkerTop + rawMarkerHeight / 2;
-
-  const maxTargetWidth = Math.max(56, Math.min(196, focusWidth - 18));
-  const maxTargetHeight = Math.max(56, Math.min(184, focusHeight - 18));
-  const minTargetWidth = Math.min(92, maxTargetWidth);
-  const minTargetHeight = Math.min(92, maxTargetHeight);
+  const maxTargetWidth = Math.max(
+    72,
+    Math.min(280, focusWidth - 12),
+  );
+  
+  const maxTargetHeight = Math.max(
+    72,
+    Math.min(320, focusHeight - 12),
+  );
+  const minTargetWidth = Math.min(46, maxTargetWidth);
+  const minTargetHeight = Math.min(46, maxTargetHeight);
   const targetWidth = clamp(
     rawMarkerWidth + 26,
     minTargetWidth,
@@ -825,7 +831,7 @@ export function ValueRadarOverlay({
     Math.max(8, width - railWidth - 8),
   );
   const railTop = clamp(
-    focusY + focusHeight - 34,
+    focusY + focusHeight - 12,
     8,
     Math.max(8, height - 28),
   );
@@ -1040,6 +1046,7 @@ export function ValueRadarOverlay({
 const styles = StyleSheet.create({
   overlayRoot: {
     ...StyleSheet.absoluteFill,
+    bottom: 40
   },
   statusModule: {
     position: "absolute",
@@ -1228,7 +1235,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.66,
   },
   targetHost: {
-    position: "absolute",
     zIndex: 8,
     alignItems: "center",
     justifyContent: "center",
@@ -1356,7 +1362,7 @@ const styles = StyleSheet.create({
   },
   markerPanel: {
     width: "100%",
-    minHeight: 55,
+    minHeight: 45,
     paddingHorizontal: 12,
     paddingVertical: 9,
     borderRadius: 9,
