@@ -31,6 +31,7 @@
     },
     "plugins": [
       "./plugins/with-appodeal-repository",
+      "./plugins/with-android-value-radar-memory",
       "expo-router",
       [
         "expo-image-picker",
