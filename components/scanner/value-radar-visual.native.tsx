@@ -982,6 +982,7 @@ export function ValueRadarOverlay({
                 left: panelLeft,
                 top: panelTop,
                 width: panelWidth,
+                height: 100,
               },
             ]}
           >
@@ -993,7 +994,7 @@ export function ValueRadarOverlay({
               style={[
                 {
                   flex: 1,
-                  height: '100%',
+                  height: '75%',
                   width: '100%',
                 },
               ]}

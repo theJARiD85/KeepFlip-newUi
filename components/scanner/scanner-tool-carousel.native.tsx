@@ -11,7 +11,8 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
-
+import { Image } from 'expo-image';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   publishScannerHudSnapshot,
   type ScannerHudToolId,
@@ -172,8 +173,8 @@ function ToolControl({
     );
     const scale = interpolate(
       distance,
-      [0, 0.62, 1, MAX_VISIBLE_PROGRESS],
-      [ACTIVE_SCALE, 0.84, SIDE_SCALE, 0.36],
+      [0, 0.5, 1, MAX_VISIBLE_PROGRESS],
+      [ACTIVE_SCALE, 0.84, SIDE_SCALE, 0.54],
       "clamp",
     );
 
@@ -356,6 +357,7 @@ export function ScannerToolCarousel({
   const selected = scannerTools[Math.max(0, selectedIndex)] ?? scannerTools[0];
   const centerX = Math.max(0, (controlDockWidth - scannerControlSize) / 2);
   const bottomInset = moderateScale(8, 0.3);
+  const insets = useSafeAreaInsets();
   const anchorY = Math.max(
     0,
     scannerCarouselHeight - scannerControlSize - bottomInset,
@@ -503,6 +505,7 @@ export function ScannerToolCarousel({
   } as const;
 
   return (
+    <>
     <GestureDetector gesture={pan}>
       <Animated.View
         style={[
@@ -527,7 +530,9 @@ export function ScannerToolCarousel({
           />
         ))}
       </Animated.View>
-    </GestureDetector>
+ 
+    </GestureDetector>  
+        </>
   );
 }
 

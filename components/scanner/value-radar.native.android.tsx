@@ -1,13 +1,11 @@
 import {
   useCallback,
   useEffect,
-  useMemo,
   useState,
   type ComponentType,
   type ReactNode,
 } from "react";
 import { useTensorflowModel } from "react-native-fast-tflite";
-import { NitroModules } from "react-native-nitro-modules";
 import {
   type CameraFrameOutput,
   useAsyncRunner,
@@ -45,7 +43,6 @@ const FRAMES_BETWEEN_INFERENCES = 30;
 const BRIDGE_EVENT_MARKER = 1;
 const BRIDGE_EVENT_CLEAR_MARKER = 2;
 const BRIDGE_EVENT_ERROR = 3;
-const BRIDGE_EVENT_CLEAR_ERROR = 4;
 
 const RADAR_FRAME_RESOLUTION = {
   width: 320,
@@ -154,7 +151,7 @@ export function useValueRadar(
   // can block com.margelo.camera.frame. A true value means every incoming frame
   // must be discarded before runAsync is touched.
   const workerBusy = useSharedValue(false);
-
+  const inferenceBlocked = useSharedValue(false);
   const bridgeSequence = useSharedValue(0);
   const bridgeKind = useSharedValue(0);
   const bridgePayload = useSharedValue<number[]>([]);
@@ -200,6 +197,7 @@ export function useValueRadar(
     setInferenceError(false);
     frameCounter.value = 0;
     workerBusy.value = false;
+    inferenceBlocked.value = false;
     bridgeKind.value = 0;
     bridgePayload.value = [];
     bridgeMessage.value = "";
@@ -209,6 +207,7 @@ export function useValueRadar(
     bridgePayload,
     enabled,
     frameCounter,
+    inferenceBlocked,
     workerBusy,
   ]);
 
@@ -253,11 +252,10 @@ export function useValueRadar(
   }, []);
 
   const clearMarker = useCallback(() => {
-    setMarker(null);
-  }, []);
-
-  const clearInferenceError = useCallback(() => {
+    // Reaching this callback means inference completed successfully but
+    // no eligible object was found in the current frame.
     setInferenceError(false);
+    setMarker(null);
   }, []);
 
   const reportInferenceError = useCallback((message: string) => {
@@ -278,31 +276,20 @@ export function useValueRadar(
         scheduleOnRN(clearMarker);
       } else if (kind === BRIDGE_EVENT_ERROR) {
         scheduleOnRN(reportInferenceError, bridgeMessage.value);
-      } else if (kind === BRIDGE_EVENT_CLEAR_ERROR) {
-        scheduleOnRN(clearInferenceError);
       }
     },
-    [clearInferenceError, clearMarker, commitMarker, reportInferenceError],
+    [clearMarker, commitMarker, reportInferenceError],
   );
 
   const model = detector.state === "loaded" ? detector.model : undefined;
   const resizer =
     resizerState.state === "ready" ? resizerState.resizer : undefined;
 
-  const boxedModel = useMemo(
-    () => (model == null ? undefined : NitroModules.box(model)),
-    [model],
-  );
-  const boxedResizer = useMemo(
-    () => (resizer == null ? undefined : NitroModules.box(resizer)),
-    [resizer],
-  );
-
   const frameOutput = useFrameOutput({
     targetResolution: RADAR_FRAME_RESOLUTION,
     pixelFormat: "yuv",
     dropFramesWhileBusy: true,
-    enablePhysicalBufferRotation: true,
+    enablePhysicalBufferRotation: false,
     enablePreviewSizedOutputBuffers: true,
     onFrame(frame) {
       "worklet";
@@ -311,33 +298,33 @@ export function useValueRadar(
       const isInferenceFrame =
         frameCounter.value % FRAMES_BETWEEN_INFERENCES === 0;
 
-      if (
-        !enabled ||
-        boxedModel == null ||
-        boxedResizer == null ||
-        !isInferenceFrame ||
-        workerBusy.value
-      ) {
-        frame.dispose();
-        return;
-      }
+        if (
+          !enabled ||
+          model == null ||
+          resizer == null ||
+          !isInferenceFrame ||
+          workerBusy.value ||
+          inferenceBlocked.value
+        ) {
+          frame.dispose();
+          return;
+        }
 
       // Set this before touching runAsync. This is the critical difference from
       // the previous implementation: no later frame may attempt to enter the
       // worker runtime while its recursive mutex is owned by inference.
       workerBusy.value = true;
 
-      const modelBox = boxedModel;
-      const resizerBox = boxedResizer;
+      const workerModel = model;
+      const workerResizer = resizer;
+      
       const wasHandled = asyncRunner.runAsync(() => {
         "worklet";
-
+      
         let resized: ResizedFrame | undefined;
-        let stage = "unbox";
-
+        let stage = "resize";
+      
         try {
-          const workerModel = modelBox.unbox();
-          const workerResizer = resizerBox.unbox();
           const sourceWidth = Math.max(frame.width, 1);
           const sourceHeight = Math.max(frame.height, 1);
 
@@ -347,7 +334,9 @@ export function useValueRadar(
           stage = "pixel-buffer";
           const pixels = new Uint8Array(resized.getPixelBuffer());
           if (pixels.byteLength !== MODEL_INPUT_BYTES) {
-            throw new Error("EfficientDet input buffer size mismatch.");
+            throw new Error(
+              `EfficientDet input buffer size mismatch: ${pixels.byteLength} bytes received, ${MODEL_INPUT_BYTES} expected.`,
+            );
           }
 
           const inputBuffer =
@@ -568,12 +557,20 @@ export function useValueRadar(
           bridgeKind.value = BRIDGE_EVENT_MARKER;
           bridgeSequence.value += 1;
 
-          if (inferenceError) {
-            bridgeKind.value = BRIDGE_EVENT_CLEAR_ERROR;
-            bridgeSequence.value += 1;
+        } catch (caughtError) {
+          inferenceBlocked.value = true;
+        
+          let errorDetail = "Unknown native error";
+        
+          try {
+            errorDetail = String(caughtError);
+          } catch {
+            // Keep the fallback description.
           }
-        } catch (_caughtError) {
-          bridgeMessage.value = `[${stage}] asynchronous inference failed.`;
+        
+          bridgeMessage.value =
+            `[${stage}] asynchronous inference failed: ${errorDetail}`;
+        
           bridgeKind.value = BRIDGE_EVENT_ERROR;
           bridgeSequence.value += 1;
         } finally {

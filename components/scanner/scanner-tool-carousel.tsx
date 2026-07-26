@@ -220,7 +220,7 @@ function ToolControl({
             {
               borderRadius: controlSize / 2,
               borderColor: tool.accent,
-              boxShadow: `0 0 30px ${tool.glow}, inset 0 0 18px ${tool.surface}`,
+              boxShadow: `0 0 30px ${tool.glow}, inset 0 0 18px ${tool.glow}`,
             },
             animatedGlowStyle,
           ]}
@@ -433,6 +433,7 @@ export function ScannerToolCarousel({
           style={styles.housingTop}
         />
       </Animated.View>
+
     </GestureDetector>
   );
 }
@@ -445,11 +446,11 @@ const styles = StyleSheet.create({
     opacity: 0.58,
   },
   housingBottom: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 0,
   },
   housingTop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: HOUSING_TOP_LAYER,
   },
   controlPosition: {
