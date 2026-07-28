@@ -391,3 +391,26 @@ export async function listInventoryItems(
 
   return (response.rows as unknown as InventoryRow[]).map(rowToInventoryItem);
 }
+
+export async function getInventoryItem(
+  ownerId: string,
+  itemId: string,
+): Promise<InventoryItem> {
+  assertInventoryConfigured();
+  const cleanOwnerId = ownerId.trim();
+  const cleanItemId = itemId.trim();
+  if (!cleanOwnerId) throw new Error('Sign in before opening an inventory item.');
+  if (!cleanItemId) throw new Error('The inventory item ID is missing.');
+
+  const row = (await tablesDB.getRow({
+    databaseId: APPWRITE.databaseId,
+    tableId: APPWRITE.itemsTableId,
+    rowId: cleanItemId,
+  })) as unknown as InventoryRow;
+
+  if (row.ownerId !== cleanOwnerId) {
+    throw new Error('This inventory item is not available to the signed-in account.');
+  }
+
+  return rowToInventoryItem(row);
+}

@@ -19,6 +19,7 @@ import { useReducedMotion } from "react-native-reanimated";
 import * as THREE from "three";
 
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { configureExpoGlForThree } from "@/lib/expo-three-gl-compat";
 
 interface Ai3DStageProps {
   active?: boolean;
@@ -281,6 +282,7 @@ export function Ai3DStage({
         frameloop={reduceMotion ? "demand" : "always"}
         gl={{ alpha: true, antialias: false }}
         onCreated={({ gl }) => {
+          configureExpoGlForThree(gl);
           gl.setClearColor(new THREE.Color("#000000"), 0);
         }}
         style={styles.canvas}

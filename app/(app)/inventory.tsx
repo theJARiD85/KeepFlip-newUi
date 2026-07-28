@@ -1,4 +1,4 @@
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState, useMemo } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 
@@ -37,11 +37,25 @@ function formatDate(value: string) {
   });
 }
 
-function InventoryCard({ item }: { item: InventoryItem }) {
+function InventoryCard({
+  item,
+  onPress,
+}: {
+  item: InventoryItem;
+  onPress: () => void;
+}) {
   const meta = [item.brand, item.model, item.category].filter(Boolean).join(' · ');
 
   return (
-    <View style={styles.card}>
+    <Pressable
+      accessibilityHint="Opens the saved KeepFlip analysis and generated item model"
+      accessibilityLabel={`Open analysis for ${item.title}`}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.card,
+        pressed && styles.cardPressed,
+      ]}>
       <View style={styles.cardTopRow}>
         <View style={styles.cardIcon}>
           <IconSymbol color={theme.colors.goldBright} name="shippingbox.fill" size={22} />
@@ -94,7 +108,7 @@ function InventoryCard({ item }: { item: InventoryItem }) {
           <Text style={styles.photoCountText}>{item.photoCount}</Text>
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -120,7 +134,9 @@ function buildInventoryFeed(items: InventoryItem[]): InventoryFeedRow[] {
 }
 
 export default function InventoryScreen() {
+  const router = useRouter();
   const { user } = useKeepFlipAuth();
+  const userId = user?.$id;
   const { contentWidth, insets, pageGutter, responsiveFont } = useResponsiveLayout();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,7 +146,7 @@ export default function InventoryScreen() {
 
   const loadItems = useCallback(
     async (refresh = false) => {
-      if (!user?.$id) {
+      if (!userId) {
         setItems([]);
         setLoading(false);
         setRefreshing(false);
@@ -142,7 +158,7 @@ export default function InventoryScreen() {
       setError(null);
 
       try {
-        setItems(await listInventoryItems(user.$id));
+        setItems(await listInventoryItems(userId));
       } catch (caughtError) {
         setError(
           caughtError instanceof Error
@@ -154,7 +170,7 @@ export default function InventoryScreen() {
         setRefreshing(false);
       }
     },
-    [user?.$id],
+    [userId],
   );
 
   useFocusEffect(
@@ -225,7 +241,15 @@ export default function InventoryScreen() {
             </View>
           ) : (
             <View style={[styles.feedItem, { width: contentWidth }]}>
-              <InventoryCard item={row.item} />
+              <InventoryCard
+                item={row.item}
+                onPress={() =>
+                  router.push({
+                    pathname: "/analysis-result",
+                    params: { itemId: row.item.id },
+                  })
+                }
+              />
             </View>
           )
         }
@@ -307,6 +331,10 @@ const styles = StyleSheet.create({
       linear-gradient(145deg, rgba(18, 15, 22, 0.98) 0%, rgba(5, 5, 8, 0.98) 72%)
     `,
     boxShadow: '0 16px 40px rgba(0, 0, 0, 0.44), 0 0 24px rgba(215, 168, 74, 0.08)',
+  },
+  cardPressed: {
+    opacity: 0.82,
+    transform: [{ scale: 0.985 }],
   },
   cardTopRow: {
     flexDirection: 'row',

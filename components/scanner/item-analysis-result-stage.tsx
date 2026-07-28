@@ -25,6 +25,7 @@ type ItemAnalysisResultStageProps = {
   doneLabel?: string;
   onDone: () => void;
   onSave?: () => void;
+  projectionLabel?: string;
   saveLabel?: string;
   saving?: boolean;
   state: ResultState;
@@ -182,6 +183,7 @@ export function ItemAnalysisResultStage({
   doneLabel = "Start new scan",
   onDone,
   onSave,
+  projectionLabel = "GENERATED MODEL / SKIA PROJECTION",
   saveLabel = "Save to inventory",
   saving = false,
   state,
@@ -306,7 +308,7 @@ export function ItemAnalysisResultStage({
       >
         <View style={styles.projectionSignal} />
         <Text style={styles.projectionLabel}>
-          GENERATED MODEL / SKIA PROJECTION
+          {projectionLabel}
         </Text>
       </Animated.View>
 
@@ -335,37 +337,44 @@ export function ItemAnalysisResultStage({
                 result.valuation.currency,
               )}
             </Text>
-            <View style={styles.marketRangeRow}>
-              <View style={styles.marketRangeCell}>
-                <Text style={styles.readoutMicroLabel}>LOW</Text>
-                <Text
-                  adjustsFontSizeToFit
-                  numberOfLines={1}
-                  selectable
-                  style={styles.readoutMicroValue}
-                >
-                  {formatMoney(
-                    Number(result.valuation.low),
-                    result.valuation.currency,
-                  )}
-                </Text>
+            {result.valuation.snapshot ? (
+              <Text style={styles.readoutFootnote}>
+                SAVED ANALYSIS MEDIAN
+              </Text>
+            ) : (
+              <View style={styles.marketRangeRow}>
+                <View style={styles.marketRangeCell}>
+                  <Text style={styles.readoutMicroLabel}>LOW</Text>
+                  <Text
+                    adjustsFontSizeToFit
+                    numberOfLines={1}
+                    selectable
+                    style={styles.readoutMicroValue}
+                  >
+                    {formatMoney(
+                      Number(result.valuation.low),
+                      result.valuation.currency,
+                    )}
+                  </Text>
+                </View>
+                <View style={styles.marketRangeCell}>
+                  <Text style={styles.readoutMicroLabel}>HIGH</Text>
+                  <Text
+                    adjustsFontSizeToFit
+                    numberOfLines={1}
+                    selectable
+                    style={styles.readoutMicroValue}
+                  >
+                    {formatMoney(
+                      Number(result.valuation.high),
+                      result.valuation.currency,
+                    )}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.marketRangeCell}>
-                <Text style={styles.readoutMicroLabel}>HIGH</Text>
-                <Text
-                  adjustsFontSizeToFit
-                  numberOfLines={1}
-                  selectable
-                  style={styles.readoutMicroValue}
-                >
-                  {formatMoney(
-                    Number(result.valuation.high),
-                    result.valuation.currency,
-                  )}
-                </Text>
-              </View>
-            </View>
-            {result.valuation.comparableCount != null ? (
+            )}
+            {!result.valuation.snapshot &&
+            result.valuation.comparableCount != null ? (
               <Text style={styles.readoutFootnote}>
                 {String(
                   result.valuation.comparableCount,

@@ -1,3 +1,5 @@
+/* eslint-disable react/no-unknown-property */
+
 import {
   Canvas as SkiaCanvas,
   BlurMask,
@@ -46,9 +48,12 @@ import {
 } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { configureExpoGlForThree } from "@/lib/expo-three-gl-compat";
 
-const MAX_PROJECTED_TRIANGLES = 3000;
-const PROJECTION_UPDATES_PER_SECOND = 6;
+const MAX_PROJECTED_TRIANGLES = 3500;
+const PROJECTION_UPDATES_PER_SECOND = 10;
+const TRANSPARENT_PIXEL_DATA_URI =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAF/gL+X1WJTQAAAABJRU5ErkJggg==";
 
 type WireframeDepthPaths = {
   far: string;
@@ -82,19 +87,43 @@ const EMPTY_WIREFRAME_DEPTH_PATHS: WireframeDepthPaths = {
   near: "",
 };
 
+function disposeScene(scene: THREE.Object3D) {
+  scene.traverse((child) => {
+    const mesh = child as THREE.Mesh;
+    mesh.geometry?.dispose();
+
+    const materials = Array.isArray(mesh.material)
+      ? mesh.material
+      : mesh.material
+        ? [mesh.material]
+        : [];
+    materials.forEach((material) => {
+      Object.values(material).forEach((value) => {
+        if (value instanceof THREE.Texture) {
+          value.dispose();
+        }
+      });
+      material.dispose();
+    });
+  });
+}
+
 type ModelProjectionScannerProps = {
-  modelUrl: string;
+  modelBytes?: ArrayBuffer | Uint8Array;
+  modelUrl?: string;
   onError?: (message: string) => void;
   style?: StyleProp<ViewStyle>;
 };
 
 type ModelProjectorProps = Pick<
   ModelProjectionScannerProps,
-  "modelUrl" | "onError"
+  "modelBytes" | "modelUrl" | "onError"
 > & {
   onProjectionUpdate: (
     depthPaths: WireframeDepthPaths,
   ) => void;
+  projectionHeight: number;
+  projectionWidth: number;
 };
 
 type ProjectionErrorBoundaryProps = {
@@ -140,9 +169,12 @@ class ProjectionErrorBoundary extends Component<
 }
 
 function ModelProjector({
+  modelBytes,
   modelUrl,
   onError,
   onProjectionUpdate,
+  projectionHeight,
+  projectionWidth,
 }: ModelProjectorProps): React.JSX.Element | null {
   const modelRef =
     useRef<THREE.Group>(null);
@@ -170,31 +202,52 @@ function ModelProjector({
 
     let cancelled = false;
 
-    setLoadedScene(null);
     onProjectionUpdate(
       EMPTY_WIREFRAME_DEPTH_PATHS,
     );
 
     async function loadModel() {
       try {
-        const response = await fetch(
-          modelUrl,
-          {
-            method: "GET",
-            signal: controller.signal,
-          },
-        );
+        let resolvedModelBytes: ArrayBuffer;
+        let contentType: string | null = null;
 
-        if (!response.ok) {
-          throw new Error(
-            `Tripo model download failed with HTTP ${response.status}.`,
+        if (modelBytes) {
+          resolvedModelBytes =
+            modelBytes instanceof Uint8Array
+              ? (modelBytes.buffer.slice(
+                  modelBytes.byteOffset,
+                  modelBytes.byteOffset + modelBytes.byteLength,
+                ) as ArrayBuffer)
+              : modelBytes;
+        } else {
+          if (!modelUrl) {
+            throw new Error(
+              "The generated model source is missing.",
+            );
+          }
+
+          const response = await fetch(
+            modelUrl,
+            {
+              method: "GET",
+              signal: controller.signal,
+            },
           );
+
+          if (!response.ok) {
+            throw new Error(
+              `Tripo model download failed with HTTP ${response.status}.`,
+            );
+          }
+
+          contentType = response.headers.get(
+            "content-type",
+          );
+          resolvedModelBytes =
+            await response.arrayBuffer();
         }
 
-        const modelBytes =
-          await response.arrayBuffer();
-
-        if (modelBytes.byteLength < 12) {
+        if (resolvedModelBytes.byteLength < 12) {
           throw new Error(
             "Tripo returned an empty or incomplete GLB file.",
           );
@@ -206,7 +259,7 @@ function ModelProjector({
          */
         const glbHeader =
           new DataView(
-            modelBytes,
+            resolvedModelBytes,
             0,
             12,
           );
@@ -218,11 +271,6 @@ function ModelProjector({
           );
 
         if (glbMagic !== 0x46546c67) {
-          const contentType =
-            response.headers.get(
-              "content-type",
-            );
-
           throw new Error(
             `The Tripo URL did not return a valid GLB file${
               contentType
@@ -258,12 +306,26 @@ function ModelProjector({
          );
        }
        
+       const loadingManager =
+         new THREE.LoadingManager();
+
+       /*
+        * The projection only needs geometry. Tripo GLBs can embed multi-megabyte
+        * base64 textures that React Native cannot decode through DOM image
+        * loaders; Three then logs the entire payload and can saturate Logcat.
+        */
+       loadingManager.setURLModifier((url) =>
+         url.startsWith("data:image/")
+           ? TRANSPARENT_PIXEL_DATA_URI
+           : url,
+       );
+
        const loader =
-         new GLTFLoader();
+         new GLTFLoader(loadingManager);
        
-       const gltf =
+         const gltf =
          await loader.parseAsync(
-           modelBytes,
+           resolvedModelBytes,
            "",
          );
           
@@ -375,7 +437,7 @@ function ModelProjector({
           "[KeepFlip Tripo3D] GLB parsed:",
           {
             bytes:
-              modelBytes.byteLength,
+              resolvedModelBytes.byteLength,
             declaredMeshes:
               declaredMeshCount,
             declaredNodes:
@@ -435,6 +497,7 @@ function ModelProjector({
       controller.abort();
     };
   }, [
+    modelBytes,
     modelUrl,
     onProjectionUpdate,
   ]);
@@ -484,9 +547,18 @@ function ModelProjector({
       };
     }, [loadedScene]);
 
+  useEffect(
+    () => () => {
+      if (loadedScene) {
+        disposeScene(loadedScene);
+      }
+    },
+    [loadedScene],
+  );
+
   useFrame(
     (
-      { camera, size },
+      { camera },
       delta,
     ) => {
       if (!modelRef.current) {
@@ -512,6 +584,19 @@ function ModelProjector({
       }
 
       projectionElapsedRef.current = 0;
+
+      if (
+        camera instanceof THREE.PerspectiveCamera &&
+        projectionHeight > 0 &&
+        projectionWidth > 0
+      ) {
+        const targetAspect =
+          projectionWidth / projectionHeight;
+        if (Math.abs(camera.aspect - targetAspect) > 0.001) {
+          camera.aspect = targetAspect;
+          camera.updateProjectionMatrix();
+        }
+      }
 
       const projectedTriangles:
         ProjectedTriangle[] = [];
@@ -601,11 +686,11 @@ const mesh =
                 (projectedVertex.x *
                   0.5 +
                   0.5) *
-                  size.width,
+                  projectionWidth,
                 (projectedVertex.y *
                   -0.5 +
                   0.5) *
-                  size.height,
+                  projectionHeight,
               );
             }
 
@@ -706,6 +791,7 @@ const mesh =
       ref={modelRef}
       rotation={[-0.32, 0, 0]}
       scale={preparedModel.scale}
+      visible={false}
     >
       <primitive
         object={
@@ -722,10 +808,12 @@ const mesh =
 }
 
 export default function ModelProjectionScanner({
+  modelBytes,
   modelUrl,
   onError,
   style,
 }: ModelProjectionScannerProps): React.JSX.Element {
+  const hasModelSource = Boolean(modelUrl || modelBytes);
   const [layout, setLayout] =
     useState({
       height: 0,
@@ -910,35 +998,51 @@ export default function ModelProjectionScanner({
         style,
       ]}
     >
-      <ProjectionErrorBoundary
-        key={modelUrl}
-        onError={onError}
-      >
-        <View
-          pointerEvents="none"
-          style={
-            styles.hiddenThreeContainer
-          }
+      {hasModelSource &&
+      layout.width > 0 &&
+      layout.height > 0 ? (
+        <ProjectionErrorBoundary
+          key={`${modelUrl ?? "stored-model"}-${modelBytes?.byteLength ?? 0}`}
+          onError={onError}
         >
-          <ThreeCanvas
-            frameloop="always"
-            camera={{
-              far: 100,
-              fov: 45,
-              near: 0.1,
-              position: [0, 0, 4],
-            }}
+          <View
+            pointerEvents="none"
+            style={
+              styles.hiddenThreeContainer
+            }
           >
-            <ModelProjector
-              modelUrl={modelUrl}
-              onError={onError}
-              onProjectionUpdate={
-                setWireframeDepthPaths
-              }
-            />
-          </ThreeCanvas>
-        </View>
-      </ProjectionErrorBoundary>
+            <ThreeCanvas
+              frameloop="always"
+              gl={{
+                alpha: true,
+                antialias: false,
+                depth: false,
+                stencil: false,
+              }}
+              camera={{
+                far: 100,
+                fov: 45,
+                near: 0.1,
+                position: [0, 0, 4],
+              }}
+              onCreated={({ gl }) => {
+                configureExpoGlForThree(gl);
+              }}
+            >
+              <ModelProjector
+                modelBytes={modelBytes}
+                modelUrl={modelUrl}
+                onError={onError}
+                onProjectionUpdate={
+                  setWireframeDepthPaths
+                }
+                projectionHeight={layout.height}
+                projectionWidth={layout.width}
+              />
+            </ThreeCanvas>
+          </View>
+        </ProjectionErrorBoundary>
+      ) : null}
 
       {layout.width > 0 &&
       layout.height > 0 ? (
@@ -1326,10 +1430,10 @@ const styles = StyleSheet.create({
   },
   hiddenThreeContainer: {
     position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    zIndex: 1001,
+    top: -4,
+    left: -4,
+    width: 2,
+    height: 2,
+    opacity: 0,
   },
 });

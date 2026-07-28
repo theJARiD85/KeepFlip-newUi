@@ -1260,42 +1260,6 @@ export default function ScannerScreen() {
       </Animated.View>
     ) : null;
 
-  const analysisOverlay = analysisState ? (
-    analysisState.status === "result" ? (
-      <ItemAnalysisResultStage
-        bottomInset={insets.bottom}
-        doneLabel="Start new scan"
-        onDone={closeAnalysis}
-        onSave={() => void saveCompletedAnalysis()}
-        saveLabel="Save to inventory"
-        saving={isSavingToInventory}
-        state={analysisState}
-        topInset={insets.top}
-      />
-    ) : (
-      <ItemAnalysisBubbles
-        bottomInset={insets.bottom}
-        doneLabel="Done"
-        onDone={closeAnalysis}
-        onRetry={() => {
-          if (analysisState.status === "insufficient-evidence") {
-            closeAnalysis();
-            return;
-          }
-          void handleAnalyzeItem();
-        }}
-        retryLabel={
-          analysisState.status === "insufficient-evidence"
-            ? "Add another photo"
-            : undefined
-        }
-        saving={isSavingToInventory}
-        state={analysisState}
-        topInset={insets.top}
-      />
-    )
-  ) : null;
-
   const photoReviewOverlay = isMultiReviewOpen ? (
     <MultiScanPhotoReview
       bottomInset={insets.bottom}

@@ -83,6 +83,7 @@ export type AnalysisValuation = {
   low: number;
   median: number;
   query?: string;
+  snapshot?: boolean;
   source?: 'ebay' | 'multi_market' | 'supplied';
 };
 

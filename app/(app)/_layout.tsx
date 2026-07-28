@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { KeepFlipMenuProvider } from '@/components/navigation/keepflip-menu-context';
 import { KeepFlipSlideDownMenu } from '@/components/navigation/keepflip-slide-down-menu';
+import { ItemAnalysisResultProvider } from '@/components/scanner/item-analysis-result-context';
 import { keepFlipTheme } from '@/constants/keepflip-theme';
 import { initializeAppodealNativeAds } from '@/services/appodeal-native-ads';
 
@@ -28,21 +29,24 @@ export default function AppShellLayout() {
 
   return (
     <KeepFlipMenuProvider>
-      <View style={styles.root}>
-        <Stack
-          screenOptions={{
-            animation: 'fade',
-            contentStyle: { backgroundColor: keepFlipTheme.colors.backgroundDeep },
-            headerShown: false,
-          }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="inventory" />
-          <Stack.Screen name="account" />
-          <Stack.Screen name="explore" />
-          <Stack.Screen name="mesh-test" />
-        </Stack>
-        <KeepFlipSlideDownMenu />
-      </View>
+      <ItemAnalysisResultProvider>
+        <View style={styles.root}>
+          <Stack
+            screenOptions={{
+              animation: 'fade',
+              contentStyle: { backgroundColor: keepFlipTheme.colors.backgroundDeep },
+              headerShown: false,
+            }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="inventory" />
+            <Stack.Screen name="analysis" />
+            <Stack.Screen name="analysis-result" />
+            <Stack.Screen name="account" />
+            <Stack.Screen name="explore" />
+          </Stack>
+          <KeepFlipSlideDownMenu />
+        </View>
+      </ItemAnalysisResultProvider>
     </KeepFlipMenuProvider>
   );
 }

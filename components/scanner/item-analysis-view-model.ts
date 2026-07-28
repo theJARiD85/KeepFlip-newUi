@@ -23,6 +23,12 @@ function titleCase(value: string) {
     .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
+function displayText(value: string, maxLength: number) {
+  const normalized = value.replace(/\s+/g, ' ').trim();
+  if (normalized.length <= maxLength) return normalized;
+  return `${normalized.slice(0, maxLength - 1).trimEnd()}…`;
+}
+
 function compact<T>(values: (T | null | undefined | '')[]) {
   return values.filter((value): value is T => value != null && value !== '');
 }
@@ -44,7 +50,7 @@ function suggestedPhotos(result: ItemAnalysisSuccess): AnalysisSuggestedPhoto[] 
 
   return resolved.map((label, index) => ({
     id: `analysis-photo-${index}`,
-    label,
+    label: displayText(label, 120),
     priority: result.status === 'insufficient_evidence' ? 'required' : 'recommended',
   }));
 }
@@ -52,17 +58,23 @@ function suggestedPhotos(result: ItemAnalysisSuccess): AnalysisSuggestedPhoto[] 
 function evidence(result: ItemAnalysisSuccess): AnalysisEvidence[] {
   return result.analysis.evidence.map((item, index) => ({
     id: `analysis-evidence-${index}`,
-    label: item.claim,
+    label: displayText(item.claim, 72),
     source: EVIDENCE_SOURCE_LABELS[item.source],
-    value: item.rationale ? `${item.value} · ${item.rationale}` : item.value,
+    value: displayText(
+      item.rationale ? `${item.value} · ${item.rationale}` : item.value,
+      320,
+    ),
   }));
 }
 
 function resultTitle(result: ItemAnalysisSuccess) {
   const identity = result.analysis.identification;
   const preciseTitle = compact<string>([identity.brand, identity.model, identity.variant]).join(' ');
-  if (preciseTitle) return preciseTitle;
-  return identity.itemType ?? identity.category ?? 'Item identified from photo evidence';
+  if (preciseTitle) return displayText(preciseTitle, 120);
+  return displayText(
+    identity.itemType ?? identity.category ?? 'Item identified from photo evidence',
+    120,
+  );
 }
 
 function valuationReadiness(result: ItemAnalysisSuccess): ItemAnalysisOverlayResult['valuationReadiness'] {
@@ -151,8 +163,10 @@ export function toItemAnalysisResult(result: ItemAnalysisSuccess): ItemAnalysisO
 
   return {
     condition: {
-      details: result.analysis.condition.notes,
-      label: titleCase(result.analysis.condition.grade),
+      details: result.analysis.condition.notes.map((note) =>
+        displayText(note, 220),
+      ),
+      label: displayText(titleCase(result.analysis.condition.grade), 80),
       score: result.analysis.condition.confidence,
     },
     confidence: {
@@ -162,15 +176,19 @@ export function toItemAnalysisResult(result: ItemAnalysisSuccess): ItemAnalysisO
     },
     evidence: evidence(result),
     identity: {
-      brand: identity.brand ?? undefined,
-      category: identity.category ?? undefined,
+      brand: identity.brand ? displayText(identity.brand, 72) : undefined,
+      category: identity.category ? displayText(identity.category, 72) : undefined,
       confidence: confidence.overall,
-      model: identity.model ?? undefined,
+      model: identity.model ? displayText(identity.model, 72) : undefined,
       title: resultTitle(result),
-      variant: compact<string>([identity.variant, identity.color, identity.era]).join(' · ') || undefined,
+      variant:
+        displayText(
+          compact<string>([identity.variant, identity.color, identity.era]).join(' · '),
+          120,
+        ) || undefined,
     },
     suggestedPhotos: suggestedPhotos(result),
-    summary: result.analysis.summary,
+    summary: displayText(result.analysis.summary, 480),
     valuation: canShowValuation
       ? {
           basis:
@@ -198,8 +216,10 @@ export function toItemAnalysisResult(result: ItemAnalysisSuccess): ItemAnalysisO
 export function toItemAnalysisState(result: ItemAnalysisSuccess): ItemAnalysisState {
   if (result.status === 'insufficient_evidence') {
     return {
-      evidence: result.analysis.evidence.map((item) => `${item.claim}: ${item.value}`),
-      message: result.analysis.summary,
+      evidence: result.analysis.evidence.map((item) =>
+        displayText(`${item.claim}: ${item.value}`, 280),
+      ),
+      message: displayText(result.analysis.summary, 480),
       status: 'insufficient-evidence',
       suggestedPhotos: suggestedPhotos(result),
     };

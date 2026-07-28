@@ -1,9 +1,8 @@
 import * as Haptics from "expo-haptics";
-import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { useIsFocused, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, AppState, BackHandler, Linking, Platform, Pressable, StyleSheet, View } from "react-native";
+import { ActivityIndicator, AppState, BackHandler, Linking, Platform, Pressable, StyleSheet, View } from "react-native";
 import {
   Camera,
   type CameraRef,
@@ -18,7 +17,6 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-import { BadassAiAnimation } from "@/components/scanner/badass-ai-animation";
 import {
   ValueRadarOverlay,
   useValueRadar,
@@ -35,15 +33,7 @@ import {
   toDisplayUri,
   type MultiScanPhoto,
 } from "@/components/scanner/multi-scan-photo-review";
-import { buildAnalysisThoughts } from "@/components/scanner/scanner-thought-stream";
-import {
-  type AnalysisStep,
-  type ItemAnalysisState,
-} from "@/components/scanner/item-analysis-overlay";
-import { ItemAnalysisBubbles } from "@/components/scanner/item-analysis-bubbles";
-import { ItemAnalysisResultStage } from "@/components/scanner/item-analysis-result-stage";
-import { toItemAnalysisState } from "@/components/scanner/item-analysis-view-model";
-import ModelProjectionScanner from "@/components/scanner/model-projection-scanner.native";
+import { useItemAnalysisResult } from "@/components/scanner/item-analysis-result-context";
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { useKeepFlipMenu } from "@/components/navigation/keepflip-menu-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -52,14 +42,8 @@ import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout } from "@/hooks/use-responsive-layout";
 import {
-  analyzeItemPhotos,
-  AppwriteSetupError,
-  ItemAnalysisError,
   MAX_ANALYSIS_PHOTOS,
-  type ItemAnalysisStage,
-  type ItemAnalysisSuccess,
 } from "@/services/item-analysis-service";
-import { saveAnalyzedItemToInventory } from "@/services/inventory-service";
 import {
   createScanId,
   saveScannerPhoto,
@@ -69,7 +53,6 @@ import {
   waitForTripo3dModel,
   type Tripo3dModelResult,
 } from "@/services/tripo3d-model-api";
-import type { ItemIdentificationSnapshot } from "@/types/item-analysis";
 
 const CAMERA_PHOTO_RESOLUTION = Object.freeze({
   width: 1920,
@@ -83,91 +66,6 @@ type AnalysisCognitionSeed = {
   };
   tool: ScannerToolId;
 };
-
-const ANALYSIS_STAGES: Record<
-  ItemAnalysisStage,
-  { detail: string; progress: number; stage: string }
-> = {
-  authenticating: {
-    detail: "Verifying your signed-in Appwrite session for this scan.",
-    progress: 0.12,
-    stage: "Securing your session",
-  },
-  uploading: {
-    detail: "Sending up to four item views through private temporary storage.",
-    progress: 0.36,
-    stage: "Uploading photo evidence",
-  },
-  analyzing: {
-    detail:
-      "Cross-checking visual details, text, condition, and identity signals.",
-    progress: 0.7,
-    stage: "Reading item evidence",
-  },
-  cleaning: {
-    detail:
-      "Removing the temporary cloud copies while preserving your local scan.",
-    progress: 0.82,
-    stage: "Protecting your photos",
-  },
-  researching_comps: {
-    detail:
-      "Searching completed marketplace sales that match the identified item.",
-    progress: 0.94,
-    stage: "Researching the sold market",
-  },
-};
-
-const ANALYSIS_STEP_LABELS = [
-  "Verify your signed-in session",
-  "Upload private photo evidence",
-  "Identify and evaluate the item",
-  "Remove temporary cloud copies",
-  "Research completed marketplace sales",
-] as const;
-
-function analysisProgressState(
-  stage: ItemAnalysisStage,
-  insights = buildAnalysisThoughts({
-    modeLabel: "Item scan",
-    photoCount: 1,
-    stage,
-  }),
-): ItemAnalysisState {
-  const stageIndex: Record<ItemAnalysisStage, number> = {
-    authenticating: 0,
-    uploading: 1,
-    analyzing: 2,
-    cleaning: 3,
-    researching_comps: 4,
-  };
-  const activeIndex = stageIndex[stage];
-  const steps: AnalysisStep[] = ANALYSIS_STEP_LABELS.map((label, index) => ({
-    label,
-    status:
-      index < activeIndex
-        ? "complete"
-        : index === activeIndex
-          ? "active"
-          : "pending",
-  }));
-
-  return {
-    ...ANALYSIS_STAGES[stage],
-    insights,
-    status: "analyzing",
-    steps,
-  };
-}
-
-function analysisDiagnosticId(error: unknown) {
-  if (!(error instanceof ItemAnalysisError)) return null;
-  const details = error.details;
-  if (!details || typeof details !== "object" || Array.isArray(details))
-    return null;
-  const value = (details as { diagnosticId?: unknown }).diagnosticId;
-  return typeof value === "string" && value ? value : null;
-}
 
 function selectMultiScanEvidence(photos: MultiScanPhoto[]) {
   if (photos.length <= MAX_ANALYSIS_PHOTOS)
@@ -235,6 +133,10 @@ export default function ScannerScreen() {
   const router = useRouter();
   const { user } = useKeepFlipAuth();
   const {
+    openScannerAnalysis,
+    updateScannerModel,
+  } = useItemAnalysisResult();
+  const {
     contentWidth,
     controlDockWidth,
     height: screenHeight,
@@ -248,12 +150,11 @@ export default function ScannerScreen() {
     verticalScale,
     width: screenWidth,
   } = useResponsiveLayout();
-  const scannerCornerSize = moderateScale(54, 0.65);
   const torchButtonSize = moderateScale(35, 0.65);
   const permissionCardWidth = Math.min(contentWidth, 480);
   const analysisButtonWidth = Math.min(controlDockWidth, 360);
   const isFocused = useIsFocused();
-  const { closeMenu, isMenuOpen } = useKeepFlipMenu();
+  const { isMenuOpen } = useKeepFlipMenu();
   const cameraRef = useRef<CameraRef>(null);
   const scanFrameRef = useRef<View>(null);
   const captureLockRef = useRef(false);
@@ -261,20 +162,23 @@ export default function ScannerScreen() {
   const uploadSequenceRef = useRef(0);
   const torchRequestSequenceRef = useRef(0);
   const modelGenerationRequestRef = useRef(0);
+  const pendingAnalysisSessionIdRef = useRef<string | null>(null);
+  const analysisNavigationTimerRef =
+    useRef<ReturnType<typeof setTimeout> | null>(null);
+  const generatedModelRef = useRef<Tripo3dModelResult | null>(null);
   const scanIdRef = useRef(createScanId());
   const modelSourcePhotoIdRef = useRef<string | null>(null);
   const modelGenerationStateRef = useRef<"idle" | "loading" | "ready">(
     "idle",
   );
-  const analysisAbortControllerRef = useRef<AbortController | null>(null);
   const device = useCameraDevice("back");
   const photoOutput = usePhotoOutput({
     targetResolution: CAMERA_PHOTO_RESOLUTION,
   });
-  const [isGeneratingModel, setIsGeneratingModel] = useState(false);
+  const [, setIsGeneratingModel] = useState(false);
   const [generatedModel, setGeneratedModel] =
     useState<Tripo3dModelResult | null>(null);
-  const [modelGenerationError, setModelGenerationError] = useState<string | null>(
+  const [, setModelGenerationError] = useState<string | null>(
     null,
   );
   const { hasPermission, canRequestPermission, requestPermission } =
@@ -296,16 +200,8 @@ export default function ScannerScreen() {
   const [batchScanPhotos, setBatchScanPhotos] = useState<string[]>([]);
   const [uploadedPhotos, setUploadedPhotos] = useState<MultiScanPhoto[]>([]);
   const [isUploadReviewOpen, setIsUploadReviewOpen] = useState(false);
-  const [analysisState, setAnalysisState] = useState<ItemAnalysisState | null>(
-    null,
-  );
-  const [analysisBackdropUri, setAnalysisBackdropUri] = useState<string | null>(
-    null,
-  );
-  const [completedAnalysis, setCompletedAnalysis] =
-    useState<ItemAnalysisSuccess | null>(null);
-  const [completedScanId, setCompletedScanId] = useState<string | null>(null);
-  const [isSavingToInventory, setIsSavingToInventory] = useState(false);
+  const [activeAnalysisSessionId, setActiveAnalysisSessionId] =
+    useState<string | null>(null);
   const canUseTorch = device?.hasTorch === true;
   const analysisPhotoUris =
     selectedTool === "single" && singlePhotoUri
@@ -326,7 +222,8 @@ export default function ScannerScreen() {
     uploadedCount: uploadedPhotos.length,
   });
   const isPhotoReviewOpen = isMultiReviewOpen || isUploadReviewOpen;
-  const isScannerOverlayOpen = isPhotoReviewOpen || analysisState != null;
+  const isScannerOverlayOpen =
+    isPhotoReviewOpen || activeAnalysisSessionId != null;
   const isScannerUiHidden = isScannerOverlayOpen;
   const isCameraActive =
     hasPermission &&
@@ -336,6 +233,11 @@ export default function ScannerScreen() {
     !isMenuOpen &&
     !isPickingPhoto &&
     !isScannerOverlayOpen;
+  const shouldMountCamera =
+    hasPermission &&
+    device != null &&
+    isFocused &&
+    appState === "active";
   const {
     frameOutput: radarFrameOutput,
     marker: radarMarker,
@@ -378,6 +280,24 @@ export default function ScannerScreen() {
       });
     });
   }, [screenHeight, screenWidth]);
+
+  const navigateToPendingAnalysis = useCallback(() => {
+    const sessionId = pendingAnalysisSessionIdRef.current;
+    if (!sessionId) return;
+
+    pendingAnalysisSessionIdRef.current = null;
+    if (analysisNavigationTimerRef.current) {
+      clearTimeout(analysisNavigationTimerRef.current);
+      analysisNavigationTimerRef.current = null;
+    }
+
+    requestAnimationFrame(() => {
+      router.push({
+        pathname: "/analysis",
+        params: { sessionId },
+      });
+    });
+  }, [router]);
 
   const handleToggleTorch = useCallback(async () => {
     if (
@@ -474,6 +394,7 @@ export default function ScannerScreen() {
       modelSourcePhotoIdRef.current = normalizedItemPhotoId;
       modelGenerationStateRef.current = "loading";
       setGeneratedModel(null);
+      generatedModelRef.current = null;
       setModelGenerationError(null);
       setIsGeneratingModel(true);
 
@@ -484,6 +405,7 @@ export default function ScannerScreen() {
 
         if (requestId !== modelGenerationRequestRef.current) return;
         modelGenerationStateRef.current = "ready";
+        generatedModelRef.current = result;
         setGeneratedModel(result);
         void Haptics.notificationAsync(
           Haptics.NotificationFeedbackType.Success,
@@ -510,19 +432,10 @@ export default function ScannerScreen() {
     [user?.$id],
   );
 
-  const handleModelProjectionError = useCallback((message: string) => {
-    modelGenerationStateRef.current = "idle";
-    setModelGenerationError(message);
-  
-    console.error(
-      "[KeepFlip Tripo3D] Model projection failed:",
-      message,
-    );
-  
-    // Do not clear generatedModel here.
-    // Clearing it unmounts ModelProjectionScanner
-    // and restores the uploaded cover photo.
-  }, []);
+  useEffect(() => {
+    if (!generatedModel?.modelUrl) return;
+    updateScannerModel(scanIdRef.current, generatedModel.modelUrl);
+  }, [generatedModel?.modelUrl, updateScannerModel]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", setAppState);
@@ -558,8 +471,10 @@ export default function ScannerScreen() {
 
   useEffect(
     () => () => {
-      analysisAbortControllerRef.current?.abort();
       modelGenerationRequestRef.current += 1;
+      if (analysisNavigationTimerRef.current) {
+        clearTimeout(analysisNavigationTimerRef.current);
+      }
     },
     [],
   );
@@ -582,24 +497,6 @@ export default function ScannerScreen() {
   }, [isMenuOpen, isMultiReviewOpen, isUploadReviewOpen]);
 
   useEffect(() => {
-    if (!isMenuOpen || analysisState == null) return;
-    if (analysisState.status === "analyzing") {
-      closeMenu();
-      return;
-    }
-    analysisAbortControllerRef.current?.abort();
-    analysisAbortControllerRef.current = null;
-    modelGenerationRequestRef.current += 1;
-    modelSourcePhotoIdRef.current = null;
-    modelGenerationStateRef.current = "idle";
-    setIsGeneratingModel(false);
-    setGeneratedModel(null);
-    setModelGenerationError(null);
-    setAnalysisState(null);
-    setAnalysisBackdropUri(null);
-  }, [analysisState, closeMenu, isMenuOpen]);
-
-  useEffect(() => {
     if (isMultiReviewOpen && multiScanPhotos.length === 0) {
       setIsMultiReviewOpen(false);
     }
@@ -612,7 +509,13 @@ export default function ScannerScreen() {
   }, [isUploadReviewOpen, uploadedPhotos.length]);
 
   useEffect(() => {
-    if (!isPhotoReviewOpen || Platform.OS !== "android") return;
+    if (
+      !isFocused ||
+      !isPhotoReviewOpen ||
+      Platform.OS !== "android"
+    ) {
+      return;
+    }
 
     const subscription = BackHandler.addEventListener(
       "hardwareBackPress",
@@ -624,25 +527,7 @@ export default function ScannerScreen() {
     );
 
     return () => subscription.remove();
-  }, [isPhotoReviewOpen]);
-
-  useEffect(() => {
-    if (analysisState == null || Platform.OS !== "android") return;
-
-    const subscription = BackHandler.addEventListener(
-      "hardwareBackPress",
-      () => {
-        if (analysisState.status === "analyzing") return true;
-        analysisAbortControllerRef.current?.abort();
-        analysisAbortControllerRef.current = null;
-        setAnalysisState(null);
-        setAnalysisBackdropUri(null);
-        return true;
-      },
-    );
-
-    return () => subscription.remove();
-  }, [analysisState]);
+  }, [isFocused, isPhotoReviewOpen]);
 
   const acceptPickedPhotos = useCallback(
     (assets: readonly ImagePicker.ImagePickerAsset[]) => {
@@ -982,7 +867,7 @@ export default function ScannerScreen() {
       setSinglePhotoUri(photoPath);
       setMessage("Photo saved. Building 3D model and starting analysis...");
       void startModelGeneration(captured.saved.itemPhotoId);
-      await runAnalysis([photoPath], cognitionSeed);
+      beginAnalysis([photoPath], cognitionSeed);
       return;
     }
 
@@ -1018,17 +903,21 @@ export default function ScannerScreen() {
   };
 
   const resetScannerSession = useCallback(() => {
-    analysisAbortControllerRef.current?.abort();
-    analysisAbortControllerRef.current = null;
     captureLockRef.current = false;
     multiScanSequenceRef.current = 0;
     uploadSequenceRef.current = 0;
     scanIdRef.current = createScanId();
     modelGenerationRequestRef.current += 1;
+    pendingAnalysisSessionIdRef.current = null;
+    if (analysisNavigationTimerRef.current) {
+      clearTimeout(analysisNavigationTimerRef.current);
+      analysisNavigationTimerRef.current = null;
+    }
     modelSourcePhotoIdRef.current = null;
     modelGenerationStateRef.current = "idle";
     setIsGeneratingModel(false);
     setGeneratedModel(null);
+    generatedModelRef.current = null;
     setModelGenerationError(null);
     setSinglePhotoUri(null);
     setMultiScanPhotos([]);
@@ -1036,189 +925,69 @@ export default function ScannerScreen() {
     setUploadedPhotos([]);
     setIsMultiReviewOpen(false);
     setIsUploadReviewOpen(false);
-    setAnalysisState(null);
-    setAnalysisBackdropUri(null);
-    setCompletedAnalysis(null);
-    setCompletedScanId(null);
+    setActiveAnalysisSessionId(null);
     setSelectedTool("single");
     setMessage("Center one item inside the frame");
     setCaptureFeedback(null);
     setTorchEnabled(false);
   }, []);
 
-  const closeAnalysis = () => {
-    if (analysisState?.status === "result") {
-      resetScannerSession();
-      return;
-    }
-
-    analysisAbortControllerRef.current?.abort();
-    analysisAbortControllerRef.current = null;
-    modelGenerationRequestRef.current += 1;
-    modelSourcePhotoIdRef.current = null;
-    modelGenerationStateRef.current = "idle";
-    setIsGeneratingModel(false);
-    setGeneratedModel(null);
-    setModelGenerationError(null);
-    setAnalysisState(null);
-    setAnalysisBackdropUri(null);
-    setCompletedAnalysis(null);
-    setCompletedScanId(null);
-  };
-
-  const saveCompletedAnalysis = useCallback(async () => {
-    if (!completedAnalysis || !completedScanId || isSavingToInventory) return;
-    if (!user?.$id) {
-      Alert.alert(
-        "Sign in required",
-        "Sign in before saving an item to inventory.",
-      );
-      return;
-    }
-
-    setIsSavingToInventory(true);
-    try {
-      const saved = await saveAnalyzedItemToInventory({
-        analysis: completedAnalysis,
-        ownerId: user.$id,
-        scanId: completedScanId,
-      });
-      resetScannerSession();
-      router.push("/inventory");
-      if (saved.photoWarning) {
-        Alert.alert("Item saved", saved.photoWarning);
-      }
-    } catch (error) {
-      Alert.alert(
-        "Could not save item",
-        error instanceof Error
-          ? error.message
-          : "KeepFlip could not save this item.",
-      );
-    } finally {
-      setIsSavingToInventory(false);
-    }
-  }, [
-    completedAnalysis,
-    completedScanId,
-    isSavingToInventory,
-    resetScannerSession,
-    router,
-    user?.$id,
-  ]);
-
-  async function runAnalysis(
+  function beginAnalysis(
     photoUris: string[],
     cognitionSeed: AnalysisCognitionSeed,
   ) {
     if (
       photoUris.length === 0 ||
-      analysisAbortControllerRef.current != null ||
+      activeAnalysisSessionId != null ||
       isPickingPhoto ||
       isMenuOpen
     ) {
       return;
     }
 
-    setCompletedAnalysis(null);
-    setCompletedScanId(null);
-    const controller = new AbortController();
-    let currentStage: ItemAnalysisStage = "authenticating";
-    let partialResult: ItemIdentificationSnapshot | undefined;
     const toolAppearance =
       scannerTools.find((tool) => tool.id === cognitionSeed.tool) ??
       scannerTools[0];
-    const cognitionContext = {
+    const sessionId = openScannerAnalysis({
+      backdropUri: toDisplayUri(photoUris[0]),
       localDetection: cognitionSeed.localDetection,
       modeLabel: toolAppearance?.label ?? "Item scan",
-      photoCount: photoUris.length,
-    };
-    const progressState = (stage: ItemAnalysisStage) =>
-      analysisProgressState(
-        stage,
-        buildAnalysisThoughts({
-          ...cognitionContext,
-          partialResult,
-          stage,
-        }),
-      );
+      modelUrl: generatedModelRef.current?.modelUrl,
+      onCancel: () => {
+        setActiveAnalysisSessionId(null);
+      },
+      onReset: resetScannerSession,
+      photoUris: [...photoUris],
+      scanId: scanIdRef.current,
+    });
 
-    analysisAbortControllerRef.current = controller;
-    setAnalysisBackdropUri(toDisplayUri(photoUris[0]));
-    setAnalysisState(progressState(currentStage));
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
-      () => undefined,
-    );
+    setActiveAnalysisSessionId(sessionId);
+    setCaptureFeedback(null);
+    setMessage("Camera released. Opening KeepFlip intelligence...");
 
-    try {
-      const result = await analyzeItemPhotos(
-        { photoUris },
-        {
-          onPartialResult: (event) => {
-            if (controller.signal.aborted) return;
-            partialResult = event.result;
-            setAnalysisState(progressState(currentStage));
-            void Haptics.selectionAsync().catch(() => undefined);
-          },
-          onStage: (stage) => {
-            if (controller.signal.aborted) return;
-            currentStage = stage;
-            setAnalysisState(progressState(stage));
-          },
-          signal: controller.signal,
-        },
-      );
-
-      if (controller.signal.aborted) return;
-      setCompletedAnalysis(result);
-      setCompletedScanId(scanIdRef.current);
-      setAnalysisState(toItemAnalysisState(result));
-      void Haptics.notificationAsync(
-        Haptics.NotificationFeedbackType.Success,
-      ).catch(() => undefined);
-    } catch (error) {
-      if (controller.signal.aborted) return;
-
-      if (error instanceof AppwriteSetupError) {
-        setAnalysisState({
-          message: error.message,
-          requirements: [
-            "Add the public Appwrite endpoint and project ID to .env",
-            "Create a private scan-photo bucket and add its ID.",
-            "Deploy the analyze-item Function and add its Function ID.",
-            ...error.missingKeys.map((key) => `Missing: ${key}`),
-          ],
-          status: "setup",
-          title: "Connect secure item analysis",
-        });
-        return;
-      }
-
-      const diagnosticId = analysisDiagnosticId(error);
-      setAnalysisState({
-        code:
-          error instanceof ItemAnalysisError ? error.code : "ANALYSIS_FAILED",
-        message:
-          error instanceof Error
-            ? `${error.message}${diagnosticId ? ` Diagnostic reference: ${diagnosticId}.` : ""}`
-            : "KeepFlip could not complete this analysis. Please try again.",
-        status: "error",
-      });
-      void Haptics.notificationAsync(
-        Haptics.NotificationFeedbackType.Error,
-      ).catch(() => undefined);
-    } finally {
-      if (analysisAbortControllerRef.current === controller) {
-        analysisAbortControllerRef.current = null;
-      }
+    pendingAnalysisSessionIdRef.current = sessionId;
+    if (!shouldMountCamera || !isCameraReady) {
+      navigateToPendingAnalysis();
+      return;
     }
+
+    /*
+     * onPreviewStopped is the normal route trigger. The timeout only covers
+     * device-specific camera implementations that omit that lifecycle event.
+     */
+    analysisNavigationTimerRef.current = setTimeout(
+      navigateToPendingAnalysis,
+      600,
+    );
   }
 
   const handleAnalyzeItem = () =>
-    runAnalysis(analysisPhotoUris, { tool: selectedTool });
+    beginAnalysis(analysisPhotoUris, { tool: selectedTool });
 
   const analysisButton =
-    canAnalyzeCurrentTool && analysisState == null && !isPhotoReviewOpen ? (
+    canAnalyzeCurrentTool &&
+    activeAnalysisSessionId == null &&
+    !isPhotoReviewOpen ? (
       <Animated.View
         entering={FadeIn.duration(180)}
         exiting={FadeOut.duration(130)}
@@ -1283,42 +1052,6 @@ export default function ScannerScreen() {
       </Animated.View>
     ) : null;
 
-  const analysisOverlay = analysisState ? (
-    analysisState.status === "result" ? (
-      <ItemAnalysisResultStage
-        bottomInset={insets.bottom}
-        doneLabel="Start new scan"
-        onDone={closeAnalysis}
-        onSave={() => void saveCompletedAnalysis()}
-        saveLabel="Save to inventory"
-        saving={isSavingToInventory}
-        state={analysisState}
-        topInset={insets.top}
-      />
-    ) : (
-      <ItemAnalysisBubbles
-        bottomInset={insets.bottom}
-        doneLabel="Done"
-        onDone={closeAnalysis}
-        onRetry={() => {
-          if (analysisState.status === "insufficient-evidence") {
-            closeAnalysis();
-            return;
-          }
-          void handleAnalyzeItem();
-        }}
-        retryLabel={
-          analysisState.status === "insufficient-evidence"
-            ? "Add another photo"
-            : undefined
-        }
-        saving={isSavingToInventory}
-        state={analysisState}
-        topInset={insets.top}
-      />
-    )
-  ) : null;
-
   const photoReviewOverlay = isMultiReviewOpen ? (
     <MultiScanPhotoReview
       bottomInset={insets.bottom}
@@ -1345,7 +1078,7 @@ export default function ScannerScreen() {
       <KeepFlipBackground
         contentStyle={[styles.centeredState, { paddingHorizontal: pageGutter }]}
       >
-        {analysisState == null ? (
+        {activeAnalysisSessionId == null ? (
           <Animated.View
             entering={FadeIn.duration(180)}
             exiting={FadeOut.duration(140)}
@@ -1440,7 +1173,6 @@ export default function ScannerScreen() {
           </Animated.View>
         ) : null}
         {photoReviewOverlay}
-        {analysisOverlay}
       </KeepFlipBackground>
     );
   }
@@ -1450,7 +1182,7 @@ export default function ScannerScreen() {
       <KeepFlipBackground
         contentStyle={[styles.centeredState, { paddingHorizontal: pageGutter }]}
       >
-        {analysisState == null ? (
+        {activeAnalysisSessionId == null ? (
           <Animated.View
             entering={FadeIn.duration(180)}
             exiting={FadeOut.duration(140)}
@@ -1512,7 +1244,6 @@ export default function ScannerScreen() {
           </Animated.View>
         ) : null}
         {photoReviewOverlay}
-        {analysisOverlay}
       </KeepFlipBackground>
     );
   }
@@ -1520,35 +1251,38 @@ export default function ScannerScreen() {
   return (
     <View style={styles.screen}>
       <View pointerEvents="none" style={styles.cameraLayer}>
-        <Camera
-          ref={cameraRef}
-          device={device}
-          implementationMode="compatible"
-          isActive={isCameraActive}
-          outputs={cameraOutputs}
-          resizeMode="cover"
-          onPreviewStarted={() => {
-            setIsCameraReady(true);
-            setCaptureFeedback(null);
-          }}
-          onPreviewStopped={() => {
-            torchRequestSequenceRef.current += 1;
-            setIsCameraReady(false);
-            setIsTorchUpdating(false);
-            setTorchEnabled(false);
-          }}
-          onError={(error) => {
-            const feedback =
-              error.message ||
-              "Camera unavailable. Try reopening the scanner.";
+        {shouldMountCamera ? (
+          <Camera
+            ref={cameraRef}
+            device={device}
+            implementationMode="compatible"
+            isActive={isCameraActive}
+            outputs={cameraOutputs}
+            resizeMode="cover"
+            onPreviewStarted={() => {
+              setIsCameraReady(true);
+              setCaptureFeedback(null);
+            }}
+            onPreviewStopped={() => {
+              torchRequestSequenceRef.current += 1;
+              setIsCameraReady(false);
+              setIsTorchUpdating(false);
+              setTorchEnabled(false);
+              navigateToPendingAnalysis();
+            }}
+            onError={(error) => {
+              const feedback =
+                error.message ||
+                "Camera unavailable. Try reopening the scanner.";
 
-            setIsCameraReady(false);
-            setTorchEnabled(false);
-            setMessage(feedback);
-            setCaptureFeedback(feedback);
-          }}
-          style={StyleSheet.absoluteFill}
-        />
+              setIsCameraReady(false);
+              setTorchEnabled(false);
+              setMessage(feedback);
+              setCaptureFeedback(feedback);
+            }}
+            style={StyleSheet.absoluteFill}
+          />
+        ) : null}
       </View>
 
       <View
@@ -1556,36 +1290,10 @@ export default function ScannerScreen() {
         pointerEvents="box-none"
         style={styles.interfaceLayer}
       >
-        {analysisBackdropUri ? (
-          <Animated.View
-            entering={FadeIn.duration(180)}
-            exiting={FadeOut.duration(160)}
-            pointerEvents="none"
-            style={StyleSheet.absoluteFill}
-          >
-            {generatedModel && analysisState?.status === "result" ? (
-                <ModelProjectionScanner
-                  modelUrl={generatedModel.modelUrl}
-                  onError={handleModelProjectionError}
-                />
-            ) : (
-                <Image
-                  cachePolicy="memory-disk"
-                  contentFit="cover"
-                  source={{ uri: analysisBackdropUri }}
-                  style={StyleSheet.absoluteFill}
-                  transition={120}
-                />
-            )}
-          </Animated.View>
-        ) : null}
         <View
           pointerEvents="none"
           style={[
             styles.cameraScrim,
-            generatedModel &&
-              analysisState?.status === "result" &&
-              styles.cameraScrimWithProjection,
           ]}
         />
         {!isScannerOverlayOpen ? (
@@ -1612,22 +1320,6 @@ export default function ScannerScreen() {
               width={screenWidth}
             />
           </View>
-        ) : null}
-        {analysisState?.status === "analyzing" ? (
-          <Animated.View
-            entering={FadeIn.duration(220)}
-            exiting={FadeOut.duration(180)}
-            pointerEvents="none"
-            style={styles.analysisAtmosphereHost}
-          >
-            <BadassAiAnimation
-              active={isFocused && appState === "active"}
-              height={screenHeight}
-              imageUri={analysisBackdropUri ?? undefined}
-              progress={analysisState.progress}
-              width={screenWidth}
-            />
-          </Animated.View>
         ) : null}
         {photoReviewOverlay ? (
           <View
@@ -1840,15 +1532,6 @@ export default function ScannerScreen() {
         </Animated.View>
         </Animated.View>
 
-        {analysisOverlay ? (
-          <View
-            collapsable={false}
-            pointerEvents="box-none"
-            style={styles.analysisOverlayHost}
-          >
-            {analysisOverlay}
-          </View>
-        ) : null}
       </View>
     </View>
   );
@@ -1880,13 +1563,6 @@ const styles = StyleSheet.create({
     zIndex: 100,
     elevation: 80,
   },
-  analysisOverlayHost: {
-    ...StyleSheet.absoluteFill,
-    width: "100%",
-    height: "100%",
-    zIndex: 120,
-    elevation: 120,
-  },
   content: { flex: 1, paddingHorizontal: 22 },
   centeredState: {
     flex: 1,
@@ -1906,18 +1582,10 @@ const styles = StyleSheet.create({
       linear-gradient(to bottom, rgba(2, 2, 4, 0.94) 0%, rgba(3, 3, 7, 0.12) 44%, rgba(6, 4, 10, 0.90) 100%)
     `,
   },
-  cameraScrimWithProjection: {
-    opacity: 0.36,
-  },
   radarOverlayHost: {
     ...StyleSheet.absoluteFill,
     zIndex: 14,
     bottom: 60,
-  },
-  analysisAtmosphereHost: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 13,
-    opacity: 0.88,
   },
   permissionCard: {
     width: "100%",

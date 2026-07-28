@@ -35,6 +35,14 @@ export type Tripo3dModelResult = {
   modelUrl: string;
 };
 
+export type StoredTripo3dModelResult = Omit<
+  Tripo3dModelResult,
+  "modelUrl"
+> & {
+  modelBytes: Uint8Array;
+  modelUrl: string | null;
+};
+
 export type WaitForTripo3dModelInput = {
   itemPhotoId: string;
 };
@@ -76,6 +84,34 @@ function requiredConfiguration() {
   };
 }
 
+function requiredStoredModelConfiguration() {
+  const missing = [
+    !APPWRITE.databaseId
+      ? "EXPO_PUBLIC_APPWRITE_DATABASE_ID"
+      : null,
+    !APPWRITE.modelFilesTableId
+      ? "EXPO_PUBLIC_APPWRITE_MODEL_FILES_COLLECTION_ID"
+      : null,
+    !APPWRITE.modelFilesBucketId
+      ? "EXPO_PUBLIC_APPWRITE_MODEL_BUCKET_ID"
+      : null,
+  ].filter((value): value is string => Boolean(value));
+
+  if (missing.length > 0) {
+    throw new Error(
+      `KeepFlip saved model loading needs Appwrite configuration: ${missing.join(
+        ", ",
+      )}`,
+    );
+  }
+
+  return {
+    databaseId: APPWRITE.databaseId,
+    modelFilesTableId: APPWRITE.modelFilesTableId,
+    modelBucketId: APPWRITE.modelFilesBucketId,
+  };
+}
+
 function errorCode(error: unknown) {
   if (
     !error ||
@@ -96,6 +132,20 @@ function errorCode(error: unknown) {
 
 function isNotFound(error: unknown) {
   return errorCode(error) === 404;
+}
+
+function validModelUrl(value: string | null | undefined) {
+  const cleaned = value?.trim();
+  if (!cleaned) return null;
+
+  try {
+    const parsed = new URL(cleaned);
+    return parsed.protocol === "https:" || parsed.protocol === "http:"
+      ? cleaned
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 function sleep(milliseconds: number) {
@@ -275,5 +325,60 @@ export async function waitForTripo3dModel({
     modelSizeBytes:
       modelFile.sizeOriginal || 0,
     modelUrl,
+  };
+}
+
+export async function getStoredTripo3dModel(
+  itemPhotoId: string,
+): Promise<StoredTripo3dModelResult | null> {
+  const cleanedItemPhotoId = itemPhotoId.trim();
+  if (!cleanedItemPhotoId) return null;
+
+  const configuration = requiredStoredModelConfiguration();
+  let modelRow: ModelFileRow;
+
+  try {
+    modelRow = (await tablesDB.getRow({
+      databaseId: configuration.databaseId,
+      tableId: configuration.modelFilesTableId,
+      rowId: cleanedItemPhotoId,
+    })) as unknown as ModelFileRow;
+  } catch (error) {
+    if (isNotFound(error)) return null;
+    throw error;
+  }
+
+  const status = modelRow.status?.trim().toLowerCase();
+  if (status === "failed") {
+    throw new Error(
+      modelRow.errorMessage?.trim() ||
+        "The saved 3D model could not be generated.",
+    );
+  }
+
+  const modelFileId = modelRow.fileId?.trim();
+  if (status !== "ready" || !modelFileId) return null;
+
+  const [modelFile, modelBuffer] = await Promise.all([
+    storage.getFile({
+      bucketId: configuration.modelBucketId,
+      fileId: modelFileId,
+    }) as Promise<AppwriteFile>,
+    storage.getFileView({
+      bucketId: configuration.modelBucketId,
+      fileId: modelFileId,
+    }),
+  ]);
+
+  return {
+    itemPhotoId: cleanedItemPhotoId,
+    sourceFileId: modelRow.sourceFileId?.trim() || cleanedItemPhotoId,
+    modelBucketId: configuration.modelBucketId,
+    modelFileId,
+    modelFileName: modelFile.name || `${modelFileId}.glb`,
+    modelMimeType: modelFile.mimeType || "model/gltf-binary",
+    modelSizeBytes: modelFile.sizeOriginal || modelBuffer.byteLength,
+    modelBytes: new Uint8Array(modelBuffer),
+    modelUrl: validModelUrl(modelRow.errorMessage),
   };
 }
