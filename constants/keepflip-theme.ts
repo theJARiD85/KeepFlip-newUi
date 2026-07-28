@@ -16,7 +16,7 @@ export const keepFlipTheme = {
     gold: '#D7A84A',
     goldBright: '#F2D38A',
     goldMuted: '#8A642B',
-    cream: '#faefcfff',
+    cream: '#F2EDE4FF',
     text: '#F7F2E8',
     textMuted: '#ADA7B2',
     scannerAmber: '#E0AC4B',

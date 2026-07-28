@@ -1,9 +1,18 @@
 import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useMemo } from "react";
-import { I18nManager, Pressable, StyleSheet, View } from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import {
+  I18nManager,
+  Pressable,
+  StyleSheet,
+  View,
+} from "react-native";
+import {
+  Gesture,
+  GestureDetector,
+} from "react-native-gesture-handler";
 import Animated, {
   cancelAnimation,
+  Extrapolation,
   interpolate,
   type SharedValue,
   useAnimatedStyle,
@@ -11,8 +20,8 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
-import { Image } from 'expo-image';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { HUDSkiaPlatterRing } from "@/components/scanner/hud-skia-platter-ring.native";
 import {
   publishScannerHudSnapshot,
   type ScannerHudToolId,
@@ -89,8 +98,8 @@ type ToolControlProps = {
   disabled: boolean;
   index: number;
   onActivate: () => void;
+  onSelect: () => void;
   orbitDepthY: number;
-  orbitDepthZ: number;
   orbitRadiusX: number;
   position: SharedValue<number>;
   selected: boolean;
@@ -98,30 +107,48 @@ type ToolControlProps = {
 };
 
 const TOOL_COUNT = scannerTools.length;
-const MAX_VISIBLE_PROGRESS = 1.22;
-const CYLINDER_MAX_ANGLE = Math.PI * 0.42;
-const SIDE_SCALE = 0.48;
-const ACTIVE_SCALE = 1.12;
+const TOOL_ACCENTS = scannerTools.map((tool) => tool.accent);
+const MAX_VISIBLE_PROGRESS = 1.35;
+const ARC_STEP_RADIANS = Math.PI / 5;
+const ACTIVE_SCALE = 1.16;
+const SIDE_SCALE = 0.78;
 
 const SPRING = {
-  damping: 20,
-  stiffness: 240,
-  mass: 0.8,
+  damping: 18,
+  stiffness: 170,
+  mass: 0.82,
   overshootClamping: true,
 } as const;
+
+function modulo(value: number, divisor: number) {
+  "worklet";
+  return ((value % divisor) + divisor) % divisor;
+}
+
+function wrappedDelta(
+  index: number,
+  position: number,
+  count: number,
+) {
+  "worklet";
+
+  const halfCount = count / 2;
+  const rawDelta = index - position;
+
+  return (
+    ((((rawDelta + halfCount) % count) + count) % count) -
+    halfCount
+  );
+}
 
 function selectionHaptic() {
   void Haptics.selectionAsync().catch(() => undefined);
 }
 
 function activationHaptic() {
-  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
-    () => undefined,
-  );
-}
-
-function modulo(value: number, divisor: number) {
-  return ((value % divisor) + divisor) % divisor;
+  void Haptics.impactAsync(
+    Haptics.ImpactFeedbackStyle.Light,
+  ).catch(() => undefined);
 }
 
 function ToolControl({
@@ -133,120 +160,105 @@ function ToolControl({
   disabled,
   index,
   onActivate,
+  onSelect,
   orbitDepthY,
-  orbitDepthZ,
   orbitRadiusX,
   position,
   selected,
   tool,
 }: ToolControlProps) {
   const direction = I18nManager.isRTL ? -1 : 1;
+  const concealed = selected === false && false;
+  const badgeSize = Math.max(20, controlSize * 0.24);
+  const iconSize = Math.round(controlCoreSize * 0.58);
 
-  const orbitStyle = useAnimatedStyle(() => {
-    const rawDelta = index - position.value;
-    const halfCount = TOOL_COUNT / 2;
-    const wrappedDelta =
-      ((((rawDelta + halfCount) % TOOL_COUNT) + TOOL_COUNT) % TOOL_COUNT) -
-      halfCount;
-    const distance = Math.abs(wrappedDelta);
-    const clampedProgress = Math.max(
+  const orbitalStyle = useAnimatedStyle(() => {
+    const delta = wrappedDelta(
+      index,
+      position.value,
+      TOOL_COUNT,
+    );
+    const distance = Math.abs(delta);
+    const clampedDelta = Math.max(
       -MAX_VISIBLE_PROGRESS,
-      Math.min(MAX_VISIBLE_PROGRESS, wrappedDelta),
+      Math.min(MAX_VISIBLE_PROGRESS, delta),
     );
+    const angularPosition =
+      clampedDelta * ARC_STEP_RADIANS * direction;
 
-    /*
-     * The tool is mounted to the OUTSIDE of a virtual cylinder:
-     * its back faces the cylinder wall and its front-facing normal points
-     * radially outward. Position and face rotation therefore use the exact
-     * same cylinder angle. This prevents the icon from counter-spinning.
-     */
-    const cylinderAngle =
-      clampedProgress * CYLINDER_MAX_ANGLE * direction;
-    const orbitX = Math.sin(cylinderAngle) * orbitRadiusX;
-    const orbitY = -(1 - Math.cos(cylinderAngle)) * orbitDepthY;
-    const orbitZ = (Math.cos(cylinderAngle) - 1) * orbitDepthZ;
-    const opacity = interpolate(
-      distance,
-      [0, 0.55, 0.92, 1.08, MAX_VISIBLE_PROGRESS],
-      [1, 0.78, 0.42, 0.14, 0],
-      "clamp",
-    );
+    const xCoord =
+      orbitRadiusX * Math.sin(angularPosition);
+    const yCoord =
+      -(1 - Math.cos(angularPosition)) * orbitDepthY;
+
     const scale = interpolate(
       distance,
-      [0, 0.5, 1, MAX_VISIBLE_PROGRESS],
-      [ACTIVE_SCALE, 0.84, SIDE_SCALE, 0.54],
-      "clamp",
+      [0, 0.68, 1, MAX_VISIBLE_PROGRESS],
+      [ACTIVE_SCALE, 0.92, SIDE_SCALE, 0.48],
+      Extrapolation.CLAMP,
+    );
+
+    const opacity = interpolate(
+      distance,
+      [0, 0.5, MAX_VISIBLE_PROGRESS],
+      [1, 0.5, 0],
+      Extrapolation.CLAMP,
+    );
+
+    const rotateY = interpolate(
+      clampedDelta,
+      [-1, 0, 1],
+      [75, 0, -75],
+      Extrapolation.CLAMP,
     );
 
     return {
       opacity,
       zIndex: Math.round(
-        interpolate(distance, [0, MAX_VISIBLE_PROGRESS], [100, 1], "clamp"),
+        interpolate(
+          distance,
+          [0, MAX_VISIBLE_PROGRESS],
+          [100, 1],
+          Extrapolation.CLAMP,
+        ),
       ),
       transform: [
         { perspective: 760 },
-        { translateX: orbitX },
-        { translateY: orbitY },
+        { translateX: xCoord },
+        { translateY: yCoord },
         { scale },
+        { rotateY: `${rotateY}deg` },
       ],
     };
   }, [
     direction,
     index,
     orbitDepthY,
-    orbitDepthZ,
     orbitRadiusX,
     position,
   ]);
 
-  const cylinderFaceStyle = useAnimatedStyle(() => {
-    const rawDelta = index - position.value;
-    const halfCount = TOOL_COUNT / 2;
-    const wrappedDelta =
-      ((((rawDelta + halfCount) % TOOL_COUNT) + TOOL_COUNT) % TOOL_COUNT) -
-      halfCount;
-    const clampedProgress = Math.max(
-      -MAX_VISIBLE_PROGRESS,
-      Math.min(MAX_VISIBLE_PROGRESS, wrappedDelta),
+  const iconOpacityStyle = useAnimatedStyle(() => {
+    const distance = Math.abs(
+      wrappedDelta(index, position.value, TOOL_COUNT),
     );
-    const cylinderAngle =
-      clampedProgress * CYLINDER_MAX_ANGLE * direction;
-    const rotationDegrees = cylinderAngle * (180 / Math.PI);
-
-    return {
-      transform: [
-        { perspective: 760 },
-        { rotateY: `${rotationDegrees}deg` },
-      ],
-    };
-  }, [direction, index, position]);
-
-  const animatedIconOpacity = useAnimatedStyle(() => {
-    const rawDelta = index - position.value;
-    const halfCount = TOOL_COUNT / 2;
-    const wrappedDelta =
-      ((((rawDelta + halfCount) % TOOL_COUNT) + TOOL_COUNT) % TOOL_COUNT) -
-      halfCount;
-    const distance = Math.abs(wrappedDelta);
 
     return {
       opacity: interpolate(
         distance,
-        [0, 0.65, 1, MAX_VISIBLE_PROGRESS],
-        [0.92, 0.7, 0.42, 0],
-        "clamp",
+        [0, 0.5, MAX_VISIBLE_PROGRESS],
+        [1, 0.5, 0],
+        Extrapolation.CLAMP,
       ),
     };
   }, [index, position]);
 
-  const concealed = !selected;
-  const badgeSize = Math.max(20, controlSize * 0.24);
-  const iconSize = Math.round(controlCoreSize * 0.58);
-
   return (
     <Animated.View
       accessibilityElementsHidden={concealed}
-      importantForAccessibility={concealed ? "no-hide-descendants" : "auto"}
+      importantForAccessibility={
+        concealed ? "no-hide-descendants" : "auto"
+      }
       pointerEvents={concealed ? "none" : "auto"}
       style={[
         styles.controlPosition,
@@ -256,11 +268,11 @@ function ToolControl({
           left: centerX,
           top: anchorY,
         },
-        orbitStyle,
+        orbitalStyle,
+        iconOpacityStyle,
       ]}
     >
-      <Animated.View style={[styles.cylinderFace, cylinderFaceStyle]}>
-        <Pressable
+      <Pressable
         accessibilityHint="Activates the selected scanner mode"
         accessibilityLabel={`${tool.label}, activate`}
         accessibilityRole="button"
@@ -269,14 +281,20 @@ function ToolControl({
           selected,
         }}
         disabled={disabled || concealed}
-        onPress={onActivate}
+        onPress={() => {
+          if (!selected) {
+            onSelect();
+            return;
+          }
+        
+          onActivate();
+        }}
         style={({ pressed }) => [
           styles.control,
           {
             width: controlSize,
             height: controlSize,
             borderColor: tool.accent,
-            borderWidth: 3,
             borderRadius: controlSize / 2,
             boxShadow: selected
               ? `0 0 24px ${tool.glow}`
@@ -293,18 +311,41 @@ function ToolControl({
               width: controlCoreSize,
               height: controlCoreSize,
             },
-            animatedIconOpacity,
+             iconOpacityStyle,
+              orbitalStyle,
           ]}
         >
-          <View style={[styles.iconGhost, styles.iconGhostCyan]}>
-            <IconSymbol color="#4FEFFF" name={tool.icon} size={iconSize} />
+          <View
+            style={[
+              styles.iconGhost,
+              styles.iconGhostCyan,
+            ]}
+          >
+            <IconSymbol
+              color="#4FEFFF"
+              name={tool.icon}
+              size={iconSize}
+            />
           </View>
 
-          <View style={[styles.iconGhost, styles.iconGhostViolet]}>
-            <IconSymbol color="#A885FF" name={tool.icon} size={iconSize} />
+          <View
+            style={[
+              styles.iconGhost,
+              styles.iconGhostViolet,
+            ]}
+          >
+            <IconSymbol
+              color="#A885FF"
+              name={tool.icon}
+              size={iconSize}
+            />
           </View>
 
-          <IconSymbol color={tool.accent} name={tool.icon} size={iconSize} />
+          <IconSymbol
+            color={tool.accent}
+            name={tool.icon}
+            size={iconSize}
+          />
         </Animated.View>
 
         {badge ? (
@@ -319,11 +360,12 @@ function ToolControl({
               },
             ]}
           >
-            <Text style={styles.badgeText}>{badge > 99 ? "99+" : badge}</Text>
+            <Text style={styles.badgeText}>
+              {badge > 99 ? "99+" : badge}
+            </Text>
           </View>
         ) : null}
-        </Pressable>
-      </Animated.View>
+      </Pressable>
     </Animated.View>
   );
 }
@@ -343,42 +385,102 @@ export function ScannerToolCarousel({
     scannerWheelRadius,
   } = useResponsiveLayout();
 
-  const selectedIndex = scannerTools.findIndex(
-    (tool) => tool.id === selectedTool,
+  const selectedIndex = Math.max(
+    0,
+    scannerTools.findIndex(
+      (tool) => tool.id === selectedTool,
+    ),
   );
-  const committedPosition = useSharedValue(Math.max(0, selectedIndex));
-  const position = useSharedValue(Math.max(0, selectedIndex));
-  const dragStart = useSharedValue(Math.max(0, selectedIndex));
+
+  const selected =
+    scannerTools[selectedIndex] ?? scannerTools[0];
+
+  const committedPosition = useSharedValue(selectedIndex);
+  const position = useSharedValue(selectedIndex);
+  const dragStart = useSharedValue(selectedIndex);
+
   const direction = I18nManager.isRTL ? -1 : 1;
   const controlCoreSize = scannerControlSize * 0.72;
   const dragDistance = moderateScale(140, 0.65);
   const dragThreshold = moderateScale(44, 0.45);
   const velocityThreshold = moderateScale(650, 0.25);
-  const selected = scannerTools[Math.max(0, selectedIndex)] ?? scannerTools[0];
-  const centerX = Math.max(0, (controlDockWidth - scannerControlSize) / 2);
+
+  const centerX = Math.max(
+    0,
+    (controlDockWidth - scannerControlSize) / 2,
+  );
+
   const bottomInset = moderateScale(8, 0.3);
-  const insets = useSafeAreaInsets();
+  const toolLift = moderateScale(18, 0.35);
+
+  // Keep a stable base position for the platter, then lift only the tools.
+  const baseAnchorY = Math.max(
+    0,
+    scannerCarouselHeight -
+      scannerControlSize -
+      bottomInset,
+  );
+
   const anchorY = Math.max(
     0,
-    scannerCarouselHeight - scannerControlSize - bottomInset,
+    baseAnchorY - toolLift,
   );
-  const orbitDepthY = Math.max(
-    moderateScale(18, 0.35),
+
+  /*
+   * One shared virtual ellipse drives both the Skia platter and the tool nodes.
+   * The platter width is derived from the orbit radius, not calculated
+   * independently, so the controls appear attached to the platter track.
+   */
+  const platterHorizontalInset = moderateScale(8, 0.2);
+  const platterVerticalInset = moderateScale(6, 0.2);
+  const availablePlatterWidth = Math.max(
+    0,
+    controlDockWidth - moderateScale(12, 0.2),
+  );
+
+  const maximumOrbitRadiusX = Math.max(
+    0,
+    availablePlatterWidth / 2 - platterHorizontalInset,
+  );
+
+  const desiredOrbitRadiusX = Math.max(
+    scannerControlSize * 1.62,
+    scannerWheelRadius,
+  );
+
+  const orbitRadiusX = Math.min(
+    desiredOrbitRadiusX,
+    maximumOrbitRadiusX,
+  );
+
+  const platterWidth =
+    orbitRadiusX * 2 + platterHorizontalInset * 2;
+
+  const platterHeight = Math.max(
+    moderateScale(48, 0.4),
+    scannerControlSize * 0.46,
+  );
+
+  const platterRadiusY = Math.max(
+    0,
+    platterHeight / 2 - platterVerticalInset,
+  );
+
+  // Exact ellipse relationship:
+  // y = -radiusY * (1 - cos(angle))
+  const orbitDepthY = platterRadiusY;
+
+  const platterLeft = Math.max(
+    0,
+    (controlDockWidth - platterWidth) / 2,
+  );
+
+  const platterTop = Math.max(
+    0,
     Math.min(
-      scannerControlSize * 0.5,
-      Math.max(0, anchorY - moderateScale(4, 0.25)),
+      scannerCarouselHeight - platterHeight,
+      baseAnchorY + scannerControlSize * 0.68,
     ),
-  );
-  const orbitRadiusX = Math.max(
-    scannerControlSize * 1.65,
-    Math.min(
-      scannerWheelRadius,
-      Math.max(0, (controlDockWidth - scannerControlSize) * 0.46),
-    ),
-  );
-  const orbitDepthZ = Math.max(
-    scannerControlSize * 0.62,
-    orbitRadiusX * 0.74,
   );
 
   useEffect(() => {
@@ -400,29 +502,46 @@ export function ScannerToolCarousel({
   ]);
 
   useEffect(() => {
-    const nextIndex = Math.max(
-      0,
-      scannerTools.findIndex((tool) => tool.id === selectedTool),
+    const currentPosition = Math.round(
+      committedPosition.value,
     );
-    const currentPosition = Math.round(committedPosition.value);
-    const currentIndex = modulo(currentPosition, TOOL_COUNT);
-    let step = nextIndex - currentIndex;
+    const currentIndex = modulo(
+      currentPosition,
+      TOOL_COUNT,
+    );
 
-    if (step > TOOL_COUNT / 2) step -= TOOL_COUNT;
-    if (step < -TOOL_COUNT / 2) step += TOOL_COUNT;
+    let step = selectedIndex - currentIndex;
+
+    if (step > TOOL_COUNT / 2) {
+      step -= TOOL_COUNT;
+    }
+
+    if (step < -TOOL_COUNT / 2) {
+      step += TOOL_COUNT;
+    }
 
     const nextPosition = currentPosition + step;
     if (nextPosition === currentPosition) return;
 
     committedPosition.value = nextPosition;
     position.value = withSpring(nextPosition, SPRING);
-  }, [committedPosition, position, selectedTool]);
+  }, [
+    committedPosition,
+    position,
+    selectedIndex,
+  ]);
 
   const commitMode = useCallback(
     (nextPosition: number) => {
-      const nextIndex = modulo(Math.round(nextPosition), TOOL_COUNT);
+      const nextIndex = modulo(
+        Math.round(nextPosition),
+        TOOL_COUNT,
+      );
       const nextTool = scannerTools[nextIndex];
-      if (!nextTool || nextTool.id === selectedTool) return;
+
+      if (!nextTool || nextTool.id === selectedTool) {
+        return;
+      }
 
       selectionHaptic();
       onSelect(nextTool.id);
@@ -442,7 +561,7 @@ export function ScannerToolCarousel({
       Gesture.Pan()
         .enabled(!disabled)
         .activeOffsetX([-12, 12])
-        .failOffsetY([-12, 12])
+        .failOffsetY([-14, 14])
         .onBegin(() => {
           cancelAnimation(position);
           dragStart.value = position.value;
@@ -450,34 +569,58 @@ export function ScannerToolCarousel({
         .onUpdate(({ translationX }) => {
           const progress = Math.min(
             1,
-            Math.max(-1, -(direction * translationX) / dragDistance),
+            Math.max(
+              -1,
+              -(direction * translationX) /
+                dragDistance,
+            ),
           );
 
           position.value = dragStart.value + progress;
         })
         .onEnd(({ translationX, velocityX }) => {
-          const intent = -direction * (translationX + velocityX * 0.12);
+          const intent =
+            -direction *
+            (translationX + velocityX * 0.12);
+
           const passed =
             Math.abs(translationX) > dragThreshold ||
             Math.abs(velocityX) > velocityThreshold;
-          const step = passed ? (intent > 0 ? 1 : -1) : 0;
-          const previousPosition = committedPosition.value;
-          const nextPosition = previousPosition + step;
+
+          const step = passed
+            ? intent > 0
+              ? 1
+              : -1
+            : 0;
+
+          const previousPosition =
+            committedPosition.value;
+          const nextPosition =
+            previousPosition + step;
 
           committedPosition.value = nextPosition;
           position.value = withSpring(
             nextPosition,
             SPRING,
             (finished) => {
-              if (finished && nextPosition !== previousPosition) {
-                scheduleOnRN(commitMode, nextPosition);
+              if (
+                finished &&
+                nextPosition !== previousPosition
+              ) {
+                scheduleOnRN(
+                  commitMode,
+                  nextPosition,
+                );
               }
             },
           );
         })
         .onFinalize((_event, success) => {
           if (!success) {
-            position.value = withSpring(committedPosition.value, SPRING);
+            position.value = withSpring(
+              committedPosition.value,
+              SPRING,
+            );
           }
         }),
     [
@@ -496,16 +639,14 @@ export function ScannerToolCarousel({
   const controlProps = {
     anchorY,
     centerX,
-      controlCoreSize,
+    controlCoreSize,
     controlSize: scannerControlSize,
     orbitDepthY,
-    orbitDepthZ,
     orbitRadiusX,
     position,
   } as const;
 
   return (
-    <>
     <GestureDetector gesture={pan}>
       <Animated.View
         style={[
@@ -517,6 +658,28 @@ export function ScannerToolCarousel({
           disabled && styles.rootDisabled,
         ]}
       >
+        <View
+          pointerEvents="none"
+          style={[
+            styles.platterHost,
+            {
+              width: platterWidth,
+              height: platterHeight,
+              left: platterLeft,
+              top: platterTop,
+            },
+          ]}
+        >
+          <HUDSkiaPlatterRing
+            accents={TOOL_ACCENTS}
+            height={platterHeight}
+            position={position}
+            radiusX={orbitRadiusX}
+            radiusY={platterRadiusY}
+            width={platterWidth}
+          />
+        </View>
+
         {scannerTools.map((tool, index) => (
           <ToolControl
             {...controlProps}
@@ -525,14 +688,13 @@ export function ScannerToolCarousel({
             index={index}
             key={tool.id}
             onActivate={activateSelected}
+            onSelect={() => onSelect(tool.id)}
             selected={tool.id === selectedTool}
             tool={tool}
           />
         ))}
       </Animated.View>
- 
-    </GestureDetector>  
-        </>
+    </GestureDetector>
   );
 }
 
@@ -544,17 +706,17 @@ const styles = StyleSheet.create({
   rootDisabled: {
     opacity: 0.58,
   },
+  platterHost: {
+    position: "absolute",
+    zIndex: 0,
+  },
   controlPosition: {
     position: "absolute",
-  },
-  cylinderFace: {
-    width: "100%",
-    height: "100%",
-    backfaceVisibility: "hidden",
   },
   control: {
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 3,
     backgroundColor: "transparent",
   },
   controlPressed: {
@@ -587,9 +749,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
     borderRadius: theme.radii.pill,
     borderWidth: 3,
-    borderColor: '4FEFFF',
     backgroundColor: "rgba(3, 7, 12, 0.9)",
-    boxShadow: "0 0 8px rgba(88, 223, 232, 0.32)",
+    boxShadow:
+      "0 0 8px rgba(88, 223, 232, 0.32)",
   },
   badgeText: {
     color: theme.colors.cream,

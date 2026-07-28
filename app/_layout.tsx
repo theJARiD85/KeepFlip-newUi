@@ -29,16 +29,8 @@ function ProtectedRootStack() {
         contentStyle: { backgroundColor: keepFlipTheme.colors.backgroundDeep },
         headerShown: false,
       }}>
-      <Stack.Protected guard={isChecking}>
-        <Stack.Screen name="auth-check" />
-      </Stack.Protected>
-      <Stack.Protected guard={!isChecking && !isSignedIn}>
-        <Stack.Screen name="(auth)" />
-      </Stack.Protected>
-      <Stack.Protected guard={isSignedIn}>
-        <Stack.Screen name="(app)" />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-      </Stack.Protected>
+      <Stack.Screen name="(app)" />
+      <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       <Stack.Screen name="terms" />
       <Stack.Screen name="privacy" />
     </Stack>

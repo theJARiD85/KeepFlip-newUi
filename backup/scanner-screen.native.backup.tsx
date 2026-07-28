@@ -5,7 +5,6 @@ import { useIsFocused, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, AppState, BackHandler, Linking, Platform, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useWindowDimensions } from "react-native";
 import {
   Camera,
   type CameraRef,
@@ -39,10 +38,6 @@ import {
   toDisplayUri,
   type MultiScanPhoto,
 } from "@/components/scanner/multi-scan-photo-review";
-import { 
-  ScannerThoughtStream,
-  type Thought
- } from '@/components/scanner/scanner-thought-stream';
 import {
   type AnalysisStep,
   type ItemAnalysisState,
@@ -276,6 +271,8 @@ export default function ScannerScreen() {
   const [captureFeedback, setCaptureFeedback] = useState<string | null>(null);
   const [radarViewport, setRadarViewport] =
     useState<ValueRadarViewport | null>(null);
+  const [atmospherePhase, setAtmospherePhase] =
+    useState<ScannerAtmospherePhase>("idle");
   const [selectedTool, setSelectedTool] = useState<ScannerToolId>("single");
   const [singlePhotoUri, setSinglePhotoUri] = useState<string | null>(null);
   const [multiScanPhotos, setMultiScanPhotos] = useState<MultiScanPhoto[]>([]);
@@ -288,11 +285,13 @@ export default function ScannerScreen() {
   );
   const [analysisBackdropUri, setAnalysisBackdropUri] = useState<string | null>(    null,
   );
-const { width, height } = useWindowDimensions();
+
   const [completedAnalysis, setCompletedAnalysis] =
     useState<ItemAnalysisSuccess | null>(null);
   const [completedScanId, setCompletedScanId] = useState<string | null>(null);
   const [isSavingToInventory, setIsSavingToInventory] = useState(false);
+  const renderedAtmospherePhase: ScannerAtmospherePhase =
+    analysisState?.status === "analyzing" ? "analyzing" : atmospherePhase;
   const canUseTorch = device?.hasTorch === true;
   const analysisPhotoUris =
     selectedTool === "single" && singlePhotoUri
@@ -332,27 +331,6 @@ const { width, height } = useWindowDimensions();
     () => [photoOutput, radarFrameOutput],
     [photoOutput, radarFrameOutput],
   );
-
-  const demoThoughts: Thought[] = [
-    {
-      id:"1",
-      text:"OBJECT BOUNDARY LOCKED",
-      confidence:"94.2%",
-      type:"analysis" as const,
-    },
-    {
-      id:"2",
-      text:"MATERIAL ANALYSIS RUNNING",
-      confidence:"METAL / GLASS",
-      type:"analysis" as const,
-    },
-    {
-      id:"3",
-      text:"MARKET MATCH FOUND",
-      confidence:"342 RESULTS",
-      type:"success" as const,
-    },
-  ];
 
   const handleScanFrameLayout = useCallback(() => {
     requestAnimationFrame(() => {
@@ -868,6 +846,13 @@ const { width, height } = useWindowDimensions();
         return null;
       }
 
+      if (!user?.$id) {
+        const feedback = "Sign in before capturing an item.";
+        setMessage(feedback);
+        setCaptureFeedback(feedback);
+        return null;
+      }
+
       if (captureLockRef.current) return null;
       captureLockRef.current = true;
       clearAtmosphereTimer();
@@ -1338,8 +1323,10 @@ const { width, height } = useWindowDimensions();
         contentStyle={[styles.centeredState, { paddingHorizontal: pageGutter }]}
       >
         <View style={styles.permissionAtmosphere}>
-          <ScannerThoughtStream
-            thoughts={demoThoughts}
+          <ScannerAtmosphere
+            width={scannerWidth}
+            height={scannerHeight}
+            active={true}
           />
         </View>
         {analysisState == null ? (
@@ -1448,6 +1435,11 @@ const { width, height } = useWindowDimensions();
         contentStyle={[styles.centeredState, { paddingHorizontal: pageGutter }]}
       >
         <View style={styles.permissionAtmosphere}>
+          <ScannerAtmosphere
+            width={scannerWidth}
+            height={scannerHeight}
+            active={true}
+          />
         </View>
         {analysisState == null ? (
           <Animated.View
@@ -1548,9 +1540,6 @@ const { width, height } = useWindowDimensions();
           }}
           style={StyleSheet.absoluteFill}
         />
-          <ScannerThoughtStream
-            thoughts={demoThoughts}
-          />
       </View>
 
       <View
@@ -1622,6 +1611,7 @@ const { width, height } = useWindowDimensions();
           pointerEvents="none"
           style={styles.analysisAtmosphereHost}
         >
+          <ScannerAtmosphere phase="analyzing" />
         </Animated.View>
       ) : null}
         {photoReviewOverlay ? (

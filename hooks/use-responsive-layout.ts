@@ -69,7 +69,7 @@ export function useResponsiveLayout() {
   const scannerWheelRadius = clamp(
     (scannerRailWidth - scannerControlSize) / 2.25,
     82,
-    isTablet ? 152 : 118,
+    isTablet ? 260 : 230,
   );
 
   return {
