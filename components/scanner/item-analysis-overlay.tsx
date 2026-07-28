@@ -22,6 +22,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import type { Thought } from '@/components/scanner/scanner-thought-stream';
 
 const analysisTextStyle = { fontFamily: theme.fonts.analysis } as const;
 
@@ -110,6 +111,7 @@ export type ItemAnalysisState =
     }
   | {
       detail?: string;
+      insights?: Thought[];
       progress?: number;
       stage?: string;
       status: 'analyzing';

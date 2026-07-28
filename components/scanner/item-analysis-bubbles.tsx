@@ -18,6 +18,7 @@ import Animated, {
   FadeOut,
   cancelAnimation,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withRepeat,
   withTiming,
@@ -27,6 +28,7 @@ import type {
   AnalysisValuation,
   ItemAnalysisState,
 } from '@/components/scanner/item-analysis-overlay';
+import { ScannerThoughtStream } from '@/components/scanner/scanner-thought-stream';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 
@@ -166,16 +168,22 @@ function BubbleButton({
 }
 
 function LiveSignal({ accent }: { accent: string }) {
+  const reduceMotion = useReducedMotion();
   const pulse = useSharedValue(0.5);
 
   useEffect(() => {
+    if (reduceMotion) {
+      pulse.value = 1;
+      return;
+    }
+
     pulse.value = withRepeat(
       withTiming(1, { duration: 720, easing: Easing.inOut(Easing.quad) }),
       -1,
       true,
     );
     return () => cancelAnimation(pulse);
-  }, [pulse]);
+  }, [pulse, reduceMotion]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: pulse.value,
@@ -194,17 +202,23 @@ function LiveSignal({ accent }: { accent: string }) {
 }
 
 function MiniAnalysisReticle({ progress }: { progress?: number }) {
+  const reduceMotion = useReducedMotion();
   const rotation = useSharedValue(0);
   const progressPercent = percentage(progress);
 
   useEffect(() => {
+    if (reduceMotion) {
+      rotation.value = 0;
+      return;
+    }
+
     rotation.value = withRepeat(
       withTiming(360, { duration: 980, easing: Easing.linear }),
       -1,
       false,
     );
     return () => cancelAnimation(rotation);
-  }, [rotation]);
+  }, [reduceMotion, rotation]);
 
   const ringStyle = useAnimatedStyle(() => ({
     transform: [{ rotateZ: `${rotation.value}deg` }],
@@ -229,6 +243,11 @@ function AnalysisProgressBubbles({
 }) {
   const accent = theme.colors.scannerCyan;
   const steps = state.steps ?? [];
+  const activeStepIndex = Math.max(
+    0,
+    steps.findIndex((step) => step.status === 'active'),
+  );
+  const activeStep = steps[activeStepIndex];
 
   return (
     <View accessibilityLiveRegion="polite" style={styles.progressBubbles}>
@@ -248,40 +267,67 @@ function AnalysisProgressBubbles({
       </GlassBubble>
 
       {steps.length > 0 ? (
-        <View style={styles.stepCloud}>
-          {steps.map((step, index) => {
-            const isActive = step.status === 'active';
-            const isComplete = step.status === 'complete';
-            return (
-              <GlassBubble
-                accent={isActive ? accent : isComplete ? theme.colors.goldBright : theme.colors.textMuted}
-                delay={60 + index * 35}
-                key={`${step.label}-${index}`}
-                style={[styles.stepBubble, !isActive && !isComplete && styles.stepBubblePending]}>
+        <View style={styles.stageRail}>
+          <View style={styles.stageRailNodes}>
+            {steps.map((step, index) => {
+              const isActive = step.status === 'active';
+              const isComplete = step.status === 'complete';
+              return (
                 <View
-                  style={[
-                    styles.stepDot,
-                    {
-                      backgroundColor: isComplete
-                        ? theme.colors.goldBright
-                        : isActive
+                  accessibilityLabel={`${step.label}: ${step.status}`}
+                  key={`${step.label}-${index}`}
+                  style={styles.stageNodeGroup}>
+                  <View
+                    style={[
+                      styles.stageNode,
+                      {
+                        backgroundColor: isComplete
+                          ? theme.colors.goldBright
+                          : isActive
+                            ? accent
+                            : 'rgba(3, 3, 5, 0.88)',
+                        borderColor: isActive
                           ? accent
-                          : 'transparent',
-                      borderColor: isActive ? accent : theme.colors.goldMuted,
-                    },
-                  ]}
-                />
-                <Text
-                  numberOfLines={2}
-                  style={[
-                    styles.stepText,
-                    { color: isActive || isComplete ? theme.colors.text : theme.colors.textMuted },
-                  ]}>
-                  {step.label}
-                </Text>
-              </GlassBubble>
-            );
-          })}
+                          : isComplete
+                            ? theme.colors.goldBright
+                            : theme.colors.goldMuted,
+                        boxShadow: isActive
+                          ? `0 0 11px ${accent}`
+                          : isComplete
+                            ? `0 0 8px ${theme.colors.goldBright}`
+                            : 'none',
+                      },
+                    ]}>
+                    <Text
+                      style={[
+                        styles.stageNodeText,
+                        {
+                          color:
+                            isActive || isComplete
+                              ? theme.colors.backgroundDeep
+                              : theme.colors.textMuted,
+                        },
+                      ]}>
+                      {String(index + 1).padStart(2, '0')}
+                    </Text>
+                  </View>
+                  {index < steps.length - 1 ? (
+                    <View
+                      style={[
+                        styles.stageConnector,
+                        isComplete && styles.stageConnectorComplete,
+                      ]}
+                    />
+                  ) : null}
+                </View>
+              );
+            })}
+          </View>
+          {activeStep ? (
+            <Text numberOfLines={1} style={styles.activeStepText}>
+              {activeStep.label}
+            </Text>
+          ) : null}
         </View>
       ) : null}
     </View>
@@ -610,13 +656,16 @@ export function ItemAnalysisBubbles({
       </Animated.View>
 
       {isAnalyzing ? (
-        <View
-          style={[
-            styles.analyzingContent,
-            { paddingTop: topInset + 72, paddingBottom: bottomInset + 24 },
-          ]}>
-          <AnalysisProgressBubbles state={state} />
-        </View>
+        <>
+          <ScannerThoughtStream thoughts={state.insights ?? []} />
+          <View
+            style={[
+              styles.analyzingContent,
+              { paddingTop: topInset + 72, paddingBottom: bottomInset + 24 },
+            ]}>
+            <AnalysisProgressBubbles state={state} />
+          </View>
+        </>
       ) : (
         <ScrollView
           contentContainerStyle={[
@@ -709,14 +758,20 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.7, transform: [{ scale: 0.95 }] },
   disabled: { opacity: 0.52 },
-  analyzingContent: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
-  progressBubbles: { width: '100%', maxWidth: 390, alignItems: 'center', gap: 12 },
+  analyzingContent: {
+    flex: 1,
+    zIndex: 2,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 18,
+  },
+  progressBubbles: { width: '100%', maxWidth: 370, alignItems: 'center', gap: 9 },
   progressHero: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    paddingVertical: 14,
+    paddingVertical: 12,
   },
   progressCopy: { flex: 1, minWidth: 0, gap: 5 },
   progressTitle: { color: theme.colors.cream, fontSize: 17, lineHeight: 22 },
@@ -748,19 +803,59 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontVariant: ['tabular-nums'],
   },
-  stepCloud: { width: '100%', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
-  stepBubble: {
-    width: '48%',
-    minHeight: 54,
+  stageRail: {
+    width: '92%',
+    minHeight: 48,
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 13,
+    paddingVertical: 9,
+    borderRadius: theme.radii.pill,
+    borderWidth: 1,
+    borderColor: 'rgba(88, 223, 232, 0.18)',
+    backgroundColor: 'rgba(3, 5, 8, 0.74)',
+    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.42)',
+  },
+  stageRailNodes: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 11,
-    paddingVertical: 9,
+    justifyContent: 'center',
   },
-  stepBubblePending: { opacity: 0.58 },
-  stepDot: { width: 10, height: 10, borderRadius: theme.radii.pill, borderWidth: 1 },
-  stepText: { flex: 1, fontSize: 9, lineHeight: 13 },
+  stageNodeGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  stageNode: {
+    width: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: theme.radii.pill,
+    borderWidth: 1,
+  },
+  stageNodeText: {
+    fontSize: 8,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+  },
+  stageConnector: {
+    width: 22,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(138, 100, 43, 0.42)',
+  },
+  stageConnectorComplete: {
+    backgroundColor: 'rgba(242, 211, 138, 0.66)',
+  },
+  activeStepText: {
+    maxWidth: '92%',
+    color: theme.colors.scannerCyan,
+    fontSize: 9,
+    lineHeight: 11,
+    fontWeight: '900',
+    letterSpacing: 0.7,
+    textAlign: 'center',
+  },
   scrollView: { flex: 1, width: '100%' },
   scrollContent: { width: '100%', alignItems: 'center', paddingHorizontal: 16 },
   bubbleColumn: { width: '100%', maxWidth: 560, gap: 12 },

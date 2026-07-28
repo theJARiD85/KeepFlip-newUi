@@ -5,7 +5,7 @@ export const keepFlipTheme = {
     medium: 'SpaceGroteskMedium',
     semibold: 'SpaceGroteskSemiBold',
     bold: 'SpaceGroteskBold',
-    display: 'SpaceGroteskBold',
+    display: 'FlexiIBMVGAFalse',
   },
   colors: {
     background: '#030305',
@@ -20,7 +20,7 @@ export const keepFlipTheme = {
     text: '#F7F2E8',
     textMuted: '#ADA7B2',
     scannerAmber: '#E0AC4B',
-    scannerCyan: '#58DFE8',
+    scannerCyan: '#00fff2',
     scannerViolet: '#8D72FF',
     scannerIndigo: '#FDFBF7',
     scannerWhite: '#FFF2D2',

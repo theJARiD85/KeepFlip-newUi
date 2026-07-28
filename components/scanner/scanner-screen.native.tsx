@@ -4,8 +4,6 @@ import * as ImagePicker from "expo-image-picker";
 import { useIsFocused, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, AppState, BackHandler, Linking, Platform, Pressable, StyleSheet, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useWindowDimensions } from "react-native";
 import {
   Camera,
   type CameraRef,
@@ -20,9 +18,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-import {
-  ScannerAtmosphere,
-} from "@/components/scanner/scanner-atmosphere.native";
+import { BadassAiAnimation } from "@/components/scanner/badass-ai-animation";
 import {
   ValueRadarOverlay,
   useValueRadar,
@@ -39,10 +35,7 @@ import {
   toDisplayUri,
   type MultiScanPhoto,
 } from "@/components/scanner/multi-scan-photo-review";
-import { 
-  ScannerThoughtStream,
-  type Thought
- } from '@/components/scanner/scanner-thought-stream';
+import { buildAnalysisThoughts } from "@/components/scanner/scanner-thought-stream";
 import {
   type AnalysisStep,
   type ItemAnalysisState,
@@ -55,6 +48,7 @@ import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { useKeepFlipMenu } from "@/components/navigation/keepflip-menu-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
+import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout } from "@/hooks/use-responsive-layout";
 import {
@@ -75,12 +69,20 @@ import {
   waitForTripo3dModel,
   type Tripo3dModelResult,
 } from "@/services/tripo3d-model-api";
-import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
+import type { ItemIdentificationSnapshot } from "@/types/item-analysis";
 
 const CAMERA_PHOTO_RESOLUTION = Object.freeze({
   width: 1920,
   height: 1440,
 });
+
+type AnalysisCognitionSeed = {
+  localDetection?: {
+    label: string;
+    score: number;
+  };
+  tool: ScannerToolId;
+};
 
 const ANALYSIS_STAGES: Record<
   ItemAnalysisStage,
@@ -124,7 +126,14 @@ const ANALYSIS_STEP_LABELS = [
   "Research completed marketplace sales",
 ] as const;
 
-function analysisProgressState(stage: ItemAnalysisStage): ItemAnalysisState {
+function analysisProgressState(
+  stage: ItemAnalysisStage,
+  insights = buildAnalysisThoughts({
+    modeLabel: "Item scan",
+    photoCount: 1,
+    stage,
+  }),
+): ItemAnalysisState {
   const stageIndex: Record<ItemAnalysisStage, number> = {
     authenticating: 0,
     uploading: 1,
@@ -143,7 +152,12 @@ function analysisProgressState(stage: ItemAnalysisStage): ItemAnalysisState {
           : "pending",
   }));
 
-  return { ...ANALYSIS_STAGES[stage], status: "analyzing", steps };
+  return {
+    ...ANALYSIS_STAGES[stage],
+    insights,
+    status: "analyzing",
+    steps,
+  };
 }
 
 function analysisDiagnosticId(error: unknown) {
@@ -253,7 +267,6 @@ export default function ScannerScreen() {
     "idle",
   );
   const analysisAbortControllerRef = useRef<AbortController | null>(null);
-  const atmosphereTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const device = useCameraDevice("back");
   const photoOutput = usePhotoOutput({
     targetResolution: CAMERA_PHOTO_RESOLUTION,
@@ -286,9 +299,9 @@ export default function ScannerScreen() {
   const [analysisState, setAnalysisState] = useState<ItemAnalysisState | null>(
     null,
   );
-  const [analysisBackdropUri, setAnalysisBackdropUri] = useState<string | null>(    null,
+  const [analysisBackdropUri, setAnalysisBackdropUri] = useState<string | null>(
+    null,
   );
-const { width, height } = useWindowDimensions();
   const [completedAnalysis, setCompletedAnalysis] =
     useState<ItemAnalysisSuccess | null>(null);
   const [completedScanId, setCompletedScanId] = useState<string | null>(null);
@@ -332,27 +345,6 @@ const { width, height } = useWindowDimensions();
     () => [photoOutput, radarFrameOutput],
     [photoOutput, radarFrameOutput],
   );
-
-  const demoThoughts: Thought[] = [
-    {
-      id:"1",
-      text:"OBJECT BOUNDARY LOCKED",
-      confidence:"94.2%",
-      type:"analysis" as const,
-    },
-    {
-      id:"2",
-      text:"MATERIAL ANALYSIS RUNNING",
-      confidence:"METAL / GLASS",
-      type:"analysis" as const,
-    },
-    {
-      id:"3",
-      text:"MARKET MATCH FOUND",
-      confidence:"342 RESULTS",
-      type:"success" as const,
-    },
-  ];
 
   const handleScanFrameLayout = useCallback(() => {
     requestAnimationFrame(() => {
@@ -532,20 +524,6 @@ const { width, height } = useWindowDimensions();
     // and restores the uploaded cover photo.
   }, []);
 
-  const clearAtmosphereTimer = useCallback(() => {
-    if (atmosphereTimerRef.current == null) return;
-    clearTimeout(atmosphereTimerRef.current);
-    atmosphereTimerRef.current = null;
-  }, []);
-
-  const scheduleAtmosphereReset = useCallback(() => {
-    clearAtmosphereTimer();
-    atmosphereTimerRef.current = setTimeout(() => {
-      atmosphereTimerRef.current = null;
-      setAtmospherePhase("idle");
-    }, 1800);
-  }, [clearAtmosphereTimer]);
-
   useEffect(() => {
     const subscription = AppState.addEventListener("change", setAppState);
     return () => subscription.remove();
@@ -582,9 +560,8 @@ const { width, height } = useWindowDimensions();
     () => () => {
       analysisAbortControllerRef.current?.abort();
       modelGenerationRequestRef.current += 1;
-      clearAtmosphereTimer();
     },
-    [clearAtmosphereTimer],
+    [],
   );
 
   useEffect(() => {
@@ -701,10 +678,8 @@ const { width, height } = useWindowDimensions();
         return nextPhotos;
       });
       setSelectedTool("upload");
-      setAtmospherePhase("captured");
-      scheduleAtmosphereReset();
     },
-    [scheduleAtmosphereReset],
+    [],
   );
 
   const persistPickedPhotos = useCallback(
@@ -810,9 +785,7 @@ const { width, height } = useWindowDimensions();
       return;
     }
 
-    clearAtmosphereTimer();
     setIsPickingPhoto(true);
-    setAtmospherePhase("scanning");
     setMessage("Opening your photo library...");
 
     try {
@@ -826,26 +799,22 @@ const { width, height } = useWindowDimensions();
       });
 
       if (result.canceled) {
-        setAtmospherePhase("idle");
         setMessage("Upload canceled. Tap the photo tool when you are ready.");
         return;
       }
 
       if (result.assets.length === 0) {
-        setAtmospherePhase("idle");
         setMessage("No photos were selected. Please try again.");
         return;
       }
 
       await persistPickedPhotos(result.assets);
     } catch {
-      setAtmospherePhase("idle");
       setMessage("Could not open your photos. Please try again.");
     } finally {
       setIsPickingPhoto(false);
     }
   }, [
-    clearAtmosphereTimer,
     isPickingPhoto,
     persistPickedPhotos,
     uploadedPhotos.length,
@@ -868,11 +837,16 @@ const { width, height } = useWindowDimensions();
         return null;
       }
 
+      if (!user?.$id) {
+        const feedback = "Sign in before saving scanner photos.";
+        setMessage(feedback);
+        setCaptureFeedback(feedback);
+        return null;
+      }
+
       if (captureLockRef.current) return null;
       captureLockRef.current = true;
-      clearAtmosphereTimer();
       setIsCapturing(true);
-      setAtmospherePhase("scanning");
       setMessage("Capturing item...");
       setCaptureFeedback("Capturing item...");
 
@@ -897,16 +871,13 @@ const { width, height } = useWindowDimensions();
           isPrimary,
         });
 
-        setAtmospherePhase("captured");
         setCaptureFeedback(null);
-        scheduleAtmosphereReset();
         return { path: photo.filePath, saved };
       } catch (error) {
         const feedback =
           error instanceof Error
             ? error.message
             : "Could not capture and save this item.";
-        setAtmospherePhase("idle");
         setMessage(feedback);
         setCaptureFeedback(feedback);
         return null;
@@ -916,11 +887,9 @@ const { width, height } = useWindowDimensions();
       }
     },
     [
-      clearAtmosphereTimer,
       isCameraActive,
       isCameraReady,
       photoOutput,
-      scheduleAtmosphereReset,
       user?.$id,
     ],
   );
@@ -992,6 +961,16 @@ const { width, height } = useWindowDimensions();
       return;
     }
 
+    const cognitionSeed: AnalysisCognitionSeed = {
+      tool,
+      localDetection:
+        tool === "single" && radarMarker && radarMarker.score >= 0.55
+          ? {
+              label: radarMarker.label,
+              score: radarMarker.score,
+            }
+          : undefined,
+    };
     const scanId = tool === "batch" ? createScanId() : scanIdRef.current;
     const sortOrder = tool === "multi" ? multiScanPhotos.length : 0;
     const isPrimary = tool !== "multi" || multiScanPhotos.length === 0;
@@ -1003,7 +982,7 @@ const { width, height } = useWindowDimensions();
       setSinglePhotoUri(photoPath);
       setMessage("Photo saved. Building 3D model and starting analysis...");
       void startModelGeneration(captured.saved.itemPhotoId);
-      await runAnalysis([photoPath]);
+      await runAnalysis([photoPath], cognitionSeed);
       return;
     }
 
@@ -1041,7 +1020,6 @@ const { width, height } = useWindowDimensions();
   const resetScannerSession = useCallback(() => {
     analysisAbortControllerRef.current?.abort();
     analysisAbortControllerRef.current = null;
-    clearAtmosphereTimer();
     captureLockRef.current = false;
     multiScanSequenceRef.current = 0;
     uploadSequenceRef.current = 0;
@@ -1065,9 +1043,8 @@ const { width, height } = useWindowDimensions();
     setSelectedTool("single");
     setMessage("Center one item inside the frame");
     setCaptureFeedback(null);
-    setAtmospherePhase("idle");
     setTorchEnabled(false);
-  }, [clearAtmosphereTimer]);
+  }, []);
 
   const closeAnalysis = () => {
     if (analysisState?.status === "result") {
@@ -1130,7 +1107,10 @@ const { width, height } = useWindowDimensions();
     user?.$id,
   ]);
 
-  async function runAnalysis(photoUris: string[]) {
+  async function runAnalysis(
+    photoUris: string[],
+    cognitionSeed: AnalysisCognitionSeed,
+  ) {
     if (
       photoUris.length === 0 ||
       analysisAbortControllerRef.current != null ||
@@ -1143,9 +1123,29 @@ const { width, height } = useWindowDimensions();
     setCompletedAnalysis(null);
     setCompletedScanId(null);
     const controller = new AbortController();
+    let currentStage: ItemAnalysisStage = "authenticating";
+    let partialResult: ItemIdentificationSnapshot | undefined;
+    const toolAppearance =
+      scannerTools.find((tool) => tool.id === cognitionSeed.tool) ??
+      scannerTools[0];
+    const cognitionContext = {
+      localDetection: cognitionSeed.localDetection,
+      modeLabel: toolAppearance?.label ?? "Item scan",
+      photoCount: photoUris.length,
+    };
+    const progressState = (stage: ItemAnalysisStage) =>
+      analysisProgressState(
+        stage,
+        buildAnalysisThoughts({
+          ...cognitionContext,
+          partialResult,
+          stage,
+        }),
+      );
+
     analysisAbortControllerRef.current = controller;
     setAnalysisBackdropUri(toDisplayUri(photoUris[0]));
-    setAnalysisState(analysisProgressState("authenticating"));
+    setAnalysisState(progressState(currentStage));
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
       () => undefined,
     );
@@ -1154,9 +1154,16 @@ const { width, height } = useWindowDimensions();
       const result = await analyzeItemPhotos(
         { photoUris },
         {
+          onPartialResult: (event) => {
+            if (controller.signal.aborted) return;
+            partialResult = event.result;
+            setAnalysisState(progressState(currentStage));
+            void Haptics.selectionAsync().catch(() => undefined);
+          },
           onStage: (stage) => {
-            if (!controller.signal.aborted)
-              setAnalysisState(analysisProgressState(stage));
+            if (controller.signal.aborted) return;
+            currentStage = stage;
+            setAnalysisState(progressState(stage));
           },
           signal: controller.signal,
         },
@@ -1207,7 +1214,8 @@ const { width, height } = useWindowDimensions();
     }
   }
 
-  const handleAnalyzeItem = () => runAnalysis(analysisPhotoUris);
+  const handleAnalyzeItem = () =>
+    runAnalysis(analysisPhotoUris, { tool: selectedTool });
 
   const analysisButton =
     canAnalyzeCurrentTool && analysisState == null && !isPhotoReviewOpen ? (
@@ -1337,11 +1345,6 @@ const { width, height } = useWindowDimensions();
       <KeepFlipBackground
         contentStyle={[styles.centeredState, { paddingHorizontal: pageGutter }]}
       >
-        <View style={styles.permissionAtmosphere}>
-          <ScannerThoughtStream
-            thoughts={demoThoughts}
-          />
-        </View>
         {analysisState == null ? (
           <Animated.View
             entering={FadeIn.duration(180)}
@@ -1447,8 +1450,6 @@ const { width, height } = useWindowDimensions();
       <KeepFlipBackground
         contentStyle={[styles.centeredState, { paddingHorizontal: pageGutter }]}
       >
-        <View style={styles.permissionAtmosphere}>
-        </View>
         {analysisState == null ? (
           <Animated.View
             entering={FadeIn.duration(180)}
@@ -1548,9 +1549,6 @@ const { width, height } = useWindowDimensions();
           }}
           style={StyleSheet.absoluteFill}
         />
-          <ScannerThoughtStream
-            thoughts={demoThoughts}
-          />
       </View>
 
       <View
@@ -1616,14 +1614,21 @@ const { width, height } = useWindowDimensions();
           </View>
         ) : null}
         {analysisState?.status === "analyzing" ? (
-        <Animated.View
-          entering={FadeIn.duration(220)}
-          exiting={FadeOut.duration(180)}
-          pointerEvents="none"
-          style={styles.analysisAtmosphereHost}
-        >
-        </Animated.View>
-      ) : null}
+          <Animated.View
+            entering={FadeIn.duration(220)}
+            exiting={FadeOut.duration(180)}
+            pointerEvents="none"
+            style={styles.analysisAtmosphereHost}
+          >
+            <BadassAiAnimation
+              active={isFocused && appState === "active"}
+              height={screenHeight}
+              imageUri={analysisBackdropUri ?? undefined}
+              progress={analysisState.progress}
+              width={screenWidth}
+            />
+          </Animated.View>
+        ) : null}
         {photoReviewOverlay ? (
           <View
             collapsable={false}
@@ -1930,12 +1935,6 @@ const styles = StyleSheet.create({
     `,
     boxShadow:
       "0 0 44px rgba(0, 0, 0, 0.62), 0 0 26px rgba(215, 168, 74, 0.10)",
-  },
-  permissionAtmosphere: {
-    position: "absolute",
-    width: "200%",
-    aspectRatio: 1,
-    opacity: 0.9,
   },
   permissionIcon: {
     width: 62,

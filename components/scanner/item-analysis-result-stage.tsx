@@ -83,7 +83,14 @@ function RibbonModule({
     <Animated.View
       entering={FadeInUp.duration(240).delay(delay)}
       exiting={FadeOut.duration(120)}
-      style={[styles.ribbonModule, { width }]}
+      style={[
+        styles.ribbonModule,
+        {
+          width,
+          borderColor: withAlpha(accent, 0.3),
+          boxShadow: `0 8px 24px rgba(0, 0, 0, 0.32), 0 0 16px ${withAlpha(accent, 0.08)}`,
+        },
+      ]}
     >
       <View
         pointerEvents="none"
@@ -192,7 +199,7 @@ export function ItemAnalysisResultStage({
         identity.category,
       ]
         .filter(Boolean)
-        .join("  â€¢  "),
+        .join("  /  "),
     [
       identity.brand,
       identity.category,
@@ -234,6 +241,9 @@ export function ItemAnalysisResultStage({
       : result.valuationReadiness.status === "limited"
         ? theme.colors.scannerAmber
         : theme.colors.danger;
+  const overallConfidence = percentage(
+    result.confidence?.overall,
+  );
 
   return (
     <Animated.View
@@ -252,6 +262,19 @@ export function ItemAnalysisResultStage({
           { top: topInset + 14 },
         ]}
       >
+        <View style={styles.identityStatusRow}>
+          <View style={styles.identityStatusSignal} />
+          <Text style={styles.identityStatusText}>
+            IDENTITY LOCK
+          </Text>
+          <View style={styles.identityStatusRule} />
+          <Text style={styles.identityStatusScore}>
+            {overallConfidence == null
+              ? "EVIDENCE VERIFIED"
+              : `${overallConfidence}% CONF`}
+          </Text>
+        </View>
+
         <Text
           adjustsFontSizeToFit
           minimumFontScale={0.7}
@@ -270,6 +293,154 @@ export function ItemAnalysisResultStage({
           >
             {identityMeta}
           </Text>
+        ) : null}
+      </Animated.View>
+
+      <Animated.View
+        entering={FadeInDown.duration(220).delay(55)}
+        pointerEvents="none"
+        style={[
+          styles.projectionBadge,
+          { top: topInset + 126 },
+        ]}
+      >
+        <View style={styles.projectionSignal} />
+        <Text style={styles.projectionLabel}>
+          GENERATED MODEL / SKIA PROJECTION
+        </Text>
+      </Animated.View>
+
+      <Animated.View
+        entering={FadeIn.duration(220).delay(80)}
+        style={[
+          styles.marketReadout,
+          { top: topInset + 164 },
+        ]}
+      >
+        <View style={styles.readoutBracketTop} />
+        <ModuleLabel accent={theme.colors.goldBright}>
+          MARKET SIGNAL
+        </ModuleLabel>
+
+        {result.valuation ? (
+          <>
+            <Text
+              adjustsFontSizeToFit
+              numberOfLines={1}
+              selectable
+              style={styles.marketMedian}
+            >
+              {formatMoney(
+                Number(result.valuation.median),
+                result.valuation.currency,
+              )}
+            </Text>
+            <View style={styles.marketRangeRow}>
+              <View style={styles.marketRangeCell}>
+                <Text style={styles.readoutMicroLabel}>LOW</Text>
+                <Text
+                  adjustsFontSizeToFit
+                  numberOfLines={1}
+                  selectable
+                  style={styles.readoutMicroValue}
+                >
+                  {formatMoney(
+                    Number(result.valuation.low),
+                    result.valuation.currency,
+                  )}
+                </Text>
+              </View>
+              <View style={styles.marketRangeCell}>
+                <Text style={styles.readoutMicroLabel}>HIGH</Text>
+                <Text
+                  adjustsFontSizeToFit
+                  numberOfLines={1}
+                  selectable
+                  style={styles.readoutMicroValue}
+                >
+                  {formatMoney(
+                    Number(result.valuation.high),
+                    result.valuation.currency,
+                  )}
+                </Text>
+              </View>
+            </View>
+            {result.valuation.comparableCount != null ? (
+              <Text style={styles.readoutFootnote}>
+                {String(
+                  result.valuation.comparableCount,
+                ).padStart(2, "0")}{" "}
+                SOLD COMPS
+              </Text>
+            ) : null}
+          </>
+        ) : (
+          <Text style={styles.readoutUnavailable}>
+            MARKET DATA PENDING
+          </Text>
+        )}
+      </Animated.View>
+
+      <Animated.View
+        entering={FadeIn.duration(220).delay(110)}
+        style={[
+          styles.statusReadout,
+          { top: topInset + 164 },
+        ]}
+      >
+        <View style={styles.readoutBracketTop} />
+        <ModuleLabel accent={readinessAccent}>
+          VALUE READINESS
+        </ModuleLabel>
+        <View style={styles.statusScoreRow}>
+          <View
+            style={[
+              styles.statusSignal,
+              {
+                backgroundColor: readinessAccent,
+                boxShadow: `0 0 12px ${withAlpha(readinessAccent, 0.8)}`,
+              },
+            ]}
+          />
+          <Text
+            selectable
+            style={[
+              styles.statusScore,
+              { color: readinessAccent },
+            ]}
+          >
+            {`${percentage(result.valuationReadiness.score) ?? "--"}%`}
+          </Text>
+        </View>
+        <Text
+          numberOfLines={2}
+          selectable
+          style={styles.statusLabel}
+        >
+          {result.valuationReadiness.label ??
+            "Valuation readiness"}
+        </Text>
+
+        {result.condition ? (
+          <View style={styles.conditionReadout}>
+            <Text style={styles.readoutMicroLabel}>
+              CONDITION
+            </Text>
+            <View style={styles.conditionReadoutRow}>
+              <Text
+                numberOfLines={1}
+                selectable
+                style={styles.conditionReadoutGrade}
+              >
+                {result.condition.label}
+              </Text>
+              {percentage(result.condition.score) != null ? (
+                <Text style={styles.conditionReadoutScore}>
+                  {percentage(result.condition.score)}%
+                </Text>
+              ) : null}
+            </View>
+          </View>
         ) : null}
       </Animated.View>
 
@@ -309,83 +480,16 @@ export function ItemAnalysisResultStage({
           horizontal
           overScrollMode="never"
           showsHorizontalScrollIndicator={false}
-          snapToAlignment="start"
-          snapToInterval={244}
           style={styles.ribbonScroller}
         >
-          {result.valuation ? (
-            <RibbonModule
-              accent={theme.colors.goldBright}
-              width={290}
-            >
-              <ModuleLabel accent={theme.colors.goldBright}>
-                MARKET VALUE
-              </ModuleLabel>
-
-              <View style={styles.valueLayout}>
-                <View style={styles.primaryValue}>
-                  <Text style={styles.primaryValueLabel}>MEDIAN</Text>
-                  <Text
-                    adjustsFontSizeToFit
-                    numberOfLines={1}
-                    selectable
-                    style={styles.primaryValueText}
-                  >
-                    {formatMoney(
-                      Number(result.valuation.median),
-                      result.valuation.currency,
-                    )}
-                  </Text>
-                </View>
-
-                <View style={styles.rangeStack}>
-                  <View>
-                    <Text style={styles.rangeLabel}>LOW</Text>
-                    <Text
-                      numberOfLines={1}
-                      selectable
-                      style={styles.rangeValue}
-                    >
-                      {formatMoney(
-                        Number(result.valuation.low),
-                        result.valuation.currency,
-                      )}
-                    </Text>
-                  </View>
-
-                  <View>
-                    <Text style={styles.rangeLabel}>HIGH</Text>
-                    <Text
-                      numberOfLines={1}
-                      selectable
-                      style={styles.rangeValue}
-                    >
-                      {formatMoney(
-                        Number(result.valuation.high),
-                        result.valuation.currency,
-                      )}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-
-              {result.valuation.comparableCount != null ? (
-                <Text style={styles.moduleFootnote}>
-                  {result.valuation.comparableCount} sold comp
-                  {result.valuation.comparableCount === 1 ? "" : "s"} used
-                </Text>
-              ) : null}
-            </RibbonModule>
-          ) : null}
-
           {result.summary ? (
             <RibbonModule
               accent={theme.colors.scannerCyan}
               delay={30}
-              width={254}
+              width={272}
             >
               <ModuleLabel accent={theme.colors.scannerCyan}>
-                ANALYSIS
+                INTELLIGENCE SUMMARY
               </ModuleLabel>
               <Text
                 numberOfLines={4}
@@ -394,90 +498,6 @@ export function ItemAnalysisResultStage({
               >
                 {result.summary}
               </Text>
-            </RibbonModule>
-          ) : null}
-
-          <RibbonModule
-            accent={readinessAccent}
-            delay={60}
-            width={218}
-          >
-            <ModuleLabel accent={readinessAccent}>
-              READINESS
-            </ModuleLabel>
-
-            <View style={styles.readinessHeading}>
-              <Text
-                numberOfLines={2}
-                selectable
-                style={[styles.readinessTitle, { color: readinessAccent }]}
-              >
-                {result.valuationReadiness.label ?? "Valuation readiness"}
-              </Text>
-
-              {percentage(result.valuationReadiness.score) != null ? (
-                <Text
-                  style={[
-                    styles.readinessScore,
-                    { color: readinessAccent },
-                  ]}
-                >
-                  {percentage(result.valuationReadiness.score)}%
-                </Text>
-              ) : null}
-            </View>
-
-            {result.valuationReadiness.reason ? (
-              <Text
-                numberOfLines={3}
-                selectable
-                style={styles.moduleBody}
-              >
-                {result.valuationReadiness.reason}
-              </Text>
-            ) : null}
-          </RibbonModule>
-
-          {result.condition ? (
-            <RibbonModule
-              accent={theme.colors.scannerViolet}
-              delay={90}
-              width={222}
-            >
-              <ModuleLabel accent={theme.colors.scannerViolet}>
-                CONDITION
-              </ModuleLabel>
-
-              <View style={styles.conditionHeading}>
-                <Text
-                  numberOfLines={1}
-                  selectable
-                  style={styles.conditionGrade}
-                >
-                  {result.condition.label}
-                </Text>
-
-                {percentage(result.condition.score) != null ? (
-                  <Text
-                    style={[
-                      styles.conditionScore,
-                      { color: theme.colors.scannerViolet },
-                    ]}
-                  >
-                    {percentage(result.condition.score)}%
-                  </Text>
-                ) : null}
-              </View>
-
-              {result.condition.summary ? (
-                <Text
-                  numberOfLines={3}
-                  selectable
-                  style={styles.moduleBody}
-                >
-                  {result.condition.summary}
-                </Text>
-              ) : null}
             </RibbonModule>
           ) : null}
 
@@ -560,7 +580,7 @@ export function ItemAnalysisResultStage({
             <CompactAction
               accent={theme.colors.goldBright}
               disabled={saving}
-              label={saving ? "Savingâ€¦" : saveLabel}
+              label={saving ? "Saving..." : saveLabel}
               onPress={onSave}
               primary
             />
@@ -585,64 +605,274 @@ const styles = StyleSheet.create({
   },
   identityHeader: {
     position: "absolute",
-    right: 60,
-    left: 60,
+    right: 66,
+    left: 66,
     zIndex: 8,
+    alignItems: "stretch",
+    gap: 4,
+    minHeight: 82,
+    paddingHorizontal: 13,
+    paddingVertical: 9,
+    borderRadius: 5,
+    borderCurve: "continuous",
+    borderWidth: 1,
+    borderLeftWidth: 2,
+    borderRightWidth: 2,
+    borderColor: "rgba(88, 223, 232, 0.22)",
+    borderLeftColor: theme.colors.scannerCyan,
+    borderRightColor: theme.colors.goldBright,
+    backgroundColor: "rgba(2, 4, 8, 0.62)",
+    boxShadow:
+      "0 10px 28px rgba(0, 0, 0, 0.40), 0 0 18px rgba(88, 223, 232, 0.06)",
+  },
+  identityStatusRow: {
+    flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 8,
+    gap: 7,
+  },
+  identityStatusSignal: {
+    width: 6,
+    height: 6,
+    borderRadius: theme.radii.pill,
+    backgroundColor: theme.colors.scannerCyan,
+    boxShadow: "0 0 10px rgba(0, 255, 242, 0.90)",
+  },
+  identityStatusText: {
+    color: theme.colors.scannerCyan,
+    fontSize: 7,
+    lineHeight: 9,
+    fontWeight: "900",
+    letterSpacing: 1.1,
+  },
+  identityStatusRule: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "rgba(88, 223, 232, 0.25)",
+  },
+  identityStatusScore: {
+    color: theme.colors.goldBright,
+    fontSize: 7,
+    lineHeight: 9,
+    fontWeight: "900",
+    letterSpacing: 0.7,
+    fontVariant: ["tabular-nums"],
   },
   identityTitle: {
     width: "100%",
     color: theme.colors.cream,
-    fontSize: 28,
-    lineHeight: 32,
+    fontSize: 20,
+    lineHeight: 24,
     fontWeight: "900",
-    letterSpacing: 0.2,
-    textAlign: "center",
+    letterSpacing: 0.25,
+    textAlign: "left",
     textShadowColor: "rgba(0, 0, 0, 0.92)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 9,
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 7,
   },
   identityMeta: {
-    marginTop: 4,
     color: "rgba(255, 248, 231, 0.72)",
-    fontSize: 11,
-    lineHeight: 15,
-    fontWeight: "300",
-    letterSpacing: 0.55,
-    textAlign: "center",
+    fontSize: 8,
+    lineHeight: 11,
+    fontWeight: "700",
+    letterSpacing: 0.6,
+    textAlign: "left",
     textShadowColor: "rgba(0, 0, 0, 0.94)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 6,
+  },
+  projectionBadge: {
+    position: "absolute",
+    left: "50%",
+    zIndex: 7,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 3,
+    borderWidth: 1,
+    borderColor: "rgba(88, 223, 232, 0.22)",
+    backgroundColor: "rgba(1, 4, 8, 0.48)",
+    transform: [{ translateX: "-50%" }],
+  },
+  projectionSignal: {
+    width: 5,
+    height: 5,
+    borderRadius: theme.radii.pill,
+    backgroundColor: theme.colors.scannerViolet,
+    boxShadow: "0 0 8px rgba(141, 114, 255, 0.88)",
+  },
+  projectionLabel: {
+    color: "rgba(200, 244, 247, 0.82)",
+    fontSize: 6,
+    lineHeight: 8,
+    fontWeight: "900",
+    letterSpacing: 0.8,
+  },
+  marketReadout: {
+    position: "absolute",
+    left: 12,
+    zIndex: 7,
+    width: 112,
+    gap: 7,
+    padding: 10,
+    borderWidth: 1,
+    borderLeftWidth: 2,
+    borderColor: "rgba(242, 211, 138, 0.26)",
+    borderLeftColor: theme.colors.goldBright,
+    backgroundColor: "rgba(3, 3, 8, 0.56)",
+    boxShadow:
+      "0 10px 24px rgba(0, 0, 0, 0.34), 0 0 16px rgba(242, 211, 138, 0.07)",
+  },
+  statusReadout: {
+    position: "absolute",
+    right: 12,
+    zIndex: 7,
+    width: 112,
+    gap: 7,
+    padding: 10,
+    borderWidth: 1,
+    borderRightWidth: 2,
+    borderColor: "rgba(88, 223, 232, 0.24)",
+    borderRightColor: theme.colors.scannerCyan,
+    backgroundColor: "rgba(3, 3, 8, 0.56)",
+    boxShadow:
+      "0 10px 24px rgba(0, 0, 0, 0.34), 0 0 16px rgba(88, 223, 232, 0.07)",
+  },
+  readoutBracketTop: {
+    position: "absolute",
+    top: -1,
+    right: -1,
+    left: -1,
+    height: 1,
+    backgroundColor: "rgba(255, 248, 231, 0.42)",
+  },
+  marketMedian: {
+    color: theme.colors.goldBright,
+    fontSize: 23,
+    lineHeight: 26,
+    fontWeight: "900",
+    fontVariant: ["tabular-nums"],
+    textShadowColor: "rgba(242, 211, 138, 0.62)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 7,
+  },
+  marketRangeRow: {
+    flexDirection: "row",
+    gap: 7,
+  },
+  marketRangeCell: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+    paddingTop: 5,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(242, 211, 138, 0.22)",
+  },
+  readoutMicroLabel: {
+    color: "rgba(255, 248, 231, 0.56)",
+    fontSize: 6,
+    lineHeight: 8,
+    fontWeight: "900",
+    letterSpacing: 0.7,
+  },
+  readoutMicroValue: {
+    color: theme.colors.cream,
+    fontSize: 10,
+    lineHeight: 13,
+    fontWeight: "900",
+    fontVariant: ["tabular-nums"],
+  },
+  readoutFootnote: {
+    color: "rgba(242, 211, 138, 0.68)",
+    fontSize: 6,
+    lineHeight: 8,
+    fontWeight: "800",
+    letterSpacing: 0.45,
+  },
+  readoutUnavailable: {
+    color: theme.colors.textMuted,
+    fontSize: 8,
+    lineHeight: 12,
+    fontWeight: "800",
+  },
+  statusScoreRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+  statusSignal: {
+    width: 7,
+    height: 7,
+    borderRadius: theme.radii.pill,
+  },
+  statusScore: {
+    fontSize: 23,
+    lineHeight: 26,
+    fontWeight: "900",
+    fontVariant: ["tabular-nums"],
+  },
+  statusLabel: {
+    color: theme.colors.cream,
+    fontSize: 9,
+    lineHeight: 12,
+    fontWeight: "800",
+  },
+  conditionReadout: {
+    gap: 3,
+    paddingTop: 7,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(141, 114, 255, 0.28)",
+  },
+  conditionReadoutRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  conditionReadoutGrade: {
+    flex: 1,
+    color: theme.colors.scannerViolet,
+    fontSize: 10,
+    lineHeight: 13,
+    fontWeight: "900",
+  },
+  conditionReadoutScore: {
+    color: theme.colors.scannerViolet,
+    fontSize: 9,
+    lineHeight: 12,
+    fontWeight: "900",
+    fontVariant: ["tabular-nums"],
   },
   closeButton: {
     position: "absolute",
     left: 16,
     zIndex: 14,
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: theme.radii.pill,
+    borderRadius: 5,
+    borderCurve: "continuous",
     borderWidth: 1,
-    borderColor: "rgba(255, 248, 231, 0.28)",
-    backgroundColor: "rgba(4, 4, 8, 0.42)",
-    boxShadow: "0 6px 18px rgba(0, 0, 0, 0.38)",
+    borderColor: "rgba(88, 223, 232, 0.34)",
+    backgroundColor: "rgba(2, 5, 9, 0.60)",
+    boxShadow:
+      "0 8px 20px rgba(0, 0, 0, 0.40), 0 0 12px rgba(88, 223, 232, 0.08)",
   },
   bottomFade: {
     position: "absolute",
     right: 0,
     bottom: 0,
     left: 0,
-    height: 168,
-    opacity: 0.82,
+    height: 182,
+    opacity: 0.9,
     experimental_backgroundImage: `
       linear-gradient(
         to bottom,
         rgba(3, 2, 8, 0) 0%,
-        rgba(3, 2, 8, 0.12) 34%,
-        rgba(3, 2, 8, 0.38) 72%,
-        rgba(3, 2, 8, 0.56) 100%
+        rgba(3, 2, 8, 0.14) 28%,
+        rgba(3, 2, 8, 0.48) 68%,
+        rgba(3, 2, 8, 0.82) 100%
       )
     `,
   },
@@ -652,39 +882,42 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     zIndex: 10,
-    gap: 6,
+    gap: 7,
+    paddingTop: 7,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(88, 223, 232, 0.20)",
   },
   ribbonScroller: {
     width: "100%",
-    maxHeight: 108,
+    maxHeight: 102,
     flexGrow: 0,
   },
   ribbonContent: {
     alignItems: "stretch",
-    gap: 14,
-    paddingHorizontal: 18,
-    paddingTop: 5,
-    paddingBottom: 3,
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingTop: 3,
+    paddingBottom: 4,
   },
   ribbonModule: {
-    height: 100,
+    height: 94,
     flexDirection: "row",
     overflow: "hidden",
+    borderRadius: 4,
+    borderCurve: "continuous",
+    borderWidth: 1,
+    backgroundColor: "rgba(2, 5, 9, 0.66)",
   },
   moduleAccent: {
-    width: 2,
-    marginVertical: 4,
-    borderRadius: 2,
+    width: 3,
   },
   moduleContent: {
     flex: 1,
     minWidth: 0,
     justifyContent: "flex-start",
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRightWidth: StyleSheet.hairlineWidth,
-    borderRightColor: "rgba(255, 248, 231, 0.16)",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
   },
   moduleLabel: {
     fontSize: 8,
@@ -820,24 +1053,30 @@ const styles = StyleSheet.create({
   },
   actionRow: {
     flexDirection: "row",
-    justifyContent: "flex-end",
+    justifyContent: "center",
     gap: 8,
-    paddingHorizontal: 18,
+    paddingHorizontal: 14,
+    paddingTop: 7,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(88, 223, 232, 0.16)",
   },
   compactAction: {
-    minWidth: 132,
-    minHeight: 38,
+    flex: 1,
+    maxWidth: 244,
+    minWidth: 0,
+    minHeight: 42,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 14,
-    borderRadius: theme.radii.pill,
+    borderRadius: 5,
+    borderCurve: "continuous",
     borderWidth: 1,
   },
   compactActionText: {
-    fontSize: 9,
+    fontSize: 8,
     lineHeight: 12,
     fontWeight: "900",
-    letterSpacing: 0.8,
+    letterSpacing: 0.9,
     textAlign: "center",
   },
   pressed: {

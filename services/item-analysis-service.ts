@@ -31,6 +31,7 @@ import {
   type ItemAnalysisEvidenceStrength,
   type ItemAnalysisStage,
   type ItemAnalysisSuccess,
+  type ItemIdentificationSnapshot,
   type ItemSoldComparable,
   type ItemValuation,
 } from "@/types/item-analysis";
@@ -68,6 +69,34 @@ function reportStage(
   } catch {
     // Presentation callbacks must never interrupt analysis.
   }
+}
+
+function reportPartialResult(
+  onPartialResult: AnalyzeItemPhotosOptions["onPartialResult"],
+  result: ItemIdentificationSnapshot,
+) {
+  try {
+    onPartialResult?.({
+      phase: "identification",
+      result,
+    });
+  } catch {
+    // Presentation callbacks must never interrupt analysis.
+  }
+}
+
+function identificationSnapshot(
+  result: ItemAnalysisSuccess,
+): ItemIdentificationSnapshot {
+  return {
+    ok: result.ok,
+    contractVersion: result.contractVersion,
+    version: result.version,
+    status: result.status,
+    input: result.input,
+    analysis: result.analysis,
+    vision: result.vision,
+  };
 }
 
 function throwIfAborted(signal?: AbortSignal) {
@@ -640,6 +669,11 @@ export async function analyzeItemPhotos(
     const identified = identificationResult(
       identification,
       input.photoUris.length,
+    );
+    throwIfAborted(options.signal);
+    reportPartialResult(
+      options.onPartialResult,
+      identificationSnapshot(identified),
     );
 
     reportStage(options.onStage, "cleaning");

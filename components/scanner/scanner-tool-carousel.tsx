@@ -47,7 +47,7 @@ export const scannerTools: ScannerTool[] = [
     icon: 'rectangle.stack.fill',
     accent: theme.colors.scannerCyan,
     surface: 'rgba(88, 223, 232, 0.14)',
-    glow: 'rgba(88, 223, 232, 0.34)',
+    glow: '#00fff260',
   },
   {
     id: 'batch',
@@ -55,7 +55,7 @@ export const scannerTools: ScannerTool[] = [
     icon: 'square.grid.2x2.fill',
     accent: theme.colors.scannerViolet,
     surface: 'rgba(141, 114, 255, 0.15)',
-    glow: 'rgba(141, 114, 255, 0.34)',
+    glow: 'rgba(141, 114, 255, 0.38)',
   },
   {
     id: 'upload',
@@ -63,7 +63,7 @@ export const scannerTools: ScannerTool[] = [
     icon: 'photo.on.rectangle.angled',
     accent: theme.colors.cream,
     surface: 'rgba(250, 239, 207, 0.15)',
-    glow: 'rgba(250, 239, 207, 0.34)',
+    glow: 'rgba(250, 239, 207, 0.38)',
   },
 ];
 

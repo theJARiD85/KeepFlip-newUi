@@ -232,6 +232,16 @@ export type ItemAnalysisSuccess = {
   marketResearch?: ItemMarketResearch;
 };
 
+export type ItemIdentificationSnapshot = Omit<
+  ItemAnalysisSuccess,
+  'valuation' | 'marketResearch'
+>;
+
+export type ItemAnalysisPartialEvent = {
+  phase: 'identification';
+  result: ItemIdentificationSnapshot;
+};
+
 export type ItemAnalysisFailure = {
   ok: false;
   error: {
@@ -275,6 +285,7 @@ export type ItemAnalysisStage =
 
 export type AnalyzeItemPhotosOptions = {
   signal?: AbortSignal;
+  onPartialResult?: (event: ItemAnalysisPartialEvent) => void;
   onStage?: (stage: ItemAnalysisStage) => void;
 };
 
