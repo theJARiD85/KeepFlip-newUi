@@ -1,6 +1,10 @@
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
-import { useIsFocused, useRouter } from "expo-router";
+import {
+  useIsFocused,
+  useRouter,
+  type Href,
+} from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, AppState, BackHandler, Linking, Platform, Pressable, StyleSheet, View } from "react-native";
 import {
@@ -65,6 +69,23 @@ type AnalysisCognitionSeed = {
     score: number;
   };
   tool: ScannerToolId;
+};
+
+type ScannerAnalysisActions = {
+  openScannerAnalysis: (input: {
+    backdropUri: string;
+    localDetection?: {
+      label: string;
+      score: number;
+    };
+    modeLabel: string;
+    modelUrl?: string | null;
+    onCancel: () => void;
+    onReset: () => void;
+    photoUris: string[];
+    scanId: string;
+  }) => string;
+  updateScannerModel: (scanId: string, modelUrl: string) => void;
 };
 
 function selectMultiScanEvidence(photos: MultiScanPhoto[]) {
@@ -135,7 +156,7 @@ export default function ScannerScreen() {
   const {
     openScannerAnalysis,
     updateScannerModel,
-  } = useItemAnalysisResult();
+  } = useItemAnalysisResult() as unknown as ScannerAnalysisActions;
   const {
     contentWidth,
     controlDockWidth,
@@ -1299,6 +1320,7 @@ export default function ScannerScreen() {
         {!isScannerOverlayOpen ? (
           <View pointerEvents="box-none" style={styles.radarOverlayHost}>
             <ValueRadarOverlay
+              avoidBottomAction={analysisButton != null}
               disabled={
                 isCapturing ||
                 isPickingPhoto ||

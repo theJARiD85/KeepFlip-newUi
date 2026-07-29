@@ -12,7 +12,7 @@ The scanner is the only part of the mobile app that saves captured source images
 6. The Function saves the GLB in the model bucket using the item-photo row ID as the model file ID.
 7. The Function updates `model_files` to `status=ready` or `status=failed`.
 8. The scanner polls only the matching `model_files` row and displays the GLB when it becomes ready.
-9. Saving the analyzed item links the existing `item_photos` and `model_files` rows to the new inventory `itemId`; it does not upload the source images again.
+9. Saving the analyzed item links the existing `item_photos` rows to the new inventory `itemId` and stores the ready GLB URL in `items.modelFile`; it does not upload the source images again. The `model_files` row remains keyed to the primary item-photo row.
 
 ## App environment variables
 

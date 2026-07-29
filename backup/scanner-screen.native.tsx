@@ -271,8 +271,6 @@ export default function ScannerScreen() {
   const [captureFeedback, setCaptureFeedback] = useState<string | null>(null);
   const [radarViewport, setRadarViewport] =
     useState<ValueRadarViewport | null>(null);
-  const [atmospherePhase, setAtmospherePhase] =
-    useState<ScannerAtmospherePhase>("idle");
   const [selectedTool, setSelectedTool] = useState<ScannerToolId>("single");
   const [singlePhotoUri, setSinglePhotoUri] = useState<string | null>(null);
   const [multiScanPhotos, setMultiScanPhotos] = useState<MultiScanPhoto[]>([]);
@@ -290,8 +288,7 @@ export default function ScannerScreen() {
     useState<ItemAnalysisSuccess | null>(null);
   const [completedScanId, setCompletedScanId] = useState<string | null>(null);
   const [isSavingToInventory, setIsSavingToInventory] = useState(false);
-  const renderedAtmospherePhase: ScannerAtmospherePhase =
-    analysisState?.status === "analyzing" ? "analyzing" : atmospherePhase;
+
   const canUseTorch = device?.hasTorch === true;
   const analysisPhotoUris =
     selectedTool === "single" && singlePhotoUri
@@ -520,7 +517,6 @@ export default function ScannerScreen() {
     clearAtmosphereTimer();
     atmosphereTimerRef.current = setTimeout(() => {
       atmosphereTimerRef.current = null;
-      setAtmospherePhase("idle");
     }, 1800);
   }, [clearAtmosphereTimer]);
 
@@ -679,7 +675,6 @@ export default function ScannerScreen() {
         return nextPhotos;
       });
       setSelectedTool("upload");
-      setAtmospherePhase("captured");
       scheduleAtmosphereReset();
     },
     [scheduleAtmosphereReset],
@@ -790,7 +785,6 @@ export default function ScannerScreen() {
 
     clearAtmosphereTimer();
     setIsPickingPhoto(true);
-    setAtmospherePhase("scanning");
     setMessage("Opening your photo library...");
 
     try {
@@ -804,20 +798,17 @@ export default function ScannerScreen() {
       });
 
       if (result.canceled) {
-        setAtmospherePhase("idle");
         setMessage("Upload canceled. Tap the photo tool when you are ready.");
         return;
       }
 
       if (result.assets.length === 0) {
-        setAtmospherePhase("idle");
         setMessage("No photos were selected. Please try again.");
         return;
       }
 
       await persistPickedPhotos(result.assets);
     } catch {
-      setAtmospherePhase("idle");
       setMessage("Could not open your photos. Please try again.");
     } finally {
       setIsPickingPhoto(false);
@@ -857,7 +848,6 @@ export default function ScannerScreen() {
       captureLockRef.current = true;
       clearAtmosphereTimer();
       setIsCapturing(true);
-      setAtmospherePhase("scanning");
       setMessage("Capturing item...");
       setCaptureFeedback("Capturing item...");
 
@@ -882,7 +872,6 @@ export default function ScannerScreen() {
           isPrimary,
         });
 
-        setAtmospherePhase("captured");
         setCaptureFeedback(null);
         scheduleAtmosphereReset();
         return { path: photo.filePath, saved };
@@ -891,7 +880,6 @@ export default function ScannerScreen() {
           error instanceof Error
             ? error.message
             : "Could not capture and save this item.";
-        setAtmospherePhase("idle");
         setMessage(feedback);
         setCaptureFeedback(feedback);
         return null;
@@ -1050,7 +1038,6 @@ export default function ScannerScreen() {
     setSelectedTool("single");
     setMessage("Center one item inside the frame");
     setCaptureFeedback(null);
-    setAtmospherePhase("idle");
     setTorchEnabled(false);
   }, [clearAtmosphereTimer]);
 
@@ -1388,7 +1375,6 @@ export default function ScannerScreen() {
           </Animated.View>
         ) : null}
         {photoReviewOverlay}
-        {analysisOverlay}
       </KeepFlipBackground>
     );
   }
@@ -1467,7 +1453,6 @@ export default function ScannerScreen() {
           </Animated.View>
         ) : null}
         {photoReviewOverlay}
-        {analysisOverlay}
       </KeepFlipBackground>
     );
   }
@@ -1788,16 +1773,6 @@ export default function ScannerScreen() {
           />
         </Animated.View>
         </Animated.View>
-
-        {analysisOverlay ? (
-          <View
-            collapsable={false}
-            pointerEvents="box-none"
-            style={styles.analysisOverlayHost}
-          >
-            {analysisOverlay}
-          </View>
-        ) : null}
       </View>
     </View>
   );

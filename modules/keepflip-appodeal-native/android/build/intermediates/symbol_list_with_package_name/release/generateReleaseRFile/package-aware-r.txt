@@ -1,0 +1,24 @@
+expo.modules.keepflipappodealnative
+color keepflip
+color keepflip_native_ad_badge_background
+color keepflip_native_ad_card_background
+color keepflip_native_ad_card_border
+color keepflip_native_ad_cream
+color keepflip_native_ad_disabled_gold
+color keepflip_native_ad_media_background
+color keepflip_native_ad_media_border
+color keepflip_native_ad_text_muted
+drawable keepflip_native_ad_badge
+drawable keepflip_native_ad_card
+drawable keepflip_native_ad_cta
+drawable keepflip_native_ad_media
+id adAttributionView
+id callToActionView
+id descriptionView
+id iconView
+id mediaView
+id nativeAdView
+id ratingView
+id titleView
+layout keepflip_native_ad
+xml keepflip_appodeal_network_security_config

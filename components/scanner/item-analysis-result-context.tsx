@@ -45,7 +45,7 @@ type OpenScannerAnalysisInput = Omit<
   modelUrl?: string | null;
 };
 
-type ItemAnalysisResultContextValue = {
+export type ItemAnalysisResultContextValue = {
   clearScannerAnalysis: (sessionId?: string) => void;
   clearScannerResult: (sessionId?: string) => void;
   openScannerAnalysis: (input: OpenScannerAnalysisInput) => string;
@@ -192,7 +192,7 @@ export function ItemAnalysisResultProvider({
   );
 }
 
-export function useItemAnalysisResult() {
+export function useItemAnalysisResult(): ItemAnalysisResultContextValue {
   const value = useContext(ItemAnalysisResultContext);
   if (!value) {
     throw new Error(

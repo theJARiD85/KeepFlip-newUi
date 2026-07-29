@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="keepflip">#FFE0AC4B</color>
+    <color name="keepflip_native_ad_badge_background">#1FD7A84A</color>
+    <color name="keepflip_native_ad_card_background">#ED08080B</color>
+    <color name="keepflip_native_ad_card_border">#57E0AC4B</color>
+    <color name="keepflip_native_ad_cream">#FFF2EDE4</color>
+    <color name="keepflip_native_ad_disabled_gold">#665E4820</color>
+    <color name="keepflip_native_ad_media_background">#FF08080B</color>
+    <color name="keepflip_native_ad_media_border">#2EE0AC4B</color>
+    <color name="keepflip_native_ad_text_muted">#FFADA7B2</color>
+</resources>

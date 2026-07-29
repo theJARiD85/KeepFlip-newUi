@@ -1,21 +1,21 @@
 /* eslint-disable react/no-unknown-property */
 
 import {
-  Canvas as SkiaCanvas,
+  Canvas as ThreeCanvas,
+  useFrame,
+} from "@react-three/fiber/native";
+import {
   BlurMask,
   Group,
-  LinearGradient,
   Line,
+  LinearGradient,
   Oval,
   Path,
   RadialGradient,
   Rect,
+  Canvas as SkiaCanvas,
   vec,
 } from "@shopify/react-native-skia";
-import {
-  Canvas as ThreeCanvas,
-  useFrame,
-} from "@react-three/fiber/native";
 import { fetch } from "expo/fetch";
 import React, {
   Component,
@@ -50,8 +50,8 @@ import {
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { configureExpoGlForThree } from "@/lib/expo-three-gl-compat";
 
-const MAX_PROJECTED_TRIANGLES = 3500;
-const PROJECTION_UPDATES_PER_SECOND = 10;
+const MAX_PROJECTED_TRIANGLES = 2500;
+const PROJECTION_UPDATES_PER_SECOND = 1;
 const TRANSPARENT_PIXEL_DATA_URI =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAF/gL+X1WJTQAAAABJRU5ErkJggg==";
 
@@ -155,7 +155,7 @@ class ProjectionErrorBoundary extends Component<
   ) {
     this.props.onError?.(
       error.message ||
-        "KeepFlip could not render the projected 3D model.",
+      "KeepFlip could not render the projected 3D model.",
     );
   }
 
@@ -215,9 +215,9 @@ function ModelProjector({
           resolvedModelBytes =
             modelBytes instanceof Uint8Array
               ? (modelBytes.buffer.slice(
-                  modelBytes.byteOffset,
-                  modelBytes.byteOffset + modelBytes.byteLength,
-                ) as ArrayBuffer)
+                modelBytes.byteOffset,
+                modelBytes.byteOffset + modelBytes.byteLength,
+              ) as ArrayBuffer)
               : modelBytes;
         } else {
           if (!modelUrl) {
@@ -272,10 +272,9 @@ function ModelProjector({
 
         if (glbMagic !== 0x46546c67) {
           throw new Error(
-            `The Tripo URL did not return a valid GLB file${
-              contentType
-                ? `; received ${contentType}`
-                : ""
+            `The Tripo URL did not return a valid GLB file${contentType
+              ? `; received ${contentType}`
+              : ""
             }.`,
           );
         }
@@ -284,65 +283,65 @@ function ModelProjector({
         * Three.js r172 expects navigator.userAgent,
         * but React Native may leave it undefined.
         */
-       const runtimeNavigator = (
-         globalThis as typeof globalThis & {
-           navigator?: {
-             userAgent?: string;
-           };
-         }
-       ).navigator;
-       
-       if (
-         runtimeNavigator &&
-         typeof runtimeNavigator.userAgent !== "string"
-       ) {
-         Object.defineProperty(
-           runtimeNavigator,
-           "userAgent",
-           {
-             configurable: true,
-             value: "ReactNative",
-           },
-         );
-       }
-       
-       const loadingManager =
-         new THREE.LoadingManager();
+        const runtimeNavigator = (
+          globalThis as typeof globalThis & {
+            navigator?: {
+              userAgent?: string;
+            };
+          }
+        ).navigator;
 
-       /*
-        * The projection only needs geometry. Tripo GLBs can embed multi-megabyte
-        * base64 textures that React Native cannot decode through DOM image
-        * loaders; Three then logs the entire payload and can saturate Logcat.
-        */
-       loadingManager.setURLModifier((url) =>
-         url.startsWith("data:image/")
-           ? TRANSPARENT_PIXEL_DATA_URI
-           : url,
-       );
+        if (
+          runtimeNavigator &&
+          typeof runtimeNavigator.userAgent !== "string"
+        ) {
+          Object.defineProperty(
+            runtimeNavigator,
+            "userAgent",
+            {
+              configurable: true,
+              value: "ReactNative",
+            },
+          );
+        }
 
-       const loader =
-         new GLTFLoader(loadingManager);
-       
-         const gltf =
-         await loader.parseAsync(
-           resolvedModelBytes,
-           "",
-         );
-          
-         const countTriangleMeshes = (
+        const loadingManager =
+          new THREE.LoadingManager();
+
+        /*
+         * The projection only needs geometry. Tripo GLBs can embed multi-megabyte
+         * base64 textures that React Native cannot decode through DOM image
+         * loaders; Three then logs the entire payload and can saturate Logcat.
+         */
+        loadingManager.setURLModifier((url) =>
+          url.startsWith("data:image/")
+            ? TRANSPARENT_PIXEL_DATA_URI
+            : url,
+        );
+
+        const loader =
+          new GLTFLoader(loadingManager);
+
+        const gltf =
+          await loader.parseAsync(
+            resolvedModelBytes,
+            "",
+          );
+
+        const countTriangleMeshes = (
           root: THREE.Object3D,
         ): number => {
           let count = 0;
-        
+
           root.traverse((child) => {
             const candidate =
               child as THREE.Mesh;
-        
+
             const position =
               candidate.geometry?.getAttribute?.(
                 "position",
               );
-        
+
             if (
               candidate.isMesh === true &&
               position &&
@@ -351,10 +350,10 @@ function ModelProjector({
               count += 1;
             }
           });
-        
+
           return count;
         };
-        
+
         const parserJson = (
           gltf.parser as unknown as {
             json?: {
@@ -364,21 +363,21 @@ function ModelProjector({
             };
           }
         ).json;
-        
+
         const declaredMeshCount =
           parserJson?.meshes?.length ?? 0;
-        
+
         const candidateScenes =
           gltf.scenes?.length > 0
             ? gltf.scenes
             : [gltf.scene];
-        
+
         let selectedScene =
           candidateScenes.find(
             (scene) =>
               countTriangleMeshes(scene) > 0,
           ) ?? null;
-        
+
         /*
          * Some GLBs declare meshes without attaching
          * them to the default scene. Recover those
@@ -394,15 +393,15 @@ function ModelProjector({
                 type: string,
               ) => Promise<THREE.Object3D[]>;
             };
-        
+
           const meshDependencies =
             await parserWithDependencies.getDependencies(
               "mesh",
             );
-        
+
           const recoveredScene =
             new THREE.Group();
-        
+
           for (
             const dependency of
             meshDependencies
@@ -415,7 +414,7 @@ function ModelProjector({
               );
             }
           }
-        
+
           if (
             countTriangleMeshes(
               recoveredScene,
@@ -425,14 +424,14 @@ function ModelProjector({
               recoveredScene;
           }
         }
-        
+
         const selectedMeshCount =
           selectedScene
             ? countTriangleMeshes(
-                selectedScene,
-              )
+              selectedScene,
+            )
             : 0;
-        
+
         console.log(
           "[KeepFlip Tripo3D] GLB parsed:",
           {
@@ -449,19 +448,19 @@ function ModelProjector({
               selectedMeshCount,
           },
         );
-        
+
         if (!selectedScene) {
           if (declaredMeshCount === 0) {
             throw new Error(
               "Tripo returned a valid but empty GLB containing zero mesh definitions.",
             );
           }
-        
+
           throw new Error(
             `The GLB declares ${declaredMeshCount} mesh definition(s), but none could be attached to a renderable scene.`,
           );
         }
-        
+
         if (!cancelled) {
           setLoadedScene(
             selectedScene.clone(true),
@@ -471,21 +470,21 @@ function ModelProjector({
         const wasAborted =
           caught instanceof Error &&
           caught.name === "AbortError";
-      
+
         if (cancelled || wasAborted) {
           return;
         }
-      
+
         console.error(
           "[KeepFlip Tripo3D] GLB load/parse error:",
           caught,
         );
-      
+
         const message =
           caught instanceof Error
             ? caught.message
             : "KeepFlip could not download or parse the generated 3D model.";
-      
+
         onErrorRef.current?.(message);
       }
     }
@@ -578,7 +577,7 @@ function ModelProjector({
       if (
         projectionElapsedRef.current <
         1 /
-          PROJECTION_UPDATES_PER_SECOND
+        PROJECTION_UPDATES_PER_SECOND
       ) {
         return;
       }
@@ -606,14 +605,14 @@ function ModelProjector({
 
       modelRef.current.traverse(
         (child) => {
-if (
-  (child as THREE.Mesh).isMesh !== true
-) {
-  return;
-}
+          if (
+            (child as THREE.Mesh).isMesh !== true
+          ) {
+            return;
+          }
 
-const mesh =
-  child as THREE.Mesh;
+          const mesh =
+            child as THREE.Mesh;
 
           const geometry =
             mesh.geometry;
@@ -629,7 +628,7 @@ const mesh =
             Math.floor(
               (geometry.index?.count ??
                 position.count) /
-                3,
+              3,
             );
 
           const triangleStep =
@@ -637,7 +636,7 @@ const mesh =
               1,
               Math.ceil(
                 triangleCount /
-                  MAX_PROJECTED_TRIANGLES,
+                MAX_PROJECTED_TRIANGLES,
               ),
             );
 
@@ -686,11 +685,11 @@ const mesh =
                 (projectedVertex.x *
                   0.5 +
                   0.5) *
-                  projectionWidth,
+                projectionWidth,
                 (projectedVertex.y *
                   -0.5 +
                   0.5) *
-                  projectionHeight,
+                projectionHeight,
               );
             }
 
@@ -863,16 +862,16 @@ export default function ModelProjectionScanner({
             horizonY +
             (layout.height -
               horizonY) *
-              progress *
-              progress;
+            progress *
+            progress;
 
           lines.push({
             color:
               index % 2 === 0
                 ? theme.colors
-                    .scannerCyan
+                  .scannerCyan
                 : theme.colors
-                    .scannerViolet,
+                  .scannerViolet,
             key: `floor-horizontal-${index}`,
             opacity:
               0.025 +
@@ -901,7 +900,7 @@ export default function ModelProjectionScanner({
               index === 3
                 ? theme.colors.gold
                 : theme.colors
-                    .scannerViolet,
+                  .scannerViolet,
             key: `floor-ray-${index}`,
             opacity:
               index === 3
@@ -909,7 +908,7 @@ export default function ModelProjectionScanner({
                 : 0.045,
             p1: vec(
               layout.width *
-                progress,
+              progress,
               layout.height,
             ),
             p2: vec(
@@ -934,8 +933,8 @@ export default function ModelProjectionScanner({
   const hasWireframe =
     Boolean(
       wireframeDepthPaths.far ||
-        wireframeDepthPaths.mid ||
-        wireframeDepthPaths.near,
+      wireframeDepthPaths.mid ||
+      wireframeDepthPaths.near,
     );
 
   const handleLayout = useCallback(
@@ -999,8 +998,8 @@ export default function ModelProjectionScanner({
       ]}
     >
       {hasModelSource &&
-      layout.width > 0 &&
-      layout.height > 0 ? (
+        layout.width > 0 &&
+        layout.height > 0 ? (
         <ProjectionErrorBoundary
           key={`${modelUrl ?? "stored-model"}-${modelBytes?.byteLength ?? 0}`}
           onError={onError}
@@ -1045,15 +1044,10 @@ export default function ModelProjectionScanner({
       ) : null}
 
       {layout.width > 0 &&
-      layout.height > 0 ? (
+        layout.height > 0 ? (
         <SkiaCanvas
           pointerEvents="none"
-          style={[
-            StyleSheet.absoluteFill,
-            {
-              zIndex: 1002,
-            },
-          ]}
+          style={StyleSheet.absoluteFill}
         >
           <Rect
             height={layout.height}

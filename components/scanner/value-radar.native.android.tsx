@@ -58,6 +58,7 @@ type ValueRadarResult = {
 };
 
 type ValueRadarOverlayProps = {
+  avoidBottomAction?: boolean;
   disabled?: boolean;
   flashButton?: ReactNode;
   focusBounds?: ValueRadarViewport | null;

@@ -1,7 +1,7 @@
-import { Image } from "expo-image";
 import { Pressable, StyleSheet, View } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 
@@ -19,9 +19,10 @@ export type {
 
 export { useValueRadar };
 
-export type ValueRadarOverlayProps = ValueRadarTargetOverlayProps;
+export type ValueRadarOverlayProps = ValueRadarTargetOverlayProps & {
+  avoidBottomAction?: boolean;
+};
 
-const POTENTIAL_FIND_ASPECT_RATIO = 323.56247 / 165.70309;
 const PANEL_GAP = 12;
 const PANEL_MARGIN = 10;
 
@@ -31,6 +32,7 @@ function clamp(value: number, minimum: number, maximum: number) {
 
 export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
   const {
+    avoidBottomAction = false,
     disabled = false,
     focusBounds,
     height,
@@ -97,8 +99,8 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
     Math.max(focusY + 8, focusY + focusHeight - targetHeight - 8),
   );
 
-  const panelWidth = Math.min(300, Math.max(180, focusWidth - 18));
-  const panelHeight = panelWidth / POTENTIAL_FIND_ASPECT_RATIO;
+  const panelWidth = Math.min(300, Math.max(210, focusWidth - 18));
+  const panelHeight = 122;
   const panelLeft = clamp(
     focusX + focusWidth / 2 - panelWidth / 2,
     PANEL_MARGIN,
@@ -116,13 +118,19 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
     height - panelHeight - PANEL_MARGIN,
   );
   const targetCenterY = targetTop + targetHeight / 2;
-  const panelTop = canPlaceBelow
-    ? belowFocusTop
-    : canPlaceAbove
-      ? aboveFocusTop
-      : targetCenterY < height / 2
-        ? bottomDock
-        : topDock;
+  const panelTop = avoidBottomAction
+    ? clamp(
+        focusY + 14,
+        PANEL_MARGIN,
+        Math.max(PANEL_MARGIN, height - panelHeight - PANEL_MARGIN),
+      )
+    : canPlaceBelow
+      ? belowFocusTop
+      : canPlaceAbove
+        ? aboveFocusTop
+        : targetCenterY < height / 2
+          ? bottomDock
+          : topDock;
 
   return (
     <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
@@ -154,30 +162,32 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
               disabled && styles.markerPanelDisabled,
             ]}
           >
-            <Image
-              accessibilityIgnoresInvertColors
-              contentFit="fill"
-              pointerEvents="none"
-              source={require("@/assets/potential-find.svg")}
-              style={StyleSheet.absoluteFill}
-            />
+            <View pointerEvents="none" style={styles.markerAccent} />
+
+            <View pointerEvents="none" style={styles.markerHeading}>
+              <View style={styles.markerIcon}>
+                <IconSymbol
+                  color={theme.colors.scannerCyan}
+                  name="viewfinder"
+                  size={16}
+                />
+              </View>
+              <Text style={styles.markerEyebrow}>POTENTIAL FIND</Text>
+              <Text style={styles.confidenceText}>
+                {Math.round(marker.score * 100)
+                  .toString()
+                  .padStart(2, "0")}
+                % LOCK
+              </Text>
+            </View>
 
             <View pointerEvents="none" style={styles.markerContent}>
-              <View style={styles.markerHeading}>
-                <Text style={styles.markerEyebrow}>POTENTIAL FIND</Text>
-                <Text style={styles.confidenceText}>
-                  {Math.round(marker.score * 100)
-                    .toString()
-                    .padStart(2, "0")}
-                  % LOCK
-                </Text>
-              </View>
-
               <Text numberOfLines={1} style={styles.markerLabel}>
                 {marker.label}
               </Text>
 
               <View style={styles.markerFooter}>
+                <View style={styles.markerFooterSignal} />
                 <Text numberOfLines={1} style={styles.markerAction}>
                   CLASS {marker.classId.toString().padStart(2, "0")} {"//"} TAP
                   TO ANALYZE VALUE
@@ -201,35 +211,70 @@ const styles = StyleSheet.create({
   markerPanel: {
     flex: 1,
     overflow: "hidden",
+    borderRadius: 8,
+    borderCurve: "continuous",
+    borderWidth: 1,
+    borderColor: "rgba(88, 223, 232, 0.46)",
+    backgroundColor: "rgba(2, 5, 10, 0.96)",
+    experimental_backgroundImage: `
+      radial-gradient(circle at 92% 8%, rgba(141, 114, 255, 0.14) 0%, transparent 42%),
+      linear-gradient(115deg, rgba(88, 223, 232, 0.08) 0%, rgba(2, 5, 10, 0.02) 52%)
+    `,
+    boxShadow:
+      "0 14px 34px rgba(0, 0, 0, 0.58), 0 0 22px rgba(88, 223, 232, 0.14)",
+  },
+  markerAccent: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: 3,
+    backgroundColor: theme.colors.scannerCyan,
+    boxShadow: "0 0 12px rgba(88, 223, 232, 0.78)",
   },
   markerContent: {
     flex: 1,
     justifyContent: "center",
-    gap: 5,
-    paddingTop: 22,
-    paddingRight: 28,
-    paddingBottom: 20,
-    paddingLeft: 35,
+    gap: 7,
+    paddingHorizontal: 13,
+    paddingVertical: 10,
   },
   markerHeading: {
+    height: 38,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 8,
+    paddingLeft: 11,
+    paddingRight: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(255, 255, 255, 0.1)",
+  },
+  markerIcon: {
+    width: 25,
+    height: 25,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 13,
+    borderWidth: 1,
+    borderColor: "rgba(88, 223, 232, 0.38)",
+    backgroundColor: "rgba(88, 223, 232, 0.1)",
   },
   markerEyebrow: {
     flex: 1,
     minWidth: 0,
     color: theme.colors.scannerCyan,
     fontFamily: theme.fonts.analysis,
-    fontSize: 8,
-    lineHeight: 10,
+    fontSize: 9,
+    lineHeight: 12,
+    fontWeight: "900",
     letterSpacing: 1.25,
   },
   confidenceText: {
     color: theme.colors.goldBright,
     fontFamily: theme.fonts.analysis,
-    fontSize: 7,
-    lineHeight: 9,
+    fontSize: 8,
+    lineHeight: 10,
+    fontWeight: "900",
     fontVariant: ["tabular-nums"],
     letterSpacing: 0.45,
   },
@@ -245,10 +290,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
   },
+  markerFooterSignal: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: theme.colors.scannerViolet,
+    boxShadow: "0 0 8px rgba(141, 114, 255, 0.82)",
+  },
   markerAction: {
     flex: 1,
     minWidth: 0,
-    color: "rgba(247, 242, 232, 0.52)",
+    color: "rgba(247, 242, 232, 0.64)",
     fontFamily: theme.fonts.analysis,
     fontSize: 6.5,
     lineHeight: 8,

@@ -1,8 +1,0 @@
-// Appodeal SDK 4.x keeps ad-network adapters separate from the SDK core.
-// This initial production configuration enables AdMob for KeepFlip Native ads.
-// Add more generated adapter dependencies here after selecting them in
-// Appodeal Dashboard > Android > Configure Mediated Networks.
-
-dependencies {
-  implementation 'com.appodeal.ads.sdk.adapters:admob:24.7.0.0'
-}

@@ -1,0 +1,36 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    xmlns:tools="http://schemas.android.com/tools"
+4    package="expo.modules.keepflipappodealnative" >
+5
+6    <uses-sdk android:minSdkVersion="26" />
+7
+8    <!--
+9         KeepFlip does not use location as a core feature, so remove location
+10         permissions that individual mediation adapters may contribute.
+11    -->
+12    <uses-permission
+12-->C:\Users\theja\KeepFlip\modules\keepflip-appodeal-native\android\src\main\AndroidManifest.xml:7:5-9:31
+13        android:name="android.permission.ACCESS_COARSE_LOCATION"
+13-->C:\Users\theja\KeepFlip\modules\keepflip-appodeal-native\android\src\main\AndroidManifest.xml:8:9-65
+14        tools:node="remove" />
+14-->C:\Users\theja\KeepFlip\modules\keepflip-appodeal-native\android\src\main\AndroidManifest.xml:9:9-28
+15    <uses-permission
+15-->C:\Users\theja\KeepFlip\modules\keepflip-appodeal-native\android\src\main\AndroidManifest.xml:10:5-12:31
+16        android:name="android.permission.ACCESS_FINE_LOCATION"
+16-->C:\Users\theja\KeepFlip\modules\keepflip-appodeal-native\android\src\main\AndroidManifest.xml:11:9-63
+17        tools:node="remove" />
+17-->C:\Users\theja\KeepFlip\modules\keepflip-appodeal-native\android\src\main\AndroidManifest.xml:12:9-28
+18
+19    <application android:networkSecurityConfig="@xml/keepflip_appodeal_network_security_config" >
+19-->C:\Users\theja\KeepFlip\modules\keepflip-appodeal-native\android\src\main\AndroidManifest.xml:14:5-19:19
+19-->C:\Users\theja\KeepFlip\modules\keepflip-appodeal-native\android\src\main\AndroidManifest.xml:15:9-87
+20        <meta-data
+20-->C:\Users\theja\KeepFlip\modules\keepflip-appodeal-native\android\src\main\AndroidManifest.xml:16:9-18:70
+21            android:name="com.google.android.gms.ads.APPLICATION_ID"
+21-->C:\Users\theja\KeepFlip\modules\keepflip-appodeal-native\android\src\main\AndroidManifest.xml:17:13-69
+22            android:value="ca-app-pub-2625792494063556~2174963113" />
+22-->C:\Users\theja\KeepFlip\modules\keepflip-appodeal-native\android\src\main\AndroidManifest.xml:18:13-67
+23    </application>
+24
+25</manifest>

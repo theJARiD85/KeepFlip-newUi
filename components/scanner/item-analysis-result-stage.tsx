@@ -1,24 +1,47 @@
-import { useMemo, type ReactNode } from "react";
+/* eslint-disable react-hooks/immutability -- Reanimated shared values are intentional mutable UI-thread state. */
+
+import * as Haptics from "expo-haptics";
 import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import {
+  I18nManager,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text as NativeText,
+  useWindowDimensions,
   type TextProps,
   View,
 } from "react-native";
+import {
+  Gesture,
+  GestureDetector,
+} from "react-native-gesture-handler";
 import Animated, {
   FadeIn,
   FadeInDown,
   FadeInUp,
   FadeOut,
+  cancelAnimation,
+  interpolate,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withSpring,
+  type SharedValue,
 } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 
 import type { ItemAnalysisState } from "@/components/scanner/item-analysis-overlay";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 
 type ResultState = Extract<ItemAnalysisState, { status: "result" }>;
+type ResultData = ResultState["data"];
 
 type ItemAnalysisResultStageProps = {
   bottomInset: number;
@@ -32,17 +55,102 @@ type ItemAnalysisResultStageProps = {
   topInset: number;
 };
 
-type RibbonModuleProps = {
+type ResultReelId =
+  | "identity"
+  | "condition"
+  | "evidence"
+  | "confidence"
+  | "value";
+
+type ResultReel = {
   accent: string;
-  children: ReactNode;
-  delay?: number;
-  width?: number;
+  eyebrow: string;
+  icon:
+    | "tag.fill"
+    | "checkmark.shield.fill"
+    | "chart.bar.fill"
+    | "gauge.with.dots.needle.67percent"
+    | "dollarsign.circle.fill";
+  id: ResultReelId;
+  label: string;
 };
 
-const analysisTextStyle = { fontFamily: theme.fonts.analysis } as const;
+type ReelTabProps = {
+  active: boolean;
+  disabled: boolean;
+  index: number;
+  onPress: () => void;
+  position: SharedValue<number>;
+  reel: ResultReel;
+};
+
+type ReelPanelProps = {
+  active: boolean;
+  children: ReactNode;
+  index: number;
+  left: number;
+  pageWidth: number;
+  position: SharedValue<number>;
+  reel: ResultReel;
+};
+
+const analysisTextStyle = {
+  fontFamily: theme.fonts.analysis,
+} as const;
+
+const RESULT_REELS: ResultReel[] = [
+  {
+    accent: theme.colors.scannerCyan,
+    eyebrow: "RESOLVED IDENTITY",
+    icon: "tag.fill",
+    id: "identity",
+    label: "Identity",
+  },
+  {
+    accent: theme.colors.scannerViolet,
+    eyebrow: "CONDITION SIGNAL",
+    icon: "checkmark.shield.fill",
+    id: "condition",
+    label: "Condition",
+  },
+  {
+    accent: theme.colors.scannerCyan,
+    eyebrow: "VERIFIED EVIDENCE",
+    icon: "chart.bar.fill",
+    id: "evidence",
+    label: "Evidence",
+  },
+  {
+    accent: theme.colors.goldBright,
+    eyebrow: "CONFIDENCE MATRIX",
+    icon: "gauge.with.dots.needle.67percent",
+    id: "confidence",
+    label: "Confidence",
+  },
+  {
+    accent: theme.colors.scannerAmber,
+    eyebrow: "MARKET INTELLIGENCE",
+    icon: "dollarsign.circle.fill",
+    id: "value",
+    label: "Value",
+  },
+];
+
+const LAST_REEL_INDEX = RESULT_REELS.length - 1;
+const REEL_SPRING = {
+  damping: 20,
+  mass: 0.76,
+  overshootClamping: true,
+  stiffness: 245,
+} as const;
 
 function Text({ style, ...props }: TextProps) {
-  return <NativeText {...props} style={[analysisTextStyle, style]} />;
+  return (
+    <NativeText
+      {...props}
+      style={[analysisTextStyle, style]}
+    />
+  );
 }
 
 function withAlpha(color: string, alpha: number) {
@@ -65,82 +173,28 @@ function percentage(value?: number) {
 function formatMoney(value: number, currency = "USD") {
   try {
     return new Intl.NumberFormat("en-US", {
-      style: "currency",
       currency,
       maximumFractionDigits: value >= 100 ? 0 : 2,
+      style: "currency",
     }).format(value);
   } catch {
     return `$${value.toFixed(value >= 100 ? 0 : 2)}`;
   }
 }
 
-function RibbonModule({
-  accent,
-  children,
-  delay = 0,
-  width = 230,
-}: RibbonModuleProps) {
-  return (
-    <Animated.View
-      entering={FadeInUp.duration(240).delay(delay)}
-      exiting={FadeOut.duration(120)}
-      style={[
-        styles.ribbonModule,
-        {
-          width,
-          borderColor: withAlpha(accent, 0.3),
-          boxShadow: `0 8px 24px rgba(0, 0, 0, 0.32), 0 0 16px ${withAlpha(accent, 0.08)}`,
-        },
-      ]}
-    >
-      <View
-        pointerEvents="none"
-        style={[
-          styles.moduleAccent,
-          {
-            backgroundColor: accent,
-            boxShadow: `0 0 14px ${withAlpha(accent, 0.72)}`,
-          },
-        ]}
-      />
-      <View style={styles.moduleContent}>{children}</View>
-    </Animated.View>
-  );
-}
-
-function ModuleLabel({
-  accent,
-  children,
-}: {
-  accent: string;
-  children: ReactNode;
-}) {
-  return (
-    <Text
-      style={[
-        styles.moduleLabel,
-        {
-          color: accent,
-          textShadowColor: withAlpha(accent, 0.72),
-          textShadowOffset: { width: 0, height: 0 },
-          textShadowRadius: 7,
-        },
-      ]}
-    >
-      {children}
-    </Text>
-  );
+function selectionHaptic() {
+  void Haptics.selectionAsync().catch(() => undefined);
 }
 
 function CompactAction({
   accent,
-  disabled = false,
+  disabled,
   label,
   onPress,
   primary = false,
 }: {
   accent: string;
-  disabled?: boolean;
+  disabled: boolean;
   label: string;
   onPress: () => void;
   primary?: boolean;
@@ -152,14 +206,14 @@ function CompactAction({
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
-        styles.compactAction,
-        primary && {
-          borderColor: withAlpha(accent, 0.62),
-          backgroundColor: withAlpha(accent, 0.16),
-        },
-        !primary && {
-          borderColor: "rgba(255, 248, 231, 0.22)",
-          backgroundColor: "rgba(5, 5, 10, 0.30)",
+        styles.action,
+        {
+          backgroundColor: primary
+            ? withAlpha(accent, 0.16)
+            : "rgba(2, 4, 8, 0.58)",
+          borderColor: primary
+            ? withAlpha(accent, 0.6)
+            : "rgba(255, 248, 231, 0.22)",
         },
         pressed && !disabled && styles.pressed,
         disabled && styles.disabled,
@@ -168,14 +222,581 @@ function CompactAction({
       <Text
         numberOfLines={1}
         style={[
-          styles.compactActionText,
-          { color: primary ? accent : theme.colors.cream },
+          styles.actionText,
+          {
+            color: primary
+              ? accent
+              : theme.colors.cream,
+          },
         ]}
       >
         {label}
       </Text>
     </Pressable>
   );
+}
+
+function HudField({
+  accent,
+  label,
+  value,
+}: {
+  accent: string;
+  label: string;
+  value?: string;
+}) {
+  return (
+    <View style={styles.field}>
+      <Text style={[styles.fieldLabel, { color: accent }]}>
+        {label}
+      </Text>
+      <Text
+        adjustsFontSizeToFit
+        minimumFontScale={0.72}
+        numberOfLines={1}
+        style={styles.fieldValue}
+      >
+        {value || "Not resolved"}
+      </Text>
+    </View>
+  );
+}
+
+function ScoreMeter({
+  accent,
+  label,
+  value,
+}: {
+  accent: string;
+  label: string;
+  value?: number;
+}) {
+  const score = percentage(value);
+  const fill = score == null ? 0 : score;
+
+  return (
+    <View style={styles.meterRow}>
+      <Text numberOfLines={1} style={styles.meterLabel}>
+        {label}
+      </Text>
+      <View style={styles.meterTrack}>
+        <View
+          style={[
+            styles.meterFill,
+            {
+              backgroundColor: accent,
+              boxShadow: `0 0 8px ${withAlpha(accent, 0.62)}`,
+              width: `${fill}%`,
+            },
+          ]}
+        />
+      </View>
+      <Text style={[styles.meterValue, { color: accent }]}>
+        {score == null ? "--" : `${score}%`}
+      </Text>
+    </View>
+  );
+}
+
+function ReelTab({
+  active,
+  disabled,
+  index,
+  onPress,
+  position,
+  reel,
+}: ReelTabProps) {
+  const animatedStyle = useAnimatedStyle(() => {
+    const delta = index - position.value;
+    const distance = Math.min(Math.abs(delta), 2);
+
+    return {
+      opacity: interpolate(
+        distance,
+        [0, 1, 2],
+        [1, 0.68, 0.42],
+        "clamp",
+      ),
+      transform: [
+        {
+          translateY: interpolate(
+            distance,
+            [0, 1, 2],
+            [-5, 1, 5],
+            "clamp",
+          ),
+        },
+        {
+          rotateZ: `${delta * 5}deg`,
+        },
+        {
+          scale: interpolate(
+            distance,
+            [0, 1, 2],
+            [1, 0.82, 0.68],
+            "clamp",
+          ),
+        },
+      ],
+    };
+  }, [index, position]);
+
+  return (
+    <Animated.View style={[styles.tabPosition, animatedStyle]}>
+      <Pressable
+        accessibilityLabel={`Show ${reel.label} results`}
+        accessibilityRole="tab"
+        accessibilityState={{ disabled, selected: active }}
+        disabled={disabled}
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.tab,
+          {
+            backgroundColor: active
+              ? "rgba(2, 6, 12, 0.97)"
+              : "rgba(1, 3, 7, 0.93)",
+            borderColor: active
+              ? reel.accent
+              : withAlpha(reel.accent, 0.24),
+            boxShadow: active
+              ? `0 8px 18px rgba(0, 0, 0, 0.72), 0 0 18px ${withAlpha(reel.accent, 0.38)}, inset 0 0 10px ${withAlpha(reel.accent, 0.14)}`
+              : `0 7px 16px rgba(0, 0, 0, 0.68), inset 0 0 8px ${withAlpha(reel.accent, 0.06)}`,
+          },
+          pressed && !disabled && styles.tabPressed,
+        ]}
+      >
+        <IconSymbol
+          color={
+            active
+              ? reel.accent
+              : withAlpha(reel.accent, 0.7)
+          }
+          name={reel.icon}
+          size={18}
+        />
+      </Pressable>
+
+      <View
+        style={[
+          styles.tabDot,
+          {
+            backgroundColor: active
+              ? reel.accent
+              : withAlpha(reel.accent, 0.2),
+            boxShadow: active
+              ? `0 0 8px ${reel.accent}`
+              : "none",
+          },
+        ]}
+      />
+    </Animated.View>
+  );
+}
+
+function ReelPanel({
+  active,
+  children,
+  index,
+  left,
+  pageWidth,
+  position,
+  reel,
+}: ReelPanelProps) {
+  const animatedStyle = useAnimatedStyle(() => {
+    const delta = index - position.value;
+    const distance = Math.min(Math.abs(delta), 1.25);
+
+    return {
+      opacity: interpolate(
+        distance,
+        [0, 0.72, 1.15],
+        [1, 0.62, 0],
+        "clamp",
+      ),
+      zIndex: Math.round(
+        interpolate(
+          distance,
+          [0, 1.25],
+          [20, 1],
+          "clamp",
+        ),
+      ),
+      transform: [
+        { perspective: 900 },
+        {
+          translateX: delta * pageWidth * 0.88,
+        },
+        {
+          translateY: interpolate(
+            distance,
+            [0, 1.25],
+            [0, 12],
+            "clamp",
+          ),
+        },
+        {
+          rotateY: `${delta * -8}deg`,
+        },
+        {
+          rotateZ: `${delta * 1.2}deg`,
+        },
+        {
+          scale: interpolate(
+            distance,
+            [0, 1.25],
+            [1, 0.84],
+            "clamp",
+          ),
+        },
+      ],
+    };
+  }, [index, pageWidth, position]);
+
+  return (
+    <Animated.View
+      accessibilityElementsHidden={!active}
+      importantForAccessibility={
+        active ? "yes" : "no-hide-descendants"
+      }
+      pointerEvents={active ? "auto" : "none"}
+      style={[
+        styles.panel,
+        {
+          borderColor: withAlpha(reel.accent, 0.42),
+          boxShadow: `0 14px 34px rgba(0, 0, 0, 0.42), 0 0 22px ${withAlpha(reel.accent, 0.1)}`,
+          left,
+          width: pageWidth,
+        },
+        animatedStyle,
+      ]}
+    >
+      <View
+        pointerEvents="none"
+        style={[
+          styles.panelAccent,
+          {
+            backgroundColor: reel.accent,
+            boxShadow: `0 0 12px ${withAlpha(reel.accent, 0.78)}`,
+          },
+        ]}
+      />
+
+      <View style={styles.panelHeader}>
+        <View
+          style={[
+            styles.panelIcon,
+            {
+              backgroundColor: withAlpha(reel.accent, 0.12),
+              borderColor: withAlpha(reel.accent, 0.36),
+            },
+          ]}
+        >
+          <IconSymbol
+            color={reel.accent}
+            name={reel.icon}
+            size={15}
+          />
+        </View>
+        <Text style={[styles.panelEyebrow, { color: reel.accent }]}>
+          {reel.eyebrow}
+        </Text>
+        <Text style={styles.panelIndex}>
+          {String(index + 1).padStart(2, "0")} /{" "}
+          {String(RESULT_REELS.length).padStart(2, "0")}
+        </Text>
+      </View>
+
+      <View style={styles.panelBody}>{children}</View>
+    </Animated.View>
+  );
+}
+
+function IdentityContent({ result }: { result: ResultData }) {
+  return (
+    <>
+      <View style={styles.fieldRow}>
+        <HudField
+          accent={theme.colors.scannerCyan}
+          label="BRAND"
+          value={result.identity.brand}
+        />
+        <HudField
+          accent={theme.colors.scannerCyan}
+          label="MODEL"
+          value={result.identity.model}
+        />
+        <HudField
+          accent={theme.colors.scannerCyan}
+          label="VARIANT"
+          value={result.identity.variant ?? result.identity.category}
+        />
+      </View>
+      <Text numberOfLines={2} style={styles.summary}>
+        {result.summary ||
+          "KeepFlip resolved the strongest identity supported by the captured evidence."}
+      </Text>
+    </>
+  );
+}
+
+function ConditionContent({ result }: { result: ResultData }) {
+  const condition = result.condition;
+  const score = percentage(condition?.score);
+
+  return (
+    <>
+      <View style={styles.heroMetricRow}>
+        <View style={styles.heroMetricCopy}>
+          <Text style={styles.metricLabel}>ASSESSED GRADE</Text>
+          <Text
+            adjustsFontSizeToFit
+            minimumFontScale={0.68}
+            numberOfLines={1}
+            style={[
+              styles.conditionGrade,
+              { color: theme.colors.scannerViolet },
+            ]}
+          >
+            {condition?.label ?? "Condition pending"}
+          </Text>
+        </View>
+        <Text
+          style={[
+            styles.heroScore,
+            { color: theme.colors.scannerViolet },
+          ]}
+        >
+          {score == null ? "--" : `${score}%`}
+        </Text>
+      </View>
+
+      <View style={styles.detailStack}>
+        {(condition?.details?.slice(0, 2) ?? []).map(
+          (detail, index) => (
+            <View key={`${detail}-${index}`} style={styles.detailRow}>
+              <View
+                style={[
+                  styles.detailDot,
+                  {
+                    backgroundColor: theme.colors.scannerViolet,
+                  },
+                ]}
+              />
+              <Text numberOfLines={1} style={styles.detailText}>
+                {detail}
+              </Text>
+            </View>
+          ),
+        )}
+        {!condition?.details?.length ? (
+          <Text numberOfLines={2} style={styles.summary}>
+            {condition?.summary ??
+              "No specific condition defects were returned by the analysis."}
+          </Text>
+        ) : null}
+      </View>
+    </>
+  );
+}
+
+function EvidenceContent({ result }: { result: ResultData }) {
+  const evidence = result.evidence?.slice(0, 2) ?? [];
+
+  if (evidence.length === 0) {
+    return (
+      <View style={styles.emptyState}>
+        <Text style={styles.emptyTitle}>NO CLAIMS AVAILABLE</Text>
+        <Text numberOfLines={2} style={styles.summary}>
+          KeepFlip completed the result without returning individual evidence
+          claims.
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.evidenceStack}>
+      {evidence.map((item, index) => (
+        <View
+          key={item.id ?? `${item.label}-${index}`}
+          style={styles.evidenceRow}
+        >
+          <View style={styles.evidenceIndex}>
+            <Text style={styles.evidenceIndexText}>
+              {String(index + 1).padStart(2, "0")}
+            </Text>
+          </View>
+          <View style={styles.evidenceCopy}>
+            <View style={styles.evidenceLabelRow}>
+              <Text numberOfLines={1} style={styles.evidenceLabel}>
+                {item.label}
+              </Text>
+              {item.source ? (
+                <Text
+                  numberOfLines={1}
+                  style={styles.evidenceSource}
+                >
+                  {item.source}
+                </Text>
+              ) : null}
+            </View>
+            <Text numberOfLines={2} style={styles.evidenceValue}>
+              {item.value}
+            </Text>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function ConfidenceContent({ result }: { result: ResultData }) {
+  return (
+    <View style={styles.meterStack}>
+      <ScoreMeter
+        accent={theme.colors.goldBright}
+        label="Overall"
+        value={result.confidence?.overall}
+      />
+      <ScoreMeter
+        accent={theme.colors.scannerCyan}
+        label="Identity"
+        value={result.confidence?.identity}
+      />
+      <ScoreMeter
+        accent={theme.colors.scannerViolet}
+        label="Condition"
+        value={result.confidence?.condition}
+      />
+      <ScoreMeter
+        accent={theme.colors.scannerAmber}
+        label="Valuation"
+        value={result.confidence?.valuation}
+      />
+    </View>
+  );
+}
+
+function ValueContent({
+  readinessAccent,
+  result,
+}: {
+  readinessAccent: string;
+  result: ResultData;
+}) {
+  const valuation = result.valuation;
+  const readinessScore = percentage(result.valuationReadiness.score);
+
+  if (!valuation) {
+    return (
+      <View style={styles.emptyState}>
+        <View style={styles.readinessRow}>
+          <View
+            style={[
+              styles.readinessSignal,
+              { backgroundColor: readinessAccent },
+            ]}
+          />
+          <Text
+            numberOfLines={1}
+            style={[styles.readinessTitle, { color: readinessAccent }]}
+          >
+            {result.valuationReadiness.label ?? "Market data pending"}
+          </Text>
+        </View>
+        <Text numberOfLines={3} style={styles.summary}>
+          {result.valuationReadiness.reason ??
+            "More sold-market evidence is needed before KeepFlip can defend a price range."}
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <>
+      <View style={styles.valueRow}>
+        <View style={styles.medianBlock}>
+          <Text style={styles.metricLabel}>ESTIMATED MEDIAN</Text>
+          <Text
+            adjustsFontSizeToFit
+            minimumFontScale={0.68}
+            numberOfLines={1}
+            style={styles.medianValue}
+          >
+            {formatMoney(
+              Number(valuation.median),
+              valuation.currency,
+            )}
+          </Text>
+        </View>
+        <View style={styles.rangeBlock}>
+          <Text style={styles.rangeLabel}>
+            LOW{"  "}
+            <Text style={styles.rangeValue}>
+              {formatMoney(Number(valuation.low), valuation.currency)}
+            </Text>
+          </Text>
+          <Text style={styles.rangeLabel}>
+            HIGH{" "}
+            <Text style={styles.rangeValue}>
+              {formatMoney(Number(valuation.high), valuation.currency)}
+            </Text>
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.readinessRow}>
+        <View
+          style={[
+            styles.readinessSignal,
+            {
+              backgroundColor: readinessAccent,
+              boxShadow: `0 0 9px ${withAlpha(readinessAccent, 0.78)}`,
+            },
+          ]}
+        />
+        <Text
+          numberOfLines={1}
+          style={[styles.readinessTitle, { color: readinessAccent }]}
+        >
+          {result.valuationReadiness.label ?? "Valuation readiness"}
+        </Text>
+        <Text
+          style={[styles.readinessScore, { color: readinessAccent }]}
+        >
+          {readinessScore == null ? "--" : `${readinessScore}%`}
+        </Text>
+      </View>
+    </>
+  );
+}
+
+function ResultReelContent({
+  readinessAccent,
+  reel,
+  result,
+}: {
+  readinessAccent: string;
+  reel: ResultReel;
+  result: ResultData;
+}) {
+  switch (reel.id) {
+    case "identity":
+      return <IdentityContent result={result} />;
+    case "condition":
+      return <ConditionContent result={result} />;
+    case "evidence":
+      return <EvidenceContent result={result} />;
+    case "confidence":
+      return <ConfidenceContent result={result} />;
+    case "value":
+      return (
+        <ValueContent
+          readinessAccent={readinessAccent}
+          result={result}
+        />
+      );
+  }
 }
 
 export function ItemAnalysisResultStage({
@@ -190,52 +811,19 @@ export function ItemAnalysisResultStage({
   topInset,
 }: ItemAnalysisResultStageProps) {
   const result = state.data;
-  const identity = result.identity;
-
-  const identityMeta = useMemo(
-    () =>
-      [
-        identity.brand,
-        identity.model,
-        identity.variant,
-        identity.category,
-      ]
-        .filter(Boolean)
-        .join("  /  "),
-    [
-      identity.brand,
-      identity.category,
-      identity.model,
-      identity.variant,
-    ],
+  const { width: screenWidth } = useWindowDimensions();
+  const reduceMotion = useReducedMotion();
+  const direction = I18nManager.isRTL ? -1 : 1;
+  const pageWidth = Math.min(
+    Math.max(screenWidth - 28, 272),
+    460,
   );
-
-  const confidenceEntries = useMemo(
-    () =>
-      [
-        [
-          "OVERALL",
-          result.confidence?.overall,
-          theme.colors.goldBright,
-        ],
-        [
-          "IDENTITY",
-          result.confidence?.identity,
-          theme.colors.scannerCyan,
-        ],
-        [
-          "CONDITION",
-          result.confidence?.condition,
-          theme.colors.scannerViolet,
-        ],
-        [
-          "VALUATION",
-          result.confidence?.valuation,
-          theme.colors.scannerAmber,
-        ],
-      ] as const,
-    [result.confidence],
-  );
+  const panelLeft = (screenWidth - pageWidth) / 2;
+  const dragDistance = Math.max(132, pageWidth * 0.58);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const committedPosition = useSharedValue(0);
+  const position = useSharedValue(0);
+  const dragStart = useSharedValue(0);
 
   const readinessAccent =
     result.valuationReadiness.status === "ready"
@@ -247,342 +835,205 @@ export function ItemAnalysisResultStage({
     result.confidence?.overall,
   );
 
+  const commitPage = useCallback((index: number) => {
+    setActiveIndex(index);
+    selectionHaptic();
+  }, []);
+
+  const selectPage = useCallback(
+    (index: number) => {
+      if (
+        saving ||
+        index === activeIndex ||
+        index < 0 ||
+        index > LAST_REEL_INDEX
+      ) {
+        return;
+      }
+
+      committedPosition.value = index;
+      position.value = reduceMotion
+        ? index
+        : withSpring(index, REEL_SPRING);
+      commitPage(index);
+    },
+    [
+      activeIndex,
+      commitPage,
+      committedPosition,
+      position,
+      reduceMotion,
+      saving,
+    ],
+  );
+
+  const pan = useMemo(
+    () =>
+      Gesture.Pan()
+        .enabled(!saving)
+        .activeOffsetX([-12, 12])
+        .failOffsetY([-14, 14])
+        .onBegin(() => {
+          cancelAnimation(position);
+          dragStart.value = committedPosition.value;
+        })
+        .onUpdate(({ translationX }) => {
+          const progress =
+            -(direction * translationX) / dragDistance;
+          position.value = Math.max(
+            -0.16,
+            Math.min(
+              LAST_REEL_INDEX + 0.16,
+              dragStart.value + progress,
+            ),
+          );
+        })
+        .onEnd(({ translationX, velocityX }) => {
+          const intent =
+            -direction * (translationX + velocityX * 0.12);
+          const passed =
+            Math.abs(translationX) > 42 ||
+            Math.abs(velocityX) > 620;
+          const step = passed ? (intent > 0 ? 1 : -1) : 0;
+          const previous = Math.round(committedPosition.value);
+          const next = Math.max(
+            0,
+            Math.min(LAST_REEL_INDEX, previous + step),
+          );
+
+          committedPosition.value = next;
+          position.value = reduceMotion
+            ? next
+            : withSpring(next, REEL_SPRING);
+
+          if (next !== previous) {
+            scheduleOnRN(commitPage, next);
+          }
+        })
+        .onFinalize((_event, success) => {
+          if (!success) {
+            position.value = reduceMotion
+              ? committedPosition.value
+              : withSpring(
+                  committedPosition.value,
+                  REEL_SPRING,
+                );
+          }
+        }),
+    [
+      commitPage,
+      committedPosition,
+      direction,
+      dragDistance,
+      dragStart,
+      position,
+      reduceMotion,
+      saving,
+    ],
+  );
+
+  useEffect(
+    () => () => {
+      cancelAnimation(position);
+    },
+    [position],
+  );
+
   return (
     <Animated.View
       accessibilityViewIsModal
-      entering={FadeIn.duration(160)}
+      entering={FadeIn.duration(180)}
       exiting={FadeOut.duration(140)}
       importantForAccessibility="yes"
       pointerEvents="box-none"
       style={styles.overlay}
     >
       <Animated.View
-        entering={FadeInDown.duration(240)}
+        entering={FadeInDown.duration(260)}
         pointerEvents="none"
         style={[
-          styles.identityHeader,
-          { top: topInset + 14 },
+          styles.titleBlock,
+          { top: topInset + 13 },
         ]}
       >
-        <View style={styles.identityStatusRow}>
-          <View style={styles.identityStatusSignal} />
-          <Text style={styles.identityStatusText}>
-            IDENTITY LOCK
-          </Text>
-          <View style={styles.identityStatusRule} />
-          <Text style={styles.identityStatusScore}>
+        <View style={styles.titleSignalRow}>
+          <View style={styles.titleSignal} />
+          <Text style={styles.titleEyebrow}>KEEPFLIP IDENTITY LOCK</Text>
+          <View style={styles.titleRule} />
+          <Text style={styles.titleConfidence}>
             {overallConfidence == null
-              ? "EVIDENCE VERIFIED"
-              : `${overallConfidence}% CONF`}
+              ? "VERIFIED"
+              : `${overallConfidence}%`}
           </Text>
         </View>
 
         <Text
           adjustsFontSizeToFit
-          minimumFontScale={0.7}
+          minimumFontScale={0.66}
           numberOfLines={2}
-          selectable
-          style={styles.identityTitle}
+          style={styles.title}
         >
-          {identity.title}
+          {result.identity.title}
         </Text>
 
-        {identityMeta ? (
-          <Text
-            numberOfLines={2}
-            selectable
-            style={styles.identityMeta}
-          >
-            {identityMeta}
-          </Text>
-        ) : null}
-      </Animated.View>
-
-      <Animated.View
-        entering={FadeInDown.duration(220).delay(55)}
-        pointerEvents="none"
-        style={[
-          styles.projectionBadge,
-          { top: topInset + 126 },
-        ]}
-      >
-        <View style={styles.projectionSignal} />
-        <Text style={styles.projectionLabel}>
-          {projectionLabel}
-        </Text>
-      </Animated.View>
-
-      <Animated.View
-        entering={FadeIn.duration(220).delay(80)}
-        style={[
-          styles.marketReadout,
-          { top: topInset + 164 },
-        ]}
-      >
-        <View style={styles.readoutBracketTop} />
-        <ModuleLabel accent={theme.colors.goldBright}>
-          MARKET SIGNAL
-        </ModuleLabel>
-
-        {result.valuation ? (
-          <>
-            <Text
-              adjustsFontSizeToFit
-              numberOfLines={1}
-              selectable
-              style={styles.marketMedian}
-            >
-              {formatMoney(
-                Number(result.valuation.median),
-                result.valuation.currency,
-              )}
-            </Text>
-            {result.valuation.snapshot ? (
-              <Text style={styles.readoutFootnote}>
-                SAVED ANALYSIS MEDIAN
-              </Text>
-            ) : (
-              <View style={styles.marketRangeRow}>
-                <View style={styles.marketRangeCell}>
-                  <Text style={styles.readoutMicroLabel}>LOW</Text>
-                  <Text
-                    adjustsFontSizeToFit
-                    numberOfLines={1}
-                    selectable
-                    style={styles.readoutMicroValue}
-                  >
-                    {formatMoney(
-                      Number(result.valuation.low),
-                      result.valuation.currency,
-                    )}
-                  </Text>
-                </View>
-                <View style={styles.marketRangeCell}>
-                  <Text style={styles.readoutMicroLabel}>HIGH</Text>
-                  <Text
-                    adjustsFontSizeToFit
-                    numberOfLines={1}
-                    selectable
-                    style={styles.readoutMicroValue}
-                  >
-                    {formatMoney(
-                      Number(result.valuation.high),
-                      result.valuation.currency,
-                    )}
-                  </Text>
-                </View>
-              </View>
-            )}
-            {!result.valuation.snapshot &&
-            result.valuation.comparableCount != null ? (
-              <Text style={styles.readoutFootnote}>
-                {String(
-                  result.valuation.comparableCount,
-                ).padStart(2, "0")}{" "}
-                SOLD COMPS
-              </Text>
-            ) : null}
-          </>
-        ) : (
-          <Text style={styles.readoutUnavailable}>
-            MARKET DATA PENDING
-          </Text>
-        )}
-      </Animated.View>
-
-      <Animated.View
-        entering={FadeIn.duration(220).delay(110)}
-        style={[
-          styles.statusReadout,
-          { top: topInset + 164 },
-        ]}
-      >
-        <View style={styles.readoutBracketTop} />
-        <ModuleLabel accent={readinessAccent}>
-          VALUE READINESS
-        </ModuleLabel>
-        <View style={styles.statusScoreRow}>
-          <View
-            style={[
-              styles.statusSignal,
-              {
-                backgroundColor: readinessAccent,
-                boxShadow: `0 0 12px ${withAlpha(readinessAccent, 0.8)}`,
-              },
-            ]}
-          />
-          <Text
-            selectable
-            style={[
-              styles.statusScore,
-              { color: readinessAccent },
-            ]}
-          >
-            {`${percentage(result.valuationReadiness.score) ?? "--"}%`}
+        <View style={styles.projectionRow}>
+          <View style={styles.projectionSignal} />
+          <Text numberOfLines={1} style={styles.projectionLabel}>
+            {projectionLabel}
           </Text>
         </View>
-        <Text
-          numberOfLines={2}
-          selectable
-          style={styles.statusLabel}
-        >
-          {result.valuationReadiness.label ??
-            "Valuation readiness"}
-        </Text>
-
-        {result.condition ? (
-          <View style={styles.conditionReadout}>
-            <Text style={styles.readoutMicroLabel}>
-              CONDITION
-            </Text>
-            <View style={styles.conditionReadoutRow}>
-              <Text
-                numberOfLines={1}
-                selectable
-                style={styles.conditionReadoutGrade}
-              >
-                {result.condition.label}
-              </Text>
-              {percentage(result.condition.score) != null ? (
-                <Text style={styles.conditionReadoutScore}>
-                  {percentage(result.condition.score)}%
-                </Text>
-              ) : null}
-            </View>
-          </View>
-        ) : null}
       </Animated.View>
-
-      <Pressable
-        accessibilityLabel="Close item analysis"
-        accessibilityRole="button"
-        accessibilityState={{ disabled: saving }}
-        disabled={saving}
-        onPress={onDone}
-        style={({ pressed }) => [
-          styles.closeButton,
-          { top: topInset + 12 },
-          pressed && !saving && styles.pressed,
-          saving && styles.disabled,
-        ]}
-      >
-        <IconSymbol
-          color={theme.colors.cream}
-          name="xmark"
-          size={18}
-        />
-      </Pressable>
 
       <View pointerEvents="none" style={styles.bottomFade} />
 
       <Animated.View
-        entering={FadeInUp.duration(260).delay(70)}
+        entering={FadeInUp.duration(280).delay(70)}
         pointerEvents="box-none"
         style={[
           styles.bottomStage,
-          { paddingBottom: bottomInset + 8 },
+          { paddingBottom: bottomInset + 7 },
         ]}
       >
-        <ScrollView
-          contentContainerStyle={styles.ribbonContent}
-          decelerationRate="fast"
-          horizontal
-          overScrollMode="never"
-          showsHorizontalScrollIndicator={false}
-          style={styles.ribbonScroller}
-        >
-          {result.summary ? (
-            <RibbonModule
-              accent={theme.colors.scannerCyan}
-              delay={30}
-              width={272}
+        <GestureDetector gesture={pan}>
+          <Animated.View style={styles.reelInteraction}>
+            <View
+              accessibilityRole="tablist"
+              style={styles.tabRail}
             >
-              <ModuleLabel accent={theme.colors.scannerCyan}>
-                INTELLIGENCE SUMMARY
-              </ModuleLabel>
-              <Text
-                numberOfLines={4}
-                selectable
-                style={styles.summaryText}
-              >
-                {result.summary}
-              </Text>
-            </RibbonModule>
-          ) : null}
-
-          {confidenceEntries.map(([label, value, accent], index) => {
-            const score = percentage(value);
-            if (score == null) return null;
-
-            return (
-              <RibbonModule
-                accent={accent}
-                delay={115 + index * 22}
-                key={label}
-                width={132}
-              >
-                <ModuleLabel accent={accent}>{label}</ModuleLabel>
-                <Text
-                  style={[styles.confidenceValue, { color: accent }]}
-                >
-                  {score}%
-                </Text>
-                <Text style={styles.confidenceCaption}>
-                  confidence
-                </Text>
-              </RibbonModule>
-            );
-          })}
-
-          {result.evidence?.slice(0, 5).map((evidence, index) => (
-            <RibbonModule
-              accent={theme.colors.scannerCyan}
-              delay={190 + index * 22}
-              key={evidence.id ?? `${evidence.label}-${index}`}
-              width={206}
-            >
-              <ModuleLabel accent={theme.colors.scannerCyan}>
-                {evidence.label}
-              </ModuleLabel>
-
-              <Text
-                numberOfLines={3}
-                selectable
-                style={styles.evidenceValue}
-              >
-                {evidence.value}
-              </Text>
-
-              {evidence.source ? (
-                <Text numberOfLines={1} style={styles.moduleFootnote}>
-                  {evidence.source}
-                </Text>
-              ) : null}
-            </RibbonModule>
-          ))}
-
-          {result.suggestedPhotos?.length ? (
-            <RibbonModule
-              accent={theme.colors.scannerAmber}
-              delay={260}
-              width={232}
-            >
-              <ModuleLabel accent={theme.colors.scannerAmber}>
-                BETTER PHOTOS
-              </ModuleLabel>
-
-              {result.suggestedPhotos.slice(0, 3).map((photo, index) => (
-                <Text
-                  key={photo.id ?? `${photo.label}-${index}`}
-                  numberOfLines={1}
-                  style={styles.suggestionLine}
-                >
-                  {String(index + 1).padStart(2, "0")}  {photo.label}
-                </Text>
+              {RESULT_REELS.map((reel, index) => (
+                <ReelTab
+                  active={activeIndex === index}
+                  disabled={saving}
+                  index={index}
+                  key={reel.id}
+                  onPress={() => selectPage(index)}
+                  position={position}
+                  reel={reel}
+                />
               ))}
-            </RibbonModule>
-          ) : null}
-        </ScrollView>
+            </View>
+
+            <View style={styles.carouselViewport}>
+              {RESULT_REELS.map((reel, index) => (
+                <ReelPanel
+                  active={activeIndex === index}
+                  index={index}
+                  key={reel.id}
+                  left={panelLeft}
+                  pageWidth={pageWidth}
+                  position={position}
+                  reel={reel}
+                >
+                  <ResultReelContent
+                    readinessAccent={readinessAccent}
+                    reel={reel}
+                    result={result}
+                  />
+                </ReelPanel>
+              ))}
+            </View>
+          </Animated.View>
+        </GestureDetector>
 
         <View style={styles.actionRow}>
           {onSave ? (
@@ -610,99 +1061,65 @@ export function ItemAnalysisResultStage({
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFill,
-    zIndex: 44,
+    zIndex: 40,
+    elevation: 40,
   },
-  identityHeader: {
+  titleBlock: {
     position: "absolute",
     right: 66,
-    left: 66,
-    zIndex: 8,
-    alignItems: "stretch",
+    left: 18,
+    zIndex: 6,
     gap: 4,
-    minHeight: 82,
-    paddingHorizontal: 13,
-    paddingVertical: 9,
-    borderRadius: 5,
-    borderCurve: "continuous",
-    borderWidth: 1,
-    borderLeftWidth: 2,
-    borderRightWidth: 2,
-    borderColor: "rgba(88, 223, 232, 0.22)",
-    borderLeftColor: theme.colors.scannerCyan,
-    borderRightColor: theme.colors.goldBright,
-    backgroundColor: "rgba(2, 4, 8, 0.62)",
-    boxShadow:
-      "0 10px 28px rgba(0, 0, 0, 0.40), 0 0 18px rgba(88, 223, 232, 0.06)",
   },
-  identityStatusRow: {
+  titleSignalRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 7,
   },
-  identityStatusSignal: {
+  titleSignal: {
     width: 6,
     height: 6,
     borderRadius: theme.radii.pill,
     backgroundColor: theme.colors.scannerCyan,
-    boxShadow: "0 0 10px rgba(0, 255, 242, 0.90)",
+    boxShadow: "0 0 10px rgba(88, 223, 232, 0.92)",
   },
-  identityStatusText: {
+  titleEyebrow: {
     color: theme.colors.scannerCyan,
     fontSize: 7,
     lineHeight: 9,
     fontWeight: "900",
-    letterSpacing: 1.1,
+    letterSpacing: 1.2,
+    textShadowColor: "rgba(0, 0, 0, 0.96)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 5,
   },
-  identityStatusRule: {
+  titleRule: {
     flex: 1,
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "rgba(88, 223, 232, 0.25)",
+    marginRight: 10,
+    backgroundColor: "rgba(88, 223, 232, 0.28)",
   },
-  identityStatusScore: {
+  titleConfidence: {
     color: theme.colors.goldBright,
-    fontSize: 7,
-    lineHeight: 9,
+    fontSize: 8,
+    lineHeight: 10,
     fontWeight: "900",
-    letterSpacing: 0.7,
     fontVariant: ["tabular-nums"],
   },
-  identityTitle: {
-    width: "100%",
-    color: theme.colors.cream,
-    fontSize: 20,
-    lineHeight: 24,
+  title: {
+    color: "#FFFFFF",
+    fontSize: 26,
+    lineHeight: 30,
     fontWeight: "900",
-    letterSpacing: 0.25,
-    textAlign: "left",
-    textShadowColor: "rgba(0, 0, 0, 0.92)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 7,
+    letterSpacing: 0.2,
+    textShadowColor: "rgba(0, 0, 0, 0.98)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 9,
   },
-  identityMeta: {
-    color: "rgba(255, 248, 231, 0.72)",
-    fontSize: 8,
-    lineHeight: 11,
-    fontWeight: "700",
-    letterSpacing: 0.6,
-    textAlign: "left",
-    textShadowColor: "rgba(0, 0, 0, 0.94)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 6,
-  },
-  projectionBadge: {
-    position: "absolute",
-    left: "50%",
-    zIndex: 7,
+  projectionRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 7,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 3,
-    borderWidth: 1,
-    borderColor: "rgba(88, 223, 232, 0.22)",
-    backgroundColor: "rgba(1, 4, 8, 0.48)",
-    transform: [{ translateX: "-50%" }],
+    gap: 6,
   },
   projectionSignal: {
     width: 5,
@@ -712,176 +1129,30 @@ const styles = StyleSheet.create({
     boxShadow: "0 0 8px rgba(141, 114, 255, 0.88)",
   },
   projectionLabel: {
-    color: "rgba(200, 244, 247, 0.82)",
+    flexShrink: 1,
+    color: "rgba(220, 248, 250, 0.82)",
     fontSize: 6,
     lineHeight: 8,
     fontWeight: "900",
-    letterSpacing: 0.8,
-  },
-  marketReadout: {
-    position: "absolute",
-    left: 12,
-    zIndex: 7,
-    width: 112,
-    gap: 7,
-    padding: 10,
-    borderWidth: 1,
-    borderLeftWidth: 2,
-    borderColor: "rgba(242, 211, 138, 0.26)",
-    borderLeftColor: theme.colors.goldBright,
-    backgroundColor: "rgba(3, 3, 8, 0.56)",
-    boxShadow:
-      "0 10px 24px rgba(0, 0, 0, 0.34), 0 0 16px rgba(242, 211, 138, 0.07)",
-  },
-  statusReadout: {
-    position: "absolute",
-    right: 12,
-    zIndex: 7,
-    width: 112,
-    gap: 7,
-    padding: 10,
-    borderWidth: 1,
-    borderRightWidth: 2,
-    borderColor: "rgba(88, 223, 232, 0.24)",
-    borderRightColor: theme.colors.scannerCyan,
-    backgroundColor: "rgba(3, 3, 8, 0.56)",
-    boxShadow:
-      "0 10px 24px rgba(0, 0, 0, 0.34), 0 0 16px rgba(88, 223, 232, 0.07)",
-  },
-  readoutBracketTop: {
-    position: "absolute",
-    top: -1,
-    right: -1,
-    left: -1,
-    height: 1,
-    backgroundColor: "rgba(255, 248, 231, 0.42)",
-  },
-  marketMedian: {
-    color: theme.colors.goldBright,
-    fontSize: 23,
-    lineHeight: 26,
-    fontWeight: "900",
-    fontVariant: ["tabular-nums"],
-    textShadowColor: "rgba(242, 211, 138, 0.62)",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 7,
-  },
-  marketRangeRow: {
-    flexDirection: "row",
-    gap: 7,
-  },
-  marketRangeCell: {
-    flex: 1,
-    minWidth: 0,
-    gap: 2,
-    paddingTop: 5,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(242, 211, 138, 0.22)",
-  },
-  readoutMicroLabel: {
-    color: "rgba(255, 248, 231, 0.56)",
-    fontSize: 6,
-    lineHeight: 8,
-    fontWeight: "900",
-    letterSpacing: 0.7,
-  },
-  readoutMicroValue: {
-    color: theme.colors.cream,
-    fontSize: 10,
-    lineHeight: 13,
-    fontWeight: "900",
-    fontVariant: ["tabular-nums"],
-  },
-  readoutFootnote: {
-    color: "rgba(242, 211, 138, 0.68)",
-    fontSize: 6,
-    lineHeight: 8,
-    fontWeight: "800",
-    letterSpacing: 0.45,
-  },
-  readoutUnavailable: {
-    color: theme.colors.textMuted,
-    fontSize: 8,
-    lineHeight: 12,
-    fontWeight: "800",
-  },
-  statusScoreRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-  },
-  statusSignal: {
-    width: 7,
-    height: 7,
-    borderRadius: theme.radii.pill,
-  },
-  statusScore: {
-    fontSize: 23,
-    lineHeight: 26,
-    fontWeight: "900",
-    fontVariant: ["tabular-nums"],
-  },
-  statusLabel: {
-    color: theme.colors.cream,
-    fontSize: 9,
-    lineHeight: 12,
-    fontWeight: "800",
-  },
-  conditionReadout: {
-    gap: 3,
-    paddingTop: 7,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(141, 114, 255, 0.28)",
-  },
-  conditionReadoutRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-  conditionReadoutGrade: {
-    flex: 1,
-    color: theme.colors.scannerViolet,
-    fontSize: 10,
-    lineHeight: 13,
-    fontWeight: "900",
-  },
-  conditionReadoutScore: {
-    color: theme.colors.scannerViolet,
-    fontSize: 9,
-    lineHeight: 12,
-    fontWeight: "900",
-    fontVariant: ["tabular-nums"],
-  },
-  closeButton: {
-    position: "absolute",
-    left: 16,
-    zIndex: 14,
-    width: 42,
-    height: 42,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 5,
-    borderCurve: "continuous",
-    borderWidth: 1,
-    borderColor: "rgba(88, 223, 232, 0.34)",
-    backgroundColor: "rgba(2, 5, 9, 0.60)",
-    boxShadow:
-      "0 8px 20px rgba(0, 0, 0, 0.40), 0 0 12px rgba(88, 223, 232, 0.08)",
+    letterSpacing: 0.9,
+    textShadowColor: "rgba(0, 0, 0, 0.96)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 5,
   },
   bottomFade: {
     position: "absolute",
     right: 0,
     bottom: 0,
     left: 0,
-    height: 182,
-    opacity: 0.9,
+    height: 286,
+    opacity: 0.86,
     experimental_backgroundImage: `
       linear-gradient(
         to bottom,
-        rgba(3, 2, 8, 0) 0%,
-        rgba(3, 2, 8, 0.14) 28%,
-        rgba(3, 2, 8, 0.48) 68%,
-        rgba(3, 2, 8, 0.82) 100%
+        rgba(1, 2, 6, 0) 0%,
+        rgba(1, 2, 6, 0.10) 20%,
+        rgba(1, 2, 6, 0.48) 64%,
+        rgba(1, 2, 6, 0.90) 100%
       )
     `,
   },
@@ -891,208 +1162,388 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     zIndex: 10,
-    gap: 7,
-    paddingTop: 7,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(88, 223, 232, 0.20)",
+    gap: 6,
+    paddingTop: 4,
   },
-  ribbonScroller: {
+  reelInteraction: {
     width: "100%",
-    maxHeight: 102,
-    flexGrow: 0,
   },
-  ribbonContent: {
-    alignItems: "stretch",
-    gap: 10,
-    paddingHorizontal: 14,
-    paddingTop: 3,
-    paddingBottom: 4,
-  },
-  ribbonModule: {
-    height: 94,
+  tabRail: {
+    height: 52,
     flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "center",
+    gap: 11,
+    paddingHorizontal: 14,
+  },
+  tabPosition: {
+    width: 42,
+    alignItems: "center",
+    gap: 4,
+  },
+  tab: {
+    width: 38,
+    height: 38,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 19,
+    borderWidth: 1,
+  },
+  tabPressed: {
+    opacity: 0.72,
+    transform: [{ scale: 0.92 }],
+  },
+  tabDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+  },
+  carouselViewport: {
+    width: "100%",
+    height: 151,
     overflow: "hidden",
-    borderRadius: 4,
+  },
+  panel: {
+    position: "absolute",
+    top: 0,
+    height: 144,
+    overflow: "hidden",
+    borderRadius: 8,
     borderCurve: "continuous",
     borderWidth: 1,
-    backgroundColor: "rgba(2, 5, 9, 0.66)",
+    backgroundColor: "rgba(2, 5, 10, 0.76)",
   },
-  moduleAccent: {
+  panelAccent: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
     width: 3,
   },
-  moduleContent: {
-    flex: 1,
-    minWidth: 0,
-    justifyContent: "flex-start",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+  panelHeader: {
+    height: 32,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    paddingLeft: 12,
+    paddingRight: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(255, 255, 255, 0.1)",
   },
-  moduleLabel: {
-    fontSize: 8,
-    lineHeight: 11,
+  panelIcon: {
+    width: 23,
+    height: 23,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  panelEyebrow: {
+    flex: 1,
+    fontSize: 9,
+    lineHeight: 12,
     fontWeight: "900",
     letterSpacing: 1.25,
   },
-  valueLayout: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-  },
-  primaryValue: {
-    flex: 1,
-    minWidth: 0,
-  },
-  primaryValueLabel: {
-    color: "rgba(255, 248, 231, 0.88)",
-    fontSize: 9,
-    lineHeight: 11,
-    fontWeight: "900",
-    letterSpacing: 1,
-  },
-  primaryValueText: {
-    width: "100%",
-    color: theme.colors.goldBright,
-    fontSize: 27,
-    lineHeight: 31,
-    fontWeight: "900",
-    textShadowColor: "rgba(242, 211, 138, 0.72)",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
-  },
-  rangeStack: {
-    minWidth: 78,
-    gap: 5,
-  },
-  rangeLabel: {
-    color: "rgba(255, 248, 231, 0.82)",
+  panelIndex: {
+    color: "rgba(255, 248, 231, 0.46)",
     fontSize: 8,
     lineHeight: 10,
     fontWeight: "900",
+    fontVariant: ["tabular-nums"],
+    letterSpacing: 0.5,
+  },
+  panelBody: {
+    flex: 1,
+    gap: 7,
+    paddingHorizontal: 13,
+    paddingTop: 9,
+    paddingBottom: 8,
+  },
+  fieldRow: {
+    flexDirection: "row",
+    gap: 7,
+  },
+  field: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 5,
+    backgroundColor: "rgba(255, 255, 255, 0.035)",
+  },
+  fieldLabel: {
+    fontSize: 7,
+    lineHeight: 9,
+    fontWeight: "900",
     letterSpacing: 0.9,
   },
-  rangeValue: {
-    color: "#fffaf0",
+  fieldValue: {
+    color: "#FFFFFF",
     fontSize: 13,
     lineHeight: 16,
     fontWeight: "900",
   },
-  summaryText: {
-    color: "#fffaf0",
-    fontSize: 12,
-    lineHeight: 17,
+  summary: {
+    color: "rgba(255, 255, 255, 0.78)",
+    fontSize: 11,
+    lineHeight: 15,
     fontWeight: "700",
-    textShadowColor: "rgba(255, 255, 255, 0.14)",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 4,
   },
-  readinessHeading: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 6,
-  },
-  readinessTitle: {
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 17,
-    fontWeight: "900",
-  },
-  readinessScore: {
-    fontSize: 18,
-    lineHeight: 20,
-    fontWeight: "900",
-  },
-  conditionHeading: {
+  heroMetricRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 12,
+  },
+  heroMetricCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  metricLabel: {
+    color: "rgba(255, 248, 231, 0.52)",
+    fontSize: 7,
+    lineHeight: 9,
+    fontWeight: "900",
+    letterSpacing: 1,
   },
   conditionGrade: {
-    flex: 1,
-    color: "#fffaf0",
-    fontSize: 17,
-    lineHeight: 20,
+    fontSize: 23,
+    lineHeight: 27,
     fontWeight: "900",
     textTransform: "capitalize",
+    textShadowColor: "rgba(141, 114, 255, 0.46)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 6,
   },
-  conditionScore: {
-    fontSize: 18,
-    lineHeight: 20,
-    fontWeight: "900",
-  },
-  confidenceValue: {
-    marginTop: 5,
-    fontSize: 30,
-    lineHeight: 34,
+  heroScore: {
+    fontSize: 25,
+    lineHeight: 28,
     fontWeight: "900",
     fontVariant: ["tabular-nums"],
   },
-  confidenceCaption: {
-    color: "rgba(255, 248, 231, 0.78)",
-    fontSize: 8,
-    lineHeight: 10,
-    fontWeight: "800",
-    letterSpacing: 0.45,
+  detailStack: {
+    gap: 4,
   },
-  moduleBody: {
-    color: "rgba(255, 248, 231, 0.84)",
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+  detailDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+  },
+  detailText: {
+    flex: 1,
+    color: "rgba(255, 255, 255, 0.76)",
     fontSize: 10,
     lineHeight: 14,
     fontWeight: "700",
   },
-  evidenceValue: {
-    color: "#fffaf0",
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: "800",
+  evidenceStack: {
+    gap: 7,
   },
-  moduleFootnote: {
-    marginTop: "auto",
-    color: "rgba(255, 248, 231, 0.72)",
+  evidenceRow: {
+    minHeight: 43,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+  },
+  evidenceIndex: {
+    width: 27,
+    height: 27,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(88, 223, 232, 0.36)",
+    backgroundColor: "rgba(88, 223, 232, 0.07)",
+  },
+  evidenceIndexText: {
+    color: theme.colors.scannerCyan,
     fontSize: 8,
     lineHeight: 10,
+    fontWeight: "900",
+    fontVariant: ["tabular-nums"],
+  },
+  evidenceCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  evidenceLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+  evidenceLabel: {
+    flex: 1,
+    color: "#FFFFFF",
+    fontSize: 10,
+    lineHeight: 13,
+    fontWeight: "900",
+  },
+  evidenceSource: {
+    maxWidth: 90,
+    color: theme.colors.scannerCyan,
+    fontSize: 7,
+    lineHeight: 9,
+    fontWeight: "900",
+    letterSpacing: 0.45,
+  },
+  evidenceValue: {
+    color: "rgba(255, 255, 255, 0.68)",
+    fontSize: 9,
+    lineHeight: 12,
     fontWeight: "700",
   },
-  suggestionLine: {
-    color: "rgba(255, 248, 231, 0.84)",
+  meterStack: {
+    gap: 7,
+  },
+  meterRow: {
+    minHeight: 17,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  meterLabel: {
+    width: 58,
+    color: "rgba(255, 255, 255, 0.76)",
     fontSize: 9,
-    lineHeight: 14,
-    fontWeight: "700",
+    lineHeight: 11,
+    fontWeight: "800",
+    textTransform: "uppercase",
+  },
+  meterTrack: {
+    flex: 1,
+    height: 4,
+    overflow: "hidden",
+    borderRadius: 2,
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+  },
+  meterFill: {
+    height: "100%",
+    borderRadius: 2,
+  },
+  meterValue: {
+    width: 35,
+    fontSize: 10,
+    lineHeight: 12,
+    fontWeight: "900",
+    fontVariant: ["tabular-nums"],
+    textAlign: "right",
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: "center",
+    gap: 8,
+  },
+  emptyTitle: {
+    color: theme.colors.scannerCyan,
+    fontSize: 14,
+    lineHeight: 17,
+    fontWeight: "900",
+    letterSpacing: 0.8,
+  },
+  valueRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  medianBlock: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  medianValue: {
+    color: theme.colors.goldBright,
+    fontSize: 29,
+    lineHeight: 32,
+    fontWeight: "900",
+    fontVariant: ["tabular-nums"],
+    textShadowColor: "rgba(242, 211, 138, 0.58)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 7,
+  },
+  rangeBlock: {
+    minWidth: 102,
+    gap: 5,
+    paddingLeft: 10,
+    borderLeftWidth: StyleSheet.hairlineWidth,
+    borderLeftColor: "rgba(242, 211, 138, 0.22)",
+  },
+  rangeLabel: {
+    color: "rgba(255, 248, 231, 0.52)",
+    fontSize: 8,
+    lineHeight: 11,
+    fontWeight: "900",
+    letterSpacing: 0.7,
+  },
+  rangeValue: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "900",
+    fontVariant: ["tabular-nums"],
+  },
+  readinessRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    paddingTop: 6,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(255, 255, 255, 0.1)",
+  },
+  readinessSignal: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  readinessTitle: {
+    flex: 1,
+    fontSize: 9,
+    lineHeight: 12,
+    fontWeight: "900",
+    letterSpacing: 0.35,
+  },
+  readinessScore: {
+    fontSize: 11,
+    lineHeight: 13,
+    fontWeight: "900",
+    fontVariant: ["tabular-nums"],
   },
   actionRow: {
     flexDirection: "row",
     justifyContent: "center",
     gap: 8,
     paddingHorizontal: 14,
-    paddingTop: 7,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(88, 223, 232, 0.16)",
   },
-  compactAction: {
+  action: {
     flex: 1,
-    maxWidth: 244,
+    maxWidth: 226,
     minWidth: 0,
-    minHeight: 42,
+    minHeight: 44,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 14,
-    borderRadius: 5,
+    paddingHorizontal: 12,
+    borderRadius: 6,
     borderCurve: "continuous",
     borderWidth: 1,
   },
-  compactActionText: {
-    fontSize: 8,
-    lineHeight: 12,
+  actionText: {
+    fontSize: 11,
+    lineHeight: 14,
     fontWeight: "900",
-    letterSpacing: 0.9,
+    letterSpacing: 0.85,
     textAlign: "center",
   },
   pressed: {
-    opacity: 0.7,
+    opacity: 0.72,
     transform: [{ scale: 0.97 }],
   },
   disabled: {
-    opacity: 0.5,
+    opacity: 0.48,
   },
 });

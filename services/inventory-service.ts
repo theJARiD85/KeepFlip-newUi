@@ -23,6 +23,7 @@ export type InventoryItem = {
   currency: string;
   aiConfidence: number | null;
   coverPhotoId: string | null;
+  modelFile: string | null;
   photoCount: number;
   createdAt: string;
 };
@@ -41,6 +42,7 @@ type InventoryRow = {
   estimatedValueCents?: number | null;
   aiConfidence?: number | null;
   coverPhotoId?: string | null;
+  modelFile?: string | null;
   photoCount?: number | null;
   createdAt?: string | null;
 };
@@ -57,6 +59,7 @@ type ItemPhotoRow = {
 
 export type SaveAnalyzedItemInput = {
   analysis: ItemAnalysisSuccess;
+  modelFile?: string | null;
   ownerId: string;
   scanId: string;
 };
@@ -79,15 +82,47 @@ function cleanText(value: string | null | undefined) {
   return cleaned || null;
 }
 
+function boundedText(
+  value: string | null | undefined,
+  maximumLength: number,
+) {
+  return cleanText(value)?.slice(0, maximumLength) || null;
+}
+
+function normalizedModelFile(value: string | null | undefined) {
+  const cleaned = boundedText(value, 50_000);
+  if (!cleaned) return null;
+
+  try {
+    const parsed = new URL(cleaned);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:'
+      ? cleaned
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 function titleFromAnalysis(result: ItemAnalysisSuccess) {
   const identity = result.analysis.identification;
-  const structured = [
-    identity.brand,
-    identity.model,
-    identity.variant,
-    identity.itemType,
-  ]
-    .map(cleanText)
+  const brand = boundedText(identity.brand, 100);
+  const model = boundedText(identity.model, 150);
+  const itemType = boundedText(identity.itemType, 80);
+  const category = boundedText(identity.category, 60);
+  const identityTitleParts =
+    brand && model
+      ? [brand, model]
+      : brand && itemType
+        ? [brand, itemType]
+        : model
+          ? [model]
+          : itemType
+            ? [itemType]
+            : category
+              ? [category]
+              : ['Scanned item'];
+
+  return identityTitleParts
     .filter((value): value is string => Boolean(value))
     .filter(
       (value, index, all) =>
@@ -96,27 +131,7 @@ function titleFromAnalysis(result: ItemAnalysisSuccess) {
         ) === index,
     )
     .join(' ')
-    .trim();
-
-  if (identity.model && structured) return structured.slice(0, 220);
-
-  const summaryTitle = result.analysis.summary
-    .split(/\r?\n/)[0]
-    .split(/[.!?](?:\s|$)/)[0]
-    .replace(
-      /^(?:(?:this|the)\s+item|it)\s+(?:appears|looks|seems)\s+to\s+be\s+(?:an?\s+)?/i,
-      '',
-    )
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  return (
-    summaryTitle ||
-    structured ||
-    cleanText(identity.category) ||
-    cleanText(identity.itemType) ||
-    'Scanned item'
-  ).slice(0, 220);
+    .slice(0, 180);
 }
 
 function normalizedCondition(value: string | null | undefined) {
@@ -170,6 +185,7 @@ function rowToInventoryItem(row: InventoryRow): InventoryItem {
     currency: 'USD',
     aiConfidence: confidencePercent(row.aiConfidence),
     coverPhotoId: cleanText(row.coverPhotoId),
+    modelFile: normalizedModelFile(row.modelFile),
     photoCount: Math.max(0, Number(row.photoCount) || 0),
     createdAt: row.createdAt || row.$createdAt || new Date().toISOString(),
   };
@@ -214,7 +230,7 @@ async function attachExistingScan({
   });
 
   const photos = response.rows as unknown as ItemPhotoRow[];
-  const failures: string[] = [];
+  const photoLinkFailures: string[] = [];
 
   for (const photo of photos) {
     try {
@@ -225,7 +241,7 @@ async function attachExistingScan({
         data: { itemId },
       });
     } catch (error) {
-      failures.push(
+      photoLinkFailures.push(
         error instanceof Error
           ? error.message
           : `Photo row ${photo.$id} could not be linked.`,
@@ -235,30 +251,6 @@ async function attachExistingScan({
 
   const primaryPhoto =
     photos.find((photo) => photo.isPrimary) ?? photos[0] ?? null;
-
-  if (primaryPhoto && APPWRITE.modelFilesTableId) {
-    try {
-      await tablesDB.updateRow({
-        databaseId: APPWRITE.databaseId,
-        tableId: APPWRITE.modelFilesTableId,
-        rowId: primaryPhoto.$id,
-        data: { itemId, updatedAt: new Date().toISOString() },
-      });
-    } catch (error) {
-      const code = Number(
-        error && typeof error === 'object' && 'code' in error
-          ? (error as { code?: unknown }).code
-          : NaN,
-      );
-      if (code !== 404) {
-        failures.push(
-          error instanceof Error
-            ? error.message
-            : 'The generated model could not be linked to the inventory item.',
-        );
-      }
-    }
-  }
 
   await tablesDB.updateRow({
     databaseId: APPWRITE.databaseId,
@@ -277,9 +269,9 @@ async function attachExistingScan({
     warning:
       photos.length === 0
         ? 'The item was saved, but no saved scanner photos matched this scan.'
-        : failures.length > 0
-          ? `The item was saved, but ${failures.length} related record${
-              failures.length === 1 ? '' : 's'
+        : photoLinkFailures.length > 0
+          ? `The item was saved, but ${photoLinkFailures.length} scanner photo${
+              photoLinkFailures.length === 1 ? '' : 's'
             } could not be linked.`
           : null,
   };
@@ -287,6 +279,7 @@ async function attachExistingScan({
 
 export async function saveAnalyzedItemToInventory({
   analysis,
+  modelFile,
   ownerId,
   scanId,
 }: SaveAnalyzedItemInput): Promise<SaveAnalyzedItemResult> {
@@ -303,6 +296,7 @@ export async function saveAnalyzedItemToInventory({
   const valuation = analysis.valuation;
   const median = valuation.median;
   const confidence = confidencePercent(analysis.analysis.confidence.overall);
+  const storedModelFile = normalizedModelFile(modelFile);
   const now = new Date().toISOString();
   const conditionNotes = [
     ...analysis.analysis.condition.notes,
@@ -322,10 +316,12 @@ export async function saveAnalyzedItemToInventory({
       ownerId: cleanOwnerId,
       title: titleFromAnalysis(analysis),
       category:
-        cleanText(identity.category) || cleanText(identity.itemType) || 'Other',
-      brand: cleanText(identity.brand),
-      model: cleanText(identity.model),
-      serialNumber: cleanText(identity.serialNumber),
+        boundedText(identity.category, 60) ||
+        boundedText(identity.itemType, 60) ||
+        'Other',
+      brand: boundedText(identity.brand, 100),
+      model: boundedText(identity.model, 150),
+      serialNumber: boundedText(identity.serialNumber, 150),
       condition: normalizedCondition(analysis.analysis.condition.grade),
       status: 'undecided',
       description: conditionNotes || null,
@@ -335,6 +331,7 @@ export async function saveAnalyzedItemToInventory({
           : null,
       originalRetailCents: null,
       coverPhotoId: null,
+      modelFile: storedModelFile,
       photoCount: 0,
       aiConfidence: confidence,
       isListed: false,

@@ -115,6 +115,7 @@ export function ItemAnalysisResultScreen() {
     try {
       const saved = await saveAnalyzedItemToInventory({
         analysis: scannerSession.analysis,
+        modelFile: scannerSession.modelUrl,
         ownerId: userId,
         scanId: scannerSession.scanId,
       });

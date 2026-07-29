@@ -28,6 +28,7 @@ import {
 
 type InventoryResultPayload = {
   model: StoredTripo3dModelResult | null;
+  modelFile: string | null;
   primaryPhotoId: string | null;
   state: ReturnType<typeof inventoryItemToAnalysisState>;
 };
@@ -56,6 +57,7 @@ async function loadInventoryResult(
       modelResult.status === "fulfilled"
         ? modelResult.value
         : null,
+    modelFile: item.modelFile,
     primaryPhotoId: primaryPhoto?.id ?? null,
     state: inventoryItemToAnalysisState(item),
   };
@@ -215,6 +217,7 @@ export function ItemAnalysisResultScreen() {
     try {
       const saved = await saveAnalyzedItemToInventory({
         analysis: scannerSession.analysis,
+        modelFile: scannerSession.modelUrl,
         ownerId: userId,
         scanId: scannerSession.scanId,
       });
@@ -245,7 +248,10 @@ export function ItemAnalysisResultScreen() {
     scannerSession?.state ?? inventoryResult?.state ?? null;
   const storedModel = inventoryResult?.model ?? null;
   const modelUrl =
-    scannerSession?.modelUrl ?? storedModel?.modelUrl ?? undefined;
+    scannerSession?.modelUrl ??
+    inventoryResult?.modelFile ??
+    storedModel?.modelUrl ??
+    undefined;
   const modelBytes = storedModel?.modelBytes;
   const hasProjection =
     !projectionError && Boolean(modelUrl || modelBytes);
@@ -268,11 +274,13 @@ export function ItemAnalysisResultScreen() {
   if (loading || resolvedError || !resultState) {
     return (
       <View style={styles.root}>
-        <ModelProjectionScanner
-          modelBytes={modelBytes}
-          modelUrl={modelUrl}
-          onError={setProjectionError}
-        />
+        <View pointerEvents="none" style={styles.projectionLayer}>
+          <ModelProjectionScanner
+            modelBytes={modelBytes}
+            modelUrl={modelUrl}
+            onError={setProjectionError}
+          />
+        </View>
         <View
           pointerEvents="none"
           style={[styles.resultScrim, styles.resultScrimWithProjection]}
@@ -333,11 +341,13 @@ export function ItemAnalysisResultScreen() {
 
   return (
     <View style={styles.root}>
-      <ModelProjectionScanner
-        modelBytes={modelBytes}
-        modelUrl={modelUrl}
-        onError={setProjectionError}
-      />
+      <View pointerEvents="none" style={styles.projectionLayer}>
+        <ModelProjectionScanner
+          modelBytes={modelBytes}
+          modelUrl={modelUrl}
+          onError={setProjectionError}
+        />
+      </View>
 
       <View
         pointerEvents="none"
@@ -373,8 +383,13 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     backgroundColor: theme.colors.backgroundDeep,
   },
+  projectionLayer: {
+    ...StyleSheet.absoluteFill,
+    zIndex: 0,
+  },
   resultScrim: {
     ...StyleSheet.absoluteFill,
+    zIndex: 1,
     experimental_backgroundImage: `
       radial-gradient(circle at 72% 44%, rgba(88, 223, 232, 0.09) 0%, transparent 34%),
       radial-gradient(circle at 24% 62%, rgba(141, 114, 255, 0.10) 0%, transparent 38%),
@@ -382,10 +397,11 @@ const styles = StyleSheet.create({
     `,
   },
   resultScrimWithProjection: {
-    opacity: 0.36,
+    opacity: 0.22,
   },
   centerState: {
     flex: 1,
+    zIndex: 2,
     alignItems: "center",
     justifyContent: "center",
     gap: 13,

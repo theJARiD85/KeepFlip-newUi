@@ -14,6 +14,7 @@ import {
 import {
   AppState,
   StyleSheet,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -29,6 +30,7 @@ import {
   type ItemAnalysisState,
 } from "@/components/scanner/item-analysis-overlay";
 import { toItemAnalysisState } from "@/components/scanner/item-analysis-view-model";
+import { ScannerAtmosphere } from "@/components/scanner/scanner-atmosphere.native";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import {
   analyzeItemPhotos,
@@ -48,6 +50,23 @@ type CompletedAnalysis = {
   state: ResultState;
 };
 
+const MODEL_RENDERING_STATE = {
+  detail:
+    "Assembling the generated 3D projection for the result screen.",
+  insights: [],
+  progress: 0.98,
+  stage: "Model rendering",
+  status: "analyzing",
+  steps: [
+    { label: "Verify your signed-in session", status: "complete" },
+    { label: "Upload private photo evidence", status: "complete" },
+    { label: "Identify and evaluate the item", status: "complete" },
+    { label: "Remove temporary cloud copies", status: "complete" },
+    { label: "Research completed marketplace sales", status: "complete" },
+    { label: "Render the final 3D model", status: "active" },
+  ],
+} satisfies Extract<ItemAnalysisState, { status: "analyzing" }>;
+
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
@@ -55,6 +74,7 @@ function firstParam(value: string | string[] | undefined) {
 export function ItemAnalysisScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { height, width } = useWindowDimensions();
   const isFocused = useIsFocused();
   const params = useLocalSearchParams<{
     sessionId?: string | string[];
@@ -86,6 +106,10 @@ export function ItemAnalysisScreen() {
   const resultNavigationStartedRef = useRef(false);
   const activeSessionId = session?.id;
   const activeSessionCancel = session?.onCancel;
+  const isFinalizingResult = state.status === "result";
+  const displayedState = isFinalizingResult
+    ? MODEL_RENDERING_STATE
+    : state;
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", setAppState);
@@ -331,19 +355,29 @@ export function ItemAnalysisScreen() {
         transition={120}
       />
       <View pointerEvents="none" style={styles.photoScrim} />
-      <BadassAiAnimation
-        active={
-          state.status === "analyzing" &&
-          isFocused &&
-          appState === "active"
-        }
-        imageUri={session.backdropUri}
-        progress={
-          state.status === "analyzing"
-            ? state.progress
-            : 1
-        }
-      />
+      {isFinalizingResult ? (
+        <ScannerAtmosphere
+          active={isFocused && appState === "active"}
+          height={height}
+          phase="analyzing"
+          progress={0.98}
+          width={width}
+        />
+      ) : (
+        <BadassAiAnimation
+          active={
+            state.status === "analyzing" &&
+            isFocused &&
+            appState === "active"
+          }
+          imageUri={session.backdropUri}
+          progress={
+            state.status === "analyzing"
+              ? state.progress
+              : 1
+          }
+        />
+      )}
       <ItemAnalysisBubbles
         bottomInset={insets.bottom}
         doneLabel="Back to scanner"
@@ -360,7 +394,7 @@ export function ItemAnalysisScreen() {
             ? "Add another photo"
             : undefined
         }
-        state={state}
+        state={displayedState}
         topInset={insets.top}
       />
     </View>
