@@ -40,6 +40,7 @@
     "react-native": "0.85.3",
     "react-native-appwrite": "^0.34.0",
     "react-native-fast-tflite": "^3.0.1",
+    "react-native-filament": "^1.11.0",
     "react-native-gesture-handler": "~2.31.1",
     "react-native-nitro-image": "0.15.0",
     "react-native-nitro-modules": "^0.35.9",
