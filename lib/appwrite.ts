@@ -125,6 +125,9 @@ export const APPWRITE = {
   profileImagesBucketId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_PROFILE_IMAGES_BUCKET_ID,
   ),
+  userProfilesTableId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_USER_PROFILES_COLLECTION_ID,
+  ),
   itemAiFunctionId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_ITEM_AI_FUNCTION_ID,
   ),

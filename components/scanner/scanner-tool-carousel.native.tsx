@@ -67,17 +67,18 @@ export const scannerTools: ScannerTool[] = [
     id: "batch",
     label: "Batch-scan",
     icon: "square.grid.2x2.fill",
-    accent: theme.colors.scannerViolet,
-    surface: "rgba(141, 114, 255, 0.15)",
-    glow: "rgba(141, 114, 255, 0.42)",
+    accent: theme.colors.cream,
+    surface: "rgba(247, 242, 232, 0.12)",
+    glow: "rgba(247, 242, 232, 0.32)",
   },
   {
     id: "upload",
     label: "Upload photo",
     icon: "photo.on.rectangle.angled",
-    accent: theme.colors.cream,
-    surface: "rgba(247, 242, 232, 0.12)",
-    glow: "rgba(247, 242, 232, 0.32)",
+    accent: theme.colors.scannerViolet,
+    surface: "rgba(141, 114, 255, 0.15)",
+    glow: "rgba(141, 114, 255, 0.42)",
+
   },
 ];
 

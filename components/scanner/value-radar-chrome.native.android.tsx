@@ -25,7 +25,7 @@ import type {
   ValueRadarMarker,
   ValueRadarStatus,
   ValueRadarViewport,
-} from "./value-radar-visual.native";
+} from "@/components/scanner/value-radar-visual.native";
 
 export type ValueRadarBubbleProps = {
   status: ValueRadarStatus;

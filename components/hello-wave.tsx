@@ -1,10 +1,12 @@
 import Animated from 'react-native-reanimated';
+import { useResponsiveSize } from "@/hooks/use-responsive-layout";
 
 export function HelloWave() {
+  const { responsiveSize } = useResponsiveSize();
   return (
     <Animated.Text
       style={{
-        fontSize: 28,
+        fontSize: responsiveSize(28),
         lineHeight: 32,
         marginTop: -6,
         animationName: {

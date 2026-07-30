@@ -5,12 +5,13 @@ import {
   type ComponentType,
   type ReactNode,
 } from "react";
-import { useTensorflowModel } from "react-native-fast-tflite";
+import { useEfficientDetModel } from "@/hooks/use-efficientdet-model.native";
 import {
   type CameraFrameOutput,
   useAsyncRunner,
   useFrameOutput,
 } from "react-native-vision-camera";
+import type { TensorflowModelDelegate } from "react-native-fast-tflite";
 import { useResizer } from "react-native-vision-camera-resizer";
 import {
   useAnimatedReaction,
@@ -49,8 +50,8 @@ const RADAR_FRAME_RESOLUTION = {
   height: 240,
 } as const;
 
-const TFLITE_DELEGATES: [] = [];
 
+const TFLITE_DELEGATES: TensorflowModelDelegate[] = [];
 type ValueRadarResult = {
   frameOutput: CameraFrameOutput;
   marker: ValueRadarMarker | null;
@@ -74,7 +75,7 @@ type ResizedFrame = {
   getPixelBuffer(): ArrayBuffer;
 };
 
-const radarPresentation = require("./value-radar.native.tsx") as {
+const radarPresentation = require("@/components/scanner/value-radar.native.tsx") as {
   ValueRadarOverlay: ComponentType<ValueRadarOverlayProps>;
 };
 
@@ -158,10 +159,7 @@ export function useValueRadar(
   const bridgePayload = useSharedValue<number[]>([]);
   const bridgeMessage = useSharedValue("");
 
-  const detector = useTensorflowModel(
-    require("../../assets/models/efficientdet_lite0.tflite"),
-    TFLITE_DELEGATES,
-  );
+  const detector = useEfficientDetModel(TFLITE_DELEGATES);
   const resizerState = useResizer({
     width: MODEL_SIZE,
     height: MODEL_SIZE,

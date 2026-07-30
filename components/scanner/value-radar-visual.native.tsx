@@ -10,7 +10,8 @@ import Animated, {
   withRepeat,
   withTiming,
 } from "react-native-reanimated";
-import { useTensorflowModel } from "react-native-fast-tflite";
+import type { TensorflowModelDelegate } from "react-native-fast-tflite";
+import { useEfficientDetModel } from "@/hooks/use-efficientdet-model.native";
 import { Image } from 'expo-image';
 import {
   type CameraFrameOutput,
@@ -37,7 +38,7 @@ const RADAR_FRAME_RESOLUTION = {
   height: 480,
 } as const;
 
-const TFLITE_DELEGATES: [] = [];
+const TFLITE_DELEGATES: TensorflowModelDelegate[] = [];
 
 export type ValueRadarStatus = "loading" | "ready" | "error";
 
@@ -229,10 +230,7 @@ export function useValueRadar(
   const publishedHeight = useSharedValue(0);
   const errorReported = useSharedValue(false);
 
-  const detector = useTensorflowModel(
-    require("../../assets/models/efficientdet_lite0.tflite"),
-    TFLITE_DELEGATES,
-  );
+  const detector = useEfficientDetModel(TFLITE_DELEGATES);
   const resizerState = useResizer({
     width: MODEL_SIZE,
     height: MODEL_SIZE,

@@ -110,6 +110,10 @@ export function ItemAnalysisScreen() {
   const displayedState = isFinalizingResult
     ? MODEL_RENDERING_STATE
     : state;
+  const isAnalysisAnimationActive =
+    state.status === "analyzing" || isFinalizingResult;
+  const analysisAnimationProgress =
+    state.status === "analyzing" ? state.progress : 0.98;
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", setAppState);
@@ -355,29 +359,18 @@ export function ItemAnalysisScreen() {
         transition={120}
       />
       <View pointerEvents="none" style={styles.photoScrim} />
-      {isFinalizingResult ? (
-        <ScannerAtmosphere
-          active={isFocused && appState === "active"}
-          height={height}
-          phase="analyzing"
-          progress={0.98}
-          width={width}
-        />
-      ) : (
-        <BadassAiAnimation
-          active={
-            state.status === "analyzing" &&
-            isFocused &&
-            appState === "active"
-          }
-          imageUri={session.backdropUri}
-          progress={
-            state.status === "analyzing"
-              ? state.progress
-              : 1
-          }
-        />
-      )}
+      <ScannerAtmosphere
+        active={
+          isAnalysisAnimationActive &&
+          isFocused &&
+          appState === "active"
+        }
+        height={height}
+        phase="analyzing"
+        progress={analysisAnimationProgress}
+        sceneOffsetY={-60}
+        width={width}
+      />
       <ItemAnalysisBubbles
         bottomInset={insets.bottom}
         doneLabel="Back to scanner"

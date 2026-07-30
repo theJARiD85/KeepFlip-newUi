@@ -18,6 +18,7 @@ type ScannerAtmosphereProps = {
   height?: number;
   phase?: ScannerAtmospherePhase;
   progress?: number;
+  sceneOffsetY?: number;
   width?: number;
 };
 
@@ -346,6 +347,7 @@ export function ScannerAtmosphere({
   height = 1,
   phase,
   progress = 0,
+  sceneOffsetY = 0,
   width = 1,
 }: ScannerAtmosphereProps) {
   const reduceMotion = useReducedMotion();
@@ -370,7 +372,11 @@ export function ScannerAtmosphere({
       <View
         style={[
           styles.sceneHost,
-          { width: sceneSize, height: sceneSize },
+          {
+            width: sceneSize,
+            height: sceneSize,
+            transform: [{ translateY: sceneOffsetY }],
+          },
         ]}
       >
         <CognitionBoundary>

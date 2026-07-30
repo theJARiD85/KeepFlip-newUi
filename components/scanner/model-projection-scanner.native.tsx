@@ -1,9 +1,3 @@
-/* eslint-disable react/no-unknown-property */
-
-import {
-  Canvas as ThreeCanvas,
-  useFrame,
-} from "@react-three/fiber/native";
 import {
   BlurMask,
   Group,
@@ -48,10 +42,11 @@ import {
 } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
-import { configureExpoGlForThree } from "@/lib/expo-three-gl-compat";
 
 const MAX_PROJECTED_TRIANGLES = 2500;
-const PROJECTION_UPDATES_PER_SECOND = 1;
+const PROJECTION_UPDATES_PER_SECOND = 8;
+const MODEL_PROJECTION_SCALE = 0.4;
+const MODEL_PROJECTION_OFFSET_Y = -70;
 const TRANSPARENT_PIXEL_DATA_URI =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAF/gL+X1WJTQAAAABJRU5ErkJggg==";
 
@@ -176,12 +171,6 @@ function ModelProjector({
   projectionHeight,
   projectionWidth,
 }: ModelProjectorProps): React.JSX.Element | null {
-  const modelRef =
-    useRef<THREE.Group>(null);
-
-  const projectionElapsedRef =
-    useRef(0);
-
   const onErrorRef =
     useRef(onError);
 
@@ -555,154 +544,142 @@ function ModelProjector({
     [loadedScene],
   );
 
-  useFrame(
-    (
-      { camera },
-      delta,
-    ) => {
-      if (!modelRef.current) {
-        return;
-      }
+  useEffect(() => {
+    if (
+      !preparedModel ||
+      projectionHeight <= 0 ||
+      projectionWidth <= 0
+    ) {
+      return;
+    }
 
-      modelRef.current.rotation.y +=
-        delta * 0.42;
+    const modelGroup = new THREE.Group();
+    const modelScene = preparedModel.scene;
+    const camera = new THREE.PerspectiveCamera(
+      45,
+      projectionWidth / projectionHeight,
+      0.1,
+      100,
+    );
+    const projectedVertex = new THREE.Vector3();
+    let animationFrame: number | null = null;
+    let lastFrameTimestamp: number | null = null;
+    let lastProjectionTimestamp =
+      Number.NEGATIVE_INFINITY;
+    let stopped = false;
 
-      modelRef.current.updateMatrixWorld(
-        true,
-      );
+    modelGroup.rotation.x = -0.32;
+    modelGroup.scale.setScalar(
+      preparedModel.scale,
+    );
+    modelScene.position.set(
+      -preparedModel.center.x,
+      -preparedModel.center.y,
+      -preparedModel.center.z,
+    );
+    modelGroup.add(modelScene);
 
-      projectionElapsedRef.current +=
-        delta;
+    camera.position.set(0, 0, 4);
+    camera.lookAt(0, 0, 0);
+    camera.updateProjectionMatrix();
+    camera.updateMatrixWorld(true);
 
-      if (
-        projectionElapsedRef.current <
-        1 /
-        PROJECTION_UPDATES_PER_SECOND
-      ) {
-        return;
-      }
-
-      projectionElapsedRef.current = 0;
-
-      if (
-        camera instanceof THREE.PerspectiveCamera &&
-        projectionHeight > 0 &&
-        projectionWidth > 0
-      ) {
-        const targetAspect =
-          projectionWidth / projectionHeight;
-        if (Math.abs(camera.aspect - targetAspect) > 0.001) {
-          camera.aspect = targetAspect;
-          camera.updateProjectionMatrix();
-        }
-      }
-
+    const publishProjection = () => {
       const projectedTriangles:
         ProjectedTriangle[] = [];
 
-      const projectedVertex =
-        new THREE.Vector3();
+      modelGroup.traverse((child) => {
+        if (
+          (child as THREE.Mesh).isMesh !==
+          true
+        ) {
+          return;
+        }
 
-      modelRef.current.traverse(
-        (child) => {
-          if (
-            (child as THREE.Mesh).isMesh !== true
-          ) {
-            return;
-          }
+        const mesh = child as THREE.Mesh;
+        const geometry = mesh.geometry;
+        const position =
+          geometry.attributes.position;
 
-          const mesh =
-            child as THREE.Mesh;
+        if (!position) return;
 
-          const geometry =
-            mesh.geometry;
+        const triangleCount = Math.floor(
+          (geometry.index?.count ??
+            position.count) / 3,
+        );
+        const triangleStep = Math.max(
+          1,
+          Math.ceil(
+            triangleCount /
+            MAX_PROJECTED_TRIANGLES,
+          ),
+        );
 
-          const position =
-            geometry.attributes.position;
-
-          if (!position) {
-            return;
-          }
-
-          const triangleCount =
-            Math.floor(
-              (geometry.index?.count ??
-                position.count) /
-              3,
-            );
-
-          const triangleStep =
-            Math.max(
-              1,
-              Math.ceil(
-                triangleCount /
-                MAX_PROJECTED_TRIANGLES,
-              ),
-            );
+        for (
+          let triangle = 0;
+          triangle < triangleCount;
+          triangle += triangleStep
+        ) {
+          const coordinates: number[] = [];
+          let depth = 0;
 
           for (
-            let triangle = 0;
-            triangle <
-            triangleCount;
-            triangle += triangleStep
+            let corner = 0;
+            corner < 3;
+            corner += 1
           ) {
-            const coordinates: number[] =
-              [];
-            let depth = 0;
+            const indexedOffset =
+              triangle * 3 + corner;
+            const vertexIndex =
+              geometry.index?.getX(
+                indexedOffset,
+              ) ?? indexedOffset;
 
-            for (
-              let corner = 0;
-              corner < 3;
-              corner += 1
-            ) {
-              const indexedOffset =
-                triangle * 3 +
-                corner;
+            projectedVertex.fromBufferAttribute(
+              position,
+              vertexIndex,
+            );
+            mesh.localToWorld(
+              projectedVertex,
+            );
+            projectedVertex.project(
+              camera,
+            );
+            depth += projectedVertex.z;
 
-              const vertexIndex =
-                geometry.index?.getX(
-                  indexedOffset,
-                ) ??
-                indexedOffset;
+            const projectedX =
+              (projectedVertex.x * 0.5 +
+                0.5) *
+              projectionWidth;
+            const projectedY =
+              (projectedVertex.y * -0.5 +
+                0.5) *
+              projectionHeight;
 
-              projectedVertex.fromBufferAttribute(
-                position,
-                vertexIndex,
-              );
-
-              mesh.localToWorld(
-                projectedVertex,
-              );
-
-              projectedVertex.project(
-                camera,
-              );
-
-              depth +=
-                projectedVertex.z;
-
-              coordinates.push(
-                (projectedVertex.x *
-                  0.5 +
-                  0.5) *
-                projectionWidth,
-                (projectedVertex.y *
-                  -0.5 +
-                  0.5) *
-                projectionHeight,
-              );
-            }
-
-            projectedTriangles.push({
-              depth: depth / 3,
-              path:
-                `M ${coordinates[0]} ${coordinates[1]} ` +
-                `L ${coordinates[2]} ${coordinates[3]} ` +
-                `L ${coordinates[4]} ${coordinates[5]} Z`,
-            });
+            coordinates.push(
+              projectionWidth * 0.5 +
+                (projectedX -
+                  projectionWidth *
+                    0.5) *
+                  MODEL_PROJECTION_SCALE,
+              projectionHeight * 0.5 +
+                (projectedY -
+                  projectionHeight *
+                    0.5) *
+                  MODEL_PROJECTION_SCALE +
+                MODEL_PROJECTION_OFFSET_Y,
+            );
           }
-        },
-      );
+
+          projectedTriangles.push({
+            depth: depth / 3,
+            path:
+              `M ${coordinates[0]} ${coordinates[1]} ` +
+              `L ${coordinates[2]} ${coordinates[3]} ` +
+              `L ${coordinates[4]} ${coordinates[5]} Z`,
+          });
+        }
+      });
 
       if (
         projectedTriangles.length === 0
@@ -736,7 +713,6 @@ function ModelProjector({
         maximumDepth - minimumDepth,
         0.0001,
       );
-
       const farPaths: string[] = [];
       const midPaths: string[] = [];
       const nearPaths: string[] = [];
@@ -750,26 +726,14 @@ function ModelProjector({
             minimumDepth) /
           depthRange;
 
-        /*
-         * Projected NDC depth increases
-         * away from the camera. Separating
-         * the mesh here lets Skia express
-         * real atmospheric perspective.
-         */
         if (normalizedDepth < 0.34) {
-          nearPaths.push(
-            triangle.path,
-          );
+          nearPaths.push(triangle.path);
         } else if (
           normalizedDepth < 0.7
         ) {
-          midPaths.push(
-            triangle.path,
-          );
+          midPaths.push(triangle.path);
         } else {
-          farPaths.push(
-            triangle.path,
-          );
+          farPaths.push(triangle.path);
         }
       }
 
@@ -778,32 +742,88 @@ function ModelProjector({
         mid: midPaths.join(" "),
         near: nearPaths.join(" "),
       });
-    },
-  );
+    };
 
-  if (!preparedModel) {
-    return null;
-  }
+    const animateProjection = (
+      timestamp: number,
+    ) => {
+      if (stopped) return;
 
-  return (
-    <group
-      ref={modelRef}
-      rotation={[-0.32, 0, 0]}
-      scale={preparedModel.scale}
-      visible={false}
-    >
-      <primitive
-        object={
-          preparedModel.scene
+      try {
+        const delta =
+          lastFrameTimestamp == null
+            ? 0
+            : Math.min(
+              (timestamp -
+                lastFrameTimestamp) /
+              1000,
+              0.1,
+            );
+        lastFrameTimestamp = timestamp;
+        modelGroup.rotation.y +=
+          delta * 0.42;
+        modelGroup.updateMatrixWorld(
+          true,
+        );
+
+        if (
+          timestamp -
+          lastProjectionTimestamp >=
+          1000 /
+          PROJECTION_UPDATES_PER_SECOND
+        ) {
+          lastProjectionTimestamp =
+            timestamp;
+          publishProjection();
         }
-        position={[
-          -preparedModel.center.x,
-          -preparedModel.center.y,
-          -preparedModel.center.z,
-        ]}
-      />
-    </group>
-  );
+      } catch (caught) {
+        stopped = true;
+        const message =
+          caught instanceof Error
+            ? caught.message
+            : "KeepFlip could not update the generated 3D projection.";
+        onErrorRef.current?.(message);
+        return;
+      }
+
+      animationFrame =
+        requestAnimationFrame(
+          animateProjection,
+        );
+    };
+
+    try {
+      modelGroup.updateMatrixWorld(true);
+      publishProjection();
+      animationFrame =
+        requestAnimationFrame(
+          animateProjection,
+        );
+    } catch (caught) {
+      const message =
+        caught instanceof Error
+          ? caught.message
+          : "KeepFlip could not project the generated 3D model.";
+      onErrorRef.current?.(message);
+    }
+
+    return () => {
+      stopped = true;
+      if (animationFrame != null) {
+        cancelAnimationFrame(
+          animationFrame,
+        );
+      }
+      modelGroup.remove(modelScene);
+    };
+  }, [
+    onProjectionUpdate,
+    preparedModel,
+    projectionHeight,
+    projectionWidth,
+  ]);
+
+  return null;
 }
 
 export default function ModelProjectionScanner({
@@ -1004,42 +1024,16 @@ export default function ModelProjectionScanner({
           key={`${modelUrl ?? "stored-model"}-${modelBytes?.byteLength ?? 0}`}
           onError={onError}
         >
-          <View
-            pointerEvents="none"
-            style={
-              styles.hiddenThreeContainer
+          <ModelProjector
+            modelBytes={modelBytes}
+            modelUrl={modelUrl}
+            onError={onError}
+            onProjectionUpdate={
+              setWireframeDepthPaths
             }
-          >
-            <ThreeCanvas
-              frameloop="always"
-              gl={{
-                alpha: true,
-                antialias: false,
-                depth: false,
-                stencil: false,
-              }}
-              camera={{
-                far: 100,
-                fov: 45,
-                near: 0.1,
-                position: [0, 0, 4],
-              }}
-              onCreated={({ gl }) => {
-                configureExpoGlForThree(gl);
-              }}
-            >
-              <ModelProjector
-                modelBytes={modelBytes}
-                modelUrl={modelUrl}
-                onError={onError}
-                onProjectionUpdate={
-                  setWireframeDepthPaths
-                }
-                projectionHeight={layout.height}
-                projectionWidth={layout.width}
-              />
-            </ThreeCanvas>
-          </View>
+            projectionHeight={layout.height}
+            projectionWidth={layout.width}
+          />
         </ProjectionErrorBoundary>
       ) : null}
 
@@ -1421,13 +1415,5 @@ const styles = StyleSheet.create({
     backgroundColor:
       theme.colors.backgroundDeep,
     opacity: 1,
-  },
-  hiddenThreeContainer: {
-    position: "absolute",
-    top: -4,
-    left: -4,
-    width: 2,
-    height: 2,
-    opacity: 0,
   },
 });

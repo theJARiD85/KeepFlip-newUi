@@ -46,6 +46,7 @@ type ResultData = ResultState["data"];
 type ItemAnalysisResultStageProps = {
   bottomInset: number;
   doneLabel?: string;
+  embedded?: boolean;
   onDone: () => void;
   onSave?: () => void;
   projectionLabel?: string;
@@ -53,6 +54,7 @@ type ItemAnalysisResultStageProps = {
   saving?: boolean;
   state: ResultState;
   topInset: number;
+  viewportWidth?: number;
 };
 
 type ResultReelId =
@@ -802,6 +804,7 @@ function ResultReelContent({
 export function ItemAnalysisResultStage({
   bottomInset,
   doneLabel = "Start new scan",
+  embedded = false,
   onDone,
   onSave,
   projectionLabel = "GENERATED MODEL / SKIA PROJECTION",
@@ -809,9 +812,11 @@ export function ItemAnalysisResultStage({
   saving = false,
   state,
   topInset,
+  viewportWidth,
 }: ItemAnalysisResultStageProps) {
   const result = state.data;
-  const { width: screenWidth } = useWindowDimensions();
+  const { width: windowWidth } = useWindowDimensions();
+  const screenWidth = viewportWidth ?? windowWidth;
   const reduceMotion = useReducedMotion();
   const direction = I18nManager.isRTL ? -1 : 1;
   const pageWidth = Math.min(
@@ -941,7 +946,7 @@ export function ItemAnalysisResultStage({
 
   return (
     <Animated.View
-      accessibilityViewIsModal
+      accessibilityViewIsModal={!embedded}
       entering={FadeIn.duration(180)}
       exiting={FadeOut.duration(140)}
       importantForAccessibility="yes"

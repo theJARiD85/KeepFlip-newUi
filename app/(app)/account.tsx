@@ -1,4 +1,5 @@
 import * as Haptics from 'expo-haptics';
+import { type Href, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -20,6 +21,7 @@ function formattedMemberDate(value: string) {
 }
 
 export default function AccountScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { isBusy, signOut, user } = useKeepFlipAuth();
   const [signOutError, setSignOutError] = useState<string | null>(null);
@@ -130,6 +132,47 @@ export default function AccountScreen() {
         </Animated.View>
 
         <Animated.View entering={FadeInDown.duration(260).delay(135)} style={styles.section}>
+          <View style={styles.sectionHeading}>
+            <Text style={styles.sectionEyebrow}>KEEPFLIP FIELD GUIDE</Text>
+            <Text style={styles.sectionTitle}>Scanner walkthrough</Text>
+          </View>
+          <Pressable
+            accessibilityHint="Replays the scan, analysis, and inventory walkthrough"
+            accessibilityLabel="Open first item walkthrough"
+            accessibilityRole="button"
+            onPress={() => {
+              if (process.env.EXPO_OS === 'ios') {
+                void Haptics.selectionAsync();
+              }
+              router.push('/walkthrough' as Href);
+            }}
+            style={({ pressed }) => [
+              styles.walkthroughCard,
+              pressed && styles.walkthroughCardPressed,
+            ]}>
+            <View style={styles.walkthroughIcon}>
+              <IconSymbol
+                color={theme.colors.scannerCyan}
+                name="viewfinder"
+                size={25}
+              />
+            </View>
+            <View style={styles.walkthroughCopy}>
+              <Text style={styles.walkthroughTitle}>SCAN → ANALYZE → SAVE</Text>
+              <Text style={styles.walkthroughDescription}>
+                Replay the interactive first-item protocol using the real scanner,
+                result reels, and inventory card.
+              </Text>
+            </View>
+            <IconSymbol
+              color={theme.colors.goldBright}
+              name="chevron.right"
+              size={20}
+            />
+          </Pressable>
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.duration(260).delay(180)} style={styles.section}>
           <View style={styles.sectionHeading}>
             <Text style={styles.sectionEyebrow}>SELLER PROFILE</Text>
             <Text style={styles.sectionTitle}>Preferences</Text>
@@ -296,6 +339,50 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   securityDescription: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 18 },
+  walkthroughCard: {
+    minHeight: 88,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    padding: 16,
+    borderRadius: theme.radii.medium,
+    borderCurve: 'continuous',
+    borderWidth: 1,
+    borderColor: 'rgba(88, 223, 232, 0.24)',
+    backgroundColor: 'rgba(3, 10, 14, 0.82)',
+    boxShadow: '0 12px 30px rgba(0, 0, 0, 0.28), 0 0 18px rgba(88, 223, 232, 0.05)',
+  },
+  walkthroughCardPressed: {
+    opacity: 0.76,
+    transform: [{ scale: 0.988 }],
+  },
+  walkthroughIcon: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: theme.radii.pill,
+    borderWidth: 1,
+    borderColor: 'rgba(88, 223, 232, 0.32)',
+    backgroundColor: 'rgba(88, 223, 232, 0.07)',
+    boxShadow: '0 0 16px rgba(88, 223, 232, 0.08)',
+  },
+  walkthroughCopy: {
+    minWidth: 0,
+    flex: 1,
+    gap: 4,
+  },
+  walkthroughTitle: {
+    color: theme.colors.scannerCyan,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  walkthroughDescription: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+    lineHeight: 18,
+  },
   preferenceCard: {
     gap: 7,
     padding: 17,

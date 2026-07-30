@@ -17,6 +17,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import type {
   ItemIdentificationSnapshot,

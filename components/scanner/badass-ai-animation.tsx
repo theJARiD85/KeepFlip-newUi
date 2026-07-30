@@ -46,11 +46,13 @@ export function BadassAiAnimation({
           { width: stageSize, height: stageSize },
         ]}
       >
-        <Ai3DStage
-          active
-          imageUri={imageUri}
-          progress={progress}
-        />
+        {false && (
+          <Ai3DStage
+            active
+            imageUri={imageUri}
+            progress={progress}
+          />
+        )}
       </View>
       <View style={styles.vignette} />
       <ScanAiOverlay

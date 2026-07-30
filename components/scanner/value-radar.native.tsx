@@ -8,14 +8,14 @@ import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import {
   ValueRadarTargetOverlay,
   type ValueRadarTargetOverlayProps,
-} from "./value-radar-chrome.native.android";
-import { useValueRadar } from "./value-radar-visual.native";
+} from "@/components/scanner/value-radar-chrome.native.android";
+import { useValueRadar } from "@/components/scanner/value-radar-visual.native";
 
 export type {
   ValueRadarMarker,
   ValueRadarStatus,
   ValueRadarViewport,
-} from "./value-radar-visual.native";
+} from "@/components/scanner/value-radar-visual.native";
 
 export { useValueRadar };
 
