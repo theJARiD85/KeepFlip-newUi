@@ -2,13 +2,23 @@
 
 import {
   Component,
+  useEffect,
   useMemo,
   useRef,
   type ReactNode,
 } from "react";
 import { StyleSheet, View } from "react-native";
 import { Canvas, useFrame } from "@react-three/fiber/native";
-import { useReducedMotion } from "react-native-reanimated";
+import Animated, {
+  cancelAnimation,
+  Easing,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 import * as THREE from "three";
 
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
@@ -50,6 +60,25 @@ type NeuralGeometry = {
 const CYAN = theme.colors.scannerCyan;
 const VIOLET = theme.colors.scannerViolet;
 const GOLD = theme.colors.goldBright;
+// Expo GL currently crashes this Android/New Architecture build while Three
+// initializes WebGLUniforms. Keep the old scene available for future
+// compatibility testing, but never mount its Canvas in the shipping native UI.
+const WEBGL_COGNITION_ENABLED = false;
+
+const SAFE_NEURAL_NODES = [
+  { left: "15%", top: "41%" },
+  { left: "22%", top: "25%" },
+  { left: "29%", top: "65%" },
+  { left: "36%", top: "34%" },
+  { left: "43%", top: "18%" },
+  { left: "49%", top: "72%" },
+  { left: "56%", top: "38%" },
+  { left: "63%", top: "59%" },
+  { left: "69%", top: "22%" },
+  { left: "76%", top: "45%" },
+  { left: "82%", top: "31%" },
+  { left: "86%", top: "62%" },
+] as const;
 
 function createNeuralGeometry(nodeCount = 34): NeuralGeometry {
   const nodePositions = new Float32Array(nodeCount * 3);
@@ -313,13 +342,190 @@ function CognitionScene({
   );
 }
 
-function FallbackCore() {
+function FallbackCore({
+  progress = 0.5,
+  reduceMotion = false,
+}: {
+  progress?: number;
+  reduceMotion?: boolean;
+}) {
+  const rotation = useSharedValue(0);
+  const counterRotation = useSharedValue(0);
+  const pulse = useSharedValue(0.35);
+  const sweep = useSharedValue(-1);
+
+  useEffect(() => {
+    cancelAnimation(rotation);
+    cancelAnimation(counterRotation);
+    cancelAnimation(pulse);
+    cancelAnimation(sweep);
+
+    if (reduceMotion) {
+      rotation.set(24);
+      counterRotation.set(-18);
+      pulse.set(0.55);
+      sweep.set(0);
+      return;
+    }
+
+    const speed = Math.max(0, Math.min(1, progress));
+    rotation.set(
+      withRepeat(
+        withTiming(360, {
+          duration: Math.round(7600 - speed * 2800),
+          easing: Easing.linear,
+        }),
+        -1,
+        false,
+      ),
+    );
+    counterRotation.set(
+      withRepeat(
+        withTiming(-360, {
+          duration: Math.round(6200 - speed * 2200),
+          easing: Easing.linear,
+        }),
+        -1,
+        false,
+      ),
+    );
+    pulse.set(
+      withRepeat(
+        withSequence(
+          withTiming(1, {
+            duration: 760,
+            easing: Easing.inOut(Easing.quad),
+          }),
+          withTiming(0.28, {
+            duration: 860,
+            easing: Easing.inOut(Easing.quad),
+          }),
+        ),
+        -1,
+        false,
+      ),
+    );
+    sweep.set(
+      withRepeat(
+        withSequence(
+          withTiming(1, {
+            duration: 1300,
+            easing: Easing.inOut(Easing.cubic),
+          }),
+          withTiming(-1, {
+            duration: 1300,
+            easing: Easing.inOut(Easing.cubic),
+          }),
+        ),
+        -1,
+        false,
+      ),
+    );
+
+    return () => {
+      cancelAnimation(rotation);
+      cancelAnimation(counterRotation);
+      cancelAnimation(pulse);
+      cancelAnimation(sweep);
+    };
+  }, [counterRotation, progress, pulse, reduceMotion, rotation, sweep]);
+
+  const outerRingStyle = useAnimatedStyle(() => ({
+    opacity: 0.42 + pulse.get() * 0.38,
+    transform: [
+      { perspective: 700 },
+      { rotateX: "66deg" },
+      { rotateZ: `${rotation.get()}deg` },
+      { scale: 0.98 + pulse.get() * 0.035 },
+    ],
+  }));
+  const middleRingStyle = useAnimatedStyle(() => ({
+    opacity: 0.38 + pulse.get() * 0.46,
+    transform: [
+      { perspective: 700 },
+      { rotateY: "62deg" },
+      { rotateZ: `${counterRotation.get()}deg` },
+      { scale: 0.96 + pulse.get() * 0.05 },
+    ],
+  }));
+  const innerRingStyle = useAnimatedStyle(() => ({
+    opacity: 0.46 + pulse.get() * 0.5,
+    transform: [
+      { perspective: 700 },
+      { rotateX: "-48deg" },
+      { rotateY: "22deg" },
+      { rotateZ: `${rotation.get() * 0.72}deg` },
+    ],
+  }));
+  const latticeStyle = useAnimatedStyle(() => ({
+    transform: [
+      { perspective: 700 },
+      { rotateZ: `${counterRotation.get() * 0.34}deg` },
+      { scale: 0.94 + pulse.get() * 0.08 },
+    ],
+  }));
+  const coreStyle = useAnimatedStyle(() => ({
+    opacity: 0.7 + pulse.get() * 0.3,
+    transform: [
+      { rotateZ: `${rotation.get() * 0.56 + 45}deg` },
+      { scale: 0.82 + pulse.get() * 0.22 },
+    ],
+  }));
+  const sweepStyle = useAnimatedStyle(() => ({
+    opacity: 0.24 + pulse.get() * 0.44,
+    transform: [{ translateY: sweep.get() * 74 }],
+  }));
+
   return (
     <View pointerEvents="none" style={styles.fallback}>
-      <View style={[styles.fallbackRing, styles.fallbackRingOuter]} />
-      <View style={[styles.fallbackRing, styles.fallbackRingMiddle]} />
-      <View style={[styles.fallbackRing, styles.fallbackRingInner]} />
-      <View style={styles.fallbackCore} />
+      <Animated.View
+        style={[
+          styles.fallbackRing,
+          styles.fallbackRingOuter,
+          outerRingStyle,
+        ]}
+      />
+      <Animated.View
+        style={[
+          styles.fallbackRing,
+          styles.fallbackRingMiddle,
+          middleRingStyle,
+        ]}
+      />
+      <Animated.View
+        style={[
+          styles.fallbackRing,
+          styles.fallbackRingInner,
+          innerRingStyle,
+        ]}
+      />
+      <Animated.View style={[styles.fallbackLattice, latticeStyle]}>
+        <View style={[styles.fallbackAxis, styles.fallbackAxisHorizontal]} />
+        <View style={[styles.fallbackAxis, styles.fallbackAxisForward]} />
+        <View style={[styles.fallbackAxis, styles.fallbackAxisReverse]} />
+        {SAFE_NEURAL_NODES.map((node, index) => (
+          <View
+            key={`${node.left}-${node.top}`}
+            style={[
+              styles.fallbackNode,
+              {
+                left: node.left,
+                top: node.top,
+                backgroundColor:
+                  index % 3 === 0
+                    ? GOLD
+                    : index % 2 === 0
+                      ? VIOLET
+                      : CYAN,
+              },
+            ]}
+          />
+        ))}
+      </Animated.View>
+      <Animated.View style={[styles.fallbackCore, coreStyle]}>
+        <View style={styles.fallbackCoreInner} />
+      </Animated.View>
+      <Animated.View style={[styles.fallbackSweep, sweepStyle]} />
     </View>
   );
 }
@@ -379,22 +585,29 @@ export function ScannerAtmosphere({
           },
         ]}
       >
-        <CognitionBoundary>
-          <Canvas
-            camera={{ fov: 42, position: [0, 0, 5.4] }}
-            frameloop={reduceMotion ? "demand" : "always"}
-            gl={{ alpha: true, antialias: false }}
-            onCreated={({ gl }) => {
-              gl.setClearColor(new THREE.Color("#000000"), 0);
-            }}
-            style={styles.canvas}
-          >
-            <CognitionScene
-              progress={resolvedProgress}
-              reduceMotion={reduceMotion}
-            />
-          </Canvas>
-        </CognitionBoundary>
+        {WEBGL_COGNITION_ENABLED ? (
+          <CognitionBoundary>
+            <Canvas
+              camera={{ fov: 42, position: [0, 0, 5.4] }}
+              frameloop={reduceMotion ? "demand" : "always"}
+              gl={{ alpha: true, antialias: false }}
+              onCreated={({ gl }) => {
+                gl.setClearColor(new THREE.Color("#000000"), 0);
+              }}
+              style={styles.canvas}
+            >
+              <CognitionScene
+                progress={resolvedProgress}
+                reduceMotion={reduceMotion}
+              />
+            </Canvas>
+          </CognitionBoundary>
+        ) : (
+          <FallbackCore
+            progress={resolvedProgress}
+            reduceMotion={reduceMotion}
+          />
+        )}
       </View>
       <View style={styles.vignette} />
       <View style={styles.scanLine} />
@@ -475,27 +688,82 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   fallbackRingOuter: {
-    width: 230,
-    height: 230,
+    width: 268,
+    height: 268,
     borderColor: "rgba(141, 114, 255, 0.34)",
+    borderStyle: "dashed",
   },
   fallbackRingMiddle: {
-    width: 170,
-    height: 170,
+    width: 222,
+    height: 222,
     borderColor: "rgba(88, 223, 232, 0.5)",
   },
   fallbackRingInner: {
-    width: 108,
-    height: 108,
+    width: 152,
+    height: 152,
     borderColor: "rgba(242, 211, 138, 0.56)",
+    borderStyle: "dotted",
+  },
+  fallbackLattice: {
+    position: "absolute",
+    width: 190,
+    height: 190,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(88, 223, 232, 0.18)",
+    backgroundColor: "rgba(5, 11, 16, 0.12)",
+  },
+  fallbackAxis: {
+    position: "absolute",
+    top: "50%",
+    left: "8%",
+    width: "84%",
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "rgba(88, 223, 232, 0.28)",
+    boxShadow: "0 0 7px rgba(88, 223, 232, 0.28)",
+  },
+  fallbackAxisHorizontal: {
+    transform: [{ rotateZ: "0deg" }],
+  },
+  fallbackAxisForward: {
+    transform: [{ rotateZ: "58deg" }],
+  },
+  fallbackAxisReverse: {
+    transform: [{ rotateZ: "-58deg" }],
+  },
+  fallbackNode: {
+    position: "absolute",
+    width: 5,
+    height: 5,
+    marginLeft: -2.5,
+    marginTop: -2.5,
+    borderRadius: 999,
+    boxShadow: "0 0 9px rgba(88, 223, 232, 0.82)",
   },
   fallbackCore: {
-    width: 34,
-    height: 34,
-    transform: [{ rotateZ: "45deg" }],
+    width: 48,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
     borderColor: theme.colors.goldBright,
     backgroundColor: "rgba(242, 211, 138, 0.08)",
     boxShadow: "0 0 24px rgba(242, 211, 138, 0.38)",
+  },
+  fallbackCoreInner: {
+    width: 18,
+    height: 18,
+    borderWidth: 1,
+    borderColor: theme.colors.scannerCyan,
+    backgroundColor: "rgba(88, 223, 232, 0.12)",
+    boxShadow: "0 0 18px rgba(88, 223, 232, 0.76)",
+  },
+  fallbackSweep: {
+    position: "absolute",
+    left: "12%",
+    right: "12%",
+    height: 1,
+    backgroundColor: "rgba(88, 223, 232, 0.72)",
+    boxShadow: "0 0 14px rgba(88, 223, 232, 0.72)",
   },
 });

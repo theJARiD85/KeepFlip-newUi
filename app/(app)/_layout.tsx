@@ -37,7 +37,7 @@ function WalkthroughAutoLauncher() {
     let frame: number | null = null;
     checkedUserIdRef.current = user.$id;
 
-    void hasCompletedScanInventoryWalkthrough(user.$id)
+    void hasCompletedScanInventoryWalkthrough(user.$id, user.name)
       .then((completed) => {
         if (cancelled || completed) return;
         frame = requestAnimationFrame(() => {
@@ -45,6 +45,9 @@ function WalkthroughAutoLauncher() {
         });
       })
       .catch((error) => {
+        if (!cancelled && checkedUserIdRef.current === user.$id) {
+          checkedUserIdRef.current = null;
+        }
         if (__DEV__) {
           console.warn(
             '[KeepFlip][Onboarding] Could not read the user profile:',

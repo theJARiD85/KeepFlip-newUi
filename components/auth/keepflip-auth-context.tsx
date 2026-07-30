@@ -21,6 +21,7 @@ import {
   getAppwriteCoreConfigurationStatus,
   getAppwriteCoreServices,
 } from '@/lib/appwrite';
+import { ensureUserProfile } from '@/services/user-profile-onboarding-service';
 
 export type KeepFlipAuthStatus =
   | 'checking'
@@ -294,6 +295,24 @@ async function getVerifiedNonAnonymousUser(): Promise<Models.User | null> {
 
   if (!user.status || user.$id !== session.userId) {
     throw new SessionVerificationError();
+  }
+
+  try {
+    await ensureUserProfile({
+      displayName: user.name,
+      userId: user.$id,
+    });
+  } catch (error) {
+    if (__DEV__) {
+      console.warn(
+        '[KeepFlip][Auth] Could not initialize the user profile:',
+        error,
+      );
+    }
+    throw new KeepFlipAuthError(
+      'KeepFlip could not initialize the profile for this account. Please try again.',
+      'AUTH_REQUEST_FAILED',
+    );
   }
 
   return user;

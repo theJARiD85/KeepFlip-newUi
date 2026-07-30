@@ -46,6 +46,7 @@ export function KeepFlipSlideDownMenu() {
     isMenuOpen,
     toggleMenu,
   } = useKeepFlipMenu();
+  const isMenuDisabled = pathname === '/walkthrough';
   const progress = useSharedValue(0);
   const [isMenuMounted, setIsMenuMounted] = useState(isMenuOpen);
   const panelHeight = Math.min(548, Math.max(430, height - insets.bottom - 84));
@@ -76,6 +77,12 @@ export function KeepFlipSlideDownMenu() {
   }, [isMenuOpen, progress]);
 
   useEffect(() => {
+    if (isMenuDisabled && isMenuOpen) {
+      closeMenu();
+    }
+  }, [closeMenu, isMenuDisabled, isMenuOpen]);
+
+  useEffect(() => {
     if (!isMenuOpen) return;
 
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -95,11 +102,13 @@ export function KeepFlipSlideDownMenu() {
   }));
 
   const handleToggle = () => {
+    if (isMenuDisabled) return;
     hapticSelection();
     toggleMenu();
   };
 
   const handleNavigate = (destination: MenuDestination) => {
+    if (isMenuDisabled) return;
     hapticSelection();
     closeMenu();
 
@@ -118,7 +127,7 @@ export function KeepFlipSlideDownMenu() {
       pointerEvents="box-none"
       style={styles.overlayRoot}
     >
-      {isMenuMounted ? (
+      {isMenuMounted && !isMenuDisabled ? (
         <>
           <Animated.View
             pointerEvents={isMenuOpen ? 'auto' : 'none'}
@@ -238,19 +247,23 @@ export function KeepFlipSlideDownMenu() {
       ) : null}
 
       <View
-        pointerEvents={isMenuOpen ? 'none' : 'auto'}
+        accessibilityElementsHidden={isMenuDisabled}
+        importantForAccessibility={
+          isMenuDisabled ? 'no-hide-descendants' : 'auto'
+        }
+        pointerEvents={isMenuDisabled || isMenuOpen ? 'none' : 'auto'}
         style={[
           styles.triggerWrap,
           {
             top: insets.top + 12,
-            opacity: isMenuOpen ? 0 : 1,
+            opacity: isMenuDisabled || isMenuOpen ? 0 : 1,
             transform: [{ scale: isMenuOpen ? 0.92 : 1 }],
           },
         ]}>
         <Pressable
           accessibilityLabel="Open navigation menu"
           accessibilityRole="button"
-          disabled={isMenuOpen}
+          disabled={isMenuDisabled || isMenuOpen}
           hitSlop={10}
           onPress={handleToggle}
           style={({ pressed }) => [styles.trigger, pressed && styles.controlPressed]}>

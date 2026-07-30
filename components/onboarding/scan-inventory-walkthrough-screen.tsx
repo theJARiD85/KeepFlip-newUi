@@ -359,7 +359,7 @@ export function ScanInventoryWalkthroughScreen() {
   const previewWidth = Math.min(Math.max(width - 32, 288), 520);
   const previewHeight =
     activeStep === 0
-      ? 480
+      ? 440
       : Math.min(
           activeStep === 1 ? 472 : 430,
           Math.max(356, height * 0.53),
@@ -373,7 +373,7 @@ export function ScanInventoryWalkthroughScreen() {
   }, []);
 
   const finish = useCallback(
-    async (destination: "back" | "scanner") => {
+    async () => {
       if (savingPreference) return;
 
       setSavingPreference(true);
@@ -382,14 +382,8 @@ export function ScanInventoryWalkthroughScreen() {
         if (!user) {
           throw new Error("Sign in before completing the walkthrough.");
         }
-        await completeScanInventoryWalkthrough(user.$id);
-        if (destination === "scanner") {
-          router.replace("/" as Href);
-        } else if (router.canGoBack()) {
-          router.back();
-        } else {
-          router.replace("/" as Href);
-        }
+        await completeScanInventoryWalkthrough(user.$id, user.name);
+        router.replace("/" as Href);
       } catch (error) {
         setPreferenceError(
           error instanceof Error
@@ -446,18 +440,6 @@ export function ScanInventoryWalkthroughScreen() {
             <Text style={styles.brandEyebrow}>KEEPFLIP FIELD GUIDE</Text>
             <Text style={styles.brandTitle}>First item protocol</Text>
           </View>
-          <Pressable
-            accessibilityLabel="Skip walkthrough"
-            accessibilityRole="button"
-            disabled={savingPreference}
-            onPress={() => void finish("back")}
-            style={({ pressed }) => [
-              styles.skipButton,
-              pressed && styles.pressed,
-            ]}
-          >
-            <Text style={styles.skipText}>SKIP</Text>
-          </Pressable>
         </Animated.View>
 
         <View style={styles.progressRail}>
@@ -539,7 +521,7 @@ export function ScanInventoryWalkthroughScreen() {
               accessibilityLabel="Finish walkthrough and start scanning"
               accessibilityRole="button"
               disabled={savingPreference}
-              onPress={() => void finish("scanner")}
+              onPress={() => void finish()}
               style={({ pressed }) => [
                 styles.primaryButton,
                 pressed && styles.pressed,
@@ -615,22 +597,6 @@ const styles = StyleSheet.create({
     color: theme.colors.cream,
     fontSize: 20,
     fontWeight: "900",
-  },
-  skipButton: {
-    minWidth: 58,
-    minHeight: 38,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: "rgba(242, 211, 138, 0.28)",
-    backgroundColor: "rgba(215, 168, 74, 0.07)",
-  },
-  skipText: {
-    color: theme.colors.goldBright,
-    fontSize: 9,
-    fontWeight: "900",
-    letterSpacing: 1.1,
   },
   progressRail: {
     width: "100%",
@@ -734,7 +700,7 @@ const styles = StyleSheet.create({
   },
   carouselHost: {
     position: "absolute",
-    bottom: -15,
+    bottom: 25,
   },
   analysisActionShell: {
     position: "absolute",

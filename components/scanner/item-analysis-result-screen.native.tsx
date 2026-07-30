@@ -266,10 +266,10 @@ export function ItemAnalysisResultScreen() {
         : null);
 
   const projectionLabel = hasProjection
-    ? "GENERATED MODEL / SKIA PROJECTION"
+    ? "GENERATED MODEL / NATIVE GPU PROJECTION"
     : projectionError
-      ? "MODEL SIGNAL DEGRADED / SKIA FIELD ACTIVE"
-      : "MODEL SIGNAL ACQUIRING / SKIA FIELD ACTIVE";
+      ? "MODEL SIGNAL DEGRADED / HUD FIELD ACTIVE"
+      : "MODEL SIGNAL ACQUIRING / HUD FIELD ACTIVE";
 
   if (loading || resolvedError || !resultState) {
     return (

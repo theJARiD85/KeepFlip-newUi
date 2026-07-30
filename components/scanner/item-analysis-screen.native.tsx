@@ -19,7 +19,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { BadassAiAnimation } from "@/components/scanner/badass-ai-animation";
 import { ItemAnalysisBubbles } from "@/components/scanner/item-analysis-bubbles";
 import {
   analysisDiagnosticId,
@@ -328,8 +327,13 @@ export function ItemAnalysisScreen() {
   if (!session) {
     return (
       <View style={styles.root}>
-        <BadassAiAnimation
+        <ScannerAtmosphere
           active={isFocused && appState === "active"}
+          height={height}
+          phase="analyzing"
+          progress={0.18}
+          sceneOffsetY={-60}
+          width={width}
         />
         <ItemAnalysisBubbles
           bottomInset={insets.bottom}
