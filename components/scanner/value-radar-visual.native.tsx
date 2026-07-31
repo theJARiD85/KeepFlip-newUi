@@ -11,7 +11,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import type { TensorflowModelDelegate } from "react-native-fast-tflite";
-import { useEfficientDetModel } from "@/hooks/use-efficientdet-model.native";
+import { useYoloV8Model } from "@/hooks/use-yolov8-model.native";
 import { Image } from 'expo-image';
 import {
   type CameraFrameOutput,
@@ -21,21 +21,26 @@ import { useResizer } from "react-native-vision-camera-resizer";
 import { scheduleOnRN } from "react-native-worklets";
 
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
+import {
+  YOLOV8_CANDIDATE_COUNT,
+  YOLOV8_CLASS_COUNT,
+  YOLOV8_INPUT_BYTES,
+  YOLOV8_MODEL_SIZE,
+  YOLOV8_OUTPUT_ELEMENTS,
+  yoloV8RadarCategoryLabel,
+} from "@/components/scanner/yolov8-radar";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 
-const MODEL_SIZE = 320;
-const MAX_DETECTIONS = 500;
 const MIN_DETECTION_SCORE = 0.48;
-const FRAMES_BETWEEN_INFERENCES = 8;
+const FRAMES_BETWEEN_INFERENCES = 24;
 const STABLE_HITS_REQUIRED = 2;
 const MISSES_BEFORE_CLEAR = 4;
 const TRACK_MATCH_TOLERANCE = 0.28;
 const PUBLISH_MOVEMENT_THRESHOLD = 0.035;
-const DIAGNOSTIC_FRAME_INTERVAL = 150;
 
 const RADAR_FRAME_RESOLUTION = {
   width: 640,
-  height: 480,
+  height: 640,
 } as const;
 
 const TFLITE_DELEGATES: TensorflowModelDelegate[] = [];
@@ -84,128 +89,6 @@ function clamp(value: number, minimum: number, maximum: number) {
   return Math.min(Math.max(value, minimum), maximum);
 }
 
-/**
- * COCO classes that represent durable or collectible goods people commonly
- * resell. Detections remain internal; this only decides whether KeepFlip
- * should surface a small "CHECK" marker.
- */
-function isRadarCategory(classId: number) {
-  "worklet";
-
-  switch (classId) {
-    case 1: // bicycle
-    case 2: // car
-    case 3: // motorcycle
-    case 7: // truck
-    case 8: // boat
-    case 14: // bench
-    case 26: // backpack
-    case 27: // umbrella
-    case 30: // handbag
-    case 31: // tie
-    case 32: // suitcase
-    case 33: // frisbee
-    case 34: // skis
-    case 35: // snowboard
-    case 36: // sports ball
-    case 37: // kite
-    case 38: // baseball bat
-    case 39: // baseball glove
-    case 40: // skateboard
-    case 41: // surfboard
-    case 42: // tennis racket
-    case 43: // bottle
-    case 45: // wine glass
-    case 46: // cup
-    case 47: // fork
-    case 48: // knife
-    case 49: // spoon
-    case 50: // bowl
-    case 61: // chair
-    case 62: // couch
-    case 63: // potted plant
-    case 64: // bed
-    case 66: // dining table
-    case 71: // tv
-    case 72: // laptop
-    case 73: // mouse
-    case 74: // remote
-    case 75: // keyboard
-    case 76: // cell phone
-    case 77: // microwave
-    case 78: // oven
-    case 79: // toaster
-    case 81: // refrigerator
-    case 83: // book
-    case 84: // clock
-    case 85: // vase
-    case 86: // scissors
-    case 87: // teddy bear
-    case 88: // hair drier
-    case 89: // toothbrush
-      return true;
-    default:
-      return false;
-  }
-}
-
-function radarCategoryLabel(classId: number) {
-  const labels: Record<number, string> = {
-    1: "Bicycle",
-    2: "Vehicle",
-    3: "Motorcycle",
-    7: "Truck",
-    8: "Boat",
-    14: "Bench",
-    26: "Backpack",
-    27: "Umbrella",
-    30: "Handbag",
-    31: "Tie",
-    32: "Suitcase",
-    33: "Frisbee",
-    34: "Skis",
-    35: "Snowboard",
-    36: "Sports gear",
-    37: "Kite",
-    38: "Baseball bat",
-    39: "Baseball glove",
-    40: "Skateboard",
-    41: "Surfboard",
-    42: "Tennis racket",
-    43: "Bottle",
-    45: "Glassware",
-    46: "Cup",
-    47: "Flatware",
-    48: "Knife",
-    49: "Flatware",
-    50: "Bowl",
-    61: "Chair",
-    62: "Couch",
-    63: "Plant",
-    64: "Bed",
-    66: "Table",
-    71: "TV",
-    72: "Laptop",
-    73: "Computer mouse",
-    74: "Remote",
-    75: "Keyboard",
-    76: "Cell phone",
-    77: "Microwave",
-    78: "Oven",
-    79: "Toaster",
-    81: "Refrigerator",
-    83: "Book",
-    84: "Clock",
-    85: "Vase",
-    86: "Scissors",
-    87: "Teddy bear",
-    88: "Hair dryer",
-    89: "Toothbrush",
-  };
-
-  return labels[classId] ?? "Item";
-}
-
 export function useValueRadar(
   enabled: boolean,
   viewport?: ValueRadarViewport,
@@ -230,14 +113,14 @@ export function useValueRadar(
   const publishedHeight = useSharedValue(0);
   const errorReported = useSharedValue(false);
 
-  const detector = useEfficientDetModel(TFLITE_DELEGATES);
+  const detector = useYoloV8Model(TFLITE_DELEGATES);
   const resizerState = useResizer({
-    width: MODEL_SIZE,
-    height: MODEL_SIZE,
+    width: YOLOV8_MODEL_SIZE,
+    height: YOLOV8_MODEL_SIZE,
     channelOrder: "rgb",
-    dataType: "uint8",
+    dataType: "float32",
     scaleMode: "cover",
-    pixelLayout: "interleaved",
+    pixelLayout: "planar",
   });
   const detectorError =
     detector.state === "error" ? detector.error : undefined;
@@ -277,6 +160,7 @@ export function useValueRadar(
       sourceWidth,
       sourceHeight,
     ] = payload;
+
     if (
       !Number.isFinite(x) ||
       !Number.isFinite(y) ||
@@ -290,13 +174,14 @@ export function useValueRadar(
       return;
     }
 
+    const roundedClassId = Math.round(classId);
     setMarker({
       x,
       y,
       width,
       height,
-      classId: Math.round(classId),
-      label: radarCategoryLabel(Math.round(classId)),
+      classId: roundedClassId,
+      label: yoloV8RadarCategoryLabel(roundedClassId),
       score,
       sourceHeight,
       sourceWidth,
@@ -315,28 +200,6 @@ export function useValueRadar(
     console.warn("[KeepFlip Value Radar] inference failed:", message);
     setInferenceError(true);
     setMarker(null);
-  }, []);
-
-  const reportInferenceHeartbeat = useCallback((payload: number[]) => {
-    if (!__DEV__) return;
-
-    const [
-      detectedCount,
-      strongestClass,
-      strongestScore,
-      eligibleClass,
-      eligibleScore,
-    ] = payload;
-    console.debug(
-      "[KeepFlip Value Radar] inference ok:",
-      JSON.stringify({
-        detectedCount,
-        eligibleClass,
-        eligibleScore: Number(eligibleScore.toFixed(3)),
-        strongestClass,
-        strongestScore: Number(strongestScore.toFixed(3)),
-      }),
-    );
   }, []);
 
   const model = detector.state === "loaded" ? detector.model : undefined;
@@ -367,7 +230,13 @@ export function useValueRadar(
         if (!shouldRun) return;
 
         resized = resizer.resize(frame);
-        const pixels = new Uint8Array(resized.getPixelBuffer());
+        const pixels = new Float32Array(resized.getPixelBuffer());
+        if (pixels.byteLength !== YOLOV8_INPUT_BYTES) {
+          throw new Error(
+            `YOLOv8 input buffer size mismatch: ${pixels.byteLength} bytes received, ${YOLOV8_INPUT_BYTES} expected.`,
+          );
+        }
+
         const inputBuffer = pixels.buffer.slice(
           pixels.byteOffset,
           pixels.byteOffset + pixels.byteLength,
@@ -376,26 +245,165 @@ export function useValueRadar(
         resized = undefined;
 
         const outputs = model.runSync([inputBuffer]);
-        if (
-          outputs[0] == null ||
-          outputs[1] == null ||
-          outputs[2] == null ||
-          outputs[3] == null
-        ) {
-          throw new Error("EfficientDet returned an incomplete result.");
+        if (outputs[0] == null) {
+          throw new Error("YOLOv8 returned no detection tensor.");
         }
 
-        const boxes = new Float32Array(outputs[0]);
-        const classes = new Float32Array(outputs[1]);
-        const scores = new Float32Array(outputs[2]);
-        const detectedCount = new Float32Array(outputs[3]);
-        const count = Math.min(
-          Math.max(Math.floor(detectedCount[0] ?? 0), 0),
-          MAX_DETECTIONS,
-          Math.floor(boxes.length / 4),
-          classes.length,
-          scores.length,
-        );
+        const detectionOutput = new Float32Array(outputs[0]);
+        if (detectionOutput.length < YOLOV8_OUTPUT_ELEMENTS) {
+          throw new Error(
+            `YOLOv8 output size mismatch: ${detectionOutput.length} floats received, ${YOLOV8_OUTPUT_ELEMENTS} expected.`,
+          );
+        }
+
+        // This decoder intentionally lives inside the camera worklet. Passing
+        // imported worklet functions into a secondary runtime turns them into
+        // non-callable serialized objects on affected Android builds.
+        let bestCandidate = -1;
+        let modelClass = -1;
+        let modelScore = MIN_DETECTION_SCORE;
+
+        for (
+          let classId = 0;
+          classId < YOLOV8_CLASS_COUNT;
+          classId += 1
+        ) {
+          let isAllowedCategory = false;
+          switch (classId) {
+            case 1:
+            case 2:
+            case 3:
+            case 5:
+            case 7:
+            case 8:
+            case 13:
+            case 24:
+            case 25:
+            case 26:
+            case 27:
+            case 28:
+            case 29:
+            case 30:
+            case 31:
+            case 32:
+            case 33:
+            case 34:
+            case 35:
+            case 36:
+            case 37:
+            case 38:
+            case 39:
+            case 40:
+            case 41:
+            case 42:
+            case 43:
+            case 44:
+            case 45:
+            case 56:
+            case 57:
+            case 58:
+            case 59:
+            case 60:
+            case 62:
+            case 63:
+            case 64:
+            case 65:
+            case 66:
+            case 67:
+            case 68:
+            case 69:
+            case 70:
+            case 72:
+            case 73:
+            case 74:
+            case 75:
+            case 76:
+            case 77:
+            case 78:
+            case 79:
+              isAllowedCategory = true;
+              break;
+            default:
+              break;
+          }
+
+          if (!isAllowedCategory) continue;
+
+          const classOffset =
+            (4 + classId) * YOLOV8_CANDIDATE_COUNT;
+          for (
+            let candidate = 0;
+            candidate < YOLOV8_CANDIDATE_COUNT;
+            candidate += 1
+          ) {
+            const score =
+              detectionOutput[classOffset + candidate] ?? 0;
+            if (
+              !Number.isFinite(score) ||
+              score <= modelScore
+            ) {
+              continue;
+            }
+
+            bestCandidate = candidate;
+            modelClass = classId;
+            modelScore = score;
+          }
+        }
+
+        let modelLeft = 0;
+        let modelTop = 0;
+        let modelWidth = 0;
+        let modelHeight = 0;
+
+        if (bestCandidate >= 0 && modelClass >= 0) {
+          const centerX = detectionOutput[bestCandidate] ?? 0;
+          const centerY =
+            detectionOutput[
+              YOLOV8_CANDIDATE_COUNT + bestCandidate
+            ] ?? 0;
+          const rawWidth =
+            detectionOutput[
+              YOLOV8_CANDIDATE_COUNT * 2 + bestCandidate
+            ] ?? 0;
+          const rawHeight =
+            detectionOutput[
+              YOLOV8_CANDIDATE_COUNT * 3 + bestCandidate
+            ] ?? 0;
+
+          if (
+            Number.isFinite(centerX) &&
+            Number.isFinite(centerY) &&
+            Number.isFinite(rawWidth) &&
+            Number.isFinite(rawHeight) &&
+            rawWidth > 0 &&
+            rawHeight > 0
+          ) {
+            modelLeft = Math.min(
+              Math.max(centerX - rawWidth / 2, 0),
+              1,
+            );
+            modelTop = Math.min(
+              Math.max(centerY - rawHeight / 2, 0),
+              1,
+            );
+            const modelRight = Math.min(
+              Math.max(centerX + rawWidth / 2, 0),
+              1,
+            );
+            const modelBottom = Math.min(
+              Math.max(centerY + rawHeight / 2, 0),
+              1,
+            );
+            modelWidth = modelRight - modelLeft;
+            modelHeight = modelBottom - modelTop;
+          }
+
+          if (modelWidth <= 0 || modelHeight <= 0) {
+            modelClass = -1;
+          }
+        }
+
         if (errorReported.value) {
           errorReported.value = false;
           scheduleOnRN(clearInferenceError);
@@ -428,89 +436,72 @@ export function useValueRadar(
         let bestY = 0;
         let bestWidth = 0;
         let bestHeight = 0;
-        let strongestClass = -1;
-        let strongestScore = 0;
 
-        for (let index = 0; index < count; index += 1) {
-          const score = scores[index] ?? 0;
-          const classId = Math.round(classes[index] ?? -1);
-          if (score > strongestScore) {
-            strongestClass = classId;
-            strongestScore = score;
-          }
-
-          if (
-            score < MIN_DETECTION_SCORE ||
-            score <= bestScore ||
-            !isRadarCategory(classId)
-          ) {
-            continue;
-          }
-
-          const boxOffset = index * 4;
-          const top = clamp(boxes[boxOffset] ?? 0, 0, 1);
-          const left = clamp(boxes[boxOffset + 1] ?? 0, 0, 1);
-          const bottom = clamp(boxes[boxOffset + 2] ?? 0, 0, 1);
-          const right = clamp(boxes[boxOffset + 3] ?? 0, 0, 1);
-          const sourceLeft = clamp(
-            (cropLeft + left * cropSide) / sourceWidth,
-            0,
+        if (modelClass >= 0) {
+          const right = modelLeft + modelWidth;
+          const bottom = modelTop + modelHeight;
+          const sourceLeft = Math.min(
+            Math.max(
+              (cropLeft + modelLeft * cropSide) / sourceWidth,
+              0,
+            ),
             1,
           );
-          const sourceTop = clamp(
-            (cropTop + top * cropSide) / sourceHeight,
-            0,
+          const sourceTop = Math.min(
+            Math.max(
+              (cropTop + modelTop * cropSide) / sourceHeight,
+              0,
+            ),
             1,
           );
-          const sourceRight = clamp(
-            (cropLeft + right * cropSide) / sourceWidth,
-            0,
+          const sourceRight = Math.min(
+            Math.max(
+              (cropLeft + right * cropSide) / sourceWidth,
+              0,
+            ),
             1,
           );
-          const sourceBottom = clamp(
-            (cropTop + bottom * cropSide) / sourceHeight,
-            0,
+          const sourceBottom = Math.min(
+            Math.max(
+              (cropTop + bottom * cropSide) / sourceHeight,
+              0,
+            ),
             1,
           );
           const width = sourceRight - sourceLeft;
           const height = sourceBottom - sourceTop;
+          let isInsideFocusBounds = true;
 
-          if (width < 0.04 || height < 0.04) continue;
-
-          if (viewport != null) {
+          if (width >= 0.04 && height >= 0.04 && viewport != null) {
             const sourceCenterX =
-              cropLeft + ((left + right) / 2) * cropSide;
+              cropLeft +
+              (modelLeft + modelWidth / 2) * cropSide;
             const sourceCenterY =
-              cropTop + ((top + bottom) / 2) * cropSide;
+              cropTop +
+              (modelTop + modelHeight / 2) * cropSide;
             const previewCenterX =
               previewOffsetX + sourceCenterX * previewScale;
             const previewCenterY =
               previewOffsetY + sourceCenterY * previewScale;
-            const isInsideFocusBounds =
+            isInsideFocusBounds =
               previewCenterX >= viewport.x &&
               previewCenterX <= viewport.x + viewport.width &&
               previewCenterY >= viewport.y &&
               previewCenterY <= viewport.y + viewport.height;
-
-            if (!isInsideFocusBounds) continue;
           }
 
-          bestClass = classId;
-          bestScore = score;
-          bestX = sourceLeft;
-          bestY = sourceTop;
-          bestWidth = width;
-          bestHeight = height;
-        }
-
-        if (frameCounter.value % DIAGNOSTIC_FRAME_INTERVAL === 0) {
-          scheduleOnRN(reportInferenceHeartbeat, [
-            count,
-            strongestClass,
-            strongestScore,
-            bestClass,
-            bestScore,
-          ]);
+          if (
+            width >= 0.04 &&
+            height >= 0.04 &&
+            isInsideFocusBounds
+          ) {
+            bestClass = modelClass;
+            bestScore = modelScore;
+            bestX = sourceLeft;
+            bestY = sourceTop;
+            bestWidth = width;
+            bestHeight = height;
+          }
         }
 
         if (bestClass < 0) {

@@ -201,41 +201,6 @@ function LiveSignal({ accent }: { accent: string }) {
   );
 }
 
-function MiniAnalysisReticle({ progress }: { progress?: number }) {
-  const reduceMotion = useReducedMotion();
-  const rotation = useSharedValue(0);
-  const progressPercent = percentage(progress);
-
-  useEffect(() => {
-    if (reduceMotion) {
-      rotation.value = 0;
-      return;
-    }
-
-    rotation.value = withRepeat(
-      withTiming(360, { duration: 980, easing: Easing.linear }),
-      -1,
-      false,
-    );
-    return () => cancelAnimation(rotation);
-  }, [reduceMotion, rotation]);
-
-  const ringStyle = useAnimatedStyle(() => ({
-    transform: [{ rotateZ: `${rotation.value}deg` }],
-  }));
-
-  return (
-    <View style={styles.miniReticle}>
-      <Animated.View style={[styles.miniReticleRing, ringStyle]} />
-      <View style={styles.miniReticleCore}>
-        <Text style={styles.miniReticleText}>
-          {progressPercent == null ? 'AI' : `${progressPercent}%`}
-        </Text>
-      </View>
-    </View>
-  );
-}
-
 function AnalysisProgressBubbles({
   state,
 }: {
@@ -251,21 +216,6 @@ function AnalysisProgressBubbles({
 
   return (
     <View accessibilityLiveRegion="polite" style={styles.progressBubbles}>
-      <GlassBubble accent={accent} style={styles.progressHero}>
-        <MiniAnalysisReticle progress={state.progress} />
-        <View style={styles.progressCopy}>
-          <BubbleEyebrow accent={accent}>KEEPFLIP INTELLIGENCE</BubbleEyebrow>
-          <Text selectable style={styles.progressTitle}>
-            {state.stage ?? 'Analyzing item'}
-          </Text>
-          {state.detail ? (
-            <Text selectable style={styles.progressDetail}>
-              {state.detail}
-            </Text>
-          ) : null}
-        </View>
-      </GlassBubble>
-
       {steps.length > 0 ? (
         <View style={styles.stageRail}>
           <View style={styles.stageRailNodes}>
@@ -766,43 +716,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
   },
   progressBubbles: { width: '100%', maxWidth: 370, alignItems: 'center', gap: 9 },
-  progressHero: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    paddingVertical: 12,
-  },
-  progressCopy: { flex: 1, minWidth: 0, gap: 5 },
-  progressTitle: { color: theme.colors.cream, fontSize: 17, lineHeight: 22 },
-  progressDetail: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 16 },
-  miniReticle: { width: 62, height: 62, alignItems: 'center', justifyContent: 'center' },
-  miniReticleRing: {
-    position: 'absolute',
-    width: 60,
-    height: 60,
-    borderRadius: theme.radii.pill,
-    borderWidth: 2,
-    borderColor: 'rgba(88, 223, 232, 0.16)',
-    borderTopColor: theme.colors.scannerCyan,
-    borderRightColor: theme.colors.scannerViolet,
-    boxShadow: '0 0 18px rgba(88, 223, 232, 0.28)',
-  },
-  miniReticleCore: {
-    width: 42,
-    height: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.42)',
-    backgroundColor: 'rgba(4, 8, 11, 0.94)',
-  },
-  miniReticleText: {
-    color: theme.colors.scannerCyan,
-    fontSize: 10,
-    fontVariant: ['tabular-nums'],
-  },
   stageRail: {
     width: '92%',
     minHeight: 48,

@@ -1,5 +1,4 @@
 import * as Haptics from "expo-haptics";
-import { Image } from "expo-image";
 import {
   useIsFocused,
   useLocalSearchParams,
@@ -29,6 +28,7 @@ import {
   type ItemAnalysisState,
 } from "@/components/scanner/item-analysis-overlay";
 import { toItemAnalysisState } from "@/components/scanner/item-analysis-view-model";
+import ModelProjectionScanner from "@/components/scanner/model-projection-scanner.native";
 import { ScannerAtmosphere } from "@/components/scanner/scanner-atmosphere.native";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import {
@@ -49,12 +49,12 @@ type CompletedAnalysis = {
   state: ResultState;
 };
 
-const MODEL_RENDERING_STATE = {
+const HOLOGRAPHIC_PROJECTION_STATE = {
   detail:
-    "Assembling the generated 3D projection for the result screen.",
+    "Stabilizing the captured image inside KeepFlip's live photon field.",
   insights: [],
   progress: 0.98,
-  stage: "Model rendering",
+  stage: "Projection rendering",
   status: "analyzing",
   steps: [
     { label: "Verify your signed-in session", status: "complete" },
@@ -62,7 +62,7 @@ const MODEL_RENDERING_STATE = {
     { label: "Identify and evaluate the item", status: "complete" },
     { label: "Remove temporary cloud copies", status: "complete" },
     { label: "Research completed marketplace sales", status: "complete" },
-    { label: "Render the final 3D model", status: "active" },
+    { label: "Stabilize the holographic image field", status: "active" },
   ],
 } satisfies Extract<ItemAnalysisState, { status: "analyzing" }>;
 
@@ -107,7 +107,7 @@ export function ItemAnalysisScreen() {
   const activeSessionCancel = session?.onCancel;
   const isFinalizingResult = state.status === "result";
   const displayedState = isFinalizingResult
-    ? MODEL_RENDERING_STATE
+    ? HOLOGRAPHIC_PROJECTION_STATE
     : state;
   const isAnalysisAnimationActive =
     state.status === "analyzing" || isFinalizingResult;
@@ -166,6 +166,7 @@ export function ItemAnalysisScreen() {
             }
             partialResult = event.result;
             setState(progressState(currentStage));
+            void session.ensurePhotosSaved?.().catch(() => undefined);
             void Haptics.selectionAsync().catch(() => undefined);
           },
           onStage: (stage) => {
@@ -247,7 +248,7 @@ export function ItemAnalysisScreen() {
 
   useEffect(() => {
     if (
-      !session?.modelUrl ||
+      !activeSessionId ||
       state.status !== "result" ||
       !completedAnalysis ||
       resultNavigationStartedRef.current
@@ -257,7 +258,7 @@ export function ItemAnalysisScreen() {
 
     resultNavigationStartedRef.current = true;
     const resultSessionId = promoteScannerAnalysisToResult(
-      session.id,
+      activeSessionId,
       completedAnalysis,
     );
 
@@ -283,11 +284,10 @@ export function ItemAnalysisScreen() {
       params: { sessionId: resultSessionId },
     });
   }, [
+    activeSessionId,
     completedAnalysis,
     promoteScannerAnalysisToResult,
     router,
-    session?.id,
-    session?.modelUrl,
     state.status,
   ]);
 
@@ -355,12 +355,8 @@ export function ItemAnalysisScreen() {
 
   return (
     <View style={styles.root}>
-      <Image
-        cachePolicy="memory-disk"
-        contentFit="cover"
-        source={{ uri: session.backdropUri }}
-        style={StyleSheet.absoluteFill}
-        transition={120}
+      <ModelProjectionScanner
+        photoUri={session.backdropUri}
       />
       <View pointerEvents="none" style={styles.photoScrim} />
       <ScannerAtmosphere
@@ -406,10 +402,10 @@ const styles = StyleSheet.create({
   },
   photoScrim: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(1, 2, 6, 0.64)",
+    backgroundColor: "rgba(1, 2, 6, 0.18)",
     experimental_backgroundImage: `
-      radial-gradient(circle at 50% 42%, rgba(88, 223, 232, 0.08) 0%, transparent 38%),
-      linear-gradient(to bottom, rgba(1, 1, 4, 0.74) 0%, rgba(3, 2, 9, 0.42) 46%, rgba(1, 1, 4, 0.82) 100%)
+      radial-gradient(circle at 50% 42%, rgba(88, 223, 232, 0.06) 0%, transparent 40%),
+      linear-gradient(to bottom, rgba(1, 1, 4, 0.64) 0%, rgba(3, 2, 9, 0.18) 46%, rgba(1, 1, 4, 0.66) 100%)
     `,
   },
 });

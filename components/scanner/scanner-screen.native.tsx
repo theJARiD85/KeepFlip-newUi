@@ -3,12 +3,12 @@ import * as ImagePicker from "expo-image-picker";
 import {
   useIsFocused,
   useRouter,
-  type Href,
 } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, AppState, BackHandler, Linking, Platform, Pressable, StyleSheet, View } from "react-native";
 import {
   Camera,
+  CommonResolutions,
   type CameraRef,
   useCameraDevice,
   useCameraPermission,
@@ -53,15 +53,6 @@ import {
   saveScannerPhoto,
   type SavedScanPhoto,
 } from "@/services/scan-photo-service";
-import {
-  waitForTripo3dModel,
-  type Tripo3dModelResult,
-} from "@/services/tripo3d-model-api";
-
-const CAMERA_PHOTO_RESOLUTION = Object.freeze({
-  width: 1920,
-  height: 1440,
-});
 
 type AnalysisCognitionSeed = {
   localDetection?: {
@@ -74,18 +65,17 @@ type AnalysisCognitionSeed = {
 type ScannerAnalysisActions = {
   openScannerAnalysis: (input: {
     backdropUri: string;
+    ensurePhotosSaved?: () => Promise<void>;
     localDetection?: {
       label: string;
       score: number;
     };
     modeLabel: string;
-    modelUrl?: string | null;
     onCancel: () => void;
     onReset: () => void;
     photoUris: string[];
     scanId: string;
   }) => string;
-  updateScannerModel: (scanId: string, modelUrl: string) => void;
 };
 
 function selectMultiScanEvidence(photos: MultiScanPhoto[]) {
@@ -153,10 +143,8 @@ function scannerToolHeaderCopy({
 export default function ScannerScreen() {
   const router = useRouter();
   const { user } = useKeepFlipAuth();
-  const {
-    openScannerAnalysis,
-    updateScannerModel,
-  } = useItemAnalysisResult() as unknown as ScannerAnalysisActions;
+  const { openScannerAnalysis } =
+    useItemAnalysisResult() as unknown as ScannerAnalysisActions;
   const {
     contentWidth,
     controlDockWidth,
@@ -182,26 +170,16 @@ export default function ScannerScreen() {
   const multiScanSequenceRef = useRef(0);
   const uploadSequenceRef = useRef(0);
   const torchRequestSequenceRef = useRef(0);
-  const modelGenerationRequestRef = useRef(0);
   const pendingAnalysisSessionIdRef = useRef<string | null>(null);
   const analysisNavigationTimerRef =
     useRef<ReturnType<typeof setTimeout> | null>(null);
-  const generatedModelRef = useRef<Tripo3dModelResult | null>(null);
   const scanIdRef = useRef(createScanId());
-  const modelSourcePhotoIdRef = useRef<string | null>(null);
-  const modelGenerationStateRef = useRef<"idle" | "loading" | "ready">(
-    "idle",
-  );
   const device = useCameraDevice("back");
   const photoOutput = usePhotoOutput({
-    targetResolution: CAMERA_PHOTO_RESOLUTION,
+    targetResolution: CommonResolutions.UHD_4_3,
+    quality: 0.92,
+    qualityPrioritization: "quality",
   });
-  const [, setIsGeneratingModel] = useState(false);
-  const [generatedModel, setGeneratedModel] =
-    useState<Tripo3dModelResult | null>(null);
-  const [, setModelGenerationError] = useState<string | null>(
-    null,
-  );
   const { hasPermission, canRequestPermission, requestPermission } =
     useCameraPermission();
   const [torchEnabled, setTorchEnabled] = useState(false);
@@ -258,7 +236,8 @@ export default function ScannerScreen() {
     hasPermission &&
     device != null &&
     isFocused &&
-    appState === "active";
+    appState === "active" &&
+    !isScannerOverlayOpen;
   const {
     frameOutput: radarFrameOutput,
     marker: radarMarker,
@@ -392,72 +371,6 @@ export default function ScannerScreen() {
     [isScannerUiHidden],
   );
 
-  const startModelGeneration = useCallback(
-    async (itemPhotoId: string) => {
-      const normalizedItemPhotoId = itemPhotoId.trim();
-      if (!normalizedItemPhotoId) return;
-
-      if (!user?.$id) {
-        setModelGenerationError(
-          "Sign in before generating a 3D model for this scan.",
-        );
-        return;
-      }
-
-      if (
-        modelSourcePhotoIdRef.current === normalizedItemPhotoId &&
-        modelGenerationStateRef.current !== "idle"
-      ) {
-        return;
-      }
-
-      const requestId = ++modelGenerationRequestRef.current;
-      modelSourcePhotoIdRef.current = normalizedItemPhotoId;
-      modelGenerationStateRef.current = "loading";
-      setGeneratedModel(null);
-      generatedModelRef.current = null;
-      setModelGenerationError(null);
-      setIsGeneratingModel(true);
-
-      try {
-        const result = await waitForTripo3dModel({
-          itemPhotoId: normalizedItemPhotoId,
-        });
-
-        if (requestId !== modelGenerationRequestRef.current) return;
-        modelGenerationStateRef.current = "ready";
-        generatedModelRef.current = result;
-        setGeneratedModel(result);
-        void Haptics.notificationAsync(
-          Haptics.NotificationFeedbackType.Success,
-        ).catch(() => undefined);
-      } catch (error) {
-        if (requestId !== modelGenerationRequestRef.current) return;
-
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : "KeepFlip could not generate the 3D model.";
-        modelGenerationStateRef.current = "idle";
-        setModelGenerationError(errorMessage);
-
-        if (__DEV__) {
-          console.error("[KeepFlip Tripo3D] Model generation failed.", error);
-        }
-      } finally {
-        if (requestId === modelGenerationRequestRef.current) {
-          setIsGeneratingModel(false);
-        }
-      }
-    },
-    [user?.$id],
-  );
-
-  useEffect(() => {
-    if (!generatedModel?.modelUrl) return;
-    updateScannerModel(scanIdRef.current, generatedModel.modelUrl);
-  }, [generatedModel?.modelUrl, updateScannerModel]);
-
   useEffect(() => {
     const subscription = AppState.addEventListener("change", setAppState);
     return () => subscription.remove();
@@ -492,7 +405,6 @@ export default function ScannerScreen() {
 
   useEffect(
     () => () => {
-      modelGenerationRequestRef.current += 1;
       if (analysisNavigationTimerRef.current) {
         clearTimeout(analysisNavigationTimerRef.current);
       }
@@ -608,26 +520,20 @@ export default function ScannerScreen() {
       if (selectedAssets.length === 0) return;
 
       const firstSortOrder = uploadedPhotos.length;
-      const savedPhotos: SavedScanPhoto[] = [];
       for (const [index, asset] of selectedAssets.entries()) {
-        const saved = await saveScannerPhoto({
+        await saveScannerPhoto({
           imageUri: asset.uri,
           ownerId: user.$id,
           scanId: scanIdRef.current,
           sortOrder: firstSortOrder + index,
           isPrimary: firstSortOrder + index === 0,
         });
-        savedPhotos.push(saved);
       }
 
       acceptPickedPhotos(selectedAssets);
-      if (firstSortOrder === 0 && savedPhotos[0]) {
-        void startModelGeneration(savedPhotos[0].itemPhotoId);
-      }
     },
     [
       acceptPickedPhotos,
-      startModelGeneration,
       uploadedPhotos,
       user?.$id,
     ],
@@ -700,7 +606,7 @@ export default function ScannerScreen() {
         allowsEditing: false,
         allowsMultipleSelection: true,
         orderedSelection: true,
-        quality: 0.85,
+        quality: 1,
         selectionLimit: remainingSlots,
       });
 
@@ -731,11 +637,16 @@ export default function ScannerScreen() {
       scanId,
       sortOrder,
       isPrimary,
+      persistImmediately,
     }: {
       scanId: string;
       sortOrder: number;
       isPrimary: boolean;
-    }): Promise<{ path: string; saved: SavedScanPhoto } | null> => {
+      persistImmediately: boolean;
+    }): Promise<{
+      path: string;
+      saved: SavedScanPhoto | null;
+    } | null> => {
       if (!isCameraActive || !isCameraReady) {
         const feedback = "Camera is getting ready. Try again in a moment.";
         setMessage(feedback);
@@ -768,14 +679,17 @@ export default function ScannerScreen() {
           throw new Error("VisionCamera returned an empty photo file path.");
         }
 
-        setMessage("Saving scanner image...");
-        const saved = await saveScannerPhoto({
-          imageUri: photo.filePath,
-          ownerId: user.$id,
-          scanId,
-          sortOrder,
-          isPrimary,
-        });
+        let saved: SavedScanPhoto | null = null;
+        if (persistImmediately) {
+          setMessage("Saving scanner image...");
+          saved = await saveScannerPhoto({
+            imageUri: photo.filePath,
+            ownerId: user.$id,
+            scanId,
+            sortOrder,
+            isPrimary,
+          });
+        }
 
         setCaptureFeedback(null);
         return { path: photo.filePath, saved };
@@ -880,28 +794,55 @@ export default function ScannerScreen() {
     const scanId = tool === "batch" ? createScanId() : scanIdRef.current;
     const sortOrder = tool === "multi" ? multiScanPhotos.length : 0;
     const isPrimary = tool !== "multi" || multiScanPhotos.length === 0;
-    const captured = await capturePhoto({ scanId, sortOrder, isPrimary });
+    const captured = await capturePhoto({
+      scanId,
+      sortOrder,
+      isPrimary,
+      persistImmediately: tool !== "single",
+    });
     if (!captured) return;
 
     const photoPath = captured.path;
     if (tool === "single") {
+      const ownerId = user?.$id;
+      if (!ownerId) {
+        setMessage("Sign in before saving scanner photos.");
+        return;
+      }
+      let photoPersistence: Promise<void> | null = null;
+      const ensurePhotosSaved = () => {
+        photoPersistence ??= saveScannerPhoto({
+          imageUri: photoPath,
+          ownerId,
+          scanId,
+          sortOrder,
+          isPrimary,
+        })
+          .then(() => undefined)
+          .catch((error) => {
+            photoPersistence = null;
+            throw error;
+          });
+        return photoPersistence;
+      };
+
       setSinglePhotoUri(photoPath);
-      setMessage("Photo saved. Building 3D model and starting analysis...");
-      void startModelGeneration(captured.saved.itemPhotoId);
-      beginAnalysis([photoPath], cognitionSeed);
+      setMessage("Photo captured. Opening KeepFlip intelligence...");
+      beginAnalysis([photoPath], cognitionSeed, ensurePhotosSaved);
       return;
     }
 
     if (tool === "multi") {
-      if (captured.saved.isPrimary) {
-        void startModelGeneration(captured.saved.itemPhotoId);
+      const savedPhoto = captured.saved;
+      if (!savedPhoto) {
+        setMessage("The captured photo could not be saved.");
+        return;
       }
-
       setMultiScanPhotos((photos) => {
         multiScanSequenceRef.current += 1;
         const photo: MultiScanPhoto = {
           createdAt: Date.now(),
-          id: captured.saved.itemPhotoId,
+          id: savedPhoto.itemPhotoId,
           path: photoPath,
           uri: toDisplayUri(photoPath),
         };
@@ -928,18 +869,11 @@ export default function ScannerScreen() {
     multiScanSequenceRef.current = 0;
     uploadSequenceRef.current = 0;
     scanIdRef.current = createScanId();
-    modelGenerationRequestRef.current += 1;
     pendingAnalysisSessionIdRef.current = null;
     if (analysisNavigationTimerRef.current) {
       clearTimeout(analysisNavigationTimerRef.current);
       analysisNavigationTimerRef.current = null;
     }
-    modelSourcePhotoIdRef.current = null;
-    modelGenerationStateRef.current = "idle";
-    setIsGeneratingModel(false);
-    setGeneratedModel(null);
-    generatedModelRef.current = null;
-    setModelGenerationError(null);
     setSinglePhotoUri(null);
     setMultiScanPhotos([]);
     setBatchScanPhotos([]);
@@ -956,6 +890,7 @@ export default function ScannerScreen() {
   function beginAnalysis(
     photoUris: string[],
     cognitionSeed: AnalysisCognitionSeed,
+    ensurePhotosSaved?: () => Promise<void>,
   ) {
     if (
       photoUris.length === 0 ||
@@ -971,9 +906,9 @@ export default function ScannerScreen() {
       scannerTools[0];
     const sessionId = openScannerAnalysis({
       backdropUri: toDisplayUri(photoUris[0]),
+      ensurePhotosSaved,
       localDetection: cognitionSeed.localDetection,
       modeLabel: toolAppearance?.label ?? "Item scan",
-      modelUrl: generatedModelRef.current?.modelUrl,
       onCancel: () => {
         setActiveAnalysisSessionId(null);
       },

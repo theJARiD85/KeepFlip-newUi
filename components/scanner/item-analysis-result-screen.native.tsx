@@ -16,20 +16,15 @@ import { ItemAnalysisResultStage } from "@/components/scanner/item-analysis-resu
 import ModelProjectionScanner from "@/components/scanner/model-projection-scanner.native";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { APPWRITE, storage } from "@/lib/appwrite";
 import {
   getInventoryItem,
   saveAnalyzedItemToInventory,
 } from "@/services/inventory-service";
 import { getItemPhotos } from "@/services/itemPhotoService";
-import {
-  getStoredTripo3dModel,
-  type StoredTripo3dModelResult,
-} from "@/services/tripo3d-model-api";
 
 type InventoryResultPayload = {
-  model: StoredTripo3dModelResult | null;
-  modelFile: string | null;
-  primaryPhotoId: string | null;
+  photoBytes: ArrayBuffer | null;
   state: ReturnType<typeof inventoryItemToAnalysisState>;
 };
 
@@ -46,19 +41,20 @@ async function loadInventoryResult(
   const primaryPhoto =
     photos.find((photo) => photo.isPrimary) ?? photos[0] ?? null;
 
-  const [modelResult] = await Promise.allSettled([
-    primaryPhoto
-      ? getStoredTripo3dModel(primaryPhoto.id)
+  const [photoResult] = await Promise.allSettled([
+    primaryPhoto && APPWRITE.itemImagesBucketId
+      ? storage.getFileView({
+          bucketId: APPWRITE.itemImagesBucketId,
+          fileId: primaryPhoto.fileId,
+        })
       : Promise.resolve(null),
   ]);
 
   return {
-    model:
-      modelResult.status === "fulfilled"
-        ? modelResult.value
+    photoBytes:
+      photoResult.status === "fulfilled"
+        ? photoResult.value
         : null,
-    modelFile: item.modelFile,
-    primaryPhotoId: primaryPhoto?.id ?? null,
     state: inventoryItemToAnalysisState(item),
   };
 }
@@ -127,51 +123,6 @@ export function ItemAnalysisResultScreen() {
   }, [itemId, loadAttempt, userId]);
 
   useEffect(() => {
-    const primaryPhotoId = inventoryResult?.primaryPhotoId;
-    if (!primaryPhotoId || inventoryResult?.model) return;
-
-    let active = true;
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    let attempts = 0;
-
-    const pollForModel = async () => {
-      attempts += 1;
-      try {
-        const model = await getStoredTripo3dModel(primaryPhotoId);
-        if (!active) return;
-        if (model) {
-          setInventoryResult((current) =>
-            current?.primaryPhotoId === primaryPhotoId
-              ? { ...current, model }
-              : current,
-          );
-          return;
-        }
-      } catch {
-        return;
-      }
-
-      if (active && attempts < 24) {
-        timer = setTimeout(() => {
-          void pollForModel();
-        }, 2_500);
-      }
-    };
-
-    timer = setTimeout(() => {
-      void pollForModel();
-    }, 2_500);
-
-    return () => {
-      active = false;
-      if (timer) clearTimeout(timer);
-    };
-  }, [
-    inventoryResult?.model,
-    inventoryResult?.primaryPhotoId,
-  ]);
-
-  useEffect(() => {
     finalizedRef.current = false;
 
     return () => {
@@ -215,9 +166,9 @@ export function ItemAnalysisResultScreen() {
 
     setSaving(true);
     try {
+      await scannerSession.ensurePhotosSaved?.();
       const saved = await saveAnalyzedItemToInventory({
         analysis: scannerSession.analysis,
-        modelFile: scannerSession.modelUrl,
         ownerId: userId,
         scanId: scannerSession.scanId,
       });
@@ -246,15 +197,10 @@ export function ItemAnalysisResultScreen() {
 
   const resultState =
     scannerSession?.state ?? inventoryResult?.state ?? null;
-  const storedModel = inventoryResult?.model ?? null;
-  const modelUrl =
-    scannerSession?.modelUrl ??
-    inventoryResult?.modelFile ??
-    storedModel?.modelUrl ??
-    undefined;
-  const modelBytes = storedModel?.modelBytes;
+  const photoUri = scannerSession?.backdropUri;
+  const photoBytes = inventoryResult?.photoBytes ?? undefined;
   const hasProjection =
-    !projectionError && Boolean(modelUrl || modelBytes);
+    !projectionError && Boolean(photoUri || photoBytes);
 
   const missingSession = Boolean(sessionId && !scannerSession);
   const resolvedError =
@@ -266,19 +212,20 @@ export function ItemAnalysisResultScreen() {
         : null);
 
   const projectionLabel = hasProjection
-    ? "GENERATED MODEL / NATIVE GPU PROJECTION"
+    ? "KEEPFLIP PHOTON PROJECTION / LIVE GPU FIELD"
     : projectionError
-      ? "MODEL SIGNAL DEGRADED / HUD FIELD ACTIVE"
-      : "MODEL SIGNAL ACQUIRING / HUD FIELD ACTIVE";
+      ? "PROJECTION SIGNAL DEGRADED / HUD FIELD ACTIVE"
+      : "PHOTO SIGNAL ACQUIRING / HUD FIELD ACTIVE";
 
   if (loading || resolvedError || !resultState) {
     return (
       <View style={styles.root}>
+              <View pointerEvents="none" style={styles.ambientGradient} />
         <View pointerEvents="none" style={styles.projectionLayer}>
           <ModelProjectionScanner
-            modelBytes={modelBytes}
-            modelUrl={modelUrl}
             onError={setProjectionError}
+            photoBytes={photoBytes}
+            photoUri={photoUri}
           />
         </View>
         <View
@@ -296,7 +243,7 @@ export function ItemAnalysisResultScreen() {
                 Reconstructing item intelligence
               </Text>
               <Text style={styles.centerBody}>
-                Loading the saved model, cover evidence, and analysis snapshot.
+                Loading the cover evidence and analysis snapshot.
               </Text>
             </>
           ) : (
@@ -343,9 +290,9 @@ export function ItemAnalysisResultScreen() {
     <View style={styles.root}>
       <View pointerEvents="none" style={styles.projectionLayer}>
         <ModelProjectionScanner
-          modelBytes={modelBytes}
-          modelUrl={modelUrl}
           onError={setProjectionError}
+          photoBytes={photoBytes}
+          photoUri={photoUri}
         />
       </View>
 
@@ -356,9 +303,6 @@ export function ItemAnalysisResultScreen() {
 
       <ItemAnalysisResultStage
         bottomInset={insets.bottom}
-        doneLabel={
-          scannerSession ? "Start new scan" : "Back to inventory"
-        }
         onDone={handleDone}
         onSave={
           scannerSession
@@ -382,6 +326,19 @@ const styles = StyleSheet.create({
     flex: 1,
     overflow: "hidden",
     backgroundColor: theme.colors.backgroundDeep,
+  },
+  ambientGradient: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    experimental_backgroundImage: `
+      radial-gradient(circle at 84% 8%, rgba(224, 172, 75, 0.10) 0%, transparent 20%),
+      radial-gradient(circle at 5% 68%, rgba(88, 223, 232, 0.075) 0%, transparent 15%),
+      radial-gradient(circle at 92% 90%, rgba(171, 61, 255, 0.30) 0%, transparent 28%),
+      linear-gradient(160deg, #050506 0%, #020204 25%, #06040A 50%)
+    `,
   },
   projectionLayer: {
     ...StyleSheet.absoluteFill,

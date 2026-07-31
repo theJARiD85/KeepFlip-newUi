@@ -5,7 +5,7 @@ import {
   type ComponentType,
   type ReactNode,
 } from "react";
-import { useEfficientDetModel } from "@/hooks/use-efficientdet-model.native";
+import { useYoloV8Model } from "@/hooks/use-yolov8-model.native";
 import {
   type CameraFrameOutput,
   useAsyncRunner,
@@ -24,6 +24,14 @@ import type {
   ValueRadarStatus,
   ValueRadarViewport,
 } from "@/components/scanner/value-radar-visual.native";
+import {
+  YOLOV8_CANDIDATE_COUNT,
+  YOLOV8_CLASS_COUNT,
+  YOLOV8_INPUT_BYTES,
+  YOLOV8_MODEL_SIZE,
+  YOLOV8_OUTPUT_ELEMENTS,
+  yoloV8RadarCategoryLabel,
+} from "@/components/scanner/yolov8-radar";
 
 export type {
   ValueRadarMarker,
@@ -31,23 +39,20 @@ export type {
   ValueRadarViewport,
 } from "@/components/scanner/value-radar-visual.native";
 
-const MODEL_SIZE = 320;
-const MODEL_INPUT_BYTES = MODEL_SIZE * MODEL_SIZE * 3;
-const MAX_DETECTIONS = 25;
 const MIN_DETECTION_SCORE = 0.48;
 
-// Keep the camera thread feather-light. At 30 FPS this requests inference
-// roughly once per second, and the single-flight gate below prevents a second
-// request while the worker runtime is still processing the first one.
-const FRAMES_BETWEEN_INFERENCES = 30;
+// YOLOv8n's 640px float tensor is substantially heavier than the previous
+// detector. At 30 FPS this requests inference about 1.25 times per second, and
+// the single-flight gate prevents overlap while the worker is still busy.
+const FRAMES_BETWEEN_INFERENCES = 24;
 
 const BRIDGE_EVENT_MARKER = 1;
 const BRIDGE_EVENT_CLEAR_MARKER = 2;
 const BRIDGE_EVENT_ERROR = 3;
 
 const RADAR_FRAME_RESOLUTION = {
-  width: 320,
-  height: 240,
+  width: 640,
+  height: 640,
 } as const;
 
 
@@ -81,63 +86,6 @@ const radarPresentation = require("@/components/scanner/value-radar.native.tsx")
 
 export const ValueRadarOverlay = radarPresentation.ValueRadarOverlay;
 
-function radarCategoryLabel(classId: number) {
-  const labels: Record<number, string> = {
-    1: "Bicycle",
-    2: "Vehicle",
-    3: "Motorcycle",
-    7: "Truck",
-    8: "Boat",
-    14: "Bench",
-    26: "Backpack",
-    27: "Umbrella",
-    30: "Handbag",
-    31: "Tie",
-    32: "Suitcase",
-    33: "Frisbee",
-    34: "Skis",
-    35: "Snowboard",
-    36: "Sports gear",
-    37: "Kite",
-    38: "Baseball bat",
-    39: "Baseball glove",
-    40: "Skateboard",
-    41: "Surfboard",
-    42: "Tennis racket",
-    43: "Bottle",
-    45: "Glassware",
-    46: "Cup",
-    47: "Flatware",
-    48: "Knife",
-    49: "Flatware",
-    50: "Bowl",
-    61: "Chair",
-    62: "Couch",
-    63: "Plant",
-    64: "Bed",
-    66: "Table",
-    71: "TV",
-    72: "Laptop",
-    73: "Computer mouse",
-    74: "Remote",
-    75: "Keyboard",
-    76: "Cell phone",
-    77: "Microwave",
-    78: "Oven",
-    79: "Toaster",
-    81: "Refrigerator",
-    83: "Book",
-    84: "Clock",
-    85: "Vase",
-    86: "Scissors",
-    87: "Teddy bear",
-    88: "Hair dryer",
-    89: "Toothbrush",
-  };
-
-  return labels[classId] ?? "Item";
-}
-
 export function useValueRadar(
   enabled: boolean,
   viewport?: ValueRadarViewport,
@@ -159,14 +107,14 @@ export function useValueRadar(
   const bridgePayload = useSharedValue<number[]>([]);
   const bridgeMessage = useSharedValue("");
 
-  const detector = useEfficientDetModel(TFLITE_DELEGATES);
+  const detector = useYoloV8Model(TFLITE_DELEGATES);
   const resizerState = useResizer({
-    width: MODEL_SIZE,
-    height: MODEL_SIZE,
+    width: YOLOV8_MODEL_SIZE,
+    height: YOLOV8_MODEL_SIZE,
     channelOrder: "rgb",
-    dataType: "uint8",
+    dataType: "float32",
     scaleMode: "cover",
-    pixelLayout: "interleaved",
+    pixelLayout: "planar",
   });
 
   const detectorError =
@@ -240,7 +188,7 @@ export function useValueRadar(
     setMarker({
       classId: roundedClassId,
       height,
-      label: radarCategoryLabel(roundedClassId),
+      label: yoloV8RadarCategoryLabel(roundedClassId),
       score,
       sourceHeight,
       sourceWidth,
@@ -331,10 +279,10 @@ export function useValueRadar(
           resized = workerResizer.resize(frame) as ResizedFrame;
 
           stage = "pixel-buffer";
-          const pixels = new Uint8Array(resized.getPixelBuffer());
-          if (pixels.byteLength !== MODEL_INPUT_BYTES) {
+          const pixels = new Float32Array(resized.getPixelBuffer());
+          if (pixels.byteLength !== YOLOV8_INPUT_BYTES) {
             throw new Error(
-              `EfficientDet input buffer size mismatch: ${pixels.byteLength} bytes received, ${MODEL_INPUT_BYTES} expected.`,
+              `YOLOv8 input buffer size mismatch: ${pixels.byteLength} bytes received, ${YOLOV8_INPUT_BYTES} expected.`,
             );
           }
 
@@ -352,27 +300,173 @@ export function useValueRadar(
 
           stage = "tflite";
           const outputs = workerModel.runSync([inputBuffer]);
-          if (
-            outputs[0] == null ||
-            outputs[1] == null ||
-            outputs[2] == null ||
-            outputs[3] == null
-          ) {
-            throw new Error("EfficientDet returned an incomplete result.");
+          if (outputs[0] == null) {
+            throw new Error("YOLOv8 returned no detection tensor.");
           }
 
           stage = "parse-output";
-          const boxes = new Float32Array(outputs[0]);
-          const classes = new Float32Array(outputs[1]);
-          const scores = new Float32Array(outputs[2]);
-          const detectedCount = new Float32Array(outputs[3]);
-          const count = Math.min(
-            Math.max(Math.floor(detectedCount[0] ?? 0), 0),
-            MAX_DETECTIONS,
-            Math.floor(boxes.length / 4),
-            classes.length,
-            scores.length,
-          );
+          const detectionOutput = new Float32Array(outputs[0]);
+          if (detectionOutput.length < YOLOV8_OUTPUT_ELEMENTS) {
+            throw new Error(
+              `YOLOv8 output size mismatch: ${detectionOutput.length} floats received, ${YOLOV8_OUTPUT_ELEMENTS} expected.`,
+            );
+          }
+
+          // Keep decoding inside this async camera worklet. Imported worklet
+          // functions are serialized as objects when they cross into this
+          // secondary runtime and are therefore not callable here.
+          let bestCandidate = -1;
+          let modelClass = -1;
+          let modelScore = MIN_DETECTION_SCORE;
+
+          for (
+            let classId = 0;
+            classId < YOLOV8_CLASS_COUNT;
+            classId += 1
+          ) {
+            let isAllowedCategory = false;
+            switch (classId) {
+              case 1:
+              case 2:
+              case 3:
+              case 5:
+              case 7:
+              case 8:
+              case 13:
+              case 24:
+              case 25:
+              case 26:
+              case 27:
+              case 28:
+              case 29:
+              case 30:
+              case 31:
+              case 32:
+              case 33:
+              case 34:
+              case 35:
+              case 36:
+              case 37:
+              case 38:
+              case 39:
+              case 40:
+              case 41:
+              case 42:
+              case 43:
+              case 44:
+              case 45:
+              case 56:
+              case 57:
+              case 58:
+              case 59:
+              case 60:
+              case 62:
+              case 63:
+              case 64:
+              case 65:
+              case 66:
+              case 67:
+              case 68:
+              case 69:
+              case 70:
+              case 72:
+              case 73:
+              case 74:
+              case 75:
+              case 76:
+              case 77:
+              case 78:
+              case 79:
+                isAllowedCategory = true;
+                break;
+              default:
+                break;
+            }
+
+            if (!isAllowedCategory) continue;
+
+            const classOffset =
+              (4 + classId) * YOLOV8_CANDIDATE_COUNT;
+            for (
+              let candidate = 0;
+              candidate < YOLOV8_CANDIDATE_COUNT;
+              candidate += 1
+            ) {
+              const score =
+                detectionOutput[classOffset + candidate] ?? 0;
+              if (
+                !Number.isFinite(score) ||
+                score <= modelScore
+              ) {
+                continue;
+              }
+
+              bestCandidate = candidate;
+              modelClass = classId;
+              modelScore = score;
+            }
+          }
+
+          let modelLeft = 0;
+          let modelTop = 0;
+          let modelWidth = 0;
+          let modelHeight = 0;
+
+          if (bestCandidate >= 0 && modelClass >= 0) {
+            const centerX =
+              detectionOutput[bestCandidate] ?? 0;
+            const centerY =
+              detectionOutput[
+                YOLOV8_CANDIDATE_COUNT + bestCandidate
+              ] ?? 0;
+            const rawWidth =
+              detectionOutput[
+                YOLOV8_CANDIDATE_COUNT * 2 + bestCandidate
+              ] ?? 0;
+            const rawHeight =
+              detectionOutput[
+                YOLOV8_CANDIDATE_COUNT * 3 + bestCandidate
+              ] ?? 0;
+
+            if (
+              Number.isFinite(centerX) &&
+              Number.isFinite(centerY) &&
+              Number.isFinite(rawWidth) &&
+              Number.isFinite(rawHeight) &&
+              rawWidth > 0 &&
+              rawHeight > 0
+            ) {
+              modelLeft = Math.min(
+                Math.max(centerX - rawWidth / 2, 0),
+                1,
+              );
+              modelTop = Math.min(
+                Math.max(centerY - rawHeight / 2, 0),
+                1,
+              );
+              const modelRight = Math.min(
+                Math.max(centerX + rawWidth / 2, 0),
+                1,
+              );
+              const modelBottom = Math.min(
+                Math.max(centerY + rawHeight / 2, 0),
+                1,
+              );
+              modelWidth = modelRight - modelLeft;
+              modelHeight = modelBottom - modelTop;
+            }
+
+            if (modelWidth <= 0 || modelHeight <= 0) {
+              modelClass = -1;
+            }
+          }
+
+          stage = "publish";
+          if (modelClass < 0) {
+            bridgeKind.value = BRIDGE_EVENT_CLEAR_MARKER;
+            bridgeSequence.value += 1;
+            return;
+          }
 
           const cropSide = Math.min(sourceWidth, sourceHeight);
           const cropLeft = (sourceWidth - cropSide) / 2;
@@ -393,163 +487,72 @@ export function useValueRadar(
               ? 0
               : (viewport.previewHeight - sourceHeight * previewScale) / 2;
 
-          let bestClass = -1;
-          let bestScore = 0;
-          let bestX = 0;
-          let bestY = 0;
-          let bestWidth = 0;
-          let bestHeight = 0;
+          stage = "map-detection-box";
+          const right = modelLeft + modelWidth;
+          const bottom = modelTop + modelHeight;
+          const sourceLeft = Math.min(
+            Math.max(
+              (cropLeft + modelLeft * cropSide) / sourceWidth,
+              0,
+            ),
+            1,
+          );
+          const sourceTop = Math.min(
+            Math.max(
+              (cropTop + modelTop * cropSide) / sourceHeight,
+              0,
+            ),
+            1,
+          );
+          const sourceRight = Math.min(
+            Math.max((cropLeft + right * cropSide) / sourceWidth, 0),
+            1,
+          );
+          const sourceBottom = Math.min(
+            Math.max((cropTop + bottom * cropSide) / sourceHeight, 0),
+            1,
+          );
+          const detectionWidth = sourceRight - sourceLeft;
+          const detectionHeight = sourceBottom - sourceTop;
 
-          stage = "filter-detections";
-          for (let index = 0; index < count; index += 1) {
-            const score = scores[index] ?? 0;
-            const classId = Math.round(classes[index] ?? -1);
-
-            let isAllowedCategory = false;
-            switch (classId) {
-              case 1:
-              case 2:
-              case 3:
-              case 7:
-              case 8:
-              case 14:
-              case 26:
-              case 27:
-              case 30:
-              case 31:
-              case 32:
-              case 33:
-              case 34:
-              case 35:
-              case 36:
-              case 37:
-              case 38:
-              case 39:
-              case 40:
-              case 41:
-              case 42:
-              case 43:
-              case 45:
-              case 46:
-              case 47:
-              case 48:
-              case 49:
-              case 50:
-              case 61:
-              case 62:
-              case 63:
-              case 64:
-              case 66:
-              case 71:
-              case 72:
-              case 73:
-              case 74:
-              case 75:
-              case 76:
-              case 77:
-              case 78:
-              case 79:
-              case 81:
-              case 83:
-              case 84:
-              case 85:
-              case 86:
-              case 87:
-              case 88:
-              case 89:
-                isAllowedCategory = true;
-                break;
-              default:
-                break;
-            }
-
-            if (
-              !isAllowedCategory ||
-              score < MIN_DETECTION_SCORE ||
-              score <= bestScore
-            ) {
-              continue;
-            }
-
-            stage = "map-detection-box";
-            const boxOffset = index * 4;
-            const top = Math.min(Math.max(boxes[boxOffset] ?? 0, 0), 1);
-            const left = Math.min(
-              Math.max(boxes[boxOffset + 1] ?? 0, 0),
-              1,
-            );
-            const bottom = Math.min(
-              Math.max(boxes[boxOffset + 2] ?? 0, 0),
-              1,
-            );
-            const right = Math.min(
-              Math.max(boxes[boxOffset + 3] ?? 0, 0),
-              1,
-            );
-
-            const sourceLeft = Math.min(
-              Math.max((cropLeft + left * cropSide) / sourceWidth, 0),
-              1,
-            );
-            const sourceTop = Math.min(
-              Math.max((cropTop + top * cropSide) / sourceHeight, 0),
-              1,
-            );
-            const sourceRight = Math.min(
-              Math.max((cropLeft + right * cropSide) / sourceWidth, 0),
-              1,
-            );
-            const sourceBottom = Math.min(
-              Math.max((cropTop + bottom * cropSide) / sourceHeight, 0),
-              1,
-            );
-            const detectionWidth = sourceRight - sourceLeft;
-            const detectionHeight = sourceBottom - sourceTop;
-
-            if (detectionWidth < 0.04 || detectionHeight < 0.04) continue;
-
-            if (viewport != null) {
-              const sourceCenterX =
-                cropLeft + ((left + right) / 2) * cropSide;
-              const sourceCenterY =
-                cropTop + ((top + bottom) / 2) * cropSide;
-              const previewCenterX =
-                previewOffsetX + sourceCenterX * previewScale;
-              const previewCenterY =
-                previewOffsetY + sourceCenterY * previewScale;
-
-              if (
-                previewCenterX < viewport.x ||
-                previewCenterX > viewport.x + viewport.width ||
-                previewCenterY < viewport.y ||
-                previewCenterY > viewport.y + viewport.height
-              ) {
-                continue;
-              }
-            }
-
-            bestClass = classId;
-            bestScore = score;
-            bestX = sourceLeft;
-            bestY = sourceTop;
-            bestWidth = detectionWidth;
-            bestHeight = detectionHeight;
-          }
-
-          stage = "publish";
-          if (bestClass < 0) {
+          if (detectionWidth < 0.04 || detectionHeight < 0.04) {
             bridgeKind.value = BRIDGE_EVENT_CLEAR_MARKER;
             bridgeSequence.value += 1;
             return;
           }
 
+          if (viewport != null) {
+            const sourceCenterX =
+              cropLeft +
+              (modelLeft + modelWidth / 2) * cropSide;
+            const sourceCenterY =
+              cropTop +
+              (modelTop + modelHeight / 2) * cropSide;
+            const previewCenterX =
+              previewOffsetX + sourceCenterX * previewScale;
+            const previewCenterY =
+              previewOffsetY + sourceCenterY * previewScale;
+
+            if (
+              previewCenterX < viewport.x ||
+              previewCenterX > viewport.x + viewport.width ||
+              previewCenterY < viewport.y ||
+              previewCenterY > viewport.y + viewport.height
+            ) {
+              bridgeKind.value = BRIDGE_EVENT_CLEAR_MARKER;
+              bridgeSequence.value += 1;
+              return;
+            }
+          }
+
+          stage = "publish";
           bridgePayload.value = [
-            bestX,
-            bestY,
-            bestWidth,
-            bestHeight,
-            bestClass,
-            bestScore,
+            sourceLeft,
+            sourceTop,
+            detectionWidth,
+            detectionHeight,
+            modelClass,
+            modelScore,
             sourceWidth,
             sourceHeight,
           ];

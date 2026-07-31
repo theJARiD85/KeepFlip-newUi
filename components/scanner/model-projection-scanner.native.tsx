@@ -31,7 +31,8 @@ import {
   withTiming,
 } from "react-native-reanimated";
 
-import { FilamentModelProjection } from "@/components/scanner/filament-model-projection.native";
+import { PhotoDepthWireframe } from "@/components/scanner/photo-depth-wireframe.native";
+import { ProjectedPhotoStage } from "@/components/scanner/projected-photo-stage.native";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 
 type PerspectiveGridLine = {
@@ -50,11 +51,100 @@ type PerspectiveGridLine = {
 };
 
 type ModelProjectionScannerProps = {
+  /**
+   * Legacy experiment inputs remain accepted so archived scanner snapshots
+   * continue to type-check. The active renderer intentionally ignores them.
+   */
   modelBytes?: ArrayBuffer | Uint8Array;
   modelUrl?: string;
+  photoBytes?: ArrayBuffer | Uint8Array;
+  photoUri?: string;
   onError?: (message: string) => void;
   style?: StyleProp<ViewStyle>;
 };
+
+type HologramFrame = {
+  height: number;
+  width: number;
+  x: number;
+  y: number;
+};
+
+function ProjectionPhotoHologram({
+  frame,
+  onError,
+  photoBytes,
+  photoUri,
+}: {
+  frame: HologramFrame;
+  onError?: (message: string) => void;
+  photoBytes?: ArrayBuffer | Uint8Array;
+  photoUri?: string;
+}) {
+  const frameInset = 5;
+
+  return (
+    <View
+      pointerEvents="none"
+      style={[
+        styles.hologramLayer,
+        {
+          height: frame.height,
+          left: frame.x,
+          top: frame.y,
+          width: frame.width,
+        },
+      ]}
+    >
+      <SkiaCanvas
+        pointerEvents="none"
+        style={StyleSheet.absoluteFill}
+      >
+        <Rect
+          color="rgba(88, 223, 232, 0.09)"
+          height={frame.height - frameInset * 2}
+          width={frame.width - frameInset * 2}
+          x={frameInset}
+          y={frameInset}
+        >
+          <BlurMask
+            blur={20}
+            style="normal"
+          />
+        </Rect>
+        <Rect
+          height={frame.height}
+          width={frame.width}
+          x={0}
+          y={0}
+        >
+          <RadialGradient
+            c={vec(
+              frame.width * 0.5,
+              frame.height * 0.48,
+            )}
+            colors={[
+              "rgba(88, 223, 232, 0.05)",
+              "rgba(141, 114, 255, 0.023)",
+              "rgba(0, 0, 0, 0)",
+            ]}
+            positions={[0, 0.58, 1]}
+            r={frame.width * 0.72}
+          />
+        </Rect>
+      </SkiaCanvas>
+
+      <PhotoDepthWireframe
+        height={frame.height}
+        onError={onError}
+        photoBytes={photoBytes}
+        photoUri={photoUri}
+        style={styles.photoHologram}
+        width={frame.width}
+      />
+    </View>
+  );
+}
 
 function ProjectionBackground({
   height,
@@ -321,14 +411,14 @@ function ProjectionForeground({
 }
 
 export default function ModelProjectionScanner({
-  modelBytes,
-  modelUrl,
+  photoBytes,
+  photoUri,
   onError,
   style,
 }: ModelProjectionScannerProps): React.JSX.Element {
-  const hasModelSource = Boolean(
-    modelUrl?.trim() ||
-      (modelBytes && modelBytes.byteLength > 0),
+  const hasPhotoSource = Boolean(
+    photoUri?.trim() ||
+      (photoBytes && photoBytes.byteLength > 0),
   );
   const [layout, setLayout] = useState({
     height: 0,
@@ -337,7 +427,7 @@ export default function ModelProjectionScanner({
 
   const scanProgress = useSharedValue(0);
   const scanGlowY = useDerivedValue(
-    () => scanProgress.value - 8,
+    () => scanProgress.get() - 8,
   );
 
   const perspectiveGridLines =
@@ -417,8 +507,8 @@ export default function ModelProjectionScanner({
       return;
     }
 
-    scanProgress.value = 0;
-    scanProgress.value = withRepeat(
+    scanProgress.set(0);
+    scanProgress.set(withRepeat(
       withTiming(layout.height, {
         duration: 3000,
         easing: Easing.bezier(
@@ -430,7 +520,7 @@ export default function ModelProjectionScanner({
       }),
       -1,
       true,
-    );
+    ));
 
     return () => {
       cancelAnimation(scanProgress);
@@ -443,6 +533,36 @@ export default function ModelProjectionScanner({
   const hasLayout =
     layout.width > 0 &&
     layout.height > 0;
+  const hologramFrame = useMemo<HologramFrame>(() => {
+    const frameWidth = Math.min(
+      layout.width * 0.8,
+      420,
+    );
+    const heightReferenceWidth = Math.min(
+      layout.width * 0.68,
+      360,
+    );
+    const frameHeight = Math.max(
+      190,
+      Math.min(
+        layout.height * 0.44 - 25,
+        heightReferenceWidth * 1.22,
+      ),
+    );
+
+    return {
+      height: frameHeight,
+      width: frameWidth,
+      x: (layout.width - frameWidth) / 2,
+      y: Math.max(
+        126,
+        layout.height * 0.17,
+      ) + 15,
+    };
+  }, [
+    layout.height,
+    layout.width,
+  ]);
 
   return (
     <View
@@ -460,12 +580,33 @@ export default function ModelProjectionScanner({
         />
       ) : null}
 
-      {hasLayout && hasModelSource ? (
-        <FilamentModelProjection
-          modelBytes={modelBytes}
-          modelUrl={modelUrl}
+      {hasLayout && hasPhotoSource ? (
+        <ProjectedPhotoStage
           onError={onError}
-          style={styles.modelLayer}
+          photoBytes={photoBytes}
+          photoUri={photoUri}
+          projectionFrame={{
+            centerYRatio:
+              (hologramFrame.y +
+                hologramFrame.height / 2) /
+              layout.height,
+            heightRatio:
+              hologramFrame.height /
+              layout.height,
+            widthRatio:
+              hologramFrame.width /
+              layout.width,
+          }}
+          style={styles.projectionLayer}
+        />
+      ) : null}
+
+      {hasLayout && hasPhotoSource ? (
+        <ProjectionPhotoHologram
+          frame={hologramFrame}
+          onError={onError}
+          photoBytes={photoBytes}
+          photoUri={photoUri}
         />
       ) : null}
 
@@ -487,8 +628,16 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.backgroundDeep,
     opacity: 1,
   },
-  modelLayer: {
+  projectionLayer: {
     ...StyleSheet.absoluteFill,
     zIndex: 1,
+  },
+  hologramLayer: {
+    position: "absolute",
+    zIndex: 2,
+    overflow: "hidden",
+  },
+  photoHologram: {
+    ...StyleSheet.absoluteFill,
   },
 });

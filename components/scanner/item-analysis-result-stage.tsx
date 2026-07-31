@@ -345,6 +345,19 @@ function ReelTab({
 
   return (
     <Animated.View style={[styles.tabPosition, animatedStyle]}>
+      <View
+        style={[
+          styles.tabDot,
+          {
+            backgroundColor: active
+              ? reel.accent
+              : withAlpha(reel.accent, 0.2),
+            boxShadow: active
+              ? `0 0 8px ${reel.accent}`
+              : "none",
+          },
+        ]}
+      />
       <Pressable
         accessibilityLabel={`Show ${reel.label} results`}
         accessibilityRole="tab"
@@ -377,20 +390,6 @@ function ReelTab({
           size={18}
         />
       </Pressable>
-
-      <View
-        style={[
-          styles.tabDot,
-          {
-            backgroundColor: active
-              ? reel.accent
-              : withAlpha(reel.accent, 0.2),
-            boxShadow: active
-              ? `0 0 8px ${reel.accent}`
-              : "none",
-          },
-        ]}
-      />
     </Animated.View>
   );
 }
@@ -1001,23 +1000,6 @@ export function ItemAnalysisResultStage({
       >
         <GestureDetector gesture={pan}>
           <Animated.View style={styles.reelInteraction}>
-            <View
-              accessibilityRole="tablist"
-              style={styles.tabRail}
-            >
-              {RESULT_REELS.map((reel, index) => (
-                <ReelTab
-                  active={activeIndex === index}
-                  disabled={saving}
-                  index={index}
-                  key={reel.id}
-                  onPress={() => selectPage(index)}
-                  position={position}
-                  reel={reel}
-                />
-              ))}
-            </View>
-
             <View style={styles.carouselViewport}>
               {RESULT_REELS.map((reel, index) => (
                 <ReelPanel
@@ -1037,6 +1019,23 @@ export function ItemAnalysisResultStage({
                 </ReelPanel>
               ))}
             </View>
+
+            <View
+              accessibilityRole="tablist"
+              style={styles.tabRail}
+            >
+              {RESULT_REELS.map((reel, index) => (
+                <ReelTab
+                  active={activeIndex === index}
+                  disabled={saving}
+                  index={index}
+                  key={reel.id}
+                  onPress={() => selectPage(index)}
+                  position={position}
+                  reel={reel}
+                />
+              ))}
+            </View>
           </Animated.View>
         </GestureDetector>
 
@@ -1050,13 +1049,6 @@ export function ItemAnalysisResultStage({
               primary
             />
           ) : null}
-
-          <CompactAction
-            accent={theme.colors.goldBright}
-            disabled={saving}
-            label={doneLabel}
-            onPress={onDone}
-          />
         </View>
       </Animated.View>
     </Animated.View>
@@ -1187,8 +1179,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   tab: {
-    width: 38,
-    height: 38,
+    width: 35,
+    height: 35,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 19,
@@ -1205,7 +1197,7 @@ const styles = StyleSheet.create({
   },
   carouselViewport: {
     width: "100%",
-    height: 151,
+    height: 165,
     overflow: "hidden",
   },
   panel: {

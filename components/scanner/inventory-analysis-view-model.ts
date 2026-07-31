@@ -75,7 +75,7 @@ export function inventoryItemToAnalysisState(
       },
       summary:
         (item.conditionNotes && displayText(item.conditionNotes, 480)) ||
-        "Saved KeepFlip analysis. The generated item model and durable inventory facts are shown here.",
+        "Saved KeepFlip analysis. The captured evidence and durable inventory facts are shown here.",
       valuation:
         item.estimatedValue == null
           ? undefined

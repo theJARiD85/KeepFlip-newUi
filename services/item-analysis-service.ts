@@ -1,4 +1,8 @@
 import { File } from "expo-file-system";
+import {
+  ImageManipulator,
+  SaveFormat,
+} from "expo-image-manipulator";
 import { Storage } from "react-native-appwrite";
 
 import {
@@ -46,7 +50,14 @@ export type {
 } from "@/types/item-analysis";
 
 export const MAX_ANALYSIS_PHOTOS = 4;
-const MAX_PHOTO_BYTES = 16 * 1024 * 1024;
+const MAX_SOURCE_PHOTO_BYTES = 64 * 1024 * 1024;
+const MAX_CLOUD_PHOTO_BYTES = 16 * 1024 * 1024;
+
+const CLOUD_PHOTO_PROFILES = Object.freeze({
+  single: Object.freeze({ width: 2048, compress: 0.86 }),
+  pair: Object.freeze({ width: 1800, compress: 0.82 }),
+  multi: Object.freeze({ width: 1600, compress: 0.8 }),
+});
 
 export class ItemAnalysisError extends Error {
   constructor(
@@ -112,7 +123,7 @@ function normalizePhotoUri(uri: string) {
   return `file://${trimmed.startsWith("/") ? "" : "/"}${trimmed}`;
 }
 
-function openPhoto(uri: string) {
+function openSourcePhoto(uri: string) {
   const file = new File(normalizePhotoUri(uri));
 
   if (!file.exists || !Number.isFinite(file.size) || file.size <= 0) {
@@ -122,15 +133,92 @@ function openPhoto(uri: string) {
     );
   }
 
-  if (file.size > MAX_PHOTO_BYTES) {
+  if (file.size > MAX_SOURCE_PHOTO_BYTES) {
     throw new ItemAnalysisError(
-      "One of the selected photos is larger than 16 MB.",
+      "One of the selected photos is larger than 64 MB.",
       "PHOTO_TOO_LARGE",
-      { size: file.size, maximumBytes: MAX_PHOTO_BYTES },
+      { size: file.size, maximumBytes: MAX_SOURCE_PHOTO_BYTES },
     );
   }
 
   return file;
+}
+
+function openCloudPhoto(uri: string) {
+  const file = new File(normalizePhotoUri(uri));
+
+  if (!file.exists || !Number.isFinite(file.size) || file.size <= 0) {
+    throw new ItemAnalysisError(
+      "KeepFlip could not prepare one of the photos for AI analysis.",
+      "CLOUD_PHOTO_PREPARATION_FAILED",
+    );
+  }
+
+  if (file.size > MAX_CLOUD_PHOTO_BYTES) {
+    throw new ItemAnalysisError(
+      "A prepared AI photo is larger than 16 MB.",
+      "CLOUD_PHOTO_TOO_LARGE",
+      { size: file.size, maximumBytes: MAX_CLOUD_PHOTO_BYTES },
+    );
+  }
+
+  return file;
+}
+
+function cloudPhotoProfile(photoCount: number) {
+  if (photoCount <= 1) return CLOUD_PHOTO_PROFILES.single;
+  if (photoCount === 2) return CLOUD_PHOTO_PROFILES.pair;
+  return CLOUD_PHOTO_PROFILES.multi;
+}
+
+function deletePreparedCloudPhoto(uri: string) {
+  try {
+    const file = new File(normalizePhotoUri(uri));
+    if (file.exists) file.delete();
+  } catch {
+    // Cache cleanup must never replace the useful analysis result or error.
+  }
+}
+
+async function preparePhotoForCloudAnalysis(
+  sourceUri: string,
+  photoCount: number,
+) {
+  const source = openSourcePhoto(sourceUri);
+  const profile = cloudPhotoProfile(photoCount);
+  const context = ImageManipulator.manipulate(source.uri);
+  let preparedUri: string | null = null;
+
+  try {
+    context.resize({ width: profile.width });
+    const image = await context.renderAsync();
+
+    try {
+      const result = await image.saveAsync({
+        compress: profile.compress,
+        format: SaveFormat.JPEG,
+      });
+      preparedUri = result.uri;
+      return {
+        file: openCloudPhoto(result.uri),
+        uri: result.uri,
+      };
+    } finally {
+      image.release();
+    }
+  } catch (error) {
+    if (preparedUri) deletePreparedCloudPhoto(preparedUri);
+    if (error instanceof ItemAnalysisError) throw error;
+
+    throw new ItemAnalysisError(
+      "KeepFlip could not prepare one of the photos for AI analysis.",
+      "CLOUD_PHOTO_PREPARATION_FAILED",
+      undefined,
+      { cause: error },
+    );
+  } finally {
+    context.release();
+  }
 }
 
 function confidence01(value: number) {
@@ -611,6 +699,7 @@ export async function analyzeItemPhotos(
 
   const storage = new Storage(client);
   const uploadedFileIds: string[] = [];
+  const preparedCloudPhotoUris: string[] = [];
   let cleaned = false;
 
   try {
@@ -618,11 +707,19 @@ export async function analyzeItemPhotos(
 
     for (const photoUri of input.photoUris) {
       throwIfAborted(options.signal);
-      const photo = openPhoto(photoUri);
+      /*
+       * saveScannerPhoto owns the durable, full-resolution inventory image.
+       * This cache JPEG is a separate working copy used only by cloud AI.
+       */
+      const prepared = await preparePhotoForCloudAnalysis(
+        photoUri,
+        input.photoUris.length,
+      );
+      preparedCloudPhotoUris.push(prepared.uri);
       const uploaded = await storage.createFile({
         bucketId: APPWRITE.itemImagesBucketId,
         fileId: ID.unique(),
-        file: photo as any,
+        file: prepared.file as any,
         permissions: [
           Permission.read(Role.user(user.$id)),
           Permission.update(Role.user(user.$id)),
@@ -750,6 +847,10 @@ export async function analyzeItemPhotos(
         APPWRITE.itemImagesBucketId,
         uploadedFileIds,
       );
+    }
+
+    for (const uri of preparedCloudPhotoUris) {
+      deletePreparedCloudPhoto(uri);
     }
   }
 }

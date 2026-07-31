@@ -46,7 +46,7 @@ export function InventoryCard({
 
   return (
     <Pressable
-      accessibilityHint="Opens the saved KeepFlip analysis and generated item model"
+      accessibilityHint="Opens the saved KeepFlip analysis and captured item evidence"
       accessibilityLabel={`Open analysis for ${item.title}`}
       accessibilityRole="button"
       onPress={onPress}

@@ -15,6 +15,7 @@ type ResultState = Extract<ItemAnalysisState, { status: "result" }>;
 
 export type ScannerAnalysisSession = {
   backdropUri: string;
+  ensurePhotosSaved?: () => Promise<void>;
   id: string;
   localDetection?: {
     label: string;
@@ -31,6 +32,7 @@ export type ScannerAnalysisSession = {
 export type ScannerAnalysisResultSession = {
   analysis: ItemAnalysisSuccess;
   backdropUri: string;
+  ensurePhotosSaved?: () => Promise<void>;
   id: string;
   modelUrl: string | null;
   onReset: () => void;
@@ -114,6 +116,7 @@ export function ItemAnalysisResultProvider({
       setScannerResult({
         analysis: input.analysis,
         backdropUri: analysisSession.backdropUri,
+        ensurePhotosSaved: analysisSession.ensurePhotosSaved,
         id,
         modelUrl: analysisSession.modelUrl,
         onReset: analysisSession.onReset,
