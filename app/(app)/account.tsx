@@ -232,6 +232,7 @@ const styles = StyleSheet.create({
   },
   header: { gap: 7 },
   eyebrow: {
+    
     color: theme.colors.gold,
     fontSize: 10,
     fontWeight: '900',

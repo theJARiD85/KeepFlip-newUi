@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, View, type ViewStyle } from "react-native";
 import Animated, {
   interpolate,
   interpolateColor,
@@ -180,14 +180,13 @@ export const HolographicToolBase = memo(function HolographicToolBase({
   );
 });
 
-const styles = StyleSheet.create({
+const styles = StyleSheet.create<Record<"root" | "tick" | "tickCarrier", ViewStyle>>({
   root: {
     position: "relative",
   },
   tickCarrier: {
     position: "absolute",
     alignItems: "stretch",
-    justifyContent: "stretch",
   },
   tick: {
     flex: 1,

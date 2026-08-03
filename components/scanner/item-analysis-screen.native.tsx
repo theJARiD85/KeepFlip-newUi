@@ -18,18 +18,17 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { CerebroAnalysisField } from "@/components/scanner/cerebro-analysis-field.native";
 import { ItemAnalysisBubbles } from "@/components/scanner/item-analysis-bubbles";
+import {
+  type ItemAnalysisState,
+} from "@/components/scanner/item-analysis-overlay";
 import {
   analysisDiagnosticId,
   analysisProgressState,
 } from "@/components/scanner/item-analysis-progress";
 import { useItemAnalysisResult } from "@/components/scanner/item-analysis-result-context";
-import {
-  type ItemAnalysisState,
-} from "@/components/scanner/item-analysis-overlay";
 import { toItemAnalysisState } from "@/components/scanner/item-analysis-view-model";
-import ModelProjectionScanner from "@/components/scanner/model-projection-scanner.native";
-import { ScannerAtmosphere } from "@/components/scanner/scanner-atmosphere.native";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import {
   analyzeItemPhotos,
@@ -49,12 +48,14 @@ type CompletedAnalysis = {
   state: ResultState;
 };
 
-const HOLOGRAPHIC_PROJECTION_STATE = {
+const FINAL_LOCK_IN_DELAY_MS = 1050;
+
+const CEREBRA_LOCK_IN_STATE = {
   detail:
-    "Stabilizing the captured image inside KeepFlip's live photon field.",
+    "Locking verified evidence into KeepFlip's neural field.",
   insights: [],
   progress: 0.98,
-  stage: "Projection rendering",
+  stage: "Evidence lock-in",
   status: "analyzing",
   steps: [
     { label: "Verify your signed-in session", status: "complete" },
@@ -62,9 +63,15 @@ const HOLOGRAPHIC_PROJECTION_STATE = {
     { label: "Identify and evaluate the item", status: "complete" },
     { label: "Remove temporary cloud copies", status: "complete" },
     { label: "Research completed marketplace sales", status: "complete" },
-    { label: "Stabilize the holographic image field", status: "active" },
+    { label: "Lock verified evidence into the neural field", status: "active" },
   ],
 } satisfies Extract<ItemAnalysisState, { status: "analyzing" }>;
+
+function normalizeConfidence(value?: number) {
+  if (value == null || !Number.isFinite(value)) return 0;
+  const normalized = value > 1 ? value / 100 : value;
+  return Math.max(0, Math.min(1, normalized));
+}
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -103,16 +110,27 @@ export function ItemAnalysisScreen() {
   const startedSessionIdRef = useRef<string | null>(null);
   const finalizedRef = useRef(false);
   const resultNavigationStartedRef = useRef(false);
+  const resultNavigationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const activeSessionId = session?.id;
   const activeSessionCancel = session?.onCancel;
   const isFinalizingResult = state.status === "result";
   const displayedState = isFinalizingResult
-    ? HOLOGRAPHIC_PROJECTION_STATE
+    ? CEREBRA_LOCK_IN_STATE
     : state;
   const isAnalysisAnimationActive =
     state.status === "analyzing" || isFinalizingResult;
   const analysisAnimationProgress =
     state.status === "analyzing" ? state.progress : 0.98;
+  const resultData = completedAnalysis?.state.data;
+  const evidenceLockConfidence = isFinalizingResult
+    ? normalizeConfidence(
+      resultData?.confidence?.valuation ??
+      resultData?.confidence?.overall ??
+      resultData?.valuationReadiness.score,
+    )
+    : 0;
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", setAppState);
@@ -124,6 +142,10 @@ export function ItemAnalysisScreen() {
     runSequenceRef.current += 1;
     controllerRef.current?.abort();
     controllerRef.current = null;
+    if (resultNavigationTimerRef.current) {
+      clearTimeout(resultNavigationTimerRef.current);
+      resultNavigationTimerRef.current = null;
+    }
     session?.onCancel();
     clearScannerAnalysis(sessionId);
     router.back();
@@ -257,32 +279,43 @@ export function ItemAnalysisScreen() {
     }
 
     resultNavigationStartedRef.current = true;
-    const resultSessionId = promoteScannerAnalysisToResult(
-      activeSessionId,
-      completedAnalysis,
-    );
+    resultNavigationTimerRef.current = setTimeout(() => {
+      resultNavigationTimerRef.current = null;
 
-    if (!resultSessionId) {
-      resultNavigationStartedRef.current = false;
-      requestAnimationFrame(() => {
-        setState({
-          code: "ANALYSIS_SESSION_ENDED",
-          message:
-            "The live analysis session ended before its result could open.",
-          status: "error",
+      const resultSessionId = promoteScannerAnalysisToResult(
+        activeSessionId,
+        completedAnalysis,
+      );
+
+      if (!resultSessionId) {
+        resultNavigationStartedRef.current = false;
+        requestAnimationFrame(() => {
+          setState({
+            code: "ANALYSIS_SESSION_ENDED",
+            message:
+              "The live analysis session ended before its result could open.",
+            status: "error",
+          });
         });
-      });
-      return;
-    }
+        return;
+      }
 
-    finalizedRef.current = true;
-    void Haptics.notificationAsync(
-      Haptics.NotificationFeedbackType.Success,
-    ).catch(() => undefined);
-    router.replace({
-      pathname: "/analysis-result",
-      params: { sessionId: resultSessionId },
-    });
+      finalizedRef.current = true;
+      void Haptics.notificationAsync(
+        Haptics.NotificationFeedbackType.Success,
+      ).catch(() => undefined);
+      router.replace({
+        pathname: "/analysis-result",
+        params: { sessionId: resultSessionId },
+      });
+    }, FINAL_LOCK_IN_DELAY_MS);
+
+    return () => {
+      if (resultNavigationTimerRef.current) {
+        clearTimeout(resultNavigationTimerRef.current);
+        resultNavigationTimerRef.current = null;
+      }
+    };
   }, [
     activeSessionId,
     completedAnalysis,
@@ -307,6 +340,10 @@ export function ItemAnalysisScreen() {
       runSequenceRef.current += 1;
       controllerRef.current?.abort();
       controllerRef.current = null;
+      if (resultNavigationTimerRef.current) {
+        clearTimeout(resultNavigationTimerRef.current);
+        resultNavigationTimerRef.current = null;
+      }
 
       if (
         !finalizedRef.current &&
@@ -327,49 +364,21 @@ export function ItemAnalysisScreen() {
   if (!session) {
     return (
       <View style={styles.root}>
-        <ScannerAtmosphere
-          active={isFocused && appState === "active"}
-          height={height}
-          phase="analyzing"
-          progress={0.18}
-          sceneOffsetY={-60}
-          width={width}
-        />
-        <ItemAnalysisBubbles
-          bottomInset={insets.bottom}
-          doneLabel="Back to scanner"
-          onDone={() => router.back()}
-          onRetry={() => router.back()}
-          retryLabel="Back to scanner"
-          state={{
-            code: "ANALYSIS_SESSION_MISSING",
-            message:
-              "This live analysis session is no longer available.",
-            status: "error",
-          }}
-          topInset={insets.top}
-        />
       </View>
     );
   }
 
   return (
     <View style={styles.root}>
-      <ModelProjectionScanner
-        photoUri={session.backdropUri}
-      />
-      <View pointerEvents="none" style={styles.photoScrim} />
-      <ScannerAtmosphere
+      <CerebroAnalysisField
         active={
           isAnalysisAnimationActive &&
           isFocused &&
           appState === "active"
         }
-        height={height}
-        phase="analyzing"
-        progress={analysisAnimationProgress}
-        sceneOffsetY={-60}
-        width={width}
+        activityProgress={analysisAnimationProgress}
+        lockConfidence={evidenceLockConfidence}
+        photoUri={session.backdropUri}
       />
       <ItemAnalysisBubbles
         bottomInset={insets.bottom}
@@ -399,13 +408,5 @@ const styles = StyleSheet.create({
     flex: 1,
     overflow: "hidden",
     backgroundColor: theme.colors.backgroundDeep,
-  },
-  photoScrim: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(1, 2, 6, 0.18)",
-    experimental_backgroundImage: `
-      radial-gradient(circle at 50% 42%, rgba(88, 223, 232, 0.06) 0%, transparent 40%),
-      linear-gradient(to bottom, rgba(1, 1, 4, 0.64) 0%, rgba(3, 2, 9, 0.18) 46%, rgba(1, 1, 4, 0.66) 100%)
-    `,
   },
 });

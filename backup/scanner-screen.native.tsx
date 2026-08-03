@@ -18,10 +18,6 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
 } from "react-native-reanimated";
-
-import {
-  ScannerAtmosphere,
-} from "@/components/scanner/scanner-atmosphere.native";
 import {
   ValueRadarOverlay,
   useValueRadar,
@@ -1274,11 +1270,6 @@ export default function ScannerScreen() {
         contentStyle={[styles.centeredState, { paddingHorizontal: pageGutter }]}
       >
         <View style={styles.permissionAtmosphere}>
-          <ScannerAtmosphere
-            width={scannerWidth}
-            height={scannerHeight}
-            active={true}
-          />
         </View>
         {analysisState == null ? (
           <Animated.View
@@ -1385,11 +1376,6 @@ export default function ScannerScreen() {
         contentStyle={[styles.centeredState, { paddingHorizontal: pageGutter }]}
       >
         <View style={styles.permissionAtmosphere}>
-          <ScannerAtmosphere
-            width={scannerWidth}
-            height={scannerHeight}
-            active={true}
-          />
         </View>
         {analysisState == null ? (
           <Animated.View
@@ -1496,29 +1482,6 @@ export default function ScannerScreen() {
         pointerEvents="box-none"
         style={styles.interfaceLayer}
       >
-        {analysisBackdropUri ? (
-          <Animated.View
-            entering={FadeIn.duration(180)}
-            exiting={FadeOut.duration(160)}
-            pointerEvents="none"
-            style={StyleSheet.absoluteFill}
-          >
-            {generatedModel && analysisState?.status === "result" ? (
-                <ModelProjectionScanner
-                  modelUrl={generatedModel.modelUrl}
-                  onError={handleModelProjectionError}
-                />
-            ) : (
-                <Image
-                  cachePolicy="memory-disk"
-                  contentFit="cover"
-                  source={{ uri: analysisBackdropUri }}
-                  style={StyleSheet.absoluteFill}
-                  transition={120}
-                />
-            )}
-          </Animated.View>
-        ) : null}
         <View
           pointerEvents="none"
           style={[
@@ -1553,16 +1516,6 @@ export default function ScannerScreen() {
             />
           </View>
         ) : null}
-        {analysisState?.status === "analyzing" ? (
-        <Animated.View
-          entering={FadeIn.duration(220)}
-          exiting={FadeOut.duration(180)}
-          pointerEvents="none"
-          style={styles.analysisAtmosphereHost}
-        >
-          <ScannerAtmosphere phase="analyzing" />
-        </Animated.View>
-      ) : null}
         {photoReviewOverlay ? (
           <View
             collapsable={false}

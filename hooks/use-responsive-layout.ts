@@ -21,7 +21,7 @@ export function useResponsiveLayout() {
   const isCompactHeight = height < 700;
   const isTallPhone = !isTablet && height / Math.max(width, 1) >= 2;
 
-  const pageGutter = isWideTablet ? 32 : isTablet ? 24 : isCompactWidth ? 16 : 20;
+  const pageGutter = isWideTablet ? 32 : isTablet ? 24 : isCompactWidth ? 10: 15
   const contentMaxWidth = isWideTablet ? 1040 : isTablet ? 720 : 560;
   const availableWidth = Math.max(0, width - pageGutter * 2);
   const contentWidth = Math.min(availableWidth, contentMaxWidth);

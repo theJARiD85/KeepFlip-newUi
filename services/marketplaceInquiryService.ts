@@ -106,21 +106,6 @@ function threadKey(listingId: string, buyerId: string, sellerId: string) {
   return `${listingId}:${buyerId}:${sellerId}`;
 }
 
-function unique(values: string[]) {
-  return Array.from(new Set(values));
-}
-
-function conversationPermissions(buyerId: string, sellerId: string) {
-  return ([
-    Permission.read(Role.user(buyerId)),
-    Permission.read(Role.user(sellerId)),
-    Permission.update(Role.user(buyerId)),
-    Permission.update(Role.user(sellerId)),
-    Permission.delete(Role.user(buyerId)),
-    Permission.delete(Role.user(sellerId)),
-  ]);
-}
-
 function marketplaceInquiriesRowsChannel() {
   return Channel.tablesdb(APPWRITE.databaseId)
     .table(APPWRITE.marketplaceInquiriesTableId)

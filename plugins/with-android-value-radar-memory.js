@@ -6,6 +6,9 @@ const {
 
 const NETWORK_INSPECTOR_PROPERTY = "EX_DEV_CLIENT_NETWORK_INSPECTOR";
 const MIN_SDK_PROPERTY = "android.minSdkVersion";
+const GRADLE_JVMARGS_PROPERTY = "org.gradle.jvmargs";
+const GRADLE_JVMARGS_VALUE =
+  "-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8";
 
 /**
  * Keeps the Android development client from copying large binary model
@@ -18,6 +21,7 @@ module.exports = function withAndroidValueRadarMemory(config) {
     const managedProperties = new Set([
       NETWORK_INSPECTOR_PROPERTY,
       MIN_SDK_PROPERTY,
+      GRADLE_JVMARGS_PROPERTY,
     ]);
 
     gradleConfig.modResults = gradleConfig.modResults.filter(
@@ -35,6 +39,11 @@ module.exports = function withAndroidValueRadarMemory(config) {
         type: "property",
         key: MIN_SDK_PROPERTY,
         value: "26",
+      },
+      {
+        type: "property",
+        key: GRADLE_JVMARGS_PROPERTY,
+        value: GRADLE_JVMARGS_VALUE,
       },
     );
 

@@ -32,6 +32,39 @@ EXPO_PUBLIC_APPWRITE_SCAN_BUCKET_ID
 EXPO_PUBLIC_APPWRITE_ANALYZE_FUNCTION_ID
 ```
 
+## `items` analysis snapshot migration
+
+The inventory row keeps its normal searchable columns (`title`, `brand`,
+`model`, `condition`, `estimatedValueCents`, `aiConfidence`, and
+`coverPhotoId`). To reopen the complete analysis without duplicating every
+result field as an Appwrite column, add this optional column to the `items`
+table:
+
+| Column | Type | Required | Indexed |
+| --- | --- | --- | --- |
+| `analysisSnapshotJson` | mediumtext | no | no |
+
+The app stores a normalized, versioned envelope containing the complete
+`ItemAnalysisSuccess` result. The current envelope is:
+
+```json
+{
+  "schemaVersion": 1,
+  "savedAt": "ISO-8601 datetime",
+  "result": "ItemAnalysisSuccess"
+}
+```
+
+The client rejects snapshots larger than 500,000 characters. Inventory list
+queries intentionally omit this column; opening a specific item loads and
+validates it. Existing rows do not need a backfill. Missing, malformed, or
+unsupported snapshots fall back to the durable item columns already stored on
+the row.
+
+If the column is missing, analyzed-item creation returns an explicit schema
+migration error instead of silently discarding the rich result. Wait until the
+Appwrite column reports as available before retrying a save.
+
 ## `item_photos` table
 
 | Column | Type | Required |

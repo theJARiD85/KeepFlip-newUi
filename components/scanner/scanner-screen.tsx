@@ -1,6 +1,5 @@
 import { ScrollView, StyleSheet, View } from 'react-native';
 
-import { ScannerAtmosphere } from '@/components/scanner/scanner-atmosphere';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
@@ -37,7 +36,6 @@ export default function ScannerScreen() {
             },
           ]}>
           <View pointerEvents="none" style={styles.colorWash} />
-          <ScannerAtmosphere phase="scanning" />
 
           <View style={styles.liveBadge}>
             <View style={styles.liveDot} />

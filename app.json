@@ -2,7 +2,7 @@
   "expo": {
     "name": "KeepFlip",
     "slug": "keepflip",
-    "version": "1.0.8",
+    "version": "2.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "keepflip",
@@ -43,7 +43,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/icon (2).png",
+          "image": "./assets/images/icon2.png",
           "imageWidth": 225,
           "resizeMode": "contain",
           "backgroundColor": "#030305",

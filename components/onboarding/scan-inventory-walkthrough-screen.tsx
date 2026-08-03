@@ -1,6 +1,6 @@
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
-import { type Href, useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -15,12 +15,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { InventoryCard } from "@/components/inventory/inventory-card";
-import type { ItemAnalysisState } from "@/components/scanner/item-analysis-overlay";
-import { ItemAnalysisResultStage } from "@/components/scanner/item-analysis-result-stage";
+import type { ItemAnalysisState } from "@/components/scanner/analysis-visual-types";
 import {
   ScannerToolCarousel,
   type ScannerToolId,
 } from "@/components/scanner/scanner-tool-carousel";
+import { ValuationResultStage } from "@/components/scanner/valuation-result-stage";
 import {
   ValueRadarOverlay,
   type ValueRadarMarker,
@@ -62,9 +62,9 @@ const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   },
   {
     accent: theme.colors.scannerViolet,
-    eyebrow: "02 / REVIEW INTELLIGENCE",
-    title: "Interrogate the result.",
-    body: "Swipe the real analysis reels to review identity, condition, evidence, confidence, and market value.",
+    eyebrow: "02 / LOCK THE VALUE",
+    title: "Read the resale range.",
+    body: "Watch the gauge resolve low, median, and high value, then open Max Profit for the strongest listing actions.",
   },
   {
     accent: theme.colors.goldBright,
@@ -115,6 +115,29 @@ const SAMPLE_ANALYSIS_STATE: Extract<
       model: "Tabby 26",
       title: "Coach Tabby Shoulder Bag 26",
       variant: "Black pebble leather",
+    },
+    profitPlan: {
+      actions: [
+        {
+          detail: "Open near $315 and use $265 as the evidence-backed offer target.",
+          id: "walkthrough-profit-price",
+          label: "Leave room for offers",
+        },
+        {
+          detail: "Lead with Coach Tabby 26 and black pebble leather in the listing title.",
+          id: "walkthrough-profit-title",
+          label: "Use the strongest search terms",
+        },
+        {
+          detail: "Photograph the corners, hardware, and stitching in sharp natural light.",
+          id: "walkthrough-profit-condition",
+          label: "Turn condition into trust",
+        },
+      ],
+      currency: "USD",
+      expectedSale: 265,
+      listTarget: 315,
+      quickSale: 215,
     },
     suggestedPhotos: [],
     summary:
@@ -278,11 +301,9 @@ function ScannerStagePreview({
 }
 
 function AnalysisStagePreview({
-  onBack,
   onSave,
   previewWidth,
 }: {
-  onBack: () => void;
   onSave: () => void;
   previewWidth: number;
 }) {
@@ -300,11 +321,9 @@ function AnalysisStagePreview({
         <View style={styles.projectionScanline} />
         <Text style={styles.projectionPlaceholderText}>MODEL PROJECTION</Text>
       </View>
-      <ItemAnalysisResultStage
+      <ValuationResultStage
         bottomInset={0}
-        doneLabel="Back"
         embedded
-        onDone={onBack}
         onSave={onSave}
         projectionLabel="WALKTHROUGH MODEL / SAFE PREVIEW"
         saveLabel="Save to inventory"
@@ -361,9 +380,9 @@ export function ScanInventoryWalkthroughScreen() {
     activeStep === 0
       ? 440
       : Math.min(
-          activeStep === 1 ? 472 : 430,
-          Math.max(356, height * 0.53),
-        );
+        activeStep === 1 ? 472 : 430,
+        Math.max(356, height * 0.53),
+      );
 
   const goToStep = useCallback((nextStep: number) => {
     selectionHaptic();
@@ -410,7 +429,6 @@ export function ScanInventoryWalkthroughScreen() {
     if (activeStep === 1) {
       return (
         <AnalysisStagePreview
-          onBack={() => goToStep(0)}
           onSave={() => goToStep(2)}
           previewWidth={previewWidth}
         />

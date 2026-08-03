@@ -16,7 +16,8 @@ export type ItemAnalysisEvidenceSource =
   | 'photo_visual'
   | 'photo_text'
   | 'user_notes'
-  | 'google_vision';
+  | 'google_vision'
+  | 'web_market';
 
 export type ItemAnalysisEvidenceStrength = 'high' | 'medium' | 'low';
 
@@ -48,6 +49,7 @@ export type ItemAnalysisConfidence = {
   brand: number;
   model: number;
   condition: number;
+  valuation?: number;
 };
 
 export type ItemAnalysisEvidence = {
@@ -111,8 +113,17 @@ export type ItemValuation = {
   median: number | null;
   p20: number | null;
   p80: number | null;
-  methodology: 'median_linear_p20_p80_mad_outlier_filter_v1' | 'none';
-  source?: 'caller_supplied' | 'ebay_sold' | 'multi_market_sold' | 'none';
+  methodology:
+  | 'median_linear_p20_p80_mad_outlier_filter_v1'
+  | 'keepflip_ai_private_sale_range_v1'
+  | 'keepflip_ai_private_sale_range_v2'
+  | 'none';
+  source?:
+  | 'caller_supplied'
+  | 'ebay_sold'
+  | 'multi_market_sold'
+  | 'keepflip_ai'
+  | 'none';
 };
 
 export type MarketProviderId =
@@ -126,6 +137,7 @@ export type MarketProviderId =
   | 'discogs'
   | 'bricklink'
   | 'yahoo_japan'
+  | 'keepflip_ai'
   | 'unknown';
 
 export type MarketEvidenceClass =
@@ -175,6 +187,7 @@ export type ItemMarketSignal = {
   observedAt: string | null;
   sourceUrl: string | null;
   note?: string | null;
+  confidencePercent?: number | null;
 };
 
 export type ItemSoldComparable = {
@@ -195,8 +208,26 @@ export type ItemSoldComparable = {
   shippingSemantics?: 'included' | 'separate' | 'unknown';
 };
 
+export type ItemMarketReference = {
+  title: string;
+  link: string;
+  snippet: string | null;
+  source: string | null;
+};
+
+export type ItemProfitabilityAction = {
+  title: string;
+  detail: string;
+  confidencePercent: number | null;
+};
+
+export type ItemValuationRefinementQuestion = {
+  prompt: string;
+  reason: string | null;
+};
+
 export type ItemMarketResearch = {
-  provider: 'ebay' | 'multi_market';
+  provider: 'ebay' | 'multi_market' | 'keepflip_ai';
   status: 'completed' | 'unavailable' | 'failed';
   jobId?: string;
   partial?: boolean;
@@ -206,13 +237,34 @@ export type ItemMarketResearch = {
   comps: ItemSoldComparable[];
   providers?: ItemMarketProviderStatus[];
   signals?: ItemMarketSignal[];
+  references?: ItemMarketReference[];
+  identification?: string | null;
+  condition?: {
+    grade: 'new' | 'like_new' | 'good' | 'fair' | 'poor' | 'parts' | 'unknown';
+    summary: string | null;
+    confidence: 'high' | 'medium' | 'low';
+    confidencePercent?: number | null;
+  } | null;
+  factors?: string[];
+  profitabilityActions?: ItemProfitabilityAction[];
+  refinementQuestions?: ItemValuationRefinementQuestion[];
+  suggestedDetails?: string[];
+  answerMarkdown?: string | null;
+  normalization?: {
+    method: 'openai_structured_outputs' | 'deterministic_fallback';
+    model: string | null;
+  } | null;
   quality?: {
     confidence: 'high' | 'medium' | 'low';
+    confidencePercent?: number | null;
     exactComparableCount: number;
     comparableCount: number;
     warnings: string[];
-    searchRoute?: 'identifier' | 'hybrid' | 'descriptor';
-    searchIntent?: 'sold_comps' | 'visual_recently_sold';
+    searchRoute?: 'identifier' | 'hybrid' | 'descriptor' | 'visual';
+    searchIntent?:
+    | 'sold_comps'
+    | 'visual_recently_sold'
+    | 'ai_mode_image_valuation';
   };
   error?: {
     code: string;

@@ -83,6 +83,8 @@ export default function AppShellLayout() {
   return (
     <KeepFlipMenuProvider>
       <ItemAnalysisResultProvider>
+        <WalkthroughAutoLauncher />
+        <KeepFlipSlideDownMenu />
         <View style={styles.root}>
           <Stack
             screenOptions={{
@@ -95,10 +97,7 @@ export default function AppShellLayout() {
             <Stack.Screen name="analysis" />
             <Stack.Screen name="analysis-result" />
             <Stack.Screen name="account" />
-            <Stack.Screen name="explore" />
           </Stack>
-          <WalkthroughAutoLauncher />
-          <KeepFlipSlideDownMenu />
         </View>
       </ItemAnalysisResultProvider>
     </KeepFlipMenuProvider>
@@ -107,7 +106,6 @@ export default function AppShellLayout() {
 
 const styles = StyleSheet.create({
   root: {
-    flex: 1,
-    backgroundColor: keepFlipTheme.colors.backgroundDeep,
+    flex: 1
   },
 });

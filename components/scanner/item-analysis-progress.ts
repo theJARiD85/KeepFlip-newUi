@@ -1,69 +1,196 @@
-import {
-  type AnalysisStep,
-  type ItemAnalysisState,
-} from "@/components/scanner/item-analysis-overlay";
-import {
-  buildAnalysisThoughts,
-  type AnalysisThoughtContext,
-} from "@/components/scanner/scanner-thought-stream";
+import type {
+  AnalysisCallout,
+  AnalysisStep,
+  ItemAnalysisState,
+} from "@/components/scanner/analysis-visual-types";
 import { ItemAnalysisError } from "@/services/item-analysis-service";
-import type { ItemAnalysisStage } from "@/types/item-analysis";
+import type {
+  ItemAnalysisStage,
+  ItemIdentificationSnapshot,
+} from "@/types/item-analysis";
 
-const ANALYSIS_STAGES: Record<
+export type AnalysisProgressContext = {
+  localDetection?: {
+    label: string;
+    score: number;
+  };
+  modeLabel: string;
+  partialResult?: ItemIdentificationSnapshot;
+  photoCount: number;
+};
+
+const STAGES: Record<
   ItemAnalysisStage,
   { detail: string; progress: number; stage: string }
 > = {
   authenticating: {
-    detail: "Verifying your signed-in Appwrite session for this scan.",
-    progress: 0.12,
-    stage: "Securing your session",
+    detail: "Opening a private valuation session for this scan.",
+    progress: 0.1,
+    stage: "Securing valuation channel",
   },
   uploading: {
-    detail: "Sending up to four item views through private temporary storage.",
-    progress: 0.36,
-    stage: "Uploading photo evidence",
+    detail: "Registering every view as sale and condition evidence.",
+    progress: 0.3,
+    stage: "Preparing market evidence",
   },
   analyzing: {
-    detail:
-      "Cross-checking visual details, text, condition, and identity signals.",
-    progress: 0.7,
-    stage: "Reading item evidence",
-  },
-  cleaning: {
-    detail:
-      "Removing the temporary cloud copies while preserving your local scan.",
-    progress: 0.82,
-    stage: "Protecting your photos",
+    detail: "Extracting condition, material, demand, and exact-match price drivers.",
+    progress: 0.62,
+    stage: "Reading value drivers",
   },
   researching_comps: {
-    detail:
-      "Searching completed marketplace sales that match the identified item.",
-    progress: 0.94,
-    stage: "Researching the sold market",
+    detail: "Comparing the strongest item signals with current private-sale evidence.",
+    progress: 0.86,
+    stage: "Calibrating resale range",
+  },
+  cleaning: {
+    detail: "Locking the median valuation and generating profit-maximizing actions.",
+    progress: 0.97,
+    stage: "Building the profit plan",
   },
 };
 
-const ANALYSIS_STEP_LABELS = [
-  "Verify your signed-in session",
-  "Upload private photo evidence",
-  "Identify and evaluate the item",
-  "Remove temporary cloud copies",
-  "Research completed marketplace sales",
+const STEP_LABELS = [
+  "Secure the scan evidence",
+  "Extract value drivers and condition",
+  "Build the strongest market match",
+  "Calibrate low, median, and high value",
+  "Generate profit-maximizing actions",
 ] as const;
+
+const STAGE_INDEX: Record<ItemAnalysisStage, number> = {
+  authenticating: 0,
+  uploading: 0,
+  analyzing: 1,
+  researching_comps: 3,
+  cleaning: 4,
+};
+
+function compact(value: string, maxLength = 52) {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (normalized.length <= maxLength) return normalized;
+  return `${normalized.slice(0, maxLength - 1).trimEnd()}...`;
+}
+
+function titleCase(value: string) {
+  return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function buildCallouts(
+  stage: ItemAnalysisStage,
+  context: AnalysisProgressContext,
+): AnalysisCallout[] {
+  const result = context.partialResult;
+  const callouts: AnalysisCallout[] = [];
+
+  if (result) {
+    const { condition, identification, valuationSignals } = result.analysis;
+    const matchKey = [identification.brand, identification.model]
+      .filter(Boolean)
+      .join(" ");
+
+    if (matchKey) {
+      callouts.push({
+        accent: "cyan",
+        id: "market-match-key",
+        label: "MARKET MATCH KEY",
+        value: compact(matchKey, 42),
+      });
+    }
+
+    if (condition.grade !== "unknown") {
+      callouts.push({
+        accent: "gold",
+        id: "condition-impact",
+        label: "CONDITION IMPACT",
+        value: titleCase(condition.grade),
+      });
+    }
+
+    const materialSignal = result.analysis.evidence.find((item) =>
+      /material|construction|fabric|leather|metal|wood/i.test(
+        `${item.claim} ${item.value}`,
+      ),
+    );
+    if (materialSignal) {
+      callouts.push({
+        accent: "violet",
+        id: "material-signal",
+        label: "MATERIAL SIGNAL",
+        value: compact(materialSignal.value, 40),
+      });
+    }
+
+    if (stage === "researching_comps") {
+      const query = valuationSignals.searchTerms
+        .map((term) => term.trim())
+        .filter(Boolean)
+        .slice(0, 2)
+        .join(" / ");
+      if (query) {
+        callouts.unshift({
+          accent: "violet",
+          id: "market-search",
+          label: "MARKET SEARCH",
+          value: compact(query, 46),
+        });
+      }
+    }
+  }
+
+  if (callouts.length === 0) {
+    callouts.push(
+      {
+        accent: "cyan",
+        id: "photo-evidence",
+        label: "SALE EVIDENCE",
+        value: `${context.photoCount} ${context.photoCount === 1 ? "VIEW" : "VIEWS"}`,
+      },
+      {
+        accent: "violet",
+        id: "scan-mode",
+        label: "VALUATION MODE",
+        value: compact(context.modeLabel.toUpperCase(), 34),
+      },
+    );
+  }
+
+  const stageCallout: AnalysisCallout =
+    stage === "researching_comps"
+      ? {
+        accent: "gold",
+        id: "range-calibration",
+        label: "RANGE CALIBRATION",
+        value: "LOW / MEDIAN / HIGH",
+      }
+      : stage === "cleaning"
+        ? {
+          accent: "gold",
+          id: "profit-actions",
+          label: "PROFIT ACTIONS",
+          value: "PRICING / PROOF / LISTING",
+        }
+        : {
+          accent: "cyan",
+          id: "value-driver-scan",
+          label: "VALUE DRIVER SCAN",
+          value: "CONDITION / MATERIAL / DEMAND",
+        };
+
+  return [stageCallout, ...callouts]
+    .filter(
+      (callout, index, values) =>
+        values.findIndex((candidate) => candidate.id === callout.id) === index,
+    )
+    .slice(0, 4);
+}
 
 export function analysisProgressState(
   stage: ItemAnalysisStage,
-  context: Omit<AnalysisThoughtContext, "stage">,
+  context: AnalysisProgressContext,
 ): Extract<ItemAnalysisState, { status: "analyzing" }> {
-  const stageIndex: Record<ItemAnalysisStage, number> = {
-    authenticating: 0,
-    uploading: 1,
-    analyzing: 2,
-    cleaning: 3,
-    researching_comps: 4,
-  };
-  const activeIndex = stageIndex[stage];
-  const steps: AnalysisStep[] = ANALYSIS_STEP_LABELS.map((label, index) => ({
+  const activeIndex = STAGE_INDEX[stage];
+  const steps: AnalysisStep[] = STEP_LABELS.map((label, index) => ({
     label,
     status:
       index < activeIndex
@@ -74,11 +201,8 @@ export function analysisProgressState(
   }));
 
   return {
-    ...ANALYSIS_STAGES[stage],
-    insights: buildAnalysisThoughts({
-      ...context,
-      stage,
-    }),
+    ...STAGES[stage],
+    callouts: buildCallouts(stage, context),
     status: "analyzing",
     steps,
   };

@@ -2,10 +2,13 @@ import type { ItemAnalysisSuccess } from '@/types/item-analysis';
 
 import type {
   AnalysisEvidence,
+  AnalysisMarketReference,
+  AnalysisProfitPlan,
+  AnalysisRefinementQuestion,
   AnalysisSuggestedPhoto,
   ItemAnalysisResult as ItemAnalysisOverlayResult,
   ItemAnalysisState,
-} from './item-analysis-overlay';
+} from './analysis-visual-types';
 
 const EVIDENCE_SOURCE_LABELS: Record<
   ItemAnalysisSuccess['analysis']['evidence'][number]['source'],
@@ -15,6 +18,7 @@ const EVIDENCE_SOURCE_LABELS: Record<
   photo_text: 'Photo text',
   photo_visual: 'Visual',
   user_notes: 'User note',
+  web_market: 'AI Mode',
 };
 
 function titleCase(value: string) {
@@ -33,20 +37,15 @@ function compact<T>(values: (T | null | undefined | '')[]) {
   return values.filter((value): value is T => value != null && value !== '');
 }
 
-function average(values: number[]) {
-  if (values.length === 0) return undefined;
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
-}
-
 function suggestedPhotos(result: ItemAnalysisSuccess): AnalysisSuggestedPhoto[] {
   const suggestions = result.analysis.suggestedPhotos;
   const resolved =
     suggestions.length > 0
       ? suggestions
       : [
-          'A sharp photo of the entire item in even lighting',
-          'A close-up of any label, logo, model number, or maker mark',
-        ];
+        'A sharp photo of the entire item in even lighting',
+        'A close-up of any label, logo, model number, or maker mark',
+      ];
 
   return resolved.map((label, index) => ({
     id: `analysis-photo-${index}`,
@@ -67,14 +66,194 @@ function evidence(result: ItemAnalysisSuccess): AnalysisEvidence[] {
   }));
 }
 
+function marketReferences(
+  result: ItemAnalysisSuccess,
+): AnalysisMarketReference[] {
+  const references = result.marketResearch?.references ?? [];
+  const seen = new Set<string>();
+  const normalized: AnalysisMarketReference[] = [];
+
+  for (const reference of references) {
+    const link = reference.link.trim();
+    const title = displayText(
+      reference.title || reference.source || 'Market reference',
+      160,
+    );
+    const dedupeKey = (link || title).toLowerCase();
+    if (!dedupeKey || seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+
+    normalized.push({
+      id: `market-reference-${normalized.length}`,
+      link: link || undefined,
+      snippet: reference.snippet
+        ? displayText(reference.snippet, 360)
+        : undefined,
+      source: reference.source
+        ? displayText(reference.source, 80)
+        : undefined,
+      title,
+    });
+
+    if (normalized.length === 8) break;
+  }
+
+  return normalized;
+}
+
+function asRefinementQuestion(detail: string) {
+  const normalized = displayText(
+    detail.replace(/^[\s\-*\d.)]+/, '').replace(/[.!]+$/, ''),
+    160,
+  );
+  if (!normalized) return '';
+  if (detail.trim().endsWith('?')) return normalized.endsWith('?') ? normalized : `${normalized}?`;
+  if (/^(what|which|who|when|where|why|how|is|are|was|were|do|does|did|can|could|would|will)\b/i.test(normalized)) {
+    return `${normalized}?`;
+  }
+  return `Can you add ${normalized.charAt(0).toLowerCase()}${normalized.slice(1)}?`;
+}
+
+function refinementQuestions(
+  result: ItemAnalysisSuccess,
+): AnalysisRefinementQuestion[] {
+  const suppliedQuestions = result.marketResearch?.refinementQuestions ?? [];
+  const seen = new Set<string>();
+  const questions: AnalysisRefinementQuestion[] = [];
+
+  for (const question of suppliedQuestions) {
+    const prompt = displayText(question.prompt, 160);
+    const dedupeKey = prompt.toLowerCase();
+    if (!prompt || seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+    questions.push({
+      id: `market-refinement-${questions.length}`,
+      prompt,
+      reason: question.reason
+        ? displayText(question.reason, 240)
+        : undefined,
+    });
+    if (questions.length >= 6) break;
+  }
+
+  if (questions.length === 0) {
+    for (const detail of (result.marketResearch?.suggestedDetails ?? []).slice(0, 6)) {
+      const prompt = asRefinementQuestion(detail);
+      const dedupeKey = prompt.toLowerCase();
+      if (!prompt || seen.has(dedupeKey)) continue;
+      seen.add(dedupeKey);
+      questions.push({
+        id: `market-refinement-${questions.length}`,
+        prompt,
+        reason: 'This detail can tighten the item match and resale valuation.',
+      });
+    }
+  }
+
+  return questions;
+}
+
 function resultTitle(result: ItemAnalysisSuccess) {
   const identity = result.analysis.identification;
+  if (identity.itemType) return displayText(identity.itemType, 120);
   const preciseTitle = compact<string>([identity.brand, identity.model, identity.variant]).join(' ');
   if (preciseTitle) return displayText(preciseTitle, 120);
   return displayText(
     identity.itemType ?? identity.category ?? 'Item identified from photo evidence',
     120,
   );
+}
+
+function profitPlan(result: ItemAnalysisSuccess): AnalysisProfitPlan {
+  const identity = result.analysis.identification;
+  const valuation = result.valuation;
+  const currency = valuation.currency ?? 'USD';
+  const hasRange =
+    valuation.p20 != null && valuation.median != null && valuation.p80 != null;
+  const listingIdentity = compact<string>([
+    identity.brand,
+    identity.model,
+    identity.variant,
+  ]).join(' ');
+  const conditionSignal = result.analysis.condition.notes[0];
+  const actions: AnalysisProfitPlan['actions'] = [];
+
+  const suppliedActions = result.marketResearch?.profitabilityActions ?? [];
+  if (suppliedActions.length > 0) {
+    const seenActions = new Set<string>();
+    for (const action of suppliedActions) {
+      const label = displayText(action.title, 72);
+      const detail = displayText(action.detail, 260);
+      const dedupeKey = `${label}|${detail}`.toLowerCase();
+      if ((!label && !detail) || seenActions.has(dedupeKey)) continue;
+      seenActions.add(dedupeKey);
+      actions.push({
+        confidence: action.confidencePercent ?? undefined,
+        detail: detail || label,
+        id: `profit-market-action-${actions.length}`,
+        label: label || `Market value opportunity ${String(actions.length + 1).padStart(2, '0')}`,
+      });
+      if (actions.length === 5) break;
+    }
+  } else {
+    const seenMarketFactors = new Set<string>();
+    for (const factor of result.marketResearch?.factors ?? []) {
+      const detail = displayText(factor, 260);
+      const dedupeKey = detail.toLowerCase();
+      if (!detail || seenMarketFactors.has(dedupeKey)) continue;
+      seenMarketFactors.add(dedupeKey);
+      actions.push({
+        detail,
+        id: `profit-market-factor-${actions.length}`,
+        label: `Market value opportunity ${String(actions.length + 1).padStart(2, '0')}`,
+      });
+      if (actions.length === 5) break;
+    }
+  }
+
+  if (hasRange) {
+    actions.push({
+      detail: `Open near ${new Intl.NumberFormat('en-US', { currency, maximumFractionDigits: 0, style: 'currency' }).format(valuation.p80!)} and use ${new Intl.NumberFormat('en-US', { currency, maximumFractionDigits: 0, style: 'currency' }).format(valuation.median!)} as the evidence-backed offer target.`,
+      id: 'profit-price-position',
+      label: 'Leave room for offers',
+    });
+  } else {
+    actions.push({
+      detail: 'Collect stronger market evidence before setting a firm asking price.',
+      id: 'profit-price-evidence',
+      label: 'Protect the price decision',
+    });
+  }
+
+  if (listingIdentity) {
+    actions.push({
+      detail: `Lead the listing title with ${displayText(listingIdentity, 86)} so qualified buyers can find the exact item.`,
+      id: 'profit-title-keywords',
+      label: 'Use the strongest search terms',
+    });
+  }
+
+  if (conditionSignal) {
+    actions.push({
+      detail: `Photograph and describe this condition signal clearly: ${displayText(conditionSignal, 120)}`,
+      id: 'profit-condition-proof',
+      label: 'Turn condition into trust',
+    });
+  } else {
+    actions.push({
+      detail: 'Add close photos of high-wear areas, included accessories, labels, and working features.',
+      id: 'profit-condition-proof',
+      label: 'Prove condition visually',
+    });
+  }
+
+  return {
+    actions: actions.slice(0, 8),
+    currency,
+    expectedSale: hasRange ? valuation.median! : undefined,
+    listTarget: hasRange ? valuation.p80! : undefined,
+    quickSale: hasRange ? valuation.p20! : undefined,
+  };
 }
 
 function valuationReadiness(result: ItemAnalysisSuccess): ItemAnalysisOverlayResult['valuationReadiness'] {
@@ -84,6 +263,8 @@ function valuationReadiness(result: ItemAnalysisSuccess): ItemAnalysisOverlayRes
   const valuationSource = String(valuation.source ?? 'none');
   const usesMultiMarketSales = valuationSource === 'multi_market_sold';
   const usesLegacyEbaySales = valuationSource === 'ebay_sold';
+  const usesSerpApiAiMode =
+    valuationSource === 'keepflip_ai' || market?.provider === 'keepflip_ai';
   const usesSoldMarketData = usesMultiMarketSales || usesLegacyEbaySales;
   const soldEvidenceLabel = usesMultiMarketSales
     ? `confirmed marketplace sale${valuation.usedCount === 1 ? '' : 's'}`
@@ -96,16 +277,25 @@ function valuationReadiness(result: ItemAnalysisSuccess): ItemAnalysisOverlayRes
     return {
       label:
         market.status === 'failed'
-          ? 'Sold-market research interrupted'
-          : 'Sold-market research not configured',
+          ? usesSerpApiAiMode
+            ? 'Visual market research interrupted'
+            : 'Sold-market research interrupted'
+          : 'Market research not configured',
       reason:
         market.error?.message ??
-        'KeepFlip completed the identification but could not retrieve marketplace sold comps.',
+        'KeepFlip completed the identification but could not retrieve market valuation evidence.',
       status: 'not-ready',
     };
   }
 
   if (valuation.status === 'ready') {
+    if (usesSerpApiAiMode) {
+      return {
+        label: 'Visual market estimate ready',
+        reason: `KeepFlip AI Mode evaluated the item photo and returned a current private-sale range${market?.query ? ` for “${market.query}”` : ''}. This is a directional AI market estimate, not a verified sold transaction. ${qualityDetail}`.trim(),
+        status: 'ready',
+      };
+    }
     if (usesSoldMarketData) {
       return {
         label: 'Sold-market range ready',
@@ -158,6 +348,7 @@ export function toItemAnalysisResult(result: ItemAnalysisSuccess): ItemAnalysisO
   const confidence = result.analysis.confidence;
   const valuation = result.valuation;
   const valuationSource = String(valuation.source ?? 'none');
+  const usesSerpApiAiMode = valuationSource === 'keepflip_ai';
   const canShowValuation =
     valuation.p20 != null && valuation.median != null && valuation.p80 != null;
 
@@ -170,9 +361,13 @@ export function toItemAnalysisResult(result: ItemAnalysisSuccess): ItemAnalysisO
       score: result.analysis.condition.confidence,
     },
     confidence: {
+      brand: confidence.brand,
       condition: confidence.condition,
-      identity: average([confidence.itemType, confidence.brand, confidence.model]),
+      identity: confidence.overall,
+      itemType: confidence.itemType,
+      model: confidence.model,
       overall: confidence.overall,
+      valuation: confidence.valuation,
     },
     evidence: evidence(result),
     identity: {
@@ -187,27 +382,35 @@ export function toItemAnalysisResult(result: ItemAnalysisSuccess): ItemAnalysisO
           120,
         ) || undefined,
     },
+    marketReferences: marketReferences(result),
+    profitPlan: profitPlan(result),
+    refinementQuestions: refinementQuestions(result),
     suggestedPhotos: suggestedPhotos(result),
     summary: displayText(result.analysis.summary, 480),
     valuation: canShowValuation
       ? {
-          basis:
-            valuation.methodology === 'none'
+        basis:
+          valuation.methodology === 'keepflip_ai_private_sale_range_v1' ||
+            valuation.methodology === 'keepflip_ai_private_sale_range_v2'
+            ? 'Private-sale range inferred by KeepFlip AI Mode from the item photo and cited web evidence'
+            : valuation.methodology === 'none'
               ? undefined
               : 'Median with 20th–80th percentile range and outlier filtering',
-          comparableCount: valuation.usedCount,
-          currency: valuation.currency ?? 'USD',
-          high: valuation.p80!,
-          low: valuation.p20!,
-          median: valuation.median!,
-          query: result.marketResearch?.query ?? undefined,
-          source:
-            valuationSource === 'multi_market_sold'
+        comparableCount: usesSerpApiAiMode ? undefined : valuation.usedCount,
+        currency: valuation.currency ?? 'USD',
+        high: valuation.p80!,
+        low: valuation.p20!,
+        median: valuation.median!,
+        query: result.marketResearch?.query ?? undefined,
+        source:
+          usesSerpApiAiMode
+            ? 'serpapi_ai'
+            : valuationSource === 'multi_market_sold'
               ? 'multi_market'
               : valuationSource === 'ebay_sold'
                 ? 'ebay'
                 : 'supplied',
-        }
+      }
       : undefined,
     valuationReadiness: valuationReadiness(result),
   };

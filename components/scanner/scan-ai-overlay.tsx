@@ -105,6 +105,7 @@ export function ScanAiOverlay({
   }
 
   return (
+    
     <Canvas
       accessibilityElementsHidden
       accessible={false}

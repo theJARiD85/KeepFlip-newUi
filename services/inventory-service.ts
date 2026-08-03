@@ -6,7 +6,36 @@ import {
   Role,
   tablesDB,
 } from '@/lib/appwrite';
-import type { ItemAnalysisSuccess } from '@/types/item-analysis';
+import {
+  ITEM_ANALYSIS_CONTRACT_VERSION,
+  type ItemAnalysisSuccess,
+} from '@/types/item-analysis';
+
+const ANALYSIS_SNAPSHOT_COLUMN = 'analysisSnapshotJson';
+const ANALYSIS_SNAPSHOT_SCHEMA_VERSION = 1 as const;
+const MAX_ANALYSIS_SNAPSHOT_CHARACTERS = 500_000;
+
+const INVENTORY_LIST_COLUMNS = [
+  'title',
+  'brand',
+  'model',
+  'category',
+  'condition',
+  'description',
+  'status',
+  'estimatedValueCents',
+  'aiConfidence',
+  'coverPhotoId',
+  'modelFile',
+  'photoCount',
+  'createdAt',
+] as const;
+
+type PersistedAnalysisSnapshot = {
+  schemaVersion: typeof ANALYSIS_SNAPSHOT_SCHEMA_VERSION;
+  savedAt: string;
+  result: ItemAnalysisSuccess;
+};
 
 export type InventoryItemStatus = 'keep' | 'flip' | 'undecided';
 
@@ -26,6 +55,7 @@ export type InventoryItem = {
   modelFile: string | null;
   photoCount: number;
   createdAt: string;
+  analysisSnapshot?: ItemAnalysisSuccess | null;
 };
 
 type InventoryRow = {
@@ -45,6 +75,7 @@ type InventoryRow = {
   modelFile?: string | null;
   photoCount?: number | null;
   createdAt?: string | null;
+  analysisSnapshotJson?: string | null;
 };
 
 type ItemPhotoRow = {
@@ -169,6 +200,103 @@ function confidencePercent(value: number | null | undefined) {
   return Math.round(Math.max(0, Math.min(100, normalized)));
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isItemAnalysisSuccess(value: unknown): value is ItemAnalysisSuccess {
+  if (!isRecord(value)) return false;
+  if (
+    value.ok !== true ||
+    value.contractVersion !== ITEM_ANALYSIS_CONTRACT_VERSION ||
+    typeof value.version !== 'string' ||
+    (value.status !== 'identified' && value.status !== 'insufficient_evidence') ||
+    !isRecord(value.input) ||
+    !isRecord(value.analysis) ||
+    !isRecord(value.vision) ||
+    !isRecord(value.valuation)
+  ) {
+    return false;
+  }
+
+  const analysis = value.analysis;
+  const condition = analysis.condition;
+  const marketResearch = value.marketResearch;
+
+  return (
+    typeof analysis.summary === 'string' &&
+    isRecord(analysis.identification) &&
+    isRecord(condition) &&
+    Array.isArray(condition.notes) &&
+    isRecord(analysis.confidence) &&
+    Array.isArray(analysis.evidence) &&
+    Array.isArray(analysis.ambiguities) &&
+    Array.isArray(analysis.suggestedPhotos) &&
+    isRecord(analysis.valuationSignals) &&
+    Array.isArray(value.vision.images) &&
+    (marketResearch == null || isRecord(marketResearch))
+  );
+}
+
+function serializeAnalysisSnapshot(
+  analysis: ItemAnalysisSuccess,
+  savedAt: string,
+) {
+  const snapshot: PersistedAnalysisSnapshot = {
+    schemaVersion: ANALYSIS_SNAPSHOT_SCHEMA_VERSION,
+    savedAt,
+    result: analysis,
+  };
+  const serialized = JSON.stringify(snapshot);
+
+  if (serialized.length > MAX_ANALYSIS_SNAPSHOT_CHARACTERS) {
+    throw new Error(
+      `KeepFlip's normalized analysis snapshot is too large to save (${serialized.length.toLocaleString()} characters).`,
+    );
+  }
+
+  return serialized;
+}
+
+function parseAnalysisSnapshot(value: string | null | undefined) {
+  const serialized = value?.trim();
+  if (!serialized) return null;
+
+  try {
+    const parsed: unknown = JSON.parse(serialized);
+    if (!isRecord(parsed)) return null;
+    if (parsed.schemaVersion !== ANALYSIS_SNAPSHOT_SCHEMA_VERSION) return null;
+    return isItemAnalysisSuccess(parsed.result) ? parsed.result : null;
+  } catch {
+    return null;
+  }
+}
+
+function isAnalysisSnapshotSchemaError(error: unknown) {
+  const source = isRecord(error) ? error : null;
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof source?.message === 'string'
+        ? source.message
+        : '';
+  const type = typeof source?.type === 'string' ? source.type : '';
+
+  return (
+    message.toLowerCase().includes(ANALYSIS_SNAPSHOT_COLUMN.toLowerCase()) ||
+    /(?:row|document)_invalid_structure|unknown_(?:attribute|column)/i.test(type)
+  );
+}
+
+function inventorySnapshotMigrationError(cause: unknown) {
+  const error = new Error(
+    `KeepFlip's Appwrite items table needs an optional mediumtext column named ${ANALYSIS_SNAPSHOT_COLUMN} before analyzed items can be saved. Add the column, wait until it is available, then retry.`,
+  );
+  error.name = 'InventorySchemaMigrationError';
+  (error as Error & { cause?: unknown }).cause = cause;
+  return error;
+}
+
 function rowToInventoryItem(row: InventoryRow): InventoryItem {
   const cents = Number(row.estimatedValueCents);
   return {
@@ -188,6 +316,7 @@ function rowToInventoryItem(row: InventoryRow): InventoryItem {
     modelFile: normalizedModelFile(row.modelFile),
     photoCount: Math.max(0, Number(row.photoCount) || 0),
     createdAt: row.createdAt || row.$createdAt || new Date().toISOString(),
+    analysisSnapshot: parseAnalysisSnapshot(row.analysisSnapshotJson),
   };
 }
 
@@ -298,6 +427,7 @@ export async function saveAnalyzedItemToInventory({
   const confidence = confidencePercent(analysis.analysis.confidence.overall);
   const storedModelFile = normalizedModelFile(modelFile);
   const now = new Date().toISOString();
+  const analysisSnapshotJson = serializeAnalysisSnapshot(analysis, now);
   const conditionNotes = [
     ...analysis.analysis.condition.notes,
     analysis.analysis.summary,
@@ -308,39 +438,48 @@ export async function saveAnalyzedItemToInventory({
     .join(' ')
     .slice(0, 4000);
 
-  const created = (await tablesDB.createRow({
-    databaseId: APPWRITE.databaseId,
-    tableId: APPWRITE.itemsTableId,
-    rowId: ID.unique(),
-    data: {
-      ownerId: cleanOwnerId,
-      title: titleFromAnalysis(analysis),
-      category:
-        boundedText(identity.category, 60) ||
-        boundedText(identity.itemType, 60) ||
-        'Other',
-      brand: boundedText(identity.brand, 100),
-      model: boundedText(identity.model, 150),
-      serialNumber: boundedText(identity.serialNumber, 150),
-      condition: normalizedCondition(analysis.analysis.condition.grade),
-      status: 'undecided',
-      description: conditionNotes || null,
-      estimatedValueCents:
-        median != null && Number.isFinite(median) && median > 0
-          ? Math.round(median * 100)
-          : null,
-      originalRetailCents: null,
-      coverPhotoId: null,
-      modelFile: storedModelFile,
-      photoCount: 0,
-      aiConfidence: confidence,
-      isListed: false,
-      acquiredAt: null,
-      createdAt: now,
-      updatedAt: now,
-    },
-    permissions: ownerPermissions(cleanOwnerId),
-  })) as unknown as InventoryRow;
+  let created: InventoryRow;
+  try {
+    created = (await tablesDB.createRow({
+      databaseId: APPWRITE.databaseId,
+      tableId: APPWRITE.itemsTableId,
+      rowId: ID.unique(),
+      data: {
+        ownerId: cleanOwnerId,
+        title: titleFromAnalysis(analysis),
+        category:
+          boundedText(identity.category, 60) ||
+          boundedText(identity.itemType, 60) ||
+          'Other',
+        brand: boundedText(identity.brand, 100),
+        model: boundedText(identity.model, 150),
+        serialNumber: boundedText(identity.serialNumber, 150),
+        condition: normalizedCondition(analysis.analysis.condition.grade),
+        status: 'undecided',
+        description: conditionNotes || null,
+        estimatedValueCents:
+          median != null && Number.isFinite(median) && median > 0
+            ? Math.round(median * 100)
+            : null,
+        originalRetailCents: null,
+        coverPhotoId: null,
+        modelFile: storedModelFile,
+        photoCount: 0,
+        aiConfidence: confidence,
+        analysisSnapshotJson,
+        isListed: false,
+        acquiredAt: null,
+        createdAt: now,
+        updatedAt: now,
+      },
+      permissions: ownerPermissions(cleanOwnerId),
+    })) as unknown as InventoryRow;
+  } catch (error) {
+    if (isAnalysisSnapshotSchemaError(error)) {
+      throw inventorySnapshotMigrationError(error);
+    }
+    throw error;
+  }
 
   let attached;
   try {
@@ -364,6 +503,7 @@ export async function saveAnalyzedItemToInventory({
     item: rowToInventoryItem({
       ...created,
       coverPhotoId: attached.coverPhotoId,
+      modelFile: storedModelFile,
       photoCount: attached.photoCount,
     }),
     photoWarning: attached.warning,
@@ -383,6 +523,7 @@ export async function listInventoryItems(
       Query.equal('ownerId', [ownerId]),
       Query.orderDesc('createdAt'),
       Query.limit(100),
+      Query.select([...INVENTORY_LIST_COLUMNS]),
     ],
   });
 

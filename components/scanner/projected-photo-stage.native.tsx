@@ -1,6 +1,5 @@
 /* eslint-disable react/no-unknown-property */
 
-import { Directory, File, Paths } from "expo-file-system";
 import {
   Canvas,
   useFrame,
@@ -11,12 +10,10 @@ import React, {
   useEffect,
   useMemo,
   useRef,
-  useState,
   type ErrorInfo,
   type ReactNode,
 } from "react";
 import {
-  Image as NativeImage,
   StyleSheet,
   View,
   type StyleProp,
@@ -28,46 +25,13 @@ import * as THREE from "three";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { configureExpoGlForThree } from "@/lib/expo-three-gl-compat";
 
-const PROJECTION_CACHE_DIRECTORY = "keepflip-projection-photos";
 const CYAN = theme.colors.scannerCyan;
 const VIOLET = theme.colors.scannerViolet;
 const GOLD = theme.colors.goldBright;
-const ORB_GLOW_VERTEX_SHADER = `
-varying vec2 vUv;
-
-void main() {
-  vUv = uv;
-  gl_Position =
-    projectionMatrix *
-    modelViewMatrix *
-    vec4(position, 1.0);
-}
-`;
-const ORB_GLOW_FRAGMENT_SHADER = `
-uniform vec3 uColor;
-uniform float uStrength;
-varying vec2 vUv;
-
-void main() {
-  float distanceFromCenter =
-    length(vUv - vec2(0.5)) * 2.0;
-  float halo =
-    pow(max(0.0, 1.0 - distanceFromCenter), 2.6);
-  float core =
-    pow(max(0.0, 1.0 - distanceFromCenter), 8.0);
-
-  gl_FragColor = vec4(
-    uColor,
-    (halo * 0.72 + core * 0.38) * uStrength
-  );
-}
-`;
 
 type ProjectedPhotoStageProps = {
   onError?: (message: string) => void;
-  photoBytes?: ArrayBuffer | Uint8Array;
-  photoUri?: string;
-  projectionFrame?: ProjectionFrame;
+  projectionFrame: ProjectionFrame;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -78,8 +42,8 @@ type ProjectionFrame = {
 };
 
 type ProjectionSceneProps = {
-  aspectRatio: number;
-  projectionFrame?: ProjectionFrame;
+  onError?: (message: string) => void;
+  projectionFrame: ProjectionFrame;
   reduceMotion: boolean;
 };
 
@@ -90,11 +54,6 @@ type ProjectionErrorBoundaryProps = {
 
 type ProjectionErrorBoundaryState = {
   failed: boolean;
-};
-
-type CachedPhoto = {
-  fingerprint: string;
-  uri: string;
 };
 
 class ProjectionErrorBoundary extends Component<
@@ -114,7 +73,7 @@ class ProjectionErrorBoundary extends Component<
   componentDidCatch(error: Error, _info: ErrorInfo) {
     this.props.onError?.(
       error.message ||
-        "KeepFlip could not render the projected photo field.",
+        "KeepFlip could not render the projection field.",
     );
   }
 
@@ -122,145 +81,6 @@ class ProjectionErrorBoundary extends Component<
     if (this.state.failed) return null;
     return this.props.children;
   }
-}
-
-function normalizedPhotoBytes(
-  photoBytes: ArrayBuffer | Uint8Array,
-): Uint8Array {
-  return photoBytes instanceof Uint8Array
-    ? photoBytes
-    : new Uint8Array(photoBytes);
-}
-
-function photoFingerprint(
-  photoBytes: ArrayBuffer | Uint8Array,
-): string {
-  const bytes = normalizedPhotoBytes(photoBytes);
-  let hash = 2166136261;
-  const sampleCount = Math.min(bytes.byteLength, 96);
-
-  for (let index = 0; index < sampleCount; index += 1) {
-    const offset =
-      sampleCount === 1
-        ? 0
-        : Math.floor(
-            (index * (bytes.byteLength - 1)) /
-              (sampleCount - 1),
-          );
-    hash ^= bytes[offset] ?? 0;
-    hash = Math.imul(hash, 16777619);
-  }
-
-  return `${bytes.byteLength}-${(hash >>> 0).toString(16)}`;
-}
-
-function photoExtension(bytes: Uint8Array): string {
-  if (
-    bytes[0] === 0x89 &&
-    bytes[1] === 0x50 &&
-    bytes[2] === 0x4e &&
-    bytes[3] === 0x47
-  ) {
-    return "png";
-  }
-
-  if (
-    bytes[0] === 0x52 &&
-    bytes[1] === 0x49 &&
-    bytes[2] === 0x46 &&
-    bytes[3] === 0x46
-  ) {
-    return "webp";
-  }
-
-  return "jpg";
-}
-
-function useProjectionPhotoUri({
-  onError,
-  photoBytes,
-  photoUri,
-}: Pick<
-  ProjectedPhotoStageProps,
-  "onError" | "photoBytes" | "photoUri"
->): string | null {
-  const directUri = photoUri?.trim() || null;
-  const fingerprint = useMemo(
-    () =>
-      photoBytes && photoBytes.byteLength > 0
-        ? photoFingerprint(photoBytes)
-        : null,
-    [photoBytes],
-  );
-  const [cachedPhoto, setCachedPhoto] =
-    useState<CachedPhoto | null>(null);
-
-  useEffect(() => {
-    let active = true;
-
-    if (directUri || !photoBytes || !fingerprint) {
-      return () => {
-        active = false;
-      };
-    }
-
-    void Promise.resolve().then(() => {
-      if (!active) return;
-
-      try {
-        const bytes = normalizedPhotoBytes(photoBytes);
-        const cacheDirectory = new Directory(
-          Paths.cache,
-          PROJECTION_CACHE_DIRECTORY,
-        );
-        cacheDirectory.create({
-          idempotent: true,
-          intermediates: true,
-        });
-
-        const cachedFile = new File(
-          cacheDirectory,
-          `${fingerprint}.${photoExtension(bytes)}`,
-        );
-
-        if (
-          !cachedFile.exists ||
-          cachedFile.size !== bytes.byteLength
-        ) {
-          cachedFile.write(bytes);
-        }
-
-        if (active) {
-          setCachedPhoto({
-            fingerprint,
-            uri: cachedFile.uri,
-          });
-        }
-      } catch (caught: unknown) {
-        if (!active) return;
-        onError?.(
-          caught instanceof Error
-            ? caught.message
-            : "KeepFlip could not prepare the photo projection.",
-        );
-      }
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [
-    directUri,
-    fingerprint,
-    onError,
-    photoBytes,
-  ]);
-
-  if (directUri) return directUri;
-  if (cachedPhoto?.fingerprint === fingerprint) {
-    return cachedPhoto.uri;
-  }
-  return null;
 }
 
 function clamp01(value: number): number {
@@ -278,34 +98,13 @@ function smoothStep(
   return progress * progress * (3 - 2 * progress);
 }
 
-function projectedPlaneSize(aspectRatio: number): {
-  height: number;
-  width: number;
-} {
-  const safeAspect = Math.max(0.35, Math.min(2.8, aspectRatio));
-  const maximumWidth = 2.45;
-  const maximumHeight = 3.15;
-  let width = maximumWidth;
-  let height = width / safeAspect;
-
-  if (height > maximumHeight) {
-    height = maximumHeight;
-    width = height * safeAspect;
-  }
-
-  return {
-    height,
-    width,
-  };
-}
-
 function perimeterPoints(
   width: number,
   height: number,
 ): THREE.Vector3[] {
   const points: THREE.Vector3[] = [];
-  const horizontalCount = 7;
-  const verticalCount = 5;
+  const horizontalCount = 8;
+  const verticalCount = 8;
 
   for (let index = 0; index < horizontalCount; index += 1) {
     const x =
@@ -326,71 +125,230 @@ function perimeterPoints(
   return points;
 }
 
-function ProjectionSource({
-  imageUri,
-  onError,
-  projectionFrame,
+type AiEyeMaterialKey =
+  | "cyan"
+  | "cyanGlass"
+  | "gold"
+  | "pupil"
+  | "violet";
+
+type AiEyeVane = {
+  material: "cyan" | "gold";
+  position: [number, number, number];
+  rotation: [number, number, number];
+};
+
+function createAiEyeMaterial({
+  color,
+  emissive,
+  emissiveIntensity,
+  metalness = 0.2,
+  opacity = 1,
+  roughness = 0.24,
+}: {
+  color: number;
+  emissive: number;
+  emissiveIntensity: number;
+  metalness?: number;
+  opacity?: number;
+  roughness?: number;
+}): THREE.MeshStandardMaterial {
+  const material = new THREE.MeshStandardMaterial({
+    color,
+    depthWrite: opacity >= 1,
+    emissive,
+    emissiveIntensity,
+    metalness,
+    opacity,
+    roughness,
+    transparent: opacity < 1,
+  });
+  material.toneMapped = false;
+  return material;
+}
+
+function aiEyeLidCurve(direction: number) {
+  return new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-1.28, 0, 0.04),
+    new THREE.Vector3(-0.72, 0.48 * direction, 0.12),
+    new THREE.Vector3(0, 0.65 * direction, 0.16),
+    new THREE.Vector3(0.72, 0.48 * direction, 0.12),
+    new THREE.Vector3(1.28, 0, 0.04),
+  ]);
+}
+
+const AI_EYE_UPPER_LID = aiEyeLidCurve(1);
+const AI_EYE_LOWER_LID = aiEyeLidCurve(-1);
+const AI_EYE_VANES: AiEyeVane[] = Array.from(
+  { length: 12 },
+  (_, index) => {
+    const angle = (index / 12) * Math.PI * 2;
+    const radius = 0.405;
+    return {
+      material: index % 3 === 0 ? "gold" : "cyan",
+      position: [
+        Math.cos(angle) * radius,
+        Math.sin(angle) * radius,
+        0.355,
+      ],
+      rotation: [0, 0, angle],
+    };
+  },
+);
+
+function AnalysisAiEyeEmitter({
   reduceMotion,
 }: {
-  imageUri: string;
-  onError?: (message: string) => void;
-  projectionFrame?: ProjectionFrame;
   reduceMotion: boolean;
 }) {
-  const [aspectRatio, setAspectRatio] =
-    useState<number | null>(null);
+  const eyeRef = useRef<THREE.Group>(null);
+  const materials = useMemo<Record<
+    AiEyeMaterialKey,
+    THREE.MeshStandardMaterial
+  >>(
+    () => ({
+      cyan: createAiEyeMaterial({
+        color: 0x0a6475,
+        emissive: 0x58dfe8,
+        emissiveIntensity: 2.4,
+      }),
+      cyanGlass: createAiEyeMaterial({
+        color: 0x041b24,
+        emissive: 0x178ca2,
+        emissiveIntensity: 1.1,
+        metalness: 0.08,
+        opacity: 0.34,
+        roughness: 0.12,
+      }),
+      gold: createAiEyeMaterial({
+        color: 0x8d5f15,
+        emissive: 0xf2d38a,
+        emissiveIntensity: 2.1,
+        metalness: 0.32,
+      }),
+      pupil: createAiEyeMaterial({
+        color: 0x010306,
+        emissive: 0x082531,
+        emissiveIntensity: 0.7,
+        metalness: 0.12,
+        roughness: 0.08,
+      }),
+      violet: createAiEyeMaterial({
+        color: 0x29165c,
+        emissive: 0x8d72ff,
+        emissiveIntensity: 1.8,
+        opacity: 0.82,
+      }),
+    }),
+    [],
+  );
 
-  useEffect(() => {
-    let active = true;
+  useEffect(
+    () => () => {
+      Object.values(materials).forEach((material) => {
+        material.dispose();
+      });
+    },
+    [materials],
+  );
 
-    try {
-      NativeImage.getSize(
-        imageUri,
-        (width, height) => {
-          if (!active) return;
-          setAspectRatio(
-            width / Math.max(1, height),
-          );
-        },
-        () => {
-          if (active) {
-            onError?.(
-              "KeepFlip could not decode the projected scan image.",
-            );
-          }
-        },
-      );
-    } catch (caught: unknown) {
-      onError?.(
-        caught instanceof Error
-          ? caught.message
-          : "KeepFlip could not decode the projected scan image.",
-      );
-    }
+  useFrame(({ clock }) => {
+    if (!eyeRef.current) return;
 
-    return () => {
-      active = false;
-    };
-  }, [imageUri, onError]);
+    const elapsed = clock.elapsedTime;
+    const scale = reduceMotion
+      ? 0.32
+      : 0.32 + Math.sin(elapsed * 2.1) * 0.012;
 
-  if (aspectRatio == null) return null;
+    eyeRef.current.rotation.x = reduceMotion
+      ? -0.04
+      : -0.04 + Math.sin(elapsed * 0.72) * 0.035;
+    eyeRef.current.rotation.y = reduceMotion
+      ? 0
+      : Math.sin(elapsed * 0.54) * 0.14;
+    eyeRef.current.rotation.z = reduceMotion
+      ? 0
+      : Math.cos(elapsed * 0.46) * 0.025;
+    eyeRef.current.scale.setScalar(scale);
+  });
 
   return (
-    <ProjectionScene
-      aspectRatio={aspectRatio}
-      projectionFrame={projectionFrame}
-      reduceMotion={reduceMotion}
-    />
+    <group ref={eyeRef} scale={0.32}>
+      <mesh material={materials.cyanGlass} scale={[1.52, 0.76, 0.38]}>
+        <sphereGeometry args={[0.76, 36, 20]} />
+      </mesh>
+
+      <mesh material={materials.cyan} position={[0, 0, 0.31]}>
+        <torusGeometry args={[0.49, 0.055, 8, 56]} />
+      </mesh>
+      <mesh material={materials.gold} position={[0, 0, 0.345]}>
+        <torusGeometry args={[0.3, 0.032, 8, 44]} />
+      </mesh>
+      <mesh
+        material={materials.pupil}
+        position={[0, 0, 0.34]}
+        scale={[0.54, 1, 0.3]}
+      >
+        <sphereGeometry args={[0.28, 28, 16]} />
+      </mesh>
+      <mesh material={materials.gold} position={[0.08, 0.11, 0.44]}>
+        <sphereGeometry args={[0.075, 20, 12]} />
+      </mesh>
+
+      {AI_EYE_VANES.map((vane, index) => (
+        <mesh
+          key={`ai-eye-vane-${index}`}
+          material={materials[vane.material]}
+          position={vane.position}
+          rotation={vane.rotation}
+        >
+          <boxGeometry args={[0.16, 0.018, 0.022]} />
+        </mesh>
+      ))}
+
+      <mesh material={materials.cyan}>
+        <tubeGeometry args={[AI_EYE_UPPER_LID, 52, 0.036, 7, false]} />
+      </mesh>
+      <mesh material={materials.gold}>
+        <tubeGeometry args={[AI_EYE_LOWER_LID, 52, 0.036, 7, false]} />
+      </mesh>
+
+      <mesh
+        material={materials.violet}
+        rotation={[0.42, 0.18, 0.08]}
+        scale={[1.24, 0.78, 1]}
+      >
+        <torusGeometry args={[0.96, 0.023, 7, 64]} />
+      </mesh>
+      <mesh
+        material={materials.cyan}
+        rotation={[Math.PI / 2.8, 0.34, Math.PI / 3.8]}
+      >
+        <torusGeometry args={[0.92, 0.018, 7, 64]} />
+      </mesh>
+      <mesh
+        material={materials.gold}
+        rotation={[Math.PI / 2.35, -0.46, -Math.PI / 4.2]}
+      >
+        <torusGeometry args={[0.87, 0.015, 7, 56]} />
+      </mesh>
+
+      <mesh material={materials.violet} position={[-1.31, 0, 0.04]}>
+        <octahedronGeometry args={[0.105, 1]} />
+      </mesh>
+      <mesh material={materials.gold} position={[1.31, 0, 0.04]}>
+        <octahedronGeometry args={[0.105, 1]} />
+      </mesh>
+    </group>
   );
 }
 
 function ProjectionScene({
-  aspectRatio,
+  onError,
   projectionFrame,
   reduceMotion,
 }: ProjectionSceneProps) {
   const viewport = useThree((state) => state.viewport);
-  const assemblyRef = useRef<THREE.Group>(null);
   const rayMaterialRef =
     useRef<THREE.LineBasicMaterial>(null);
   const beamMaterialRef =
@@ -399,34 +357,16 @@ function ProjectionScene({
     useRef<THREE.PointsMaterial>(null);
   const particleAttributeRef =
     useRef<THREE.BufferAttribute>(null);
-  const scanLineRef = useRef<THREE.Group>(null);
-  const scanLineMaterialRef =
-    useRef<THREE.MeshBasicMaterial>(null);
-  const scanGlowMaterialRef =
-    useRef<THREE.MeshBasicMaterial>(null);
-  const emitterRef = useRef<THREE.Mesh>(null);
-  const emitterMaterialRef =
-    useRef<THREE.MeshBasicMaterial>(null);
-  const orbGlowMaterialRef =
-    useRef<THREE.ShaderMaterial>(null);
-  const ringOneRef = useRef<THREE.Mesh>(null);
-  const ringTwoRef = useRef<THREE.Mesh>(null);
   const startedAtRef = useRef<number | null>(null);
 
   const planeSize = useMemo(
-    () =>
-      projectionFrame
-        ? {
-            height:
-              viewport.height *
-              projectionFrame.heightRatio,
-            width:
-              viewport.width *
-              projectionFrame.widthRatio,
-          }
-        : projectedPlaneSize(aspectRatio),
+    () => ({
+      height:
+        viewport.height * projectionFrame.heightRatio,
+      width:
+        viewport.width * projectionFrame.widthRatio,
+    }),
     [
-      aspectRatio,
       projectionFrame,
       viewport.height,
       viewport.width,
@@ -434,148 +374,105 @@ function ProjectionScene({
   );
   const assemblyCenterY = useMemo(
     () =>
-      projectionFrame
-        ? 0.08 +
-          (0.5 - projectionFrame.centerYRatio) *
-            viewport.height
-        : 0.42,
+      0.08 +
+      (0.5 - projectionFrame.centerYRatio) * viewport.height,
     [
       projectionFrame,
       viewport.height,
     ],
   );
-  const emitterOrigin = useMemo(
-    () =>
-      new THREE.Vector3(
-        0,
-        -planeSize.height / 2 - 0.58,
-        -3.6,
-      ),
-    [planeSize.height],
-  );
-  const emitterPosition = useMemo<
-    [number, number, number]
-  >(
-    () => [
-      emitterOrigin.x,
-      emitterOrigin.y,
-      emitterOrigin.z,
-    ],
-    [emitterOrigin],
-  );
-  const orbGlowUniforms = useMemo(
-    () => ({
-      uColor: {
-        value: new THREE.Color(CYAN),
-      },
-      uStrength: {
-        value: 0,
-      },
-    }),
-    [],
-  );
-  const endpoints = useMemo(
-    () =>
-      perimeterPoints(
-        planeSize.width,
-        planeSize.height,
-      ),
-    [
-      planeSize.height,
-      planeSize.width,
-    ],
-  );
-  const rayPositions = useMemo(() => {
-    const positions = new Float32Array(endpoints.length * 6);
+const emitterOrigin = useMemo(
+  () => new THREE.Vector3(0, -planeSize.height / 2 - 0.58, -3.6),
+  [planeSize.height]
+);
 
-    endpoints.forEach((endpoint, index) => {
-      const offset = index * 6;
-      positions[offset] = emitterOrigin.x;
-      positions[offset + 1] = emitterOrigin.y;
-      positions[offset + 2] = emitterOrigin.z;
-      positions[offset + 3] = endpoint.x;
-      positions[offset + 4] = endpoint.y;
-      positions[offset + 5] = endpoint.z;
-    });
+const emitterPosition = useMemo<[number, number, number]>(
+  () => emitterOrigin.toArray() as [number, number, number],
+  [emitterOrigin]
+);
 
-    return positions;
-  }, [emitterOrigin, endpoints]);
+const endpoints = useMemo(
+  () => perimeterPoints(planeSize.width, planeSize.height),
+  [planeSize.height, planeSize.width]
+);
+
+const rayPositions = useMemo<Float32Array>(() => {
+  const positions = new Float32Array(endpoints.length * 6);
+  
+  endpoints.forEach((endpoint, index) => {
+    const offset = index * 6;
+    
+    // Start of line (Emitter)
+    positions[offset]     = emitterOrigin.x;
+    positions[offset + 1] = emitterOrigin.y;
+    positions[offset + 2] = emitterOrigin.z;
+    
+    // End of line (Perimeter)
+    positions[offset + 3] = endpoint.x;
+    positions[offset + 4] = endpoint.y;
+    positions[offset + 5] = endpoint.z;
+  });
+  
+  return positions;
+}, [emitterOrigin, endpoints]);
+
+
   const particlePositions = useMemo(
     () => new Float32Array(endpoints.length * 3),
     [endpoints.length],
   );
   const beamPositions = useMemo(() => {
-    const halfWidth = planeSize.width / 2;
+    const halfWidth = planeSize.width / 3.25;
     const halfHeight = planeSize.height / 2;
+    
+    // Define corners relative to center (0,0)
+    // We can just use objects or temp variables instead of new THREE.Vector3 to save overhead
     const corners = [
-      new THREE.Vector3(-halfWidth, -halfHeight, 0),
-      new THREE.Vector3(halfWidth, -halfHeight, 0),
-      new THREE.Vector3(halfWidth, halfHeight, 0),
-      new THREE.Vector3(-halfWidth, halfHeight, 0),
+      { x: -halfWidth, y: -halfHeight, z: 0 },
+      { x:  halfWidth, y: -halfHeight, z: 0 },
+      { x:  halfWidth, y:  halfHeight, z: 0 },
+      { x: -halfWidth, y:  halfHeight, z: 0 },
     ];
-    const positions = new Float32Array(4 * 9);
-
-    for (let index = 0; index < 4; index += 1) {
-      const nextIndex = (index + 1) % 4;
-      const offset = index * 9;
-      const first = corners[index];
+  
+    const positions = new Float32Array(4 * 9); // 4 faces * 3 vertices * 3 coords
+  
+    for (let i = 0; i < 4; i++) {
+      const nextIndex = (i + 1) % 4;
+      const offset = i * 9;
+      
+      const first = corners[i];
       const second = corners[nextIndex];
-      positions.set(
-        [
-          emitterOrigin.x,
-          emitterOrigin.y,
-          emitterOrigin.z,
-          first.x,
-          first.y,
-          first.z,
-          second.x,
-          second.y,
-          second.z,
-        ],
-        offset,
-      );
+  
+      // Vertex 1: Emitter Tip
+      positions[offset]     = emitterOrigin.x;
+      positions[offset + 1] = emitterOrigin.y;
+      positions[offset + 2] = emitterOrigin.z;
+  
+      // Vertex 2: Corner A
+      positions[offset + 3] = first.x;
+      positions[offset + 4] = first.y;
+      positions[offset + 5] = first.z;
+  
+      // Vertex 3: Corner B
+      positions[offset + 6] = second.x;
+      positions[offset + 7] = second.y;
+      positions[offset + 8] = second.z;
     }
-
+    
     return positions;
-  }, [
-    emitterOrigin,
-    planeSize.height,
-    planeSize.width,
-  ]);
-  useFrame(({ clock }, delta) => {
+  }, [emitterOrigin, planeSize.width, planeSize.height]);
+  
+  
+  useFrame(({ clock }) => {
     if (startedAtRef.current === null) {
       startedAtRef.current = clock.elapsedTime;
     }
 
     const elapsed =
       clock.elapsedTime - startedAtRef.current;
-    const reveal = reduceMotion
-      ? 1
-      : smoothStep(0.34, 1.48, elapsed);
     const power = reduceMotion
       ? 1
       : smoothStep(0.02, 0.48, elapsed);
-    const introGlitch =
-      !reduceMotion && elapsed < 1.82
-        ? 1 -
-          reveal * 0.2
-        : 0;
-    const burstPhase = elapsed % 5.2;
-    const ambientGlitch =
-      !reduceMotion && elapsed >= 1.82 && burstPhase < 0.17
-        ? 1 - burstPhase / 0.17
-        : 0;
-    const glitchStrength = Math.max(
-      ambientGlitch,
-      introGlitch *
-        (0.35 +
-          Math.abs(Math.sin(elapsed * 47)) * 0.65),
-    );
-    if (assemblyRef.current) {
-      assemblyRef.current.position.y = assemblyCenterY;
-      assemblyRef.current.rotation.x = 0;
-      assemblyRef.current.rotation.y = 0;
-    }
 
     if (rayMaterialRef.current) {
       rayMaterialRef.current.opacity =
@@ -621,83 +518,25 @@ function ProjectionScene({
       particleMaterialRef.current.opacity =
         0.12 + power * 0.66;
     }
-
-    if (
-      scanLineRef.current &&
-      scanLineMaterialRef.current &&
-      scanGlowMaterialRef.current
-    ) {
-      const scanProgress =
-        (elapsed * 0.29 + 0.12) % 1;
-      scanLineRef.current.position.y =
-        -planeSize.height / 2 +
-        planeSize.height * scanProgress;
-      const scanOpacity =
-        reveal *
-        (0.62 +
-          Math.max(0, Math.sin(elapsed * 3.2)) * 0.28) *
-        0.7;
-      scanLineMaterialRef.current.opacity = scanOpacity;
-      scanGlowMaterialRef.current.opacity =
-        scanOpacity * 0.18;
-    }
-
-    if (
-      emitterRef.current &&
-      emitterMaterialRef.current
-    ) {
-      emitterRef.current.rotation.x += delta * 0.24;
-      emitterRef.current.rotation.y += delta * 0.42;
-      const pulse =
-        0.82 +
-        Math.sin(elapsed * 3.4) * 0.12 +
-        glitchStrength * 0.18;
-      emitterRef.current.scale.setScalar(pulse);
-      emitterMaterialRef.current.opacity =
-        0.22 + power * 0.58;
-    }
-
-    if (orbGlowMaterialRef.current) {
-      orbGlowMaterialRef.current.uniforms.uStrength.value =
-        0.2 +
-        power * 0.22 +
-        Math.max(0, Math.sin(elapsed * 2.7)) * 0.08;
-    }
-
-    if (ringOneRef.current) {
-      ringOneRef.current.rotation.z += delta * 0.24;
-      ringOneRef.current.scale.setScalar(
-        0.9 +
-          power * 0.14 +
-          Math.sin(elapsed * 2.2) * 0.05,
-      );
-    }
-
-    if (ringTwoRef.current) {
-      ringTwoRef.current.rotation.z -= delta * 0.18;
-      ringTwoRef.current.scale.setScalar(
-        0.94 +
-          power * 0.1 +
-          Math.cos(elapsed * 1.8) * 0.04,
-      );
-    }
   });
 
   return (
-    <group ref={assemblyRef}>
+    <group position={[0, assemblyCenterY, 0]}>
       <mesh>
         <bufferGeometry>
           <bufferAttribute
             args={[beamPositions, 3]}
             attach="attributes-position"
+            count={beamPositions.length / 3}
+            array={beamPositions}
           />
         </bufferGeometry>
         <meshBasicMaterial
           ref={beamMaterialRef}
           blending={THREE.AdditiveBlending}
-          color={CYAN}
+          color={GOLD}
           depthWrite={false}
-          opacity={0}
+          opacity={0.1}
           side={THREE.DoubleSide}
           toneMapped={false}
           transparent
@@ -728,102 +567,25 @@ function ProjectionScene({
             ref={particleAttributeRef}
             args={[particlePositions, 3]}
             attach="attributes-position"
+            count={particlePositions.length / 3}
+            array={particlePositions}
           />
         </bufferGeometry>
         <pointsMaterial
           ref={particleMaterialRef}
           blending={THREE.AdditiveBlending}
-          color={GOLD}
-          depthWrite={false}
-          opacity={0}
-          size={0.035}
-          sizeAttenuation
+          color={VIOLET}
+          depthWrite={true}
+          opacity={1}
+          size={0.013}
+          sizeAttenuation={true}
           toneMapped={false}
           transparent
         />
       </points>
 
       <group position={emitterPosition}>
-        <mesh position={[0, 0, -0.05]}>
-          <planeGeometry args={[1.5, 1.5]} />
-          <shaderMaterial
-            ref={orbGlowMaterialRef}
-            blending={THREE.AdditiveBlending}
-            depthTest={false}
-            depthWrite={false}
-            fragmentShader={ORB_GLOW_FRAGMENT_SHADER}
-            toneMapped={false}
-            transparent
-            uniforms={orbGlowUniforms}
-            vertexShader={ORB_GLOW_VERTEX_SHADER}
-          />
-        </mesh>
-        <mesh ref={emitterRef}>
-          <icosahedronGeometry args={[0.19, 1]} />
-          <meshBasicMaterial
-            ref={emitterMaterialRef}
-            blending={THREE.AdditiveBlending}
-            color={GOLD}
-            depthWrite={false}
-            opacity={0}
-            toneMapped={false}
-            transparent
-            wireframe
-          />
-        </mesh>
-        <mesh ref={ringOneRef} rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[0.31, 0.012, 4, 42]} />
-          <meshBasicMaterial
-            blending={THREE.AdditiveBlending}
-            color={CYAN}
-            depthWrite={false}
-            opacity={0.54}
-            toneMapped={false}
-            transparent
-          />
-        </mesh>
-        <mesh ref={ringTwoRef} rotation={[Math.PI / 2, 0, Math.PI / 4]}>
-          <torusGeometry args={[0.4, 0.008, 4, 42]} />
-          <meshBasicMaterial
-            blending={THREE.AdditiveBlending}
-            color={VIOLET}
-            depthWrite={false}
-            opacity={0.38}
-            toneMapped={false}
-            transparent
-          />
-        </mesh>
-      </group>
-
-      <group ref={scanLineRef} position={[0, 0, 0]}>
-        <mesh>
-          <planeGeometry
-            args={[planeSize.width, 0.018]}
-          />
-          <meshBasicMaterial
-            ref={scanLineMaterialRef}
-            blending={THREE.AdditiveBlending}
-            color={GOLD}
-            depthWrite={false}
-            opacity={0}
-            toneMapped={false}
-            transparent
-          />
-        </mesh>
-        <mesh position={[0, 0, 0]}>
-          <planeGeometry
-            args={[planeSize.width, 0.11]}
-          />
-          <meshBasicMaterial
-            ref={scanGlowMaterialRef}
-            blending={THREE.AdditiveBlending}
-            color={CYAN}
-            depthWrite={false}
-            opacity={0}
-            toneMapped={false}
-            transparent
-          />
-        </mesh>
+          <AnalysisAiEyeEmitter reduceMotion={reduceMotion} />
       </group>
     </group>
   );
@@ -831,29 +593,16 @@ function ProjectionScene({
 
 export function ProjectedPhotoStage({
   onError,
-  photoBytes,
-  photoUri,
   projectionFrame,
   style,
-}: ProjectedPhotoStageProps): React.JSX.Element | null {
+}: ProjectedPhotoStageProps): React.JSX.Element {
   const reduceMotion = useReducedMotion();
-  const resolvedUri = useProjectionPhotoUri({
-    onError,
-    photoBytes,
-    photoUri,
-  });
-
-  if (!resolvedUri) return null;
 
   return (
     <View
       pointerEvents="none"
       style={[styles.container, style]}
     >
-      <ProjectionErrorBoundary
-        key={resolvedUri}
-        onError={onError}
-      >
         <Canvas
           camera={{
             far: 30,
@@ -873,14 +622,12 @@ export function ProjectedPhotoStage({
           }}
           style={styles.canvas}
         >
-          <ProjectionSource
-            imageUri={resolvedUri}
+          <ProjectionScene
             onError={onError}
             projectionFrame={projectionFrame}
             reduceMotion={reduceMotion}
           />
         </Canvas>
-      </ProjectionErrorBoundary>
     </View>
   );
 }
@@ -893,6 +640,6 @@ const styles = StyleSheet.create({
   canvas: {
     ...StyleSheet.absoluteFill,
     backgroundColor: "transparent",
-    top: 15
+    top: 15,
   },
 });

@@ -7,36 +7,25 @@ import { Storage } from "react-native-appwrite";
 
 import {
   APPWRITE,
-  AppwriteSetupError,
   ID,
   Permission,
   Role,
   getAppwriteCoreServices,
 } from "@/lib/appwrite";
 import {
-  getItemIdentificationGuidance,
-  identifyItemWithAI,
-  type ItemIdentificationGuidance,
-  type ItemIdentityEvidence,
-  type ItemValuationReadiness,
-  type KeepFlipIdentification,
-} from "@/services/itemAiService";
-import {
-  runStrictEbaySoldComps,
-  type EbaySoldComp,
-  type EbaySoldCompsResult,
+  runSerpApiImageValuation,
+  type SerpApiImageValuationResult,
 } from "@/services/ebaySoldCompsService";
+import { getPrimaryScannerPhotoFileId } from "@/services/scan-photo-service";
 import {
   ITEM_ANALYSIS_CONTRACT_VERSION,
   ITEM_ANALYSIS_VERSION,
   type AnalyzeItemPhotosInput,
   type AnalyzeItemPhotosOptions,
-  type ItemAnalysisEvidenceSource,
   type ItemAnalysisEvidenceStrength,
   type ItemAnalysisStage,
   type ItemAnalysisSuccess,
   type ItemIdentificationSnapshot,
-  type ItemSoldComparable,
   type ItemValuation,
 } from "@/types/item-analysis";
 
@@ -46,12 +35,14 @@ export type {
   AnalyzeItemPhotosOptions,
   ItemAnalysisResult,
   ItemAnalysisStage,
-  ItemAnalysisSuccess,
+  ItemAnalysisSuccess
 } from "@/types/item-analysis";
 
 export const MAX_ANALYSIS_PHOTOS = 4;
 const MAX_SOURCE_PHOTO_BYTES = 64 * 1024 * 1024;
 const MAX_CLOUD_PHOTO_BYTES = 16 * 1024 * 1024;
+const MAX_REFINEMENT_CONTEXT_LENGTH = 600;
+const refinementRequests = new Map<string, Promise<ItemAnalysisSuccess>>();
 
 const CLOUD_PHOTO_PROFILES = Object.freeze({
   single: Object.freeze({ width: 2048, compress: 0.86 }),
@@ -221,385 +212,330 @@ async function preparePhotoForCloudAnalysis(
   }
 }
 
-function confidence01(value: number) {
-  const normalized = value > 1 ? value / 100 : value;
-  return Math.max(0, Math.min(1, normalized));
-}
-
-function strengthFromConfidence(value: number): ItemAnalysisEvidenceStrength {
-  const normalized = value > 1 ? value : value * 100;
-  if (normalized >= 75) return "high";
-  if (normalized >= 45) return "medium";
-  return "low";
-}
-
-function percentile(values: number[], amount: number) {
-  if (values.length === 0) return null;
-  if (values.length === 1) return values[0];
-
-  const position = (values.length - 1) * amount;
-  const lower = Math.floor(position);
-  const upper = Math.ceil(position);
-  if (lower === upper) return values[lower];
-
-  const weight = position - lower;
-  return values[lower] * (1 - weight) + values[upper] * weight;
-}
-
-function roundMoney(value: number | null) {
-  return value == null
-    ? null
-    : Math.round((value + Number.EPSILON) * 100) / 100;
-}
-
-function toComparable(comp: EbaySoldComp): ItemSoldComparable {
-  return {
-    provider: "ebay",
-    marketplace: "ebay",
-    evidenceClass: "confirmed_transaction",
-    title: comp.title,
-    soldPrice: comp.soldPrice,
-    shipping: comp.shipping,
-    totalPrice: comp.totalPrice,
-    currency: comp.currency,
-    condition: comp.condition,
-    soldDate: comp.soldDate,
-    imageUrl: comp.imageUrl,
-    listingUrl: comp.listingUrl,
-    soldDateConfidence: comp.soldDate ? "exact" : "unknown",
-    shippingSemantics: comp.shipping > 0 ? "separate" : "unknown",
-  };
-}
-
-function valuationFromOldUiResult(
-  result: EbaySoldCompsResult,
-  readiness: ItemValuationReadiness,
-): ItemValuation {
-  const prices = result.comps
-    .map((comp) => comp.totalPrice)
-    .filter((value) => Number.isFinite(value) && value > 0)
-    .sort((left, right) => left - right);
-
-  if (prices.length === 0) {
-    return {
-      status: "needs_comps",
-      currency: null,
-      suppliedCount: result.comps.length,
-      usedCount: 0,
-      rejectedCount: result.comps.length,
-      median: null,
-      p20: null,
-      p80: null,
-      methodology: "none",
-      source: "ebay_sold",
-    };
-  }
-
-  return {
-    status:
-      prices.length >= 3 && readiness === "ready"
-        ? "ready"
-        : "limited_comps",
-    currency: result.summary.currency || result.comps[0]?.currency || "USD",
-    suppliedCount: result.comps.length,
-    usedCount: prices.length,
-    rejectedCount: Math.max(0, result.comps.length - prices.length),
-    median: roundMoney(percentile(prices, 0.5)),
-    p20: roundMoney(percentile(prices, 0.2)),
-    p80: roundMoney(percentile(prices, 0.8)),
-    methodology: "median_linear_p20_p80_mad_outlier_filter_v1",
-    source: "ebay_sold",
-  };
-}
-
-function sourceFromIdentityEvidence(
-  source: ItemIdentityEvidence["source"],
-): ItemAnalysisEvidenceSource {
-  switch (source) {
-    case "photo_text":
-      return "photo_text";
-    case "user_notes":
-      return "user_notes";
-    case "external_evidence":
-      return "google_vision";
-    case "visual_design":
-    default:
-      return "photo_visual";
-  }
-}
-
-function findVariant(identification: KeepFlipIdentification) {
-  return (
-    identification.identityEvidence
-      .filter((entry) => entry.field === "variant")
-      .sort((left, right) => right.confidence - left.confidence)[0]?.value ??
-    null
-  );
-}
-
-function identityEvidenceForAnalysis(
-  identification: KeepFlipIdentification,
+function confidenceFromLabel(
+  value: "high" | "medium" | "low",
+  confidencePercent?: number | null,
 ) {
-  return identification.identityEvidence.map((entry) => ({
-    claim: entry.field,
-    value: entry.value,
-    source: sourceFromIdentityEvidence(entry.source),
-    imageIndex: null,
-    strength: strengthFromConfidence(entry.confidence),
-    rationale: entry.explanation,
-  }));
-}
-
-function visibleTextEvidence(identification: KeepFlipIdentification) {
-  const directlyRepresented = new Set(
-    identification.identityEvidence
-      .filter((entry) => entry.source === "photo_text")
-      .map((entry) => entry.value.toLowerCase()),
-  );
-
-  return identification.detectedText
-    .filter((value) => !directlyRepresented.has(value.toLowerCase()))
-    .map((value) => ({
-      claim: "visible_text",
-      value,
-      source: "photo_text" as const,
-      imageIndex: null,
-      strength: strengthFromConfidence(
-        identification.confidenceBreakdown.model ||
-          identification.confidenceBreakdown.brand ||
-          identification.confidenceBreakdown.itemType,
-      ),
-      rationale: "Text transcribed from the uploaded item photos.",
-    }));
-}
-
-function fieldEvidenceForAnalysis(identification: KeepFlipIdentification) {
-  return identification.evidenceFields
-    .filter((field) => field.value.trim())
-    .map((field) => ({
-      claim: field.key,
-      value: field.value,
-      source: "photo_visual" as const,
-      imageIndex: null,
-      strength: strengthFromConfidence(field.confidence),
-      rationale:
-        field.reason ||
-        "A product-specific detail extracted from the uploaded item photos.",
-    }));
-}
-
-function ambiguityList(identification: KeepFlipIdentification) {
-  const candidates = identification.candidateMatches.map(
-    (candidate) =>
-      `Possible match (${candidate.confidence}%): ${candidate.name}. ${candidate.reason}`,
-  );
-
-  return Array.from(
-    new Set(
-      [
-        ...identification.ambiguityNotes,
-        ...identification.valuationSignals.uncertainty,
-        ...candidates,
-      ].filter(Boolean),
-    ),
-  ).slice(0, 15);
-}
-
-function resultSummary(identification: KeepFlipIdentification) {
-  if (identification.identificationBasis === "insufficient_evidence") {
-    return (
-      identification.conditionNotes ||
-      "KeepFlip could not establish a reliable item identity from the current photos."
-    );
+  if (
+    typeof confidencePercent === "number" &&
+    Number.isFinite(confidencePercent)
+  ) {
+    return Math.max(0, Math.min(1, confidencePercent / 100));
   }
-
-  const certainty =
-    identification.valuationReadiness === "ready"
-      ? "The identity is specific enough for narrow sold-comparable research."
-      : identification.valuationReadiness === "directional"
-        ? "The item is identified directionally; exact variant or condition evidence is still limited."
-        : "The item type is recognizable, but more evidence is required before valuation.";
-
-  return [identification.title, identification.conditionNotes, certainty]
-    .filter(Boolean)
-    .join(" ");
+  if (value === "high") return 0.85;
+  if (value === "medium") return 0.65;
+  return 0.35;
 }
 
-function identificationResult(
-  identification: KeepFlipIdentification,
+export type RefineItemAnalysisInput = {
+  answers: {
+    answer: string;
+    question: string;
+  }[];
+  imageCount?: number;
+  ownerId: string;
+  scanId: string;
+};
+
+function refinementContext(
+  answers: RefineItemAnalysisInput["answers"],
+) {
+  if (!Array.isArray(answers)) return "";
+
+  const context = answers
+    .slice(0, 10)
+    .map(({ answer, question }) => ({
+      answer: String(answer ?? "").replace(/\s+/g, " ").trim().slice(0, 500),
+      question: String(question ?? "").replace(/\s+/g, " ").trim().slice(0, 220),
+    }))
+    .filter(({ answer, question }) => answer && question)
+    .map(({ answer, question }) => `${question}: ${answer}`)
+    .join("\n");
+
+  return context.slice(0, MAX_REFINEMENT_CONTEXT_LENGTH).trim();
+}
+
+function strengthFromLabel(
+  value: "high" | "medium" | "low",
+): ItemAnalysisEvidenceStrength {
+  return value;
+}
+
+function valuationFromSerpApiResult(
+  result: SerpApiImageValuationResult,
+): ItemValuation {
+  return {
+    ...result.valuation,
+  };
+}
+
+function uniqueMarketText(values: (string | null | undefined)[]) {
+  const seen = new Set<string>();
+
+  return values.filter((value): value is string => {
+    const normalized = value?.replace(/\s+/g, " ").trim() ?? "";
+    const key = normalized.toLowerCase();
+    if (!normalized || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function evidenceFromSerpApiResult(
+  result: SerpApiImageValuationResult,
+): ItemAnalysisSuccess["analysis"]["evidence"] {
+  const strength = strengthFromLabel(result.quality.confidence);
+  const identityStrength = strengthFromLabel(
+    result.identity?.confidence ?? result.quality.confidence,
+  );
+  const identificationDetail =
+    result.identity?.summary ??
+    result.identificationSummary ??
+    result.identification;
+  const identification = identificationDetail
+    ? [
+      {
+        claim: "visual_market_identification",
+        value: identificationDetail,
+        source: "web_market" as const,
+        imageIndex: null,
+        strength: identityStrength,
+        rationale:
+          "KeepFlip AI identified product details from the same item photo; the concise inventory name is stored separately from this supporting explanation.",
+      },
+    ]
+    : [];
+  const condition = result.condition?.summary
+    ? [
+      {
+        claim: "visual_market_condition",
+        value: result.condition.summary,
+        source: "web_market" as const,
+        imageIndex: null,
+        strength:
+          strengthFromLabel(result.condition.confidence),
+        rationale:
+          "KeepFlip AI assessed the visible condition from the item photo during the single analysis request.",
+      },
+    ]
+    : [];
+  const normalizedIdentification = identificationDetail
+    ?.replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+  const factors = uniqueMarketText(result.factors)
+    .filter(
+      (factor) =>
+        factor.replace(/\s+/g, " ").trim().toLowerCase() !==
+        normalizedIdentification,
+    )
+    .map((factor) => ({
+      claim: "market_value_factor",
+      value: factor,
+      source: "web_market" as const,
+      imageIndex: null,
+      strength,
+      rationale:
+        "A value factor returned with the visual market estimate; conditional language is preserved.",
+    }));
+  const estimates = result.estimates.map((estimate) => ({
+    claim: `${estimate.type}_estimate`,
+    value: estimate.note,
+    source: "web_market" as const,
+    imageIndex: null,
+    strength,
+    rationale:
+      estimate.type === "private_sale"
+        ? "The private-sale band drives KeepFlip's displayed valuation range."
+        : "This supporting band is retained separately from the private-sale estimate.",
+  }));
+  const references = result.references.map((reference) => ({
+    claim: "market_reference",
+    value: [reference.source, reference.title].filter(Boolean).join(": "),
+    source: "web_market" as const,
+    imageIndex: null,
+    strength,
+    rationale: reference.link,
+  }));
+
+  return [
+    ...identification,
+    ...condition,
+    ...estimates,
+    ...factors,
+    ...references,
+  ];
+}
+
+function itemTypeFromMarketIdentity(value: string | null) {
+  const cleaned = value?.replace(/\s+/g, " ").trim() ?? "";
+  if (!cleaned) return null;
+
+  return (
+    cleaned
+      .split(/\s+\((?:specifically|likely|possibly)\b/i)[0]
+      .replace(/[.:]\s*$/, "")
+      .slice(0, 160) || null
+  );
+}
+
+function analysisResultFromSerpApi(
+  market: SerpApiImageValuationResult,
   imageCount: number,
 ): ItemAnalysisSuccess {
-  const status =
-    identification.identificationBasis === "insufficient_evidence"
-      ? "insufficient_evidence"
-      : "identified";
-  const signals = identification.valuationSignals;
-  const breakdown = identification.confidenceBreakdown;
-  const evidence = [
-    ...identityEvidenceForAnalysis(identification),
-    ...visibleTextEvidence(identification),
-    ...fieldEvidenceForAnalysis(identification),
-  ].slice(0, 30);
+  const displayIdentity = market.display.identity;
+  const displayCondition = market.display.condition ?? market.condition;
+  const displayName = market.display.title.replace(/\s+/g, " ").trim() || null;
+  const identificationSummary =
+    (market.display.summary ?? market.identificationSummary ?? displayName)
+      ?.replace(/\s+/g, " ")
+      .trim() || null;
+  const itemType = itemTypeFromMarketIdentity(displayName);
+  const conditionSummary = displayCondition?.summary?.replace(/\s+/g, " ").trim() || null;
+  const identityConfidence = displayName
+    ? confidenceFromLabel(
+      displayIdentity.confidence ?? market.quality.confidence,
+      displayIdentity.itemNameConfidencePercent ??
+      displayIdentity.confidencePercent ??
+      market.quality.confidencePercent,
+    )
+    : 0;
+  const brandConfidence = displayIdentity.brand
+    ? confidenceFromLabel(
+      displayIdentity.confidence,
+      displayIdentity.brandConfidencePercent,
+    )
+    : 0;
+  const modelConfidence = displayIdentity.model
+    ? confidenceFromLabel(
+      displayIdentity.confidence,
+      displayIdentity.modelConfidencePercent,
+    )
+    : 0;
+  const conditionConfidence = displayCondition
+    ? confidenceFromLabel(
+      displayCondition.confidence,
+      displayCondition.confidencePercent,
+    )
+    : 0;
+  const status = displayName ? "identified" : "insufficient_evidence";
+  const warnings = uniqueMarketText([
+    ...market.quality.warnings,
+    ...displayIdentity.candidateModels.map(
+      (candidate) => `Possible model: ${candidate}`,
+    ),
+    imageCount > 1
+      ? "KeepFlip AI Mode analyzed the first photo; the remaining photos were retained locally and were not sent to another analysis function."
+      : null,
+  ]);
 
   return {
     ok: true,
     contractVersion: ITEM_ANALYSIS_CONTRACT_VERSION,
-    version: `${ITEM_ANALYSIS_VERSION}-evidence-aligned`,
+    version: `${ITEM_ANALYSIS_VERSION}-serpapi-single-function`,
     status,
     input: {
       imageCount,
       source: "appwrite_storage",
     },
     analysis: {
-      summary: resultSummary(identification),
+      summary:
+        uniqueMarketText([identificationSummary, conditionSummary]).join(" ") ||
+        "KeepFlip AI returned a valuation but could not establish a usable item identity.",
       identification: {
-        itemType:
-          signals.objectType ||
-          (identification.title.toLowerCase() === "unclear item"
-            ? null
-            : identification.title),
-        category: identification.category,
-        brand: identification.brand,
-        model: identification.model,
-        variant: findVariant(identification),
-        color: signals.colors[0] ?? null,
-        era: signals.era[0] ?? null,
-        serialNumber: identification.serialNumber,
-      },
-      condition: {
-        grade: identification.condition,
-        confidence:
-          identification.condition === "unknown"
-            ? 0
-            : confidence01(breakdown.condition),
-        notes: identification.conditionNotes
-          ? [identification.conditionNotes]
-          : signals.conditionSignals,
-      },
-      confidence: {
-        overall: confidence01(identification.confidence),
-        itemType: confidence01(breakdown.itemType),
-        brand: identification.brand ? confidence01(breakdown.brand) : 0,
-        model: identification.model ? confidence01(breakdown.model) : 0,
-        condition:
-          identification.condition === "unknown"
-            ? 0
-            : confidence01(breakdown.condition),
-      },
-      evidence,
-      ambiguities: ambiguityList(identification),
-      suggestedPhotos: identification.suggestedPhotos,
-      valuationSignals: {
-        searchTerms:
-          signals.searchQueries.length > 0
-            ? signals.searchQueries
-            : [identification.productSearchQuery].filter(Boolean),
-        category: signals.subcategory ?? identification.category,
-        conditionAdjustment:
-          identification.conditionNotes ||
-          "Only visibly supported condition evidence should affect comparable selection.",
-        positiveFactors: signals.conditionSignals,
-        negativeFactors: signals.uncertainty,
-      },
-    },
-    vision: {
-      enabled: true,
-      succeeded: status === "identified",
-      images: [
-        {
-          imageIndex: 0,
-          text: identification.detectedText.join("\n") || null,
-          labels: [],
-          objects: [],
-        },
-      ],
-      warnings: [
-        ...(identification.needsMorePhotos
-          ? ["Additional photos would materially improve this result."]
-          : []),
-        ...(identification.valuationReadiness === "needs_evidence"
-          ? ["Valuation research is paused until stronger identity evidence is available."]
-          : []),
-      ],
-    },
-    valuation: {
-      status: "needs_comps",
-      currency: null,
-      suppliedCount: 0,
-      usedCount: 0,
-      rejectedCount: 0,
-      median: null,
-      p20: null,
-      p80: null,
-      methodology: "none",
-      source: "none",
-    },
-  };
-}
-
-function guidanceResult(
-  guidance: ItemIdentificationGuidance,
-  imageCount: number,
-): ItemAnalysisSuccess {
-  return {
-    ok: true,
-    contractVersion: ITEM_ANALYSIS_CONTRACT_VERSION,
-    version: `${ITEM_ANALYSIS_VERSION}-evidence-guidance`,
-    status: "insufficient_evidence",
-    input: { imageCount, source: "appwrite_storage" },
-    analysis: {
-      summary: guidance.message,
-      identification: {
-        itemType: null,
-        category: null,
-        brand: null,
-        model: null,
-        variant: null,
+        itemType,
+        category: displayIdentity.category,
+        brand: displayIdentity.brand,
+        model: displayIdentity.model,
+        variant: displayIdentity.variant,
         color: null,
         era: null,
         serialNumber: null,
       },
       condition: {
-        grade: "unknown",
-        confidence: 0,
-        notes: [],
+        grade:
+          displayCondition?.grade === "parts"
+            ? "poor"
+            : (displayCondition?.grade ?? "unknown"),
+        confidence: conditionConfidence,
+        notes: conditionSummary ? [conditionSummary] : [],
       },
       confidence: {
-        overall: 0,
-        itemType: 0,
-        brand: 0,
-        model: 0,
-        condition: 0,
+        overall: identityConfidence,
+        itemType: identityConfidence,
+        brand: brandConfidence,
+        model: modelConfidence,
+        condition: conditionConfidence,
+        valuation: confidenceFromLabel(
+          market.display.valuation.confidence,
+          market.display.valuation.confidencePercent,
+        ),
       },
-      evidence: [],
-      ambiguities: [guidance.message],
-      suggestedPhotos: guidance.tips,
+      evidence: evidenceFromSerpApiResult(market).slice(0, 30),
+      ambiguities: warnings.slice(0, 15),
+      suggestedPhotos: market.suggestedDetails.slice(0, 10),
       valuationSignals: {
-        searchTerms: [],
-        category: null,
+        searchTerms: uniqueMarketText([
+          [displayIdentity.brand, displayIdentity.model]
+            .filter(Boolean)
+            .join(" "),
+          itemType,
+        ]),
+        category: displayIdentity.category,
         conditionAdjustment:
-          "Condition cannot be assessed from the current photos.",
-        positiveFactors: [],
-        negativeFactors: [],
+          conditionSummary ||
+          "Only the visible condition returned by KeepFlip AI was used.",
+        positiveFactors: market.factors,
+        negativeFactors: warnings,
       },
     },
     vision: {
       enabled: true,
-      succeeded: false,
-      images: [],
-      warnings: [guidance.message],
+      succeeded: Boolean(displayName),
+      images: [
+        {
+          imageIndex: 0,
+          text: null,
+          labels: [],
+          objects: [],
+        },
+      ],
+      warnings,
     },
-    valuation: {
-      status: "needs_comps",
-      currency: null,
-      suppliedCount: 0,
-      usedCount: 0,
-      rejectedCount: 0,
-      median: null,
-      p20: null,
-      p80: null,
-      methodology: "none",
-      source: "none",
+    valuation: valuationFromSerpApiResult(market),
+    marketResearch: {
+      provider: "keepflip_ai",
+      status: "completed",
+      query: market.query,
+      searchedAt: market.searchedAt,
+      comparableCount: 0,
+      comps: [],
+      signals: market.estimates.map((estimate) => ({
+        provider: "keepflip_ai",
+        evidenceClass: "inferred_sale",
+        type: estimate.type,
+        label: estimate.label,
+        currency: estimate.currency,
+        value: estimate.median,
+        low: estimate.low,
+        median: estimate.median,
+        high: estimate.high,
+        sampleSize: null,
+        observedAt: market.searchedAt,
+        sourceUrl: null,
+        note: estimate.note,
+        confidencePercent: estimate.confidencePercent,
+      })),
+      references: market.references,
+      identification: identificationSummary,
+      condition: market.condition,
+      factors: market.factors,
+      profitabilityActions: market.profitabilityActions,
+      refinementQuestions: market.refinementQuestions,
+      suggestedDetails: market.suggestedDetails,
+      answerMarkdown: market.reconstructedMarkdown,
+      normalization: market.normalization,
+      quality: market.quality,
     },
   };
 }
@@ -639,31 +575,6 @@ function validateInput(input: AnalyzeItemPhotosInput) {
   }
 }
 
-function pausedMarketResearch(
-  identification: KeepFlipIdentification,
-  identified: ItemAnalysisSuccess,
-): ItemAnalysisSuccess {
-  return {
-    ...identified,
-    marketResearch: {
-      provider: "ebay",
-      status: "unavailable",
-      query:
-        identification.productSearchQuery ||
-        identification.valuationSignals.searchQueries[0] ||
-        null,
-      searchedAt: null,
-      comparableCount: 0,
-      comps: [],
-      error: {
-        code: "VALUATION_NEEDS_EVIDENCE",
-        message:
-          "KeepFlip paused sold-comparable research because the current identity evidence would produce a noisy or misleading value range.",
-      },
-    },
-  };
-}
-
 export async function analyzeItemPhotos(
   input: AnalyzeItemPhotosInput,
   options: AnalyzeItemPhotosOptions = {},
@@ -678,17 +589,10 @@ export async function analyzeItemPhotos(
     );
   }
 
-  if (!APPWRITE.itemAiFunctionId) {
+  if (!APPWRITE.marketResearchFunctionId) {
     throw new ItemAnalysisError(
-      "Add EXPO_PUBLIC_APPWRITE_ITEM_AI_FUNCTION_ID before running old-UI analysis.",
-      "ITEM_AI_FUNCTION_NOT_CONFIGURED",
-    );
-  }
-
-  if (!APPWRITE.ebaySoldCompsFunctionId) {
-    throw new ItemAnalysisError(
-      "Add EXPO_PUBLIC_APPWRITE_EBAY_SOLD_COMPS_FUNCTION_ID before running old-UI valuation.",
-      "EBAY_SOLD_COMPS_FUNCTION_NOT_CONFIGURED",
+      "Add EXPO_PUBLIC_APPWRITE_MARKET_COMPS_FUNCTION_ID before running old-UI valuation.",
+      "MARKET_COMPS_FUNCTION_NOT_CONFIGURED",
     );
   }
 
@@ -705,7 +609,7 @@ export async function analyzeItemPhotos(
   try {
     reportStage(options.onStage, "uploading");
 
-    for (const photoUri of input.photoUris) {
+    for (const photoUri of input.photoUris.slice(0, 1)) {
       throwIfAborted(options.signal);
       /*
        * saveScannerPhoto owns the durable, full-resolution inventory image.
@@ -731,46 +635,33 @@ export async function analyzeItemPhotos(
 
     throwIfAborted(options.signal);
     reportStage(options.onStage, "analyzing");
+    reportStage(options.onStage, "researching_comps");
 
-    let identification: KeepFlipIdentification;
+    let market: SerpApiImageValuationResult;
     try {
-      identification = await identifyItemWithAI(
-        uploadedFileIds,
-        input.userNotes?.trim() || "",
-      );
+      market = await runSerpApiImageValuation({
+        bucketId: APPWRITE.itemImagesBucketId,
+        fileId: uploadedFileIds[0],
+      });
     } catch (error) {
-      const guidance = getItemIdentificationGuidance(error);
-
-      reportStage(options.onStage, "cleaning");
-      await deleteTemporaryFiles(
-        storage,
-        APPWRITE.itemImagesBucketId,
-        uploadedFileIds,
-      );
-      cleaned = true;
-
-      if (guidance) {
-        return guidanceResult(guidance, input.photoUris.length);
-      }
-
       throw new ItemAnalysisError(
         error instanceof Error
           ? error.message
-          : "The item identifier could not analyze these photos.",
-        "ITEM_IDENTIFICATION_FAILED",
+          : "KeepFlip AI could not complete item analysis.",
+        "ITEM_ANALYSIS_FAILED",
         undefined,
         { cause: error },
       );
     }
 
-    const identified = identificationResult(
-      identification,
+    const completedResult = analysisResultFromSerpApi(
+      market,
       input.photoUris.length,
     );
     throwIfAborted(options.signal);
     reportPartialResult(
       options.onPartialResult,
-      identificationSnapshot(identified),
+      identificationSnapshot(completedResult),
     );
 
     reportStage(options.onStage, "cleaning");
@@ -781,65 +672,7 @@ export async function analyzeItemPhotos(
     );
     cleaned = true;
 
-    throwIfAborted(options.signal);
-    reportStage(options.onStage, "researching_comps");
-
-    try {
-      const sold = await runStrictEbaySoldComps({
-        title: identification.title,
-        brand: identification.brand,
-        model: identification.model,
-        condition: identification.condition,
-        conditionNotes: identification.conditionNotes,
-        photoCount: input.photoUris.length,
-        valuationSignals: identification.valuationSignals,
-      });
-
-      const comps = sold.comps.map(toComparable);
-      return {
-        ...identified,
-        valuation: valuationFromOldUiResult(
-          sold,
-          identification.valuationReadiness,
-        ),
-        marketResearch: {
-          provider: "ebay",
-          status: "completed",
-          query: sold.query,
-          searchedAt: sold.searchedAt,
-          comparableCount: comps.length,
-          comps,
-          quality: sold.valuation,
-        },
-      };
-    } catch (error) {
-      return {
-        ...identified,
-        marketResearch: {
-          provider: "ebay",
-          status: "failed",
-          query:
-            identification.productSearchQuery ||
-            [
-              identification.brand,
-              identification.model,
-              identification.title,
-            ]
-              .filter(Boolean)
-              .join(" "),
-          searchedAt: null,
-          comparableCount: 0,
-          comps: [],
-          error: {
-            code: "VALUATION_FAILED",
-            message:
-              error instanceof Error
-                ? error.message
-                : "The eBay sold-comps service could not complete valuation.",
-          },
-        },
-      };
-    }
+    return completedResult;
   } finally {
     if (!cleaned && uploadedFileIds.length > 0) {
       await deleteTemporaryFiles(
@@ -851,6 +684,104 @@ export async function analyzeItemPhotos(
 
     for (const uri of preparedCloudPhotoUris) {
       deletePreparedCloudPhoto(uri);
+    }
+  }
+}
+
+export async function refineItemAnalysis({
+  answers,
+  imageCount = 1,
+  ownerId,
+  scanId,
+}: RefineItemAnalysisInput): Promise<ItemAnalysisSuccess> {
+  const cleanOwnerId = ownerId.trim();
+  const cleanScanId = scanId.trim();
+  const context = refinementContext(answers);
+
+  if (!cleanOwnerId) {
+    throw new ItemAnalysisError(
+      "Sign in before refining a valuation.",
+      "AUTH_REQUIRED",
+    );
+  }
+  if (!cleanScanId) {
+    throw new ItemAnalysisError(
+      "The scanner session ID is missing.",
+      "SCAN_ID_REQUIRED",
+    );
+  }
+  if (!context) {
+    throw new ItemAnalysisError(
+      "Answer at least one valuation question before recalculating.",
+      "REFINEMENT_ANSWERS_REQUIRED",
+    );
+  }
+  if (!APPWRITE.itemImagesBucketId) {
+    throw new ItemAnalysisError(
+      "Add EXPO_PUBLIC_APPWRITE_ITEM_IMAGES_BUCKET_ID before refining valuation.",
+      "ITEM_IMAGES_BUCKET_NOT_CONFIGURED",
+    );
+  }
+  if (!APPWRITE.marketResearchFunctionId) {
+    throw new ItemAnalysisError(
+      "Add EXPO_PUBLIC_APPWRITE_MARKET_COMPS_FUNCTION_ID before refining valuation.",
+      "MARKET_COMPS_FUNCTION_NOT_CONFIGURED",
+    );
+  }
+
+  const normalizedImageCount = Math.max(
+    1,
+    Math.min(MAX_ANALYSIS_PHOTOS, Math.floor(imageCount) || 1),
+  );
+  const requestKey = JSON.stringify([
+    cleanOwnerId,
+    cleanScanId,
+    context,
+    normalizedImageCount,
+  ]);
+  const activeRequest = refinementRequests.get(requestKey);
+  if (activeRequest) return activeRequest;
+
+  const request = (async () => {
+    try {
+      const { account } = getAppwriteCoreServices();
+      const user = await account.get();
+      if (user.$id !== cleanOwnerId) {
+        throw new ItemAnalysisError(
+          "The signed-in user does not own this scan.",
+          "SCAN_OWNER_MISMATCH",
+        );
+      }
+
+      const fileId = await getPrimaryScannerPhotoFileId(
+        cleanOwnerId,
+        cleanScanId,
+      );
+      const market = await runSerpApiImageValuation({
+        bucketId: APPWRITE.itemImagesBucketId,
+        fileId,
+        refinementContext: context,
+      });
+      return analysisResultFromSerpApi(market, normalizedImageCount);
+    } catch (error) {
+      if (error instanceof ItemAnalysisError) throw error;
+      throw new ItemAnalysisError(
+        error instanceof Error
+          ? error.message
+          : "KeepFlip could not refine this valuation.",
+        "ITEM_ANALYSIS_REFINEMENT_FAILED",
+        undefined,
+        { cause: error },
+      );
+    }
+  })();
+
+  refinementRequests.set(requestKey, request);
+  try {
+    return await request;
+  } finally {
+    if (refinementRequests.get(requestKey) === request) {
+      refinementRequests.delete(requestKey);
     }
   }
 }

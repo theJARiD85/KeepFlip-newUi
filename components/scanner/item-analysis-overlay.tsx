@@ -23,6 +23,7 @@ import Animated, {
 
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import type { Thought } from '@/components/scanner/scanner-thought-stream';
+import type { AnalysisProfitPlan } from "@/components/scanner/analysis-visual-types";
 
 const analysisTextStyle = { fontFamily: theme.fonts.analysis } as const;
 
@@ -84,10 +85,11 @@ export type AnalysisValuation = {
   median: number;
   query?: string;
   snapshot?: boolean;
-  source?: 'ebay' | 'multi_market' | 'supplied';
+  source?: 'ebay' | 'multi_market' | 'serpapi_ai' | 'supplied';
 };
 
 export type ItemAnalysisResult = {
+  profitPlan: AnalysisProfitPlan;
   condition?: AnalysisCondition;
   confidence?: AnalysisConfidenceBreakdown;
   evidence?: AnalysisEvidence[];

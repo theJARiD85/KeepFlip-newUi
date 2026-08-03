@@ -1,6 +1,5 @@
 import { Image } from 'expo-image';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
@@ -9,12 +8,12 @@ import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 export function KeepFlipAuthBootstrapScreen() {
   return (
     <KeepFlipBackground contentStyle={styles.content}>
-      <Animated.View entering={FadeIn.duration(220)} style={styles.lockup}>
+      <View style={styles.lockup}>
         <View style={styles.logoHalo}>
           <Image
             accessibilityLabel="KeepFlip"
             contentFit="contain"
-            source={require('@/assets/images/icon.png')}
+            source={require('@/assets/images/icon3.png')}
             style={styles.logo}
           />
         </View>
@@ -25,7 +24,7 @@ export function KeepFlipAuthBootstrapScreen() {
             <Text style={styles.status}>Verifying your session</Text>
           </View>
         </View>
-      </Animated.View>
+      </View>
     </KeepFlipBackground>
   );
 }

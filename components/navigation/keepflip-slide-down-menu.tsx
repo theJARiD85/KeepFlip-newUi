@@ -161,12 +161,12 @@ export function KeepFlipSlideDownMenu() {
               <Image
                 accessibilityLabel="KeepFlip"
                 contentFit="contain"
-                source={require('@/assets/images/icon.png')}
+                source={require('@/assets/images/icon3.png')}
                 style={styles.brandMark}
               />
               <View style={styles.brandCopy}>
                 <Text style={styles.brandName}>KEEPFLIP</Text>
-                <Text style={styles.brandDescriptor}>FLIP INTELLIGENCE</Text>
+                <Text style={styles.brandDescriptor}>Price Smarter, Profit More</Text>
               </View>
             </View>
 

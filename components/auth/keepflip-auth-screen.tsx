@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { useEffect, useRef, useState, type ComponentProps } from 'react';
+import { useEffect, useRef, useState, type ComponentProps, type ComponentRef } from 'react';
 import { AccessibilityInfo, ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, type TextInputProps } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 
 type AuthMode = 'sign-in' | 'create-account';
 type IconName = ComponentProps<typeof IconSymbol>['name'];
+type TextInputHandle = ComponentRef<typeof TextInput>;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -26,7 +27,7 @@ function AuthField({
   ...inputProps
 }: TextInputProps & {
   icon: IconName;
-  inputRef?: React.RefObject<TextInput | null>;
+  inputRef?: React.RefObject<TextInputHandle | null>;
   label: string;
   onToggleSecure?: () => void;
   secureVisible?: boolean;
@@ -114,9 +115,9 @@ export function KeepFlipAuthScreen() {
     signUp,
     status,
   } = useKeepFlipAuth();
-  const emailRef = useRef<TextInput>(null);
-  const passwordRef = useRef<TextInput>(null);
-  const confirmPasswordRef = useRef<TextInput>(null);
+  const emailRef = useRef<TextInputHandle>(null);
+  const passwordRef = useRef<TextInputHandle>(null);
+  const confirmPasswordRef = useRef<TextInputHandle>(null);
   const [mode, setMode] = useState<AuthMode>('sign-in');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -214,7 +215,7 @@ export function KeepFlipAuthScreen() {
                 <Image
                   accessibilityLabel="KeepFlip gold scanner mark"
                   contentFit="contain"
-                  source={require('@/assets/images/icon.png')}
+                  source={require('@/assets/images/icon3.png')}
                   style={styles.logo}
                 />
               </View>

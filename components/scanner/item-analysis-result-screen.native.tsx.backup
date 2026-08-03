@@ -1,4 +1,3 @@
-import { File, Paths } from "expo-file-system";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -13,8 +12,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { inventoryItemToAnalysisState } from "@/components/scanner/inventory-analysis-view-model";
 import { useItemAnalysisResult } from "@/components/scanner/item-analysis-result-context";
-import { ValuationResultStage } from "@/components/scanner/valuation-result-stage";
-import { HudImageFrame } from "@/components/scanner/hud-image-frame.native";
+import { ItemAnalysisResultStage } from "@/components/scanner/item-analysis-result-stage";
+import ModelProjectionScanner from "@/components/scanner/model-projection-scanner.native";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { APPWRITE, storage } from "@/lib/appwrite";
@@ -25,233 +24,9 @@ import {
 import { getItemPhotos } from "@/services/itemPhotoService";
 
 type InventoryResultPayload = {
-  photoUri: string | null;
+  photoBytes: ArrayBuffer | null;
   state: ReturnType<typeof inventoryItemToAnalysisState>;
 };
-
-type JsonRecord = Record<string, unknown>;
-
-type SnapshotImageReference = {
-  bucketId: string | null;
-  fileId: string | null;
-  imageUrl: string | null;
-};
-
-const SNAPSHOT_IMAGE_SKIP_KEYS = new Set([
-  "comps",
-  "comparables",
-  "matches",
-  "signals",
-  "references",
-  "search_parameters",
-]);
-
-function isRecord(value: unknown): value is JsonRecord {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
-function cleanString(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const cleaned = value.trim();
-  return cleaned || null;
-}
-
-function asHttpUrl(value: unknown): string | null {
-  const cleaned = cleanString(value);
-  return cleaned && /^https?:\/\//i.test(cleaned) ? cleaned : null;
-}
-
-function findSnapshotFileReference(
-  value: unknown,
-  depth = 0,
-): SnapshotImageReference | null {
-  if (depth > 10 || value == null) return null;
-
-  if (Array.isArray(value)) {
-    for (const entry of value) {
-      const found = findSnapshotFileReference(entry, depth + 1);
-      if (found) return found;
-    }
-    return null;
-  }
-
-  if (!isRecord(value)) return null;
-
-  const bucketId =
-    cleanString(value.bucketId) ??
-    cleanString(value.imageBucketId);
-  const fileId =
-    cleanString(value.fileId) ??
-    cleanString(value.imageFileId);
-
-  if (bucketId && fileId) {
-    return {
-      bucketId,
-      fileId,
-      imageUrl:
-        asHttpUrl(value.imageUrl) ??
-        asHttpUrl(value.viewUrl),
-    };
-  }
-
-  for (const [key, nested] of Object.entries(value)) {
-    if (SNAPSHOT_IMAGE_SKIP_KEYS.has(key)) continue;
-    const found = findSnapshotFileReference(nested, depth + 1);
-    if (found) return found;
-  }
-
-  return null;
-}
-
-function findSnapshotImageUrl(
-  value: unknown,
-  depth = 0,
-): string | null {
-  if (depth > 10 || value == null) return null;
-
-  if (Array.isArray(value)) {
-    for (const entry of value) {
-      const found = findSnapshotImageUrl(entry, depth + 1);
-      if (found) return found;
-    }
-    return null;
-  }
-
-  if (!isRecord(value)) return null;
-
-  const direct =
-    asHttpUrl(value.imageUrl) ??
-    asHttpUrl(value.viewUrl) ??
-    asHttpUrl(value.photoUrl) ??
-    asHttpUrl(value.sourceImageUrl);
-
-  if (direct && !/[?&]token=/i.test(direct)) {
-    return direct;
-  }
-
-  for (const [key, nested] of Object.entries(value)) {
-    if (SNAPSHOT_IMAGE_SKIP_KEYS.has(key)) continue;
-    const found = findSnapshotImageUrl(nested, depth + 1);
-    if (found) return found;
-  }
-
-  return null;
-}
-
-function imageExtension(bytes: Uint8Array) {
-  if (
-    bytes.length >= 8 &&
-    bytes[0] === 0x89 &&
-    bytes[1] === 0x50 &&
-    bytes[2] === 0x4e &&
-    bytes[3] === 0x47
-  ) {
-    return "png";
-  }
-
-  if (
-    bytes.length >= 12 &&
-    bytes[0] === 0x52 &&
-    bytes[1] === 0x49 &&
-    bytes[2] === 0x46 &&
-    bytes[3] === 0x46 &&
-    bytes[8] === 0x57 &&
-    bytes[9] === 0x45 &&
-    bytes[10] === 0x42 &&
-    bytes[11] === 0x50
-  ) {
-    return "webp";
-  }
-
-  return "jpg";
-}
-
-function safeCacheName(value: string) {
-  return value.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 100);
-}
-
-async function appwriteImageFileUri(
-  bucketId: string,
-  fileId: string,
-): Promise<string> {
-  const response = await storage.getFileView({
-    bucketId,
-    fileId,
-  });
-  const bytes =
-    response instanceof Uint8Array
-      ? response
-      : new Uint8Array(response);
-  const extension = imageExtension(bytes);
-  const cacheFile = new File(
-    Paths.cache,
-    `keepflip-analysis-${safeCacheName(fileId)}.${extension}`,
-  );
-
-  cacheFile.create({
-    intermediates: true,
-    overwrite: true,
-  });
-  cacheFile.write(bytes);
-
-  return cacheFile.uri;
-}
-
-async function resolveSavedItemImageUri(
-  item: Awaited<ReturnType<typeof getInventoryItem>>,
-  ownerId: string,
-): Promise<string | null> {
-  const snapshotReference = findSnapshotFileReference(
-    item.analysisSnapshot,
-  );
-
-  if (snapshotReference?.bucketId && snapshotReference.fileId) {
-    try {
-      return await appwriteImageFileUri(
-        snapshotReference.bucketId,
-        snapshotReference.fileId,
-      );
-    } catch {
-      // Continue through the durable inventory-photo fallbacks.
-    }
-  }
-
-  if (item.coverPhotoId && APPWRITE.itemImagesBucketId) {
-    try {
-      return await appwriteImageFileUri(
-        APPWRITE.itemImagesBucketId,
-        item.coverPhotoId,
-      );
-    } catch {
-      // The cover pointer may belong to an older inventory record.
-    }
-  }
-
-  try {
-    const photos = await getItemPhotos({
-      itemId: item.id,
-      ownerId,
-    });
-    const primaryPhoto =
-      photos.find((photo) => photo.isPrimary) ??
-      photos[0] ??
-      null;
-
-    if (primaryPhoto && APPWRITE.itemImagesBucketId) {
-      return await appwriteImageFileUri(
-        APPWRITE.itemImagesBucketId,
-        primaryPhoto.fileId,
-      );
-    }
-  } catch {
-    // A saved snapshot URL is still a valid final fallback.
-  }
-
-  return (
-    snapshotReference?.imageUrl ??
-    findSnapshotImageUrl(item.analysisSnapshot)
-  );
-}
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -262,9 +37,24 @@ async function loadInventoryResult(
   itemId: string,
 ): Promise<InventoryResultPayload> {
   const item = await getInventoryItem(ownerId, itemId);
+  const photos = await getItemPhotos({ itemId, ownerId });
+  const primaryPhoto =
+    photos.find((photo) => photo.isPrimary) ?? photos[0] ?? null;
+
+  const [photoResult] = await Promise.allSettled([
+    primaryPhoto && APPWRITE.itemImagesBucketId
+      ? storage.getFileView({
+          bucketId: APPWRITE.itemImagesBucketId,
+          fileId: primaryPhoto.fileId,
+        })
+      : Promise.resolve(null),
+  ]);
 
   return {
-    photoUri: await resolveSavedItemImageUri(item, ownerId),
+    photoBytes:
+      photoResult.status === "fulfilled"
+        ? photoResult.value
+        : null,
     state: inventoryItemToAnalysisState(item),
   };
 }
@@ -407,10 +197,10 @@ export function ItemAnalysisResultScreen() {
 
   const resultState =
     scannerSession?.state ?? inventoryResult?.state ?? null;
-  const photoUri =
-    scannerSession?.backdropUri ??
-    inventoryResult?.photoUri ??
-    undefined;
+  const photoUri = scannerSession?.backdropUri;
+  const photoBytes = inventoryResult?.photoBytes ?? undefined;
+  const hasProjection =
+    !projectionError && Boolean(photoUri || photoBytes);
 
   const missingSession = Boolean(sessionId && !scannerSession);
   const resolvedError =
@@ -421,19 +211,21 @@ export function ItemAnalysisResultScreen() {
         ? "No analysis result was supplied to this screen."
         : null);
 
+  const projectionLabel = hasProjection
+    ? "KEEPFLIP PHOTON PROJECTION / LIVE GPU FIELD"
+    : projectionError
+      ? "PROJECTION SIGNAL DEGRADED / HUD FIELD ACTIVE"
+      : "PHOTO SIGNAL ACQUIRING / HUD FIELD ACTIVE";
+
   if (loading || resolvedError || !resultState) {
     return (
       <View style={styles.root}>
               <View pointerEvents="none" style={styles.ambientGradient} />
         <View pointerEvents="none" style={styles.projectionLayer}>
-          <HudImageFrame
+          <ModelProjectionScanner
             onError={setProjectionError}
+            photoBytes={photoBytes}
             photoUri={photoUri}
-            statusText={
-              scannerSession
-                ? "CAPTURED EVIDENCE"
-                : "SAVED ANALYSIS IMAGE"
-            }
           />
         </View>
         <View
@@ -494,21 +286,13 @@ export function ItemAnalysisResultScreen() {
     );
   }
 
-  const projectionLabel = projectionError
-  ? "PROJECTION SIGNAL DEGRADED / HUD FIELD ACTIVE"
-  : "KEEPFLIP ITEM PROJECTION / VALUATION FIELD";
-
   return (
     <View style={styles.root}>
       <View pointerEvents="none" style={styles.projectionLayer}>
-        <HudImageFrame
+        <ModelProjectionScanner
           onError={setProjectionError}
+          photoBytes={photoBytes}
           photoUri={photoUri}
-          statusText={
-            scannerSession
-              ? "CAPTURED EVIDENCE"
-              : "SAVED ANALYSIS IMAGE"
-          }
         />
       </View>
 
@@ -517,21 +301,22 @@ export function ItemAnalysisResultScreen() {
         style={[styles.resultScrim, styles.resultScrimWithProjection]}
       />
 
-    <ValuationResultStage
-      bottomInset={insets.bottom}
-      onSave={
-        scannerSession
-          ? () => {
-              void handleSave();
-            }
-          : undefined
-      }
-      projectionLabel={projectionLabel}
-      saveLabel="Save to inventory"
-      saving={saving}
-      state={resultState}
-      topInset={insets.top}
-    />
+      <ItemAnalysisResultStage
+        bottomInset={insets.bottom}
+        onDone={handleDone}
+        onSave={
+          scannerSession
+            ? () => {
+                void handleSave();
+              }
+            : undefined
+        }
+        projectionLabel={projectionLabel}
+        saveLabel="Save to inventory"
+        saving={saving}
+        state={resultState}
+        topInset={insets.top}
+      />
     </View>
   );
 }
@@ -558,12 +343,6 @@ const styles = StyleSheet.create({
   projectionLayer: {
     ...StyleSheet.absoluteFill,
     zIndex: 0,
-    alignItems: "center",
-    justifyContent: "center",
-    position: "absolute",
-    top: 80,
-    left: 8,
-    right: 8,
   },
   resultScrim: {
     ...StyleSheet.absoluteFill,
@@ -587,7 +366,7 @@ const styles = StyleSheet.create({
   },
   centerEyebrow: {
     color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.numbers,
+    fontFamily: theme.fonts.analysis,
     fontSize: 8,
     fontWeight: "900",
     letterSpacing: 1.8,
@@ -621,8 +400,8 @@ const styles = StyleSheet.create({
   },
   stateButtonText: {
     color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.numbers,
-    fontSize: 11,
+    fontFamily: theme.fonts.analysis,
+    fontSize: 9,
     fontWeight: "900",
     letterSpacing: 1.1,
   },

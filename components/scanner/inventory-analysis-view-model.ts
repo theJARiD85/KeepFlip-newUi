@@ -1,4 +1,5 @@
-import type { ItemAnalysisState } from "@/components/scanner/item-analysis-overlay";
+import type { ItemAnalysisState } from "@/components/scanner/analysis-visual-types";
+import { toItemAnalysisState } from "@/components/scanner/item-analysis-view-model";
 import type { InventoryItem } from "@/services/inventory-service";
 
 type ResultState = Extract<ItemAnalysisState, { status: "result" }>;
@@ -17,6 +18,15 @@ function displayText(value: string, maxLength: number) {
 export function inventoryItemToAnalysisState(
   item: InventoryItem,
 ): ResultState {
+  if (item.analysisSnapshot?.status === "identified") {
+    try {
+      const restored = toItemAnalysisState(item.analysisSnapshot);
+      if (restored.status === "result") return restored;
+    } catch {
+      // Older or malformed snapshots fall through to the durable item fields.
+    }
+  }
+
   const confidence = normalizedConfidence(item.aiConfidence);
   const identityValue = [item.brand, item.model, item.category]
     .filter(Boolean)
@@ -24,28 +34,28 @@ export function inventoryItemToAnalysisState(
   const evidence = [
     identityValue
       ? {
-          id: "saved-identity",
-          label: "SAVED IDENTITY",
-          source: "Inventory record",
-          value: displayText(identityValue, 220),
-        }
+        id: "saved-identity",
+        label: "SAVED IDENTITY",
+        source: "Inventory record",
+        value: displayText(identityValue, 220),
+      }
       : null,
     item.condition
       ? {
-          id: "saved-condition",
-          label: "OBSERVED CONDITION",
-          source: "Original KeepFlip analysis",
-          value: displayText(item.condition, 120),
-        }
+        id: "saved-condition",
+        label: "OBSERVED CONDITION",
+        source: "Original KeepFlip analysis",
+        value: displayText(item.condition, 120),
+      }
       : null,
     item.estimatedValue != null
       ? {
-          id: "saved-value-basis",
-          label: "VALUE SNAPSHOT",
-          source: "Saved analysis median",
-          value:
-            "This is the stored estimate from the original scan. Refresh market research before pricing for sale.",
-        }
+        id: "saved-value-basis",
+        label: "VALUE SNAPSHOT",
+        source: "Saved analysis median",
+        value:
+          "This is the stored estimate from the original scan. Refresh market research before pricing for sale.",
+      }
       : null,
   ].filter((entry): entry is NonNullable<typeof entry> => entry != null);
 
@@ -62,9 +72,9 @@ export function inventoryItemToAnalysisState(
         confidence == null
           ? undefined
           : {
-              identity: confidence,
-              overall: confidence,
-            },
+            identity: confidence,
+            overall: confidence,
+          },
       evidence,
       identity: {
         brand: item.brand ? displayText(item.brand, 72) : undefined,
@@ -73,6 +83,26 @@ export function inventoryItemToAnalysisState(
         model: item.model ? displayText(item.model, 72) : undefined,
         title: displayText(item.title, 120),
       },
+      profitPlan: {
+        actions: [
+          {
+            detail:
+              "Refresh market research before listing so the price reflects current demand.",
+            id: "saved-profit-refresh",
+            label: "Refresh the market range",
+          },
+          {
+            detail:
+              "Record the item cost and selling channel before accepting an offer so margin decisions stay grounded.",
+            id: "saved-profit-inputs",
+            label: "Complete the profit inputs",
+          },
+        ],
+        currency: item.currency,
+        expectedSale: item.estimatedValue ?? undefined,
+        listTarget: item.estimatedValue ?? undefined,
+        quickSale: item.estimatedValue ?? undefined,
+      },
       summary:
         (item.conditionNotes && displayText(item.conditionNotes, 480)) ||
         "Saved KeepFlip analysis. The captured evidence and durable inventory facts are shown here.",
@@ -80,12 +110,12 @@ export function inventoryItemToAnalysisState(
         item.estimatedValue == null
           ? undefined
           : {
-              currency: item.currency,
-              high: item.estimatedValue,
-              low: item.estimatedValue,
-              median: item.estimatedValue,
-              snapshot: true,
-            },
+            currency: item.currency,
+            high: item.estimatedValue,
+            low: item.estimatedValue,
+            median: item.estimatedValue,
+            snapshot: true,
+          },
       valuationReadiness: {
         label:
           item.estimatedValue == null

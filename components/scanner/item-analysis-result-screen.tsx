@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { inventoryItemToAnalysisState } from "@/components/scanner/inventory-analysis-view-model";
 import { useItemAnalysisResult } from "@/components/scanner/item-analysis-result-context";
-import { ItemAnalysisResultStage } from "@/components/scanner/item-analysis-result-stage";
+import { ValuationResultStage } from "@/components/scanner/valuation-result-stage";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import {
@@ -115,7 +115,6 @@ export function ItemAnalysisResultScreen() {
     try {
       const saved = await saveAnalyzedItemToInventory({
         analysis: scannerSession.analysis,
-        modelFile: scannerSession.modelUrl,
         ownerId: userId,
         scanId: scannerSession.scanId,
       });
@@ -173,15 +172,8 @@ export function ItemAnalysisResultScreen() {
 
   return (
     <View style={styles.root}>
-      <ItemAnalysisResultStage
+      <ValuationResultStage
         bottomInset={insets.bottom}
-        doneLabel={
-          scannerSession ? "Start new scan" : "Back to inventory"
-        }
-        onDone={() => {
-          finishScannerSession();
-          router.back();
-        }}
         onSave={
           scannerSession
             ? () => {

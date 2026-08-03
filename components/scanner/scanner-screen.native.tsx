@@ -5,7 +5,16 @@ import {
   useRouter,
 } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, AppState, BackHandler, Linking, Platform, Pressable, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  AppState,
+  BackHandler,
+  Linking,
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
+} from "react-native";
 import {
   Camera,
   CommonResolutions,
@@ -45,9 +54,7 @@ import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout } from "@/hooks/use-responsive-layout";
-import {
-  MAX_ANALYSIS_PHOTOS,
-} from "@/services/item-analysis-service";
+import { MAX_ANALYSIS_PHOTOS } from "@/services/item-analysis-service";
 import {
   createScanId,
   saveScannerPhoto,
@@ -167,7 +174,6 @@ export default function ScannerScreen() {
   const cameraRef = useRef<CameraRef>(null);
   const scanFrameRef = useRef<View>(null);
   const captureLockRef = useRef(false);
-  const multiScanSequenceRef = useRef(0);
   const uploadSequenceRef = useRef(0);
   const torchRequestSequenceRef = useRef(0);
   const pendingAnalysisSessionIdRef = useRef<string | null>(null);
@@ -185,10 +191,9 @@ export default function ScannerScreen() {
   const [torchEnabled, setTorchEnabled] = useState(false);
   const [isTorchUpdating, setIsTorchUpdating] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
-  const [isCameraReady, setIsCameraReady] = useState(false);
+  const [readyCameraId, setReadyCameraId] = useState<string | null>(null);
   const [isPickingPhoto, setIsPickingPhoto] = useState(false);
   const [appState, setAppState] = useState(AppState.currentState);
-  const [message, setMessage] = useState("Center one item inside the frame");
   const [captureFeedback, setCaptureFeedback] = useState<string | null>(null);
   const [radarViewport, setRadarViewport] =
     useState<ValueRadarViewport | null>(null);
@@ -202,6 +207,7 @@ export default function ScannerScreen() {
   const [activeAnalysisSessionId, setActiveAnalysisSessionId] =
     useState<string | null>(null);
   const canUseTorch = device?.hasTorch === true;
+  const isCameraReady = readyCameraId === device?.id;
   const analysisPhotoUris =
     selectedTool === "single" && singlePhotoUri
       ? [singlePhotoUri]
@@ -223,7 +229,6 @@ export default function ScannerScreen() {
   const isPhotoReviewOpen = isMultiReviewOpen || isUploadReviewOpen;
   const isScannerOverlayOpen =
     isPhotoReviewOpen || activeAnalysisSessionId != null;
-  const isScannerUiHidden = isScannerOverlayOpen;
   const isCameraActive =
     hasPermission &&
     device != null &&
@@ -363,21 +368,18 @@ export default function ScannerScreen() {
   );
   const scannerChromeAnimatedStyle = useAnimatedStyle(
     () => ({
-      opacity: withTiming(isScannerUiHidden ? 0 : 1, { duration: 170 }),
+      opacity: withTiming(isScannerOverlayOpen ? 0 : 1, { duration: 170 }),
       transform: [
-        { scale: withTiming(isScannerUiHidden ? 0.97 : 1, { duration: 190 }) },
+        { scale: withTiming(isScannerOverlayOpen ? 0.97 : 1, { duration: 190 }) },
       ],
     }),
-    [isScannerUiHidden],
+    [isScannerOverlayOpen],
   );
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", setAppState);
     return () => subscription.remove();
   }, []);
-
-
-
   useEffect(() => {
     if (
       !isFocused ||
@@ -390,7 +392,7 @@ export default function ScannerScreen() {
     }
 
     void requestPermission().catch(() => {
-      setMessage(
+      setCaptureFeedback(
         "Camera permission could not be requested. Open system settings to enable it.",
       );
     });
@@ -413,33 +415,13 @@ export default function ScannerScreen() {
   );
 
   useEffect(() => {
-    setIsCameraReady(false);
-  }, [device?.id]);
-
-  useEffect(() => {
-    if (canUseTorch && isCameraActive) return;
-    torchRequestSequenceRef.current += 1;
-    setIsTorchUpdating(false);
-    setTorchEnabled(false);
-  }, [canUseTorch, isCameraActive]);
-
-  useEffect(() => {
     if (!isMenuOpen) return;
-    if (isMultiReviewOpen) setIsMultiReviewOpen(false);
-    if (isUploadReviewOpen) setIsUploadReviewOpen(false);
-  }, [isMenuOpen, isMultiReviewOpen, isUploadReviewOpen]);
-
-  useEffect(() => {
-    if (isMultiReviewOpen && multiScanPhotos.length === 0) {
+    const closeReviewFrame = requestAnimationFrame(() => {
       setIsMultiReviewOpen(false);
-    }
-  }, [isMultiReviewOpen, multiScanPhotos.length]);
-
-  useEffect(() => {
-    if (isUploadReviewOpen && uploadedPhotos.length === 0) {
       setIsUploadReviewOpen(false);
-    }
-  }, [isUploadReviewOpen, uploadedPhotos.length]);
+    });
+    return () => cancelAnimationFrame(closeReviewFrame);
+  }, [isMenuOpen]);
 
   useEffect(() => {
     if (
@@ -486,14 +468,10 @@ export default function ScannerScreen() {
               uri: toDisplayUri(uri),
             } satisfies MultiScanPhoto;
           });
-        const nextPhotos = [...currentPhotos, ...additions].slice(
+        return [...currentPhotos, ...additions].slice(
           0,
           MAX_ANALYSIS_PHOTOS,
         );
-        setMessage(
-          `${nextPhotos.length} of ${MAX_ANALYSIS_PHOTOS} uploaded photo${nextPhotos.length === 1 ? "" : "s"} ready for AI analysis.`,
-        );
-        return nextPhotos;
       });
       setSelectedTool("upload");
     },
@@ -549,7 +527,7 @@ export default function ScannerScreen() {
         if (!isMounted || pendingResult == null) return;
 
         if ("code" in pendingResult) {
-          setMessage(
+          setCaptureFeedback(
             pendingResult.message || "Could not restore the selected photo.",
           );
           return;
@@ -560,7 +538,7 @@ export default function ScannerScreen() {
         }
       } catch {
         if (isMounted)
-          setMessage(
+          setCaptureFeedback(
             "Could not restore the selected photo. Please choose it again.",
           );
       }
@@ -577,7 +555,7 @@ export default function ScannerScreen() {
       const granted = await requestPermission();
 
       if (!granted) {
-        setMessage("Camera permission was not granted.");
+        setCaptureFeedback("Camera permission was not granted.");
       }
 
       return;
@@ -590,7 +568,7 @@ export default function ScannerScreen() {
     if (isPickingPhoto) return;
     const remainingSlots = MAX_ANALYSIS_PHOTOS - uploadedPhotos.length;
     if (remainingSlots <= 0) {
-      setMessage(
+      setCaptureFeedback(
         `The ${MAX_ANALYSIS_PHOTOS}-photo analysis set is full. Remove a photo before adding another.`,
       );
       setIsUploadReviewOpen(true);
@@ -598,7 +576,7 @@ export default function ScannerScreen() {
     }
 
     setIsPickingPhoto(true);
-    setMessage("Opening your photo library...");
+    setCaptureFeedback(null);
 
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -611,18 +589,17 @@ export default function ScannerScreen() {
       });
 
       if (result.canceled) {
-        setMessage("Upload canceled. Tap the photo tool when you are ready.");
         return;
       }
 
       if (result.assets.length === 0) {
-        setMessage("No photos were selected. Please try again.");
+        setCaptureFeedback("No photos were selected. Please try again.");
         return;
       }
 
       await persistPickedPhotos(result.assets);
     } catch {
-      setMessage("Could not open your photos. Please try again.");
+      setCaptureFeedback("Could not open your photos. Please try again.");
     } finally {
       setIsPickingPhoto(false);
     }
@@ -649,14 +626,12 @@ export default function ScannerScreen() {
     } | null> => {
       if (!isCameraActive || !isCameraReady) {
         const feedback = "Camera is getting ready. Try again in a moment.";
-        setMessage(feedback);
         setCaptureFeedback(feedback);
         return null;
       }
 
       if (!user?.$id) {
         const feedback = "Sign in before saving scanner photos.";
-        setMessage(feedback);
         setCaptureFeedback(feedback);
         return null;
       }
@@ -664,7 +639,6 @@ export default function ScannerScreen() {
       if (captureLockRef.current) return null;
       captureLockRef.current = true;
       setIsCapturing(true);
-      setMessage("Capturing item...");
       setCaptureFeedback("Capturing item...");
 
       try {
@@ -681,7 +655,7 @@ export default function ScannerScreen() {
 
         let saved: SavedScanPhoto | null = null;
         if (persistImmediately) {
-          setMessage("Saving scanner image...");
+          setCaptureFeedback("Saving scanner image...");
           saved = await saveScannerPhoto({
             imageUri: photo.filePath,
             ownerId: user.$id,
@@ -698,7 +672,6 @@ export default function ScannerScreen() {
           error instanceof Error
             ? error.message
             : "Could not capture and save this item.";
-        setMessage(feedback);
         setCaptureFeedback(feedback);
         return null;
       } finally {
@@ -735,11 +708,13 @@ export default function ScannerScreen() {
   }, []);
 
   const deleteMultiPhoto = useCallback((photoId: string) => {
-    setMultiScanPhotos((currentPhotos) =>
-      currentPhotos.filter((photo) => photo.id !== photoId),
+    const nextPhotos = multiScanPhotos.filter(
+      (photo) => photo.id !== photoId,
     );
+    setMultiScanPhotos(nextPhotos);
+    if (nextPhotos.length === 0) setIsMultiReviewOpen(false);
     void Haptics.selectionAsync().catch(() => undefined);
-  }, []);
+  }, [multiScanPhotos]);
 
   const openUploadReview = useCallback(() => {
     if (
@@ -762,11 +737,13 @@ export default function ScannerScreen() {
   }, []);
 
   const deleteUploadedPhoto = useCallback((photoId: string) => {
-    setUploadedPhotos((currentPhotos) =>
-      currentPhotos.filter((photo) => photo.id !== photoId),
+    const nextPhotos = uploadedPhotos.filter(
+      (photo) => photo.id !== photoId,
     );
+    setUploadedPhotos(nextPhotos);
+    if (nextPhotos.length === 0) setIsUploadReviewOpen(false);
     void Haptics.selectionAsync().catch(() => undefined);
-  }, []);
+  }, [uploadedPhotos]);
 
   const handleToolSelect = (tool: ScannerToolId) => {
     if (isCapturing || isPickingPhoto || isMenuOpen) return;
@@ -806,7 +783,7 @@ export default function ScannerScreen() {
     if (tool === "single") {
       const ownerId = user?.$id;
       if (!ownerId) {
-        setMessage("Sign in before saving scanner photos.");
+        setCaptureFeedback("Sign in before saving scanner photos.");
         return;
       }
       let photoPersistence: Promise<void> | null = null;
@@ -827,7 +804,6 @@ export default function ScannerScreen() {
       };
 
       setSinglePhotoUri(photoPath);
-      setMessage("Photo captured. Opening KeepFlip intelligence...");
       beginAnalysis([photoPath], cognitionSeed, ensurePhotosSaved);
       return;
     }
@@ -835,38 +811,28 @@ export default function ScannerScreen() {
     if (tool === "multi") {
       const savedPhoto = captured.saved;
       if (!savedPhoto) {
-        setMessage("The captured photo could not be saved.");
+        setCaptureFeedback("The captured photo could not be saved.");
         return;
       }
       setMultiScanPhotos((photos) => {
-        multiScanSequenceRef.current += 1;
         const photo: MultiScanPhoto = {
           createdAt: Date.now(),
           id: savedPhoto.itemPhotoId,
           path: photoPath,
           uri: toDisplayUri(photoPath),
         };
-        const nextPhotos = [...photos, photo];
-        setMessage(
-          `${nextPhotos.length} view${nextPhotos.length === 1 ? "" : "s"} saved. Keep scanning or tap the photo stack to analyze.`,
-        );
-        return nextPhotos;
+        return [...photos, photo];
       });
       return;
     }
 
     setBatchScanPhotos((photos) => {
-      const nextPhotos = [...photos, photoPath];
-      setMessage(
-        `Batch-scan - ${nextPhotos.length} item${nextPhotos.length === 1 ? "" : "s"} saved`,
-      );
-      return nextPhotos;
+      return [...photos, photoPath];
     });
   };
 
   const resetScannerSession = useCallback(() => {
     captureLockRef.current = false;
-    multiScanSequenceRef.current = 0;
     uploadSequenceRef.current = 0;
     scanIdRef.current = createScanId();
     pendingAnalysisSessionIdRef.current = null;
@@ -882,7 +848,6 @@ export default function ScannerScreen() {
     setIsUploadReviewOpen(false);
     setActiveAnalysisSessionId(null);
     setSelectedTool("single");
-    setMessage("Center one item inside the frame");
     setCaptureFeedback(null);
     setTorchEnabled(false);
   }, []);
@@ -919,7 +884,6 @@ export default function ScannerScreen() {
 
     setActiveAnalysisSessionId(sessionId);
     setCaptureFeedback(null);
-    setMessage("Camera released. Opening KeepFlip intelligence...");
 
     pendingAnalysisSessionIdRef.current = sessionId;
     if (!shouldMountCamera || !isCameraReady) {
@@ -1124,7 +1088,9 @@ export default function ScannerScreen() {
             ) : null}
             {analysisButton}
             {uploadedPhotos.length > 0 ? (
-              <Text style={styles.permissionStatus}>{message}</Text>
+              <Text style={styles.permissionStatus}>
+                {`${uploadedPhotos.length} of ${MAX_ANALYSIS_PHOTOS} photos ready for AI analysis.`}
+              </Text>
             ) : null}
           </Animated.View>
         ) : null}
@@ -1195,7 +1161,9 @@ export default function ScannerScreen() {
             ) : null}
             {analysisButton}
             {uploadedPhotos.length > 0 ? (
-              <Text style={styles.permissionStatus}>{message}</Text>
+              <Text style={styles.permissionStatus}>
+                {`${uploadedPhotos.length} of ${MAX_ANALYSIS_PHOTOS} photos ready for AI analysis.`}
+              </Text>
             ) : null}
           </Animated.View>
         ) : null}
@@ -1216,12 +1184,12 @@ export default function ScannerScreen() {
             outputs={cameraOutputs}
             resizeMode="cover"
             onPreviewStarted={() => {
-              setIsCameraReady(true);
+              setReadyCameraId(device.id);
               setCaptureFeedback(null);
             }}
             onPreviewStopped={() => {
               torchRequestSequenceRef.current += 1;
-              setIsCameraReady(false);
+              setReadyCameraId(null);
               setIsTorchUpdating(false);
               setTorchEnabled(false);
               navigateToPendingAnalysis();
@@ -1231,9 +1199,8 @@ export default function ScannerScreen() {
                 error.message ||
                 "Camera unavailable. Try reopening the scanner.";
 
-              setIsCameraReady(false);
+              setReadyCameraId(null);
               setTorchEnabled(false);
-              setMessage(feedback);
               setCaptureFeedback(feedback);
             }}
             style={StyleSheet.absoluteFill}
@@ -1246,12 +1213,7 @@ export default function ScannerScreen() {
         pointerEvents="box-none"
         style={styles.interfaceLayer}
       >
-        <View
-          pointerEvents="none"
-          style={[
-            styles.cameraScrim,
-          ]}
-        />
+        <View pointerEvents="none" style={styles.cameraScrim} />
         {!isScannerOverlayOpen ? (
           <View pointerEvents="box-none" style={styles.radarOverlayHost}>
             <ValueRadarOverlay
@@ -1267,9 +1229,6 @@ export default function ScannerScreen() {
               marker={radarMarker}
               onMarkerPress={() => {
                 setSelectedTool("single");
-                setMessage(
-                  "Potential find locked. Capturing for full KeepFlip analysis...",
-                );
                 void Haptics.selectionAsync().catch(() => undefined);
                 void handleToolActivate("single");
               }}
@@ -1289,11 +1248,11 @@ export default function ScannerScreen() {
         ) : null}
 
         <Animated.View
-        accessibilityElementsHidden={isScannerUiHidden}
+        accessibilityElementsHidden={isScannerOverlayOpen}
         importantForAccessibility={
-          isScannerUiHidden ? "no-hide-descendants" : "auto"
+          isScannerOverlayOpen ? "no-hide-descendants" : "auto"
         }
-        pointerEvents={isScannerUiHidden ? "none" : "auto"}
+        pointerEvents={isScannerOverlayOpen ? "none" : "auto"}
         style={[
           styles.content,
           {
@@ -1417,14 +1376,10 @@ export default function ScannerScreen() {
               {
                 width: scannerWidth,
                 height: scannerHeight,
-                maxHeight: undefined,
-                aspectRatio: undefined,
-                bottom: 0,
               },
             ]}
           >
             <View pointerEvents="none" style={styles.frameColorWash} />
-
           </View>
           {selectedTool === "multi" &&
           multiScanPhotos.length > 0 &&
@@ -1504,23 +1459,18 @@ const styles = StyleSheet.create({
   cameraLayer: {
     ...StyleSheet.absoluteFill,
     zIndex: 20,
-    elevation: 0,
   },
   interfaceLayer: {
     ...StyleSheet.absoluteFill,
-    width: "100%",
-    height: "100%",
     zIndex: 20,
     elevation: 20,
   },
   photoOverlayHost: {
     ...StyleSheet.absoluteFill,
-    width: "100%",
-    height: "100%",
     zIndex: 100,
     elevation: 80,
   },
-  content: { flex: 1, paddingHorizontal: 22 },
+  content: { flex: 1 },
   centeredState: {
     flex: 1,
     alignItems: "center",
@@ -1545,11 +1495,7 @@ const styles = StyleSheet.create({
     bottom: 60,
   },
   permissionCard: {
-    width: "100%",
-    maxWidth: 420,
     alignItems: "center",
-    gap: 14,
-    padding: 28,
     borderRadius: theme.radii.large,
     borderWidth: 0.5,
     borderColor: "rgba(215, 168, 74, 0.38)",
@@ -1562,9 +1508,6 @@ const styles = StyleSheet.create({
       "0 0 44px rgba(0, 0, 0, 0.62), 0 0 26px rgba(215, 168, 74, 0.10)",
   },
   permissionIcon: {
-    width: 62,
-    height: 62,
-    borderRadius: theme.radii.pill,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "rgba(215,168,74,0.12)",
@@ -1573,13 +1516,10 @@ const styles = StyleSheet.create({
   },
   permissionTitle: {
     color: theme.colors.text,
-    fontSize: 25,
     fontWeight: "800",
   },
   permissionBody: {
     color: theme.colors.textMuted,
-    fontSize: 15,
-    lineHeight: 22,
     textAlign: "center",
   },
   permissionButton: {
@@ -1631,20 +1571,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    marginBottom: 12,
-    paddingRight: 60,
   },
   headerCopy: { flex: 1, minWidth: 0 },
   eyebrow: {
     color: theme.colors.gold,
-    fontSize: 11,
     fontWeight: "900",
-    letterSpacing: 2.4,
   },
   toolHeaderContent: { gap: 3 },
   title: {
     color: theme.colors.cream,
-    fontSize: 25,
     fontWeight: "800",
     letterSpacing: -0.6,
   },
@@ -1658,17 +1593,12 @@ const styles = StyleSheet.create({
   headerHint: {
     flex: 1,
     maxWidth: 340,
-    fontSize: 12,
-    lineHeight: 16,
     fontWeight: "700",
   },
   iconButton: {
     position: 'absolute',
     top: -30, 
     left: 10,
-    width: 30,
-    height: 30,
-    borderRadius: theme.radii.pill,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
@@ -1705,13 +1635,9 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   scanFrame: {
-    width: "100%",
-    aspectRatio: 0.9,
-    maxHeight: 325,
     borderRadius: theme.radii.large,
     alignSelf: "center",
     justifyContent: "flex-start",
-    bottom: 40,
   },
   frameColorWash: {
     position: "absolute",
@@ -1726,85 +1652,8 @@ const styles = StyleSheet.create({
       radial-gradient(circle at 50% 52%, rgba(224, 172, 75, 0.06) 0%, transparent 52%)
     `,
   },
-  corner: {
-    position: "absolute",
-    width: 54,
-    height: 54,
-    borderColor: theme.colors.goldBright,
-  },
-  topLeft: {
-    top: 0,
-    left: 0,
-    borderTopWidth: 3,
-    borderLeftWidth: 3,
-    borderTopLeftRadius: 24,
-    zIndex: 2,
-  },
-  topRight: {
-    top: 0,
-    right: 0,
-    borderTopWidth: 3,
-    borderRightWidth: 3,
-    borderTopRightRadius: 24,
-    zIndex: 2,
-  },
-  bottomLeft: {
-    bottom: 0,
-    left: 0,
-    borderBottomWidth: 3,
-    borderLeftWidth: 3,
-    borderBottomLeftRadius: 24,
-    zIndex: 2,
-  },
-  bottomRight: {
-    bottom: 0,
-    right: 0,
-    borderBottomWidth: 3,
-    borderRightWidth: 3,
-    borderBottomRightRadius: 24,
-    zIndex: 2,
-  },
-  scanLine: {
-    position: "absolute",
-    top: "48%",
-    left: 18,
-    right: 18,
-    height: 2,
-    experimental_backgroundImage:
-      "linear-gradient(to right, transparent 0%, rgba(88, 223, 232, 0.82) 34%, rgba(242, 211, 138, 0.96) 52%, rgba(141, 114, 255, 0.82) 70%, transparent 100%)",
-    boxShadow:
-      "0 0 16px rgba(88, 223, 232, 0.70), 0 0 28px rgba(141, 114, 255, 0.24)",
-  },
-  liveBadge: {
-    position: "absolute",
-    top: 16,
-    alignSelf: "center",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: "rgba(88, 223, 232, 0.32)",
-    backgroundColor: "rgba(5, 5, 9, 0.72)",
-  },
-  liveBadgeDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: theme.colors.scannerCyan,
-    boxShadow: "0 0 9px rgba(88, 223, 232, 0.92)",
-  },
-  liveBadgeText: {
-    color: theme.colors.scannerCyan,
-    fontSize: 9,
-    fontWeight: "900",
-    letterSpacing: 1.4,
-  },
   analyzeButtonShell: {
     width: "100%",
-    maxWidth: 330,
   },
   analyzeButton: {
     width: "100%",
@@ -1828,11 +1677,8 @@ const styles = StyleSheet.create({
   },
   analyzeButtonPressed: { opacity: 0.78, transform: [{ scale: 0.98 }] },
   analyzeReticle: {
-    width: 38,
-    height: 38,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: theme.radii.pill,
     borderWidth: 1,
     borderColor: theme.colors.scannerCyan,
     backgroundColor: "rgba(88, 223, 232, 0.08)",
@@ -1848,20 +1694,16 @@ const styles = StyleSheet.create({
   analyzeButtonCopy: { flex: 1, gap: 2 },
   analyzeButtonEyebrow: {
     color: theme.colors.scannerCyan,
-    fontSize: 8,
     fontWeight: "900",
     letterSpacing: 1.25,
   },
   analyzeButtonText: {
     color: theme.colors.cream,
-    fontSize: 15,
     fontWeight: "900",
   },
   analyzeButtonArrow: {
     color: theme.colors.goldBright,
-    fontSize: 27,
     fontWeight: "400",
-    lineHeight: 30,
   },
   bottomPanel: { alignItems: "center" },
 });

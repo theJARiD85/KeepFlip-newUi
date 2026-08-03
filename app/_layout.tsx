@@ -5,7 +5,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
@@ -37,7 +37,6 @@ function ProtectedRootStack() {
       </Stack.Protected>
       <Stack.Protected guard={isSignedIn}>
         <Stack.Screen name="(app)" />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack.Protected>
       <Stack.Screen name="terms" />
       <Stack.Screen name="privacy" />
@@ -47,13 +46,17 @@ function ProtectedRootStack() {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    LucidaConsole: require('../assets/fonts/LucidaConsole.ttf'),
-    SpaceGroteskSemiBold: require('../assets/fonts/SpaceGroteskSemiBold.otf'),
-    SpaceGroteskBold: require('../assets/fonts/SpaceGroteskBold.otf'),
-    SpaceGroteskRegular: require('../assets/fonts/SpaceGroteskRegular.otf'),
-    SpaceGroteskMedium: require('../assets/fonts/SpaceGroteskMedium.otf'),
-    FlexiIBMVGAFalse: require('../assets/fonts/FlexiIBMVGAFalse.ttf'),
-    FlexiIBMVGAFalse437: require('../assets/fonts/FlexiIBMVGAFalse437.ttf'),
+    LucidaConsole: require('@/assets/fonts/LucidaConsole.ttf'),
+    SpaceGroteskSemiBold: require('@/assets/fonts/SpaceGroteskSemiBold.otf'),
+    SpaceGroteskBold: require('@/assets/fonts/SpaceGroteskBold.otf'),
+    SpaceGroteskRegular: require('@/assets/fonts/SpaceGroteskRegular.otf'),
+    SpaceGroteskMedium: require('@/assets/fonts/SpaceGroteskMedium.otf'),
+    FlexiIBMVGAFalse: require('@/assets/fonts/FlexiIBMVGAFalse.ttf'),
+    FlexiIBMVGAFalse437: require('@/assets/fonts/FlexiIBMVGAFalse437.ttf'),
+    Inter: require('@/assets/fonts/Inter.ttf'),
+    PlusJakartaSansBold: require('@/assets/fonts/PlusJakartaSansBold.otf'),
+    PlusJakartaSansMedium: require('@/assets/fonts/PlusJakartaSansMedium.otf'),
+    PlusJakartaSansSemiBold: require('@/assets/fonts/PlusJakartaSansSemiBold.otf'),
   });
 
   useEffect(() => {

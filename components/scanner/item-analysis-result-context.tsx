@@ -8,13 +8,14 @@ import {
   type ReactNode,
 } from "react";
 
-import type { ItemAnalysisState } from "@/components/scanner/item-analysis-overlay";
+import type { ItemAnalysisState } from "@/components/scanner/analysis-visual-types";
 import type { ItemAnalysisSuccess } from "@/types/item-analysis";
 
 type ResultState = Extract<ItemAnalysisState, { status: "result" }>;
 
 export type ScannerAnalysisSession = {
   backdropUri: string;
+  modelUrl: string | null;
   ensurePhotosSaved?: () => Promise<void>;
   id: string;
   localDetection?: {
@@ -22,7 +23,6 @@ export type ScannerAnalysisSession = {
     score: number;
   };
   modeLabel: string;
-  modelUrl: string | null;
   onCancel: () => void;
   onReset: () => void;
   photoUris: string[];
@@ -32,20 +32,15 @@ export type ScannerAnalysisSession = {
 export type ScannerAnalysisResultSession = {
   analysis: ItemAnalysisSuccess;
   backdropUri: string;
+  modelUrl: string | null;
   ensurePhotosSaved?: () => Promise<void>;
   id: string;
-  modelUrl: string | null;
   onReset: () => void;
   scanId: string;
   state: ResultState;
 };
 
-type OpenScannerAnalysisInput = Omit<
-  ScannerAnalysisSession,
-  "id" | "modelUrl"
-> & {
-  modelUrl?: string | null;
-};
+type OpenScannerAnalysisInput = Omit<ScannerAnalysisSession, "id">;
 
 export type ItemAnalysisResultContextValue = {
   clearScannerAnalysis: (sessionId?: string) => void;
@@ -60,7 +55,13 @@ export type ItemAnalysisResultContextValue = {
   ) => string | null;
   scannerAnalysis: ScannerAnalysisSession | null;
   scannerResult: ScannerAnalysisResultSession | null;
-  updateScannerModel: (scanId: string, modelUrl: string) => void;
+  updateScannerResult: (
+    sessionId: string,
+    input: {
+      analysis: ItemAnalysisSuccess;
+      state: ResultState;
+    },
+  ) => void;
 };
 
 const ItemAnalysisResultContext =
@@ -92,7 +93,6 @@ export function ItemAnalysisResultProvider({
       const session = {
         ...input,
         id,
-        modelUrl: input.modelUrl ?? null,
       };
       scannerAnalysisRef.current = session;
       setScannerAnalysis(session);
@@ -116,9 +116,9 @@ export function ItemAnalysisResultProvider({
       setScannerResult({
         analysis: input.analysis,
         backdropUri: analysisSession.backdropUri,
+        modelUrl: analysisSession.modelUrl,
         ensurePhotosSaved: analysisSession.ensurePhotosSaved,
         id,
-        modelUrl: analysisSession.modelUrl,
         onReset: analysisSession.onReset,
         scanId: analysisSession.scanId,
         state: input.state,
@@ -130,23 +130,21 @@ export function ItemAnalysisResultProvider({
     [],
   );
 
-  const updateScannerModel = useCallback(
-    (scanId: string, modelUrl: string) => {
-      const currentAnalysis = scannerAnalysisRef.current;
-      if (currentAnalysis?.scanId === scanId) {
-        const nextAnalysis = {
-          ...currentAnalysis,
-          modelUrl,
-        };
-        scannerAnalysisRef.current = nextAnalysis;
-        setScannerAnalysis(nextAnalysis);
-      }
+  const updateScannerResult = useCallback(
+    (
+      sessionId: string,
+      input: {
+        analysis: ItemAnalysisSuccess;
+        state: ResultState;
+      },
+    ) => {
       setScannerResult((current) =>
-        current?.scanId === scanId
+        current?.id === sessionId
           ? {
-              ...current,
-              modelUrl,
-            }
+            ...current,
+            analysis: input.analysis,
+            state: input.state,
+          }
           : current,
       );
     },
@@ -175,7 +173,7 @@ export function ItemAnalysisResultProvider({
       promoteScannerAnalysisToResult,
       scannerAnalysis,
       scannerResult,
-      updateScannerModel,
+      updateScannerResult,
     }),
     [
       clearScannerAnalysis,
@@ -184,7 +182,7 @@ export function ItemAnalysisResultProvider({
       promoteScannerAnalysisToResult,
       scannerAnalysis,
       scannerResult,
-      updateScannerModel,
+      updateScannerResult,
     ],
   );
 

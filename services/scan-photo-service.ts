@@ -4,6 +4,7 @@ import {
   APPWRITE,
   ID,
   Permission,
+  Query,
   Role,
   storage,
   tablesDB,
@@ -76,6 +77,45 @@ function openPhoto(imageUri: string) {
 
 export function createScanId() {
   return ID.unique();
+}
+
+export async function getPrimaryScannerPhotoFileId(
+  ownerId: string,
+  scanId: string,
+): Promise<string> {
+  const cleanOwnerId = ownerId.trim();
+  const cleanScanId = scanId.trim();
+
+  if (!cleanOwnerId) throw new Error("Sign in before refining a valuation.");
+  if (!cleanScanId) throw new Error("The scanner session ID is missing.");
+
+  const configuration = requiredConfiguration();
+  const response = await tablesDB.listRows({
+    databaseId: configuration.databaseId,
+    tableId: configuration.itemPhotosTableId,
+    queries: [
+      Query.equal("ownerId", [cleanOwnerId]),
+      Query.equal("scanId", [cleanScanId]),
+      Query.orderAsc("sortOrder"),
+      Query.limit(21),
+      Query.select(["fileId", "isPrimary", "sortOrder"]),
+    ],
+  });
+  const rows = response.rows as unknown as {
+    fileId?: unknown;
+    isPrimary?: unknown;
+  }[];
+  const primary = rows.find((row) => row.isPrimary === true) ?? rows[0];
+  const fileId =
+    typeof primary?.fileId === "string" ? primary.fileId.trim() : "";
+
+  if (!fileId) {
+    throw new Error(
+      "Save the scan photo before answering valuation questions.",
+    );
+  }
+
+  return fileId;
 }
 
 export async function saveScannerPhoto({
