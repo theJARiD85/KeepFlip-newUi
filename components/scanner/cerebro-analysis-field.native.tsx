@@ -112,7 +112,6 @@ const PARTICLE_VERTEX_SHADER = `
   uniform mat4 uViewMatrix;
   uniform float uTime;
   uniform float uPixelRatio;
-  uniform float uIsValuating;
   uniform float uSuccessProgress;
   uniform float uActivityProgress;
 
@@ -513,11 +512,6 @@ function makeSceneController(
     particleProgram,
     "uPixelRatio",
   );
-  const valuatingLocation = requiredUniform(
-    gl,
-    particleProgram,
-    "uIsValuating",
-  );
   const successLocation = requiredUniform(
     gl,
     particleProgram,
@@ -750,7 +744,6 @@ function makeSceneController(
     );
     gl.uniform1f(timeLocation, elapsed);
     gl.uniform1f(pixelRatioLocation, input.pixelRatio);
-    gl.uniform1f(valuatingLocation, valuating ? 1 : 0);
     gl.uniform1f(successLocation, successProgress);
     gl.uniform1f(
       activityLocation,
@@ -1111,8 +1104,13 @@ export function CerebroAnalysisField({
           reportError,
         );
       } catch (caught) {
+        const details =
+          caught instanceof Error
+            ? caught.message
+            : String(caught);
+
         reportError(
-          "KeepFlip could not initialize the valuation scene.",
+          `KeepFlip could not initialize the valuation scene: ${details}`,
           caught,
         );
       }
