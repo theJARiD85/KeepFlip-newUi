@@ -1,4 +1,5 @@
 import * as Haptics from "expo-haptics";
+import { Asset } from "expo-asset";
 import { Image } from "expo-image";
 import { useRouter, type Href } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
@@ -16,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { InventoryCard } from "@/components/inventory/inventory-card";
 import type { ItemAnalysisState } from "@/components/scanner/analysis-visual-types";
+import { CerebroAnalysisField } from "@/components/scanner/cerebro-analysis-field.native";
 import {
   ScannerToolCarousel,
   type ScannerToolId,
@@ -40,6 +42,8 @@ type WalkthroughStep = {
 };
 
 const WALKTHROUGH_ITEM_IMAGE = require("@/assets/images/walkthrough-coach-bag.jpeg");
+const WALKTHROUGH_ITEM_URI =
+  Asset.fromModule(WALKTHROUGH_ITEM_IMAGE).uri;
 
 const WALKTHROUGH_RADAR_MARKER: ValueRadarMarker = {
   classId: 30,
@@ -64,7 +68,7 @@ const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     accent: theme.colors.scannerViolet,
     eyebrow: "02 / LOCK THE VALUE",
     title: "Read the resale range.",
-    body: "Watch the gauge resolve low, median, and high value, then open Max Profit for the strongest listing actions.",
+    body: "Watch Cerebro lock the market range, inspect Value and Max Profit, then swipe up in the live result for the complete intelligence report.",
   },
   {
     accent: theme.colors.goldBright,
@@ -309,23 +313,23 @@ function AnalysisStagePreview({
 }) {
   return (
     <View style={styles.analysisStage}>
-      <View pointerEvents="none" style={styles.projectionPlaceholder}>
-        <View style={styles.projectionHalo} />
-        <Image
-          accessibilityLabel="Coach bag model projection source"
-          contentFit="contain"
-          source={WALKTHROUGH_ITEM_IMAGE}
-          style={styles.projectionImage}
-          transition={180}
-        />
-        <View style={styles.projectionScanline} />
-        <Text style={styles.projectionPlaceholderText}>MODEL PROJECTION</Text>
-      </View>
+      <CerebroAnalysisField
+        active
+        activityProgress={1}
+        isValuating={false}
+        lockConfidence={
+          SAMPLE_ANALYSIS_STATE.data.confidence?.valuation ??
+          SAMPLE_ANALYSIS_STATE.data.valuationReadiness.score
+        }
+        photoUri={WALKTHROUGH_ITEM_URI}
+        style={styles.analysisCerebro}
+      />
+
       <ValuationResultStage
         bottomInset={0}
         embedded
         onSave={onSave}
-        projectionLabel="WALKTHROUGH MODEL / SAFE PREVIEW"
+        projectionLabel="KEEPFLIP CEREBRO / MARKET LOCK"
         saveLabel="Save to inventory"
         state={SAMPLE_ANALYSIS_STATE}
         topInset={0}
@@ -775,47 +779,11 @@ const styles = StyleSheet.create({
   },
   analysisStage: {
     flex: 1,
+    overflow: "hidden",
+    backgroundColor: "#030308",
   },
-  projectionPlaceholder: {
-    position: "absolute",
-    top: 88,
-    right: 0,
-    left: 0,
-    alignItems: "center",
-    gap: 8,
-    opacity: 0.6,
-  },
-  projectionHalo: {
-    position: "absolute",
-    width: 176,
-    height: 176,
-    borderRadius: 88,
-    borderWidth: 1,
-    borderColor: "rgba(141, 114, 255, 0.22)",
-    backgroundColor: "rgba(141, 114, 255, 0.055)",
-    boxShadow: "0 0 42px rgba(141, 114, 255, 0.16)",
-  },
-  projectionPlaceholderText: {
-    color: theme.colors.scannerViolet,
-    fontFamily: theme.fonts.analysis,
-    fontSize: 7,
-    fontWeight: "900",
-    letterSpacing: 1.2,
-  },
-  projectionImage: {
-    width: 176,
-    height: 132,
-    borderRadius: 22,
-    opacity: 0.58,
-    tintColor: theme.colors.scannerViolet,
-  },
-  projectionScanline: {
-    position: "absolute",
-    top: 63,
-    width: 184,
-    height: 1,
-    backgroundColor: theme.colors.scannerCyan,
-    boxShadow: "0 0 10px rgba(88, 223, 232, 0.95)",
+  analysisCerebro: {
+    ...StyleSheet.absoluteFillObject,
   },
   inventoryStage: {
     flex: 1,

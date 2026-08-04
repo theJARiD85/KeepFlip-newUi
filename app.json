@@ -2,7 +2,7 @@
   "expo": {
     "name": "KeepFlip",
     "slug": "keepflip",
-    "version": "2.0.2",
+    "version": "2.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "keepflip",
@@ -17,7 +17,8 @@
     "android": {
       "package": "com.keepflip.app",
       "permissions": [
-        "android.permission.CAMERA"
+        "android.permission.CAMERA",
+        "com.google.android.gms.permission.AD_ID"
       ],
       "adaptiveIcon": {
         "backgroundColor": "#030305",
