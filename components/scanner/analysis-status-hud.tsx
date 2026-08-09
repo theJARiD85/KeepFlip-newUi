@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
   },
   brand: {
     color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 8,
     fontWeight: "900",
     letterSpacing: 1.3,
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
   },
   headerState: {
     color: theme.colors.goldBright,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 8,
     fontWeight: "900",
     letterSpacing: 1,
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
   stageLabel: {
     flex: 1,
     color: "#FFFFFF",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 12,
     fontWeight: "900",
     letterSpacing: 0.3,
@@ -268,14 +268,14 @@ const styles = StyleSheet.create({
   },
   stepCount: {
     color: theme.colors.goldBright,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 9,
     fontWeight: "900",
     fontVariant: ["tabular-nums"],
   },
   detail: {
     color: "rgba(255, 255, 255, 0.68)",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 10,
     lineHeight: 15,
   },
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
   },
   activeStepLabel: {
     color: theme.colors.scannerViolet,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 7,
     fontWeight: "900",
     letterSpacing: 0.9,
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
   activeStepValue: {
     flex: 1,
     color: "rgba(255, 255, 255, 0.84)",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 9,
     fontWeight: "800",
   },
@@ -326,21 +326,21 @@ const styles = StyleSheet.create({
   },
   stateEyebrow: {
     color: theme.colors.goldBright,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 8,
     fontWeight: "900",
     letterSpacing: 1.4,
   },
   stateTitle: {
     color: "#FFFFFF",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 22,
     lineHeight: 27,
     fontWeight: "900",
   },
   stateMessage: {
     color: "rgba(255, 255, 255, 0.68)",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 12,
     lineHeight: 18,
   },
@@ -351,14 +351,14 @@ const styles = StyleSheet.create({
   },
   suggestionIndex: {
     color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 9,
     fontWeight: "900",
   },
   suggestionText: {
     flex: 1,
     color: "rgba(255, 255, 255, 0.82)",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 10,
     lineHeight: 15,
   },
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 9,
     fontWeight: "900",
     letterSpacing: 0.6,

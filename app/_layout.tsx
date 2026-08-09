@@ -1,5 +1,4 @@
 import "react-native-url-polyfill/auto";
-
 import {
   DarkTheme,
   ThemeProvider,
@@ -16,17 +15,58 @@ import {
 import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
-
 import {
   KeepFlipAuthProvider,
   useKeepFlipAuth,
 } from "@/components/auth/keepflip-auth-context";
 import KeepFlipIntro from "@/components/intro/keepflip-intro.native";
+
 import { keepFlipTheme } from "@/constants/keepflip-theme";
+import { AppodealNativeAdsInitializer } from "@keepflip/expo-appodeal-native-ads";
 
 void SplashScreen
   .preventAutoHideAsync()
   .catch(() => undefined);
+
+const appodealAppKey =
+  process.env.EXPO_PUBLIC_APPODEAL_APP_KEY ?? "";
+
+const isAdsTesting = process.env.EXPO_PUBLIC_APPODEAL_TESTING === "true";
+
+function KeepFlipAdsInitializer() {
+  const handleInitialized = useCallback((result: {
+    availableCount: number;
+    errors: string[];
+    initialized: boolean;
+    testing: boolean;
+  }) => {
+    console.info("Appodeal native ads initialized:", result);
+
+    if (!result.initialized) {
+      console.warn(
+        "Appodeal initialization errors:",
+        result.errors,
+      );
+    }
+  }, []);
+
+  const handleError = useCallback((error: Error) => {
+    console.error(
+      "Appodeal initialization failed:",
+      error,
+    );
+  }, []);
+
+  return (
+    <AppodealNativeAdsInitializer
+      appKey={appodealAppKey}
+      cacheCount={2}
+      testing={isAdsTesting}
+      onInitialized={handleInitialized}
+      onError={handleError}
+    />
+  );
+}
 
 function ProtectedRootStack() {
   const {
@@ -78,6 +118,7 @@ export default function RootLayout() {
     introVisible,
     setIntroVisible,
   ] = useState(true);
+
 
   const [
     fontsLoaded,
@@ -173,6 +214,7 @@ export default function RootLayout() {
           value={navigationTheme}
         >
           <KeepFlipAuthProvider>
+            <KeepFlipAdsInitializer />
             <ProtectedRootStack />
           </KeepFlipAuthProvider>
 
@@ -186,6 +228,7 @@ export default function RootLayout() {
 
       {introVisible ? (
         <KeepFlipIntro
+          startupReady
           onComplete={
             handleIntroComplete
           }

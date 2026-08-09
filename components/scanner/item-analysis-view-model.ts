@@ -164,6 +164,40 @@ function resultTitle(result: ItemAnalysisSuccess) {
   );
 }
 
+function profitabilityGuidanceKey(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function profitabilityGuidanceFor(
+  result: ItemAnalysisSuccess,
+  actionTitle: string,
+): AnalysisProfitPlan["actions"][number]["guidance"] {
+  const target = profitabilityGuidanceKey(actionTitle);
+  const guidance = result.marketResearch?.profitabilityGuidance?.find(
+    (entry) => profitabilityGuidanceKey(entry.actionTitle) === target,
+  );
+
+  if (!guidance) return undefined;
+
+  return {
+    references: guidance.references?.map((reference, index) => ({
+      id: `profitability-guidance-reference-${index}`,
+      link: reference.link,
+      snippet: reference.snippet ?? undefined,
+      source: reference.source ?? undefined,
+      title: reference.title,
+    })),
+    safetyWarnings: guidance.safetyWarnings,
+    searchedAt: guidance.searchedAt,
+    steps: guidance.steps,
+    summary: guidance.summary,
+    toolsOrParts: guidance.toolsOrParts,
+  };
+}
+
 function profitPlan(result: ItemAnalysisSuccess): AnalysisProfitPlan {
   const identity = result.analysis.identification;
   const valuation = result.valuation;
@@ -177,6 +211,34 @@ function profitPlan(result: ItemAnalysisSuccess): AnalysisProfitPlan {
   ]).join(' ');
   const conditionSignal = result.analysis.condition.notes[0];
   const actions: AnalysisProfitPlan['actions'] = [];
+  const flipDecision = result.marketResearch?.flipDecision;
+  const marketVelocity = result.marketResearch?.marketVelocity;
+  const flipComplexity = result.marketResearch?.flipComplexity;
+
+  if (flipDecision && flipDecision.verdict !== 'unknown') {
+    const decisionSignals = compact<string>([
+      marketVelocity && marketVelocity.demand !== 'unknown'
+        ? `Resale velocity: ${titleCase(marketVelocity.demand)}${marketVelocity.typicalDays != null ? ` (${marketVelocity.typicalDays} days typical)` : ''}`
+        : null,
+      flipComplexity && flipComplexity.level !== 'unknown'
+        ? `Flip complexity: ${titleCase(flipComplexity.level)}`
+        : null,
+      flipDecision.missingInputs.length > 0
+        ? `Still needed: ${flipDecision.missingInputs.join(', ')}`
+        : null,
+    ]);
+
+    actions.push({
+      confidence: flipDecision.confidencePercent ?? undefined,
+      detail: displayText(
+        [flipDecision.summary, ...decisionSignals].filter(Boolean).join(' '),
+        360,
+      ),
+      id: 'profit-flip-verdict',
+      kind: 'decision',
+      label: `Flip verdict: ${titleCase(flipDecision.verdict)}`,
+    });
+  }
 
   const suppliedActions = result.marketResearch?.profitabilityActions ?? [];
   if (suppliedActions.length > 0) {
@@ -187,11 +249,15 @@ function profitPlan(result: ItemAnalysisSuccess): AnalysisProfitPlan {
       const dedupeKey = `${label}|${detail}`.toLowerCase();
       if ((!label && !detail) || seenActions.has(dedupeKey)) continue;
       seenActions.add(dedupeKey);
+      const actionLabel =
+        label || `Market value opportunity ${String(actions.length + 1).padStart(2, '0')}`;
       actions.push({
         confidence: action.confidencePercent ?? undefined,
         detail: detail || label,
+        guidance: profitabilityGuidanceFor(result, actionLabel),
         id: `profit-market-action-${actions.length}`,
-        label: label || `Market value opportunity ${String(actions.length + 1).padStart(2, '0')}`,
+        kind: 'enhancement',
+        label: actionLabel,
       });
       if (actions.length === 5) break;
     }
@@ -202,48 +268,67 @@ function profitPlan(result: ItemAnalysisSuccess): AnalysisProfitPlan {
       const dedupeKey = detail.toLowerCase();
       if (!detail || seenMarketFactors.has(dedupeKey)) continue;
       seenMarketFactors.add(dedupeKey);
+      const actionLabel =
+        `Market value opportunity ${String(actions.length + 1).padStart(2, '0')}`;
       actions.push({
         detail,
+        guidance: profitabilityGuidanceFor(result, actionLabel),
         id: `profit-market-factor-${actions.length}`,
-        label: `Market value opportunity ${String(actions.length + 1).padStart(2, '0')}`,
+        kind: 'enhancement',
+        label: actionLabel,
       });
       if (actions.length === 5) break;
     }
   }
 
   if (hasRange) {
+    const actionLabel = 'Leave room for offers';
     actions.push({
       detail: `Open near ${new Intl.NumberFormat('en-US', { currency, maximumFractionDigits: 0, style: 'currency' }).format(valuation.p80!)} and use ${new Intl.NumberFormat('en-US', { currency, maximumFractionDigits: 0, style: 'currency' }).format(valuation.median!)} as the evidence-backed offer target.`,
+      guidance: profitabilityGuidanceFor(result, actionLabel),
       id: 'profit-price-position',
-      label: 'Leave room for offers',
+      kind: 'enhancement',
+      label: actionLabel,
     });
   } else {
+    const actionLabel = 'Protect the price decision';
     actions.push({
       detail: 'Collect stronger market evidence before setting a firm asking price.',
+      guidance: profitabilityGuidanceFor(result, actionLabel),
       id: 'profit-price-evidence',
-      label: 'Protect the price decision',
+      kind: 'enhancement',
+      label: actionLabel,
     });
   }
 
   if (listingIdentity) {
+    const actionLabel = 'Use the strongest search terms';
     actions.push({
       detail: `Lead the listing title with ${displayText(listingIdentity, 86)} so qualified buyers can find the exact item.`,
+      guidance: profitabilityGuidanceFor(result, actionLabel),
       id: 'profit-title-keywords',
-      label: 'Use the strongest search terms',
+      kind: 'enhancement',
+      label: actionLabel,
     });
   }
 
   if (conditionSignal) {
+    const actionLabel = 'Turn condition into trust';
     actions.push({
       detail: `Photograph and describe this condition signal clearly: ${displayText(conditionSignal, 120)}`,
+      guidance: profitabilityGuidanceFor(result, actionLabel),
       id: 'profit-condition-proof',
-      label: 'Turn condition into trust',
+      kind: 'enhancement',
+      label: actionLabel,
     });
   } else {
+    const actionLabel = 'Prove condition visually';
     actions.push({
       detail: 'Add close photos of high-wear areas, included accessories, labels, and working features.',
+      guidance: profitabilityGuidanceFor(result, actionLabel),
       id: 'profit-condition-proof',
-      label: 'Prove condition visually',
+      kind: 'enhancement',
+      label: actionLabel,
     });
   }
 

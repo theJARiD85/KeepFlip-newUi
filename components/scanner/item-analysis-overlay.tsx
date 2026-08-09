@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import {
+  Text as NativeText,
   Pressable,
   ScrollView,
   StyleSheet,
-  Text as NativeText,
   type TextProps,
   View,
 } from 'react-native';
@@ -21,11 +21,11 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import type { Thought } from '@/components/scanner/scanner-thought-stream';
 import type { AnalysisProfitPlan } from "@/components/scanner/analysis-visual-types";
+import type { Thought } from '@/components/scanner/scanner-thought-stream';
+import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 
-const analysisTextStyle = { fontFamily: theme.fonts.analysis } as const;
+const analysisTextStyle = { fontFamily: theme.fonts.radar } as const;
 
 function Text({ style, ...props }: TextProps) {
   return <NativeText {...props} style={[analysisTextStyle, style]} />;
@@ -107,36 +107,36 @@ export type AnalysisStep = {
 
 export type ItemAnalysisState =
   | {
-      message?: string;
-      requirements?: string[];
-      status: 'setup';
-      title?: string;
-    }
+    message?: string;
+    requirements?: string[];
+    status: 'setup';
+    title?: string;
+  }
   | {
-      detail?: string;
-      insights?: Thought[];
-      progress?: number;
-      stage?: string;
-      status: 'analyzing';
-      steps?: AnalysisStep[];
-    }
+    detail?: string;
+    insights?: Thought[];
+    progress?: number;
+    stage?: string;
+    status: 'analyzing';
+    steps?: AnalysisStep[];
+  }
   | {
-      code?: string;
-      message: string;
-      status: 'error';
-      title?: string;
-    }
+    code?: string;
+    message: string;
+    status: 'error';
+    title?: string;
+  }
   | {
-      evidence?: string[];
-      message?: string;
-      status: 'insufficient-evidence';
-      suggestedPhotos: AnalysisSuggestedPhoto[];
-      title?: string;
-    }
+    evidence?: string[];
+    message?: string;
+    status: 'insufficient-evidence';
+    suggestedPhotos: AnalysisSuggestedPhoto[];
+    title?: string;
+  }
   | {
-      data: ItemAnalysisResult;
-      status: 'result';
-    };
+    data: ItemAnalysisResult;
+    status: 'result';
+  };
 
 type ItemAnalysisOverlayProps = {
   bottomInset: number;
@@ -245,13 +245,13 @@ function AnalysisOrb({ progress }: { progress?: number }) {
     barProgress.value =
       nextProgress == null
         ? withRepeat(
-            withSequence(
-              withTiming(0.86, { duration: 1250, easing: Easing.inOut(Easing.cubic) }),
-              withTiming(0.16, { duration: 900, easing: Easing.inOut(Easing.cubic) }),
-            ),
-            -1,
-            false,
-          )
+          withSequence(
+            withTiming(0.86, { duration: 1250, easing: Easing.inOut(Easing.cubic) }),
+            withTiming(0.16, { duration: 900, easing: Easing.inOut(Easing.cubic) }),
+          ),
+          -1,
+          false,
+        )
         : withTiming(nextProgress, { duration: 420, easing: Easing.out(Easing.cubic) });
 
     return () => cancelAnimation(barProgress);

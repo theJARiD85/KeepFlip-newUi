@@ -7,7 +7,6 @@ import { KeepFlipMenuProvider } from '@/components/navigation/keepflip-menu-cont
 import { KeepFlipSlideDownMenu } from '@/components/navigation/keepflip-slide-down-menu';
 import { ItemAnalysisResultProvider } from '@/components/scanner/item-analysis-result-context';
 import { keepFlipTheme } from '@/constants/keepflip-theme';
-import { initializeAppodealNativeAds } from '@/services/appodeal-native-ads';
 import { hasCompletedScanInventoryWalkthrough } from '@/services/user-profile-onboarding-service';
 
 export const unstable_settings = {
@@ -66,19 +65,6 @@ function WalkthroughAutoLauncher() {
 }
 
 export default function AppShellLayout() {
-  useEffect(() => {
-    void initializeAppodealNativeAds()
-      .then((result) => {
-        if (__DEV__ && result.errors.length) {
-          console.warn('[KeepFlip][Appodeal] Initialization warnings:', result.errors);
-        }
-      })
-      .catch((error) => {
-        if (__DEV__) {
-          console.warn('[KeepFlip][Appodeal] Native ads unavailable:', error);
-        }
-      });
-  }, []);
 
   return (
     <KeepFlipMenuProvider>
@@ -96,6 +82,7 @@ export default function AppShellLayout() {
             <Stack.Screen name="inventory" />
             <Stack.Screen name="analysis" />
             <Stack.Screen name="analysis-result" />
+            <Stack.Screen name="repair-assist" />
             <Stack.Screen name="account" />
           </Stack>
         </View>

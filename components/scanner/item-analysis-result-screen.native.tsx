@@ -11,20 +11,28 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
+import { HudImageFrame } from "@/components/scanner/hud-image-frame.native";
 import { inventoryItemToAnalysisState } from "@/components/scanner/inventory-analysis-view-model";
+import { toItemAnalysisState } from "@/components/scanner/item-analysis-view-model";
 import { useItemAnalysisResult } from "@/components/scanner/item-analysis-result-context";
 import { ValuationResultStage } from "@/components/scanner/valuation-result-stage";
-import { HudImageFrame } from "@/components/scanner/hud-image-frame.native";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { APPWRITE, storage } from "@/lib/appwrite";
 import {
+  applyProfitabilityGuidanceToAnalysis,
+  type SerpApiProfitabilityGuidance,
+} from "@/services/ebaySoldCompsService";
+import {
   getInventoryItem,
   saveAnalyzedItemToInventory,
+  updateInventoryAnalysisSnapshot,
 } from "@/services/inventory-service";
 import { getItemPhotos } from "@/services/itemPhotoService";
+import type { ItemAnalysisSuccess } from "@/types/item-analysis";
 
 type InventoryResultPayload = {
+  analysis: ItemAnalysisSuccess | null;
   photoUri: string | null;
   state: ReturnType<typeof inventoryItemToAnalysisState>;
 };
@@ -264,6 +272,7 @@ async function loadInventoryResult(
   const item = await getInventoryItem(ownerId, itemId);
 
   return {
+    analysis: item.analysisSnapshot ?? null,
     photoUri: await resolveSavedItemImageUri(item, ownerId),
     state: inventoryItemToAnalysisState(item),
   };
@@ -283,6 +292,7 @@ export function ItemAnalysisResultScreen() {
   const {
     clearScannerResult,
     scannerResult,
+    updateScannerResult,
   } = useItemAnalysisResult();
   const scannerSession =
     sessionId && scannerResult?.id === sessionId
@@ -405,6 +415,58 @@ export function ItemAnalysisResultScreen() {
     userId,
   ]);
 
+  const handleProfitabilityGuidance = useCallback(
+    async (guidance: SerpApiProfitabilityGuidance) => {
+      if (scannerSession) {
+        const analysis = applyProfitabilityGuidanceToAnalysis(
+          scannerSession.analysis,
+          guidance,
+        );
+        const nextState = toItemAnalysisState(analysis);
+        if (nextState.status === "result") {
+          updateScannerResult(scannerSession.id, {
+            analysis,
+            state: nextState,
+          });
+        }
+        return;
+      }
+
+      if (!inventoryResult?.analysis || !itemId || !userId) {
+        return;
+      }
+
+      const analysis = applyProfitabilityGuidanceToAnalysis(
+        inventoryResult.analysis,
+        guidance,
+      );
+      const nextState = toItemAnalysisState(analysis);
+      if (nextState.status !== "result") return;
+
+      await updateInventoryAnalysisSnapshot({
+        analysis,
+        itemId,
+        ownerId: userId,
+      });
+      setInventoryResult((current) =>
+        current
+          ? {
+            ...current,
+            analysis,
+            state: nextState,
+          }
+          : current,
+      );
+    },
+    [
+      inventoryResult,
+      itemId,
+      scannerSession,
+      updateScannerResult,
+      userId,
+    ],
+  );
+
   const resultState =
     scannerSession?.state ?? inventoryResult?.state ?? null;
   const photoUri =
@@ -424,7 +486,7 @@ export function ItemAnalysisResultScreen() {
   if (loading || resolvedError || !resultState) {
     return (
       <View style={styles.root}>
-              <View pointerEvents="none" style={styles.ambientGradient} />
+        <View pointerEvents="none" style={styles.ambientGradient} />
         <View pointerEvents="none" style={styles.projectionLayer}>
           <HudImageFrame
             onError={setProjectionError}
@@ -495,8 +557,8 @@ export function ItemAnalysisResultScreen() {
   }
 
   const projectionLabel = projectionError
-  ? "PROJECTION SIGNAL DEGRADED / HUD FIELD ACTIVE"
-  : "KEEPFLIP ITEM PROJECTION / VALUATION FIELD";
+    ? "PROJECTION SIGNAL DEGRADED / HUD FIELD ACTIVE"
+    : "KEEPFLIP ITEM PROJECTION / VALUATION FIELD";
 
   return (
     <View style={styles.root}>
@@ -517,21 +579,22 @@ export function ItemAnalysisResultScreen() {
         style={[styles.resultScrim, styles.resultScrimWithProjection]}
       />
 
-    <ValuationResultStage
-      bottomInset={insets.bottom}
-      onSave={
-        scannerSession
-          ? () => {
+      <ValuationResultStage
+        bottomInset={insets.bottom}
+        onProfitabilityGuidance={handleProfitabilityGuidance}
+        onSave={
+          scannerSession
+            ? () => {
               void handleSave();
             }
-          : undefined
-      }
-      projectionLabel={projectionLabel}
-      saveLabel="Save to inventory"
-      saving={saving}
-      state={resultState}
-      topInset={insets.top}
-    />
+            : undefined
+        }
+        projectionLabel={projectionLabel}
+        saveLabel="Save to inventory"
+        saving={saving}
+        state={resultState}
+        topInset={insets.top}
+      />
     </View>
   );
 }
@@ -594,7 +657,7 @@ const styles = StyleSheet.create({
   },
   centerTitle: {
     color: theme.colors.cream,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 22,
     lineHeight: 27,
     fontWeight: "900",
@@ -603,7 +666,7 @@ const styles = StyleSheet.create({
   centerBody: {
     maxWidth: 420,
     color: theme.colors.textMuted,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 12,
     lineHeight: 18,
     textAlign: "center",

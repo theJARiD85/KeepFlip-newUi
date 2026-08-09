@@ -1,18 +1,18 @@
-/* eslint-disable react/no-unknown-property */
-
-import { Asset } from "expo-asset";
-import { LinearGradient } from "expo-linear-gradient";
 import {
+  BlurMask,
   Canvas,
-  useFrame,
-  useLoader,
-} from "@react-three/fiber/native";
+  Circle,
+  Line,
+  LinearGradient as SkiaLinearGradient,
+  RadialGradient,
+  Rect,
+  SweepGradient,
+  vec,
+} from "@shopify/react-native-skia";
 import React, {
   Component,
-  Suspense,
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
   type ErrorInfo,
@@ -22,32 +22,79 @@ import {
   AccessibilityInfo,
   Animated,
   Easing,
-  Pressable,
   StyleSheet,
   Text,
   View,
   useWindowDimensions,
 } from "react-native";
-import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import {
+  Camera,
+  DefaultLight,
+  FilamentScene,
+  FilamentView,
+  Light,
+  ModelInstance,
+  ModelRenderer,
+  setLogger,
+  useModel,
+  type Float3,
+  type RenderCallback,
+} from "react-native-filament";
+import {
+  useSharedValue,
+  type ISharedValue,
+} from "react-native-worklets-core";
 
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
-import { configureExpoGlForThree } from "@/lib/expo-three-gl-compat";
 
-const CYAN = theme.colors.scannerCyan;
-const VIOLET = theme.colors.scannerViolet;
-const GOLD = theme.colors.goldBright;
-const AMBER = theme.colors.scannerAmber;
+const KEEPFLIP_ICON_GLB =
+  require("@/assets/models/keepflip_icon.glb");
 
-const INTRO_DURATION_MS = 4_300;
+const INTRO_MINIMUM_DURATION_MS =
+  4_600;
 
-type KeepFlipIntroProps = {
+const MODEL_LOAD_TIMEOUT_MS =
+  12_000;
+
+const MODEL_SCALE =
+  0.5;
+
+const MODEL_ROTATION_RADIANS_PER_SECOND =
+  0.65;
+
+const MODEL_SCALE_VECTOR: Float3 = [
+  MODEL_SCALE,
+  MODEL_SCALE,
+  MODEL_SCALE,
+];
+
+const CYAN =
+  theme.colors.scannerCyan;
+
+const VIOLET =
+  theme.colors.scannerViolet;
+
+const GOLD =
+  theme.colors.goldBright;
+
+/*
+ * Disable react-native-filament's internal JavaScript logger globally.
+ */
+setLogger({
+  debug: () => undefined,
+  info: () => undefined,
+  warn: () => undefined,
+  error: () => undefined,
+});
+
+export type KeepFlipIntroProps = {
+  startupReady: boolean;
   onComplete: () => void;
 };
 
 type IntroErrorBoundaryProps = {
   children: ReactNode;
-  onError: (message: string) => void;
+  onError: () => void;
 };
 
 type IntroErrorBoundaryState = {
@@ -68,13 +115,14 @@ class IntroErrorBoundary extends Component<
     };
   }
 
-  componentDidCatch(caught: Error, _info: ErrorInfo) {
-    this.props.onError(
-      caught.message || "KeepFlip could not render the intro model.",
-    );
+  componentDidCatch(
+    _error: Error,
+    _info: ErrorInfo,
+  ): void {
+    this.props.onError();
   }
 
-  render() {
+  render(): ReactNode {
     if (this.state.failed) {
       return null;
     }
@@ -83,443 +131,1002 @@ class IntroErrorBoundary extends Component<
   }
 }
 
-function smoothStep(
-  start: number,
-  end: number,
-  value: number,
-): number {
-  const progress = THREE.MathUtils.clamp(
-    (value - start) / (end - start),
-    0,
-    1,
-  );
+function IntroBackdrop({
+  height,
+  width,
+}: {
+  height: number;
+  width: number;
+}): React.JSX.Element {
+  const baseRadius =
+    Math.min(
+      width,
+      height,
+    );
 
-  return progress * progress * (3 - 2 * progress);
+  return (
+    <Canvas
+      style={
+        StyleSheet.absoluteFill
+      }
+    >
+      <Rect
+        x={0}
+        y={0}
+        width={width}
+        height={height}
+      >
+        <SkiaLinearGradient
+          start={
+            vec(0, 0)
+          }
+          end={
+            vec(
+              width,
+              height,
+            )
+          }
+          colors={[
+            "#010102",
+            "#090511",
+            "#030106",
+            "#010102",
+          ]}
+          positions={[
+            0,
+            0.42,
+            0.76,
+            1,
+          ]}
+        />
+      </Rect>
+
+      <Circle
+        cx={
+          width * 0.82
+        }
+        cy={
+          height * 0.28
+        }
+        r={
+          baseRadius * 0.42
+        }
+      >
+        <RadialGradient
+          c={
+            vec(
+              width * 0.82,
+              height * 0.28,
+            )
+          }
+          r={
+            baseRadius * 0.42
+          }
+          colors={[
+            "rgba(0,255,255,0.16)",
+            "rgba(0,255,255,0)",
+          ]}
+        />
+      </Circle>
+
+      <Circle
+        cx={
+          width * 0.12
+        }
+        cy={
+          height * 0.68
+        }
+        r={
+          baseRadius * 0.48
+        }
+      >
+        <RadialGradient
+          c={
+            vec(
+              width * 0.12,
+              height * 0.68,
+            )
+          }
+          r={
+            baseRadius * 0.48
+          }
+          colors={[
+            "rgba(141,114,255,0.15)",
+            "rgba(141,114,255,0)",
+          ]}
+        />
+      </Circle>
+
+      <Circle
+        cx={
+          width * 0.7
+        }
+        cy={
+          height * 0.88
+        }
+        r={
+          baseRadius * 0.25
+        }
+      >
+        <RadialGradient
+          c={
+            vec(
+              width * 0.7,
+              height * 0.88,
+            )
+          }
+          r={
+            baseRadius * 0.25
+          }
+          colors={[
+            "rgba(242,211,138,0.10)",
+            "rgba(242,211,138,0)",
+          ]}
+        />
+      </Circle>
+    </Canvas>
+  );
 }
 
-function KeepFlipIconModel({
-  modelUri,
+function SpinRing({
+  colors,
+  radius,
+  size,
+  strokeWidth,
+}: {
+  colors: string[];
+  radius: number;
+  size: number;
+  strokeWidth: number;
+}): React.JSX.Element {
+  const center =
+    size / 2;
+
+  return (
+    <Canvas
+      style={
+        StyleSheet.absoluteFill
+      }
+    >
+      <Circle
+        cx={center}
+        cy={center}
+        r={radius}
+        style="stroke"
+        strokeWidth={
+          strokeWidth + 5
+        }
+        opacity={0.25}
+      >
+        <SweepGradient
+          c={
+            vec(
+              center,
+              center,
+            )
+          }
+          colors={colors}
+        />
+
+        <BlurMask
+          blur={8}
+          style="solid"
+        />
+      </Circle>
+
+      <Circle
+        cx={center}
+        cy={center}
+        r={radius}
+        style="stroke"
+        strokeWidth={
+          strokeWidth
+        }
+      >
+        <SweepGradient
+          c={
+            vec(
+              center,
+              center,
+            )
+          }
+          colors={colors}
+        />
+      </Circle>
+    </Canvas>
+  );
+}
+
+function TargetCore({
+  frameSize,
+  size,
+}: {
+  frameSize: number;
+  size: number;
+}): React.JSX.Element {
+  const center =
+    size / 2;
+
+  const half =
+    frameSize / 2;
+
+  const left =
+    center - half;
+
+  const right =
+    center + half;
+
+  const top =
+    center - half;
+
+  const bottom =
+    center + half;
+
+  const bracketLength =
+    frameSize * 0.17;
+
+  return (
+    <Canvas
+      style={
+        StyleSheet.absoluteFill
+      }
+    >
+      <Circle
+        cx={center}
+        cy={center}
+        r={
+          frameSize * 0.43
+        }
+        color="rgba(0,255,255,0.38)"
+        style="stroke"
+        strokeWidth={1.1}
+      />
+
+      <Circle
+        cx={center}
+        cy={center}
+        r={
+          frameSize * 0.31
+        }
+        color="rgba(141,114,255,0.34)"
+        style="stroke"
+        strokeWidth={1}
+      />
+
+      <Line
+        p1={
+          vec(
+            left,
+            top,
+          )
+        }
+        p2={
+          vec(
+            left +
+              bracketLength,
+            top,
+          )
+        }
+        color={CYAN}
+        strokeWidth={2.3}
+        strokeCap="round"
+      >
+        <BlurMask
+          blur={5}
+          style="solid"
+        />
+      </Line>
+
+      <Line
+        p1={
+          vec(
+            left,
+            top,
+          )
+        }
+        p2={
+          vec(
+            left,
+            top +
+              bracketLength,
+          )
+        }
+        color={CYAN}
+        strokeWidth={2.3}
+        strokeCap="round"
+      >
+        <BlurMask
+          blur={5}
+          style="solid"
+        />
+      </Line>
+
+      <Line
+        p1={
+          vec(
+            right,
+            top,
+          )
+        }
+        p2={
+          vec(
+            right -
+              bracketLength,
+            top,
+          )
+        }
+        color={GOLD}
+        strokeWidth={2.3}
+        strokeCap="round"
+      >
+        <BlurMask
+          blur={5}
+          style="solid"
+        />
+      </Line>
+
+      <Line
+        p1={
+          vec(
+            right,
+            top,
+          )
+        }
+        p2={
+          vec(
+            right,
+            top +
+              bracketLength,
+          )
+        }
+        color={GOLD}
+        strokeWidth={2.3}
+        strokeCap="round"
+      >
+        <BlurMask
+          blur={5}
+          style="solid"
+        />
+      </Line>
+
+      <Line
+        p1={
+          vec(
+            left,
+            bottom,
+          )
+        }
+        p2={
+          vec(
+            left +
+              bracketLength,
+            bottom,
+          )
+        }
+        color={GOLD}
+        strokeWidth={2.3}
+        strokeCap="round"
+      >
+        <BlurMask
+          blur={5}
+          style="solid"
+        />
+      </Line>
+
+      <Line
+        p1={
+          vec(
+            left,
+            bottom,
+          )
+        }
+        p2={
+          vec(
+            left,
+            bottom -
+              bracketLength,
+          )
+        }
+        color={GOLD}
+        strokeWidth={2.3}
+        strokeCap="round"
+      >
+        <BlurMask
+          blur={5}
+          style="solid"
+        />
+      </Line>
+
+      <Line
+        p1={
+          vec(
+            right,
+            bottom,
+          )
+        }
+        p2={
+          vec(
+            right -
+              bracketLength,
+            bottom,
+          )
+        }
+        color={CYAN}
+        strokeWidth={2.3}
+        strokeCap="round"
+      >
+        <BlurMask
+          blur={5}
+          style="solid"
+        />
+      </Line>
+
+      <Line
+        p1={
+          vec(
+            right,
+            bottom,
+          )
+        }
+        p2={
+          vec(
+            right,
+            bottom -
+              bracketLength,
+          )
+        }
+        color={CYAN}
+        strokeWidth={2.3}
+        strokeCap="round"
+      >
+        <BlurMask
+          blur={5}
+          style="solid"
+        />
+      </Line>
+
+      <Line
+        p1={
+          vec(
+            center - 22,
+            center,
+          )
+        }
+        p2={
+          vec(
+            center + 22,
+            center,
+          )
+        }
+        color="rgba(242,211,138,0.78)"
+        strokeWidth={1}
+      />
+
+      <Line
+        p1={
+          vec(
+            center,
+            center - 22,
+          )
+        }
+        p2={
+          vec(
+            center,
+            center + 22,
+          )
+        }
+        color="rgba(0,255,255,0.78)"
+        strokeWidth={1}
+      />
+
+      <Circle
+        cx={center}
+        cy={center}
+        r={3.2}
+        color={GOLD}
+      >
+        <BlurMask
+          blur={8}
+          style="solid"
+        />
+      </Circle>
+
+      <Circle
+        cx={center}
+        cy={center}
+        r={1.6}
+        color="#FFF2D2"
+      />
+    </Canvas>
+  );
+}
+
+function TargetHud({
+  frameSize,
+  height,
+  pulse,
+  reverseSpin,
+  scan,
+  spin,
+  width,
+}: {
+  frameSize: number;
+  height: number;
+  pulse: Animated.Value;
+  reverseSpin: Animated.Value;
+  scan: Animated.Value;
+  spin: Animated.Value;
+  width: number;
+}): React.JSX.Element {
+  const size =
+    frameSize + 88;
+
+  const left =
+    (width - size) / 2;
+
+  const top =
+    (height - size) / 2;
+
+  const outerRotation =
+    spin.interpolate({
+      inputRange: [
+        0,
+        1,
+      ],
+
+      outputRange: [
+        "0deg",
+        "360deg",
+      ],
+    });
+
+  const innerRotation =
+    reverseSpin.interpolate({
+      inputRange: [
+        0,
+        1,
+      ],
+
+      outputRange: [
+        "0deg",
+        "-360deg",
+      ],
+    });
+
+  const pulseScale =
+    pulse.interpolate({
+      inputRange: [
+        0,
+        1,
+      ],
+
+      outputRange: [
+        0.985,
+        1.025,
+      ],
+    });
+
+  const pulseOpacity =
+    pulse.interpolate({
+      inputRange: [
+        0,
+        1,
+      ],
+
+      outputRange: [
+        0.7,
+        1,
+      ],
+    });
+
+  const scanTranslateY =
+    scan.interpolate({
+      inputRange: [
+        0,
+        1,
+      ],
+
+      outputRange: [
+        -44,
+        frameSize + 4,
+      ],
+    });
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        styles.targetHud,
+
+        {
+          height: size,
+          left,
+          top,
+          width: size,
+
+          opacity:
+            pulseOpacity,
+
+          transform: [
+            {
+              scale:
+                pulseScale,
+            },
+          ],
+        },
+      ]}
+    >
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFill,
+
+          {
+            transform: [
+              {
+                rotate:
+                  outerRotation,
+              },
+            ],
+          },
+        ]}
+      >
+        <SpinRing
+          colors={[
+            "rgba(0,255,255,0)",
+            "rgba(0,255,255,0.95)",
+            "rgba(141,114,255,0.65)",
+            "rgba(0,255,255,0)",
+          ]}
+          radius={
+            frameSize * 0.49
+          }
+          size={size}
+          strokeWidth={1.7}
+        />
+      </Animated.View>
+
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFill,
+
+          {
+            transform: [
+              {
+                rotate:
+                  innerRotation,
+              },
+            ],
+          },
+        ]}
+      >
+        <SpinRing
+          colors={[
+            "rgba(242,211,138,0)",
+            "rgba(242,211,138,0.92)",
+            "rgba(141,114,255,0.55)",
+            "rgba(242,211,138,0)",
+          ]}
+          radius={
+            frameSize * 0.39
+          }
+          size={size}
+          strokeWidth={1.3}
+        />
+      </Animated.View>
+
+      <TargetCore
+        frameSize={
+          frameSize
+        }
+        size={size}
+      />
+
+      <View
+        style={[
+          styles.scanWindow,
+
+          {
+            height:
+              frameSize,
+
+            left:
+              (
+                size -
+                frameSize
+              ) /
+              2,
+
+            top:
+              (
+                size -
+                frameSize
+              ) /
+              2,
+
+            width:
+              frameSize,
+          },
+        ]}
+      >
+        <Animated.View
+          style={[
+            styles.scanBeam,
+
+            {
+              transform: [
+                {
+                  translateY:
+                    scanTranslateY,
+                },
+              ],
+            },
+          ]}
+        >
+          <Canvas
+            style={
+              StyleSheet.absoluteFill
+            }
+          >
+            <Rect
+              x={0}
+              y={0}
+              width={
+                frameSize
+              }
+              height={42}
+            >
+              <SkiaLinearGradient
+                start={
+                  vec(
+                    0,
+                    0,
+                  )
+                }
+                end={
+                  vec(
+                    0,
+                    42,
+                  )
+                }
+                colors={[
+                  "rgba(0,255,255,0)",
+                  "rgba(0,255,255,0.11)",
+                  "rgba(0,255,255,0.75)",
+                  "rgba(0,255,255,0)",
+                ]}
+                positions={[
+                  0,
+                  0.38,
+                  0.5,
+                  1,
+                ]}
+              />
+            </Rect>
+          </Canvas>
+        </Animated.View>
+      </View>
+    </Animated.View>
+  );
+}
+
+function KeepFlipFilamentModel({
+  onReady,
+  rotation,
+}: {
+  onReady: () => void;
+  rotation: ISharedValue<Float3>;
+}): React.JSX.Element {
+  const model =
+    useModel(
+      KEEPFLIP_ICON_GLB,
+    );
+
+  const notifiedRef =
+    useRef(false);
+
+  useEffect(() => {
+    if (
+      model.state !==
+        "loaded" ||
+      notifiedRef.current
+    ) {
+      return;
+    }
+
+    notifiedRef.current =
+      true;
+
+    onReady();
+  }, [
+    model.state,
+    onReady,
+  ]);
+
+  return (
+    <ModelRenderer
+      model={model}
+      transformToUnitCube
+      scale={MODEL_SCALE_VECTOR}
+      castShadow={false}
+      receiveShadow={false}
+    >
+      <ModelInstance
+        index={0}
+        rotate={rotation}
+      />
+    </ModelRenderer>
+  );
+}
+
+function FilamentStage({
   onReady,
   reduceMotion,
 }: {
-  modelUri: string;
   onReady: () => void;
   reduceMotion: boolean;
-}) {
-  const rootRef = useRef<THREE.Group>(null);
-  const gltf = useLoader(GLTFLoader, modelUri);
+}): React.JSX.Element {
+  const rotation =
+    useSharedValue<Float3>([
+      -0.05,
+      -0.48,
+      0,
+    ]);
 
-  const normalizedModel = useMemo(() => {
-    const clonedScene = gltf.scene.clone(true);
+  const renderCallback:
+    RenderCallback =
+      useCallback(
+        (
+          frameInfo,
+        ) => {
+          "worklet";
 
-    clonedScene.traverse((object) => {
-      if (!(object instanceof THREE.Mesh)) {
-        return;
-      }
+          if (
+            reduceMotion
+          ) {
+            return;
+          }
 
-      object.castShadow = false;
-      object.receiveShadow = false;
-      object.frustumCulled = true;
+          const frameDelta =
+            Math.min(
+              Math.max(
+                frameInfo.timeSinceLastFrame,
+                0,
+              ),
+              0.05,
+            );
 
-      const materials = Array.isArray(object.material)
-        ? object.material
-        : [object.material];
-
-      for (const material of materials) {
-        if (
-          material instanceof THREE.MeshStandardMaterial ||
-          material instanceof THREE.MeshPhysicalMaterial
-        ) {
-          material.envMapIntensity = 1.25;
-        }
-      }
-    });
-
-    const bounds = new THREE.Box3().setFromObject(clonedScene);
-    const size = bounds.getSize(new THREE.Vector3());
-    const center = bounds.getCenter(new THREE.Vector3());
-
-    const longestSide = Math.max(
-      size.x,
-      size.y,
-      size.z,
-      0.001,
-    );
-
-    const scale = 2.25 / longestSide;
-
-    const position: [number, number, number] = [
-      -center.x * scale,
-      -center.y * scale,
-      -center.z * scale,
-    ];
-
-    return {
-      object: clonedScene,
-      position,
-      scale,
-    };
-  }, [gltf.scene]);
-
-  useEffect(() => {
-    onReady();
-  }, [onReady]);
-
-  useFrame(({ clock }, delta) => {
-    const root = rootRef.current;
-
-    if (!root) {
-      return;
-    }
-
-    const elapsed = clock.elapsedTime;
-
-    const reveal = reduceMotion
-      ? 1
-      : smoothStep(0.15, 1.15, elapsed);
-
-    const desiredScale =
-      0.18 +
-      reveal * 0.82;
-
-    const pulse = reduceMotion
-      ? 1
-      : 1 + Math.sin(elapsed * 2.4) * 0.015;
-
-    root.scale.setScalar(
-      THREE.MathUtils.damp(
-        root.scale.x,
-        desiredScale * pulse,
-        7,
-        delta,
-      ),
-    );
-
-    root.rotation.y = reduceMotion
-      ? 0.2
-      : elapsed * 0.48 - 0.62;
-
-    root.rotation.x = reduceMotion
-      ? -0.06
-      : -0.06 + Math.sin(elapsed * 0.72) * 0.075;
-
-    root.rotation.z = reduceMotion
-      ? 0
-      : Math.sin(elapsed * 0.44) * 0.035;
-
-    root.position.y = reduceMotion
-      ? 0
-      : Math.sin(elapsed * 1.15) * 0.07;
-  });
-
-  return (
-    <group ref={rootRef} scale={0.18}>
-      <primitive
-        object={normalizedModel.object}
-        position={normalizedModel.position}
-        scale={normalizedModel.scale}
-      />
-    </group>
-  );
-}
-
-function TargetReticle3D({
-  reduceMotion,
-}: {
-  reduceMotion: boolean;
-}) {
-  const rootRef = useRef<THREE.Group>(null);
-  const sweepRef = useRef<THREE.Mesh>(null);
-
-  const corners = useMemo(
-    () =>
-      [
-        [-1.4, 1.4, 0.2, 1, 1],
-        [1.4, 1.4, 0.2, -1, 1],
-        [-1.4, -1.4, 0.2, 1, -1],
-        [1.4, -1.4, 0.2, -1, -1],
-      ] as const,
-    [],
-  );
-
-  useFrame(({ clock }) => {
-    const elapsed = clock.elapsedTime;
-
-    if (rootRef.current) {
-      rootRef.current.rotation.z = reduceMotion
-        ? 0
-        : Math.sin(elapsed * 0.28) * 0.04;
-
-      const pulse = reduceMotion
-        ? 1
-        : 1 + Math.sin(elapsed * 2.2) * 0.025;
-
-      rootRef.current.scale.setScalar(pulse);
-    }
-
-    if (sweepRef.current) {
-      sweepRef.current.rotation.z = reduceMotion
-        ? 0
-        : elapsed * 1.25;
-    }
-  });
-
-  return (
-    <group ref={rootRef}>
-      <mesh rotation={[0, 0, 0]}>
-        <torusGeometry args={[1.58, 0.012, 6, 96]} />
-
-        <meshBasicMaterial
-          color={CYAN}
-          depthWrite={false}
-          opacity={0.68}
-          toneMapped={false}
-          transparent
-        />
-      </mesh>
-
-      <mesh rotation={[1.08, 0.22, 0.15]}>
-        <torusGeometry args={[1.72, 0.009, 6, 96]} />
-
-        <meshBasicMaterial
-          color={VIOLET}
-          depthWrite={false}
-          opacity={0.44}
-          toneMapped={false}
-          transparent
-        />
-      </mesh>
-
-      <mesh rotation={[1.36, -0.42, -0.2]}>
-        <torusGeometry args={[1.84, 0.008, 6, 96]} />
-
-        <meshBasicMaterial
-          color={GOLD}
-          depthWrite={false}
-          opacity={0.32}
-          toneMapped={false}
-          transparent
-        />
-      </mesh>
-
-      <mesh ref={sweepRef} position={[0, 0, 0.22]}>
-        <ringGeometry
-          args={[
-            1.47,
-            1.62,
-            96,
-            1,
+          // react-native-worklets-core shared values are intentionally mutable.
+          // eslint-disable-next-line react-hooks/immutability
+          rotation.value = [
             0,
-            Math.PI * 0.36,
-          ]}
-        />
-
-        <meshBasicMaterial
-          color={CYAN}
-          depthWrite={false}
-          opacity={0.24}
-          side={THREE.DoubleSide}
-          toneMapped={false}
-          transparent
-        />
-      </mesh>
-
-      {corners.map(
-        ([x, y, z, horizontalDirection, verticalDirection], index) => (
-          <group
-            key={`target-corner-${index}`}
-            position={[x, y, z]}
-          >
-            <mesh
-              position={[
-                horizontalDirection * 0.17,
-                0,
-                0,
-              ]}
-            >
-              <boxGeometry args={[0.36, 0.035, 0.035]} />
-
-              <meshBasicMaterial
-                color={index % 2 === 0 ? CYAN : GOLD}
-                toneMapped={false}
-              />
-            </mesh>
-
-            <mesh
-              position={[
-                0,
-                verticalDirection * 0.17,
-                0,
-              ]}
-            >
-              <boxGeometry args={[0.035, 0.36, 0.035]} />
-
-              <meshBasicMaterial
-                color={index % 2 === 0 ? CYAN : GOLD}
-                toneMapped={false}
-              />
-            </mesh>
-          </group>
-        ),
-      )}
-    </group>
-  );
-}
-
-function EnergyParticles({
-  reduceMotion,
-}: {
-  reduceMotion: boolean;
-}) {
-  const particlesRef = useRef<THREE.Points>(null);
-
-  const positions = useMemo(() => {
-    const count = 110;
-    const values = new Float32Array(count * 3);
-
-    for (let index = 0; index < count; index += 1) {
-      const radius =
-        1.7 +
-        Math.random() * 2.2;
-
-      const angle =
-        Math.random() *
-        Math.PI *
-        2;
-
-      const elevation =
-        (Math.random() - 0.5) *
-        3.8;
-
-      values[index * 3] =
-        Math.cos(angle) *
-        radius;
-
-      values[index * 3 + 1] =
-        elevation;
-
-      values[index * 3 + 2] =
-        Math.sin(angle) *
-        radius;
-    }
-
-    return values;
-  }, []);
-
-  useFrame(({ clock }) => {
-    const particles = particlesRef.current;
-
-    if (!particles || reduceMotion) {
-      return;
-    }
-
-    const elapsed = clock.elapsedTime;
-
-    particles.rotation.y =
-      elapsed * 0.055;
-
-    particles.rotation.x =
-      Math.sin(elapsed * 0.18) * 0.08;
-  });
+            frameDelta *
+              MODEL_ROTATION_RADIANS_PER_SECOND,
+            0,
+          ];
+        },
+        [
+          reduceMotion,
+          rotation,
+        ],
+      );
 
   return (
-    <points ref={particlesRef}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          args={[positions, 3]}
-        />
-      </bufferGeometry>
-
-      <pointsMaterial
-        color={CYAN}
-        depthWrite={false}
-        opacity={0.54}
-        size={0.028}
-        sizeAttenuation
-        toneMapped={false}
-        transparent
-      />
-    </points>
-  );
-}
-
-function IntroScene({
-  modelUri,
-  onModelReady,
-  reduceMotion,
-}: {
-  modelUri: string;
-  onModelReady: () => void;
-  reduceMotion: boolean;
-}) {
-  return (
-    <>
-      <ambientLight intensity={0.65} />
-
-      <hemisphereLight
-        args={[
-          0x8defff,
-          0x08030d,
-          1.1,
+    <FilamentView
+      enableTransparentRendering
+      renderCallback={
+        renderCallback
+      }
+      style={
+        StyleSheet.absoluteFill
+      }
+    >
+      <Camera
+        cameraPosition={[
+          0,
+          0,
+          5.25,
         ]}
+        cameraTarget={[
+          0,
+          0,
+          0,
+        ]}
+        cameraUp={[
+          0,
+          1,
+          0,
+        ]}
+        focalLengthInMillimeters={
+          46
+        }
+        near={0.1}
+        far={50}
       />
 
-      <pointLight
-        color={CYAN}
-        intensity={28}
-        position={[3.2, 2.4, 4.5]}
+      <DefaultLight />
+
+      <Light
+        type="point"
+        colorKelvin={
+          9_000
+        }
+        intensity={
+          42_000
+        }
+        position={[
+          2.7,
+          1.7,
+          3.4,
+        ]}
+        falloffRadius={8}
+        castShadows={false}
       />
 
-      <pointLight
-        color={VIOLET}
-        intensity={22}
-        position={[-3.2, 0.2, 3]}
+      <Light
+        type="point"
+        colorKelvin={
+          3_200
+        }
+        intensity={
+          32_000
+        }
+        position={[
+          -2.5,
+          -1.3,
+          2.8,
+        ]}
+        falloffRadius={7}
+        castShadows={false}
       />
 
-      <pointLight
-        color={AMBER}
-        intensity={16}
-        position={[0, -3, 3.2]}
+      <KeepFlipFilamentModel
+        onReady={
+          onReady
+        }
+        rotation={
+          rotation
+        }
       />
-
-      <EnergyParticles reduceMotion={reduceMotion} />
-
-      <TargetReticle3D reduceMotion={reduceMotion} />
-
-      <KeepFlipIconModel
-        modelUri={modelUri}
-        onReady={onModelReady}
-        reduceMotion={reduceMotion}
-      />
-    </>
+    </FilamentView>
   );
 }
 
 export default function KeepFlipIntro({
+  startupReady,
   onComplete,
 }: KeepFlipIntroProps): React.JSX.Element {
   const {
     height,
     width,
-  } = useWindowDimensions();
+  } =
+    useWindowDimensions();
 
   const containerOpacity =
     useRef(
       new Animated.Value(0),
     ).current;
 
-  const interfaceOpacity =
+  const hudOpacity =
     useRef(
       new Animated.Value(0),
     ).current;
 
-  const targetPulse =
+  const pulse =
     useRef(
       new Animated.Value(0),
     ).current;
 
-  const scanProgress =
+  const spin =
+    useRef(
+      new Animated.Value(0),
+    ).current;
+
+  const reverseSpin =
+    useRef(
+      new Animated.Value(0),
+    ).current;
+
+  const scan =
     useRef(
       new Animated.Value(0),
     ).current;
@@ -527,81 +1134,101 @@ export default function KeepFlipIntro({
   const completedRef =
     useRef(false);
 
-  const [modelUri, setModelUri] =
-    useState<string | null>(null);
-
-  const [modelReady, setModelReady] =
+  const [
+    modelReady,
+    setModelReady,
+  ] =
     useState(false);
 
-  const [modelError, setModelError] =
-    useState<string | null>(null);
-
-  const [reduceMotion, setReduceMotion] =
+  const [
+    modelFailed,
+    setModelFailed,
+  ] =
     useState(false);
 
-  const frameSize = Math.min(
-    width * 0.72,
-    height * 0.42,
-    340,
-  );
+  const [
+    minimumDurationElapsed,
+    setMinimumDurationElapsed,
+  ] =
+    useState(false);
 
-  const finish = useCallback(() => {
-    if (completedRef.current) {
-      return;
-    }
+  const [
+    reduceMotion,
+    setReduceMotion,
+  ] =
+    useState(false);
 
-    completedRef.current = true;
-    onComplete();
-  }, [onComplete]);
+  const frameSize =
+    Math.min(
+      width * 0.72,
+      height * 0.42,
+      344,
+    );
 
-  useEffect(() => {
-    let mounted = true;
+  const modelSettled =
+    modelReady ||
+    modelFailed;
 
-    const loadModel = async () => {
-      try {
-        const asset = Asset.fromModule(
-          require("../../assets/models/keepflip_icon.glb"),
-        );
+  const canComplete =
+    startupReady &&
+    modelSettled &&
+    minimumDurationElapsed;
 
-        await asset.downloadAsync();
+  const handleModelReady =
+    useCallback(() => {
+      setModelReady(true);
+      setModelFailed(false);
+    }, []);
 
-        const resolvedUri =
-          asset.localUri ??
-          asset.uri;
+  const handleModelFailure =
+    useCallback(() => {
+      setModelFailed(true);
+    }, []);
 
-        if (!resolvedUri) {
-          throw new Error(
-            "The KeepFlip intro model did not resolve to a local URI.",
-          );
-        }
-
-        if (mounted) {
-          setModelUri(resolvedUri);
-        }
-      } catch (caught) {
-        if (!mounted) {
-          return;
-        }
-
-        setModelError(
-          caught instanceof Error
-            ? caught.message
-            : "The KeepFlip intro model could not be loaded.",
-        );
+  const finish =
+    useCallback(() => {
+      if (
+        completedRef.current
+      ) {
+        return;
       }
-    };
 
-    void loadModel();
+      completedRef.current =
+        true;
 
-    return () => {
-      mounted = false;
-    };
-  }, []);
+      Animated.timing(
+        containerOpacity,
+        {
+          toValue: 0,
+
+          duration:
+            reduceMotion
+              ? 100
+              : 480,
+
+          easing:
+            Easing.in(
+              Easing.cubic,
+            ),
+
+          useNativeDriver:
+            true,
+        },
+      ).start(() => {
+        onComplete();
+      });
+    }, [
+      containerOpacity,
+      onComplete,
+      reduceMotion,
+    ]);
 
   useEffect(() => {
     void AccessibilityInfo
       .isReduceMotionEnabled()
-      .then(setReduceMotion);
+      .then(
+        setReduceMotion,
+      );
 
     const subscription =
       AccessibilityInfo.addEventListener(
@@ -615,667 +1242,560 @@ export default function KeepFlipIntro({
   }, []);
 
   useEffect(() => {
-    const entrance = Animated.parallel([
-      Animated.timing(
-        containerOpacity,
-        {
-          toValue: 1,
-          duration: reduceMotion
-            ? 120
-            : 420,
-          easing: Easing.out(
-            Easing.cubic,
-          ),
-          useNativeDriver: true,
-        },
-      ),
-
-      Animated.timing(
-        interfaceOpacity,
-        {
-          toValue: 1,
-          duration: reduceMotion
-            ? 120
-            : 850,
-          delay: reduceMotion
-            ? 0
-            : 360,
-          easing: Easing.out(
-            Easing.cubic,
-          ),
-          useNativeDriver: true,
-        },
-      ),
-    ]);
-
-    const pulse = Animated.loop(
-      Animated.sequence([
+    const entrance =
+      Animated.parallel([
         Animated.timing(
-          targetPulse,
+          containerOpacity,
           {
             toValue: 1,
-            duration: 900,
-            easing: Easing.inOut(
-              Easing.sin,
-            ),
-            useNativeDriver: true,
+
+            duration:
+              reduceMotion
+                ? 100
+                : 360,
+
+            easing:
+              Easing.out(
+                Easing.cubic,
+              ),
+
+            useNativeDriver:
+              true,
           },
         ),
 
         Animated.timing(
-          targetPulse,
+          hudOpacity,
           {
-            toValue: 0,
-            duration: 900,
-            easing: Easing.inOut(
-              Easing.sin,
-            ),
-            useNativeDriver: true,
+            toValue: 1,
+
+            duration:
+              reduceMotion
+                ? 100
+                : 760,
+
+            delay:
+              reduceMotion
+                ? 0
+                : 220,
+
+            easing:
+              Easing.out(
+                Easing.cubic,
+              ),
+
+            useNativeDriver:
+              true,
           },
         ),
-      ]),
-    );
+      ]);
 
-    const scan = Animated.loop(
-      Animated.timing(
-        scanProgress,
-        {
-          toValue: 1,
-          duration: 1_700,
-          easing: Easing.inOut(
-            Easing.cubic,
+    const pulseLoop =
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(
+            pulse,
+            {
+              toValue: 1,
+              duration: 950,
+
+              easing:
+                Easing.inOut(
+                  Easing.sin,
+                ),
+
+              useNativeDriver:
+                true,
+            },
           ),
-          useNativeDriver: true,
-        },
-      ),
-    );
+
+          Animated.timing(
+            pulse,
+            {
+              toValue: 0,
+              duration: 950,
+
+              easing:
+                Easing.inOut(
+                  Easing.sin,
+                ),
+
+              useNativeDriver:
+                true,
+            },
+          ),
+        ]),
+      );
+
+    const spinLoop =
+      Animated.loop(
+        Animated.timing(
+          spin,
+          {
+            toValue: 1,
+            duration: 5_200,
+            easing:
+              Easing.linear,
+            useNativeDriver:
+              true,
+          },
+        ),
+      );
+
+    const reverseSpinLoop =
+      Animated.loop(
+        Animated.timing(
+          reverseSpin,
+          {
+            toValue: 1,
+            duration: 7_400,
+            easing:
+              Easing.linear,
+            useNativeDriver:
+              true,
+          },
+        ),
+      );
+
+    const scanLoop =
+      Animated.loop(
+        Animated.timing(
+          scan,
+          {
+            toValue: 1,
+            duration: 1_650,
+
+            easing:
+              Easing.inOut(
+                Easing.cubic,
+              ),
+
+            useNativeDriver:
+              true,
+          },
+        ),
+      );
 
     entrance.start();
 
     if (!reduceMotion) {
-      pulse.start();
-      scan.start();
+      pulseLoop.start();
+      spinLoop.start();
+      reverseSpinLoop.start();
+      scanLoop.start();
     }
 
-    const exitTimer = setTimeout(() => {
-      Animated.timing(
-        containerOpacity,
-        {
-          toValue: 0,
-          duration: reduceMotion
-            ? 100
-            : 520,
-          easing: Easing.in(
-            Easing.cubic,
-          ),
-          useNativeDriver: true,
-        },
-      ).start(({ finished }) => {
-        if (finished) {
-          finish();
-        }
-      });
-    }, INTRO_DURATION_MS);
-
     return () => {
-      clearTimeout(exitTimer);
       entrance.stop();
-      pulse.stop();
-      scan.stop();
+      pulseLoop.stop();
+      spinLoop.stop();
+      reverseSpinLoop.stop();
+      scanLoop.stop();
     };
   }, [
     containerOpacity,
-    finish,
-    interfaceOpacity,
+    hudOpacity,
+    pulse,
     reduceMotion,
-    scanProgress,
-    targetPulse,
+    reverseSpin,
+    scan,
+    spin,
   ]);
 
-  const handleSkip = useCallback(() => {
-    Animated.timing(
-      containerOpacity,
-      {
-        toValue: 0,
-        duration: 220,
-        easing: Easing.out(
-          Easing.quad,
-        ),
-        useNativeDriver: true,
-      },
-    ).start(() => {
-      finish();
-    });
+  useEffect(() => {
+    const timeout =
+      setTimeout(() => {
+        setMinimumDurationElapsed(
+          true,
+        );
+      }, INTRO_MINIMUM_DURATION_MS);
+
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (
+      modelReady ||
+      modelFailed
+    ) {
+      return;
+    }
+
+    const timeout =
+      setTimeout(() => {
+        setModelFailed(true);
+      }, MODEL_LOAD_TIMEOUT_MS);
+
+    return () => {
+      clearTimeout(timeout);
+    };
   }, [
-    containerOpacity,
+    modelFailed,
+    modelReady,
+  ]);
+
+  useEffect(() => {
+    if (!canComplete) {
+      return;
+    }
+
+    finish();
+  }, [
+    canComplete,
     finish,
   ]);
 
-  const handleModelError =
-    useCallback(
-      (message: string) => {
-        setModelError(message);
-      },
-      [],
-    );
+  const statusText =
+    !startupReady
+      ? "INITIALIZING SYSTEMS"
+      : modelReady
+        ? "TARGET LOCKED"
+        : modelFailed
+          ? "VISUAL CORE BYPASSED"
+          : "ACQUIRING TARGET";
 
-  const handleModelReady =
-    useCallback(() => {
-      setModelReady(true);
-    }, []);
-
-  const targetAnimatedStyle = {
-    opacity: targetPulse.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0.62, 1],
-    }),
-
-    transform: [
-      {
-        scale: targetPulse.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0.985, 1.025],
-        }),
-      },
-    ],
-  };
-
-  const scanAnimatedStyle = {
-    transform: [
-      {
-        translateY:
-          scanProgress.interpolate({
-            inputRange: [0, 1],
-            outputRange: [
-              -frameSize / 2,
-              frameSize / 2,
-            ],
-          }),
-      },
-    ],
-  };
-
-  const statusText = modelReady
-    ? "TARGET LOCKED"
-    : modelError
-      ? "VISUAL CORE ONLINE"
-      : "ACQUIRING TARGET";
+  const loadingText =
+    !startupReady
+      ? "LOADING STARTUP ASSETS"
+      : !modelSettled
+        ? "CALIBRATING VISUAL CORE"
+        : !minimumDurationElapsed
+          ? "FINALIZING STARTUP"
+          : "SYSTEM READY";
 
   return (
     <Animated.View
       style={[
         styles.container,
+
         {
           opacity:
             containerOpacity,
         },
       ]}
     >
-      <LinearGradient
-        colors={[
-          "#010102",
-          "#080411",
-          "#020106",
-          "#010102",
-        ]}
-        locations={[
-          0,
-          0.37,
-          0.72,
-          1,
-        ]}
-        style={StyleSheet.absoluteFill}
-      />
-
       <View
         pointerEvents="none"
-        style={styles.cyanGlow}
-      />
-
-      <View
-        pointerEvents="none"
-        style={styles.violetGlow}
-      />
-
-      <View
-        pointerEvents="none"
-        style={styles.goldGlow}
-      />
-
-      <Pressable
-        accessibilityHint="Skips the KeepFlip intro"
-        accessibilityLabel="Skip intro"
-        onPress={handleSkip}
-        style={StyleSheet.absoluteFill}
+        style={
+          StyleSheet.absoluteFill
+        }
       >
-        {modelUri ? (
-          <IntroErrorBoundary
-            onError={handleModelError}
-          >
-          <Canvas
-            camera={{
-                far: 100,
-                fov: 38,
-                near: 0.1,
-                position: [0, 0, 6.2],
-            }}
-            frameloop="always"
-            gl={{
-                alpha: true,
-                antialias: true,
-            }}
-            onCreated={({ gl }) => {
-                configureExpoGlForThree(gl);
+        <IntroBackdrop
+          height={height}
+          width={width}
+        />
+      </View>
 
-                gl.setClearColor(
-                0x000000,
-                0,
-                );
-            }}
-            style={StyleSheet.absoluteFill}
-            >
-            <Suspense fallback={null}>
-                <IntroScene
-                modelUri={modelUri}
-                onModelReady={handleModelReady}
-                reduceMotion={reduceMotion}
-                />
-            </Suspense>
-            </Canvas>
-          </IntroErrorBoundary>
-        ) : null}
-
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            styles.interfaceLayer,
-            {
-              opacity:
-                interfaceOpacity,
-            },
-          ]}
+      <View
+        pointerEvents="none"
+        style={
+          StyleSheet.absoluteFill
+        }
+      >
+        <IntroErrorBoundary
+          onError={
+            handleModelFailure
+          }
         >
-          <View style={styles.topReadout}>
-            <View style={styles.statusDot} />
+          <FilamentScene>
+            <FilamentStage
+              onReady={
+                handleModelReady
+              }
+              reduceMotion={
+                reduceMotion
+              }
+            />
+          </FilamentScene>
+        </IntroErrorBoundary>
+      </View>
 
-            <Text style={styles.topReadoutText}>
-              KEEPFLIP // VALUE INTELLIGENCE
-            </Text>
-          </View>
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.hudLayer,
 
-          <Animated.View
-            style={[
-              styles.targetFrame,
-              targetAnimatedStyle,
-              {
-                height: frameSize,
-                width: frameSize,
-              },
-            ]}
+          {
+            opacity:
+              hudOpacity,
+          },
+        ]}
+      >
+        <View
+          style={
+            styles.topReadout
+          }
+        >
+          <View
+            style={
+              styles.statusDot
+            }
+          />
+
+          <Text
+            style={
+              styles.topReadoutText
+            }
           >
-            <View
-              style={[
-                styles.targetCircle,
-                {
-                  borderRadius:
-                    frameSize / 2,
-                },
-              ]}
-            />
-
-            <View
-              style={[
-                styles.targetCircleInner,
-                {
-                  borderRadius:
-                    frameSize / 2,
-                },
-              ]}
-            />
-
-            <View
-              style={[
-                styles.cornerHorizontal,
-                styles.topLeftHorizontal,
-              ]}
-            />
-
-            <View
-              style={[
-                styles.cornerVertical,
-                styles.topLeftVertical,
-              ]}
-            />
-
-            <View
-              style={[
-                styles.cornerHorizontal,
-                styles.topRightHorizontal,
-              ]}
-            />
-
-            <View
-              style={[
-                styles.cornerVertical,
-                styles.topRightVertical,
-              ]}
-            />
-
-            <View
-              style={[
-                styles.cornerHorizontal,
-                styles.bottomLeftHorizontal,
-              ]}
-            />
-
-            <View
-              style={[
-                styles.cornerVertical,
-                styles.bottomLeftVertical,
-              ]}
-            />
-
-            <View
-              style={[
-                styles.cornerHorizontal,
-                styles.bottomRightHorizontal,
-              ]}
-            />
-
-            <View
-              style={[
-                styles.cornerVertical,
-                styles.bottomRightVertical,
-              ]}
-            />
-
-            {!reduceMotion ? (
-              <Animated.View
-                style={[
-                  styles.scanLine,
-                  scanAnimatedStyle,
-                ]}
-              />
-            ) : null}
-
-            <View style={styles.targetStatus}>
-              <Text style={styles.targetStatusText}>
-                {statusText}
-              </Text>
-            </View>
-          </Animated.View>
-
-          <View style={styles.bottomBrand}>
-            <Text style={styles.brandName}>
-              KEEPFLIP
-            </Text>
-
-            <View style={styles.brandDivider} />
-
-            <Text style={styles.brandTagline}>
-              SEE VALUE BEFORE OTHERS DO
-            </Text>
-          </View>
-
-          <Text style={styles.skipLabel}>
-            TAP TO SKIP
+            KEEPFLIP // VALUE INTELLIGENCE
           </Text>
-        </Animated.View>
-      </Pressable>
+        </View>
+
+        <TargetHud
+          frameSize={
+            frameSize
+          }
+          height={height}
+          pulse={pulse}
+          reverseSpin={
+            reverseSpin
+          }
+          scan={scan}
+          spin={spin}
+          width={width}
+        />
+
+        <View
+          style={
+            styles.targetStatus
+          }
+        >
+          <Text
+            style={
+              styles.targetStatusText
+            }
+          >
+            {statusText}
+          </Text>
+        </View>
+
+        <View
+          style={
+            styles.bottomBrand
+          }
+        >
+          <Text
+            style={
+              styles.brandName
+            }
+          >
+            KEEPFLIP
+          </Text>
+
+          <View
+            style={
+              styles.brandDivider
+            }
+          />
+
+          <Text
+            style={
+              styles.brandTagline
+            }
+          >
+            SEE VALUE BEFORE OTHERS DO
+          </Text>
+        </View>
+
+        <Text
+          style={
+            styles.loadingLabel
+          }
+        >
+          {loadingText}
+        </Text>
+      </Animated.View>
     </Animated.View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 10_000,
-    overflow: "hidden",
-    backgroundColor:
-      theme.colors.backgroundDeep,
-  },
+const styles =
+  StyleSheet.create({
+    container: {
+      ...StyleSheet.absoluteFill,
 
-  interfaceLayer: {
-    ...StyleSheet.absoluteFill,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+      zIndex: 10_000,
+      overflow: "hidden",
 
-  cyanGlow: {
-    position: "absolute",
-    top: "18%",
-    right: "-18%",
-    width: 310,
-    height: 310,
-    borderRadius: 999,
-    backgroundColor:
-      "rgba(0, 255, 255, 0.07)",
-    boxShadow:
-      "0 0 90px rgba(0, 255, 255, 0.25)",
-  },
-
-  violetGlow: {
-    position: "absolute",
-    bottom: "20%",
-    left: "-22%",
-    width: 340,
-    height: 340,
-    borderRadius: 999,
-    backgroundColor:
-      "rgba(141, 114, 255, 0.07)",
-    boxShadow:
-      "0 0 100px rgba(141, 114, 255, 0.23)",
-  },
-
-  goldGlow: {
-    position: "absolute",
-    right: "12%",
-    bottom: "10%",
-    width: 140,
-    height: 140,
-    borderRadius: 999,
-    backgroundColor:
-      "rgba(242, 211, 138, 0.045)",
-    boxShadow:
-      "0 0 70px rgba(242, 211, 138, 0.18)",
-  },
-
-  topReadout: {
-    position: "absolute",
-    top: 68,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 9,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderCurve: "continuous",
-    borderWidth:
-      StyleSheet.hairlineWidth,
-    borderColor:
-      "rgba(0, 255, 255, 0.24)",
-    backgroundColor:
-      "rgba(2, 5, 9, 0.52)",
-  },
-
-  statusDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 999,
-    backgroundColor: CYAN,
-    boxShadow:
-      "0 0 9px rgba(0, 255, 255, 0.95)",
-  },
-
-  topReadoutText: {
-    color:
-      "rgba(225, 255, 255, 0.82)",
-    fontFamily:
-      theme.fonts.analysis,
-    fontSize: 9,
-    letterSpacing: 1.35,
-  },
-
-  targetFrame: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  targetCircle: {
-    position: "absolute",
-    width: "87%",
-    height: "87%",
-    borderWidth:
-      StyleSheet.hairlineWidth,
-    borderColor:
-      "rgba(0, 255, 255, 0.32)",
-  },
-
-  targetCircleInner: {
-    position: "absolute",
-    width: "68%",
-    height: "68%",
-    borderWidth:
-      StyleSheet.hairlineWidth,
-    borderColor:
-      "rgba(141, 114, 255, 0.24)",
-  },
-
-  cornerHorizontal: {
-    position: "absolute",
-    width: 48,
-    height: 2,
-    backgroundColor: CYAN,
-    boxShadow:
-      "0 0 11px rgba(0, 255, 255, 0.9)",
-  },
-
-  cornerVertical: {
-    position: "absolute",
-    width: 2,
-    height: 48,
-    backgroundColor: CYAN,
-    boxShadow:
-      "0 0 11px rgba(0, 255, 255, 0.9)",
-  },
-
-  topLeftHorizontal: {
-    top: 0,
-    left: 0,
-  },
-
-  topLeftVertical: {
-    top: 0,
-    left: 0,
-  },
-
-  topRightHorizontal: {
-    top: 0,
-    right: 0,
-  },
-
-  topRightVertical: {
-    top: 0,
-    right: 0,
-  },
-
-  bottomLeftHorizontal: {
-    bottom: 0,
-    left: 0,
-  },
-
-  bottomLeftVertical: {
-    bottom: 0,
-    left: 0,
-  },
-
-  bottomRightHorizontal: {
-    right: 0,
-    bottom: 0,
-  },
-
-  bottomRightVertical: {
-    right: 0,
-    bottom: 0,
-  },
-
-  scanLine: {
-    position: "absolute",
-    right: 8,
-    left: 8,
-    height: 1,
-    backgroundColor: CYAN,
-    boxShadow:
-      "0 0 13px rgba(0, 255, 255, 0.88), 0 0 28px rgba(141, 114, 255, 0.32)",
-  },
-
-  targetStatus: {
-    position: "absolute",
-    bottom: -34,
-    paddingHorizontal: 11,
-    paddingVertical: 5,
-    borderRadius: 999,
-    borderCurve: "continuous",
-    backgroundColor:
-      "rgba(1, 5, 8, 0.7)",
-  },
-
-  targetStatusText: {
-    color: GOLD,
-    fontFamily:
-      theme.fonts.analysis,
-    fontSize: 9,
-    letterSpacing: 1.65,
-  },
-
-  bottomBrand: {
-    position: "absolute",
-    bottom: 88,
-    alignItems: "center",
-    gap: 10,
-  },
-
-  brandName: {
-    color:
-      theme.colors.scannerWhite,
-    fontFamily:
-      theme.fonts.bold,
-    fontSize: 32,
-    letterSpacing: 7,
-    textShadowColor:
-      "rgba(0, 255, 255, 0.48)",
-    textShadowOffset: {
-      width: 0,
-      height: 0,
+      backgroundColor:
+        theme.colors.backgroundDeep,
     },
-    textShadowRadius: 15,
-  },
 
-  brandDivider: {
-    width: 64,
-    height: 1,
-    backgroundColor: GOLD,
-    boxShadow:
-      "0 0 10px rgba(242, 211, 138, 0.6)",
-  },
+    hudLayer: {
+      ...StyleSheet.absoluteFill,
 
-  brandTagline: {
-    color:
-      theme.colors.textMuted,
-    fontFamily:
-      theme.fonts.analysis,
-    fontSize: 9,
-    letterSpacing: 2.05,
-  },
+      alignItems: "center",
+    },
 
-  skipLabel: {
-    position: "absolute",
-    bottom: 34,
-    color:
-      "rgba(173, 167, 178, 0.44)",
-    fontFamily:
-      theme.fonts.analysis,
-    fontSize: 8,
-    letterSpacing: 1.5,
-  },
-});
+    targetHud: {
+      position: "absolute",
+    },
+
+    scanWindow: {
+      position: "absolute",
+      overflow: "hidden",
+    },
+
+    scanBeam: {
+      position: "absolute",
+
+      top: 0,
+      left: 0,
+
+      height: 42,
+    },
+
+    topReadout: {
+      position: "absolute",
+      top: 68,
+
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 9,
+
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+
+      borderRadius: 999,
+      borderCurve: "continuous",
+
+      borderWidth:
+        StyleSheet.hairlineWidth,
+
+      borderColor:
+        "rgba(0,255,255,0.26)",
+
+      backgroundColor:
+        "rgba(2,5,9,0.56)",
+
+      boxShadow:
+        "0 0 18px rgba(0,255,255,0.10)",
+    },
+
+    statusDot: {
+      width: 5,
+      height: 5,
+
+      borderRadius: 999,
+
+      backgroundColor:
+        CYAN,
+
+      boxShadow:
+        "0 0 9px rgba(0,255,255,0.95)",
+    },
+
+    topReadoutText: {
+      color:
+        "rgba(225,255,255,0.84)",
+
+      fontFamily:
+        theme.fonts.radar,
+
+      fontSize: 9,
+      letterSpacing: 1.35,
+    },
+
+    targetStatus: {
+      position: "absolute",
+      top: "50%",
+
+      transform: [
+        {
+          translateY: 196,
+        },
+      ],
+
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+
+      borderRadius: 999,
+      borderCurve: "continuous",
+
+      borderWidth:
+        StyleSheet.hairlineWidth,
+
+      borderColor:
+        "rgba(242,211,138,0.26)",
+
+      backgroundColor:
+        "rgba(1,5,8,0.72)",
+    },
+
+    targetStatusText: {
+      color: GOLD,
+
+      fontFamily:
+        theme.fonts.radar,
+
+      fontSize: 9,
+      letterSpacing: 1.65,
+    },
+
+    bottomBrand: {
+      position: "absolute",
+      bottom: 88,
+
+      alignItems: "center",
+      gap: 10,
+    },
+
+    brandName: {
+      color:
+        theme.colors.scannerWhite,
+
+      fontFamily:
+        theme.fonts.bold,
+
+      fontSize: 33,
+      letterSpacing: 1,
+
+      textShadowColor:
+        "rgba(0,255,255,0.48)",
+
+      textShadowOffset: {
+        width: 0,
+        height: 0,
+      },
+
+      textShadowRadius: 15,
+    },
+
+    brandDivider: {
+      width: 64,
+      height: 1,
+
+      backgroundColor:
+        GOLD,
+
+      boxShadow:
+        "0 0 10px rgba(242,211,138,0.6)",
+    },
+
+    brandTagline: {
+      color:
+        theme.colors.textMuted,
+
+      fontFamily:
+        theme.fonts.display,
+
+      fontSize: 9,
+      letterSpacing: 2.05,
+    },
+
+    loadingLabel: {
+      position: "absolute",
+      bottom: 34,
+
+      color:
+        "rgba(173,167,178,0.58)",
+
+      fontFamily:
+        theme.fonts.radar,
+
+      fontSize: 8,
+      letterSpacing: 1.5,
+    },
+  });

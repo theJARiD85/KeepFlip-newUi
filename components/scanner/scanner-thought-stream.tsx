@@ -1,14 +1,14 @@
 import { useEffect, useMemo } from "react";
 import {
-  StyleSheet,
   Text as NativeText,
+  StyleSheet,
   useWindowDimensions,
   View,
   type TextStyle,
 } from "react-native";
 import Animated, {
-  Easing,
   cancelAnimation,
+  Easing,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -17,11 +17,10 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import type {
-  ItemIdentificationSnapshot,
   ItemAnalysisStage,
+  ItemIdentificationSnapshot,
 } from "@/types/item-analysis";
 
 export type Thought = {
@@ -778,7 +777,7 @@ const styles = StyleSheet.create({
   signalNotchLeft: { left: -1 },
   signalNotchRight: { right: -1 },
   label: {
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 8,
     lineHeight: 10,
     fontWeight: "900",
@@ -790,7 +789,7 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
   },
   valueGlow: {
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontWeight: "900",
     opacity: 0.62,
     textShadowOffset: { width: 0, height: 0 },
@@ -798,7 +797,7 @@ const styles = StyleSheet.create({
   },
   value: {
     color: "#E9FDFF",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontWeight: "900",
     textShadowColor: "rgba(0, 0, 0, 0.98)",
     textShadowOffset: { width: 0, height: 3 },
@@ -808,7 +807,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
   },
   confidence: {
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 8,
     lineHeight: 10,
     fontWeight: "800",

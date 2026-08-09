@@ -82,8 +82,19 @@ export type AnalysisValuation = {
 export type AnalysisProfitAction = {
   confidence?: number;
   detail: string;
+  guidance?: AnalysisProfitActionGuidance;
   id: string;
+  kind?: "decision" | "enhancement";
   label: string;
+};
+
+export type AnalysisProfitActionGuidance = {
+  references?: AnalysisMarketReference[];
+  safetyWarnings: string[];
+  searchedAt?: string;
+  steps: string[];
+  summary: string | null;
+  toolsOrParts: string[];
 };
 
 export type AnalysisProfitPlan = {

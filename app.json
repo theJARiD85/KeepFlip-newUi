@@ -16,6 +16,7 @@
     },
     "android": {
       "package": "com.keepflip.app",
+      "versionCode": 14,
       "permissions": [
         "android.permission.CAMERA",
         "com.google.android.gms.permission.AD_ID"
@@ -31,7 +32,6 @@
       "favicon": "./assets/images/icon.png"
     },
     "plugins": [
-      "./plugins/with-appodeal-repository",
       "./plugins/with-android-value-radar-memory",
       "expo-router",
       [
@@ -60,7 +60,16 @@
           "enableAndroidGpuLibraries": true
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "@keepflip/expo-appodeal-native-ads",
+        {
+          "enableAdMob": true,
+          "appId": "ca-app-pub-9259020398529102~7300404509",
+          "adMobAppId": "ca-app-pub-9259020398529102~7300404509",
+          "removeLocationPermissions": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

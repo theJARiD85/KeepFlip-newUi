@@ -1,11 +1,11 @@
-import { useEffect } from 'react';
 import type { ReactNode } from 'react';
+import { useEffect } from 'react';
 import {
+  Text as NativeText,
   Pressable,
   ScrollView,
-  StyleSheet,
-  Text as NativeText,
   type StyleProp,
+  StyleSheet,
   type TextProps,
   View,
   type ViewStyle,
@@ -52,7 +52,7 @@ type BubbleProps = {
   style?: StyleProp<ViewStyle>;
 };
 
-const analysisTextStyle = { fontFamily: theme.fonts.analysis } as const;
+const analysisTextStyle = { fontFamily: theme.fonts.radar } as const;
 
 function Text({ style, ...props }: TextProps) {
   return <NativeText {...props} style={[analysisTextStyle, style]} />;
@@ -490,9 +490,9 @@ function NonResultBubbles({ state }: { state: Exclude<ItemAnalysisState, { statu
       ? state.requirements ?? []
       : state.status === 'insufficient-evidence'
         ? [
-            ...(state.evidence ?? []),
-            ...state.suggestedPhotos.map((photo) => photo.label),
-          ]
+          ...(state.evidence ?? []),
+          ...state.suggestedPhotos.map((photo) => photo.label),
+        ]
         : state.code
           ? [`Error code: ${state.code}`]
           : [];

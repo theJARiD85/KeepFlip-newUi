@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.appodeal.ads.nativead.NativeAdView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/expoAppodealNativeAdView"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="350dp"
+    android:background="@drawable/expo_appodeal_native_ad_card"
+    android:padding="14dp"
+    app:adChoicePosition="end_top"
+    app:adAttributionViewId="@id/expoAppodealAdAttribution"
+    app:callToActionViewId="@id/expoAppodealCallToAction"
+    app:descriptionViewId="@id/expoAppodealDescription"
+    app:iconViewId="@id/expoAppodealIcon"
+    app:mediaViewId="@id/expoAppodealMedia"
+    app:ratingViewId="@id/expoAppodealRating"
+    app:titleViewId="@id/expoAppodealTitle"
+    tools:visibility="visible">
+
+  <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+      <TextView
+          android:id="@+id/expoAppodealAdAttribution"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:background="@drawable/expo_appodeal_native_ad_badge"
+          android:text="AD"
+          android:textColor="#FF030305"
+          android:textSize="9sp"
+          android:textStyle="bold" />
+
+      <TextView
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginStart="8dp"
+          android:fontFamily="sans-serif-medium"
+          android:letterSpacing="0.18"
+          android:text="SPONSORED"
+          android:textColor="#FFD7A84A"
+          android:textSize="9sp" />
+    </LinearLayout>
+
+    <com.appodeal.ads.nativead.NativeMediaView
+        android:id="@+id/expoAppodealMedia"
+        android:layout_width="match_parent"
+        android:layout_height="190dp"
+        android:minWidth="120dp"
+        android:minHeight="120dp"
+        android:background="@drawable/expo_appodeal_native_ad_media" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:gravity="top"
+        android:orientation="horizontal">
+
+      <com.appodeal.ads.nativead.NativeIconView
+          android:id="@+id/expoAppodealIcon"
+          android:layout_width="58dp"
+          android:layout_height="58dp"
+          android:layout_marginEnd="12dp"
+          android:background="@drawable/expo_appodeal_native_ad_media" />
+
+      <LinearLayout
+          android:layout_width="0dp"
+          android:layout_height="wrap_content"
+          android:layout_weight="1"
+          android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/expoAppodealTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif-medium"
+            android:maxLines="2"
+            android:minHeight="24dp"
+            android:textColor="#FFF6EBD1"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            tools:text="Advertiser title appears here" />
+
+        <TextView
+            android:id="@+id/expoAppodealDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:ellipsize="end"
+            android:maxLength="100"
+            android:maxLines="3"
+            android:textColor="#FFAAA4B4"
+            android:textSize="12sp"
+            tools:text="Advertiser description appears here." />
+
+        <RatingBar
+            android:id="@+id/expoAppodealRating"
+            style="?android:attr/ratingBarStyleSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:isIndicator="true"
+            android:numStars="5"
+            android:stepSize="0.5" />
+      </LinearLayout>
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/expoAppodealCallToAction"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/expo_appodeal_native_ad_cta"
+        android:fontFamily="sans-serif-medium"
+        android:gravity="center"
+        android:maxLines="2"
+        android:minHeight="50dp"
+        android:paddingStart="16dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="10dp"
+        android:textAllCaps="false"
+        android:textColor="#FF030305"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        tools:text="Learn more" />
+  </LinearLayout>
+</com.appodeal.ads.nativead.NativeAdView>

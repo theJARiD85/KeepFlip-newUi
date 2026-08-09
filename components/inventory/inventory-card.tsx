@@ -1,13 +1,18 @@
 import { Image, type ImageSource } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { resolveInventoryCoverImageUri } from "@/services/inventory-cover-image";
 import type { InventoryItem } from "@/services/inventory-service";
 
+type CoverImageSource = ImageSource | number | string;
+
 function formatMoney(value: number | null, currency: string) {
-  if (value == null) return "Value pending";
+  if (value == null) return "—";
 
   try {
     return new Intl.NumberFormat("en-US", {
@@ -22,247 +27,537 @@ function formatMoney(value: number | null, currency: string) {
 
 function formatDate(value: string) {
   const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "Recently scanned";
+  if (Number.isNaN(parsed.getTime())) return "RECENT SCAN";
 
-  return parsed.toLocaleDateString(undefined, {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return parsed
+    .toLocaleDateString(undefined, {
+      day: "numeric",
+      month: "short",
+    })
+    .toUpperCase();
+}
+
+function displaySignal(value: string | null) {
+  return value?.replace(/_/g, " ").toUpperCase() || null;
 }
 
 export function InventoryCard({
   coverImageSource,
   item,
   onPress,
+  onRepairPress,
 }: {
-  coverImageSource?: ImageSource | number;
+  coverImageSource?: CoverImageSource;
   item: InventoryItem;
   onPress: () => void;
+  onRepairPress?: () => void;
 }) {
+  const coverPhotoId = item.coverPhotoId;
+  const coverKey = coverPhotoId ?? "";
+  const [coverState, setCoverState] = useState({
+    key: "",
+    uri: null as string | null,
+    unavailable: false,
+  });
   const meta = [item.brand, item.model, item.category]
     .filter(Boolean)
-    .join(" · ");
+    .join(" / ");
+  const resolvedSource =
+    coverImageSource ??
+    (coverState.key === coverKey && coverState.uri
+      ? { uri: coverState.uri }
+      : null);
+  const imageUnavailable =
+    !coverImageSource &&
+    coverState.key === coverKey &&
+    coverState.unavailable;
+  const hasValuation = item.estimatedValue != null;
+  const flipDecision = displaySignal(item.flipDecision ?? item.flipVerdict);
+  const resaleVelocity = displaySignal(item.resaleVelocity);
+
+  useEffect(() => {
+    let active = true;
+
+    if (coverImageSource) {
+      return () => {
+        active = false;
+      };
+    }
+
+    void (coverPhotoId
+      ? resolveInventoryCoverImageUri(coverPhotoId)
+      : Promise.resolve(null))
+      .then((uri) => {
+        if (!active) return;
+        setCoverState({
+          key: coverKey,
+          uri,
+          unavailable: !uri,
+        });
+      })
+      .catch(() => {
+        if (!active) return;
+        setCoverState({
+          key: coverKey,
+          uri: null,
+          unavailable: true,
+        });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [coverImageSource, coverKey, coverPhotoId]);
 
   return (
-    <Pressable
-      accessibilityHint="Opens the saved KeepFlip analysis and captured item evidence"
-      accessibilityLabel={`Open analysis for ${item.title}`}
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.card,
-        pressed && styles.cardPressed,
-      ]}
-    >
-      <View style={styles.cardTopRow}>
-        <View style={styles.cardIcon}>
-          {coverImageSource ? (
-            <Image
-              accessibilityLabel={`${item.title} cover photo`}
-              contentFit="cover"
-              source={coverImageSource}
-              style={styles.cardCoverImage}
-              transition={160}
-            />
-          ) : (
+    <View style={styles.card}>
+      <Pressable
+        accessibilityHint="Opens the saved KeepFlip analysis and captured item evidence"
+        accessibilityLabel={`Open analysis for ${item.title}`}
+        accessibilityRole="button"
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.cardPressTarget,
+          pressed && styles.cardPressed,
+        ]}
+      >
+      <View style={styles.hero}>
+        {resolvedSource && !imageUnavailable ? (
+          <Image
+            accessibilityLabel={`${item.title} cover photo`}
+            contentFit="cover"
+            onError={() =>
+              setCoverState((current) =>
+                current.key === coverKey
+                  ? { ...current, unavailable: true }
+                  : current,
+              )
+            }
+            source={resolvedSource}
+            style={styles.coverImage}
+            transition={180}
+          />
+        ) : (
+          <View style={styles.coverFallback}>
             <IconSymbol
               color={theme.colors.goldBright}
-              name="shippingbox.fill"
-              size={22}
+              name="photo.on.rectangle.angled"
+              size={36}
             />
-          )}
+            <Text style={styles.fallbackLabel}>
+              {item.coverPhotoId ? "LOADING COVER" : "NO COVER PHOTO"}
+            </Text>
+          </View>
+        )}
+
+        <LinearGradient
+          colors={[
+            "rgba(1, 1, 2, 0.04)",
+            "rgba(1, 1, 2, 0.14)",
+            "rgba(1, 1, 2, 0.94)",
+          ]}
+          locations={[0, 0.42, 1]}
+          pointerEvents="none"
+          style={styles.heroShade}
+        />
+
+        <View pointerEvents="none" style={styles.heroTopRail}>
+          <View style={styles.photoPill}>
+            <IconSymbol
+              color={theme.colors.scannerCyan}
+              name="photo.on.rectangle.angled"
+              size={12}
+            />
+            <Text style={styles.photoPillText}>
+              {item.photoCount} {item.photoCount === 1 ? "PHOTO" : "PHOTOS"}
+            </Text>
+          </View>
+
+          <View style={styles.conditionPill}>
+            <Text numberOfLines={1} style={styles.conditionText}>
+              {item.condition}
+            </Text>
+            {flipDecision && flipDecision !== "UNKNOWN" ? (
+              <Text numberOfLines={1} style={styles.flipDecisionText}>
+                {flipDecision}{resaleVelocity ? ` / ${resaleVelocity}` : ""}
+              </Text>
+            ) : null}
+          </View>
         </View>
-        <View style={styles.cardTitleCopy}>
-          <Text numberOfLines={2} selectable style={styles.cardTitle}>
+
+        <View pointerEvents="none" style={styles.heroCopy}>
+          <Text numberOfLines={2} selectable style={styles.title}>
             {item.title}
           </Text>
           {meta ? (
-            <Text numberOfLines={2} selectable style={styles.cardMeta}>
+            <Text numberOfLines={2} selectable style={styles.meta}>
               {meta}
             </Text>
           ) : null}
         </View>
-        {item.aiConfidence != null ? (
-          <View style={styles.confidencePill}>
-            <Text style={styles.confidenceValue}>{item.aiConfidence}%</Text>
-            <Text style={styles.confidenceLabel}>CONFIDENCE</Text>
-          </View>
-        ) : null}
       </View>
 
-      <View style={styles.cardDivider} />
+      <View
+        style={[
+          styles.valuationDivider,
+          !hasValuation && styles.valuationDividerPending,
+        ]}
+      >
+        <LinearGradient
+          colors={[
+            theme.colors.scannerViolet,
+            theme.colors.goldBright,
+            theme.colors.scannerCyan,
+          ]}
+          end={{ x: 1, y: 0.5 }}
+          locations={[0, 0.5, 1]}
+          start={{ x: 0, y: 0.5 }}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={styles.dividerMedianMarker} />
+      </View>
 
-      <View style={styles.metricRow}>
-        <View style={styles.metricBlock}>
-          <Text style={styles.metricEyebrow}>ESTIMATED VALUE</Text>
-          <Text selectable style={styles.valueText}>
+      <View style={styles.valuationSummary}>
+        <View style={styles.savedAt}>
+          <Text style={styles.savedAtLabel}>SAVED</Text>
+          <Text style={styles.savedAtValue}>{formatDate(item.createdAt)}</Text>
+        </View>
+
+        <View style={styles.medianBlock}>
+          <Text style={styles.medianLabel}>
+            {hasValuation ? "MARKET MEDIAN" : "MARKET VALUE"}
+          </Text>
+          <Text selectable style={styles.medianValue}>
             {formatMoney(item.estimatedValue, item.currency)}
           </Text>
         </View>
-        <View style={styles.metricBlockRight}>
-          <Text style={styles.metricEyebrow}>OBSERVED CONDITION</Text>
-          <Text selectable style={styles.conditionText}>
-            {item.condition}
+
+        <View style={styles.confidenceBlock}>
+          <Text style={styles.confidenceValue}>
+            {item.aiConfidence == null ? "—" : `${item.aiConfidence}%`}
           </Text>
+          <Text style={styles.confidenceLabel}>CONFIDENCE</Text>
         </View>
       </View>
+      </Pressable>
 
-      {item.conditionNotes ? (
-        <Text numberOfLines={3} selectable style={styles.notes}>
-          {item.conditionNotes}
-        </Text>
-      ) : null}
-
-      <View style={styles.cardFooter}>
-        <Text style={styles.footerText}>{formatDate(item.createdAt)}</Text>
-        <View style={styles.photoCount}>
-          <IconSymbol
-            color={theme.colors.scannerCyan}
-            name="photo.on.rectangle.angled"
-            size={13}
+      {onRepairPress ? (
+        <Pressable
+          accessibilityHint={`Describe an issue and research a repair for ${item.title}`}
+          accessibilityLabel={`Repair intelligence for ${item.title}`}
+          accessibilityRole="button"
+          onPress={onRepairPress}
+          style={({ pressed }) => [
+            styles.repairButton,
+            pressed && styles.repairButtonPressed,
+          ]}
+        >
+          <LinearGradient
+            colors={[
+              "rgba(141, 114, 255, 0.22)",
+              "rgba(0, 255, 255, 0.16)",
+              "rgba(242, 211, 138, 0.18)",
+            ]}
+            end={{ x: 1, y: 0.5 }}
+            pointerEvents="none"
+            start={{ x: 0, y: 0.5 }}
+            style={StyleSheet.absoluteFill}
           />
-          <Text style={styles.photoCountText}>{item.photoCount}</Text>
-        </View>
-      </View>
-    </Pressable>
+          <View style={styles.repairButtonIcon}>
+            <IconSymbol
+              color={theme.colors.scannerCyan}
+              name="wrench.and.screwdriver.fill"
+              size={17}
+            />
+          </View>
+          <View style={styles.repairButtonCopy}>
+            <Text style={styles.repairButtonEyebrow}>SYMPTOM-LED RESEARCH</Text>
+            <Text style={styles.repairButtonLabel}>Repair intelligence</Text>
+          </View>
+          <IconSymbol
+            color={theme.colors.goldBright}
+            name="arrow.right"
+            size={18}
+          />
+        </Pressable>
+      ) : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    gap: 14,
-    padding: 18,
+    overflow: "hidden",
     borderRadius: theme.radii.large,
     borderCurve: "continuous",
     borderWidth: 1,
-    borderColor: "rgba(215, 168, 74, 0.30)",
-    backgroundColor: "rgba(7, 7, 11, 0.92)",
-    experimental_backgroundImage: `
-      radial-gradient(circle at 88% 8%, rgba(88, 223, 232, 0.08) 0%, transparent 34%),
-      linear-gradient(145deg, rgba(18, 15, 22, 0.98) 0%, rgba(5, 5, 8, 0.98) 72%)
-    `,
+    borderColor: "rgba(215, 168, 74, 0.32)",
+    backgroundColor: "rgba(5, 5, 8, 0.98)",
     boxShadow:
-      "0 16px 40px rgba(0, 0, 0, 0.44), 0 0 24px rgba(215, 168, 74, 0.08)",
+      "0 18px 42px rgba(0, 0, 0, 0.46), 0 0 28px rgba(215, 168, 74, 0.08)",
+  },
+  cardPressTarget: {
+    backgroundColor: "rgba(5, 5, 8, 0.98)",
   },
   cardPressed: {
-    opacity: 0.82,
+    opacity: 0.86,
     transform: [{ scale: 0.985 }],
   },
-  cardTopRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
+  hero: {
+    height: 216,
+    justifyContent: "space-between",
+    backgroundColor: "#08070C",
   },
-  cardIcon: {
-    width: 44,
-    height: 44,
-    overflow: "hidden",
+  coverImage: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  },
+  coverFallback: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: theme.radii.medium,
-    borderWidth: 1,
-    borderColor: "rgba(242, 211, 138, 0.38)",
-    backgroundColor: "rgba(215, 168, 74, 0.12)",
+    gap: 8,
+    backgroundColor: "#08070C",
+    experimental_backgroundImage:
+      "radial-gradient(circle at 50% 26%, rgba(141, 114, 255, 0.28) 0%, transparent 34%), radial-gradient(circle at 74% 72%, rgba(88, 223, 232, 0.16) 0%, transparent 38%), linear-gradient(145deg, #100B18 0%, #030305 76%)",
   },
-  cardCoverImage: {
-    width: "100%",
-    height: "100%",
-  },
-  cardTitleCopy: {
-    flex: 1,
-    minWidth: 0,
-    gap: 4,
-  },
-  cardTitle: {
-    color: theme.colors.cream,
-    fontSize: 18,
-    lineHeight: 23,
-    fontWeight: "900",
-  },
-  cardMeta: {
-    color: theme.colors.textMuted,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  confidencePill: {
-    minWidth: 58,
-    alignItems: "center",
-    gap: 2,
-    paddingHorizontal: 8,
-    paddingVertical: 7,
-    borderRadius: theme.radii.medium,
-    borderWidth: 1,
-    borderColor: "rgba(88, 223, 232, 0.34)",
-    backgroundColor: "rgba(88, 223, 232, 0.08)",
-  },
-  confidenceValue: {
-    color: theme.colors.scannerCyan,
-    fontSize: 15,
-    fontWeight: "900",
-  },
-  confidenceLabel: {
-    color: theme.colors.textMuted,
-    fontSize: 7,
-    fontWeight: "900",
-    letterSpacing: 0.7,
-  },
-  cardDivider: {
-    height: 1,
-    backgroundColor: "rgba(242, 211, 138, 0.14)",
-  },
-  metricRow: {
-    flexDirection: "row",
-    gap: 14,
-  },
-  metricBlock: {
-    flex: 1,
-    gap: 4,
-  },
-  metricBlockRight: {
-    flex: 1,
-    gap: 4,
-    alignItems: "flex-end",
-  },
-  metricEyebrow: {
-    color: theme.colors.textMuted,
+  fallbackLabel: {
+    color: "rgba(242, 211, 138, 0.72)",
+    fontFamily: theme.fonts.radar,
     fontSize: 8,
     fontWeight: "900",
     letterSpacing: 1.1,
   },
-  valueText: {
-    color: theme.colors.goldBright,
-    fontSize: 21,
-    fontWeight: "900",
+  heroShade: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
   },
-  conditionText: {
-    color: theme.colors.scannerViolet,
-    fontSize: 16,
-    fontWeight: "900",
-  },
-  notes: {
-    color: theme.colors.textMuted,
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  cardFooter: {
+  heroTopRail: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 10,
+    padding: 14,
   },
-  footerText: {
-    color: theme.colors.textMuted,
-    fontSize: 10,
-    fontWeight: "700",
-  },
-  photoCount: {
+  photoPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: theme.radii.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(88, 223, 232, 0.42)",
+    backgroundColor: "rgba(0, 8, 13, 0.70)",
   },
-  photoCountText: {
+  photoPillText: {
     color: theme.colors.scannerCyan,
-    fontSize: 11,
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
     fontWeight: "900",
+    letterSpacing: 0.75,
+  },
+  conditionPill: {
+    maxWidth: "58%",
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: theme.radii.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(242, 211, 138, 0.36)",
+    backgroundColor: "rgba(7, 5, 10, 0.72)",
+  },
+  conditionText: {
+    color: theme.colors.goldBright,
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+  },
+  flipDecisionText: {
+    color: theme.colors.scannerCyan,
+    fontFamily: theme.fonts.radar,
+    fontSize: 7,
+    fontWeight: "900",
+    letterSpacing: 0.7,
+    marginTop: 3,
+    textTransform: "uppercase",
+  },
+  heroCopy: {
+    gap: 5,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  title: {
+    color: "#FFFFFF",
+    fontFamily: theme.fonts.bold,
+    fontSize: 21,
+    lineHeight: 25,
+    fontWeight: "900",
+    letterSpacing: -0.3,
+    textShadowColor: "rgba(0, 0, 0, 0.96)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 7,
+  },
+  meta: {
+    color: "rgba(235, 241, 244, 0.78)",
+    fontFamily: theme.fonts.radar,
+    fontSize: 9,
+    lineHeight: 13,
+    fontWeight: "800",
+    letterSpacing: 0.4,
+    textShadowColor: "rgba(0, 0, 0, 0.98)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  valuationDivider: {
+    height: 7,
+    overflow: "visible",
+    backgroundColor: theme.colors.goldBright,
+    boxShadow:
+      "0 0 12px rgba(141, 114, 255, 0.46), 0 0 18px rgba(242, 211, 138, 0.56), 0 0 12px rgba(88, 223, 232, 0.42)",
+  },
+  valuationDividerPending: {
+    opacity: 0.36,
+  },
+  dividerMedianMarker: {
+    position: "absolute",
+    top: -3,
+    left: "50%",
+    width: 2,
+    height: 13,
+    marginLeft: -1,
+    backgroundColor: "#FFFFFF",
+    boxShadow: "0 0 8px rgba(255, 255, 255, 0.96)",
+  },
+  valuationSummary: {
+    position: "relative",
+    minHeight: 88,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    backgroundColor: "rgba(5, 5, 8, 0.98)",
+    experimental_backgroundImage:
+      "radial-gradient(circle at 50% 0%, rgba(242, 211, 138, 0.13) 0%, transparent 48%), linear-gradient(90deg, rgba(141, 114, 255, 0.08) 0%, rgba(5, 5, 8, 0) 28%, rgba(5, 5, 8, 0) 72%, rgba(88, 223, 232, 0.08) 100%)",
+  },
+  savedAt: {
+    position: "absolute",
+    bottom: 18,
+    left: 16,
+    gap: 3,
+  },
+  savedAtLabel: {
+    color: "rgba(255, 255, 255, 0.38)",
+    fontFamily: theme.fonts.radar,
+    fontSize: 7,
+    fontWeight: "900",
+    letterSpacing: 0.8,
+  },
+  savedAtValue: {
+    color: "rgba(255, 255, 255, 0.66)",
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+  },
+  medianBlock: {
+    alignItems: "center",
+    gap: 3,
+  },
+  medianLabel: {
+    color: "rgba(242, 211, 138, 0.70)",
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 1.1,
+  },
+  medianValue: {
+    color: theme.colors.goldBright,
+    fontFamily: theme.fonts.radar,
+    fontSize: 27,
+    lineHeight: 31,
+    fontWeight: "900",
+    fontVariant: ["tabular-nums"],
+    textShadowColor: "rgba(242, 211, 138, 0.52)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 9,
+  },
+  confidenceBlock: {
+    position: "absolute",
+    right: 16,
+    bottom: 17,
+    alignItems: "flex-end",
+    gap: 3,
+  },
+  confidenceValue: {
+    color: theme.colors.scannerCyan,
+    fontFamily: theme.fonts.radar,
+    fontSize: 16,
+    fontWeight: "900",
+    fontVariant: ["tabular-nums"],
+    textShadowColor: "rgba(88, 223, 232, 0.58)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 7,
+  },
+  confidenceLabel: {
+    color: "rgba(88, 223, 232, 0.60)",
+    fontFamily: theme.fonts.radar,
+    fontSize: 7,
+    fontWeight: "900",
+    letterSpacing: 0.65,
+  },
+  repairButton: {
+    position: "relative",
+    minHeight: 66,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 11,
+    paddingHorizontal: 15,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(0, 255, 255, 0.28)",
+    backgroundColor: "rgba(4, 8, 12, 0.96)",
+  },
+  repairButtonPressed: {
+    opacity: 0.76,
+  },
+  repairButtonIcon: {
+    width: 34,
+    height: 34,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: theme.radii.small,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(0, 255, 255, 0.42)",
+    backgroundColor: "rgba(0, 255, 255, 0.08)",
+    boxShadow: "0 0 16px rgba(0, 255, 255, 0.16)",
+  },
+  repairButtonCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  repairButtonEyebrow: {
+    color: "rgba(0, 255, 255, 0.66)",
+    fontFamily: theme.fonts.radar,
+    fontSize: 7,
+    fontWeight: "900",
+    letterSpacing: 0.75,
+  },
+  repairButtonLabel: {
+    color: theme.colors.cream,
+    fontFamily: theme.fonts.bold,
+    fontSize: 15,
+    fontWeight: "900",
+    letterSpacing: -0.12,
   },
 });

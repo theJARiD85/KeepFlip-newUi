@@ -9,9 +9,21 @@ import {
 import {
   ITEM_ANALYSIS_CONTRACT_VERSION,
   type ItemAnalysisSuccess,
+  type ItemMarketFlipComplexity,
+  type ItemMarketFlipDecision,
+  type ItemMarketResaleVelocity,
 } from '@/types/item-analysis';
 
 const ANALYSIS_SNAPSHOT_COLUMN = 'analysisSnapshotJson';
+const INVENTORY_RESELLER_COLUMNS = [
+  'acquisitionCostCents',
+  'flipDecision',
+  'flipVerdict',
+  'resaleVelocity',
+  'resaleTypicalDays',
+  'flipComplexity',
+  'flipDecisionConfidence',
+] as const;
 const ANALYSIS_SNAPSHOT_SCHEMA_VERSION = 1 as const;
 const MAX_ANALYSIS_SNAPSHOT_CHARACTERS = 500_000;
 
@@ -25,6 +37,13 @@ const INVENTORY_LIST_COLUMNS = [
   'status',
   'estimatedValueCents',
   'aiConfidence',
+  'acquisitionCostCents',
+  'flipDecision',
+  'flipVerdict',
+  'resaleVelocity',
+  'resaleTypicalDays',
+  'flipComplexity',
+  'flipDecisionConfidence',
   'coverPhotoId',
   'modelFile',
   'photoCount',
@@ -38,6 +57,22 @@ type PersistedAnalysisSnapshot = {
 };
 
 export type InventoryItemStatus = 'keep' | 'flip' | 'undecided';
+export type InventoryFlipDecision = ItemMarketFlipDecision['verdict'];
+export type InventoryFlipVerdict = ItemMarketFlipDecision['verdict'];
+export type InventoryResaleVelocity = ItemMarketResaleVelocity['demand'];
+export type InventoryFlipComplexity = ItemMarketFlipComplexity['level'];
+export type InventoryListSort =
+  | 'newest'
+  | 'resale_speed'
+  | 'decision_confidence';
+
+export type InventoryListOptions = {
+  flipDecision?: InventoryFlipDecision;
+  /** @deprecated Use flipDecision for new inventory filters. */
+  flipVerdict?: InventoryFlipVerdict;
+  resaleVelocity?: InventoryResaleVelocity;
+  sort?: InventoryListSort;
+};
 
 export type InventoryItem = {
   id: string;
@@ -49,8 +84,15 @@ export type InventoryItem = {
   conditionNotes: string;
   status: InventoryItemStatus;
   estimatedValue: number | null;
+  acquisitionCost: number | null;
   currency: string;
   aiConfidence: number | null;
+  flipDecision: InventoryFlipDecision | null;
+  flipVerdict: InventoryFlipVerdict | null;
+  resaleVelocity: InventoryResaleVelocity | null;
+  resaleTypicalDays: number | null;
+  flipComplexity: InventoryFlipComplexity | null;
+  flipDecisionConfidence: number | null;
   coverPhotoId: string | null;
   modelFile: string | null;
   photoCount: number;
@@ -70,7 +112,14 @@ type InventoryRow = {
   description?: string | null;
   status?: string | null;
   estimatedValueCents?: number | null;
+  acquisitionCostCents?: number | null;
   aiConfidence?: number | null;
+  flipDecision?: string | null;
+  flipVerdict?: string | null;
+  resaleVelocity?: string | null;
+  resaleTypicalDays?: number | null;
+  flipComplexity?: string | null;
+  flipDecisionConfidence?: number | null;
   coverPhotoId?: string | null;
   modelFile?: string | null;
   photoCount?: number | null;
@@ -90,6 +139,7 @@ type ItemPhotoRow = {
 
 export type SaveAnalyzedItemInput = {
   analysis: ItemAnalysisSuccess;
+  acquisitionCost?: number | null;
   modelFile?: string | null;
   ownerId: string;
   scanId: string;
@@ -98,6 +148,12 @@ export type SaveAnalyzedItemInput = {
 export type SaveAnalyzedItemResult = {
   item: InventoryItem;
   photoWarning: string | null;
+};
+
+export type UpdateInventoryAnalysisSnapshotInput = {
+  analysis: ItemAnalysisSuccess;
+  itemId: string;
+  ownerId: string;
 };
 
 function ownerPermissions(ownerId: string) {
@@ -200,6 +256,77 @@ function confidencePercent(value: number | null | undefined) {
   return Math.round(Math.max(0, Math.min(100, normalized)));
 }
 
+function amountFromCents(value: number | null | undefined) {
+  const cents = Number(value);
+  return Number.isFinite(cents) && cents >= 0 ? Math.round(cents) / 100 : null;
+}
+
+function centsFromAmount(value: number | null | undefined) {
+  if (value == null || !Number.isFinite(value) || value < 0) return null;
+  const cents = Math.round(value * 100);
+  return cents <= 2_147_483_647 ? cents : null;
+}
+
+function normalizedFlipVerdict(
+  value: string | null | undefined,
+): InventoryFlipVerdict | null {
+  return value === 'flip' ||
+    value === 'conditional_flip' ||
+    value === 'sell_as_is' ||
+    value === 'part_out' ||
+    value === 'skip' ||
+    value === 'unknown'
+    ? value
+    : null;
+}
+
+function normalizedResaleVelocity(
+  value: string | null | undefined,
+): InventoryResaleVelocity | null {
+  return value === 'fast' ||
+    value === 'moderate' ||
+    value === 'slow' ||
+    value === 'unknown'
+    ? value
+    : null;
+}
+
+function normalizedFlipComplexity(
+  value: string | null | undefined,
+): InventoryFlipComplexity | null {
+  return value === 'easy' ||
+    value === 'moderate' ||
+    value === 'complex' ||
+    value === 'unknown'
+    ? value
+    : null;
+}
+
+function normalizedResaleDays(value: number | null | undefined) {
+  if (value == null || !Number.isFinite(value)) return null;
+  const days = Math.round(value);
+  return days >= 0 && days <= 3_650 ? days : null;
+}
+
+function inventoryResellerSignals(analysis: ItemAnalysisSuccess) {
+  const market = analysis.marketResearch;
+  const flipDecision = normalizedFlipVerdict(market?.flipDecision?.verdict);
+  return {
+    // Keep the legacy display field and the enum field aligned. The enum is
+    // the preferred filter key; flipVerdict preserves readable compatibility.
+    flipDecision,
+    flipVerdict: flipDecision,
+    resaleVelocity: normalizedResaleVelocity(market?.marketVelocity?.demand),
+    resaleTypicalDays: normalizedResaleDays(
+      market?.marketVelocity?.typicalDays,
+    ),
+    flipComplexity: normalizedFlipComplexity(market?.flipComplexity?.level),
+    flipDecisionConfidence: confidencePercent(
+      market?.flipDecision?.confidencePercent,
+    ),
+  };
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
@@ -272,7 +399,7 @@ function parseAnalysisSnapshot(value: string | null | undefined) {
   }
 }
 
-function isAnalysisSnapshotSchemaError(error: unknown) {
+function isInventorySchemaError(error: unknown) {
   const source = isRecord(error) ? error : null;
   const message =
     error instanceof Error
@@ -283,22 +410,76 @@ function isAnalysisSnapshotSchemaError(error: unknown) {
   const type = typeof source?.type === 'string' ? source.type : '';
 
   return (
-    message.toLowerCase().includes(ANALYSIS_SNAPSHOT_COLUMN.toLowerCase()) ||
+    [ANALYSIS_SNAPSHOT_COLUMN, ...INVENTORY_RESELLER_COLUMNS].some((column) =>
+      message.toLowerCase().includes(column.toLowerCase()),
+    ) ||
     /(?:row|document)_invalid_structure|unknown_(?:attribute|column)/i.test(type)
   );
 }
 
-function inventorySnapshotMigrationError(cause: unknown) {
+function inventorySchemaMigrationError(cause: unknown) {
   const error = new Error(
-    `KeepFlip's Appwrite items table needs an optional mediumtext column named ${ANALYSIS_SNAPSHOT_COLUMN} before analyzed items can be saved. Add the column, wait until it is available, then retry.`,
+    `KeepFlip's Appwrite items table needs ${ANALYSIS_SNAPSHOT_COLUMN} plus these optional reseller-intelligence columns before analyzed items can be saved: ${INVENTORY_RESELLER_COLUMNS.join(', ')}. Set flipDecisionConfidence to an integer range of 0 through 100, then wait until the columns are available and retry.`,
   );
   error.name = 'InventorySchemaMigrationError';
   (error as Error & { cause?: unknown }).cause = cause;
   return error;
 }
 
+function isMissingInventoryIndexError(cause: unknown) {
+  const source = cause as { message?: unknown; type?: unknown } | null;
+  const detail = [
+    cause instanceof Error ? cause.message : null,
+    typeof source?.message === 'string' ? source.message : null,
+    typeof source?.type === 'string' ? source.type : null,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  return /(?:index|indexed|query_invalid)/.test(detail);
+}
+
+function applyInventoryListOptions(
+  items: InventoryItem[],
+  options: InventoryListOptions,
+) {
+  const flipDecision = options.flipDecision ?? options.flipVerdict;
+  const filtered = items.filter((item) => {
+    if (
+      flipDecision &&
+      item.flipDecision !== flipDecision &&
+      item.flipVerdict !== flipDecision
+    ) {
+      return false;
+    }
+    return !options.resaleVelocity || item.resaleVelocity === options.resaleVelocity;
+  });
+
+  if (options.sort === 'resale_speed') {
+    return filtered.sort((left, right) => {
+      const leftDays = left.resaleTypicalDays ?? Number.MAX_SAFE_INTEGER;
+      const rightDays = right.resaleTypicalDays ?? Number.MAX_SAFE_INTEGER;
+      return leftDays - rightDays;
+    });
+  }
+
+  if (options.sort === 'decision_confidence') {
+    return filtered.sort(
+      (left, right) =>
+        (right.flipDecisionConfidence ?? -1) -
+        (left.flipDecisionConfidence ?? -1),
+    );
+  }
+
+  return filtered;
+}
+
 function rowToInventoryItem(row: InventoryRow): InventoryItem {
   const cents = Number(row.estimatedValueCents);
+  const flipDecision =
+    normalizedFlipVerdict(row.flipDecision) ??
+    normalizedFlipVerdict(row.flipVerdict);
   return {
     id: row.$id,
     title: row.title,
@@ -310,8 +491,15 @@ function rowToInventoryItem(row: InventoryRow): InventoryItem {
     status: normalizedStatus(row.status),
     estimatedValue:
       Number.isFinite(cents) && cents > 0 ? Math.round(cents) / 100 : null,
+    acquisitionCost: amountFromCents(row.acquisitionCostCents),
     currency: 'USD',
     aiConfidence: confidencePercent(row.aiConfidence),
+    flipDecision,
+    flipVerdict: normalizedFlipVerdict(row.flipVerdict) ?? flipDecision,
+    resaleVelocity: normalizedResaleVelocity(row.resaleVelocity),
+    resaleTypicalDays: normalizedResaleDays(row.resaleTypicalDays),
+    flipComplexity: normalizedFlipComplexity(row.flipComplexity),
+    flipDecisionConfidence: confidencePercent(row.flipDecisionConfidence),
     coverPhotoId: cleanText(row.coverPhotoId),
     modelFile: normalizedModelFile(row.modelFile),
     photoCount: Math.max(0, Number(row.photoCount) || 0),
@@ -408,6 +596,7 @@ async function attachExistingScan({
 
 export async function saveAnalyzedItemToInventory({
   analysis,
+  acquisitionCost,
   modelFile,
   ownerId,
   scanId,
@@ -428,6 +617,8 @@ export async function saveAnalyzedItemToInventory({
   const storedModelFile = normalizedModelFile(modelFile);
   const now = new Date().toISOString();
   const analysisSnapshotJson = serializeAnalysisSnapshot(analysis, now);
+  const acquisitionCostCents = centsFromAmount(acquisitionCost);
+  const resellerSignals = inventoryResellerSignals(analysis);
   const conditionNotes = [
     ...analysis.analysis.condition.notes,
     analysis.analysis.summary,
@@ -461,6 +652,8 @@ export async function saveAnalyzedItemToInventory({
           median != null && Number.isFinite(median) && median > 0
             ? Math.round(median * 100)
             : null,
+        acquisitionCostCents,
+        ...resellerSignals,
         originalRetailCents: null,
         coverPhotoId: null,
         modelFile: storedModelFile,
@@ -475,8 +668,8 @@ export async function saveAnalyzedItemToInventory({
       permissions: ownerPermissions(cleanOwnerId),
     })) as unknown as InventoryRow;
   } catch (error) {
-    if (isAnalysisSnapshotSchemaError(error)) {
-      throw inventorySnapshotMigrationError(error);
+    if (isInventorySchemaError(error)) {
+      throw inventorySchemaMigrationError(error);
     }
     throw error;
   }
@@ -502,6 +695,8 @@ export async function saveAnalyzedItemToInventory({
   return {
     item: rowToInventoryItem({
       ...created,
+      acquisitionCostCents,
+      ...resellerSignals,
       coverPhotoId: attached.coverPhotoId,
       modelFile: storedModelFile,
       photoCount: attached.photoCount,
@@ -512,22 +707,99 @@ export async function saveAnalyzedItemToInventory({
 
 export async function listInventoryItems(
   ownerId: string,
+  options: InventoryListOptions = {},
 ): Promise<InventoryItem[]> {
   assertInventoryConfigured();
   if (!ownerId.trim()) return [];
 
-  const response = await tablesDB.listRows({
+  const queries = [Query.equal('ownerId', [ownerId])];
+  const flipDecision = options.flipDecision ?? options.flipVerdict;
+  if (flipDecision) {
+    queries.push(Query.equal('flipDecision', [flipDecision]));
+  }
+  if (options.resaleVelocity) {
+    queries.push(Query.equal('resaleVelocity', [options.resaleVelocity]));
+  }
+
+  switch (options.sort) {
+    case 'resale_speed':
+      queries.push(Query.orderAsc('resaleTypicalDays'));
+      break;
+    case 'decision_confidence':
+      queries.push(Query.orderDesc('flipDecisionConfidence'));
+      break;
+    default:
+      queries.push(Query.orderDesc('createdAt'));
+      break;
+  }
+  queries.push(Query.limit(100), Query.select([...INVENTORY_LIST_COLUMNS]));
+
+  try {
+    const response = await tablesDB.listRows({
+      databaseId: APPWRITE.databaseId,
+      tableId: APPWRITE.itemsTableId,
+      queries,
+    });
+    return applyInventoryListOptions(
+      (response.rows as unknown as InventoryRow[]).map(rowToInventoryItem),
+      options,
+    );
+  } catch (cause) {
+    const requestedFilterOrSort =
+      Boolean(flipDecision || options.resaleVelocity) ||
+      options.sort === 'resale_speed' ||
+      options.sort === 'decision_confidence';
+
+    if (!requestedFilterOrSort || !isMissingInventoryIndexError(cause)) {
+      throw cause;
+    }
+
+    // A new column is readable before its Appwrite composite index is ready.
+    // Preserve usable controls for the first 100 items, while normal indexed
+    // queries take over automatically once the index exists.
+    const fallback = await tablesDB.listRows({
+      databaseId: APPWRITE.databaseId,
+      tableId: APPWRITE.itemsTableId,
+      queries: [
+        Query.equal('ownerId', [ownerId]),
+        Query.orderDesc('createdAt'),
+        Query.limit(100),
+        Query.select([...INVENTORY_LIST_COLUMNS]),
+      ],
+    });
+    return applyInventoryListOptions(
+      (fallback.rows as unknown as InventoryRow[]).map(rowToInventoryItem),
+      options,
+    );
+  }
+}
+
+export async function updateInventoryAnalysisSnapshot({
+  analysis,
+  itemId,
+  ownerId,
+}: UpdateInventoryAnalysisSnapshotInput): Promise<void> {
+  assertInventoryConfigured();
+  const cleanItemId = itemId.trim();
+  const cleanOwnerId = ownerId.trim();
+
+  if (!cleanItemId || !cleanOwnerId) {
+    throw new Error(
+      'KeepFlip needs the signed-in owner and inventory item before saving guidance.',
+    );
+  }
+
+  const savedAt = new Date().toISOString();
+
+  await tablesDB.updateRow({
     databaseId: APPWRITE.databaseId,
     tableId: APPWRITE.itemsTableId,
-    queries: [
-      Query.equal('ownerId', [ownerId]),
-      Query.orderDesc('createdAt'),
-      Query.limit(100),
-      Query.select([...INVENTORY_LIST_COLUMNS]),
-    ],
+    rowId: cleanItemId,
+    data: {
+      analysisSnapshotJson: serializeAnalysisSnapshot(analysis, savedAt),
+      updatedAt: savedAt,
+    },
   });
-
-  return (response.rows as unknown as InventoryRow[]).map(rowToInventoryItem);
 }
 
 export async function getInventoryItem(

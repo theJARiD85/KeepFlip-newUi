@@ -221,9 +221,56 @@ export type ItemProfitabilityAction = {
   confidencePercent: number | null;
 };
 
+export type ItemProfitabilityGuidance = {
+  actionTitle: string;
+  query: string;
+  references?: ItemMarketReference[];
+  safetyWarnings: string[];
+  searchedAt: string;
+  steps: string[];
+  summary: string | null;
+  toolsOrParts: string[];
+};
+
 export type ItemValuationRefinementQuestion = {
   prompt: string;
   reason: string | null;
+};
+
+export type ItemMarketResaleVelocity = {
+  demand: 'fast' | 'moderate' | 'slow' | 'unknown';
+  lowDays: number | null;
+  typicalDays: number | null;
+  highDays: number | null;
+  evidence: string | null;
+  confidence: 'high' | 'medium' | 'low';
+  confidencePercent: number | null;
+};
+
+export type ItemMarketFlipComplexity = {
+  level: 'easy' | 'moderate' | 'complex' | 'unknown';
+  summary: string | null;
+  requiredWork: string[];
+  partsOrTools: string[];
+  skillLevel: 'beginner' | 'intermediate' | 'advanced' | 'unknown';
+  safetyWarnings: string[];
+  confidence: 'high' | 'medium' | 'low';
+  confidencePercent: number | null;
+};
+
+export type ItemMarketFlipDecision = {
+  verdict:
+    | 'flip'
+    | 'conditional_flip'
+    | 'sell_as_is'
+    | 'part_out'
+    | 'skip'
+    | 'unknown';
+  summary: string | null;
+  assumptions: string[];
+  missingInputs: string[];
+  confidence: 'high' | 'medium' | 'low';
+  confidencePercent: number | null;
 };
 
 export type ItemMarketResearch = {
@@ -247,7 +294,11 @@ export type ItemMarketResearch = {
   } | null;
   factors?: string[];
   profitabilityActions?: ItemProfitabilityAction[];
+  profitabilityGuidance?: ItemProfitabilityGuidance[];
   refinementQuestions?: ItemValuationRefinementQuestion[];
+  marketVelocity?: ItemMarketResaleVelocity;
+  flipComplexity?: ItemMarketFlipComplexity;
+  flipDecision?: ItemMarketFlipDecision;
   suggestedDetails?: string[];
   answerMarkdown?: string | null;
   normalization?: {

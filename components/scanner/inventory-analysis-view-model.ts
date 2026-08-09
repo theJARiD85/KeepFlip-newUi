@@ -15,6 +15,10 @@ function displayText(value: string, maxLength: number) {
   return `${normalized.slice(0, maxLength - 1).trimEnd()}…`;
 }
 
+function displaySignal(value: string | null) {
+  return value?.replace(/_/g, " ").trim() || null;
+}
+
 export function inventoryItemToAnalysisState(
   item: InventoryItem,
 ): ResultState {
@@ -57,6 +61,24 @@ export function inventoryItemToAnalysisState(
           "This is the stored estimate from the original scan. Refresh market research before pricing for sale.",
       }
       : null,
+    item.flipDecision && item.flipDecision !== "unknown"
+      ? {
+        id: "saved-flip-decision",
+        label: "SAVED FLIP DECISION",
+        source: "Original KeepFlip analysis",
+        value: [
+          displaySignal(item.flipDecision),
+          item.resaleVelocity
+            ? `${displaySignal(item.resaleVelocity)} resale velocity`
+            : null,
+          item.resaleTypicalDays != null
+            ? `${item.resaleTypicalDays} typical resale days`
+            : null,
+        ]
+          .filter(Boolean)
+          .join(" / "),
+      }
+      : null,
   ].filter((entry): entry is NonNullable<typeof entry> => entry != null);
 
   return {
@@ -85,19 +107,39 @@ export function inventoryItemToAnalysisState(
       },
       profitPlan: {
         actions: [
+          item.flipDecision && item.flipDecision !== "unknown"
+            ? {
+              detail: [
+                `Stored decision: ${displaySignal(item.flipDecision)}.`,
+                item.flipComplexity
+                  ? `Complexity: ${displaySignal(item.flipComplexity)}.`
+                  : null,
+                item.flipDecisionConfidence != null
+                  ? `Decision confidence: ${item.flipDecisionConfidence}%.`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" "),
+              id: "saved-profit-flip-decision",
+              kind: "decision" as const,
+              label: "Use the stored flip decision",
+            }
+            : null,
           {
             detail:
               "Refresh market research before listing so the price reflects current demand.",
             id: "saved-profit-refresh",
+            kind: "enhancement" as const,
             label: "Refresh the market range",
           },
           {
             detail:
               "Record the item cost and selling channel before accepting an offer so margin decisions stay grounded.",
             id: "saved-profit-inputs",
+            kind: "enhancement" as const,
             label: "Complete the profit inputs",
           },
-        ],
+        ].filter((action): action is NonNullable<typeof action> => action != null),
         currency: item.currency,
         expectedSale: item.estimatedValue ?? undefined,
         listTarget: item.estimatedValue ?? undefined,

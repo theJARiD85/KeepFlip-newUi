@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   targetCaptionLabel: {
     flexShrink: 1,
     color: theme.colors.text,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 7,
     lineHeight: 9,
     letterSpacing: 0.8,
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
   },
   targetCaptionScore: {
     color: theme.colors.goldBright,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 6.5,
     lineHeight: 8,
     letterSpacing: 0.35,

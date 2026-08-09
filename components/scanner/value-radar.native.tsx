@@ -14,7 +14,7 @@ import { useValueRadar } from "@/components/scanner/value-radar-visual.native";
 export type {
   ValueRadarMarker,
   ValueRadarStatus,
-  ValueRadarViewport,
+  ValueRadarViewport
 } from "@/components/scanner/value-radar-visual.native";
 
 export { useValueRadar };
@@ -45,35 +45,35 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
   const horizontalInset = 4;
   const fallbackFocusTop = Math.max(68, height * 0.1);
   const fallbackFocusBottom = 18;
-  
+
   const focusScaleX =
     focusBounds != null
       ? width / Math.max(focusBounds.previewWidth, 1)
       : 1;
-  
+
   const focusScaleY =
     focusBounds != null
       ? height / Math.max(focusBounds.previewHeight, 1)
       : 1;
-  
+
   const focusX = focusBounds
     ? focusBounds.x * focusScaleX
     : horizontalInset;
-  
+
   const focusY = focusBounds
     ? focusBounds.y * focusScaleY
     : fallbackFocusTop;
-  
+
   const focusWidth = focusBounds
     ? focusBounds.width * focusScaleX
     : Math.max(0, width - horizontalInset * 2);
-  
+
   const focusHeight = focusBounds
     ? focusBounds.height * focusScaleY
     : Math.max(
-        120,
-        height - fallbackFocusTop - fallbackFocusBottom,
-      );
+      120,
+      height - fallbackFocusTop - fallbackFocusBottom,
+    );
 
   const sourceWidth = Math.max(marker?.sourceWidth ?? width, 1);
   const sourceHeight = Math.max(marker?.sourceHeight ?? height, 1);
@@ -120,10 +120,10 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
   const targetCenterY = targetTop + targetHeight / 2;
   const panelTop = avoidBottomAction
     ? clamp(
-        focusY + 14,
-        PANEL_MARGIN,
-        Math.max(PANEL_MARGIN, height - panelHeight - PANEL_MARGIN),
-      )
+      focusY + 14,
+      PANEL_MARGIN,
+      Math.max(PANEL_MARGIN, height - panelHeight - PANEL_MARGIN),
+    )
     : canPlaceBelow
       ? belowFocusTop
       : canPlaceAbove
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 9,
     lineHeight: 12,
     fontWeight: "900",
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
   },
   confidenceText: {
     color: theme.colors.goldBright,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 8,
     lineHeight: 10,
     fontWeight: "900",
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     color: "rgba(247, 242, 232, 0.64)",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 6.5,
     lineHeight: 8,
     letterSpacing: 0.5,

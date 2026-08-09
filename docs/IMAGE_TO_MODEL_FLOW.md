@@ -44,6 +44,32 @@ table:
 | --- | --- | --- | --- |
 | `analysisSnapshotJson` | mediumtext | no | no |
 
+For fast inventory filtering and sorting, also add these optional `items`
+columns. They are compact copies of the richer snapshot fields, not a second
+source of analysis truth.
+
+| Column | Type | Required | Indexed |
+| --- | --- | --- | --- |
+| `acquisitionCostCents` | integer | no | no |
+| `flipDecision` | enum | no | yes |
+| `flipVerdict` | string(24) | no | no |
+| `resaleVelocity` | string(16) | no | yes |
+| `resaleTypicalDays` | integer | no | yes |
+| `flipComplexity` | string(16) | no | no |
+| `flipDecisionConfidence` | integer | no | yes |
+
+Set the `flipDecision` enum values to `flip`, `conditional_flip`,
+`sell_as_is`, `part_out`, `skip`, and `unknown`. `flipDecisionConfidence`
+should be an integer with a range of 0–100.
+
+Create composite indexes that begin with `ownerId` for the inventory queries
+you enable—for example `ownerId + flipDecision + createdAt`,
+`ownerId + resaleVelocity + resaleTypicalDays`, and
+`ownerId + flipDecisionConfidence`. The mobile service supports filtering by
+verdict or velocity and sorting by resale speed or decision confidence. Until
+those indexes are ready, it safely filters and sorts the newest 100 rows on
+device, then automatically uses the indexed query once available.
+
 The app stores a normalized, versioned envelope containing the complete
 `ItemAnalysisSuccess` result. The current envelope is:
 

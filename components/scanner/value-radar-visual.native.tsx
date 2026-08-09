@@ -1,5 +1,8 @@
+import { useYoloV8Model } from "@/hooks/use-yolov8-model.native";
+import { Image } from 'expo-image';
 import { useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
+import type { TensorflowModelDelegate } from "react-native-fast-tflite";
 import Animated, {
   cancelAnimation,
   Easing,
@@ -10,9 +13,6 @@ import Animated, {
   withRepeat,
   withTiming,
 } from "react-native-reanimated";
-import type { TensorflowModelDelegate } from "react-native-fast-tflite";
-import { useYoloV8Model } from "@/hooks/use-yolov8-model.native";
-import { Image } from 'expo-image';
 import {
   type CameraFrameOutput,
   useFrameOutput,
@@ -20,7 +20,6 @@ import {
 import { useResizer } from "react-native-vision-camera-resizer";
 import { scheduleOnRN } from "react-native-worklets";
 
-import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import {
   YOLOV8_CANDIDATE_COUNT,
   YOLOV8_CLASS_COUNT,
@@ -29,6 +28,7 @@ import {
   YOLOV8_OUTPUT_ELEMENTS,
   yoloV8RadarCategoryLabel,
 } from "@/components/scanner/yolov8-radar";
+import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 
 const MIN_DETECTION_SCORE = 0.48;
@@ -360,15 +360,15 @@ export function useValueRadar(
           const centerX = detectionOutput[bestCandidate] ?? 0;
           const centerY =
             detectionOutput[
-              YOLOV8_CANDIDATE_COUNT + bestCandidate
+            YOLOV8_CANDIDATE_COUNT + bestCandidate
             ] ?? 0;
           const rawWidth =
             detectionOutput[
-              YOLOV8_CANDIDATE_COUNT * 2 + bestCandidate
+            YOLOV8_CANDIDATE_COUNT * 2 + bestCandidate
             ] ?? 0;
           const rawHeight =
             detectionOutput[
-              YOLOV8_CANDIDATE_COUNT * 3 + bestCandidate
+            YOLOV8_CANDIDATE_COUNT * 3 + bestCandidate
             ] ?? 0;
 
           if (
@@ -417,9 +417,9 @@ export function useValueRadar(
         const previewScale =
           viewport != null
             ? Math.max(
-                viewport.previewWidth / sourceWidth,
-                viewport.previewHeight / sourceHeight,
-              )
+              viewport.previewWidth / sourceWidth,
+              viewport.previewHeight / sourceHeight,
+            )
             : 0;
         const previewOffsetX =
           viewport != null
@@ -614,12 +614,12 @@ export function useValueRadar(
 
   const status: ValueRadarStatus =
     inferenceError ||
-    detector.state === "error" ||
-    resizerState.state === "error"
-    ? "error"
-    : detector.state === "loaded" && resizerState.state === "ready"
-      ? "ready"
-      : "loading";
+      detector.state === "error" ||
+      resizerState.state === "error"
+      ? "error"
+      : detector.state === "loaded" && resizerState.state === "ready"
+        ? "ready"
+        : "loading";
 
   return { frameOutput, marker, status };
 }
@@ -758,7 +758,7 @@ export function ValueRadarOverlay({
     72,
     Math.min(280, focusWidth - 12),
   );
-  
+
   const maxTargetHeight = Math.max(
     72,
     Math.min(320, focusHeight - 12),
@@ -1097,21 +1097,21 @@ const styles = StyleSheet.create({
   },
   statusName: {
     color: theme.colors.text,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 9,
     lineHeight: 11,
     letterSpacing: 1.2,
   },
   statusSeparator: {
     color: "rgba(141, 114, 255, 0.78)",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 8,
     lineHeight: 10,
   },
   statusState: {
     marginLeft: "auto",
     color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 8,
     lineHeight: 10,
     letterSpacing: 0.9,
@@ -1131,7 +1131,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     color: "rgba(247, 242, 232, 0.52)",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 6.5,
     lineHeight: 8,
     letterSpacing: 0.72,
@@ -1188,7 +1188,7 @@ const styles = StyleSheet.create({
   },
   acquisitionIndexText: {
     color: theme.colors.scannerViolet,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 7,
     lineHeight: 9,
     fontVariant: ["tabular-nums"],
@@ -1219,7 +1219,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     color: "rgba(247, 242, 232, 0.58)",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 6.5,
     lineHeight: 8,
     letterSpacing: 0.66,
@@ -1341,7 +1341,7 @@ const styles = StyleSheet.create({
   },
   targetIdText: {
     color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 6,
     lineHeight: 7,
     letterSpacing: 0.6,
@@ -1401,7 +1401,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 7.5,
     lineHeight: 9,
     letterSpacing: 1.1,
@@ -1416,7 +1416,7 @@ const styles = StyleSheet.create({
   },
   confidenceText: {
     color: theme.colors.goldBright,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 6.5,
     lineHeight: 8,
     fontVariant: ["tabular-nums"],
@@ -1438,7 +1438,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     color: "rgba(247, 242, 232, 0.5)",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 6.5,
     lineHeight: 8,
     letterSpacing: 0.48,

@@ -4,9 +4,13 @@ import {
   functions,
 } from "../lib/appwrite";
 import type { ItemValuationSignals } from "./itemAiService";
+import type {
+  ItemAnalysisSuccess,
+  ItemProfitabilityGuidance,
+} from "@/types/item-analysis";
 
 export const SERPAPI_IMAGE_VALUATION_BASE_QUERY =
-  "Give distinct information answers along with corresponding confidence values: exact item title, brand (if available), model (if available), observed condition, current resale market value, and any fixes or alters to enhance profitability.";
+  "Analyze the supplied item image using current, cited web and market evidence. First decide whether the photo supports a uniquely identifiable item or model. If it does not, do not make the analysis fail and do not force a valuation: return a short needs_more_identification fallback with only the broad visible category or brand, visible condition, unknown for the unsupported model, price, resale velocity, complexity, and verdict, plus 2-4 exact photos or details needed to identify it. Do not guess a model, price, repair, resale speed, or recommendation. If it does, give distinct labeled answers with a confidence percentage for every supported claim. Include: exact item title; brand; model or variant; observed condition; current resale market value; resale velocity with demand and estimated time-to-sell range; flip complexity with required work, parts or tools, skill level, and safety concerns; ranked item-specific profitability actions; and a flip verdict with rationale, assumptions, missing inputs, and confidence. Use unknown when evidence does not support a claim, and do not give a definite flip or skip verdict without acquisition cost, fees, shipping, and preparation costs.";
 const MAX_REFINEMENT_CONTEXT_LENGTH = 600;
 
 export type EbaySoldComp = {
@@ -130,9 +134,64 @@ export type SerpApiProfitabilityAction = {
   confidencePercent: number | null;
 };
 
+export type SerpApiProfitabilityGuidance = {
+  actionTitle: string;
+  itemTitle: string;
+  query: string;
+  references: SerpApiValuationReference[];
+  runId: string;
+  safetyWarnings: string[];
+  searchedAt: string;
+  steps: string[];
+  summary: string | null;
+  toolsOrParts: string[];
+};
+
+export type SerpApiProfitabilityGuidanceInput = {
+  actionTitle: string;
+  itemTitle: string;
+  profitabilityContext?: string;
+};
+
 export type SerpApiRefinementQuestion = {
   prompt: string;
   reason: string | null;
+};
+
+export type SerpApiResaleVelocity = {
+  demand: "fast" | "moderate" | "slow" | "unknown";
+  lowDays: number | null;
+  typicalDays: number | null;
+  highDays: number | null;
+  evidence: string | null;
+  confidence: MarketValueConfidence;
+  confidencePercent: number | null;
+};
+
+export type SerpApiFlipComplexity = {
+  level: "easy" | "moderate" | "complex" | "unknown";
+  summary: string | null;
+  requiredWork: string[];
+  partsOrTools: string[];
+  skillLevel: "beginner" | "intermediate" | "advanced" | "unknown";
+  safetyWarnings: string[];
+  confidence: MarketValueConfidence;
+  confidencePercent: number | null;
+};
+
+export type SerpApiFlipDecision = {
+  verdict:
+    | "flip"
+    | "conditional_flip"
+    | "sell_as_is"
+    | "part_out"
+    | "skip"
+    | "unknown";
+  summary: string | null;
+  assumptions: string[];
+  missingInputs: string[];
+  confidence: MarketValueConfidence;
+  confidencePercent: number | null;
 };
 
 export type SerpApiDisplayReadyResult = {
@@ -143,11 +202,11 @@ export type SerpApiDisplayReadyResult = {
   valuation: {
     label: string;
     rangeLabel: string | null;
-    low: number;
+    low: number | null;
     lowLabel: string | null;
-    median: number;
+    median: number | null;
     medianLabel: string | null;
-    high: number;
+    high: number | null;
     highLabel: string | null;
     currency: string;
     confidence: MarketValueConfidence;
@@ -159,6 +218,9 @@ export type SerpApiDisplayReadyResult = {
   suggestedDetails: string[];
   profitabilityActions: SerpApiProfitabilityAction[];
   refinementQuestions: SerpApiRefinementQuestion[];
+  marketVelocity: SerpApiResaleVelocity;
+  flipComplexity: SerpApiFlipComplexity;
+  flipDecision: SerpApiFlipDecision;
 };
 
 export type SerpApiNormalization = {
@@ -183,21 +245,22 @@ export type SerpApiImageValuationResult = {
   image: SerpApiImageReference | null;
   sourceImage: SerpApiImageReference | null;
   valuation: {
-    status: "ready";
+    status: "ready" | "needs_comps";
     currency: string;
     suppliedCount: number;
     usedCount: number;
     rejectedCount: number;
-    median: number;
-    p20: number;
-    p80: number;
-    methodology: "keepflip_ai_private_sale_range_v2";
-    source: "keepflip_ai";
+    median: number | null;
+    p20: number | null;
+    p80: number | null;
+    methodology: "keepflip_ai_private_sale_range_v2" | "none";
+    source: "keepflip_ai" | "none";
   };
   estimates: SerpApiValuationEstimate[];
   references: SerpApiValuationReference[];
   identification: string | null;
   identificationSummary: string | null;
+  identificationStatus: "identified" | "needs_identification";
   identity: SerpApiIdentityAssessment | null;
   display: SerpApiDisplayReadyResult;
   condition: SerpApiConditionAssessment | null;
@@ -205,6 +268,9 @@ export type SerpApiImageValuationResult = {
   suggestedDetails: string[];
   profitabilityActions: SerpApiProfitabilityAction[];
   refinementQuestions: SerpApiRefinementQuestion[];
+  marketVelocity: SerpApiResaleVelocity;
+  flipComplexity: SerpApiFlipComplexity;
+  flipDecision: SerpApiFlipDecision;
   reconstructedMarkdown: string | null;
   normalization: SerpApiNormalization | null;
   quality: {
@@ -294,6 +360,11 @@ function asNumber(value: unknown): number {
   }
 
   return 0;
+}
+
+function positiveNumberOrNull(value: unknown): number | null {
+  const number = asNumber(value);
+  return number > 0 ? number : null;
 }
 
 function isSynchronousExecutionTimeout(error: unknown) {
@@ -858,6 +929,9 @@ function asStringArray(value: unknown): string[] {
     : [];
 }
 
+const SERPAPI_FIELD_PREFIX =
+  /^(?:(?:exact[_\s]+item[_\s]+title|item[_\s]+identification|item[_\s]+name|brand|model(?:[_\s]+line|[_\s]+or[_\s]+variant)?|observed[_\s]+condition|current[_\s]+resale[_\s]+market[_\s]+value|resale[_\s]+velocity|flip[_\s]+complexity|item[_\s]+specific[_\s]+profitability[_\s]+actions|flip[_\s]+verdict)\s*:\s*)+/i;
+
 function cleanSerpApiIdentityText(value: unknown): string | null {
   const cleaned = toNullableString(value)
     ?.slice(0, 10_000)
@@ -873,9 +947,20 @@ function cleanSerpApiIdentityText(value: unknown): string | null {
     .replace(/\(\s*\)/g, " ")
     .replace(/\s+([,.;:!?])/g, "$1")
     .replace(/\s{2,}/g, " ")
+    .replace(SERPAPI_FIELD_PREFIX, "")
+    .replace(
+      /\s*(?:[-\u2012\u2013\u2014\u2212]|\u00e2\u20ac\u201d)?\s*confidence(?:\s+value)?\s*:\s*\d{1,3}(?:\.\d+)?\s*%\.?\s*$/i,
+      ""
+    )
     .trim();
 
   return cleaned || null;
+}
+
+function cleanSerpApiTextArray(value: unknown, maximumLength = 1_500) {
+  return asStringArray(value)
+    .map((entry) => cleanSerpApiIdentityText(entry)?.slice(0, maximumLength))
+    .filter((entry): entry is string => Boolean(entry));
 }
 
 function cleanSerpApiItemTitle(value: unknown): string | null {
@@ -887,7 +972,7 @@ function cleanSerpApiItemTitle(value: unknown): string | null {
   )?.[1];
   const cleaned = cleanSerpApiIdentityText(linkedTitle ?? source)
     ?.replace(
-      /^(?:(?:exact item title|item identification|item name|item)\s*:\s*)+/i,
+      /^(?:(?:exact[_\s]+item[_\s]+title|item[_\s]+identification|item[_\s]+name|item)\s*:\s*)+/i,
       ""
     )
     .replace(
@@ -936,12 +1021,12 @@ function normalizeValuationEstimate(
 
   return {
     type,
-    label: asString(source?.label) || "Market estimate",
+    label: cleanSerpApiIdentityText(source?.label) || "Market estimate",
     low: roundMoney(low),
     median: roundMoney(medianValue),
     high: roundMoney(high),
     currency: asString(source?.currency) || "USD",
-    note: asString(source?.note),
+    note: cleanSerpApiIdentityText(source?.note) ?? "",
     confidence:
       asString(source?.confidence) === "high" ||
         asString(source?.confidence) === "medium"
@@ -955,7 +1040,7 @@ function normalizeValuationReference(
   value: unknown
 ): SerpApiValuationReference | null {
   const source = asRecord(value);
-  const title = asString(source?.title);
+  const title = cleanSerpApiIdentityText(source?.title) ?? "";
   const link = asString(source?.link);
 
   if (!title || !/^https?:\/\//i.test(link)) {
@@ -965,8 +1050,8 @@ function normalizeValuationReference(
   return {
     title,
     link,
-    snippet: toNullableString(source?.snippet),
-    source: toNullableString(source?.source),
+    snippet: cleanSerpApiIdentityText(source?.snippet),
+    source: cleanSerpApiIdentityText(source?.source),
   };
 }
 
@@ -994,7 +1079,7 @@ function normalizeConditionAssessment(
 
   return {
     grade,
-    summary: toNullableString(source.summary),
+    summary: cleanSerpApiIdentityText(source.summary),
     confidence,
     confidencePercent: normalizeConfidencePercent(source.confidencePercent),
   };
@@ -1094,6 +1179,121 @@ function normalizeRefinementQuestions(
     .slice(0, 8);
 }
 
+function normalizeMarketConfidence(value: unknown): MarketValueConfidence {
+  const confidence = asString(value);
+  return confidence === "high" || confidence === "medium"
+    ? confidence
+    : "low";
+}
+
+function normalizeDayEstimate(value: unknown): number | null {
+  const raw =
+    typeof value === "number"
+      ? value
+      : typeof value === "string" && value.trim()
+        ? Number(value)
+        : Number.NaN;
+  if (!Number.isFinite(raw)) return null;
+
+  const days = Math.round(raw);
+  return days >= 0 && days <= 3_650 ? days : null;
+}
+
+function normalizeResaleVelocity(value: unknown): SerpApiResaleVelocity {
+  const source = asRecord(value);
+  let lowDays = normalizeDayEstimate(source?.lowDays);
+  let typicalDays = normalizeDayEstimate(source?.typicalDays);
+  let highDays = normalizeDayEstimate(source?.highDays);
+
+  if (lowDays !== null && highDays !== null && lowDays > highDays) {
+    [lowDays, highDays] = [highDays, lowDays];
+  }
+  if (lowDays !== null && typicalDays !== null && typicalDays < lowDays) {
+    typicalDays = lowDays;
+  }
+  if (highDays !== null && typicalDays !== null && typicalDays > highDays) {
+    typicalDays = highDays;
+  }
+  if (typicalDays === null && lowDays !== null && highDays !== null) {
+    typicalDays = Math.round((lowDays + highDays) / 2);
+  }
+
+  const demand = asString(source?.demand);
+  return {
+    demand:
+      demand === "fast" || demand === "moderate" || demand === "slow"
+        ? demand
+        : "unknown",
+    lowDays,
+    typicalDays,
+    highDays,
+    evidence: cleanSerpApiIdentityText(source?.evidence)?.slice(0, 700) ?? null,
+    confidence: normalizeMarketConfidence(source?.confidence),
+    confidencePercent: normalizeConfidencePercent(source?.confidencePercent),
+  };
+}
+
+function normalizeFlipComplexity(value: unknown): SerpApiFlipComplexity {
+  const source = asRecord(value);
+  const level = asString(source?.level);
+  const skillLevel = asString(source?.skillLevel);
+
+  return {
+    level:
+      level === "easy" || level === "moderate" || level === "complex"
+        ? level
+        : "unknown",
+    summary: cleanSerpApiIdentityText(source?.summary)?.slice(0, 700) ?? null,
+    requiredWork: asStringArray(source?.requiredWork)
+      .map(cleanSerpApiIdentityText)
+      .filter((entry): entry is string => Boolean(entry))
+      .slice(0, 6),
+    partsOrTools: asStringArray(source?.partsOrTools)
+      .map(cleanSerpApiIdentityText)
+      .filter((entry): entry is string => Boolean(entry))
+      .slice(0, 6),
+    skillLevel:
+      skillLevel === "beginner" ||
+      skillLevel === "intermediate" ||
+      skillLevel === "advanced"
+        ? skillLevel
+        : "unknown",
+    safetyWarnings: asStringArray(source?.safetyWarnings)
+      .map(cleanSerpApiIdentityText)
+      .filter((entry): entry is string => Boolean(entry))
+      .slice(0, 6),
+    confidence: normalizeMarketConfidence(source?.confidence),
+    confidencePercent: normalizeConfidencePercent(source?.confidencePercent),
+  };
+}
+
+function normalizeFlipDecision(value: unknown): SerpApiFlipDecision {
+  const source = asRecord(value);
+  const verdict = asString(source?.verdict);
+
+  return {
+    verdict:
+      verdict === "flip" ||
+      verdict === "conditional_flip" ||
+      verdict === "sell_as_is" ||
+      verdict === "part_out" ||
+      verdict === "skip"
+        ? verdict
+        : "unknown",
+    summary: cleanSerpApiIdentityText(source?.summary)?.slice(0, 900) ?? null,
+    assumptions: asStringArray(source?.assumptions)
+      .map(cleanSerpApiIdentityText)
+      .filter((entry): entry is string => Boolean(entry))
+      .slice(0, 8),
+    missingInputs: asStringArray(source?.missingInputs)
+      .map(cleanSerpApiIdentityText)
+      .filter((entry): entry is string => Boolean(entry))
+      .slice(0, 8),
+    confidence: normalizeMarketConfidence(source?.confidence),
+    confidencePercent: normalizeConfidencePercent(source?.confidencePercent),
+  };
+}
+
 function displayConditionLabel(grade: SerpApiConditionAssessment["grade"]) {
   switch (grade) {
     case "new":
@@ -1113,7 +1313,8 @@ function displayConditionLabel(grade: SerpApiConditionAssessment["grade"]) {
   }
 }
 
-function fallbackUsdLabel(value: number) {
+function fallbackUsdLabel(value: number | null) {
+  if (value == null) return null;
   return `$${roundMoney(value).toLocaleString("en-US", {
     maximumFractionDigits: 2,
   })}`;
@@ -1126,9 +1327,9 @@ function normalizeDisplayReadyResult(
     identificationSummary: string | null;
     identity: SerpApiIdentityAssessment | null;
     condition: SerpApiConditionAssessment | null;
-    low: number;
-    median: number;
-    high: number;
+    low: number | null;
+    median: number | null;
+    high: number | null;
     currency: string;
     valuationConfidence: MarketValueConfidence;
     valuationConfidencePercent: number | null;
@@ -1136,6 +1337,9 @@ function normalizeDisplayReadyResult(
     suggestedDetails: string[];
     profitabilityActions: SerpApiProfitabilityAction[];
     refinementQuestions: SerpApiRefinementQuestion[];
+    marketVelocity: SerpApiResaleVelocity;
+    flipComplexity: SerpApiFlipComplexity;
+    flipDecision: SerpApiFlipDecision;
   }
 ): SerpApiDisplayReadyResult {
   const source = asRecord(value);
@@ -1147,6 +1351,9 @@ function normalizeDisplayReadyResult(
   const refinementQuestions = normalizeRefinementQuestions(
     source?.refinementQuestions
   );
+  const marketVelocity = normalizeResaleVelocity(source?.marketVelocity);
+  const flipComplexity = normalizeFlipComplexity(source?.flipComplexity);
+  const flipDecision = normalizeFlipDecision(source?.flipDecision);
   const identity =
     normalizeIdentityAssessment(
       source?.identity,
@@ -1180,6 +1387,13 @@ function normalizeDisplayReadyResult(
     valuationConfidenceRaw === "high" || valuationConfidenceRaw === "medium"
       ? valuationConfidenceRaw
       : fallback.valuationConfidence;
+  const sourceLow = positiveNumberOrNull(sourceValuation?.low);
+  const sourceMedian = positiveNumberOrNull(sourceValuation?.median);
+  const sourceHigh = positiveNumberOrNull(sourceValuation?.high);
+  const low = sourceLow ?? fallback.low;
+  const medianValue = sourceMedian ?? fallback.median;
+  const high = sourceHigh ?? fallback.high;
+  const hasRange = low != null && medianValue != null && high != null;
 
   return {
     title,
@@ -1195,41 +1409,48 @@ function normalizeDisplayReadyResult(
       : null,
     valuation: {
       label:
-        asString(sourceValuation?.label) || "Current Resale Market Value",
+        asString(sourceValuation?.label) ||
+        (hasRange
+          ? "Current Resale Market Value"
+          : "Valuation Needs More Evidence"),
       rangeLabel:
         toNullableString(sourceValuation?.rangeLabel) ??
-        `${fallbackUsdLabel(fallback.low)} - ${fallbackUsdLabel(
-          fallback.high
-        )} ${fallback.currency}`,
-      low: asNumber(sourceValuation?.low) || fallback.low,
+        (hasRange
+          ? `${fallbackUsdLabel(low)} - ${fallbackUsdLabel(high)} ${fallback.currency}`
+          : null),
+      low,
       lowLabel:
         toNullableString(sourceValuation?.lowLabel) ??
-        fallbackUsdLabel(fallback.low),
-      median: asNumber(sourceValuation?.median) || fallback.median,
+        fallbackUsdLabel(low),
+      median: medianValue,
       medianLabel:
         toNullableString(sourceValuation?.medianLabel) ??
-        fallbackUsdLabel(fallback.median),
-      high: asNumber(sourceValuation?.high) || fallback.high,
+        fallbackUsdLabel(medianValue),
+      high,
       highLabel:
         toNullableString(sourceValuation?.highLabel) ??
-        fallbackUsdLabel(fallback.high),
+        fallbackUsdLabel(high),
       currency: asString(sourceValuation?.currency) || fallback.currency,
       confidence: valuationConfidence,
       confidencePercent:
         normalizeConfidencePercent(sourceValuation?.confidencePercent) ??
         fallback.valuationConfidencePercent,
       basis:
-        asString(sourceValuation?.basis) ||
-        "Current private-sale estimate from the submitted item photo",
+        cleanSerpApiIdentityText(sourceValuation?.basis) ||
+        (hasRange
+          ? "Current private-sale estimate from the submitted item photo"
+          : "KeepFlip did not invent a resale range because the image evidence was not specific enough."),
       disclaimer:
-        asString(sourceValuation?.disclaimer) ||
-        "Directional AI market estimate; not a verified completed sale.",
+        cleanSerpApiIdentityText(sourceValuation?.disclaimer) ||
+        (hasRange
+          ? "Directional AI market estimate; not a verified completed sale."
+          : "Add the requested identifying evidence before relying on a price or flip verdict."),
     },
-    factors: asStringArray(source?.factors).length
-      ? asStringArray(source?.factors)
+    factors: cleanSerpApiTextArray(source?.factors).length
+      ? cleanSerpApiTextArray(source?.factors)
       : fallback.factors,
-    suggestedDetails: asStringArray(source?.suggestedDetails).length
-      ? asStringArray(source?.suggestedDetails)
+    suggestedDetails: cleanSerpApiTextArray(source?.suggestedDetails).length
+      ? cleanSerpApiTextArray(source?.suggestedDetails)
       : fallback.suggestedDetails,
     profitabilityActions: profitabilityActions.length
       ? profitabilityActions
@@ -1237,6 +1458,20 @@ function normalizeDisplayReadyResult(
     refinementQuestions: refinementQuestions.length
       ? refinementQuestions
       : fallback.refinementQuestions,
+    marketVelocity:
+      marketVelocity.demand !== "unknown" ||
+      marketVelocity.typicalDays !== null ||
+      marketVelocity.evidence
+        ? marketVelocity
+        : fallback.marketVelocity,
+    flipComplexity:
+      flipComplexity.level !== "unknown" || flipComplexity.summary
+        ? flipComplexity
+        : fallback.flipComplexity,
+    flipDecision:
+      flipDecision.verdict !== "unknown" || flipDecision.summary
+        ? flipDecision
+        : fallback.flipDecision,
   };
 }
 
@@ -1275,15 +1510,12 @@ export async function runSerpApiImageValuation(
     ...(refinementContext ? { refinementContext } : {}),
   });
   const valuation = asRecord(payload.valuation);
-  const low = asNumber(valuation?.p20);
-  const medianValue = asNumber(valuation?.median);
-  const high = asNumber(valuation?.p80);
-
-  if (low <= 0 || medianValue <= 0 || high <= 0) {
-    throw new Error(
-      "KeepFlip AI completed without a usable private-sale valuation range."
-    );
-  }
+  const low = positiveNumberOrNull(valuation?.p20);
+  const medianValue = positiveNumberOrNull(valuation?.median);
+  const high = positiveNumberOrNull(valuation?.p80);
+  const hasValuation =
+    low != null && medianValue != null && high != null &&
+    asString(valuation?.status) !== "needs_comps";
 
   const rawQuality = asRecord(payload.quality);
   const rawConfidence = asString(rawQuality?.confidence);
@@ -1299,6 +1531,11 @@ export async function runSerpApiImageValuation(
     identification,
     identificationSummary
   );
+  const rawIdentificationStatus = asString(payload.identificationStatus);
+  const identificationStatus: SerpApiImageValuationResult["identificationStatus"] =
+    rawIdentificationStatus === "needs_identification"
+      ? "needs_identification"
+      : "identified";
   const condition = normalizeConditionAssessment(payload.condition);
   const factors = asStringArray(payload.factors);
   const suggestedDetails = asStringArray(payload.suggestedDetails);
@@ -1308,6 +1545,9 @@ export async function runSerpApiImageValuation(
   const refinementQuestions = normalizeRefinementQuestions(
     payload.refinementQuestions
   );
+  const marketVelocity = normalizeResaleVelocity(payload.marketVelocity);
+  const flipComplexity = normalizeFlipComplexity(payload.flipComplexity);
+  const flipDecision = normalizeFlipDecision(payload.flipDecision);
   const valuationConfidencePercent = normalizeConfidencePercent(
     rawQuality?.confidencePercent
   );
@@ -1365,6 +1605,9 @@ export async function runSerpApiImageValuation(
     suggestedDetails,
     profitabilityActions,
     refinementQuestions,
+    marketVelocity,
+    flipComplexity,
+    flipDecision,
   });
 
   return {
@@ -1378,16 +1621,19 @@ export async function runSerpApiImageValuation(
     image,
     sourceImage,
     valuation: {
-      status: "ready",
+      status: hasValuation ? "ready" : "needs_comps",
       currency: asString(valuation?.currency) || "USD",
       suppliedCount: asNumber(valuation?.suppliedCount),
-      usedCount: asNumber(valuation?.usedCount) || 1,
+      usedCount: hasValuation ? asNumber(valuation?.usedCount) || 1 : 0,
       rejectedCount: asNumber(valuation?.rejectedCount),
-      median: roundMoney(medianValue),
-      p20: roundMoney(low),
-      p80: roundMoney(high),
-      methodology: "keepflip_ai_private_sale_range_v2",
-      source: "keepflip_ai",
+      median:
+        hasValuation && medianValue != null ? roundMoney(medianValue) : null,
+      p20: hasValuation && low != null ? roundMoney(low) : null,
+      p80: hasValuation && high != null ? roundMoney(high) : null,
+      methodology: hasValuation
+        ? "keepflip_ai_private_sale_range_v2"
+        : "none",
+      source: hasValuation ? "keepflip_ai" : "none",
     },
     estimates: (Array.isArray(payload.estimates) ? payload.estimates : [])
       .map(normalizeValuationEstimate)
@@ -1397,6 +1643,7 @@ export async function runSerpApiImageValuation(
       .filter((value): value is SerpApiValuationReference => Boolean(value)),
     identification: display.title,
     identificationSummary: display.summary,
+    identificationStatus,
     identity: display.identity,
     display,
     condition: display.condition,
@@ -1404,6 +1651,9 @@ export async function runSerpApiImageValuation(
     suggestedDetails: display.suggestedDetails,
     profitabilityActions: display.profitabilityActions,
     refinementQuestions: display.refinementQuestions,
+    marketVelocity: display.marketVelocity,
+    flipComplexity: display.flipComplexity,
+    flipDecision: display.flipDecision,
     reconstructedMarkdown: toNullableString(
       payload.reconstructedMarkdown
     ),
@@ -1419,6 +1669,101 @@ export async function runSerpApiImageValuation(
     },
     searchedAt:
       asString(payload.searchedAt) || new Date().toISOString(),
+  };
+}
+
+export async function runSerpApiProfitabilityGuidance(
+  input: SerpApiProfitabilityGuidanceInput,
+): Promise<SerpApiProfitabilityGuidance> {
+  const itemTitle = asString(input.itemTitle).slice(0, 180);
+  const actionTitle = asString(input.actionTitle).slice(0, 160);
+  const profitabilityContext = asString(input.profitabilityContext)
+    .replace(/\s+/g, " ")
+    .slice(0, 600)
+    .trim();
+
+  if (!itemTitle || !actionTitle) {
+    throw new Error(
+      "KeepFlip needs both the identified item title and enhancement label before it can research a how-to.",
+    );
+  }
+
+  const payload = await callMarketCompsFunction({
+    action: "start",
+    purpose: "profitability_guidance",
+    itemTitle,
+    profitabilityAction: actionTitle,
+    ...(profitabilityContext ? { profitabilityContext } : {}),
+  });
+  const summary = toNullableString(payload.summary);
+  const steps = asStringArray(payload.steps);
+
+  if (!summary && steps.length === 0) {
+    throw new Error(
+      "KeepFlip received no usable how-to guidance for this profitability enhancement.",
+    );
+  }
+
+  return {
+    actionTitle: asString(payload.actionTitle) || actionTitle,
+    itemTitle: asString(payload.itemTitle) || itemTitle,
+    query: asString(payload.query),
+    references: (Array.isArray(payload.references) ? payload.references : [])
+      .map(normalizeValuationReference)
+      .filter((value): value is SerpApiValuationReference => Boolean(value)),
+    runId: asString(payload.runId ?? payload.id) || "completed",
+    safetyWarnings: asStringArray(payload.safetyWarnings),
+    searchedAt: asString(payload.searchedAt) || new Date().toISOString(),
+    steps,
+    summary,
+    toolsOrParts: asStringArray(payload.partsOrTools),
+  };
+}
+
+function profitabilityGuidanceKey(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+export function applyProfitabilityGuidanceToAnalysis(
+  analysis: ItemAnalysisSuccess,
+  guidance: SerpApiProfitabilityGuidance,
+): ItemAnalysisSuccess {
+  if (!analysis.marketResearch) {
+    return analysis;
+  }
+
+  const nextGuidance: ItemProfitabilityGuidance = {
+    actionTitle: guidance.actionTitle,
+    query: guidance.query,
+    references: guidance.references,
+    safetyWarnings: guidance.safetyWarnings,
+    searchedAt: guidance.searchedAt,
+    steps: guidance.steps,
+    summary: guidance.summary,
+    toolsOrParts: guidance.toolsOrParts,
+  };
+  const target = profitabilityGuidanceKey(nextGuidance.actionTitle);
+  const existing = analysis.marketResearch.profitabilityGuidance ?? [];
+  const existingIndex = existing.findIndex(
+    (entry) => profitabilityGuidanceKey(entry.actionTitle) === target,
+  );
+  const profitabilityGuidance = [...existing];
+
+  if (existingIndex >= 0) {
+    profitabilityGuidance[existingIndex] = nextGuidance;
+  } else {
+    profitabilityGuidance.push(nextGuidance);
+  }
+
+  return {
+    ...analysis,
+    marketResearch: {
+      ...analysis.marketResearch,
+      profitabilityGuidance,
+    },
   };
 }
 

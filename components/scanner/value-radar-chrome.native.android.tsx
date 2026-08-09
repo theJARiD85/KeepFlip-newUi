@@ -95,7 +95,7 @@ export function ValueRadarBubble({
       />
       <Text style={styles.readinessName}>VALUE RADAR</Text>
       <Text style={styles.readinessSeparator}>{"//"}</Text>
-      <Text style={[styles.readinessState, { color: cue.color }]}> 
+      <Text style={[styles.readinessState, { color: cue.color }]}>
         {cue.label}
       </Text>
       <View style={styles.signalBars}>
@@ -126,7 +126,7 @@ export function ValueRadarBar({
       pointerEvents="none"
       style={[styles.modelCue, { maxWidth: width }, style]}
     >
-      <Text style={[styles.modelCueIndex, { color: cue.color }]}> 
+      <Text style={[styles.modelCueIndex, { color: cue.color }]}>
         {marker && status === "ready" ? "T-01" : "VR"}
       </Text>
       <View style={styles.modelCueLine} />
@@ -275,19 +275,19 @@ const styles = StyleSheet.create({
   },
   readinessName: {
     color: theme.colors.text,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 8.5,
     lineHeight: 10,
     letterSpacing: 1.15,
   },
   readinessSeparator: {
     color: theme.colors.scannerViolet,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 8,
     lineHeight: 10,
   },
   readinessState: {
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 7.5,
     lineHeight: 9,
     letterSpacing: 0.8,
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   modelCueIndex: {
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 7.5,
     lineHeight: 9,
     letterSpacing: 0.8,
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   modelCueText: {
     flexShrink: 1,
     color: "rgba(247, 242, 232, 0.7)",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 7,
     lineHeight: 9,
     letterSpacing: 0.72,

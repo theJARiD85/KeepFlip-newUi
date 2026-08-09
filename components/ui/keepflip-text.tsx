@@ -3,9 +3,9 @@ import {
   type ComponentRef,
 } from "react";
 import {
-  StyleSheet,
   Text as NativeText,
   TextInput as NativeTextInput,
+  StyleSheet,
   type TextInputProps,
   type TextProps,
   type TextStyle,
@@ -47,7 +47,7 @@ function resolvedTypography(style: TextProps["style"]) {
 /**
  * Default KeepFlip application text.
  * Item-analysis components are intentionally excluded from the migration
- * and continue using theme.fonts.analysis.
+ * and continue using theme.fonts.radar.
  */
 export const KeepFlipText = forwardRef<
   ComponentRef<typeof NativeText>,

@@ -262,8 +262,8 @@ export function ValuationEvidenceField({
   const expectX =
     hasRange && listTarget !== quickSale
       ? bandLeft +
-        ((expectSale! - quickSale!) / Math.max(1, listTarget! - quickSale!)) *
-          bandWidth
+      ((expectSale! - quickSale!) / Math.max(1, listTarget! - quickSale!)) *
+      bandWidth
       : layout.width * 0.5;
   const quickX = bandLeft;
   const listX = bandRight;
@@ -706,14 +706,14 @@ const styles = StyleSheet.create({
     width: 96,
   },
   rangeEyebrow: {
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 7,
     fontWeight: "900",
     letterSpacing: 0.9,
   },
   rangeValue: {
     color: "#FFFFFF",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 11,
     fontWeight: "900",
     fontVariant: ["tabular-nums"],
@@ -737,14 +737,14 @@ const styles = StyleSheet.create({
   },
   profitEyebrow: {
     color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 6,
     fontWeight: "900",
     letterSpacing: 0.85,
   },
   profitValue: {
     color: theme.colors.goldBright,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 15,
     fontWeight: "900",
     fontVariant: ["tabular-nums"],
@@ -752,7 +752,7 @@ const styles = StyleSheet.create({
   profitHint: {
     maxWidth: 140,
     color: "rgba(255, 255, 255, 0.62)",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 7,
     fontWeight: "700",
   },

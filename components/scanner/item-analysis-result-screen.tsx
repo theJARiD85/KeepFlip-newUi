@@ -177,8 +177,8 @@ export function ItemAnalysisResultScreen() {
         onSave={
           scannerSession
             ? () => {
-                void handleSave();
-              }
+              void handleSave();
+            }
             : undefined
         }
         projectionLabel="SAVED ANALYSIS / MODEL AVAILABLE ON DEVICE"
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
   },
   message: {
     color: theme.colors.textMuted,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 13,
     lineHeight: 19,
     textAlign: "center",
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 9,
     fontWeight: "900",
     letterSpacing: 1.1,

@@ -418,7 +418,10 @@ function analysisResultFromSerpApi(
       displayCondition.confidencePercent,
     )
     : 0;
-  const status = displayName ? "identified" : "insufficient_evidence";
+  const status =
+    market.identificationStatus === "needs_identification" || !displayName
+      ? "insufficient_evidence"
+      : "identified";
   const warnings = uniqueMarketText([
     ...market.quality.warnings,
     ...displayIdentity.candidateModels.map(
@@ -441,7 +444,9 @@ function analysisResultFromSerpApi(
     analysis: {
       summary:
         uniqueMarketText([identificationSummary, conditionSummary]).join(" ") ||
-        "KeepFlip AI returned a valuation but could not establish a usable item identity.",
+        (market.valuation.status === "ready"
+          ? "KeepFlip AI returned a valuation but could not establish a usable item identity."
+          : "KeepFlip AI needs more identifying evidence before it can provide a defensible resale range."),
       identification: {
         itemType,
         category: displayIdentity.category,
@@ -491,7 +496,7 @@ function analysisResultFromSerpApi(
     },
     vision: {
       enabled: true,
-      succeeded: Boolean(displayName),
+      succeeded: status === "identified" && Boolean(displayName),
       images: [
         {
           imageIndex: 0,
@@ -532,6 +537,9 @@ function analysisResultFromSerpApi(
       factors: market.factors,
       profitabilityActions: market.profitabilityActions,
       refinementQuestions: market.refinementQuestions,
+      marketVelocity: market.marketVelocity,
+      flipComplexity: market.flipComplexity,
+      flipDecision: market.flipDecision,
       suggestedDetails: market.suggestedDetails,
       answerMarkdown: market.reconstructedMarkdown,
       normalization: market.normalization,

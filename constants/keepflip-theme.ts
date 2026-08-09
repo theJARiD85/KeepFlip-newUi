@@ -1,12 +1,14 @@
 export const keepFlipTheme = {
   fonts: {
-    analysis: 'LucidaConsole',
+    analysis: 'FlexiIBMVGAFalse437',
     body: 'Inter',
     medium: 'PlusJakartaSansMedium',
     semibold: 'PlusJakartaSansSemiBold',
     bold: 'PlusJakartaSansBold',
     display: 'Inter',
     numbers: 'PlusJakartaSansBold',
+    radar: 'FlexiIBMVGAFalse437',
+
   },
   colors: {
     background: '#030305',

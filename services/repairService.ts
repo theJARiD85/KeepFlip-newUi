@@ -41,7 +41,7 @@ import {
   
   export type PartsResearch = {
     researchSummary: string;
-    parts: Array<{
+    parts: {
       name: string;
       partNumber: string | null;
       matchLevel:
@@ -51,12 +51,12 @@ import {
       confidence: number;
       searchQuery: string;
       caution: string;
-    }>;
+    }[];
     warnings: string[];
-    sources: Array<{
+    sources: {
       title: string;
       url: string;
-    }>;
+    }[];
   };
   
   export type RepairAssistResult = {
@@ -131,6 +131,18 @@ import {
   
     return payload;
   }
+
+  function repairAssistFunctionId() {
+    const functionId = APPWRITE.repairAssistFunctionId.trim();
+
+    if (!functionId) {
+      throw new Error(
+        "Repair intelligence is not configured. Add EXPO_PUBLIC_APPWRITE_REPAIR_ASSIST_FUNCTION_ID and restart the app.",
+      );
+    }
+
+    return functionId;
+  }
   
   export async function runRepairAssist({
     itemId,
@@ -139,8 +151,9 @@ import {
     latitude = null,
     longitude = null,
   }: RunRepairAssistArgs): Promise<RepairAssistResult> {
+    const functionId = repairAssistFunctionId();
     const execution = await functions.createExecution({
-      functionId: APPWRITE.repairAssistFunctionId,
+      functionId,
       async: false,
       method: ExecutionMethod.POST,
       headers: {

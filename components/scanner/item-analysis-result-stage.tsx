@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import {
+  Text as NativeText,
   Pressable,
   ScrollView,
   StyleSheet,
-  Text as NativeText,
   type TextProps,
   View,
 } from "react-native";
@@ -29,7 +29,7 @@ type ItemAnalysisResultStageProps = {
   viewportWidth?: number;
 };
 
-const analysisTextStyle = { fontFamily: theme.fonts.analysis } as const;
+const analysisTextStyle = { fontFamily: theme.fonts.radar } as const;
 
 function Text({ style, ...props }: TextProps) {
   return <NativeText {...props} style={[analysisTextStyle, style]} />;

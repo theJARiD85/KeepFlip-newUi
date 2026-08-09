@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: theme.colors.textMuted,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 10,
     fontWeight: "900",
     letterSpacing: 1.2,
@@ -171,14 +171,14 @@ const styles = StyleSheet.create({
   statusText: {
     flex: 1,
     color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 8,
     fontWeight: "900",
     letterSpacing: 0.9,
   },
   confidence: {
     color: theme.colors.goldBright,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 10,
     fontWeight: "900",
     fontVariant: ["tabular-nums"],

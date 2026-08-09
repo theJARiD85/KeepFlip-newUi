@@ -1,5 +1,5 @@
-import * as Haptics from "expo-haptics";
 import { Asset } from "expo-asset";
+import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useRouter, type Href } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
@@ -166,6 +166,7 @@ const SAMPLE_ANALYSIS_STATE: Extract<
 };
 
 const SAMPLE_INVENTORY_ITEM: InventoryItem = {
+  acquisitionCost: null,
   aiConfidence: 93,
   brand: "Coach",
   category: "Designer handbag",
@@ -175,10 +176,16 @@ const SAMPLE_INVENTORY_ITEM: InventoryItem = {
   createdAt: new Date().toISOString(),
   currency: "USD",
   estimatedValue: 265,
+  flipComplexity: "easy",
+  flipDecision: "flip",
+  flipDecisionConfidence: 91,
+  flipVerdict: "flip",
   id: "walkthrough-sample",
   model: "Tabby 26",
   modelFile: null,
   photoCount: 1,
+  resaleTypicalDays: 18,
+  resaleVelocity: "fast",
   status: "undecided",
   title: "Coach Tabby Shoulder Bag 26",
 };
@@ -644,7 +651,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   stepEyebrow: {
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 9,
     fontWeight: "900",
     letterSpacing: 1.45,
@@ -715,7 +722,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 278,
     color: theme.colors.textMuted,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 7,
     fontWeight: "900",
     letterSpacing: 0.9,
@@ -767,7 +774,7 @@ const styles = StyleSheet.create({
   },
   analysisEyebrow: {
     color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 7,
     fontWeight: "900",
     letterSpacing: 1,
@@ -783,7 +790,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#030308",
   },
   analysisCerebro: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   inventoryStage: {
     flex: 1,
@@ -812,7 +819,7 @@ const styles = StyleSheet.create({
   },
   savedSignalEyebrow: {
     color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 7,
     fontWeight: "900",
     letterSpacing: 1,

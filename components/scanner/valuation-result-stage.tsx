@@ -33,21 +33,29 @@ import Animated, {
 import { scheduleOnRN } from "react-native-worklets";
 
 import type {
+  AnalysisProfitAction,
   AnalysisValuation,
   ItemAnalysisState,
 } from "@/components/scanner/analysis-visual-types";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import {
+  runSerpApiProfitabilityGuidance,
+  type SerpApiProfitabilityGuidance,
+} from "@/services/ebaySoldCompsService";
 
 type ResultState = Extract<ItemAnalysisState, { status: "result" }>;
 type ResultData = ResultState["data"];
-type ResultTab = "value" | "profit" | "proof";
+type ResultTab = "valuation" | "profit" | "identifiers";
 
 type ValuationResultStageProps = {
   bottomInset: number;
   embedded?: boolean;
   onRefine?: (
     answers: Record<string, string>,
+  ) => void | Promise<void>;
+  onProfitabilityGuidance?: (
+    guidance: SerpApiProfitabilityGuidance,
   ) => void | Promise<void>;
   onSave?: () => void;
   projectionLabel?: string;
@@ -60,9 +68,9 @@ type ValuationResultStageProps = {
 };
 
 const TABS: { id: ResultTab; label: string }[] = [
-  { id: "value", label: "VALUE" },
+  { id: "valuation", label: "VALUATION" },
   { id: "profit", label: "MAX PROFIT" },
-  { id: "proof", label: "PROOF" },
+  { id: "identifiers", label: "IDENTIFIERS" },
 ];
 
 const COLLAPSED_HEIGHT = 248;
@@ -358,7 +366,100 @@ function ValuePanel({ result }: { result: ResultData }) {
   );
 }
 
-function ProfitPanel({ result }: { result: ResultData }) {
+type ProfitabilityGuidanceState = {
+  error?: string;
+  status: "error" | "loading" | "ready";
+  value?: NonNullable<AnalysisProfitAction["guidance"]>;
+};
+
+function ProfitabilityActionRow({
+  action,
+  expanded,
+  guidanceState,
+  index,
+  onPress,
+}: {
+  action: AnalysisProfitAction;
+  expanded: boolean;
+  guidanceState?: ProfitabilityGuidanceState;
+  index: number;
+  onPress: (action: AnalysisProfitAction) => void;
+}) {
+  const guidance = guidanceState?.value ?? action.guidance;
+  const loading = guidanceState?.status === "loading";
+  const error = guidanceState?.status === "error" ? guidanceState.error : null;
+
+  return (
+    <View style={styles.profitActionWrap}>
+      <Pressable
+        accessibilityHint="Requests concise item-specific resale preparation guidance"
+        accessibilityRole="button"
+        accessibilityState={{ expanded }}
+        onPress={() => onPress(action)}
+        style={({ pressed }) => [
+          styles.profitRow,
+          pressed && styles.pressed,
+          expanded && styles.profitRowExpanded,
+        ]}
+      >
+        <View style={styles.profitIndex}>
+          <Text style={styles.profitIndexText}>{String(index + 1).padStart(2, "0")}</Text>
+        </View>
+        <View style={styles.profitCopy}>
+          <Text numberOfLines={expanded ? undefined : 1} style={styles.profitTitle}>
+            {action.label}
+          </Text>
+          <Text numberOfLines={expanded ? undefined : 2} style={styles.profitDetail}>
+            {action.detail}
+          </Text>
+        </View>
+        <Text style={styles.profitExpandMark}>{expanded ? "−" : "+"}</Text>
+      </Pressable>
+
+      {expanded ? (
+        <View style={styles.profitGuidance}>
+          {loading ? (
+            <Text style={styles.profitGuidanceStatus}>RESEARCHING ITEM-SPECIFIC HOW-TO...</Text>
+          ) : null}
+          {error ? (
+            <Text selectable style={styles.profitGuidanceError}>{error}</Text>
+          ) : null}
+          {guidance?.summary ? (
+            <Text selectable style={styles.detailBody}>{guidance.summary}</Text>
+          ) : null}
+          {guidance?.steps.map((step, stepIndex) => (
+            <View key={`${action.id}-step-${stepIndex}`} style={styles.detailBulletRow}>
+              <Text style={styles.detailBullet}>{stepIndex + 1}.</Text>
+              <Text selectable style={styles.detailBulletText}>{step}</Text>
+            </View>
+          ))}
+          {guidance?.toolsOrParts.length ? (
+            <Text selectable style={styles.profitGuidanceMeta}>
+              TOOLS / PARTS: {guidance.toolsOrParts.join(" · ")}
+            </Text>
+          ) : null}
+          {guidance?.safetyWarnings.length ? (
+            <Text selectable style={styles.profitGuidanceWarning}>
+              SAFETY: {guidance.safetyWarnings.join(" · ")}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function ProfitPanel({
+  expandedActionId,
+  guidance,
+  onPressAction,
+  result,
+}: {
+  expandedActionId: string | null;
+  guidance: Record<string, ProfitabilityGuidanceState>;
+  onPressAction: (action: AnalysisProfitAction) => void;
+  result: ResultData;
+}) {
   const currency =
     result.profitPlan.currency ?? result.valuation?.currency ?? "USD";
   const listTarget = result.profitPlan.listTarget;
@@ -367,6 +468,9 @@ function ProfitPanel({ result }: { result: ResultData }) {
   const hasStrategy =
     listTarget != null || expectedSale != null || quickSale != null;
   const firmPricing = result.valuationReadiness.status === "ready";
+  const enhancements = result.profitPlan.actions.filter(
+    (action) => action.kind !== "decision",
+  );
 
   return (
     <View style={styles.profitList}>
@@ -405,60 +509,88 @@ function ProfitPanel({ result }: { result: ResultData }) {
         </View>
       ) : null}
 
-      {result.profitPlan.actions.slice(0, hasStrategy ? 2 : 3).map((action, index) => (
-        <View key={action.id} style={styles.profitRow}>
-          <View style={styles.profitIndex}>
-            <Text style={styles.profitIndexText}>{String(index + 1).padStart(2, "0")}</Text>
-          </View>
-          <View style={styles.profitCopy}>
-            <Text numberOfLines={1} style={styles.profitTitle}>{action.label}</Text>
-            <Text numberOfLines={2} style={styles.profitDetail}>{action.detail}</Text>
-          </View>
-        </View>
+      <Text style={styles.profitTapHint}>TAP AN ENHANCEMENT FOR ITS ITEM-SPECIFIC HOW-TO</Text>
+      {enhancements.slice(0, hasStrategy ? 2 : 3).map((action, index) => (
+        <ProfitabilityActionRow
+          action={action}
+          expanded={expandedActionId === action.id}
+          guidanceState={guidance[action.id]}
+          index={index}
+          key={action.id}
+          onPress={onPressAction}
+        />
       ))}
     </View>
   );
 }
 
-function ProofPanel({ result }: { result: ResultData }) {
-  const conditionScore = percentage(result.condition?.score);
-  const evidence = result.evidence?.slice(0, 2) ?? [];
-  const basis = valuationBasisLine(result);
-  const proofLead =
-    result.valuationReadiness.reason?.replace(/\s+/g, " ").trim() ||
-    basis ||
-    null;
+function profitabilityTaskContext(result: ResultData, action: AnalysisProfitAction) {
+  const currency =
+    result.profitPlan.currency ?? result.valuation?.currency ?? "USD";
+  const pricing = [
+    result.profitPlan.quickSale != null
+      ? `Quick-sale signal: ${formatMoney(result.profitPlan.quickSale, currency)}`
+      : null,
+    result.profitPlan.expectedSale != null
+      ? `Expected-sale signal: ${formatMoney(result.profitPlan.expectedSale, currency)}`
+      : null,
+    result.profitPlan.listTarget != null
+      ? `List-target signal: ${formatMoney(result.profitPlan.listTarget, currency)}`
+      : null,
+  ].filter(Boolean);
+  const condition = [
+    result.condition?.label,
+    result.condition?.details?.[0],
+  ]
+    .filter(Boolean)
+    .join(" — ");
+
+  return [
+    action.detail ? `Action-card detail: ${action.detail}` : null,
+    pricing.length ? pricing.join("; ") : null,
+    condition ? `Observed condition: ${condition}` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function IdentifierPanel({ result }: { result: ResultData }) {
+  const titleConfidence = percentage(
+    result.confidence?.itemType ??
+      result.confidence?.identity ??
+      result.identity.confidence,
+  );
+  const brandConfidence = percentage(result.confidence?.brand);
+  const modelConfidence = percentage(result.confidence?.model);
+  const conditionConfidence = percentage(
+    result.confidence?.condition ?? result.condition?.score,
+  );
 
   return (
-    <View style={styles.proofPanel}>
-      {proofLead ? (
-        <View style={styles.proofLeadRow}>
-          <Text style={styles.microLabel}>WHY THIS PRICE</Text>
-          <Text numberOfLines={2} style={styles.proofLeadText}>
-            {proofLead}
-          </Text>
-        </View>
-      ) : null}
-
-      <View style={styles.conditionRow}>
-        <View style={styles.conditionCopy}>
-          <Text style={styles.microLabel}>VALUE-AFFECTING CONDITION</Text>
-          <Text numberOfLines={1} style={styles.conditionGrade}>
-            {result.condition?.label ?? "Condition pending"}
-          </Text>
-        </View>
-        <Text style={styles.conditionScore}>
-          {conditionScore == null ? "--" : `${conditionScore}%`}
+    <View style={styles.identifierPanel}>
+      <View style={styles.identifierLead}>
+        <Text style={styles.microLabel}>EXACT ITEM TITLE</Text>
+        <Text numberOfLines={2} style={styles.identifierTitle}>
+          {result.identity.title}
+        </Text>
+        <Text style={styles.identifierConfidence}>
+          {titleConfidence == null ? "--" : `${titleConfidence}% CONF`}
         </Text>
       </View>
-
-      {evidence.map((item, index) => (
-        <View key={item.id ?? `${item.label}-${index}`} style={styles.evidenceRow}>
-          <Text style={styles.evidenceCode}>E{index + 1}</Text>
-          <View style={styles.evidenceCopy}>
-            <Text numberOfLines={1} style={styles.evidenceLabel}>{item.label}</Text>
-            <Text numberOfLines={1} style={styles.evidenceValue}>{item.value}</Text>
-          </View>
+      {[
+        ["BRAND", result.identity.brand, brandConfidence],
+        ["MODEL", result.identity.model, modelConfidence],
+        ["VARIANT", result.identity.variant, null],
+        ["OBSERVED CONDITION", result.condition?.label, conditionConfidence],
+      ].filter((entry) => Boolean(entry[1])).map(([label, value, confidence]) => (
+        <View key={String(label)} style={styles.identifierFactRow}>
+          <Text style={styles.identifierFactLabel}>{label}</Text>
+          <Text numberOfLines={1} style={styles.identifierFactValue}>
+            {value}
+          </Text>
+          <Text style={styles.identifierFactConfidence}>
+            {typeof confidence === "number" ? `${confidence}%` : ""}
+          </Text>
         </View>
       ))}
     </View>
@@ -466,15 +598,23 @@ function ProofPanel({ result }: { result: ResultData }) {
 }
 
 function ExpandedResultDetails({
+  activeTab,
   answers,
+  expandedActionId,
+  guidance,
   onAnswerChange,
+  onPressAction,
   onRefine,
   onSubmitRefinement,
   refining,
   result,
 }: {
+  activeTab: ResultTab;
   answers: Record<string, string>;
+  expandedActionId: string | null;
+  guidance: Record<string, ProfitabilityGuidanceState>;
   onAnswerChange: (questionId: string, answer: string) => void;
+  onPressAction: (action: AnalysisProfitAction) => void;
   onRefine?: ValuationResultStageProps["onRefine"];
   onSubmitRefinement: () => void;
   refining: boolean;
@@ -488,11 +628,15 @@ function ExpandedResultDetails({
     Boolean(onRefine) &&
     !refining &&
     questions.some((question) => answers[question.id]?.trim());
+  const enhancements = result.profitPlan.actions.filter(
+    (action) => action.kind !== "decision",
+  );
 
   return (
     <View style={styles.expandedDetails}>
-      <View style={styles.detailSection}>
-        <Text style={styles.detailSectionTitle}>DISTINCT ITEM INTELLIGENCE</Text>
+      {activeTab === "identifiers" ? (
+        <View style={styles.detailSection}>
+          <Text style={styles.detailSectionTitle}>DISTINCT ITEM IDENTIFIERS</Text>
         <DetailFact
           confidence={
             result.confidence?.itemType ??
@@ -523,21 +667,27 @@ function ExpandedResultDetails({
           label="OBSERVED CONDITION"
           value={result.condition?.label}
         />
-        {result.valuation ? (
-          <DetailFact
-            confidence={result.confidence?.valuation}
-            label="CURRENT RESALE MARKET VALUE"
-            value={formatMoney(
-              result.valuation.median,
-              result.valuation.currency,
-            )}
-          />
-        ) : null}
-      </View>
+        </View>
+      ) : null}
 
-      {result.summary || conditionDetails.length > 0 ? (
+      {activeTab === "valuation" && (result.summary || conditionDetails.length > 0) ? (
         <View style={styles.detailSection}>
-          <Text style={styles.detailSectionTitle}>CONDITION + VALUE NOTES</Text>
+          <Text style={styles.detailSectionTitle}>VALUATION REASONS + CONFIDENCE</Text>
+          {result.valuation ? (
+            <DetailFact
+              confidence={result.confidence?.valuation}
+              label="CURRENT RESALE MARKET VALUE"
+              value={formatMoney(
+                result.valuation.median,
+                result.valuation.currency,
+              )}
+            />
+          ) : null}
+          {result.valuationReadiness.reason ? (
+            <Text selectable style={styles.detailBody}>
+              {result.valuationReadiness.reason}
+            </Text>
+          ) : null}
           {result.summary ? (
             <Text selectable style={styles.detailBody}>{result.summary}</Text>
           ) : null}
@@ -550,28 +700,25 @@ function ExpandedResultDetails({
         </View>
       ) : null}
 
-      <View style={styles.detailSection}>
-        <Text style={styles.detailSectionTitle}>PROFITABILITY ENHANCEMENTS</Text>
-        {result.profitPlan.actions.map((action, index) => (
-          <View key={action.id} style={styles.expandedProfitRow}>
-            <Text style={styles.expandedProfitCode}>
-              {String(index + 1).padStart(2, "0")}
-            </Text>
-            <View style={styles.expandedProfitCopy}>
-              <View style={styles.expandedProfitHeader}>
-                <Text style={styles.expandedProfitTitle}>{action.label}</Text>
-                {percentage(action.confidence) == null ? null : (
-                  <Text style={styles.detailFactConfidence}>
-                    {percentage(action.confidence)}% CONF
-                  </Text>
-                )}
-              </View>
-              <Text selectable style={styles.detailBody}>{action.detail}</Text>
-            </View>
-          </View>
-        ))}
-      </View>
-      {evidence.length > 0 ? (
+      {activeTab === "profit" ? (
+        <View style={styles.detailSection}>
+          <Text style={styles.detailSectionTitle}>PROFITABILITY ENHANCEMENTS</Text>
+          <Text style={styles.detailBody}>
+            Tap an enhancement to research its focused item-specific how-to. Completed guidance is cached with this analysis.
+          </Text>
+          {enhancements.map((action, index) => (
+            <ProfitabilityActionRow
+              action={action}
+              expanded={expandedActionId === action.id}
+              guidanceState={guidance[action.id]}
+              index={index}
+              key={action.id}
+              onPress={onPressAction}
+            />
+          ))}
+        </View>
+      ) : null}
+      {activeTab === "valuation" && evidence.length > 0 ? (
         <View style={styles.detailSection}>
           <Text style={styles.detailSectionTitle}>SUPPORTING EVIDENCE</Text>
           {evidence.map((item, index) => {
@@ -597,7 +744,7 @@ function ExpandedResultDetails({
         </View>
       ) : null}
 
-      {references.length > 0 ? (
+      {activeTab === "valuation" && references.length > 0 ? (
         <View style={styles.detailSection}>
           <Text style={styles.detailSectionTitle}>MARKET REFERENCES</Text>
           {references.map((reference, index) => (
@@ -622,7 +769,7 @@ function ExpandedResultDetails({
         </View>
       ) : null}
 
-      {questions.length > 0 && onRefine ? (
+      {activeTab === "valuation" && questions.length > 0 && onRefine ? (
         <View style={styles.detailSection}>
           <Text style={styles.detailSectionTitle}>REFINE THIS VALUATION</Text>
           <Text style={styles.detailBody}>
@@ -672,6 +819,7 @@ function ExpandedResultDetails({
 export function ValuationResultStage({
   bottomInset,
   embedded = false,
+  onProfitabilityGuidance,
   onRefine,
   onSave,
   projectionLabel = "GENERATED ITEM PROJECTION",
@@ -694,9 +842,16 @@ export function ValuationResultStage({
   const expansionEnabled =
     !embedded && expandedHeight - collapsedHeight >= 56;
   const reduceMotion = useReducedMotion();
-  const [activeTab, setActiveTab] = useState<ResultTab>("value");
+  const [activeTab, setActiveTab] = useState<ResultTab>("valuation");
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [expanded, setExpanded] = useState(false);
+  const [expandedProfitActionId, setExpandedProfitActionId] = useState<
+    string | null
+  >(null);
+  const [profitabilityGuidance, setProfitabilityGuidance] = useState<
+    Record<string, ProfitabilityGuidanceState>
+  >({});
+  const profitabilityRequestsRef = useRef(new Set<string>());
   const scrollRef = useRef<ScrollView>(null);
   const sheetHeight = useSharedValue(collapsedHeight);
   const dragStartHeight = useSharedValue(collapsedHeight);
@@ -876,6 +1031,94 @@ export function ValuationResultStage({
     }
   }, [answers, onRefine, refining, result.refinementQuestions]);
 
+  const requestProfitabilityGuidance = useCallback(
+    (action: AnalysisProfitAction) => {
+      const currentlyExpanded = expandedProfitActionId === action.id;
+      setExpandedProfitActionId(currentlyExpanded ? null : action.id);
+      if (!currentlyExpanded && !expanded) {
+        toggleExpanded();
+      }
+      if (currentlyExpanded || action.guidance) return;
+
+      const existing = profitabilityGuidance[action.id];
+      if (
+        existing?.status === "loading" ||
+        existing?.status === "ready" ||
+        profitabilityRequestsRef.current.has(action.id)
+      ) {
+        return;
+      }
+
+      profitabilityRequestsRef.current.add(action.id);
+      setProfitabilityGuidance((current) => ({
+        ...current,
+        [action.id]: { status: "loading" },
+      }));
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
+        () => undefined,
+      );
+
+      void runSerpApiProfitabilityGuidance({
+        actionTitle: action.label,
+        itemTitle: result.identity.title,
+        profitabilityContext: profitabilityTaskContext(result, action),
+      })
+        .then((response) => {
+          const value: NonNullable<AnalysisProfitAction["guidance"]> = {
+            references: response.references.map((reference, index) => ({
+              id: `${action.id}-guidance-reference-${index}`,
+              link: reference.link,
+              snippet: reference.snippet ?? undefined,
+              source: reference.source ?? undefined,
+              title: reference.title,
+            })),
+            safetyWarnings: response.safetyWarnings,
+            searchedAt: response.searchedAt,
+            steps: response.steps,
+            summary: response.summary,
+            toolsOrParts: response.toolsOrParts,
+          };
+          setProfitabilityGuidance((current) => ({
+            ...current,
+            [action.id]: { status: "ready", value },
+          }));
+
+          try {
+            void Promise.resolve(onProfitabilityGuidance?.(response)).catch(
+              (error) => {
+                console.warn("KeepFlip could not cache profitability guidance.", error);
+              },
+            );
+          } catch (error) {
+            console.warn("KeepFlip could not cache profitability guidance.", error);
+          }
+        })
+        .catch((caught) => {
+          setProfitabilityGuidance((current) => ({
+            ...current,
+            [action.id]: {
+              error:
+                caught instanceof Error
+                  ? caught.message
+                  : "KeepFlip could not research this enhancement.",
+              status: "error",
+            },
+          }));
+        })
+        .finally(() => {
+          profitabilityRequestsRef.current.delete(action.id);
+        });
+    },
+    [
+      expandedProfitActionId,
+      expanded,
+      onProfitabilityGuidance,
+      profitabilityGuidance,
+      result,
+      toggleExpanded,
+    ],
+  );
+
   const selectTab = (tab: ResultTab) => {
     if (tab === activeTab || saving) return;
     setActiveTab(tab);
@@ -888,9 +1131,16 @@ export function ValuationResultStage({
       key={activeTab}
       style={styles.panelBody}
     >
-      {activeTab === "value" ? <ValuePanel result={result} /> : null}
-      {activeTab === "profit" ? <ProfitPanel result={result} /> : null}
-      {activeTab === "proof" ? <ProofPanel result={result} /> : null}
+      {activeTab === "valuation" ? <ValuePanel result={result} /> : null}
+      {activeTab === "profit" ? (
+        <ProfitPanel
+          expandedActionId={expandedProfitActionId}
+          guidance={profitabilityGuidance}
+          onPressAction={requestProfitabilityGuidance}
+          result={result}
+        />
+      ) : null}
+      {activeTab === "identifiers" ? <IdentifierPanel result={result} /> : null}
     </Animated.View>
   );
 
@@ -909,7 +1159,7 @@ export function ValuationResultStage({
           <View style={styles.titleSignal} />
           <Text style={styles.titleEyebrow}>KEEPFLIP / VALUATION COMPLETE</Text>
         </View>
-        <Text adjustsFontSizeToFit minimumFontScale= {11} numberOfLines={2} style={styles.itemTitle}>
+        <Text adjustsFontSizeToFit minimumFontScale={11} numberOfLines={2} style={styles.itemTitle}>
           {result.identity.title}
         </Text>
         <Text numberOfLines={1} style={styles.projectionLabel}>{projectionLabel}</Text>
@@ -981,8 +1231,12 @@ export function ValuationResultStage({
             {panel}
             {expanded ? (
               <ExpandedResultDetails
+                activeTab={activeTab}
                 answers={answers}
+                expandedActionId={expandedProfitActionId}
+                guidance={profitabilityGuidance}
                 onAnswerChange={updateAnswer}
+                onPressAction={requestProfitabilityGuidance}
                 onRefine={onRefine}
                 onSubmitRefinement={submitRefinement}
                 refining={refining}
@@ -1111,14 +1365,14 @@ const styles = StyleSheet.create({
   tabActive: { borderWidth: 1, borderColor: "rgba(242, 211, 138, 0.42)", backgroundColor: "rgba(242, 211, 138, 0.10)" },
   tabText: { color: "rgba(255, 255, 255, 0.46)", fontFamily: theme.fonts.display, fontSize: 8, fontWeight: "900", letterSpacing: 0.8 },
   tabTextActive: { color: theme.colors.goldBright },
-  panelScroll: { flex: 1},
+  panelScroll: { flex: 1 },
   panelScrollContent: { paddingBottom: 12 },
   panelBody: { height: 186, paddingHorizontal: 3 },
   gauge: { flex: 1, justifyContent: "center", gap: 10 },
   gaugeHeader: { minHeight: 42, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
-  microLabel: { color: "rgba(255, 255, 255, 0.48)", fontFamily: theme.fonts.analysis, fontSize: 7, fontWeight: "900", letterSpacing: 0.9 },
-  gaugeStatus: { color: theme.colors.goldBright, fontFamily: theme.fonts.analysis, fontSize: 9, fontWeight: "900", letterSpacing: 0.8 },
-  medianValue: { maxWidth: 190, color: theme.colors.goldBright, fontFamily: theme.fonts.analysis, fontSize: 30, lineHeight: 34, fontWeight: "900", fontVariant: ["tabular-nums"], textShadowColor: "rgba(242, 211, 138, 0.52)", textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 7 },
+  microLabel: { color: "rgba(255, 255, 255, 0.48)", fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: "900", letterSpacing: 0.9 },
+  gaugeStatus: { color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 9, fontWeight: "900", letterSpacing: 0.8 },
+  medianValue: { maxWidth: 190, color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 30, lineHeight: 34, fontWeight: "900", fontVariant: ["tabular-nums"], textShadowColor: "rgba(242, 211, 138, 0.52)", textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 7 },
   gaugeTrack: { height: 28, justifyContent: "center" },
   gaugeBand: { position: "absolute", right: 0, left: 0, height: 9, overflow: "hidden", borderRadius: 5, transformOrigin: "left", boxShadow: "0 0 14px rgba(0, 255, 255, 0.18)" },
   gaugeTick: { position: "absolute", top: 5, width: StyleSheet.hairlineWidth, height: 18, backgroundColor: "rgba(255, 255, 255, 0.34)" },
@@ -1126,23 +1380,23 @@ const styles = StyleSheet.create({
   gaugeLabels: { flexDirection: "row", justifyContent: "space-between" },
   gaugeLabelCenter: { alignItems: "center" },
   gaugeLabelRight: { alignItems: "flex-end" },
-  gaugeLabel: { fontFamily: theme.fonts.analysis, fontSize: 7, fontWeight: "900", letterSpacing: 0.8 },
-  gaugeAmount: { color: "#FFFFFF", fontFamily: theme.fonts.analysis, fontSize: 10, fontWeight: "900", fontVariant: ["tabular-nums"] },
+  gaugeLabel: { fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: "900", letterSpacing: 0.8 },
+  gaugeAmount: { color: "#FFFFFF", fontFamily: theme.fonts.radar, fontSize: 10, fontWeight: "900", fontVariant: ["tabular-nums"] },
   valuePanel: { flex: 1 },
   readinessRow: { minHeight: 24, flexDirection: "row", alignItems: "center", gap: 7, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(255, 255, 255, 0.10)" },
   readinessSignal: { width: 6, height: 6, borderRadius: 3 },
-  readinessText: { flex: 1, fontFamily: theme.fonts.analysis, fontSize: 8, fontWeight: "900" },
-  readinessScore: { fontFamily: theme.fonts.analysis, fontSize: 9, fontWeight: "900", fontVariant: ["tabular-nums"] },
+  readinessText: { flex: 1, fontFamily: theme.fonts.radar, fontSize: 8, fontWeight: "900" },
+  readinessScore: { fontFamily: theme.fonts.radar, fontSize: 9, fontWeight: "900", fontVariant: ["tabular-nums"] },
   basisLine: {
     color: "rgba(255, 255, 255, 0.48)",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 7,
     fontWeight: "800",
     letterSpacing: 0.2,
   },
   emptyPanel: { flex: 1, justifyContent: "center", gap: 9, paddingHorizontal: 8 },
-  emptyTitle: { fontFamily: theme.fonts.analysis, fontSize: 15, fontWeight: "900", letterSpacing: 0.5 },
-  emptyBody: { color: "rgba(255, 255, 255, 0.68)", fontFamily: theme.fonts.analysis, fontSize: 11, lineHeight: 17 },
+  emptyTitle: { fontFamily: theme.fonts.radar, fontSize: 15, fontWeight: "900", letterSpacing: 0.5 },
+  emptyBody: { color: "rgba(255, 255, 255, 0.68)", fontFamily: theme.fonts.radar, fontSize: 11, lineHeight: 17 },
   profitList: { flex: 1, justifyContent: "center", gap: 7 },
   profitStrategyRow: {
     minHeight: 42,
@@ -1158,42 +1412,83 @@ const styles = StyleSheet.create({
   },
   profitStrategyCell: { flex: 1, minWidth: 0, gap: 2, alignItems: "center" },
   profitStrategyLabel: {
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 7,
     fontWeight: "900",
     letterSpacing: 0.8,
   },
   profitStrategyValue: {
     color: "#FFFFFF",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 11,
     fontWeight: "900",
     fontVariant: ["tabular-nums"],
   },
-  profitRow: { minHeight: 43, flexDirection: "row", alignItems: "center", gap: 9, paddingHorizontal: 8, borderLeftWidth: 2, borderLeftColor: theme.colors.scannerCyan, backgroundColor: "rgba(0, 255, 255, 0.035)" },
-  profitIndex: { width: 25, height: 25, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(0, 255, 255, 0.34)", borderRadius: 13 },
-  profitIndexText: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.analysis, fontSize: 7, fontWeight: "900" },
-  profitCopy: { flex: 1, minWidth: 0, gap: 1 },
-  profitTitle: { color: "#FFFFFF", fontFamily: theme.fonts.analysis, fontSize: 10, fontWeight: "900" },
-  profitDetail: { color: "rgba(255, 255, 255, 0.62)", fontFamily: theme.fonts.analysis, fontSize: 8, lineHeight: 11 },
-  proofPanel: { flex: 1, justifyContent: "center", gap: 8 },
-  proofLeadRow: { gap: 3 },
-  proofLeadText: {
-    color: "rgba(255, 255, 255, 0.72)",
-    fontFamily: theme.fonts.analysis,
-    fontSize: 9,
-    lineHeight: 13,
-    fontWeight: "700",
+  profitTapHint: {
+    color: "rgba(0, 255, 255, 0.66)",
+    fontFamily: theme.fonts.radar,
+    fontSize: 7,
+    fontWeight: "900",
+    letterSpacing: 0.7,
   },
-  conditionRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  conditionCopy: { flex: 1, minWidth: 0, gap: 2 },
-  conditionGrade: { color: theme.colors.scannerViolet, fontFamily: theme.fonts.analysis, fontSize: 20, lineHeight: 23, fontWeight: "900" },
-  conditionScore: { color: theme.colors.scannerViolet, fontFamily: theme.fonts.analysis, fontSize: 18, fontWeight: "900", fontVariant: ["tabular-nums"] },
-  evidenceRow: { minHeight: 38, flexDirection: "row", alignItems: "center", gap: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(255, 255, 255, 0.09)" },
-  evidenceCode: { color: theme.colors.goldBright, fontFamily: theme.fonts.analysis, fontSize: 8, fontWeight: "900" },
-  evidenceCopy: { flex: 1, minWidth: 0, gap: 1 },
-  evidenceLabel: { color: "#FFFFFF", fontFamily: theme.fonts.analysis, fontSize: 9, fontWeight: "900" },
-  evidenceValue: { color: "rgba(255, 255, 255, 0.58)", fontFamily: theme.fonts.analysis, fontSize: 8 },
+  profitActionWrap: { gap: 5 },
+  profitRow: { minHeight: 43, flexDirection: "row", alignItems: "center", gap: 9, paddingHorizontal: 8, borderLeftWidth: 2, borderLeftColor: theme.colors.scannerCyan, backgroundColor: "rgba(0, 255, 255, 0.035)" },
+  profitRowExpanded: {
+    borderLeftColor: theme.colors.goldBright,
+    backgroundColor: "rgba(242, 211, 138, 0.08)",
+  },
+  profitIndex: { width: 25, height: 25, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(0, 255, 255, 0.34)", borderRadius: 13 },
+  profitIndexText: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: "900" },
+  profitCopy: { flex: 1, minWidth: 0, gap: 1 },
+  profitTitle: { color: "#FFFFFF", fontFamily: theme.fonts.radar, fontSize: 10, fontWeight: "900" },
+  profitDetail: { color: "rgba(255, 255, 255, 0.62)", fontFamily: theme.fonts.radar, fontSize: 8, lineHeight: 11 },
+  profitExpandMark: {
+    color: theme.colors.goldBright,
+    fontFamily: theme.fonts.radar,
+    fontSize: 18,
+    fontWeight: "900",
+  },
+  profitGuidance: {
+    gap: 7,
+    marginLeft: 10,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "rgba(0, 255, 255, 0.16)",
+    backgroundColor: "rgba(0, 255, 255, 0.025)",
+  },
+  profitGuidanceStatus: {
+    color: theme.colors.scannerCyan,
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 0.75,
+  },
+  profitGuidanceError: {
+    color: theme.colors.danger,
+    fontFamily: theme.fonts.radar,
+    fontSize: 9,
+    lineHeight: 14,
+  },
+  profitGuidanceMeta: {
+    color: "rgba(0, 255, 255, 0.72)",
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
+    lineHeight: 13,
+  },
+  profitGuidanceWarning: {
+    color: theme.colors.goldBright,
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
+    lineHeight: 13,
+  },
+  identifierPanel: { flex: 1, justifyContent: "center", gap: 7 },
+  identifierLead: { gap: 2, paddingBottom: 6, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(255, 255, 255, 0.10)" },
+  identifierTitle: { color: "#FFFFFF", fontFamily: theme.fonts.radar, fontSize: 15, lineHeight: 19, fontWeight: "900" },
+  identifierConfidence: { color: theme.colors.scannerViolet, fontFamily: theme.fonts.numbers, fontSize: 8, fontWeight: "900", letterSpacing: 0.55 },
+  identifierFactRow: { minHeight: 18, flexDirection: "row", alignItems: "center", gap: 7 },
+  identifierFactLabel: { width: 96, color: "rgba(255, 255, 255, 0.45)", fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: "900", letterSpacing: 0.5 },
+  identifierFactValue: { flex: 1, color: "rgba(255, 255, 255, 0.84)", fontFamily: theme.fonts.radar, fontSize: 9, fontWeight: "800" },
+  identifierFactConfidence: { width: 28, color: theme.colors.scannerViolet, fontFamily: theme.fonts.numbers, fontSize: 8, fontWeight: "900", textAlign: "right" },
   expandedDetails: { gap: 10, paddingHorizontal: 3, paddingTop: 10 },
   detailSection: {
     gap: 9,
@@ -1205,7 +1500,7 @@ const styles = StyleSheet.create({
   },
   detailSectionTitle: {
     color: theme.colors.goldBright,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 8,
     fontWeight: "900",
     letterSpacing: 1.1,
@@ -1218,7 +1513,7 @@ const styles = StyleSheet.create({
   },
   detailFactLabel: {
     color: "rgba(255, 255, 255, 0.42)",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 7,
     fontWeight: "900",
     letterSpacing: 0.8,
@@ -1231,7 +1526,7 @@ const styles = StyleSheet.create({
   detailFactValue: {
     flex: 1,
     color: "#FFFFFF",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 12,
     lineHeight: 17,
     fontWeight: "800",
@@ -1245,34 +1540,34 @@ const styles = StyleSheet.create({
   },
   detailBody: {
     color: "rgba(255, 255, 255, 0.68)",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 10,
     lineHeight: 15,
   },
   detailBulletRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
   detailBullet: {
     color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 11,
     fontWeight: "900",
   },
   detailBulletText: {
     flex: 1,
     color: "rgba(255, 255, 255, 0.72)",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 10,
     lineHeight: 15,
   },
   detailSignal: {
     color: theme.colors.scannerViolet,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 9,
     fontWeight: "900",
     letterSpacing: 0.7,
   },
   detailSource: {
     color: "rgba(0, 255, 255, 0.58)",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 6,
     fontWeight: "900",
     letterSpacing: 0.65,
@@ -1288,7 +1583,7 @@ const styles = StyleSheet.create({
   expandedProfitCode: {
     width: 24,
     color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 8,
     fontWeight: "900",
   },
@@ -1302,7 +1597,7 @@ const styles = StyleSheet.create({
   expandedProfitTitle: {
     flex: 1,
     color: "#FFFFFF",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 10,
     fontWeight: "900",
   },
@@ -1317,7 +1612,7 @@ const styles = StyleSheet.create({
   expandedEvidenceCode: {
     width: 22,
     color: theme.colors.goldBright,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 8,
     fontWeight: "900",
   },
@@ -1331,7 +1626,7 @@ const styles = StyleSheet.create({
   expandedEvidenceLabel: {
     flex: 1,
     color: "#FFFFFF",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 9,
     fontWeight: "900",
   },
@@ -1346,21 +1641,21 @@ const styles = StyleSheet.create({
   referenceCode: {
     width: 22,
     color: theme.colors.scannerViolet,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 8,
     fontWeight: "900",
   },
   referenceCopy: { flex: 1, minWidth: 0, gap: 3 },
   referenceTitle: {
     color: "#FFFFFF",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 10,
     lineHeight: 14,
     fontWeight: "900",
   },
   referenceLink: {
     color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 7,
     lineHeight: 11,
   },
@@ -1372,14 +1667,14 @@ const styles = StyleSheet.create({
   },
   questionLabel: {
     color: "#FFFFFF",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 9,
     lineHeight: 14,
     fontWeight: "900",
   },
   questionReason: {
     color: "rgba(255, 255, 255, 0.46)",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 8,
     lineHeight: 12,
   },
@@ -1392,7 +1687,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     color: "#FFFFFF",
     backgroundColor: "rgba(0, 255, 255, 0.035)",
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 10,
     lineHeight: 15,
     textAlignVertical: "top",
@@ -1408,13 +1703,13 @@ const styles = StyleSheet.create({
   },
   refineButtonText: {
     color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.analysis,
+    fontFamily: theme.fonts.radar,
     fontSize: 9,
     fontWeight: "900",
     letterSpacing: 0.8,
   },
   saveButton: { minHeight: 43, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 4, backgroundColor: theme.colors.goldBright },
-  saveButtonText: { color: theme.colors.backgroundDeep, fontFamily: theme.fonts.analysis, fontSize: 9, fontWeight: "900", letterSpacing: 0.7 },
+  saveButtonText: { color: theme.colors.backgroundDeep, fontFamily: theme.fonts.radar, fontSize: 9, fontWeight: "900", letterSpacing: 0.7 },
   pressed: { opacity: 0.72, transform: [{ scale: 0.98 }] },
   disabled: { opacity: 0.48 },
 });

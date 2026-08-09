@@ -40,7 +40,9 @@ const MAPPING = {
   'rectangle.portrait.and.arrow.right': 'logout',
   'arrow.clockwise': 'refresh',
   'arrow.right': 'arrow-forward',
+  'magnifyingglass': 'search',
   'tag.fill': 'sell',
+  'wrench.and.screwdriver.fill': 'build',
   'xmark': 'close',
 } as const satisfies Record<string, MaterialIconName>;
 
