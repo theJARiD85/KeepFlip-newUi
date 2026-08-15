@@ -35,6 +35,7 @@ import {
   AppwriteSetupError,
   ItemAnalysisError,
 } from "@/services/item-analysis-service";
+import { neutralizeMarketplaceBrand } from "@/services/market-copy";
 import type {
   ItemAnalysisStage,
   ItemAnalysisSuccess,
@@ -101,6 +102,7 @@ export function ItemAnalysisScreen() {
       localDetection: session?.localDetection,
       modeLabel: session?.modeLabel ?? "Item scan",
       photoCount: session?.photoUris.length ?? 1,
+      scanProof: session?.scanProof,
     }),
   );
   const [completedAnalysis, setCompletedAnalysis] =
@@ -162,6 +164,7 @@ export function ItemAnalysisScreen() {
       localDetection: session.localDetection,
       modeLabel: session.modeLabel,
       photoCount: session.photoUris.length,
+      scanProof: session.scanProof,
     };
     const progressState = (stage: ItemAnalysisStage) =>
       analysisProgressState(stage, {
@@ -233,12 +236,14 @@ export function ItemAnalysisScreen() {
 
       if (error instanceof AppwriteSetupError) {
         setState({
-          message: error.message,
+          message: neutralizeMarketplaceBrand(error.message),
           requirements: [
             "Add the public Appwrite endpoint and project ID to .env",
             "Create a private scan-photo bucket and add its ID.",
             "Deploy the analyze-item Function and add its Function ID.",
-            ...error.missingKeys.map((key) => `Missing: ${key}`),
+            ...error.missingKeys.map((key) =>
+              neutralizeMarketplaceBrand(`Missing: ${key}`),
+            ),
           ],
           status: "setup",
           title: "Connect secure item analysis",
@@ -254,7 +259,9 @@ export function ItemAnalysisScreen() {
             : "ANALYSIS_FAILED",
         message:
           error instanceof Error
-            ? `${error.message}${diagnosticId ? ` Diagnostic reference: ${diagnosticId}.` : ""}`
+            ? neutralizeMarketplaceBrand(
+              `${error.message}${diagnosticId ? ` Diagnostic reference: ${diagnosticId}.` : ""}`,
+            )
             : "KeepFlip could not complete this analysis. Please try again.",
         status: "error",
       });

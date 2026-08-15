@@ -1,6 +1,7 @@
 import type { ItemAnalysisState } from "@/components/scanner/analysis-visual-types";
 import { toItemAnalysisState } from "@/components/scanner/item-analysis-view-model";
 import type { InventoryItem } from "@/services/inventory-service";
+import { neutralizeMarketplaceBrand } from "@/services/market-copy";
 
 type ResultState = Extract<ItemAnalysisState, { status: "result" }>;
 
@@ -10,13 +11,17 @@ function normalizedConfidence(value: number | null) {
 }
 
 function displayText(value: string, maxLength: number) {
-  const normalized = value.replace(/\s+/g, " ").trim();
+  const normalized = neutralizeMarketplaceBrand(value)
+    .replace(/\s+/g, " ")
+    .trim();
   if (normalized.length <= maxLength) return normalized;
   return `${normalized.slice(0, maxLength - 1).trimEnd()}…`;
 }
 
 function displaySignal(value: string | null) {
-  return value?.replace(/_/g, " ").trim() || null;
+  return value
+    ? neutralizeMarketplaceBrand(value).replace(/_/g, " ").trim() || null
+    : null;
 }
 
 export function inventoryItemToAnalysisState(

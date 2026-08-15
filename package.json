@@ -38,7 +38,6 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.85.3",
-    "react-native-appodeal": "^4.2.0",
     "react-native-appwrite": "^0.34.0",
     "react-native-fast-tflite": "^3.0.1",
     "react-native-filament": "^1.11.0",

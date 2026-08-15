@@ -26,6 +26,7 @@ export type AnalysisIdentity = {
   confidence?: number;
   model?: string;
   title: string;
+  titleLabel?: string;
   variant?: string;
 };
 
@@ -34,6 +35,7 @@ export type AnalysisCondition = {
   label: string;
   score?: number;
   summary?: string;
+  titleLabel?: string;
 };
 
 export type AnalysisConfidenceBreakdown = {
@@ -67,6 +69,12 @@ export type AnalysisValuationReadiness = {
   status: "ready" | "limited" | "not-ready";
 };
 
+export type AnalysisValuationLadder = {
+  level: "Level 1" | "Level 2" | "Level 3" | "Level 4" | "Level 5";
+  reason?: string;
+  confidence?: number;
+};
+
 export type AnalysisValuation = {
   basis?: string;
   comparableCount?: number;
@@ -74,9 +82,9 @@ export type AnalysisValuation = {
   high: number;
   low: number;
   median: number;
-  query?: string;
   snapshot?: boolean;
   source?: "ebay" | "multi_market" | "serpapi_ai" | "supplied";
+  titleLabel?: string;
 };
 
 export type AnalysisProfitAction = {
@@ -116,6 +124,7 @@ export type ItemAnalysisResult = {
   suggestedPhotos?: AnalysisSuggestedPhoto[];
   summary?: string;
   valuation?: AnalysisValuation;
+  valuationLadder?: AnalysisValuationLadder;
   valuationReadiness: AnalysisValuationReadiness;
 };
 

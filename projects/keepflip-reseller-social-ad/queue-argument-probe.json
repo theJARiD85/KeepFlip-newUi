@@ -1,0 +1,10 @@
+{
+  "project": "keepflip-reseller-social-ad",
+  "tasks": [
+    {
+      "id": "probe",
+      "label": "probe",
+      "cmd": "pixverse create image --model v4.5 --prompt x"
+    }
+  ]
+}

@@ -31,6 +31,10 @@ import Animated, {
 } from "react-native-reanimated";
 
 import {
+  BarcodeLookupOverlay,
+  type BarcodeLookupOverlayState,
+} from "@/components/scanner/barcode-lookup-overlay.native";
+import {
   ValueRadarOverlay,
   useValueRadar,
   type ValueRadarViewport,
@@ -54,18 +58,28 @@ import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout } from "@/hooks/use-responsive-layout";
+import { lookupBarcodeWithEbay } from "@/services/ebaySoldCompsService";
 import { MAX_ANALYSIS_PHOTOS } from "@/services/item-analysis-service";
+import { neutralizeMarketplaceBrand } from "@/services/market-copy";
 import {
   createScanId,
   saveScannerPhoto,
   type SavedScanPhoto,
 } from "@/services/scan-photo-service";
+import {
+  buildScanProofAssessment,
+  inspectLocalScanProofPhoto,
+  mergeLocalScanProofSignals,
+  type LocalScanProofSignals,
+  type ScanProofAssessment,
+} from "@/services/scan-proof-service";
 
 type AnalysisCognitionSeed = {
   localDetection?: {
     label: string;
     score: number;
   };
+  scanProof?: ScanProofAssessment;
   tool: ScannerToolId;
 };
 
@@ -81,6 +95,7 @@ type ScannerAnalysisActions = {
     onCancel: () => void;
     onReset: () => void;
     photoUris: string[];
+    scanProof?: ScanProofAssessment;
     scanId: string;
   }) => string;
 };
@@ -94,6 +109,14 @@ function selectMultiScanEvidence(photos: MultiScanPhoto[]) {
     photos[0].path,
     ...photos.slice(-(MAX_ANALYSIS_PHOTOS - 1)).map((photo) => photo.path),
   ];
+}
+
+function productCodeFromSignals(signals: LocalScanProofSignals) {
+  return (
+    signals.barcodes
+      .map((value) => value.replace(/\s+/g, ""))
+      .find((value) => /^[A-Za-z0-9-]{6,32}$/.test(value)) ?? null
+  );
 }
 
 function scannerToolHeaderCopy({
@@ -115,6 +138,13 @@ function scannerToolHeaderCopy({
       hint: hasSinglePhoto
         ? "Photo ready. Tap the scan tool to replace it."
         : "One item, one photo.",
+    };
+  }
+
+  if (tool === "barcode") {
+    return {
+      title: "Scan a product barcode",
+      hint: "Center a UPC, EAN, ISBN, or product code to identify the item.",
     };
   }
 
@@ -177,6 +207,7 @@ export default function ScannerScreen() {
   const uploadSequenceRef = useRef(0);
   const torchRequestSequenceRef = useRef(0);
   const pendingAnalysisSessionIdRef = useRef<string | null>(null);
+  const barcodeLookupRequestRef = useRef(0);
   const analysisNavigationTimerRef =
     useRef<ReturnType<typeof setTimeout> | null>(null);
   const scanIdRef = useRef(createScanId());
@@ -191,6 +222,7 @@ export default function ScannerScreen() {
   const [torchEnabled, setTorchEnabled] = useState(false);
   const [isTorchUpdating, setIsTorchUpdating] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [isInspectingProof, setIsInspectingProof] = useState(false);
   const [readyCameraId, setReadyCameraId] = useState<string | null>(null);
   const [isPickingPhoto, setIsPickingPhoto] = useState(false);
   const [appState, setAppState] = useState(AppState.currentState);
@@ -204,10 +236,16 @@ export default function ScannerScreen() {
   const [batchScanPhotos, setBatchScanPhotos] = useState<string[]>([]);
   const [uploadedPhotos, setUploadedPhotos] = useState<MultiScanPhoto[]>([]);
   const [isUploadReviewOpen, setIsUploadReviewOpen] = useState(false);
+  const [barcodeLookup, setBarcodeLookup] =
+    useState<BarcodeLookupOverlayState>({ phase: "idle" });
   const [activeAnalysisSessionId, setActiveAnalysisSessionId] =
     useState<string | null>(null);
+  const [proofSignalsByUri, setProofSignalsByUri] = useState<
+    Record<string, LocalScanProofSignals>
+  >({});
   const canUseTorch = device?.hasTorch === true;
   const isCameraReady = readyCameraId === device?.id;
+  const isBarcodeMode = selectedTool === "barcode";
   const analysisPhotoUris =
     selectedTool === "single" && singlePhotoUri
       ? [singlePhotoUri]
@@ -227,8 +265,11 @@ export default function ScannerScreen() {
     uploadedCount: uploadedPhotos.length,
   });
   const isPhotoReviewOpen = isMultiReviewOpen || isUploadReviewOpen;
+  const isBarcodeLookupOpen = barcodeLookup.phase !== "idle";
   const isScannerOverlayOpen =
-    isPhotoReviewOpen || activeAnalysisSessionId != null;
+    isPhotoReviewOpen ||
+    isBarcodeLookupOpen ||
+    activeAnalysisSessionId != null;
   const isCameraActive =
     hasPermission &&
     device != null &&
@@ -236,6 +277,7 @@ export default function ScannerScreen() {
     appState === "active" &&
     !isMenuOpen &&
     !isPickingPhoto &&
+    !isInspectingProof &&
     !isScannerOverlayOpen;
   const shouldMountCamera =
     hasPermission &&
@@ -247,11 +289,38 @@ export default function ScannerScreen() {
     frameOutput: radarFrameOutput,
     marker: radarMarker,
     status: radarStatus,
-  } = useValueRadar(isCameraActive, radarViewport ?? undefined);
+  } = useValueRadar(
+    isCameraActive && !isBarcodeMode,
+    radarViewport ?? undefined,
+  );
   const cameraOutputs = useMemo(
     () => [photoOutput, radarFrameOutput],
     [photoOutput, radarFrameOutput],
   );
+  const currentCameraCandidate =
+    radarMarker && radarMarker.score >= 0.55
+      ? {
+          label: radarMarker.label,
+          score: radarMarker.score,
+        }
+      : undefined;
+  const localProofSignals = mergeLocalScanProofSignals(
+    analysisPhotoUris.map((photoUri) => proofSignalsByUri[photoUri]),
+  );
+  const scanProof = buildScanProofAssessment({
+    localDetection:
+      selectedTool === "single" ? currentCameraCandidate : undefined,
+    mode: isBarcodeMode ? "single" : selectedTool,
+    photoCount: analysisPhotoUris.length,
+    signals: localProofSignals,
+  });
+  const scannerHeaderHint =
+    captureFeedback ??
+    (scanProof.source === "on_device"
+      ? `${scanProof.evidenceDetail}. ${scanProof.processingDetail}`
+      : selectedToolHeader.hint);
+  const scannerHeaderHasEvidence =
+    captureFeedback != null || scanProof.source === "on_device";
 
   const handleScanFrameLayout = useCallback(() => {
     requestAnimationFrame(() => {
@@ -478,6 +547,33 @@ export default function ScannerScreen() {
     [],
   );
 
+  const inspectCapturedPhotoProof = useCallback(async (photoUri: string) => {
+    setIsInspectingProof(true);
+    setCaptureFeedback("Reading barcode or model label locally...");
+
+    try {
+      const signals = await inspectLocalScanProofPhoto(photoUri);
+      setProofSignalsByUri((current) => ({
+        ...current,
+        [photoUri]: signals,
+      }));
+      return signals;
+    } finally {
+      setIsInspectingProof(false);
+    }
+  }, []);
+
+  const inspectCapturedBarcode = useCallback(async (photoUri: string) => {
+    setIsInspectingProof(true);
+    setCaptureFeedback("Reading barcode locally...");
+
+    try {
+      return await inspectLocalScanProofPhoto(photoUri);
+    } finally {
+      setIsInspectingProof(false);
+    }
+  }, []);
+
   const persistPickedPhotos = useCallback(
     async (assets: readonly ImagePicker.ImagePickerAsset[]) => {
       if (!user?.$id) {
@@ -509,9 +605,14 @@ export default function ScannerScreen() {
       }
 
       acceptPickedPhotos(selectedAssets);
+      for (const asset of selectedAssets) {
+        await inspectCapturedPhotoProof(asset.uri);
+      }
+      setCaptureFeedback(null);
     },
     [
       acceptPickedPhotos,
+      inspectCapturedPhotoProof,
       uploadedPhotos,
       user?.$id,
     ],
@@ -565,7 +666,7 @@ export default function ScannerScreen() {
   };
 
   const handleUploadPhoto = useCallback(async () => {
-    if (isPickingPhoto) return;
+    if (isPickingPhoto || isInspectingProof) return;
     const remainingSlots = MAX_ANALYSIS_PHOTOS - uploadedPhotos.length;
     if (remainingSlots <= 0) {
       setCaptureFeedback(
@@ -604,6 +705,7 @@ export default function ScannerScreen() {
       setIsPickingPhoto(false);
     }
   }, [
+    isInspectingProof,
     isPickingPhoto,
     persistPickedPhotos,
     uploadedPhotos.length,
@@ -630,8 +732,12 @@ export default function ScannerScreen() {
         return null;
       }
 
+      if (isInspectingProof) return null;
+
       if (!user?.$id) {
-        const feedback = "Sign in before saving scanner photos.";
+        const feedback = isBarcodeMode
+          ? "Sign in before looking up a barcode."
+          : "Sign in before saving scanner photos.";
         setCaptureFeedback(feedback);
         return null;
       }
@@ -682,16 +788,85 @@ export default function ScannerScreen() {
     [
       isCameraActive,
       isCameraReady,
+      isBarcodeMode,
+      isInspectingProof,
       photoOutput,
       user?.$id,
     ],
   );
+
+  const dismissBarcodeLookup = useCallback(() => {
+    barcodeLookupRequestRef.current += 1;
+    setBarcodeLookup({ phase: "idle" });
+    setCaptureFeedback(null);
+  }, []);
+
+  const scanAnotherBarcode = useCallback(() => {
+    dismissBarcodeLookup();
+    setSelectedTool("barcode");
+    setCaptureFeedback("Center the full product barcode inside the scan frame.");
+  }, [dismissBarcodeLookup]);
+
+  const handleBarcodeToolActivate = useCallback(async () => {
+    const captured = await capturePhoto({
+      scanId: scanIdRef.current,
+      sortOrder: 0,
+      isPrimary: false,
+      persistImmediately: false,
+    });
+    if (!captured) return;
+
+    const signals = await inspectCapturedBarcode(captured.path);
+    const barcode = productCodeFromSignals(signals);
+
+    if (!barcode) {
+      setBarcodeLookup({
+        phase: "error",
+        barcode: null,
+        message:
+          "No complete product barcode was read. Move closer, avoid glare, and keep the full code in the frame.",
+      });
+      return;
+    }
+
+    const requestId = barcodeLookupRequestRef.current + 1;
+    barcodeLookupRequestRef.current = requestId;
+    setBarcodeLookup({ phase: "searching", barcode });
+
+    try {
+      // This explicit, code-only action owns the barcode lookup boundary.
+      const result = await lookupBarcodeWithEbay(barcode);
+      if (requestId !== barcodeLookupRequestRef.current) return;
+
+      setBarcodeLookup({ phase: "result", result });
+      void Haptics.notificationAsync(
+        result.found
+          ? Haptics.NotificationFeedbackType.Success
+          : Haptics.NotificationFeedbackType.Warning,
+      ).catch(() => undefined);
+    } catch (error) {
+      if (requestId !== barcodeLookupRequestRef.current) return;
+
+      setBarcodeLookup({
+        phase: "error",
+        barcode,
+        message:
+          error instanceof Error
+            ? neutralizeMarketplaceBrand(error.message)
+            : "KeepFlip could not verify that barcode. Please try again.",
+      });
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(
+        () => undefined,
+      );
+    }
+  }, [capturePhoto, inspectCapturedBarcode]);
 
   const openMultiReview = useCallback(() => {
     if (
       multiScanPhotos.length === 0 ||
       captureLockRef.current ||
       isCapturing ||
+      isInspectingProof ||
       isPickingPhoto ||
       isMenuOpen
     ) {
@@ -700,7 +875,13 @@ export default function ScannerScreen() {
 
     setIsMultiReviewOpen(true);
     void Haptics.selectionAsync().catch(() => undefined);
-  }, [isCapturing, isMenuOpen, isPickingPhoto, multiScanPhotos.length]);
+  }, [
+    isCapturing,
+    isInspectingProof,
+    isMenuOpen,
+    isPickingPhoto,
+    multiScanPhotos.length,
+  ]);
 
   const closeMultiReview = useCallback(() => {
     setIsMultiReviewOpen(false);
@@ -708,10 +889,18 @@ export default function ScannerScreen() {
   }, []);
 
   const deleteMultiPhoto = useCallback((photoId: string) => {
+    const deletedPhoto = multiScanPhotos.find((photo) => photo.id === photoId);
     const nextPhotos = multiScanPhotos.filter(
       (photo) => photo.id !== photoId,
     );
     setMultiScanPhotos(nextPhotos);
+    if (deletedPhoto) {
+      setProofSignalsByUri((current) => {
+        const next = { ...current };
+        delete next[deletedPhoto.path];
+        return next;
+      });
+    }
     if (nextPhotos.length === 0) setIsMultiReviewOpen(false);
     void Haptics.selectionAsync().catch(() => undefined);
   }, [multiScanPhotos]);
@@ -721,6 +910,7 @@ export default function ScannerScreen() {
       uploadedPhotos.length === 0 ||
       captureLockRef.current ||
       isCapturing ||
+      isInspectingProof ||
       isPickingPhoto ||
       isMenuOpen
     ) {
@@ -729,7 +919,13 @@ export default function ScannerScreen() {
 
     setIsUploadReviewOpen(true);
     void Haptics.selectionAsync().catch(() => undefined);
-  }, [isCapturing, isMenuOpen, isPickingPhoto, uploadedPhotos.length]);
+  }, [
+    isCapturing,
+    isInspectingProof,
+    isMenuOpen,
+    isPickingPhoto,
+    uploadedPhotos.length,
+  ]);
 
   const closeUploadReview = useCallback(() => {
     setIsUploadReviewOpen(false);
@@ -737,36 +933,49 @@ export default function ScannerScreen() {
   }, []);
 
   const deleteUploadedPhoto = useCallback((photoId: string) => {
+    const deletedPhoto = uploadedPhotos.find((photo) => photo.id === photoId);
     const nextPhotos = uploadedPhotos.filter(
       (photo) => photo.id !== photoId,
     );
     setUploadedPhotos(nextPhotos);
+    if (deletedPhoto) {
+      setProofSignalsByUri((current) => {
+        const next = { ...current };
+        delete next[deletedPhoto.path];
+        return next;
+      });
+    }
     if (nextPhotos.length === 0) setIsUploadReviewOpen(false);
     void Haptics.selectionAsync().catch(() => undefined);
   }, [uploadedPhotos]);
 
   const handleToolSelect = (tool: ScannerToolId) => {
-    if (isCapturing || isPickingPhoto || isMenuOpen) return;
+    if (isCapturing || isInspectingProof || isPickingPhoto || isMenuOpen) {
+      return;
+    }
 
     setCaptureFeedback(null);
     setSelectedTool(tool);
   };
 
   const handleToolActivate = async (tool: ScannerToolId) => {
+    if (isCapturing || isInspectingProof || isPickingPhoto || isMenuOpen) {
+      return;
+    }
+
     if (tool === "upload") {
       await handleUploadPhoto();
       return;
     }
 
+    if (tool === "barcode") {
+      await handleBarcodeToolActivate();
+      return;
+    }
+
     const cognitionSeed: AnalysisCognitionSeed = {
       tool,
-      localDetection:
-        tool === "single" && radarMarker && radarMarker.score >= 0.55
-          ? {
-              label: radarMarker.label,
-              score: radarMarker.score,
-            }
-          : undefined,
+      localDetection: tool === "single" ? currentCameraCandidate : undefined,
     };
     const scanId = tool === "batch" ? createScanId() : scanIdRef.current;
     const sortOrder = tool === "multi" ? multiScanPhotos.length : 0;
@@ -804,7 +1013,20 @@ export default function ScannerScreen() {
       };
 
       setSinglePhotoUri(photoPath);
-      beginAnalysis([photoPath], cognitionSeed, ensurePhotosSaved);
+      const signals = await inspectCapturedPhotoProof(photoPath);
+      beginAnalysis(
+        [photoPath],
+        {
+          ...cognitionSeed,
+          scanProof: buildScanProofAssessment({
+            localDetection: cognitionSeed.localDetection,
+            mode: tool,
+            photoCount: 1,
+            signals,
+          }),
+        },
+        ensurePhotosSaved,
+      );
       return;
     }
 
@@ -814,6 +1036,7 @@ export default function ScannerScreen() {
         setCaptureFeedback("The captured photo could not be saved.");
         return;
       }
+      await inspectCapturedPhotoProof(photoPath);
       setMultiScanPhotos((photos) => {
         const photo: MultiScanPhoto = {
           createdAt: Date.now(),
@@ -823,12 +1046,14 @@ export default function ScannerScreen() {
         };
         return [...photos, photo];
       });
+      setCaptureFeedback(null);
       return;
     }
 
     setBatchScanPhotos((photos) => {
       return [...photos, photoPath];
     });
+    setCaptureFeedback(null);
   };
 
   const resetScannerSession = useCallback(() => {
@@ -836,6 +1061,7 @@ export default function ScannerScreen() {
     uploadSequenceRef.current = 0;
     scanIdRef.current = createScanId();
     pendingAnalysisSessionIdRef.current = null;
+    barcodeLookupRequestRef.current += 1;
     if (analysisNavigationTimerRef.current) {
       clearTimeout(analysisNavigationTimerRef.current);
       analysisNavigationTimerRef.current = null;
@@ -844,8 +1070,11 @@ export default function ScannerScreen() {
     setMultiScanPhotos([]);
     setBatchScanPhotos([]);
     setUploadedPhotos([]);
+    setProofSignalsByUri({});
+    setIsInspectingProof(false);
     setIsMultiReviewOpen(false);
     setIsUploadReviewOpen(false);
+    setBarcodeLookup({ phase: "idle" });
     setActiveAnalysisSessionId(null);
     setSelectedTool("single");
     setCaptureFeedback(null);
@@ -860,6 +1089,7 @@ export default function ScannerScreen() {
     if (
       photoUris.length === 0 ||
       activeAnalysisSessionId != null ||
+      isInspectingProof ||
       isPickingPhoto ||
       isMenuOpen
     ) {
@@ -879,6 +1109,7 @@ export default function ScannerScreen() {
       },
       onReset: resetScannerSession,
       photoUris: [...photoUris],
+      scanProof: cognitionSeed.scanProof,
       scanId: scanIdRef.current,
     });
 
@@ -902,7 +1133,12 @@ export default function ScannerScreen() {
   }
 
   const handleAnalyzeItem = () =>
-    beginAnalysis(analysisPhotoUris, { tool: selectedTool });
+    beginAnalysis(analysisPhotoUris, {
+      localDetection:
+        selectedTool === "single" ? currentCameraCandidate : undefined,
+      scanProof,
+      tool: selectedTool,
+    });
 
   const analysisButton =
     canAnalyzeCurrentTool &&
@@ -917,12 +1153,14 @@ export default function ScannerScreen() {
           accessibilityHint={`Uses ${analysisPhotoUris.length} selected photo${analysisPhotoUris.length === 1 ? "" : "s"} to identify and value this item`}
           accessibilityLabel="Analyze item with KeepFlip AI"
           accessibilityRole="button"
-          disabled={isCapturing || isPickingPhoto || isMenuOpen}
+          disabled={
+            isCapturing || isInspectingProof || isPickingPhoto || isMenuOpen
+          }
           onPress={() => void handleAnalyzeItem()}
           style={({ pressed }) => [
             styles.analyzeButton,
             pressed && styles.analyzeButtonPressed,
-            (isCapturing || isPickingPhoto || isMenuOpen) &&
+            (isCapturing || isInspectingProof || isPickingPhoto || isMenuOpen) &&
               styles.buttonDisabled,
           ]}
         >
@@ -972,7 +1210,7 @@ export default function ScannerScreen() {
       </Animated.View>
     ) : null;
 
-  const photoReviewOverlay = isMultiReviewOpen ? (
+  const scannerOverlay = isMultiReviewOpen ? (
     <MultiScanPhotoReview
       bottomInset={insets.bottom}
       onClose={closeMultiReview}
@@ -989,6 +1227,14 @@ export default function ScannerScreen() {
       onClose={closeUploadReview}
       onDelete={deleteUploadedPhoto}
       photos={uploadedPhotos}
+      topInset={insets.top}
+    />
+  ) : isBarcodeLookupOpen ? (
+    <BarcodeLookupOverlay
+      bottomInset={insets.bottom}
+      onDismiss={dismissBarcodeLookup}
+      onScanAgain={scanAnotherBarcode}
+      state={barcodeLookup}
       topInset={insets.top}
     />
   ) : null;
@@ -1094,7 +1340,7 @@ export default function ScannerScreen() {
             ) : null}
           </Animated.View>
         ) : null}
-        {photoReviewOverlay}
+        {scannerOverlay}
       </KeepFlipBackground>
     );
   }
@@ -1167,7 +1413,7 @@ export default function ScannerScreen() {
             ) : null}
           </Animated.View>
         ) : null}
-        {photoReviewOverlay}
+        {scannerOverlay}
       </KeepFlipBackground>
     );
   }
@@ -1220,30 +1466,37 @@ export default function ScannerScreen() {
               avoidBottomAction={analysisButton != null}
               disabled={
                 isCapturing ||
+                isInspectingProof ||
                 isPickingPhoto ||
                 isMenuOpen ||
-                !isCameraReady
+                !isCameraReady ||
+                isBarcodeMode
               }
               focusBounds={radarViewport}
               height={screenHeight}
-              marker={radarMarker}
+              marker={isBarcodeMode ? null : radarMarker}
               onMarkerPress={() => {
                 setSelectedTool("single");
                 void Haptics.selectionAsync().catch(() => undefined);
                 void handleToolActivate("single");
               }}
+              proof={
+                selectedTool === "multi" && scanProof.source === "on_device"
+                  ? scanProof
+                  : undefined
+              }
               status={radarStatus}
               width={screenWidth}
             />
           </View>
         ) : null}
-        {photoReviewOverlay ? (
+        {scannerOverlay ? (
           <View
             collapsable={false}
             pointerEvents="box-none"
             style={styles.photoOverlayHost}
           >
-            {photoReviewOverlay}
+            {scannerOverlay}
           </View>
         ) : null}
 
@@ -1312,7 +1565,7 @@ export default function ScannerScreen() {
                   style={[
                     styles.headerHint,
                     {
-                      color: captureFeedback
+                      color: scannerHeaderHasEvidence
                         ? selectedToolAppearance.accent
                         : theme.colors.text,
                       fontSize: responsiveFont(12),
@@ -1320,7 +1573,7 @@ export default function ScannerScreen() {
                     },
                   ]}
                 >
-                  {captureFeedback ?? selectedToolHeader.hint}
+                  {scannerHeaderHint}
                 </Text>
               </View>
             </Animated.View>
@@ -1386,7 +1639,12 @@ export default function ScannerScreen() {
           !isMultiReviewOpen ? (
             <View style={styles.multiStackAnchor}>
               <MultiScanPhotoStack
-                disabled={isCapturing || isPickingPhoto || isMenuOpen}
+                disabled={
+                  isCapturing ||
+                  isInspectingProof ||
+                  isPickingPhoto ||
+                  isMenuOpen
+                }
                 onOpen={openMultiReview}
                 photos={multiScanPhotos}
               />
@@ -1399,7 +1657,12 @@ export default function ScannerScreen() {
               <MultiScanPhotoStack
                 accentColor={theme.colors.cream}
                 accessibilityContext="uploaded"
-                disabled={isCapturing || isPickingPhoto || isMenuOpen}
+                disabled={
+                  isCapturing ||
+                  isInspectingProof ||
+                  isPickingPhoto ||
+                  isMenuOpen
+                }
                 onOpen={openUploadReview}
                 photos={uploadedPhotos}
               />
@@ -1436,7 +1699,12 @@ export default function ScannerScreen() {
               batch: batchScanPhotos.length,
               upload: uploadedPhotos.length,
             }}
-            disabled={isCapturing || isPickingPhoto || isMenuOpen}
+            disabled={
+              isCapturing ||
+              isInspectingProof ||
+              isPickingPhoto ||
+              isMenuOpen
+            }
             onActivate={(tool) => void handleToolActivate(tool)}
             onSelect={handleToolSelect}
             selectedTool={selectedTool}
@@ -1638,6 +1906,45 @@ const styles = StyleSheet.create({
     borderRadius: theme.radii.large,
     alignSelf: "center",
     justifyContent: "flex-start",
+  },
+  barcodeGuide: {
+    ...StyleSheet.absoluteFill,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 15,
+    paddingHorizontal: 30,
+  },
+  barcodeGuideStrip: {
+    width: "100%",
+    maxWidth: 250,
+    height: 94,
+    flexDirection: "row",
+    alignItems: "stretch",
+    justifyContent: "center",
+    gap: 7,
+    paddingHorizontal: 22,
+    paddingVertical: 10,
+    borderRadius: theme.radii.medium,
+    borderWidth: 1,
+    borderColor: "rgba(141, 114, 255, 0.78)",
+    backgroundColor: "rgba(4, 3, 9, 0.48)",
+    boxShadow: "0 0 28px rgba(141, 114, 255, 0.24)",
+  },
+  barcodeGuideLine: {
+    width: 5,
+    borderRadius: 3,
+    backgroundColor: theme.colors.scannerMagenta,
+  },
+  barcodeGuideLineWide: {
+    width: 12,
+    borderRadius: 3,
+    backgroundColor: theme.colors.scannerCyan,
+  },
+  barcodeGuideText: {
+    color: theme.colors.scannerMagenta,
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 2,
   },
   frameColorWash: {
     position: "absolute",

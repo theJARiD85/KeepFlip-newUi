@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080" fill="none">
+  <defs>
+    <radialGradient id="halo" cx="0" cy="0" r="1" gradientTransform="translate(540 540) rotate(90) scale(500)"><stop offset="0" stop-color="#58DFE8" stop-opacity=".19"/><stop offset=".36" stop-color="#8D72FF" stop-opacity=".08"/><stop offset=".72" stop-color="#58DFE8" stop-opacity="0"/></radialGradient>
+    <linearGradient id="scan" x1="238" y1="0" x2="842" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#58DFE8" stop-opacity="0"/><stop offset=".18" stop-color="#58DFE8"/><stop offset=".82" stop-color="#58DFE8"/><stop offset="1" stop-color="#58DFE8" stop-opacity="0"/></linearGradient>
+    <filter id="cyanGlow" x="-80%" y="-80%" width="260%" height="260%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="10" result="blur"/><feFlood flood-color="#58DFE8" flood-opacity=".82" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="violetGlow" x="-80%" y="-80%" width="260%" height="260%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="9" result="blur"/><feFlood flood-color="#8D72FF" flood-opacity=".72" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="goldGlow" x="-80%" y="-80%" width="260%" height="260%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="8" result="blur"/><feFlood flood-color="#F2D38A" flood-opacity=".72" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <circle cx="540" cy="540" r="500" fill="url(#halo)"/>
+  <circle cx="540" cy="540" r="365" stroke="#8D72FF" stroke-opacity=".66" stroke-width="3" stroke-dasharray="14 21" filter="url(#violetGlow)"/>
+  <circle cx="540" cy="540" r="124" fill="#03080D" fill-opacity=".16" stroke="#58DFE8" stroke-opacity=".42" stroke-width="3"/>
+  <g stroke-linecap="square" stroke-width="9"><path d="M212 358V212H358" stroke="#58DFE8" filter="url(#cyanGlow)"/><path d="M722 212H868V358" stroke="#8D72FF" filter="url(#violetGlow)"/><path d="M212 722V868H358" stroke="#F2D38A" filter="url(#goldGlow)"/><path d="M722 868H868V722" stroke="#58DFE8" filter="url(#cyanGlow)"/></g>
+  <g stroke="#58DFE8" stroke-opacity=".54" stroke-width="3"><path d="M392 540H688"/><path d="M540 392V688"/></g>
+  <circle cx="540" cy="540" r="30" fill="#010102" fill-opacity=".15" stroke="#F2D38A" stroke-opacity=".78" stroke-width="3" filter="url(#goldGlow)"/><circle cx="540" cy="540" r="8" fill="#F2D38A" filter="url(#goldGlow)"/>
+  <path d="M238 476H842" stroke="url(#scan)" stroke-width="4" filter="url(#cyanGlow)"/>
+</svg>

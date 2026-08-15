@@ -19,6 +19,7 @@ const MAPPING = {
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
   'viewfinder': 'center-focus-strong',
+  'barcode.viewfinder': 'qr-code-scanner',
   'rectangle.stack.fill': 'photo-library',
   'square.grid.2x2.fill': 'burst-mode',
   'photo.on.rectangle.angled': 'add-photo-alternate',

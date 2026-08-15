@@ -38,6 +38,7 @@ type ScannerTool = {
   glow: string;
   icon:
     | "viewfinder"
+    | "barcode.viewfinder"
     | "rectangle.stack.fill"
     | "square.grid.2x2.fill"
     | "photo.on.rectangle.angled";
@@ -54,6 +55,14 @@ export const scannerTools: ScannerTool[] = [
     accent: theme.colors.goldBright,
     surface: "rgba(242, 211, 138, 0.15)",
     glow: "rgba(242, 211, 138, 0.44)",
+  },
+  {
+    id: "barcode",
+    label: "Barcode scanner",
+    icon: "barcode.viewfinder",
+    accent: theme.colors.scannerMagenta,
+    surface: "rgba(141, 114, 255, 0.16)",
+    glow: "rgba(255, 0, 127, 0.31)",
   },
   {
     id: "multi",
@@ -489,6 +498,7 @@ export function ScannerToolCarousel({
       selectedTool,
       badges: {
         single: badges?.single,
+        barcode: badges?.barcode,
         multi: badges?.multi,
         batch: badges?.batch,
         upload: badges?.upload,
@@ -496,6 +506,7 @@ export function ScannerToolCarousel({
     });
   }, [
     badges?.batch,
+    badges?.barcode,
     badges?.multi,
     badges?.single,
     badges?.upload,
@@ -705,11 +716,12 @@ const styles = StyleSheet.create({
     overflow: "visible",
   },
   rootDisabled: {
-    opacity: 0.58,
+    opacity: 0.9,
   },
   platterHost: {
     position: "absolute",
     zIndex: 0,
+    top: 5
   },
   controlPosition: {
     position: "absolute",

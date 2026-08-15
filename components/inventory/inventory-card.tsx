@@ -2,7 +2,7 @@ import { Image, type ImageSource } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-
+import { AdvancedHoloOverlay } from '@/components/scanner/advanced-holo-overlay';
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
@@ -45,12 +45,12 @@ export function InventoryCard({
   coverImageSource,
   item,
   onPress,
-  onRepairPress,
+  onListingGuidePress,
 }: {
   coverImageSource?: CoverImageSource;
   item: InventoryItem;
   onPress: () => void;
-  onRepairPress?: () => void;
+  onListingGuidePress?: () => void;
 }) {
   const coverPhotoId = item.coverPhotoId;
   const coverKey = coverPhotoId ?? "";
@@ -122,7 +122,9 @@ export function InventoryCard({
         ]}
       >
       <View style={styles.hero}>
+        <AdvancedHoloOverlay width={500} height={216} />
         {resolvedSource && !imageUnavailable ? (
+          
           <Image
             accessibilityLabel={`${item.title} cover photo`}
             contentFit="cover"
@@ -147,9 +149,8 @@ export function InventoryCard({
             <Text style={styles.fallbackLabel}>
               {item.coverPhotoId ? "LOADING COVER" : "NO COVER PHOTO"}
             </Text>
-          </View>
+            </View>
         )}
-
         <LinearGradient
           colors={[
             "rgba(1, 1, 2, 0.04)",
@@ -241,15 +242,15 @@ export function InventoryCard({
       </View>
       </Pressable>
 
-      {onRepairPress ? (
+      {onListingGuidePress ? (
         <Pressable
-          accessibilityHint={`Describe an issue and research a repair for ${item.title}`}
-          accessibilityLabel={`Repair intelligence for ${item.title}`}
+          accessibilityHint={`Opens a guided checklist for creating a marketplace listing for ${item.title}`}
+          accessibilityLabel={`Listing creation guide for ${item.title}`}
           accessibilityRole="button"
-          onPress={onRepairPress}
+          onPress={onListingGuidePress}
           style={({ pressed }) => [
-            styles.repairButton,
-            pressed && styles.repairButtonPressed,
+            styles.listingGuideButton,
+            pressed && styles.listingGuideButtonPressed,
           ]}
         >
           <LinearGradient
@@ -263,16 +264,16 @@ export function InventoryCard({
             start={{ x: 0, y: 0.5 }}
             style={StyleSheet.absoluteFill}
           />
-          <View style={styles.repairButtonIcon}>
+          <View style={styles.listingGuideButtonIcon}>
             <IconSymbol
               color={theme.colors.scannerCyan}
-              name="wrench.and.screwdriver.fill"
+              name="tag.fill"
               size={17}
             />
           </View>
-          <View style={styles.repairButtonCopy}>
-            <Text style={styles.repairButtonEyebrow}>SYMPTOM-LED RESEARCH</Text>
-            <Text style={styles.repairButtonLabel}>Repair intelligence</Text>
+          <View style={styles.listingGuideButtonCopy}>
+            <Text style={styles.listingGuideButtonEyebrow}>SELLER WORKFLOW</Text>
+            <Text style={styles.listingGuideButtonLabel}>Listing creation guide</Text>
           </View>
           <IconSymbol
             color={theme.colors.goldBright}
@@ -517,7 +518,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     letterSpacing: 0.65,
   },
-  repairButton: {
+  listingGuideButton: {
     position: "relative",
     minHeight: 66,
     flexDirection: "row",
@@ -528,10 +529,10 @@ const styles = StyleSheet.create({
     borderTopColor: "rgba(0, 255, 255, 0.28)",
     backgroundColor: "rgba(4, 8, 12, 0.96)",
   },
-  repairButtonPressed: {
+  listingGuideButtonPressed: {
     opacity: 0.76,
   },
-  repairButtonIcon: {
+  listingGuideButtonIcon: {
     width: 34,
     height: 34,
     alignItems: "center",
@@ -542,18 +543,18 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 255, 255, 0.08)",
     boxShadow: "0 0 16px rgba(0, 255, 255, 0.16)",
   },
-  repairButtonCopy: {
+  listingGuideButtonCopy: {
     flex: 1,
     gap: 2,
   },
-  repairButtonEyebrow: {
+  listingGuideButtonEyebrow: {
     color: "rgba(0, 255, 255, 0.66)",
     fontFamily: theme.fonts.radar,
     fontSize: 7,
     fontWeight: "900",
     letterSpacing: 0.75,
   },
-  repairButtonLabel: {
+  listingGuideButtonLabel: {
     color: theme.colors.cream,
     fontFamily: theme.fonts.bold,
     fontSize: 15,

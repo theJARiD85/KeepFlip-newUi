@@ -13,8 +13,8 @@ import {
   useReducedMotion,
 } from "react-native-reanimated";
 
-const ANIMATION_DURATION_MS = 40_000;
-const ANIMATION_TIME_SPAN = 1_000;
+const ANIMATION_DURATION_MS = 60_000;
+const ANIMATION_TIME_SPAN = 3_000;
 
 const ADVANCED_HOLO_SHADER_SOURCE = `
   uniform float2 iResolution;
@@ -22,8 +22,8 @@ const ADVANCED_HOLO_SHADER_SOURCE = `
 
   // 1. High-frequency pseudo-random generator
   float hash(float2 p) {
-    p = fract(p * float2(123.34, 456.21));
-    float selfDot = dot(p, p + float2(45.32));
+    p = fract(p * float2(123.45, 456.78));
+    float selfDot = dot(p, p + float2(54.23));
     p += float2(selfDot);
     return fract(p.x * p.y);
   }
@@ -83,7 +83,7 @@ const ADVANCED_HOLO_SHADER_SOURCE = `
 
     // --- EFFECT 4: COMPRESSED SCANLINES & INTERLACE ---
     float fineGrid = sin(pos.y * 2.0) * 0.08;
-    float heavyScanline = sin(pos.y * 0.2 - iTime * 6.0) * 0.15;
+    float heavyScanline = sin(pos.y * 0.2 - iTime * 8.0) * 0.15;
     float totalGrid = 0.5 + fineGrid + heavyScanline;
 
     // --- EFFECT 5: COLOR GRADING & VIGNETTE ---

@@ -1,0 +1,28 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.keepflipscanproof'
+version = '0.1.0'
+
+repositories {
+  google()
+  mavenCentral()
+}
+
+android {
+  namespace 'expo.modules.keepflipscanproof'
+
+  defaultConfig {
+    minSdk 26
+    versionCode 1
+    versionName '0.1.0'
+  }
+}
+
+dependencies {
+  // Bundled models keep the evidence read available without a network download.
+  implementation("com.google.mlkit:barcode-scanning:17.3.0")
+  implementation("com.google.mlkit:text-recognition:16.0.1")
+}

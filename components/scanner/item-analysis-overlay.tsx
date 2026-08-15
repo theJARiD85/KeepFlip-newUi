@@ -83,7 +83,6 @@ export type AnalysisValuation = {
   high: number;
   low: number;
   median: number;
-  query?: string;
   snapshot?: boolean;
   source?: 'ebay' | 'multi_market' | 'serpapi_ai' | 'supplied';
 };
@@ -711,11 +710,6 @@ function ValuationCard({ valuation }: { valuation: AnalysisValuation }) {
               )}
             </Text>
           ) : null}
-          {valuation.query ? (
-            <Text selectable style={styles.valuationQuery}>
-              Search: {valuation.query}
-            </Text>
-          ) : null}
           {valuation.basis ? (
             <Text selectable style={styles.valuationBasis}>
               {valuation.basis}
@@ -1262,7 +1256,6 @@ const styles = StyleSheet.create({
   valuationBasisRow: { gap: 5, padding: 14, borderTopWidth: 1, borderTopColor: 'rgba(215, 168, 74, 0.18)' },
   valuationBasisStrong: { color: theme.colors.cream, fontSize: 12, fontWeight: '800' },
   valuationBasis: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 },
-  valuationQuery: { color: theme.colors.goldMuted, fontSize: 11, lineHeight: 16 },
   actions: { gap: 10, paddingTop: 7 },
   actionButton: {
     minHeight: 52,

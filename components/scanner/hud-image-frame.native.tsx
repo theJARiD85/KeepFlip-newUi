@@ -1,8 +1,8 @@
+import { AdvancedHoloOverlay } from '@/components/scanner/advanced-holo-overlay';
+import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { Image } from "expo-image";
 import { useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
-
-import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 
 type HudImageFrameProps = {
   confidence?: number;
@@ -13,6 +13,7 @@ type HudImageFrameProps = {
   statusText?: string;
   width?: number;
 };
+
 
 function percentage(value?: number) {
   if (value == null || !Number.isFinite(value)) return null;
@@ -53,6 +54,10 @@ export function HudImageFrame({
         },
       ]}
     >
+      <AdvancedHoloOverlay
+        width={width}
+        height={height}
+      />
       {photoUri ? (
         <Image
           contentFit="contain"
@@ -66,12 +71,6 @@ export function HudImageFrame({
           <Text style={styles.emptyText}>PHOTO SIGNAL UNAVAILABLE</Text>
         </View>
       )}
-
-      <View style={[styles.corner, styles.topLeft]} />
-      <View style={[styles.corner, styles.topRight]} />
-      <View style={[styles.corner, styles.bottomLeft]} />
-      <View style={[styles.corner, styles.bottomRight]} />
-
       <View style={styles.statusBar}>
         <View style={styles.liveDot} />
         <Text numberOfLines={1} style={styles.statusText}>
@@ -81,6 +80,12 @@ export function HudImageFrame({
           <Text style={styles.confidence}>{confidenceLabel}%</Text>
         ) : null}
       </View>
+      <View style={[styles.corner, styles.topLeft]} />
+      <View style={[styles.corner, styles.topRight]} />
+      <View style={[styles.corner, styles.bottomLeft]} />
+      <View style={[styles.corner, styles.bottomRight]} />
+
+
     </View>
   );
 }
@@ -88,14 +93,14 @@ export function HudImageFrame({
 const styles = StyleSheet.create({
   frame: {
     position: "absolute",
-    top: 70,
+    top: 50,
 
     overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: "rgba(88, 223, 232, 0.32)",
+    borderColor: "rgba(215, 168, 74, 0.32)",
     backgroundColor: "rgba(3, 3, 7, 0.84)",
     boxShadow:
       "0 16px 34px rgba(0, 0, 0, 0.48), 0 0 24px rgba(88, 223, 232, 0.12)",
@@ -120,46 +125,45 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: 28,
     height: 28,
-    borderColor: theme.colors.scannerCyan,
   },
   topLeft: {
     top: 10,
     left: 10,
     borderTopWidth: 2,
     borderLeftWidth: 2,
+    borderColor: theme.colors.scannerCyan,
   },
   topRight: {
     top: 10,
     right: 10,
     borderTopWidth: 2,
     borderRightWidth: 2,
+    borderColor: theme.colors.scannerAmber,
   },
   bottomLeft: {
     bottom: 10,
     left: 10,
     borderBottomWidth: 2,
     borderLeftWidth: 2,
+    borderColor: theme.colors.scannerViolet,
   },
   bottomRight: {
     right: 10,
     bottom: 10,
     borderRightWidth: 2,
     borderBottomWidth: 2,
+    borderColor: theme.colors.scannerCyan,
   },
   statusBar: {
     position: "absolute",
     right: 16,
-    bottom: 14,
+    top: 14,
     left: 16,
     minHeight: 30,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     paddingHorizontal: 11,
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: "rgba(88, 223, 232, 0.28)",
-    backgroundColor: "rgba(3, 4, 8, 0.82)",
   },
   liveDot: {
     width: 6,

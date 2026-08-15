@@ -1,0 +1,103 @@
+{
+  "country": "US",
+  "search_lang": "en",
+  "safesearch": "strict",
+  "count_per_query": 10,
+  "delay_seconds": 0.5,
+  "queries": [
+    {
+      "id": "jewelry-rolex-watch",
+      "class_label": "jewelry",
+      "query": "Rolex luxury watch single product photo",
+      "source_domains": []
+    },
+    {
+      "id": "jewelry-cartier-watch",
+      "class_label": "jewelry",
+      "query": "Cartier luxury watch single product photo",
+      "source_domains": []
+    },
+    {
+      "id": "jewelry-diamond-ring",
+      "class_label": "jewelry",
+      "query": "diamond engagement ring single product photo",
+      "source_domains": []
+    },
+    {
+      "id": "jewelry-gold-chain",
+      "class_label": "jewelry",
+      "query": "gold chain necklace single product photo",
+      "source_domains": []
+    },
+    {
+      "id": "collectible-pokemon-booster-box",
+      "class_label": "collectibles_toys_media",
+      "query": "sealed Pokemon booster box product photo",
+      "source_domains": []
+    },
+    {
+      "id": "collectible-graded-sports-card",
+      "class_label": "collectibles_toys_media",
+      "query": "graded sports card slab product photo",
+      "source_domains": []
+    },
+    {
+      "id": "collectible-lego-ucs",
+      "class_label": "collectibles_toys_media",
+      "query": "LEGO Star Wars UCS set product photo",
+      "source_domains": []
+    },
+    {
+      "id": "collectible-sealed-retro-game",
+      "class_label": "collectibles_toys_media",
+      "query": "sealed retro video game product photo",
+      "source_domains": []
+    },
+    {
+      "id": "electronics-xbox-console",
+      "class_label": "electronics_camera",
+      "query": "xbox video game console product photo",
+      "source_domains": []
+    },
+    {
+      "id": "other-electric-guitar",
+      "class_label": "unknown_other",
+      "query": "electric guitar single product photo",
+      "unknown_other_subtype": "electric_guitar",
+      "source_domains": []
+    },
+    {
+      "id": "other-espresso-machine",
+      "class_label": "unknown_other",
+      "query": "prosumer espresso machine single product photo",
+      "unknown_other_subtype": "espresso_machine",
+      "source_domains": []
+    },
+    {
+      "id": "other-sewing-machine",
+      "class_label": "unknown_other",
+      "query": "high end sewing machine single product photo",
+      "unknown_other_subtype": "sewing_machine",
+      "source_domains": []
+    },
+    {
+      "id": "other-stereo-receiver",
+      "class_label": "unknown_other",
+      "query": "vintage stereo receiver single product photo",
+      "unknown_other_subtype": "stereo_receiver",
+      "source_domains": []
+    },
+    {
+      "id": "sports-ebike",
+      "class_label": "sports_outdoor",
+      "query": "electric bicycle e-bike single product photo",
+      "source_domains": []
+    },
+    {
+      "id": "sports-golf-club-set",
+      "class_label": "sports_outdoor",
+      "query": "premium golf club set single product photo",
+      "source_domains": []
+    }
+  ]
+}

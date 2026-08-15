@@ -82,6 +82,7 @@ export default function AppShellLayout() {
             <Stack.Screen name="inventory" />
             <Stack.Screen name="analysis" />
             <Stack.Screen name="analysis-result" />
+            <Stack.Screen name="listing-guide" />
             <Stack.Screen name="repair-assist" />
             <Stack.Screen name="account" />
           </Stack>

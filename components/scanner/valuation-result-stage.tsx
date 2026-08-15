@@ -43,6 +43,7 @@ import {
   runSerpApiProfitabilityGuidance,
   type SerpApiProfitabilityGuidance,
 } from "@/services/ebaySoldCompsService";
+import { neutralizeMarketplaceBrand } from "@/services/market-copy";
 
 type ResultState = Extract<ItemAnalysisState, { status: "result" }>;
 type ResultData = ResultState["data"];
@@ -54,12 +55,15 @@ type ValuationResultStageProps = {
   onRefine?: (
     answers: Record<string, string>,
   ) => void | Promise<void>;
+  onScanMorePhotos?: () => void | Promise<void>;
   onProfitabilityGuidance?: (
     guidance: SerpApiProfitabilityGuidance,
   ) => void | Promise<void>;
   onSave?: () => void;
   projectionLabel?: string;
   refining?: boolean;
+  refinementPhotoReady?: boolean;
+  scanningMorePhotos?: boolean;
   saveLabel?: string;
   saving?: boolean;
   state: ResultState;
@@ -73,8 +77,9 @@ const TABS: { id: ResultTab; label: string }[] = [
   { id: "identifiers", label: "IDENTIFIERS" },
 ];
 
-const COLLAPSED_HEIGHT = 248;
-const COLLAPSED_HEIGHT_WITH_SAVE = 299;
+// The collapsed sheet includes its in-card drag header, tab rail, and summary.
+const COLLAPSED_HEIGHT = 284;
+const COLLAPSED_HEIGHT_WITH_SAVE = 335;
 const MAX_EXPANDED_HEIGHT = 720;
 const SHEET_SPRING = {
   damping: 24,
@@ -104,7 +109,7 @@ function percentage(value?: number) {
 function marketSourceLabel(source?: string) {
   if (source === "serpapi_ai") return "Visual market research";
   if (source === "multi_market") return "Multi-market sold data";
-  if (source === "ebay") return "eBay sold data";
+  if (source === "ebay") return "Sold market data";
   if (source === "supplied") return "Supplied market data";
   return "Market analysis";
 }
@@ -133,6 +138,20 @@ function valuationBasisLine(result: ResultData) {
   return parts.length > 0 ? parts.join(" · ") : null;
 }
 
+function isUnresolvedDisplayValue(value: string | undefined) {
+  const normalized = value?.trim().toLowerCase() ?? "";
+  return (
+    !normalized ||
+    /^(?:unknown|undetermined|unidentified|unavailable|not available|not determined|unable to determine|n\/a|null|none|condition unknown)[.!:;]*$/.test(
+      normalized,
+    ) ||
+    /\b(?:unknown|undetermined|unidentified|unavailable)\b/.test(normalized) ||
+    /\b(?:could not|cannot|can't|unable to|not able to)\s+(?:be\s+)?(?:determine|identify|verify)/.test(
+      normalized,
+    )
+  );
+}
+
 function DetailFact({
   confidence,
   label,
@@ -142,14 +161,17 @@ function DetailFact({
   label: string;
   value?: string;
 }) {
-  if (!value) return null;
+  const normalized = value?.trim() ?? "";
+  if (isUnresolvedDisplayValue(normalized)) {
+    return null;
+  }
   const score = percentage(confidence);
 
   return (
     <View style={styles.detailFact}>
       <Text style={styles.detailFactLabel}>{label}</Text>
       <View style={styles.detailFactValueRow}>
-        <Text selectable style={styles.detailFactValue}>{value}</Text>
+        <Text selectable style={styles.detailFactValue}>{normalized}</Text>
         {score == null ? null : (
           <Text style={styles.detailFactConfidence}>{score}%</Text>
         )}
@@ -240,7 +262,7 @@ function ValuationGauge({
 
   return (
     <View style={styles.gauge}>
-      <View style={styles.gaugeHeader}>
+      <Animated.View style={[styles.gaugeHeader, medianStyle]}>
         <View>
           <Text style={styles.microLabel}>EXPECTED SALE</Text>
           <Text style={styles.gaugeStatus}>
@@ -257,7 +279,7 @@ function ValuationGauge({
             {formatMoney(expectSale, valuation.currency)}
           </Text>
         </Animated.View>
-      </View>
+      </Animated.View>
 
       <View style={styles.gaugeTrack}>
         <Animated.View style={[styles.gaugeBand, bandStyle]}>
@@ -326,17 +348,28 @@ function ValuePanel({ result }: { result: ResultData }) {
     result.confidence?.valuation ?? result.valuationReadiness.score,
   );
   const basis = valuationBasisLine(result);
+  const ladder = result.valuationLadder;
+  const ladderLine = ladder
+    ? `VALUATION LADDER · ${ladder.level.toUpperCase()}${
+      percentage(ladder.confidence) == null
+        ? ""
+        : ` · ${percentage(ladder.confidence)}%`
+    }`
+    : basis;
 
   if (!result.valuation) {
     return (
       <View style={styles.emptyPanel}>
         <Text style={[styles.emptyTitle, { color: accent }]}>
-          {result.valuationReadiness.label ?? "VALUATION NEEDS EVIDENCE"}
+          {ladder
+            ? `VALUATION LADDER · ${ladder.level.toUpperCase()}`
+            : "REFINE WITH VERIFIED DETAILS"}
         </Text>
-        <Text numberOfLines={3} style={styles.emptyBody}>
-          {result.valuationReadiness.reason ??
-            "KeepFlip needs stronger market evidence before it can defend a quick-sale, expected, and list range."}
-        </Text>
+        {result.refinementQuestions?.length ? (
+          <Text numberOfLines={2} style={styles.emptyBody}>
+            Add a requested photo or answer below to tighten this valuation.
+          </Text>
+        ) : null}
       </View>
     );
   }
@@ -353,13 +386,15 @@ function ValuePanel({ result }: { result: ResultData }) {
         <Text numberOfLines={1} style={[styles.readinessText, { color: accent }]}>
           {result.valuationReadiness.label ?? "Valuation calibrated"}
         </Text>
-        <Text style={[styles.readinessScore, { color: accent }]}>
-          {readiness == null ? "--" : `${readiness}%`}
-        </Text>
+        {readiness != null ? (
+          <Text style={[styles.readinessScore, { color: accent }]}>
+            {`${readiness}%`}
+          </Text>
+        ) : null}
       </View>
-      {basis ? (
+      {ladderLine ? (
         <Text numberOfLines={1} style={styles.basisLine}>
-          {basis}
+          {ladderLine}
         </Text>
       ) : null}
     </View>
@@ -465,9 +500,11 @@ function ProfitPanel({
   const listTarget = result.profitPlan.listTarget;
   const expectedSale = result.profitPlan.expectedSale;
   const quickSale = result.profitPlan.quickSale;
-  const hasStrategy =
-    listTarget != null || expectedSale != null || quickSale != null;
   const firmPricing = result.valuationReadiness.status === "ready";
+  const showListTarget = listTarget != null && firmPricing;
+  const showExpectedSale = expectedSale != null;
+  const showQuickSale = quickSale != null && firmPricing;
+  const hasStrategy = showListTarget || showExpectedSale || showQuickSale;
   const enhancements = result.profitPlan.actions.filter(
     (action) => action.kind !== "decision",
   );
@@ -476,36 +513,30 @@ function ProfitPanel({
     <View style={styles.profitList}>
       {hasStrategy ? (
         <View style={styles.profitStrategyRow}>
-          <View style={styles.profitStrategyCell}>
+          {showListTarget ? <View style={styles.profitStrategyCell}>
             <Text style={[styles.profitStrategyLabel, { color: theme.colors.scannerCyan }]}>
               LIST
             </Text>
             <Text style={styles.profitStrategyValue}>
-              {listTarget == null || !firmPricing
-                ? "--"
-                : formatMoney(listTarget, currency)}
+              {formatMoney(listTarget!, currency)}
             </Text>
-          </View>
-          <View style={styles.profitStrategyCell}>
+          </View> : null}
+          {showExpectedSale ? <View style={styles.profitStrategyCell}>
             <Text style={[styles.profitStrategyLabel, { color: theme.colors.goldBright }]}>
               EXPECT
             </Text>
             <Text style={styles.profitStrategyValue}>
-              {expectedSale == null
-                ? "--"
-                : formatMoney(expectedSale, currency)}
+              {formatMoney(expectedSale!, currency)}
             </Text>
-          </View>
-          <View style={styles.profitStrategyCell}>
+          </View> : null}
+          {showQuickSale ? <View style={styles.profitStrategyCell}>
             <Text style={[styles.profitStrategyLabel, { color: theme.colors.scannerViolet }]}>
               QUICK
             </Text>
             <Text style={styles.profitStrategyValue}>
-              {quickSale == null || !firmPricing
-                ? "--"
-                : formatMoney(quickSale, currency)}
+              {formatMoney(quickSale!, currency)}
             </Text>
-          </View>
+          </View> : null}
         </View>
       ) : null}
 
@@ -569,20 +600,25 @@ function IdentifierPanel({ result }: { result: ResultData }) {
   return (
     <View style={styles.identifierPanel}>
       <View style={styles.identifierLead}>
-        <Text style={styles.microLabel}>EXACT ITEM TITLE</Text>
+        <Text style={styles.microLabel}>{result.identity.titleLabel ?? "Exact Item Name"}</Text>
         <Text numberOfLines={2} style={styles.identifierTitle}>
           {result.identity.title}
         </Text>
-        <Text style={styles.identifierConfidence}>
-          {titleConfidence == null ? "--" : `${titleConfidence}% CONF`}
-        </Text>
+        {titleConfidence != null ? (
+          <Text style={styles.identifierConfidence}>
+            {`${titleConfidence}% CONF`}
+          </Text>
+        ) : null}
       </View>
       {[
         ["BRAND", result.identity.brand, brandConfidence],
         ["MODEL", result.identity.model, modelConfidence],
         ["VARIANT", result.identity.variant, null],
-        ["OBSERVED CONDITION", result.condition?.label, conditionConfidence],
-      ].filter((entry) => Boolean(entry[1])).map(([label, value, confidence]) => (
+        [result.condition?.titleLabel ?? "Observed Condition", result.condition?.label, conditionConfidence],
+      ].filter((entry) =>
+        Boolean(entry[1]) &&
+        !isUnresolvedDisplayValue(String(entry[1]).trim()),
+      ).map(([label, value, confidence]) => (
         <View key={String(label)} style={styles.identifierFactRow}>
           <Text style={styles.identifierFactLabel}>{label}</Text>
           <Text numberOfLines={1} style={styles.identifierFactValue}>
@@ -605,8 +641,11 @@ function ExpandedResultDetails({
   onAnswerChange,
   onPressAction,
   onRefine,
+  onScanMorePhotos,
   onSubmitRefinement,
   refining,
+  refinementPhotoReady,
+  scanningMorePhotos,
   result,
 }: {
   activeTab: ResultTab;
@@ -616,18 +655,23 @@ function ExpandedResultDetails({
   onAnswerChange: (questionId: string, answer: string) => void;
   onPressAction: (action: AnalysisProfitAction) => void;
   onRefine?: ValuationResultStageProps["onRefine"];
+  onScanMorePhotos?: ValuationResultStageProps["onScanMorePhotos"];
   onSubmitRefinement: () => void;
   refining: boolean;
+  refinementPhotoReady: boolean;
+  scanningMorePhotos: boolean;
   result: ResultData;
 }) {
   const conditionDetails = result.condition?.details ?? [];
   const evidence = result.evidence ?? [];
   const references = result.marketReferences ?? [];
   const questions = result.refinementQuestions ?? [];
+  const requestedPhotos = result.suggestedPhotos ?? [];
   const canSubmit =
     Boolean(onRefine) &&
     !refining &&
-    questions.some((question) => answers[question.id]?.trim());
+    (refinementPhotoReady ||
+      questions.some((question) => answers[question.id]?.trim()));
   const enhancements = result.profitPlan.actions.filter(
     (action) => action.kind !== "decision",
   );
@@ -643,7 +687,7 @@ function ExpandedResultDetails({
             result.confidence?.identity ??
             result.identity.confidence
           }
-          label="EXACT ITEM TITLE"
+          label={result.identity.titleLabel ?? "Exact Item Name"}
           value={result.identity.title}
         />
         <DetailFact
@@ -664,31 +708,46 @@ function ExpandedResultDetails({
         <DetailFact label="VARIANT" value={result.identity.variant} />
         <DetailFact
           confidence={result.confidence?.condition ?? result.condition?.score}
-          label="OBSERVED CONDITION"
+          label={result.condition?.titleLabel ?? "Observed Condition"}
           value={result.condition?.label}
         />
         </View>
       ) : null}
 
-      {activeTab === "valuation" && (result.summary || conditionDetails.length > 0) ? (
+      {activeTab === "valuation" && (result.valuationLadder || result.summary || conditionDetails.length > 0) ? (
         <View style={styles.detailSection}>
           <Text style={styles.detailSectionTitle}>VALUATION REASONS + CONFIDENCE</Text>
+          {result.valuationLadder ? (
+            <>
+              <DetailFact
+                confidence={result.valuationLadder.confidence}
+                label="VALUATION LADDER"
+                value={result.valuationLadder.level}
+              />
+              {result.valuationLadder.reason &&
+              !["Level 4", "Level 5"].includes(result.valuationLadder.level) ? (
+                <Text selectable style={styles.detailBody}>
+                  {result.valuationLadder.reason}
+                </Text>
+              ) : null}
+            </>
+          ) : null}
           {result.valuation ? (
             <DetailFact
               confidence={result.confidence?.valuation}
-              label="CURRENT RESALE MARKET VALUE"
+              label={result.valuation.titleLabel ?? "Current Resale Market Value"}
               value={formatMoney(
                 result.valuation.median,
                 result.valuation.currency,
               )}
             />
           ) : null}
-          {result.valuationReadiness.reason ? (
+          {result.valuation && result.valuationReadiness.reason ? (
             <Text selectable style={styles.detailBody}>
               {result.valuationReadiness.reason}
             </Text>
           ) : null}
-          {result.summary ? (
+          {result.valuation && result.summary ? (
             <Text selectable style={styles.detailBody}>{result.summary}</Text>
           ) : null}
           {conditionDetails.map((detail, index) => (
@@ -760,7 +819,7 @@ function ExpandedResultDetails({
                 ) : null}
                 {reference.link ? (
                   <Text numberOfLines={1} selectable style={styles.referenceLink}>
-                    {reference.link}
+                    MARKET REFERENCE AVAILABLE
                   </Text>
                 ) : null}
               </View>
@@ -769,13 +828,50 @@ function ExpandedResultDetails({
         </View>
       ) : null}
 
-      {activeTab === "valuation" && questions.length > 0 && onRefine ? (
+      {activeTab === "valuation" && questions.length > 0 && (onRefine || onScanMorePhotos) ? (
         <View style={styles.detailSection}>
           <Text style={styles.detailSectionTitle}>REFINE THIS VALUATION</Text>
           <Text style={styles.detailBody}>
             Add only what you can verify. KeepFlip can use these details to run a tighter market pass.
           </Text>
-          {questions.map((question, index) => (
+          {requestedPhotos.slice(0, 4).map((photo, index) => (
+            <Text key={photo.id ?? `${photo.label}-${index}`} style={styles.photoRequest}>
+              {`PHOTO ${index + 1} · ${photo.label}`}
+            </Text>
+          ))}
+          {onScanMorePhotos ? (
+            <Pressable
+              accessibilityHint="Opens the camera to capture a requested identifying detail"
+              accessibilityRole="button"
+              disabled={refining || scanningMorePhotos}
+              onPress={() => {
+                try {
+                  void Promise.resolve(onScanMorePhotos()).catch(() => undefined);
+                } catch {
+                  // The host screen presents the capture error.
+                }
+              }}
+              style={({ pressed }) => [
+                styles.scanDetailButton,
+                pressed && styles.pressed,
+                (refining || scanningMorePhotos) && styles.disabled,
+              ]}
+            >
+              <IconSymbol
+                color={theme.colors.scannerCyan}
+                name="camera.fill"
+                size={15}
+              />
+              <Text style={styles.scanDetailButtonText}>
+                {scanningMorePhotos
+                  ? "OPENING CAMERA..."
+                  : refinementPhotoReady
+                    ? "DETAIL PHOTO READY · SCAN ANOTHER"
+                    : "SCAN A DETAIL PHOTO"}
+              </Text>
+            </Pressable>
+          ) : null}
+          {onRefine ? questions.map((question, index) => (
             <View key={question.id} style={styles.questionBlock}>
               <Text style={styles.questionLabel}>
                 Q{index + 1} / {question.prompt}
@@ -795,8 +891,8 @@ function ExpandedResultDetails({
                 value={answers[question.id] ?? ""}
               />
             </View>
-          ))}
-          <Pressable
+          )) : null}
+          {onRefine ? <Pressable
             accessibilityRole="button"
             disabled={!canSubmit}
             onPress={onSubmitRefinement}
@@ -810,6 +906,7 @@ function ExpandedResultDetails({
               {refining ? "REFINING VALUATION..." : "REFINE VALUATION"}
             </Text>
           </Pressable>
+          : null}
         </View>
       ) : null}
     </View>
@@ -821,9 +918,12 @@ export function ValuationResultStage({
   embedded = false,
   onProfitabilityGuidance,
   onRefine,
+  onScanMorePhotos,
   onSave,
   projectionLabel = "GENERATED ITEM PROJECTION",
   refining = false,
+  refinementPhotoReady = false,
+  scanningMorePhotos = false,
   saveLabel = "Save to inventory",
   saving = false,
   state,
@@ -843,7 +943,10 @@ export function ValuationResultStage({
     !embedded && expandedHeight - collapsedHeight >= 56;
   const reduceMotion = useReducedMotion();
   const [activeTab, setActiveTab] = useState<ResultTab>("valuation");
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [answerState, setAnswerState] = useState<{
+    questionKey: string;
+    values: Record<string, string>;
+  }>({ questionKey: "", values: {} });
   const [expanded, setExpanded] = useState(false);
   const [expandedProfitActionId, setExpandedProfitActionId] = useState<
     string | null
@@ -851,6 +954,16 @@ export function ValuationResultStage({
   const [profitabilityGuidance, setProfitabilityGuidance] = useState<
     Record<string, ProfitabilityGuidanceState>
   >({});
+  const refinementQuestionKey = (result.refinementQuestions ?? [])
+    .map((question) => `${question.id}:${question.prompt}`)
+    .join("|");
+  const answers = useMemo(
+    () =>
+      answerState.questionKey === refinementQuestionKey
+        ? answerState.values
+        : {},
+    [answerState, refinementQuestionKey],
+  );
   const profitabilityRequestsRef = useRef(new Set<string>());
   const scrollRef = useRef<ScrollView>(null);
   const sheetHeight = useSharedValue(collapsedHeight);
@@ -1009,8 +1122,14 @@ export function ValuationResultStage({
   ]);
 
   const updateAnswer = useCallback((questionId: string, answer: string) => {
-    setAnswers((current) => ({ ...current, [questionId]: answer }));
-  }, []);
+    setAnswerState((current) => ({
+      questionKey: refinementQuestionKey,
+      values: {
+        ...(current.questionKey === refinementQuestionKey ? current.values : {}),
+        [questionId]: answer,
+      },
+    }));
+  }, [refinementQuestionKey]);
 
   const submitRefinement = useCallback(() => {
     if (!onRefine || refining) return;
@@ -1019,7 +1138,7 @@ export function ValuationResultStage({
       const answer = answers[question.id]?.trim();
       if (answer) submitted[question.id] = answer;
     }
-    if (Object.keys(submitted).length === 0) return;
+    if (Object.keys(submitted).length === 0 && !refinementPhotoReady) return;
 
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
       () => undefined,
@@ -1029,7 +1148,13 @@ export function ValuationResultStage({
     } catch {
       // The screen owns any user-facing refinement error state.
     }
-  }, [answers, onRefine, refining, result.refinementQuestions]);
+  }, [
+    answers,
+    onRefine,
+    refining,
+    refinementPhotoReady,
+    result.refinementQuestions,
+  ]);
 
   const requestProfitabilityGuidance = useCallback(
     (action: AnalysisProfitAction) => {
@@ -1068,15 +1193,25 @@ export function ValuationResultStage({
             references: response.references.map((reference, index) => ({
               id: `${action.id}-guidance-reference-${index}`,
               link: reference.link,
-              snippet: reference.snippet ?? undefined,
-              source: reference.source ?? undefined,
-              title: reference.title,
+              snippet: reference.snippet
+                ? neutralizeMarketplaceBrand(reference.snippet)
+                : undefined,
+              source: reference.source
+                ? neutralizeMarketplaceBrand(reference.source)
+                : undefined,
+              title: neutralizeMarketplaceBrand(reference.title),
             })),
-            safetyWarnings: response.safetyWarnings,
+            safetyWarnings: response.safetyWarnings.map((warning) =>
+              neutralizeMarketplaceBrand(warning),
+            ),
             searchedAt: response.searchedAt,
-            steps: response.steps,
-            summary: response.summary,
-            toolsOrParts: response.toolsOrParts,
+            steps: response.steps.map((step) => neutralizeMarketplaceBrand(step)),
+            summary: response.summary
+              ? neutralizeMarketplaceBrand(response.summary)
+              : null,
+            toolsOrParts: response.toolsOrParts.map((item) =>
+              neutralizeMarketplaceBrand(item),
+            ),
           };
           setProfitabilityGuidance((current) => ({
             ...current,
@@ -1099,7 +1234,7 @@ export function ValuationResultStage({
             [action.id]: {
               error:
                 caught instanceof Error
-                  ? caught.message
+                  ? neutralizeMarketplaceBrand(caught.message)
                   : "KeepFlip could not research this enhancement.",
               status: "error",
             },
@@ -1162,7 +1297,6 @@ export function ValuationResultStage({
         <Text adjustsFontSizeToFit minimumFontScale={11} numberOfLines={2} style={styles.itemTitle}>
           {result.identity.title}
         </Text>
-        <Text numberOfLines={1} style={styles.projectionLabel}>{projectionLabel}</Text>
       </Animated.View>
 
       <Animated.View
@@ -1177,44 +1311,46 @@ export function ValuationResultStage({
           embedded && styles.resultDockEmbedded,
         ]}
       >
-        {expansionEnabled ? (
-          <GestureDetector gesture={sheetPan}>
-            <Pressable
-              accessibilityLabel={
-                expanded
-                  ? "Collapse analysis details"
-                  : "Expand analysis details"
-              }
-              accessibilityRole="button"
-              accessibilityState={{ expanded }}
-              hitSlop={8}
-              onPress={toggleExpanded}
-              style={styles.sheetHandleHitbox}
-            >
-              <View style={styles.sheetHandle} />
-              <Text style={styles.sheetHandleLabel}>
-                {expanded ? "SWIPE DOWN" : "SWIPE UP FOR FULL INTELLIGENCE"}
-              </Text>
-            </Pressable>
-          </GestureDetector>
-        ) : null}
-
-        <View accessibilityRole="tablist" style={styles.tabRail}>
-          {TABS.map((tab) => {
-            const active = activeTab === tab.id;
-            return (
+        <View style={styles.sheetHeader}>
+          {expansionEnabled ? (
+            <GestureDetector gesture={sheetPan}>
               <Pressable
-                accessibilityRole="tab"
-                accessibilityState={{ selected: active }}
-                disabled={saving}
-                key={tab.id}
-                onPress={() => selectTab(tab.id)}
-                style={({ pressed }) => [styles.tab, active && styles.tabActive, pressed && styles.pressed]}
+                accessibilityLabel={
+                  expanded
+                    ? "Collapse analysis details"
+                    : "Expand analysis details"
+                }
+                accessibilityRole="button"
+                accessibilityState={{ expanded }}
+                hitSlop={8}
+                onPress={toggleExpanded}
+                style={styles.sheetHandleHitbox}
               >
-                <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.label}</Text>
+                <View style={styles.sheetHandle} />
+                <Text style={styles.sheetHandleLabel}>
+                  {expanded ? "SWIPE DOWN" : "SWIPE UP FOR FULL INTELLIGENCE"}
+                </Text>
               </Pressable>
-            );
-          })}
+            </GestureDetector>
+          ) : null}
+
+          <View accessibilityRole="tablist" style={styles.tabRail}>
+            {TABS.map((tab) => {
+              const active = activeTab === tab.id;
+              return (
+                <Pressable
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: active }}
+                  disabled={saving}
+                  key={tab.id}
+                  onPress={() => selectTab(tab.id)}
+                  style={({ pressed }) => [styles.tab, active && styles.tabActive, pressed && styles.pressed]}
+                >
+                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
 
         {expansionEnabled ? (
@@ -1238,8 +1374,11 @@ export function ValuationResultStage({
                 onAnswerChange={updateAnswer}
                 onPressAction={requestProfitabilityGuidance}
                 onRefine={onRefine}
+                onScanMorePhotos={onScanMorePhotos}
                 onSubmitRefinement={submitRefinement}
                 refining={refining}
+                refinementPhotoReady={refinementPhotoReady}
+                scanningMorePhotos={scanningMorePhotos}
                 result={result}
               />
             ) : null}
@@ -1290,7 +1429,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     gap: 8,
     paddingHorizontal: 12,
-    paddingTop: 11,
+    paddingTop: 10,
     overflow: "visible",
     borderTopLeftRadius: theme.radii.large,
     borderTopRightRadius: theme.radii.large,
@@ -1322,17 +1461,13 @@ const styles = StyleSheet.create({
       "0 -18px 52px rgba(0, 0, 0, 0.64), 0 -1px 18px rgba(141, 114, 255, 0.10), 0 0 16px rgba(215, 168, 74, 0.06)",
   },
   resultDockEmbedded: { borderBottomWidth: 1, borderBottomLeftRadius: theme.radii.large, borderBottomRightRadius: theme.radii.large },
+  sheetHeader: { gap: 4 },
   sheetHandleHitbox: {
-    position: "absolute",
-    top: -23,
-    left: "50%",
-    zIndex: 12,
-    width: 226,
-    height: 36,
+    alignSelf: "stretch",
+    minHeight: 32,
     alignItems: "center",
-    justifyContent: "flex-start",
-    gap: 3,
-    marginLeft: -113,
+    justifyContent: "center",
+    gap: 8,
   },
   sheetHandle: {
     width: 52,
@@ -1677,6 +1812,32 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.radar,
     fontSize: 8,
     lineHeight: 12,
+  },
+  photoRequest: {
+    color: "rgba(242, 211, 138, 0.78)",
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
+    fontWeight: "800",
+    lineHeight: 13,
+  },
+  scanDetailButton: {
+    minHeight: 42,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 3,
+    borderWidth: 1,
+    borderColor: "rgba(88, 223, 232, 0.48)",
+    borderRadius: 4,
+    backgroundColor: "rgba(0, 255, 255, 0.07)",
+  },
+  scanDetailButtonText: {
+    color: theme.colors.scannerCyan,
+    fontFamily: theme.fonts.radar,
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 0.8,
   },
   questionInput: {
     minHeight: 70,

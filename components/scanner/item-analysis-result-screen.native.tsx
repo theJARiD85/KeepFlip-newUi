@@ -1,4 +1,5 @@
 import { File, Paths } from "expo-file-system";
+import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -9,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { HudImageFrame } from "@/components/scanner/hud-image-frame.native";
@@ -23,12 +25,18 @@ import {
   applyProfitabilityGuidanceToAnalysis,
   type SerpApiProfitabilityGuidance,
 } from "@/services/ebaySoldCompsService";
+import { refineItemAnalysis } from "@/services/item-analysis-service";
 import {
   getInventoryItem,
   saveAnalyzedItemToInventory,
   updateInventoryAnalysisSnapshot,
 } from "@/services/inventory-service";
 import { getItemPhotos } from "@/services/itemPhotoService";
+import { neutralizeMarketplaceBrand } from "@/services/market-copy";
+import {
+  saveScannerRefinementPhoto,
+  type SavedScanPhoto,
+} from "@/services/scan-photo-service";
 import type { ItemAnalysisSuccess } from "@/types/item-analysis";
 
 type InventoryResultPayload = {
@@ -305,10 +313,18 @@ export function ItemAnalysisResultScreen() {
   const [projectionError, setProjectionError] =
     useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [refining, setRefining] = useState(false);
+  const [scanningMorePhotos, setScanningMorePhotos] = useState(false);
+  const [refinementPhoto, setRefinementPhoto] =
+    useState<{ photo: SavedScanPhoto; sessionId: string } | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const finalizedRef = useRef(false);
   const activeSessionId = scannerSession?.id;
   const activeSessionReset = scannerSession?.onReset;
+  const activeRefinementPhoto =
+    refinementPhoto && refinementPhoto.sessionId === activeSessionId
+      ? refinementPhoto.photo
+      : null;
 
   useEffect(() => {
     if (!itemId) return;
@@ -329,7 +345,7 @@ export function ItemAnalysisResultScreen() {
         if (!active) return;
         setError(
           caught instanceof Error
-            ? caught.message
+            ? neutralizeMarketplaceBrand(caught.message)
             : "KeepFlip could not open this saved analysis.",
         );
       } finally {
@@ -369,11 +385,6 @@ export function ItemAnalysisResultScreen() {
     clearScannerResult(scannerSession.id);
   }, [clearScannerResult, scannerSession]);
 
-  const handleDone = useCallback(() => {
-    finishScannerSession();
-    router.back();
-  }, [finishScannerSession, router]);
-
   const handleSave = useCallback(async () => {
     if (!scannerSession || saving) return;
     if (!userId) {
@@ -401,7 +412,7 @@ export function ItemAnalysisResultScreen() {
       Alert.alert(
         "Could not save item",
         caught instanceof Error
-          ? caught.message
+          ? neutralizeMarketplaceBrand(caught.message)
           : "KeepFlip could not save this item.",
       );
     } finally {
@@ -414,6 +425,107 @@ export function ItemAnalysisResultScreen() {
     scannerSession,
     userId,
   ]);
+
+  const handleScanMorePhotos = useCallback(async () => {
+    if (!scannerSession || !userId || refining || scanningMorePhotos) return;
+
+    setScanningMorePhotos(true);
+    try {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(
+          "Camera access needed",
+          "Allow camera access to add a close-up for this valuation.",
+        );
+        return;
+      }
+
+      const capture = await ImagePicker.launchCameraAsync({
+        allowsEditing: false,
+        mediaTypes: ["images"],
+        quality: 0.9,
+      });
+      if (capture.canceled) return;
+
+      const imageUri = capture.assets[0]?.uri;
+      if (!imageUri) {
+        throw new Error("The camera did not return a usable photo.");
+      }
+
+      await scannerSession.ensurePhotosSaved?.();
+      const saved = await saveScannerRefinementPhoto({
+        imageUri,
+        ownerId: userId,
+        scanId: scannerSession.scanId,
+      });
+      setRefinementPhoto({ photo: saved, sessionId: scannerSession.id });
+      Alert.alert(
+        "Detail photo ready",
+        "Add any verified answer, then refine the valuation. You can also refine using this photo alone.",
+      );
+    } catch (caught) {
+      Alert.alert(
+        "Could not save detail photo",
+        caught instanceof Error
+          ? neutralizeMarketplaceBrand(caught.message)
+          : "KeepFlip could not save this photo for valuation.",
+      );
+    } finally {
+      setScanningMorePhotos(false);
+    }
+  }, [refining, scannerSession, scanningMorePhotos, userId]);
+
+  const handleRefine = useCallback(
+    async (answersByQuestion: Record<string, string>) => {
+      if (!scannerSession || !userId || refining) return;
+
+      const answers = (scannerSession.state.data.refinementQuestions ?? [])
+        .map((question) => ({
+          answer: answersByQuestion[question.id]?.trim() ?? "",
+          question: question.prompt,
+        }))
+        .filter((entry) => Boolean(entry.answer));
+
+      if (answers.length === 0 && !activeRefinementPhoto) return;
+
+      setRefining(true);
+      try {
+        await scannerSession.ensurePhotosSaved?.();
+        const analysis = await refineItemAnalysis({
+          answers,
+          ownerId: userId,
+          photoFileId: activeRefinementPhoto?.fileId,
+          scanId: scannerSession.scanId,
+        });
+        const nextState = toItemAnalysisState(analysis);
+        if (nextState.status !== "result") {
+          throw new Error("KeepFlip needs another clear identifying detail.");
+        }
+
+        updateScannerResult(scannerSession.id, {
+          analysis,
+          state: nextState,
+        });
+        setRefinementPhoto(null);
+      } catch (caught) {
+        Alert.alert(
+          "Could not refine valuation",
+          caught instanceof Error
+            ? neutralizeMarketplaceBrand(caught.message)
+            : "KeepFlip could not apply those valuation details.",
+        );
+      } finally {
+        setRefining(false);
+      }
+    },
+    [
+      activeRefinementPhoto,
+      refining,
+      scannerSession,
+      updateScannerResult,
+      userId,
+    ],
+  );
 
   const handleProfitabilityGuidance = useCallback(
     async (guidance: SerpApiProfitabilityGuidance) => {
@@ -561,41 +673,66 @@ export function ItemAnalysisResultScreen() {
     : "KEEPFLIP ITEM PROJECTION / VALUATION FIELD";
 
   return (
-    <View style={styles.root}>
-      <View pointerEvents="none" style={styles.projectionLayer}>
-        <HudImageFrame
-          onError={setProjectionError}
-          photoUri={photoUri}
-          statusText={
-            scannerSession
-              ? "CAPTURED EVIDENCE"
-              : "SAVED ANALYSIS IMAGE"
-          }
-        />
-      </View>
-
-      <View
-        pointerEvents="none"
-        style={[styles.resultScrim, styles.resultScrimWithProjection]}
-      />
-
-      <ValuationResultStage
-        bottomInset={insets.bottom}
-        onProfitabilityGuidance={handleProfitabilityGuidance}
-        onSave={
-          scannerSession
-            ? () => {
-              void handleSave();
+    <KeepFlipBackground>
+        <View pointerEvents="none" style={styles.projectionLayer}>
+          <HudImageFrame
+            onError={setProjectionError}
+            photoUri={photoUri}
+            statusText={
+              scannerSession
+                ? "CAPTURED EVIDENCE"
+                : "SAVED ANALYSIS IMAGE"
             }
-            : undefined
-        }
-        projectionLabel={projectionLabel}
-        saveLabel="Save to inventory"
-        saving={saving}
-        state={resultState}
-        topInset={insets.top}
-      />
-    </View>
+          />
+        </View>
+
+        <View
+          pointerEvents="none"
+          style={[styles.resultScrim, styles.resultScrimWithProjection]}
+        />
+
+        <ValuationResultStage
+          bottomInset={insets.bottom}
+          key={
+            scannerSession
+              ? `${scannerSession.id}:${
+                scannerSession.analysis.marketResearch?.searchedAt ??
+                scannerSession.analysis.version
+              }`
+              : itemId ?? "saved-analysis"
+          }
+          onProfitabilityGuidance={handleProfitabilityGuidance}
+          onRefine={
+            scannerSession
+              ? (answers) => {
+                void handleRefine(answers);
+              }
+              : undefined
+          }
+          onScanMorePhotos={
+            scannerSession
+              ? () => {
+                void handleScanMorePhotos();
+              }
+              : undefined
+          }
+          onSave={
+            scannerSession
+              ? () => {
+                void handleSave();
+              }
+              : undefined
+          }
+          projectionLabel={projectionLabel}
+          refining={refining}
+          refinementPhotoReady={Boolean(activeRefinementPhoto)}
+          saveLabel="Save to inventory"
+          saving={saving}
+          scanningMorePhotos={scanningMorePhotos}
+          state={resultState}
+          topInset={insets.top}
+        />
+    </KeepFlipBackground>
   );
 }
 

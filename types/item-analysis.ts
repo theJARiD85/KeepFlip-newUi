@@ -71,6 +71,11 @@ export type ItemValuationSignals = {
 
 export type ItemAnalysis = {
   summary: string;
+  displayTitles?: {
+    exactItemName: string;
+    currentResaleMarketValue: string;
+    observedCondition: string;
+  };
   identification: ItemIdentification;
   condition: ItemCondition;
   confidence: ItemAnalysisConfidence;
@@ -223,7 +228,6 @@ export type ItemProfitabilityAction = {
 
 export type ItemProfitabilityGuidance = {
   actionTitle: string;
-  query: string;
   references?: ItemMarketReference[];
   safetyWarnings: string[];
   searchedAt: string;
@@ -235,6 +239,12 @@ export type ItemProfitabilityGuidance = {
 export type ItemValuationRefinementQuestion = {
   prompt: string;
   reason: string | null;
+};
+
+export type ItemValuationLadder = {
+  level: "Level 1" | "Level 2" | "Level 3" | "Level 4" | "Level 5";
+  reason: string | null;
+  confidence: number;
 };
 
 export type ItemMarketResaleVelocity = {
@@ -296,6 +306,7 @@ export type ItemMarketResearch = {
   profitabilityActions?: ItemProfitabilityAction[];
   profitabilityGuidance?: ItemProfitabilityGuidance[];
   refinementQuestions?: ItemValuationRefinementQuestion[];
+  valuationLadder?: ItemValuationLadder;
   marketVelocity?: ItemMarketResaleVelocity;
   flipComplexity?: ItemMarketFlipComplexity;
   flipDecision?: ItemMarketFlipDecision;

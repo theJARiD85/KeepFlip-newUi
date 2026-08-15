@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="400" viewBox="0 0 960 400" fill="none">
+  <defs>
+    <linearGradient id="card" x1="88" y1="62" x2="872" y2="338" gradientUnits="userSpaceOnUse"><stop stop-color="#01060A" stop-opacity=".94"/><stop offset="1" stop-color="#03060C" stop-opacity=".82"/></linearGradient>
+    <filter id="cyan" x="-80%" y="-80%" width="260%" height="260%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="8" result="blur"/><feFlood flood-color="#58DFE8" flood-opacity=".7" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="violet" x="-80%" y="-80%" width="260%" height="260%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="6" result="blur"/><feFlood flood-color="#8D72FF" flood-opacity=".6" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect x="68" y="46" width="824" height="308" rx="22" fill="url(#card)" stroke="#58DFE8" stroke-opacity=".45" stroke-width="3"/>
+  <circle cx="119" cy="100" r="10" fill="#58DFE8" filter="url(#cyan)"/><rect x="148" y="90" width="232" height="13" rx="6.5" fill="#58DFE8" fill-opacity=".66"/><rect x="392" y="90" width="98" height="13" rx="6.5" fill="#58DFE8" fill-opacity=".28"/><rect x="746" y="91" width="95" height="12" rx="6" fill="#F2D38A" fill-opacity=".8"/>
+  <path d="M104 141H856" stroke="#58DFE8" stroke-opacity=".23" stroke-width="2"/>
+  <path d="M118 204H140" stroke="#58DFE8" stroke-width="8" stroke-linecap="round" filter="url(#cyan)"/><rect x="166" y="192" width="406" height="16" rx="8" fill="#E9FFFF" fill-opacity=".88"/><rect x="166" y="225" width="523" height="11" rx="5.5" fill="#D8EEF1" fill-opacity=".38"/><rect x="166" y="249" width="368" height="11" rx="5.5" fill="#D8EEF1" fill-opacity=".24"/>
+  <rect x="104" y="297" width="322" height="10" rx="5" fill="#8D72FF" fill-opacity=".53"/><rect x="447" y="297" width="110" height="10" rx="5" fill="#8D72FF" fill-opacity=".25"/><rect x="805" y="281" width="16" height="28" rx="2" fill="#58DFE8" fill-opacity=".76" filter="url(#cyan)"/><path d="M743 309H775" stroke="#58DFE8" stroke-opacity=".4" stroke-width="3"/><circle cx="855" cy="307" r="5" fill="#8D72FF" filter="url(#violet)"/>
+</svg>

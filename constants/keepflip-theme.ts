@@ -21,7 +21,7 @@ export const keepFlipTheme = {
     scannerAmber: '#E0AC4B',
     scannerCyan: '#00ffff',
     scannerViolet: '#8D72FF',
-    scannerIndigo: '#6F00FF',
+    scannerMagenta: '#FF007F',
     scannerWhite: '#FFF2D2',
     goldBright: '#F2D38A',
     goldMuted: '#8A642B',

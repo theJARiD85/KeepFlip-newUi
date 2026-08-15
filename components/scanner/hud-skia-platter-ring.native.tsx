@@ -68,7 +68,7 @@ export const HUDSkiaPlatterRing = memo(
   }: HUDSkiaPlatterRingProps) {
     const geometry = useMemo(() => {
       const centerX = width / 2;
-      const centerY = height * 0.46;
+      const centerY = height * 0.5;
 
       const left = centerX - radiusX;
       const right = centerX + radiusX;
@@ -85,8 +85,8 @@ export const HUDSkiaPlatterRing = memo(
         `A ${radiusX} ${radiusY} 0 0 0 ${right} ${centerY}`,
       ].join(" ");
 
-      const innerRadiusX = radiusX * 0.86;
-      const innerRadiusY = radiusY * 0.74;
+      const innerRadiusX = radiusX * 0.85;
+      const innerRadiusY = radiusY * 0.6;
       const innerLeft = centerX - innerRadiusX;
       const innerRight = centerX + innerRadiusX;
       const innerCenterY = centerY + radiusY * 0.08;
@@ -108,9 +108,9 @@ export const HUDSkiaPlatterRing = memo(
 
     const gradientColors = useDerivedValue(() => [
       colorAtPosition(position.value - 1, accents),
-      colorAtPosition(position.value - 0.38, accents),
+      colorAtPosition(position.value - 0.33, accents),
       colorAtPosition(position.value, accents),
-      colorAtPosition(position.value + 0.38, accents),
+      colorAtPosition(position.value + 0.33, accents),
       colorAtPosition(position.value + 1, accents),
     ]);
 
@@ -202,7 +202,7 @@ export const HUDSkiaPlatterRing = memo(
             colors={gradientColors}
           />
           <DashPathEffect
-            intervals={[3, 7]}
+            intervals={[3, 6]}
             phase={dashPhase}
           />
         </Path>

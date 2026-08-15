@@ -1,2 +1,0 @@
--keep class expo.modules.appodealnativeads.** { *; }
--dontwarn expo.modules.appodealnativeads.**

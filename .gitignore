@@ -35,6 +35,9 @@ yarn-error.*
 .env
 .env*.local
 
+# Private Roboflow pilot source photos and completed manifests
+/tools/roboflow/private-data/
+
 # typescript
 *.tsbuildinfo
 
@@ -42,6 +45,11 @@ app-example
 
 # generated native folders
 /ios
-/android
+/android/build
+/android/.gradle
+/android/.kotlin
+/modules/keepflip-scan-proof/android/build
+/modules/keepflip-scan-proof/android/.gradle
+/modules/keepflip-scan-proof/android/.kotlin
 /backend
 /.backups

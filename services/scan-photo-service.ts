@@ -79,10 +79,16 @@ export function createScanId() {
   return ID.unique();
 }
 
-export async function getPrimaryScannerPhotoFileId(
+type ScannerPhotoRow = {
+  fileId?: unknown;
+  isPrimary?: unknown;
+  sortOrder?: unknown;
+};
+
+async function listScannerPhotoRows(
   ownerId: string,
   scanId: string,
-): Promise<string> {
+): Promise<ScannerPhotoRow[]> {
   const cleanOwnerId = ownerId.trim();
   const cleanScanId = scanId.trim();
 
@@ -101,13 +107,32 @@ export async function getPrimaryScannerPhotoFileId(
       Query.select(["fileId", "isPrimary", "sortOrder"]),
     ],
   });
-  const rows = response.rows as unknown as {
-    fileId?: unknown;
-    isPrimary?: unknown;
-  }[];
+
+  return response.rows as unknown as ScannerPhotoRow[];
+}
+
+function rowFileId(row: ScannerPhotoRow | undefined) {
+  return typeof row?.fileId === "string" ? row.fileId.trim() : "";
+}
+
+export async function getScannerPhotoFileId(
+  ownerId: string,
+  scanId: string,
+  requestedFileId?: string | null,
+): Promise<string> {
+  const rows = await listScannerPhotoRows(ownerId, scanId);
+  const requested = requestedFileId?.trim() || "";
+
+  if (requested) {
+    const selected = rows.find((row) => rowFileId(row) === requested);
+    if (!selected) {
+      throw new Error("The selected scanner photo is no longer available.");
+    }
+    return requested;
+  }
+
   const primary = rows.find((row) => row.isPrimary === true) ?? rows[0];
-  const fileId =
-    typeof primary?.fileId === "string" ? primary.fileId.trim() : "";
+  const fileId = rowFileId(primary);
 
   if (!fileId) {
     throw new Error(
@@ -116,6 +141,13 @@ export async function getPrimaryScannerPhotoFileId(
   }
 
   return fileId;
+}
+
+export async function getPrimaryScannerPhotoFileId(
+  ownerId: string,
+  scanId: string,
+): Promise<string> {
+  return getScannerPhotoFileId(ownerId, scanId);
 }
 
 export async function saveScannerPhoto({
@@ -181,4 +213,32 @@ export async function saveScannerPhoto({
     isPrimary,
     localUri: imageUri,
   };
+}
+
+export async function saveScannerRefinementPhoto({
+  imageUri,
+  ownerId,
+  scanId,
+}: Pick<SaveScannerPhotoInput, "imageUri" | "ownerId" | "scanId">): Promise<SavedScanPhoto> {
+  const rows = await listScannerPhotoRows(ownerId, scanId);
+  const highestSortOrder = rows.reduce((highest, row) => {
+    const value =
+      typeof row.sortOrder === "number" && Number.isInteger(row.sortOrder)
+        ? row.sortOrder
+        : -1;
+    return Math.max(highest, value);
+  }, -1);
+  const sortOrder = highestSortOrder + 1;
+
+  if (sortOrder > 20) {
+    throw new Error("This scan already has the maximum number of saved photos.");
+  }
+
+  return saveScannerPhoto({
+    imageUri,
+    ownerId,
+    scanId,
+    sortOrder,
+    isPrimary: false,
+  });
 }

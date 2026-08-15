@@ -1,4 +1,5 @@
 import type { ItemAnalysisSuccess } from '@/types/item-analysis';
+import { neutralizeMarketplaceBrand } from '@/services/market-copy';
 
 import type {
   AnalysisEvidence,
@@ -6,6 +7,7 @@ import type {
   AnalysisProfitPlan,
   AnalysisRefinementQuestion,
   AnalysisSuggestedPhoto,
+  AnalysisValuationLadder,
   ItemAnalysisResult as ItemAnalysisOverlayResult,
   ItemAnalysisState,
 } from './analysis-visual-types';
@@ -28,9 +30,37 @@ function titleCase(value: string) {
 }
 
 function displayText(value: string, maxLength: number) {
-  const normalized = value.replace(/\s+/g, ' ').trim();
+  const normalized = neutralizeMarketplaceBrand(value)
+    .replace(/\s+/g, ' ')
+    .trim();
   if (normalized.length <= maxLength) return normalized;
   return `${normalized.slice(0, maxLength - 1).trimEnd()}…`;
+}
+
+function isUnresolvedValue(value: string) {
+  const normalized = value
+    .replace(/[.!:;]+$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+  return (
+    /^(?:unknown|undetermined|unidentified|unavailable|not available|not determined|unable to determine|n\/a|null|none)$/.test(
+      normalized,
+    ) ||
+    /\b(?:unknown|undetermined|unidentified|unavailable)\b/.test(normalized) ||
+    /\b(?:could not|cannot|can't|unable to|not able to)\s+(?:be\s+)?(?:determine|identify|verify)/.test(
+      normalized,
+    )
+  );
+}
+
+function displayKnownText(
+  value: string | null | undefined,
+  maxLength: number,
+) {
+  if (!value) return undefined;
+  const text = displayText(value, maxLength);
+  return text && !isUnresolvedValue(text) ? text : undefined;
 }
 
 function compact<T>(values: (T | null | undefined | '')[]) {
@@ -38,7 +68,9 @@ function compact<T>(values: (T | null | undefined | '')[]) {
 }
 
 function suggestedPhotos(result: ItemAnalysisSuccess): AnalysisSuggestedPhoto[] {
-  const suggestions = result.analysis.suggestedPhotos;
+  const suggestions = result.analysis.suggestedPhotos.filter(
+    (value) => Boolean(displayKnownText(value, 120)),
+  );
   const resolved =
     suggestions.length > 0
       ? suggestions
@@ -47,15 +79,29 @@ function suggestedPhotos(result: ItemAnalysisSuccess): AnalysisSuggestedPhoto[] 
         'A close-up of any label, logo, model number, or maker mark',
       ];
 
-  return resolved.map((label, index) => ({
-    id: `analysis-photo-${index}`,
-    label: displayText(label, 120),
-    priority: result.status === 'insufficient_evidence' ? 'required' : 'recommended',
-  }));
+  return resolved.reduce<AnalysisSuggestedPhoto[]>((photos, label, index) => {
+      const text = displayKnownText(label, 120);
+      if (text) {
+        photos.push({
+          id: `analysis-photo-${index}`,
+          label: text,
+          priority:
+            result.status === 'insufficient_evidence' ? 'required' : 'recommended',
+        });
+      }
+      return photos;
+    }, []);
 }
 
 function evidence(result: ItemAnalysisSuccess): AnalysisEvidence[] {
-  return result.analysis.evidence.map((item, index) => ({
+  return result.analysis.evidence
+    .filter((item) => {
+      const detail = [item.value, item.rationale]
+        .filter((value): value is string => Boolean(value))
+        .join(' ');
+      return Boolean(displayKnownText(detail, 320));
+    })
+    .map((item, index) => ({
     id: `analysis-evidence-${index}`,
     label: displayText(item.claim, 72),
     source: EVIDENCE_SOURCE_LABELS[item.source],
@@ -129,9 +175,7 @@ function refinementQuestions(
     questions.push({
       id: `market-refinement-${questions.length}`,
       prompt,
-      reason: question.reason
-        ? displayText(question.reason, 240)
-        : undefined,
+      reason: displayKnownText(question.reason, 240),
     });
     if (questions.length >= 6) break;
   }
@@ -155,13 +199,15 @@ function refinementQuestions(
 
 function resultTitle(result: ItemAnalysisSuccess) {
   const identity = result.analysis.identification;
-  if (identity.itemType) return displayText(identity.itemType, 120);
-  const preciseTitle = compact<string>([identity.brand, identity.model, identity.variant]).join(' ');
+  const itemType = displayKnownText(identity.itemType, 120);
+  if (itemType) return itemType;
+  const preciseTitle = compact<string>([
+    displayKnownText(identity.brand, 72),
+    displayKnownText(identity.model, 72),
+    displayKnownText(identity.variant, 72),
+  ]).join(' ');
   if (preciseTitle) return displayText(preciseTitle, 120);
-  return displayText(
-    identity.itemType ?? identity.category ?? 'Item identified from photo evidence',
-    120,
-  );
+  return displayKnownText(identity.category, 120) ?? 'Item Scan';
 }
 
 function profitabilityGuidanceKey(value: string) {
@@ -186,15 +232,23 @@ function profitabilityGuidanceFor(
     references: guidance.references?.map((reference, index) => ({
       id: `profitability-guidance-reference-${index}`,
       link: reference.link,
-      snippet: reference.snippet ?? undefined,
-      source: reference.source ?? undefined,
-      title: reference.title,
+      snippet: reference.snippet
+        ? displayText(reference.snippet, 360)
+        : undefined,
+      source: reference.source
+        ? displayText(reference.source, 80)
+        : undefined,
+      title: displayText(reference.title, 160),
     })),
-    safetyWarnings: guidance.safetyWarnings,
+    safetyWarnings: guidance.safetyWarnings.map((warning) =>
+      displayText(warning, 240),
+    ),
     searchedAt: guidance.searchedAt,
-    steps: guidance.steps,
-    summary: guidance.summary,
-    toolsOrParts: guidance.toolsOrParts,
+    steps: guidance.steps.map((step) => displayText(step, 280)),
+    summary: guidance.summary ? displayText(guidance.summary, 520) : null,
+    toolsOrParts: guidance.toolsOrParts.map((item) =>
+      displayText(item, 120),
+    ),
   };
 }
 
@@ -355,7 +409,7 @@ function valuationReadiness(result: ItemAnalysisSuccess): ItemAnalysisOverlayRes
     ? `confirmed marketplace sale${valuation.usedCount === 1 ? '' : 's'}`
     : `completed marketplace sale${valuation.usedCount === 1 ? '' : 's'}`;
   const qualityDetail = quality
-    ? `${titleCase(quality.confidence)} confidence${quality.searchRoute ? ` ${quality.searchRoute.replaceAll('_', ' ')} search` : ''}. ${quality.warnings[0] ?? ''}`.trim()
+    ? `${titleCase(quality.confidence)} confidence${quality.searchRoute ? ` ${quality.searchRoute.replaceAll('_', ' ')} search` : ''}. ${quality.warnings[0] ? displayText(quality.warnings[0], 220) : ''}`.trim()
     : '';
 
   if (market?.status === 'failed' || market?.status === 'unavailable') {
@@ -367,7 +421,9 @@ function valuationReadiness(result: ItemAnalysisSuccess): ItemAnalysisOverlayRes
             : 'Sold-market research interrupted'
           : 'Market research not configured',
       reason:
-        market.error?.message ??
+        (market.error?.message
+          ? displayText(market.error.message, 280)
+          : null) ??
         'KeepFlip completed the identification but could not retrieve market valuation evidence.',
       status: 'not-ready',
     };
@@ -377,14 +433,14 @@ function valuationReadiness(result: ItemAnalysisSuccess): ItemAnalysisOverlayRes
     if (usesSerpApiAiMode) {
       return {
         label: 'Visual market estimate ready',
-        reason: `KeepFlip AI Mode evaluated the item photo and returned a current private-sale range${market?.query ? ` for “${market.query}”` : ''}. This is a directional AI market estimate, not a verified sold transaction. ${qualityDetail}`.trim(),
+        reason: `KeepFlip AI Mode evaluated the item photo and returned a current private-sale range. This is a directional AI market estimate, not a verified sold transaction. ${qualityDetail}`.trim(),
         status: 'ready',
       };
     }
     if (usesSoldMarketData) {
       return {
         label: 'Sold-market range ready',
-        reason: `${valuation.usedCount} ${soldEvidenceLabel} remained after identity, condition, currency, duplicate, and outlier filtering${market?.query ? ` for “${market.query}”` : ''}. ${qualityDetail}`.trim(),
+        reason: `${valuation.usedCount} ${soldEvidenceLabel} remained after identity, condition, currency, duplicate, and outlier filtering. ${qualityDetail}`.trim(),
         status: 'ready',
       };
     }
@@ -413,9 +469,7 @@ function valuationReadiness(result: ItemAnalysisSuccess): ItemAnalysisOverlayRes
   if (usesSoldMarketData && market?.status === 'completed') {
     return {
       label: 'No matching sold-market transactions found',
-      reason: market.query
-        ? `The completed-listing search for “${market.query}” did not return enough usable sold comps to calculate a range.`
-        : 'The completed-listing search did not return enough usable sold comps to calculate a range.',
+      reason: 'The completed-listing search did not return enough usable sold comps to calculate a range.',
       status: 'not-ready',
     };
   }
@@ -428,6 +482,21 @@ function valuationReadiness(result: ItemAnalysisSuccess): ItemAnalysisOverlayRes
   };
 }
 
+function valuationLadder(
+  result: ItemAnalysisSuccess,
+): AnalysisValuationLadder | undefined {
+  const ladder = result.marketResearch?.valuationLadder;
+  if (!ladder) return undefined;
+
+  return {
+    level: ladder.level,
+    reason: displayKnownText(ladder.reason, 360),
+    confidence: Number.isFinite(ladder.confidence)
+      ? Math.max(0, Math.min(100, ladder.confidence))
+      : undefined,
+  };
+}
+
 export function toItemAnalysisResult(result: ItemAnalysisSuccess): ItemAnalysisOverlayResult {
   const identity = result.analysis.identification;
   const confidence = result.analysis.confidence;
@@ -436,15 +505,20 @@ export function toItemAnalysisResult(result: ItemAnalysisSuccess): ItemAnalysisO
   const usesSerpApiAiMode = valuationSource === 'keepflip_ai';
   const canShowValuation =
     valuation.p20 != null && valuation.median != null && valuation.p80 != null;
+  const observedCondition =
+    result.analysis.condition.grade === 'unknown'
+      ? undefined
+      : {
+        details: result.analysis.condition.notes
+          .map((note) => displayKnownText(note, 220))
+          .filter((note): note is string => Boolean(note)),
+        label: displayText(titleCase(result.analysis.condition.grade), 80),
+        titleLabel: result.analysis.displayTitles?.observedCondition,
+        score: result.analysis.condition.confidence,
+      };
 
   return {
-    condition: {
-      details: result.analysis.condition.notes.map((note) =>
-        displayText(note, 220),
-      ),
-      label: displayText(titleCase(result.analysis.condition.grade), 80),
-      score: result.analysis.condition.confidence,
-    },
+    condition: observedCondition,
     confidence: {
       brand: confidence.brand,
       condition: confidence.condition,
@@ -456,11 +530,12 @@ export function toItemAnalysisResult(result: ItemAnalysisSuccess): ItemAnalysisO
     },
     evidence: evidence(result),
     identity: {
-      brand: identity.brand ? displayText(identity.brand, 72) : undefined,
-      category: identity.category ? displayText(identity.category, 72) : undefined,
+      brand: displayKnownText(identity.brand, 72),
+      category: displayKnownText(identity.category, 72),
       confidence: confidence.overall,
-      model: identity.model ? displayText(identity.model, 72) : undefined,
+      model: displayKnownText(identity.model, 72),
       title: resultTitle(result),
+      titleLabel: result.analysis.displayTitles?.exactItemName,
       variant:
         displayText(
           compact<string>([identity.variant, identity.color, identity.era]).join(' · '),
@@ -471,7 +546,7 @@ export function toItemAnalysisResult(result: ItemAnalysisSuccess): ItemAnalysisO
     profitPlan: profitPlan(result),
     refinementQuestions: refinementQuestions(result),
     suggestedPhotos: suggestedPhotos(result),
-    summary: displayText(result.analysis.summary, 480),
+    summary: displayKnownText(result.analysis.summary, 480),
     valuation: canShowValuation
       ? {
         basis:
@@ -486,7 +561,6 @@ export function toItemAnalysisResult(result: ItemAnalysisSuccess): ItemAnalysisO
         high: valuation.p80!,
         low: valuation.p20!,
         median: valuation.median!,
-        query: result.marketResearch?.query ?? undefined,
         source:
           usesSerpApiAiMode
             ? 'serpapi_ai'
@@ -495,8 +569,10 @@ export function toItemAnalysisResult(result: ItemAnalysisSuccess): ItemAnalysisO
               : valuationSource === 'ebay_sold'
                 ? 'ebay'
                 : 'supplied',
+        titleLabel: result.analysis.displayTitles?.currentResaleMarketValue,
       }
       : undefined,
+    valuationLadder: valuationLadder(result),
     valuationReadiness: valuationReadiness(result),
   };
 }

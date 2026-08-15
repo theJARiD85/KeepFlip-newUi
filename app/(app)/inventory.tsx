@@ -4,13 +4,16 @@ import {
   ActivityIndicator,
   FlatList,
   Modal,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   View,
 } from "react-native";
-import { InventoryMRECCard } from "@/components/inventory/inventory-mrec-card";
+import {
+  AppodealNativeAdView,
+} from "@keepflip/expo-appodeal-native-ads";
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { InventoryCard } from "@/components/inventory/inventory-card";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -26,7 +29,7 @@ import {
   type InventoryResaleVelocity,
 } from "@/services/inventory-service";
 
-const CARDS_BETWEEN_ADS = 5;
+const CARDS_BETWEEN_ADS = 4;
 const HEADER_BOTTOM_SPACING = 22;
 
 const INVENTORY_FEED_PLACEMENTS = [
@@ -35,7 +38,14 @@ const INVENTORY_FEED_PLACEMENTS = [
   "inventory_feed_2",
   "inventory_feed_3",
   "inventory_feed_4",
+  "27824954287146084_27824996457141867",
+  "27824954287146084_27824999867141526",
+  "27824954287146084_27825000287141484",
+  "27824954287146084_27825000503808129",
+  "27824954287146084_27825000743808105",  
 ] as const;
+
+const NATIVE_ADS_SUPPORTED = Platform.OS === "android";
 
 type InventoryFeedPlacement =
   (typeof INVENTORY_FEED_PLACEMENTS)[number];
@@ -76,7 +86,10 @@ type InventoryFeedRow =
       placement: InventoryFeedPlacement;
     };
 
-function buildInventoryFeed(items: InventoryItem[]): InventoryFeedRow[] {
+function buildInventoryFeed(
+  items: InventoryItem[],
+  includeNativeAds: boolean,
+): InventoryFeedRow[] {
   const feed: InventoryFeedRow[] = [];
   let nextPlacementIndex = 0;
 
@@ -88,7 +101,7 @@ function buildInventoryFeed(items: InventoryItem[]): InventoryFeedRow[] {
     }
 
     feed.push({
-      id: `inventory-mrec-ad-${nextPlacementIndex}`,
+      id: `inventory-feed-${nextPlacementIndex}`,
       kind: "native-ad",
       placement,
     });
@@ -99,12 +112,16 @@ function buildInventoryFeed(items: InventoryItem[]): InventoryFeedRow[] {
   items.forEach((item, index) => {
     feed.push({ id: item.id, item, kind: "item" });
 
-    if ((index + 1) % CARDS_BETWEEN_ADS === 0) {
+    if (includeNativeAds && (index + 1) % CARDS_BETWEEN_ADS === 0) {
       appendAd();
     }
   });
 
-  if (items.length > 0 && items.length < CARDS_BETWEEN_ADS) {
+  if (
+    includeNativeAds &&
+    items.length > 0 &&
+    items.length < CARDS_BETWEEN_ADS
+  ) {
     appendAd();
   }
 
@@ -140,7 +157,10 @@ export default function InventoryScreen() {
   >();
   const [draftSort, setDraftSort] = useState<InventoryListSort>("newest");
 
-  const feedRows = useMemo(() => buildInventoryFeed(items), [items]);
+  const feedRows = useMemo(
+    () => buildInventoryFeed(items, NATIVE_ADS_SUPPORTED),
+    [items],
+  );
 
   const appliedSelectionSummary = useMemo(() => {
     const decision = DECISION_FILTERS.find(
@@ -313,7 +333,21 @@ export default function InventoryScreen() {
         renderItem={({ item: row }) =>
           row.kind === "native-ad" ? (
             <View style={{ width: contentWidth }}>
-              <InventoryMRECCard placement={row.placement} />
+            <AppodealNativeAdView
+                style={{ height: 380 }}
+                onAdReady={({ nativeEvent }) => {
+                  console.info(
+                    "Native ad ready",
+                    nativeEvent.availableCount,
+                  );
+                }}
+                onAdFailed={({ nativeEvent }) => {
+                  console.warn(
+                    "Native ad failed",
+                    nativeEvent.code,
+                  );
+                }}
+              />
             </View>
           ) : (
             <View style={[styles.feedItem, { width: contentWidth }]}>
@@ -325,9 +359,9 @@ export default function InventoryScreen() {
                     params: { itemId: row.item.id },
                   })
                 }
-                onRepairPress={() =>
+                onListingGuidePress={() =>
                   router.push({
-                    pathname: "/repair-assist",
+                    pathname: "/listing-guide",
                     params: { itemId: row.item.id },
                   })
                 }

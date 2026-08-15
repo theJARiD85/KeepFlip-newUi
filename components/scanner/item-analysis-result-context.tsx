@@ -9,6 +9,7 @@ import {
 } from "react";
 
 import type { ItemAnalysisState } from "@/components/scanner/analysis-visual-types";
+import type { ScanProofAssessment } from "@/services/scan-proof-service";
 import type { ItemAnalysisSuccess } from "@/types/item-analysis";
 
 type ResultState = Extract<ItemAnalysisState, { status: "result" }>;
@@ -26,6 +27,7 @@ export type ScannerAnalysisSession = {
   onCancel: () => void;
   onReset: () => void;
   photoUris: string[];
+  scanProof?: ScanProofAssessment;
   scanId: string;
 };
 

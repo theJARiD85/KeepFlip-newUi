@@ -4,6 +4,7 @@ import {
   functions,
 } from "../lib/appwrite";
 import type { ItemValuationSignals } from "./itemAiService";
+import { neutralizeMarketplaceBrand } from "./market-copy";
 import type {
   ItemAnalysisSuccess,
   ItemProfitabilityGuidance,
@@ -137,7 +138,6 @@ export type SerpApiProfitabilityAction = {
 export type SerpApiProfitabilityGuidance = {
   actionTitle: string;
   itemTitle: string;
-  query: string;
   references: SerpApiValuationReference[];
   runId: string;
   safetyWarnings: string[];
@@ -194,7 +194,18 @@ export type SerpApiFlipDecision = {
   confidencePercent: number | null;
 };
 
+export type SerpApiValuationLadder = {
+  level: "Level 1" | "Level 2" | "Level 3" | "Level 4" | "Level 5";
+  reason: string | null;
+  confidence: number;
+};
+
 export type SerpApiDisplayReadyResult = {
+  fieldTitles: {
+    exactItemName: string;
+    currentResaleMarketValue: string;
+    observedCondition: string;
+  };
   title: string;
   summary: string;
   identity: SerpApiIdentityAssessment;
@@ -214,6 +225,7 @@ export type SerpApiDisplayReadyResult = {
     basis: string;
     disclaimer: string;
   };
+  valuationLadder: SerpApiValuationLadder;
   factors: string[];
   suggestedDetails: string[];
   profitabilityActions: SerpApiProfitabilityAction[];
@@ -240,7 +252,6 @@ export type SerpApiImageValuationResult = {
   purpose: "image_valuation";
   provider: "keepflip_ai";
   runId: string;
-  query: string;
   imageUrl: string | null;
   image: SerpApiImageReference | null;
   sourceImage: SerpApiImageReference | null;
@@ -262,6 +273,7 @@ export type SerpApiImageValuationResult = {
   identificationSummary: string | null;
   identificationStatus: "identified" | "needs_identification";
   identity: SerpApiIdentityAssessment | null;
+  valuationLadder: SerpApiValuationLadder;
   display: SerpApiDisplayReadyResult;
   condition: SerpApiConditionAssessment | null;
   factors: string[];
@@ -288,6 +300,12 @@ export type SerpApiImageValuationResult = {
 export type SerpApiImageValuationInput = {
   bucketId: string;
   fileId: string;
+  /**
+   * Candidate identity from KeepFlip's separate multi-photo visual pass.
+   * It remains unverified and the market Function must cross-check it against
+   * the supplied image before using it for valuation.
+   */
+  identityContext?: string | null;
   refinementContext?: string | null;
 };
 
@@ -334,16 +352,29 @@ function debugResponseJson(value: unknown): string {
 }
 
 export function buildSerpApiImageValuationQuery(
-  refinementContext?: string | null
+  refinementContext?: string | null,
+  identityContext?: string | null,
 ) {
-  const boundedContext = asString(refinementContext)
+  const boundedRefinementContext = asString(refinementContext)
+    .replace(/\s+/g, " ")
+    .slice(0, MAX_REFINEMENT_CONTEXT_LENGTH)
+    .trim();
+  const boundedIdentityContext = asString(identityContext)
     .replace(/\s+/g, " ")
     .slice(0, MAX_REFINEMENT_CONTEXT_LENGTH)
     .trim();
 
-  return boundedContext
-    ? `${SERPAPI_IMAGE_VALUATION_BASE_QUERY} Owner-provided details (unverified): ${boundedContext}`
-    : SERPAPI_IMAGE_VALUATION_BASE_QUERY;
+  return [
+    SERPAPI_IMAGE_VALUATION_BASE_QUERY,
+    boundedIdentityContext
+      ? `Candidate identity from KeepFlip's separate multi-photo visual pass (unverified; verify against the supplied image): ${boundedIdentityContext}`
+      : null,
+    boundedRefinementContext
+      ? `Owner-provided details (unverified): ${boundedRefinementContext}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 function asNumber(value: unknown): number {
@@ -474,12 +505,13 @@ function normalizeComp(value: unknown): EbaySoldComp {
   const totalPrice = asNumber(source.totalPrice) || soldPrice + shipping;
 
   return {
-    title:
+    title: neutralizeMarketplaceBrand(
       asString(
         source.title ??
         source.name ??
         source.itemTitle
-      ) || "Untitled eBay item",
+      ) || "Untitled market listing",
+    ),
     soldPrice: roundMoney(soldPrice),
     shipping: roundMoney(shipping),
     totalPrice: roundMoney(totalPrice),
@@ -518,7 +550,7 @@ function readComps(payload: JsonRecord): EbaySoldComp[] {
 
   return rawComps
     .map(normalizeComp)
-    .filter((comp) => comp.title !== "Untitled eBay item");
+    .filter((comp) => comp.title !== "Untitled market listing");
 }
 
 function makeSummary(comps: EbaySoldComp[]) {
@@ -565,11 +597,12 @@ function looksRunning(payload: JsonRecord) {
 }
 
 function getPayloadError(payload: JsonRecord) {
-  return (
+  const message =
     asString(payload.error) ||
     asString(payload.message) ||
-    asString(asRecord(payload.error)?.message)
-  );
+    asString(asRecord(payload.error)?.message);
+
+  return message ? neutralizeMarketplaceBrand(message) : "";
 }
 
 async function callMarketCompsFunction(
@@ -655,7 +688,7 @@ async function callMarketCompsFunction(
       typeof execution.errors === "string" ? execution.errors.trim() : "";
     throw new Error(
       executionError ||
-      "eBay research completed without a response. Check the Appwrite Function execution log."
+      "Market research completed without a response. Check the Appwrite Function execution log."
     );
   }
 
@@ -665,7 +698,7 @@ async function callMarketCompsFunction(
     parsed = JSON.parse(rawBody);
   } catch {
     throw new Error(
-      `eBay research returned invalid JSON: ${rawBody.slice(0, 250)}`
+      `Market research returned invalid JSON: ${rawBody.slice(0, 250)}`
     );
   }
 
@@ -698,7 +731,7 @@ async function callMarketCompsFunction(
 
   if (!payload) {
     throw new Error(
-      "eBay research returned an unexpected response format."
+      "Market research returned an unexpected response format."
     );
   }
 
@@ -710,7 +743,7 @@ async function callMarketCompsFunction(
   ) {
     throw new Error(
       errorMessage ||
-      "KeepFlip could not complete the eBay search."
+      "KeepFlip could not complete the market search."
     );
   }
 
@@ -752,7 +785,7 @@ async function waitForResult(
 
   if (!runId) {
     throw new Error(
-      "eBay research started but did not return a run ID."
+      "Market research started but did not return a run ID."
     );
   }
 
@@ -795,7 +828,7 @@ function toSoldCompsResult(
 
   if (!comps.length) {
     throw new Error(
-      "eBay completed the search but returned no usable sold listings."
+      "Market research completed without usable sold listings."
     );
   }
 
@@ -875,22 +908,26 @@ function toBarcodeLookupResult(
 
   const firstMatch = matches[0];
 
-  const title =
-    asString(rawProduct?.title) || firstMatch?.title || "";
+  const title = neutralizeMarketplaceBrand(
+    asString(rawProduct?.title) || firstMatch?.title || "",
+  );
+  const rawBrand = toNullableString(rawProduct?.brand);
+  const rawModel = toNullableString(rawProduct?.model);
 
   const product: EbayBarcodeProduct | null = title
     ? {
       barcode:
         asString(rawProduct?.barcode) || barcode,
       title,
-      brand: toNullableString(rawProduct?.brand),
-      model: toNullableString(rawProduct?.model),
+      brand: rawBrand ? neutralizeMarketplaceBrand(rawBrand) : null,
+      model: rawModel ? neutralizeMarketplaceBrand(rawModel) : null,
       category:
         asString(rawProduct?.category) ||
         guessCategoryFromTitle(title),
-      description:
+      description: neutralizeMarketplaceBrand(
         asString(rawProduct?.description) ||
-        `Matched from eBay search results for barcode ${barcode}.`,
+          `Matched from market research for barcode ${barcode}.`,
+      ),
       imageUrl:
         toNullableString(rawProduct?.imageUrl) ||
         firstMatch?.imageUrl ||
@@ -954,7 +991,7 @@ function cleanSerpApiIdentityText(value: unknown): string | null {
     )
     .trim();
 
-  return cleaned || null;
+  return cleaned ? neutralizeMarketplaceBrand(cleaned) : null;
 }
 
 function cleanSerpApiTextArray(value: unknown, maximumLength = 1_500) {
@@ -1048,6 +1085,11 @@ function normalizeValuationReference(
   }
 
   return {
+    fieldTitles: {
+      exactItemName: "Exact Item Name",
+      currentResaleMarketValue: "Current Resale Market Value",
+      observedCondition: "Observed Condition",
+    },
     title,
     link,
     snippet: cleanSerpApiIdentityText(source?.snippet),
@@ -1320,12 +1362,101 @@ function fallbackUsdLabel(value: number | null) {
   })}`;
 }
 
+const VALUATION_LADDER_LEVELS = [
+  "Level 1",
+  "Level 2",
+  "Level 3",
+  "Level 4",
+  "Level 5",
+] as const;
+
+function normalizedLadderConfidence(value: unknown): number | null {
+  const raw =
+    typeof value === "number"
+      ? value
+      : typeof value === "string" && value.trim()
+        ? Number(value.replace(/%/g, "").trim())
+        : Number.NaN;
+  if (!Number.isFinite(raw)) return null;
+  return normalizeConfidencePercent(raw >= 0 && raw <= 1 ? raw * 100 : raw);
+}
+
+function fallbackValuationLadder(
+  identity: SerpApiIdentityAssessment | null,
+  identificationStatus: SerpApiImageValuationResult["identificationStatus"],
+): SerpApiValuationLadder {
+  const model = cleanSerpApiIdentityText(identity?.model);
+  const brand = cleanSerpApiIdentityText(identity?.brand);
+  const category = cleanSerpApiIdentityText(identity?.category);
+  const itemName = cleanSerpApiItemTitle(identity?.itemName);
+  const confidence =
+    normalizedLadderConfidence(identity?.modelConfidencePercent) ??
+    normalizedLadderConfidence(identity?.itemNameConfidencePercent) ??
+    normalizedLadderConfidence(identity?.confidencePercent) ??
+    0;
+
+  if (model && identificationStatus === "identified") {
+    return {
+      level: "Level 2",
+      reason: "A probable model is available; the exact variant remains unconfirmed.",
+      confidence,
+    };
+  }
+  if (brand) {
+    return {
+      level: "Level 3",
+      reason: "The brand or product family is available; the exact variant is unconfirmed.",
+      confidence,
+    };
+  }
+  if (category || itemName) {
+    return {
+      level: "Level 4",
+      reason: "Only a broad product category is available from the current evidence.",
+      confidence,
+    };
+  }
+  return {
+    level: "Level 5",
+    reason: "No defensible item identity is available from the current evidence.",
+    confidence,
+  };
+}
+
+function normalizeValuationLadder(
+  value: unknown,
+  fallback: {
+    identity: SerpApiIdentityAssessment | null;
+    identificationStatus: SerpApiImageValuationResult["identificationStatus"];
+  },
+): SerpApiValuationLadder {
+  const source = asRecord(value);
+  const level = asString(source?.level);
+  const fallbackValue = fallbackValuationLadder(
+    fallback.identity,
+    fallback.identificationStatus,
+  );
+
+  if (!VALUATION_LADDER_LEVELS.includes(level as SerpApiValuationLadder["level"])) {
+    return fallbackValue;
+  }
+
+  return {
+    level: level as SerpApiValuationLadder["level"],
+    reason: cleanSerpApiIdentityText(source?.reason)?.slice(0, 360) ?? null,
+    confidence:
+      normalizedLadderConfidence(source?.confidence) ?? fallbackValue.confidence,
+  };
+}
+
 function normalizeDisplayReadyResult(
   value: unknown,
   fallback: {
     identification: string | null;
     identificationSummary: string | null;
+    identificationStatus: SerpApiImageValuationResult["identificationStatus"];
     identity: SerpApiIdentityAssessment | null;
+    valuationLadder: SerpApiValuationLadder;
     condition: SerpApiConditionAssessment | null;
     low: number | null;
     median: number | null;
@@ -1345,6 +1476,7 @@ function normalizeDisplayReadyResult(
   const source = asRecord(value);
   const sourceValuation = asRecord(source?.valuation);
   const sourceCondition = asRecord(source?.condition);
+  const sourceValuationLadder = asRecord(source?.valuationLadder);
   const profitabilityActions = normalizeProfitabilityActions(
     source?.profitabilityActions
   );
@@ -1394,6 +1526,12 @@ function normalizeDisplayReadyResult(
   const medianValue = sourceMedian ?? fallback.median;
   const high = sourceHigh ?? fallback.high;
   const hasRange = low != null && medianValue != null && high != null;
+  const valuationLadder = sourceValuationLadder
+    ? normalizeValuationLadder(sourceValuationLadder, {
+      identity,
+      identificationStatus: fallback.identificationStatus,
+    })
+    : fallback.valuationLadder;
 
   return {
     title,
@@ -1446,6 +1584,7 @@ function normalizeDisplayReadyResult(
           ? "Directional AI market estimate; not a verified completed sale."
           : "Add the requested identifying evidence before relying on a price or flip verdict."),
     },
+    valuationLadder,
     factors: cleanSerpApiTextArray(source?.factors).length
       ? cleanSerpApiTextArray(source?.factors)
       : fallback.factors,
@@ -1499,7 +1638,14 @@ export async function runSerpApiImageValuation(
     .replace(/\s+/g, " ")
     .slice(0, MAX_REFINEMENT_CONTEXT_LENGTH)
     .trim();
-  const requestedQuery = buildSerpApiImageValuationQuery(refinementContext);
+  const identityContext = asString(input.identityContext)
+    .replace(/\s+/g, " ")
+    .slice(0, MAX_REFINEMENT_CONTEXT_LENGTH)
+    .trim();
+  const requestedQuery = buildSerpApiImageValuationQuery(
+    refinementContext,
+    identityContext,
+  );
   const payload = await callMarketCompsFunction({
     action: "start",
     purpose: "image_valuation",
@@ -1507,6 +1653,7 @@ export async function runSerpApiImageValuation(
     targetCurrency: "USD",
     bucketId: input.bucketId,
     fileId: input.fileId,
+    ...(identityContext ? { identityContext } : {}),
     ...(refinementContext ? { refinementContext } : {}),
   });
   const valuation = asRecord(payload.valuation);
@@ -1536,6 +1683,15 @@ export async function runSerpApiImageValuation(
     rawIdentificationStatus === "needs_identification"
       ? "needs_identification"
       : "identified";
+  const rawLadderSummary = asRecord(payload.valuation_ladder_summary);
+  const valuationLadder = normalizeValuationLadder(
+    payload.valuationLadder ?? {
+      level: payload.valuation_ladder_level,
+      reason: rawLadderSummary?.reason,
+      confidence: rawLadderSummary?.confidence,
+    },
+    { identity, identificationStatus },
+  );
   const condition = normalizeConditionAssessment(payload.condition);
   const factors = asStringArray(payload.factors);
   const suggestedDetails = asStringArray(payload.suggestedDetails);
@@ -1593,7 +1749,9 @@ export async function runSerpApiImageValuation(
   const display = normalizeDisplayReadyResult(payload.display, {
     identification,
     identificationSummary,
+    identificationStatus,
     identity,
+    valuationLadder,
     condition,
     low,
     median: medianValue,
@@ -1616,7 +1774,6 @@ export async function runSerpApiImageValuation(
     purpose: "image_valuation",
     provider: "keepflip_ai",
     runId: asString(payload.runId ?? payload.id) || "completed",
-    query: asString(payload.query) || requestedQuery,
     imageUrl,
     image,
     sourceImage,
@@ -1645,6 +1802,7 @@ export async function runSerpApiImageValuation(
     identificationSummary: display.summary,
     identificationStatus,
     identity: display.identity,
+    valuationLadder: display.valuationLadder,
     display,
     condition: display.condition,
     factors: display.factors,
@@ -1707,7 +1865,6 @@ export async function runSerpApiProfitabilityGuidance(
   return {
     actionTitle: asString(payload.actionTitle) || actionTitle,
     itemTitle: asString(payload.itemTitle) || itemTitle,
-    query: asString(payload.query),
     references: (Array.isArray(payload.references) ? payload.references : [])
       .map(normalizeValuationReference)
       .filter((value): value is SerpApiValuationReference => Boolean(value)),
@@ -1737,7 +1894,6 @@ export function applyProfitabilityGuidanceToAnalysis(
 
   const nextGuidance: ItemProfitabilityGuidance = {
     actionTitle: guidance.actionTitle,
-    query: guidance.query,
     references: guidance.references,
     safetyWarnings: guidance.safetyWarnings,
     searchedAt: guidance.searchedAt,

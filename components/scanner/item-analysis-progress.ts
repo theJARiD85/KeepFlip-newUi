@@ -8,6 +8,7 @@ import type {
   ItemAnalysisStage,
   ItemIdentificationSnapshot,
 } from "@/types/item-analysis";
+import type { ScanProofAssessment } from "@/services/scan-proof-service";
 
 export type AnalysisProgressContext = {
   localDetection?: {
@@ -17,6 +18,7 @@ export type AnalysisProgressContext = {
   modeLabel: string;
   partialResult?: ItemIdentificationSnapshot;
   photoCount: number;
+  scanProof?: ScanProofAssessment;
 };
 
 const STAGES: Record<
@@ -82,6 +84,26 @@ function buildCallouts(
 ): AnalysisCallout[] {
   const result = context.partialResult;
   const callouts: AnalysisCallout[] = [];
+  const scanProof = context.scanProof;
+
+  if (!result && scanProof && scanProof.source !== "none") {
+    const proof = scanProof;
+    callouts.push({
+      accent: proof.source === "camera" ? "violet" : "cyan",
+      id: "local-proof",
+      label:
+        proof.source === "camera"
+          ? "ON-DEVICE CATEGORY"
+          : "ON-DEVICE EVIDENCE",
+      value: compact(proof.evidenceDetail.toUpperCase(), 44),
+    });
+    callouts.push({
+      accent: "gold",
+      id: "evidence-fusion",
+      label: "EVIDENCE FUSION",
+      value: compact(proof.processingDetail.toUpperCase(), 46),
+    });
+  }
 
   if (result) {
     const { condition, identification, valuationSignals } = result.analysis;

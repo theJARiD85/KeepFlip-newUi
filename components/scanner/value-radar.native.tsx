@@ -4,6 +4,7 @@ import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import type { ScanProofAssessment } from "@/services/scan-proof-service";
 
 import {
   ValueRadarTargetOverlay,
@@ -21,6 +22,7 @@ export { useValueRadar };
 
 export type ValueRadarOverlayProps = ValueRadarTargetOverlayProps & {
   avoidBottomAction?: boolean;
+  proof?: ScanProofAssessment;
 };
 
 const PANEL_GAP = 12;
@@ -38,6 +40,7 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
     height,
     marker,
     onMarkerPress,
+    proof,
     status,
     width,
   } = props;
@@ -100,7 +103,7 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
   );
 
   const panelWidth = Math.min(300, Math.max(210, focusWidth - 18));
-  const panelHeight = 122;
+  const panelHeight = proof ? 148 : 122;
   const panelLeft = clamp(
     focusX + focusWidth / 2 - panelWidth / 2,
     PANEL_MARGIN,
@@ -186,11 +189,21 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
                 {marker.label}
               </Text>
 
+              {proof ? (
+                <View style={styles.proofRow}>
+                  <View style={styles.proofSignal} />
+                  <Text numberOfLines={1} style={styles.proofLabel}>
+                    AI EVIDENCE // {proof.evidenceDetail.toUpperCase()}
+                  </Text>
+                </View>
+              ) : null}
+
               <View style={styles.markerFooter}>
                 <View style={styles.markerFooterSignal} />
                 <Text numberOfLines={1} style={styles.markerAction}>
-                  CLASS {marker.classId.toString().padStart(2, "0")} {"//"} TAP
-                  TO ANALYZE VALUE
+                  {proof
+                    ? "CATEGORY + LOCAL EVIDENCE // TAP TO ANALYZE"
+                    : `CLASS ${marker.classId.toString().padStart(2, "0")} // TAP TO ANALYZE VALUE`}
                 </Text>
                 <Text style={styles.markerChevron}>›</Text>
               </View>
@@ -289,6 +302,30 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+  },
+  proofRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingTop: 5,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(255, 255, 255, 0.1)",
+  },
+  proofSignal: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: theme.colors.goldBright,
+    boxShadow: "0 0 8px rgba(242, 211, 138, 0.78)",
+  },
+  proofLabel: {
+    flex: 1,
+    color: "rgba(247, 242, 232, 0.72)",
+    fontFamily: theme.fonts.radar,
+    fontSize: 6.5,
+    lineHeight: 8,
+    fontWeight: "800",
+    letterSpacing: 0.44,
   },
   markerFooterSignal: {
     width: 6,

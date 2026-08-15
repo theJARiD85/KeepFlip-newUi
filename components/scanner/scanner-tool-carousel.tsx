@@ -17,13 +17,14 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 
-export type ScannerToolId = 'single' | 'multi' | 'batch' | 'upload';
+export type ScannerToolId = 'single' | 'barcode' | 'multi' | 'batch' | 'upload';
 
 type ScannerTool = {
   accent: string;
   glow: string;
   icon:
     | 'viewfinder'
+    | 'barcode.viewfinder'
     | 'rectangle.stack.fill'
     | 'square.grid.2x2.fill'
     | 'photo.on.rectangle.angled';
@@ -40,6 +41,14 @@ export const scannerTools: ScannerTool[] = [
     accent: theme.colors.goldBright,
     surface: 'rgba(215, 168, 74, 0.18)',
     glow: 'rgba(215, 168, 74, 0.38)',
+  },
+  {
+    id: 'barcode',
+    label: 'Barcode scanner',
+    icon: 'barcode.viewfinder',
+    accent: theme.colors.scannerViolet,
+    surface: 'rgba(141, 114, 255, 0.16)',
+    glow: 'rgba(141, 114, 255, 0.46)',
   },
   {
     id: 'multi',

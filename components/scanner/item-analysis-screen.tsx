@@ -90,6 +90,7 @@ export function ItemAnalysisScreen() {
       localDetection: session?.localDetection,
       modeLabel: session?.modeLabel ?? "Item scan",
       photoCount: session?.photoUris.length ?? 1,
+      scanProof: session?.scanProof,
     }),
   );
   const [completedAnalysis, setCompletedAnalysis] =
@@ -136,6 +137,7 @@ export function ItemAnalysisScreen() {
       localDetection: session.localDetection,
       modeLabel: session.modeLabel,
       photoCount: session.photoUris.length,
+      scanProof: session.scanProof,
     };
     const progressState = (stage: ItemAnalysisStage) =>
       analysisProgressState(stage, {

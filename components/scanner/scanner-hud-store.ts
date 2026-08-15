@@ -1,6 +1,11 @@
 import { useSyncExternalStore } from "react";
 
-export type ScannerHudToolId = "single" | "multi" | "batch" | "upload";
+export type ScannerHudToolId =
+  | "single"
+  | "barcode"
+  | "multi"
+  | "batch"
+  | "upload";
 
 export type ScannerHudSnapshot = {
   badges: Partial<Record<ScannerHudToolId, number>>;
@@ -23,6 +28,7 @@ function snapshotsMatch(
 
   return (
     current.badges.single === next.badges.single &&
+    current.badges.barcode === next.badges.barcode &&
     current.badges.multi === next.badges.multi &&
     current.badges.batch === next.badges.batch &&
     current.badges.upload === next.badges.upload
@@ -57,6 +63,15 @@ export function scannerHudCopy({
   badges,
   selectedTool,
 }: ScannerHudSnapshot) {
+  if (selectedTool === "barcode") {
+    return {
+      eyebrow: "BARCODE LOOKUP",
+      title: "Scan a product barcode",
+      helper:
+        "Center a UPC, EAN, ISBN, or product code to identify the item.",
+    };
+  }
+
   if (selectedTool === "multi") {
     const count = badges.multi ?? 0;
     return {

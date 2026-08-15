@@ -153,7 +153,6 @@ const SAMPLE_ANALYSIS_STATE: Extract<
       high: 315,
       low: 215,
       median: 265,
-      query: "Coach Tabby 26 black sold",
       source: "multi_market",
     },
     valuationReadiness: {

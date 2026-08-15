@@ -1,0 +1,39 @@
+{
+  "project": "keepflip-reseller-social-ad",
+  "route": {
+    "valid": true,
+    "kind": "video",
+    "intent": "final",
+    "control_layer": "reference",
+    "model": "v6",
+    "quality": "720p",
+    "detail_level": "",
+    "aspect_ratio": "9:16",
+    "duration": 15.0,
+    "reference_count": 4,
+    "membership_tier": "basic",
+    "reasons": [
+      "Basic/Free membership detected, so video generation uses PixVerse v6 instead of a premium video model."
+    ],
+    "issues": [],
+    "chain": [
+      {
+        "role": "final motion render",
+        "mode": "create reference",
+        "model": "v6",
+        "quality": "720p",
+        "command_template": "pixverse create reference --model v6 --quality 720p --duration 15 --aspect-ratio 9:16 --images <reference-images...> --prompt <prompt>"
+      }
+    ],
+    "alternatives": [],
+    "command_template": "pixverse create reference --model v6 --quality 720p --duration 15 --aspect-ratio 9:16 --images <reference-images...> --prompt <prompt>",
+    "capability_source": "PixVerse CLI video/reference help and supported-model table"
+  },
+  "tasks": [
+    {
+      "id": "film",
+      "label": "final motion render",
+      "cmd": "pixverse create reference --model v6 --quality 720p --duration 15 --aspect-ratio 9:16 --images C:/Users/theja/Downloads/exec-f48a63b2-77ff-49fd-b5fb-db89b09e7c96.png C:/Users/theja/Downloads/exec-1f99de97-0948-48dc-9231-399bf110962c.png C:/Users/theja/Downloads/exec-daae0155-a783-4b56-98f2-a118fe7779b8.png C:/Users/theja/Downloads/exec-e9085875-4f0c-4778-a01c-42f47a12861a.png --no-audio --prompt projects/keepflip-reseller-social-ad/prompts/keepflip-ad-picture.txt"
+    }
+  ]
+}

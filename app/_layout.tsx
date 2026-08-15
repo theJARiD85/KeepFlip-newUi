@@ -20,53 +20,41 @@ import {
   useKeepFlipAuth,
 } from "@/components/auth/keepflip-auth-context";
 import KeepFlipIntro from "@/components/intro/keepflip-intro.native";
-
 import { keepFlipTheme } from "@/constants/keepflip-theme";
-import { AppodealNativeAdsInitializer } from "@keepflip/expo-appodeal-native-ads";
+import {
+  AppodealNativeAdsInitializer,
+} from "@keepflip/expo-appodeal-native-ads";
+
+export function AdsInitializer() {
+  const appodealKey =
+  process.env.EXPO_PUBLIC_APPODEAL_APP_KEY ?? "";
+
+  const isAdsTesting =
+  __DEV__ ||
+  process.env.EXPO_PUBLIC_APPODEAL_TESTING === "true";
+
+  let appodealInitializationStarted = false;
+
+
+  return (
+    <AppodealNativeAdsInitializer
+      appKey={appodealKey}
+      cacheCount={5}
+      testing={isAdsTesting}
+      onInitialized={(result) => {
+        // result.initialized
+        // result.errors
+      }}
+      onError={(error) => {
+        // Send this to your error reporting service.
+      }}
+    />
+  );
+}
 
 void SplashScreen
   .preventAutoHideAsync()
   .catch(() => undefined);
-
-const appodealAppKey =
-  process.env.EXPO_PUBLIC_APPODEAL_APP_KEY ?? "";
-
-const isAdsTesting = process.env.EXPO_PUBLIC_APPODEAL_TESTING === "true";
-
-function KeepFlipAdsInitializer() {
-  const handleInitialized = useCallback((result: {
-    availableCount: number;
-    errors: string[];
-    initialized: boolean;
-    testing: boolean;
-  }) => {
-    console.info("Appodeal native ads initialized:", result);
-
-    if (!result.initialized) {
-      console.warn(
-        "Appodeal initialization errors:",
-        result.errors,
-      );
-    }
-  }, []);
-
-  const handleError = useCallback((error: Error) => {
-    console.error(
-      "Appodeal initialization failed:",
-      error,
-    );
-  }, []);
-
-  return (
-    <AppodealNativeAdsInitializer
-      appKey={appodealAppKey}
-      cacheCount={2}
-      testing={isAdsTesting}
-      onInitialized={handleInitialized}
-      onError={handleError}
-    />
-  );
-}
 
 function ProtectedRootStack() {
   const {
@@ -214,8 +202,10 @@ export default function RootLayout() {
           value={navigationTheme}
         >
           <KeepFlipAuthProvider>
-            <KeepFlipAdsInitializer />
-            <ProtectedRootStack />
+          {!introVisible ? (
+            <AdsInitializer />
+          ) : null}
+          <ProtectedRootStack />
           </KeepFlipAuthProvider>
 
           <StatusBar
