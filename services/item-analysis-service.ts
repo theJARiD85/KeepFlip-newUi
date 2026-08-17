@@ -46,6 +46,7 @@ export const MAX_ANALYSIS_PHOTOS = 4;
 const MAX_SOURCE_PHOTO_BYTES = 64 * 1024 * 1024;
 const MAX_CLOUD_PHOTO_BYTES = 16 * 1024 * 1024;
 const MAX_REFINEMENT_CONTEXT_LENGTH = 600;
+const MAX_SERPAPI_SUBSEQUENT_REQUEST_TOKEN_LENGTH = 24_000;
 const refinementRequests = new Map<string, Promise<ItemAnalysisSuccess>>();
 
 const CLOUD_PHOTO_PROFILES = Object.freeze({
@@ -240,6 +241,7 @@ export type RefineItemAnalysisInput = {
   ownerId: string;
   photoFileId?: string | null;
   scanId: string;
+  subsequentRequestToken?: string | null;
 };
 
 function refinementContext(
@@ -678,15 +680,18 @@ function analysisResultFromSerpApi(
         confidencePercent: estimate.confidencePercent,
       })),
       references: market.references,
+      aiModeConversation: market.aiModeConversation,
       identification: identificationSummary,
       condition: market.condition,
       factors: market.factors,
       profitabilityActions: market.profitabilityActions,
       refinementQuestions: market.refinementQuestions,
       valuationLadder: market.valuationLadder,
+      acquisitionGuidance: market.acquisitionGuidance,
       marketVelocity: market.marketVelocity,
       flipComplexity: market.flipComplexity,
       flipDecision: market.flipDecision,
+      decisionCard: market.decisionCard,
       suggestedDetails: market.suggestedDetails,
       answerMarkdown: market.reconstructedMarkdown,
       normalization: market.normalization,
@@ -873,11 +878,16 @@ export async function refineItemAnalysis({
   ownerId,
   photoFileId,
   scanId,
+  subsequentRequestToken: suppliedSubsequentRequestToken,
 }: RefineItemAnalysisInput): Promise<ItemAnalysisSuccess> {
   const cleanOwnerId = ownerId.trim();
   const cleanScanId = scanId.trim();
   const cleanPhotoFileId = photoFileId?.trim() || null;
   const context = refinementContext(answers);
+  const subsequentRequestToken =
+    typeof suppliedSubsequentRequestToken === "string"
+      ? suppliedSubsequentRequestToken.trim()
+      : "";
 
   if (!cleanOwnerId) {
     throw new ItemAnalysisError(
@@ -895,6 +905,15 @@ export async function refineItemAnalysis({
     throw new ItemAnalysisError(
       "Answer a valuation question or add a clear detail photo before recalculating.",
       "REFINEMENT_ANSWERS_REQUIRED",
+    );
+  }
+  if (
+    subsequentRequestToken.length >
+    MAX_SERPAPI_SUBSEQUENT_REQUEST_TOKEN_LENGTH
+  ) {
+    throw new ItemAnalysisError(
+      "KeepFlip could not continue the previous Google AI Mode valuation. Start a new item valuation.",
+      "AI_MODE_CONVERSATION_INVALID",
     );
   }
   if (!APPWRITE.itemImagesBucketId) {
@@ -920,6 +939,7 @@ export async function refineItemAnalysis({
     context,
     normalizedImageCount,
     cleanPhotoFileId,
+    subsequentRequestToken,
   ]);
   const activeRequest = refinementRequests.get(requestKey);
   if (activeRequest) return activeRequest;
@@ -944,6 +964,8 @@ export async function refineItemAnalysis({
         bucketId: APPWRITE.itemImagesBucketId,
         fileId,
         ...(context ? { refinementContext: context } : {}),
+        ...(subsequentRequestToken ? { subsequentRequestToken } : {}),
+        ...(cleanPhotoFileId ? { hasRefinementImage: true } : {}),
       });
       return analysisResultFromSerpApi(market, normalizedImageCount);
     } catch (error) {

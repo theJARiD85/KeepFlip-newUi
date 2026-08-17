@@ -1,0 +1,12 @@
+diff --git a/node_modules/react-native-vision-camera-resizer/android/build.gradle b/node_modules/react-native-vision-camera-resizer/android/build.gradle
+index 0000000..0000000 100644
+--- a/node_modules/react-native-vision-camera-resizer/android/build.gradle
++++ b/node_modules/react-native-vision-camera-resizer/android/build.gradle
+@@ -103,6 +103,7 @@ android {
+   buildFeatures {
+     buildConfig true
+     prefab true
++    shaders true
+   }
+ 
+   buildTypes {

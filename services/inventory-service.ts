@@ -790,6 +790,7 @@ export async function updateInventoryAnalysisSnapshot({
   }
 
   const savedAt = new Date().toISOString();
+  const resellerSignals = inventoryResellerSignals(analysis);
 
   await tablesDB.updateRow({
     databaseId: APPWRITE.databaseId,
@@ -797,6 +798,7 @@ export async function updateInventoryAnalysisSnapshot({
     rowId: cleanItemId,
     data: {
       analysisSnapshotJson: serializeAnalysisSnapshot(analysis, savedAt),
+      ...resellerSignals,
       updatedAt: savedAt,
     },
   });

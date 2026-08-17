@@ -101,6 +101,9 @@ export const APPWRITE = {
   itemsTableId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_ITEMS_COLLECTION_ID,
   ),
+  shelfTableId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_SHELF_TABLE_ID,
+  ),
   itemPhotosTableId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_ITEM_PHOTOS_COLLECTION_ID,
   ),

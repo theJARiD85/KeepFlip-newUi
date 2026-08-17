@@ -10,9 +10,8 @@ import type {
   ItemProfitabilityGuidance,
 } from "@/types/item-analysis";
 
-export const SERPAPI_IMAGE_VALUATION_BASE_QUERY =
-  "Analyze the supplied item image using current, cited web and market evidence. First decide whether the photo supports a uniquely identifiable item or model. If it does not, do not make the analysis fail and do not force a valuation: return a short needs_more_identification fallback with only the broad visible category or brand, visible condition, unknown for the unsupported model, price, resale velocity, complexity, and verdict, plus 2-4 exact photos or details needed to identify it. Do not guess a model, price, repair, resale speed, or recommendation. If it does, give distinct labeled answers with a confidence percentage for every supported claim. Include: exact item title; brand; model or variant; observed condition; current resale market value; resale velocity with demand and estimated time-to-sell range; flip complexity with required work, parts or tools, skill level, and safety concerns; ranked item-specific profitability actions; and a flip verdict with rationale, assumptions, missing inputs, and confidence. Use unknown when evidence does not support a claim, and do not give a definite flip or skip verdict without acquisition cost, fees, shipping, and preparation costs.";
 const MAX_REFINEMENT_CONTEXT_LENGTH = 600;
+const MAX_SERPAPI_SUBSEQUENT_REQUEST_TOKEN_LENGTH = 24_000;
 
 export type EbaySoldComp = {
   title: string;
@@ -194,10 +193,38 @@ export type SerpApiFlipDecision = {
   confidencePercent: number | null;
 };
 
+export type SerpApiDecisionReason = {
+  factor: string;
+  evidence: string;
+  impact: string;
+};
+
+export type SerpApiDecisionCard = {
+  type: "flip" | "skip" | "undecided";
+  status: "decided" | "provisional" | "needs_more_evidence";
+  headline: "Flip" | "Skip" | "Undecided";
+  summary: string;
+  reasons: SerpApiDecisionReason[];
+  confidencePercent: number | null;
+  missingInputs: string[];
+};
+
 export type SerpApiValuationLadder = {
   level: "Level 1" | "Level 2" | "Level 3" | "Level 4" | "Level 5";
   reason: string | null;
   confidence: number;
+};
+
+export type SerpApiAcquisitionGuidance = {
+  status: "provisional" | "needs_evidence" | "not_viable";
+  label: "Top Dollar to Pay";
+  maxBuyPrice: number | null;
+  resaleBasis: number | null;
+  currency: string;
+  formula: string | null;
+  assumptions: string[];
+  missingInputs: string[];
+  summary: string;
 };
 
 export type SerpApiDisplayReadyResult = {
@@ -225,6 +252,7 @@ export type SerpApiDisplayReadyResult = {
     basis: string;
     disclaimer: string;
   };
+  acquisitionGuidance?: SerpApiAcquisitionGuidance;
   valuationLadder: SerpApiValuationLadder;
   factors: string[];
   suggestedDetails: string[];
@@ -233,11 +261,16 @@ export type SerpApiDisplayReadyResult = {
   marketVelocity: SerpApiResaleVelocity;
   flipComplexity: SerpApiFlipComplexity;
   flipDecision: SerpApiFlipDecision;
+  decisionCard?: SerpApiDecisionCard;
 };
 
 export type SerpApiNormalization = {
   method: "openai_structured_outputs" | "deterministic_fallback";
   model: string | null;
+};
+
+export type SerpApiAiModeConversation = {
+  subsequentRequestToken: string;
 };
 
 export type SerpApiImageReference = {
@@ -255,6 +288,7 @@ export type SerpApiImageValuationResult = {
   imageUrl: string | null;
   image: SerpApiImageReference | null;
   sourceImage: SerpApiImageReference | null;
+  aiModeConversation: SerpApiAiModeConversation | null;
   valuation: {
     status: "ready" | "needs_comps";
     currency: string;
@@ -274,6 +308,7 @@ export type SerpApiImageValuationResult = {
   identificationStatus: "identified" | "needs_identification";
   identity: SerpApiIdentityAssessment | null;
   valuationLadder: SerpApiValuationLadder;
+  acquisitionGuidance?: SerpApiAcquisitionGuidance;
   display: SerpApiDisplayReadyResult;
   condition: SerpApiConditionAssessment | null;
   factors: string[];
@@ -283,6 +318,7 @@ export type SerpApiImageValuationResult = {
   marketVelocity: SerpApiResaleVelocity;
   flipComplexity: SerpApiFlipComplexity;
   flipDecision: SerpApiFlipDecision;
+  decisionCard?: SerpApiDecisionCard;
   reconstructedMarkdown: string | null;
   normalization: SerpApiNormalization | null;
   quality: {
@@ -304,9 +340,15 @@ export type SerpApiImageValuationInput = {
    * Candidate identity from KeepFlip's separate multi-photo visual pass.
    * It remains unverified and the market Function must cross-check it against
    * the supplied image before using it for valuation.
-   */
+  */
   identityContext?: string | null;
   refinementContext?: string | null;
+  /**
+   * Opaque continuation token returned from the preceding Google AI Mode
+   * valuation. It is sent only to the market-research Function.
+   */
+  subsequentRequestToken?: string | null;
+  hasRefinementImage?: boolean;
 };
 
 type JsonRecord = Record<string, unknown>;
@@ -334,11 +376,11 @@ function asString(value: unknown): string {
 function redactSensitiveResponseText(value: string): string {
   return value
     .replace(
-      /([?&](?:token|jwt|secret|api[_-]?key)=)[^&\\s"']+/gi,
+      /([?&](?:token|subsequent[_-]?request[_-]?token|jwt|secret|api[_-]?key)=)[^&\s"']+/gi,
       "$1[REDACTED]"
     )
     .replace(
-      /("(?:token|jwt|secret|apiKey|api_key)"\\s*:\\s*")[^"]+/gi,
+      /("(?:token|subsequent[_-]?request[_-]?token|jwt|secret|apiKey|api_key)"\s*:\s*")[^"]+/gi,
       '$1[REDACTED]'
     );
 }
@@ -349,32 +391,6 @@ function debugResponseJson(value: unknown): string {
   } catch {
     return redactSensitiveResponseText(String(value));
   }
-}
-
-export function buildSerpApiImageValuationQuery(
-  refinementContext?: string | null,
-  identityContext?: string | null,
-) {
-  const boundedRefinementContext = asString(refinementContext)
-    .replace(/\s+/g, " ")
-    .slice(0, MAX_REFINEMENT_CONTEXT_LENGTH)
-    .trim();
-  const boundedIdentityContext = asString(identityContext)
-    .replace(/\s+/g, " ")
-    .slice(0, MAX_REFINEMENT_CONTEXT_LENGTH)
-    .trim();
-
-  return [
-    SERPAPI_IMAGE_VALUATION_BASE_QUERY,
-    boundedIdentityContext
-      ? `Candidate identity from KeepFlip's separate multi-photo visual pass (unverified; verify against the supplied image): ${boundedIdentityContext}`
-      : null,
-    boundedRefinementContext
-      ? `Owner-provided details (unverified): ${boundedRefinementContext}`
-      : null,
-  ]
-    .filter(Boolean)
-    .join(" ");
 }
 
 function asNumber(value: unknown): number {
@@ -396,6 +412,17 @@ function asNumber(value: unknown): number {
 function positiveNumberOrNull(value: unknown): number | null {
   const number = asNumber(value);
   return number > 0 ? number : null;
+}
+
+function nonNegativeNumberOrNull(value: unknown): number | null {
+  if (value == null) return null;
+  const number =
+    typeof value === "number"
+      ? value
+      : typeof value === "string" && value.trim()
+        ? Number(value.replace(/,/g, "").replace(/[^\d.-]/g, ""))
+        : Number.NaN;
+  return Number.isFinite(number) && number >= 0 ? number : null;
 }
 
 function isSynchronousExecutionTimeout(error: unknown) {
@@ -1085,11 +1112,6 @@ function normalizeValuationReference(
   }
 
   return {
-    fieldTitles: {
-      exactItemName: "Exact Item Name",
-      currentResaleMarketValue: "Current Resale Market Value",
-      observedCondition: "Observed Condition",
-    },
     title,
     link,
     snippet: cleanSerpApiIdentityText(source?.snippet),
@@ -1336,30 +1358,67 @@ function normalizeFlipDecision(value: unknown): SerpApiFlipDecision {
   };
 }
 
-function displayConditionLabel(grade: SerpApiConditionAssessment["grade"]) {
-  switch (grade) {
-    case "new":
-      return "New";
-    case "like_new":
-      return "Like New";
-    case "good":
-      return "Good";
-    case "fair":
-      return "Fair";
-    case "poor":
-      return "Poor";
-    case "parts":
-      return "For Parts";
-    default:
-      return "Condition Unknown";
-  }
+function normalizeDecisionReasons(value: unknown): SerpApiDecisionReason[] {
+  const seen = new Set<string>();
+
+  return (Array.isArray(value) ? value : [])
+    .map((entry) => {
+      const source = asRecord(entry);
+      const factor = cleanSerpApiIdentityText(source?.factor)?.slice(0, 100);
+      const evidence = cleanSerpApiIdentityText(source?.evidence)?.slice(0, 500);
+      const impact = cleanSerpApiIdentityText(source?.impact)?.slice(0, 320);
+      if (!factor || !evidence || !impact) return null;
+
+      const key = `${factor}\n${evidence}\n${impact}`.toLowerCase();
+      if (seen.has(key)) return null;
+      seen.add(key);
+
+      return { factor, evidence, impact };
+    })
+    .filter((entry): entry is SerpApiDecisionReason => Boolean(entry))
+    .slice(0, 4);
 }
 
-function fallbackUsdLabel(value: number | null) {
-  if (value == null) return null;
-  return `$${roundMoney(value).toLocaleString("en-US", {
-    maximumFractionDigits: 2,
-  })}`;
+function normalizeDecisionCard(value: unknown): SerpApiDecisionCard | null {
+  const source = asRecord(value);
+  const type = asString(source?.type);
+  if (type !== "flip" && type !== "skip" && type !== "undecided") {
+    return null;
+  }
+
+  const status = asString(source?.status);
+  const headline =
+    type === "flip" ? "Flip" : type === "skip" ? "Skip" : "Undecided";
+  const defaults = {
+    flip: "Market evidence supports a flip.",
+    skip: "Market evidence supports passing on this item.",
+    undecided: "The available evidence cannot support a flip or skip decision yet.",
+  };
+
+  return {
+    type,
+    status:
+      status === "decided" ||
+      status === "provisional" ||
+      status === "needs_more_evidence"
+        ? status
+        : type === "undecided"
+          ? "needs_more_evidence"
+          : "decided",
+    headline,
+    summary:
+      cleanSerpApiIdentityText(source?.summary)?.slice(0, 900) ??
+      defaults[type],
+    reasons: type === "skip" ? normalizeDecisionReasons(source?.reasons) : [],
+    confidencePercent: normalizeConfidencePercent(source?.confidencePercent),
+    missingInputs:
+      type === "undecided"
+        ? asStringArray(source?.missingInputs)
+          .map(cleanSerpApiIdentityText)
+          .filter((entry): entry is string => Boolean(entry))
+          .slice(0, 8)
+        : [],
+  };
 }
 
 const VALUATION_LADDER_LEVELS = [
@@ -1381,102 +1440,69 @@ function normalizedLadderConfidence(value: unknown): number | null {
   return normalizeConfidencePercent(raw >= 0 && raw <= 1 ? raw * 100 : raw);
 }
 
-function fallbackValuationLadder(
-  identity: SerpApiIdentityAssessment | null,
-  identificationStatus: SerpApiImageValuationResult["identificationStatus"],
-): SerpApiValuationLadder {
-  const model = cleanSerpApiIdentityText(identity?.model);
-  const brand = cleanSerpApiIdentityText(identity?.brand);
-  const category = cleanSerpApiIdentityText(identity?.category);
-  const itemName = cleanSerpApiItemTitle(identity?.itemName);
-  const confidence =
-    normalizedLadderConfidence(identity?.modelConfidencePercent) ??
-    normalizedLadderConfidence(identity?.itemNameConfidencePercent) ??
-    normalizedLadderConfidence(identity?.confidencePercent) ??
-    0;
-
-  if (model && identificationStatus === "identified") {
-    return {
-      level: "Level 2",
-      reason: "A probable model is available; the exact variant remains unconfirmed.",
-      confidence,
-    };
-  }
-  if (brand) {
-    return {
-      level: "Level 3",
-      reason: "The brand or product family is available; the exact variant is unconfirmed.",
-      confidence,
-    };
-  }
-  if (category || itemName) {
-    return {
-      level: "Level 4",
-      reason: "Only a broad product category is available from the current evidence.",
-      confidence,
-    };
-  }
-  return {
-    level: "Level 5",
-    reason: "No defensible item identity is available from the current evidence.",
-    confidence,
-  };
-}
-
-function normalizeValuationLadder(
+function normalizeAcquisitionGuidance(
   value: unknown,
-  fallback: {
-    identity: SerpApiIdentityAssessment | null;
-    identificationStatus: SerpApiImageValuationResult["identificationStatus"];
-  },
-): SerpApiValuationLadder {
+): SerpApiAcquisitionGuidance | null {
   const source = asRecord(value);
-  const level = asString(source?.level);
-  const fallbackValue = fallbackValuationLadder(
-    fallback.identity,
-    fallback.identificationStatus,
-  );
+  const status = asString(source?.status);
+  const label = cleanSerpApiIdentityText(source?.label);
+  const currency = asString(source?.currency);
+  const summary = cleanSerpApiIdentityText(source?.summary)?.slice(0, 520);
+  const rawMaxBuyPrice = source?.maxBuyPrice;
+  const maxBuyPrice = nonNegativeNumberOrNull(rawMaxBuyPrice);
+  const resaleBasis = positiveNumberOrNull(source?.resaleBasis);
 
-  if (!VALUATION_LADDER_LEVELS.includes(level as SerpApiValuationLadder["level"])) {
-    return fallbackValue;
+  if (
+    (status !== "provisional" &&
+      status !== "needs_evidence" &&
+      status !== "not_viable") ||
+    label !== "Top Dollar to Pay" ||
+    !currency ||
+    !summary ||
+    (rawMaxBuyPrice != null && maxBuyPrice == null) ||
+    (status === "provisional" && (maxBuyPrice == null || maxBuyPrice <= 0)) ||
+    (status === "needs_evidence" && maxBuyPrice != null) ||
+    (status === "not_viable" && maxBuyPrice !== 0)
+  ) {
+    return null;
   }
 
   return {
-    level: level as SerpApiValuationLadder["level"],
-    reason: cleanSerpApiIdentityText(source?.reason)?.slice(0, 360) ?? null,
-    confidence:
-      normalizedLadderConfidence(source?.confidence) ?? fallbackValue.confidence,
+    status,
+    label,
+    maxBuyPrice,
+    resaleBasis,
+    currency,
+    formula: cleanSerpApiIdentityText(source?.formula)?.slice(0, 280) ?? null,
+    assumptions: cleanSerpApiTextArray(source?.assumptions, 320).slice(0, 5),
+    missingInputs: cleanSerpApiTextArray(source?.missingInputs, 320).slice(0, 5),
+    summary,
   };
 }
 
-function normalizeDisplayReadyResult(
+/**
+ * Runtime-decoder for the Function-owned display contract. This never
+ * reconstructs a valuation from raw SerpApi fields; the Function is the only
+ * authority that creates `display`.
+ */
+function decodeFunctionDisplayResult(
   value: unknown,
-  fallback: {
-    identification: string | null;
-    identificationSummary: string | null;
-    identificationStatus: SerpApiImageValuationResult["identificationStatus"];
-    identity: SerpApiIdentityAssessment | null;
-    valuationLadder: SerpApiValuationLadder;
-    condition: SerpApiConditionAssessment | null;
-    low: number | null;
-    median: number | null;
-    high: number | null;
-    currency: string;
-    valuationConfidence: MarketValueConfidence;
-    valuationConfidencePercent: number | null;
-    factors: string[];
-    suggestedDetails: string[];
-    profitabilityActions: SerpApiProfitabilityAction[];
-    refinementQuestions: SerpApiRefinementQuestion[];
-    marketVelocity: SerpApiResaleVelocity;
-    flipComplexity: SerpApiFlipComplexity;
-    flipDecision: SerpApiFlipDecision;
-  }
 ): SerpApiDisplayReadyResult {
   const source = asRecord(value);
+  if (!source) {
+    throw new Error(
+      "KeepFlip received an image valuation without the Function's normalized display result.",
+    );
+  }
   const sourceValuation = asRecord(source?.valuation);
   const sourceCondition = asRecord(source?.condition);
   const sourceValuationLadder = asRecord(source?.valuationLadder);
+  const sourceFieldTitles = asRecord(source?.fieldTitles);
+  if (!sourceValuation || !sourceValuationLadder || !sourceFieldTitles) {
+    throw new Error(
+      "KeepFlip received an incomplete normalized display result from the valuation Function.",
+    );
+  }
   const profitabilityActions = normalizeProfitabilityActions(
     source?.profitabilityActions
   );
@@ -1486,131 +1512,144 @@ function normalizeDisplayReadyResult(
   const marketVelocity = normalizeResaleVelocity(source?.marketVelocity);
   const flipComplexity = normalizeFlipComplexity(source?.flipComplexity);
   const flipDecision = normalizeFlipDecision(source?.flipDecision);
-  const identity =
-    normalizeIdentityAssessment(
-      source?.identity,
-      cleanSerpApiItemTitle(source?.title) ??
-      fallback.identity?.itemName ??
-      fallback.identification,
-      cleanSerpApiIdentityText(source?.summary) ??
-      fallback.identity?.summary ??
-      fallback.identificationSummary
-    ) ?? {
-      itemName: fallback.identification,
-      summary: fallback.identificationSummary,
-      brand: null,
-      model: null,
-      variant: null,
-      category: null,
-      candidateModels: [],
-      confidence: "low",
-      confidencePercent: null,
-    };
-  const condition =
-    normalizeConditionAssessment(source?.condition) ?? fallback.condition;
-  const title =
-    cleanSerpApiItemTitle(source?.title) ??
-    identity.itemName ??
-    "Unidentified Item";
-  const summary =
-    cleanSerpApiIdentityText(source?.summary) ?? identity.summary ?? title;
+  const decisionCard = normalizeDecisionCard(source?.decisionCard);
+  const acquisitionGuidance = normalizeAcquisitionGuidance(
+    source?.acquisitionGuidance,
+  );
+  if (source?.acquisitionGuidance != null && !acquisitionGuidance) {
+    throw new Error(
+      "KeepFlip received invalid acquisition guidance from the valuation Function.",
+    );
+  }
+  const title = cleanSerpApiItemTitle(source?.title);
+  if (!title) {
+    throw new Error(
+      "KeepFlip received a normalized display result without an item title.",
+    );
+  }
+  const summary = cleanSerpApiIdentityText(source?.summary);
+  if (!summary) {
+    throw new Error(
+      "KeepFlip received a normalized display result without an item summary.",
+    );
+  }
+  const identity = normalizeIdentityAssessment(source?.identity, title, summary);
+  if (!identity) {
+    throw new Error(
+      "KeepFlip received a normalized display result without item identity details.",
+    );
+  }
+  const condition = normalizeConditionAssessment(source?.condition);
   const valuationConfidenceRaw = asString(sourceValuation?.confidence);
-  const valuationConfidence: MarketValueConfidence =
-    valuationConfidenceRaw === "high" || valuationConfidenceRaw === "medium"
-      ? valuationConfidenceRaw
-      : fallback.valuationConfidence;
-  const sourceLow = positiveNumberOrNull(sourceValuation?.low);
-  const sourceMedian = positiveNumberOrNull(sourceValuation?.median);
-  const sourceHigh = positiveNumberOrNull(sourceValuation?.high);
-  const low = sourceLow ?? fallback.low;
-  const medianValue = sourceMedian ?? fallback.median;
-  const high = sourceHigh ?? fallback.high;
-  const hasRange = low != null && medianValue != null && high != null;
-  const valuationLadder = sourceValuationLadder
-    ? normalizeValuationLadder(sourceValuationLadder, {
-      identity,
-      identificationStatus: fallback.identificationStatus,
-    })
-    : fallback.valuationLadder;
+  if (
+    valuationConfidenceRaw !== "high" &&
+    valuationConfidenceRaw !== "medium" &&
+    valuationConfidenceRaw !== "low"
+  ) {
+    throw new Error(
+      "KeepFlip received an invalid valuation confidence from the valuation Function.",
+    );
+  }
+  const valuationConfidence: MarketValueConfidence = valuationConfidenceRaw;
+  const conditionLabel = condition
+    ? cleanSerpApiIdentityText(sourceCondition?.label)
+    : null;
+  const valuationLabel = cleanSerpApiIdentityText(sourceValuation?.label);
+  const valuationCurrency = asString(sourceValuation?.currency);
+  const valuationBasis = cleanSerpApiIdentityText(sourceValuation?.basis);
+  const valuationDisclaimer = cleanSerpApiIdentityText(
+    sourceValuation?.disclaimer,
+  );
+  if (
+    (condition && !conditionLabel) ||
+    !valuationLabel ||
+    !valuationCurrency ||
+    !valuationBasis ||
+    !valuationDisclaimer
+  ) {
+    throw new Error(
+      "KeepFlip received an incomplete normalized display result from the valuation Function.",
+    );
+  }
+  const low = positiveNumberOrNull(sourceValuation?.low);
+  const medianValue = positiveNumberOrNull(sourceValuation?.median);
+  const high = positiveNumberOrNull(sourceValuation?.high);
+  const level = asString(sourceValuationLadder.level);
+  const confidence = normalizedLadderConfidence(sourceValuationLadder.confidence);
+  if (
+    !VALUATION_LADDER_LEVELS.includes(
+      level as SerpApiValuationLadder["level"],
+    ) ||
+    confidence == null
+  ) {
+    throw new Error(
+      "KeepFlip received an invalid valuation ladder from the valuation Function.",
+    );
+  }
+  const valuationLadder: SerpApiValuationLadder = {
+    level: level as SerpApiValuationLadder["level"],
+    reason: cleanSerpApiIdentityText(sourceValuationLadder.reason)?.slice(0, 360) ?? null,
+    confidence,
+  };
+  const exactItemNameTitle = cleanSerpApiIdentityText(
+    sourceFieldTitles.exactItemName,
+  );
+  const currentResaleMarketValueTitle = cleanSerpApiIdentityText(
+    sourceFieldTitles.currentResaleMarketValue,
+  );
+  const observedConditionTitle = cleanSerpApiIdentityText(
+    sourceFieldTitles.observedCondition,
+  );
+  if (
+    exactItemNameTitle !== "Exact Item Name" ||
+    currentResaleMarketValueTitle !== "Current Resale Market Value" ||
+    observedConditionTitle !== "Observed Condition"
+  ) {
+    throw new Error(
+      "KeepFlip received invalid display titles from the valuation Function.",
+    );
+  }
 
   return {
+    fieldTitles: {
+      exactItemName: exactItemNameTitle,
+      currentResaleMarketValue: currentResaleMarketValueTitle,
+      observedCondition: observedConditionTitle,
+    },
     title,
     summary,
     identity,
     condition: condition
       ? {
         ...condition,
-        label:
-          cleanSerpApiIdentityText(sourceCondition?.label) ??
-          displayConditionLabel(condition.grade),
+        label: conditionLabel as string,
       }
       : null,
     valuation: {
-      label:
-        asString(sourceValuation?.label) ||
-        (hasRange
-          ? "Current Resale Market Value"
-          : "Valuation Needs More Evidence"),
-      rangeLabel:
-        toNullableString(sourceValuation?.rangeLabel) ??
-        (hasRange
-          ? `${fallbackUsdLabel(low)} - ${fallbackUsdLabel(high)} ${fallback.currency}`
-          : null),
+      label: valuationLabel,
+      rangeLabel: toNullableString(sourceValuation?.rangeLabel),
       low,
-      lowLabel:
-        toNullableString(sourceValuation?.lowLabel) ??
-        fallbackUsdLabel(low),
+      lowLabel: toNullableString(sourceValuation?.lowLabel),
       median: medianValue,
-      medianLabel:
-        toNullableString(sourceValuation?.medianLabel) ??
-        fallbackUsdLabel(medianValue),
+      medianLabel: toNullableString(sourceValuation?.medianLabel),
       high,
-      highLabel:
-        toNullableString(sourceValuation?.highLabel) ??
-        fallbackUsdLabel(high),
-      currency: asString(sourceValuation?.currency) || fallback.currency,
+      highLabel: toNullableString(sourceValuation?.highLabel),
+      currency: valuationCurrency,
       confidence: valuationConfidence,
-      confidencePercent:
-        normalizeConfidencePercent(sourceValuation?.confidencePercent) ??
-        fallback.valuationConfidencePercent,
-      basis:
-        cleanSerpApiIdentityText(sourceValuation?.basis) ||
-        (hasRange
-          ? "Current private-sale estimate from the submitted item photo"
-          : "KeepFlip did not invent a resale range because the image evidence was not specific enough."),
-      disclaimer:
-        cleanSerpApiIdentityText(sourceValuation?.disclaimer) ||
-        (hasRange
-          ? "Directional AI market estimate; not a verified completed sale."
-          : "Add the requested identifying evidence before relying on a price or flip verdict."),
+      confidencePercent: normalizeConfidencePercent(sourceValuation?.confidencePercent),
+      basis: valuationBasis,
+      disclaimer: valuationDisclaimer,
     },
+    ...(acquisitionGuidance ? { acquisitionGuidance } : {}),
     valuationLadder,
-    factors: cleanSerpApiTextArray(source?.factors).length
-      ? cleanSerpApiTextArray(source?.factors)
-      : fallback.factors,
-    suggestedDetails: cleanSerpApiTextArray(source?.suggestedDetails).length
-      ? cleanSerpApiTextArray(source?.suggestedDetails)
-      : fallback.suggestedDetails,
-    profitabilityActions: profitabilityActions.length
-      ? profitabilityActions
-      : fallback.profitabilityActions,
-    refinementQuestions: refinementQuestions.length
-      ? refinementQuestions
-      : fallback.refinementQuestions,
-    marketVelocity:
-      marketVelocity.demand !== "unknown" ||
-      marketVelocity.typicalDays !== null ||
-      marketVelocity.evidence
-        ? marketVelocity
-        : fallback.marketVelocity,
-    flipComplexity:
-      flipComplexity.level !== "unknown" || flipComplexity.summary
-        ? flipComplexity
-        : fallback.flipComplexity,
-    flipDecision:
-      flipDecision.verdict !== "unknown" || flipDecision.summary
-        ? flipDecision
-        : fallback.flipDecision,
+    factors: cleanSerpApiTextArray(source?.factors),
+    suggestedDetails: cleanSerpApiTextArray(source?.suggestedDetails),
+    profitabilityActions,
+    refinementQuestions,
+    marketVelocity,
+    flipComplexity,
+    flipDecision,
+    ...(decisionCard ? { decisionCard } : {}),
   };
 }
 
@@ -1631,6 +1670,22 @@ function normalizeNormalization(value: unknown): SerpApiNormalization | null {
   };
 }
 
+function normalizeAiModeConversation(
+  value: unknown,
+): SerpApiAiModeConversation | null {
+  const source = asRecord(value);
+  const subsequentRequestToken = asString(source?.subsequentRequestToken);
+
+  if (
+    !subsequentRequestToken ||
+    subsequentRequestToken.length > MAX_SERPAPI_SUBSEQUENT_REQUEST_TOKEN_LENGTH
+  ) {
+    return null;
+  }
+
+  return { subsequentRequestToken };
+}
+
 export async function runSerpApiImageValuation(
   input: SerpApiImageValuationInput
 ): Promise<SerpApiImageValuationResult> {
@@ -1642,71 +1697,65 @@ export async function runSerpApiImageValuation(
     .replace(/\s+/g, " ")
     .slice(0, MAX_REFINEMENT_CONTEXT_LENGTH)
     .trim();
-  const requestedQuery = buildSerpApiImageValuationQuery(
-    refinementContext,
-    identityContext,
-  );
+  const subsequentRequestToken = asString(input.subsequentRequestToken);
+  if (
+    subsequentRequestToken.length >
+    MAX_SERPAPI_SUBSEQUENT_REQUEST_TOKEN_LENGTH
+  ) {
+    throw new Error(
+      "KeepFlip could not continue the previous Google AI Mode valuation. Start a new item valuation.",
+    );
+  }
   const payload = await callMarketCompsFunction({
     action: "start",
     purpose: "image_valuation",
-    query: requestedQuery,
     targetCurrency: "USD",
     bucketId: input.bucketId,
     fileId: input.fileId,
     ...(identityContext ? { identityContext } : {}),
     ...(refinementContext ? { refinementContext } : {}),
+    ...(subsequentRequestToken ? { subsequentRequestToken } : {}),
+    ...(input.hasRefinementImage ? { hasRefinementImage: true } : {}),
   });
+  const display = decodeFunctionDisplayResult(payload.display);
   const valuation = asRecord(payload.valuation);
-  const low = positiveNumberOrNull(valuation?.p20);
-  const medianValue = positiveNumberOrNull(valuation?.median);
-  const high = positiveNumberOrNull(valuation?.p80);
-  const hasValuation =
-    low != null && medianValue != null && high != null &&
-    asString(valuation?.status) !== "needs_comps";
+  if (!valuation) {
+    throw new Error(
+      "KeepFlip received an image valuation without the Function's normalized valuation payload.",
+    );
+  }
+  const valuationStatus = asString(valuation.status);
+  if (valuationStatus !== "ready" && valuationStatus !== "needs_comps") {
+    throw new Error(
+      "KeepFlip received an invalid valuation status from the valuation Function.",
+    );
+  }
+  // The Function-owned `display` object is the canonical valuation payload.
+  // The top-level valuation object below only supplies response metadata such
+  // as its ready/needs-comps status and comparable counts.
+  const low = display.valuation.low;
+  const medianValue = display.valuation.median;
+  const high = display.valuation.high;
+  const displayHasValuation =
+    low != null && medianValue != null && high != null;
+  const hasValuation = valuationStatus === "ready";
+  if (hasValuation !== displayHasValuation) {
+    throw new Error(
+      "KeepFlip received inconsistent normalized valuation data from the valuation Function.",
+    );
+  }
 
   const rawQuality = asRecord(payload.quality);
-  const rawConfidence = asString(rawQuality?.confidence);
-  const confidence: MarketValueConfidence =
-    rawConfidence === "high" || rawConfidence === "medium"
-      ? rawConfidence
-      : "low";
-  const identification = cleanSerpApiItemTitle(payload.identification);
-  const identificationSummary =
-    cleanSerpApiIdentityText(payload.identificationSummary) ?? identification;
-  const identity = normalizeIdentityAssessment(
-    payload.identity,
-    identification,
-    identificationSummary
-  );
   const rawIdentificationStatus = asString(payload.identificationStatus);
-  const identificationStatus: SerpApiImageValuationResult["identificationStatus"] =
-    rawIdentificationStatus === "needs_identification"
-      ? "needs_identification"
-      : "identified";
-  const rawLadderSummary = asRecord(payload.valuation_ladder_summary);
-  const valuationLadder = normalizeValuationLadder(
-    payload.valuationLadder ?? {
-      level: payload.valuation_ladder_level,
-      reason: rawLadderSummary?.reason,
-      confidence: rawLadderSummary?.confidence,
-    },
-    { identity, identificationStatus },
-  );
-  const condition = normalizeConditionAssessment(payload.condition);
-  const factors = asStringArray(payload.factors);
-  const suggestedDetails = asStringArray(payload.suggestedDetails);
-  const profitabilityActions = normalizeProfitabilityActions(
-    payload.profitabilityActions
-  );
-  const refinementQuestions = normalizeRefinementQuestions(
-    payload.refinementQuestions
-  );
-  const marketVelocity = normalizeResaleVelocity(payload.marketVelocity);
-  const flipComplexity = normalizeFlipComplexity(payload.flipComplexity);
-  const flipDecision = normalizeFlipDecision(payload.flipDecision);
-  const valuationConfidencePercent = normalizeConfidencePercent(
-    rawQuality?.confidencePercent
-  );
+  if (
+    rawIdentificationStatus !== "identified" &&
+    rawIdentificationStatus !== "needs_identification"
+  ) {
+    throw new Error(
+      "KeepFlip received an invalid identification status from the valuation Function.",
+    );
+  }
+  const identificationStatus = rawIdentificationStatus;
   const payloadDisplay = asRecord(payload.display);
   const payloadDisplayImage = asRecord(payloadDisplay?.image);
   const fallbackImage: SerpApiImageReference = {
@@ -1746,28 +1795,6 @@ export async function runSerpApiImageValuation(
     });
   }
 
-  const display = normalizeDisplayReadyResult(payload.display, {
-    identification,
-    identificationSummary,
-    identificationStatus,
-    identity,
-    valuationLadder,
-    condition,
-    low,
-    median: medianValue,
-    high,
-    currency: asString(valuation?.currency) || "USD",
-    valuationConfidence: confidence,
-    valuationConfidencePercent,
-    factors,
-    suggestedDetails,
-    profitabilityActions,
-    refinementQuestions,
-    marketVelocity,
-    flipComplexity,
-    flipDecision,
-  });
-
   return {
     ok: true,
     phase: "completed",
@@ -1777,16 +1804,19 @@ export async function runSerpApiImageValuation(
     imageUrl,
     image,
     sourceImage,
+    aiModeConversation: normalizeAiModeConversation(
+      payload.aiModeConversation,
+    ),
     valuation: {
       status: hasValuation ? "ready" : "needs_comps",
-      currency: asString(valuation?.currency) || "USD",
+      currency: display.valuation.currency,
       suppliedCount: asNumber(valuation?.suppliedCount),
-      usedCount: hasValuation ? asNumber(valuation?.usedCount) || 1 : 0,
+      usedCount: hasValuation ? asNumber(valuation?.usedCount) : 0,
       rejectedCount: asNumber(valuation?.rejectedCount),
       median:
-        hasValuation && medianValue != null ? roundMoney(medianValue) : null,
-      p20: hasValuation && low != null ? roundMoney(low) : null,
-      p80: hasValuation && high != null ? roundMoney(high) : null,
+        hasValuation && medianValue != null ? medianValue : null,
+      p20: hasValuation && low != null ? low : null,
+      p80: hasValuation && high != null ? high : null,
       methodology: hasValuation
         ? "keepflip_ai_private_sale_range_v2"
         : "none",
@@ -1803,6 +1833,7 @@ export async function runSerpApiImageValuation(
     identificationStatus,
     identity: display.identity,
     valuationLadder: display.valuationLadder,
+    acquisitionGuidance: display.acquisitionGuidance,
     display,
     condition: display.condition,
     factors: display.factors,
@@ -1812,13 +1843,14 @@ export async function runSerpApiImageValuation(
     marketVelocity: display.marketVelocity,
     flipComplexity: display.flipComplexity,
     flipDecision: display.flipDecision,
+    decisionCard: display.decisionCard,
     reconstructedMarkdown: toNullableString(
       payload.reconstructedMarkdown
     ),
     normalization: normalizeNormalization(payload.normalization),
     quality: {
-      confidence,
-      confidencePercent: valuationConfidencePercent,
+      confidence: display.valuation.confidence,
+      confidencePercent: display.valuation.confidencePercent,
       exactComparableCount: 0,
       comparableCount: 0,
       warnings: asStringArray(rawQuality?.warnings),

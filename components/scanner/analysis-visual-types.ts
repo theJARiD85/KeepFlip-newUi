@@ -75,6 +75,18 @@ export type AnalysisValuationLadder = {
   confidence?: number;
 };
 
+export type AnalysisAcquisitionGuidance = {
+  status: "provisional" | "not_viable";
+  label: string;
+  maxBuyPrice: number;
+  resaleBasis?: number;
+  currency?: string;
+  formula?: string;
+  assumptions: string[];
+  missingInputs: string[];
+  summary?: string;
+};
+
 export type AnalysisValuation = {
   basis?: string;
   comparableCount?: number;
@@ -85,6 +97,22 @@ export type AnalysisValuation = {
   snapshot?: boolean;
   source?: "ebay" | "multi_market" | "serpapi_ai" | "supplied";
   titleLabel?: string;
+};
+
+export type AnalysisDecisionReason = {
+  evidence: string;
+  factor: string;
+  impact: string;
+};
+
+export type AnalysisDecisionCard = {
+  confidence?: number;
+  kind: "flip" | "skip" | "undetermined";
+  label: "FLIP" | "SKIP" | "UNDETERMINED";
+  missingInputs: string[];
+  reasons: AnalysisDecisionReason[];
+  status: "decided" | "provisional" | "needs_more_evidence";
+  summary: string;
 };
 
 export type AnalysisProfitAction = {
@@ -114,8 +142,10 @@ export type AnalysisProfitPlan = {
 };
 
 export type ItemAnalysisResult = {
+  acquisitionGuidance?: AnalysisAcquisitionGuidance;
   condition?: AnalysisCondition;
   confidence?: AnalysisConfidenceBreakdown;
+  decisionCard?: AnalysisDecisionCard;
   evidence?: AnalysisEvidence[];
   identity: AnalysisIdentity;
   marketReferences?: AnalysisMarketReference[];

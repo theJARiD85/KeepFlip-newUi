@@ -27,12 +27,14 @@ import Animated, {
   useReducedMotion,
   useSharedValue,
   withDelay,
+  withSequence,
   withSpring,
   withTiming,
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
 import type {
+  AnalysisDecisionCard,
   AnalysisProfitAction,
   AnalysisValuation,
   ItemAnalysisState,
@@ -59,13 +61,17 @@ type ValuationResultStageProps = {
   onProfitabilityGuidance?: (
     guidance: SerpApiProfitabilityGuidance,
   ) => void | Promise<void>;
+  onSaveToDealShelf?: () => void;
   onSave?: () => void;
   projectionLabel?: string;
   refining?: boolean;
   refinementPhotoReady?: boolean;
+  savingDeal?: boolean;
+  saveDealLabel?: string;
   scanningMorePhotos?: boolean;
   saveLabel?: string;
   saving?: boolean;
+  showMarketDecisionStamp?: boolean;
   state: ResultState;
   topInset: number;
   viewportWidth?: number;
@@ -81,6 +87,9 @@ const TABS: { id: ResultTab; label: string }[] = [
 const COLLAPSED_HEIGHT = 284;
 const COLLAPSED_HEIGHT_WITH_SAVE = 335;
 const MAX_EXPANDED_HEIGHT = 720;
+const FLIP_ACCENT = "#46F5A2";
+const MARKET_DECISION_STAMP_HEIGHT = 68;
+const MARKET_DECISION_IMAGE_TOP_GAP = 116;
 const SHEET_SPRING = {
   damping: 24,
   mass: 0.82,
@@ -349,6 +358,11 @@ function ValuePanel({ result }: { result: ResultData }) {
   );
   const basis = valuationBasisLine(result);
   const ladder = result.valuationLadder;
+  const acquisitionGuidance = result.acquisitionGuidance;
+  const acquisitionAccent =
+    acquisitionGuidance?.status === "not_viable"
+      ? theme.colors.danger
+      : theme.colors.scannerCyan;
   const ladderLine = ladder
     ? `VALUATION LADDER · ${ladder.level.toUpperCase()}${
       percentage(ladder.confidence) == null
@@ -381,6 +395,36 @@ function ValuePanel({ result }: { result: ResultData }) {
         result={result}
         valuation={result.valuation}
       />
+      {acquisitionGuidance ? (
+        <View
+          style={[
+            styles.buyCeilingRow,
+            { borderColor: `${acquisitionAccent}66` },
+          ]}
+        >
+          <View style={styles.buyCeilingCopy}>
+            <Text numberOfLines={1} style={[styles.buyCeilingLabel, { color: acquisitionAccent }]}>
+              {acquisitionGuidance.label.toUpperCase()}
+            </Text>
+            <Text numberOfLines={1} style={styles.buyCeilingStatus}>
+              {acquisitionGuidance.status === "not_viable"
+                ? "DO NOT BUY"
+                : "PROVISIONAL CEILING"}
+            </Text>
+          </View>
+          <Text
+            adjustsFontSizeToFit
+            minimumFontScale={0.72}
+            numberOfLines={1}
+            style={[styles.buyCeilingValue, { color: acquisitionAccent }]}
+          >
+            {formatMoney(
+              acquisitionGuidance.maxBuyPrice,
+              acquisitionGuidance.currency ?? result.valuation.currency,
+            )}
+          </Text>
+        </View>
+      ) : null}
       <View style={styles.readinessRow}>
         <View style={[styles.readinessSignal, { backgroundColor: accent }]} />
         <Text numberOfLines={1} style={[styles.readinessText, { color: accent }]}>
@@ -399,6 +443,189 @@ function ValuePanel({ result }: { result: ResultData }) {
       ) : null}
     </View>
   );
+}
+
+function decisionTone(kind: AnalysisDecisionCard["kind"]) {
+  if (kind === "flip") {
+    return {
+      accent: FLIP_ACCENT,
+      background: "rgba(70, 245, 162, 0.075)",
+      border: "rgba(70, 245, 162, 0.54)",
+      label: "MARKET SIGNAL CONFIRMED",
+    };
+  }
+  if (kind === "skip") {
+    return {
+      accent: theme.colors.danger,
+      background: "rgba(255, 75, 94, 0.065)",
+      border: "rgba(255, 94, 110, 0.44)",
+      label: "MARKET RISK OUTWEIGHS UPSIDE",
+    };
+  }
+  return {
+    accent: theme.colors.goldBright,
+    background: "rgba(242, 211, 138, 0.065)",
+    border: "rgba(242, 211, 138, 0.42)",
+    label: "MORE EVIDENCE NEEDED",
+  };
+}
+
+function decisionCardForResult(result: ResultData): AnalysisDecisionCard {
+  if (result.decisionCard) return result.decisionCard;
+
+  const needsMoreEvidence = result.valuationReadiness.status !== "ready";
+  const missingInputs = (result.refinementQuestions ?? [])
+    .map((question) => question.prompt)
+    .filter(Boolean)
+    .slice(0, 6);
+
+  return {
+    confidence: result.confidence?.valuation,
+    kind: "undetermined",
+    label: "UNDETERMINED",
+    missingInputs,
+    reasons: [],
+    status: needsMoreEvidence ? "needs_more_evidence" : "provisional",
+    summary: needsMoreEvidence
+      ? "KeepFlip needs more market or item evidence before it can make a Flip or Skip decision."
+      : "A market range is available, but this saved result does not include a Flip or Skip decision.",
+  };
+}
+
+function MarketDecisionStamp({
+  card,
+  top,
+}: {
+  card: AnalysisDecisionCard;
+  top: number;
+}) {
+  const reduceMotion = useReducedMotion();
+  const tone = decisionTone(card.kind);
+  const confidence = percentage(card.confidence);
+  const flash = useSharedValue(reduceMotion ? 1 : 0.24);
+  const scale = useSharedValue(reduceMotion ? 1 : 0.86);
+
+  useEffect(() => {
+    cancelAnimation(flash);
+    cancelAnimation(scale);
+
+    if (reduceMotion) {
+      flash.set(1);
+      scale.set(1);
+      return;
+    }
+
+    flash.set(0.24);
+    scale.set(0.86);
+    scale.set(
+      withSpring(1, {
+        damping: 12,
+        mass: 0.5,
+        stiffness: 220,
+      }),
+    );
+    flash.set(
+      withSequence(
+        withTiming(1, { duration: 100 }),
+        withTiming(0.38, { duration: 80 }),
+        withTiming(1, { duration: 110 }),
+        withTiming(0.48, { duration: 80 }),
+        withTiming(1, { duration: 140 }),
+      ),
+    );
+
+    return () => {
+      cancelAnimation(flash);
+      cancelAnimation(scale);
+    };
+  }, [card.kind, flash, reduceMotion, scale]);
+
+  const animatedStampStyle = useAnimatedStyle(() => ({
+    opacity: flash.get(),
+    transform: [{ scale: scale.get() }],
+  }));
+
+  return (
+    <View
+      pointerEvents="none"
+      style={[styles.marketDecisionStampHost, { top }]}
+    >
+      <Animated.View
+        accessibilityLabel={`Market decision: ${card.label}`}
+        accessibilityLiveRegion="polite"
+        entering={reduceMotion ? undefined : FadeInDown.duration(140)}
+        key={`market-decision-stamp-${card.kind}`}
+        style={[
+          styles.marketDecisionStamp,
+          {
+            backgroundColor: tone.background,
+            borderColor: tone.border,
+            boxShadow:
+              card.kind === "flip"
+                ? "0 0 20px rgba(70, 245, 162, 0.52)"
+                : "0 0 20px rgba(232, 97, 88, 0.48)",
+          },
+          animatedStampStyle,
+        ]}
+      >
+        <Text
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
+          numberOfLines={1}
+          style={[
+            styles.marketDecisionStampWord,
+            {
+              color: tone.accent,
+              textShadowColor:
+                card.kind === "flip"
+                  ? "rgba(70, 245, 162, 0.76)"
+                  : "rgba(232, 97, 88, 0.72)",
+            },
+          ]}
+        >
+          {card.label}
+        </Text>
+        <View style={styles.marketDecisionStampMeta}>
+          <Text
+            numberOfLines={1}
+            style={[styles.marketDecisionStampSignal, { color: tone.accent }]}
+          >
+            {tone.label}
+          </Text>
+          {confidence != null ? (
+            <Text
+              style={[
+                styles.marketDecisionStampConfidence,
+                { color: tone.accent },
+              ]}
+            >
+              {`${confidence}% CONF`}
+            </Text>
+          ) : null}
+        </View>
+      </Animated.View>
+    </View>
+  );
+}
+
+function profitabilityPauseMessage(card: AnalysisDecisionCard) {
+  if (card.kind === "skip") {
+    return "No profitability tasks are shown because the market decision is Skip.";
+  }
+  if (card.kind === "undetermined") {
+    return "Resolve the missing market evidence before KeepFlip prepares profitability tasks.";
+  }
+  return "KeepFlip did not find a supported profitability task for this item.";
+}
+
+function compactProfitabilityActionLimit(result: ResultData) {
+  const firmPricing = result.valuationReadiness.status === "ready";
+  const hasStrategy =
+    (result.profitPlan.listTarget != null && firmPricing) ||
+    result.profitPlan.expectedSale != null ||
+    (result.profitPlan.quickSale != null && firmPricing);
+
+  return hasStrategy ? 2 : 3;
 }
 
 type ProfitabilityGuidanceState = {
@@ -508,6 +735,10 @@ function ProfitPanel({
   const enhancements = result.profitPlan.actions.filter(
     (action) => action.kind !== "decision",
   );
+  const compactActionLimit = compactProfitabilityActionLimit(result);
+  const hasEnhancements = enhancements.length > 0;
+  const decisionCard = decisionCardForResult(result);
+  const emptyMessage = profitabilityPauseMessage(decisionCard);
 
   return (
     <View style={styles.profitList}>
@@ -540,17 +771,26 @@ function ProfitPanel({
         </View>
       ) : null}
 
-      <Text style={styles.profitTapHint}>TAP AN ENHANCEMENT FOR ITS ITEM-SPECIFIC HOW-TO</Text>
-      {enhancements.slice(0, hasStrategy ? 2 : 3).map((action, index) => (
-        <ProfitabilityActionRow
-          action={action}
-          expanded={expandedActionId === action.id}
-          guidanceState={guidance[action.id]}
-          index={index}
-          key={action.id}
-          onPress={onPressAction}
-        />
-      ))}
+      {hasEnhancements ? (
+        <>
+          <Text style={styles.profitTapHint}>TAP AN ENHANCEMENT FOR ITS ITEM-SPECIFIC HOW-TO</Text>
+          {enhancements.slice(0, compactActionLimit).map((action, index) => (
+            <ProfitabilityActionRow
+              action={action}
+              expanded={expandedActionId === action.id}
+              guidanceState={guidance[action.id]}
+              index={index}
+              key={action.id}
+              onPress={onPressAction}
+            />
+          ))}
+        </>
+      ) : (
+        <View style={styles.profitEmpty}>
+          <Text style={styles.profitEmptyTitle}>PROFIT TASKS PAUSED</Text>
+          <Text selectable style={styles.profitEmptyBody}>{emptyMessage}</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -667,6 +907,8 @@ function ExpandedResultDetails({
   const references = result.marketReferences ?? [];
   const questions = result.refinementQuestions ?? [];
   const requestedPhotos = result.suggestedPhotos ?? [];
+  const decisionCard = decisionCardForResult(result);
+  const acquisitionGuidance = result.acquisitionGuidance;
   const canSubmit =
     Boolean(onRefine) &&
     !refining &&
@@ -675,6 +917,8 @@ function ExpandedResultDetails({
   const enhancements = result.profitPlan.actions.filter(
     (action) => action.kind !== "decision",
   );
+  const compactActionLimit = compactProfitabilityActionLimit(result);
+  const additionalEnhancements = enhancements.slice(compactActionLimit);
 
   return (
     <View style={styles.expandedDetails}>
@@ -711,6 +955,59 @@ function ExpandedResultDetails({
           label={result.condition?.titleLabel ?? "Observed Condition"}
           value={result.condition?.label}
         />
+        </View>
+      ) : null}
+
+      {activeTab === "valuation" ? (
+        <View style={styles.detailSection}>
+          <Text style={styles.detailSectionTitle}>MARKET DECISION DETAIL</Text>
+          <Text selectable style={styles.detailBody}>{decisionCard.summary}</Text>
+
+          {decisionCard.kind === "skip" ? (
+            <>
+              <Text style={styles.decisionDetailHeading}>WHY THIS IS A SKIP</Text>
+              {decisionCard.reasons.map((reason, index) => (
+                <View key={`${reason.factor}-${index}`} style={styles.decisionEvidenceRow}>
+                  <Text style={styles.decisionEvidenceCode}>
+                    S{index + 1}
+                  </Text>
+                  <View style={styles.decisionEvidenceCopy}>
+                    <Text selectable style={styles.decisionEvidenceFactor}>
+                      {reason.factor}
+                    </Text>
+                    <Text selectable style={styles.detailBody}>{reason.evidence}</Text>
+                    <Text selectable style={styles.decisionEvidenceImpact}>
+                      {reason.impact}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </>
+          ) : null}
+
+          {decisionCard.kind === "flip" ? (
+            <Text selectable style={styles.decisionActionHint}>
+              This is a market-first Flip decision. Open Max Profit for the supported preparation tasks.
+            </Text>
+          ) : null}
+
+          {decisionCard.kind === "undetermined" ? (
+            <>
+              <Text style={styles.decisionDetailHeading}>WHAT WOULD RESOLVE IT</Text>
+              {decisionCard.missingInputs.length > 0 ? (
+                decisionCard.missingInputs.map((input, index) => (
+                  <View key={`${input}-${index}`} style={styles.detailBulletRow}>
+                    <Text style={styles.detailBullet}>+</Text>
+                    <Text selectable style={styles.detailBulletText}>{input}</Text>
+                  </View>
+                ))
+              ) : (
+                <Text selectable style={styles.detailBody}>
+                  Add a requested identifying or functionality detail so KeepFlip can make a market decision.
+                </Text>
+              )}
+            </>
+          ) : null}
         </View>
       ) : null}
 
@@ -759,18 +1056,60 @@ function ExpandedResultDetails({
         </View>
       ) : null}
 
-      {activeTab === "profit" ? (
+      {activeTab === "valuation" && acquisitionGuidance ? (
         <View style={styles.detailSection}>
-          <Text style={styles.detailSectionTitle}>PROFITABILITY ENHANCEMENTS</Text>
-          <Text style={styles.detailBody}>
-            Tap an enhancement to research its focused item-specific how-to. Completed guidance is cached with this analysis.
-          </Text>
-          {enhancements.map((action, index) => (
+          <Text style={styles.detailSectionTitle}>ACQUISITION CEILING</Text>
+          <DetailFact
+            label={acquisitionGuidance.label}
+            value={formatMoney(
+              acquisitionGuidance.maxBuyPrice,
+              acquisitionGuidance.currency ?? result.valuation?.currency,
+            )}
+          />
+          {acquisitionGuidance.summary ? (
+            <Text selectable style={styles.detailBody}>
+              {acquisitionGuidance.summary}
+            </Text>
+          ) : null}
+          {acquisitionGuidance.formula ? (
+            <Text selectable style={styles.detailBody}>
+              {acquisitionGuidance.formula}
+            </Text>
+          ) : null}
+          {acquisitionGuidance.assumptions.length > 0 ? (
+            <>
+              <Text style={styles.decisionDetailHeading}>FORMULA ASSUMPTIONS</Text>
+              {acquisitionGuidance.assumptions.map((assumption, index) => (
+                <View key={`${assumption}-${index}`} style={styles.detailBulletRow}>
+                  <Text style={styles.detailBullet}>+</Text>
+                  <Text selectable style={styles.detailBulletText}>{assumption}</Text>
+                </View>
+              ))}
+            </>
+          ) : null}
+          {acquisitionGuidance.missingInputs.length > 0 ? (
+            <>
+              <Text style={styles.decisionDetailHeading}>CHECK BEFORE BUYING</Text>
+              {acquisitionGuidance.missingInputs.map((input, index) => (
+                <View key={`${input}-${index}`} style={styles.detailBulletRow}>
+                  <Text style={styles.detailBullet}>+</Text>
+                  <Text selectable style={styles.detailBulletText}>{input}</Text>
+                </View>
+              ))}
+            </>
+          ) : null}
+        </View>
+      ) : null}
+
+      {activeTab === "profit" && additionalEnhancements.length > 0 ? (
+        <View style={styles.detailSection}>
+          <Text style={styles.detailSectionTitle}>MORE PROFITABILITY ENHANCEMENTS</Text>
+          {additionalEnhancements.map((action, index) => (
             <ProfitabilityActionRow
               action={action}
               expanded={expandedActionId === action.id}
               guidanceState={guidance[action.id]}
-              index={index}
+              index={compactActionLimit + index}
               key={action.id}
               onPress={onPressAction}
             />
@@ -828,11 +1167,11 @@ function ExpandedResultDetails({
         </View>
       ) : null}
 
-      {activeTab === "valuation" && questions.length > 0 && (onRefine || onScanMorePhotos) ? (
+      {activeTab === "valuation" && decisionCard.kind === "undetermined" && questions.length > 0 && (onRefine || onScanMorePhotos) ? (
         <View style={styles.detailSection}>
-          <Text style={styles.detailSectionTitle}>REFINE THIS VALUATION</Text>
+          <Text style={styles.detailSectionTitle}>RESOLVE THIS DECISION</Text>
           <Text style={styles.detailBody}>
-            Add only what you can verify. KeepFlip can use these details to run a tighter market pass.
+            Add only what you can verify. KeepFlip can use these details to make a tighter market decision.
           </Text>
           {requestedPhotos.slice(0, 4).map((photo, index) => (
             <Text key={photo.id ?? `${photo.label}-${index}`} style={styles.photoRequest}>
@@ -920,21 +1259,41 @@ export function ValuationResultStage({
   onRefine,
   onScanMorePhotos,
   onSave,
+  onSaveToDealShelf,
   projectionLabel = "GENERATED ITEM PROJECTION",
   refining = false,
   refinementPhotoReady = false,
+  saveDealLabel = "Park on Deal Shelf",
+  savingDeal = false,
   scanningMorePhotos = false,
   saveLabel = "Save to inventory",
   saving = false,
+  showMarketDecisionStamp = false,
   state,
   topInset,
   viewportWidth,
 }: ValuationResultStageProps) {
   const result = state.data;
+  const marketDecision = decisionCardForResult(result);
+  const hasSaveAction = Boolean(onSave || onSaveToDealShelf);
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const width = Math.min(viewportWidth ?? windowWidth, 520);
   const collapsedHeight =
-    (onSave ? COLLAPSED_HEIGHT_WITH_SAVE : COLLAPSED_HEIGHT) + bottomInset;
+    (hasSaveAction ? COLLAPSED_HEIGHT_WITH_SAVE : COLLAPSED_HEIGHT) + bottomInset;
+  const stampImageTop = topInset + MARKET_DECISION_IMAGE_TOP_GAP;
+  const stampImageBottom = Math.max(
+    stampImageTop + MARKET_DECISION_STAMP_HEIGHT,
+    windowHeight - collapsedHeight,
+  );
+  const marketDecisionStampTop =
+    stampImageTop +
+    Math.max(
+      0,
+      (stampImageBottom -
+        stampImageTop -
+        MARKET_DECISION_STAMP_HEIGHT) /
+        2,
+    );
   const expandedHeight = Math.max(
     collapsedHeight,
     Math.min(MAX_EXPANDED_HEIGHT, windowHeight - topInset - 14),
@@ -1299,6 +1658,11 @@ export function ValuationResultStage({
         </Text>
       </Animated.View>
 
+      {showMarketDecisionStamp &&
+      (marketDecision.kind === "flip" || marketDecision.kind === "skip") ? (
+        <MarketDecisionStamp card={marketDecision} top={marketDecisionStampTop} />
+      ) : null}
+
       <Animated.View
         entering={FadeInUp.duration(260).delay(60)}
         style={[
@@ -1387,20 +1751,45 @@ export function ValuationResultStage({
           panel
         )}
 
-        {onSave ? (
-          <Pressable
-            accessibilityRole="button"
-            disabled={saving || refining}
-            onPress={onSave}
-            style={({ pressed }) => [
-              styles.saveButton,
-              pressed && styles.pressed,
-              (saving || refining) && styles.disabled,
-            ]}
-          >
-            <IconSymbol color={theme.colors.backgroundDeep} name="save.fill" size={16} />
-            <Text style={styles.saveButtonText}>{saving ? "SAVING..." : saveLabel.toUpperCase()}</Text>
-          </Pressable>
+        {hasSaveAction ? (
+          <View style={styles.saveActions}>
+            {onSaveToDealShelf ? (
+              <Pressable
+                accessibilityRole="button"
+                disabled={saving || savingDeal || refining}
+                onPress={onSaveToDealShelf}
+                style={({ pressed }) => [
+                  styles.saveButton,
+                  styles.saveButtonSecondary,
+                  pressed && styles.pressed,
+                  (saving || savingDeal || refining) && styles.disabled,
+                ]}
+              >
+                <IconSymbol color={theme.colors.goldBright} name="tag.fill" size={16} />
+                <Text style={styles.saveButtonTextSecondary}>
+                  {savingDeal ? "PARKING..." : saveDealLabel.toUpperCase()}
+                </Text>
+              </Pressable>
+            ) : null}
+
+            {onSave ? (
+              <Pressable
+                accessibilityRole="button"
+                disabled={saving || savingDeal || refining}
+                onPress={onSave}
+                style={({ pressed }) => [
+                  styles.saveButton,
+                  pressed && styles.pressed,
+                  (saving || savingDeal || refining) && styles.disabled,
+                ]}
+              >
+                <IconSymbol color={theme.colors.backgroundDeep} name="save.fill" size={16} />
+                <Text style={styles.saveButtonText}>
+                  {saving ? "SAVING..." : saveLabel.toUpperCase()}
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
         ) : null}
       </Animated.View>
     </View>
@@ -1425,6 +1814,8 @@ const styles = StyleSheet.create({
   projectionLabel: { color: "rgba(0, 255, 255, 0.74)", fontFamily: theme.fonts.numbers, fontSize: 7, fontWeight: "900", letterSpacing: 0.8 },
   resultDock: {
     position: "absolute",
+    zIndex: 10,
+    elevation: 10,
     alignSelf: "center",
     bottom: 0,
     gap: 8,
@@ -1507,7 +1898,7 @@ const styles = StyleSheet.create({
   gaugeHeader: { minHeight: 42, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   microLabel: { color: "rgba(255, 255, 255, 0.48)", fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: "900", letterSpacing: 0.9 },
   gaugeStatus: { color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 9, fontWeight: "900", letterSpacing: 0.8 },
-  medianValue: { maxWidth: 190, color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 30, lineHeight: 34, fontWeight: "900", fontVariant: ["tabular-nums"], textShadowColor: "rgba(242, 211, 138, 0.52)", textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 7 },
+  medianValue: { maxWidth: 210, color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 40, lineHeight: 44, fontWeight: "900", fontVariant: ["tabular-nums"], textShadowColor: "rgba(242, 211, 138, 0.52)", textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 7 },
   gaugeTrack: { height: 28, justifyContent: "center" },
   gaugeBand: { position: "absolute", right: 0, left: 0, height: 9, overflow: "hidden", borderRadius: 5, transformOrigin: "left", boxShadow: "0 0 14px rgba(0, 255, 255, 0.18)" },
   gaugeTick: { position: "absolute", top: 5, width: StyleSheet.hairlineWidth, height: 18, backgroundColor: "rgba(255, 255, 255, 0.34)" },
@@ -1518,6 +1909,93 @@ const styles = StyleSheet.create({
   gaugeLabel: { fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: "900", letterSpacing: 0.8 },
   gaugeAmount: { color: "#FFFFFF", fontFamily: theme.fonts.radar, fontSize: 10, fontWeight: "900", fontVariant: ["tabular-nums"] },
   valuePanel: { flex: 1 },
+  buyCeilingRow: {
+    minHeight: 31,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    marginTop: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderRadius: 5,
+    backgroundColor: "rgba(0, 255, 255, 0.045)",
+  },
+  buyCeilingCopy: { flex: 1, minWidth: 0, gap: 1 },
+  buyCeilingLabel: {
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 0.8,
+  },
+  buyCeilingStatus: {
+    color: "rgba(255, 255, 255, 0.52)",
+    fontFamily: theme.fonts.radar,
+    fontSize: 6.5,
+    fontWeight: "800",
+    letterSpacing: 0.55,
+  },
+  buyCeilingValue: {
+    minWidth: 56,
+    fontFamily: theme.fonts.radar,
+    fontSize: 18,
+    fontWeight: "900",
+    fontVariant: ["tabular-nums"],
+    textAlign: "right",
+  },
+  marketDecisionStampHost: {
+    position: "absolute",
+    zIndex: 2,
+    elevation: 2,
+    right: 0,
+    left: 0,
+    alignItems: "center",
+  },
+  marketDecisionStamp: {
+    minWidth: 126,
+    minHeight: MARKET_DECISION_STAMP_HEIGHT,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderWidth: 2,
+    borderRadius: 6,
+    overflow: "hidden",
+  },
+  marketDecisionStampWord: {
+    alignSelf: "stretch",
+    fontFamily: theme.fonts.display,
+    fontSize: 36,
+    lineHeight: 39,
+    fontWeight: "900",
+    letterSpacing: 2.8,
+    textAlign: "center",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 12,
+  },
+  marketDecisionStampMeta: {
+    alignSelf: "stretch",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  marketDecisionStampSignal: {
+    flex: 1,
+    fontFamily: theme.fonts.radar,
+    fontSize: 6,
+    fontWeight: "900",
+    letterSpacing: 0.65,
+    textAlign: "center",
+  },
+  marketDecisionStampConfidence: {
+    fontFamily: theme.fonts.numbers,
+    fontSize: 6,
+    fontWeight: "900",
+    letterSpacing: 0.4,
+  },
   readinessRow: { minHeight: 24, flexDirection: "row", alignItems: "center", gap: 7, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(255, 255, 255, 0.10)" },
   readinessSignal: { width: 6, height: 6, borderRadius: 3 },
   readinessText: { flex: 1, fontFamily: theme.fonts.radar, fontSize: 8, fontWeight: "900" },
@@ -1565,6 +2043,27 @@ const styles = StyleSheet.create({
     fontSize: 7,
     fontWeight: "900",
     letterSpacing: 0.7,
+  },
+  profitEmpty: {
+    gap: 6,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "rgba(242, 211, 138, 0.20)",
+    borderRadius: 4,
+    backgroundColor: "rgba(242, 211, 138, 0.04)",
+  },
+  profitEmptyTitle: {
+    color: theme.colors.goldBright,
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 0.8,
+  },
+  profitEmptyBody: {
+    color: "rgba(255, 255, 255, 0.62)",
+    fontFamily: theme.fonts.radar,
+    fontSize: 9,
+    lineHeight: 13,
   },
   profitActionWrap: { gap: 5 },
   profitRow: { minHeight: 43, flexDirection: "row", alignItems: "center", gap: 9, paddingHorizontal: 8, borderLeftWidth: 2, borderLeftColor: theme.colors.scannerCyan, backgroundColor: "rgba(0, 255, 255, 0.035)" },
@@ -1706,6 +2205,48 @@ const styles = StyleSheet.create({
     fontSize: 6,
     fontWeight: "900",
     letterSpacing: 0.65,
+  },
+  decisionDetailHeading: {
+    paddingTop: 3,
+    color: theme.colors.goldBright,
+    fontFamily: theme.fonts.radar,
+    fontSize: 7,
+    fontWeight: "900",
+    letterSpacing: 0.8,
+  },
+  decisionEvidenceRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 9,
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(255, 255, 255, 0.09)",
+  },
+  decisionEvidenceCode: {
+    width: 22,
+    color: theme.colors.danger,
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
+    fontWeight: "900",
+  },
+  decisionEvidenceCopy: { flex: 1, minWidth: 0, gap: 3 },
+  decisionEvidenceFactor: {
+    color: "#FFFFFF",
+    fontFamily: theme.fonts.radar,
+    fontSize: 10,
+    fontWeight: "900",
+  },
+  decisionEvidenceImpact: {
+    color: "rgba(255, 121, 133, 0.86)",
+    fontFamily: theme.fonts.radar,
+    fontSize: 9,
+    lineHeight: 13,
+  },
+  decisionActionHint: {
+    color: "rgba(0, 255, 255, 0.72)",
+    fontFamily: theme.fonts.radar,
+    fontSize: 9,
+    lineHeight: 14,
   },
   expandedProfitRow: {
     flexDirection: "row",
@@ -1869,8 +2410,11 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     letterSpacing: 0.8,
   },
-  saveButton: { minHeight: 43, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 4, backgroundColor: theme.colors.goldBright },
+  saveActions: { flexDirection: "row", gap: 8 },
+  saveButton: { flex: 1, minHeight: 43, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingHorizontal: 8, borderRadius: 4, backgroundColor: theme.colors.goldBright },
+  saveButtonSecondary: { borderWidth: 1, borderColor: "rgba(242, 211, 138, 0.38)", backgroundColor: "rgba(4, 4, 8, 0.72)" },
   saveButtonText: { color: theme.colors.backgroundDeep, fontFamily: theme.fonts.radar, fontSize: 9, fontWeight: "900", letterSpacing: 0.7 },
+  saveButtonTextSecondary: { color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 9, fontWeight: "900", letterSpacing: 0.7 },
   pressed: { opacity: 0.72, transform: [{ scale: 0.98 }] },
   disabled: { opacity: 0.48 },
 });

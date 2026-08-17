@@ -247,6 +247,18 @@ export type ItemValuationLadder = {
   confidence: number;
 };
 
+export type ItemMarketAcquisitionGuidance = {
+  status: 'provisional' | 'needs_evidence' | 'not_viable';
+  label: 'Top Dollar to Pay';
+  maxBuyPrice: number | null;
+  resaleBasis: number | null;
+  currency: string;
+  formula: string | null;
+  assumptions: string[];
+  missingInputs: string[];
+  summary: string;
+};
+
 export type ItemMarketResaleVelocity = {
   demand: 'fast' | 'moderate' | 'slow' | 'unknown';
   lowDays: number | null;
@@ -283,6 +295,26 @@ export type ItemMarketFlipDecision = {
   confidencePercent: number | null;
 };
 
+export type ItemMarketDecisionReason = {
+  factor: string;
+  evidence: string;
+  impact: string;
+};
+
+export type ItemMarketDecisionCard = {
+  type: 'flip' | 'skip' | 'undecided';
+  status: 'decided' | 'provisional' | 'needs_more_evidence';
+  headline: 'Flip' | 'Skip' | 'Undecided';
+  summary: string;
+  reasons: ItemMarketDecisionReason[];
+  confidencePercent: number | null;
+  missingInputs: string[];
+};
+
+export type ItemAiModeConversation = {
+  subsequentRequestToken: string | null;
+};
+
 export type ItemMarketResearch = {
   provider: 'ebay' | 'multi_market' | 'keepflip_ai';
   status: 'completed' | 'unavailable' | 'failed';
@@ -295,6 +327,7 @@ export type ItemMarketResearch = {
   providers?: ItemMarketProviderStatus[];
   signals?: ItemMarketSignal[];
   references?: ItemMarketReference[];
+  aiModeConversation?: ItemAiModeConversation | null;
   identification?: string | null;
   condition?: {
     grade: 'new' | 'like_new' | 'good' | 'fair' | 'poor' | 'parts' | 'unknown';
@@ -307,9 +340,11 @@ export type ItemMarketResearch = {
   profitabilityGuidance?: ItemProfitabilityGuidance[];
   refinementQuestions?: ItemValuationRefinementQuestion[];
   valuationLadder?: ItemValuationLadder;
+  acquisitionGuidance?: ItemMarketAcquisitionGuidance;
   marketVelocity?: ItemMarketResaleVelocity;
   flipComplexity?: ItemMarketFlipComplexity;
   flipDecision?: ItemMarketFlipDecision;
+  decisionCard?: ItemMarketDecisionCard;
   suggestedDetails?: string[];
   answerMarkdown?: string | null;
   normalization?: {

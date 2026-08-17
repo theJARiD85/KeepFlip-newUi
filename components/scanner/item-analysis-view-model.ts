@@ -2,6 +2,7 @@ import type { ItemAnalysisSuccess } from '@/types/item-analysis';
 import { neutralizeMarketplaceBrand } from '@/services/market-copy';
 
 import type {
+  AnalysisDecisionCard,
   AnalysisEvidence,
   AnalysisMarketReference,
   AnalysisProfitPlan,
@@ -23,10 +24,29 @@ const EVIDENCE_SOURCE_LABELS: Record<
   web_market: 'AI Mode',
 };
 
+const EVIDENCE_CLAIM_LABELS: Record<string, string> = {
+  multi_photo_brand: 'Brand identification',
+  multi_photo_item_type: 'Item category',
+  multi_photo_model: 'Model identification',
+  online_curated_estimate: 'Patient online resale estimate',
+  private_sale_estimate: 'Private-sale market estimate',
+  quick_sale_estimate: 'Quick-sale market estimate',
+  visual_market_condition: 'Observed condition',
+  visual_market_identification: 'Market-supported identification',
+};
+
 function titleCase(value: string) {
   return value
     .replaceAll('_', ' ')
     .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function normalizedEvidenceClaim(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
 }
 
 function displayText(value: string, maxLength: number) {
@@ -61,6 +81,18 @@ function displayKnownText(
   if (!value) return undefined;
   const text = displayText(value, maxLength);
   return text && !isUnresolvedValue(text) ? text : undefined;
+}
+
+function evidenceLabel(
+  item: ItemAnalysisSuccess['analysis']['evidence'][number],
+) {
+  const claim = normalizedEvidenceClaim(item.claim);
+
+  if (claim === 'market_value_factor' || claim === 'market_value_factors') {
+    return displayKnownText(item.value, 96) ?? 'Market value factor';
+  }
+
+  return EVIDENCE_CLAIM_LABELS[claim] ?? titleCase(claim);
 }
 
 function compact<T>(values: (T | null | undefined | '')[]) {
@@ -103,7 +135,7 @@ function evidence(result: ItemAnalysisSuccess): AnalysisEvidence[] {
     })
     .map((item, index) => ({
     id: `analysis-evidence-${index}`,
-    label: displayText(item.claim, 72),
+    label: evidenceLabel(item),
     source: EVIDENCE_SOURCE_LABELS[item.source],
     value: displayText(
       item.rationale ? `${item.value} · ${item.rationale}` : item.value,
@@ -252,10 +284,128 @@ function profitabilityGuidanceFor(
   };
 }
 
+function marketDecisionCard(result: ItemAnalysisSuccess): AnalysisDecisionCard {
+  const supplied = result.marketResearch?.decisionCard;
+  if (supplied) {
+    const kind =
+      supplied.type === 'flip'
+        ? 'flip'
+        : supplied.type === 'skip'
+          ? 'skip'
+          : 'undetermined';
+    const reasons =
+      kind === 'skip'
+        ? supplied.reasons
+          .map((reason) => {
+            const factor = displayKnownText(reason.factor, 84);
+            const evidence = displayKnownText(reason.evidence, 320);
+            const impact = displayKnownText(reason.impact, 220);
+            return factor && evidence && impact
+              ? { factor, evidence, impact }
+              : null;
+          })
+          .filter((reason): reason is AnalysisDecisionCard['reasons'][number] => Boolean(reason))
+          .slice(0, 4)
+        : [];
+    const missingInputs =
+      kind === 'undetermined'
+        ? supplied.missingInputs
+          .map((value) => displayKnownText(value, 120))
+          .filter((value): value is string => Boolean(value))
+          .slice(0, 6)
+        : [];
+
+    return {
+      confidence: supplied.confidencePercent ?? undefined,
+      kind,
+      label: kind === 'flip' ? 'FLIP' : kind === 'skip' ? 'SKIP' : 'UNDETERMINED',
+      missingInputs,
+      reasons,
+      status: supplied.status,
+      summary:
+        displayKnownText(supplied.summary, 460) ??
+        (kind === 'flip'
+          ? 'Market evidence supports a flip.'
+          : kind === 'skip'
+            ? 'Market evidence supports passing on this item.'
+            : 'The available evidence cannot support a flip or skip decision yet.'),
+    };
+  }
+
+  const legacy = result.marketResearch?.flipDecision;
+  const kind =
+    legacy?.verdict === 'flip'
+      ? 'flip'
+      : legacy?.verdict === 'skip'
+        ? 'skip'
+        : 'undetermined';
+  const summary =
+    displayKnownText(legacy?.summary, 460) ??
+    (kind === 'flip'
+      ? 'Market evidence supports a flip.'
+      : kind === 'skip'
+        ? 'Market evidence supports passing on this item.'
+        : 'The available evidence cannot support a flip or skip decision yet.');
+  const fallbackReasons: AnalysisDecisionCard['reasons'] = [];
+  const velocity = result.marketResearch?.marketVelocity;
+  const complexity = result.marketResearch?.flipComplexity;
+
+  if (kind === 'skip' && velocity?.demand === 'slow') {
+    fallbackReasons.push({
+      factor: 'Resale velocity',
+      evidence:
+        displayKnownText(velocity.evidence, 320) ??
+        `Market demand is slow${velocity.typicalDays != null ? ` with about ${velocity.typicalDays} days to sell` : ''}.`,
+      impact: 'Slow turnover increases holding time and sale friction.',
+    });
+  }
+  if (kind === 'skip' && complexity?.level === 'complex') {
+    fallbackReasons.push({
+      factor: 'Sale complexity',
+      evidence:
+        displayKnownText(complexity.summary, 320) ??
+        'The item needs complex preparation before a confident resale.',
+      impact: 'The required work raises the effort and risk of completing the resale.',
+    });
+  }
+  if (kind === 'skip' && fallbackReasons.length === 0) {
+    fallbackReasons.push({
+      factor: 'Market assessment',
+      evidence: summary,
+      impact: 'This is the available evidence-bound basis for passing on the item.',
+    });
+  }
+
+  return {
+    confidence: legacy?.confidencePercent ?? undefined,
+    kind,
+    label: kind === 'flip' ? 'FLIP' : kind === 'skip' ? 'SKIP' : 'UNDETERMINED',
+    missingInputs:
+      kind === 'undetermined'
+        ? (legacy?.missingInputs ?? [])
+          .map((value) => displayKnownText(value, 120))
+          .filter((value): value is string => Boolean(value))
+          .slice(0, 6)
+        : [],
+    reasons: fallbackReasons,
+    status:
+      kind === 'undetermined'
+        ? result.valuation.status === 'ready'
+          ? 'provisional'
+          : 'needs_more_evidence'
+        : 'decided',
+    summary,
+  };
+}
+
 function profitPlan(result: ItemAnalysisSuccess): AnalysisProfitPlan {
   const identity = result.analysis.identification;
   const valuation = result.valuation;
   const currency = valuation.currency ?? 'USD';
+  const decision = marketDecisionCard(result);
+  if (decision.kind !== 'flip') {
+    return { actions: [], currency };
+  }
   const hasRange =
     valuation.p20 != null && valuation.median != null && valuation.p80 != null;
   const listingIdentity = compact<string>([
@@ -265,34 +415,6 @@ function profitPlan(result: ItemAnalysisSuccess): AnalysisProfitPlan {
   ]).join(' ');
   const conditionSignal = result.analysis.condition.notes[0];
   const actions: AnalysisProfitPlan['actions'] = [];
-  const flipDecision = result.marketResearch?.flipDecision;
-  const marketVelocity = result.marketResearch?.marketVelocity;
-  const flipComplexity = result.marketResearch?.flipComplexity;
-
-  if (flipDecision && flipDecision.verdict !== 'unknown') {
-    const decisionSignals = compact<string>([
-      marketVelocity && marketVelocity.demand !== 'unknown'
-        ? `Resale velocity: ${titleCase(marketVelocity.demand)}${marketVelocity.typicalDays != null ? ` (${marketVelocity.typicalDays} days typical)` : ''}`
-        : null,
-      flipComplexity && flipComplexity.level !== 'unknown'
-        ? `Flip complexity: ${titleCase(flipComplexity.level)}`
-        : null,
-      flipDecision.missingInputs.length > 0
-        ? `Still needed: ${flipDecision.missingInputs.join(', ')}`
-        : null,
-    ]);
-
-    actions.push({
-      confidence: flipDecision.confidencePercent ?? undefined,
-      detail: displayText(
-        [flipDecision.summary, ...decisionSignals].filter(Boolean).join(' '),
-        360,
-      ),
-      id: 'profit-flip-verdict',
-      kind: 'decision',
-      label: `Flip verdict: ${titleCase(flipDecision.verdict)}`,
-    });
-  }
 
   const suppliedActions = result.marketResearch?.profitabilityActions ?? [];
   if (suppliedActions.length > 0) {
@@ -497,6 +619,43 @@ function valuationLadder(
   };
 }
 
+function acquisitionGuidance(
+  result: ItemAnalysisSuccess,
+): ItemAnalysisOverlayResult['acquisitionGuidance'] {
+  const guidance = result.marketResearch?.acquisitionGuidance;
+  if (!guidance || guidance.status === 'needs_evidence') return undefined;
+  if (
+    guidance.maxBuyPrice == null ||
+    !Number.isFinite(guidance.maxBuyPrice) ||
+    guidance.maxBuyPrice < 0
+  ) {
+    return undefined;
+  }
+
+  return {
+    status: guidance.status,
+    label: displayKnownText(guidance.label, 80) ?? 'Top Dollar to Pay',
+    maxBuyPrice: guidance.maxBuyPrice,
+    resaleBasis:
+      guidance.resaleBasis != null &&
+      Number.isFinite(guidance.resaleBasis) &&
+      guidance.resaleBasis > 0
+        ? guidance.resaleBasis
+        : undefined,
+    currency: displayKnownText(guidance.currency, 12) ?? undefined,
+    formula: displayKnownText(guidance.formula, 280),
+    assumptions: guidance.assumptions
+      .map((value) => displayKnownText(value, 280))
+      .filter((value): value is string => Boolean(value))
+      .slice(0, 5),
+    missingInputs: guidance.missingInputs
+      .map((value) => displayKnownText(value, 280))
+      .filter((value): value is string => Boolean(value))
+      .slice(0, 5),
+    summary: displayKnownText(guidance.summary, 420),
+  };
+}
+
 export function toItemAnalysisResult(result: ItemAnalysisSuccess): ItemAnalysisOverlayResult {
   const identity = result.analysis.identification;
   const confidence = result.analysis.confidence;
@@ -518,6 +677,7 @@ export function toItemAnalysisResult(result: ItemAnalysisSuccess): ItemAnalysisO
       };
 
   return {
+    acquisitionGuidance: acquisitionGuidance(result),
     condition: observedCondition,
     confidence: {
       brand: confidence.brand,
@@ -529,6 +689,7 @@ export function toItemAnalysisResult(result: ItemAnalysisSuccess): ItemAnalysisO
       valuation: confidence.valuation,
     },
     evidence: evidence(result),
+    decisionCard: marketDecisionCard(result),
     identity: {
       brand: displayKnownText(identity.brand, 72),
       category: displayKnownText(identity.category, 72),

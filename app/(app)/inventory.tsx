@@ -334,6 +334,7 @@ export default function InventoryScreen() {
           row.kind === "native-ad" ? (
             <View style={{ width: contentWidth }}>
             <AppodealNativeAdView
+                placement="inventory_feed"
                 style={{ height: 380 }}
                 onAdReady={({ nativeEvent }) => {
                   console.info(

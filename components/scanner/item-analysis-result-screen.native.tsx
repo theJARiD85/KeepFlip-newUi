@@ -1,6 +1,6 @@
 import { File, Paths } from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { type Href, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -25,6 +25,7 @@ import {
   applyProfitabilityGuidanceToAnalysis,
   type SerpApiProfitabilityGuidance,
 } from "@/services/ebaySoldCompsService";
+import { saveDealShelfItem } from "@/services/deal-shelf-service";
 import { refineItemAnalysis } from "@/services/item-analysis-service";
 import {
   getInventoryItem,
@@ -313,6 +314,7 @@ export function ItemAnalysisResultScreen() {
   const [projectionError, setProjectionError] =
     useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [savingDeal, setSavingDeal] = useState(false);
   const [refining, setRefining] = useState(false);
   const [scanningMorePhotos, setScanningMorePhotos] = useState(false);
   const [refinementPhoto, setRefinementPhoto] =
@@ -386,7 +388,7 @@ export function ItemAnalysisResultScreen() {
   }, [clearScannerResult, scannerSession]);
 
   const handleSave = useCallback(async () => {
-    if (!scannerSession || saving) return;
+    if (!scannerSession || saving || savingDeal) return;
     if (!userId) {
       Alert.alert(
         "Sign in required",
@@ -400,6 +402,7 @@ export function ItemAnalysisResultScreen() {
       await scannerSession.ensurePhotosSaved?.();
       const saved = await saveAnalyzedItemToInventory({
         analysis: scannerSession.analysis,
+        modelFile: scannerSession.modelUrl,
         ownerId: userId,
         scanId: scannerSession.scanId,
       });
@@ -422,6 +425,47 @@ export function ItemAnalysisResultScreen() {
     finishScannerSession,
     router,
     saving,
+    savingDeal,
+    scannerSession,
+    userId,
+  ]);
+
+  const handleSaveToDealShelf = useCallback(async () => {
+    if (!scannerSession || saving || savingDeal) return;
+    if (!userId) {
+      Alert.alert(
+        "Sign in required",
+        "Sign in before parking a deal.",
+      );
+      return;
+    }
+
+    setSavingDeal(true);
+    try {
+      await scannerSession.ensurePhotosSaved?.();
+      await saveDealShelfItem({
+        analysis: scannerSession.analysis,
+        modelFile: scannerSession.modelUrl,
+        ownerId: userId,
+        scanId: scannerSession.scanId,
+      });
+      finishScannerSession();
+      router.replace("/deal-shelf" as Href);
+    } catch (caught) {
+      Alert.alert(
+        "Could not park deal",
+        caught instanceof Error
+          ? neutralizeMarketplaceBrand(caught.message)
+          : "KeepFlip could not save this deal.",
+      );
+    } finally {
+      setSavingDeal(false);
+    }
+  }, [
+    finishScannerSession,
+    router,
+    saving,
+    savingDeal,
     scannerSession,
     userId,
   ]);
@@ -496,6 +540,9 @@ export function ItemAnalysisResultScreen() {
           ownerId: userId,
           photoFileId: activeRefinementPhoto?.fileId,
           scanId: scannerSession.scanId,
+          subsequentRequestToken:
+            scannerSession.analysis.marketResearch?.aiModeConversation
+              ?.subsequentRequestToken,
         });
         const nextState = toItemAnalysisState(analysis);
         if (nextState.status !== "result") {
@@ -716,6 +763,13 @@ export function ItemAnalysisResultScreen() {
               }
               : undefined
           }
+          onSaveToDealShelf={
+            scannerSession
+              ? () => {
+                void handleSaveToDealShelf();
+              }
+              : undefined
+          }
           onSave={
             scannerSession
               ? () => {
@@ -727,8 +781,10 @@ export function ItemAnalysisResultScreen() {
           refining={refining}
           refinementPhotoReady={Boolean(activeRefinementPhoto)}
           saveLabel="Save to inventory"
+          savingDeal={savingDeal}
           saving={saving}
           scanningMorePhotos={scanningMorePhotos}
+          showMarketDecisionStamp={Boolean(scannerSession)}
           state={resultState}
           topInset={insets.top}
         />

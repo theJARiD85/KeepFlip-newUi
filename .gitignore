@@ -34,6 +34,7 @@ yarn-error.*
 # local env files
 .env
 .env*.local
+package-lock.
 
 # Private Roboflow pilot source photos and completed manifests
 /tools/roboflow/private-data/
@@ -53,3 +54,8 @@ app-example
 /modules/keepflip-scan-proof/android/.kotlin
 /backend
 /.backups
+/.keepflip-gradle-user-home
+/.codex-adb-home
+/.agents
+/.cursor
+/.venv

@@ -1,8 +1,7 @@
 import * as Haptics from 'expo-haptics';
-import { Image } from 'expo-image';
 import { type Href, usePathname, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { BackHandler, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { BackHandler, Image, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -22,12 +21,13 @@ import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 type MenuDestination = {
   eyebrow: string;
   href: Href;
-  icon: 'viewfinder' | 'shippingbox.fill' | 'person.crop.circle.fill';
+  icon: 'viewfinder' | 'tag.fill' | 'shippingbox.fill' | 'person.crop.circle.fill';
   label: string;
 };
 
 const destinations: MenuDestination[] = [
   { eyebrow: 'IDENTIFY & VALUE', href: '/', icon: 'viewfinder', label: 'Scanner' },
+  { eyebrow: 'DEALS TO DECIDE', href: '/deal-shelf' as Href, icon: 'tag.fill', label: 'Deal Shelf' },
   { eyebrow: 'YOUR SAVED FINDS', href: '/inventory', icon: 'shippingbox.fill', label: 'Inventory' },
   { eyebrow: 'SELLER CONTROLS', href: '/account', icon: 'person.crop.circle.fill', label: 'Account' },
 ];
@@ -159,9 +159,8 @@ export function KeepFlipSlideDownMenu() {
           <View style={styles.brandRow}>
             <View style={styles.brandLockup}>
               <Image
-                accessibilityLabel="KeepFlip"
-                contentFit="contain"
                 source={require('@/assets/images/icon3.png')}
+                accessibilityLabel="KeepFlip"
                 style={styles.brandMark}
               />
               <View style={styles.brandCopy}>

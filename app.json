@@ -2,7 +2,7 @@
   "expo": {
     "name": "KeepFlip",
     "slug": "keepflip",
-    "version": "2.0.5",
+    "version": "2.0.6",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "keepflip",
@@ -16,7 +16,8 @@
     },
     "android": {
       "package": "com.keepflip.app",
-      "versionCode": 16,
+      "versionCode": 18,
+      "googleServicesFile": "./config/android/google-services.json",
       "permissions": [
         "android.permission.CAMERA",
         "com.google.android.gms.permission.AD_ID"
@@ -33,6 +34,13 @@
     },
     "plugins": [
       "./plugins/with-android-value-radar-memory",
+      [
+        "./plugins/with-keepflip-android-firebase-signing",
+        {
+          "keystorePropertiesFile": "./config/android/keystore.properties",
+          "keystoreFile": "./config/android/production-keystore.jks"
+        }
+      ],
       "expo-router",
       [
         "expo-image-picker",
@@ -67,6 +75,17 @@
           "enableAdMob": true,
           "adMobAppId": "ca-app-pub-9259020398529102~7300404509",
           "removeLocationPermissions": true
+        }
+      ],
+      "expo-font",
+      "expo-image",
+      "expo-status-bar",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "agpVersion": "8.8.0"
+          }
         }
       ]
     ],

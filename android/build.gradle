@@ -1,25 +1,47 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-  repositories {
+    repositories {
     google()
     mavenCentral()
   }
   dependencies {
-    classpath('com.android.tools.build:gradle')
+    classpath 'com.google.gms:google-services:4.4.4'
+    classpath('com.android.tools.build:gradle:8.13.2')
     classpath('com.facebook.react:react-native-gradle-plugin')
     classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
-    classpath('com.google.gms:google-services:4.5.0')
     classpath('com.google.firebase:firebase-appdistribution-gradle:5.3.0')
   }
 }
 
 allprojects {
   repositories {
+    maven {
+      url 'https://artifactory.appodeal.com/appodeal'
+      content {
+        includeGroupByRegex 'com[.]appodeal([.].*)?'
+        includeGroupByRegex 'com[.]explorestack([.].*)?'
+        includeGroupByRegex 'io[.]bidmachine([.].*)?'
+        includeGroupByRegex 'org[.]bidon([.].*)?'
+      }
+    }
+
+    maven {
+      url 'https://dl-maven-android.mintegral.com/repository/mbridge_android_sdk_oversea/'
+      content {
+        includeGroupByRegex 'com[.]mbridge[.]msdk([.].*)?'
+      }
+    }
+
+    maven {
+      url 'https://s3.amazonaws.com/smaato-sdk-releases/'
+      content {
+        includeGroupByRegex 'com[.]smaato[.]android[.]sdk([.].*)?'
+      }
+    }
     google()
     mavenCentral()
     maven { url 'https://www.jitpack.io' }
-    maven { url "https://artifactory.appodeal.com/appodeal" }
   }
 }
 

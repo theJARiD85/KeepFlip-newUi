@@ -8,6 +8,7 @@ import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { resolveInventoryCoverImageUri } from "@/services/inventory-cover-image";
 import type { InventoryItem } from "@/services/inventory-service";
+import { withAlpha } from '@/lib/withAlpha';
 
 type CoverImageSource = ImageSource | number | string;
 
@@ -206,9 +207,9 @@ export function InventoryCard({
       >
         <LinearGradient
           colors={[
-            theme.colors.scannerViolet,
-            theme.colors.goldBright,
-            theme.colors.scannerCyan,
+            withAlpha(theme.colors.scannerViolet,1),
+            withAlpha(theme.colors.goldBright,1),
+            withAlpha(theme.colors.scannerCyan,1),
           ]}
           end={{ x: 1, y: 0.5 }}
           locations={[0, 0.5, 1]}

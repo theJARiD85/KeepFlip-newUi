@@ -79,6 +79,7 @@ export default function AppShellLayout() {
               headerShown: false,
             }}>
             <Stack.Screen name="index" />
+            <Stack.Screen name="deal-shelf" />
             <Stack.Screen name="inventory" />
             <Stack.Screen name="analysis" />
             <Stack.Screen name="analysis-result" />

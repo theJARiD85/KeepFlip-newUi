@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { type Href, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -15,6 +15,7 @@ import { useItemAnalysisResult } from "@/components/scanner/item-analysis-result
 import { ValuationResultStage } from "@/components/scanner/valuation-result-stage";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { saveDealShelfItem } from "@/services/deal-shelf-service";
 import {
   getInventoryItem,
   saveAnalyzedItemToInventory,
@@ -47,6 +48,7 @@ export function ItemAnalysisResultScreen() {
   const [loading, setLoading] = useState(Boolean(itemId));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [savingDeal, setSavingDeal] = useState(false);
   const finalizedRef = useRef(false);
   const activeSessionId = scannerSession?.id;
   const activeSessionReset = scannerSession?.onReset;
@@ -110,11 +112,12 @@ export function ItemAnalysisResultScreen() {
   }, [clearScannerResult, scannerSession]);
 
   const handleSave = useCallback(async () => {
-    if (!scannerSession || saving || !userId) return;
+    if (!scannerSession || saving || savingDeal || !userId) return;
     setSaving(true);
     try {
       const saved = await saveAnalyzedItemToInventory({
         analysis: scannerSession.analysis,
+        modelFile: scannerSession.modelUrl,
         ownerId: userId,
         scanId: scannerSession.scanId,
       });
@@ -137,6 +140,39 @@ export function ItemAnalysisResultScreen() {
     finishScannerSession,
     router,
     saving,
+    savingDeal,
+    scannerSession,
+    userId,
+  ]);
+
+  const handleSaveToDealShelf = useCallback(async () => {
+    if (!scannerSession || saving || savingDeal || !userId) return;
+    setSavingDeal(true);
+    try {
+      await scannerSession.ensurePhotosSaved?.();
+      await saveDealShelfItem({
+        analysis: scannerSession.analysis,
+        modelFile: scannerSession.modelUrl,
+        ownerId: userId,
+        scanId: scannerSession.scanId,
+      });
+      finishScannerSession();
+      router.replace("/deal-shelf" as Href);
+    } catch (caught) {
+      Alert.alert(
+        "Could not park deal",
+        caught instanceof Error
+          ? caught.message
+          : "KeepFlip could not save this deal.",
+      );
+    } finally {
+      setSavingDeal(false);
+    }
+  }, [
+    finishScannerSession,
+    router,
+    saving,
+    savingDeal,
     scannerSession,
     userId,
   ]);
@@ -181,8 +217,17 @@ export function ItemAnalysisResultScreen() {
             }
             : undefined
         }
+        onSaveToDealShelf={
+          scannerSession
+            ? () => {
+              void handleSaveToDealShelf();
+            }
+            : undefined
+        }
         projectionLabel="SAVED ANALYSIS / MODEL AVAILABLE ON DEVICE"
+        savingDeal={savingDeal}
         saving={saving}
+        showMarketDecisionStamp={Boolean(scannerSession)}
         state={state}
         topInset={insets.top}
       />

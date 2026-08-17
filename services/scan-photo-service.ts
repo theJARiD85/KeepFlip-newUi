@@ -150,6 +150,29 @@ export async function getPrimaryScannerPhotoFileId(
   return getScannerPhotoFileId(ownerId, scanId);
 }
 
+export type SavedScannerPhotoSummary = {
+  coverPhotoId: string | null;
+  photoCount: number;
+};
+
+/**
+ * Returns the durable photo pointers for a completed scan. Shelf rows store
+ * these pointers rather than a device-only `file://` URI so they remain usable
+ * after the scanner session closes or the user signs in on another device.
+ */
+export async function getSavedScannerPhotoSummary(
+  ownerId: string,
+  scanId: string,
+): Promise<SavedScannerPhotoSummary> {
+  const rows = await listScannerPhotoRows(ownerId, scanId);
+  const primary = rows.find((row) => row.isPrimary === true) ?? rows[0];
+
+  return {
+    coverPhotoId: rowFileId(primary) || null,
+    photoCount: rows.length,
+  };
+}
+
 export async function saveScannerPhoto({
   imageUri,
   ownerId,

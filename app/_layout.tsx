@@ -42,11 +42,10 @@ export function AdsInitializer() {
       cacheCount={5}
       testing={isAdsTesting}
       onInitialized={(result) => {
-        // result.initialized
-        // result.errors
+        console.log('Appodeal initialized', result.initialized)
       }}
       onError={(error) => {
-        // Send this to your error reporting service.
+        console.log('Appodeal error', error)
       }}
     />
   );
