@@ -1,7 +1,15 @@
 import * as Haptics from 'expo-haptics';
 import { type Href, usePathname, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { BackHandler, Image, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import {
+  BackHandler,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -10,13 +18,14 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { EbayShoppingBagIcon } from '@/components/ebay/ebay-shopping-bag-icon';
 import {
   MENU_CLOSE_DURATION_MS,
   useKeepFlipMenu,
 } from '@/components/navigation/keepflip-menu-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 
 type MenuDestination = {
   eyebrow: string;
@@ -121,6 +130,16 @@ export function KeepFlipSlideDownMenu() {
     }
   };
 
+  const handleEbayNavigate = () => {
+    if (isMenuDisabled) return;
+    hapticSelection();
+    closeMenu();
+
+    if (!pathname.startsWith('/ebay-connect')) {
+      requestAnimationFrame(() => router.push('/ebay-connect' as Href));
+    }
+  };
+
   return (
     <View
       collapsable={false}
@@ -151,95 +170,113 @@ export function KeepFlipSlideDownMenu() {
               { height: panelHeight, paddingTop: insets.top + 14 },
               panelStyle,
             ]}>
-        <ScrollView
-          bounces={false}
-          contentContainerStyle={styles.panelContent}
-          contentInsetAdjustmentBehavior="never"
-          showsVerticalScrollIndicator={false}>
-          <View style={styles.brandRow}>
-            <View style={styles.brandLockup}>
-              <Image
-                source={require('@/assets/images/icon3.png')}
-                accessibilityLabel="KeepFlip"
-                style={styles.brandMark}
-              />
-              <View style={styles.brandCopy}>
-                <Text style={styles.brandName}>KEEPFLIP</Text>
-                <Text style={styles.brandDescriptor}>Price Smarter, Profit More</Text>
+            <ScrollView
+              bounces={false}
+              contentContainerStyle={styles.panelContent}
+              contentInsetAdjustmentBehavior="never"
+              showsVerticalScrollIndicator={false}>
+              <View style={styles.brandRow}>
+                <View style={styles.brandLockup}>
+                  <Image
+                    source={require('@/assets/images/icon3.png')}
+                    accessibilityLabel="KeepFlip"
+                    style={styles.brandMark}
+                  />
+                  <View style={styles.brandCopy}>
+                    <Text style={styles.brandName}>KEEPFLIP</Text>
+                    <Text style={styles.brandDescriptor}>Price Smarter, Profit More</Text>
+                  </View>
+                </View>
+
+                <Pressable
+                  accessibilityLabel="Close navigation menu"
+                  accessibilityRole="button"
+                  hitSlop={10}
+                  onPress={closeMenu}
+                  style={({ pressed }) => [styles.closeButton, pressed && styles.controlPressed]}>
+                  <IconSymbol name="xmark" size={22} color={theme.colors.goldBright} />
+                </Pressable>
               </View>
-            </View>
 
-            <Pressable
-              accessibilityLabel="Close navigation menu"
-              accessibilityRole="button"
-              hitSlop={10}
-              onPress={closeMenu}
-              style={({ pressed }) => [styles.closeButton, pressed && styles.controlPressed]}>
-              <IconSymbol name="xmark" size={22} color={theme.colors.goldBright} />
-            </Pressable>
-          </View>
+              <View pointerEvents="none" style={styles.goldRail} />
 
-          <View pointerEvents="none" style={styles.goldRail} />
+              <View style={styles.navigationBlock}>
+                <Text style={styles.sectionLabel}>NAVIGATION</Text>
 
-          <View style={styles.navigationBlock}>
-            <Text style={styles.sectionLabel}>NAVIGATION</Text>
+                <View style={styles.destinationList}>
+                  {destinations.map((destination, index) => {
+                    const destinationPath = destination.href.toString();
+                    const isActive =
+                      destinationPath === '/'
+                        ? pathname === '/'
+                        : pathname.startsWith(destinationPath);
 
-            <View style={styles.destinationList}>
-              {destinations.map((destination, index) => {
-                const destinationPath = destination.href.toString();
-                const isActive =
-                  destinationPath === '/'
-                    ? pathname === '/'
-                    : pathname.startsWith(destinationPath);
+                    return (
+                      <Pressable
+                        accessibilityLabel={`Open ${destination.label}`}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: isActive }}
+                        key={destinationPath}
+                        onPress={() => handleNavigate(destination)}
+                        style={({ pressed }) => [
+                          styles.destination,
+                          isActive && styles.destinationActive,
+                          pressed && styles.destinationPressed,
+                        ]}>
+                        <View style={[styles.destinationIcon, isActive && styles.destinationIconActive]}>
+                          <IconSymbol
+                            color={isActive ? theme.colors.goldBright : theme.colors.goldMuted}
+                            name={destination.icon}
+                            size={24}
+                          />
+                        </View>
 
-                return (
-                  <Pressable
-                    accessibilityLabel={`Open ${destination.label}`}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: isActive }}
-                    key={destinationPath}
-                    onPress={() => handleNavigate(destination)}
-                    style={({ pressed }) => [
-                      styles.destination,
-                      isActive && styles.destinationActive,
-                      pressed && styles.destinationPressed,
-                    ]}>
-                    <View style={[styles.destinationIcon, isActive && styles.destinationIconActive]}>
-                      <IconSymbol
-                        color={isActive ? theme.colors.goldBright : theme.colors.goldMuted}
-                        name={destination.icon}
-                        size={24}
-                      />
-                    </View>
+                        <View style={styles.destinationCopy}>
+                          <Text style={[styles.destinationLabel, isActive && styles.destinationLabelActive]}>
+                            {destination.label}
+                          </Text>
+                          <Text style={styles.destinationEyebrow}>{destination.eyebrow}</Text>
+                        </View>
 
-                    <View style={styles.destinationCopy}>
-                      <Text style={[styles.destinationLabel, isActive && styles.destinationLabelActive]}>
-                        {destination.label}
-                      </Text>
-                      <Text style={styles.destinationEyebrow}>{destination.eyebrow}</Text>
-                    </View>
+                        {isActive ? (
+                          <View accessibilityLabel="Current screen" style={styles.activeIndicator} />
+                        ) : (
+                          <IconSymbol name="chevron.right" size={19} color={theme.colors.goldMuted} />
+                        )}
 
-                    {isActive ? (
-                      <View accessibilityLabel="Current screen" style={styles.activeIndicator} />
-                    ) : (
-                      <IconSymbol name="chevron.right" size={19} color={theme.colors.goldMuted} />
-                    )}
+                        <Text style={styles.destinationNumber}>0{index + 1}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
 
-                    <Text style={styles.destinationNumber}>0{index + 1}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
+              <Pressable
+                accessibilityHint="Explains what connecting eBay enables before opening eBay sign-in"
+                accessibilityLabel="Link your eBay account"
+                accessibilityRole="button"
+                onPress={handleEbayNavigate}
+                style={({ pressed }) => [
+                  styles.ebayLink,
+                  pathname.startsWith('/ebay-connect') && styles.ebayLinkActive,
+                  pressed && styles.ebayLinkPressed,
+                ]}>
+                <EbayShoppingBagIcon size={29} />
+                <View style={styles.ebayLinkCopy}>
+                  <Text style={styles.ebayLinkText}>Link your eBay account</Text>
+                  <Text style={styles.ebayLinkEyebrow}>SOURCE · MESSAGE · CONNECT</Text>
+                </View>
+                <IconSymbol name="chevron.right" size={18} color={theme.colors.goldMuted} />
+              </Pressable>
 
-          <View style={styles.systemStatus}>
-            <View style={styles.systemStatusDot} />
-            <View style={styles.systemStatusCopy}>
-              <Text style={styles.systemStatusLabel}>KEEPFLIP VISION</Text>
-              <Text style={styles.systemStatusValue}>SYSTEM READY</Text>
-            </View>
-            <Text style={styles.systemStatusCode}>KF//01</Text>
-          </View>
+              <View style={styles.systemStatus}>
+                <View style={styles.systemStatusDot} />
+                <View style={styles.systemStatusCopy}>
+                  <Text style={styles.systemStatusLabel}>KEEPFLIP VISION</Text>
+                  <Text style={styles.systemStatusValue}>SYSTEM READY</Text>
+                </View>
+                <Text style={styles.systemStatusCode}>KF//01</Text>
+              </View>
             </ScrollView>
           </Animated.View>
         </>
@@ -450,6 +487,41 @@ const styles = StyleSheet.create({
     fontSize: 38,
     fontWeight: '900',
     letterSpacing: -2,
+  },
+  ebayLink: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: theme.radii.medium,
+    borderWidth: 1,
+    borderColor: 'rgba(242, 211, 138, 0.18)',
+    backgroundColor: 'rgba(6, 6, 9, 0.62)',
+  },
+  ebayLinkActive: {
+    borderColor: 'rgba(242, 211, 138, 0.36)',
+    backgroundColor: 'rgba(215, 168, 74, 0.09)',
+  },
+  ebayLinkPressed: {
+    opacity: 0.76,
+  },
+  ebayLinkCopy: {
+    minWidth: 0,
+    flex: 1,
+    gap: 2,
+  },
+  ebayLinkText: {
+    color: theme.colors.cream,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  ebayLinkEyebrow: {
+    color: theme.colors.textMuted,
+    fontSize: 7,
+    fontWeight: '900',
+    letterSpacing: 1.2,
   },
   systemStatus: {
     marginTop: 'auto',
