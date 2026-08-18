@@ -7,6 +7,8 @@ const {
 const NETWORK_INSPECTOR_PROPERTY = "EX_DEV_CLIENT_NETWORK_INSPECTOR";
 const MIN_SDK_PROPERTY = "android.minSdkVersion";
 const GRADLE_JVMARGS_PROPERTY = "org.gradle.jvmargs";
+const BUILT_IN_KOTLIN_PROPERTY = "android.builtInKotlin";
+const NEW_DSL_PROPERTY = "android.newDsl";
 const GRADLE_JVMARGS_VALUE =
   "-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8";
 
@@ -22,6 +24,8 @@ module.exports = function withAndroidValueRadarMemory(config) {
       NETWORK_INSPECTOR_PROPERTY,
       MIN_SDK_PROPERTY,
       GRADLE_JVMARGS_PROPERTY,
+      BUILT_IN_KOTLIN_PROPERTY,
+      NEW_DSL_PROPERTY,
     ]);
 
     gradleConfig.modResults = gradleConfig.modResults.filter(
@@ -44,6 +48,16 @@ module.exports = function withAndroidValueRadarMemory(config) {
         type: "property",
         key: GRADLE_JVMARGS_PROPERTY,
         value: GRADLE_JVMARGS_VALUE,
+      },
+      {
+        type: "property",
+        key: BUILT_IN_KOTLIN_PROPERTY,
+        value: "false",
+      },
+      {
+        type: "property",
+        key: NEW_DSL_PROPERTY,
+        value: "false",
       },
     );
 

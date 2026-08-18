@@ -1,0 +1,151 @@
+diff --git a/node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle b/node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle
+--- a/node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle
++++ b/node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle
+@@ -69 +69,0 @@ ext.useDefaultAndroidSdkVersions = {
+-      targetSdkVersion project.ext.safeExtGet("targetSdkVersion", 36)
+diff --git a/node_modules/expo-modules-core/expo-module-gradle-plugin/build.gradle.kts b/node_modules/expo-modules-core/expo-module-gradle-plugin/build.gradle.kts
+--- a/node_modules/expo-modules-core/expo-module-gradle-plugin/build.gradle.kts
++++ b/node_modules/expo-modules-core/expo-module-gradle-plugin/build.gradle.kts
+@@ -5,3 +5,3 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+ plugins {
+-  kotlin("jvm") version "2.1.20"
++  kotlin("jvm") version "2.3.21"
+   id("java-gradle-plugin")
+ }
+@@ -30,5 +30,5 @@ dependencies {
+   implementation(gradleApi())
+-  compileOnly("com.android.tools.build:gradle:8.5.0")
++  compileOnly("com.android.tools.build:gradle:9.3.0")
+   implementation("com.facebook.react:react-native-gradle-plugin")
+   implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+   implementation("io.github.lukmccall.pika:pika-gradle:0.3.2")
+@@ -46,2 +46,2 @@ java {
+-  sourceCompatibility = JavaVersion.VERSION_11
+-  targetCompatibility = JavaVersion.VERSION_11
++  sourceCompatibility = JavaVersion.VERSION_17
++  targetCompatibility = JavaVersion.VERSION_17
+@@ -61 +61 @@ tasks.withType<KotlinCompile> {
+-    jvmTarget.set(JvmTarget.JVM_11)
++    jvmTarget.set(JvmTarget.JVM_17)
+diff --git a/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/ProjectConfiguration.kt b/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/ProjectConfiguration.kt
+--- a/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/ProjectConfiguration.kt
++++ b/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/ProjectConfiguration.kt
+@@ -5 +5 @@ package expo.modules.plugin
+-import com.android.build.gradle.LibraryExtension
++import com.android.build.api.dsl.LibraryExtension
+@@ -74,4 +74,2 @@ internal fun Project.applyDefaultAndroidSdkVersions() {
+-      minSdk = rootProject.extra.safeGet("minSdkVersion")
+-        ?: logger.warnIfNotDefined("minSdkVersion", 24),
+-      targetSdk = rootProject.extra.safeGet("targetSdkVersion")
+-        ?: logger.warnIfNotDefined("targetSdkVersion", 36)
++      minSdk = rootProject.extra.safeGet("minSdkVersion")
++        ?: logger.warnIfNotDefined("minSdkVersion", 24)
+@@ -97,25 +95,28 @@ internal fun Project.applyPublishing(expoModulesExtension: ExpoModuleExtension) {
+     .applyPublishingVariant()
+ 
+   afterEvaluate {
+-    val publicationInfo = PublicationInfo(this)
+-
+-    publishingExtension()
+-      .publications
+-      .createReleasePublication(
+-        publicationInfo,
+-        expoModulesExtension.pomConfigurator
+-      )
+-
+-    createExpoPublishToMavenLocalTask(publicationInfo, expoModulesExtension)
+-
+-    val npmLocalRepositoryRelativePath = "local-maven-repo"
+-    val npmLocalRepository = File("${project.projectDir.parentFile}/${npmLocalRepositoryRelativePath}").toURI()
+-    publishingExtension().repositories.mavenLocal { mavenRepo ->
+-      mavenRepo.name = "NPMPackage"
+-      mavenRepo.url = npmLocalRepository
++    val project = this
++    components.matching { it.name == "release" }.all {
++      val publicationInfo = PublicationInfo(project)
++
++      project.publishingExtension()
++        .publications
++        .createReleasePublication(
++          publicationInfo,
++          expoModulesExtension.pomConfigurator
++        )
++
++      project.createExpoPublishToMavenLocalTask(publicationInfo, expoModulesExtension)
++
++      val npmLocalRepositoryRelativePath = "local-maven-repo"
++      val npmLocalRepository = File("${project.projectDir.parentFile}/${npmLocalRepositoryRelativePath}").toURI()
++      project.publishingExtension().repositories.mavenLocal { mavenRepo ->
++        mavenRepo.name = "NPMPackage"
++        mavenRepo.url = npmLocalRepository
++      }
++
++      project.createExpoPublishTask(publicationInfo, expoModulesExtension, npmLocalRepositoryRelativePath)
+     }
+-
+-    createExpoPublishTask(publicationInfo, expoModulesExtension, npmLocalRepositoryRelativePath)
+   }
+ }
+ 
+diff --git a/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/android/AndroidLibraryExtension.kt b/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/android/AndroidLibraryExtension.kt
+--- a/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/android/AndroidLibraryExtension.kt
++++ b/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/android/AndroidLibraryExtension.kt
+@@ -3 +3 @@ package expo.modules.plugin.android
+-import com.android.build.gradle.LibraryExtension
++import com.android.build.api.dsl.LibraryExtension
+@@ -5 +5 @@ import com.android.build.gradle.LibraryExtension
+-internal fun LibraryExtension.applySDKVersions(compileSdk: Int, minSdk: Int, targetSdk: Int) {
++internal fun LibraryExtension.applySDKVersions(compileSdk: Int, minSdk: Int) {
+@@ -9 +9,0 @@ internal fun LibraryExtension.applySDKVersions(compileSdk: Int, minSdk: Int, targetSdk: Int) {
+-    this@defaultConfig.targetSdk = targetSdk
+@@ -14 +13 @@ internal fun LibraryExtension.applyLinterOptions() {
+-  lintOptions.isAbortOnError = false
++  lint.abortOnError = false
+@@ -17,8 +16,8 @@ internal fun LibraryExtension.applyLinterOptions() {
+ }
+ 
+ internal fun LibraryExtension.applyPublishingVariant() {
+-  publishing { publishing ->
+-    publishing.singleVariant("release") {
++  publishing {
++    singleVariant("release") {
+      withSourcesJar()
+    }
+  }
+diff --git a/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/android/MavenPublicationExtension.kt b/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/android/MavenPublicationExtension.kt
+--- a/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/android/MavenPublicationExtension.kt
++++ b/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/android/MavenPublicationExtension.kt
+@@ -41,8 +41,8 @@ internal data class PublicationInfo(
+     artifactId = requireNotNull(project.androidLibraryExtension().namespace) {
+       "'android.namespace' is not defined"
+     },
+-    version = requireNotNull(project.androidLibraryExtension().defaultConfig.versionName) {
+-      "'android.defaultConfig.versionName' is not defined"
++    version = requireNotNull(project.version.toString().takeUnless { it == "unspecified" }) {
++      "'project.version' is not defined. Set `version = \"<x.y.z>\"` in the module's android/build.gradle."
+     },
+   )
+ 
+diff --git a/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/ExpoModulesGradlePlugin.kt b/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/ExpoModulesGradlePlugin.kt
+--- a/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/ExpoModulesGradlePlugin.kt
++++ b/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/ExpoModulesGradlePlugin.kt
+@@ -21,13 +21,17 @@ abstract class ExpoModulesGradlePlugin : Plugin<Project> {
+ 
+     with(project) {
+       applyDefaultPlugins()
+-      applyPikaPlugin()
++      if (expoModuleExtension.enableCompileTimeOptimization) {
++        applyPikaPlugin()
++      }
+       applyKotlin(kotlinVersion, kspVersion)
+       applyDefaultDependencies()
+       applyDefaultAndroidSdkVersions()
+ 
+       extensions.getByType(AndroidComponentsExtension::class.java).finalizeDsl {
+-        configurePika(shouldBeEnabled = expoModuleExtension.enableCompileTimeOptimization)
++        if (expoModuleExtension.enableCompileTimeOptimization) {
++          configurePika()
++        }
+ 
+         applyPublishing(expoModuleExtension)
+       }

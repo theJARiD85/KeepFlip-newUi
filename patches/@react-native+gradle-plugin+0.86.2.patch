@@ -1,0 +1,214 @@
+diff --git a/node_modules/@react-native/gradle-plugin/gradle/libs.versions.toml b/node_modules/@react-native/gradle-plugin/gradle/libs.versions.toml
+--- a/node_modules/@react-native/gradle-plugin/gradle/libs.versions.toml
++++ b/node_modules/@react-native/gradle-plugin/gradle/libs.versions.toml
+@@ -1,9 +1,9 @@
+ [versions]
+-agp = "8.12.0"
++agp = "9.3.0"
+ gson = "2.8.9"
+ guava = "31.0.1-jre"
+ javapoet = "1.13.0"
+ junit = "4.13.2"
+-kotlin = "2.1.20"
++kotlin = "2.3.21"
+ assertj = "3.25.1"
+ ktfmt = "0.22.0"
+diff --git a/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/build.gradle.kts b/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/build.gradle.kts
+--- a/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/build.gradle.kts
++++ b/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/build.gradle.kts
+@@ -57,4 +57,4 @@ dependencies {
+-// We intentionally don't build for Java 17 as users will see a cryptic bytecode version
+-// error first. Instead we produce a Java 11-compatible Gradle Plugin, so that AGP can print their
+-// nice message showing that JDK 11 (or 17) is required first
+-java { targetCompatibility = JavaVersion.VERSION_11 }
++// AGP 9 publishes Java 17 artifacts, so this plugin must compile for Java 17 as well.
++java {
++  sourceCompatibility = JavaVersion.VERSION_17
++  targetCompatibility = JavaVersion.VERSION_17
++}
+@@ -67,3 +67,2 @@ tasks.withType<KotlinCompile>().configureEach {
+-    apiVersion.set(KotlinVersion.KOTLIN_1_8)
+-    // See comment above on JDK 11 support
+-    jvmTarget.set(JvmTarget.JVM_11)
++    apiVersion.set(KotlinVersion.KOTLIN_1_9)
++    jvmTarget.set(JvmTarget.JVM_17)
+diff --git a/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/src/main/kotlin/com/facebook/react/ReactPlugin.kt b/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/src/main/kotlin/com/facebook/react/ReactPlugin.kt
+--- a/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/src/main/kotlin/com/facebook/react/ReactPlugin.kt
++++ b/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/src/main/kotlin/com/facebook/react/ReactPlugin.kt
+@@ -95,12 +95,21 @@ class ReactPlugin : Plugin<Project> {
+       configureCodegen(project, extension, rootExtension, isLibrary = false)
+       configureResources(project, extension)
+       configureBuildTypesForApp(project)
++
++      project.rootProject.allprojects { subproject ->
++        subproject.pluginManager.withPlugin("com.android.library") {
++          if (!subproject.state.executed) {
++            configureBuildConfigFieldsForLibraries(subproject)
++            configureNamespaceForLibraries(subproject)
++          }
++        }
++      }
+     }
+ 
+     // Library Only Configuration
+-    configureBuildConfigFieldsForLibraries(project)
+-    configureNamespaceForLibraries(project)
+     project.pluginManager.withPlugin("com.android.library") {
++      configureBuildConfigFieldsForLibraries(project)
++      configureNamespaceForLibraries(project)
+       configureCodegen(project, extension, rootExtension, isLibrary = true)
+     }
+   }
+@@ -234,12 +243,12 @@ class ReactPlugin : Plugin<Project> {
+     if (isLibrary) {
+       project.extensions.getByType(LibraryAndroidComponentsExtension::class.java).finalizeDsl { ext
+         ->
+-        ext.sourceSets.getByName("main").java.srcDir(generatedSrcDir.get().dir("java").asFile)
++        ext.sourceSets.getByName("main").java.directories.add(generatedSrcDir.get().dir("java").asFile.path)
+       }
+     } else {
+       project.extensions.getByType(ApplicationAndroidComponentsExtension::class.java).finalizeDsl {
+           ext ->
+-        ext.sourceSets.getByName("main").java.srcDir(generatedSrcDir.get().dir("java").asFile)
++        ext.sourceSets.getByName("main").java.directories.add(generatedSrcDir.get().dir("java").asFile.path)
+       }
+     }
+ 
+diff --git a/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/src/main/kotlin/com/facebook/react/utils/AgpConfiguratorUtils.kt b/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/src/main/kotlin/com/facebook/react/utils/AgpConfiguratorUtils.kt
+--- a/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/src/main/kotlin/com/facebook/react/utils/AgpConfiguratorUtils.kt
++++ b/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/src/main/kotlin/com/facebook/react/utils/AgpConfiguratorUtils.kt
+@@ -9,7 +9,6 @@ package com.facebook.react.utils
+ 
+ import com.android.build.api.variant.ApplicationAndroidComponentsExtension
+ import com.android.build.api.variant.LibraryAndroidComponentsExtension
+-import com.android.build.gradle.LibraryExtension
+ import com.facebook.react.ReactExtension
+ import com.facebook.react.utils.ProjectUtils.isEdgeToEdgeEnabled
+ import com.facebook.react.utils.ProjectUtils.isHermesEnabled
+@@ -77,14 +76,15 @@ internal object AgpConfiguratorUtils {
+     project.pluginManager.withPlugin("com.android.library", action)
+   }
+ 
+-  fun configureBuildConfigFieldsForLibraries(appProject: Project) {
+-    appProject.rootProject.allprojects { subproject ->
+-      subproject.pluginManager.withPlugin("com.android.library") {
+-        subproject.extensions
+-            .getByType(LibraryAndroidComponentsExtension::class.java)
+-            .finalizeDsl { ext -> ext.buildFeatures.buildConfig = true }
+-      }
++  fun configureBuildConfigFieldsForLibraries(project: Project) {
++    if (project.extensions.extraProperties.has(BUILD_CONFIG_CONFIGURED_PROPERTY)) {
++      return
+     }
++    project.extensions.extraProperties.set(BUILD_CONFIG_CONFIGURED_PROPERTY, true)
++
++    project.extensions
++        .getByType(LibraryAndroidComponentsExtension::class.java)
++        .finalizeDsl { ext -> ext.buildFeatures.buildConfig = true }
+   }
+ 
+   fun configureDevServerLocation(project: Project) {
+@@ -111,30 +111,34 @@ internal object AgpConfiguratorUtils {
+     project.pluginManager.withPlugin("com.android.library", action)
+   }
+ 
+-  fun configureNamespaceForLibraries(appProject: Project) {
+-    appProject.rootProject.allprojects { subproject ->
+-      subproject.pluginManager.withPlugin("com.android.library") {
+-        subproject.extensions
+-            .getByType(LibraryAndroidComponentsExtension::class.java)
+-            .finalizeDsl { ext ->
+-              if (ext.namespace == null) {
+-                val android = subproject.extensions.getByType(LibraryExtension::class.java)
+-                val manifestFile = android.sourceSets.getByName("main").manifest.srcFile
+-
+-                manifestFile
+-                    .takeIf { it.exists() }
+-                    ?.let { file ->
+-                      getPackageNameFromManifest(file)?.let { packageName ->
+-                        ext.namespace = packageName
+-                      }
+-                    }
+-              }
+-            }
+-      }
++  fun configureNamespaceForLibraries(project: Project) {
++    if (project.extensions.extraProperties.has(NAMESPACE_CONFIGURED_PROPERTY)) {
++      return
+     }
++    project.extensions.extraProperties.set(NAMESPACE_CONFIGURED_PROPERTY, true)
++
++    project.extensions
++        .getByType(LibraryAndroidComponentsExtension::class.java)
++        .finalizeDsl { ext ->
++          if (ext.namespace == null) {
++            val manifestFile =
++                project.layout.projectDirectory.file("src/main/AndroidManifest.xml").asFile
++
++            manifestFile
++                .takeIf { it.exists() }
++                ?.let { file ->
++                  getPackageNameFromManifest(file)?.let { packageName ->
++                    ext.namespace = packageName
++                  }
++                }
++          }
++        }
+   }
+ }
+ 
++private const val NAMESPACE_CONFIGURED_PROPERTY = "com.facebook.react.internal.namespaceConfigured"
++private const val BUILD_CONFIG_CONFIGURED_PROPERTY = "com.facebook.react.internal.buildConfigConfigured"
++
+ const val DEFAULT_DEV_SERVER_PORT = "8081"
+ 
+ fun getPackageNameFromManifest(manifest: File): String? {
+diff --git a/node_modules/@react-native/gradle-plugin/settings-plugin/build.gradle.kts b/node_modules/@react-native/gradle-plugin/settings-plugin/build.gradle.kts
+--- a/node_modules/@react-native/gradle-plugin/settings-plugin/build.gradle.kts
++++ b/node_modules/@react-native/gradle-plugin/settings-plugin/build.gradle.kts
+@@ -47,4 +47,4 @@ dependencies {
+-// We intentionally don't build for Java 17 as users will see a cryptic bytecode version
+-// error first. Instead we produce a Java 11-compatible Gradle Plugin, so that AGP can print their
+-// nice message showing that JDK 11 (or 17) is required first
+-java { targetCompatibility = JavaVersion.VERSION_11 }
++// AGP 9 publishes Java 17 artifacts, so this plugin must compile for Java 17 as well.
++java {
++  sourceCompatibility = JavaVersion.VERSION_17
++  targetCompatibility = JavaVersion.VERSION_17
++}
+@@ -57,3 +57,2 @@ tasks.withType<KotlinCompile>().configureEach {
+-    apiVersion.set(KotlinVersion.KOTLIN_1_8)
+-    // See comment above on JDK 11 support
+-    jvmTarget.set(JvmTarget.JVM_11)
++    apiVersion.set(KotlinVersion.KOTLIN_1_9)
++    jvmTarget.set(JvmTarget.JVM_17)
+diff --git a/node_modules/@react-native/gradle-plugin/shared/build.gradle.kts b/node_modules/@react-native/gradle-plugin/shared/build.gradle.kts
+--- a/node_modules/@react-native/gradle-plugin/shared/build.gradle.kts
++++ b/node_modules/@react-native/gradle-plugin/shared/build.gradle.kts
+@@ -30 +30,4 @@ dependencies {
+-java { targetCompatibility = JavaVersion.VERSION_11 }
++java {
++  sourceCompatibility = JavaVersion.VERSION_17
++  targetCompatibility = JavaVersion.VERSION_17
++}
+@@ -36,3 +39,2 @@ tasks.withType<KotlinCompile>().configureEach {
+-    apiVersion.set(KotlinVersion.KOTLIN_1_8)
+-    // See comment above on JDK 11 support
+-    jvmTarget.set(JvmTarget.JVM_11)
++    apiVersion.set(KotlinVersion.KOTLIN_1_9)
++    jvmTarget.set(JvmTarget.JVM_17)
+diff --git a/node_modules/@react-native/gradle-plugin/shared-testutil/build.gradle.kts b/node_modules/@react-native/gradle-plugin/shared-testutil/build.gradle.kts
+--- a/node_modules/@react-native/gradle-plugin/shared-testutil/build.gradle.kts
++++ b/node_modules/@react-native/gradle-plugin/shared-testutil/build.gradle.kts
+@@ -24 +24,4 @@ dependencies { implementation(libs.junit) }
+-java { targetCompatibility = JavaVersion.VERSION_11 }
++java {
++  sourceCompatibility = JavaVersion.VERSION_17
++  targetCompatibility = JavaVersion.VERSION_17
++}
+@@ -30,3 +33,2 @@ tasks.withType<KotlinCompile>().configureEach {
+-    apiVersion.set(KotlinVersion.KOTLIN_1_8)
+-    // See comment above on JDK 11 support
+-    jvmTarget.set(JvmTarget.JVM_11)
++    apiVersion.set(KotlinVersion.KOTLIN_1_9)
++    jvmTarget.set(JvmTarget.JVM_17)

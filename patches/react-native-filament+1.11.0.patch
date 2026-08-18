@@ -1,0 +1,9 @@
+diff --git a/node_modules/react-native-filament/android/build.gradle b/node_modules/react-native-filament/android/build.gradle
+--- a/node_modules/react-native-filament/android/build.gradle
++++ b/node_modules/react-native-filament/android/build.gradle
+@@ -85,2 +85,6 @@ android {
++  // AGP 9 otherwise selects its own default NDK for this library. Keep it
++  // aligned with the NDK version declared by the host Expo/React Native app.
++  ndkVersion getExtOrDefault("ndkversion")
++
+   if (supportsNamespace()) {

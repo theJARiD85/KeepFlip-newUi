@@ -15,6 +15,15 @@ pluginManagement {
     "../android/expo-gradle-plugin"
   ).absolutePath
   includeBuild(expoPluginsPath)
+
+  def expoModuleGradlePluginPath = new File(
+    providers.exec {
+      workingDir(rootDir)
+      commandLine("node", "--print", "require.resolve('expo-modules-core/package.json')")
+    }.standardOutput.asText.get().trim(),
+    "../expo-module-gradle-plugin"
+  ).absolutePath
+  includeBuild(expoModuleGradlePluginPath)
 }
 
 plugins {

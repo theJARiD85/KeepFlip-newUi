@@ -2,6 +2,16 @@ diff --git a/node_modules/react-native-vision-camera-resizer/android/build.gradl
 index 0000000..0000000 100644
 --- a/node_modules/react-native-vision-camera-resizer/android/build.gradle
 +++ b/node_modules/react-native-vision-camera-resizer/android/build.gradle
+@@ -7,3 +7,3 @@ buildscript {
+  dependencies {
+-    classpath "com.android.tools.build:gradle:9.2.1"
++    classpath "com.android.tools.build:gradle:9.3.0"
+  }
+@@ -48,4 +48,3 @@ android {
+  defaultConfig {
+    minSdkVersion getRequiredMinSdkVersion()
+-    targetSdkVersion getExtOrIntegerDefault("targetSdkVersion")
+    buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
 @@ -103,6 +103,7 @@ android {
    buildFeatures {
      buildConfig true

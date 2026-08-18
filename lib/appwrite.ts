@@ -150,6 +150,9 @@ export const APPWRITE = {
   ebaySoldCompsFunctionId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_EBAY_SOLD_COMPS_FUNCTION_ID,
   ),
+  ebayOauthFunctionId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_EBAY_OAUTH_FUNCTION_ID,
+  ),
   listingGeneratorFunctionId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_LISTING_GENERATOR_FUNCTION_ID,
   ),
