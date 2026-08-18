@@ -86,6 +86,7 @@ export default function AppShellLayout() {
             <Stack.Screen name="listing-guide" />
             <Stack.Screen name="repair-assist" />
             <Stack.Screen name="account" />
+            <Stack.Screen name="ebay-connect" />
           </Stack>
         </View>
       </ItemAnalysisResultProvider>
