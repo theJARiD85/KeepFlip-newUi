@@ -53,6 +53,12 @@ app-example
 /modules/keepflip-scan-proof/android/.gradle
 /modules/keepflip-scan-proof/android/.kotlin
 /backend
+/.appodeal-patch-work
+/.expo-dev-launcher-clean-patch
+/.gradle-pika-test
+/.gradle-user-home
+/.keepflip-gradle-user-home
+/.vision-resizer-clean-patch
 # Keep the eBay Function source reviewable and deployable. Their templates
 # contain placeholders only; all live credentials remain Appwrite variables.
 !/backend/
