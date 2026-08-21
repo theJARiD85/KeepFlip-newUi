@@ -1,8 +1,8 @@
 diff --git a/node_modules/@keepflip/expo-appodeal-native-ads/plugin/build/withAppodealNativeAds.js b/node_modules/@keepflip/expo-appodeal-native-ads/plugin/build/withAppodealNativeAds.js
-index 10ab3a2..d67801d 100644
+index 0000000..0000000 100644
 --- a/node_modules/@keepflip/expo-appodeal-native-ads/plugin/build/withAppodealNativeAds.js
 +++ b/node_modules/@keepflip/expo-appodeal-native-ads/plugin/build/withAppodealNativeAds.js
-@@ -31,6 +31,9 @@ const APPODEAL_REPOSITORIES = [
+@@ -30,6 +30,9 @@ const APPODEAL_REPOSITORIES = [
  
  const ADMOB_ADAPTER =
    'implementation("com.appodeal.ads.sdk.adapters:admob:25.2.0.0")';
@@ -12,7 +12,7 @@ index 10ab3a2..d67801d 100644
  
  function repositoryBlock(repository, indent = "    ") {
    const contentLines = repository.groups
-@@ -79,7 +82,10 @@ ${blocks}
+@@ -76,8 +79,11 @@ function addRepositories(source) {
  }
  
  function addAdMobAdapter(source) {
@@ -24,7 +24,7 @@ index 10ab3a2..d67801d 100644
      return source;
    }
  
-@@ -93,7 +99,7 @@ function addAdMobAdapter(source) {
+@@ -91,7 +97,7 @@ function addAdMobAdapter(source) {
    return source.replace(
      dependenciesPattern,
      (match) =>
@@ -32,4 +32,3 @@ index 10ab3a2..d67801d 100644
 +      `${match}\n    // Optional Appodeal AdMob adapter and its Bidon mediation bridge.\n    ${missingDependencies.join("\n    ")}`,
    );
  }
- 

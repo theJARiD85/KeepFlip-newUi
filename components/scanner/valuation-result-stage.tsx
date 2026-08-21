@@ -1906,7 +1906,7 @@ const styles = StyleSheet.create({
   gaugeLabels: { flexDirection: "row", justifyContent: "space-between" },
   gaugeLabelCenter: { alignItems: "center" },
   gaugeLabelRight: { alignItems: "flex-end" },
-  gaugeLabel: { fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: "900", letterSpacing: 0.8 },
+  gaugeLabel: { fontFamily: theme.fonts.radar, fontSize: 10, fontWeight: "900", letterSpacing: 0.8 },
   gaugeAmount: { color: "#FFFFFF", fontFamily: theme.fonts.radar, fontSize: 10, fontWeight: "900", fontVariant: ["tabular-nums"] },
   valuePanel: { flex: 1 },
   buyCeilingRow: {
@@ -1932,7 +1932,7 @@ const styles = StyleSheet.create({
   buyCeilingStatus: {
     color: "rgba(255, 255, 255, 0.52)",
     fontFamily: theme.fonts.radar,
-    fontSize: 6.5,
+    fontSize: 10,
     fontWeight: "800",
     letterSpacing: 0.55,
   },
@@ -1985,14 +1985,14 @@ const styles = StyleSheet.create({
   marketDecisionStampSignal: {
     flex: 1,
     fontFamily: theme.fonts.radar,
-    fontSize: 6,
+    fontSize: 9,
     fontWeight: "900",
     letterSpacing: 0.65,
     textAlign: "center",
   },
   marketDecisionStampConfidence: {
     fontFamily: theme.fonts.numbers,
-    fontSize: 6,
+    fontSize: 9,
     fontWeight: "900",
     letterSpacing: 0.4,
   },
@@ -2003,7 +2003,7 @@ const styles = StyleSheet.create({
   basisLine: {
     color: "rgba(255, 255, 255, 0.48)",
     fontFamily: theme.fonts.radar,
-    fontSize: 7,
+    fontSize: 10,
     fontWeight: "800",
     letterSpacing: 0.2,
   },
@@ -2026,7 +2026,7 @@ const styles = StyleSheet.create({
   profitStrategyCell: { flex: 1, minWidth: 0, gap: 2, alignItems: "center" },
   profitStrategyLabel: {
     fontFamily: theme.fonts.radar,
-    fontSize: 7,
+    fontSize: 10,
     fontWeight: "900",
     letterSpacing: 0.8,
   },

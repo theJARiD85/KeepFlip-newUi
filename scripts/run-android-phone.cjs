@@ -1,5 +1,4 @@
 const { spawn } = require("node:child_process");
-
 const expoCommand = process.platform === "win32" ? "expo.cmd" : "expo";
 const expoArgs = ["run:android", "--device", ...process.argv.slice(2)];
 

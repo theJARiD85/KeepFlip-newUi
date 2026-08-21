@@ -1,14 +1,18 @@
 const {
   AndroidConfig,
   withAndroidManifest,
+  withAppBuildGradle,
   withGradleProperties,
+  withProjectBuildGradle,
 } = require("expo/config-plugins");
 
 const NETWORK_INSPECTOR_PROPERTY = "EX_DEV_CLIENT_NETWORK_INSPECTOR";
 const MIN_SDK_PROPERTY = "android.minSdkVersion";
 const GRADLE_JVMARGS_PROPERTY = "org.gradle.jvmargs";
+const COMPILE_SDK_PROPERTY = "android.compileSdkVersion";
 const BUILT_IN_KOTLIN_PROPERTY = "android.builtInKotlin";
 const NEW_DSL_PROPERTY = "android.newDsl";
+const ANDROID_GRADLE_PLUGIN_VERSION = "8.13.2";
 const GRADLE_JVMARGS_VALUE =
   "-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8";
 
@@ -24,6 +28,7 @@ module.exports = function withAndroidValueRadarMemory(config) {
       NETWORK_INSPECTOR_PROPERTY,
       MIN_SDK_PROPERTY,
       GRADLE_JVMARGS_PROPERTY,
+      COMPILE_SDK_PROPERTY,
       BUILT_IN_KOTLIN_PROPERTY,
       NEW_DSL_PROPERTY,
     ]);
@@ -51,6 +56,11 @@ module.exports = function withAndroidValueRadarMemory(config) {
       },
       {
         type: "property",
+        key: COMPILE_SDK_PROPERTY,
+        value: "36",
+      },
+      {
+        type: "property",
         key: BUILT_IN_KOTLIN_PROPERTY,
         value: "false",
       },
@@ -62,6 +72,36 @@ module.exports = function withAndroidValueRadarMemory(config) {
     );
 
     return gradleConfig;
+  });
+
+  config = withProjectBuildGradle(config, (projectBuildGradle) => {
+    let contents = projectBuildGradle.modResults.contents;
+
+    const agpClasspathPattern =
+      /classpath\(['"]com\.android\.tools\.build:gradle(?::[^'"]+)?['"]\)/;
+    if (!agpClasspathPattern.test(contents)) {
+      throw new Error(
+        "Could not set the Android Gradle Plugin version: root classpath was not found.",
+      );
+    }
+    contents = contents.replace(
+      agpClasspathPattern,
+      `classpath('com.android.tools.build:gradle:${ANDROID_GRADLE_PLUGIN_VERSION}')`,
+    );
+
+    projectBuildGradle.modResults.contents = contents;
+    return projectBuildGradle;
+  });
+
+  config = withAppBuildGradle(config, (appBuildGradle) => {
+    const contents = appBuildGradle.modResults.contents;
+    if (!/apply plugin: ["']org\.jetbrains\.kotlin\.android["']/.test(contents)) {
+      appBuildGradle.modResults.contents = contents.replace(
+        /apply plugin: ["']com\.android\.application["']\r?\n/,
+        'apply plugin: "com.android.application"\napply plugin: "org.jetbrains.kotlin.android"\n',
+      );
+    }
+    return appBuildGradle;
   });
 
   return withAndroidManifest(config, (manifestConfig) => {

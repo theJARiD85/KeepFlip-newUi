@@ -116,6 +116,18 @@ export const APPWRITE = {
   marketplaceInquiriesTableId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_MARKETPLACE_INQUIRIES_TABLE_ID,
   ),
+  ledgerEntriesTableId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_LEDGER_ENTRIES_TABLE_ID,
+  ),
+  assistantTasksTableId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_ASSISTANT_TASKS_TABLE_ID,
+  ),
+  assistantActionRunsTableId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_ASSISTANT_ACTION_RUNS_TABLE_ID,
+  ),
+  assistantPreferencesTableId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_ASSISTANT_PREFERENCES_TABLE_ID,
+  ),
   itemImagesBucketId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_ITEM_IMAGES_BUCKET_ID,
   ),

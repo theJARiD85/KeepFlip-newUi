@@ -1,1 +1,1 @@
-const crypto = require('crypto'); console.log(crypto.randomBytes(24).toString('hex'));
+const crypto = require('crypto'); function generateToken(length) { const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-'; let result = ''; const bytes = crypto.randomBytes(length); for (let i = 0; i < length; i++) { result += chars[bytes[i] % chars.length]; } return result; } console.log(generateToken(48));

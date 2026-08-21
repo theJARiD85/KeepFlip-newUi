@@ -25,31 +25,6 @@ import {
   AppodealNativeAdsInitializer,
 } from "@keepflip/expo-appodeal-native-ads";
 
-export function AdsInitializer() {
-  const appodealKey =
-  process.env.EXPO_PUBLIC_APPODEAL_APP_KEY ?? "";
-
-  const isAdsTesting =
-  __DEV__ ||
-  process.env.EXPO_PUBLIC_APPODEAL_TESTING === "true";
-
-  let appodealInitializationStarted = false;
-
-
-  return (
-    <AppodealNativeAdsInitializer
-      appKey={appodealKey}
-      cacheCount={5}
-      testing={isAdsTesting}
-      onInitialized={(result) => {
-        console.log('Appodeal initialized', result.initialized)
-      }}
-      onError={(error) => {
-        console.log('Appodeal error', error)
-      }}
-    />
-  );
-}
 
 void SplashScreen
   .preventAutoHideAsync()
@@ -106,6 +81,12 @@ export default function RootLayout() {
     setIntroVisible,
   ] = useState(true);
 
+  const appodealKey =
+  process.env.EXPO_PUBLIC_APPODEAL_APP_KEY ?? "";
+
+  const isAdsTesting =
+  __DEV__ ||
+  process.env.EXPO_PUBLIC_APPODEAL_TESTING === "true";
 
   const [
     fontsLoaded,
@@ -202,7 +183,17 @@ export default function RootLayout() {
         >
           <KeepFlipAuthProvider>
           {!introVisible ? (
-            <AdsInitializer />
+            <AppodealNativeAdsInitializer
+              appKey={appodealKey}
+              cacheCount={5}
+              testing={isAdsTesting}
+              onInitialized={(result) => {
+                console.log('Appodeal initialized', result.initialized)
+              }}
+              onError={(error) => {
+                console.log('Appodeal error', error)
+              }}
+            />
           ) : null}
           <ProtectedRootStack />
           </KeepFlipAuthProvider>

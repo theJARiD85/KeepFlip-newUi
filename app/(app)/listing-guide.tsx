@@ -18,6 +18,10 @@ import {
   getInventoryItem,
   type InventoryItem,
 } from "@/services/inventory-service";
+import {
+  runListingGenerator,
+  type ListingGeneratorResult,
+} from "@/services/listingService";
 
 type ChecklistStep = {
   completeByDefault: boolean;
@@ -38,6 +42,11 @@ function formatMoney(value: number | null, currency: string) {
   } catch {
     return `$${value.toFixed(value >= 100 ? 0 : 2)}`;
   }
+}
+
+function formatConfidence(value: number | null) {
+  if (value == null || !Number.isFinite(value)) return 0;
+  return Math.round(value <= 1 ? value * 100 : value);
 }
 
 function listingTitle(item: InventoryItem) {
@@ -114,6 +123,15 @@ export default function ListingCreationGuideScreen() {
   const [confirmedStepIdsByItem, setConfirmedStepIdsByItem] = useState<
     Record<string, string[]>
   >({});
+  const [generatedListing, setGeneratedListing] = useState<
+    ListingGeneratorResult["listing"] | null
+  >(null);
+  const [listingConfidence, setListingConfidence] = useState<number | null>(null);
+  const [listingGenerationError, setListingGenerationError] = useState<string | null>(null);
+  const [generatingListing, setGeneratingListing] = useState(false);
+  const [selectedPlatform, setSelectedPlatform] = useState<
+    keyof ListingGeneratorResult["listing"]["platformCopy"]
+  >("ebay");
 
   const loadItem = useCallback(async () => {
     if (!userId) {
@@ -177,6 +195,27 @@ export default function ListingCreationGuideScreen() {
       return { ...current, [targetItemId]: nextIds };
     });
   }, []);
+
+  const generateListing = useCallback(async () => {
+    if (!item) return;
+
+    setGeneratingListing(true);
+    setListingGenerationError(null);
+    try {
+      const result = await runListingGenerator({ itemId: item.id });
+      setGeneratedListing(result.listing);
+      setListingConfidence(result.confidence);
+      setSelectedPlatform("ebay");
+    } catch (caughtError) {
+      setListingGenerationError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "KeepFlip could not generate this listing.",
+      );
+    } finally {
+      setGeneratingListing(false);
+    }
+  }, [item]);
 
   return (
     <KeepFlipBackground>
@@ -296,6 +335,115 @@ export default function ListingCreationGuideScreen() {
                       : "No saved market estimate. Analyze the item before setting a price."}
                   </Text>
                 </View>
+              </View>
+
+              <View style={styles.generatorCard}>
+                <View style={styles.sectionHeader}>
+                  <View style={styles.generatorHeading}>
+                    <Text style={styles.sectionEyebrow}>LISTING INJECTOR</Text>
+                    <Text style={styles.sectionTitle}>Generate the working draft</Text>
+                  </View>
+                  <View style={styles.generatorBadge}>
+                    <Text style={styles.generatorBadgeText}>AI DRAFT</Text>
+                  </View>
+                </View>
+                <Text style={styles.generatorDescription}>
+                  Use the saved item facts, photos, condition notes, and market reference to create platform-ready copy. Review every claim before publishing.
+                </Text>
+                <Pressable
+                  accessibilityLabel={generatedListing ? "Regenerate listing draft" : "Generate listing draft"}
+                  accessibilityRole="button"
+                  disabled={generatingListing}
+                  onPress={() => void generateListing()}
+                  style={({ pressed }) => [
+                    styles.generateButton,
+                    pressed && styles.pressed,
+                    generatingListing && styles.generateButtonBusy,
+                  ]}
+                >
+                  {generatingListing ? (
+                    <ActivityIndicator color={theme.colors.backgroundDeep} />
+                  ) : (
+                    <Text style={styles.generateButtonText}>
+                      {generatedListing ? "REGENERATE DRAFT" : "GENERATE LISTING DRAFT"}
+                    </Text>
+                  )}
+                </Pressable>
+                {listingGenerationError ? (
+                  <Text selectable style={styles.generatorError}>
+                    {listingGenerationError}
+                  </Text>
+                ) : null}
+
+                {generatedListing ? (
+                  <View style={styles.generatedCopy}>
+                    <View style={styles.generatedTitleRow}>
+                      <Text selectable style={styles.generatedTitle}>
+                        {generatedListing.title}
+                      </Text>
+                      <Text style={styles.confidenceText}>
+                        {formatConfidence(listingConfidence)}% CONFIDENCE
+                      </Text>
+                    </View>
+                    <Text selectable style={styles.generatedSubtitle}>
+                      {generatedListing.subtitle}
+                    </Text>
+                    <View style={styles.generatedSignals}>
+                      <Text style={styles.generatedSignal}>
+                        {generatedListing.conditionLabel.replace(/_/g, " ").toUpperCase()}
+                      </Text>
+                      <Text style={styles.generatedSignal}>
+                        TARGET ${generatedListing.priceRange.targetPrice.toFixed(0)}
+                      </Text>
+                      <Text style={styles.generatedSignal}>
+                        {generatedListing.sellingStrategy.replace(/_/g, " ").toUpperCase()}
+                      </Text>
+                    </View>
+                    <Text style={styles.fieldLabel}>PLATFORM COPY</Text>
+                    <View style={styles.platformTabs}>
+                      {(
+                        Object.keys(generatedListing.platformCopy) as Array<
+                          keyof ListingGeneratorResult["listing"]["platformCopy"]
+                        >
+                      ).map((platform) => (
+                        <Pressable
+                          key={platform}
+                          accessibilityRole="button"
+                          onPress={() => setSelectedPlatform(platform)}
+                          style={[
+                            styles.platformTab,
+                            selectedPlatform === platform && styles.platformTabActive,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.platformTabText,
+                              selectedPlatform === platform && styles.platformTabTextActive,
+                            ]}
+                          >
+                            {platform === "facebookMarketplace"
+                              ? "FACEBOOK"
+                              : platform === "offerUp"
+                                ? "OFFERUP"
+                                : "EBAY"}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                    <Text selectable style={styles.generatedBody}>
+                      {generatedListing.platformCopy[selectedPlatform]}
+                    </Text>
+                    <Text style={styles.fieldLabel}>CONDITION DISCLOSURE</Text>
+                    <Text selectable style={styles.generatedBody}>
+                      {generatedListing.conditionDisclosure}
+                    </Text>
+                    {generatedListing.warnings.length ? (
+                      <Text selectable style={styles.generatorWarning}>
+                        Review: {generatedListing.warnings.join(" ")}
+                      </Text>
+                    ) : null}
+                  </View>
+                ) : null}
               </View>
 
               <View style={styles.progressCard}>
@@ -628,6 +776,139 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     lineHeight: 20,
+  },
+  generatorCard: {
+    gap: 12,
+    padding: 20,
+    borderRadius: theme.radii.large,
+    borderWidth: 1,
+    borderColor: "rgba(0, 255, 255, 0.28)",
+    backgroundColor: "rgba(5, 14, 18, 0.88)",
+  },
+  generatorHeading: {
+    flex: 1,
+    gap: 2,
+  },
+  generatorBadge: {
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: theme.radii.pill,
+    borderWidth: 1,
+    borderColor: "rgba(0, 255, 255, 0.35)",
+    backgroundColor: "rgba(0, 255, 255, 0.08)",
+  },
+  generatorBadgeText: {
+    color: theme.colors.scannerCyan,
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 0.8,
+  },
+  generatorDescription: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  generateButton: {
+    minHeight: 46,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: theme.radii.medium,
+    backgroundColor: theme.colors.goldBright,
+  },
+  generateButtonBusy: {
+    opacity: 0.68,
+  },
+  generateButtonText: {
+    color: theme.colors.backgroundDeep,
+    fontFamily: theme.fonts.radar,
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 0.9,
+  },
+  generatorError: {
+    color: theme.colors.danger,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  generatedCopy: {
+    gap: 10,
+    paddingTop: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(0, 255, 255, 0.20)",
+  },
+  generatedTitleRow: {
+    gap: 6,
+  },
+  generatedTitle: {
+    color: theme.colors.cream,
+    fontFamily: theme.fonts.bold,
+    fontSize: 18,
+    fontWeight: "900",
+    lineHeight: 24,
+  },
+  confidenceText: {
+    color: theme.colors.scannerCyan,
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 0.8,
+  },
+  generatedSubtitle: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  generatedSignals: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  generatedSignal: {
+    paddingHorizontal: 7,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: "rgba(242, 211, 138, 0.20)",
+    color: theme.colors.goldBright,
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 0.6,
+  },
+  platformTabs: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  platformTab: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: "rgba(247, 242, 232, 0.16)",
+    backgroundColor: "rgba(247, 242, 232, 0.04)",
+  },
+  platformTabActive: {
+    borderColor: "rgba(0, 255, 255, 0.44)",
+    backgroundColor: "rgba(0, 255, 255, 0.10)",
+  },
+  platformTabText: {
+    color: theme.colors.textMuted,
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 0.6,
+  },
+  platformTabTextActive: {
+    color: theme.colors.scannerCyan,
+  },
+  generatedBody: {
+    color: theme.colors.cream,
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  generatorWarning: {
+    color: theme.colors.goldBright,
+    fontSize: 11,
+    lineHeight: 16,
   },
   progressCard: {
     gap: 15,

@@ -2650,6 +2650,224 @@
                     ]
                 }
             ]
+        },
+        {
+            "$id": "reseller_ledger_entries",
+            "$permissions": [
+                "create(\"users\")"
+            ],
+            "databaseId": "keepflip",
+            "name": "Reseller Ledger Entries",
+            "enabled": true,
+            "rowSecurity": true,
+            "columns": [
+                {
+                    "key": "ownerId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "itemId",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "saleGroupId",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "entryType",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "default": null,
+                    "format": "enum",
+                    "elements": [
+                        "inventory_purchase",
+                        "sale_proceeds",
+                        "marketplace_fee",
+                        "shipping_label",
+                        "refund",
+                        "repair_parts",
+                        "supplies",
+                        "software",
+                        "advertising",
+                        "storage",
+                        "mileage",
+                        "other_income",
+                        "other_expense"
+                    ]
+                },
+                {
+                    "key": "direction",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "default": null,
+                    "format": "enum",
+                    "elements": [
+                        "income",
+                        "expense"
+                    ]
+                },
+                {
+                    "key": "amountCents",
+                    "type": "integer",
+                    "required": true,
+                    "array": false,
+                    "default": null,
+                    "min": 1,
+                    "max": 1000000000
+                },
+                {
+                    "key": "currency",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 3,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "occurredAt",
+                    "type": "datetime",
+                    "required": true,
+                    "array": false,
+                    "default": null,
+                    "format": ""
+                },
+                {
+                    "key": "channel",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 64,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "source",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "default": "manual",
+                    "format": "enum",
+                    "elements": [
+                        "manual",
+                        "ebay_import",
+                        "migration"
+                    ]
+                },
+                {
+                    "key": "externalId",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 160,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "notes",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 2000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "receiptFileId",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "createdAt",
+                    "type": "datetime",
+                    "required": true,
+                    "array": false,
+                    "default": null,
+                    "format": ""
+                },
+                {
+                    "key": "updatedAt",
+                    "type": "datetime",
+                    "required": true,
+                    "array": false,
+                    "default": null,
+                    "format": ""
+                },
+                {
+                    "key": "voidedAt",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "format": ""
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "ledger_owner_occurred",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "ownerId",
+                        "occurredAt"
+                    ],
+                    "orders": [
+                        "ASC",
+                        "DESC"
+                    ]
+                },
+                {
+                    "key": "ledger_owner_item_occurred",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "ownerId",
+                        "itemId",
+                        "occurredAt"
+                    ],
+                    "orders": [
+                        "ASC",
+                        "ASC",
+                        "DESC"
+                    ]
+                },
+                {
+                    "key": "ledger_owner_type_occurred",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "ownerId",
+                        "entryType",
+                        "occurredAt"
+                    ],
+                    "orders": [
+                        "ASC",
+                        "ASC",
+                        "DESC"
+                    ]
+                }
+            ]
         }
     ],
     "buckets": [
