@@ -25,7 +25,7 @@ import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import {
   connectEbayAccount,
   getEbayConnectionStatus,
-} from '@/lib/connect-ebay-account';
+} from '@/services/ebayConnectionService';
 
 type EbayConnectionViewState =
   | 'checking'
@@ -173,9 +173,15 @@ export function CommandCenterScreen() {
       const result = await connectEbayAccount();
       if (connectionAttempt !== eBayRequestId.current) return;
 
-      if (result.type !== 'success') {
+      if (result.status !== 'connected') {
         setEbayState('disconnected');
-        setEbayErrorMessage('The eBay connection was canceled before it finished.');
+        setEbayErrorMessage(
+          result.status === 'declined'
+            ? 'You declined the eBay connection. Nothing was linked.'
+            : result.status === 'dismissed'
+              ? 'The eBay sign-in window was closed before it finished.'
+              : 'eBay could not complete the connection. Please try again.',
+        );
         return;
       }
 
