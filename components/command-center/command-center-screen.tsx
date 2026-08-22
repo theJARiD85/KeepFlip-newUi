@@ -173,7 +173,7 @@ export function CommandCenterScreen() {
       const result = await connectEbayAccount();
       if (connectionAttempt !== eBayRequestId.current) return;
 
-      if (result.type !== 'success') {
+      if (result.status !== 'connected') {
         setEbayState('disconnected');
         setEbayErrorMessage('The eBay connection was canceled before it finished.');
         return;

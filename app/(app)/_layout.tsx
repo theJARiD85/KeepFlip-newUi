@@ -87,11 +87,8 @@ export default function AppShellLayout() {
             <Stack.Screen name="repair-assist" />
             <Stack.Screen name="command-center" />
             <Stack.Screen name="account" />
-<<<<<<< Updated upstream
             <Stack.Screen name="ebay-connect" />
-=======
             <Stack.Screen name="books" />
->>>>>>> Stashed changes
           </Stack>
         </View>
       </ItemAnalysisResultProvider>

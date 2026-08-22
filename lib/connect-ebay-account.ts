@@ -16,73 +16,7 @@ const EBAY_RETURN_URL = Linking.createURL('ebay/connected', {
 
 WebBrowser.maybeCompleteAuthSession();
 
-<<<<<<< Updated upstream
-function normalizeEnvironment(value: string | undefined): EbayOAuthEnvironment | null {
-  const normalized = value?.trim().toLowerCase();
-  if (normalized === 'sandbox' || normalized === 'production') {
-    return normalized;
-  }
-  return null;
-}
-
-/**
- * A public app setting chooses which eBay environment this build starts.
- * Development builds default to Sandbox; release builds default to Production.
- */
-export function getEbayOAuthEnvironment(): EbayOAuthEnvironment {
-  return (
-    normalizeEnvironment(process.env.EXPO_PUBLIC_EBAY_OAUTH_ENVIRONMENT) ??
-    (__DEV__ ? 'sandbox' : 'production')
-  );
-}
-
-function firstQueryValue(value: unknown) {
-  if (Array.isArray(value)) {
-    return typeof value[0] === 'string' ? value[0] : undefined;
-  }
-  return typeof value === 'string' ? value : undefined;
-}
-
-function parseFunctionError(responseBody: string) {
-  try {
-    const payload = JSON.parse(responseBody || '{}') as { error?: unknown };
-    return typeof payload.error === 'string' && payload.error.trim()
-      ? payload.error.trim()
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-function parseOAuthResult(
-  url: string,
-  fallbackEnvironment: EbayOAuthEnvironment,
-): EbayConnectionResult {
-  const parsed = Linking.parse(url);
-  const status = firstQueryValue(parsed.queryParams?.ebay);
-  const returnedEnvironment = normalizeEnvironment(
-    firstQueryValue(parsed.queryParams?.ebayEnvironment),
-  );
-  const environment = returnedEnvironment ?? fallbackEnvironment;
-
-  if (
-    status === 'connected' ||
-    status === 'declined' ||
-    status === 'invalid' ||
-    status === 'error'
-  ) {
-    return { status, environment };
-  }
-
-  return { status: 'error', environment };
-}
-
-export async function connectEbayAccount(
-  environment: EbayOAuthEnvironment = getEbayOAuthEnvironment(),
-): Promise<EbayConnectionResult> {
-=======
 export type EbayConnectionStatus = 'connected' | 'not_connected';
-export type EbayOAuthEnvironment = 'sandbox' | 'production';
 
 export type EbayConnectionStatusResult = {
   connected: boolean;
@@ -92,28 +26,55 @@ export type EbayConnectionStatusResult = {
 type EbayOAuthResponse = {
   authorizationUrl?: unknown;
   connected?: unknown;
+  environment?: unknown;
   error?: unknown;
   ok?: unknown;
   status?: unknown;
 };
 
+function normalizeEnvironment(value: unknown): EbayOAuthEnvironment | null {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'sandbox' || normalized === 'production') return normalized;
+  return null;
+}
+
+function firstQueryValue(value: unknown) {
+  if (Array.isArray(value)) {
+    return typeof value[0] === 'string' ? value[0] : undefined;
+  }
+  return typeof value === 'string' ? value : undefined;
+}
+
+function parseOAuthResult(
+  url: string,
+  fallbackEnvironment: EbayOAuthEnvironment,
+): EbayConnectionResult {
+  const parsed = Linking.parse(url);
+  const status =
+    firstQueryValue(parsed.queryParams?.status) ??
+    firstQueryValue(parsed.queryParams?.ebay);
+  const returnedEnvironment = normalizeEnvironment(
+    firstQueryValue(parsed.queryParams?.environment) ??
+      firstQueryValue(parsed.queryParams?.ebayEnvironment),
+  );
+  const environment = returnedEnvironment ?? fallbackEnvironment;
+
+  if (status === 'connected') return { status, environment };
+  if (status === 'cancelled' || status === 'declined') {
+    return { status: 'declined', environment };
+  }
+  if (status === 'invalid') return { status, environment };
+
+  return { status: 'error', environment };
+}
+
 function ebayOAuthFunctionId() {
->>>>>>> Stashed changes
   const functionId = APPWRITE.ebayOauthFunctionId;
   if (!functionId) {
     throw new Error('eBay connection is not configured for this KeepFlip build.');
   }
 
-<<<<<<< Updated upstream
-  const execution = await functions.createExecution({
-    functionId,
-    body: JSON.stringify({
-      action: 'start',
-      environment,
-    }),
-    async: false,
-    xpath: '/',
-=======
   return functionId;
 }
 
@@ -150,7 +111,6 @@ async function executeEbayOAuthFunction(
     body: JSON.stringify({ action, environment }),
     async: false,
     xpath,
->>>>>>> Stashed changes
     method: ExecutionMethod.POST,
     headers: {
       'content-type': 'application/json',
@@ -178,29 +138,16 @@ async function executeEbayAction(
 
 export async function connectEbayAccount(
   environment: EbayOAuthEnvironment = getEbayOAuthEnvironment(),
-) {
+): Promise<EbayConnectionResult> {
   const execution = await executeEbayAction('start', environment);
 
   if (execution.responseStatusCode !== 200) {
     throw new Error(
-<<<<<<< Updated upstream
-      parseFunctionError(execution.responseBody) ??
-        'Could not start the eBay connection.',
-    );
-  }
-
-  const payload = JSON.parse(execution.responseBody || '{}') as {
-    authorizationUrl?: unknown;
-    environment?: unknown;
-  };
-
-=======
       responseError(execution.responseBody, 'Could not start eBay connection.'),
     );
   }
 
   const payload = parseResponse(execution.responseBody);
->>>>>>> Stashed changes
   if (typeof payload.authorizationUrl !== 'string' || !payload.authorizationUrl) {
     throw new Error('KeepFlip could not start the eBay connection.');
   }
