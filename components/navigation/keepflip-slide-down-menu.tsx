@@ -1,7 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { type Href, usePathname, useRouter } from 'expo-router';
-<<<<<<< Updated upstream
-import { useEffect, useState } from 'react';
+import { type ComponentProps, useEffect, useState } from 'react';
 import {
   BackHandler,
   Image,
@@ -11,10 +10,6 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-=======
-import { type ComponentProps, useEffect, useState } from 'react';
-import { BackHandler, Image, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
->>>>>>> Stashed changes
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -74,11 +69,7 @@ export function KeepFlipSlideDownMenu() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
-  const {
-    closeMenu,
-    isMenuOpen,
-    toggleMenu,
-  } = useKeepFlipMenu();
+  const { closeMenu, isMenuOpen, toggleMenu } = useKeepFlipMenu();
   const isMenuDisabled = pathname === '/walkthrough';
   const progress = useSharedValue(0);
   const [isMenuMounted, setIsMenuMounted] = useState(isMenuOpen);
@@ -169,11 +160,7 @@ export function KeepFlipSlideDownMenu() {
   };
 
   return (
-    <View
-      collapsable={false}
-      pointerEvents="box-none"
-      style={styles.overlayRoot}
-    >
+    <View collapsable={false} pointerEvents="box-none" style={styles.overlayRoot}>
       {isMenuMounted && !isMenuDisabled ? (
         <>
           <Animated.View
@@ -198,7 +185,6 @@ export function KeepFlipSlideDownMenu() {
               { height: panelHeight, paddingTop: insets.top + 14 },
               panelStyle,
             ]}>
-<<<<<<< Updated upstream
             <ScrollView
               bounces={false}
               contentContainerStyle={styles.panelContent}
@@ -213,7 +199,7 @@ export function KeepFlipSlideDownMenu() {
                   />
                   <View style={styles.brandCopy}>
                     <Text style={styles.brandName}>KEEPFLIP</Text>
-                    <Text style={styles.brandDescriptor}>Price Smarter, Profit More</Text>
+                    <Text style={styles.brandDescriptor}>Find Better, Flip Smarter.</Text>
                   </View>
                 </View>
 
@@ -222,26 +208,12 @@ export function KeepFlipSlideDownMenu() {
                   accessibilityRole="button"
                   hitSlop={10}
                   onPress={closeMenu}
-                  style={({ pressed }) => [styles.closeButton, pressed && styles.controlPressed]}>
+                  style={({ pressed }) => [
+                    styles.closeButton,
+                    pressed && styles.controlPressed,
+                  ]}>
                   <IconSymbol name="xmark" size={22} color={theme.colors.goldBright} />
                 </Pressable>
-=======
-        <ScrollView
-          bounces={false}
-          contentContainerStyle={styles.panelContent}
-          contentInsetAdjustmentBehavior="never"
-          showsVerticalScrollIndicator={false}>
-          <View style={styles.brandRow}>
-            <View style={styles.brandLockup}>
-              <Image
-                source={require('@/assets/images/icon3.png')}
-                accessibilityLabel="KeepFlip"
-                style={styles.brandMark}
-              />
-              <View style={styles.brandCopy}>
-                <Text style={styles.brandName}>KEEPFLIP</Text>
-                <Text style={styles.brandDescriptor}>Find Better, Flip Smarter.</Text>
->>>>>>> Stashed changes
               </View>
 
               <View pointerEvents="none" style={styles.goldRail} />
@@ -252,12 +224,8 @@ export function KeepFlipSlideDownMenu() {
                 <View style={styles.destinationList}>
                   {destinations.map((destination, index) => {
                     const destinationPath = destination.href.toString();
-                    const isActive =
-                      destinationPath === '/'
-                        ? pathname === '/'
-                        : pathname.startsWith(destinationPath);
+                    const isActive = isDestinationActive(destinationPath, pathname);
 
-<<<<<<< Updated upstream
                     return (
                       <Pressable
                         accessibilityLabel={`Open ${destination.label}`}
@@ -270,31 +238,46 @@ export function KeepFlipSlideDownMenu() {
                           isActive && styles.destinationActive,
                           pressed && styles.destinationPressed,
                         ]}>
-                        <View style={[styles.destinationIcon, isActive && styles.destinationIconActive]}>
+                        <View
+                          style={[
+                            styles.destinationIcon,
+                            isActive && styles.destinationIconActive,
+                          ]}>
                           <IconSymbol
-                            color={isActive ? theme.colors.goldBright : theme.colors.goldMuted}
+                            color={
+                              isActive
+                                ? theme.colors.goldBright
+                                : theme.colors.goldMuted
+                            }
                             name={destination.icon}
                             size={24}
                           />
                         </View>
-=======
-            <View style={styles.destinationList}>
-              {destinations.map((destination, index) => {
-                const destinationPath = destination.href.toString();
-                const isActive = isDestinationActive(destinationPath, pathname);
->>>>>>> Stashed changes
 
                         <View style={styles.destinationCopy}>
-                          <Text style={[styles.destinationLabel, isActive && styles.destinationLabelActive]}>
+                          <Text
+                            style={[
+                              styles.destinationLabel,
+                              isActive && styles.destinationLabelActive,
+                            ]}>
                             {destination.label}
                           </Text>
-                          <Text style={styles.destinationEyebrow}>{destination.eyebrow}</Text>
+                          <Text style={styles.destinationEyebrow}>
+                            {destination.eyebrow}
+                          </Text>
                         </View>
 
                         {isActive ? (
-                          <View accessibilityLabel="Current screen" style={styles.activeIndicator} />
+                          <View
+                            accessibilityLabel="Current screen"
+                            style={styles.activeIndicator}
+                          />
                         ) : (
-                          <IconSymbol name="chevron.right" size={19} color={theme.colors.goldMuted} />
+                          <IconSymbol
+                            name="chevron.right"
+                            size={19}
+                            color={theme.colors.goldMuted}
+                          />
                         )}
 
                         <Text style={styles.destinationNumber}>0{index + 1}</Text>
@@ -337,9 +320,7 @@ export function KeepFlipSlideDownMenu() {
 
       <View
         accessibilityElementsHidden={isMenuDisabled}
-        importantForAccessibility={
-          isMenuDisabled ? 'no-hide-descendants' : 'auto'
-        }
+        importantForAccessibility={isMenuDisabled ? 'no-hide-descendants' : 'auto'}
         pointerEvents={isMenuDisabled || isMenuOpen ? 'none' : 'auto'}
         style={[
           styles.triggerWrap,
