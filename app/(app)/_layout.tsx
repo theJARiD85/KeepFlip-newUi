@@ -65,7 +65,6 @@ function WalkthroughAutoLauncher() {
 }
 
 export default function AppShellLayout() {
-
   return (
     <KeepFlipMenuProvider>
       <ItemAnalysisResultProvider>
@@ -87,11 +86,8 @@ export default function AppShellLayout() {
             <Stack.Screen name="repair-assist" />
             <Stack.Screen name="command-center" />
             <Stack.Screen name="account" />
-<<<<<<< Updated upstream
             <Stack.Screen name="ebay-connect" />
-=======
             <Stack.Screen name="books" />
->>>>>>> Stashed changes
           </Stack>
         </View>
       </ItemAnalysisResultProvider>
@@ -101,6 +97,6 @@ export default function AppShellLayout() {
 
 const styles = StyleSheet.create({
   root: {
-    flex: 1
+    flex: 1,
   },
 });
