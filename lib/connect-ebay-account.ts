@@ -93,7 +93,7 @@ function responseError(responseBody: string, fallback: string) {
     : fallback;
 }
 
-type EbayOAuthAction = 'start' | 'status';
+type EbayOAuthAction = 'connect' | 'status';
 
 export function getEbayOAuthEnvironment(): EbayOAuthEnvironment {
   const configured = process.env.EXPO_PUBLIC_EBAY_OAUTH_ENVIRONMENT?.trim().toLowerCase();
@@ -101,16 +101,19 @@ export function getEbayOAuthEnvironment(): EbayOAuthEnvironment {
   return __DEV__ ? 'sandbox' : 'production';
 }
 
+function ebayOAuthPath(action: EbayOAuthAction) {
+  return action === 'connect' ? '/connect' : '/status';
+}
+
 async function executeEbayOAuthFunction(
   action: EbayOAuthAction,
   environment: EbayOAuthEnvironment,
-  xpath = '/',
 ) {
   return functions.createExecution({
     functionId: ebayOAuthFunctionId(),
-    body: JSON.stringify({ action, environment }),
+    body: JSON.stringify({ environment }),
     async: false,
-    xpath,
+    xpath: ebayOAuthPath(action),
     method: ExecutionMethod.POST,
     headers: {
       'content-type': 'application/json',
@@ -118,28 +121,10 @@ async function executeEbayOAuthFunction(
   });
 }
 
-async function executeEbayAction(
-  action: EbayOAuthAction,
-  environment: EbayOAuthEnvironment,
-) {
-  const execution = await executeEbayOAuthFunction(action, environment);
-
-  // The deployed keepflip-ebay-oauth Function uses POST / with an action.
-  // Keep compatibility with the newer local Function while deployments are
-  // being reconciled; its route returns 404 for the root path.
-  if (execution.responseStatusCode !== 404) return execution;
-
-  return executeEbayOAuthFunction(
-    action === 'start' ? 'start' : 'status',
-    environment,
-    action === 'start' ? '/connect' : '/status',
-  );
-}
-
 export async function connectEbayAccount(
   environment: EbayOAuthEnvironment = getEbayOAuthEnvironment(),
 ): Promise<EbayConnectionResult> {
-  const execution = await executeEbayAction('start', environment);
+  const execution = await executeEbayOAuthFunction('connect', environment);
 
   if (execution.responseStatusCode !== 200) {
     throw new Error(
@@ -175,7 +160,7 @@ export async function connectEbayAccount(
 export async function getEbayConnectionStatus(
   environment: EbayOAuthEnvironment = getEbayOAuthEnvironment(),
 ): Promise<EbayConnectionStatusResult> {
-  const execution = await executeEbayAction('status', environment);
+  const execution = await executeEbayOAuthFunction('status', environment);
   if (execution.responseStatusCode !== 200) {
     throw new Error(
       responseError(
