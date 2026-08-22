@@ -22,7 +22,7 @@ import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import {
   getEbayConnectionStatus,
   type EbayConnectionStatusResult,
-} from '@/lib/connect-ebay-account';
+} from '@/services/ebayConnectionService';
 
 function formattedMemberDate(value: string) {
   const date = new Date(value);
