@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
-import { type Href, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { type Href, useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -13,11 +13,16 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
+import { EbayShoppingBagIcon } from '@/components/ebay/ebay-shopping-bag-icon';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipControlRow } from '@/components/ui/keepflip-control-row';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
+import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
+import {
+  getEbayConnectionStatus,
+  type EbayConnectionStatusResult,
+} from '@/lib/connect-ebay-account';
 
 function formattedMemberDate(value: string) {
   const date = new Date(value);
@@ -39,6 +44,48 @@ export default function AccountScreen() {
   const insets = useSafeAreaInsets();
   const { isBusy, signOut, user } = useKeepFlipAuth();
   const [signOutError, setSignOutError] = useState<string | null>(null);
+  const [ebayConnection, setEbayConnection] =
+    useState<EbayConnectionStatusResult | null>(null);
+  const [ebayConnectionLoading, setEbayConnectionLoading] = useState(false);
+  const [ebayConnectionError, setEbayConnectionError] = useState<string | null>(null);
+
+  const userId = user?.$id;
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!userId) {
+        setEbayConnection(null);
+        setEbayConnectionError(null);
+        setEbayConnectionLoading(false);
+        return;
+      }
+
+      let cancelled = false;
+      setEbayConnectionLoading(true);
+      setEbayConnectionError(null);
+
+      void getEbayConnectionStatus()
+        .then((status) => {
+          if (!cancelled) setEbayConnection(status);
+        })
+        .catch((error) => {
+          if (cancelled) return;
+          setEbayConnection(null);
+          setEbayConnectionError(
+            error instanceof Error
+              ? error.message
+              : 'KeepFlip could not verify the eBay connection.',
+          );
+        })
+        .finally(() => {
+          if (!cancelled) setEbayConnectionLoading(false);
+        });
+
+      return () => {
+        cancelled = true;
+      };
+    }, [userId]),
+  );
 
   if (!user) return null;
 
@@ -46,6 +93,24 @@ export default function AccountScreen() {
   const avatarInitial = (displayName[0] || user.email[0] || 'K').toUpperCase();
   const appVersion =
     Constants.nativeAppVersion ?? Constants.expoConfig?.version ?? '2.0.7';
+
+  const ebayDescription = ebayConnectionLoading
+    ? 'Checking your eBay authorization with KeepFlip.'
+    : ebayConnectionError
+      ? 'Connection status is unavailable. Open eBay connection to retry.'
+      : ebayConnection?.needsReconnect
+        ? 'Your saved eBay authorization needs to be renewed.'
+        : ebayConnection?.connected
+          ? `Authorized for ${ebayConnection.environment === 'sandbox' ? 'eBay Sandbox' : 'eBay'} features.`
+          : 'Connect eBay for authorized sourcing and messaging features.';
+
+  const ebayStatus = ebayConnectionError
+    ? { label: 'CHECK', tone: 'danger' as const }
+    : ebayConnection?.needsReconnect
+      ? { label: 'RECONNECT', tone: 'warning' as const }
+      : ebayConnection?.connected
+        ? { label: 'CONNECTED', tone: 'active' as const }
+        : { label: 'NOT CONNECTED', tone: 'muted' as const };
 
   const handleSignOut = async () => {
     if (isBusy) return;
@@ -80,7 +145,7 @@ export default function AccountScreen() {
           <Text style={styles.eyebrow}>KEEPFLIP / ACCOUNT</Text>
           <Text style={styles.title}>Account & access</Text>
           <Text style={styles.subtitle}>
-            Your identity, security, data controls, and device session.
+            Your identity, security, data controls, and connected services.
           </Text>
         </Animated.View>
 
@@ -148,7 +213,30 @@ export default function AccountScreen() {
           </View>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.duration(260).delay(135)} style={styles.section}>
+        <Animated.View entering={FadeInDown.duration(260).delay(120)} style={styles.section}>
+          <View style={styles.sectionHeading}>
+            <Text style={styles.sectionEyebrow}>CONNECTED SERVICES</Text>
+            <Text style={styles.sectionTitle}>Marketplace access</Text>
+          </View>
+          <View style={styles.settingsList}>
+            <KeepFlipControlRow
+              accent="cyan"
+              accessibilityHint="Opens the eBay connection screen."
+              actionBusy={ebayConnectionLoading}
+              actionLabel={ebayConnection?.connected ? 'MANAGE' : 'CONNECT'}
+              description={ebayDescription}
+              label="eBay"
+              leading={<EbayShoppingBagIcon size={24} />}
+              onPress={() => {
+                hapticSelection();
+                router.push('/ebay-connect' as Href);
+              }}
+              status={ebayConnectionLoading ? undefined : ebayStatus}
+            />
+          </View>
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.duration(260).delay(150)} style={styles.section}>
           <View style={styles.sectionHeading}>
             <Text style={styles.sectionEyebrow}>LEGAL & POLICY</Text>
             <Text style={styles.sectionTitle}>Your data and terms</Text>
