@@ -29,6 +29,7 @@ type EbayOAuthResponse = {
   environment?: unknown;
   error?: unknown;
   ok?: unknown;
+  state?: unknown;
   status?: unknown;
 };
 
@@ -76,6 +77,88 @@ function ebayOAuthFunctionId() {
   }
 
   return functionId;
+}
+
+function configuredEbayOAuthLoginUrl(environment: EbayOAuthEnvironment) {
+  const configuredUrl = process.env.EXPO_PUBLIC_EBAY_OAUTH_LOGIN_URL?.trim();
+  if (!configuredUrl) {
+    throw new Error(
+      'eBay connection is not configured for this KeepFlip environment.',
+    );
+  }
+
+  let url: URL;
+  try {
+    url = new URL(configuredUrl);
+  } catch {
+    throw new Error('The configured eBay login URL is invalid.');
+  }
+
+  if (url.protocol !== 'https:') {
+    throw new Error('The configured eBay login URL must use HTTPS.');
+  }
+
+  const expectedAuthorizeHost =
+    environment === 'sandbox' ? 'auth.sandbox.ebay.com' : 'auth.ebay.com';
+
+  if (url.hostname === 'signin.ebay.com') {
+    const nestedAuthorizeUrl = url.searchParams.get('ru');
+    if (!nestedAuthorizeUrl) {
+      throw new Error('The configured eBay sign-in URL is missing its authorize URL.');
+    }
+
+    let authorizeUrl: URL;
+    try {
+      authorizeUrl = new URL(nestedAuthorizeUrl);
+    } catch {
+      throw new Error('The configured eBay sign-in URL has an invalid authorize URL.');
+    }
+
+    if (
+      authorizeUrl.protocol !== 'https:' ||
+      authorizeUrl.hostname !== expectedAuthorizeHost
+    ) {
+      throw new Error(
+        'The configured eBay login URL does not match the ' +
+          environment +
+          ' environment.',
+      );
+    }
+
+    return { url, nestedAuthorizeUrl: authorizeUrl };
+  }
+
+  if (
+    url.hostname !== expectedAuthorizeHost ||
+    url.pathname !== '/oauth2/authorize'
+  ) {
+    throw new Error(
+      'The configured eBay login URL does not match the ' +
+        environment +
+        ' environment.',
+    );
+  }
+
+  return { url, nestedAuthorizeUrl: null };
+}
+
+function loginUrlWithState(
+  environment: EbayOAuthEnvironment,
+  state: string,
+) {
+  const configured = configuredEbayOAuthLoginUrl(environment);
+
+  if (configured.nestedAuthorizeUrl) {
+    configured.nestedAuthorizeUrl.searchParams.set('state', state);
+    configured.url.searchParams.set(
+      'ru',
+      configured.nestedAuthorizeUrl.toString(),
+    );
+  } else {
+    configured.url.searchParams.set('state', state);
+  }
+
+  return configured.url.toString();
 }
 
 function parseResponse(responseBody: string): EbayOAuthResponse {
@@ -133,8 +216,8 @@ export async function connectEbayAccount(
   }
 
   const payload = parseResponse(execution.responseBody);
-  if (typeof payload.authorizationUrl !== 'string' || !payload.authorizationUrl) {
-    throw new Error('KeepFlip could not start the eBay connection.');
+  if (typeof payload.state !== 'string' || !payload.state) {
+    throw new Error('KeepFlip did not receive a secure eBay connection state.');
   }
 
   const responseEnvironment = normalizeEnvironment(
@@ -143,7 +226,7 @@ export async function connectEbayAccount(
   const activeEnvironment = responseEnvironment ?? environment;
 
   const result = await WebBrowser.openAuthSessionAsync(
-    payload.authorizationUrl,
+    loginUrlWithState(activeEnvironment, payload.state),
     EBAY_RETURN_URL,
   );
 
