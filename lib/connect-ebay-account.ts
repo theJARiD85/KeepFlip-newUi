@@ -79,86 +79,48 @@ function ebayOAuthFunctionId() {
   return functionId;
 }
 
-function configuredEbayOAuthLoginUrl(environment: EbayOAuthEnvironment) {
-  const configuredUrl = process.env.EXPO_PUBLIC_EBAY_OAUTH_LOGIN_URL?.trim();
-  if (!configuredUrl) {
+function authorizationUrlFromResponse(
+  environment: EbayOAuthEnvironment,
+  value: unknown,
+  state: string,
+) {
+  if (typeof value !== "string" || !value.trim()) {
     throw new Error(
-      'eBay connection is not configured for this KeepFlip environment.',
+      "KeepFlip did not receive an eBay authorization URL from the backend.",
     );
   }
 
   let url: URL;
   try {
-    url = new URL(configuredUrl);
+    url = new URL(value);
   } catch {
-    throw new Error('The configured eBay login URL is invalid.');
-  }
-
-  if (url.protocol !== 'https:') {
-    throw new Error('The configured eBay login URL must use HTTPS.');
+    throw new Error("The eBay authorization URL returned by the backend is invalid.");
   }
 
   const expectedAuthorizeHost =
-    environment === 'sandbox' ? 'auth.sandbox.ebay.com' : 'auth.ebay.com';
-
-  if (url.hostname === 'signin.ebay.com') {
-    const nestedAuthorizeUrl = url.searchParams.get('ru');
-    if (!nestedAuthorizeUrl) {
-      throw new Error('The configured eBay sign-in URL is missing its authorize URL.');
-    }
-
-    let authorizeUrl: URL;
-    try {
-      authorizeUrl = new URL(nestedAuthorizeUrl);
-    } catch {
-      throw new Error('The configured eBay sign-in URL has an invalid authorize URL.');
-    }
-
-    if (
-      authorizeUrl.protocol !== 'https:' ||
-      authorizeUrl.hostname !== expectedAuthorizeHost
-    ) {
-      throw new Error(
-        'The configured eBay login URL does not match the ' +
-          environment +
-          ' environment.',
-      );
-    }
-
-    return { url, nestedAuthorizeUrl: authorizeUrl };
-  }
+    environment === "sandbox" ? "auth.sandbox.ebay.com" : "auth.ebay.com";
 
   if (
+    url.protocol !== "https:" ||
     url.hostname !== expectedAuthorizeHost ||
-    url.pathname !== '/oauth2/authorize'
+    url.pathname !== "/oauth2/authorize"
   ) {
     throw new Error(
-      'The configured eBay login URL does not match the ' +
+      "The eBay authorization URL returned by the backend does not match the " +
         environment +
-        ' environment.',
+        " environment.",
     );
   }
 
-  return { url, nestedAuthorizeUrl: null };
-}
-
-function loginUrlWithState(
-  environment: EbayOAuthEnvironment,
-  state: string,
-) {
-  const configured = configuredEbayOAuthLoginUrl(environment);
-
-  if (configured.nestedAuthorizeUrl) {
-    configured.nestedAuthorizeUrl.searchParams.set('state', state);
-    configured.url.searchParams.set(
-      'ru',
-      configured.nestedAuthorizeUrl.toString(),
-    );
-  } else {
-    configured.url.searchParams.set('state', state);
+  if (url.searchParams.get("response_type") !== "code") {
+    throw new Error("The eBay authorization URL is missing response_type=code.");
   }
 
-  return configured.url.toString();
+  if (url.searchParams.get("state") !== state) {
+    throw new Error("The eBay authorization URL does not contain the issued state.");
+  }
+
+  return url.toString();
 }
 
 function parseResponse(responseBody: string): EbayOAuthResponse {

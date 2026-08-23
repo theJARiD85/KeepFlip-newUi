@@ -4,7 +4,7 @@
     "slug": "keepflip",
     "version": "2.0.7",
     "orientation": "portrait",
-    "icon": "@/assets/images/icon.png",
+    "icon": "./assets/images/icon.png",
     "scheme": "keepflip",
     "userInterfaceStyle": "dark",
     "ios": {
@@ -17,28 +17,28 @@
     "android": {
       "package": "com.keepflip.app",
       "versionCode": 18,
-      "googleServicesFile": "@/config/android/google-services.json",
+      "googleServicesFile": "./config/android/google-services.json",
       "permissions": [
         "android.permission.CAMERA",
         "com.google.android.gms.permission.AD_ID"
       ],
       "adaptiveIcon": {
         "backgroundColor": "#030305",
-        "foregroundImage": "@/assets/images/icon.png"
+        "foregroundImage": "./assets/images/icon.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
-      "favicon": "@/assets/images/icon.png"
+      "favicon": "./assets/images/icon.png"
     },
     "plugins": [
       "./plugins/with-android-value-radar-memory",
       [
         "./plugins/with-keepflip-android-firebase-signing",
         {
-          "keystorePropertiesFile": "@/config/android/keystore.properties",
-          "keystoreFile": "@/config/android/production-keystore.jks"
+          "keystorePropertiesFile": "./config/android/keystore.properties",
+          "keystoreFile": "./config/android/production-keystore.jks"
         }
       ],
       "expo-router",
@@ -52,7 +52,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "@/assets/images/icon2.png",
+          "image": "./assets/images/icon2.png",
           "imageWidth": 225,
           "resizeMode": "contain",
           "light": {

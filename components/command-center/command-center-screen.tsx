@@ -221,7 +221,7 @@ export function CommandCenterScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top + 74, paddingBottom: insets.bottom + 32 },
+          { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 32 },
         ]}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}>
@@ -263,7 +263,7 @@ export function CommandCenterScreen() {
                 <Image
                   accessible={false}
                   resizeMode="contain"
-                  source={require('@/assets/images/ebay-seeklogo.png')}
+                  source={require('@/assets/images/ebay.png')}
                   style={styles.eBayLogo}
                 />
               }
