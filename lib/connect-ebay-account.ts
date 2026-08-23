@@ -188,7 +188,11 @@ export async function connectEbayAccount(
   const activeEnvironment = responseEnvironment ?? environment;
 
   const result = await WebBrowser.openAuthSessionAsync(
-    loginUrlWithState(activeEnvironment, payload.state),
+    authorizationUrlFromResponse(
+      activeEnvironment,
+      payload.authorizationUrl,
+      payload.state,
+    ),
     EBAY_RETURN_URL,
   );
 
