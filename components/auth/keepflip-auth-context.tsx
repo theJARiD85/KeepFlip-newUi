@@ -153,15 +153,13 @@ function safeAuthError(
   const code = appwriteErrorCode(error);
   const type = appwriteErrorType(error);
 
-  // Appwrite may report an existing email/password session as a 401. Handle
-  // the specific response before the generic invalid-credentials branch so a
-  // retry can recover the already-valid session.
   if (code === 409 || type.includes('already_exists')) {
+    const signingUp = operation === 'sign-up';
     return new KeepFlipAuthError(
-      operation === 'sign-up'
+      signingUp
         ? 'An account already exists for this email. Sign in instead.'
-        : 'A session is already active. Retry the session check.',
-      'AUTH_ACCOUNT_EXISTS',
+        : 'KeepFlip could not start a new session. Please try again.',
+      signingUp ? 'AUTH_ACCOUNT_EXISTS' : 'AUTH_REQUEST_FAILED',
     );
   }
 
@@ -318,6 +316,16 @@ async function getVerifiedNonAnonymousUser(): Promise<Models.User | null> {
   return user;
 }
 
+async function clearCurrentAppwriteSession() {
+  const { account } = getAppwriteCoreServices();
+
+  try {
+    await account.deleteSession({ sessionId: 'current' });
+  } catch (error) {
+    if (!isSignedOutResponse(error)) throw error;
+  }
+}
+
 export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
   const [snapshot, setSnapshot] = useState<AuthSnapshot>(INITIAL_AUTH_SNAPSHOT);
   const [isBusy, setIsBusy] = useState(true);
@@ -424,6 +432,7 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
         }
 
         commit(signedOutSnapshot());
+        await clearCurrentAppwriteSession();
         const { account } = getAppwriteCoreServices();
         sessionRequestStarted = true;
         await account.createEmailPasswordSession({
@@ -442,27 +451,6 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
         });
       } catch (error) {
         const safeError = safeAuthError(error, 'sign-in');
-        if (safeError.code === 'AUTH_ACCOUNT_EXISTS') {
-          try {
-            const user = await getVerifiedNonAnonymousUser();
-            if (!user) throw new SessionVerificationError();
-            commit({
-              status: 'signed-in',
-              user,
-              errorMessage: null,
-              missingKeys: [],
-            });
-            return;
-          } catch (verificationError) {
-            const verificationAuthError = safeAuthError(
-              verificationError,
-              'refresh',
-            );
-            commit(errorSnapshot(verificationAuthError.message));
-            throw verificationAuthError;
-          }
-        }
-
         if (safeError.code === 'AUTH_SETUP_REQUIRED') {
           const configurationStatus = getAppwriteCoreConfigurationStatus();
           commit(
@@ -526,6 +514,7 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
         }
 
         commit(signedOutSnapshot());
+        await clearCurrentAppwriteSession();
         const { account } = getAppwriteCoreServices();
         await account.create({
           userId: ID.unique(),
