@@ -63,6 +63,7 @@ type ValuationResultStageProps = {
   ) => void | Promise<void>;
   onSaveToDealShelf?: () => void;
   onSave?: () => void;
+  onReportIncorrectIdentification?: () => void;
   projectionLabel?: string;
   refining?: boolean;
   refinementPhotoReady?: boolean;
@@ -1260,6 +1261,7 @@ export function ValuationResultStage({
   onScanMorePhotos,
   onSave,
   onSaveToDealShelf,
+  onReportIncorrectIdentification,
   projectionLabel = "GENERATED ITEM PROJECTION",
   refining = false,
   refinementPhotoReady = false,
@@ -1276,10 +1278,12 @@ export function ValuationResultStage({
   const result = state.data;
   const marketDecision = decisionCardForResult(result);
   const hasSaveAction = Boolean(onSave || onSaveToDealShelf);
+  const hasIncorrectIdentificationReportAction = Boolean(onReportIncorrectIdentification);
+  const reportActionHeight = hasIncorrectIdentificationReportAction ? 36 : 0;
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const width = Math.min(viewportWidth ?? windowWidth, 520);
   const collapsedHeight =
-    (hasSaveAction ? COLLAPSED_HEIGHT_WITH_SAVE : COLLAPSED_HEIGHT) + bottomInset;
+    (hasSaveAction ? COLLAPSED_HEIGHT_WITH_SAVE : COLLAPSED_HEIGHT) + reportActionHeight + bottomInset;
   const stampImageTop = topInset + MARKET_DECISION_IMAGE_TOP_GAP;
   const stampImageBottom = Math.max(
     stampImageTop + MARKET_DECISION_STAMP_HEIGHT,
@@ -1790,6 +1794,24 @@ export function ValuationResultStage({
               </Pressable>
             ) : null}
           </View>
+        ) : null}
+
+        {onReportIncorrectIdentification ? (
+          <Pressable
+            accessibilityHint="Opens a report with this analysis result's item and scan reference."
+            accessibilityRole="button"
+            disabled={saving || savingDeal || refining || scanningMorePhotos}
+            onPress={onReportIncorrectIdentification}
+            style={({ pressed }) => [
+              styles.incorrectIdentificationAction,
+              pressed && styles.pressed,
+              (saving || savingDeal || refining || scanningMorePhotos) && styles.disabled,
+            ]}>
+            <IconSymbol color={theme.colors.textMuted} name="exclamationmark.triangle.fill" size={13} />
+            <Text style={styles.incorrectIdentificationActionText}>
+              FLAG INCORRECT IDENTIFICATION
+            </Text>
+          </Pressable>
         ) : null}
       </Animated.View>
     </View>
@@ -2411,6 +2433,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   saveActions: { flexDirection: "row", gap: 8 },
+  incorrectIdentificationAction: { minHeight: 28, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(242, 211, 138, 0.16)" },
+  incorrectIdentificationActionText: { color: theme.colors.textMuted, fontFamily: theme.fonts.radar, fontSize: 8, fontWeight: "900", letterSpacing: 0.72 },
   saveButton: { flex: 1, minHeight: 43, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingHorizontal: 8, borderRadius: 4, backgroundColor: theme.colors.goldBright },
   saveButtonSecondary: { borderWidth: 1, borderColor: "rgba(242, 211, 138, 0.38)", backgroundColor: "rgba(4, 4, 8, 0.72)" },
   saveButtonText: { color: theme.colors.backgroundDeep, fontFamily: theme.fonts.radar, fontSize: 9, fontWeight: "900", letterSpacing: 0.7 },

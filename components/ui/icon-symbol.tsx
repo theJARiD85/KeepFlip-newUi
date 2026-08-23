@@ -14,12 +14,14 @@ type MaterialIconName = ComponentProps<typeof MaterialIcons>['name'];
  */
 const MAPPING = {
   "save.fill": "save",
+  'star.fill': 'star',
   'house.fill': 'home',
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
   'viewfinder': 'center-focus-strong',
   'barcode.viewfinder': 'qr-code-scanner',
+  'bubble.left.and.bubble.right.fill': 'forum',
   'rectangle.stack.fill': 'photo-library',
   'square.grid.2x2.fill': 'burst-mode',
   'photo.on.rectangle.angled': 'add-photo-alternate',
@@ -32,6 +34,7 @@ const MAPPING = {
   'chart.bar.fill': 'bar-chart',
   'dollarsign.circle.fill': 'paid',
   'envelope.fill': 'email',
+  'exclamationmark.triangle.fill': 'report-problem',
   'eye.fill': 'visibility',
   'eye.slash.fill': 'visibility-off',
   'gauge.with.dots.needle.67percent': 'speed',

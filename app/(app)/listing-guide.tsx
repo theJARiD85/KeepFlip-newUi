@@ -9,6 +9,7 @@ import {
 } from "react-native";
 
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
+import { useKeepFlipFeedbackNudge } from "@/components/feedback/keepflip-feedback-nudge";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
@@ -114,6 +115,7 @@ export default function ListingCreationGuideScreen() {
   const itemId = Array.isArray(params.itemId) ? params.itemId[0] : params.itemId;
   const router = useRouter();
   const { user } = useKeepFlipAuth();
+  const { recordCompletedAction } = useKeepFlipFeedbackNudge();
   const userId = user?.$id;
   const { contentWidth, insets, pageGutter, responsiveFont } =
     useResponsiveLayout();
@@ -206,6 +208,7 @@ export default function ListingCreationGuideScreen() {
       setGeneratedListing(result.listing);
       setListingConfidence(result.confidence);
       setSelectedPlatform("ebay");
+      recordCompletedAction();
     } catch (caughtError) {
       setListingGenerationError(
         caughtError instanceof Error
@@ -215,7 +218,7 @@ export default function ListingCreationGuideScreen() {
     } finally {
       setGeneratingListing(false);
     }
-  }, [item]);
+  }, [item, recordCompletedAction]);
 
   return (
     <KeepFlipBackground>

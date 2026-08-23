@@ -19,6 +19,7 @@ import {
   KeepFlipAuthProvider,
   useKeepFlipAuth,
 } from "@/components/auth/keepflip-auth-context";
+import { KeepFlipFeedbackNudgeProvider } from "@/components/feedback/keepflip-feedback-nudge";
 import KeepFlipIntro from "@/components/intro/keepflip-intro.native";
 import { keepFlipTheme } from "@/constants/keepflip-theme";
 import {
@@ -182,6 +183,7 @@ export default function RootLayout() {
           value={navigationTheme}
         >
           <KeepFlipAuthProvider>
+            <KeepFlipFeedbackNudgeProvider>
           {!introVisible ? (
             <AppodealNativeAdsInitializer
               appKey={appodealKey}
@@ -196,6 +198,7 @@ export default function RootLayout() {
             />
           ) : null}
           <ProtectedRootStack />
+            </KeepFlipFeedbackNudgeProvider>
           </KeepFlipAuthProvider>
 
           <StatusBar

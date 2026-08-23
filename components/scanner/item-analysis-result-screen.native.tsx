@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
+import { useKeepFlipFeedbackNudge } from "@/components/feedback/keepflip-feedback-nudge";
 import { HudImageFrame } from "@/components/scanner/hud-image-frame.native";
 import { inventoryItemToAnalysisState } from "@/components/scanner/inventory-analysis-view-model";
 import { toItemAnalysisState } from "@/components/scanner/item-analysis-view-model";
@@ -21,6 +22,7 @@ import { ValuationResultStage } from "@/components/scanner/valuation-result-stag
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { APPWRITE, storage } from "@/lib/appwrite";
+import { openKeepFlipIncorrectIdentificationReport } from "@/lib/keepflip-feedback";
 import {
   applyProfitabilityGuidanceToAnalysis,
   type SerpApiProfitabilityGuidance,
@@ -297,6 +299,7 @@ export function ItemAnalysisResultScreen() {
   const itemId = firstParam(params.itemId);
   const sessionId = firstParam(params.sessionId);
   const { user } = useKeepFlipAuth();
+  const { recordCompletedAction } = useKeepFlipFeedbackNudge();
   const userId = user?.$id;
   const {
     clearScannerResult,
@@ -406,6 +409,7 @@ export function ItemAnalysisResultScreen() {
         ownerId: userId,
         scanId: scannerSession.scanId,
       });
+      recordCompletedAction();
       finishScannerSession();
       router.replace("/inventory");
       if (saved.photoWarning) {
@@ -423,6 +427,7 @@ export function ItemAnalysisResultScreen() {
     }
   }, [
     finishScannerSession,
+    recordCompletedAction,
     router,
     saving,
     savingDeal,
@@ -449,6 +454,7 @@ export function ItemAnalysisResultScreen() {
         ownerId: userId,
         scanId: scannerSession.scanId,
       });
+      recordCompletedAction();
       finishScannerSession();
       router.replace("/deal-shelf" as Href);
     } catch (caught) {
@@ -463,6 +469,7 @@ export function ItemAnalysisResultScreen() {
     }
   }, [
     finishScannerSession,
+    recordCompletedAction,
     router,
     saving,
     savingDeal,
@@ -715,6 +722,19 @@ export function ItemAnalysisResultScreen() {
     );
   }
 
+  const handleReportIncorrectIdentification = () => {
+    void openKeepFlipIncorrectIdentificationReport({
+      identifiedAs: resultState.data.identity.title || "Unknown item",
+      itemId,
+      scanId: scannerSession?.scanId,
+    }).catch(() => {
+      Alert.alert(
+        "Could not open report",
+        "Your device could not open email. Contact support@keep-flip.com and include this result's details.",
+      );
+    });
+  };
+
   const projectionLabel = projectionError
     ? "PROJECTION SIGNAL DEGRADED / HUD FIELD ACTIVE"
     : "KEEPFLIP ITEM PROJECTION / VALUATION FIELD";
@@ -749,6 +769,7 @@ export function ItemAnalysisResultScreen() {
               : itemId ?? "saved-analysis"
           }
           onProfitabilityGuidance={handleProfitabilityGuidance}
+          onReportIncorrectIdentification={handleReportIncorrectIdentification}
           onRefine={
             scannerSession
               ? (answers) => {

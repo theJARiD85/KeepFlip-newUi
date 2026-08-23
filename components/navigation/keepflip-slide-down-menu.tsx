@@ -27,15 +27,10 @@ type MenuDestination = {
 };
 
 const destinations: MenuDestination[] = [
+  {eyebrow: 'RUN YOUR BUSINESS', href: '/command-center' as Href, icon: 'gauge.with.dots.needle.67percent', label: 'Command Center'},
   { eyebrow: 'IDENTIFY & VALUE', href: '/', icon: 'viewfinder', label: 'Scanner' },
   { eyebrow: 'DEALS TO DECIDE', href: '/deal-shelf' as Href, icon: 'tag.fill', label: 'Deal Shelf' },
   { eyebrow: 'YOUR SAVED FINDS', href: '/inventory', icon: 'shippingbox.fill', label: 'Inventory' },
-  {
-    eyebrow: 'RUN YOUR BUSINESS',
-    href: '/command-center' as Href,
-    icon: 'gauge.with.dots.needle.67percent',
-    label: 'Command Center',
-  },
 ];
 
 function hapticSelection() {
@@ -69,7 +64,7 @@ export function KeepFlipSlideDownMenu() {
   const isMenuDisabled = pathname === '/walkthrough';
   const progress = useSharedValue(0);
   const [isMenuMounted, setIsMenuMounted] = useState(isMenuOpen);
-  const panelHeight = Math.min(548, Math.max(430, height - insets.bottom - 30));
+  const panelHeight = Math.min(685, Math.max(517, height - insets.bottom));
 
   useEffect(() => {
     let openFrame: number | undefined;

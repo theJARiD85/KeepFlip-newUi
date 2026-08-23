@@ -13,6 +13,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
+import { useKeepFlipFeedbackNudge } from '@/components/feedback/keepflip-feedback-nudge';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipControlRow } from '@/components/ui/keepflip-control-row';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
@@ -38,7 +39,9 @@ export default function AccountScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { isBusy, signOut, user } = useKeepFlipAuth();
+  const { openFeedbackEmail, openStoreReview } = useKeepFlipFeedbackNudge();
   const [signOutError, setSignOutError] = useState<string | null>(null);
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
   if (!user) return null;
 
@@ -63,6 +66,30 @@ export default function AccountScreen() {
       );
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(
         () => undefined,
+      );
+    }
+  };
+
+  const handleOpenFeedback = async () => {
+    hapticSelection();
+    setFeedbackError(null);
+    try {
+      await openFeedbackEmail();
+    } catch {
+      setFeedbackError(
+        'Your device could not open email. Contact support@keep-flip.com for help.',
+      );
+    }
+  };
+
+  const handleOpenStoreReview = async () => {
+    hapticSelection();
+    setFeedbackError(null);
+    try {
+      await openStoreReview();
+    } catch {
+      setFeedbackError(
+        'KeepFlip could not open Google Play right now. Please try again later.',
       );
     }
   };
@@ -178,6 +205,36 @@ export default function AccountScreen() {
           </View>
         </Animated.View>
 
+        <Animated.View entering={FadeInDown.duration(260).delay(180)} style={styles.section}>
+          <View style={styles.sectionHeading}>
+            <Text style={styles.sectionEyebrow}>SUPPORT</Text>
+            <Text style={styles.sectionTitle}>Feedback & reviews</Text>
+          </View>
+          <View style={styles.settingsList}>
+            <KeepFlipControlRow
+              accent="cyan"
+              accessibilityHint="Opens an email to share feedback with KeepFlip."
+              description="Tell us what worked, what missed, or what would make KeepFlip more useful."
+              icon="envelope.fill"
+              label="Share feedback"
+              onPress={() => void handleOpenFeedback()}
+            />
+            <KeepFlipControlRow
+              accent="gold"
+              accessibilityHint="Opens KeepFlip's Google Play page where you can leave a review."
+              description="Open Google Play to leave an honest review."
+              icon="star.fill"
+              label="Rate KeepFlip"
+              onPress={() => void handleOpenStoreReview()}
+            />
+          </View>
+          {feedbackError ? (
+            <Text accessibilityLiveRegion="polite" selectable style={styles.errorText}>
+              {feedbackError}
+            </Text>
+          ) : null}
+        </Animated.View>
+
         {signOutError ? (
           <Text
             accessibilityLiveRegion="polite"
@@ -206,7 +263,7 @@ export default function AccountScreen() {
               size={21}
             />
           )}
-          <Text style={styles.signOutText}>SIGN OUT THIS DEVICE</Text>
+          <Text style={styles.signOutText}>LOG OUT OF THIS DEVICE</Text>
         </Pressable>
 
         <View style={styles.versionFooter}>
@@ -371,13 +428,13 @@ const styles = StyleSheet.create({
   },
   versionLabel: {
     color: theme.colors.textMuted,
-    fontSize: 7,
+    fontSize: 8,
     fontWeight: '900',
     letterSpacing: 1.25,
   },
   versionValue: {
     color: theme.colors.goldMuted,
-    fontSize: 8,
+    fontSize: 9,
     fontWeight: '800',
   },
 });

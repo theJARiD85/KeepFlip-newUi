@@ -94,7 +94,7 @@ export function KeepFlipControlRow({
   const isPressable = Boolean(onPress) && !actionBusy;
 
   const content = (
-    <>
+    <View style={styles.container}>
       <View style={[styles.rowIcon, iconStyle]}>
         {leading ?? (icon ? <IconSymbol color={iconColor} name={icon} size={19} /> : null)}
       </View>
@@ -121,7 +121,7 @@ export function KeepFlipControlRow({
       ) : staticLabel ? (
         <Text style={styles.rowStaticLabel}>{staticLabel}</Text>
       ) : null}
-    </>
+    </View>
   );
 
   if (!isPressable) {
@@ -141,8 +141,14 @@ export function KeepFlipControlRow({
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    gap: 7
+  },
   controlRow: {
-    minHeight: 60,
+    minHeight: 70,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,

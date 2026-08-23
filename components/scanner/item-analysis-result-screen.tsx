@@ -10,11 +10,13 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
+import { useKeepFlipFeedbackNudge } from "@/components/feedback/keepflip-feedback-nudge";
 import { inventoryItemToAnalysisState } from "@/components/scanner/inventory-analysis-view-model";
 import { useItemAnalysisResult } from "@/components/scanner/item-analysis-result-context";
 import { ValuationResultStage } from "@/components/scanner/valuation-result-stage";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { openKeepFlipIncorrectIdentificationReport } from "@/lib/keepflip-feedback";
 import { saveDealShelfItem } from "@/services/deal-shelf-service";
 import {
   getInventoryItem,
@@ -35,6 +37,7 @@ export function ItemAnalysisResultScreen() {
   const itemId = firstParam(params.itemId);
   const sessionId = firstParam(params.sessionId);
   const { user } = useKeepFlipAuth();
+  const { recordCompletedAction } = useKeepFlipFeedbackNudge();
   const userId = user?.$id;
   const { clearScannerResult, scannerResult } =
     useItemAnalysisResult();
@@ -121,6 +124,7 @@ export function ItemAnalysisResultScreen() {
         ownerId: userId,
         scanId: scannerSession.scanId,
       });
+      recordCompletedAction();
       finishScannerSession();
       router.replace("/inventory");
       if (saved.photoWarning) {
@@ -138,6 +142,7 @@ export function ItemAnalysisResultScreen() {
     }
   }, [
     finishScannerSession,
+    recordCompletedAction,
     router,
     saving,
     savingDeal,
@@ -156,6 +161,7 @@ export function ItemAnalysisResultScreen() {
         ownerId: userId,
         scanId: scannerSession.scanId,
       });
+      recordCompletedAction();
       finishScannerSession();
       router.replace("/deal-shelf" as Href);
     } catch (caught) {
@@ -170,6 +176,7 @@ export function ItemAnalysisResultScreen() {
     }
   }, [
     finishScannerSession,
+    recordCompletedAction,
     router,
     saving,
     savingDeal,
@@ -206,10 +213,24 @@ export function ItemAnalysisResultScreen() {
     );
   }
 
+  const handleReportIncorrectIdentification = () => {
+    void openKeepFlipIncorrectIdentificationReport({
+      identifiedAs: state.data.identity.title || "Unknown item",
+      itemId,
+      scanId: scannerSession?.scanId,
+    }).catch(() => {
+      Alert.alert(
+        "Could not open report",
+        "Your device could not open email. Contact support@keep-flip.com and include this result's details.",
+      );
+    });
+  };
+
   return (
     <View style={styles.root}>
       <ValuationResultStage
         bottomInset={insets.bottom}
+        onReportIncorrectIdentification={handleReportIncorrectIdentification}
         onSave={
           scannerSession
             ? () => {

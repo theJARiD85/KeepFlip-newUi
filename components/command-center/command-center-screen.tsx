@@ -1,5 +1,4 @@
 import * as Haptics from 'expo-haptics';
-import * as Linking from 'expo-linking';
 import { type Href, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -26,6 +25,7 @@ import {
   connectEbayAccount,
   getEbayConnectionStatus,
 } from '@/lib/connect-ebay-account';
+import { openKeepFlipSupportEmail } from '@/lib/keepflip-feedback';
 
 type EbayConnectionViewState =
   | 'checking'
@@ -146,14 +146,7 @@ export function CommandCenterScreen() {
 
   const eBayDetails = eBayStateDetails(eBayState, eBayErrorMessage);
   const eBayIsBusy = eBayState === 'checking' || eBayState === 'connecting';
-  const eBayActionLabel =
-    eBayState === 'connected'
-      ? 'REFRESH'
-      : eBayState === 'disconnected'
-        ? 'CONNECT'
-        : eBayState === 'error'
-          ? 'RETRY'
-          : undefined;
+
 
   const handleEbayConnection = async () => {
     if (eBayIsBusy) return;
@@ -206,9 +199,7 @@ export function CommandCenterScreen() {
     setSupportError(null);
 
     try {
-      await Linking.openURL(
-        'mailto:support@keep-flip.com?subject=KeepFlip%20support%20and%20feedback',
-      );
+      await openKeepFlipSupportEmail();
     } catch {
       setSupportError(
         'Your device could not open email. Contact support@keep-flip.com for help.',
@@ -221,7 +212,7 @@ export function CommandCenterScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 32 },
+          { paddingTop: insets.top + 35, paddingBottom: insets.bottom + 32 },
         ]}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}>
@@ -251,7 +242,6 @@ export function CommandCenterScreen() {
             <KeepFlipControlRow
               accent="cyan"
               actionBusy={eBayIsBusy}
-              actionLabel={eBayActionLabel}
               accessibilityHint={
                 eBayState === 'connected'
                   ? 'Refreshes the eBay connection status.'
@@ -374,9 +364,9 @@ export function CommandCenterScreen() {
             <KeepFlipControlRow
               accent="cyan"
               accessibilityHint="Opens an email to KeepFlip support."
-              description="Get help or share feedback with the KeepFlip team."
+              description="Contact KeepFlip support for your account or the app."
               icon="envelope.fill"
-              label="Help & feedback"
+              label="Get help"
               onPress={() => void handleOpenSupport()}
             />
           </View>
@@ -398,7 +388,7 @@ const styles = StyleSheet.create({
     maxWidth: 760,
     alignSelf: 'center',
     gap: 16,
-    paddingHorizontal: 18,
+    paddingHorizontal: 10,
   },
   header: { gap: 4 },
   eyebrow: {
@@ -442,8 +432,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(6, 11, 14, 0.76)',
   },
   eBayLogo: {
-    width: 25,
-    height: 27,
+    width: 22,
+    height: 22,
   },
   settingsList: {
     borderTopWidth: StyleSheet.hairlineWidth,

@@ -1,7 +1,12 @@
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 
-import { APPWRITE, ExecutionMethod, functions } from '@/lib/appwrite';
+import {
+  APPWRITE,
+  ExecutionMethod,
+  functions,
+  getAppwriteCoreServices,
+} from '@/lib/appwrite';
 
 export type EbayOAuthEnvironment = 'sandbox' | 'production';
 
@@ -150,10 +155,31 @@ function ebayOAuthPath(action: EbayOAuthAction) {
   return action === 'connect' ? '/connect' : '/status';
 }
 
+async function signedInEbayOAuthJwt() {
+  try {
+    const { jwt } = await getAppwriteCoreServices().account.createJWT({
+      // The token is used only to authenticate this one Function execution.
+      duration: 60,
+    });
+
+    if (typeof jwt === 'string' && jwt.trim()) {
+      return jwt;
+    }
+  } catch {
+    // Turn a missing or expired local session into a clear connection error.
+  }
+
+  throw new Error(
+    'Your KeepFlip sign-in session has expired. Sign in again, then connect eBay.',
+  );
+}
+
 async function executeEbayOAuthFunction(
   action: EbayOAuthAction,
   environment: EbayOAuthEnvironment,
 ) {
+  const userJwt = await signedInEbayOAuthJwt();
+
   return functions.createExecution({
     functionId: ebayOAuthFunctionId(),
     body: JSON.stringify({ environment }),
@@ -162,6 +188,9 @@ async function executeEbayOAuthFunction(
     method: ExecutionMethod.POST,
     headers: {
       'content-type': 'application/json',
+      // Appwrite normally forwards the authenticated execution JWT itself.
+      // This fallback keeps the Function user-bound if that runtime header is absent.
+      'x-keepflip-user-jwt': userJwt,
     },
   });
 }

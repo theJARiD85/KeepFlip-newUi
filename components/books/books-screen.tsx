@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
+import { useKeepFlipFeedbackNudge } from '@/components/feedback/keepflip-feedback-nudge';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import {
@@ -216,6 +217,7 @@ function TransactionRow({
 
 export function BooksScreen() {
   const { user } = useKeepFlipAuth();
+  const { recordCompletedAction } = useKeepFlipFeedbackNudge();
   const insets = useSafeAreaInsets();
   const userId = user?.$id;
   const ledgerConfigured = isResellerBooksConfigured();
@@ -342,6 +344,7 @@ export function BooksScreen() {
       setSheetOpen(false);
       setStatusMessage(`${draftDetails.label} recorded in Books.`);
       hapticSuccess();
+      recordCompletedAction();
       await loadBooks(true);
     } catch (caughtError) {
       setFormError(
