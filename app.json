@@ -83,7 +83,8 @@
       "expo-font",
       "expo-image",
       "expo-status-bar",
-      "expo-build-properties"
+      "expo-build-properties",
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,
