@@ -20,6 +20,7 @@ import {
   identifyItemWithAI,
   type KeepFlipIdentification,
 } from "@/services/itemAiService";
+import { neutralizeMarketProviderBrand } from "@/services/market-copy";
 import { getScannerPhotoFileId } from "@/services/scan-photo-service";
 import {
   ITEM_ANALYSIS_CONTRACT_VERSION,
@@ -828,7 +829,7 @@ export async function analyzeItemPhotos(
     } catch (error) {
       throw new ItemAnalysisError(
         error instanceof Error
-          ? error.message
+          ? neutralizeMarketProviderBrand(error.message)
           : "KeepFlip AI could not complete item analysis.",
         "ITEM_ANALYSIS_FAILED",
         undefined,
@@ -912,7 +913,7 @@ export async function refineItemAnalysis({
     MAX_SERPAPI_SUBSEQUENT_REQUEST_TOKEN_LENGTH
   ) {
     throw new ItemAnalysisError(
-      "KeepFlip could not continue the previous Google AI Mode valuation. Start a new item valuation.",
+      "KeepFlip AI could not continue the previous valuation. Start a new item valuation.",
       "AI_MODE_CONVERSATION_INVALID",
     );
   }
@@ -972,7 +973,7 @@ export async function refineItemAnalysis({
       if (error instanceof ItemAnalysisError) throw error;
       throw new ItemAnalysisError(
         error instanceof Error
-          ? error.message
+          ? neutralizeMarketProviderBrand(error.message)
           : "KeepFlip could not refine this valuation.",
         "ITEM_ANALYSIS_REFINEMENT_FAILED",
         undefined,

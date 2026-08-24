@@ -4,7 +4,10 @@ import {
   functions,
 } from "../lib/appwrite";
 import type { ItemValuationSignals } from "./itemAiService";
-import { neutralizeMarketplaceBrand } from "./market-copy";
+import {
+  neutralizeMarketplaceBrand,
+  neutralizeMarketProviderBrand,
+} from "./market-copy";
 import type {
   ItemAnalysisSuccess,
   ItemProfitabilityGuidance,
@@ -38,6 +41,105 @@ export type MarketValueQuality = {
   searchIntent?: "sold_comps" | "visual_recently_sold";
 };
 
+export type EbayMarketAnalysisPeriod = {
+  days: 30 | 90 | null;
+  start: string | null;
+  end: string;
+  datedComparableCount: number;
+  undatedComparableCount: number;
+};
+
+export type EbayMarketAnalysisConditionBand = {
+  condition: string;
+  comparableCount: number;
+  floor: number | null;
+  median: number | null;
+  ceiling: number | null;
+  deltaVsBaseline: number | null;
+};
+
+export type EbayMarketAnalysis = {
+  version: 1;
+  marketValue: {
+    status: "ready" | "limited_sample" | "unavailable";
+    basis: "confirmed_ebay_sold";
+    priceBasis: "buyer_paid_total";
+    currency: string;
+    period: EbayMarketAnalysisPeriod;
+    comparableCount: number;
+    floor: number | null;
+    median: number | null;
+    average: number | null;
+    ceiling: number | null;
+    quickSale: number | null;
+    listTarget: number | null;
+    conditionBands: EbayMarketAnalysisConditionBand[];
+    evidenceNote: string;
+  };
+  marketVelocity: {
+    status: "sample_only" | "unavailable";
+    activeListings: number | null;
+    returnedSoldListings: number;
+    observedSoldToActiveRatio: number | null;
+    ratioBasis: "returned_sold_sample_to_active_snapshot" | "unavailable";
+    daysOnMarket: {
+      status: "unavailable";
+      average: number | null;
+      low: number | null;
+      high: number | null;
+      sampleSize: number;
+      note: string;
+    };
+    seasonality: {
+      status: "insufficient_history" | "unavailable";
+      monthsObserved: number;
+      peakMonths: string[];
+      slowMonths: string[];
+      summary: string;
+    };
+    /** A returned sold-listing sample; never an exact sell-through rate. */
+    evidenceNote: string;
+  };
+  competitorSaturation: {
+    status: "ready" | "limited_sample" | "unavailable";
+    marketplace: "ebay";
+    activeListingCount: number | null;
+    activeSampleCount: number;
+    activePriceFloor: number | null;
+    activePriceMedian: number | null;
+    activePriceCeiling: number | null;
+    activeShippingMedian: number | null;
+    supplyDemandStatus: "unknown";
+    listingQuality: {
+      status: "assessed" | "unavailable";
+      imageCoverage: number | null;
+      titleCoverage: number | null;
+      summary: string;
+    };
+    warnings: string[];
+  };
+  netMarginViability: {
+    status: "needs_inputs";
+    marketplace: "ebay";
+    currency: string;
+    expectedSalePrice: number | null;
+    platformFees: number | null;
+    outboundShipping: number | null;
+    cogs: number | null;
+    prepAndRepair: number | null;
+    netProfit: number | null;
+    marginPercent: number | null;
+    roiPercent: number | null;
+    missingInputs: string[];
+    assumptions: string[];
+  };
+  decisionInputs: {
+    status: "needs_more_evidence" | "limited";
+    summary: string;
+    missingInputs: string[];
+  };
+};
+
 export type EbaySoldCompsResult = {
   ok: true;
   phase: "completed";
@@ -55,6 +157,7 @@ export type EbaySoldCompsResult = {
   };
   searchedAt: string;
   valuation?: MarketValueQuality;
+  marketAnalysis?: EbayMarketAnalysis;
 };
 
 export type EbayBarcodeProduct = {
@@ -344,7 +447,7 @@ export type SerpApiImageValuationInput = {
   identityContext?: string | null;
   refinementContext?: string | null;
   /**
-   * Opaque continuation token returned from the preceding Google AI Mode
+   * Opaque continuation token returned from the preceding KeepFlip AI
    * valuation. It is sent only to the market-research Function.
    */
   subsequentRequestToken?: string | null;
@@ -1703,7 +1806,7 @@ export async function runSerpApiImageValuation(
     MAX_SERPAPI_SUBSEQUENT_REQUEST_TOKEN_LENGTH
   ) {
     throw new Error(
-      "KeepFlip could not continue the previous Google AI Mode valuation. Start a new item valuation.",
+      "KeepFlip AI could not continue the previous valuation. Start a new item valuation.",
     );
   }
   const payload = await callMarketCompsFunction({

@@ -39,9 +39,12 @@ import type {
   AnalysisValuation,
   ItemAnalysisState,
 } from "@/components/scanner/analysis-visual-types";
+import { MarketPricingDashboard } from "@/components/scanner/market-pricing-dashboard";
+import { SmartProfitCalculator } from "@/components/scanner/smart-profit-calculator";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import {
+  runEbaySoldComps,
   runSerpApiProfitabilityGuidance,
   type SerpApiProfitabilityGuidance,
 } from "@/services/ebaySoldCompsService";
@@ -116,7 +119,7 @@ function percentage(value?: number) {
 }
 
 function marketSourceLabel(source?: string) {
-  if (source === "serpapi_ai") return "Visual market research";
+  if (source === "serpapi_ai") return "KeepFlip AI market research";
   if (source === "multi_market") return "Multi-market sold data";
   if (source === "ebay") return "Sold market data";
   if (source === "supplied") return "Supplied market data";
@@ -487,7 +490,7 @@ function decisionCardForResult(result: ResultData): AnalysisDecisionCard {
     reasons: [],
     status: needsMoreEvidence ? "needs_more_evidence" : "provisional",
     summary: needsMoreEvidence
-      ? "KeepFlip needs more market or item evidence before it can make a Flip or Skip decision."
+      ? "KeepFlip has a directional market range. Add the requested details to narrow it to the exact item before treating the decision as item-specific."
       : "A market range is available, but this saved result does not include a Flip or Skip decision.",
   };
 }
@@ -613,7 +616,7 @@ function profitabilityPauseMessage(card: AnalysisDecisionCard) {
     return "No profitability tasks are shown because the market decision is Skip.";
   }
   if (card.kind === "undetermined") {
-    return "Resolve the missing market evidence before KeepFlip prepares profitability tasks.";
+    return "KeepFlip has a directional range. Add a model, condition, or functionality detail to unlock item-specific preparation tasks.";
   }
   return "KeepFlip did not find a supported profitability task for this item.";
 }
@@ -712,11 +715,13 @@ function ProfitabilityActionRow({
 }
 
 function ProfitPanel({
+  expanded,
   expandedActionId,
   guidance,
   onPressAction,
   result,
 }: {
+  expanded: boolean;
   expandedActionId: string | null;
   guidance: Record<string, ProfitabilityGuidanceState>;
   onPressAction: (action: AnalysisProfitAction) => void;
@@ -727,11 +732,11 @@ function ProfitPanel({
   const listTarget = result.profitPlan.listTarget;
   const expectedSale = result.profitPlan.expectedSale;
   const quickSale = result.profitPlan.quickSale;
-  const firmPricing = result.valuationReadiness.status === "ready";
-  const showListTarget = listTarget != null && firmPricing;
+  const showListTarget = listTarget != null;
   const showExpectedSale = expectedSale != null;
-  const showQuickSale = quickSale != null && firmPricing;
+  const showQuickSale = quickSale != null;
   const hasStrategy = showListTarget || showExpectedSale || showQuickSale;
+  const pricingIsProvisional = hasStrategy && result.valuationReadiness.status !== "ready";
   const enhancements = result.profitPlan.actions.filter(
     (action) => action.kind !== "decision",
   );
@@ -743,32 +748,49 @@ function ProfitPanel({
   return (
     <View style={styles.profitList}>
       {hasStrategy ? (
-        <View style={styles.profitStrategyRow}>
-          {showListTarget ? <View style={styles.profitStrategyCell}>
-            <Text style={[styles.profitStrategyLabel, { color: theme.colors.scannerCyan }]}>
-              LIST
-            </Text>
-            <Text style={styles.profitStrategyValue}>
-              {formatMoney(listTarget!, currency)}
-            </Text>
-          </View> : null}
-          {showExpectedSale ? <View style={styles.profitStrategyCell}>
-            <Text style={[styles.profitStrategyLabel, { color: theme.colors.goldBright }]}>
-              EXPECT
-            </Text>
-            <Text style={styles.profitStrategyValue}>
-              {formatMoney(expectedSale!, currency)}
-            </Text>
-          </View> : null}
-          {showQuickSale ? <View style={styles.profitStrategyCell}>
-            <Text style={[styles.profitStrategyLabel, { color: theme.colors.scannerViolet }]}>
-              QUICK
-            </Text>
-            <Text style={styles.profitStrategyValue}>
-              {formatMoney(quickSale!, currency)}
-            </Text>
-          </View> : null}
-        </View>
+        <>
+          <View style={styles.profitStrategyRow}>
+            {showListTarget ? <View style={styles.profitStrategyCell}>
+              <Text style={[styles.profitStrategyLabel, { color: theme.colors.scannerCyan }]}>
+                LIST
+              </Text>
+              <Text style={styles.profitStrategyValue}>
+                {formatMoney(listTarget!, currency)}
+              </Text>
+            </View> : null}
+            {showExpectedSale ? <View style={styles.profitStrategyCell}>
+              <Text style={[styles.profitStrategyLabel, { color: theme.colors.goldBright }]}>
+                EXPECT
+              </Text>
+              <Text style={styles.profitStrategyValue}>
+                {formatMoney(expectedSale!, currency)}
+              </Text>
+            </View> : null}
+            {showQuickSale ? <View style={styles.profitStrategyCell}>
+              <Text style={[styles.profitStrategyLabel, { color: theme.colors.scannerViolet }]}>
+                QUICK
+              </Text>
+              <Text style={styles.profitStrategyValue}>
+                {formatMoney(quickSale!, currency)}
+              </Text>
+            </View> : null}
+          </View>
+        </>
+      ) : null}
+      {pricingIsProvisional ? (
+        <Text style={styles.profitStrategyNotice}>
+          BROAD MARKET RANGE · ADD DETAILS TO NARROW THE EXACT MODEL AND CONDITION
+        </Text>
+      ) : null}
+      {expanded && result.valuation ? (
+        <SmartProfitCalculator valuation={result.valuation} />
+      ) : null}
+      {expanded ? (
+        <MarketPricingDashboard
+          loadComps={runEbaySoldComps}
+          query={result.identity.title}
+          title={result.identity.title}
+        />
       ) : null}
 
       {hasEnhancements ? (
@@ -1623,11 +1645,15 @@ export function ValuationResultStage({
     <Animated.View
       entering={FadeIn.duration(150)}
       key={activeTab}
-      style={styles.panelBody}
+      style={[
+        styles.panelBody,
+        activeTab === "profit" && expanded && styles.panelBodyExpanded,
+      ]}
     >
       {activeTab === "valuation" ? <ValuePanel result={result} /> : null}
       {activeTab === "profit" ? (
         <ProfitPanel
+          expanded={expanded}
           expandedActionId={expandedProfitActionId}
           guidance={profitabilityGuidance}
           onPressAction={requestProfitabilityGuidance}
@@ -1892,6 +1918,7 @@ const styles = StyleSheet.create({
   tabText: { color: "rgba(255, 255, 255, 0.46)", fontFamily: theme.fonts.display, fontSize: 8, fontWeight: "900", letterSpacing: 0.8 },
   tabTextActive: { color: theme.colors.goldBright },
   panelScroll: { flex: 1 },
+  panelBodyExpanded: { height: "auto" },
   panelScrollContent: { paddingBottom: 12 },
   panelBody: { height: 186, paddingHorizontal: 3 },
   gauge: { flex: 1, justifyContent: "center", gap: 10 },
@@ -2036,6 +2063,15 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "900",
     fontVariant: ["tabular-nums"],
+  },
+  profitStrategyNotice: {
+    color: "rgba(242, 211, 138, 0.76)",
+    fontFamily: theme.fonts.radar,
+    fontSize: 7,
+    fontWeight: "900",
+    letterSpacing: 0.45,
+    lineHeight: 10,
+    textAlign: "center",
   },
   profitTapHint: {
     color: "rgba(0, 255, 255, 0.66)",
