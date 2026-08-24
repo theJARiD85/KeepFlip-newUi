@@ -47,7 +47,6 @@ export type EbaySoldCompsResult = {
   comps: EbaySoldComp[];
   summary: {
     count: number;
-    activeCount: number | null;
     low: number;
     median: number;
     average: number;
@@ -872,8 +871,6 @@ function toSoldCompsResult(
     comps,
     summary: {
       count: asNumber(rawSummary?.count) || fallbackSummary.count,
-      activeCount:
-        asNumber(rawSummary?.activeCount ?? payload.activeCount) || null,
       low:
         asNumber(rawSummary?.low) || fallbackSummary.low,
       median:
@@ -2630,10 +2627,7 @@ export async function runStrictEbaySoldComps(
     ...raw,
     query,
     comps: selected,
-    summary: {
-      ...makeSummary(selected),
-      activeCount: raw.summary.activeCount,
-    },
+    summary: makeSummary(selected),
     valuation: buildQuality(
       profile,
       model,
