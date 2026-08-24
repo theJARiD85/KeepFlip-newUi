@@ -76,3 +76,4 @@ app-example
 /.agents
 /.cursor
 /.venv
+.dyad/
