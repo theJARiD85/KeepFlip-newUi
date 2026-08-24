@@ -284,7 +284,7 @@ function profitabilityGuidanceFor(
   };
 }
 
-function marketDecisionCard(result: ItemAnalysisSuccess): AnalysisDecisionCard {
+function ungatedMarketDecisionCard(result: ItemAnalysisSuccess): AnalysisDecisionCard {
   const supplied = result.marketResearch?.decisionCard;
   if (supplied) {
     const kind =
@@ -396,6 +396,89 @@ function marketDecisionCard(result: ItemAnalysisSuccess): AnalysisDecisionCard {
         : 'decided',
     summary,
   };
+}
+
+function uniqueDecisionInputs(values: string[]) {
+  const seen = new Set<string>();
+
+  return values.filter((value) => {
+    const text = displayKnownText(value, 180);
+    if (!text) return false;
+    const key = text.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function applyMarketAnalysisDecisionGate(
+  result: ItemAnalysisSuccess,
+  decision: AnalysisDecisionCard,
+): AnalysisDecisionCard {
+  const analysis = result.marketResearch?.marketAnalysis;
+  if (!analysis) return decision;
+
+  const decisionInputs = analysis.decisionInputs;
+  const financialInputs = analysis.netMarginViability.missingInputs;
+  const requiredInputs = uniqueDecisionInputs([
+    ...decision.missingInputs,
+    ...decisionInputs.missingInputs,
+    ...financialInputs,
+  ]).slice(0, 8);
+  const gateSummary =
+    displayKnownText(decisionInputs.summary, 460) ??
+    "The market signal is incomplete until the missing evidence and resale costs are checked.";
+
+  if (decisionInputs.status === "needs_more_evidence") {
+    return {
+      confidence: decision.confidence,
+      kind: "undetermined",
+      label: "UNDETERMINED",
+      missingInputs: requiredInputs,
+      reasons: [],
+      status: "needs_more_evidence",
+      summary: gateSummary,
+    };
+  }
+
+  if (
+    decision.kind === "flip" &&
+    analysis.netMarginViability.status === "needs_inputs"
+  ) {
+    return {
+      ...decision,
+      missingInputs: requiredInputs,
+      status: "provisional",
+      summary: displayText(
+        decision.summary + " " + gateSummary,
+        460,
+      ),
+    };
+  }
+
+  if (decision.kind === "undetermined") {
+    return {
+      ...decision,
+      missingInputs: requiredInputs,
+      status:
+        decision.status === "needs_more_evidence"
+          ? "needs_more_evidence"
+          : "provisional",
+      summary: displayText(
+        decision.summary + " " + gateSummary,
+        460,
+      ),
+    };
+  }
+
+  return decision;
+}
+
+function marketDecisionCard(result: ItemAnalysisSuccess): AnalysisDecisionCard {
+  return applyMarketAnalysisDecisionGate(
+    result,
+    ungatedMarketDecisionCard(result),
+  );
 }
 
 function profitPlan(result: ItemAnalysisSuccess): AnalysisProfitPlan {
@@ -704,6 +787,7 @@ export function toItemAnalysisResult(result: ItemAnalysisSuccess): ItemAnalysisO
         ) || undefined,
     },
     marketReferences: marketReferences(result),
+    marketAnalysis: result.marketResearch?.marketAnalysis,
     profitPlan: profitPlan(result),
     refinementQuestions: refinementQuestions(result),
     suggestedPhotos: suggestedPhotos(result),

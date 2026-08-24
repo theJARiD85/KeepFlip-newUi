@@ -7,6 +7,7 @@ import type { ItemValuationSignals } from "./itemAiService";
 import { neutralizeMarketplaceBrand } from "./market-copy";
 import type {
   ItemAnalysisSuccess,
+  ItemMarketAnalysis,
   ItemProfitabilityGuidance,
 } from "@/types/item-analysis";
 
@@ -52,9 +53,11 @@ export type EbaySoldCompsResult = {
     average: number;
     high: number;
     currency: string;
+    activeCount?: number | null;
   };
   searchedAt: string;
   valuation?: MarketValueQuality;
+  marketAnalysis?: ItemMarketAnalysis;
 };
 
 export type EbayBarcodeProduct = {
@@ -414,6 +417,16 @@ function positiveNumberOrNull(value: unknown): number | null {
   return number > 0 ? number : null;
 }
 
+function finiteNumberOrNull(value: unknown): number | null {
+  if (value == null) return null;
+  const number =
+    typeof value === "number"
+      ? value
+      : typeof value === "string" && value.trim()
+        ? Number(value.replace(/,/g, "").replace(/[^\d.-]/g, ""))
+        : Number.NaN;
+  return Number.isFinite(number) ? number : null;
+}
 function nonNegativeNumberOrNull(value: unknown): number | null {
   if (value == null) return null;
   const number =
@@ -595,6 +608,230 @@ function makeSummary(comps: EbaySoldComp[]) {
     average: average(values),
     high: values.length ? Math.max(...values) : 0,
     currency,
+  };
+}
+
+function normalizeMarketEvidenceStatus(
+  value: unknown
+): "ready" | "limited_sample" | "unavailable" | null {
+  const status = asString(value);
+  return status === "ready" ||
+    status === "limited_sample" ||
+    status === "unavailable"
+    ? status
+    : null;
+}
+
+function normalizeMarketAnalysis(
+  value: unknown
+): ItemMarketAnalysis | undefined {
+  const source = asRecord(value);
+  const marketValue = asRecord(source?.marketValue);
+  const marketVelocity = asRecord(source?.marketVelocity);
+  const competitorSaturation = asRecord(source?.competitorSaturation);
+  const netMarginViability = asRecord(source?.netMarginViability);
+  const decisionInputs = asRecord(source?.decisionInputs);
+
+  if (
+    source?.version !== 1 ||
+    !marketValue ||
+    !marketVelocity ||
+    !competitorSaturation ||
+    !netMarginViability ||
+    !decisionInputs
+  ) {
+    return undefined;
+  }
+
+  const marketValueStatus = normalizeMarketEvidenceStatus(marketValue.status);
+  const saturationStatus = normalizeMarketEvidenceStatus(
+    competitorSaturation.status
+  );
+  const velocityStatus = asString(marketVelocity.status);
+  const ratioBasis = asString(marketVelocity.ratioBasis);
+  const daysOnMarket = asRecord(marketVelocity.daysOnMarket);
+  const seasonality = asRecord(marketVelocity.seasonality);
+  const listingQuality = asRecord(competitorSaturation.listingQuality);
+  const decisionStatus = asString(decisionInputs.status);
+  const period = asRecord(marketValue.period);
+
+  if (
+    !marketValueStatus ||
+    !saturationStatus ||
+    marketValue.basis !== "confirmed_ebay_sold" ||
+    marketValue.priceBasis !== "buyer_paid_total" ||
+    !period ||
+    (period.days !== 30 && period.days !== 90 && period.days !== null) ||
+    !asString(period.end) ||
+    (velocityStatus !== "sample_only" && velocityStatus !== "unavailable") ||
+    (ratioBasis !== "returned_sold_sample_to_active_snapshot" &&
+      ratioBasis !== "unavailable") ||
+    !daysOnMarket ||
+    daysOnMarket.status !== "unavailable" ||
+    !seasonality ||
+    (seasonality.status !== "insufficient_history" &&
+      seasonality.status !== "unavailable") ||
+    competitorSaturation.marketplace !== "ebay" ||
+    competitorSaturation.supplyDemandStatus !== "unknown" ||
+    !listingQuality ||
+    (listingQuality.status !== "assessed" &&
+      listingQuality.status !== "unavailable") ||
+    netMarginViability.status !== "needs_inputs" ||
+    netMarginViability.marketplace !== "ebay" ||
+    (decisionStatus !== "ready" &&
+      decisionStatus !== "limited" &&
+      decisionStatus !== "needs_more_evidence") ||
+    !asString(decisionInputs.summary)
+  ) {
+    return undefined;
+  }
+
+  const conditionBands = Array.isArray(marketValue.conditionBands)
+    ? marketValue.conditionBands
+      .map((entry) => {
+        const band = asRecord(entry);
+        const condition = asString(band?.condition);
+        if (!condition) return null;
+
+        return {
+          condition,
+          comparableCount: Math.max(0, Math.floor(asNumber(band?.comparableCount))),
+          floor: nonNegativeNumberOrNull(band?.floor),
+          median: nonNegativeNumberOrNull(band?.median),
+          ceiling: nonNegativeNumberOrNull(band?.ceiling),
+          deltaVsBaseline:
+            band?.deltaVsBaseline == null
+              ? null
+              : typeof band.deltaVsBaseline === "number" &&
+                  Number.isFinite(band.deltaVsBaseline)
+                ? band.deltaVsBaseline
+                : null,
+        };
+      })
+      .filter(
+        (
+          entry
+        ): entry is ItemMarketAnalysis["marketValue"]["conditionBands"][number] =>
+          Boolean(entry)
+      )
+    : [];
+
+  return {
+    version: 1,
+    marketValue: {
+      status: marketValueStatus,
+      basis: "confirmed_ebay_sold",
+      priceBasis: "buyer_paid_total",
+      currency: toNullableString(marketValue.currency),
+      period: {
+        days: period.days,
+        start: toNullableString(period.start),
+        end: asString(period.end),
+        datedComparableCount: Math.max(
+          0,
+          Math.floor(asNumber(period.datedComparableCount))
+        ),
+        undatedComparableCount: Math.max(
+          0,
+          Math.floor(asNumber(period.undatedComparableCount))
+        ),
+      },
+      comparableCount: Math.max(0, Math.floor(asNumber(marketValue.comparableCount))),
+      floor: nonNegativeNumberOrNull(marketValue.floor),
+      median: nonNegativeNumberOrNull(marketValue.median),
+      average: nonNegativeNumberOrNull(marketValue.average),
+      ceiling: nonNegativeNumberOrNull(marketValue.ceiling),
+      quickSale: nonNegativeNumberOrNull(marketValue.quickSale),
+      listTarget: nonNegativeNumberOrNull(marketValue.listTarget),
+      conditionBands,
+      evidenceNote: toNullableString(marketValue.evidenceNote),
+    },
+    marketVelocity: {
+      status: velocityStatus,
+      activeListings: nonNegativeNumberOrNull(marketVelocity.activeListings),
+      returnedSoldListings: Math.max(
+        0,
+        Math.floor(asNumber(marketVelocity.returnedSoldListings))
+      ),
+      observedSoldToActiveRatio: nonNegativeNumberOrNull(
+        marketVelocity.observedSoldToActiveRatio
+      ),
+      ratioBasis,
+      daysOnMarket: {
+        status: "unavailable",
+        average: nonNegativeNumberOrNull(daysOnMarket.average),
+        low: nonNegativeNumberOrNull(daysOnMarket.low),
+        high: nonNegativeNumberOrNull(daysOnMarket.high),
+        sampleSize: Math.max(0, Math.floor(asNumber(daysOnMarket.sampleSize))),
+        note: asString(daysOnMarket.note),
+      },
+      seasonality: {
+        status: seasonality.status,
+        monthsObserved: Math.max(
+          0,
+          Math.floor(asNumber(seasonality.monthsObserved))
+        ),
+        peakMonths: asStringArray(seasonality.peakMonths),
+        slowMonths: asStringArray(seasonality.slowMonths),
+        summary: toNullableString(seasonality.summary),
+      },
+      evidenceNote: toNullableString(marketVelocity.evidenceNote),
+    },
+    competitorSaturation: {
+      status: saturationStatus,
+      marketplace: "ebay",
+      activeListingCount: nonNegativeNumberOrNull(
+        competitorSaturation.activeListingCount
+      ),
+      activeSampleCount: Math.max(
+        0,
+        Math.floor(asNumber(competitorSaturation.activeSampleCount))
+      ),
+      activePriceFloor: nonNegativeNumberOrNull(
+        competitorSaturation.activePriceFloor
+      ),
+      activePriceMedian: nonNegativeNumberOrNull(
+        competitorSaturation.activePriceMedian
+      ),
+      activePriceCeiling: nonNegativeNumberOrNull(
+        competitorSaturation.activePriceCeiling
+      ),
+      activeShippingMedian: nonNegativeNumberOrNull(
+        competitorSaturation.activeShippingMedian
+      ),
+      supplyDemandStatus: "unknown",
+      listingQuality: {
+        status: listingQuality.status,
+        imageCoverage: nonNegativeNumberOrNull(listingQuality.imageCoverage),
+        titleCoverage: nonNegativeNumberOrNull(listingQuality.titleCoverage),
+        summary: toNullableString(listingQuality.summary),
+      },
+      warnings: asStringArray(competitorSaturation.warnings),
+    },
+    netMarginViability: {
+      status: "needs_inputs",
+      marketplace: "ebay",
+      currency: toNullableString(netMarginViability.currency),
+      expectedSalePrice: nonNegativeNumberOrNull(
+        netMarginViability.expectedSalePrice
+      ),
+      platformFees: nonNegativeNumberOrNull(netMarginViability.platformFees),
+      outboundShipping: nonNegativeNumberOrNull(
+        netMarginViability.outboundShipping
+      ),
+      cogs: nonNegativeNumberOrNull(netMarginViability.cogs),
+      prepAndRepair: nonNegativeNumberOrNull(netMarginViability.prepAndRepair),
+      netProfit: finiteNumberOrNull(netMarginViability.netProfit),
+      marginPercent: finiteNumberOrNull(netMarginViability.marginPercent),
+      roiPercent: finiteNumberOrNull(netMarginViability.roiPercent),
+      missingInputs: asStringArray(netMarginViability.missingInputs),
+      assumptions: asStringArray(netMarginViability.assumptions),
+    },
+    decisionInputs: {
+      status: decisionStatus,
+      summary: asString(decisionInputs.summary),
+      missingInputs: asStringArray(decisionInputs.missingInputs),
+    },
   };
 }
 
@@ -861,6 +1098,8 @@ function toSoldCompsResult(
 
   const rawSummary = asRecord(payload.summary);
   const fallbackSummary = makeSummary(comps);
+  const activeCount = nonNegativeNumberOrNull(rawSummary?.activeCount);
+  const marketAnalysis = normalizeMarketAnalysis(payload.marketAnalysis);
 
   return {
     ok: true,
@@ -883,7 +1122,9 @@ function toSoldCompsResult(
       currency:
         asString(rawSummary?.currency) ||
         fallbackSummary.currency,
+      ...(activeCount != null ? { activeCount } : {}),
     },
+    ...(marketAnalysis ? { marketAnalysis } : {}),
     searchedAt:
       asString(payload.searchedAt) ||
       new Date().toISOString(),

@@ -1,3 +1,5 @@
+import type { ItemMarketAnalysis } from "@/types/item-analysis";
+
 export type AnalysisCallout = {
   accent: "cyan" | "gold" | "violet";
   id: string;
@@ -148,6 +150,7 @@ export type ItemAnalysisResult = {
   decisionCard?: AnalysisDecisionCard;
   evidence?: AnalysisEvidence[];
   identity: AnalysisIdentity;
+  marketAnalysis?: ItemMarketAnalysis;
   marketReferences?: AnalysisMarketReference[];
   profitPlan: AnalysisProfitPlan;
   refinementQuestions?: AnalysisRefinementQuestion[];

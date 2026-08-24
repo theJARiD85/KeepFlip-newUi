@@ -311,9 +311,108 @@ export type ItemMarketDecisionCard = {
   missingInputs: string[];
 };
 
+export type ItemMarketEvidenceStatus =
+  | 'ready'
+  | 'limited_sample'
+  | 'unavailable';
+
+export type ItemMarketAnalysis = {
+  version: 1;
+  marketValue: {
+    status: ItemMarketEvidenceStatus;
+    basis: 'confirmed_ebay_sold';
+    priceBasis: 'buyer_paid_total';
+    currency: string | null;
+    period: {
+      days: 30 | 90 | null;
+      start: string | null;
+      end: string;
+      datedComparableCount: number;
+      undatedComparableCount: number;
+    };
+    comparableCount: number;
+    floor: number | null;
+    median: number | null;
+    average: number | null;
+    ceiling: number | null;
+    quickSale: number | null;
+    listTarget: number | null;
+    conditionBands: Array<{
+      condition: string;
+      comparableCount: number;
+      floor: number | null;
+      median: number | null;
+      ceiling: number | null;
+      deltaVsBaseline: number | null;
+    }>;
+    evidenceNote: string | null;
+  };
+  marketVelocity: {
+    status: 'sample_only' | 'unavailable';
+    activeListings: number | null;
+    returnedSoldListings: number;
+    observedSoldToActiveRatio: number | null;
+    ratioBasis: 'returned_sold_sample_to_active_snapshot' | 'unavailable';
+    daysOnMarket: {
+      status: 'unavailable';
+      average: number | null;
+      low: number | null;
+      high: number | null;
+      sampleSize: number;
+      note: string;
+    };
+    seasonality: {
+      status: 'insufficient_history' | 'unavailable';
+      monthsObserved: number;
+      peakMonths: string[];
+      slowMonths: string[];
+      summary: string | null;
+    };
+    evidenceNote: string | null;
+  };
+  competitorSaturation: {
+    status: ItemMarketEvidenceStatus;
+    marketplace: 'ebay';
+    activeListingCount: number | null;
+    activeSampleCount: number;
+    activePriceFloor: number | null;
+    activePriceMedian: number | null;
+    activePriceCeiling: number | null;
+    activeShippingMedian: number | null;
+    supplyDemandStatus: 'unknown';
+    listingQuality: {
+      status: 'assessed' | 'unavailable';
+      imageCoverage: number | null;
+      titleCoverage: number | null;
+      summary: string | null;
+    };
+    warnings: string[];
+  };
+  netMarginViability: {
+    status: 'needs_inputs';
+    marketplace: 'ebay';
+    currency: string | null;
+    expectedSalePrice: number | null;
+    platformFees: number | null;
+    outboundShipping: number | null;
+    cogs: number | null;
+    prepAndRepair: number | null;
+    netProfit: number | null;
+    marginPercent: number | null;
+    roiPercent: number | null;
+    missingInputs: string[];
+    assumptions: string[];
+  };
+  decisionInputs: {
+    status: 'ready' | 'limited' | 'needs_more_evidence';
+    summary: string;
+    missingInputs: string[];
+  };
+};
 export type ItemAiModeConversation = {
   subsequentRequestToken: string | null;
 };
+
 
 export type ItemMarketResearch = {
   provider: 'ebay' | 'multi_market' | 'keepflip_ai';
@@ -363,6 +462,7 @@ export type ItemMarketResearch = {
     | 'visual_recently_sold'
     | 'ai_mode_image_valuation';
   };
+  marketAnalysis?: ItemMarketAnalysis;
   error?: {
     code: string;
     message: string;

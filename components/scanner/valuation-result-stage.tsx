@@ -110,6 +110,42 @@ function formatMoney(value: number, currency = "USD") {
   }
 }
 
+function formatMarketMoney(
+  value: number | null,
+  currency: string | null | undefined,
+) {
+  return value == null ? "Unavailable" : formatMoney(value, currency ?? "USD");
+}
+
+function formatMarketRange(
+  low: number | null,
+  high: number | null,
+  currency: string | null | undefined,
+) {
+  if (low == null || high == null) return "Unavailable";
+  return formatMarketMoney(low, currency) + " — " + formatMarketMoney(high, currency);
+}
+
+function formatObservedRatio(value: number | null) {
+  if (value == null) return "Unavailable";
+  const percent = value * 100;
+  const decimals = percent > 0 && percent < 10 ? 1 : 0;
+  return percent.toFixed(decimals) + "%";
+}
+
+function formatCoverage(value: number | null) {
+  return value == null ? "Unavailable" : Math.round(value * 100) + "%";
+}
+
+function conditionVarianceText(
+  delta: number | null,
+  currency: string | null | undefined,
+) {
+  if (delta == null) return "Needs at least two matching sold comps";
+  const prefix = delta > 0 ? "+" : "";
+  return prefix + formatMarketMoney(delta, currency) + " vs. sample median";
+}
+
 function percentage(value?: number) {
   if (value == null || !Number.isFinite(value)) return null;
   const normalized = value > 1 ? value : value * 100;
@@ -446,13 +482,17 @@ function ValuePanel({ result }: { result: ResultData }) {
   );
 }
 
-function decisionTone(kind: AnalysisDecisionCard["kind"]) {
+function decisionTone(card: AnalysisDecisionCard) {
+  const kind = card.kind;
   if (kind === "flip") {
     return {
       accent: FLIP_ACCENT,
       background: "rgba(70, 245, 162, 0.075)",
       border: "rgba(70, 245, 162, 0.54)",
-      label: "MARKET SIGNAL CONFIRMED",
+      label:
+        card.status === "provisional"
+          ? "MARKET FIT · FINANCIAL CHECK REQUIRED"
+          : "MARKET SIGNAL CONFIRMED",
     };
   }
   if (kind === "skip") {
@@ -501,7 +541,7 @@ function MarketDecisionStamp({
   top: number;
 }) {
   const reduceMotion = useReducedMotion();
-  const tone = decisionTone(card.kind);
+  const tone = decisionTone(card);
   const confidence = percentage(card.confidence);
   const flash = useSharedValue(reduceMotion ? 1 : 0.24);
   const scale = useSharedValue(reduceMotion ? 1 : 0.86);
@@ -910,6 +950,7 @@ function ExpandedResultDetails({
   const requestedPhotos = result.suggestedPhotos ?? [];
   const decisionCard = decisionCardForResult(result);
   const acquisitionGuidance = result.acquisitionGuidance;
+  const marketAnalysis = result.marketAnalysis;
   const canSubmit =
     Boolean(onRefine) &&
     !refining &&
@@ -987,9 +1028,24 @@ function ExpandedResultDetails({
           ) : null}
 
           {decisionCard.kind === "flip" ? (
-            <Text selectable style={styles.decisionActionHint}>
-              This is a market-first Flip decision. Open Max Profit for the supported preparation tasks.
-            </Text>
+            <>
+              <Text selectable style={styles.decisionActionHint}>
+                {decisionCard.status === "provisional"
+                  ? "Market fit is promising, but the final Flip verdict is pending COGS, fee, shipping, and preparation inputs."
+                  : "This is a market-first Flip decision. Open Max Profit for the supported preparation tasks."}
+              </Text>
+              {decisionCard.status === "provisional" && decisionCard.missingInputs.length > 0 ? (
+                <>
+                  <Text style={styles.decisionDetailHeading}>FINANCIAL CHECK REQUIRED</Text>
+                  {decisionCard.missingInputs.map((input, index) => (
+                    <View key={input + "-" + String(index)} style={styles.detailBulletRow}>
+                      <Text style={styles.detailBullet}>+</Text>
+                      <Text selectable style={styles.detailBulletText}>{input}</Text>
+                    </View>
+                  ))}
+                </>
+              ) : null}
+            </>
           ) : null}
 
           {decisionCard.kind === "undetermined" ? (
@@ -1012,6 +1068,232 @@ function ExpandedResultDetails({
         </View>
       ) : null}
 
+      {activeTab === "valuation" && marketAnalysis ? (
+        <View style={styles.detailSection}>
+          <Text style={styles.detailSectionTitle}>MARKET VALUE · VERIFIED SOLD</Text>
+          <DetailFact
+            label={
+              marketAnalysis.marketValue.period.days == null
+                ? "RETURNED BUYER-PAID SOLD SAMPLE"
+                : "BUYER-PAID SOLD RANGE · " +
+                  String(marketAnalysis.marketValue.period.days) +
+                  " DAYS"
+            }
+            value={
+              marketAnalysis.marketValue.floor != null &&
+              marketAnalysis.marketValue.ceiling != null
+                ? formatMarketRange(
+                    marketAnalysis.marketValue.floor,
+                    marketAnalysis.marketValue.ceiling,
+                    marketAnalysis.marketValue.currency,
+                  )
+                : "A tighter range needs more usable sold listings"
+            }
+          />
+          <DetailFact
+            label="MEDIAN BUYER-PAID TOTAL"
+            value={
+              marketAnalysis.marketValue.median == null
+                ? "A median needs usable sold listings"
+                : formatMarketMoney(
+                    marketAnalysis.marketValue.median,
+                    marketAnalysis.marketValue.currency,
+                  )
+            }
+          />
+          <DetailFact
+            label="QUICK SALE / LIST TARGET"
+            value={
+              marketAnalysis.marketValue.quickSale != null &&
+              marketAnalysis.marketValue.listTarget != null
+                ? formatMarketMoney(
+                    marketAnalysis.marketValue.quickSale,
+                    marketAnalysis.marketValue.currency,
+                  ) +
+                  " / " +
+                  formatMarketMoney(
+                    marketAnalysis.marketValue.listTarget,
+                    marketAnalysis.marketValue.currency,
+                  )
+                : "Planning targets need more usable sold listings"
+            }
+          />
+          {marketAnalysis.marketValue.evidenceNote ? (
+            <Text selectable style={styles.detailBody}>
+              {marketAnalysis.marketValue.evidenceNote}
+            </Text>
+          ) : null}
+          {marketAnalysis.marketValue.conditionBands.length > 0 ? (
+            <>
+              <Text style={styles.decisionDetailHeading}>CONDITION VARIANCE</Text>
+              {marketAnalysis.marketValue.conditionBands.slice(0, 4).map((band, index) => (
+                <DetailFact
+                  key={band.condition + "-" + String(index)}
+                  label={band.condition.toUpperCase() + " · " + String(band.comparableCount) + " SOLD"}
+                  value={
+                    (band.median == null
+                      ? "No median for this condition band"
+                      : formatMarketMoney(
+                          band.median,
+                          marketAnalysis.marketValue.currency,
+                        )) +
+                    " · " +
+                    conditionVarianceText(
+                      band.deltaVsBaseline,
+                      marketAnalysis.marketValue.currency,
+                    )
+                  }
+                />
+              ))}
+            </>
+          ) : null}
+        </View>
+      ) : null}
+      {activeTab === "valuation" && marketAnalysis ? (
+        <View style={styles.detailSection}>
+          <Text style={styles.detailSectionTitle}>MARKET VELOCITY</Text>
+          <DetailFact
+            label="OBSERVED SOLD / ACTIVE"
+            value={
+              marketAnalysis.marketVelocity.activeListings == null
+                ? String(marketAnalysis.marketVelocity.returnedSoldListings) +
+                  " returned sold · active snapshot unavailable"
+                : String(marketAnalysis.marketVelocity.returnedSoldListings) +
+                  " returned sold / " +
+                  String(marketAnalysis.marketVelocity.activeListings) +
+                  " active · " +
+                  formatObservedRatio(
+                    marketAnalysis.marketVelocity.observedSoldToActiveRatio,
+                  )
+            }
+          />
+          <DetailFact
+            label="DAYS ON MARKET"
+            value="Not verifiable from sold dates alone"
+          />
+          <Text selectable style={styles.detailBody}>
+            {marketAnalysis.marketVelocity.evidenceNote ??
+              "A current sell-through calculation needs a matched active and sold history."}
+          </Text>
+          <Text selectable style={styles.detailBody}>
+            {marketAnalysis.marketVelocity.daysOnMarket.note}
+          </Text>
+          <Text style={styles.decisionDetailHeading}>SEASONALITY</Text>
+          <Text selectable style={styles.detailBody}>
+            {marketAnalysis.marketVelocity.seasonality.summary ??
+              "A seasonal pattern needs a fuller dated sales history."}
+          </Text>
+        </View>
+      ) : null}
+      {activeTab === "valuation" && marketAnalysis ? (
+        <View style={styles.detailSection}>
+          <Text style={styles.detailSectionTitle}>COMPETITOR SATURATION</Text>
+          <DetailFact
+            label="CURRENT ACTIVE EBAY SNAPSHOT"
+            value={
+              marketAnalysis.competitorSaturation.activeListingCount == null
+                ? "Active eBay inventory snapshot unavailable"
+                : String(marketAnalysis.competitorSaturation.activeListingCount) +
+                  " active listings · " +
+                  String(marketAnalysis.competitorSaturation.activeSampleCount) +
+                  " sampled"
+            }
+          />
+          <DetailFact
+            label="ACTIVE PRICE RANGE"
+            value={
+              marketAnalysis.competitorSaturation.activePriceFloor != null &&
+              marketAnalysis.competitorSaturation.activePriceCeiling != null
+                ? formatMarketRange(
+                    marketAnalysis.competitorSaturation.activePriceFloor,
+                    marketAnalysis.competitorSaturation.activePriceCeiling,
+                    marketAnalysis.marketValue.currency,
+                  )
+                : "A usable active price range was not returned"
+            }
+          />
+          <DetailFact
+            label="ACTIVE SHIPPING MEDIAN"
+            value={
+              marketAnalysis.competitorSaturation.activeShippingMedian == null
+                ? "Shipping terms need a usable active-listing sample"
+                : formatMarketMoney(
+                    marketAnalysis.competitorSaturation.activeShippingMedian,
+                    marketAnalysis.marketValue.currency,
+                  )
+            }
+          />
+          <DetailFact
+            label="LISTING COVERAGE"
+            value={
+              "Images " +
+              formatCoverage(
+                marketAnalysis.competitorSaturation.listingQuality.imageCoverage,
+              ) +
+              " · titles " +
+              formatCoverage(
+                marketAnalysis.competitorSaturation.listingQuality.titleCoverage,
+              )
+            }
+          />
+          <DetailFact
+            label="PLATFORM COVERAGE"
+            value="eBay snapshot only · cross-market comparison needs verified marketplace sources"
+          />
+          {marketAnalysis.competitorSaturation.listingQuality.summary ? (
+            <Text selectable style={styles.detailBody}>
+              {marketAnalysis.competitorSaturation.listingQuality.summary}
+            </Text>
+          ) : null}
+          {marketAnalysis.competitorSaturation.warnings.slice(0, 3).map((warning, index) => (
+            <View key={warning + "-" + String(index)} style={styles.detailBulletRow}>
+              <Text style={styles.detailBullet}>+</Text>
+              <Text selectable style={styles.detailBulletText}>{warning}</Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+      {activeTab === "valuation" && marketAnalysis ? (
+        <View style={styles.detailSection}>
+          <Text style={styles.detailSectionTitle}>NET MARGIN VIABILITY</Text>
+          <DetailFact
+            label="EXPECTED GROSS SALE"
+            value={
+              marketAnalysis.netMarginViability.expectedSalePrice == null
+                ? "A gross sale estimate needs usable sold listings"
+                : formatMarketMoney(
+                    marketAnalysis.netMarginViability.expectedSalePrice,
+                    marketAnalysis.netMarginViability.currency,
+                  )
+            }
+          />
+          <DetailFact
+            label="NET PROFIT / ROI"
+            value={
+              marketAnalysis.netMarginViability.netProfit == null ||
+              marketAnalysis.netMarginViability.roiPercent == null
+                ? "Pending real COGS, fee, shipping, and preparation inputs"
+                : formatMarketMoney(
+                    marketAnalysis.netMarginViability.netProfit,
+                    marketAnalysis.netMarginViability.currency,
+                  ) +
+                  " · " +
+                  Math.round(marketAnalysis.netMarginViability.roiPercent) +
+                  "% ROI"
+            }
+          />
+          <Text selectable style={styles.detailBody}>
+            KeepFlip will not assume category fees, package dimensions, carrier cost, COGS, repair work, or return reserve.
+          </Text>
+          <Text style={styles.decisionDetailHeading}>REQUIRED TO COMPLETE THE MARGIN</Text>
+          {marketAnalysis.netMarginViability.missingInputs.map((input, index) => (
+            <View key={input + "-" + String(index)} style={styles.detailBulletRow}>
+              <Text style={styles.detailBullet}>+</Text>
+              <Text selectable style={styles.detailBulletText}>{input}</Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
       {activeTab === "valuation" && (result.valuationLadder || result.summary || conditionDetails.length > 0) ? (
         <View style={styles.detailSection}>
           <Text style={styles.detailSectionTitle}>VALUATION REASONS + CONFIDENCE</Text>

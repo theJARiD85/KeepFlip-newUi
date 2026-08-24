@@ -13,8 +13,11 @@ import {
   getAppwriteCoreServices,
 } from "@/lib/appwrite";
 import {
+  runStrictEbaySoldComps,
   runSerpApiImageValuation,
+  type EbaySoldCompsResult,
   type SerpApiImageValuationResult,
+  type StrictMarketValueProfile,
 } from "@/services/ebaySoldCompsService";
 import {
   identifyItemWithAI,
@@ -270,7 +273,40 @@ function strengthFromLabel(
 
 function valuationFromSerpApiResult(
   result: SerpApiImageValuationResult,
+  verifiedSoldComps: EbaySoldCompsResult | null = null,
 ): ItemValuation {
+  const marketValue = verifiedSoldComps?.marketAnalysis?.marketValue;
+  const low = marketValue?.quickSale ?? marketValue?.floor ?? null;
+  const median = marketValue?.median ?? null;
+  const high = marketValue?.listTarget ?? marketValue?.ceiling ?? null;
+
+  if (
+    marketValue &&
+    marketValue.status !== "unavailable" &&
+    marketValue.currency &&
+    low != null &&
+    median != null &&
+    high != null
+  ) {
+    return {
+      status:
+        marketValue.status === "ready" ? "ready" : "limited_comps",
+      currency: marketValue.currency,
+      suppliedCount: verifiedSoldComps?.comps.length ?? 0,
+      usedCount: marketValue.comparableCount,
+      rejectedCount: Math.max(
+        0,
+        (verifiedSoldComps?.comps.length ?? 0) -
+          marketValue.comparableCount,
+      ),
+      median,
+      p20: low,
+      p80: high,
+      methodology: "median_linear_p20_p80_mad_outlier_filter_v1",
+      source: "ebay_sold",
+    };
+  }
+
   return {
     ...result.valuation,
   };
@@ -471,11 +507,85 @@ function marketIdentityContext(
     .trim();
 }
 
+function marketTitleTokens(value: string | null | undefined) {
+  return (value ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .split(/\s+/)
+    .filter((token) => token.length >= 3);
+}
+
+function verifiedSoldCompsProfile(
+  market: SerpApiImageValuationResult,
+  photoCount: number,
+  multiPhotoIdentification: KeepFlipIdentification | null,
+): StrictMarketValueProfile | null {
+  if (market.identificationStatus !== "identified") return null;
+
+  const fused = isStrongMultiPhotoIdentification(multiPhotoIdentification)
+    ? multiPhotoIdentification
+    : null;
+  const identity = market.display.identity;
+  const title =
+    meaningfulIdentificationTitle(market.display.title) ??
+    meaningfulIdentificationTitle(fused?.title);
+  const brand = identity.brand ?? fused?.brand ?? null;
+  const model = identity.model ?? fused?.model ?? null;
+  const condition = (
+    market.display.condition ??
+    market.condition
+  )?.grade ?? fused?.condition ?? "unknown";
+  const conditionNotes = (
+    market.display.condition ??
+    market.condition
+  )?.summary ?? fused?.conditionNotes ?? "";
+
+  if (!title) return null;
+  const titleTokens = marketTitleTokens(title);
+  const hasSpecificIdentity =
+    Boolean(model?.trim()) ||
+    (Boolean(brand?.trim()) && titleTokens.length >= 3);
+
+  if (!hasSpecificIdentity) return null;
+
+  return {
+    title,
+    brand,
+    model,
+    condition,
+    conditionNotes,
+    photoCount,
+  };
+}
+
+async function loadVerifiedSoldComps(
+  market: SerpApiImageValuationResult,
+  photoCount: number,
+  multiPhotoIdentification: KeepFlipIdentification | null,
+): Promise<EbaySoldCompsResult | null> {
+  const profile = verifiedSoldCompsProfile(
+    market,
+    photoCount,
+    multiPhotoIdentification,
+  );
+  if (!profile) return null;
+
+  try {
+    return await runStrictEbaySoldComps(profile, 50);
+  } catch {
+    console.warn(
+      "[KeepFlip] Verified eBay sold-comp follow-up was unavailable; retaining the visual market estimate.",
+    );
+    return null;
+  }
+}
+
 function analysisResultFromSerpApi(
   market: SerpApiImageValuationResult,
   imageCount: number,
   multiPhotoIdentification: KeepFlipIdentification | null = null,
   multiPhotoPassCompleted = false,
+  verifiedSoldComps: EbaySoldCompsResult | null = null,
 ): ItemAnalysisSuccess {
   const displayIdentity = market.display.identity;
   const displayCondition = market.display.condition ?? market.condition;
@@ -553,6 +663,7 @@ function analysisResultFromSerpApi(
       ? "insufficient_evidence"
       : "identified";
   const warnings = uniqueMarketText([
+    ...(verifiedSoldComps?.valuation?.warnings ?? []),
     ...market.quality.warnings,
     ...displayIdentity.candidateModels.map(
       (candidate) => `Possible model: ${candidate}`,
@@ -570,6 +681,26 @@ function analysisResultFromSerpApi(
     fusedIdentification,
   );
   const analyzedImageCount = multiPhotoPassCompleted ? imageCount : 1;
+  const verifiedQuality = verifiedSoldComps?.valuation ?? null;
+  const verifiedSoldComparableEntries = verifiedSoldComps?.comps.map(
+    (comp) => ({
+      provider: "ebay" as const,
+      marketplace: "ebay",
+      evidenceClass: "confirmed_transaction" as const,
+      title: comp.title,
+      soldPrice: comp.soldPrice,
+      shipping: comp.shipping,
+      totalPrice: comp.totalPrice,
+      currency: comp.currency,
+      condition: comp.condition,
+      soldDate: comp.soldDate,
+      imageUrl: comp.imageUrl,
+      listingUrl: comp.listingUrl,
+      shippingSemantics: comp.shipping > 0
+        ? "separate" as const
+        : "unknown" as const,
+    }),
+  ) ?? [];
 
   return {
     ok: true,
@@ -611,8 +742,8 @@ function analysisResultFromSerpApi(
         model: modelConfidence,
         condition: conditionConfidence,
         valuation: confidenceFromLabel(
-          market.display.valuation.confidence,
-          market.display.valuation.confidencePercent,
+          verifiedQuality?.confidence ?? market.display.valuation.confidence,
+          verifiedQuality ? null : market.display.valuation.confidencePercent,
         ),
       },
       evidence: [
@@ -653,16 +784,29 @@ function analysisResultFromSerpApi(
       })),
       warnings,
     },
-    valuation: valuationFromSerpApiResult(market),
+    valuation: valuationFromSerpApiResult(market, verifiedSoldComps),
     marketResearch: {
-      provider: "keepflip_ai",
+      provider: verifiedSoldComps ? "ebay" : "keepflip_ai",
       status: "completed",
       // The full research prompt is internal operational context, never a
       // customer-facing valuation fact.
-      query: null,
-      searchedAt: market.searchedAt,
-      comparableCount: 0,
-      comps: [],
+      query: verifiedSoldComps?.query ?? null,
+      searchedAt: verifiedSoldComps?.searchedAt ?? market.searchedAt,
+      comparableCount: verifiedSoldComparableEntries.length,
+      comps: verifiedSoldComparableEntries,
+      ...(verifiedSoldComps
+        ? {
+          providers: [{
+            provider: "ebay" as const,
+            status: "completed" as const,
+            query: verifiedSoldComps.query,
+            comparableCount: verifiedSoldComparableEntries.length,
+            signalCount: 0,
+            searchedAt: verifiedSoldComps.searchedAt,
+            warnings: verifiedQuality?.warnings ?? [],
+          }],
+        }
+        : {}),
       signals: market.estimates.map((estimate) => ({
         provider: "keepflip_ai",
         evidenceClass: "inferred_sale",
@@ -695,7 +839,10 @@ function analysisResultFromSerpApi(
       suggestedDetails: market.suggestedDetails,
       answerMarkdown: market.reconstructedMarkdown,
       normalization: market.normalization,
-      quality: market.quality,
+      quality: verifiedQuality ?? market.quality,
+      ...(verifiedSoldComps?.marketAnalysis
+        ? { marketAnalysis: verifiedSoldComps.marketAnalysis }
+        : {}),
     },
   };
 }
@@ -836,11 +983,20 @@ export async function analyzeItemPhotos(
       );
     }
 
+    throwIfAborted(options.signal);
+    const verifiedSoldComps = await loadVerifiedSoldComps(
+      market,
+      input.photoUris.length,
+      multiPhotoIdentification,
+    );
+    throwIfAborted(options.signal);
+
     const completedResult = analysisResultFromSerpApi(
       market,
       input.photoUris.length,
       multiPhotoIdentification,
       multiPhotoPassCompleted,
+      verifiedSoldComps,
     );
     throwIfAborted(options.signal);
     reportPartialResult(
@@ -967,7 +1123,18 @@ export async function refineItemAnalysis({
         ...(subsequentRequestToken ? { subsequentRequestToken } : {}),
         ...(cleanPhotoFileId ? { hasRefinementImage: true } : {}),
       });
-      return analysisResultFromSerpApi(market, normalizedImageCount);
+      const verifiedSoldComps = await loadVerifiedSoldComps(
+        market,
+        normalizedImageCount,
+        null,
+      );
+      return analysisResultFromSerpApi(
+        market,
+        normalizedImageCount,
+        null,
+        false,
+        verifiedSoldComps,
+      );
     } catch (error) {
       if (error instanceof ItemAnalysisError) throw error;
       throw new ItemAnalysisError(

@@ -32,11 +32,24 @@ export type EbayConnectionStatus = 'connected' | 'not_connected';
 export type EbayConnectionStatusResult = {
   connected: boolean;
   status: EbayConnectionStatus;
+  environment: EbayOAuthEnvironment;
+  ebayUsername: string | null;
+  connectionUpdatedAt: string | null;
+  needsReconnect: boolean;
+};
+
+export type EbayDisconnectResult = {
+  connected: false;
+  ebayRevocation: 'confirmed' | 'not_confirmed' | 'not_applicable';
 };
 
 type EbayOAuthResponse = {
   connected?: unknown;
   environment?: unknown;
+  ebayRevocation?: unknown;
+  ebayUsername?: unknown;
+  connectionUpdatedAt?: unknown;
+  needsReconnect?: unknown;
   error?: unknown;
   expiresAt?: unknown;
   ok?: unknown;
@@ -55,6 +68,15 @@ function normalizeEnvironment(value: unknown): EbayOAuthEnvironment | null {
   const normalized = value.trim().toLowerCase();
   if (normalized === 'sandbox' || normalized === 'production') return normalized;
   return null;
+}
+
+function optionalResponseText(value: unknown, maxLength = 255) {
+  if (typeof value !== 'string') return null;
+
+  const text = value.trim();
+  if (!text || text.length > maxLength) return null;
+
+  return text;
 }
 
 function firstQueryValue(value: unknown) {
@@ -260,7 +282,7 @@ function responseError(responseBody: string, fallback: string) {
     : fallback;
 }
 
-type EbayOAuthAction = 'connect' | 'status';
+type EbayOAuthAction = 'connect' | 'disconnect' | 'status';
 
 export function getEbayOAuthEnvironment(): EbayOAuthEnvironment {
   const configured = process.env.EXPO_PUBLIC_EBAY_OAUTH_ENVIRONMENT?.trim().toLowerCase();
@@ -269,7 +291,14 @@ export function getEbayOAuthEnvironment(): EbayOAuthEnvironment {
 }
 
 function ebayOAuthPath(action: EbayOAuthAction) {
-  return action === 'connect' ? '/connect' : '/status';
+  switch (action) {
+    case 'connect':
+      return '/connect';
+    case 'disconnect':
+      return '/disconnect';
+    default:
+      return '/status';
+  }
 }
 
 function eBayFunctionRequestParameters(
@@ -476,8 +505,53 @@ export async function getEbayConnectionStatus(
     throw new Error('KeepFlip could not read the eBay connection status.');
   }
 
+  const responseEnvironment = normalizeEnvironment(payload.environment);
+  if (responseEnvironment !== environment) {
+    throw new Error('KeepFlip received an unexpected eBay connection environment.');
+  }
+
   return {
+    environment: responseEnvironment,
+    ebayUsername: optionalResponseText(payload.ebayUsername),
+    connectionUpdatedAt: optionalResponseText(payload.connectionUpdatedAt, 64),
     connected: payload.connected,
+    needsReconnect: payload.needsReconnect === true,
     status: payload.connected ? 'connected' : 'not_connected',
+  };
+}
+
+export async function disconnectEbayAccount(
+  environment: EbayOAuthEnvironment = getEbayOAuthEnvironment(),
+): Promise<EbayDisconnectResult> {
+  const execution = await executeEbayOAuthFunction('disconnect', environment);
+  if (execution.responseStatusCode !== 200) {
+    throw new Error(
+      responseError(
+        execution.responseBody,
+        'KeepFlip could not disconnect the eBay account.',
+      ),
+    );
+  }
+
+  const payload = parseResponse(execution.responseBody);
+  if (payload.connected !== false) {
+    throw new Error('KeepFlip could not confirm the eBay account was disconnected.');
+  }
+
+  const responseEnvironment = normalizeEnvironment(payload.environment);
+  if (responseEnvironment !== environment) {
+    throw new Error('KeepFlip received an unexpected eBay connection environment.');
+  }
+
+  const ebayRevocation =
+    payload.ebayRevocation === 'confirmed' ||
+    payload.ebayRevocation === 'not_applicable' ||
+    payload.ebayRevocation === 'not_confirmed'
+      ? payload.ebayRevocation
+      : 'not_confirmed';
+
+  return {
+    connected: false,
+    ebayRevocation,
   };
 }
