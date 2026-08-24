@@ -19,6 +19,9 @@ import {
   KeepFlipAuthProvider,
   useKeepFlipAuth,
 } from "@/components/auth/keepflip-auth-context";
+import {
+  getAppwriteCoreServices,
+} from '@/lib/appwrite';
 import { KeepFlipFeedbackNudgeProvider } from "@/components/feedback/keepflip-feedback-nudge";
 import KeepFlipIntro from "@/components/intro/keepflip-intro.native";
 import { keepFlipTheme } from "@/constants/keepflip-theme";
@@ -89,6 +92,8 @@ export default function RootLayout() {
   __DEV__ ||
   process.env.EXPO_PUBLIC_APPODEAL_TESTING === "true";
 
+  const { account } = getAppwriteCoreServices();
+
   const [
     fontsLoaded,
     fontError,
@@ -126,6 +131,20 @@ export default function RootLayout() {
     PlusJakartaSansSemiBold:
       require("@/assets/fonts/PlusJakartaSansSemiBold.otf"),
   });
+
+  useEffect(() => {
+    async function checkUser() {
+      try {
+        const currentUser = await account.get();
+        console.log(currentUser);
+      } catch (error) {
+        console.log('No user signed in');
+      }
+    }
+    
+    checkUser();
+  }, []);
+  
 
   useEffect(() => {
     if (

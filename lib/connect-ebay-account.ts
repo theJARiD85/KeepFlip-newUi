@@ -5,7 +5,6 @@ import {
   APPWRITE,
   ExecutionMethod,
   functions,
-  getAppwriteCoreServices,
 } from '@/lib/appwrite';
 
 export type EbayOAuthEnvironment = 'sandbox' | 'production';
@@ -128,12 +127,35 @@ function authorizationUrlFromResponse(
   return url.toString();
 }
 
+function eBayDebugAuthorizationUrl(value: unknown) {
+  if (typeof value !== 'string' || !value.trim()) return 'missing';
+
+  try {
+    return new URL(value).toString();
+  } catch {
+    return 'invalid';
+  }
+}
+
 function parseResponse(responseBody: string): EbayOAuthResponse {
   try {
     return JSON.parse(responseBody || '{}') as EbayOAuthResponse;
   } catch {
     return {};
   }
+}
+
+function eBayDebugResponse(responseBody: string) {
+  const payload = parseResponse(responseBody);
+
+  return {
+    authorizationUrl: eBayDebugAuthorizationUrl(payload.authorizationUrl),
+    connected: typeof payload.connected === 'boolean' ? payload.connected : 'missing',
+    environment: typeof payload.environment === 'string' ? payload.environment : 'missing',
+    error: typeof payload.error === 'string' ? payload.error : 'missing',
+    state: typeof payload.state === 'string' && payload.state ? 'state' : 'missing',
+    status: typeof payload.status === 'string' ? payload.status : 'missing',
+  };
 }
 
 function responseError(responseBody: string, fallback: string) {
@@ -155,32 +177,42 @@ function ebayOAuthPath(action: EbayOAuthAction) {
   return action === 'connect' ? '/connect' : '/status';
 }
 
-async function signedInEbayOAuthJwt() {
-  try {
-    const { jwt } = await getAppwriteCoreServices().account.createJWT({
-      // The token is used only to authenticate this one Function execution.
-      duration: 60,
-    });
-
-    if (typeof jwt === 'string' && jwt.trim()) {
-      return jwt;
-    }
-  } catch {
-    // Turn a missing or expired local session into a clear connection error.
-  }
-
-  throw new Error(
-    'Your KeepFlip sign-in session has expired. Sign in again, then connect eBay.',
-  );
+function eBayFunctionRequestParameters(
+  action: EbayOAuthAction,
+  environment: EbayOAuthEnvironment,
+) {
+  return {
+    action,
+    async: false,
+    body: { environment },
+    functionId: ebayOAuthFunctionId(),
+    functionHeaders: {
+      'content-type': 'application/json',
+    },
+    sessionAuthentication: {
+      appwriteSession: 'authenticated Appwrite SDK session',
+    },
+    expectedAppwriteHeaders: {
+      'x-appwrite-user-id': 'injected for an authenticated execution',
+      'x-appwrite-user-jwt': 'injected by Appwrite when available',
+    },
+    method: ExecutionMethod.POST,
+    xpath: ebayOAuthPath(action),
+  };
 }
 
 async function executeEbayOAuthFunction(
   action: EbayOAuthAction,
   environment: EbayOAuthEnvironment,
 ) {
-  const userJwt = await signedInEbayOAuthJwt();
+  const requestParameters = eBayFunctionRequestParameters(action, environment);
 
-  return functions.createExecution({
+  console.log('[KeepFlip eBay OAuth] Function request', requestParameters);
+
+  // This is deliberately a normal SDK call. Appwrite verifies the local
+  // account session and injects the invoking user into the Function request.
+  // Passing a second manual JWT creates the JWT-and-cookie conflict we saw.
+  const execution = await functions.createExecution({
     functionId: ebayOAuthFunctionId(),
     body: JSON.stringify({ environment }),
     async: false,
@@ -188,11 +220,16 @@ async function executeEbayOAuthFunction(
     method: ExecutionMethod.POST,
     headers: {
       'content-type': 'application/json',
-      // Appwrite normally forwards the authenticated execution JWT itself.
-      // This fallback keeps the Function user-bound if that runtime header is absent.
-      'x-keepflip-user-jwt': userJwt,
     },
   });
+
+  console.log('[KeepFlip eBay OAuth] Function response', {
+    requestParameters,
+    response: eBayDebugResponse(execution.responseBody),
+    responseStatusCode: execution.responseStatusCode,
+  });
+
+  return execution;
 }
 
 export async function connectEbayAccount(
@@ -215,6 +252,12 @@ export async function connectEbayAccount(
     typeof payload.environment === 'string' ? payload.environment : undefined,
   );
   const activeEnvironment = responseEnvironment ?? environment;
+
+  console.log('[KeepFlip eBay OAuth] returned authorization URL', {
+    authorizationUrl: eBayDebugAuthorizationUrl(payload.authorizationUrl),
+    environment: activeEnvironment,
+    state: payload.state ? 'state' : 'missing',
+  });
 
   const result = await WebBrowser.openAuthSessionAsync(
     authorizationUrlFromResponse(
