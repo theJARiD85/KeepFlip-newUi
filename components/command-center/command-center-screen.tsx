@@ -94,10 +94,19 @@ export function CommandCenterScreen() {
           : ('disconnected' as const),
         errorMessage: null,
       };
-    } catch {
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error && error.message.trim()
+          ? error.message.trim()
+          : 'We could not check eBay right now. Tap retry to try again.';
+
+      console.warn('[KeepFlip eBay OAuth] Status check failed', {
+        message: errorMessage,
+      });
+
       return {
         state: 'error' as const,
-        errorMessage: 'We could not check eBay right now. Tap retry to try again.',
+        errorMessage,
       };
     }
   }, []);
