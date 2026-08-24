@@ -29,6 +29,7 @@ type MenuDestination = {
 const destinations: MenuDestination[] = [
   {eyebrow: 'RUN YOUR BUSINESS', href: '/command-center' as Href, icon: 'gauge.with.dots.needle.67percent', label: 'Command Center'},
   { eyebrow: 'IDENTIFY & VALUE', href: '/', icon: 'viewfinder', label: 'Scanner' },
+  { eyebrow: 'RESEARCH & PRICE', href: '/market-research' as Href, icon: 'chart.bar.fill', label: 'Market Research' },
   { eyebrow: 'DEALS TO DECIDE', href: '/deal-shelf' as Href, icon: 'tag.fill', label: 'Deal Shelf' },
   { eyebrow: 'YOUR SAVED FINDS', href: '/inventory', icon: 'shippingbox.fill', label: 'Inventory' },
 ];
