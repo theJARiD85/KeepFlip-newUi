@@ -21,7 +21,7 @@ const EVIDENCE_SOURCE_LABELS: Record<
   photo_text: 'Photo text',
   photo_visual: 'Visual',
   user_notes: 'User note',
-  web_market: 'AI Mode',
+  web_market: 'KeepFlip AI',
 };
 
 const EVIDENCE_CLAIM_LABELS: Record<string, string> = {
@@ -99,6 +99,15 @@ function compact<T>(values: (T | null | undefined | '')[]) {
   return values.filter((value): value is T => value != null && value !== '');
 }
 
+function hasRenderableValuation(result: ItemAnalysisSuccess) {
+  return [result.valuation.p20, result.valuation.median, result.valuation.p80]
+    .every(
+      (value) =>
+        typeof value === 'number' && Number.isFinite(value) && value > 0,
+    );
+}
+
+
 function suggestedPhotos(result: ItemAnalysisSuccess): AnalysisSuggestedPhoto[] {
   const suggestions = result.analysis.suggestedPhotos.filter(
     (value) => Boolean(displayKnownText(value, 120)),
@@ -118,7 +127,10 @@ function suggestedPhotos(result: ItemAnalysisSuccess): AnalysisSuggestedPhoto[] 
           id: `analysis-photo-${index}`,
           label: text,
           priority:
-            result.status === 'insufficient_evidence' ? 'required' : 'recommended',
+            result.status === 'insufficient_evidence' &&
+            !hasRenderableValuation(result)
+              ? 'required'
+              : 'recommended',
         });
       }
       return photos;
@@ -634,11 +646,21 @@ function valuationReadiness(result: ItemAnalysisSuccess): ItemAnalysisOverlayRes
     };
   }
 
+
+  if (valuation.status === 'ready' && result.status === 'insufficient_evidence') {
+    return {
+      label: 'Broad market range ready',
+      reason:
+        `KeepFlip AI found a directional market range from the visible item category. Add the requested details to narrow it to the exact model and condition. ${qualityDetail}`.trim(),
+      status: 'limited',
+    };
+  }
+
   if (valuation.status === 'ready') {
     if (usesSerpApiAiMode) {
       return {
         label: 'Visual market estimate ready',
-        reason: `KeepFlip AI Mode evaluated the item photo and returned a current private-sale range. This is a directional AI market estimate, not a verified sold transaction. ${qualityDetail}`.trim(),
+        reason: `KeepFlip AI evaluated the item photo and returned a current private-sale range. This is a directional AI market estimate, not a verified sold transaction. ${qualityDetail}`.trim(),
         status: 'ready',
       };
     }
@@ -797,7 +819,7 @@ export function toItemAnalysisResult(result: ItemAnalysisSuccess): ItemAnalysisO
         basis:
           valuation.methodology === 'keepflip_ai_private_sale_range_v1' ||
             valuation.methodology === 'keepflip_ai_private_sale_range_v2'
-            ? 'Private-sale range inferred by KeepFlip AI Mode from the item photo and cited web evidence'
+            ? 'Private-sale range inferred by KeepFlip AI from the item photo and cited web evidence'
             : valuation.methodology === 'none'
               ? undefined
               : 'Median with 20th–80th percentile range and outlier filtering',
@@ -823,7 +845,10 @@ export function toItemAnalysisResult(result: ItemAnalysisSuccess): ItemAnalysisO
 }
 
 export function toItemAnalysisState(result: ItemAnalysisSuccess): ItemAnalysisState {
-  if (result.status === 'insufficient_evidence') {
+  if (
+    result.status === 'insufficient_evidence' &&
+    !hasRenderableValuation(result)
+  ) {
     return {
       evidence: result.analysis.evidence.map((item) =>
         displayText(`${item.claim}: ${item.value}`, 280),

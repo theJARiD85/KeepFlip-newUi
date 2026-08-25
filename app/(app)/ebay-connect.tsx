@@ -19,7 +19,7 @@ import {
   connectEbayAccount,
   getEbayOAuthEnvironment,
   type EbayConnectionResult,
-} from '@/lib/connect-ebay-account';
+} from '@/services/ebayConnectionService';
 
 const BENEFITS = [
   {
@@ -61,12 +61,6 @@ function resultMessage(result: EbayConnectionResult) {
         tone: 'neutral' as const,
         title: 'eBay sign-in closed',
         body: 'No changes were made to your account.',
-      };
-    case 'invalid':
-      return {
-        tone: 'error' as const,
-        title: 'Connection expired',
-        body: 'Please start the eBay connection again.',
       };
     default:
       return {

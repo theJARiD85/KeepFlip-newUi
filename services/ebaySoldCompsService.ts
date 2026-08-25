@@ -39,6 +39,105 @@ export type MarketValueQuality = {
   searchIntent?: "sold_comps" | "visual_recently_sold";
 };
 
+export type EbayMarketAnalysisPeriod = {
+  days: 30 | 90 | null;
+  start: string | null;
+  end: string;
+  datedComparableCount: number;
+  undatedComparableCount: number;
+};
+
+export type EbayMarketAnalysisConditionBand = {
+  condition: string;
+  comparableCount: number;
+  floor: number | null;
+  median: number | null;
+  ceiling: number | null;
+  deltaVsBaseline: number | null;
+};
+
+export type EbayMarketAnalysis = {
+  version: 1;
+  marketValue: {
+    status: "ready" | "limited_sample" | "unavailable";
+    basis: "confirmed_ebay_sold";
+    priceBasis: "buyer_paid_total";
+    currency: string;
+    period: EbayMarketAnalysisPeriod;
+    comparableCount: number;
+    floor: number | null;
+    median: number | null;
+    average: number | null;
+    ceiling: number | null;
+    quickSale: number | null;
+    listTarget: number | null;
+    conditionBands: EbayMarketAnalysisConditionBand[];
+    evidenceNote: string;
+  };
+  marketVelocity: {
+    status: "sample_only" | "unavailable";
+    activeListings: number | null;
+    returnedSoldListings: number;
+    observedSoldToActiveRatio: number | null;
+    ratioBasis: "returned_sold_sample_to_active_snapshot" | "unavailable";
+    daysOnMarket: {
+      status: "unavailable";
+      average: number | null;
+      low: number | null;
+      high: number | null;
+      sampleSize: number;
+      note: string;
+    };
+    seasonality: {
+      status: "insufficient_history" | "unavailable";
+      monthsObserved: number;
+      peakMonths: string[];
+      slowMonths: string[];
+      summary: string;
+    };
+    /** A returned sold-listing sample; never an exact sell-through rate. */
+    evidenceNote: string;
+  };
+  competitorSaturation: {
+    status: "ready" | "limited_sample" | "unavailable";
+    marketplace: "ebay";
+    activeListingCount: number | null;
+    activeSampleCount: number;
+    activePriceFloor: number | null;
+    activePriceMedian: number | null;
+    activePriceCeiling: number | null;
+    activeShippingMedian: number | null;
+    supplyDemandStatus: "unknown";
+    listingQuality: {
+      status: "assessed" | "unavailable";
+      imageCoverage: number | null;
+      titleCoverage: number | null;
+      summary: string;
+    };
+    warnings: string[];
+  };
+  netMarginViability: {
+    status: "needs_inputs";
+    marketplace: "ebay";
+    currency: string;
+    expectedSalePrice: number | null;
+    platformFees: number | null;
+    outboundShipping: number | null;
+    cogs: number | null;
+    prepAndRepair: number | null;
+    netProfit: number | null;
+    marginPercent: number | null;
+    roiPercent: number | null;
+    missingInputs: string[];
+    assumptions: string[];
+  };
+  decisionInputs: {
+    status: "needs_more_evidence" | "limited";
+    summary: string;
+    missingInputs: string[];
+  };
+};
+
 export type EbaySoldCompsResult = {
   ok: true;
   phase: "completed";
@@ -347,7 +446,7 @@ export type SerpApiImageValuationInput = {
   identityContext?: string | null;
   refinementContext?: string | null;
   /**
-   * Opaque continuation token returned from the preceding Google AI Mode
+   * Opaque continuation token returned from the preceding KeepFlip AI
    * valuation. It is sent only to the market-research Function.
    */
   subsequentRequestToken?: string | null;
@@ -436,6 +535,42 @@ function nonNegativeNumberOrNull(value: unknown): number | null {
         ? Number(value.replace(/,/g, "").replace(/[^\d.-]/g, ""))
         : Number.NaN;
   return Number.isFinite(number) && number >= 0 ? number : null;
+}
+
+function strictNonNegativeInteger(value: unknown): number | undefined {
+  return typeof value === "number" &&
+    Number.isFinite(value) &&
+    Number.isInteger(value) &&
+    value >= 0
+    ? value
+    : undefined;
+}
+
+function strictNullableNonNegativeNumber(
+  value: unknown
+): number | null | undefined {
+  if (value === null) return null;
+
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? value
+    : undefined;
+}
+
+function strictNullableFiniteNumber(
+  value: unknown
+): number | null | undefined {
+  if (value === null) return null;
+
+  return typeof value === "number" && Number.isFinite(value)
+    ? value
+    : undefined;
+}
+
+function strictStringArray(value: unknown): string[] | undefined {
+  return Array.isArray(value) &&
+    value.every((entry) => typeof entry === "string")
+    ? value
+    : undefined;
 }
 
 function isSynchronousExecutionTimeout(error: unknown) {
@@ -686,35 +821,176 @@ function normalizeMarketAnalysis(
     return undefined;
   }
 
-  const conditionBands = Array.isArray(marketValue.conditionBands)
-    ? marketValue.conditionBands
-      .map((entry) => {
-        const band = asRecord(entry);
-        const condition = asString(band?.condition);
-        if (!condition) return null;
+  const datedComparableCount = strictNonNegativeInteger(
+    period.datedComparableCount
+  );
+  const undatedComparableCount = strictNonNegativeInteger(
+    period.undatedComparableCount
+  );
+  const comparableCount = strictNonNegativeInteger(marketValue.comparableCount);
+  const returnedSoldListings = strictNonNegativeInteger(
+    marketVelocity.returnedSoldListings
+  );
+  const daysOnMarketSampleSize = strictNonNegativeInteger(
+    daysOnMarket.sampleSize
+  );
+  const monthsObserved = strictNonNegativeInteger(seasonality.monthsObserved);
+  const activeSampleCount = strictNonNegativeInteger(
+    competitorSaturation.activeSampleCount
+  );
+  const marketFloor = strictNullableNonNegativeNumber(marketValue.floor);
+  const marketMedian = strictNullableNonNegativeNumber(marketValue.median);
+  const marketAverage = strictNullableNonNegativeNumber(marketValue.average);
+  const marketCeiling = strictNullableNonNegativeNumber(marketValue.ceiling);
+  const quickSale = strictNullableNonNegativeNumber(marketValue.quickSale);
+  const listTarget = strictNullableNonNegativeNumber(marketValue.listTarget);
+  const activeListings = strictNullableNonNegativeNumber(
+    marketVelocity.activeListings
+  );
+  const observedSoldToActiveRatio = strictNullableNonNegativeNumber(
+    marketVelocity.observedSoldToActiveRatio
+  );
+  const daysOnMarketAverage = strictNullableNonNegativeNumber(
+    daysOnMarket.average
+  );
+  const daysOnMarketLow = strictNullableNonNegativeNumber(daysOnMarket.low);
+  const daysOnMarketHigh = strictNullableNonNegativeNumber(daysOnMarket.high);
+  const activeListingCount = strictNullableNonNegativeNumber(
+    competitorSaturation.activeListingCount
+  );
+  const activePriceFloor = strictNullableNonNegativeNumber(
+    competitorSaturation.activePriceFloor
+  );
+  const activePriceMedian = strictNullableNonNegativeNumber(
+    competitorSaturation.activePriceMedian
+  );
+  const activePriceCeiling = strictNullableNonNegativeNumber(
+    competitorSaturation.activePriceCeiling
+  );
+  const activeShippingMedian = strictNullableNonNegativeNumber(
+    competitorSaturation.activeShippingMedian
+  );
+  const imageCoverage = strictNullableNonNegativeNumber(
+    listingQuality.imageCoverage
+  );
+  const titleCoverage = strictNullableNonNegativeNumber(
+    listingQuality.titleCoverage
+  );
+  const expectedSalePrice = strictNullableNonNegativeNumber(
+    netMarginViability.expectedSalePrice
+  );
+  const platformFees = strictNullableNonNegativeNumber(
+    netMarginViability.platformFees
+  );
+  const outboundShipping = strictNullableNonNegativeNumber(
+    netMarginViability.outboundShipping
+  );
+  const cogs = strictNullableNonNegativeNumber(netMarginViability.cogs);
+  const prepAndRepair = strictNullableNonNegativeNumber(
+    netMarginViability.prepAndRepair
+  );
+  const netProfit = strictNullableFiniteNumber(netMarginViability.netProfit);
+  const marginPercent = strictNullableFiniteNumber(
+    netMarginViability.marginPercent
+  );
+  const roiPercent = strictNullableFiniteNumber(netMarginViability.roiPercent);
+  const peakMonths = strictStringArray(seasonality.peakMonths);
+  const slowMonths = strictStringArray(seasonality.slowMonths);
+  const saturationWarnings = strictStringArray(competitorSaturation.warnings);
+  const missingInputs = strictStringArray(netMarginViability.missingInputs);
+  const assumptions = strictStringArray(netMarginViability.assumptions);
 
-        return {
-          condition,
-          comparableCount: Math.max(0, Math.floor(asNumber(band?.comparableCount))),
-          floor: nonNegativeNumberOrNull(band?.floor),
-          median: nonNegativeNumberOrNull(band?.median),
-          ceiling: nonNegativeNumberOrNull(band?.ceiling),
-          deltaVsBaseline:
-            band?.deltaVsBaseline == null
-              ? null
-              : typeof band.deltaVsBaseline === "number" &&
-                  Number.isFinite(band.deltaVsBaseline)
-                ? band.deltaVsBaseline
-                : null,
-        };
-      })
-      .filter(
-        (
-          entry
-        ): entry is ItemMarketAnalysis["marketValue"]["conditionBands"][number] =>
-          Boolean(entry)
-      )
-    : [];
+  if (
+    !Array.isArray(marketValue.conditionBands) ||
+    datedComparableCount === undefined ||
+    undatedComparableCount === undefined ||
+    comparableCount === undefined ||
+    returnedSoldListings === undefined ||
+    daysOnMarketSampleSize === undefined ||
+    monthsObserved === undefined ||
+    activeSampleCount === undefined ||
+    marketFloor === undefined ||
+    marketMedian === undefined ||
+    marketAverage === undefined ||
+    marketCeiling === undefined ||
+    quickSale === undefined ||
+    listTarget === undefined ||
+    activeListings === undefined ||
+    observedSoldToActiveRatio === undefined ||
+    daysOnMarketAverage === undefined ||
+    daysOnMarketLow === undefined ||
+    daysOnMarketHigh === undefined ||
+    activeListingCount === undefined ||
+    activePriceFloor === undefined ||
+    activePriceMedian === undefined ||
+    activePriceCeiling === undefined ||
+    activeShippingMedian === undefined ||
+    imageCoverage === undefined ||
+    titleCoverage === undefined ||
+    expectedSalePrice === undefined ||
+    platformFees === undefined ||
+    outboundShipping === undefined ||
+    cogs === undefined ||
+    prepAndRepair === undefined ||
+    netProfit === undefined ||
+    marginPercent === undefined ||
+    roiPercent === undefined ||
+    peakMonths === undefined ||
+    slowMonths === undefined ||
+    saturationWarnings === undefined ||
+    missingInputs === undefined ||
+    assumptions === undefined ||
+    !asString(daysOnMarket.note)
+  ) {
+    return undefined;
+  }
+
+  let hasInvalidConditionBand = false;
+  const conditionBands = marketValue.conditionBands
+    .map((entry) => {
+      const band = asRecord(entry);
+      const condition = asString(band?.condition);
+      const bandComparableCount = strictNonNegativeInteger(
+        band?.comparableCount
+      );
+      const floor = strictNullableNonNegativeNumber(band?.floor);
+      const median = strictNullableNonNegativeNumber(band?.median);
+      const ceiling = strictNullableNonNegativeNumber(band?.ceiling);
+      const deltaVsBaseline = strictNullableFiniteNumber(
+        band?.deltaVsBaseline
+      );
+
+      if (
+        !condition ||
+        bandComparableCount === undefined ||
+        floor === undefined ||
+        median === undefined ||
+        ceiling === undefined ||
+        deltaVsBaseline === undefined
+      ) {
+        hasInvalidConditionBand = true;
+        return null;
+      }
+
+      return {
+        condition,
+        comparableCount: bandComparableCount,
+        floor,
+        median,
+        ceiling,
+        deltaVsBaseline,
+      };
+    })
+    .filter(
+      (
+        entry
+      ): entry is ItemMarketAnalysis["marketValue"]["conditionBands"][number] =>
+        Boolean(entry)
+    );
+
+  if (hasInvalidConditionBand) {
+    return undefined;
+  }
 
   return {
     version: 1,
@@ -727,52 +1003,38 @@ function normalizeMarketAnalysis(
         days: period.days,
         start: toNullableString(period.start),
         end: asString(period.end),
-        datedComparableCount: Math.max(
-          0,
-          Math.floor(asNumber(period.datedComparableCount))
-        ),
-        undatedComparableCount: Math.max(
-          0,
-          Math.floor(asNumber(period.undatedComparableCount))
-        ),
+        datedComparableCount,
+        undatedComparableCount,
       },
-      comparableCount: Math.max(0, Math.floor(asNumber(marketValue.comparableCount))),
-      floor: nonNegativeNumberOrNull(marketValue.floor),
-      median: nonNegativeNumberOrNull(marketValue.median),
-      average: nonNegativeNumberOrNull(marketValue.average),
-      ceiling: nonNegativeNumberOrNull(marketValue.ceiling),
-      quickSale: nonNegativeNumberOrNull(marketValue.quickSale),
-      listTarget: nonNegativeNumberOrNull(marketValue.listTarget),
+      comparableCount,
+      floor: marketFloor,
+      median: marketMedian,
+      average: marketAverage,
+      ceiling: marketCeiling,
+      quickSale,
+      listTarget,
       conditionBands,
       evidenceNote: toNullableString(marketValue.evidenceNote),
     },
     marketVelocity: {
       status: velocityStatus,
-      activeListings: nonNegativeNumberOrNull(marketVelocity.activeListings),
-      returnedSoldListings: Math.max(
-        0,
-        Math.floor(asNumber(marketVelocity.returnedSoldListings))
-      ),
-      observedSoldToActiveRatio: nonNegativeNumberOrNull(
-        marketVelocity.observedSoldToActiveRatio
-      ),
+      activeListings,
+      returnedSoldListings,
+      observedSoldToActiveRatio,
       ratioBasis,
       daysOnMarket: {
         status: "unavailable",
-        average: nonNegativeNumberOrNull(daysOnMarket.average),
-        low: nonNegativeNumberOrNull(daysOnMarket.low),
-        high: nonNegativeNumberOrNull(daysOnMarket.high),
-        sampleSize: Math.max(0, Math.floor(asNumber(daysOnMarket.sampleSize))),
+        average: daysOnMarketAverage,
+        low: daysOnMarketLow,
+        high: daysOnMarketHigh,
+        sampleSize: daysOnMarketSampleSize,
         note: asString(daysOnMarket.note),
       },
       seasonality: {
         status: seasonality.status,
-        monthsObserved: Math.max(
-          0,
-          Math.floor(asNumber(seasonality.monthsObserved))
-        ),
-        peakMonths: asStringArray(seasonality.peakMonths),
-        slowMonths: asStringArray(seasonality.slowMonths),
+        monthsObserved,
+        peakMonths,
+        slowMonths,
         summary: toNullableString(seasonality.summary),
       },
       evidenceNote: toNullableString(marketVelocity.evidenceNote),
@@ -780,52 +1042,35 @@ function normalizeMarketAnalysis(
     competitorSaturation: {
       status: saturationStatus,
       marketplace: "ebay",
-      activeListingCount: nonNegativeNumberOrNull(
-        competitorSaturation.activeListingCount
-      ),
-      activeSampleCount: Math.max(
-        0,
-        Math.floor(asNumber(competitorSaturation.activeSampleCount))
-      ),
-      activePriceFloor: nonNegativeNumberOrNull(
-        competitorSaturation.activePriceFloor
-      ),
-      activePriceMedian: nonNegativeNumberOrNull(
-        competitorSaturation.activePriceMedian
-      ),
-      activePriceCeiling: nonNegativeNumberOrNull(
-        competitorSaturation.activePriceCeiling
-      ),
-      activeShippingMedian: nonNegativeNumberOrNull(
-        competitorSaturation.activeShippingMedian
-      ),
+      activeListingCount,
+      activeSampleCount,
+      activePriceFloor,
+      activePriceMedian,
+      activePriceCeiling,
+      activeShippingMedian,
       supplyDemandStatus: "unknown",
       listingQuality: {
         status: listingQuality.status,
-        imageCoverage: nonNegativeNumberOrNull(listingQuality.imageCoverage),
-        titleCoverage: nonNegativeNumberOrNull(listingQuality.titleCoverage),
+        imageCoverage,
+        titleCoverage,
         summary: toNullableString(listingQuality.summary),
       },
-      warnings: asStringArray(competitorSaturation.warnings),
+      warnings: saturationWarnings,
     },
     netMarginViability: {
       status: "needs_inputs",
       marketplace: "ebay",
       currency: toNullableString(netMarginViability.currency),
-      expectedSalePrice: nonNegativeNumberOrNull(
-        netMarginViability.expectedSalePrice
-      ),
-      platformFees: nonNegativeNumberOrNull(netMarginViability.platformFees),
-      outboundShipping: nonNegativeNumberOrNull(
-        netMarginViability.outboundShipping
-      ),
-      cogs: nonNegativeNumberOrNull(netMarginViability.cogs),
-      prepAndRepair: nonNegativeNumberOrNull(netMarginViability.prepAndRepair),
-      netProfit: finiteNumberOrNull(netMarginViability.netProfit),
-      marginPercent: finiteNumberOrNull(netMarginViability.marginPercent),
-      roiPercent: finiteNumberOrNull(netMarginViability.roiPercent),
-      missingInputs: asStringArray(netMarginViability.missingInputs),
-      assumptions: asStringArray(netMarginViability.assumptions),
+      expectedSalePrice,
+      platformFees,
+      outboundShipping,
+      cogs,
+      prepAndRepair,
+      netProfit,
+      marginPercent,
+      roiPercent,
+      missingInputs,
+      assumptions,
     },
     decisionInputs: {
       status: decisionStatus,
@@ -1944,7 +2189,7 @@ export async function runSerpApiImageValuation(
     MAX_SERPAPI_SUBSEQUENT_REQUEST_TOKEN_LENGTH
   ) {
     throw new Error(
-      "KeepFlip could not continue the previous Google AI Mode valuation. Start a new item valuation.",
+      "KeepFlip AI could not continue the previous valuation. Start a new item valuation.",
     );
   }
   const payload = await callMarketCompsFunction({

@@ -27,7 +27,7 @@ function displaySignal(value: string | null) {
 export function inventoryItemToAnalysisState(
   item: InventoryItem,
 ): ResultState {
-  if (item.analysisSnapshot?.status === "identified") {
+  if (item.analysisSnapshot) {
     try {
       const restored = toItemAnalysisState(item.analysisSnapshot);
       if (restored.status === "result") return restored;

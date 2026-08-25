@@ -24,7 +24,7 @@ import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import {
   connectEbayAccount,
   getEbayConnectionStatus,
-} from '@/lib/connect-ebay-account';
+} from '@/services/ebayConnectionService';
 import { openKeepFlipSupportEmail } from '@/lib/keepflip-feedback';
 
 type EbayConnectionViewState =
@@ -155,6 +155,14 @@ export function CommandCenterScreen() {
 
   const eBayDetails = eBayStateDetails(eBayState, eBayErrorMessage);
   const eBayIsBusy = eBayState === 'checking' || eBayState === 'connecting';
+  const eBayActionLabel =
+    eBayState === 'connected'
+      ? 'REFRESH'
+      : eBayState === 'disconnected'
+        ? 'CONNECT'
+        : eBayState === 'error'
+          ? 'RETRY'
+          : undefined;
 
 
   const handleEbayConnection = async () => {
@@ -177,7 +185,13 @@ export function CommandCenterScreen() {
 
       if (result.status !== 'connected') {
         setEbayState('disconnected');
-        setEbayErrorMessage('The eBay connection was canceled before it finished.');
+        setEbayErrorMessage(
+          result.status === 'declined'
+            ? 'You declined the eBay connection. Nothing was linked.'
+            : result.status === 'dismissed'
+              ? 'The eBay sign-in window was closed before it finished.'
+              : 'eBay could not complete the connection. Please try again.',
+        );
         return;
       }
 
@@ -221,7 +235,7 @@ export function CommandCenterScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top + 35, paddingBottom: insets.bottom + 32 },
+          { paddingTop: insets.top + 74, paddingBottom: insets.bottom + 32 },
         ]}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}>
@@ -251,6 +265,7 @@ export function CommandCenterScreen() {
             <KeepFlipControlRow
               accent="cyan"
               actionBusy={eBayIsBusy}
+              actionLabel={eBayActionLabel}
               accessibilityHint={
                 eBayState === 'connected'
                   ? 'Refreshes the eBay connection status.'
@@ -262,7 +277,7 @@ export function CommandCenterScreen() {
                 <Image
                   accessible={false}
                   resizeMode="contain"
-                  source={require('@/assets/images/ebay.png')}
+                  source={require('@/assets/images/ebay-seeklogo.png')}
                   style={styles.eBayLogo}
                 />
               }
@@ -397,7 +412,7 @@ const styles = StyleSheet.create({
     maxWidth: 760,
     alignSelf: 'center',
     gap: 16,
-    paddingHorizontal: 10,
+    paddingHorizontal: 18,
   },
   header: { gap: 4 },
   eyebrow: {
@@ -441,8 +456,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(6, 11, 14, 0.76)',
   },
   eBayLogo: {
-    width: 22,
-    height: 22,
+    width: 25,
+    height: 27,
   },
   settingsList: {
     borderTopWidth: StyleSheet.hairlineWidth,
