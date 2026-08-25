@@ -40,6 +40,14 @@ const SECTIONS: LegalSection[] = [
     ],
   },
   {
+    title: "eBay services and content",
+    body: [
+      "When you connect an eBay account or use KeepFlip features that display eBay content, your use of that content is subject to the eBay User Agreement and, to the extent KeepFlip sublicenses the right to display eBay content through the app, the eBay API License Agreement.",
+      "By using those features, you agree to be bound by the applicable terms of the eBay API License Agreement for that sublicense. eBay is an intended third-party beneficiary of that sublicense and may enforce its terms, and the sublicense is revocable at any time.",
+      "KeepFlip does not provide users with eBay API credentials or programmatic control over eBay APIs. eBay content remains owned by eBay or its licensors and may be refreshed, limited, or removed when required by eBay or applicable policy.",
+    ],
+  },
+  {
     title: "Third-party services",
     body: [
       "KeepFlip may rely on services such as Appwrite, artificial-intelligence providers, market-research providers, advertising providers, mapping providers, and external marketplaces.",
@@ -70,7 +78,7 @@ const SECTIONS: LegalSection[] = [
 export default function TermsScreen() {
   return (
     <LegalDocumentScreen
-      effectiveDate="July 21, 2026"
+      effectiveDate="August 24, 2026"
       intro="These terms explain the rules that apply when you create an account or use KeepFlip."
       sections={SECTIONS}
       title="Terms of Service"

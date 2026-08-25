@@ -133,7 +133,7 @@ function PriceTrend({ result }: { result: MarketResearchResult }) {
           <Text style={styles.sectionEyebrow}>90-DAY SIGNAL</Text>
           <Text style={styles.sectionTitle}>Price trend</Text>
         </View>
-        <Text style={styles.chartCaption}>15-day averages</Text>
+        <Text style={styles.chartCaption}>15-day sold-sample averages</Text>
       </View>
       <View style={styles.chart}>
         {result.trend.map((point) => {
@@ -220,10 +220,6 @@ export function MarketResearchScreen() {
     }
   };
 
-  const sellThrough = result?.summary.activeCount
-    ? (result.summary.count / result.summary.activeCount) * 100
-    : null;
-
   return (
     <KeepFlipBackground>
       <KeyboardAvoidingView
@@ -280,7 +276,9 @@ export function MarketResearchScreen() {
                 )}
               </Pressable>
             </View>
-            <Text style={styles.sourceNote}>Secure sold comps with an official eBay active-listing signal</Text>
+            <Text style={styles.sourceNote}>
+              Sold-comp research is shown separately from the official eBay active-listing snapshot.
+            </Text>
             {error ? <Text accessibilityRole="alert" style={styles.errorText}>{error}</Text> : null}
           </Animated.View>
 
@@ -295,13 +293,13 @@ export function MarketResearchScreen() {
               </View>
 
               <View style={styles.metricsGrid}>
-                <MetricCard label="Median sold" value={money(result.summary.median, result.summary.currency)} detail={`${result.summary.count} comps`} />
-                <MetricCard label="Average" value={money(result.summary.average, result.summary.currency)} detail="Sale + shipping" />
-                <MetricCard label="Low / high" value={`${money(result.summary.low, result.summary.currency)} – ${money(result.summary.high, result.summary.currency)}`} />
+                <MetricCard label="Sold sample median" value={money(result.summary.median, result.summary.currency)} detail={`${result.summary.count} sold observations`} />
+                <MetricCard label="Sold sample mean" value={money(result.summary.average, result.summary.currency)} detail="Observed sale + shipping" />
+                <MetricCard label="Observed low / high" value={`${money(result.summary.low, result.summary.currency)} – ${money(result.summary.high, result.summary.currency)}`} />
                 <MetricCard
-                  label="Sell-through"
-                  value={sellThrough == null ? 'Pending' : percent(sellThrough)}
-                  detail={sellThrough == null ? `${result.soldLast30Days} dated sales / 30d` : `${result.summary.count} sold / ${result.summary.activeCount} active`}
+                  label="eBay active listings"
+                  value={result.summary.activeCount == null ? 'Unavailable' : String(Math.round(result.summary.activeCount))}
+                  detail={`${result.soldLast30Days} dated sold observations / 30d`}
                 />
               </View>
 
@@ -350,7 +348,7 @@ export function MarketResearchScreen() {
             <Text style={styles.sectionEyebrow}>SMART MARGIN ESTIMATOR</Text>
             <Text style={styles.sectionTitle}>What will you actually make?</Text>
             <Text style={styles.sectionDescription}>
-              Compare marketplace fees and adjust every cost. The median sold price fills automatically after research.
+              Compare marketplace fees and adjust every cost. The sold-sample median fills automatically after research.
             </Text>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.platformScroller}>
