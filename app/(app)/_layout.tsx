@@ -87,6 +87,7 @@ export default function AppShellLayout() {
             <Stack.Screen name="command-center" />
             <Stack.Screen name="account" />
             <Stack.Screen name="ebay-connect" />
+            <Stack.Screen name="ebay-account" />
             <Stack.Screen name="books" />
           </Stack>
         </View>

@@ -1,0 +1,28 @@
+{
+  "model": "YOLOv8n-seg",
+  "purpose": "silhouette pretraining baseline",
+  "input": {
+    "shape": [1, 3, 640, 640],
+    "layout": "NCHW",
+    "dataType": "float32"
+  },
+  "outputs": [
+    {
+      "shape": [1, 116, 8400],
+      "meaning": "decoded boxes, class scores, and mask coefficients"
+    },
+    {
+      "shape": [1, 160, 160, 32],
+      "meaning": "mask prototypes (NHWC in this TFLite export)"
+    }
+  ],
+  "classes": 80,
+  "maskCoefficients": 32,
+  "export": {
+    "imageSize": 640,
+    "batch": 1,
+    "nms": false,
+    "precision": "float32"
+  },
+  "nextStep": "Fine-tune from the pretrained checkpoint with a single item class and polygon masks before using the silhouette for measurements."
+}

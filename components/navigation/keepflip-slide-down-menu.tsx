@@ -18,7 +18,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { EbayShoppingBagIcon } from '@/components/ebay/ebay-shopping-bag-icon';
+import { EbayMenuConnectionLink } from '@/components/navigation/ebay-menu-connection-link';
 import {
   MENU_CLOSE_DURATION_MS,
   useKeepFlipMenu,
@@ -149,13 +149,14 @@ export function KeepFlipSlideDownMenu() {
     }
   };
 
-  const handleEbayNavigate = () => {
+  const handleEbayNavigate = (isConnected: boolean) => {
     if (isMenuDisabled) return;
     hapticSelection();
     closeMenu();
 
-    if (!pathname.startsWith('/ebay-connect')) {
-      requestAnimationFrame(() => router.push('/ebay-connect' as Href));
+    const destination = (isConnected ? '/ebay-account' : '/ebay-connect') as Href;
+    if (!pathname.startsWith(destination.toString())) {
+      requestAnimationFrame(() => router.push(destination));
     }
   };
 
@@ -287,23 +288,14 @@ export function KeepFlipSlideDownMenu() {
                 </View>
               </View>
 
-              <Pressable
-                accessibilityHint="Explains what connecting eBay enables before opening eBay sign-in"
-                accessibilityLabel="Link your eBay account"
-                accessibilityRole="button"
+              <EbayMenuConnectionLink
+                active={
+                  pathname.startsWith('/ebay-connect') || pathname.startsWith('/ebay-account')
+                }
+                disabled={isMenuDisabled}
+                open={isMenuOpen}
                 onPress={handleEbayNavigate}
-                style={({ pressed }) => [
-                  styles.ebayLink,
-                  pathname.startsWith('/ebay-connect') && styles.ebayLinkActive,
-                  pressed && styles.ebayLinkPressed,
-                ]}>
-                <EbayShoppingBagIcon size={29} />
-                <View style={styles.ebayLinkCopy}>
-                  <Text style={styles.ebayLinkText}>Link your eBay account</Text>
-                  <Text style={styles.ebayLinkEyebrow}>SOURCE · MESSAGE · CONNECT</Text>
-                </View>
-                <IconSymbol name="chevron.right" size={18} color={theme.colors.goldMuted} />
-              </Pressable>
+              />
 
               <View style={styles.systemStatus}>
                 <View style={styles.systemStatusDot} />

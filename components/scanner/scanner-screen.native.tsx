@@ -1,4 +1,5 @@
 import * as Haptics from "expo-haptics";
+import type { Href } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import {
   useIsFocused,
@@ -1425,6 +1426,7 @@ export default function ScannerScreen() {
           <Camera
             ref={cameraRef}
             device={device}
+            zoom={device.minZoom}
             implementationMode="compatible"
             isActive={isCameraActive}
             outputs={cameraOutputs}
@@ -1710,9 +1712,34 @@ export default function ScannerScreen() {
             selectedTool={selectedTool}
           />
         </Animated.View>
-        </Animated.View>
-
+      </Animated.View>
       </View>
+  
+      <Pressable
+        onPress={() => router.push("/ar-measure-test" as Href)}
+        style={{
+          position: "absolute",
+          right: 50,
+          top: 200,
+          paddingHorizontal: 12,
+          paddingVertical: 8,
+          borderRadius: 10,
+          borderWidth: 1,
+          borderColor: theme.colors.goldBright,
+          backgroundColor: "rgba(0,0,0,0.75)",
+          zIndex: 100,
+        }}
+      >
+        <Text
+          style={{
+            color: theme.colors.goldBright,
+            fontSize: 12,
+            fontWeight: "800",
+          }}
+        >
+          TEST AR
+        </Text>
+      </Pressable>
     </View>
   );
 }
