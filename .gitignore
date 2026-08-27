@@ -31,9 +31,10 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# local env files and server-side environment exports
 .env
 .env*.local
+*.env
 package-lock.
 
 # Private Roboflow pilot source photos and completed manifests
