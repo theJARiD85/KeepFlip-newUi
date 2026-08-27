@@ -266,7 +266,7 @@ export function SmartProfitCalculator({
       <View style={styles.header}>
         <View style={styles.headerCopy}>
           <Text style={styles.eyebrow}>SMART PROFIT CALCULATOR</Text>
-          <Text selectable style={styles.title}>Price the flip before you list it.</Text>
+          <Text selectable style={styles.title}>Price the flip</Text>
         </View>
         <View style={styles.rangeReadout}>
           <Text style={styles.rangeLabel}>MARKET MID</Text>

@@ -179,34 +179,13 @@ internal object ItemExtentEstimator {
         extents
       )
 
-    val edges =
-      intArrayOf(
-        0, 1,
-        1, 3,
-        3, 2,
-        2, 0,
-        4, 5,
-        5, 7,
-        7, 6,
-        6, 4,
-        0, 4,
-        1, 5,
-        2, 6,
-        3, 7
-      )
-
     val lineVertices =
-      FloatArray(edges.size * 3)
-
-    var outputIndex = 0
-
-    edges.forEach { cornerIndex ->
-      val corner = corners[cornerIndex]
-
-      lineVertices[outputIndex++] = corner[0]
-      lineVertices[outputIndex++] = corner[1]
-      lineVertices[outputIndex++] = corner[2]
-    }
+      buildWireframeVertices(
+        points,
+        centroid,
+        axes,
+        ranges
+      )
 
     return ItemExtentEstimate(
       corners = corners,
@@ -400,6 +379,205 @@ internal object ItemExtentEstimator {
         matrix[7] * vector[1] +
         matrix[8] * vector[2]
     )
+  }
+  /** Build a bounded world-space wireframe from the fused depth samples. */
+  private fun buildWireframeVertices(
+    points: List<FloatArray>,
+    centroid: FloatArray,
+    axes: Array<FloatArray>,
+    ranges: List<AxisRange>
+  ): FloatArray {
+    val gridSize = 8
+    val maxSegments = 260
+    if (points.isEmpty() || axes.size < 3 || ranges.size < 3) {
+      return FloatArray(0)
+    }
+
+    val occupied = mutableSetOf<Int>()
+    points.forEach { point ->
+      val projections = axes.map { axis ->
+        dot(subtract(point, centroid), axis)
+      }
+      occupied.add(
+        wireframeCellKey(
+          projectionToCell(projections[0], ranges[0], gridSize),
+          projectionToCell(projections[1], ranges[1], gridSize),
+          projectionToCell(projections[2], ranges[2], gridSize),
+          gridSize
+        )
+      )
+    }
+
+    if (occupied.isEmpty()) {
+      return FloatArray(0)
+    }
+
+    val vertices = ArrayList<Float>(maxSegments * 6)
+    fun addSegment(first: FloatArray, second: FloatArray) {
+      if (vertices.size / 6 >= maxSegments) return
+      vertices.add(first[0])
+      vertices.add(first[1])
+      vertices.add(first[2])
+      vertices.add(second[0])
+      vertices.add(second[1])
+      vertices.add(second[2])
+    }
+
+    /* Keep a clean outer outline even when the depth samples are sparse. */
+    val hull = buildProjectedHull(points, centroid, axes[0], axes[1])
+    if (hull.size >= 2) {
+      hull.indices.forEach { index ->
+        addSegment(hull[index], hull[(index + 1) % hull.size])
+      }
+    }
+
+    val boundaryCells = occupied.filter { key ->
+      val cell = decodeWireframeCell(key, gridSize)
+      isBoundaryCell(cell[0], cell[1], cell[2], occupied, gridSize)
+    }.toSet()
+
+    occupied.forEach { key ->
+      if (vertices.size / 6 >= maxSegments) return@forEach
+      val cell = decodeWireframeCell(key, gridSize)
+      val first = wireframeCellCenter(
+        cell[0], cell[1], cell[2], centroid, axes, ranges, gridSize
+      )
+      val neighbors = arrayOf(
+        intArrayOf(cell[0] + 1, cell[1], cell[2]),
+        intArrayOf(cell[0], cell[1] + 1, cell[2]),
+        intArrayOf(cell[0], cell[1], cell[2] + 1)
+      )
+      neighbors.forEach { neighbor ->
+        if (neighbor.any { coordinate -> coordinate !in 0 until gridSize }) {
+          return@forEach
+        }
+        val neighborKey = wireframeCellKey(
+          neighbor[0], neighbor[1], neighbor[2], gridSize
+        )
+        if (
+          !occupied.contains(neighborKey) ||
+          (!boundaryCells.contains(key) && !boundaryCells.contains(neighborKey))
+        ) {
+          return@forEach
+        }
+        addSegment(
+          first,
+          wireframeCellCenter(
+            neighbor[0], neighbor[1], neighbor[2],
+            centroid, axes, ranges, gridSize
+          )
+        )
+      }
+    }
+
+    return vertices.toFloatArray()
+  }
+
+  private fun projectionToCell(
+    projection: Float,
+    range: AxisRange,
+    gridSize: Int
+  ): Int {
+    if (range.extent <= 0f) return 0
+    return (((projection - range.low) / range.extent) * gridSize)
+      .toInt().coerceIn(0, gridSize - 1)
+  }
+
+  private fun wireframeCellKey(x: Int, y: Int, z: Int, gridSize: Int): Int {
+    return x + gridSize * (y + gridSize * z)
+  }
+
+  private fun decodeWireframeCell(key: Int, gridSize: Int): IntArray {
+    val z = key / (gridSize * gridSize)
+    val remainder = key - z * gridSize * gridSize
+    val y = remainder / gridSize
+    return intArrayOf(remainder - y * gridSize, y, z)
+  }
+
+  private fun isBoundaryCell(
+    x: Int,
+    y: Int,
+    z: Int,
+    occupied: Set<Int>,
+    gridSize: Int
+  ): Boolean {
+    val neighbors = arrayOf(
+      intArrayOf(x - 1, y, z), intArrayOf(x + 1, y, z),
+      intArrayOf(x, y - 1, z), intArrayOf(x, y + 1, z),
+      intArrayOf(x, y, z - 1), intArrayOf(x, y, z + 1)
+    )
+    return neighbors.any { neighbor ->
+      neighbor.any { coordinate -> coordinate !in 0 until gridSize } ||
+        !occupied.contains(
+          wireframeCellKey(neighbor[0], neighbor[1], neighbor[2], gridSize)
+        )
+    }
+  }
+
+  private fun wireframeCellCenter(
+    x: Int,
+    y: Int,
+    z: Int,
+    centroid: FloatArray,
+    axes: Array<FloatArray>,
+    ranges: List<AxisRange>,
+    gridSize: Int
+  ): FloatArray {
+    var point = centroid.copyOf()
+    val cells = intArrayOf(x, y, z)
+    for (axisIndex in 0..2) {
+      val fraction = (cells[axisIndex] + 0.5f) / gridSize.toFloat()
+      val projection = ranges[axisIndex].low + ranges[axisIndex].extent * fraction
+      point = add(point, scale(axes[axisIndex], projection))
+    }
+    return point
+  }
+
+  private data class ProjectedPoint(
+    val x: Float,
+    val y: Float,
+    val world: FloatArray
+  )
+
+  private fun buildProjectedHull(
+    points: List<FloatArray>,
+    centroid: FloatArray,
+    firstAxis: FloatArray,
+    secondAxis: FloatArray
+  ): List<FloatArray> {
+    val projected = points.map { point ->
+      ProjectedPoint(
+        dot(subtract(point, centroid), firstAxis),
+        dot(subtract(point, centroid), secondAxis),
+        point
+      )
+    }.sortedWith(compareBy<ProjectedPoint> { it.x }.thenBy { it.y })
+
+    if (projected.size < 3) return projected.map { it.world }
+
+    fun cross(origin: ProjectedPoint, first: ProjectedPoint, second: ProjectedPoint): Float {
+      return (first.x - origin.x) * (second.y - origin.y) -
+        (first.y - origin.y) * (second.x - origin.x)
+    }
+
+    fun buildHalf(input: List<ProjectedPoint>): MutableList<ProjectedPoint> {
+      val half = mutableListOf<ProjectedPoint>()
+      input.forEach { point ->
+        while (
+          half.size >= 2 &&
+          cross(half[half.lastIndex - 1], half.last(), point) <= 0f
+        ) {
+          half.removeAt(half.lastIndex)
+        }
+        half.add(point)
+      }
+      return half
+    }
+
+    val lower = buildHalf(projected)
+    val upper = buildHalf(projected.asReversed())
+    val hull = (lower.dropLast(1) + upper.dropLast(1)).map { it.world }
+    return if (hull.size >= 2) hull else projected.map { it.world }
   }
 
   private fun cross(

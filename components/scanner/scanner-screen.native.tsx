@@ -1426,7 +1426,6 @@ export default function ScannerScreen() {
           <Camera
             ref={cameraRef}
             device={device}
-            zoom={device.minZoom}
             implementationMode="compatible"
             isActive={isCameraActive}
             outputs={cameraOutputs}

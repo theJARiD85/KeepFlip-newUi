@@ -8,6 +8,7 @@ import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
+import android.view.MotionEvent
 import android.view.Surface
 import android.widget.FrameLayout
 import org.opencv.android.OpenCVLoader
@@ -128,6 +129,9 @@ private class ItemScanState {
   var lastEstimate: ItemExtentEstimate? = null
   var stableEstimateCount = 0
   var depthWarningEmitted = false
+  var tapX = 0f
+  var tapY = 0f
+  var tapPending = false
 }
 
 private var measurementMode =
@@ -360,6 +364,27 @@ private val maximumLostCornerFrames =
     glSurfaceView.preserveEGLContextOnPause = true
 
     glSurfaceView.setRenderer(this)
+    glSurfaceView.setOnTouchListener { _, event ->
+      if (event.actionMasked == MotionEvent.ACTION_UP) {
+        val tapX = event.x
+        val tapY = event.y
+        glSurfaceView.queueEvent {
+          if (
+            !disposed &&
+            measurementMode == "item" &&
+            !measurementComplete &&
+            itemScan.seedPoint == null
+          ) {
+            itemScan.tapX = tapX
+            itemScan.tapY = tapY
+            itemScan.tapPending = true
+            itemScan.depthWarningEmitted = false
+            emitTargetState("searching_item", 0f)
+          }
+        }
+      }
+      true
+    }
 
     glSurfaceView.renderMode =
       GLSurfaceView.RENDERMODE_CONTINUOUSLY
@@ -1482,7 +1507,7 @@ frame.camera.getViewMatrix(
         frame
       )
 
-      drawMeasuredItemExtent()
+      drawMeasuredItemWireframe()
       emitItemMeasurementLabels()
     }
     } catch (
@@ -1504,7 +1529,7 @@ frame.camera.getViewMatrix(
     }
   }
 
-private fun drawMeasuredItemExtent() {
+private fun drawMeasuredItemWireframe() {
   val model = itemExtentModel ?: return
   if (
     lineProgram == 0 ||
@@ -2983,6 +3008,13 @@ private fun handleAutoItemMeasurement(
   ) {
     return
   }
+  if (
+    !itemScan.tapPending &&
+    itemScan.seedPoint == null
+  ) {
+    emitTargetState("searching_item", 0f)
+    return
+  }
   val cameraPose = frame.camera.pose
   val previousCameraPose = itemScan.lastCameraPose
   if (previousCameraPose != null && itemScan.seedPoint != null) {
@@ -2992,13 +3024,21 @@ private fun handleAutoItemMeasurement(
   if (frameCounter % itemSampleIntervalFrames != 0) {
     return
   }
-  val centerX = surfaceWidth / 2f
-  val centerY = surfaceHeight * 0.42f
+  val projectedSeed = itemScan.seedPoint?.let {
+    projectWorldPointToView(it)
+  }
+  val centerX = (
+    projectedSeed?.getOrNull(0) ?: itemScan.tapX
+  ).coerceIn(0f, surfaceWidth.toFloat())
+  val centerY = (
+    projectedSeed?.getOrNull(1) ?: itemScan.tapY
+  ).coerceIn(0f, surfaceHeight.toFloat())
   val centerHit = findDepthPointHit(frame, centerX, centerY)
   if (centerHit == null) {
     emitTargetState("item_depth_required", 0f)
     return
   }
+  itemScan.tapPending = false
   itemScan.depthWarningEmitted = false
   val now = System.nanoTime()
   val seed = itemScan.seedPoint ?: poseToPoint(centerHit.hitPose).also {
@@ -5239,6 +5279,9 @@ private fun clearItemScan() {
   itemScan.lastEstimate = null
   itemScan.stableEstimateCount = 0
   itemScan.depthWarningEmitted = false
+  itemScan.tapX = 0f
+  itemScan.tapY = 0f
+  itemScan.tapPending = false
 }
   private fun createExternalCameraTexture():
     Int {

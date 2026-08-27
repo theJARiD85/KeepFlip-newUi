@@ -4,7 +4,6 @@ import * as WebBrowser from 'expo-web-browser';
 import { ExecutionMethod, functions } from '../lib/appwrite';
 import {
   clearEbayOAuthState,
-  createEbayOAuthState,
   startEbayLogin,
 } from '../lib/start-ebay-login';
 
@@ -26,6 +25,8 @@ export type EbayConnectionStatusResult = {
 };
 
 type FunctionPayload = {
+  ok?: unknown;
+  authorizationUrl?: unknown;
   state?: unknown;
   connected?: unknown;
   environment?: unknown;
@@ -119,6 +120,8 @@ async function executeOAuthFunction(
   extra: Record<string, unknown> = {},
 ) {
   return functions.createExecution({
+    // This is the active authenticated helper. The eBay-facing callback is a
+    // separate function (ebay_oauth_callback) and is never called by mobile.
     functionId: ebayOAuthFunctionId(),
     body: JSON.stringify({ ...extra, environment }),
     async: false,
@@ -175,20 +178,18 @@ function parseReturnUrl(
 }
 
 /**
- * Starts eBay's authorization-code grant. The app assembles the public eBay
- * authorize URL and stores a short-lived client correlation state. The
- * backend-signed state still travels through eBay so the callback can bind the
- * resulting tokens to the authenticated KeepFlip user.
+ * Starts eBay's authorization-code grant through the active backend. The
+ * backend creates the opaque state row and returns the complete authorization
+ * URL; the app persists that returned state in SecureStore before opening the
+ * browser. eBay calls ebay_oauth_callback directly after consent.
  */
 export async function connectEbayAccount(
   environment: EbayOAuthEnvironment = getEbayOAuthEnvironment(),
 ): Promise<EbayConnectionResult> {
-  const clientState = await createEbayOAuthState(environment);
+  let pendingState: string | undefined;
 
   try {
-    const execution = await executeOAuthFunction('/connect', environment, {
-      clientState,
-    });
+    const execution = await executeOAuthFunction('/connect', environment);
 
     if (execution.responseStatusCode !== 200) {
       throw functionError(
@@ -200,23 +201,31 @@ export async function connectEbayAccount(
     const payload = parseFunctionPayload(execution.responseBody);
     const responseEnvironment = normalizeEnvironment(payload.environment);
     const activeEnvironment = responseEnvironment ?? environment;
-    const authorizationState =
+    const authorizationUrl =
+      typeof payload.authorizationUrl === 'string'
+        ? payload.authorizationUrl.trim()
+        : '';
+    const legacyAuthorizationState =
       typeof payload.state === 'string' ? payload.state.trim() : '';
 
-    if (!authorizationState) {
+    if (!authorizationUrl && !legacyAuthorizationState) {
       throw new Error(
-        'The eBay OAuth Function did not return a callback state.',
+        'The eBay OAuth backend did not return an authorization URL.',
       );
     }
 
     const browserSession = await startEbayLogin({
       environment: activeEnvironment,
-      authorizationState,
-      clientState,
+      authorizationUrl: authorizationUrl || undefined,
+      authorizationState: authorizationUrl
+        ? undefined
+        : legacyAuthorizationState,
     });
-    const browserResult = browserSession.result;
+    pendingState = browserSession.authorizationState || browserSession.clientState;
 
+    const browserResult = browserSession.result;
     if (browserResult.type !== 'success' || !browserResult.url) {
+      await clearEbayOAuthState(pendingState).catch(() => undefined);
       return {
         status: 'dismissed',
         environment: activeEnvironment,
@@ -225,19 +234,25 @@ export async function connectEbayAccount(
 
     const callbackResult = parseReturnUrl(browserResult.url, activeEnvironment);
     if (callbackResult.status !== 'connected') {
+      await clearEbayOAuthState(pendingState).catch(() => undefined);
       return callbackResult;
     }
 
     try {
+      // ebay_oauth_callback has already validated/claimed the opaque state and
+      // stored the tokens. This status request verifies the result belongs to
+      // the signed-in KeepFlip user before the app reports success.
       const status = await getEbayConnectionStatus(callbackResult.environment);
+      await clearEbayOAuthState(pendingState).catch(() => undefined);
       return status.connected
         ? { status: 'connected', environment: status.environment }
         : { status: 'error', environment: callbackResult.environment };
     } catch {
+      await clearEbayOAuthState(pendingState).catch(() => undefined);
       return { status: 'error', environment: callbackResult.environment };
     }
   } catch (error) {
-    await clearEbayOAuthState(clientState).catch(() => undefined);
+    await clearEbayOAuthState(pendingState).catch(() => undefined);
     throw error;
   }
 }
@@ -262,7 +277,8 @@ export async function getEbayConnectionStatus(
     throw new Error('The eBay OAuth Function returned an invalid connection status.');
   }
 
-  const responseEnvironment = normalizeEnvironment(payload.environment) ?? environment;
+  const responseEnvironment =
+    normalizeEnvironment(payload.environment) ?? environment;
 
   return {
     connected: payload.connected,

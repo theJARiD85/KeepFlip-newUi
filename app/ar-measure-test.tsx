@@ -123,7 +123,7 @@ export default function ARMeasureTestScreen() {
   const targetLabel = (() => {
     switch (target.state) {
       case "searching_item":
-        return "AIM AT ITEM";
+        return "TAP OBJECT TO START";
       case "item_depth_required":
         return "MOVE CLOSER / ADD LIGHT";
       case "scanning_item":
@@ -234,7 +234,7 @@ export default function ARMeasureTestScreen() {
           </Text>
 
           <Text style={styles.status}>
-            Mode: item extent scan
+            Mode: silhouette wireframe scan
           </Text>
 
           {measurement ? (
@@ -252,7 +252,7 @@ export default function ARMeasureTestScreen() {
             </>
           ) : (
             <Text style={styles.instructions}>
-              Keep the item centered and make a slow, natural arc around it.
+              Tap the item, then make a slow, natural arc around it.
             </Text>
           )}
 
