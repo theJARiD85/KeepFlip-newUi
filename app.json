@@ -11,7 +11,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.keepflip.app",
       "infoPlist": {
-        "NSCameraUsageDescription": "Allow KeepFlip to photograph items for identification and resale analysis."
+        "NSCameraUsageDescription": "Allow KeepFlip to photograph items and receipts for identification and resale records."
       }
     },
     "android": {
@@ -45,7 +45,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow KeepFlip to select item photos for identification and resale analysis.",
+          "photosPermission": "Allow KeepFlip to select item and receipt photos.",
           "microphonePermission": false
         }
       ],

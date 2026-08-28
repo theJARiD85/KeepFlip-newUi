@@ -47,6 +47,7 @@ const INVENTORY_LIST_COLUMNS = [
   'coverPhotoId',
   'modelFile',
   'photoCount',
+  'acquiredAt',
   'createdAt',
 ] as const;
 
@@ -96,6 +97,7 @@ export type InventoryItem = {
   coverPhotoId: string | null;
   modelFile: string | null;
   photoCount: number;
+  acquiredAt?: string | null;
   createdAt: string;
   analysisSnapshot?: ItemAnalysisSuccess | null;
 };
@@ -123,6 +125,7 @@ type InventoryRow = {
   coverPhotoId?: string | null;
   modelFile?: string | null;
   photoCount?: number | null;
+  acquiredAt?: string | null;
   createdAt?: string | null;
   analysisSnapshotJson?: string | null;
 };
@@ -140,6 +143,7 @@ type ItemPhotoRow = {
 export type SaveAnalyzedItemInput = {
   analysis: ItemAnalysisSuccess;
   acquisitionCost?: number | null;
+  acquiredAt?: string | null;
   modelFile?: string | null;
   ownerId: string;
   scanId: string;
@@ -503,6 +507,7 @@ function rowToInventoryItem(row: InventoryRow): InventoryItem {
     coverPhotoId: cleanText(row.coverPhotoId),
     modelFile: normalizedModelFile(row.modelFile),
     photoCount: Math.max(0, Number(row.photoCount) || 0),
+    acquiredAt: row.acquiredAt || null,
     createdAt: row.createdAt || row.$createdAt || new Date().toISOString(),
     analysisSnapshot: parseAnalysisSnapshot(row.analysisSnapshotJson),
   };
@@ -597,6 +602,7 @@ async function attachExistingScan({
 export async function saveAnalyzedItemToInventory({
   analysis,
   acquisitionCost,
+  acquiredAt,
   modelFile,
   ownerId,
   scanId,
@@ -618,6 +624,7 @@ export async function saveAnalyzedItemToInventory({
   const now = new Date().toISOString();
   const analysisSnapshotJson = serializeAnalysisSnapshot(analysis, now);
   const acquisitionCostCents = centsFromAmount(acquisitionCost);
+  const normalizedAcquiredAt = acquiredAt?.trim() || null;
   const resellerSignals = inventoryResellerSignals(analysis);
   const conditionNotes = [
     ...analysis.analysis.condition.notes,
@@ -661,7 +668,7 @@ export async function saveAnalyzedItemToInventory({
         aiConfidence: confidence,
         analysisSnapshotJson,
         isListed: false,
-        acquiredAt: null,
+        acquiredAt: normalizedAcquiredAt,
         createdAt: now,
         updatedAt: now,
       },

@@ -27,6 +27,8 @@ import {
 import Animated, {
   FadeIn,
   FadeOut,
+  SlideInRight,
+  SlideOutRight,
   useAnimatedStyle,
   withTiming,
 } from "react-native-reanimated";
@@ -178,6 +180,18 @@ function scannerToolHeaderCopy({
   };
 }
 
+function clampCameraZoom(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function formatZoomLabel(value: number) {
+  const rounded = Math.round(value * 100) / 100;
+  const formatted = Number.isInteger(rounded)
+    ? String(rounded)
+    : rounded.toFixed(2).replace(/0$/, "");
+  return `${formatted}×`;
+}
+
 export default function ScannerScreen() {
   const router = useRouter();
   const { user } = useKeepFlipAuth();
@@ -221,7 +235,12 @@ export default function ScannerScreen() {
   const { hasPermission, canRequestPermission, requestPermission } =
     useCameraPermission();
   const [torchEnabled, setTorchEnabled] = useState(false);
+  const [zoomDisplayFactor, setZoomDisplayFactor] = useState(1);
+  const [zoomDisplayScale, setZoomDisplayScale] = useState(1);
+  const [isZoomOpen, setIsZoomOpen] = useState(false);
   const [isTorchUpdating, setIsTorchUpdating] = useState(false);
+  const zoomRequestSequenceRef = useRef(0);
+  const zoomDisplayScaleRef = useRef(1);
   const [isCapturing, setIsCapturing] = useState(false);
   const [isInspectingProof, setIsInspectingProof] = useState(false);
   const [readyCameraId, setReadyCameraId] = useState<string | null>(null);
@@ -246,6 +265,51 @@ export default function ScannerScreen() {
   >({});
   const canUseTorch = device?.hasTorch === true;
   const isCameraReady = readyCameraId === device?.id;
+  const zoomBounds = useMemo(() => {
+    const min =
+      typeof device?.minZoom === "number" && Number.isFinite(device.minZoom)
+        ? device.minZoom
+        : 1;
+    const maxCandidate =
+      typeof device?.maxZoom === "number" && Number.isFinite(device.maxZoom)
+        ? device.maxZoom
+        : min;
+    return { min, max: Math.max(min, maxCandidate) };
+  }, [device?.maxZoom, device?.minZoom]);
+  const zoomDisplayBounds = useMemo(
+    () => ({
+      min: zoomBounds.min * zoomDisplayScale,
+      max: zoomBounds.max * zoomDisplayScale,
+    }),
+    [zoomBounds, zoomDisplayScale],
+  );
+  const zoomPresets = useMemo(() => {
+    const candidates = [
+      0.5,
+      0.75,
+      1,
+      1.5,
+      2,
+      3,
+      4,
+      zoomDisplayBounds.max,
+    ];
+
+    const supported = candidates
+      .filter(
+        (value) =>
+          value >= zoomDisplayBounds.min - 0.001 &&
+          value <= zoomDisplayBounds.max + 0.001,
+      )
+      .filter(
+        (value, index, values) =>
+          values.findIndex(
+            (candidate) => Math.abs(candidate - value) < 0.05,
+          ) === index,
+      );
+
+    return supported.length > 0 ? supported : [zoomDisplayBounds.min];
+  }, [zoomDisplayBounds]);
   const isBarcodeMode = selectedTool === "barcode";
   const analysisPhotoUris =
     selectedTool === "single" && singlePhotoUri
@@ -280,6 +344,8 @@ export default function ScannerScreen() {
     !isPickingPhoto &&
     !isInspectingProof &&
     !isScannerOverlayOpen;
+  const zoomControlDisabled =
+    !isCameraActive || !isCameraReady || isCapturing;
   const shouldMountCamera =
     hasPermission &&
     device != null &&
@@ -419,6 +485,50 @@ export default function ScannerScreen() {
     isTorchUpdating,
     torchEnabled,
   ]);
+
+  const handleToggleZoom = useCallback(() => {
+    if (zoomControlDisabled) return;
+    setIsZoomOpen((current) => !current);
+    void Haptics.selectionAsync().catch(() => undefined);
+  }, [zoomControlDisabled]);
+
+  const handleZoomChange = useCallback(
+    async (requestedDisplayZoom: number) => {
+      if (!device || !isCameraActive || !isCameraReady) return;
+
+      const controller = cameraRef.current?.controller;
+      if (controller == null) return;
+
+      const minZoom =
+        typeof controller.minZoom === "number" && Number.isFinite(controller.minZoom)
+          ? controller.minZoom
+          : zoomBounds.min;
+      const maxZoom =
+        typeof controller.maxZoom === "number" && Number.isFinite(controller.maxZoom)
+          ? controller.maxZoom
+          : zoomBounds.max;
+      const displayScale = zoomDisplayScaleRef.current;
+      const requestedRawZoom = requestedDisplayZoom / displayScale;
+      const nextZoom = clampCameraZoom(
+        requestedRawZoom,
+        minZoom,
+        Math.max(minZoom, maxZoom),
+      );
+      const requestId = ++zoomRequestSequenceRef.current;
+      setZoomDisplayFactor(nextZoom * displayScale);
+      setIsZoomOpen(false);
+
+      try {
+        await controller.startZoomAnimation(nextZoom, 2);
+      } catch (error) {
+        if (requestId !== zoomRequestSequenceRef.current) return;
+        if (__DEV__) {
+          console.warn("Unable to update the camera zoom.", error);
+        }
+      }
+    },
+    [device, isCameraActive, isCameraReady, zoomBounds],
+  );
 
   const toolbarAnimatedStyle = useAnimatedStyle(
     () => ({
@@ -1429,16 +1539,40 @@ export default function ScannerScreen() {
             implementationMode="compatible"
             isActive={isCameraActive}
             outputs={cameraOutputs}
-            resizeMode="cover"
+            getInitialZoom={() =>
+              clampCameraZoom(1, zoomBounds.min, zoomBounds.max)
+            }
             onPreviewStarted={() => {
+              const initialZoom = clampCameraZoom(
+                1,
+                zoomBounds.min,
+                zoomBounds.max,
+              );
+              const controller = cameraRef.current?.controller;
+              const currentZoom = controller?.zoom ?? initialZoom;
+              const currentDisplayableZoom =
+                controller?.displayableZoomFactor ?? currentZoom;
+              const displayScale =
+                currentZoom > 0 && Number.isFinite(currentDisplayableZoom)
+                  ? currentDisplayableZoom / currentZoom
+                  : 1;
+
+              zoomDisplayScaleRef.current = displayScale;
+              setZoomDisplayScale(displayScale);
+              setZoomDisplayFactor(initialZoom * displayScale);
               setReadyCameraId(device.id);
               setCaptureFeedback(null);
             }}
             onPreviewStopped={() => {
               torchRequestSequenceRef.current += 1;
+              zoomRequestSequenceRef.current += 1;
               setReadyCameraId(null);
               setIsTorchUpdating(false);
               setTorchEnabled(false);
+              setZoomDisplayFactor(1);
+              zoomDisplayScaleRef.current = 1;
+              setZoomDisplayScale(1);
+              setIsZoomOpen(false);
               navigateToPendingAnalysis();
             }}
             onError={(error) => {
@@ -1448,6 +1582,10 @@ export default function ScannerScreen() {
 
               setReadyCameraId(null);
               setTorchEnabled(false);
+              setZoomDisplayFactor(1);
+              zoomDisplayScaleRef.current = 1;
+              setZoomDisplayScale(1);
+              setIsZoomOpen(false);
               setCaptureFeedback(feedback);
             }}
             style={StyleSheet.absoluteFill}
@@ -1622,6 +1760,82 @@ export default function ScannerScreen() {
                     }
                   />
                 </Pressable>
+          <View style={styles.zoomControlAnchor}>
+            <View style={styles.zoomControlRow}>
+              {isZoomOpen ? (
+                <Animated.View
+                  entering={SlideInRight.duration(180)}
+                  exiting={SlideOutRight.duration(120)}
+                  style={styles.zoomPanel}
+                >
+                  <Text style={styles.zoomControlLabel}>ZOOM</Text>
+                  <View style={styles.zoomPresetRow}>
+                    {zoomPresets.map((preset) => {
+                      const selected =
+                        Math.abs(zoomDisplayFactor - preset) < 0.05;
+                      return (
+                        <Pressable
+                          accessibilityLabel={`Set camera zoom to ${formatZoomLabel(preset)}`}
+                          accessibilityRole="button"
+                          accessibilityState={{
+                            disabled: zoomControlDisabled,
+                            selected,
+                          }}
+                          disabled={zoomControlDisabled}
+                          key={preset}
+                          onPress={() => void handleZoomChange(preset)}
+                          style={({ pressed }) => [
+                            styles.zoomPreset,
+                            selected && styles.zoomPresetSelected,
+                            pressed && styles.zoomPresetPressed,
+                            zoomControlDisabled && styles.zoomPresetDisabled,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.zoomPresetText,
+                              selected && styles.zoomPresetTextSelected,
+                            ]}
+                          >
+                            {formatZoomLabel(preset)}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </Animated.View>
+              ) : null}
+              <Pressable
+                accessibilityLabel={
+                  isZoomOpen
+                    ? "Hide camera zoom controls"
+                    : `Show camera zoom controls at ${formatZoomLabel(zoomDisplayFactor)}`
+                }
+                accessibilityRole="button"
+                accessibilityState={{
+                  disabled: zoomControlDisabled,
+                  expanded: isZoomOpen,
+                }}
+                disabled={zoomControlDisabled}
+                onPress={handleToggleZoom}
+                style={({ pressed }) => [
+                  styles.zoomButton,
+                  isZoomOpen && styles.zoomButtonActive,
+                  pressed && styles.zoomButtonPressed,
+                  zoomControlDisabled && styles.zoomButtonDisabled,
+                  {
+                    width: torchButtonSize,
+                    height: torchButtonSize,
+                    borderRadius: 5,
+                  },
+                ]}
+              >
+                <Text style={styles.zoomButtonText}>
+                  {formatZoomLabel(zoomDisplayFactor)}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
           <View
             ref={scanFrameRef}
             onLayout={handleScanFrameLayout}
@@ -1713,7 +1927,7 @@ export default function ScannerScreen() {
         </Animated.View>
       </Animated.View>
       </View>
-  
+
       <Pressable
         onPress={() => router.push("/ar-measure-test" as Href)}
         style={{
@@ -1891,7 +2105,7 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     position: 'absolute',
-    top: -30, 
+    top: -30,
     left: 10,
     alignItems: "center",
     justifyContent: "center",
@@ -1902,6 +2116,78 @@ const styles = StyleSheet.create({
   },
   iconButtonActive: { backgroundColor: theme.colors.goldBright },
   iconButtonDisabled: { opacity: 0.42 },
+  zoomControlAnchor: {
+    position: "absolute",
+    top: -30,
+    right: 10,
+    zIndex: 4,
+  },
+  zoomControlRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  zoomButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(88, 223, 232, 0.42)",
+    backgroundColor: "rgba(9, 9, 13, 0.78)",
+  },
+  zoomButtonActive: {
+    borderColor: theme.colors.scannerCyan,
+    backgroundColor: "rgba(88, 223, 232, 0.18)",
+  },
+  zoomButtonPressed: { opacity: 0.72, transform: [{ scale: 0.94 }] },
+  zoomButtonDisabled: { opacity: 0.42 },
+  zoomButtonText: {
+    color: theme.colors.scannerCyan,
+    fontSize: 10,
+    fontWeight: "900",
+  },
+  zoomPanel: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    padding: 4,
+    borderWidth: 1,
+    borderRightWidth: 0,
+    borderColor: "rgba(88, 223, 232, 0.34)",
+    backgroundColor: "rgba(8, 8, 12, 0.86)",
+  },
+  zoomControlLabel: {
+    marginHorizontal: 4,
+    color: theme.colors.scannerCyan,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 1,
+  },
+  zoomPresetRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+  },
+  zoomPreset: {
+    minWidth: 34,
+    height: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 5,
+    borderWidth: 1,
+    borderColor: "rgba(242, 242, 232, 0.20)",
+    backgroundColor: "rgba(247, 242, 232, 0.05)",
+  },
+  zoomPresetSelected: {
+    borderColor: theme.colors.scannerCyan,
+    backgroundColor: "rgba(88, 223, 232, 0.18)",
+  },
+  zoomPresetPressed: { opacity: 0.72, transform: [{ scale: 0.96 }] },
+  zoomPresetDisabled: { opacity: 0.42 },
+  zoomPresetText: {
+    color: theme.colors.textMuted,
+    fontSize: 10,
+    fontWeight: "800",
+  },
+  zoomPresetTextSelected: { color: theme.colors.cream },
   scannerArea: {
     flex: 1,
     minHeight: 0,

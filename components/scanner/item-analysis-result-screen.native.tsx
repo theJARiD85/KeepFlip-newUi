@@ -18,6 +18,7 @@ import { HudImageFrame } from "@/components/scanner/hud-image-frame.native";
 import { inventoryItemToAnalysisState } from "@/components/scanner/inventory-analysis-view-model";
 import { toItemAnalysisState } from "@/components/scanner/item-analysis-view-model";
 import { useItemAnalysisResult } from "@/components/scanner/item-analysis-result-context";
+import { AddToInventoryForm, type AddToInventoryFormValues } from "@/components/scanner/add-to-inventory-form";
 import { ValuationResultStage } from "@/components/scanner/valuation-result-stage";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
@@ -28,6 +29,14 @@ import {
   type SerpApiProfitabilityGuidance,
 } from "@/services/ebaySoldCompsService";
 import { saveDealShelfItem } from "@/services/deal-shelf-service";
+import {
+  centsFromLedgerAmount,
+  createManualLedgerEntry,
+  deleteLedgerReceipt,
+  isResellerBooksConfigured,
+  parseLedgerDate,
+  uploadLedgerReceipt,
+} from "@/services/reseller-ledger-service";
 import { refineItemAnalysis } from "@/services/item-analysis-service";
 import {
   getInventoryItem,
@@ -317,6 +326,7 @@ export function ItemAnalysisResultScreen() {
   const [projectionError, setProjectionError] =
     useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [inventoryFormOpen, setInventoryFormOpen] = useState(false);
   const [savingDeal, setSavingDeal] = useState(false);
   const [refining, setRefining] = useState(false);
   const [scanningMorePhotos, setScanningMorePhotos] = useState(false);
@@ -390,38 +400,121 @@ export function ItemAnalysisResultScreen() {
     clearScannerResult(scannerSession.id);
   }, [clearScannerResult, scannerSession]);
 
-  const handleSave = useCallback(async () => {
+  const openAddToInventory = useCallback(() => {
     if (!scannerSession || saving || savingDeal) return;
     if (!userId) {
       Alert.alert(
         "Sign in required",
-        "Sign in before saving an item to inventory.",
+        "Sign in before adding an item to inventory.",
+      );
+      return;
+    }
+    if (!isResellerBooksConfigured()) {
+      Alert.alert(
+        "Books setup needed",
+        "KeepFlip cannot record this purchase until the Books ledger is configured.",
+      );
+      return;
+    }
+    setInventoryFormOpen(true);
+  }, [saving, savingDeal, scannerSession, userId]);
+
+  const handleAddToInventory = useCallback(async (
+    values: AddToInventoryFormValues,
+  ) => {
+    if (!scannerSession || saving || savingDeal || !userId) return;
+
+    const amountCents = centsFromLedgerAmount(values.acquisitionCost);
+    if (!amountCents) {
+      Alert.alert(
+        "Actual cost required",
+        "Enter what you actually paid, from $0.01 to $10,000,000.00.",
+      );
+      return;
+    }
+
+    const occurredAt = parseLedgerDate(values.acquiredAt);
+    if (!occurredAt) {
+      Alert.alert(
+        "Check the date",
+        "Use a real acquisition date in YYYY-MM-DD format.",
       );
       return;
     }
 
     setSaving(true);
+    let savedItemId: string | null = null;
+    let receiptFileId: string | null = null;
+    let receiptLinked = false;
     try {
       await scannerSession.ensurePhotosSaved?.();
+      if (values.receiptReference.trim()) {
+        receiptFileId = await uploadLedgerReceipt({
+          imageUri: values.receiptReference,
+          ownerId: userId,
+        });
+      }
       const saved = await saveAnalyzedItemToInventory({
+        acquiredAt: occurredAt,
+        acquisitionCost: amountCents / 100,
         analysis: scannerSession.analysis,
         modelFile: scannerSession.modelUrl,
         ownerId: userId,
         scanId: scannerSession.scanId,
       });
+
+      savedItemId = saved.item.id;
+      const purchaseDetails = [
+        values.source.trim() ? `Purchase source: ${values.source.trim()}` : null,
+        values.sku.trim() ? `SKU / tag: ${values.sku.trim()}` : null,
+        values.location.trim() ? `Storage location: ${values.location.trim()}` : null,
+        receiptFileId ? "Receipt photo attached" : null,
+        values.notes.trim() ? values.notes.trim() : null,
+      ].filter((value): value is string => Boolean(value));
+
+      await createManualLedgerEntry({
+        amountCents,
+        channel: values.source.trim() || null,
+        entryType: "inventory_purchase",
+        itemId: saved.item.id,
+        notes: purchaseDetails.length > 0 ? purchaseDetails.join(" | ") : null,
+        occurredAt,
+        ownerId: userId,
+        receiptFileId,
+      });
+
+      receiptLinked = true;
+      setInventoryFormOpen(false);
       recordCompletedAction();
       finishScannerSession();
       router.replace("/inventory");
       if (saved.photoWarning) {
-        Alert.alert("Item saved", saved.photoWarning);
+        Alert.alert("Item added", saved.photoWarning);
       }
     } catch (caught) {
-      Alert.alert(
-        "Could not save item",
-        caught instanceof Error
-          ? neutralizeMarketplaceBrand(caught.message)
-          : "KeepFlip could not save this item.",
-      );
+      if (receiptFileId && !receiptLinked) {
+        await deleteLedgerReceipt(receiptFileId);
+      }
+      if (savedItemId) {
+        setInventoryFormOpen(false);
+        recordCompletedAction();
+        finishScannerSession();
+        router.replace("/inventory");
+        Alert.alert(
+          "Item added; Books needs attention",
+          "The item was saved to inventory, but its purchase entry could not be recorded. Open Books to add the actual purchase manually." +
+            (caught instanceof Error
+              ? " " + neutralizeMarketplaceBrand(caught.message)
+              : ""),
+        );
+      } else {
+        Alert.alert(
+          "Could not record purchase",
+          caught instanceof Error
+            ? neutralizeMarketplaceBrand(caught.message)
+            : "KeepFlip could not save the inventory and Books records.",
+        );
+      }
     } finally {
       setSaving(false);
     }
@@ -758,56 +851,67 @@ export function ItemAnalysisResultScreen() {
           style={[styles.resultScrim, styles.resultScrimWithProjection]}
         />
 
-        <ValuationResultStage
-          bottomInset={insets.bottom}
-          key={
-            scannerSession
-              ? `${scannerSession.id}:${
-                scannerSession.analysis.marketResearch?.searchedAt ??
-                scannerSession.analysis.version
-              }`
-              : itemId ?? "saved-analysis"
-          }
-          onProfitabilityGuidance={handleProfitabilityGuidance}
-          onReportIncorrectIdentification={handleReportIncorrectIdentification}
-          onRefine={
-            scannerSession
-              ? (answers) => {
-                void handleRefine(answers);
-              }
-              : undefined
-          }
-          onScanMorePhotos={
-            scannerSession
-              ? () => {
-                void handleScanMorePhotos();
-              }
-              : undefined
-          }
-          onSaveToDealShelf={
-            scannerSession
-              ? () => {
-                void handleSaveToDealShelf();
-              }
-              : undefined
-          }
-          onSave={
-            scannerSession
-              ? () => {
-                void handleSave();
-              }
-              : undefined
-          }
-          projectionLabel={projectionLabel}
-          refining={refining}
-          refinementPhotoReady={Boolean(activeRefinementPhoto)}
-          saveLabel="Save to inventory"
-          savingDeal={savingDeal}
-          saving={saving}
-          scanningMorePhotos={scanningMorePhotos}
-          showMarketDecisionStamp={Boolean(scannerSession)}
-          state={resultState}
-          topInset={insets.top}
+        {!inventoryFormOpen ? (
+          <ValuationResultStage
+            bottomInset={insets.bottom}
+            key={
+              scannerSession
+                ? `${scannerSession.id}:${
+                  scannerSession.analysis.marketResearch?.searchedAt ??
+                  scannerSession.analysis.version
+                }`
+                : itemId ?? "saved-analysis"
+            }
+            onProfitabilityGuidance={handleProfitabilityGuidance}
+            onReportIncorrectIdentification={handleReportIncorrectIdentification}
+            onRefine={
+              scannerSession
+                ? (answers) => {
+                  void handleRefine(answers);
+                }
+                : undefined
+            }
+            onScanMorePhotos={
+              scannerSession
+                ? () => {
+                  void handleScanMorePhotos();
+                }
+                : undefined
+            }
+            onSaveToDealShelf={
+              scannerSession
+                ? () => {
+                  void handleSaveToDealShelf();
+                }
+                : undefined
+            }
+            onSave={
+              scannerSession
+                ? () => {
+                  openAddToInventory();
+                }
+                : undefined
+            }
+            projectionLabel={projectionLabel}
+            refining={refining}
+            refinementPhotoReady={Boolean(activeRefinementPhoto)}
+            saveLabel="Add to inventory"
+            savingDeal={savingDeal}
+            saving={saving}
+            scanningMorePhotos={scanningMorePhotos}
+            showMarketDecisionStamp={Boolean(scannerSession)}
+            state={resultState}
+            topInset={insets.top}
+          />
+        ) : null}
+
+        <AddToInventoryForm
+          key={inventoryFormOpen ? "open" : "closed"}
+          itemTitle={resultState.data.identity.title}
+          onCancel={() => setInventoryFormOpen(false)}
+          onSubmit={handleAddToInventory}
+          submitting={saving}
+          visible={inventoryFormOpen}
         />
     </KeepFlipBackground>
   );

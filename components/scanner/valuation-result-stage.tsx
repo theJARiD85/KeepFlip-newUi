@@ -39,6 +39,10 @@ import type {
   AnalysisValuation,
   ItemAnalysisState,
 } from "@/components/scanner/analysis-visual-types";
+import {
+  BooksRecordsProjection,
+  hasBooksRecordsProjection,
+} from "@/components/scanner/books-records-projection";
 import { MarketPricingDashboard } from "@/components/scanner/market-pricing-dashboard";
 import { SmartProfitCalculator } from "@/components/scanner/smart-profit-calculator";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -398,11 +402,6 @@ function ValuePanel({ result }: { result: ResultData }) {
   );
   const basis = valuationBasisLine(result);
   const ladder = result.valuationLadder;
-  const acquisitionGuidance = result.acquisitionGuidance;
-  const acquisitionAccent =
-    acquisitionGuidance?.status === "not_viable"
-      ? theme.colors.danger
-      : theme.colors.scannerCyan;
   const ladderLine = ladder
     ? `VALUATION LADDER · ${ladder.level.toUpperCase()}${
       percentage(ladder.confidence) == null
@@ -435,36 +434,6 @@ function ValuePanel({ result }: { result: ResultData }) {
         result={result}
         valuation={result.valuation}
       />
-      {acquisitionGuidance ? (
-        <View
-          style={[
-            styles.buyCeilingRow,
-            { borderColor: `${acquisitionAccent}66` },
-          ]}
-        >
-          <View style={styles.buyCeilingCopy}>
-            <Text numberOfLines={1} style={[styles.buyCeilingLabel, { color: acquisitionAccent }]}>
-              {acquisitionGuidance.label.toUpperCase()}
-            </Text>
-            <Text numberOfLines={1} style={styles.buyCeilingStatus}>
-              {acquisitionGuidance.status === "not_viable"
-                ? "DO NOT BUY"
-                : "PROVISIONAL CEILING"}
-            </Text>
-          </View>
-          <Text
-            adjustsFontSizeToFit
-            minimumFontScale={0.72}
-            numberOfLines={1}
-            style={[styles.buyCeilingValue, { color: acquisitionAccent }]}
-          >
-            {formatMoney(
-              acquisitionGuidance.maxBuyPrice,
-              acquisitionGuidance.currency ?? result.valuation.currency,
-            )}
-          </Text>
-        </View>
-      ) : null}
       <View style={styles.readinessRow}>
         <View style={[styles.readinessSignal, { backgroundColor: accent }]} />
         <Text numberOfLines={1} style={[styles.readinessText, { color: accent }]}>
@@ -481,6 +450,7 @@ function ValuePanel({ result }: { result: ResultData }) {
           {ladderLine}
         </Text>
       ) : null}
+      <BooksRecordsProjection compact result={result} />
     </View>
   );
 }
@@ -939,6 +909,7 @@ function IdentifierPanel({ result }: { result: ResultData }) {
 function ExpandedResultDetails({
   activeTab,
   answers,
+  onAddToInventory,
   expandedActionId,
   guidance,
   onAnswerChange,
@@ -953,6 +924,7 @@ function ExpandedResultDetails({
 }: {
   activeTab: ResultTab;
   answers: Record<string, string>;
+  onAddToInventory?: () => void;
   expandedActionId: string | null;
   guidance: Record<string, ProfitabilityGuidanceState>;
   onAnswerChange: (questionId: string, answer: string) => void;
@@ -986,6 +958,12 @@ function ExpandedResultDetails({
 
   return (
     <View style={styles.expandedDetails}>
+      {activeTab === "valuation" ? (
+        <BooksRecordsProjection
+          onAddToInventory={onAddToInventory}
+          result={result}
+        />
+      ) : null}
       {activeTab === "identifiers" ? (
         <View style={styles.detailSection}>
           <Text style={styles.detailSectionTitle}>DISTINCT ITEM IDENTIFIERS</Text>
@@ -1586,8 +1564,16 @@ export function ValuationResultStage({
   const reportActionHeight = hasIncorrectIdentificationReportAction ? 36 : 0;
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const width = Math.min(viewportWidth ?? windowWidth, 520);
+  const [activeTab, setActiveTab] = useState<ResultTab>("valuation");
+  const compactBooksHeight =
+    activeTab === "valuation" && hasBooksRecordsProjection(result)
+      ? 54
+      : 0;
   const collapsedHeight =
-    (hasSaveAction ? COLLAPSED_HEIGHT_WITH_SAVE : COLLAPSED_HEIGHT) + reportActionHeight + bottomInset;
+    (hasSaveAction ? COLLAPSED_HEIGHT_WITH_SAVE : COLLAPSED_HEIGHT) +
+    compactBooksHeight +
+    reportActionHeight +
+    bottomInset;
   const stampImageTop = topInset + MARKET_DECISION_IMAGE_TOP_GAP;
   const stampImageBottom = Math.max(
     stampImageTop + MARKET_DECISION_STAMP_HEIGHT,
@@ -1609,7 +1595,6 @@ export function ValuationResultStage({
   const expansionEnabled =
     !embedded && expandedHeight - collapsedHeight >= 56;
   const reduceMotion = useReducedMotion();
-  const [activeTab, setActiveTab] = useState<ResultTab>("valuation");
   const [answerState, setAnswerState] = useState<{
     questionKey: string;
     values: Record<string, string>;
@@ -1933,10 +1918,15 @@ export function ValuationResultStage({
       key={activeTab}
       style={[
         styles.panelBody,
+        activeTab === "valuation" && compactBooksHeight > 0
+          ? { height: 186 + compactBooksHeight }
+          : null,
         activeTab === "profit" && expanded && styles.panelBodyExpanded,
       ]}
     >
-      {activeTab === "valuation" ? <ValuePanel result={result} /> : null}
+      {activeTab === "valuation" ? (
+        <ValuePanel result={result} />
+      ) : null}
       {activeTab === "profit" ? (
         <ProfitPanel
           expanded={expanded}
@@ -2045,6 +2035,7 @@ export function ValuationResultStage({
               <ExpandedResultDetails
                 activeTab={activeTab}
                 answers={answers}
+                onAddToInventory={onSave}
                 expandedActionId={expandedProfitActionId}
                 guidance={profitabilityGuidance}
                 onAnswerChange={updateAnswer}
@@ -2223,7 +2214,7 @@ const styles = StyleSheet.create({
   tabTextActive: { color: theme.colors.goldBright },
   panelScroll: { flex: 1 },
   panelBodyExpanded: { height: "auto" },
-  panelScrollContent: { paddingBottom: 12 },
+  panelScrollContent: { paddingTop: 12, paddingBottom: 12 },
   panelBody: { height: 186, paddingHorizontal: 3 },
   gauge: { flex: 1, justifyContent: "center", gap: 10 },
   gaugeHeader: { minHeight: 42, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
@@ -2234,7 +2225,7 @@ const styles = StyleSheet.create({
   gaugeBand: { position: "absolute", right: 0, left: 0, height: 9, overflow: "hidden", borderRadius: 5, transformOrigin: "left", boxShadow: "0 0 14px rgba(0, 255, 255, 0.18)" },
   gaugeTick: { position: "absolute", top: 5, width: StyleSheet.hairlineWidth, height: 18, backgroundColor: "rgba(255, 255, 255, 0.34)" },
   gaugeNeedle: { position: "absolute", top: 0, width: 0, height: 0, marginLeft: -5, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 9, borderLeftColor: "transparent", borderRightColor: "transparent" },
-  gaugeLabels: { flexDirection: "row", justifyContent: "space-between" },
+  gaugeLabels: { flexDirection: "row", justifyContent: "space-between"},
   gaugeLabelCenter: { alignItems: "center" },
   gaugeLabelRight: { alignItems: "flex-end" },
   gaugeLabel: { fontFamily: theme.fonts.radar, fontSize: 10, fontWeight: "900", letterSpacing: 0.8 },
@@ -2463,7 +2454,7 @@ const styles = StyleSheet.create({
   identifierFactLabel: { width: 96, color: "rgba(255, 255, 255, 0.45)", fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: "900", letterSpacing: 0.5 },
   identifierFactValue: { flex: 1, color: "rgba(255, 255, 255, 0.84)", fontFamily: theme.fonts.radar, fontSize: 9, fontWeight: "800" },
   identifierFactConfidence: { width: 28, color: theme.colors.scannerViolet, fontFamily: theme.fonts.numbers, fontSize: 8, fontWeight: "900", textAlign: "right" },
-  expandedDetails: { gap: 10, paddingHorizontal: 3, paddingTop: 10 },
+  expandedDetails: { gap: 10, paddingHorizontal: 3, paddingTop: 10, height: 'auto' },
   detailSection: {
     gap: 9,
     padding: 11,

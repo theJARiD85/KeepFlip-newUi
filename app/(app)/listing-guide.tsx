@@ -1,9 +1,12 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
+import * as ImagePicker from "expo-image-picker";
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   View,
 } from "react-native";
@@ -19,10 +22,12 @@ import {
   getInventoryItem,
   type InventoryItem,
 } from "@/services/inventory-service";
+import { appendPhotoToItem } from "@/services/itemPhotoService";
 import {
   runListingGenerator,
   type ListingGeneratorResult,
 } from "@/services/listingService";
+import { uploadItemImage } from "@/services/uploadItemImage";
 
 type ChecklistStep = {
   completeByDefault: boolean;
@@ -30,6 +35,41 @@ type ChecklistStep = {
   id: string;
   label: string;
 };
+
+type ListingPlatform =
+  keyof ListingGeneratorResult["listing"]["platformCopy"];
+
+const MAX_LISTING_PHOTOS = 10;
+
+const CROSSLIST_PLATFORMS: {
+  id: ListingPlatform;
+  label: string;
+  mode: string;
+  description: string;
+}[] = [
+  {
+    id: "ebay",
+    label: "eBay",
+    mode: "DRAFT READY · API NEXT",
+    description:
+      "KeepFlip has the listing facts ready. Direct eBay publishing will use the seller connection when that endpoint is added.",
+  },
+  {
+    id: "facebookMarketplace",
+    label: "Facebook Marketplace",
+    mode: "ASSISTED HANDOFF",
+    description:
+      "Send the prepared copy to Facebook, then confirm category, pickup, and listing details.",
+  },
+  {
+    id: "offerUp",
+    label: "OfferUp",
+    mode: "ASSISTED HANDOFF",
+    description:
+      "Send the prepared copy to OfferUp, then confirm category, shipping, and listing details.",
+  },
+];
+
 
 function formatMoney(value: number | null, currency: string) {
   if (value == null) return null;
@@ -134,6 +174,11 @@ export default function ListingCreationGuideScreen() {
   const [selectedPlatform, setSelectedPlatform] = useState<
     keyof ListingGeneratorResult["listing"]["platformCopy"]
   >("ebay");
+  const [sharedPlatform, setSharedPlatform] =
+    useState<ListingPlatform | null>(null);
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [addingPhotos, setAddingPhotos] = useState(false);
+  const [photoUploadError, setPhotoUploadError] = useState<string | null>(null);
 
   const loadItem = useCallback(async () => {
     if (!userId) {
@@ -220,6 +265,193 @@ export default function ListingCreationGuideScreen() {
     }
   }, [item, recordCompletedAction]);
 
+  const uploadAdditionalPhotoAssets = useCallback(
+    async (assets: readonly ImagePicker.ImagePickerAsset[]) => {
+      if (!item || !userId || addingPhotos) return;
+
+      const remainingSlots = Math.max(
+        0,
+        MAX_LISTING_PHOTOS - item.photoCount,
+      );
+      const selectedAssets = assets.filter((asset) => Boolean(asset.uri)).slice(
+        0,
+        remainingSlots,
+      );
+
+      if (!selectedAssets.length) {
+        if (remainingSlots === 0) {
+          Alert.alert(
+            "Photo set is full",
+            "KeepFlip supports up to " + MAX_LISTING_PHOTOS + " photos per inventory item.",
+          );
+        }
+        return;
+      }
+
+      setAddingPhotos(true);
+      setPhotoUploadError(null);
+
+      try {
+        for (const [index, asset] of selectedAssets.entries()) {
+          const extension =
+            asset.fileName?.split(".").pop()?.toLowerCase() || "jpg";
+          const fileName =
+            asset.fileName?.trim() ||
+            "keepflip-item-" +
+              item.id +
+              "-" +
+              Date.now() +
+              "-" +
+              index +
+              "." +
+              extension;
+          const fileMimeType = asset.mimeType || "image/jpeg";
+          const uploaded = await uploadItemImage(
+            asset.uri,
+            fileName,
+            fileMimeType,
+            userId,
+          );
+
+          await appendPhotoToItem({
+            itemId: item.id,
+            ownerId: userId,
+            fileId: uploaded.$id,
+          });
+        }
+
+        await loadItem();
+        recordCompletedAction();
+      } catch (caughtError) {
+        setPhotoUploadError(
+          caughtError instanceof Error
+            ? caughtError.message
+            : "KeepFlip could not add those item photos.",
+        );
+      } finally {
+        setAddingPhotos(false);
+      }
+    },
+    [addingPhotos, item, loadItem, recordCompletedAction, userId],
+  );
+
+  const captureAdditionalPhoto = useCallback(async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(
+        "Camera access needed",
+        "Allow KeepFlip to use the camera so you can add another item photo.",
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: false,
+      mediaTypes: ["images"],
+      quality: 0.9,
+    });
+
+    if (result.canceled) return;
+    await uploadAdditionalPhotoAssets(result.assets);
+  }, [uploadAdditionalPhotoAssets]);
+
+  const chooseAdditionalPhotos = useCallback(async () => {
+    if (!item) return;
+
+    const remainingSlots = Math.max(
+      0,
+      MAX_LISTING_PHOTOS - item.photoCount,
+    );
+    if (remainingSlots === 0) {
+      Alert.alert(
+        "Photo set is full",
+        "KeepFlip supports up to " + MAX_LISTING_PHOTOS + " photos per inventory item.",
+      );
+      return;
+    }
+
+    const permission =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(
+        "Photo access needed",
+        "Allow KeepFlip to choose item photos from your device.",
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: false,
+      allowsMultipleSelection: true,
+      mediaTypes: ["images"],
+      quality: 0.9,
+      selectionLimit: remainingSlots,
+    });
+
+    if (result.canceled) return;
+    await uploadAdditionalPhotoAssets(result.assets);
+  }, [item, uploadAdditionalPhotoAssets]);
+
+  const addItemPhotos = useCallback(() => {
+    if (!item || addingPhotos) return;
+
+    Alert.alert("Add item photos", "Choose how you want to add listing photos.", [
+      {
+        text: "Camera",
+        onPress: () => void captureAdditionalPhoto(),
+      },
+      {
+        text: "Photo library",
+        onPress: () => void chooseAdditionalPhotos(),
+      },
+      {
+        style: "cancel",
+        text: "Cancel",
+      },
+    ]);
+  }, [addingPhotos, captureAdditionalPhoto, chooseAdditionalPhotos, item]);
+
+  const shareListingDraft = useCallback(
+    async (platform: ListingPlatform) => {
+      if (!generatedListing) return;
+
+      setShareError(null);
+      const platformInfo = CROSSLIST_PLATFORMS.find(
+        (candidate) => candidate.id === platform,
+      );
+      const price = formatMoney(
+        generatedListing.priceRange.targetPrice,
+        item?.currency ?? "USD",
+      );
+      const message = [
+        generatedListing.title,
+        generatedListing.subtitle,
+        generatedListing.platformCopy[platform],
+        "Condition: " + generatedListing.conditionDisclosure,
+        price ? "Target price: " + price : null,
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+
+      try {
+        await Share.share({
+          message,
+          title:
+            (platformInfo?.label ?? "Marketplace") + " listing draft",
+        });
+        setSharedPlatform(platform);
+        recordCompletedAction();
+      } catch (caughtError) {
+        setShareError(
+          caughtError instanceof Error
+            ? caughtError.message
+            : "KeepFlip could not open the sharing handoff.",
+        );
+      }
+    },
+    [generatedListing, item?.currency, recordCompletedAction],
+  );
+
   return (
     <KeepFlipBackground>
       <ScrollView
@@ -238,7 +470,7 @@ export default function ListingCreationGuideScreen() {
             <View style={styles.topCopy}>
               <Text style={styles.eyebrow}>SELLER WORKFLOW</Text>
               <Text style={[styles.title, { fontSize: responsiveFont(30) }]}>
-                Listing Creation Guide
+                Crosslisting Workspace
               </Text>
             </View>
             <Pressable
@@ -252,7 +484,7 @@ export default function ListingCreationGuideScreen() {
           </View>
 
           <Text style={styles.subtitle}>
-            Turn the evidence already saved with this item into a clear, honest listing. KeepFlip does not publish or request data from this guide.
+            Draft once from the item facts, then hand off a platform-ready version to each marketplace. Review every destination before publishing.
           </Text>
 
           {loading ? (
@@ -306,6 +538,44 @@ export default function ListingCreationGuideScreen() {
                     <Text style={styles.signalPillText}>{item.condition || "ADD"}</Text>
                   </View>
                 </View>
+
+                <View style={styles.photoPrepRow}>
+                  <View style={styles.photoPrepCopy}>
+                    <Text style={styles.fieldLabel}>LISTING PHOTO SET</Text>
+                    <Text style={styles.photoPrepText}>
+                      {item.photoCount} of {MAX_LISTING_PHOTOS} photos saved. Add
+                      close-ups of labels, flaws, measurements, and the full item
+                      before handing the draft to a marketplace.
+                    </Text>
+                  </View>
+                  <Pressable
+                    accessibilityLabel="Add more item photos"
+                    accessibilityRole="button"
+                    disabled={addingPhotos || item.photoCount >= MAX_LISTING_PHOTOS}
+                    onPress={addItemPhotos}
+                    style={({ pressed }) => [
+                      styles.addPhotosButton,
+                      pressed && styles.pressed,
+                      (addingPhotos || item.photoCount >= MAX_LISTING_PHOTOS) &&
+                        styles.addPhotosButtonDisabled,
+                    ]}
+                  >
+                    {addingPhotos ? (
+                      <ActivityIndicator color={theme.colors.backgroundDeep} />
+                    ) : (
+                      <Text style={styles.addPhotosButtonText}>
+                        {item.photoCount >= MAX_LISTING_PHOTOS
+                          ? "FULL"
+                          : "ADD PHOTOS"}
+                      </Text>
+                    )}
+                  </Pressable>
+                </View>
+                {photoUploadError ? (
+                  <Text selectable style={styles.photoUploadError}>
+                    {photoUploadError}
+                  </Text>
+                ) : null}
               </View>
 
               <View style={styles.draftCard}>
@@ -343,11 +613,11 @@ export default function ListingCreationGuideScreen() {
               <View style={styles.generatorCard}>
                 <View style={styles.sectionHeader}>
                   <View style={styles.generatorHeading}>
-                    <Text style={styles.sectionEyebrow}>LISTING INJECTOR</Text>
+                    <Text style={styles.sectionEyebrow}>DRAFT BUILDER</Text>
                     <Text style={styles.sectionTitle}>Generate the working draft</Text>
                   </View>
                   <View style={styles.generatorBadge}>
-                    <Text style={styles.generatorBadgeText}>AI DRAFT</Text>
+                    <Text style={styles.generatorBadgeText}>MASTER DRAFT</Text>
                   </View>
                 </View>
                 <Text style={styles.generatorDescription}>
@@ -405,9 +675,7 @@ export default function ListingCreationGuideScreen() {
                     <Text style={styles.fieldLabel}>PLATFORM COPY</Text>
                     <View style={styles.platformTabs}>
                       {(
-                        Object.keys(generatedListing.platformCopy) as Array<
-                          keyof ListingGeneratorResult["listing"]["platformCopy"]
-                        >
+                        Object.keys(generatedListing.platformCopy) as (keyof ListingGeneratorResult["listing"]["platformCopy"])[]
                       ).map((platform) => (
                         <Pressable
                           key={platform}
@@ -449,6 +717,85 @@ export default function ListingCreationGuideScreen() {
                 ) : null}
               </View>
 
+              {generatedListing ? (
+                <View style={styles.crosslistCard}>
+                  <View style={styles.sectionHeader}>
+                    <View style={styles.generatorHeading}>
+                      <Text style={styles.sectionEyebrow}>CROSSLIST DESTINATIONS</Text>
+                      <Text style={styles.sectionTitle}>Send the draft where you sell</Text>
+                    </View>
+                    <View style={styles.crosslistBadge}>
+                      <Text style={styles.crosslistBadgeText}>
+                        {CROSSLIST_PLATFORMS.length} CHANNELS
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={styles.crosslistDescription}>
+                    KeepFlip keeps the item facts consistent while each channel gets its own handoff. The share action opens Android&apos;s standard share sheet with the selected platform copy.
+                  </Text>
+                  <View style={styles.destinationList}>
+                    {CROSSLIST_PLATFORMS.map((platform) => {
+                      const shared = sharedPlatform === platform.id;
+                      return (
+                        <View key={platform.id} style={styles.destinationRow}>
+                          <View style={styles.destinationIcon}>
+                            <IconSymbol
+                              color={theme.colors.scannerCyan}
+                              name="paperplane.fill"
+                              size={18}
+                            />
+                          </View>
+                          <View style={styles.destinationCopy}>
+                            <View style={styles.destinationTopline}>
+                              <Text style={styles.destinationName}>
+                                {platform.label}
+                              </Text>
+                              <Text style={styles.destinationMode}>
+                                {platform.mode}
+                              </Text>
+                            </View>
+                            <Text style={styles.destinationDescription}>
+                              {platform.description}
+                            </Text>
+                          </View>
+                          <Pressable
+                            accessibilityLabel={
+                              (shared ? "Share again" : "Share") +
+                              " " +
+                              platform.label +
+                              " listing draft"
+                            }
+                            accessibilityRole="button"
+                            onPress={() => void shareListingDraft(platform.id)}
+                            style={({ pressed }) => [
+                              styles.shareDraftButton,
+                              shared && styles.shareDraftButtonDone,
+                              pressed && styles.pressed,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.shareDraftText,
+                                shared && styles.shareDraftTextDone,
+                              ]}
+                            >
+                              {shared ? "SHARED" : "SHARE"}
+                            </Text>
+                          </Pressable>
+                        </View>
+                      );
+                    })}
+                  </View>
+                  {shareError ? (
+                    <Text selectable style={styles.crosslistError}>
+                      {shareError}
+                    </Text>
+                  ) : null}
+                  <Text style={styles.crosslistFootnote}>
+                    KeepFlip does not claim a listing is live until the marketplace confirms it. Confirm the final category, item specifics, shipping, returns, and fees in each destination.
+                  </Text>
+                </View>
+              ) : null}
               <View style={styles.progressCard}>
                 <View style={styles.progressHeader}>
                   <View>
@@ -910,6 +1257,158 @@ const styles = StyleSheet.create({
   },
   generatorWarning: {
     color: theme.colors.goldBright,
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  photoPrepRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingTop: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(247, 242, 232, 0.13)",
+  },
+  photoPrepCopy: {
+    flex: 1,
+    gap: 5,
+  },
+  photoPrepText: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  addPhotosButton: {
+    minHeight: 38,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: "rgba(0, 255, 255, 0.42)",
+    backgroundColor: "rgba(0, 255, 255, 0.11)",
+  },
+  addPhotosButtonDisabled: {
+    opacity: 0.48,
+  },
+  addPhotosButtonText: {
+    color: theme.colors.scannerCyan,
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 0.6,
+  },
+  photoUploadError: {
+    color: theme.colors.danger,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  crosslistCard: {
+    gap: 14,
+    padding: 20,
+    borderRadius: theme.radii.large,
+    borderWidth: 1,
+    borderColor: "rgba(0, 255, 255, 0.28)",
+    backgroundColor: "rgba(7, 12, 18, 0.88)",
+  },
+  crosslistBadge: {
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: "rgba(0, 255, 255, 0.34)",
+    backgroundColor: "rgba(0, 255, 255, 0.08)",
+  },
+  crosslistBadgeText: {
+    color: theme.colors.scannerCyan,
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 0.8,
+  },
+  crosslistDescription: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  destinationList: {
+    gap: 0,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(247, 242, 232, 0.13)",
+  },
+  destinationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 13,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(247, 242, 232, 0.13)",
+  },
+  destinationIcon: {
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(0, 255, 255, 0.24)",
+    backgroundColor: "rgba(0, 255, 255, 0.06)",
+  },
+  destinationCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  destinationTopline: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 7,
+  },
+  destinationName: {
+    color: theme.colors.cream,
+    fontFamily: theme.fonts.semibold,
+    fontSize: 14,
+    fontWeight: "900",
+  },
+  destinationMode: {
+    color: theme.colors.scannerCyan,
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 0.7,
+  },
+  destinationDescription: {
+    color: theme.colors.textMuted,
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  shareDraftButton: {
+    minWidth: 58,
+    minHeight: 34,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderColor: "rgba(242, 211, 138, 0.42)",
+    backgroundColor: "rgba(242, 211, 138, 0.10)",
+  },
+  shareDraftButtonDone: {
+    borderColor: "rgba(0, 255, 255, 0.42)",
+    backgroundColor: "rgba(0, 255, 255, 0.10)",
+  },
+  shareDraftText: {
+    color: theme.colors.goldBright,
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 0.6,
+  },
+  shareDraftTextDone: {
+    color: theme.colors.scannerCyan,
+  },
+  crosslistError: {
+    color: theme.colors.danger,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  crosslistFootnote: {
+    color: theme.colors.textMuted,
     fontSize: 11,
     lineHeight: 16,
   },

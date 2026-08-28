@@ -13,11 +13,20 @@ import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { useKeepFlipFeedbackNudge } from "@/components/feedback/keepflip-feedback-nudge";
 import { inventoryItemToAnalysisState } from "@/components/scanner/inventory-analysis-view-model";
 import { useItemAnalysisResult } from "@/components/scanner/item-analysis-result-context";
+import { AddToInventoryForm, type AddToInventoryFormValues } from "@/components/scanner/add-to-inventory-form";
 import { ValuationResultStage } from "@/components/scanner/valuation-result-stage";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { openKeepFlipIncorrectIdentificationReport } from "@/lib/keepflip-feedback";
 import { saveDealShelfItem } from "@/services/deal-shelf-service";
+import {
+  centsFromLedgerAmount,
+  createManualLedgerEntry,
+  deleteLedgerReceipt,
+  isResellerBooksConfigured,
+  parseLedgerDate,
+  uploadLedgerReceipt,
+} from "@/services/reseller-ledger-service";
 import {
   getInventoryItem,
   saveAnalyzedItemToInventory,
@@ -51,6 +60,7 @@ export function ItemAnalysisResultScreen() {
   const [loading, setLoading] = useState(Boolean(itemId));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [inventoryFormOpen, setInventoryFormOpen] = useState(false);
   const [savingDeal, setSavingDeal] = useState(false);
   const finalizedRef = useRef(false);
   const activeSessionId = scannerSession?.id;
@@ -114,29 +124,119 @@ export function ItemAnalysisResultScreen() {
     clearScannerResult(scannerSession.id);
   }, [clearScannerResult, scannerSession]);
 
-  const handleSave = useCallback(async () => {
+  const openAddToInventory = useCallback(() => {
+    if (!scannerSession || saving || savingDeal) return;
+    if (!userId) {
+      Alert.alert(
+        "Sign in required",
+        "Sign in before adding an item to inventory.",
+      );
+      return;
+    }
+    if (!isResellerBooksConfigured()) {
+      Alert.alert(
+        "Books setup needed",
+        "KeepFlip cannot record this purchase until the Books ledger is configured.",
+      );
+      return;
+    }
+    setInventoryFormOpen(true);
+  }, [saving, savingDeal, scannerSession, userId]);
+
+  const handleAddToInventory = useCallback(async (
+    values: AddToInventoryFormValues,
+  ) => {
     if (!scannerSession || saving || savingDeal || !userId) return;
+
+    const amountCents = centsFromLedgerAmount(values.acquisitionCost);
+    if (!amountCents) {
+      Alert.alert(
+        "Actual cost required",
+        "Enter what you actually paid, from $0.01 to $10,000,000.00.",
+      );
+      return;
+    }
+
+    const occurredAt = parseLedgerDate(values.acquiredAt);
+    if (!occurredAt) {
+      Alert.alert(
+        "Check the date",
+        "Use a real acquisition date in YYYY-MM-DD format.",
+      );
+      return;
+    }
+
     setSaving(true);
+    let savedItemId: string | null = null;
+    let receiptFileId: string | null = null;
+    let receiptLinked = false;
     try {
+      await scannerSession.ensurePhotosSaved?.();
+      if (values.receiptReference.trim()) {
+        receiptFileId = await uploadLedgerReceipt({
+          imageUri: values.receiptReference,
+          ownerId: userId,
+        });
+      }
       const saved = await saveAnalyzedItemToInventory({
+        acquiredAt: occurredAt,
+        acquisitionCost: amountCents / 100,
         analysis: scannerSession.analysis,
         modelFile: scannerSession.modelUrl,
         ownerId: userId,
         scanId: scannerSession.scanId,
       });
+
+      savedItemId = saved.item.id;
+      const purchaseDetails = [
+        values.source.trim() ? `Purchase source: ${values.source.trim()}` : null,
+        values.sku.trim() ? `SKU / tag: ${values.sku.trim()}` : null,
+        values.location.trim() ? `Storage location: ${values.location.trim()}` : null,
+        receiptFileId ? "Receipt photo attached" : null,
+        values.notes.trim() ? values.notes.trim() : null,
+      ].filter((value): value is string => Boolean(value));
+
+      await createManualLedgerEntry({
+        amountCents,
+        channel: values.source.trim() || null,
+        entryType: "inventory_purchase",
+        itemId: saved.item.id,
+        notes: purchaseDetails.length > 0 ? purchaseDetails.join(" | ") : null,
+        occurredAt,
+        ownerId: userId,
+        receiptFileId,
+      });
+
+      receiptLinked = true;
+      setInventoryFormOpen(false);
       recordCompletedAction();
       finishScannerSession();
       router.replace("/inventory");
       if (saved.photoWarning) {
-        Alert.alert("Item saved", saved.photoWarning);
+        Alert.alert("Item added", saved.photoWarning);
       }
     } catch (caught) {
-      Alert.alert(
-        "Could not save item",
-        caught instanceof Error
-          ? caught.message
-          : "KeepFlip could not save this item.",
-      );
+      if (receiptFileId && !receiptLinked) {
+        await deleteLedgerReceipt(receiptFileId);
+      }
+      if (savedItemId) {
+        setInventoryFormOpen(false);
+        recordCompletedAction();
+        finishScannerSession();
+        router.replace("/inventory");
+        Alert.alert(
+          "Item added; Books needs attention",
+          "The item was saved to inventory, but its purchase entry could not be recorded. Open Books to add the actual purchase manually." +
+            (caught instanceof Error ? " " + caught.message : ""),
+        );
+      } else {
+        Alert.alert(
+          "Could not record purchase",
+          caught instanceof Error
+            ? caught.message
+            : "KeepFlip could not save the inventory and Books records.",
+        );
+      }
     } finally {
       setSaving(false);
     }
@@ -228,29 +328,41 @@ export function ItemAnalysisResultScreen() {
 
   return (
     <View style={styles.root}>
-      <ValuationResultStage
-        bottomInset={insets.bottom}
-        onReportIncorrectIdentification={handleReportIncorrectIdentification}
-        onSave={
-          scannerSession
-            ? () => {
-              void handleSave();
-            }
-            : undefined
-        }
-        onSaveToDealShelf={
-          scannerSession
-            ? () => {
-              void handleSaveToDealShelf();
-            }
-            : undefined
-        }
-        projectionLabel="SAVED ANALYSIS / MODEL AVAILABLE ON DEVICE"
-        savingDeal={savingDeal}
-        saving={saving}
-        showMarketDecisionStamp={Boolean(scannerSession)}
-        state={state}
-        topInset={insets.top}
+      {!inventoryFormOpen ? (
+        <ValuationResultStage
+          bottomInset={insets.bottom}
+          onReportIncorrectIdentification={handleReportIncorrectIdentification}
+          onSave={
+            scannerSession
+              ? () => {
+                openAddToInventory();
+              }
+              : undefined
+          }
+          onSaveToDealShelf={
+            scannerSession
+              ? () => {
+                void handleSaveToDealShelf();
+              }
+              : undefined
+          }
+          projectionLabel="SAVED ANALYSIS / MODEL AVAILABLE ON DEVICE"
+          savingDeal={savingDeal}
+          saving={saving}
+          showMarketDecisionStamp={Boolean(scannerSession)}
+          saveLabel="Add to inventory"
+          state={state}
+          topInset={insets.top}
+        />
+      ) : null}
+
+      <AddToInventoryForm
+        key={inventoryFormOpen ? "open" : "closed"}
+        itemTitle={state.data.identity.title}
+        onCancel={() => setInventoryFormOpen(false)}
+        onSubmit={handleAddToInventory}
+        submitting={saving}
+        visible={inventoryFormOpen}
       />
     </View>
   );

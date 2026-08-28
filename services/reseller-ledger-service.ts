@@ -1,9 +1,12 @@
+import { File } from "expo-file-system";
+
 import {
   APPWRITE,
   ID,
   Permission,
   Query,
   Role,
+  storage,
   tablesDB,
 } from '@/lib/appwrite';
 
@@ -59,6 +62,7 @@ export type CreateManualLedgerEntryInput = {
   notes?: string | null;
   occurredAt: string;
   ownerId: string;
+  receiptFileId?: string | null;
 };
 
 export type ResellerBooksSummary = {
@@ -295,6 +299,61 @@ export function isResellerBooksConfigured() {
   return Boolean(APPWRITE.databaseId && APPWRITE.ledgerEntriesTableId);
 }
 
+function normalizeReceiptUri(uri: string) {
+  const trimmed = uri.trim();
+  if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return trimmed;
+  return "file://" + (trimmed.startsWith("/") ? "" : "/") + trimmed;
+}
+
+function openReceiptFile(imageUri: string) {
+  const file = new File(normalizeReceiptUri(imageUri));
+  if (!file.exists || !Number.isFinite(file.size) || file.size <= 0) {
+    throw new Error("The selected receipt photo is missing or empty.");
+  }
+  return file;
+}
+
+export async function uploadLedgerReceipt({
+  imageUri,
+  ownerId,
+}: {
+  imageUri: string;
+  ownerId: string;
+}) {
+  const cleanOwnerId = ownerId.trim();
+  const bucketId = APPWRITE.itemImagesBucketId;
+
+  if (!cleanOwnerId) {
+    throw new Error("Sign in before attaching a receipt.");
+  }
+  if (!bucketId) {
+    throw new Error(
+      "Receipt storage is not configured. Add the item images bucket before attaching a receipt.",
+    );
+  }
+
+  const uploaded = await storage.createFile({
+    bucketId,
+    fileId: ID.unique(),
+    file: openReceiptFile(imageUri) as any,
+    permissions: ownerPermissions(cleanOwnerId),
+  });
+
+  return uploaded.$id;
+}
+
+export async function deleteLedgerReceipt(fileId: string) {
+  const bucketId = APPWRITE.itemImagesBucketId;
+  const cleanFileId = fileId.trim();
+  if (!bucketId || !cleanFileId) return;
+
+  try {
+    await storage.deleteFile({ bucketId, fileId: cleanFileId });
+  } catch {
+    // Receipt cleanup is best effort when the ledger write fails.
+  }
+}
+
 export function ledgerEntryDetails(entryType: ResellerLedgerEntryType) {
   return ENTRY_DETAILS[entryType];
 }
@@ -388,6 +447,7 @@ export async function createManualLedgerEntry({
   notes,
   occurredAt,
   ownerId,
+  receiptFileId,
 }: CreateManualLedgerEntryInput) {
   assertLedgerConfigured();
   const cleanOwnerId = ownerId.trim();
@@ -422,7 +482,7 @@ export async function createManualLedgerEntry({
       source: 'manual',
       externalId: null,
       notes: cleanText(notes, 2_000),
-      receiptFileId: null,
+      receiptFileId: cleanText(receiptFileId, 36),
       createdAt: now,
       updatedAt: now,
       voidedAt: null,
