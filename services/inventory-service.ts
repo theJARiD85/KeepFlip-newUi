@@ -47,6 +47,7 @@ const INVENTORY_LIST_COLUMNS = [
   'coverPhotoId',
   'modelFile',
   'photoCount',
+  'itemPhotos',
   'acquiredAt',
   'createdAt',
 ] as const;
@@ -97,6 +98,7 @@ export type InventoryItem = {
   coverPhotoId: string | null;
   modelFile: string | null;
   photoCount: number;
+  itemPhotos: string[];
   acquiredAt?: string | null;
   createdAt: string;
   analysisSnapshot?: ItemAnalysisSuccess | null;
@@ -125,6 +127,7 @@ type InventoryRow = {
   coverPhotoId?: string | null;
   modelFile?: string | null;
   photoCount?: number | null;
+  itemPhotos?: unknown;
   acquiredAt?: string | null;
   createdAt?: string | null;
   analysisSnapshotJson?: string | null;
@@ -178,6 +181,29 @@ function boundedText(
   maximumLength: number,
 ) {
   return cleanText(value)?.slice(0, maximumLength) || null;
+}
+
+function normalizedItemPhotos(value: unknown): string[] {
+  let candidates: unknown = value;
+
+  if (typeof value === 'string') {
+    try {
+      candidates = JSON.parse(value);
+    } catch {
+      candidates = value.split(',');
+    }
+  }
+
+  if (!Array.isArray(candidates)) return [];
+
+  return [
+    ...new Set(
+      candidates
+        .filter((candidate): candidate is string => typeof candidate === 'string')
+        .map((candidate) => candidate.trim())
+        .filter(Boolean),
+    ),
+  ];
 }
 
 function normalizedModelFile(value: string | null | undefined) {
@@ -507,6 +533,7 @@ function rowToInventoryItem(row: InventoryRow): InventoryItem {
     coverPhotoId: cleanText(row.coverPhotoId),
     modelFile: normalizedModelFile(row.modelFile),
     photoCount: Math.max(0, Number(row.photoCount) || 0),
+    itemPhotos: normalizedItemPhotos(row.itemPhotos),
     acquiredAt: row.acquiredAt || null,
     createdAt: row.createdAt || row.$createdAt || new Date().toISOString(),
     analysisSnapshot: parseAnalysisSnapshot(row.analysisSnapshotJson),
@@ -581,6 +608,7 @@ async function attachExistingScan({
     data: {
       coverPhotoId: primaryPhoto?.fileId || null,
       photoCount: photos.length,
+      itemPhotos: normalizedItemPhotos(photos.map((photo) => photo.fileId)),
       updatedAt: new Date().toISOString(),
     },
   });
@@ -588,6 +616,7 @@ async function attachExistingScan({
   return {
     coverPhotoId: primaryPhoto?.fileId || null,
     photoCount: photos.length,
+    itemPhotos: normalizedItemPhotos(photos.map((photo) => photo.fileId)),
     warning:
       photos.length === 0
         ? 'The item was saved, but no saved scanner photos matched this scan.'
@@ -665,6 +694,7 @@ export async function saveAnalyzedItemToInventory({
         coverPhotoId: null,
         modelFile: storedModelFile,
         photoCount: 0,
+        itemPhotos: [],
         aiConfidence: confidence,
         analysisSnapshotJson,
         isListed: false,
@@ -692,6 +722,7 @@ export async function saveAnalyzedItemToInventory({
     attached = {
       coverPhotoId: null,
       photoCount: 0,
+      itemPhotos: [],
       warning:
         error instanceof Error
           ? `The item was saved, but its scanner photos could not be linked: ${error.message}`
@@ -707,6 +738,7 @@ export async function saveAnalyzedItemToInventory({
       coverPhotoId: attached.coverPhotoId,
       modelFile: storedModelFile,
       photoCount: attached.photoCount,
+      itemPhotos: attached.itemPhotos,
     }),
     photoWarning: attached.warning,
   };

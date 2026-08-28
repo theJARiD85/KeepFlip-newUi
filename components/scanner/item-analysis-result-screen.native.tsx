@@ -400,6 +400,22 @@ export function ItemAnalysisResultScreen() {
     clearScannerResult(scannerSession.id);
   }, [clearScannerResult, scannerSession]);
 
+  const openSavedListingWorkspace = useCallback(() => {
+    if (!itemId || scannerSession) return;
+    router.push({
+      pathname: "/listing-guide",
+      params: { itemId },
+    });
+  }, [itemId, router, scannerSession]);
+
+  const openSavedPhotoManager = useCallback(() => {
+    if (!itemId || scannerSession) return;
+    router.push({
+      pathname: "/listing-guide",
+      params: { focus: "photos", itemId },
+    });
+  }, [itemId, router, scannerSession]);
+
   const openAddToInventory = useCallback(() => {
     if (!scannerSession || saving || savingDeal) return;
     if (!userId) {
@@ -854,6 +870,12 @@ export function ItemAnalysisResultScreen() {
         {!inventoryFormOpen ? (
           <ValuationResultStage
             bottomInset={insets.bottom}
+            onManagePhotos={
+              itemId && !scannerSession ? openSavedPhotoManager : undefined
+            }
+            onOpenListing={
+              itemId && !scannerSession ? openSavedListingWorkspace : undefined
+            }
             key={
               scannerSession
                 ? `${scannerSession.id}:${

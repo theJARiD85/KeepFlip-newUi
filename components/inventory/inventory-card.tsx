@@ -47,11 +47,13 @@ export function InventoryCard({
   item,
   onPress,
   onListingGuidePress,
+  onAddPhotosPress,
 }: {
   coverImageSource?: CoverImageSource;
   item: InventoryItem;
   onPress: () => void;
   onListingGuidePress?: () => void;
+  onAddPhotosPress?: () => void;
 }) {
   const coverPhotoId = item.coverPhotoId;
   const coverKey = coverPhotoId ?? "";
@@ -274,10 +276,41 @@ export function InventoryCard({
           </View>
           <View style={styles.listingGuideButtonCopy}>
             <Text style={styles.listingGuideButtonEyebrow}>SELLER WORKFLOW</Text>
-            <Text style={styles.listingGuideButtonLabel}>Listing creation guide</Text>
+            <Text style={styles.listingGuideButtonLabel}>List item</Text>
           </View>
           <IconSymbol
             color={theme.colors.goldBright}
+            name="arrow.right"
+            size={18}
+          />
+        </Pressable>
+      ) : null}
+
+      {onAddPhotosPress ? (
+        <Pressable
+          accessibilityHint={"Opens the photo manager for " + item.title}
+          accessibilityLabel={"Add photos to " + item.title}
+          accessibilityRole="button"
+          onPress={onAddPhotosPress}
+          style={({ pressed }) => [
+            styles.listingGuideButton,
+            styles.photoManagerButton,
+            pressed && styles.listingGuideButtonPressed,
+          ]}
+        >
+          <View style={styles.listingGuideButtonIcon}>
+            <IconSymbol
+              color={theme.colors.scannerCyan}
+              name="photo.on.rectangle.angled"
+              size={17}
+            />
+          </View>
+          <View style={styles.listingGuideButtonCopy}>
+            <Text style={styles.listingGuideButtonEyebrow}>PHOTO SET</Text>
+            <Text style={styles.listingGuideButtonLabel}>Add photos</Text>
+          </View>
+          <IconSymbol
+            color={theme.colors.scannerCyan}
             name="arrow.right"
             size={18}
           />
@@ -532,6 +565,10 @@ const styles = StyleSheet.create({
   },
   listingGuideButtonPressed: {
     opacity: 0.76,
+  },
+  photoManagerButton: {
+    borderTopColor: "rgba(88, 223, 232, 0.22)",
+    backgroundColor: "rgba(7, 12, 18, 0.96)",
   },
   listingGuideButtonIcon: {
     width: 34,

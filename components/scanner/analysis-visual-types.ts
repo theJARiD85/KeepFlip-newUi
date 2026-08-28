@@ -151,6 +151,7 @@ export type ItemAnalysisResult = {
   evidence?: AnalysisEvidence[];
   identity: AnalysisIdentity;
   marketAnalysis?: ItemMarketAnalysis;
+  browseMarketAnalysis?: ItemMarketAnalysis;
   marketReferences?: AnalysisMarketReference[];
   profitPlan: AnalysisProfitPlan;
   refinementQuestions?: AnalysisRefinementQuestion[];

@@ -43,6 +43,13 @@ table:
 | Column | Type | Required | Indexed |
 | --- | --- | --- | --- |
 | `analysisSnapshotJson` | mediumtext | no | no |
+| `itemPhotos` | string array | no | no |
+
+`itemPhotos` stores the Appwrite Storage file IDs for every image currently
+attached to the inventory item. The `item_photos` row remains the source of
+truth for ownership, ordering, and cover state; the item-level array is a
+compact lookup used by inventory and listing flows. Add it as an optional
+array of strings with an empty-array default for new items.
 
 For fast inventory filtering and sorting, also add these optional `items`
 columns. They are compact copies of the richer snapshot fields, not a second
@@ -96,12 +103,16 @@ Appwrite column reports as available before retrying a save.
 | Column | Type | Required |
 | --- | --- | --- |
 | `ownerId` | string(36) | yes |
-| `scanId` | string(36) | yes |
+| `scanId` | string(36) | no |
 | `itemId` | string(36) | no |
 | `fileId` | string(36) | yes |
 | `sortOrder` | integer, 0–20 | yes |
 | `isPrimary` | boolean | yes |
 | `createdAt` | datetime | yes |
+
+`scanId` is required for scanner-created photos, but it must be optional for
+photos added later from an existing inventory item because those uploads do not
+belong to a scanner session.
 
 Create an index that supports filtering by `ownerId` and `scanId`, ordered by `sortOrder`.
 

@@ -366,6 +366,12 @@ export default function InventoryScreen() {
                     params: { itemId: row.item.id },
                   })
                 }
+                onAddPhotosPress={() =>
+                  router.push({
+                    pathname: "/listing-guide",
+                    params: { focus: "photos", itemId: row.item.id },
+                  })
+                }
               />
             </View>
           )

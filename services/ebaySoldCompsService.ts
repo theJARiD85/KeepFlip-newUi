@@ -391,6 +391,7 @@ export type SerpApiImageValuationResult = {
   image: SerpApiImageReference | null;
   sourceImage: SerpApiImageReference | null;
   aiModeConversation: SerpApiAiModeConversation | null;
+  browseMarketAnalysis?: ItemMarketAnalysis;
   valuation: {
     status: "ready" | "needs_comps";
     currency: string;
@@ -516,16 +517,6 @@ function positiveNumberOrNull(value: unknown): number | null {
   return number > 0 ? number : null;
 }
 
-function finiteNumberOrNull(value: unknown): number | null {
-  if (value == null) return null;
-  const number =
-    typeof value === "number"
-      ? value
-      : typeof value === "string" && value.trim()
-        ? Number(value.replace(/,/g, "").replace(/[^\d.-]/g, ""))
-        : Number.NaN;
-  return Number.isFinite(number) ? number : null;
-}
 function nonNegativeNumberOrNull(value: unknown): number | null {
   if (value == null) return null;
   const number =
@@ -1329,53 +1320,6 @@ async function waitForResult(
 
 }
 
-function toSoldCompsResult(
-  payload: JsonRecord,
-  query: string
-): EbaySoldCompsResult {
-  const comps = readComps(payload);
-
-  if (!comps.length) {
-    throw new Error(
-      "Market research completed without usable sold listings."
-    );
-  }
-
-  const rawSummary = asRecord(payload.summary);
-  const fallbackSummary = makeSummary(comps);
-  const activeCount = nonNegativeNumberOrNull(rawSummary?.activeCount);
-  const marketAnalysis = normalizeMarketAnalysis(payload.marketAnalysis);
-
-  return {
-    ok: true,
-    phase: "completed",
-    purpose: "sold_comps",
-    runId: asString(payload.runId ?? payload.id) || "completed",
-    query: asString(payload.query) || query,
-    comps,
-    summary: {
-      count: asNumber(rawSummary?.count) || fallbackSummary.count,
-      low:
-        asNumber(rawSummary?.low) || fallbackSummary.low,
-      median:
-        asNumber(rawSummary?.median) || fallbackSummary.median,
-      average:
-        asNumber(rawSummary?.average) ||
-        fallbackSummary.average,
-      high:
-        asNumber(rawSummary?.high) || fallbackSummary.high,
-      currency:
-        asString(rawSummary?.currency) ||
-        fallbackSummary.currency,
-      ...(activeCount != null ? { activeCount } : {}),
-    },
-    ...(marketAnalysis ? { marketAnalysis } : {}),
-    searchedAt:
-      asString(payload.searchedAt) ||
-      new Date().toISOString(),
-  };
-}
-
 function guessCategoryFromTitle(title: string): string {
   const value = title.toLowerCase();
 
@@ -1486,7 +1430,7 @@ function cleanSerpApiIdentityText(value: unknown): string | null {
   const cleaned = toNullableString(value)
     ?.slice(0, 10_000)
     .replace(
-      /!?\[([^\]\r\n]+)\]\(\s*(?:https?:\/\/|www\.)[^)\s]+(?:\s+["'][^"']*["'])?\s*\)/gi,
+      /!?\[([^\]\n]+)\]\(\s*(?:https?:\/\/|www\.)[^)\s]+(?:\s+["'][^"']*["'])?\s*\)/gi,
       "$1"
     )
     .replace(/<\s*(?:https?:\/\/|www\.)[^>]+>/gi, "")
@@ -1518,7 +1462,7 @@ function cleanSerpApiItemTitle(value: unknown): string | null {
   if (!source) return null;
 
   const linkedTitle = source.match(
-    /!?\[([^\]\r\n]+)\]\(\s*(?:https?:\/\/|www\.)[^)\s]+(?:\s+["'][^"']*["'])?\s*\)/i
+    /!?\[([^\]\n]+)\]\(\s*(?:https?:\/\/|www\.)[^)\s]+(?:\s+["'][^"']*["'])?\s*\)/i
   )?.[1];
   const cleaned = cleanSerpApiIdentityText(linkedTitle ?? source)
     ?.replace(
@@ -2232,6 +2176,9 @@ export async function runSerpApiImageValuation(
   }
 
   const rawQuality = asRecord(payload.quality);
+  const browseMarketAnalysis = normalizeMarketAnalysis(
+    payload.browseMarketAnalysis,
+  );
   const rawIdentificationStatus = asString(payload.identificationStatus);
   if (
     rawIdentificationStatus !== "identified" &&
@@ -2293,6 +2240,7 @@ export async function runSerpApiImageValuation(
     aiModeConversation: normalizeAiModeConversation(
       payload.aiModeConversation,
     ),
+    ...(browseMarketAnalysis ? { browseMarketAnalysis } : {}),
     valuation: {
       status: hasValuation ? "ready" : "needs_comps",
       currency: display.valuation.currency,
@@ -2442,37 +2390,12 @@ export function applyProfitabilityGuidanceToAnalysis(
 }
 
 export async function runEbaySoldComps(
-  rawQuery: string,
-  limit = 12
+  _rawQuery: string,
+  _limit = 12,
 ): Promise<EbaySoldCompsResult> {
-  const query = rawQuery.trim();
-
-  if (query.length < 3) {
-    throw new Error(
-      "Enter a more specific item name before researching sold comps."
-    );
-  }
-
-  const started = await startSearch(
-    "sold_comps",
-    query,
-    undefined,
-    limit
+  throw new Error(
+    "Direct eBay sold-comps search has been removed. Image valuation uses KeepFlip AI and current supply uses eBay Browse.",
   );
-
-  const completed = await waitForResult(
-    started,
-    "sold_comps",
-    query,
-    undefined
-  );
-
-  /*
-    Intentional compatibility behavior:
-    A valid response with `comps` is a sold-comps result even when the
-    Function omitted or incorrectly labeled `purpose`.
-  */
-  return toSoldCompsResult(completed, query);
 }
 
 export async function lookupBarcodeWithEbay(

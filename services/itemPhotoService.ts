@@ -29,6 +29,10 @@ type ItemPhotoRow = {
   isPrimary?: boolean | null;
 };
 
+function photoFileIds(photos: ItemPhoto[]): string[] {
+  return [...new Set(photos.map((photo) => photo.fileId.trim()).filter(Boolean))];
+}
+
 function ownerPermissions(userId: string) {
   return [
     Permission.read(Role.user(userId)),
@@ -60,7 +64,9 @@ export async function getItemPhotos({
       Query.equal("ownerId", [ownerId]),
       Query.equal("itemId", [itemId]),
       Query.orderAsc("sortOrder"),
-      Query.limit(10),
+      // Keep the item-level array complete even when an item has more than
+      // the listing composer limit of ten photos.
+      Query.limit(100),
     ],
   });
 
@@ -72,19 +78,23 @@ export async function getItemPhotos({
 async function writePhotoSummary({
   itemId,
   coverFileId,
-  photoCount,
+  photos,
 }: {
   itemId: string;
   coverFileId: string | null;
-  photoCount: number;
+  photos: ItemPhoto[];
 }) {
+  const itemPhotos = photoFileIds(photos);
+  const normalizedCoverFileId = coverFileId?.trim() || null;
+
   await tablesDB.updateRow({
     databaseId: APPWRITE.databaseId,
     tableId: APPWRITE.itemsTableId,
     rowId: itemId,
     data: {
-      coverPhotoId: coverFileId,
-      photoCount,
+      coverPhotoId: normalizedCoverFileId,
+      photoCount: itemPhotos.length,
+      itemPhotos,
       updatedAt: new Date().toISOString(),
     },
   });
@@ -121,7 +131,7 @@ export async function setItemCoverPhoto({
   await writePhotoSummary({
     itemId,
     coverFileId: fileId,
-    photoCount: photos.length,
+    photos,
   });
 }
 
@@ -135,18 +145,30 @@ export async function appendPhotoToItem({
   fileId: string;
 }) {
   const photos = await getItemPhotos({ itemId, ownerId });
+  const cleanFileId = fileId.trim();
+  if (!cleanFileId) {
+    throw new Error("The uploaded item photo is missing its file ID.");
+  }
+
   const now = new Date().toISOString();
   const isFirstPhoto = photos.length === 0;
+  const itemPhotoId = ID.unique();
+  const appendedPhoto: ItemPhoto = {
+    id: itemPhotoId,
+    fileId: cleanFileId,
+    sortOrder: photos.length,
+    isPrimary: isFirstPhoto,
+  };
 
   await tablesDB.createRow({
     databaseId: APPWRITE.databaseId,
     tableId: APPWRITE.itemPhotosTableId,
-    rowId: ID.unique(),
+    rowId: itemPhotoId,
     data: {
       ownerId,
       itemId,
-      fileId,
-      sortOrder: photos.length,
+      fileId: cleanFileId,
+      sortOrder: appendedPhoto.sortOrder,
       isPrimary: isFirstPhoto,
       createdAt: now,
     },
@@ -156,11 +178,11 @@ export async function appendPhotoToItem({
   await writePhotoSummary({
     itemId,
     coverFileId: isFirstPhoto
-      ? fileId
+      ? cleanFileId
       : photos.find((photo) => photo.isPrimary)?.fileId ||
         photos[0]?.fileId ||
-        fileId,
-    photoCount: photos.length + 1,
+        cleanFileId,
+    photos: [...photos, appendedPhoto],
   });
 }
 
@@ -215,7 +237,7 @@ export async function removeItemPhoto({
   await writePhotoSummary({
     itemId,
     coverFileId: nextCover,
-    photoCount: remaining.length,
+    photos: remaining,
   });
 }
 
@@ -240,9 +262,15 @@ export async function linkPhotosToItem({
       : photos[0].fileId;
 
   const now = new Date().toISOString();
+  const linkedPhotos: ItemPhoto[] = photos.map((photo, index) => ({
+    id: 'linked-' + index,
+    fileId: photo.fileId.trim(),
+    sortOrder: index,
+    isPrimary: photo.fileId === selectedCoverFileId,
+  }));
 
   await Promise.all(
-    photos.map((photo, index) =>
+    linkedPhotos.map((photo) =>
       tablesDB.createRow({
         databaseId: APPWRITE.databaseId,
         tableId: APPWRITE.itemPhotosTableId,
@@ -251,8 +279,8 @@ export async function linkPhotosToItem({
           ownerId,
           itemId,
           fileId: photo.fileId,
-          sortOrder: index,
-          isPrimary: photo.fileId === selectedCoverFileId,
+          sortOrder: photo.sortOrder,
+          isPrimary: photo.isPrimary,
           createdAt: now,
         },
         permissions: ownerPermissions(ownerId),
@@ -263,7 +291,7 @@ export async function linkPhotosToItem({
   await writePhotoSummary({
     itemId,
     coverFileId: selectedCoverFileId,
-    photoCount: photos.length,
+    photos: linkedPhotos,
   });
 
   return selectedCoverFileId;

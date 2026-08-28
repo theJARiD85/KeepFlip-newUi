@@ -13,11 +13,9 @@ import {
   getAppwriteCoreServices,
 } from "@/lib/appwrite";
 import {
-  runStrictEbaySoldComps,
   runSerpApiImageValuation,
   type EbaySoldCompsResult,
   type SerpApiImageValuationResult,
-  type StrictMarketValueProfile,
 } from "@/services/ebaySoldCompsService";
 import {
   identifyItemWithAI,
@@ -508,78 +506,6 @@ function marketIdentityContext(
     .trim();
 }
 
-function marketTitleTokens(value: string | null | undefined) {
-  return (value ?? "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .split(/\s+/)
-    .filter((token) => token.length >= 3);
-}
-
-function verifiedSoldCompsProfile(
-  market: SerpApiImageValuationResult,
-  photoCount: number,
-  multiPhotoIdentification: KeepFlipIdentification | null,
-): StrictMarketValueProfile | null {
-  if (market.identificationStatus !== "identified") return null;
-
-  const fused = isStrongMultiPhotoIdentification(multiPhotoIdentification)
-    ? multiPhotoIdentification
-    : null;
-  const identity = market.display.identity;
-  const title =
-    meaningfulIdentificationTitle(market.display.title) ??
-    meaningfulIdentificationTitle(fused?.title);
-  const brand = identity.brand ?? fused?.brand ?? null;
-  const model = identity.model ?? fused?.model ?? null;
-  const condition = (
-    market.display.condition ??
-    market.condition
-  )?.grade ?? fused?.condition ?? "unknown";
-  const conditionNotes = (
-    market.display.condition ??
-    market.condition
-  )?.summary ?? fused?.conditionNotes ?? "";
-
-  if (!title) return null;
-  const titleTokens = marketTitleTokens(title);
-  const hasSpecificIdentity =
-    Boolean(model?.trim()) ||
-    (Boolean(brand?.trim()) && titleTokens.length >= 3);
-
-  if (!hasSpecificIdentity) return null;
-
-  return {
-    title,
-    brand,
-    model,
-    condition,
-    conditionNotes,
-    photoCount,
-  };
-}
-
-async function loadVerifiedSoldComps(
-  market: SerpApiImageValuationResult,
-  photoCount: number,
-  multiPhotoIdentification: KeepFlipIdentification | null,
-): Promise<EbaySoldCompsResult | null> {
-  const profile = verifiedSoldCompsProfile(
-    market,
-    photoCount,
-    multiPhotoIdentification,
-  );
-  if (!profile) return null;
-
-  try {
-    return await runStrictEbaySoldComps(profile, 50);
-  } catch {
-    console.warn(
-      "[KeepFlip] Verified eBay sold-comp follow-up was unavailable; retaining the visual market estimate.",
-    );
-    return null;
-  }
-}
 
 function analysisResultFromSerpApi(
   market: SerpApiImageValuationResult,
@@ -826,6 +752,9 @@ function analysisResultFromSerpApi(
       })),
       references: market.references,
       aiModeConversation: market.aiModeConversation,
+      ...(market.browseMarketAnalysis
+        ? { browseMarketAnalysis: market.browseMarketAnalysis }
+        : {}),
       identification: identificationSummary,
       condition: market.condition,
       factors: market.factors,
@@ -985,11 +914,10 @@ export async function analyzeItemPhotos(
     }
 
     throwIfAborted(options.signal);
-    const verifiedSoldComps = await loadVerifiedSoldComps(
-      market,
-      input.photoUris.length,
-      multiPhotoIdentification,
-    );
+    // Historical sold-comps follow-up is intentionally disabled. SerpApi is
+    // reserved for KeepFlip AI Mode; official eBay Browse data is attached by
+    // the market Function only for current active-listing context.
+    const verifiedSoldComps = null;
     throwIfAborted(options.signal);
 
     const completedResult = analysisResultFromSerpApi(
@@ -1124,11 +1052,9 @@ export async function refineItemAnalysis({
         ...(subsequentRequestToken ? { subsequentRequestToken } : {}),
         ...(cleanPhotoFileId ? { hasRefinementImage: true } : {}),
       });
-      const verifiedSoldComps = await loadVerifiedSoldComps(
-        market,
-        normalizedImageCount,
-        null,
-      );
+      // Keep refinements on the KeepFlip AI path; do not trigger a direct
+      // SerpApi eBay search after an image valuation.
+      const verifiedSoldComps = null;
       return analysisResultFromSerpApi(
         market,
         normalizedImageCount,

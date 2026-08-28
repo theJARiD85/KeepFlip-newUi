@@ -285,14 +285,11 @@ export default function ScannerScreen() {
   );
   const zoomPresets = useMemo(() => {
     const candidates = [
-      0.5,
-      0.75,
       1,
       1.5,
       2,
       3,
       4,
-      zoomDisplayBounds.max,
     ];
 
     const supported = candidates

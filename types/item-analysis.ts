@@ -427,6 +427,7 @@ export type ItemMarketResearch = {
   signals?: ItemMarketSignal[];
   references?: ItemMarketReference[];
   aiModeConversation?: ItemAiModeConversation | null;
+  browseMarketAnalysis?: ItemMarketAnalysis;
   identification?: string | null;
   condition?: {
     grade: 'new' | 'like_new' | 'good' | 'fair' | 'poor' | 'parts' | 'unknown';

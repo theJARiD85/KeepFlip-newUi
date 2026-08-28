@@ -810,6 +810,7 @@ export function toItemAnalysisResult(result: ItemAnalysisSuccess): ItemAnalysisO
     },
     marketReferences: marketReferences(result),
     marketAnalysis: result.marketResearch?.marketAnalysis,
+    browseMarketAnalysis: result.marketResearch?.browseMarketAnalysis,
     profitPlan: profitPlan(result),
     refinementQuestions: refinementQuestions(result),
     suggestedPhotos: suggestedPhotos(result),

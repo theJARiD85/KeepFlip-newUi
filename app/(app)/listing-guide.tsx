@@ -1,5 +1,5 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import * as ImagePicker from "expo-image-picker";
 import {
   ActivityIndicator,
@@ -151,8 +151,12 @@ function buildChecklist(item: InventoryItem): ChecklistStep[] {
 }
 
 export default function ListingCreationGuideScreen() {
-  const params = useLocalSearchParams<{ itemId?: string | string[] }>();
+  const params = useLocalSearchParams<{
+    focus?: string | string[];
+    itemId?: string | string[];
+  }>();
   const itemId = Array.isArray(params.itemId) ? params.itemId[0] : params.itemId;
+  const focus = Array.isArray(params.focus) ? params.focus[0] : params.focus;
   const router = useRouter();
   const { user } = useKeepFlipAuth();
   const { recordCompletedAction } = useKeepFlipFeedbackNudge();
@@ -179,6 +183,7 @@ export default function ListingCreationGuideScreen() {
   const [shareError, setShareError] = useState<string | null>(null);
   const [addingPhotos, setAddingPhotos] = useState(false);
   const [photoUploadError, setPhotoUploadError] = useState<string | null>(null);
+  const promptedForPhotosRef = useRef<string | null>(null);
 
   const loadItem = useCallback(async () => {
     if (!userId) {
@@ -410,6 +415,15 @@ export default function ListingCreationGuideScreen() {
       },
     ]);
   }, [addingPhotos, captureAdditionalPhoto, chooseAdditionalPhotos, item]);
+
+  useEffect(() => {
+    if (focus !== "photos" || !item || loading || addingPhotos) return;
+    if (promptedForPhotosRef.current === item.id) return;
+
+    promptedForPhotosRef.current = item.id;
+    const promptTimer = setTimeout(() => addItemPhotos(), 180);
+    return () => clearTimeout(promptTimer);
+  }, [addItemPhotos, addingPhotos, focus, item, loading]);
 
   const shareListingDraft = useCallback(
     async (platform: ListingPlatform) => {

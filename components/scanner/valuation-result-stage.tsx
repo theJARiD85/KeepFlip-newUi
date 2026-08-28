@@ -43,12 +43,10 @@ import {
   BooksRecordsProjection,
   hasBooksRecordsProjection,
 } from "@/components/scanner/books-records-projection";
-import { MarketPricingDashboard } from "@/components/scanner/market-pricing-dashboard";
 import { SmartProfitCalculator } from "@/components/scanner/smart-profit-calculator";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import {
-  runEbaySoldComps,
   runSerpApiProfitabilityGuidance,
   type SerpApiProfitabilityGuidance,
 } from "@/services/ebaySoldCompsService";
@@ -70,6 +68,8 @@ type ValuationResultStageProps = {
   ) => void | Promise<void>;
   onSaveToDealShelf?: () => void;
   onSave?: () => void;
+  onOpenListing?: () => void;
+  onManagePhotos?: () => void;
   onReportIncorrectIdentification?: () => void;
   projectionLabel?: string;
   refining?: boolean;
@@ -796,15 +796,7 @@ function ProfitPanel({
       {expanded && result.valuation ? (
         <SmartProfitCalculator valuation={result.valuation} />
       ) : null}
-      {expanded ? (
-        <MarketPricingDashboard
-          loadComps={runEbaySoldComps}
-          query={result.identity.title}
-          title={result.identity.title}
-        />
-      ) : null}
-
-      {hasEnhancements ? (
+       {hasEnhancements ? (
         <>
           <Text style={styles.profitTapHint}>TAP AN ENHANCEMENT FOR ITS ITEM-SPECIFIC HOW-TO</Text>
           {enhancements.slice(0, compactActionLimit).map((action, index) => (
@@ -944,7 +936,9 @@ function ExpandedResultDetails({
   const requestedPhotos = result.suggestedPhotos ?? [];
   const decisionCard = decisionCardForResult(result);
   const acquisitionGuidance = result.acquisitionGuidance;
-  const marketAnalysis = result.marketAnalysis;
+  const marketAnalysis =
+    result.marketAnalysis ?? result.browseMarketAnalysis;
+  const hasConfirmedSoldEvidence = Boolean(result.marketAnalysis);
   const canSubmit =
     Boolean(onRefine) &&
     !refining &&
@@ -1070,7 +1064,11 @@ function ExpandedResultDetails({
 
       {activeTab === "valuation" && marketAnalysis ? (
         <View style={styles.detailSection}>
-          <Text style={styles.detailSectionTitle}>MARKET VALUE · VERIFIED SOLD</Text>
+          <Text style={styles.detailSectionTitle}>
+            {hasConfirmedSoldEvidence
+              ? "MARKET VALUE · VERIFIED SOLD"
+              : "MARKET VALUE · ACTIVE MARKET CONTEXT"}
+          </Text>
           <DetailFact
             label={
               marketAnalysis.marketValue.period.days == null
@@ -1543,6 +1541,8 @@ export function ValuationResultStage({
   onScanMorePhotos,
   onSave,
   onSaveToDealShelf,
+  onOpenListing,
+  onManagePhotos,
   onReportIncorrectIdentification,
   projectionLabel = "GENERATED ITEM PROJECTION",
   refining = false,
@@ -1560,6 +1560,8 @@ export function ValuationResultStage({
   const result = state.data;
   const marketDecision = decisionCardForResult(result);
   const hasSaveAction = Boolean(onSave || onSaveToDealShelf);
+  const hasSellerAction = Boolean(onOpenListing || onManagePhotos);
+  const hasBottomActions = hasSaveAction || hasSellerAction;
   const hasIncorrectIdentificationReportAction = Boolean(onReportIncorrectIdentification);
   const reportActionHeight = hasIncorrectIdentificationReportAction ? 36 : 0;
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
@@ -1570,7 +1572,7 @@ export function ValuationResultStage({
       ? 54
       : 0;
   const collapsedHeight =
-    (hasSaveAction ? COLLAPSED_HEIGHT_WITH_SAVE : COLLAPSED_HEIGHT) +
+    (hasBottomActions ? COLLAPSED_HEIGHT_WITH_SAVE : COLLAPSED_HEIGHT) +
     compactBooksHeight +
     reportActionHeight +
     bottomInset;
@@ -2054,7 +2056,7 @@ export function ValuationResultStage({
           panel
         )}
 
-        {hasSaveAction ? (
+        {hasBottomActions ? (
           <View style={styles.saveActions}>
             {onSaveToDealShelf ? (
               <Pressable
@@ -2090,6 +2092,49 @@ export function ValuationResultStage({
                 <Text style={styles.saveButtonText}>
                   {saving ? "SAVING..." : saveLabel.toUpperCase()}
                 </Text>
+              </Pressable>
+            ) : null}
+
+            {onOpenListing ? (
+              <Pressable
+                accessibilityHint="Opens the listing workspace for this saved item."
+                accessibilityRole="button"
+                disabled={saving || savingDeal || refining}
+                onPress={onOpenListing}
+                style={({ pressed }) => [
+                  styles.saveButton,
+                  pressed && styles.pressed,
+                  (saving || savingDeal || refining) && styles.disabled,
+                ]}
+              >
+                <IconSymbol
+                  color={theme.colors.backgroundDeep}
+                  name="tag.fill"
+                  size={16}
+                />
+                <Text style={styles.saveButtonText}>LIST ITEM</Text>
+              </Pressable>
+            ) : null}
+
+            {onManagePhotos ? (
+              <Pressable
+                accessibilityHint="Opens the listing workspace photo manager for this saved item."
+                accessibilityRole="button"
+                disabled={saving || savingDeal || refining}
+                onPress={onManagePhotos}
+                style={({ pressed }) => [
+                  styles.saveButton,
+                  styles.saveButtonSecondary,
+                  pressed && styles.pressed,
+                  (saving || savingDeal || refining) && styles.disabled,
+                ]}
+              >
+                <IconSymbol
+                  color={theme.colors.goldBright}
+                  name="photo.on.rectangle.angled"
+                  size={16}
+                />
+                <Text style={styles.saveButtonTextSecondary}>ADD PHOTOS</Text>
               </Pressable>
             ) : null}
           </View>

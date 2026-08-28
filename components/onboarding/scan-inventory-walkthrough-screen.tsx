@@ -183,6 +183,7 @@ const SAMPLE_INVENTORY_ITEM: InventoryItem = {
   model: "Tabby 26",
   modelFile: null,
   photoCount: 1,
+  itemPhotos: [],
   resaleTypicalDays: 18,
   resaleVelocity: "fast",
   status: "undecided",
