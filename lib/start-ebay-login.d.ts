@@ -29,7 +29,6 @@ export function verifyAndConsumeEbayOAuthState(
 
 export function startEbayLogin(options?: {
   environment?: 'sandbox' | 'production';
-  authorizationUrl?: string;
   authorizationState?: string;
   clientState?: string;
   locale?: string;
@@ -41,3 +40,5 @@ export function startEbayLogin(options?: {
   clientState: string;
   redirectUri: string;
 }>;
+
+

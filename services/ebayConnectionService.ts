@@ -26,8 +26,8 @@ export type EbayConnectionStatusResult = {
 
 type FunctionPayload = {
   ok?: unknown;
-  authorizationUrl?: unknown;
   state?: unknown;
+  expiresAt?: unknown;
   connected?: unknown;
   environment?: unknown;
   ebayUsername?: unknown;
@@ -179,9 +179,9 @@ function parseReturnUrl(
 
 /**
  * Starts eBay's authorization-code grant through the active backend. The
- * backend creates the opaque state row and returns the complete authorization
- * URL; the app persists that returned state in SecureStore before opening the
- * browser. eBay calls ebay_oauth_callback directly after consent.
+ * backend creates and records the opaque state; the app persists that exact
+ * state in SecureStore, builds the environment-specific eBay authorize URL,
+ * and opens the browser. eBay calls ebay_oauth_callback directly after consent.
  */
 export async function connectEbayAccount(
   environment: EbayOAuthEnvironment = getEbayOAuthEnvironment(),
@@ -201,25 +201,18 @@ export async function connectEbayAccount(
     const payload = parseFunctionPayload(execution.responseBody);
     const responseEnvironment = normalizeEnvironment(payload.environment);
     const activeEnvironment = responseEnvironment ?? environment;
-    const authorizationUrl =
-      typeof payload.authorizationUrl === 'string'
-        ? payload.authorizationUrl.trim()
-        : '';
-    const legacyAuthorizationState =
+    const authorizationState =
       typeof payload.state === 'string' ? payload.state.trim() : '';
 
-    if (!authorizationUrl && !legacyAuthorizationState) {
+    if (!authorizationState) {
       throw new Error(
-        'The eBay OAuth backend did not return an authorization URL.',
+        'The eBay OAuth backend did not return an OAuth state.',
       );
     }
 
     const browserSession = await startEbayLogin({
       environment: activeEnvironment,
-      authorizationUrl: authorizationUrl || undefined,
-      authorizationState: authorizationUrl
-        ? undefined
-        : legacyAuthorizationState,
+      authorizationState,
     });
     pendingState = browserSession.authorizationState || browserSession.clientState;
 
@@ -365,3 +358,7 @@ export async function revokeEbayConnection(
     environment: normalizeEnvironment(payload.environment) ?? environment,
   };
 }
+
+
+
+

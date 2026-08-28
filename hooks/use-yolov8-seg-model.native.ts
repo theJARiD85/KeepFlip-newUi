@@ -10,7 +10,7 @@ import {
 // detector is still used by Value Radar; this model has a second prototype
 // output and must be decoded by the segmentation path.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const MODEL_MODULE = require("@/assets/models/yolov8n-seg.tflite");
+const MODEL_MODULE = require("@/assets/models/yolov8n-seg-trained.tflite");
 
 export function useYoloV8SegmentationModel(
   delegates: TensorflowModelDelegate[],

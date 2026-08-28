@@ -64,6 +64,7 @@ app-example
 # contain placeholders only; all live credentials remain Appwrite variables.
 !/backend/
 !/backend/functions/
+/functions
 /backend/*
 !/backend/functions/
 /backend/functions/*
@@ -78,3 +79,12 @@ app-example
 /.cursor
 /.venv
 .dyad/
+/work
+/tools
+/skills
+/scripts
+/runs
+/output
+/modules/keepflip-ar-measure/android/build
+/modules/keepflip-ar-measure/android/.gradle
+

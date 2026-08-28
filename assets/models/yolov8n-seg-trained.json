@@ -1,0 +1,35 @@
+{
+  "model": "KeepFlip item silhouette YOLOv8n-seg",
+  "purpose": "fine-tuned one-class item instance segmentation",
+  "sourceCheckpoint": "runs/segment/train-4/weights/best.pt",
+  "input": {
+    "name": "images",
+    "shape": [1, 3, 640, 640],
+    "layout": "NCHW",
+    "dataType": "float32"
+  },
+  "outputs": [
+    {
+      "name": "output0",
+      "shape": [1, 37, 8400],
+      "meaning": "boxes, one item-class score, and mask coefficients"
+    },
+    {
+      "name": "output1",
+      "shape": [1, 32, 160, 160],
+      "layout": "CHW",
+      "meaning": "mask prototypes"
+    }
+  ],
+  "classes": 1,
+  "classNames": ["item"],
+  "maskCoefficients": 32,
+  "export": {
+    "imageSize": 640,
+    "batch": 1,
+    "nms": false,
+    "precision": "float32",
+    "backend": "onnx2tf flatbuffer_direct",
+    "sha256": "25c72a211816b26e09efe6678d03661737096b13754ed41218d4044ab22bcbf1"
+  }
+}
