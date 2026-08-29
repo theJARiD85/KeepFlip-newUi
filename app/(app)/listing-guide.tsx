@@ -6,8 +6,10 @@ import {
   Alert,
   Pressable,
   ScrollView,
+  Linking,
   Share,
   StyleSheet,
+  TextInput,
   View,
 } from "react-native";
 
@@ -22,6 +24,11 @@ import {
   getInventoryItem,
   type InventoryItem,
 } from "@/services/inventory-service";
+import { getEbayOAuthEnvironment } from "@/services/ebayConnectionService";
+import {
+  publishEbayListing,
+  type PublishEbayListingResult,
+} from "@/services/ebayListingService";
 import { appendPhotoToItem } from "@/services/itemPhotoService";
 import {
   runListingGenerator,
@@ -39,6 +46,16 @@ type ChecklistStep = {
 type ListingPlatform =
   keyof ListingGeneratorResult["listing"]["platformCopy"];
 
+type EbayListingForm = {
+  categoryId: string;
+  merchantLocationKey: string;
+  paymentPolicyId: string;
+  fulfillmentPolicyId: string;
+  returnPolicyId: string;
+  quantity: string;
+  marketplaceId: string;
+};
+
 const MAX_LISTING_PHOTOS = 10;
 
 const CROSSLIST_PLATFORMS: {
@@ -50,9 +67,9 @@ const CROSSLIST_PLATFORMS: {
   {
     id: "ebay",
     label: "eBay",
-    mode: "DRAFT READY · API NEXT",
+    mode: "LIVE LISTING",
     description:
-      "KeepFlip has the listing facts ready. Direct eBay publishing will use the seller connection when that endpoint is added.",
+      "Publish the reviewed draft through your connected eBay account. eBay category, location, and policy settings are required.",
   },
   {
     id: "facebookMarketplace",
@@ -181,6 +198,20 @@ export default function ListingCreationGuideScreen() {
   const [sharedPlatform, setSharedPlatform] =
     useState<ListingPlatform | null>(null);
   const [shareError, setShareError] = useState<string | null>(null);
+  const [ebayPublishOpen, setEbayPublishOpen] = useState(false);
+  const [ebayPublishing, setEbayPublishing] = useState(false);
+  const [ebayPublishError, setEbayPublishError] = useState<string | null>(null);
+  const [ebayPublishResult, setEbayPublishResult] =
+    useState<PublishEbayListingResult | null>(null);
+  const [ebayForm, setEbayForm] = useState<EbayListingForm>({
+    categoryId: "",
+    merchantLocationKey: "",
+    paymentPolicyId: "",
+    fulfillmentPolicyId: "",
+    returnPolicyId: "",
+    quantity: "1",
+    marketplaceId: "EBAY_US",
+  });
   const [addingPhotos, setAddingPhotos] = useState(false);
   const [photoUploadError, setPhotoUploadError] = useState<string | null>(null);
   const promptedForPhotosRef = useRef<string | null>(null);
@@ -466,6 +497,103 @@ export default function ListingCreationGuideScreen() {
     [generatedListing, item?.currency, recordCompletedAction],
   );
 
+
+  const openEbayPublishForm = useCallback(() => {
+    if (!generatedListing) {
+      setListingGenerationError("Generate the listing draft before publishing on eBay.");
+      return;
+    }
+    setEbayPublishError(null);
+    setEbayPublishResult(null);
+    setEbayPublishOpen(true);
+  }, [generatedListing]);
+
+  const publishListingToEbay = useCallback(async () => {
+    if (!item || !generatedListing || ebayPublishing) return;
+
+    const requiredFields: Array<[keyof EbayListingForm, string]> = [
+      ["categoryId", "eBay category ID"],
+      ["merchantLocationKey", "merchant location key"],
+      ["paymentPolicyId", "payment policy ID"],
+      ["fulfillmentPolicyId", "fulfillment policy ID"],
+      ["returnPolicyId", "return policy ID"],
+    ];
+    const missingField = requiredFields.find(
+      ([field]) => !ebayForm[field].trim(),
+    );
+    if (missingField) {
+      setEbayPublishError("Add your " + missingField[1] + " before publishing.");
+      return;
+    }
+
+    const price = Number(generatedListing.priceRange.targetPrice);
+    const quantity = Number(ebayForm.quantity);
+    if (!Number.isFinite(price) || price <= 0) {
+      setEbayPublishError("The generated draft does not have a usable target price.");
+      return;
+    }
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      setEbayPublishError("Quantity must be a whole number greater than zero.");
+      return;
+    }
+
+    setEbayPublishing(true);
+    setEbayPublishError(null);
+    try {
+      const result = await publishEbayListing({
+        environment: getEbayOAuthEnvironment(),
+        itemId: item.id,
+        title: generatedListing.title,
+        description: [
+          generatedListing.description,
+          generatedListing.conditionDisclosure,
+        ]
+          .filter(Boolean)
+          .join("\n\n"),
+        price,
+        quantity,
+        categoryId: ebayForm.categoryId.trim(),
+        merchantLocationKey: ebayForm.merchantLocationKey.trim(),
+        paymentPolicyId: ebayForm.paymentPolicyId.trim(),
+        fulfillmentPolicyId: ebayForm.fulfillmentPolicyId.trim(),
+        returnPolicyId: ebayForm.returnPolicyId.trim(),
+        marketplaceId: ebayForm.marketplaceId.trim() || "EBAY_US",
+        currency: item.currency || "USD",
+        condition: generatedListing.conditionLabel,
+        conditionDescription: generatedListing.conditionDisclosure,
+        listingDuration: "GTC",
+      });
+      setEbayPublishResult(result);
+      recordCompletedAction();
+    } catch (caughtError) {
+      setEbayPublishError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "KeepFlip could not publish this item on eBay.",
+      );
+    } finally {
+      setEbayPublishing(false);
+    }
+  }, [
+    ebayForm,
+    ebayPublishing,
+    generatedListing,
+    item,
+    recordCompletedAction,
+  ]);
+
+  const confirmEbayPublish = useCallback(() => {
+    if (ebayPublishing || ebayPublishResult) return;
+    Alert.alert(
+      "Publish on eBay?",
+      "This sends the reviewed draft to eBay and creates a live listing on the connected seller account.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Publish listing", onPress: () => void publishListingToEbay() },
+      ],
+    );
+  }, [ebayPublishResult, ebayPublishing, publishListingToEbay]);
+
   return (
     <KeepFlipBackground>
       <ScrollView
@@ -745,11 +873,12 @@ export default function ListingCreationGuideScreen() {
                     </View>
                   </View>
                   <Text style={styles.crosslistDescription}>
-                    KeepFlip keeps the item facts consistent while each channel gets its own handoff. The share action opens Android&apos;s standard share sheet with the selected platform copy.
+                    KeepFlip keeps the item facts consistent across channels. eBay can publish the reviewed draft; the other destinations open Android&apos;s standard share sheet for an assisted handoff.
                   </Text>
                   <View style={styles.destinationList}>
                     {CROSSLIST_PLATFORMS.map((platform) => {
                       const shared = sharedPlatform === platform.id;
+                      const isEbay = platform.id === "ebay";
                       return (
                         <View key={platform.id} style={styles.destinationRow}>
                           <View style={styles.destinationIcon}>
@@ -774,16 +903,25 @@ export default function ListingCreationGuideScreen() {
                           </View>
                           <Pressable
                             accessibilityLabel={
-                              (shared ? "Share again" : "Share") +
-                              " " +
-                              platform.label +
-                              " listing draft"
+                              isEbay
+                                ? ebayPublishResult
+                                  ? "Open published eBay listing"
+                                  : "Publish listing on eBay"
+                                : (shared ? "Share again" : "Share") +
+                                  " " +
+                                  platform.label +
+                                  " listing draft"
                             }
                             accessibilityRole="button"
-                            onPress={() => void shareListingDraft(platform.id)}
+                            onPress={() =>
+                              isEbay
+                                ? openEbayPublishForm()
+                                : void shareListingDraft(platform.id)
+                            }
                             style={({ pressed }) => [
                               styles.shareDraftButton,
-                              shared && styles.shareDraftButtonDone,
+                              (shared || (isEbay && ebayPublishResult)) &&
+                                styles.shareDraftButtonDone,
                               pressed && styles.pressed,
                             ]}
                           >
@@ -793,13 +931,254 @@ export default function ListingCreationGuideScreen() {
                                 shared && styles.shareDraftTextDone,
                               ]}
                             >
-                              {shared ? "SHARED" : "SHARE"}
+                              {isEbay
+                                ? ebayPublishResult
+                                  ? "PUBLISHED"
+                                  : ebayPublishOpen
+                                    ? "EDIT"
+                                    : "PUBLISH"
+                                : shared
+                                  ? "SHARED"
+                                  : "SHARE"}
                             </Text>
                           </Pressable>
                         </View>
                       );
                     })}
                   </View>
+
+                  {ebayPublishOpen ? (
+                    <View style={styles.ebayPublishPanel}>
+                      <View style={styles.ebayPublishHeader}>
+                        <View style={styles.ebayPublishHeaderCopy}>
+                          <Text style={styles.fieldLabel}>PUBLISH TO EBAY</Text>
+                          <Text style={styles.ebayPublishTitle}>
+                            Review seller settings
+                          </Text>
+                        </View>
+                        <Text style={styles.ebayPublishMode}>
+                          LIVE INVENTORY API
+                        </Text>
+                      </View>
+                      {ebayPublishResult ? (
+                        <View style={styles.ebayPublishSuccess}>
+                          <IconSymbol
+                            color={theme.colors.scannerCyan}
+                            name="checkmark.shield.fill"
+                            size={22}
+                          />
+                          <View style={styles.ebayPublishSuccessCopy}>
+                            <Text style={styles.ebayPublishSuccessTitle}>
+                              {ebayPublishResult.status === "already_published"
+                                ? "This item is already live on eBay."
+                                : "Live eBay listing created."}
+                            </Text>
+                            <Text selectable style={styles.ebayPublishSuccessDetail}>
+                              {ebayPublishResult.listingId
+                                ? "Listing ID " + ebayPublishResult.listingId
+                                : "eBay accepted the listing."}
+                            </Text>
+                          </View>
+                        </View>
+                      ) : (
+                        <>
+                          <Text style={styles.ebayPublishHint}>
+                            These IDs come from your eBay seller account. KeepFlip sends them with the reviewed title, description, price, condition, and saved item photos.
+                          </Text>
+                          <View style={styles.ebayField}>
+                            <Text style={styles.ebayFieldLabel}>CATEGORY ID</Text>
+                            <TextInput
+                              autoCapitalize="none"
+                              autoCorrect={false}
+                              keyboardType="number-pad"
+                              onChangeText={(value) =>
+                                setEbayForm((current) => ({
+                                  ...current,
+                                  categoryId: value,
+                                }))
+                              }
+                              placeholder="Example: 9355"
+                              placeholderTextColor="rgba(247, 242, 232, 0.38)"
+                              style={styles.ebayFieldInput}
+                              value={ebayForm.categoryId}
+                            />
+                          </View>
+                          <View style={styles.ebayField}>
+                            <Text style={styles.ebayFieldLabel}>
+                              MERCHANT LOCATION KEY
+                            </Text>
+                            <TextInput
+                              autoCapitalize="none"
+                              autoCorrect={false}
+                              onChangeText={(value) =>
+                                setEbayForm((current) => ({
+                                  ...current,
+                                  merchantLocationKey: value,
+                                }))
+                              }
+                              placeholder="Your eBay inventory location"
+                              placeholderTextColor="rgba(247, 242, 232, 0.38)"
+                              style={styles.ebayFieldInput}
+                              value={ebayForm.merchantLocationKey}
+                            />
+                          </View>
+                          <View style={styles.ebayFieldRow}>
+                            <View style={styles.ebayFieldHalf}>
+                              <Text style={styles.ebayFieldLabel}>
+                                PAYMENT POLICY ID
+                              </Text>
+                              <TextInput
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                                onChangeText={(value) =>
+                                  setEbayForm((current) => ({
+                                    ...current,
+                                    paymentPolicyId: value,
+                                  }))
+                                }
+                                placeholder="Payment policy"
+                                placeholderTextColor="rgba(247, 242, 232, 0.38)"
+                                style={styles.ebayFieldInput}
+                                value={ebayForm.paymentPolicyId}
+                              />
+                            </View>
+                            <View style={styles.ebayFieldHalf}>
+                              <Text style={styles.ebayFieldLabel}>
+                                RETURN POLICY ID
+                              </Text>
+                              <TextInput
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                                onChangeText={(value) =>
+                                  setEbayForm((current) => ({
+                                    ...current,
+                                    returnPolicyId: value,
+                                  }))
+                                }
+                                placeholder="Return policy"
+                                placeholderTextColor="rgba(247, 242, 232, 0.38)"
+                                style={styles.ebayFieldInput}
+                                value={ebayForm.returnPolicyId}
+                              />
+                            </View>
+                          </View>
+                          <View style={styles.ebayFieldRow}>
+                            <View style={styles.ebayFieldHalf}>
+                              <Text style={styles.ebayFieldLabel}>
+                                FULFILLMENT POLICY ID
+                              </Text>
+                              <TextInput
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                                onChangeText={(value) =>
+                                  setEbayForm((current) => ({
+                                    ...current,
+                                    fulfillmentPolicyId: value,
+                                  }))
+                                }
+                                placeholder="Shipping policy"
+                                placeholderTextColor="rgba(247, 242, 232, 0.38)"
+                                style={styles.ebayFieldInput}
+                                value={ebayForm.fulfillmentPolicyId}
+                              />
+                            </View>
+                            <View style={styles.ebayFieldHalf}>
+                              <Text style={styles.ebayFieldLabel}>QUANTITY</Text>
+                              <TextInput
+                                keyboardType="number-pad"
+                                onChangeText={(value) =>
+                                  setEbayForm((current) => ({
+                                    ...current,
+                                    quantity: value,
+                                  }))
+                                }
+                                placeholder="1"
+                                placeholderTextColor="rgba(247, 242, 232, 0.38)"
+                                style={styles.ebayFieldInput}
+                                value={ebayForm.quantity}
+                              />
+                            </View>
+                          </View>
+                          <View style={styles.ebayField}>
+                            <Text style={styles.ebayFieldLabel}>
+                              MARKETPLACE
+                            </Text>
+                            <TextInput
+                              autoCapitalize="characters"
+                              autoCorrect={false}
+                              onChangeText={(value) =>
+                                setEbayForm((current) => ({
+                                  ...current,
+                                  marketplaceId: value.toUpperCase(),
+                                }))
+                              }
+                              placeholder="EBAY_US"
+                              placeholderTextColor="rgba(247, 242, 232, 0.38)"
+                              style={styles.ebayFieldInput}
+                              value={ebayForm.marketplaceId}
+                            />
+                          </View>
+                          {ebayPublishError ? (
+                            <Text selectable style={styles.ebayPublishError}>
+                              {ebayPublishError}
+                            </Text>
+                          ) : null}
+                          <View style={styles.ebayPublishActions}>
+                            <Pressable
+                              accessibilityRole="button"
+                              onPress={() => setEbayPublishOpen(false)}
+                              style={({ pressed }) => [
+                                styles.ebayCancelButton,
+                                pressed && styles.pressed,
+                              ]}
+                            >
+                              <Text style={styles.ebayCancelButtonText}>CLOSE</Text>
+                            </Pressable>
+                            <Pressable
+                              accessibilityLabel="Publish live eBay listing"
+                              accessibilityRole="button"
+                              disabled={ebayPublishing}
+                              onPress={confirmEbayPublish}
+                              style={({ pressed }) => [
+                                styles.ebayPublishButton,
+                                pressed && styles.pressed,
+                                ebayPublishing && styles.ebayPublishButtonDisabled,
+                              ]}
+                            >
+                              {ebayPublishing ? (
+                                <ActivityIndicator
+                                  color={theme.colors.backgroundDeep}
+                                  size="small"
+                                />
+                              ) : (
+                                <Text style={styles.ebayPublishButtonText}>
+                                  PUBLISH LIVE LISTING
+                                </Text>
+                              )}
+                            </Pressable>
+                          </View>
+                        </>
+                      )}
+                      {ebayPublishResult?.listingUrl ? (
+                        <Pressable
+                          accessibilityRole="link"
+                          onPress={() =>
+                            void Linking.openURL(ebayPublishResult.listingUrl!).catch(
+                              () => undefined,
+                            )
+                          }
+                          style={({ pressed }) => [
+                            styles.ebayOpenButton,
+                            pressed && styles.pressed,
+                          ]}
+                        >
+                          <Text style={styles.ebayOpenButtonText}>
+                            OPEN EBAY LISTING
+                          </Text>
+                        </Pressable>
+                      ) : null}
+                    </View>
+                  ) : null}
                   {shareError ? (
                     <Text selectable style={styles.crosslistError}>
                       {shareError}
@@ -1415,6 +1794,154 @@ const styles = StyleSheet.create({
   },
   shareDraftTextDone: {
     color: theme.colors.scannerCyan,
+  },
+  ebayPublishPanel: {
+    gap: 12,
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(247, 242, 232, 0.14)",
+  },
+  ebayPublishHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  ebayPublishHeaderCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  ebayPublishTitle: {
+    color: theme.colors.cream,
+    fontSize: 15,
+    fontWeight: "900",
+  },
+  ebayPublishMode: {
+    color: theme.colors.scannerCyan,
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 0.7,
+  },
+  ebayPublishHint: {
+    color: theme.colors.textMuted,
+    fontSize: 11,
+    lineHeight: 17,
+  },
+  ebayField: {
+    gap: 6,
+  },
+  ebayFieldRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  ebayFieldHalf: {
+    flex: 1,
+    gap: 6,
+  },
+  ebayFieldLabel: {
+    color: theme.colors.textMuted,
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 0.7,
+  },
+  ebayFieldInput: {
+    minHeight: 42,
+    borderWidth: 1,
+    borderColor: "rgba(247, 242, 232, 0.18)",
+    backgroundColor: "rgba(247, 242, 232, 0.06)",
+    color: theme.colors.cream,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    fontSize: 13,
+    borderRadius: 4,
+  },
+  ebayPublishActions: {
+    flexDirection: "row",
+    gap: 10,
+    justifyContent: "flex-end",
+  },
+  ebayCancelButton: {
+    minHeight: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: "rgba(247, 242, 232, 0.18)",
+    borderRadius: 4,
+  },
+  ebayCancelButtonText: {
+    color: theme.colors.textMuted,
+    fontFamily: theme.fonts.radar,
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 0.8,
+  },
+  ebayPublishButton: {
+    minHeight: 40,
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 14,
+    backgroundColor: theme.colors.goldBright,
+    borderRadius: 4,
+  },
+  ebayPublishButtonDisabled: {
+    opacity: 0.6,
+  },
+  ebayPublishButtonText: {
+    color: theme.colors.backgroundDeep,
+    fontFamily: theme.fonts.radar,
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 0.8,
+  },
+  ebayPublishError: {
+    color: theme.colors.danger,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  ebayPublishSuccess: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "rgba(0, 255, 255, 0.28)",
+    backgroundColor: "rgba(0, 255, 255, 0.06)",
+    borderRadius: 4,
+  },
+  ebayPublishSuccessCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  ebayPublishSuccessTitle: {
+    color: theme.colors.cream,
+    fontSize: 14,
+    fontWeight: "900",
+  },
+  ebayPublishSuccessDetail: {
+    color: theme.colors.textMuted,
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  ebayOpenButton: {
+    minHeight: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(0, 255, 255, 0.34)",
+    backgroundColor: "rgba(0, 255, 255, 0.08)",
+    borderRadius: 4,
+  },
+  ebayOpenButtonText: {
+    color: theme.colors.scannerCyan,
+    fontFamily: theme.fonts.radar,
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 0.8,
   },
   crosslistError: {
     color: theme.colors.danger,

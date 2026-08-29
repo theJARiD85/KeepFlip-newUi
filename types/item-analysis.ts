@@ -259,6 +259,15 @@ export type ItemMarketAcquisitionGuidance = {
   summary: string;
 };
 
+export type ItemMarketVelocityWindow = {
+  windowDays: 30 | 60 | 90;
+  activeListingCount: number | null;
+  soldListingCount: number | null;
+  averageDaysOnMarket: number | null;
+  evidence: string | null;
+  confidencePercent: number | null;
+};
+
 export type ItemMarketResaleVelocity = {
   demand: 'fast' | 'moderate' | 'slow' | 'unknown';
   lowDays: number | null;
@@ -267,6 +276,7 @@ export type ItemMarketResaleVelocity = {
   evidence: string | null;
   confidence: 'high' | 'medium' | 'low';
   confidencePercent: number | null;
+  countWindows?: ItemMarketVelocityWindow[];
 };
 
 export type ItemMarketFlipComplexity = {

@@ -1,4 +1,7 @@
-import type { ItemMarketAnalysis } from "@/types/item-analysis";
+import type {
+  ItemMarketAnalysis,
+  ItemMarketResaleVelocity,
+} from "@/types/item-analysis";
 
 export type AnalysisCallout = {
   accent: "cyan" | "gold" | "violet";
@@ -152,6 +155,7 @@ export type ItemAnalysisResult = {
   identity: AnalysisIdentity;
   marketAnalysis?: ItemMarketAnalysis;
   browseMarketAnalysis?: ItemMarketAnalysis;
+  marketVelocity?: ItemMarketResaleVelocity;
   marketReferences?: AnalysisMarketReference[];
   profitPlan: AnalysisProfitPlan;
   refinementQuestions?: AnalysisRefinementQuestion[];

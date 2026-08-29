@@ -8,6 +8,7 @@ import { neutralizeMarketplaceBrand } from "./market-copy";
 import type {
   ItemAnalysisSuccess,
   ItemMarketAnalysis,
+  ItemMarketVelocityWindow,
   ItemProfitabilityGuidance,
 } from "@/types/item-analysis";
 
@@ -267,6 +268,7 @@ export type SerpApiResaleVelocity = {
   evidence: string | null;
   confidence: MarketValueConfidence;
   confidencePercent: number | null;
+  countWindows?: ItemMarketVelocityWindow[];
 };
 
 export type SerpApiFlipComplexity = {
@@ -1693,6 +1695,101 @@ function normalizeDayEstimate(value: unknown): number | null {
   return days >= 0 && days <= 3_650 ? days : null;
 }
 
+function normalizeListingCount(value: unknown): number | null {
+  if (value == null || value === "") return null;
+  const cleaned =
+    typeof value === "number"
+      ? value
+      : typeof value === "string" && value.trim()
+        ? value.replace(/,/g, "").replace(/[^\d.-]/g, "")
+        : "";
+  const raw =
+    typeof cleaned === "number"
+      ? cleaned
+      : cleaned
+        ? Number(cleaned)
+        : Number.NaN;
+  return Number.isInteger(raw) && raw >= 0 && raw <= 1_000_000_000
+    ? raw
+    : null;
+}
+
+function normalizeVelocityCountWindows(
+  value: unknown,
+): ItemMarketVelocityWindow[] {
+  const windowDays = [30, 60, 90] as const;
+  let candidates: (Record<string, unknown> | null)[] = [];
+
+  if (Array.isArray(value)) {
+    candidates = value.map((entry, index) => {
+      const source = asRecord(entry);
+      return source
+        ? {
+            ...source,
+            windowDays:
+              source.windowDays ??
+              source.window_days ??
+              source.days ??
+              windowDays[index],
+          }
+        : null;
+    });
+  } else {
+    const source = asRecord(value);
+    if (source) {
+      candidates = Object.entries(source).map(([key, entry]) => {
+        const entrySource = asRecord(entry);
+        return entrySource
+          ? {
+              ...entrySource,
+              windowDays:
+                entrySource.windowDays ??
+                entrySource.window_days ??
+                entrySource.days ??
+                key,
+            }
+          : null;
+      });
+    }
+  }
+
+  return windowDays.map((days) => {
+    const source =
+      candidates.find(
+        (candidate) => Number(candidate?.windowDays) === days,
+      ) ?? null;
+    return {
+      windowDays: days,
+      activeListingCount: normalizeListingCount(
+        source?.activeListingCount ??
+          source?.activeListings ??
+          source?.active_listing_count ??
+          source?.active_listings,
+      ),
+      soldListingCount: normalizeListingCount(
+        source?.soldListingCount ??
+          source?.soldListings ??
+          source?.sold_listing_count ??
+          source?.sold_listings,
+      ),
+      averageDaysOnMarket: normalizeDayEstimate(
+        source?.averageDaysOnMarket ??
+          source?.averageDom ??
+          source?.average_days_on_market ??
+          source?.average_dom,
+      ),
+      evidence:
+        cleanSerpApiIdentityText(source?.evidence ?? source?.summary)?.slice(
+          0,
+          700,
+        ) ?? null,
+      confidencePercent: normalizeConfidencePercent(
+        source?.confidencePercent ?? source?.confidence_percent,
+      ),
+    };
+  });
+}
+
 function normalizeResaleVelocity(value: unknown): SerpApiResaleVelocity {
   const source = asRecord(value);
   let lowDays = normalizeDayEstimate(source?.lowDays);
@@ -1724,6 +1821,13 @@ function normalizeResaleVelocity(value: unknown): SerpApiResaleVelocity {
     evidence: cleanSerpApiIdentityText(source?.evidence)?.slice(0, 700) ?? null,
     confidence: normalizeMarketConfidence(source?.confidence),
     confidencePercent: normalizeConfidencePercent(source?.confidencePercent),
+    countWindows: normalizeVelocityCountWindows(
+      source?.countWindows ??
+        source?.count_windows ??
+        source?.windows ??
+        source?.sellThroughWindows ??
+        source?.sell_through_windows,
+    ),
   };
 }
 

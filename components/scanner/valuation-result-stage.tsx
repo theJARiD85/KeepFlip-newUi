@@ -140,6 +140,74 @@ function formatObservedRatio(value: number | null) {
   return percent.toFixed(decimals) + "%";
 }
 
+type MarketVelocityWindow = NonNullable<
+  NonNullable<ResultData["marketVelocity"]>["countWindows"]
+>[number];
+
+function preferredVelocityWindow(
+  velocity: ResultData["marketVelocity"],
+): MarketVelocityWindow | null {
+  const windows = velocity?.countWindows ?? [];
+  return (
+    windows.find(
+      (window) =>
+        window.activeListingCount != null &&
+        window.soldListingCount != null,
+    ) ??
+    windows.find((window) => window.averageDaysOnMarket != null) ??
+    null
+  );
+}
+
+function sellThroughRatePercent(window: MarketVelocityWindow | null) {
+  if (
+    !window ||
+    window.activeListingCount == null ||
+    window.soldListingCount == null
+  ) {
+    return null;
+  }
+  const denominator = window.activeListingCount + window.soldListingCount;
+  if (denominator <= 0) return null;
+  return (window.soldListingCount / denominator) * 100;
+}
+
+function formatSellThroughRate(rate: number | null) {
+  if (rate == null) return "Counts not reported for a matched window";
+  const decimals = rate > 0 && rate < 10 ? 1 : 0;
+  return rate.toFixed(decimals) + "%";
+}
+
+function sellThroughGuidance(rate: number | null) {
+  if (rate == null) {
+    return "KeepFlip needs explicitly reported active and sold counts for the same item and time window before calculating STR.";
+  }
+  if (rate >= 80) return "High demand - price toward the ceiling";
+  if (rate < 10) return "Low demand - price nearer the floor";
+  return "Directional demand signal";
+}
+
+function formatVelocityCountWindows(
+  windows: NonNullable<ResultData["marketVelocity"]>["countWindows"],
+) {
+  const reported = (windows ?? []).filter(
+    (window) =>
+      window.activeListingCount != null && window.soldListingCount != null,
+  );
+  if (reported.length === 0) return "No matched 30 / 60 / 90-day counts reported";
+  return reported
+    .map(
+      (window) =>
+        String(window.windowDays) +
+        "d - " +
+        String(window.soldListingCount) +
+        " sold / " +
+        String(window.activeListingCount) +
+        " active",
+    )
+    .join("  -  ");
+}
+
 function formatCoverage(value: number | null) {
   return value == null ? "Unavailable" : Math.round(value * 100) + "%";
 }
@@ -938,6 +1006,8 @@ function ExpandedResultDetails({
   const acquisitionGuidance = result.acquisitionGuidance;
   const marketAnalysis =
     result.marketAnalysis ?? result.browseMarketAnalysis;
+  const velocityWindow = preferredVelocityWindow(result.marketVelocity);
+  const sellThroughRate = sellThroughRatePercent(velocityWindow);
   const hasConfirmedSoldEvidence = Boolean(result.marketAnalysis);
   const canSubmit =
     Boolean(onRefine) &&
@@ -1166,15 +1236,42 @@ function ExpandedResultDetails({
             }
           />
           <DetailFact
+            label="CALCULATED SELL-THROUGH RATE"
+            value={
+              formatSellThroughRate(sellThroughRate) +
+              (velocityWindow
+                ? " - " + String(velocityWindow.windowDays) + "-day window"
+                : "")
+            }
+          />
+          <DetailFact
+            label="REPORTED COUNT WINDOWS"
+            value={formatVelocityCountWindows(result.marketVelocity?.countWindows)}
+          />
+          <DetailFact
             label="DAYS ON MARKET"
-            value="Not verifiable from sold dates alone"
+            value={
+              velocityWindow?.averageDaysOnMarket == null
+                ? "No timestamp-based average reported"
+                : String(velocityWindow.averageDaysOnMarket) +
+                  " days - " +
+                  String(velocityWindow.windowDays) +
+                  "-day reported average"
+            }
           />
           <Text selectable style={styles.detailBody}>
-            {marketAnalysis.marketVelocity.evidenceNote ??
-              "A current sell-through calculation needs a matched active and sold history."}
+            {sellThroughGuidance(sellThroughRate) +
+              " KeepFlip calculates STR as sold / (active + sold)."}
           </Text>
           <Text selectable style={styles.detailBody}>
-            {marketAnalysis.marketVelocity.daysOnMarket.note}
+            {velocityWindow?.evidence ??
+              marketAnalysis.marketVelocity.evidenceNote ??
+              "STR requires matching active and sold counts for the same item and time window."}
+          </Text>
+          <Text selectable style={styles.detailBody}>
+            {velocityWindow?.averageDaysOnMarket == null
+              ? marketAnalysis.marketVelocity.daysOnMarket.note
+              : "Average days on market is shown only when the supplied evidence reports a timestamp-based average."}
           </Text>
           <Text style={styles.decisionDetailHeading}>SEASONALITY</Text>
           <Text selectable style={styles.detailBody}>
