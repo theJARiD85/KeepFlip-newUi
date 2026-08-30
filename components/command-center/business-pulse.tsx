@@ -1,0 +1,317 @@
+import { Pressable, StyleSheet, View } from 'react-native';
+
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
+import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import type { ResellerBusinessOverview } from '@/services/reseller-business-overview';
+
+type BusinessPulseProps = {
+  errorMessage?: string | null;
+  loading: boolean;
+  overview: ResellerBusinessOverview | null;
+  onOpenBooks: () => void;
+  onOpenInventory: () => void;
+};
+
+function money(cents: number) {
+  const sign = cents < 0 ? '-' : '';
+  return `${sign}$${(Math.abs(cents) / 100).toLocaleString(undefined, {
+    maximumFractionDigits: 0,
+    minimumFractionDigits: 0,
+  })}`;
+}
+
+function metricTone(value: number) {
+  if (value < 0) return styles.metricNegativeValue;
+  return styles.metricValue;
+}
+
+function barHeight(value: number, maximum: number) {
+  if (value <= 0 || maximum <= 0) return 4;
+  return Math.max(8, Math.round((value / maximum) * 74));
+}
+
+export function BusinessPulse({
+  errorMessage,
+  loading,
+  overview,
+  onOpenBooks,
+  onOpenInventory,
+}: BusinessPulseProps) {
+  if (loading && !overview) {
+    return (
+      <View style={styles.loadingCard}>
+        <IconSymbol color={theme.colors.scannerCyan} name="chart.bar.fill" size={20} />
+        <View style={styles.loadingCopy}>
+          <Text style={styles.eyebrow}>BUSINESS PULSE</Text>
+          <Text style={styles.loadingText}>Loading your saved money and inventory records</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (!overview) {
+    return (
+      <View style={styles.emptyCard}>
+        <View style={styles.emptyIcon}>
+          <IconSymbol color={theme.colors.goldBright} name="chart.bar.fill" size={20} />
+        </View>
+        <View style={styles.emptyCopy}>
+          <Text style={styles.eyebrow}>BUSINESS PULSE</Text>
+          <Text style={styles.emptyTitle}>Your working numbers will show here</Text>
+          <Text style={styles.emptyText}>
+            Add an item with its real cost, then record a sale or expense to see a clear picture of your business.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  const maximumFlow = Math.max(
+    ...overview.moneyFlow.flatMap((month) => [month.moneyInCents, month.moneyOutCents]),
+    1,
+  );
+  const attention = [
+    overview.inventory.missingCostCount > 0
+      ? `${overview.inventory.missingCostCount} item${overview.inventory.missingCostCount === 1 ? '' : 's'} need${overview.inventory.missingCostCount === 1 ? 's' : ''} a real purchase price`
+      : null,
+    overview.attention.unlinkedSaleCount > 0
+      ? `${overview.attention.unlinkedSaleCount} sale${overview.attention.unlinkedSaleCount === 1 ? '' : 's'} need${overview.attention.unlinkedSaleCount === 1 ? 's' : ''} to be linked to an item`
+      : null,
+    overview.attention.unlinkedInventoryCostCents > 0
+      ? `${money(overview.attention.unlinkedInventoryCostCents)} of purchases are not tied to an item`
+      : null,
+  ].filter((value): value is string => Boolean(value));
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View>
+          <Text style={styles.eyebrow}>BUSINESS PULSE</Text>
+          <Text style={styles.title}>The numbers that matter</Text>
+        </View>
+        <View style={styles.livePill}>
+          <View style={styles.liveDot} />
+          <Text style={styles.liveText}>SAVED DATA</Text>
+        </View>
+      </View>
+
+      <Text style={styles.description}>
+        Real money stays separate from item estimates, so you can see what happened without the sometimes confusing accounting-speak.
+      </Text>
+
+      <View style={styles.metricGrid}>
+        <Metric label="MONEY IN" value={money(overview.currentMonth.moneyInCents)} tone="cyan" />
+        <Metric label="COSTS" value={money(overview.currentMonth.moneyOutCents)} tone="gold" />
+        <Metric
+          label="LEFT AFTER COSTS"
+          value={money(overview.currentMonth.leftAfterCostsCents)}
+          valueStyle={metricTone(overview.currentMonth.leftAfterCostsCents)}
+          tone="violet"
+        />
+        <Metric label="CASH TIED UP" value={money(overview.inventory.cashTiedUpCents)} tone="muted" />
+      </View>
+
+      <View style={styles.chartSurface}>
+        <View style={styles.chartHeading}>
+          <View>
+            <Text style={styles.chartLabel}>MONEY MOVEMENT</Text>
+            <Text style={styles.chartTitle}>Last six months</Text>
+          </View>
+          <View style={styles.legend}>
+            <Legend color={theme.colors.scannerCyan} label="In" />
+            <Legend color={theme.colors.goldBright} label="Out" />
+          </View>
+        </View>
+        <View style={styles.chartBars}>
+          {overview.moneyFlow.map((month) => (
+            <View key={month.key} style={styles.monthGroup}>
+              <View style={styles.bars}>
+                <View
+                  style={[
+                    styles.bar,
+                    styles.inBar,
+                    { height: barHeight(month.moneyInCents, maximumFlow) },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.bar,
+                    styles.outBar,
+                    { height: barHeight(month.moneyOutCents, maximumFlow) },
+                  ]}
+                />
+              </View>
+              <Text style={styles.monthLabel}>{month.label}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.splitRow}>
+        <View style={styles.inventorySurface}>
+          <Text style={styles.chartLabel}>ITEMS ON HAND</Text>
+          <Text style={styles.inventoryValue}>{overview.inventory.onHandCount}</Text>
+          <Text style={styles.inventoryCopy}>
+            {overview.inventory.readyToFlipCount} ready to flip · {overview.inventory.undecidedCount} to decide
+          </Text>
+          <Text style={styles.estimateCopy}>
+            Est. item value {money(overview.inventory.estimatedOnHandValueCents)} · not money earned
+          </Text>
+        </View>
+        <View style={styles.costSurface}>
+          <Text style={styles.chartLabel}>BIGGEST COSTS</Text>
+          {overview.topCostsThisMonth.length ? (
+            overview.topCostsThisMonth.map((cost) => (
+              <View key={cost.entryType} style={styles.costRow}>
+                <Text numberOfLines={1} style={styles.costLabel}>{cost.label}</Text>
+                <Text style={styles.costValue}>{money(cost.amountCents)}</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.noCostsText}>No costs saved for this month yet.</Text>
+          )}
+        </View>
+      </View>
+
+      {attention.length ? (
+        <View style={styles.attentionSurface}>
+          <IconSymbol color={theme.colors.goldBright} name="exclamationmark.triangle.fill" size={18} />
+          <View style={styles.attentionCopy}>
+            <Text style={styles.attentionTitle}>A couple things need your eyes</Text>
+            {attention.slice(0, 2).map((message) => (
+              <Text key={message} style={styles.attentionText}>• {message}</Text>
+            ))}
+          </View>
+        </View>
+      ) : null}
+
+      {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+
+      <View style={styles.actions}>
+        <Pressable
+          accessibilityHint="Opens your books and reports"
+          accessibilityRole="button"
+          onPress={onOpenBooks}
+          style={({ pressed }) => [styles.primaryAction, pressed && styles.pressed]}
+        >
+          <Text style={styles.primaryActionText}>Open books</Text>
+          <IconSymbol color={theme.colors.backgroundDeep} name="chart.bar.fill" size={15} />
+        </Pressable>
+        <Pressable
+          accessibilityHint="Opens your inventory items"
+          accessibilityRole="button"
+          onPress={onOpenInventory}
+          style={({ pressed }) => [styles.secondaryAction, pressed && styles.pressed]}
+        >
+          <Text style={styles.secondaryActionText}>See inventory</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+function Metric({
+  label,
+  value,
+  tone,
+  valueStyle,
+}: {
+  label: string;
+  value: string;
+  tone: 'cyan' | 'gold' | 'violet' | 'muted';
+  valueStyle?: object;
+}) {
+  const toneStyle = {
+    cyan: styles.metricCyan,
+    gold: styles.metricGold,
+    muted: styles.metricMuted,
+    violet: styles.metricViolet,
+  }[tone];
+  return (
+    <View style={[styles.metric, toneStyle]}>
+      <Text style={styles.metricLabel}>{label}</Text>
+      <Text numberOfLines={1} style={[styles.metricValue, valueStyle]}>{value}</Text>
+    </View>
+  );
+}
+
+function Legend({ color, label }: { color: string; label: string }) {
+  return (
+    <View style={styles.legendItem}>
+      <View style={[styles.legendDot, { backgroundColor: color }]} />
+      <Text style={styles.legendText}>{label}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    gap: 14,
+    borderColor: 'rgba(88, 223, 232, 0.27)',
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    backgroundColor: 'rgba(5, 13, 19, 0.86)',
+  },
+  cardHeader: { alignItems: 'flex-start', flexDirection: 'row', gap: 12, justifyContent: 'space-between' },
+  eyebrow: { color: theme.colors.goldBright, fontSize: 8, fontWeight: '900', letterSpacing: 1.4 },
+  title: { color: theme.colors.cream, fontSize: 19, fontWeight: '900', letterSpacing: -0.25, lineHeight: 24 },
+  description: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 15 },
+  livePill: { alignItems: 'center', backgroundColor: 'rgba(88, 223, 232, 0.10)', borderColor: 'rgba(88, 223, 232, 0.24)', borderRadius: 999, borderWidth: 1, flexDirection: 'row', gap: 5, paddingHorizontal: 8, paddingVertical: 5 },
+  liveDot: { backgroundColor: theme.colors.scannerCyan, borderRadius: 4, height: 6, width: 6 },
+  liveText: { color: theme.colors.scannerCyan, fontSize: 8, fontWeight: '900', letterSpacing: 0.8 },
+  metricGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  metric: { borderRadius: 11, borderWidth: 1, flexGrow: 1, flexBasis: '46%', gap: 4, minWidth: 125, padding: 11 },
+  metricCyan: { backgroundColor: 'rgba(43, 213, 226, 0.09)', borderColor: 'rgba(88, 223, 232, 0.25)' },
+  metricGold: { backgroundColor: 'rgba(215, 168, 74, 0.10)', borderColor: 'rgba(242, 211, 138, 0.24)' },
+  metricViolet: { backgroundColor: 'rgba(160, 111, 255, 0.10)', borderColor: 'rgba(190, 154, 255, 0.24)' },
+  metricMuted: { backgroundColor: 'rgba(255, 255, 255, 0.035)', borderColor: 'rgba(255, 255, 255, 0.10)' },
+  metricLabel: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 0.9 },
+  metricValue: { color: theme.colors.cream, fontSize: 21, fontWeight: '900', letterSpacing: -0.45, lineHeight: 25 },
+  metricNegativeValue: { color: '#FFB8B1' },
+  chartSurface: { backgroundColor: 'rgba(0, 0, 0, 0.20)', borderColor: 'rgba(88, 223, 232, 0.16)', borderRadius: 12, borderWidth: 1, gap: 11, padding: 12 },
+  chartHeading: { alignItems: 'flex-start', flexDirection: 'row', justifyContent: 'space-between' },
+  chartLabel: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 1 },
+  chartTitle: { color: theme.colors.text, fontSize: 13, fontWeight: '800', lineHeight: 17 },
+  legend: { flexDirection: 'row', gap: 8, paddingTop: 2 },
+  legendItem: { alignItems: 'center', flexDirection: 'row', gap: 4 },
+  legendDot: { borderRadius: 3, height: 6, width: 6 },
+  legendText: { color: theme.colors.textMuted, fontSize: 9, fontWeight: '700' },
+  chartBars: { alignItems: 'flex-end', flexDirection: 'row', gap: 8, justifyContent: 'space-between', minHeight: 100 },
+  monthGroup: { alignItems: 'center', flex: 1, gap: 5 },
+  bars: { alignItems: 'flex-end', flexDirection: 'row', gap: 3, height: 78 },
+  bar: { borderRadius: 4, width: 7 },
+  inBar: { backgroundColor: theme.colors.scannerCyan },
+  outBar: { backgroundColor: theme.colors.goldBright },
+  monthLabel: { color: theme.colors.textMuted, fontSize: 9, fontWeight: '700' },
+  splitRow: { flexDirection: 'row', gap: 8 },
+  inventorySurface: { backgroundColor: 'rgba(78, 41, 147, 0.16)', borderColor: 'rgba(190, 154, 255, 0.20)', borderRadius: 12, borderWidth: 1, flex: 1, gap: 3, padding: 11 },
+  costSurface: { backgroundColor: 'rgba(21, 16, 5, 0.56)', borderColor: 'rgba(242, 211, 138, 0.17)', borderRadius: 12, borderWidth: 1, flex: 1, gap: 5, padding: 11 },
+  inventoryValue: { color: theme.colors.cream, fontSize: 25, fontWeight: '900', letterSpacing: -0.5, lineHeight: 30 },
+  inventoryCopy: { color: theme.colors.text, fontSize: 10, fontWeight: '700', lineHeight: 14 },
+  estimateCopy: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 13, marginTop: 3 },
+  costRow: { alignItems: 'center', flexDirection: 'row', gap: 4, justifyContent: 'space-between' },
+  costLabel: { color: theme.colors.textMuted, flex: 1, fontSize: 10, lineHeight: 14 },
+  costValue: { color: theme.colors.goldBright, fontSize: 10, fontWeight: '900' },
+  noCostsText: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 15, marginTop: 4 },
+  attentionSurface: { alignItems: 'flex-start', backgroundColor: 'rgba(215, 168, 74, 0.11)', borderColor: 'rgba(242, 211, 138, 0.28)', borderRadius: 11, borderWidth: 1, flexDirection: 'row', gap: 9, padding: 11 },
+  attentionCopy: { flex: 1, gap: 2 },
+  attentionTitle: { color: theme.colors.goldBright, fontSize: 11, fontWeight: '900', lineHeight: 15 },
+  attentionText: { color: theme.colors.text, fontSize: 10, lineHeight: 14 },
+  actions: { flexDirection: 'row', gap: 8 },
+  primaryAction: { alignItems: 'center', backgroundColor: theme.colors.scannerCyan, borderRadius: 10, flex: 1, flexDirection: 'row', gap: 7, justifyContent: 'center', minHeight: 42, paddingHorizontal: 10 },
+  primaryActionText: { color: theme.colors.backgroundDeep, fontSize: 12, fontWeight: '900' },
+  secondaryAction: { alignItems: 'center', borderColor: 'rgba(242, 211, 138, 0.35)', borderRadius: 10, borderWidth: 1, flex: 1, justifyContent: 'center', minHeight: 42, paddingHorizontal: 10 },
+  secondaryActionText: { color: theme.colors.goldBright, fontSize: 12, fontWeight: '900' },
+  errorText: { color: '#FFB8B1', fontSize: 10, lineHeight: 14 },
+  pressed: { opacity: 0.78, transform: [{ scale: 0.985 }] },
+  loadingCard: { alignItems: 'center', backgroundColor: 'rgba(5, 13, 19, 0.86)', borderColor: 'rgba(88, 223, 232, 0.27)', borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 11, padding: 16 },
+  loadingCopy: { flex: 1, gap: 3 },
+  loadingText: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 17 },
+  emptyCard: { alignItems: 'flex-start', backgroundColor: 'rgba(5, 13, 19, 0.86)', borderColor: 'rgba(88, 223, 232, 0.27)', borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 11, padding: 16 },
+  emptyIcon: { alignItems: 'center', backgroundColor: 'rgba(215, 168, 74, 0.12)', borderRadius: 10, height: 39, justifyContent: 'center', width: 39 },
+  emptyCopy: { flex: 1, gap: 3 },
+  emptyTitle: { color: theme.colors.cream, fontSize: 15, fontWeight: '900', lineHeight: 20 },
+  emptyText: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 },
+});

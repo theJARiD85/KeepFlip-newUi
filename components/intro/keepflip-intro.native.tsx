@@ -1539,7 +1539,7 @@ export default function KeepFlipIntro({
               styles.topReadoutText
             }
           >
-            KEEPFLIP // VALUE INTELLIGENCE
+            KEEPFLIP // RESALE INTELLIGENCE
           </Text>
         </View>
 
@@ -1595,7 +1595,7 @@ export default function KeepFlipIntro({
               styles.brandTagline
             }
           >
-            SEE VALUE BEFORE OTHERS DO
+            THE PULSE OF YOUR RESALE BUSINESS
           </Text>
         </View>
 

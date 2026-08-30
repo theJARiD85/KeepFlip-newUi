@@ -27,6 +27,11 @@ import {
   parseLedgerDate,
   uploadLedgerReceipt,
 } from "@/services/reseller-ledger-service";
+
+import {
+  isResellerBookkeepingConfigured,
+  recordBookkeepingEvent,
+} from "@/services/reseller-bookkeeping-service";
 import {
   getInventoryItem,
   saveAnalyzedItemToInventory,
@@ -149,10 +154,10 @@ export function ItemAnalysisResultScreen() {
       );
       return;
     }
-    if (!isResellerBooksConfigured()) {
+    if (!isResellerBooksConfigured() && !isResellerBookkeepingConfigured()) {
       Alert.alert(
         "Books setup needed",
-        "KeepFlip cannot record this purchase until the Books ledger is configured.",
+        "Finish setting up Books before saving a purchase.",
       );
       return;
     }
@@ -212,16 +217,28 @@ export function ItemAnalysisResultScreen() {
         values.notes.trim() ? values.notes.trim() : null,
       ].filter((value): value is string => Boolean(value));
 
-      await createManualLedgerEntry({
-        amountCents,
-        channel: values.source.trim() || null,
-        entryType: "inventory_purchase",
-        itemId: saved.item.id,
-        notes: purchaseDetails.length > 0 ? purchaseDetails.join(" | ") : null,
-        occurredAt,
-        ownerId: userId,
-        receiptFileId,
-      });
+      if (isResellerBookkeepingConfigured()) {
+        await recordBookkeepingEvent({
+          amountCents,
+          eventType: "inventory_purchase",
+          idempotencyKey: `inventory-purchase:${saved.item.id}`,
+          itemId: saved.item.id,
+          notes: purchaseDetails.length > 0 ? purchaseDetails.join(" | ") : null,
+          occurredAt,
+          summary: "Inventory purchase",
+        });
+      } else {
+        await createManualLedgerEntry({
+          amountCents,
+          channel: values.source.trim() || null,
+          entryType: "inventory_purchase",
+          itemId: saved.item.id,
+          notes: purchaseDetails.length > 0 ? purchaseDetails.join(" | ") : null,
+          occurredAt,
+          ownerId: userId,
+          receiptFileId,
+        });
+      }
 
       receiptLinked = true;
       setInventoryFormOpen(false);

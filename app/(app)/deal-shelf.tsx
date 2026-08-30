@@ -364,7 +364,7 @@ export default function DealShelfScreen() {
                 </Text>
                 <Pressable
                   accessibilityRole="button"
-                  onPress={() => router.replace("/")}
+                  onPress={() => router.replace("/scanner")}
                   style={({ pressed }) => [
                     styles.primaryAction,
                     pressed && styles.pressed,

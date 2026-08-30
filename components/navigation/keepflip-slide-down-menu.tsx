@@ -41,7 +41,7 @@ const destinations: MenuDestination[] = [
     icon: 'gauge.with.dots.needle.67percent',
     label: 'Command Center',
   },
-  { eyebrow: 'IDENTIFY & VALUE', href: '/', icon: 'viewfinder', label: 'Scanner' },
+  { eyebrow: 'IDENTIFY & VALUE', href: '/scanner' as Href, icon: 'viewfinder', label: 'Scanner' },
   { eyebrow: 'DEALS TO DECIDE', href: '/deal-shelf' as Href, icon: 'tag.fill', label: 'Deal Shelf' },
   { eyebrow: 'YOUR SAVED FINDS', href: '/inventory', icon: 'shippingbox.fill', label: 'Inventory' },
 
@@ -54,15 +54,14 @@ function hapticSelection() {
 function isDestinationActive(destinationPath: string, pathname: string) {
   if (destinationPath === '/command-center') {
     return (
+      pathname === '/' ||
       pathname === '/command-center' ||
       pathname === '/books' ||
       pathname === '/account'
     );
   }
 
-  return destinationPath === '/'
-    ? pathname === '/'
-    : pathname.startsWith(destinationPath);
+  return pathname.startsWith(destinationPath);
 }
 
 export function KeepFlipSlideDownMenu() {
@@ -143,7 +142,9 @@ export function KeepFlipSlideDownMenu() {
 
     const destinationPath = destination.href.toString();
     const isAlreadyOnDestination =
-      destinationPath === '/' ? pathname === '/' : pathname === destinationPath;
+      destinationPath === '/command-center'
+        ? pathname === '/' || pathname === '/command-center'
+        : pathname === destinationPath;
 
     if (!isAlreadyOnDestination) {
       requestAnimationFrame(() => router.replace(destination.href));

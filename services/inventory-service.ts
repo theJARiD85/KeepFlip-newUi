@@ -680,7 +680,7 @@ export async function saveAnalyzedItemToInventory({
           'Other',
         brand: boundedText(identity.brand, 100),
         model: boundedText(identity.model, 150),
-        serialNumber: boundedText(identity.serialNumber, 150),
+        serialNumber: boundedText(identity.serialNumber, 150) || null,
         condition: normalizedCondition(analysis.analysis.condition.grade),
         status: 'undecided',
         description: conditionNotes || null,
@@ -841,6 +841,62 @@ export async function updateInventoryAnalysisSnapshot({
       updatedAt: savedAt,
     },
   });
+}
+
+export async function updateInventoryMarketplaceLink({
+  ownerId,
+  itemId,
+  ebaySku,
+  ebayOfferId,
+  ebayListingId,
+  listedAt,
+}: {
+  ownerId: string;
+  itemId: string;
+  ebaySku: string;
+  ebayOfferId?: string | null;
+  ebayListingId?: string | null;
+  listedAt?: string | null;
+}): Promise<void> {
+  assertInventoryConfigured();
+  const cleanOwnerId = ownerId.trim();
+  const cleanItemId = itemId.trim();
+  const cleanSku = ebaySku.trim();
+  if (!cleanOwnerId || !cleanItemId || !cleanSku) {
+    throw new Error(
+      'KeepFlip needs the signed-in owner, item, and eBay SKU before linking a listing.',
+    );
+  }
+
+  // Confirm ownership before adding marketplace identifiers to an item. The
+  // financial sync uses these identifiers later to locate the exact inventory
+  // cost when the listing sells.
+  await getInventoryItem(cleanOwnerId, cleanItemId);
+  const now = new Date().toISOString();
+
+  try {
+    await tablesDB.updateRow({
+      databaseId: APPWRITE.databaseId,
+      tableId: APPWRITE.itemsTableId,
+      rowId: cleanItemId,
+      data: {
+        ebayListingId: ebayListingId?.trim() || null,
+        ebayOfferId: ebayOfferId?.trim() || null,
+        ebaySku: cleanSku,
+        isListed: true,
+        listedAt: listedAt?.trim() || now,
+        resaleStatus: 'listed',
+        updatedAt: now,
+      },
+    });
+  } catch (cause) {
+    if (isInventorySchemaError(cause)) {
+      throw new Error(
+        'Add the eBay tracking columns (resaleStatus, ebaySku, ebayOfferId, ebayListingId, and listedAt) to the items table before linking a listing.',
+      );
+    }
+    throw cause;
+  }
 }
 
 export async function getInventoryItem(

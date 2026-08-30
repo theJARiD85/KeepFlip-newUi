@@ -70,6 +70,10 @@ app-example
 /backend/functions/*
 !/backend/functions/ebay-oauth/
 !/backend/functions/ebay-oauth/**
+!/backend/functions/keepflip-ebay-oauth/
+!/backend/functions/keepflip-ebay-oauth/**
+!/backend/functions/keepflip-books/
+!/backend/functions/keepflip-books/**
 !/backend/functions/ebay-account-deletion/
 !/backend/functions/ebay-account-deletion/**
 /.backups

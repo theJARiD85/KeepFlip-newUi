@@ -38,6 +38,14 @@ import {
   type ResellerLedgerEntryType,
 } from '@/services/reseller-ledger-service';
 import {
+  createBookkeepingIdempotencyKey,
+  getBookkeepingOverview,
+  isResellerBookkeepingConfigured,
+  recordBookkeepingEvent,
+  type BookkeepingEventType,
+  type BookkeepingMoneyEvent,
+} from '@/services/reseller-bookkeeping-service';
+import {
   listInventoryItems,
   type InventoryItem,
 } from '@/services/inventory-service';
@@ -46,6 +54,7 @@ type LedgerDraft = {
   amount: string;
   channel: string;
   entryType: ResellerLedgerEntryType;
+  idempotencyKey: string;
   itemId: string | null;
   notes: string;
   occurredOn: string;
@@ -79,6 +88,7 @@ function makeDraft(entryType: ResellerLedgerEntryType): LedgerDraft {
     amount: '',
     channel: '',
     entryType,
+    idempotencyKey: createBookkeepingIdempotencyKey(`manual-${entryType}`),
     itemId: null,
     notes: '',
     occurredOn: todayBusinessDate(),
@@ -215,12 +225,62 @@ function TransactionRow({
   );
 }
 
+function bookkeepingEventsAsLedgerEntries(
+  ownerId: string,
+  events: BookkeepingMoneyEvent[],
+): ResellerLedgerEntry[] {
+  return events.map((event) => ({
+    amountCents: event.amountCents,
+    channel: 'KeepFlip Books',
+    createdAt: event.occurredAt,
+    currency: 'USD',
+    direction: event.direction,
+    entryType: event.entryType,
+    externalId: null,
+    id: `books-v2-${event.id}`,
+    itemId: event.itemId,
+    notes: null,
+    occurredAt: event.occurredAt,
+    ownerId,
+    receiptFileId: null,
+    saleGroupId: null,
+    source: 'migration',
+    updatedAt: event.occurredAt,
+    voidedAt: null,
+  }));
+}
+
+function advancedEventTypeForLedgerEntry(
+  entryType: ResellerLedgerEntryType,
+): BookkeepingEventType | null {
+  switch (entryType) {
+    case 'sale_proceeds':
+      return 'sale';
+    case 'inventory_purchase':
+    case 'marketplace_fee':
+    case 'shipping_label':
+    case 'refund':
+    case 'repair_parts':
+    case 'supplies':
+    case 'software':
+    case 'advertising':
+    case 'storage':
+    case 'mileage':
+    case 'other_expense':
+      return entryType;
+    case 'other_income':
+      return null;
+  }
+}
+
 export function BooksScreen() {
   const { user } = useKeepFlipAuth();
   const { recordCompletedAction } = useKeepFlipFeedbackNudge();
   const insets = useSafeAreaInsets();
   const userId = user?.$id;
-  const ledgerConfigured = isResellerBooksConfigured();
+  const legacyLedgerConfigured = isResellerBooksConfigured();
+  const advancedBookkeepingConfigured = isResellerBookkeepingConfigured();
+  const ledgerConfigured = legacyLedgerConfigured || advancedBookkeepingConfigured;
   const [entries, setEntries] = useState<ResellerLedgerEntry[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -254,18 +314,35 @@ export function BooksScreen() {
       setSetupNotice(null);
 
       try {
-        const savedInventory = await listInventoryItems(userId);
+        const [savedInventory, legacyEntries, advancedOverview] = await Promise.all([
+          listInventoryItems(userId),
+          legacyLedgerConfigured
+            ? listResellerLedgerEntries(userId)
+            : Promise.resolve([] as ResellerLedgerEntry[]),
+          advancedBookkeepingConfigured
+            ? getBookkeepingOverview()
+            : Promise.resolve(null),
+        ]);
         setInventory(savedInventory);
 
         if (!ledgerConfigured) {
           setEntries([]);
           setSetupNotice(
-            'Deploy the private Books ledger table and add its public table ID to this app configuration to start recording transactions. Your existing inventory stays unchanged.',
+            'Deploy the private Books service and add its Function ID to this app configuration to start recording transactions. Your existing inventory stays unchanged.',
           );
           return;
         }
 
-        setEntries(await listResellerLedgerEntries(userId));
+        const advancedEntries = advancedOverview
+          ? bookkeepingEventsAsLedgerEntries(userId, advancedOverview.moneyEvents)
+          : [];
+        setEntries(
+          [...legacyEntries, ...advancedEntries].sort(
+            (left, right) =>
+              new Date(right.occurredAt).getTime() -
+              new Date(left.occurredAt).getTime(),
+          ),
+        );
       } catch (caughtError) {
         setError(
           caughtError instanceof Error
@@ -277,7 +354,12 @@ export function BooksScreen() {
         setRefreshing(false);
       }
     },
-    [ledgerConfigured, userId],
+    [
+      advancedBookkeepingConfigured,
+      ledgerConfigured,
+      legacyLedgerConfigured,
+      userId,
+    ],
   );
 
   useFocusEffect(
@@ -298,6 +380,9 @@ export function BooksScreen() {
     ? inventory.find((item) => item.id === draft.itemId) ?? null
     : null;
   const draftDetails = ledgerEntryDetails(draft.entryType);
+  const availableEntryTypeOptions = advancedBookkeepingConfigured
+    ? ENTRY_TYPE_OPTIONS.filter((entryType) => entryType !== 'other_income')
+    : ENTRY_TYPE_OPTIONS;
 
   const openEntrySheet = (entryType: ResellerLedgerEntryType) => {
     if (!ledgerConfigured) {
@@ -332,15 +417,54 @@ export function BooksScreen() {
     setSaving(true);
     setFormError(null);
     try {
-      await createManualLedgerEntry({
-        amountCents,
-        channel: draft.channel,
-        entryType: draft.entryType,
-        itemId: draft.itemId,
-        notes: draft.notes,
-        occurredAt,
-        ownerId: userId,
-      });
+      if (advancedBookkeepingConfigured) {
+        const advancedEventType = advancedEventTypeForLedgerEntry(draft.entryType);
+        if (!advancedEventType) {
+          setFormError(
+            'Other income is not available in Advanced Books yet. Use a sale or a recorded cost instead.',
+          );
+          return;
+        }
+        if (
+          (advancedEventType === 'sale' ||
+            advancedEventType === 'inventory_purchase') &&
+          !draft.itemId
+        ) {
+          setFormError(
+            advancedEventType === 'sale'
+              ? 'Choose the item that sold so KeepFlip can move its original cost.'
+              : 'Choose the item you bought so KeepFlip can save its original cost.',
+          );
+          return;
+        }
+        const advancedNotes = [
+          draft.channel.trim() ? `Source: ${draft.channel.trim()}` : '',
+          draft.notes.trim(),
+        ]
+          .filter(Boolean)
+          .join(' | ');
+        await recordBookkeepingEvent({
+          ...(advancedEventType === 'sale'
+            ? { grossSaleCents: amountCents }
+            : { amountCents }),
+          eventType: advancedEventType,
+          idempotencyKey: draft.idempotencyKey,
+          itemId: draft.itemId,
+          notes: advancedNotes || null,
+          occurredAt,
+          summary: draftDetails.label,
+        });
+      } else {
+        await createManualLedgerEntry({
+          amountCents,
+          channel: draft.channel,
+          entryType: draft.entryType,
+          itemId: draft.itemId,
+          notes: draft.notes,
+          occurredAt,
+          ownerId: userId,
+        });
+      }
       setSheetOpen(false);
       setStatusMessage(`${draftDetails.label} recorded in Books.`);
       hapticSuccess();
@@ -419,9 +543,9 @@ export function BooksScreen() {
         showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Text style={styles.eyebrow}>KEEPFLIP / BOOKS</Text>
-          <Text style={styles.title}>Reseller books</Text>
+          <Text style={styles.title}>Your money & items</Text>
           <Text style={styles.subtitle}>
-            Record actual money in and out. Estimates and asking prices stay out of
+            Track money in, costs, and what is tied up in your items. Estimates and asking prices stay out of
             your books.
           </Text>
 
@@ -495,7 +619,7 @@ export function BooksScreen() {
           </Text>
         ) : null}
 
-        <Section eyebrow="CURRENT MONTH" title="Cash movement">
+        <Section eyebrow="THIS MONTH" title="Money movement">
           {loading ? (
             <View style={styles.loadingLine}>
               <ActivityIndicator color={theme.colors.scannerCyan} size="small" />
@@ -504,19 +628,19 @@ export function BooksScreen() {
           ) : (
             <View style={styles.metricGrid}>
               <Metric
-                detail="Actual income logged"
-                label="INCOME"
+                detail="Sales and other money recorded"
+                label="MONEY IN"
                 tone="cyan"
                 value={formatMoney(summary.currentMonthIncomeCents)}
               />
               <Metric
-                detail="Purchases, fees & expenses"
-                label="CASH OUT"
+                detail="Purchases, fees, and other costs"
+                label="COSTS"
                 value={formatMoney(summary.currentMonthExpensesCents)}
               />
               <Metric
-                detail="Income minus cash out"
-                label="NET CASH"
+                detail="Money in minus recorded costs"
+                label="LEFT AFTER COSTS"
                 tone="violet"
                 value={formatSignedMoney(summary.currentMonthNetCashCents)}
               />
@@ -524,17 +648,17 @@ export function BooksScreen() {
           )}
         </Section>
 
-        <Section eyebrow="ITEM ECONOMICS" title="What is tied up">
+        <Section eyebrow="ITEM HEALTH" title="What is in your items">
           <View style={styles.metricGrid}>
             <Metric
-              detail="Recorded cost of unsold inventory"
-              label="INVENTORY BASIS"
+              detail="What you have paid for unsold items"
+              label="CASH TIED UP"
               tone="cyan"
               value={formatMoney(summary.inventoryBasisCents)}
             />
             <Metric
-              detail="This month, linked sales only"
-              label="REALIZED ITEM PROFIT"
+              detail="Linked sales after item cost and fees"
+              label="TRUE ITEM PROFIT"
               value={formatSignedMoney(summary.realizedItemProfitCents)}
             />
             <Metric
@@ -543,7 +667,7 @@ export function BooksScreen() {
                   ? 'Saved item needs a real cost'
                   : 'Saved items need real costs'
               }
-              label="COSTS MISSING"
+              label="ADD COSTS"
               tone="violet"
               value={String(summary.missingCostItemCount)}
             />
@@ -653,7 +777,7 @@ export function BooksScreen() {
               <View style={styles.formSection}>
                 <Text style={styles.formLabel}>WHAT HAPPENED</Text>
                 <View style={styles.typeOptions}>
-                  {ENTRY_TYPE_OPTIONS.map((entryType) => {
+                  {availableEntryTypeOptions.map((entryType) => {
                     const selected = draft.entryType === entryType;
                     return (
                       <Pressable

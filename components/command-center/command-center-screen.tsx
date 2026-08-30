@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { KeepFlipAssistantPanel } from '@/components/command-center/keepflip-assistant-panel';
+import { BusinessPulse } from '@/components/command-center/business-pulse';
 import {
   KeepFlipControlRow,
   type KeepFlipStatusBadgeProps,
@@ -26,6 +27,22 @@ import {
   getEbayConnectionStatus,
 } from '@/services/ebayConnectionService';
 import { openKeepFlipSupportEmail } from '@/lib/keepflip-feedback';
+import {
+  buildResellerBusinessOverview,
+  type ResellerBusinessOverview,
+} from '@/services/reseller-business-overview';
+import {
+  getBookkeepingOverview,
+  syncEbayBookkeeping,
+  isResellerBookkeepingConfigured,
+  type BookkeepingMoneyEvent,
+} from '@/services/reseller-bookkeeping-service';
+import { listInventoryItems } from '@/services/inventory-service';
+import {
+  isResellerBooksConfigured,
+  listResellerLedgerEntries,
+  type ResellerLedgerEntry,
+} from '@/services/reseller-ledger-service';
 
 type EbayConnectionViewState =
   | 'checking'
@@ -34,10 +51,41 @@ type EbayConnectionViewState =
   | 'disconnected'
   | 'error';
 
+function bookkeepingEventsForBusinessPulse(
+  ownerId: string,
+  events: BookkeepingMoneyEvent[],
+): ResellerLedgerEntry[] {
+  return events.map((event) => ({
+    amountCents: event.amountCents,
+    channel: 'KeepFlip Books',
+    createdAt: event.occurredAt,
+    currency: 'USD',
+    direction: event.direction,
+    entryType: event.entryType,
+    externalId: null,
+    id: `books-v2-${event.id}`,
+    itemId: event.itemId,
+    notes: null,
+    occurredAt: event.occurredAt,
+    ownerId,
+    receiptFileId: null,
+    saleGroupId: null,
+    source: 'migration',
+    updatedAt: event.occurredAt,
+    voidedAt: null,
+  }));
+}
+
 function hapticSelection() {
   if (process.env.EXPO_OS === 'ios') {
     void Haptics.selectionAsync().catch(() => undefined);
   }
+}
+
+function hapticSuccess() {
+  void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+    () => undefined,
+  );
 }
 
 function eBayStateDetails(
@@ -84,6 +132,13 @@ export function CommandCenterScreen() {
     useState<EbayConnectionViewState>('checking');
   const [eBayErrorMessage, setEbayErrorMessage] = useState<string | null>(null);
   const eBayRequestId = useRef(0);
+  const businessRequestId = useRef(0);
+  const [businessOverview, setBusinessOverview] =
+    useState<ResellerBusinessOverview | null>(null);
+  const [businessLoading, setBusinessLoading] = useState(true);
+  const [businessError, setBusinessError] = useState<string | null>(null);
+  const [eBayBooksSyncing, setEbayBooksSyncing] = useState(false);
+  const [eBayBooksSyncMessage, setEbayBooksSyncMessage] = useState<string | null>(null);
 
   const resolveEbayStatus = useCallback(async () => {
     try {
@@ -124,6 +179,105 @@ export function CommandCenterScreen() {
 
     return result.state;
   }, [resolveEbayStatus]);
+  const refreshBusinessOverview = useCallback(async () => {
+    if (!user?.$id) {
+      setBusinessOverview(null);
+      setBusinessLoading(false);
+      return;
+    }
+
+    const ownerId = user.$id;
+    const requestId = ++businessRequestId.current;
+    setBusinessLoading(true);
+    setBusinessError(null);
+
+    const [inventoryResult, legacyResult, advancedResult] = await Promise.allSettled([
+      listInventoryItems(ownerId),
+      isResellerBooksConfigured()
+        ? listResellerLedgerEntries(ownerId)
+        : Promise.resolve([]),
+      isResellerBookkeepingConfigured()
+        ? getBookkeepingOverview()
+        : Promise.resolve(null),
+    ]);
+
+    if (requestId !== businessRequestId.current) return;
+
+    if (inventoryResult.status !== 'fulfilled') {
+      setBusinessOverview(null);
+      setBusinessError(
+        inventoryResult.reason instanceof Error
+          ? inventoryResult.reason.message
+          : 'KeepFlip could not load the current business picture.',
+      );
+      setBusinessLoading(false);
+      return;
+    }
+
+    const entries: ResellerLedgerEntry[] = [];
+    const notes: string[] = [];
+    if (legacyResult.status === 'fulfilled') {
+      entries.push(...legacyResult.value);
+    } else {
+      notes.push('Some saved money records could not be loaded right now.');
+    }
+    if (advancedResult.status === 'fulfilled' && advancedResult.value) {
+      entries.push(
+        ...bookkeepingEventsForBusinessPulse(
+          ownerId,
+          advancedResult.value.moneyEvents,
+        ),
+      );
+      if (advancedResult.value.truncated) {
+        notes.push('This view is showing the latest 1,000 Books lines.');
+      }
+    } else if (isResellerBookkeepingConfigured()) {
+      notes.push('Advanced Books is set up, but its latest records are unavailable right now.');
+    }
+
+    setBusinessOverview(
+      buildResellerBusinessOverview({
+        entries,
+        inventory: inventoryResult.value,
+      }),
+    );
+    setBusinessError(notes.join(' ') || null);
+    setBusinessLoading(false);
+  }, [user?.$id]);
+  const handleEbayBooksSync = async () => {
+    if (eBayBooksSyncing) return;
+    if (eBayState !== 'connected') {
+      setEbayBooksSyncMessage('Connect eBay first, then sync its sales, fees, labels, refunds, and payouts.');
+      return;
+    }
+
+    hapticSelection();
+    setEbayBooksSyncing(true);
+    setEbayBooksSyncMessage(null);
+    try {
+      const result = await syncEbayBookkeeping();
+      const attention = result.needsItemMatch + result.needsItemCost + result.needsReview;
+      setEbayBooksSyncMessage(
+        `${result.posted} record${result.posted === 1 ? '' : 's'} added from eBay. ` +
+          (attention > 0
+            ? `${attention} item${attention === 1 ? '' : 's'} need${attention === 1 ? 's' : ''} a quick review.`
+            : 'Everything matched cleanly.'),
+      );
+      hapticSuccess();
+      await refreshBusinessOverview();
+    } catch (error) {
+      setEbayBooksSyncMessage(
+        error instanceof Error
+          ? error.message
+          : 'KeepFlip could not sync eBay financial activity right now.',
+      );
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(
+        () => undefined,
+      );
+    } finally {
+      setEbayBooksSyncing(false);
+    }
+  };
 
   useEffect(() => {
     const message =
@@ -150,6 +304,12 @@ export function CommandCenterScreen() {
       eBayRequestId.current += 1;
     };
   }, [resolveEbayStatus, user?.$id]);
+  useEffect(() => {
+    void refreshBusinessOverview();
+    return () => {
+      businessRequestId.current += 1;
+    };
+  }, [refreshBusinessOverview]);
 
   if (!user) return null;
 
@@ -235,7 +395,7 @@ export function CommandCenterScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top + 74, paddingBottom: insets.bottom + 32 },
+          { paddingTop: insets.top + 34, paddingBottom: insets.bottom + 32 },
         ]}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}>
@@ -253,6 +413,21 @@ export function CommandCenterScreen() {
               hapticSelection();
               router.push(route as Href);
             }}
+          />
+        </Animated.View>
+        <Animated.View entering={FadeInDown.duration(260).delay(60)} style={styles.section}>
+          <BusinessPulse
+            errorMessage={businessError}
+            loading={businessLoading}
+            onOpenBooks={() => {
+              hapticSelection();
+              router.push('/books' as Href);
+            }}
+            onOpenInventory={() => {
+              hapticSelection();
+              router.push('/inventory' as Href);
+            }}
+            overview={businessOverview}
           />
         </Animated.View>
 
@@ -285,6 +460,37 @@ export function CommandCenterScreen() {
               status={eBayDetails.status}
             />
           </View>
+          {isResellerBookkeepingConfigured() ? (
+            <View style={styles.eBaySurface}>
+              <KeepFlipControlRow
+                accent="gold"
+                actionBusy={eBayBooksSyncing}
+                actionLabel={eBayState === 'connected' ? 'SYNC' : undefined}
+                accessibilityHint="Brings in eBay sales, fees, labels, refunds, and payouts using the connected seller account."
+                description={
+                  eBayBooksSyncMessage ??
+                  'Bring in eBay sales, fees, shipping labels, refunds, and payouts. Payouts are matched without counting them as a second sale.'
+                }
+                icon="chart.bar.fill"
+                label="eBay money sync"
+                onPress={eBayBooksSyncing ? undefined : () => void handleEbayBooksSync()}
+                status={{
+                  label:
+                    eBayBooksSyncing
+                      ? 'SYNCING'
+                      : eBayState === 'connected'
+                        ? 'READY'
+                        : 'CONNECT FIRST',
+                  tone:
+                    eBayBooksSyncing
+                      ? 'violet'
+                      : eBayState === 'connected'
+                        ? 'active'
+                        : 'muted',
+                }}
+              />
+            </View>
+          ) : null}
         </Animated.View>
 
         <Animated.View entering={FadeInDown.duration(260).delay(90)} style={styles.section}>

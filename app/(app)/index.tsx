@@ -1,1 +1,5 @@
-export { default } from '@/components/scanner/scanner-screen';
+import { CommandCenterScreen } from '@/components/command-center/command-center-screen';
+
+export default function MainRoute() {
+  return <CommandCenterScreen />;
+}

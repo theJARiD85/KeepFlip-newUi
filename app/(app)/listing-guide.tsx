@@ -22,6 +22,7 @@ import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout } from "@/hooks/use-responsive-layout";
 import {
   getInventoryItem,
+  updateInventoryMarketplaceLink,
   type InventoryItem,
 } from "@/services/inventory-service";
 import { getEbayOAuthEnvironment } from "@/services/ebayConnectionService";
@@ -563,6 +564,23 @@ export default function ListingCreationGuideScreen() {
         conditionDescription: generatedListing.conditionDisclosure,
         listingDuration: "GTC",
       });
+      if (userId) {
+        try {
+          await updateInventoryMarketplaceLink({
+            ebayListingId: result.listingId,
+            ebayOfferId: result.offerId,
+            ebaySku: result.sku,
+            itemId: item.id,
+            listedAt: new Date().toISOString(),
+            ownerId: userId,
+          });
+        } catch (linkError) {
+          setEbayPublishError(
+            "Your eBay listing is live, but KeepFlip could not save its tracking link. Add the eBay tracking columns to inventory, then publish or open this item again to reconnect it." +
+              (linkError instanceof Error ? " " + linkError.message : ""),
+          );
+        }
+      }
       setEbayPublishResult(result);
       recordCompletedAction();
     } catch (caughtError) {
@@ -580,6 +598,7 @@ export default function ListingCreationGuideScreen() {
     generatedListing,
     item,
     recordCompletedAction,
+    userId,
   ]);
 
   const confirmEbayPublish = useCallback(() => {
