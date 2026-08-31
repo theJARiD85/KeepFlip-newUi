@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import {
   KeepFlipText as Text,
@@ -460,35 +460,23 @@ export function FlipPlanScreen() {
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
-        <View style={styles.topBar}>
+        <Animated.View entering={FadeInDown.duration(220)} style={styles.topBar}>
           <Pressable
-            accessibilityHint="Returns to the Command Center"
-            accessibilityLabel="Back to Command Center"
+            accessibilityLabel="Go back"
             accessibilityRole="button"
-            hitSlop={8}
+            hitSlop={10}
             onPress={() => router.back()}
             style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
             <IconSymbol
-              color={theme.colors.cream}
-              name="arrow.right"
-              size={16}
+              color={theme.colors.goldBright}
+              name="chevron.right"
+              size={22}
               style={styles.backIcon}
             />
-            <Text style={styles.backButtonText}>Command Center</Text>
           </Pressable>
-          <Pressable
-            accessibilityHint="Clears the values and returns to Buy Device"
-            accessibilityLabel="Clear flip plan"
-            accessibilityRole="button"
-            onPress={() => {
-              setDraft(EMPTY_PLAN);
-              setActiveStage('buy');
-            }}
-            style={({ pressed }) => [styles.resetButton, pressed && styles.pressed]}>
-            <IconSymbol color={theme.colors.textMuted} name="arrow.clockwise" size={14} />
-            <Text style={styles.resetText}>Clear</Text>
-          </Pressable>
-        </View>
+          <Text style={styles.topLabel}>SELLER ACCOUNT</Text>
+          <View style={styles.topSpacer} />
+        </Animated.View>
 
         <View style={styles.header}>
           <Text style={styles.eyebrow}>KEEPFLIP / FLIP PLAN</Text>
@@ -836,6 +824,16 @@ const styles = StyleSheet.create({
     gap: 10,
     padding: 11,
   },
+    topLabel: {
+      color: theme.colors.textMuted,
+      fontSize: 9,
+      fontWeight: '900',
+      letterSpacing: 1.8,
+    },
+    topSpacer: {
+      width: 44,
+      height: 44,
+    },
   impactText: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 },
   input: {
     color: theme.colors.cream,

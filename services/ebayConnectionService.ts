@@ -25,6 +25,39 @@ export type EbayConnectionStatusResult = {
   needsReconnect?: boolean;
 };
 
+export type EbaySellerProfile = {
+  username?: string;
+  accountType?: string;
+  accountStatus?: string;
+  registrationMarketplaceId?: string;
+  businessName?: string;
+  doingBusinessAs?: string;
+  businessWebsiteUrl?: string;
+  lastSyncedAt?: string;
+};
+
+export type EbaySellerListing = {
+  listingId?: string;
+  offerId?: string;
+  sku?: string;
+  title?: string;
+  status?: string;
+  listingUrl?: string;
+  currentPriceCents?: number;
+  currency?: string;
+  quantityAvailable?: number;
+  lastSyncedAt?: string;
+};
+
+export type EbaySellerAccountResult = {
+  connected: boolean;
+  environment: EbayOAuthEnvironment;
+  profile?: EbaySellerProfile;
+  profileFreshness?: 'current' | 'stale';
+  listingCount: number;
+  listings: EbaySellerListing[];
+};
+
 type FunctionPayload = {
   ok?: unknown;
   state?: unknown;
@@ -39,6 +72,10 @@ type FunctionPayload = {
   refreshed?: unknown;
   revoked?: unknown;
   remoteRevocation?: unknown;
+  profile?: unknown;
+  profileFreshness?: unknown;
+  listingCount?: unknown;
+  listings?: unknown;
   error?: unknown;
 };
 
@@ -106,6 +143,81 @@ function parseFunctionPayload(responseBody: string): FunctionPayload {
   }
 }
 
+function recordValue(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function optionalText(value: unknown, maxLength = 2_048): string | undefined {
+  return typeof value === 'string' && value.trim()
+    ? value.trim().slice(0, maxLength)
+    : undefined;
+}
+
+function optionalNonNegativeInteger(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0
+    ? value
+    : undefined;
+}
+
+function optionalHttpUrl(value: unknown): string | undefined {
+  const text = optionalText(value);
+  if (!text) return undefined;
+
+  try {
+    const parsed = new URL(text);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:'
+      ? parsed.toString()
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function parseSellerProfile(value: unknown): EbaySellerProfile | undefined {
+  const profile = recordValue(value);
+  if (!profile) return undefined;
+
+  const result: EbaySellerProfile = {
+    username: optionalText(profile.username, 160),
+    accountType: optionalText(profile.accountType, 32),
+    accountStatus: optionalText(profile.accountStatus, 32),
+    registrationMarketplaceId: optionalText(
+      profile.registrationMarketplaceId,
+      64,
+    ),
+    businessName: optionalText(profile.businessName, 160),
+    doingBusinessAs: optionalText(profile.doingBusinessAs, 160),
+    businessWebsiteUrl: optionalHttpUrl(profile.businessWebsiteUrl),
+    lastSyncedAt: optionalText(profile.lastSyncedAt, 64),
+  };
+
+  return Object.values(result).some(Boolean) ? result : undefined;
+}
+
+function parseSellerListing(value: unknown): EbaySellerListing | undefined {
+  const listing = recordValue(value);
+  if (!listing) return undefined;
+
+  const result: EbaySellerListing = {
+    listingId: optionalText(listing.listingId, 180),
+    offerId: optionalText(listing.offerId, 180),
+    sku: optionalText(listing.sku, 180),
+    title: optionalText(listing.title, 512),
+    status: optionalText(listing.status, 64),
+    listingUrl: optionalHttpUrl(listing.listingUrl),
+    currentPriceCents: optionalNonNegativeInteger(listing.currentPriceCents),
+    currency: optionalText(listing.currency, 3),
+    quantityAvailable: optionalNonNegativeInteger(listing.quantityAvailable),
+    lastSyncedAt: optionalText(listing.lastSyncedAt, 64),
+  };
+
+  return Object.values(result).some((entry) => entry !== undefined)
+    ? result
+    : undefined;
+}
+
 function functionError(responseBody: string, fallback: string): Error {
   const payload = parseFunctionPayload(responseBody);
   const message =
@@ -117,13 +229,13 @@ function functionError(responseBody: string, fallback: string): Error {
 }
 
 async function executeOAuthFunction(
-  path: '/connect' | '/status' | '/refresh' | '/revoke',
+  path: '/connect' | '/status' | '/refresh' | '/revoke' | '/seller-account',
   environment: EbayOAuthEnvironment,
   extra: Record<string, unknown> = {},
 ) {
   return functions.createExecution({
-    // This is the active authenticated helper. The eBay-facing callback is a
-    // separate function (ebay_oauth_callback) and is never called by mobile.
+    // This is the active authenticated eBay backend. The authorization-code
+    // callback is a separate function and is never called by mobile.
     functionId: ebayOAuthFunctionId(),
     body: JSON.stringify({ ...extra, environment }),
     async: false,
@@ -306,6 +418,50 @@ export async function getEbayConnectionStatus(
       typeof payload.needsReconnect === 'boolean'
         ? payload.needsReconnect
         : undefined,
+  };
+}
+
+/**
+ * Reads the safe seller profile plus the small cache of KeepFlip-published
+ * listings. The backend retains all OAuth credentials and raw eBay identity
+ * data; this result is safe to render on-device.
+ */
+export async function getEbaySellerAccount(
+  environment: EbayOAuthEnvironment = getEbayOAuthEnvironment(),
+): Promise<EbaySellerAccountResult> {
+  const execution = await executeOAuthFunction('/seller-account', environment);
+
+  if (execution.responseStatusCode !== 200) {
+    throw functionError(
+      execution.responseBody,
+      'KeepFlip could not read the eBay seller account.',
+    );
+  }
+
+  const payload = parseFunctionPayload(execution.responseBody);
+  if (typeof payload.connected !== 'boolean') {
+    throw new Error('The eBay OAuth Function returned an invalid seller account.');
+  }
+
+  const listings = Array.isArray(payload.listings)
+    ? payload.listings
+        .map(parseSellerListing)
+        .filter((listing): listing is EbaySellerListing => Boolean(listing))
+        .slice(0, 6)
+    : [];
+  const responseCount = optionalNonNegativeInteger(payload.listingCount);
+  const profileFreshness =
+    payload.profileFreshness === 'current' || payload.profileFreshness === 'stale'
+      ? payload.profileFreshness
+      : undefined;
+
+  return {
+    connected: payload.connected,
+    environment: normalizeEnvironment(payload.environment) ?? environment,
+    profile: parseSellerProfile(payload.profile),
+    profileFreshness,
+    listingCount: Math.max(responseCount ?? listings.length, listings.length),
+    listings,
   };
 }
 

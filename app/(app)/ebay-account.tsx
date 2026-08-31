@@ -22,8 +22,10 @@ import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import {
   getEbayConnectionStatus,
   getEbayOAuthEnvironment,
+  getEbaySellerAccount,
   revokeEbayConnection,
   type EbayConnectionStatusResult,
+  type EbaySellerAccountResult,
 } from '@/services/ebayConnectionService';
 
 function hapticSelection() {
@@ -36,6 +38,41 @@ function environmentLabel(value: 'sandbox' | 'production') {
   return value === 'sandbox' ? 'EBAY SANDBOX' : 'EBAY';
 }
 
+function readableEbayValue(value?: string) {
+  if (!value) return undefined;
+  return value
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function listingPriceLabel(cents?: number, currency?: string) {
+  if (typeof cents !== 'number') return 'PRICE NOT SET';
+
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: currency || 'USD',
+      maximumFractionDigits: 2,
+    }).format(cents / 100);
+  } catch {
+    return '$' + (cents / 100).toFixed(2);
+  }
+}
+
+function sellerSyncLabel(lastSyncedAt?: string, freshness?: 'current' | 'stale') {
+  if (freshness === 'stale') {
+    return 'Showing the last saved details while eBay is temporarily unavailable.';
+  }
+  if (!lastSyncedAt) {
+    return 'Seller details will appear after the first secure sync.';
+  }
+
+  const date = new Date(lastSyncedAt);
+  if (Number.isNaN(date.getTime())) return 'Seller details are securely synced.';
+  return 'Updated ' + date.toLocaleString();
+}
+
 export default function EbayAccountScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -43,6 +80,8 @@ export default function EbayAccountScreen() {
   const { setDisconnected } = useEbayConnection();
   const [connection, setConnection] =
     useState<EbayConnectionStatusResult | null>(null);
+  const [sellerAccount, setSellerAccount] =
+    useState<EbaySellerAccountResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRevoking, setIsRevoking] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -54,9 +93,35 @@ export default function EbayAccountScreen() {
     try {
       const status = await getEbayConnectionStatus();
       setConnection(status);
+      if (!status.connected) {
+        setSellerAccount(null);
+        return status;
+      }
+
+      try {
+        const seller = await getEbaySellerAccount(status.environment);
+        setSellerAccount(seller.connected ? seller : null);
+        if (!seller.connected) {
+          const disconnected = {
+            connected: false,
+            environment: status.environment,
+          };
+          setConnection(disconnected);
+          return disconnected;
+        }
+      } catch (error) {
+        setSellerAccount(null);
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : 'KeepFlip could not read your eBay seller details.',
+        );
+      }
+
       return status;
     } catch (error) {
       setConnection(null);
+      setSellerAccount(null);
       setErrorMessage(
         error instanceof Error
           ? error.message
@@ -72,32 +137,57 @@ export default function EbayAccountScreen() {
     useCallback(() => {
       if (!userId) {
         setConnection(null);
+        setSellerAccount(null);
         setErrorMessage(null);
         setIsLoading(false);
         return;
       }
 
       let cancelled = false;
-      setIsLoading(true);
-      setErrorMessage(null);
+      const loadSellerAccount = async () => {
+        setIsLoading(true);
+        setErrorMessage(null);
+        try {
+          const status = await getEbayConnectionStatus();
+          if (cancelled) return;
+          setConnection(status);
 
-      void getEbayConnectionStatus()
-        .then((status) => {
-          if (!cancelled) setConnection(status);
-        })
-        .catch((error) => {
+          if (!status.connected) {
+            setSellerAccount(null);
+            return;
+          }
+
+          try {
+            const seller = await getEbaySellerAccount(status.environment);
+            if (cancelled) return;
+            setSellerAccount(seller.connected ? seller : null);
+            if (!seller.connected) {
+              setConnection({ connected: false, environment: status.environment });
+            }
+          } catch (error) {
+            if (cancelled) return;
+            setSellerAccount(null);
+            setErrorMessage(
+              error instanceof Error
+                ? error.message
+                : 'KeepFlip could not read your eBay seller details.',
+            );
+          }
+        } catch (error) {
           if (cancelled) return;
           setConnection(null);
+          setSellerAccount(null);
           setErrorMessage(
             error instanceof Error
               ? error.message
               : 'KeepFlip could not check your eBay connection.',
           );
-        })
-        .finally(() => {
+        } finally {
           if (!cancelled) setIsLoading(false);
-        });
+        }
+      };
 
+      void loadSellerAccount();
       return () => {
         cancelled = true;
       };
@@ -112,6 +202,7 @@ export default function EbayAccountScreen() {
     try {
       const result = await revokeEbayConnection(connection.environment);
       setConnection(result);
+      setSellerAccount(null);
       setDisconnected(result);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
         () => undefined,
@@ -151,7 +242,14 @@ export default function EbayAccountScreen() {
 
   const activeConnection = connection?.connected === true;
   const environment = connection?.environment ?? getEbayOAuthEnvironment();
-  const accountName = connection?.ebayUsername?.trim();
+  const sellerProfile = sellerAccount?.profile;
+  const accountName =
+    sellerProfile?.username?.trim() || connection?.ebayUsername?.trim();
+  const sellerDisplayName =
+    sellerProfile?.businessName?.trim() ||
+    sellerProfile?.doingBusinessAs?.trim() ||
+    accountName;
+  const cachedListings = sellerAccount?.listings ?? [];
 
   return (
     <KeepFlipBackground>
@@ -179,7 +277,7 @@ export default function EbayAccountScreen() {
               style={styles.backIcon}
             />
           </Pressable>
-          <Text style={styles.topLabel}>EBAY ACCOUNT</Text>
+          <Text style={styles.topLabel}>SELLER ACCOUNT</Text>
           <View style={styles.topSpacer} />
         </Animated.View>
 
@@ -189,11 +287,11 @@ export default function EbayAccountScreen() {
           </View>
           <Text style={styles.eyebrow}>KEEPFLIP + EBAY</Text>
           <Text style={styles.title}>
-            {activeConnection ? 'Your eBay account' : 'eBay connection'}
+            {activeConnection ? 'Your seller account' : 'eBay connection'}
           </Text>
           <Text style={styles.subtitle}>
             {activeConnection
-              ? 'Review the account linked to KeepFlip and control its authorization.'
+              ? 'Seller details and KeepFlip-published listings, with secure account controls below.'
               : 'Connect an eBay account to manage authorized account-level features.'}
           </Text>
         </Animated.View>
@@ -215,7 +313,9 @@ export default function EbayAccountScreen() {
                   />
                 </View>
                 <View style={styles.accountCopy}>
-                  <Text style={styles.accountTitle}>eBay access active</Text>
+                  <Text style={styles.accountTitle}>
+                    {sellerDisplayName || 'eBay access active'}
+                  </Text>
                   <Text selectable style={styles.accountIdentity}>
                     {accountName
                       ? 'Connected as ' + accountName
@@ -230,6 +330,123 @@ export default function EbayAccountScreen() {
             </Animated.View>
 
             <Animated.View entering={FadeInDown.duration(250).delay(100)} style={styles.section}>
+              <Text style={styles.sectionEyebrow}>SELLER INFORMATION</Text>
+              <View style={styles.settingsCard}>
+                <View style={styles.sellerSummary}>
+                  <Text style={styles.settingTitle}>
+                    {sellerDisplayName || 'Seller details are syncing'}
+                  </Text>
+                  <Text selectable style={styles.settingDescription}>
+                    {sellerProfile
+                      ? 'eBay-managed account details update in eBay. KeepFlip securely refreshes the safe details shown here.'
+                      : 'KeepFlip will show the safe account details eBay shares after the first secure sync.'}
+                  </Text>
+                </View>
+
+                {sellerProfile?.username ? (
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>EBAY HANDLE</Text>
+                    <Text selectable style={styles.detailValue}>
+                      {sellerProfile.username}
+                    </Text>
+                  </View>
+                ) : null}
+                {sellerProfile?.accountType || sellerProfile?.accountStatus ? (
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>ACCOUNT</Text>
+                    <Text selectable style={styles.detailValue}>
+                      {[
+                        readableEbayValue(sellerProfile?.accountType),
+                        readableEbayValue(sellerProfile?.accountStatus),
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </Text>
+                  </View>
+                ) : null}
+                {sellerProfile?.registrationMarketplaceId ? (
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>MARKETPLACE</Text>
+                    <Text selectable style={styles.detailValue}>
+                      {sellerProfile.registrationMarketplaceId.replace(/_/g, ' ')}
+                    </Text>
+                  </View>
+                ) : null}
+                {sellerProfile?.businessWebsiteUrl ? (
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>BUSINESS SITE</Text>
+                    <Text selectable numberOfLines={1} style={styles.detailValue}>
+                      {sellerProfile.businessWebsiteUrl}
+                    </Text>
+                  </View>
+                ) : null}
+
+                <Text style={styles.profileSyncNote}>
+                  {sellerSyncLabel(
+                    sellerProfile?.lastSyncedAt,
+                    sellerAccount?.profileFreshness,
+                  )}
+                </Text>
+              </View>
+            </Animated.View>
+
+            <Animated.View entering={FadeInDown.duration(250).delay(130)} style={styles.section}>
+              <Text style={styles.sectionEyebrow}>KEEPFLIP LISTINGS</Text>
+              <View style={styles.settingsCard}>
+                <View style={styles.listingHeader}>
+                  <View style={styles.settingCopy}>
+                    <Text style={styles.settingTitle}>
+                      {sellerAccount?.listingCount
+                        ? sellerAccount.listingCount +
+                          (sellerAccount.listingCount === 1
+                            ? ' saved listing'
+                            : ' saved listings')
+                        : 'No listings saved yet'}
+                    </Text>
+                    <Text style={styles.settingDescription}>
+                      KeepFlip-published eBay listings appear here after they are created.
+                    </Text>
+                  </View>
+                  <Text style={styles.connectedPill}>KEEPFLIP</Text>
+                </View>
+
+                {cachedListings.length ? (
+                  cachedListings.slice(0, 3).map((listing, index) => (
+                    <View
+                      key={
+                        listing.listingId ||
+                        listing.offerId ||
+                        listing.sku ||
+                        'listing-' + index
+                      }
+                      style={styles.listingRow}>
+                      <View style={styles.listingCopy}>
+                        <Text numberOfLines={2} style={styles.listingTitle}>
+                          {listing.title || 'Saved eBay listing'}
+                        </Text>
+                        <Text style={styles.listingMeta}>
+                          {readableEbayValue(listing.status) || 'Saved listing'}
+                          {listing.sku ? ' · ' + listing.sku : ''}
+                        </Text>
+                      </View>
+                      <Text style={styles.listingPrice}>
+                        {listingPriceLabel(
+                          listing.currentPriceCents,
+                          listing.currency,
+                        )}
+                      </Text>
+                    </View>
+                  ))
+                ) : (
+                  <Text style={styles.profileSyncNote}>
+                    Listings you publish through KeepFlip will be saved here. Existing
+                    Seller Hub listings are not shown until KeepFlip can verify and import them.
+                  </Text>
+                )}
+              </View>
+            </Animated.View>
+
+            <Animated.View entering={FadeInDown.duration(250).delay(160)} style={styles.section}>
               <Text style={styles.sectionEyebrow}>ACCESS SETTINGS</Text>
               <View style={styles.settingsCard}>
                 <View style={styles.settingRow}>
@@ -267,9 +484,9 @@ export default function EbayAccountScreen() {
                   (isLoading || isRevoking) && styles.buttonDisabled,
                   pressed && !isLoading && !isRevoking && styles.pressed,
                 ]}>
-                    <Text style={styles.settingTitle}>Connection refresh</Text>
+                    <Text style={styles.settingTitle}>Refresh seller details</Text>
                     <Text style={styles.settingDescription}>
-                      Check the latest secure connection status before using eBay tools.
+                      Check the latest secure seller details and saved KeepFlip listings.
                     </Text>
                 </Pressable>
                 </View>
@@ -565,6 +782,71 @@ const styles = StyleSheet.create({
   settingDivider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: 'rgba(242, 211, 138, 0.18)',
+  },
+  sellerSummary: {
+    gap: 4,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 14,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(242, 211, 138, 0.14)',
+  },
+  detailLabel: {
+    color: theme.colors.textMuted,
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 1.1,
+  },
+  detailValue: {
+    minWidth: 0,
+    flexShrink: 1,
+    color: theme.colors.cream,
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'right',
+  },
+  profileSyncNote: {
+    color: theme.colors.textMuted,
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  listingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  listingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(242, 211, 138, 0.14)',
+  },
+  listingCopy: {
+    minWidth: 0,
+    flex: 1,
+    gap: 3,
+  },
+  listingTitle: {
+    color: theme.colors.cream,
+    fontSize: 12,
+    fontWeight: '800',
+    lineHeight: 17,
+  },
+  listingMeta: {
+    color: theme.colors.textMuted,
+    fontSize: 10,
+    lineHeight: 14,
+  },
+  listingPrice: {
+    color: theme.colors.goldBright,
+    fontSize: 12,
+    fontWeight: '900',
   },
   actions: {
     gap: 10,

@@ -34,7 +34,8 @@ yarn-error.*
 # local env files and server-side environment exports
 .env
 .env*.local
-*.env
+.env.development
+.env.production
 .token-encryption-key
 package-lock.
 
@@ -51,9 +52,9 @@ app-example
 /android/build
 /android/.gradle
 /android/.kotlin
-/modules/keepflip-scan-proof/android/build
-/modules/keepflip-scan-proof/android/.gradle
-/modules/keepflip-scan-proof/android/.kotlin
+/modules/keepflip-scan-proof/android/build/
+/modules/keepflip-scan-proof/android/.gradle/
+/modules/keepflip-scan-proof/android/.kotlin/
 /backend
 /.appodeal-patch-work
 /.expo-dev-launcher-clean-patch
@@ -63,22 +64,21 @@ app-example
 /.vision-resizer-clean-patch
 # Keep the eBay Function source reviewable and deployable. Their templates
 # contain placeholders only; all live credentials remain Appwrite variables.
-!/backend/
-!/backend/functions/
+/backend/
+/backend/functions/
 /functions
 /backend/*
-!/backend/functions/
-/backend/functions/*
-!/backend/functions/ebay-oauth/
-!/backend/functions/ebay-oauth/**
-!/backend/functions/keepflip-ebay-oauth/
-!/backend/functions/keepflip-ebay-oauth/**
-!/backend/functions/keepflip-ebay-oauth-helper/
-!/backend/functions/keepflip-ebay-oauth-helper/**
-!/backend/functions/keepflip-books/
-!/backend/functions/keepflip-books/**
-!/backend/functions/ebay-account-deletion/
-!/backend/functions/ebay-account-deletion/**
+/backend/functions/**
+/backend/functions/ebay-oauth/
+/backend/functions/ebay-oauth/**
+/backend/functions/keepflip-ebay-oauth/
+/backend/functions/keepflip-ebay-oauth/**
+/backend/functions/keepflip-ebay-oauth-helper/
+/backend/functions/keepflip-ebay-oauth-helper/**
+/backend/functions/keepflip-books/
+/backend/functions/keepflip-books/**
+/backend/functions/ebay-account-deletion/
+/backend/functions/ebay-account-deletion/**
 /.backups
 /.keepflip-gradle-user-home
 /.codex-adb-home
