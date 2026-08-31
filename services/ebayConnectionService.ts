@@ -37,6 +37,7 @@ type FunctionPayload = {
   needsReconnect?: unknown;
   refreshed?: unknown;
   revoked?: unknown;
+  remoteRevocation?: unknown;
   error?: unknown;
 };
 
@@ -213,6 +214,10 @@ export async function connectEbayAccount(
     const browserSession = await startEbayLogin({
       environment: activeEnvironment,
       authorizationState,
+      // A reconnect authorizes sensitive marketplace access. Never let an
+      // existing eBay browser session silently approve it on a borrowed or
+      // unlocked phone.
+      prompt: 'login',
     });
     pendingState = browserSession.authorizationState || browserSession.clientState;
 
@@ -336,9 +341,16 @@ export async function refreshEbayConnection(
  * Revokes the user grant at eBay and clears the locally stored token material.
  * The app receives only the confirmed disconnected result.
  */
+export type EbayConnectionRevocationResult = Pick<
+  EbayConnectionStatusResult,
+  'connected' | 'environment'
+> & {
+  remoteRevocation?: boolean;
+};
+
 export async function revokeEbayConnection(
   environment: EbayOAuthEnvironment = getEbayOAuthEnvironment(),
-): Promise<Pick<EbayConnectionStatusResult, 'connected' | 'environment'>> {
+): Promise<EbayConnectionRevocationResult> {
   const execution = await executeOAuthFunction('/revoke', environment);
 
   if (execution.responseStatusCode !== 200) {
@@ -356,6 +368,9 @@ export async function revokeEbayConnection(
   return {
     connected: false,
     environment: normalizeEnvironment(payload.environment) ?? environment,
+    ...(typeof payload.remoteRevocation === 'boolean'
+      ? { remoteRevocation: payload.remoteRevocation }
+      : {}),
   };
 }
 

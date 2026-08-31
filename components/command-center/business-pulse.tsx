@@ -10,6 +10,7 @@ type BusinessPulseProps = {
   loading: boolean;
   overview: ResellerBusinessOverview | null;
   onOpenBooks: () => void;
+  onOpenFlipPlan: () => void;
   onOpenInventory: () => void;
 };
 
@@ -36,6 +37,7 @@ export function BusinessPulse({
   loading,
   overview,
   onOpenBooks,
+  onOpenFlipPlan,
   onOpenInventory,
 }: BusinessPulseProps) {
   if (loading && !overview) {
@@ -62,6 +64,15 @@ export function BusinessPulse({
           <Text style={styles.emptyText}>
             Add an item with its real cost, then record a sale or expense to see a clear picture of your business.
           </Text>
+          <Pressable
+            accessibilityHint="Opens a private calculator for planning a possible flip"
+            accessibilityRole="button"
+            onPress={onOpenFlipPlan}
+            style={({ pressed }) => [styles.emptyPlanAction, pressed && styles.pressed]}
+          >
+            <Text style={styles.emptyPlanActionText}>Plan a possible flip</Text>
+            <IconSymbol color={theme.colors.scannerCyan} name="chevron.right" size={14} />
+          </Pressable>
         </View>
       </View>
     );
@@ -188,6 +199,22 @@ export function BusinessPulse({
 
       {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
+      <Pressable
+        accessibilityHint="Opens a private calculator for planning a possible flip"
+        accessibilityRole="button"
+        onPress={onOpenFlipPlan}
+        style={({ pressed }) => [styles.planAction, pressed && styles.pressed]}
+      >
+        <View style={styles.planActionIcon}>
+          <IconSymbol color={theme.colors.scannerCyan} name="star.fill" size={16} />
+        </View>
+        <View style={styles.planActionCopy}>
+          <Text style={styles.planActionTitle}>Plan the next flip</Text>
+          <Text style={styles.planActionText}>Test the buy, fix-up, selling costs, and an optional partner split.</Text>
+        </View>
+        <IconSymbol color={theme.colors.scannerCyan} name="chevron.right" size={15} />
+      </Pressable>
+
       <View style={styles.actions}>
         <Pressable
           accessibilityHint="Opens your books and reports"
@@ -300,6 +327,11 @@ const styles = StyleSheet.create({
   attentionTitle: { color: theme.colors.goldBright, fontSize: 11, fontWeight: '900', lineHeight: 15 },
   attentionText: { color: theme.colors.text, fontSize: 10, lineHeight: 14 },
   actions: { flexDirection: 'row', gap: 8 },
+  planAction: { alignItems: 'center', backgroundColor: 'rgba(88, 223, 232, 0.06)', borderColor: 'rgba(88, 223, 232, 0.26)', borderRadius: 11, borderWidth: 1, flexDirection: 'row', gap: 9, minHeight: 58, paddingHorizontal: 10, paddingVertical: 8 },
+  planActionIcon: { alignItems: 'center', backgroundColor: 'rgba(88, 223, 232, 0.12)', borderRadius: 8, height: 32, justifyContent: 'center', width: 32 },
+  planActionCopy: { flex: 1, gap: 1 },
+  planActionTitle: { color: theme.colors.cream, fontSize: 12, fontWeight: '900' },
+  planActionText: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 14 },
   primaryAction: { alignItems: 'center', backgroundColor: theme.colors.scannerCyan, borderRadius: 10, flex: 1, flexDirection: 'row', gap: 7, justifyContent: 'center', minHeight: 42, paddingHorizontal: 10 },
   primaryActionText: { color: theme.colors.backgroundDeep, fontSize: 12, fontWeight: '900' },
   secondaryAction: { alignItems: 'center', borderColor: 'rgba(242, 211, 138, 0.35)', borderRadius: 10, borderWidth: 1, flex: 1, justifyContent: 'center', minHeight: 42, paddingHorizontal: 10 },
@@ -314,4 +346,6 @@ const styles = StyleSheet.create({
   emptyCopy: { flex: 1, gap: 3 },
   emptyTitle: { color: theme.colors.cream, fontSize: 15, fontWeight: '900', lineHeight: 20 },
   emptyText: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 },
+  emptyPlanAction: { alignItems: 'center', alignSelf: 'flex-start', flexDirection: 'row', gap: 5, marginTop: 5, minHeight: 28 },
+  emptyPlanActionText: { color: theme.colors.scannerCyan, fontSize: 11, fontWeight: '900' },
 });

@@ -29,7 +29,7 @@ import {
   type InventoryResaleVelocity,
 } from "@/services/inventory-service";
 
-const CARDS_BETWEEN_ADS = 4;
+const CARDS_BETWEEN_ADS = 0;
 const HEADER_BOTTOM_SPACING = 22;
 
 const INVENTORY_FEED_PLACEMENTS = [

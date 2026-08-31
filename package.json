@@ -6,7 +6,6 @@
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "node ./scripts/run-android-phone.cjs",
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
@@ -42,7 +41,7 @@
     "expo-web-browser": "~57.0.2",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "react-native": "0.86.2",
+    "react-native": "0.86.3",
     "react-native-appwrite": "^0.34.0",
     "react-native-fast-tflite": "^3.0.1",
     "react-native-filament": "^1.11.0",

@@ -314,7 +314,7 @@ export function BooksScreen() {
       setSetupNotice(null);
 
       try {
-        const [savedInventory, legacyEntries, advancedOverview] = await Promise.all([
+        const [inventoryResult, legacyResult, advancedResult] = await Promise.allSettled([
           listInventoryItems(userId),
           legacyLedgerConfigured
             ? listResellerLedgerEntries(userId)
@@ -323,6 +323,17 @@ export function BooksScreen() {
             ? getBookkeepingOverview()
             : Promise.resolve(null),
         ]);
+
+        if (inventoryResult.status === 'rejected') {
+          throw inventoryResult.reason;
+        }
+
+        const savedInventory = inventoryResult.value;
+        const legacyEntries =
+          legacyResult.status === 'fulfilled' ? legacyResult.value : [];
+        const advancedOverview =
+          advancedResult.status === 'fulfilled' ? advancedResult.value : null;
+
         setInventory(savedInventory);
 
         if (!ledgerConfigured) {
@@ -336,6 +347,19 @@ export function BooksScreen() {
         const advancedEntries = advancedOverview
           ? bookkeepingEventsAsLedgerEntries(userId, advancedOverview.moneyEvents)
           : [];
+        const loadingNotice = [
+          ...(legacyLedgerConfigured && legacyResult.status === 'rejected'
+            ? ['Classic Books history could not load right now.']
+            : []),
+          ...(advancedBookkeepingConfigured && advancedResult.status === 'rejected'
+            ? ['Advanced Books could not load right now.']
+            : []),
+        ].join(' ');
+
+        if (loadingNotice) {
+          setSetupNotice(`${loadingNotice} Your saved inventory is still available.`);
+        }
+
         setEntries(
           [...legacyEntries, ...advancedEntries].sort(
             (left, right) =>

@@ -14,13 +14,12 @@ config.resolver.sourceExts.push("cjs", "mjs");
 // and watch phases, which makes the fallback watcher crash with ENOENT. 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); 
 const separator = String.raw`[\\/]`; 
-const gradlePluginRoot = escapeRegExp( 
-  path.join(__dirname, "node_modules", "@react-native", "gradle-plugin"), 
-); 
-const gradlePluginGeneratedOutput = new RegExp( 
-  `^${gradlePluginRoot}${separator}.*${separator}(?:bin|build)(?:${separator}|$)`, 
-); 
-
+const gradlePluginGeneratedOutput =
+  /node_modules[\\/]@react-native[\\/]gradle-plugin[\\/](?:bin|build)(?:[\\/]|$)/;
+// Metro normalizes Windows paths to forward slashes before testing this list,
+// so this native-only Gradle output rule must accept both separators.
+const expoModulesCoreGradlePluginGeneratedOutput =
+  /node_modules[\\/]expo-modules-core[\\/]expo-module-gradle-plugin[\\/](?:bin|build)(?:[\\/]|$)/;
 const existingBlockList = config.resolver.blockList 
   ? Array.isArray(config.resolver.blockList) 
     ? config.resolver.blockList 
@@ -30,6 +29,7 @@ const existingBlockList = config.resolver.blockList
 config.resolver.blockList = [ 
   ...existingBlockList, 
   gradlePluginGeneratedOutput, 
+  expoModulesCoreGradlePluginGeneratedOutput, 
 ]; 
 
 // Cleaned up the 'config;fig;' typo here

@@ -1,0 +1,1762 @@
+<html lang="en"><head>
+    <meta data-sandbox-injected="" http-equiv="Content-Security-Policy" content="
+        default-src 'none';
+        base-uri 'none';
+        connect-src https://fonts.gstatic.com https://www.gstatic.com;
+        font-src https://fonts.gstatic.com;
+        form-action 'none';
+        
+        worker-src blob: https://*.scf.usercontent.goog;
+        img-src data: https://encrypted-tbn0.gstatic.com https://encrypted-tbn1.gstatic.com https://encrypted-tbn2.gstatic.com https://encrypted-tbn3.gstatic.com ;
+        media-src 'none';
+        object-src 'none';
+        script-src 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://widgetlibs.static.usercontent.goog https://*.scf.usercontent.goog;
+        style-src 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://www.gstatic.com/;">
+    <meta data-sandbox-injected="" charset="UTF-8">
+    <meta data-sandbox-injected="" name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="enable-onep-api" content="false"><script data-sandbox-injected="true">(function(){var g=Object.defineProperty,k=globalThis,l=function(a,b){if(b)a:{var c=k;a=a.split(".");for(var d=0;d<a.length-1;d++){var e=a[d];if(!(e in c))break a;c=c[e]}a=a[a.length-1];d=c[a];b=b(d);b!=d&&b!=null&&g(c,a,{configurable:!0,writable:!0,value:b})}};l("Promise.withResolvers",function(a){return a?a:function(){var b,c;return{promise:new Promise(function(d,e){b=d;c=e}),resolve:b,reject:c}}});var m=function(a){return typeof a==="object"&&a!==null&&"kind"in a&&typeof a.kind==="string"&&("payload"in a||a.kind==="___CROSS_FRAME_HANDSHAKE___")},n=class{constructor(){this.j=new Map}i(a){var b=a.data;if(m(b)){let c=b.payload;if(b=this.j.get(b.kind))(a=a.ports&&a.ports.length>0?a.ports:void 0)?b(c,a):b(c)}}sendMessage(a,b,c){if(!this.port)throw Error("a");a={kind:String(a),payload:b||{}};c&&c.length>0?this.port.postMessage(a,c):this.port.postMessage(a)}},p=async function(a){var b=window.parent;
+return a.h?{}:new Promise(c=>{var d=e=>{e.source===b&&m(e.data)&&e.data.kind==="___CROSS_FRAME_HANDSHAKE___"&&(window.removeEventListener("message",d),a.port=e.ports[0],a.port.onmessage=a.i.bind(a),a.h=!0,c(e.data.payload||{}))};window.addEventListener("message",d)})},q=class extends n{constructor(){super(...arguments);this.h=!1}};var {promise:r,resolve:t}=Promise.withResolvers(),{promise:u,resolve:v}=Promise.withResolvers(),w=!1;(async function(){var a=new q,b=await p(a);b&&b.enableSandboxToEditorSync&&(w=!!b.enableSandboxToEditorSync);if(b&&b.initialPayload){let c=b.initialPayload;window.initialPayload=c;window.setTimeout(()=>{window.dispatchEvent(new MessageEvent("message",{data:c}))},0)}t(a);(a=a.port)&&v(a)})();function x(a){r.then(b=>{b.sendMessage("ERROR",{error:a})})}window.onerror=(a,b,c,d,e)=>{x(e);return!0};
+window.onunhandledrejection=a=>{x(Error(a.reason));a.preventDefault()};
+window.document.addEventListener("DOMContentLoaded",()=>{r.then(a=>{a.sendMessage("ISOLATE_READY",{});var b=window.document.querySelector("#resize-target")||window.document.body,c=NaN,d=NaN,e=!1;(new ResizeObserver(()=>{e||(e=!0,window.requestAnimationFrame(()=>{e=!1;var f=Math.ceil(b.scrollHeight),h=Math.ceil(b.scrollWidth);f===c&&h===d||f===0&&h===0||(c=f,d=h,a.sendMessage("RESIZE",{height:f,width:h}))}))})).observe(b);if(w){let f;(new MutationObserver(()=>{f&&window.clearTimeout(f);f=window.setTimeout(()=>
+{f=void 0;a.sendMessage("HTML_CHANGED",{html:"<!DOCTYPE html>\n"+window.document.documentElement.outerHTML})},500)})).observe(window.document.documentElement,{attributes:!0,childList:!0,subtree:!0,characterData:!0})}})});window.addEventListener("resizeRequest",()=>{r.then(a=>{var b=window.document.querySelector("#resize-target")||window.document.body,c=Math.ceil(b.scrollHeight);b=Math.ceil(b.scrollWidth);c===0&&b===0||a.sendMessage("MANUAL_RESIZE",{height:c,width:b})})});
+function y(a){var b=null;a instanceof Element?b=a:a&&a.nodeType===Node.TEXT_NODE&&(b=a.parentElement);if(!b)return null;for(a=b;a&&a!==window.document.body;){if(a.matches('a,button,input,textarea,select,option,details,summary,area,[jsaction],[data-jsaction],[role],[tabindex]:not([tabindex="-1"])'))return z(a);if(a instanceof HTMLElement&&a.isContentEditable)return z(a);a=a.parentElement}return null}
+function z(a){var b={tagName:a.tagName.toUpperCase(),attributes:{}},c=["role","jsaction","data-jsaction","tabindex"];for(let d of c)c=a.getAttribute(d),c!==null&&(b.attributes[d]=c);a instanceof HTMLElement&&a.isContentEditable&&(b.isContentEditable=!0);return b}window.addEventListener("click",a=>{var b=(a=a.target)?y(a):null;r.then(c=>{c.sendMessage("CLICK",{matchedNode:b})})},!0);
+window.addEventListener("request_window_open",a=>{var b=a.detail;r.then(c=>{c.sendMessage("REQUEST_WINDOW_OPEN",{url:b.url,hostname:b.hostname,target:b.target,features:b.features,skipConfirmation:b.skipConfirmation})})});window.sandboxConsoleLog=(a,b)=>{r.then(c=>{c.sendMessage("CONSOLE_LOG",{logLevel:a,message:b})})};if(document.querySelector('meta[name="enable-onep-api"]')?.getAttribute("content")==="true"){let a=!1;window.claimPortReady=()=>{if(a)return null;a=!0;return u}}window.logError=x;}).call(this);</script><script>(function(){function f(b){return["https://www.google.com/maps/","https://maps.google.com/","https://www.youtube.com/watch?v=","https://www.youtube.com/v/","https://youtu.be/"].some(a=>b.startsWith(a))}window.open=(b,a,d)=>{var c,e=!1;if(b)try{if(c=b instanceof URL?b.toString():String(b)){var g=(new URL(c,window.location.href)).hostname;e=f(c)}}catch(h){}window.dispatchEvent(new CustomEvent("request_window_open",{detail:{url:c,hostname:g,target:a,features:d,h:e}}));return null};
+window.addEventListener("click",b=>{var a=b.target.closest("a");if(a&&a.getAttribute("target")==="_blank"&&a.hasAttribute("href")){a=a.getAttribute("href");let d,c=!1;try{d=(new URL(a,window.location.href)).hostname,c=f(a)}catch(e){}b.preventDefault();b.stopPropagation();window.dispatchEvent(new CustomEvent("request_window_open",{detail:{url:a,hostname:d,target:"_blank",h:c}}))}},!0);}).call(this);</script><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"><title>Generated Interactive Widget</title><script type="module" crossorigin="">
+import { jsx, jsxs } from 'https://widgetlibs.static.usercontent.goog/react/jsx-runtime-Dc9ViRTo.js';
+import React, { useState, useMemo } from 'https://widgetlibs.static.usercontent.goog/react-Dd1pKoqe.js';
+import ReactDOM from 'https://widgetlibs.static.usercontent.goog/react-dom/client-BTuQ-l8_.js';
+import { ErrorBoundary } from 'https://widgetlibs.static.usercontent.goog/react-error-boundary-BY2GTZrN.js';
+import * as Slider from 'https://widgetlibs.static.usercontent.goog/@radix-ui/react-slider-DXk-CvUR.js';
+import { Coins, Wrench, Receipt, Percent, Scale } from 'https://widgetlibs.static.usercontent.goog/lucide-react-5WMLBm_f.js';
+
+true              &&(function polyfill() {
+  const relList = document.createElement("link").relList;
+  if (relList && relList.supports && relList.supports("modulepreload")) return;
+  for (const link of document.querySelectorAll("link[rel=\"modulepreload\"]")) processPreload(link);
+  new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+          if (mutation.type !== "childList") continue;
+          for (const node of mutation.addedNodes) if (node.tagName === "LINK" && noe.rel === "modulepreload") processPreload(node);
+      }
+  }).observe(document, {
+      childList: true,
+      subtree: true
+  });
+  function getFetchOpts(link) {
+      const fetchOpts = {};
+      if (link.integrity) fetchOpts.integrity = link.integrity;
+      if (link.referrerPolicy) fetchOpts.referrerPolicy = link.referrerPolicy;
+      if (link.crossOrigin === "use-credentials") fetchOpts.credentials = "include";
+      else if (link.crossOrigin === "anonymous") fetchOpts.credentials = "omit";
+      else fetchOpts.credentials = "same-origin";
+      return fetchOpts;
+  }
+  function processPreload(link) {
+      if (link.ep) return;
+      link.ep = true;
+      const fetchOpts = getFetchOpts(link);
+      fetch(link.href, fetchOpts);
+  }
+}());
+
+function ErrorFallback({ error }) {
+return /* @__PURE__ */ jsxs("div", { className: "p-5 text-error bg-error/10 rounded-lg font-sans", children: [
+  /* @__PURE__ */ jsx("p", { className: "font-medium text-sm", children: "Something went wrong inside the ledger simulator:" }),
+  /* @__PURE__ */ jsx("pre", { className: "text-xs mt-1 overflow-auto", children: error.message })
+] });
+}
+function LlmGeneratedComponent() {
+const [purchasePrice, setPurchasePrice] = useState(120);
+const [repairCost, setRepairCost] = useState(40);
+const [salePrice, setSalePrice] = useState(320);
+const [partnerShare, setPartnerShare] = useState(30);
+const [currentStep, setCurrentStep] = useState("payout");
+const calculations = useMemo(() => {
+  const totalCOGS = purchasePrice + repairCost;
+  const grossProfit = Math.max(0, salePrice - totalCOGS);
+  const partnerPayout = Number((grossProfit * partnerShare / 100).toFixed(2));
+  const resellerNetProfit = Number((grossProfit - partnerPayout).toFixed(2));
+  return {
+    totalCOGS,
+    grossProfit,
+    partnerPayout,
+    resellerNetProfit
+  };
+}, [purchasePrice, repairCost, salePrice, partnerShare]);
+const ledgerData = useMemo(() => {
+  const { totalCOGS, grossProfit, partnerPayout } = calculations;
+  const accounts = {
+    cash: { title: "Cash & Bank", type: "Asset", debits: [], credits: [] },
+    inventory: { title: "Inventory Asset (Device)", type: "Asset", debits: [], credits: [] },
+    cogs: { title: "Cost of Goods Sold (COGS)", type: "Expense", debits: [], credits: [] },
+    revenue: { title: "Sales Revenue", type: "Revenue", debits: [], credits: [] },
+    partnerPayable: { title: "Partner Split Payable", type: "Liability", debits: [], credits: [] }
+  };
+  accounts.inventory.debits.push({ label: "Device Purchase", debit: purchasePrice });
+  accounts.cash.credits.push({ label: "Device Purchase", credit: purchasePrice });
+  if (currentStep !== "acquisition") {
+    accounts.inventory.debits.push({ label: "Parts / Screen Repair", debit: repairCost });
+    accounts.cash.credits.push({ label: "Parts / Screen Repair", credit: repairCost });
+  }
+  if (currentStep === "sale" || currentStep === "payout") {
+    accounts.cash.debits.push({ label: "Customer Payment", debit: salePrice });
+    accounts.revenue.credits.push({ label: "Device Sale", credit: salePrice });
+    accounts.cogs.debits.push({ label: "Recognize Item COGS", debit: totalCOGS });
+    accounts.inventory.credits.push({ label: "Clear Sold Inventory", credit: totalCOGS });
+  }
+  if (currentStep === "payout" && partnerPayout > 0) {
+    accounts.revenue.debits.push({ label: "Partner Profit Split Share", debit: partnerPayout });
+    accounts.partnerPayable.credits.push({ label: "Partner Allocation", credit: partnerPayout });
+  }
+  let totalDebits = 0;
+  let totalCredits = 0;
+  Object.values(accounts).forEach((acc) => {
+    acc.debits.forEach((d) => totalDebits += d.debit || 0);
+    acc.credits.forEach((c) => totalCredits += c.credit || 0);
+  });
+  return {
+    accounts,
+    totalDebits: Number(totalDebits.toFixed(2)),
+    totalCredits: Number(totalCredits.toFixed(2)),
+    isBalanced: Math.abs(totalDebits - totalCredits) < 0.01
+  };
+}, [purchasePrice, repairCost, salePrice, partnerShare, currentStep, calculations]);
+return /* @__PURE__ */ jsx(ErrorBoundary, { FallbackComponent: ErrorFallback, children: /* @__PURE__ */ jsxs("div", { className: "w-full font-sans bg-background text-foreground flex flex-col min-h-[580px] max-w-4xl mx-auto overflow-hidden shadow-sm", children: [
+  /* @__PURE__ */ jsxs("div", { className: "p-4 bg-muted/30 border-b border-border flex flex-col gap-4", children: [
+    /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-4 gap-2 relative bg-card p-2 rounded-xl border border-border", children: [
+      /* @__PURE__ */ jsxs(
+        "button",
+        {
+          onClick: () => setCurrentStep("acquisition"),
+          className: `flex flex-col items-center gap-1 p-2 rounded-lg transition-all text-center ${currentStep === "acquisition" ? "bg-primary text-white shadow-sm" : "hover:bg-muted text-muted-foreground"}`,
+          children: [
+            /* @__PURE__ */ jsx(Coins, { className: "w-4 h-4" }),
+            /* @__PURE__ */ jsx("span", { className: "text-[11px] font-medium tracking-tight", children: "1. Buy Device" }),
+            /* @__PURE__ */ jsxs("span", { className: "text-[10px] opacity-80", children: [
+              "$",
+              purchasePrice
+            ] })
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxs(
+        "button",
+        {
+          onClick: () => setCurrentStep("refurb"),
+          className: `flex flex-col items-center gap-1 p-2 rounded-lg transition-all text-center ${currentStep === "refurb" ? "bg-primary text-white shadow-sm" : "hover:bg-muted text-muted-foreground"}`,
+          children: [
+            /* @__PURE__ */ jsx(Wrench, { className: "w-4 h-4" }),
+            /* @__PURE__ */ jsx("span", { className: "text-[11px] font-medium tracking-tight", children: "2. Refurbish" }),
+            /* @__PURE__ */ jsxs("span", { className: "text-[10px] opacity-80", children: [
+              "+$",
+              repairCost
+            ] })
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxs(
+        "button",
+        {
+          onClick: () => setCurrentStep("sale"),
+          className: `flex flex-col items-center gap-1 p-2 rounded-lg transition-all text-center ${currentStep === "sale" ? "bg-primary text-white shadow-sm" : "hover:bg-muted text-muted-foreground"}`,
+          children: [
+            /* @__PURE__ */ jsx(Receipt, { className: "w-4 h-4" }),
+            /* @__PURE__ */ jsx("span", { className: "text-[11px] font-medium tracking-tight", children: "3. Sell Item" }),
+            /* @__PURE__ */ jsxs("span", { className: "text-[10px] opacity-80", children: [
+              "$",
+              salePrice
+            ] })
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxs(
+        "button",
+        {
+          onClick: () => setCurrentStep("payout"),
+          className: `flex flex-col items-center gap-1 p-2 rounded-lg transition-all text-center ${currentStep === "payout" ? "bg-primary text-white shadow-sm" : "hover:bg-muted text-muted-foreground"}`,
+          children: [
+            /* @__PURE__ */ jsx(Percent, { className: "w-4 h-4" }),
+            /* @__PURE__ */ jsx("span", { className: "text-[11px] font-medium tracking-tight", children: "4. Split Payout" }),
+            /* @__PURE__ */ jsxs("span", { className: "text-[10px] opacity-80", children: [
+              partnerShare,
+              "% Split"
+            ] })
+          ]
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-3", children: [
+      /* @__PURE__ */ jsxs("div", { className: "bg-card p-3 rounded-xl border border-border flex flex-col", children: [
+        /* @__PURE__ */ jsx("span", { className: "text-xs text-muted-foreground font-normal", children: "Accumulated COGS" }),
+        /* @__PURE__ */ jsxs("span", { className: "text-lg font-bold text-foreground tabular-nums", children: [
+          "$",
+          calculations.totalCOGS
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "bg-card p-3 rounded-xl border border-border flex flex-col", children: [
+        /* @__PURE__ */ jsx("span", { className: "text-xs text-muted-foreground font-normal", children: "Gross Profit Margin" }),
+        /* @__PURE__ */ jsxs("span", { className: "text-lg font-bold text-success tabular-nums", children: [
+          "$",
+          calculations.grossProfit
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "bg-card p-3 rounded-xl border border-border flex flex-col", children: [
+        /* @__PURE__ */ jsx("span", { className: "text-xs text-muted-foreground font-normal font-medium", children: "Partner Payout" }),
+        /* @__PURE__ */ jsxs("span", { className: "text-lg font-bold text-primary tabular-nums", children: [
+          "$",
+          calculations.partnerPayout
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "bg-card p-3 rounded-xl border border-border flex flex-col", children: [
+        /* @__PURE__ */ jsx("span", { className: "text-xs text-muted-foreground font-normal", children: "Reseller Keep" }),
+        /* @__PURE__ */ jsxs("span", { className: "text-lg font-bold text-foreground tabular-nums", children: [
+          "$",
+          calculations.resellerNetProfit
+        ] })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "text-xs bg-muted/70 px-3 py-2 rounded-lg text-muted-foreground flex items-center justify-between", children: [
+      /* @__PURE__ */ jsxs("span", { children: [
+        currentStep === "acquisition" && "Double-entry impact: Cash is credited/decreased, Inventory asset is debited/increased.",
+        currentStep === "refurb" && "Double-entry impact: Repair part cash spent capitalizes directly into the device inventory asset value.",
+        currentStep === "sale" && "Double-entry impact: Received payment triggers revenue credit & concurrent COGS recognition moving value out of inventory asset.",
+        currentStep === "payout" && "Double-entry impact: Payout split allocation creates partner payable liability while drawing down project surplus revenue."
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-1.5 shrink-0 bg-background/80 px-2 py-0.5 rounded border border-border text-[11px] text-foreground font-medium", children: [
+        /* @__PURE__ */ jsx(Scale, { className: "w-3 h-3 text-success" }),
+        /* @__PURE__ */ jsx("span", { children: "Ledger Balanced" })
+      ] })
+    ] })
+  ] }),
+  /* @__PURE__ */ jsx("div", { className: "p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-background overflow-y-auto max-h-[360px]", children: Object.entries(ledgerData.accounts).map(([key, account]) => {
+    const accDebitsSum = account.debits.reduce((sum, d) => sum + (d.debit || 0), 0);
+    const accCreditsSum = account.credits.reduce((sum, c) => sum + (c.credit || 0), 0);
+    if (account.debits.length === 0 && account.credits.length === 0) {
+      return null;
+    }
+    return /* @__PURE__ */ jsxs("div", { className: "bg-card border border-border rounded-xl flex flex-col overflow-hidden", children: [
+      /* @__PURE__ */ jsxs("div", { className: "px-3 py-2 bg-muted border-b border-border flex justify-between items-center", children: [
+        /* @__PURE__ */ jsx("span", { className: "text-xs font-bold text-foreground tracking-tight", children: account.title }),
+        /* @__PURE__ */ jsx("span", { className: "text-[10px] text-muted-foreground uppercase px-1.5 py-0.5 bg-background rounded border border-border", children: account.type })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 text-[10px] font-medium text-center text-muted-foreground border-b border-border/60 bg-background/50", children: [
+        /* @__PURE__ */ jsx("div", { className: "py-1 border-r border-border/60", children: "DEBIT (DR)" }),
+        /* @__PURE__ */ jsx("div", { className: "py-1", children: "CREDIT (CR)" })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "flex-1 grid grid-cols-2 text-xs min-h-[60px] content-start bg-background/20", children: [
+        /* @__PURE__ */ jsx("div", { className: "border-r border-border/40 p-1.5 space-y-1", children: account.debits.map((d, i) => /* @__PURE__ */ jsxs("div", { className: "flex flex-col text-[11px] bg-card p-1 rounded border border-border/40", children: [
+          /* @__PURE__ */ jsx("span", { className: "text-muted-foreground text-[9px] truncate", children: d.label }),
+          /* @__PURE__ */ jsxs("span", { className: "font-semibold text-foreground text-right tabular-nums", children: [
+            "$",
+            d.debit
+          ] })
+        ] }, i)) }),
+        /* @__PURE__ */ jsx("div", { className: "p-1.5 space-y-1", children: account.credits.map((c, i) => /* @__PURE__ */ jsxs("div", { className: "flex flex-col text-[11px] bg-card p-1 rounded border border-border/40", children: [
+          /* @__PURE__ */ jsx("span", { className: "text-muted-foreground text-[9px] truncate", children: c.label }),
+          /* @__PURE__ */ jsxs("span", { className: "font-semibold text-error text-right tabular-nums", children: [
+            "$",
+            c.credit
+          ] })
+        ] }, i)) })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 text-[11px] font-medium bg-muted/50 border-t border-border p-1.5 text-center", children: [
+        /* @__PURE__ */ jsxs("div", { className: "border-r border-border/40 text-foreground tabular-nums", children: [
+          " Total: $",
+          accDebitsSum
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "text-foreground tabular-nums", children: [
+          " Total: $",
+          accCreditsSum
+        ] })
+      ] })
+    ] }, key);
+  }) }),
+  /* @__PURE__ */ jsx("div", { className: "p-5 bg-card border-t border-border mt-auto", children: /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4", children: [
+    /* @__PURE__ */ jsxs("div", { className: "flex flex-col gap-1", children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex justify-between items-center", children: [
+        /* @__PURE__ */ jsx("span", { className: "text-xs font-medium text-muted-foreground", children: "Device Purchase Cost" }),
+        /* @__PURE__ */ jsxs("span", { className: "text-xs font-bold text-foreground", children: [
+          "$",
+          purchasePrice
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs(
+        Slider.Root,
+        {
+          value: [purchasePrice],
+          onValueChange: (vals) => setPurchasePrice(vals[0]),
+          min: 20,
+          max: 400,
+          step: 5,
+          className: "relative flex items-center h-7 select-none touch-none",
+          children: [
+            /* @__PURE__ */ jsx(Slider.Track, { className: "bg-muted relative grow rounded-full h-1", children: /* @__PURE__ */ jsx(Slider.Range, { className: "absolute bg-primary rounded-full h-full" }) }),
+            /* @__PURE__ */ jsx(Slider.Thumb, { className: "block w-4 h-4 bg-primary rounded-full border-none focus:outline-none" })
+          ]
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "flex flex-col gap-1", children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex justify-between items-center", children: [
+        /* @__PURE__ */ jsx("span", { className: "text-xs font-medium text-muted-foreground", children: "Refurbishment & Parts" }),
+        /* @__PURE__ */ jsxs("span", { className: "text-xs font-bold text-foreground", children: [
+          "$",
+          repairCost
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs(
+        Slider.Root,
+        {
+          value: [repairCost],
+          onValueChange: (vals) => setRepairCost(vals[0]),
+          min: 0,
+          max: 150,
+          step: 5,
+          className: "relative flex items-center h-7 select-none touch-none",
+          children: [
+            /* @__PURE__ */ jsx(Slider.Track, { className: "bg-muted relative grow rounded-full h-1", children: /* @__PURE__ */ jsx(Slider.Range, { className: "absolute bg-primary rounded-full h-full" }) }),
+            /* @__PURE__ */ jsx(Slider.Thumb, { className: "block w-4 h-4 bg-primary rounded-full border-none focus:outline-none" })
+          ]
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "flex flex-col gap-1", children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex justify-between items-center", children: [
+        /* @__PURE__ */ jsx("span", { className: "text-xs font-medium text-muted-foreground", children: "Resale Consumer Price" }),
+        /* @__PURE__ */ jsxs("span", { className: "text-xs font-bold text-foreground", children: [
+          "$",
+          salePrice
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs(
+        Slider.Root,
+        {
+          value: [salePrice],
+          onValueChange: (vals) => setSalePrice(vals[0]),
+          min: 100,
+          max: 800,
+          step: 10,
+          className: "relative flex items-center h-7 select-none touch-none",
+          children: [
+            /* @__PURE__ */ jsx(Slider.Track, { className: "bg-muted relative grow rounded-full h-1", children: /* @__PURE__ */ jsx(Slider.Range, { className: "absolute bg-primary rounded-full h-full" }) }),
+            /* @__PURE__ */ jsx(Slider.Thumb, { className: "block w-4 h-4 bg-primary rounded-full border-none focus:outline-none" })
+          ]
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "flex flex-col gap-1", children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex justify-between items-center", children: [
+        /* @__PURE__ */ jsx("span", { className: "text-xs font-medium text-muted-foreground", children: "Partner Profit Share" }),
+        /* @__PURE__ */ jsxs("span", { className: "text-xs font-bold text-foreground", children: [
+          partnerShare,
+          "%"
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs(
+        Slider.Root,
+        {
+          value: [partnerShare],
+          onValueChange: (vals) => setPartnerShare(vals[0]),
+          min: 0,
+          max: 100,
+          step: 5,
+          className: "relative flex items-center h-7 select-none touch-none",
+          children: [
+            /* @__PURE__ */ jsx(Slider.Track, { className: "bg-muted relative grow rounded-full h-1", children: /* @__PURE__ */ jsx(Slider.Range, { className: "absolute bg-primary rounded-full h-full" }) }),
+            /* @__PURE__ */ jsx(Slider.Thumb, { className: "block w-4 h-4 bg-primary rounded-full border-none focus:outline-none" })
+          ]
+        }
+      )
+    ] })
+  ] }) })
+] }) });
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+/* @__PURE__ */ jsx(React.StrictMode, { children: /* @__PURE__ */ jsx(LlmGeneratedComponent, {}) })
+);
+
+</script><style>
+/*! tailwindcss v4.1.11 | MIT License | https://tailwindcss.com */
+@layer properties {
+@supports (((-webkit-hyphens: none)) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color: rgb(from red r g b)))) {
+  *, :before, :after, ::backdrop {
+    --tw-rotate-x: initial;
+    --tw-rotate-y: initial;
+    --tw-rotate-z: initial;
+    --tw-skew-x: initial;
+    --tw-skew-y: initial;
+    --tw-space-y-reverse: 0;
+    --tw-border-style: solid;
+    --tw-font-weight: initial;
+    --tw-tracking: initial;
+    --tw-ordinal: initial;
+    --tw-slashed-zero: initial;
+    --tw-numeric-figure: initial;
+    --tw-numeric-spacing: initial;
+    --tw-numeric-fraction: initial;
+    --tw-shadow: 0 0 #0000;
+    --tw-shadow-color: initial;
+    --tw-shadow-alpha: 100%;
+    --tw-inset-shadow: 0 0 #0000;
+    --tw-inset-shadow-color: initial;
+    --tw-inset-shadow-alpha: 100%;
+    --tw-ring-color: initial;
+    --tw-ring-shadow: 0 0 #0000;
+    --tw-inset-ring-color: initial;
+    --tw-inset-ring-shadow: 0 0 #0000;
+    --tw-ring-inset: initial;
+    --tw-ring-offset-width: 0px;
+    --tw-ring-offset-color: #fff;
+    --tw-ring-offset-shadow: 0 0 #0000;
+    --tw-outline-style: solid;
+    --tw-content: "";
+    --tw-translate-x: 0;
+    --tw-translate-y: 0;
+    --tw-translate-z: 0;
+  }
+}
+}
+
+@layer theme {
+:root, :host {
+  --font-sans: "Google Sans", "Roboto", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --color-white: #fff;
+  --spacing: .25rem;
+  --container-4xl: 56rem;
+  --text-xs: .75rem;
+  --text-xs--line-height: calc(1 / .75);
+  --text-sm: .875rem;
+  --text-sm--line-height: calc(1.25 / .875);
+  --text-base: 1rem;
+  --text-base--line-height: calc(1.5 / 1);
+  --text-lg: 1.125rem;
+  --text-lg--line-height: calc(1.75 / 1.125);
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --tracking-tight: -.025em;
+  --radius-lg: .5rem;
+  --radius-xl: .75rem;
+  --default-transition-duration: .15s;
+  --default-transition-timing-function: cubic-bezier(.31, .94, .34, 1);
+  --default-font-family: var(--font-sans);
+  --default-mono-font-family: var(--font-mono);
+  --color-primary: var(--primary, #336ef3);
+  --color-primary-hover: var(--primary-hover, #395fe1);
+  --color-error: var(--brand-red, #ea4335);
+  --color-warning: var(--brand-yellow, #fbbc04);
+  --color-success: var(--brand-green, #34a853);
+  --color-background: var(--surface-container-de-emphasis, #f7f8fa);
+  --color-card: var(--surface-container-de-emphasis, #f7f8fa);
+  --color-card-hover: var(--surface-container-high, #e9ebf0);
+  --color-border: var(--divider, #dcdfe5);
+  --color-input: var(--surface-container, #f0f2f5);
+  --color-secondary: var(--surface-container-high, #e9ebf0);
+  --color-secondary-hover: var(--surface-container-highest, #e1e3e8);
+  --color-accent: var(--surface-container-highest, #e1e3e8);
+  --color-accent-foreground: var(--on-surface-default, #0a0a0a);
+  --color-muted: var(--surface-container, #f0f2f5);
+  --color-muted-foreground: var(--on-surface-de-emphasis, #56595e);
+  --color-foreground: var(--on-surface-default, #0a0a0a);
+  --color-disabled: var(--surface-container, #f0f2f5);
+  --color-disabled-foreground: var(--disabled-foreground, #95989c);
+}
+}
+
+@layer base {
+*, :after, :before, ::backdrop {
+  box-sizing: border-box;
+  border: 0 solid;
+  margin: 0;
+  padding: 0;
+}
+
+::file-selector-button {
+  box-sizing: border-box;
+  border: 0 solid;
+  margin: 0;
+  padding: 0;
+}
+
+html, :host {
+  -webkit-text-size-adjust: 100%;
+  tab-size: 4;
+  line-height: 1.5;
+  font-family: var(--default-font-family, ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji");
+  font-feature-settings: var(--default-font-feature-settings, normal);
+  font-variation-settings: var(--default-font-variation-settings, normal);
+  -webkit-tap-highlight-color: transparent;
+}
+
+hr {
+  height: 0;
+  color: inherit;
+  border-top-width: 1px;
+}
+
+abbr:where([title]) {
+  -webkit-text-decoration: underline dotted;
+  text-decoration: underline dotted;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+a {
+  color: inherit;
+  -webkit-text-decoration: inherit;
+  -webkit-text-decoration: inherit;
+  -webkit-text-decoration: inherit;
+  text-decoration: inherit;
+}
+
+b, strong {
+  font-weight: bolder;
+}
+
+code, kbd, samp, pre {
+  font-family: var(--default-mono-font-family, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);
+  font-feature-settings: var(--default-mono-font-feature-settings, normal);
+  font-variation-settings: var(--default-mono-font-variation-settings, normal);
+  font-size: 1em;
+}
+
+small {
+  font-size: 80%;
+}
+
+sub, sup {
+  vertical-align: baseline;
+  font-size: 75%;
+  line-height: 0;
+  position: relative;
+}
+
+sub {
+  bottom: -.25em;
+}
+
+sup {
+  top: -.5em;
+}
+
+table {
+  text-indent: 0;
+  border-color: inherit;
+  border-collapse: collapse;
+}
+
+:-moz-focusring {
+  outline: auto;
+}
+
+progress {
+  vertical-align: baseline;
+}
+
+summary {
+  display: list-item;
+}
+
+ol, ul, menu {
+  list-style: none;
+}
+
+img, svg, video, canvas, audio, iframe, embed, object {
+  vertical-align: middle;
+  display: block;
+}
+
+img, video {
+  max-width: 100%;
+  height: auto;
+}
+
+button, input, select, optgroup, textarea {
+  font: inherit;
+  font-feature-settings: inherit;
+  font-variation-settings: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  opacity: 1;
+  background-color: #0000;
+  border-radius: 0;
+}
+
+::file-selector-button {
+  font: inherit;
+  font-feature-settings: inherit;
+  font-variation-settings: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  opacity: 1;
+  background-color: #0000;
+  border-radius: 0;
+}
+
+:where(select:is([multiple], [size])) optgroup {
+  font-weight: bolder;
+}
+
+:where(select:is([multiple], [size])) optgroup option {
+  padding-inline-start: 20px;
+}
+
+::file-selector-button {
+  margin-inline-end: 4px;
+}
+
+::placeholder {
+  opacity: 1;
+}
+
+@supports (not ((-webkit-appearance: -apple-pay-button))) or (contain-intrinsic-size: 1px) {
+  ::placeholder {
+    color: currentColor;
+  }
+
+  @supports (color: color-mix(in lab, red, red)) {
+    ::placeholder {
+      color: color-mix(in oklab, currentcolor 50%, transparent);
+    }
+  }
+}
+
+textarea {
+  resize: vertical;
+}
+
+::-webkit-search-decoration {
+  -webkit-appearance: none;
+}
+
+::-webkit-date-and-time-value {
+  min-height: 1lh;
+  text-align: inherit;
+}
+
+::-webkit-datetime-edit {
+  display: inline-flex;
+}
+
+::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+
+::-webkit-datetime-edit {
+  padding-block: 0;
+}
+
+::-webkit-datetime-edit-year-field {
+  padding-block: 0;
+}
+
+::-webkit-datetime-edit-month-field {
+  padding-block: 0;
+}
+
+::-webkit-datetime-edit-day-field {
+  padding-block: 0;
+}
+
+::-webkit-datetime-edit-hour-field {
+  padding-block: 0;
+}
+
+::-webkit-datetime-edit-minute-field {
+  padding-block: 0;
+}
+
+::-webkit-datetime-edit-second-field {
+  padding-block: 0;
+}
+
+::-webkit-datetime-edit-millisecond-field {
+  padding-block: 0;
+}
+
+::-webkit-datetime-edit-meridiem-field {
+  padding-block: 0;
+}
+
+:-moz-ui-invalid {
+  box-shadow: none;
+}
+
+button, input:where([type="button"], [type="reset"], [type="submit"]) {
+  appearance: button;
+}
+
+::file-selector-button {
+  appearance: button;
+}
+
+::-webkit-inner-spin-button {
+  height: auto;
+}
+
+::-webkit-outer-spin-button {
+  height: auto;
+}
+
+[hidden]:where(:not([hidden="until-found"])) {
+  display: none !important;
+}
+}
+
+@layer components;
+
+@layer utilities {
+.pointer-events-none {
+  pointer-events: none;
+}
+
+.absolute {
+  position: absolute;
+}
+
+.relative {
+  position: relative;
+}
+
+.static {
+  position: static;
+}
+
+.top-0 {
+  top: calc(var(--spacing) * 0);
+}
+
+.right-0 {
+  right: calc(var(--spacing) * 0);
+}
+
+.z-10 {
+  z-index: 10;
+}
+
+.container {
+  width: 100%;
+}
+
+@media (min-width: 40rem) {
+  .container {
+    max-width: 40rem;
+  }
+}
+
+@media (min-width: 48rem) {
+  .container {
+    max-width: 48rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  .container {
+    max-width: 64rem;
+  }
+}
+
+@media (min-width: 80rem) {
+  .container {
+    max-width: 80rem;
+  }
+}
+
+@media (min-width: 96rem) {
+  .container {
+    max-width: 96rem;
+  }
+}
+
+.mx-auto {
+  margin-inline: auto;
+}
+
+.-my-3 {
+  margin-block: calc(var(--spacing) * -3);
+}
+
+.mt-1 {
+  margin-top: calc(var(--spacing) * 1);
+}
+
+.mt-auto {
+  margin-top: auto;
+}
+
+.ml-auto {
+  margin-left: auto;
+}
+
+.block {
+  display: block;
+}
+
+.flex {
+  display: flex;
+}
+
+.grid {
+  display: grid;
+}
+
+.table {
+  display: table;
+}
+
+.h-1 {
+  height: calc(var(--spacing) * 1);
+}
+
+.h-3 {
+  height: calc(var(--spacing) * 3);
+}
+
+.h-4 {
+  height: calc(var(--spacing) * 4);
+}
+
+.h-7 {
+  height: calc(var(--spacing) * 7);
+}
+
+.h-9 {
+  height: calc(var(--spacing) * 9);
+}
+
+.h-11 {
+  height: calc(var(--spacing) * 11);
+}
+
+.h-\[18px\] {
+  height: 18px;
+}
+
+.h-auto {
+  height: auto;
+}
+
+.h-full {
+  height: 100%;
+}
+
+.max-h-\[360px\] {
+  max-height: 360px;
+}
+
+.min-h-\[60px\] {
+  min-height: 60px;
+}
+
+.min-h-\[580px\] {
+  min-height: 580px;
+}
+
+.w-3 {
+  width: calc(var(--spacing) * 3);
+}
+
+.w-4 {
+  width: calc(var(--spacing) * 4);
+}
+
+.w-9 {
+  width: calc(var(--spacing) * 9);
+}
+
+.w-\[8ch\] {
+  width: 8ch;
+}
+
+.w-\[18px\] {
+  width: 18px;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.max-w-4xl {
+  max-width: var(--container-4xl);
+}
+
+.min-w-0 {
+  min-width: calc(var(--spacing) * 0);
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.flex-shrink {
+  flex-shrink: 1;
+}
+
+.shrink-0 {
+  flex-shrink: 0;
+}
+
+.flex-grow, .grow {
+  flex-grow: 1;
+}
+
+.border-collapse {
+  border-collapse: collapse;
+}
+
+.transform {
+  transform: var(--tw-rotate-x, ) var(--tw-rotate-y, ) var(--tw-rotate-z, ) var(--tw-skew-x, ) var(--tw-skew-y, );
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.touch-none {
+  touch-action: none;
+}
+
+.resize {
+  resize: both;
+}
+
+.grid-cols-1 {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.grid-cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.content-start {
+  align-content: flex-start;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-end {
+  justify-content: flex-end;
+}
+
+.gap-0 {
+  gap: calc(var(--spacing) * 0);
+}
+
+.gap-0\.5 {
+  gap: calc(var(--spacing) * .5);
+}
+
+.gap-1 {
+  gap: calc(var(--spacing) * 1);
+}
+
+.gap-1\.5 {
+  gap: calc(var(--spacing) * 1.5);
+}
+
+.gap-2 {
+  gap: calc(var(--spacing) * 2);
+}
+
+.gap-3 {
+  gap: calc(var(--spacing) * 3);
+}
+
+.gap-4 {
+  gap: calc(var(--spacing) * 4);
+}
+
+:where(.space-y-1 > :not(:last-child)) {
+  --tw-space-y-reverse: 0;
+  margin-block-start: calc(calc(var(--spacing) * 1) * var(--tw-space-y-reverse));
+  margin-block-end: calc(calc(var(--spacing) * 1) * calc(1 - var(--tw-space-y-reverse)));
+}
+
+.gap-x-4 {
+  column-gap: calc(var(--spacing) * 4);
+}
+
+.gap-x-6 {
+  column-gap: calc(var(--spacing) * 6);
+}
+
+.gap-y-4 {
+  row-gap: calc(var(--spacing) * 4);
+}
+
+.truncate {
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.overflow-auto {
+  overflow: auto;
+}
+
+.overflow-hidden {
+  overflow: hidden;
+}
+
+.overflow-visible {
+  overflow: visible;
+}
+
+.overflow-y-auto {
+  overflow-y: auto;
+}
+
+.rounded {
+  border-radius: .25rem;
+}
+
+.rounded-full {
+  border-radius: 3.40282e38px;
+}
+
+.rounded-lg {
+  border-radius: var(--radius-lg);
+}
+
+.rounded-xl {
+  border-radius: var(--radius-xl);
+}
+
+.border {
+  border-style: var(--tw-border-style);
+  border-width: 1px;
+}
+
+.border-t {
+  border-top-style: var(--tw-border-style);
+  border-top-width: 1px;
+}
+
+.border-r {
+  border-right-style: var(--tw-border-style);
+  border-right-width: 1px;
+}
+
+.border-b {
+  border-bottom-style: var(--tw-border-style);
+  border-bottom-width: 1px;
+}
+
+.border-none {
+  --tw-border-style: none;
+  border-style: none;
+}
+
+.border-border, .border-border\/40 {
+  border-color: var(--color-border);
+}
+
+@supports (color: color-mix(in lab, red, red)) {
+  .border-border\/40 {
+    border-color: color-mix(in oklab, var(--color-border) 40%, transparent);
+  }
+}
+
+.border-border\/60 {
+  border-color: var(--color-border);
+}
+
+@supports (color: color-mix(in lab, red, red)) {
+  .border-border\/60 {
+    border-color: color-mix(in oklab, var(--color-border) 60%, transparent);
+  }
+}
+
+.\!bg-muted {
+  background-color: var(--color-muted) !important;
+}
+
+.bg-background, .bg-background\/20 {
+  background-color: var(--color-background);
+}
+
+@supports (color: color-mix(in lab, red, red)) {
+  .bg-background\/20 {
+    background-color: color-mix(in oklab, var(--color-background) 20%, transparent);
+  }
+}
+
+.bg-background\/50 {
+  background-color: var(--color-background);
+}
+
+@supports (color: color-mix(in lab, red, red)) {
+  .bg-background\/50 {
+    background-color: color-mix(in oklab, var(--color-background) 50%, transparent);
+  }
+}
+
+.bg-background\/80 {
+  background-color: var(--color-background);
+}
+
+@supports (color: color-mix(in lab, red, red)) {
+  .bg-background\/80 {
+    background-color: color-mix(in oklab, var(--color-background) 80%, transparent);
+  }
+}
+
+.bg-card, .bg-card\/70 {
+  background-color: var(--color-card);
+}
+
+@supports (color: color-mix(in lab, red, red)) {
+  .bg-card\/70 {
+    background-color: color-mix(in oklab, var(--color-card) 70%, transparent);
+  }
+}
+
+.bg-error, .bg-error\/10 {
+  background-color: var(--color-error);
+}
+
+@supports (color: color-mix(in lab, red, red)) {
+  .bg-error\/10 {
+    background-color: color-mix(in oklab, var(--color-error) 10%, transparent);
+  }
+}
+
+.bg-muted, .bg-muted\/30 {
+  background-color: var(--color-muted);
+}
+
+@supports (color: color-mix(in lab, red, red)) {
+  .bg-muted\/30 {
+    background-color: color-mix(in oklab, var(--color-muted) 30%, transparent);
+  }
+}
+
+.bg-muted\/50 {
+  background-color: var(--color-muted);
+}
+
+@supports (color: color-mix(in lab, red, red)) {
+  .bg-muted\/50 {
+    background-color: color-mix(in oklab, var(--color-muted) 50%, transparent);
+  }
+}
+
+.bg-muted\/70 {
+  background-color: var(--color-muted);
+}
+
+@supports (color: color-mix(in lab, red, red)) {
+  .bg-muted\/70 {
+    background-color: color-mix(in oklab, var(--color-muted) 70%, transparent);
+  }
+}
+
+.bg-muted\/90 {
+  background-color: var(--color-muted);
+}
+
+@supports (color: color-mix(in lab, red, red)) {
+  .bg-muted\/90 {
+    background-color: color-mix(in oklab, var(--color-muted) 90%, transparent);
+  }
+}
+
+.bg-primary {
+  background-color: var(--color-primary);
+}
+
+.p-1 {
+  padding: calc(var(--spacing) * 1);
+}
+
+.p-1\.5 {
+  padding: calc(var(--spacing) * 1.5);
+}
+
+.p-2 {
+  padding: calc(var(--spacing) * 2);
+}
+
+.p-3 {
+  padding: calc(var(--spacing) * 3);
+}
+
+.p-4 {
+  padding: calc(var(--spacing) * 4);
+}
+
+.p-5 {
+  padding: calc(var(--spacing) * 5);
+}
+
+.px-1\.5 {
+  padding-inline: calc(var(--spacing) * 1.5);
+}
+
+.px-2 {
+  padding-inline: calc(var(--spacing) * 2);
+}
+
+.px-2\.5 {
+  padding-inline: calc(var(--spacing) * 2.5);
+}
+
+.px-3 {
+  padding-inline: calc(var(--spacing) * 3);
+}
+
+.px-5 {
+  padding-inline: calc(var(--spacing) * 5);
+}
+
+.py-0 {
+  padding-block: calc(var(--spacing) * 0);
+}
+
+.py-0\.5 {
+  padding-block: calc(var(--spacing) * .5);
+}
+
+.py-1 {
+  padding-block: calc(var(--spacing) * 1);
+}
+
+.py-2 {
+  padding-block: calc(var(--spacing) * 2);
+}
+
+.py-3 {
+  padding-block: calc(var(--spacing) * 3);
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.font-sans {
+  font-family: var(--font-sans);
+}
+
+.\!text-base {
+  font-size: var(--text-base) !important;
+  line-height: var(--tw-leading, var(--text-base--line-height)) !important;
+}
+
+.text-lg {
+  font-size: var(--text-lg);
+  line-height: var(--tw-leading, var(--text-lg--line-height));
+}
+
+.text-sm {
+  font-size: var(--text-sm);
+  line-height: var(--tw-leading, var(--text-sm--line-height));
+}
+
+.text-xs {
+  font-size: var(--text-xs);
+  line-height: var(--tw-leading, var(--text-xs--line-height));
+}
+
+.text-\[9px\] {
+  font-size: 9px;
+}
+
+.text-\[10px\] {
+  font-size: 10px;
+}
+
+.text-\[11px\] {
+  font-size: 11px;
+}
+
+.font-bold {
+  --tw-font-weight: var(--font-weight-bold);
+  font-weight: var(--font-weight-bold);
+}
+
+.font-medium {
+  --tw-font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-medium);
+}
+
+.font-normal {
+  --tw-font-weight: var(--font-weight-normal);
+  font-weight: var(--font-weight-normal);
+}
+
+.font-semibold {
+  --tw-font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-semibold);
+}
+
+.tracking-tight {
+  --tw-tracking: var(--tracking-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+.whitespace-nowrap {
+  white-space: nowrap;
+}
+
+.text-error {
+  color: var(--color-error);
+}
+
+.text-foreground {
+  color: var(--color-foreground);
+}
+
+.text-muted-foreground {
+  color: var(--color-muted-foreground);
+}
+
+.text-primary {
+  color: var(--color-primary);
+}
+
+.text-success {
+  color: var(--color-success);
+}
+
+.text-white {
+  color: var(--color-white);
+}
+
+.uppercase {
+  text-transform: uppercase;
+}
+
+.tabular-nums {
+  --tw-numeric-spacing: tabular-nums;
+  font-variant-numeric: var(--tw-ordinal, ) var(--tw-slashed-zero, ) var(--tw-numeric-figure, ) var(--tw-numeric-spacing, ) var(--tw-numeric-fraction, );
+}
+
+.underline {
+  text-decoration-line: underline;
+}
+
+.opacity-80 {
+  opacity: .8;
+}
+
+.shadow-none {
+  --tw-shadow: 0 0 #0000;
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+}
+
+.shadow-sm {
+  --tw-shadow: 0 1px 3px 0 var(--tw-shadow-color, #0000001a), 0 1px 2px -1px var(--tw-shadow-color, #0000001a);
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+}
+
+.outline {
+  outline-style: var(--tw-outline-style);
+  outline-width: 1px;
+}
+
+.transition-all {
+  transition-property: all;
+  transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+  transition-duration: var(--tw-duration, var(--default-transition-duration));
+}
+
+.transition-colors {
+  transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to;
+  transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+  transition-duration: var(--tw-duration, var(--default-transition-duration));
+}
+
+.select-none {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.selection\:bg-primary\/20 ::selection {
+  background-color: var(--color-primary);
+}
+
+@supports (color: color-mix(in lab, red, red)) {
+  .selection\:bg-primary\/20 ::selection {
+    background-color: color-mix(in oklab, var(--color-primary) 20%, transparent);
+  }
+}
+
+.selection\:bg-primary\/20::selection {
+  background-color: var(--color-primary);
+}
+
+@supports (color: color-mix(in lab, red, red)) {
+  .selection\:bg-primary\/20::selection {
+    background-color: color-mix(in oklab, var(--color-primary) 20%, transparent);
+  }
+}
+
+.after\:absolute:after {
+  content: var(--tw-content);
+  position: absolute;
+}
+
+.after\:inset-x-0:after {
+  content: var(--tw-content);
+  inset-inline: calc(var(--spacing) * 0);
+}
+
+.after\:-inset-y-2:after {
+  content: var(--tw-content);
+  inset-block: calc(var(--spacing) * -2);
+}
+
+.after\:top-1\/2:after {
+  content: var(--tw-content);
+  top: 50%;
+}
+
+.after\:left-1\/2:after {
+  content: var(--tw-content);
+  left: 50%;
+}
+
+.after\:h-11:after {
+  content: var(--tw-content);
+  height: calc(var(--spacing) * 11);
+}
+
+.after\:w-11:after {
+  content: var(--tw-content);
+  width: calc(var(--spacing) * 11);
+}
+
+.after\:-translate-x-1\/2:after {
+  content: var(--tw-content);
+  --tw-translate-x: calc(calc(1 / 2 * 100%) * -1);
+  translate: var(--tw-translate-x) var(--tw-translate-y);
+}
+
+.after\:-translate-y-1\/2:after {
+  content: var(--tw-content);
+  --tw-translate-y: calc(calc(1 / 2 * 100%) * -1);
+  translate: var(--tw-translate-x) var(--tw-translate-y);
+}
+
+@media (hover: hover) {
+  .hover\:bg-muted:hover {
+    background-color: var(--color-muted);
+  }
+
+  .hover\:bg-secondary-hover:hover {
+    background-color: var(--color-secondary-hover);
+  }
+
+  .hover\:text-foreground:hover {
+    color: var(--color-foreground);
+  }
+}
+
+.focus\:outline-none:focus {
+  --tw-outline-style: none;
+  outline-style: none;
+}
+
+.data-\[state\=on\]\:bg-primary[data-state="on"] {
+  background-color: var(--color-primary);
+}
+
+.data-\[state\=on\]\:text-white[data-state="on"] {
+  color: var(--color-white);
+}
+
+@media (min-width: 40rem) {
+  .sm\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sm\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .sm\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .sm\:gap-x-8 {
+    column-gap: calc(var(--spacing) * 8);
+  }
+}
+
+@media (min-width: 48rem) {
+  .md\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .md\:gap-x-12 {
+    column-gap: calc(var(--spacing) * 12);
+  }
+}
+
+@media (min-width: 64rem) {
+  .lg\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+}
+
+@media (prefers-color-scheme: dark) {
+:root:not(.light) {
+  --color-primary: var(--primary, #336ef3);
+  --color-primary-hover: var(--primary-hover, #395fe1);
+  --color-error: var(--brand-red, #ea4335);
+  --color-warning: var(--brand-yellow, #fbbc04);
+  --color-success: var(--brand-green, #34a853);
+  --color-background: var(--surface-container-de-emphasis, #272930);
+  --color-card: var(--surface-container-de-emphasis, #272930);
+  --color-card-hover: var(--surface-container-high, #363840);
+  --color-border: var(--divider, #363840);
+  --color-input: var(--surface-container, #2c2e35);
+  --color-secondary: var(--surface-container-high, #363840);
+  --color-secondary-hover: var(--surface-container-highest, #42444d);
+  --color-accent: var(--surface-container-highest, #42444d);
+  --color-accent-foreground: var(--on-surface-default, #e6e8f0);
+  --color-muted: var(--surface-container, #2c2e35);
+  --color-muted-foreground: var(--on-surface-de-emphasis, #adafb8);
+  --color-foreground: var(--on-surface-default, #e6e8f0);
+  --color-disabled: var(--surface-container, #2c2e35);
+  --color-disabled-foreground: var(--disabled-foreground, #797c90);
+}
+}
+
+.dark {
+--color-primary: var(--primary, #336ef3);
+--color-primary-hover: var(--primary-hover, #395fe1);
+--color-error: var(--brand-red, #ea4335);
+--color-warning: var(--brand-yellow, #fbbc04);
+--color-success: var(--brand-green, #34a853);
+--color-background: var(--surface-container-de-emphasis, #272930);
+--color-card: var(--surface-container-de-emphasis, #272930);
+--color-card-hover: var(--surface-container-high, #363840);
+--color-border: var(--divider, #363840);
+--color-input: var(--surface-container, #2c2e35);
+--color-secondary: var(--surface-container-high, #363840);
+--color-secondary-hover: var(--surface-container-highest, #42444d);
+--color-accent: var(--surface-container-highest, #42444d);
+--color-accent-foreground: var(--on-surface-default, #e6e8f0);
+--color-muted: var(--surface-container, #2c2e35);
+--color-muted-foreground: var(--on-surface-de-emphasis, #adafb8);
+--color-foreground: var(--on-surface-default, #e6e8f0);
+--color-disabled: var(--surface-container, #2c2e35);
+--color-disabled-foreground: var(--disabled-foreground, #797c90);
+}
+
+@property --tw-rotate-x {
+syntax: "*";
+inherits: false
+}
+
+@property --tw-rotate-y {
+syntax: "*";
+inherits: false
+}
+
+@property --tw-rotate-z {
+syntax: "*";
+inherits: false
+}
+
+@property --tw-skew-x {
+syntax: "*";
+inherits: false
+}
+
+@property --tw-skew-y {
+syntax: "*";
+inherits: false
+}
+
+@property --tw-space-y-reverse {
+syntax: "*";
+inherits: false;
+initial-value: 0;
+}
+
+@property --tw-border-style {
+syntax: "*";
+inherits: false;
+initial-value: solid;
+}
+
+@property --tw-font-weight {
+syntax: "*";
+inherits: false
+}
+
+@property --tw-tracking {
+syntax: "*";
+inherits: false
+}
+
+@property --tw-ordinal {
+syntax: "*";
+inherits: false
+}
+
+@property --tw-slashed-zero {
+syntax: "*";
+inherits: false
+}
+
+@property --tw-numeric-figure {
+syntax: "*";
+inherits: false
+}
+
+@property --tw-numeric-spacing {
+syntax: "*";
+inherits: false
+}
+
+@property --tw-numeric-fraction {
+syntax: "*";
+inherits: false
+}
+
+@property --tw-shadow {
+syntax: "*";
+inherits: false;
+initial-value: 0 0 #0000;
+}
+
+@property --tw-shadow-color {
+syntax: "*";
+inherits: false
+}
+
+@property --tw-shadow-alpha {
+syntax: "<percentage>";
+inherits: false;
+initial-value: 100%;
+}
+
+@property --tw-inset-shadow {
+syntax: "*";
+inherits: false;
+initial-value: 0 0 #0000;
+}
+
+@property --tw-inset-shadow-color {
+syntax: "*";
+inherits: false
+}
+
+@property --tw-inset-shadow-alpha {
+syntax: "<percentage>";
+inherits: false;
+initial-value: 100%;
+}
+
+@property --tw-ring-color {
+syntax: "*";
+inherits: false
+}
+
+@property --tw-ring-shadow {
+syntax: "*";
+inherits: false;
+initial-value: 0 0 #0000;
+}
+
+@property --tw-inset-ring-color {
+syntax: "*";
+inherits: false
+}
+
+@property --tw-inset-ring-shadow {
+syntax: "*";
+inherits: false;
+initial-value: 0 0 #0000;
+}
+
+@property --tw-ring-inset {
+syntax: "*";
+inherits: false
+}
+
+@property --tw-ring-offset-width {
+syntax: "<length>";
+inherits: false;
+initial-value: 0;
+}
+
+@property --tw-ring-offset-color {
+syntax: "*";
+inherits: false;
+initial-value: #fff;
+}
+
+@property --tw-ring-offset-shadow {
+syntax: "*";
+inherits: false;
+initial-value: 0 0 #0000;
+}
+
+@property --tw-outline-style {
+syntax: "*";
+inherits: false;
+initial-value: solid;
+}
+
+@property --tw-content {
+syntax: "*";
+inherits: false;
+initial-value: "";
+}
+
+@property --tw-translate-x {
+syntax: "*";
+inherits: false;
+initial-value: 0;
+}
+
+@property --tw-translate-y {
+syntax: "*";
+inherits: false;
+initial-value: 0;
+}
+
+@property --tw-translate-z {
+syntax: "*";
+inherits: false;
+initial-value: 0;
+}
+
+</style><link href="https://www.gstatic.com/_/mss/search-next/_/ss/k=search-next.ss.194ScI3vTpE.L.B1.O/am=AB4AAACGAAIS/d=1/ed=1/dg=2/rs=AE5fCmSiwQEqcQzgLlch0XxMXax9wWTBwg/ee=/m=capy_widget_colors" rel="stylesheet"></head>
+  <body class="">
+
+<div id="root"><div class="w-full font-sans bg-background text-foreground flex flex-col min-h-[580px] max-w-4xl mx-auto overflow-hidden shadow-sm"><div class="p-4 bg-muted/30 border-b border-border flex flex-col gap-4"><div class="grid grid-cols-4 gap-2 relative bg-card p-2 rounded-xl border border-border"><button class="flex flex-col items-center gap-1 p-2 rounded-lg transition-all text-center hover:bg-muted text-muted-foreground"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><circle cx="8" cy="8" r="6"></circle><path d="M18.09 10.37A6 6 0 1 1 10.34 18"></path><path d="M7 6h1v4"></path><path d="m16.71 13.88.7.71-2.82 2.82"></path></svg><span class="text-[11px] font-medium tracking-tight">1. Buy Device</span><span class="text-[10px] opacity-80">$225</span></button><button class="flex flex-col items-center gap-1 p-2 rounded-lg transition-all text-center bg-primary text-white shadow-sm"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg><span class="text-[11px] font-medium tracking-tight">2. Refurbish</span><span class="text-[10px] opacity-80">+$35</span></button><button class="flex flex-col items-center gap-1 p-2 rounded-lg transition-all text-center hover:bg-muted text-muted-foreground"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z"></path><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><path d="M12 17V7"></path></svg><span class="text-[11px] font-medium tracking-tight">3. Sell Item</span><span class="text-[10px] opacity-80">$530</span></button><button class="flex flex-col items-center gap-1 p-2 rounded-lg transition-all text-center hover:bg-muted text-muted-foreground"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><line x1="19" x2="5" y1="5" y2="19"></line><circle cx="6.5" cy="6.5" r="2.5"></circle><circle cx="17.5" cy="17.5" r="2.5"></circle></svg><span class="text-[11px] font-medium tracking-tight">4. Split Payout</span><span class="text-[10px] opacity-80">35% Split</span></button></div><div class="grid grid-cols-2 sm:grid-cols-4 gap-3"><div class="bg-card p-3 rounded-xl border border-border flex flex-col"><span class="text-xs text-muted-foreground font-normal">Accumulated COGS</span><span class="text-lg font-bold text-foreground tabular-nums">$260</span></div><div class="bg-card p-3 rounded-xl border border-border flex flex-col"><span class="text-xs text-muted-foreground font-normal">Gross Profit Margin</span><span class="text-lg font-bold text-success tabular-nums">$270</span></div><div class="bg-card p-3 rounded-xl border border-border flex flex-col"><span class="text-xs text-muted-foreground font-normal font-medium">Partner Payout</span><span class="text-lg font-bold text-primary tabular-nums">$94.5</span></div><div class="bg-card p-3 rounded-xl border border-border flex flex-col"><span class="text-xs text-muted-foreground font-normal">Reseller Keep</span><span class="text-lg font-bold text-foreground tabular-nums">$175.5</span></div></div><div class="text-xs bg-muted/70 px-3 py-2 rounded-lg text-muted-foreground flex items-center justify-between"><span>Double-entry impact: Repair part cash spent capitalizes directly into the device inventory asset value.</span><div class="flex items-center gap-1.5 shrink-0 bg-background/80 px-2 py-0.5 rounded border border-border text-[11px] text-foreground font-medium"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3 text-success"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path><path d="M7 21h10"></path><path d="M12 3v18"></path><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"></path></svg><span>Ledger Balanced</span></div></div></div><div class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-background overflow-y-auto max-h-[360px]"><div class="bg-card border border-border rounded-xl flex flex-col overflow-hidden"><div class="px-3 py-2 bg-muted border-b border-border flex justify-between items-center"><span class="text-xs font-bold text-foreground tracking-tight">Cash &amp; Bank</span><span class="text-[10px] text-muted-foreground uppercase px-1.5 py-0.5 bg-background rounded border border-border">Asset</span></div><div class="grid grid-cols-2 text-[10px] font-medium text-center text-muted-foreground border-b border-border/60 bg-background/50"><div class="py-1 border-r border-border/60">DEBIT (DR)</div><div class="py-1">CREDIT (CR)</div></div><div class="flex-1 grid grid-cols-2 text-xs min-h-[60px] content-start bg-background/20"><div class="border-r border-border/40 p-1.5 space-y-1"></div><div class="p-1.5 space-y-1"><div class="flex flex-col text-[11px] bg-card p-1 rounded border border-border/40"><span class="text-muted-foreground text-[9px] truncate">Device Purchase</span><span class="font-semibold text-error text-right tabular-nums">$225</span></div><div class="flex flex-col text-[11px] bg-card p-1 rounded border border-border/40"><span class="text-muted-foreground text-[9px] truncate">Parts / Screen Repair</span><span class="font-semibold text-error text-right tabular-nums">$35</span></div></div></div><div class="grid grid-cols-2 text-[11px] font-medium bg-muted/50 border-t border-border p-1.5 text-center"><div class="border-r border-border/40 text-foreground tabular-nums"> Total: $0</div><div class="text-foreground tabular-nums"> Total: $260</div></div></div><div class="bg-card border border-border rounded-xl flex flex-col overflow-hidden"><div class="px-3 py-2 bg-muted border-b border-border flex justify-between items-center"><span class="text-xs font-bold text-foreground tracking-tight">Inventory Asset (Device)</span><span class="text-[10px] text-muted-foreground uppercase px-1.5 py-0.5 bg-background rounded border border-border">Asset</span></div><div class="grid grid-cols-2 text-[10px] font-medium text-center text-muted-foreground border-b border-border/60 bg-background/50"><div class="py-1 border-r border-border/60">DEBIT (DR)</div><div class="py-1">CREDIT (CR)</div></div><div class="flex-1 grid grid-cols-2 text-xs min-h-[60px] content-start bg-background/20"><div class="border-r border-border/40 p-1.5 space-y-1"><div class="flex flex-col text-[11px] bg-card p-1 rounded border border-border/40"><span class="text-muted-foreground text-[9px] truncate">Device Purchase</span><span class="font-semibold text-foreground text-right tabular-nums">$225</span></div><div class="flex flex-col text-[11px] bg-card p-1 rounded border border-border/40"><span class="text-muted-foreground text-[9px] truncate">Parts / Screen Repair</span><span class="font-semibold text-foreground text-right tabular-nums">$35</span></div></div><div class="p-1.5 space-y-1"></div></div><div class="grid grid-cols-2 text-[11px] font-medium bg-muted/50 border-t border-border p-1.5 text-center"><div class="border-r border-border/40 text-foreground tabular-nums"> Total: $260</div><div class="text-foreground tabular-nums"> Total: $0</div></div></div></div><div class="p-5 bg-card border-t border-border mt-auto"><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div class="flex flex-col gap-1"><div class="flex justify-between items-center"><span class="text-xs font-medium text-muted-foreground">Device Purchase Cost</span><span class="text-xs font-bold text-foreground">$225</span></div><span dir="ltr" data-orientation="horizontal" aria-disabled="false" class="relative flex items-center h-7 select-none touch-none" style="--radix-slider-thumb-transform: translateX(-50%);"><span data-orientation="horizontal" class="bg-muted relative grow rounded-full h-1"><span data-orientation="horizontal" class="absolute bg-primary rounded-full h-full" style="left: 0%; right: 46.0526%;"></span></span><span style="transform: var(--radix-slider-thumb-transform); position: absolute; left: calc(53.9474% - 0.630962px);"><span role="slider" aria-valuemin="20" aria-valuemax="400" aria-orientation="horizontal" data-orientation="horizontal" tabindex="0" class="block w-4 h-4 bg-primary rounded-full border-none focus:outline-none" data-radix-collection-item="" aria-valuenow="225" style=""></span></span></span></div><div class="flex flex-col gap-1"><div class="flex justify-between items-center"><span class="text-xs font-medium text-muted-foreground">Refurbishment &amp; Parts</span><span class="text-xs font-bold text-foreground">$35</span></div><span dir="ltr" data-orientation="horizontal" aria-disabled="false" class="relative flex items-center h-7 select-none touch-none" style="--radix-slider-thumb-transform: translateX(-50%);"><span data-orientation="horizontal" class="bg-muted relative grow rounded-full h-1"><span data-orientation="horizontal" class="absolute bg-primary rounded-full h-full" style="left: 0%; right: 76.6667%;"></span></span><span style="transform: var(--radix-slider-thumb-transform); position: absolute; left: calc(23.3333% + 4.2625px);"><span role="slider" aria-valuemin="0" aria-valuemax="150" aria-orientation="horizontal" data-orientation="horizontal" tabindex="0" class="block w-4 h-4 bg-primary rounded-full border-none focus:outline-none" data-radix-collection-item="" aria-valuenow="35" style=""></span></span></span></div><div class="flex flex-col gap-1"><div class="flex justify-between items-center"><span class="text-xs font-medium text-muted-foreground">Resale Consumer Price</span><span class="text-xs font-bold text-foreground">$530</span></div><span dir="ltr" data-orientation="horizontal" aria-disabled="false" class="relative flex items-center h-7 select-none touch-none" style="--radix-slider-thumb-transform: translateX(-50%);"><span data-orientation="horizontal" class="bg-muted relative grow rounded-full h-1"><span data-orientation="horizontal" class="absolute bg-primary rounded-full h-full" style="left: 0%; right: 38.5714%;"></span></span><span style="transform: var(--radix-slider-thumb-transform); position: absolute; left: calc(61.4286% - 1.82679px);"><span role="slider" aria-valuemin="100" aria-valuemax="800" aria-orientation="horizontal" data-orientation="horizontal" tabindex="0" class="block w-4 h-4 bg-primary rounded-full border-none focus:outline-none" data-radix-collection-item="" aria-valuenow="530" style=""></span></span></span></div><div class="flex flex-col gap-1"><div class="flex justify-between items-center"><span class="text-xs font-medium text-muted-foreground">Partner Profit Share</span><span class="text-xs font-bold text-foreground">35%</span></div><span dir="ltr" data-orientation="horizontal" aria-disabled="false" class="relative flex items-center h-7 select-none touch-none" style="--radix-slider-thumb-transform: translateX(-50%);"><span data-orientation="horizontal" class="bg-muted relative grow rounded-full h-1"><span data-orientation="horizontal" class="absolute bg-primary rounded-full h-full" style="left: 0%; right: 65%;"></span></span><span style="transform: var(--radix-slider-thumb-transform); position: absolute; left: calc(35% + 2.39766px);"><span role="slider" aria-valuemin="0" aria-valuemax="100" aria-orientation="horizontal" data-orientation="horizontal" tabindex="0" class="block w-4 h-4 bg-primary rounded-full border-none focus:outline-none" data-radix-collection-item="" aria-valuenow="35" style=""></span></span></span></div></div></div></div></div></body></html>

@@ -423,6 +423,10 @@ export function CommandCenterScreen() {
               hapticSelection();
               router.push('/books' as Href);
             }}
+            onOpenFlipPlan={() => {
+              hapticSelection();
+              router.push('/flip-plan' as Href);
+            }}
             onOpenInventory={() => {
               hapticSelection();
               router.push('/inventory' as Href);

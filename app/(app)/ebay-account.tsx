@@ -113,7 +113,9 @@ export default function EbayAccountScreen() {
       const result = await revokeEbayConnection(connection.environment);
       setConnection(result);
       setSuccessMessage(
-        'eBay access has been revoked. Connect again if you want to restore it.',
+        result.remoteRevocation === false
+          ? 'KeepFlip removed its saved eBay access, but eBay did not confirm the remote revoke. Finish it from eBay third-party app access.'
+          : 'eBay access has been revoked. Connect again if you want to restore it.',
       );
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
         () => undefined,
@@ -254,18 +256,7 @@ export default function EbayAccountScreen() {
                     name="arrow.clockwise"
                     size={20}
                   />
-                  <View style={styles.settingCopy}>
-                    <Text style={styles.settingTitle}>Connection refresh</Text>
-                    <Text style={styles.settingDescription}>
-                      Check the latest secure connection status before using eBay tools.
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            </Animated.View>
-
-            <View style={styles.actions}>
-              <Pressable
+                <Pressable
                 accessibilityLabel="Refresh eBay connection status"
                 accessibilityRole="button"
                 accessibilityState={{ busy: isLoading, disabled: isLoading || isRevoking }}
@@ -275,18 +266,20 @@ export default function EbayAccountScreen() {
                   void refreshConnection();
                 }}
                 style={({ pressed }) => [
-                  styles.secondaryButton,
+                  styles.settingCopy,
                   (isLoading || isRevoking) && styles.buttonDisabled,
                   pressed && !isLoading && !isRevoking && styles.pressed,
                 ]}>
-                <IconSymbol
-                  color={theme.colors.goldBright}
-                  name="arrow.clockwise"
-                  size={19}
-                />
-                <Text style={styles.secondaryButtonText}>REFRESH CONNECTION</Text>
-              </Pressable>
+                    <Text style={styles.settingTitle}>Connection refresh</Text>
+                    <Text style={styles.settingDescription}>
+                      Check the latest secure connection status before using eBay tools.
+                    </Text>
+                </Pressable>
+                </View>
+              </View>
+            </Animated.View>
 
+            <View style={styles.actions}>
               <Pressable
                 accessibilityLabel="Reconnect eBay account"
                 accessibilityRole="button"

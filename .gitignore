@@ -35,6 +35,7 @@ yarn-error.*
 .env
 .env*.local
 *.env
+.token-encryption-key
 package-lock.
 
 # Private Roboflow pilot source photos and completed manifests
@@ -72,6 +73,8 @@ app-example
 !/backend/functions/ebay-oauth/**
 !/backend/functions/keepflip-ebay-oauth/
 !/backend/functions/keepflip-ebay-oauth/**
+!/backend/functions/keepflip-ebay-oauth-helper/
+!/backend/functions/keepflip-ebay-oauth-helper/**
 !/backend/functions/keepflip-books/
 !/backend/functions/keepflip-books/**
 !/backend/functions/ebay-account-deletion/
