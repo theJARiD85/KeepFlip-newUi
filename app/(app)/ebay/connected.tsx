@@ -1,4 +1,7 @@
 import { Redirect, type Href, useLocalSearchParams } from 'expo-router';
+import { useEffect } from 'react';
+
+import { useEbayConnection } from '@/components/ebay/ebay-connection-context';
 
 function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
@@ -11,6 +14,7 @@ function firstParam(value: string | string[] | undefined): string | undefined {
  * identity values never enter the app.
  */
 export default function EbayConnectedCallbackScreen() {
+  const { refreshConnection } = useEbayConnection();
   const params = useLocalSearchParams();
   const rawStatus = firstParam(params.status);
   const rawEnvironment = firstParam(params.environment);
@@ -25,14 +29,21 @@ export default function EbayConnectedCallbackScreen() {
       : undefined;
   const state =
     rawState && /^[A-Za-z0-9_-]{32,256}$/.test(rawState) ? rawState : undefined;
+  useEffect(() => {
+    if (status !== 'connected') return;
+
+    void refreshConnection();
+  }, [refreshConnection, status]);
+
   const query = [
     status ? 'status=' + encodeURIComponent(status) : '',
     environment ? 'environment=' + encodeURIComponent(environment) : '',
     state ? 'state=' + encodeURIComponent(state) : '',
   ].filter(Boolean);
-  const href = (
-    '/ebay-connect' + (query.length ? '?' + query.join('&') : '')
-  ) as Href;
+  const href =
+    status === 'connected'
+      ? ('/ebay-account' as Href)
+      : (('/ebay-connect' + (query.length ? '?' + query.join('&') : '')) as Href);
 
   return <Redirect href={href} />;
 }

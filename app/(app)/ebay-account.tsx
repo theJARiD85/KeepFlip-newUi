@@ -13,6 +13,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
+import { useEbayConnection } from '@/components/ebay/ebay-connection-context';
 import { EbayShoppingBagIcon } from '@/components/ebay/ebay-shopping-bag-icon';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
@@ -39,12 +40,12 @@ export default function EbayAccountScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useKeepFlipAuth();
+  const { setDisconnected } = useEbayConnection();
   const [connection, setConnection] =
     useState<EbayConnectionStatusResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRevoking, setIsRevoking] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const userId = user?.$id;
 
   const refreshConnection = useCallback(async () => {
@@ -108,18 +109,14 @@ export default function EbayAccountScreen() {
 
     setIsRevoking(true);
     setErrorMessage(null);
-    setSuccessMessage(null);
     try {
       const result = await revokeEbayConnection(connection.environment);
       setConnection(result);
-      setSuccessMessage(
-        result.remoteRevocation === false
-          ? 'KeepFlip removed its saved eBay access, but eBay did not confirm the remote revoke. Finish it from eBay third-party app access.'
-          : 'eBay access has been revoked. Connect again if you want to restore it.',
-      );
+      setDisconnected(result);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
         () => undefined,
       );
+      router.replace('/ebay-connect');
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -286,7 +283,7 @@ export default function EbayAccountScreen() {
                 disabled={isRevoking}
                 onPress={() => {
                   hapticSelection();
-                  router.push('/ebay-connect');
+                  router.push('/ebay-connect?reconnect=1');
                 }}
                 style={({ pressed }) => [
                   styles.reconnectButton,
@@ -360,13 +357,6 @@ export default function EbayAccountScreen() {
           </Animated.View>
         )}
 
-        {successMessage ? (
-          <View style={[styles.messageCard, styles.messageSuccess]}>
-            <Text selectable style={styles.messageText}>
-              {successMessage}
-            </Text>
-          </View>
-        ) : null}
 
         {errorMessage && activeConnection ? (
           <View style={[styles.messageCard, styles.messageError]}>

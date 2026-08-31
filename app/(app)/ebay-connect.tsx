@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EbayShoppingBagIcon } from '@/components/ebay/ebay-shopping-bag-icon';
+import { useEbayConnection } from '@/components/ebay/ebay-connection-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
@@ -41,6 +42,10 @@ const BENEFITS = [
       'You sign in and approve permissions on eBay. KeepFlip receives authorization tokens, not your eBay password.',
   },
 ];
+
+function firstParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
 
 function resultMessage(result: EbayConnectionResult) {
   switch (result.status) {
@@ -73,6 +78,14 @@ function resultMessage(result: EbayConnectionResult) {
 
 export default function EbayConnectScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ reconnect?: string | string[] }>();
+  const {
+    connected,
+    isChecking: isCheckingConnection,
+    refreshConnection,
+    setConnected,
+  } = useEbayConnection();
+  const reconnectRequested = firstParam(params.reconnect) === '1';
   const insets = useSafeAreaInsets();
   const environment = getEbayOAuthEnvironment();
   const [isConnecting, setIsConnecting] = useState(false);
@@ -88,13 +101,24 @@ export default function EbayConnectScreen() {
 
     try {
       const result = await connectEbayAccount(environment);
-      setConnectionResult(result);
 
       if (result.status === 'connected') {
+        const confirmedConnection =
+          result.connection ?? (await refreshConnection());
+
+        if (!confirmedConnection?.connected) {
+          throw new Error('KeepFlip could not confirm the connected eBay account.');
+        }
+
+        setConnected(confirmedConnection);
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
           () => undefined,
         );
+        router.replace('/ebay-account');
+        return;
       }
+
+      setConnectionResult(result);
     } catch (error) {
       setConnectionError(
         error instanceof Error
@@ -108,6 +132,12 @@ export default function EbayConnectScreen() {
       setIsConnecting(false);
     }
   };
+
+  if (!reconnectRequested && isCheckingConnection) return null;
+
+  if (!reconnectRequested && connected) {
+    return <Redirect href="/ebay-account" />;
+  }
 
   const message = connectionResult ? resultMessage(connectionResult) : null;
 

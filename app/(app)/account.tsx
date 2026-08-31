@@ -107,6 +107,8 @@ export default function AccountScreen() {
           ? `Authorized for ${ebayConnection.environment === 'sandbox' ? 'eBay Sandbox' : 'eBay'} features.`
           : 'Connect eBay for authorized sourcing and messaging features.';
 
+  const newEbayDestination = ebayConnection?.connected ? '/ebay-account' : '/ebay-connect';
+
   const ebayStatus = ebayConnectionError
     ? { label: 'CHECK', tone: 'danger' as const }
     : ebayConnection?.needsReconnect
@@ -256,7 +258,7 @@ export default function AccountScreen() {
               leading={<EbayShoppingBagIcon size={24} />}
               onPress={() => {
                 hapticSelection();
-                router.push('/ebay-connect' as Href);
+                router.push(newEbayDestination as Href);
               }}
               status={ebayConnectionLoading ? undefined : ebayStatus}
             />

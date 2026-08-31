@@ -1,15 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { EbayShoppingBagIcon } from '@/components/ebay/ebay-shopping-bag-icon';
+import { useEbayConnection } from '@/components/ebay/ebay-connection-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import {
-  getEbayConnectionStatus,
-  type EbayConnectionStatusResult,
-} from '@/services/ebayConnectionService';
 
 type EbayMenuConnectionLinkProps = {
   active: boolean;
@@ -24,44 +20,20 @@ export function EbayMenuConnectionLink({
   open,
   onPress,
 }: EbayMenuConnectionLinkProps) {
-  const { user } = useKeepFlipAuth();
-  const [connection, setConnection] =
-    useState<EbayConnectionStatusResult | null>(null);
-  const [isChecking, setIsChecking] = useState(false);
-  const [hasStatusError, setHasStatusError] = useState(false);
+  const {
+    connection,
+    errorMessage,
+    isChecking,
+    refreshConnection,
+  } = useEbayConnection();
 
   useEffect(() => {
-    if (!open || !user?.$id) {
-      if (!user?.$id) {
-        setConnection(null);
-        setHasStatusError(false);
-        setIsChecking(false);
-      }
-      return;
-    }
+    if (!open) return;
 
-    let cancelled = false;
-    setIsChecking(true);
-    setHasStatusError(false);
+    void refreshConnection();
+  }, [open, refreshConnection]);
 
-    void getEbayConnectionStatus()
-      .then((nextConnection) => {
-        if (!cancelled) setConnection(nextConnection);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setConnection(null);
-          setHasStatusError(true);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setIsChecking(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [open, user?.$id]);
+  const hasStatusError = errorMessage !== null;
 
   const isConnected = connection?.connected === true;
   const interactionDisabled = disabled || isChecking;

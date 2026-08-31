@@ -12,6 +12,7 @@ export type EbayOAuthEnvironment = 'sandbox' | 'production';
 export type EbayConnectionResult = {
   status: 'connected' | 'declined' | 'error' | 'dismissed';
   environment: EbayOAuthEnvironment;
+  connection?: EbayConnectionStatusResult;
 };
 
 export type EbayConnectionStatusResult = {
@@ -243,7 +244,11 @@ export async function connectEbayAccount(
       const status = await getEbayConnectionStatus(callbackResult.environment);
       await clearEbayOAuthState(pendingState).catch(() => undefined);
       return status.connected
-        ? { status: 'connected', environment: status.environment }
+        ? {
+            status: 'connected',
+            environment: status.environment,
+            connection: status,
+          }
         : { status: 'error', environment: callbackResult.environment };
     } catch {
       await clearEbayOAuthState(pendingState).catch(() => undefined);

@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
+import { EbayConnectionProvider } from '@/components/ebay/ebay-connection-context';
 import { KeepFlipMenuProvider } from '@/components/navigation/keepflip-menu-context';
 import { KeepFlipSlideDownMenu } from '@/components/navigation/keepflip-slide-down-menu';
 import { ItemAnalysisResultProvider } from '@/components/scanner/item-analysis-result-context';
@@ -67,7 +68,8 @@ function WalkthroughAutoLauncher() {
 export default function AppShellLayout() {
   return (
     <KeepFlipMenuProvider>
-      <ItemAnalysisResultProvider>
+      <EbayConnectionProvider>
+        <ItemAnalysisResultProvider>
         <WalkthroughAutoLauncher />
         <KeepFlipSlideDownMenu />
         <View style={styles.root}>
@@ -93,7 +95,8 @@ export default function AppShellLayout() {
             <Stack.Screen name="books" />
           </Stack>
         </View>
-      </ItemAnalysisResultProvider>
+        </ItemAnalysisResultProvider>
+      </EbayConnectionProvider>
     </KeepFlipMenuProvider>
   );
 }
