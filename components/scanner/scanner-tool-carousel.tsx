@@ -35,14 +35,6 @@ type ScannerTool = {
 
 export const scannerTools: ScannerTool[] = [
   {
-    id: 'single',
-    label: 'Single scan',
-    icon: 'viewfinder',
-    accent: theme.colors.goldBright,
-    surface: 'rgba(215, 168, 74, 0.18)',
-    glow: 'rgba(215, 168, 74, 0.38)',
-  },
-  {
     id: 'barcode',
     label: 'Barcode scanner',
     icon: 'barcode.viewfinder',
@@ -52,7 +44,7 @@ export const scannerTools: ScannerTool[] = [
   },
   {
     id: 'multi',
-    label: 'Multi-scan',
+    label: 'Smart scan',
     icon: 'rectangle.stack.fill',
     accent: theme.colors.scannerCyan,
     surface: 'rgba(88, 223, 232, 0.14)',

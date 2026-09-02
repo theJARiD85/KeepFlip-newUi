@@ -49,11 +49,32 @@ export type EbaySellerListing = {
   lastSyncedAt?: string;
 };
 
+export type EbaySellerListingSetup = {
+  state: 'ready' | 'needs_setup' | 'failed';
+  marketplaceId: string;
+  policyCounts: {
+    payment: number;
+    fulfillment: number;
+    return: number;
+  };
+  locationCount: number;
+  defaultSelection: {
+    hasMerchantLocation: boolean;
+    hasPaymentPolicy: boolean;
+    hasFulfillmentPolicy: boolean;
+    hasReturnPolicy: boolean;
+  };
+  lastCheckedAt?: string;
+  issueCode?: string;
+  message?: string;
+};
+
 export type EbaySellerAccountResult = {
   connected: boolean;
   environment: EbayOAuthEnvironment;
   profile?: EbaySellerProfile;
   profileFreshness?: 'current' | 'stale';
+  listingSetup?: EbaySellerListingSetup;
   listingCount: number;
   listings: EbaySellerListing[];
 };
@@ -76,6 +97,7 @@ type FunctionPayload = {
   profileFreshness?: unknown;
   listingCount?: unknown;
   listings?: unknown;
+  listingSetup?: unknown;
   error?: unknown;
 };
 
@@ -218,6 +240,75 @@ function parseSellerListing(value: unknown): EbaySellerListing | undefined {
     : undefined;
 }
 
+function parseSellerListingSetup(
+  value: unknown,
+): EbaySellerListingSetup | undefined {
+  const setup = recordValue(value);
+  if (!setup) return undefined;
+
+  const state =
+    setup.state === 'ready' ||
+    setup.state === 'needs_setup' ||
+    setup.state === 'failed'
+      ? setup.state
+      : undefined;
+  const marketplaceId = optionalText(setup.marketplaceId, 64);
+  const policyCounts = recordValue(setup.policyCounts);
+  const defaultSelection = recordValue(setup.defaultSelection);
+  const payment = optionalNonNegativeInteger(policyCounts?.payment);
+  const fulfillment = optionalNonNegativeInteger(policyCounts?.fulfillment);
+  const returns = optionalNonNegativeInteger(policyCounts?.return);
+  const hasMerchantLocation =
+    typeof defaultSelection?.hasMerchantLocation === 'boolean'
+      ? defaultSelection.hasMerchantLocation
+      : undefined;
+  const hasPaymentPolicy =
+    typeof defaultSelection?.hasPaymentPolicy === 'boolean'
+      ? defaultSelection.hasPaymentPolicy
+      : undefined;
+  const hasFulfillmentPolicy =
+    typeof defaultSelection?.hasFulfillmentPolicy === 'boolean'
+      ? defaultSelection.hasFulfillmentPolicy
+      : undefined;
+  const hasReturnPolicy =
+    typeof defaultSelection?.hasReturnPolicy === 'boolean'
+      ? defaultSelection.hasReturnPolicy
+      : undefined;
+
+  if (
+    !state ||
+    !marketplaceId ||
+    payment === undefined ||
+    fulfillment === undefined ||
+    returns === undefined ||
+    hasMerchantLocation === undefined ||
+    hasPaymentPolicy === undefined ||
+    hasFulfillmentPolicy === undefined ||
+    hasReturnPolicy === undefined
+  ) {
+    return undefined;
+  }
+
+  return {
+    state,
+    marketplaceId,
+    policyCounts: {
+      payment,
+      fulfillment,
+      return: returns,
+    },
+    locationCount: optionalNonNegativeInteger(setup.locationCount) ?? 0,
+    defaultSelection: {
+      hasMerchantLocation,
+      hasPaymentPolicy,
+      hasFulfillmentPolicy,
+      hasReturnPolicy,
+    },
+    lastCheckedAt: optionalText(setup.lastCheckedAt, 64),
+    issueCode: optionalText(setup.issueCode, 64),
+    message: optionalText(setup.message, 512),
+  };
+}
 function functionError(responseBody: string, fallback: string): Error {
   const payload = parseFunctionPayload(responseBody);
   const message =
@@ -460,6 +551,7 @@ export async function getEbaySellerAccount(
     environment: normalizeEnvironment(payload.environment) ?? environment,
     profile: parseSellerProfile(payload.profile),
     profileFreshness,
+    listingSetup: parseSellerListingSetup(payload.listingSetup),
     listingCount: Math.max(responseCount ?? listings.length, listings.length),
     listings,
   };

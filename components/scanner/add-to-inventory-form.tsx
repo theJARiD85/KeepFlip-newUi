@@ -17,11 +17,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeepFlipText as Text, KeepFlipTextInput as TextInput } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { todayBusinessDate } from "@/services/reseller-ledger-service";
-import { InstancedMesh } from "three";
+import type { SourcingTripSummary } from "@/services/sourcing-trip-service";
+
 
 export type AddToInventoryFormValues = {
   acquisitionCost: string;
   acquiredAt: string;
+  itemSpecifics: string;
+  quantity: string;
   source: string;
   sku: string;
   location: string;
@@ -33,20 +36,27 @@ type AddToInventoryFormProps = {
   itemTitle: string;
   onCancel: () => void;
   onSubmit: (values: AddToInventoryFormValues) => void | Promise<void>;
+  sourcingTrip?: SourcingTripSummary | null;
   submitting?: boolean;
   visible: boolean;
 };
 
-function emptyValues(): AddToInventoryFormValues {
+function emptyValues(sourcingTrip: SourcingTripSummary | null = null): AddToInventoryFormValues {
   return {
     acquisitionCost: "",
     acquiredAt: todayBusinessDate(),
-    source: "",
+    itemSpecifics: "",
+    quantity: "1",
+    source: sourcingTrip?.trip.sourceName ?? "",
     sku: "",
     location: "",
     receiptReference: "",
     notes: "",
   };
+}
+
+function money(cents: number) {
+  return `$${(cents / 100).toFixed(2)}`;
 }
 
 function FieldLabel({ children, required = false }: { children: string; required?: boolean }) {
@@ -61,16 +71,17 @@ export function AddToInventoryForm({
   itemTitle,
   onCancel,
   onSubmit,
+  sourcingTrip = null,
   submitting = false,
   visible,
 }: AddToInventoryFormProps) {
-  const [values, setValues] = useState<AddToInventoryFormValues>(emptyValues);
+  const [values, setValues] = useState<AddToInventoryFormValues>(() => emptyValues(sourcingTrip));
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   
   const handleCancel = () => {
     if (submitting) return;
-    setValues(emptyValues());
+    setValues(emptyValues(sourcingTrip));
     onCancel();
   };
 
@@ -202,24 +213,52 @@ export function AddToInventoryForm({
             </Pressable>
           </View>
 
+          {sourcingTrip ? (
+            <View style={styles.sourceTripNotice}>
+              <Text style={styles.sourceTripEyebrow}>ACTIVE SOURCE TRIP</Text>
+              <Text numberOfLines={2} style={styles.sourceTripCopy}>
+                {sourcingTrip.trip.label || sourcingTrip.trip.sourceName} · {sourcingTrip.findCount} saved find{sourcingTrip.findCount === 1 ? "" : "s"} · {money(sourcingTrip.allocatedCostCents)} allocated
+              </Text>
+              <Text style={styles.sourceTripHelper}>
+                This item keeps its own actual cost, then returns you to the scanner for the next find.
+              </Text>
+            </View>
+          ) : null}
+
           <ScrollView
             contentContainerStyle={styles.content}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <FieldLabel required>Actual acquisition cost</FieldLabel>
-            <TextInput
-              autoFocus
-              editable={!submitting}
-              keyboardType="decimal-pad"
-              onChangeText={(value) => update("acquisitionCost", value)}
-              placeholder="$0.00"
-              placeholderTextColor="rgba(255,255,255,0.34)"
-              style={styles.input}
-              value={values.acquisitionCost}
-            />
+            <View style={styles.twoColumn}>
+              <View style={styles.column}>
+                <FieldLabel required>Total paid</FieldLabel>
+                <TextInput
+                  autoFocus
+                  editable={!submitting}
+                  keyboardType="decimal-pad"
+                  onChangeText={(value) => update("acquisitionCost", value)}
+                  placeholder="$0.00"
+                  placeholderTextColor="rgba(255,255,255,0.34)"
+                  style={styles.input}
+                  value={values.acquisitionCost}
+                />
+              </View>
+              <View style={styles.quantityColumn}>
+                <FieldLabel required>How many?</FieldLabel>
+                <TextInput
+                  editable={!submitting}
+                  keyboardType="number-pad"
+                  onChangeText={(value) => update("quantity", value)}
+                  placeholder="1"
+                  placeholderTextColor="rgba(255,255,255,0.34)"
+                  style={styles.input}
+                  value={values.quantity}
+                />
+              </View>
+            </View>
             <Text style={styles.helper}>
-              This is the amount recorded as the inventory purchase in Books.
+              Enter the full amount you paid. KeepFlip tracks the cost per item as units sell.
             </Text>
             <View style={styles.column}>
               <FieldLabel required>Acquisition date</FieldLabel>
@@ -269,6 +308,21 @@ export function AddToInventoryForm({
               />
             </View>
             <View style={styles.column}>
+              <FieldLabel>Extra item details</FieldLabel>
+              <TextInput
+                editable={!submitting}
+                multiline
+                onChangeText={(value) => update("itemSpecifics", value)}
+                placeholder={"Size: Large\nMaterial: Leather\nMeasurements: 20 in"}
+                placeholderTextColor="rgba(255,255,255,0.34)"
+                style={[styles.input, styles.notesInput]}
+                value={values.itemSpecifics}
+              />
+              <Text style={styles.helper}>
+                Add one detail per line. These stay with the item for future listings.
+              </Text>
+            </View>
+            <View style={styles.column}>
               <FieldLabel>Receipt photo</FieldLabel>
               <Pressable
                 accessibilityHint="Opens the camera or photo library to attach a receipt"
@@ -297,14 +351,18 @@ export function AddToInventoryForm({
                   <Text style={styles.receiptButtonSubtitle}>
                     {values.receiptReference
                       ? "Tap to replace the photo"
-                      : "Take a photo or choose one from your device"}
+                      : sourcingTrip?.trip.receiptFileId
+                        ? "A shared trip receipt is already on file"
+                        : sourcingTrip
+                          ? "Attach an item receipt, or add the shared trip receipt when you close it"
+                          : "Take a photo or choose one from your device"}
                   </Text>
                 </View>
                 <Text style={styles.receiptButtonArrow}>›</Text>
               </Pressable>
             </View>
             <View style={styles.column}>
-              <FieldLabel>Notes</FieldLabel>
+              <FieldLabel>Purchase notes</FieldLabel>
               <TextInput
                 editable={!submitting}
                 multiline
@@ -365,6 +423,34 @@ const styles = StyleSheet.create({
     borderBottomColor: "rgba(255,255,255,0.12)",
   },
   headerCopy: { flex: 1, gap: 5 },
+  sourceTripNotice: {
+    gap: 3,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(88, 223, 232, 0.28)",
+    backgroundColor: "rgba(88, 223, 232, 0.055)",
+  },
+  sourceTripEyebrow: {
+    color: theme.colors.scannerCyan,
+    fontFamily: theme.fonts.radar,
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 0.9,
+  },
+  sourceTripCopy: {
+    color: theme.colors.cream,
+    fontFamily: theme.fonts.body,
+    fontSize: 12,
+    fontWeight: "800",
+    lineHeight: 16,
+  },
+  sourceTripHelper: {
+    color: theme.colors.textMuted,
+    fontFamily: theme.fonts.body,
+    fontSize: 11,
+    lineHeight: 15,
+  },
   eyebrow: {
     color: theme.colors.scannerCyan,
     fontFamily: theme.fonts.radar,
@@ -465,6 +551,7 @@ const styles = StyleSheet.create({
   },
   twoColumn: { flexDirection: "row", gap: 10 },
   column: { flex: 1, minWidth: 0 },
+  quantityColumn: { flex: 0.46, minWidth: 86 },
   actions: {
     flexDirection: "row",
     gap: 10,

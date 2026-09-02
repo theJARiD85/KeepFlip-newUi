@@ -11,9 +11,6 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import {
-  AppodealNativeAdView,
-} from "@keepflip/expo-appodeal-native-ads";
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { InventoryCard } from "@/components/inventory/inventory-card";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -332,24 +329,7 @@ export default function InventoryScreen() {
         }
         renderItem={({ item: row }) =>
           row.kind === "native-ad" ? (
-            <View style={{ width: contentWidth }}>
-            <AppodealNativeAdView
-                placement="inventory_feed"
-                style={{ height: 380 }}
-                onAdReady={({ nativeEvent }) => {
-                  console.info(
-                    "Native ad ready",
-                    nativeEvent.availableCount,
-                  );
-                }}
-                onAdFailed={({ nativeEvent }) => {
-                  console.warn(
-                    "Native ad failed",
-                    nativeEvent.code,
-                  );
-                }}
-              />
-            </View>
+          null
           ) : (
             <View style={[styles.feedItem, { width: contentWidth }]}>
               <InventoryCard

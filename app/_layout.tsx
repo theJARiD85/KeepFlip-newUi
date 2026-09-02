@@ -25,10 +25,6 @@ import {
 import { KeepFlipFeedbackNudgeProvider } from "@/components/feedback/keepflip-feedback-nudge";
 import KeepFlipIntro from "@/components/intro/keepflip-intro.native";
 import { keepFlipTheme } from "@/constants/keepflip-theme";
-import {
-  AppodealNativeAdsInitializer,
-} from "@keepflip/expo-appodeal-native-ads";
-
 
 void SplashScreen
   .preventAutoHideAsync()
@@ -203,20 +199,7 @@ export default function RootLayout() {
         >
           <KeepFlipAuthProvider>
             <KeepFlipFeedbackNudgeProvider>
-          {!introVisible ? (
-            <AppodealNativeAdsInitializer
-              appKey={appodealKey}
-              cacheCount={5}
-              testing={isAdsTesting}
-              onInitialized={(result) => {
-                console.log('Appodeal initialized', result.initialized)
-              }}
-              onError={(error) => {
-                console.log('Appodeal error', error)
-              }}
-            />
-          ) : null}
-          <ProtectedRootStack />
+              <ProtectedRootStack />
             </KeepFlipFeedbackNudgeProvider>
           </KeepFlipAuthProvider>
 

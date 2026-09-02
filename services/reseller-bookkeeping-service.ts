@@ -27,6 +27,7 @@ export type RecordBookkeepingEventInput = {
   feeCents?: number;
   grossSaleCents?: number;
   itemId?: string | null;
+  quantity?: number;
   marketplaceCollectedTaxCents?: number;
   notes?: string | null;
   orderId?: string | null;

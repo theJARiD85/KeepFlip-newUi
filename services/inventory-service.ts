@@ -24,8 +24,23 @@ const INVENTORY_RESELLER_COLUMNS = [
   'flipComplexity',
   'flipDecisionConfidence',
 ] as const;
+const INVENTORY_ITEM_DETAILS_COLUMNS = [
+  'quantityPurchased',
+  'quantityOnHand',
+  'inventoryCostCentsOnHand',
+  'purchaseSource',
+  'sku',
+  'storageLocation',
+  'receiptFileId',
+  'purchaseNotes',
+  'variant',
+  'color',
+  'era',
+  'itemSpecificsJson',
+] as const;
 const ANALYSIS_SNAPSHOT_SCHEMA_VERSION = 1 as const;
 const MAX_ANALYSIS_SNAPSHOT_CHARACTERS = 500_000;
+const MAX_ITEM_QUANTITY = 100_000;
 
 const INVENTORY_LIST_COLUMNS = [
   'title',
@@ -38,6 +53,9 @@ const INVENTORY_LIST_COLUMNS = [
   'estimatedValueCents',
   'aiConfidence',
   'acquisitionCostCents',
+  'quantityPurchased',
+  'quantityOnHand',
+  'inventoryCostCentsOnHand',
   'flipDecision',
   'flipVerdict',
   'resaleVelocity',
@@ -48,6 +66,8 @@ const INVENTORY_LIST_COLUMNS = [
   'modelFile',
   'photoCount',
   'itemPhotos',
+  'sku',
+  'storageLocation',
   'acquiredAt',
   'createdAt',
 ] as const;
@@ -87,6 +107,10 @@ export type InventoryItem = {
   status: InventoryItemStatus;
   estimatedValue: number | null;
   acquisitionCost: number | null;
+  /** Total original cost for the saved lot, rather than a per-unit estimate. */
+  inventoryCostOnHand: number | null;
+  quantityPurchased: number;
+  quantityOnHand: number;
   currency: string;
   aiConfidence: number | null;
   flipDecision: InventoryFlipDecision | null;
@@ -99,6 +123,16 @@ export type InventoryItem = {
   modelFile: string | null;
   photoCount: number;
   itemPhotos: string[];
+  variant: string | null;
+  color: string | null;
+  era: string | null;
+  serialNumber: string | null;
+  itemSpecifics: Record<string, string>;
+  purchaseSource: string | null;
+  sku: string | null;
+  storageLocation: string | null;
+  receiptFileId: string | null;
+  purchaseNotes: string | null;
   acquiredAt?: string | null;
   createdAt: string;
   analysisSnapshot?: ItemAnalysisSuccess | null;
@@ -117,6 +151,9 @@ type InventoryRow = {
   status?: string | null;
   estimatedValueCents?: number | null;
   acquisitionCostCents?: number | null;
+  inventoryCostCentsOnHand?: number | null;
+  quantityPurchased?: number | null;
+  quantityOnHand?: number | null;
   aiConfidence?: number | null;
   flipDecision?: string | null;
   flipVerdict?: string | null;
@@ -126,6 +163,16 @@ type InventoryRow = {
   flipDecisionConfidence?: number | null;
   coverPhotoId?: string | null;
   modelFile?: string | null;
+  variant?: string | null;
+  color?: string | null;
+  era?: string | null;
+  serialNumber?: string | null;
+  itemSpecificsJson?: string | null;
+  purchaseSource?: string | null;
+  sku?: string | null;
+  storageLocation?: string | null;
+  receiptFileId?: string | null;
+  purchaseNotes?: string | null;
   photoCount?: number | null;
   itemPhotos?: unknown;
   acquiredAt?: string | null;
@@ -147,9 +194,16 @@ export type SaveAnalyzedItemInput = {
   analysis: ItemAnalysisSuccess;
   acquisitionCost?: number | null;
   acquiredAt?: string | null;
+  itemSpecifics?: Record<string, string> | string | null;
   modelFile?: string | null;
   ownerId: string;
+  purchaseNotes?: string | null;
+  purchaseSource?: string | null;
+  quantity?: number | null;
+  receiptFileId?: string | null;
   scanId: string;
+  sku?: string | null;
+  storageLocation?: string | null;
 };
 
 export type SaveAnalyzedItemResult = {
@@ -297,6 +351,71 @@ function centsFromAmount(value: number | null | undefined) {
   return cents <= 2_147_483_647 ? cents : null;
 }
 
+function savedQuantity(value: number | null | undefined, fallback = 1) {
+  const quantity = Number(value);
+  return Number.isSafeInteger(quantity) &&
+    quantity >= 0 &&
+    quantity <= MAX_ITEM_QUANTITY
+    ? quantity
+    : fallback;
+}
+
+function purchaseQuantity(value: number | null | undefined) {
+  if (value == null) return 1;
+  const quantity = Number(value);
+  if (
+    !Number.isSafeInteger(quantity) ||
+    quantity < 1 ||
+    quantity > MAX_ITEM_QUANTITY
+  ) {
+    throw new Error(
+      `Quantity must be a whole number from 1 through ${MAX_ITEM_QUANTITY.toLocaleString()}.`,
+    );
+  }
+  return quantity;
+}
+
+function itemSpecifics(value: unknown): Record<string, string> {
+  let source: unknown = value;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return {};
+    try {
+      source = JSON.parse(trimmed);
+    } catch {
+      source = Object.fromEntries(
+        trimmed
+          .split(/\r?\n/)
+          .map((line, index) => {
+            const separator = line.indexOf(':');
+            const key =
+              separator > 0 ? line.slice(0, separator) : `Detail ${index + 1}`;
+            const detail = separator > 0 ? line.slice(separator + 1) : line;
+            return [key, detail];
+          }),
+      );
+    }
+  }
+  if (!isRecord(source)) return {};
+
+  return Object.fromEntries(
+    Object.entries(source)
+      .map(([key, detail]) => [
+        boundedText(key, 60),
+        boundedText(typeof detail === 'string' ? detail : String(detail), 240),
+      ])
+      .filter(
+        (entry): entry is [string, string] => Boolean(entry[0] && entry[1]),
+      )
+      .slice(0, 24),
+  );
+}
+
+function serializedItemSpecifics(value: unknown) {
+  const details = itemSpecifics(value);
+  return Object.keys(details).length > 0 ? JSON.stringify(details) : null;
+}
+
 function normalizedFlipVerdict(
   value: string | null | undefined,
 ): InventoryFlipVerdict | null {
@@ -440,7 +559,11 @@ function isInventorySchemaError(error: unknown) {
   const type = typeof source?.type === 'string' ? source.type : '';
 
   return (
-    [ANALYSIS_SNAPSHOT_COLUMN, ...INVENTORY_RESELLER_COLUMNS].some((column) =>
+    [
+      ANALYSIS_SNAPSHOT_COLUMN,
+      ...INVENTORY_RESELLER_COLUMNS,
+      ...INVENTORY_ITEM_DETAILS_COLUMNS,
+    ].some((column) =>
       message.toLowerCase().includes(column.toLowerCase()),
     ) ||
     /(?:row|document)_invalid_structure|unknown_(?:attribute|column)/i.test(type)
@@ -449,7 +572,7 @@ function isInventorySchemaError(error: unknown) {
 
 function inventorySchemaMigrationError(cause: unknown) {
   const error = new Error(
-    `KeepFlip's Appwrite items table needs ${ANALYSIS_SNAPSHOT_COLUMN} plus these optional reseller-intelligence columns before analyzed items can be saved: ${INVENTORY_RESELLER_COLUMNS.join(', ')}. Set flipDecisionConfidence to an integer range of 0 through 100, then wait until the columns are available and retry.`,
+    `KeepFlip's Appwrite items table needs ${ANALYSIS_SNAPSHOT_COLUMN}, these reseller-intelligence columns: ${INVENTORY_RESELLER_COLUMNS.join(', ')}, and these item-detail columns: ${INVENTORY_ITEM_DETAILS_COLUMNS.join(', ')}. Set flipDecisionConfidence to an integer range of 0 through 100, then wait until the columns are available and retry.`,
   );
   error.name = 'InventorySchemaMigrationError';
   (error as Error & { cause?: unknown }).cause = cause;
@@ -522,6 +645,14 @@ function rowToInventoryItem(row: InventoryRow): InventoryItem {
     estimatedValue:
       Number.isFinite(cents) && cents > 0 ? Math.round(cents) / 100 : null,
     acquisitionCost: amountFromCents(row.acquisitionCostCents),
+    inventoryCostOnHand: amountFromCents(
+      row.inventoryCostCentsOnHand ?? row.acquisitionCostCents,
+    ),
+    quantityPurchased: savedQuantity(row.quantityPurchased),
+    quantityOnHand: savedQuantity(
+      row.quantityOnHand,
+      savedQuantity(row.quantityPurchased),
+    ),
     currency: 'USD',
     aiConfidence: confidencePercent(row.aiConfidence),
     flipDecision,
@@ -534,6 +665,16 @@ function rowToInventoryItem(row: InventoryRow): InventoryItem {
     modelFile: normalizedModelFile(row.modelFile),
     photoCount: Math.max(0, Number(row.photoCount) || 0),
     itemPhotos: normalizedItemPhotos(row.itemPhotos),
+    variant: cleanText(row.variant),
+    color: cleanText(row.color),
+    era: cleanText(row.era),
+    serialNumber: cleanText(row.serialNumber),
+    itemSpecifics: itemSpecifics(row.itemSpecificsJson),
+    purchaseSource: cleanText(row.purchaseSource),
+    sku: cleanText(row.sku),
+    storageLocation: cleanText(row.storageLocation),
+    receiptFileId: cleanText(row.receiptFileId),
+    purchaseNotes: cleanText(row.purchaseNotes),
     acquiredAt: row.acquiredAt || null,
     createdAt: row.createdAt || row.$createdAt || new Date().toISOString(),
     analysisSnapshot: parseAnalysisSnapshot(row.analysisSnapshotJson),
@@ -632,9 +773,16 @@ export async function saveAnalyzedItemToInventory({
   analysis,
   acquisitionCost,
   acquiredAt,
+  itemSpecifics: suppliedItemSpecifics,
   modelFile,
   ownerId,
+  purchaseNotes,
+  purchaseSource,
+  quantity,
+  receiptFileId,
   scanId,
+  sku,
+  storageLocation,
 }: SaveAnalyzedItemInput): Promise<SaveAnalyzedItemResult> {
   assertInventoryConfigured();
   const cleanOwnerId = ownerId.trim();
@@ -654,6 +802,20 @@ export async function saveAnalyzedItemToInventory({
   const analysisSnapshotJson = serializeAnalysisSnapshot(analysis, now);
   const acquisitionCostCents = centsFromAmount(acquisitionCost);
   const normalizedAcquiredAt = acquiredAt?.trim() || null;
+  const normalizedQuantity = purchaseQuantity(quantity);
+  const inventoryCostCentsOnHand = acquisitionCostCents;
+  const itemDetailData = {
+    color: boundedText(identity.color, 80),
+    era: boundedText(identity.era, 80),
+    itemSpecificsJson: serializedItemSpecifics(suppliedItemSpecifics),
+    purchaseNotes: boundedText(purchaseNotes, 2_000),
+    purchaseSource: boundedText(purchaseSource, 120),
+    receiptFileId: boundedText(receiptFileId, 64),
+    serialNumber: boundedText(identity.serialNumber, 150) || null,
+    sku: boundedText(sku, 120),
+    storageLocation: boundedText(storageLocation, 180),
+    variant: boundedText(identity.variant, 120),
+  };
   const resellerSignals = inventoryResellerSignals(analysis);
   const conditionNotes = [
     ...analysis.analysis.condition.notes,
@@ -680,7 +842,6 @@ export async function saveAnalyzedItemToInventory({
           'Other',
         brand: boundedText(identity.brand, 100),
         model: boundedText(identity.model, 150),
-        serialNumber: boundedText(identity.serialNumber, 150) || null,
         condition: normalizedCondition(analysis.analysis.condition.grade),
         status: 'undecided',
         description: conditionNotes || null,
@@ -689,6 +850,10 @@ export async function saveAnalyzedItemToInventory({
             ? Math.round(median * 100)
             : null,
         acquisitionCostCents,
+        inventoryCostCentsOnHand,
+        quantityPurchased: normalizedQuantity,
+        quantityOnHand: normalizedQuantity,
+        ...itemDetailData,
         ...resellerSignals,
         originalRetailCents: null,
         coverPhotoId: null,
@@ -734,6 +899,10 @@ export async function saveAnalyzedItemToInventory({
     item: rowToInventoryItem({
       ...created,
       acquisitionCostCents,
+      inventoryCostCentsOnHand,
+      quantityPurchased: normalizedQuantity,
+      quantityOnHand: normalizedQuantity,
+      ...itemDetailData,
       ...resellerSignals,
       coverPhotoId: attached.coverPhotoId,
       modelFile: storedModelFile,

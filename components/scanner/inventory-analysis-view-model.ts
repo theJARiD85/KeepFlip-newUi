@@ -2,6 +2,7 @@ import type { ItemAnalysisState } from "@/components/scanner/analysis-visual-typ
 import { toItemAnalysisState } from "@/components/scanner/item-analysis-view-model";
 import type { InventoryItem } from "@/services/inventory-service";
 import { neutralizeMarketplaceBrand } from "@/services/market-copy";
+import type { ItemAnalysisSuccess } from "@/types/item-analysis";
 
 type ResultState = Extract<ItemAnalysisState, { status: "result" }>;
 
@@ -26,10 +27,11 @@ function displaySignal(value: string | null) {
 
 export function inventoryItemToAnalysisState(
   item: InventoryItem,
+  analysisSnapshot: ItemAnalysisSuccess | null | undefined = item.analysisSnapshot,
 ): ResultState {
-  if (item.analysisSnapshot) {
+  if (analysisSnapshot) {
     try {
-      const restored = toItemAnalysisState(item.analysisSnapshot);
+      const restored = toItemAnalysisState(analysisSnapshot);
       if (restored.status === "result") return restored;
     } catch {
       // Older or malformed snapshots fall through to the durable item fields.

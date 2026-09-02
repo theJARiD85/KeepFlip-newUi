@@ -125,7 +125,7 @@ export function InventoryCard({
         ]}
       >
       <View style={styles.hero}>
-        <AdvancedHoloOverlay width={500} height={216} />
+        <AdvancedHoloOverlay width={500} height={240} />
         {resolvedSource && !imageUnavailable ? (
           
           <Image
@@ -166,17 +166,6 @@ export function InventoryCard({
         />
 
         <View pointerEvents="none" style={styles.heroTopRail}>
-          <View style={styles.photoPill}>
-            <IconSymbol
-              color={theme.colors.scannerCyan}
-              name="photo.on.rectangle.angled"
-              size={12}
-            />
-            <Text style={styles.photoPillText}>
-              {item.photoCount} {item.photoCount === 1 ? "PHOTO" : "PHOTOS"}
-            </Text>
-          </View>
-
           <View style={styles.conditionPill}>
             <Text numberOfLines={1} style={styles.conditionText}>
               {item.condition}
@@ -198,6 +187,10 @@ export function InventoryCard({
               {meta}
             </Text>
           ) : null}
+        </View>
+        <View style={styles.savedAt}>
+          <Text style={styles.savedAtLabel}>SAVED</Text>
+          <Text style={styles.savedAtValue}>{formatDate(item.createdAt)}</Text>
         </View>
       </View>
 
@@ -222,10 +215,6 @@ export function InventoryCard({
       </View>
 
       <View style={styles.valuationSummary}>
-        <View style={styles.savedAt}>
-          <Text style={styles.savedAtLabel}>SAVED</Text>
-          <Text style={styles.savedAtValue}>{formatDate(item.createdAt)}</Text>
-        </View>
 
         <View style={styles.medianBlock}>
           <Text style={styles.medianLabel}>
@@ -307,7 +296,7 @@ export function InventoryCard({
           </View>
           <View style={styles.listingGuideButtonCopy}>
             <Text style={styles.listingGuideButtonEyebrow}>PHOTO SET</Text>
-            <Text style={styles.listingGuideButtonLabel}>Add photos</Text>
+            <Text style={styles.listingGuideButtonLabel}> Add photos</Text>
           </View>
           <IconSymbol
             color={theme.colors.scannerCyan}
@@ -339,7 +328,7 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.985 }],
   },
   hero: {
-    height: 216,
+    height: 240,
     justifyContent: "space-between",
     backgroundColor: "#08070C",
   },
@@ -554,7 +543,7 @@ const styles = StyleSheet.create({
   },
   listingGuideButton: {
     position: "relative",
-    minHeight: 66,
+    minHeight: 53,
     flexDirection: "row",
     alignItems: "center",
     gap: 11,

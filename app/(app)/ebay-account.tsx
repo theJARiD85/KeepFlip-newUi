@@ -250,6 +250,10 @@ export default function EbayAccountScreen() {
     sellerProfile?.doingBusinessAs?.trim() ||
     accountName;
   const cachedListings = sellerAccount?.listings ?? [];
+  const listingSetup = sellerAccount?.listingSetup;
+  const savedListingDefaultCount = listingSetup
+    ? Object.values(listingSetup.defaultSelection).filter(Boolean).length
+    : 0;
 
   return (
     <KeepFlipBackground>
@@ -390,7 +394,75 @@ export default function EbayAccountScreen() {
               </View>
             </Animated.View>
 
-            <Animated.View entering={FadeInDown.duration(250).delay(130)} style={styles.section}>
+            {listingSetup ? (
+              <Animated.View
+                entering={FadeInDown.duration(250).delay(130)}
+                style={styles.section}>
+                <Text style={styles.sectionEyebrow}>LISTING SETUP</Text>
+                <View style={styles.settingsCard}>
+                  <View style={styles.settingRow}>
+                    <IconSymbol
+                      color={
+                        listingSetup.state === 'ready'
+                          ? theme.colors.scannerCyan
+                          : theme.colors.goldBright
+                      }
+                      name={
+                        listingSetup.state === 'ready'
+                          ? 'checkmark.shield.fill'
+                          : 'exclamationmark.triangle.fill'
+                      }
+                      size={20}
+                    />
+                    <View style={styles.settingCopy}>
+                      <Text style={styles.settingTitle}>
+                        {listingSetup.state === 'ready'
+                          ? 'Ready to list'
+                          : listingSetup.state === 'failed'
+                            ? 'Setup needs a refresh'
+                            : 'Listing setup needs attention'}
+                      </Text>
+                      <Text style={styles.settingDescription}>
+                        {listingSetup.message ||
+                          'KeepFlip checks the eBay policies and inventory location needed to publish a listing.'}
+                      </Text>
+                    </View>
+                    <Text
+                      style={[
+                        styles.connectedPill,
+                        listingSetup.state !== 'ready' && styles.setupPillPending,
+                      ]}>
+                      {listingSetup.state === 'ready' ? 'READY' : 'CHECK'}
+                    </Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>SAVED DEFAULTS</Text>
+                    <Text selectable style={styles.detailValue}>
+                      {savedListingDefaultCount + ' of 4 ready'}
+                    </Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>EBAY OPTIONS FOUND</Text>
+                    <Text selectable style={styles.detailValue}>
+                      {[
+                        listingSetup.policyCounts.payment + ' payment',
+                        listingSetup.policyCounts.fulfillment + ' shipping',
+                        listingSetup.policyCounts.return + ' return',
+                        listingSetup.locationCount + ' location',
+                      ].join(' · ')}
+                    </Text>
+                  </View>
+                  <Text style={styles.profileSyncNote}>
+                    {listingSetup.lastCheckedAt
+                      ? 'Checked ' +
+                        new Date(listingSetup.lastCheckedAt).toLocaleString()
+                      : 'eBay listing setup has not been checked yet.'}
+                  </Text>
+                </View>
+              </Animated.View>
+            ) : null}
+
+            <Animated.View entering={FadeInDown.duration(250).delay(160)} style={styles.section}>
               <Text style={styles.sectionEyebrow}>KEEPFLIP LISTINGS</Text>
               <View style={styles.settingsCard}>
                 <View style={styles.listingHeader}>
@@ -446,7 +518,7 @@ export default function EbayAccountScreen() {
               </View>
             </Animated.View>
 
-            <Animated.View entering={FadeInDown.duration(250).delay(160)} style={styles.section}>
+            <Animated.View entering={FadeInDown.duration(250).delay(190)} style={styles.section}>
               <Text style={styles.sectionEyebrow}>ACCESS SETTINGS</Text>
               <View style={styles.settingsCard}>
                 <View style={styles.settingRow}>
@@ -494,27 +566,6 @@ export default function EbayAccountScreen() {
             </Animated.View>
 
             <View style={styles.actions}>
-              <Pressable
-                accessibilityLabel="Reconnect eBay account"
-                accessibilityRole="button"
-                disabled={isRevoking}
-                onPress={() => {
-                  hapticSelection();
-                  router.push('/ebay-connect?reconnect=1');
-                }}
-                style={({ pressed }) => [
-                  styles.reconnectButton,
-                  isRevoking && styles.buttonDisabled,
-                  pressed && !isRevoking && styles.pressed,
-                ]}>
-                <EbayShoppingBagIcon size={22} />
-                <Text style={styles.reconnectButtonText}>RECONNECT EBAY</Text>
-                <IconSymbol
-                  color={theme.colors.backgroundDeep}
-                  name="arrow.right"
-                  size={19}
-                />
-              </Pressable>
 
               <Pressable
                 accessibilityLabel="Revoke eBay access"
@@ -778,6 +829,9 @@ const styles = StyleSheet.create({
     fontSize: 8,
     fontWeight: '900',
     letterSpacing: 1,
+  },
+  setupPillPending: {
+    color: theme.colors.goldBright,
   },
   settingDivider: {
     height: StyleSheet.hairlineWidth,

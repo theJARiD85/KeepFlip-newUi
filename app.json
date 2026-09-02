@@ -20,6 +20,7 @@
       "googleServicesFile": "./config/android/google-services.json",
       "permissions": [
         "android.permission.CAMERA",
+        "android.permission.POST_NOTIFICATIONS",
         "com.google.android.gms.permission.AD_ID"
       ],
       "adaptiveIcon": {
@@ -71,21 +72,13 @@
         }
       ],
       "expo-web-browser",
-      [
-        "@keepflip/expo-appodeal-native-ads",
-        {
-          "enableAdMob": true,
-          "adMobAppId": "ca-app-pub-9259020398529102~7300404509",
-          "removeLocationPermissions": true
-        }
-      ],
-      "./plugins/with-appodeal-bidon",
       "expo-font",
       "expo-image",
       "expo-status-bar",
       "expo-build-properties",
       "expo-secure-store",
-      "expo-sharing"
+      "expo-sharing",
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -1,6 +1,7 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
+apply plugin: "com.google.firebase.appdistribution"
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
@@ -73,7 +74,7 @@ react {
 /**
  * Set this to true in release builds to optimize the app using [R8](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization).
  */
-def enableMinifyInReleaseBuilds = (findProperty('android.enableMinifyInReleaseBuilds') ?: true).toBoolean()
+def enableMinifyInReleaseBuilds = (findProperty('android.enableMinifyInReleaseBuilds') ?: false).toBoolean()
 
 /**
  * The preferred build flavor of JavaScriptCore (JSC)
@@ -92,7 +93,7 @@ android {
     ndkVersion rootProject.ext.ndkVersion
 
     buildToolsVersion rootProject.ext.buildToolsVersion
-    compileSdk 36
+    compileSdk rootProject.ext.compileSdkVersion
 
     namespace 'com.keepflip.app'
     defaultConfig {
@@ -100,7 +101,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 18
-        versionName "2.0.6"
+        versionName "2.0.7"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
@@ -121,16 +122,19 @@ android {
         }
     }
     buildTypes {
-        debug { signingConfig signingConfigs.debug }
+        debug {
+            if (keepFlipKeystorePropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            }
+        }
         release {
-
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-
-           if (keepFlipKeystorePropertiesFile.exists()) {
-                 signingConfig signingConfigs.release
-           }
+            // Caution! In production, you need to generate your own keystore file.
+            // see https://reactnative.dev/docs/signed-apk-android.
+            signingConfig signingConfigs.debug
+            def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
+            shrinkResources enableShrinkResources.toBoolean()
+            minifyEnabled enableMinifyInReleaseBuilds
+            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
             def enablePngCrunchInRelease = findProperty('android.enablePngCrunchInReleaseBuilds') ?: 'true'
             crunchPngs enablePngCrunchInRelease.toBoolean()
         }
@@ -167,24 +171,12 @@ android {
 }
 
 dependencies {
+    implementation(platform("com.google.firebase:firebase-bom:34.17.0"))
+    implementation("com.google.firebase:firebase-analytics")
+    // Optional Appodeal AdMob adapter and its Bidon mediation bridge.
     implementation("com.appodeal.ads.sdk.adapters:admob:25.2.0.0")
+    // Required by Appodeal's AdMob mediation bridge.
     implementation("com.appodeal.ads.sdk.adapters:bidon:0.14.0.0")
-    implementation("io.bidmachine:ads.networks.meta_audience:6.21.0.1")
-    implementation("io.bidmachine:ads.networks.mintegral:17.1.61.1")
-    implementation("io.bidmachine:ads.networks.my_target:5.47.1.2")
-    implementation("org.bidon:bidmachine-adapter:3.7.1.1")
-    implementation("org.bidon:bigoads-adapter:5.9.0.0")
-    implementation("org.bidon:inmobi-adapter:11.3.0.0")
-    implementation("org.bidon:meta-adapter:6.21.0.0")
-    implementation("org.bidon:mintegral-adapter:17.1.61.0")
-    implementation("org.bidon:mobilefuse-adapter:1.11.0.0")
-    implementation("org.bidon:vkads-adapter:5.47.1.0")
-    implementation("com.appodeal.ads.sdk.adapters:bigo_ads:5.9.0.0")
-    implementation("com.appodeal.ads.sdk.adapters:facebook_analytics:18.3.0.0")
-    implementation("com.appodeal.ads.sdk.adapters:firebase:23.2.0.0")
-    implementation("com.appodeal.ads.sdk.adapters:iab:1.8.1.0")
-    implementation("com.appodeal.ads.sdk.adapters:sentry_analytics:8.44.1.0")
-    implementation("com.appodeal.ads.sdk.adapters:smaato:22.7.2.0")
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
 

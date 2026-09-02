@@ -137,7 +137,6 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
 
   return (
     <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
-      <ValueRadarTargetOverlay {...props} />
 
       {marker && status === "ready" ? (
         <Animated.View
@@ -211,6 +210,7 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
           </Pressable>
         </Animated.View>
       ) : null}
+      <ValueRadarTargetOverlay {...props} />
     </View>
   );
 }

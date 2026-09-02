@@ -5,6 +5,13 @@ import {
   Role,
   tablesDB,
 } from '@/lib/appwrite';
+import {
+  normalizeResellerBuyRules,
+  type ResellerBuyRules,
+  type ResellerBuyRulesInput,
+} from '@/services/reseller-buy-rules-service';
+
+export const USER_PROFILE_BUY_RULES_COLUMN = 'resellerBuyRulesJson';
 
 type UserProfileRow = {
   $id: string;
@@ -12,6 +19,7 @@ type UserProfileRow = {
   defaultCurrency?: string;
   displayName?: string | null;
   onboardingCompletedAt?: string | null;
+  resellerBuyRulesJson?: string | null;
   updatedAt?: string;
   userId?: string;
   [key: string]: unknown;
@@ -51,6 +59,39 @@ function isConflictError(error: unknown) {
   }
 
   return Number((error as { code?: unknown }).code) === 409;
+}
+
+function isProfileSchemaError(error: unknown) {
+  const source =
+    typeof error === 'object' && error !== null
+      ? (error as { message?: unknown; type?: unknown })
+      : null;
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof source?.message === 'string'
+        ? source.message
+        : '';
+  const type = typeof source?.type === 'string' ? source.type : '';
+  const details = (message + ' ' + type).toLowerCase();
+
+  return (
+    details.includes(USER_PROFILE_BUY_RULES_COLUMN.toLowerCase()) ||
+    /(?:row|document)_invalid_structure|unknown_(?:attribute|column)/i.test(
+      type,
+    )
+  );
+}
+
+function userProfileSchemaMigrationError(cause: unknown) {
+  const error = new Error(
+    "KeepFlip's user_profiles table needs the " +
+      USER_PROFILE_BUY_RULES_COLUMN +
+      " mediumtext column before Buy Rules can be saved. Follow docs/USER_PROFILE_BUY_RULES_APPWRITE_SCHEMA.md, wait until the column is Available, then retry.",
+  );
+  error.name = 'UserProfileSchemaMigrationError';
+  (error as Error & { cause?: unknown }).cause = cause;
+  return error;
 }
 
 function profilePermissions(userId: string) {
@@ -151,33 +192,71 @@ export async function ensureUserProfile({
   }
 }
 
+function parseResellerBuyRules(value: unknown): ResellerBuyRules | null {
+  if (typeof value !== 'string' || !value.trim()) return null;
+
+  try {
+    return normalizeResellerBuyRules(JSON.parse(value) as unknown);
+  } catch {
+    return null;
+  }
+}
+
+export async function getResellerBuyRules(
+  userId: string,
+  displayName?: string | null,
+) {
+  const row = await ensureUserProfile({ displayName, userId });
+  return parseResellerBuyRules(row.resellerBuyRulesJson);
+}
+
 export async function hasCompletedScanInventoryWalkthrough(
   userId: string,
   displayName?: string | null,
 ) {
   const row = await ensureUserProfile({ displayName, userId });
-  return Boolean(
+  const hasCompletedWalkthrough = Boolean(
     typeof row.onboardingCompletedAt === 'string'
       ? row.onboardingCompletedAt.trim()
       : row.onboardingCompletedAt,
+  );
+
+  return hasCompletedWalkthrough && Boolean(
+    parseResellerBuyRules(row.resellerBuyRulesJson),
   );
 }
 
 export async function completeScanInventoryWalkthrough(
   userId: string,
   displayName?: string | null,
+  buyRules?: ResellerBuyRulesInput,
 ) {
   const row = await ensureUserProfile({ displayName, userId });
-  if (row.onboardingCompletedAt) return;
-  const completedAt = new Date().toISOString();
+  const normalizedBuyRules = normalizeResellerBuyRules(buyRules);
+  if (!normalizedBuyRules) {
+    throw new Error('Choose valid Buy Rules before finishing onboarding.');
+  }
 
-  await tablesDB.updateRow({
-    databaseId: APPWRITE.databaseId,
-    tableId: APPWRITE.userProfilesTableId,
-    rowId: row.$id,
-    data: {
-      onboardingCompletedAt: completedAt,
-      updatedAt: completedAt,
-    },
-  });
+  const completedAt = new Date().toISOString();
+  try {
+    await tablesDB.updateRow({
+      databaseId: APPWRITE.databaseId,
+      tableId: APPWRITE.userProfilesTableId,
+      rowId: row.$id,
+      data: {
+        onboardingCompletedAt:
+          typeof row.onboardingCompletedAt === 'string' &&
+          row.onboardingCompletedAt.trim()
+            ? row.onboardingCompletedAt
+            : completedAt,
+        [USER_PROFILE_BUY_RULES_COLUMN]: JSON.stringify(normalizedBuyRules),
+        updatedAt: completedAt,
+      },
+    });
+  } catch (error) {
+    if (isProfileSchemaError(error)) {
+      throw userProfileSchemaMigrationError(error);
+    }
+    throw error;
+  }
 }

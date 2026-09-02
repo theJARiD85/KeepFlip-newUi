@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { CerebroAnalysisField } from "@/components/scanner/cerebro-analysis-field.native";
 import { ItemAnalysisBubbles } from "@/components/scanner/item-analysis-bubbles";
 import {
@@ -36,6 +37,8 @@ import {
   ItemAnalysisError,
 } from "@/services/item-analysis-service";
 import { neutralizeMarketplaceBrand } from "@/services/market-copy";
+import { applyResellerBuyRulesToAnalysis } from "@/services/reseller-buy-rules-service";
+import { getResellerBuyRules } from "@/services/user-profile-onboarding-service";
 import type {
   ItemAnalysisStage,
   ItemAnalysisSuccess,
@@ -83,6 +86,9 @@ export function ItemAnalysisScreen() {
   const insets = useSafeAreaInsets();
   const { height, width } = useWindowDimensions();
   const isFocused = useIsFocused();
+  const { user } = useKeepFlipAuth();
+  const userId = user?.$id;
+  const userName = user?.name;
   const params = useLocalSearchParams<{
     sessionId?: string | string[];
   }>();
@@ -179,6 +185,9 @@ export function ItemAnalysisScreen() {
     );
 
     try {
+      const buyRulesPromise = userId
+        ? getResellerBuyRules(userId, userName).catch(() => null)
+        : Promise.resolve(null);
       const result = await analyzeItemPhotos(
         { photoUris: session.photoUris },
         {
@@ -215,7 +224,18 @@ export function ItemAnalysisScreen() {
         return;
       }
 
-      const resultState = toItemAnalysisState(result);
+      const buyRules = await buyRulesPromise;
+      if (
+        controller.signal.aborted ||
+        runId !== runSequenceRef.current
+      ) {
+        return;
+      }
+
+      const personalizedResult = buyRules
+        ? applyResellerBuyRulesToAnalysis(result, buyRules)
+        : result;
+      const resultState = toItemAnalysisState(personalizedResult);
       if (resultState.status !== "result") {
         setState(resultState);
         return;
@@ -223,7 +243,7 @@ export function ItemAnalysisScreen() {
 
       setState(resultState);
       setCompletedAnalysis({
-        analysis: result,
+        analysis: personalizedResult,
         state: resultState,
       });
     } catch (error) {
@@ -273,7 +293,7 @@ export function ItemAnalysisScreen() {
         controllerRef.current = null;
       }
     }
-  }, [session]);
+  }, [session, userId, userName]);
 
   useEffect(() => {
     if (

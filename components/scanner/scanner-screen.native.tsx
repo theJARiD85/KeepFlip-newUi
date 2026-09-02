@@ -73,9 +73,13 @@ import {
   buildScanProofAssessment,
   inspectLocalScanProofPhoto,
   mergeLocalScanProofSignals,
+  type LocalScanDetection,
   type LocalScanProofSignals,
   type ScanProofAssessment,
 } from "@/services/scan-proof-service";
+import {
+  getSmartEvidenceCapturePlan,
+} from "@/services/smart-evidence-capture";
 
 type AnalysisCognitionSeed = {
   localDetection?: {
@@ -223,6 +227,7 @@ export default function ScannerScreen() {
   const torchRequestSequenceRef = useRef(0);
   const pendingAnalysisSessionIdRef = useRef<string | null>(null);
   const barcodeLookupRequestRef = useRef(0);
+  const proofReadGenerationRef = useRef(0);
   const analysisNavigationTimerRef =
     useRef<ReturnType<typeof setTimeout> | null>(null);
   const scanIdRef = useRef(createScanId());
@@ -249,7 +254,7 @@ export default function ScannerScreen() {
   const [captureFeedback, setCaptureFeedback] = useState<string | null>(null);
   const [radarViewport, setRadarViewport] =
     useState<ValueRadarViewport | null>(null);
-  const [selectedTool, setSelectedTool] = useState<ScannerToolId>("single");
+  const [selectedTool, setSelectedTool] = useState<ScannerToolId>("multi");
   const [singlePhotoUri, setSinglePhotoUri] = useState<string | null>(null);
   const [multiScanPhotos, setMultiScanPhotos] = useState<MultiScanPhoto[]>([]);
   const [isMultiReviewOpen, setIsMultiReviewOpen] = useState(false);
@@ -263,6 +268,9 @@ export default function ScannerScreen() {
   const [proofSignalsByUri, setProofSignalsByUri] = useState<
     Record<string, LocalScanProofSignals>
   >({});
+  const [smartEvidenceDetection, setSmartEvidenceDetection] = useState<
+    LocalScanDetection | undefined
+  >(undefined);
   const canUseTorch = device?.hasTorch === true;
   const isCameraReady = readyCameraId === device?.id;
   const zoomBounds = useMemo(() => {
@@ -361,16 +369,55 @@ export default function ScannerScreen() {
     () => [photoOutput, radarFrameOutput],
     [photoOutput, radarFrameOutput],
   );
-  const currentCameraCandidate =
-    radarMarker && radarMarker.score >= 0.55
-      ? {
-          label: radarMarker.label,
-          score: radarMarker.score,
-        }
-      : undefined;
+  const currentCameraCandidate = useMemo(
+    () =>
+      radarMarker && radarMarker.score >= 0.55
+        ? {
+            label: radarMarker.label,
+            score: radarMarker.score,
+          }
+        : undefined,
+    [radarMarker],
+  );
   const localProofSignals = mergeLocalScanProofSignals(
     analysisPhotoUris.map((photoUri) => proofSignalsByUri[photoUri]),
   );
+  const multiScanProofSignals = useMemo(
+    () =>
+      mergeLocalScanProofSignals(
+        multiScanPhotos.map((photo) => proofSignalsByUri[photo.path]),
+      ),
+    [multiScanPhotos, proofSignalsByUri],
+  );
+  const smartEvidenceCapturePlan = useMemo(
+    () =>
+      getSmartEvidenceCapturePlan({
+        localDetection:
+          multiScanPhotos.length > 0
+            ? smartEvidenceDetection
+            : currentCameraCandidate,
+        signals: multiScanProofSignals,
+      }),
+    [
+      currentCameraCandidate,
+      multiScanPhotos.length,
+      multiScanProofSignals,
+      smartEvidenceDetection,
+    ],
+  );
+  const smartScanTip = useMemo(() => {
+    const completedPhotoCount = Math.max(
+      0,
+      Math.min(multiScanPhotos.length, smartEvidenceCapturePlan.steps.length),
+    );
+    const currentStep = smartEvidenceCapturePlan.steps[completedPhotoCount];
+
+    if (!currentStep) {
+      return "Evidence set ready. Tap Analyze when you want KeepFlip to research it.";
+    }
+
+    return `${completedPhotoCount + 1}/${smartEvidenceCapturePlan.steps.length} · ${currentStep.title}: ${currentStep.prompt}`;
+  }, [multiScanPhotos.length, smartEvidenceCapturePlan]);
   const scanProof = buildScanProofAssessment({
     localDetection:
       selectedTool === "single" ? currentCameraCandidate : undefined,
@@ -379,10 +426,12 @@ export default function ScannerScreen() {
     signals: localProofSignals,
   });
   const scannerHeaderHint =
-    captureFeedback ??
-    (scanProof.source === "on_device"
-      ? `${scanProof.evidenceDetail}. ${scanProof.processingDetail}`
-      : selectedToolHeader.hint);
+    selectedTool === "multi"
+      ? smartScanTip
+      : captureFeedback ??
+        (scanProof.source === "on_device"
+          ? `${scanProof.evidenceDetail}. ${scanProof.processingDetail}`
+          : selectedToolHeader.hint);
   const scannerHeaderHasEvidence =
     captureFeedback != null || scanProof.source === "on_device";
 
@@ -655,19 +704,33 @@ export default function ScannerScreen() {
     [],
   );
 
-  const inspectCapturedPhotoProof = useCallback(async (photoUri: string) => {
-    setIsInspectingProof(true);
-    setCaptureFeedback("Reading barcode or model label locally...");
+  const inspectCapturedPhotoProof = useCallback(async (
+    photoUri: string,
+    {
+      announce = true,
+      blocking = true,
+    }: {
+      announce?: boolean;
+      blocking?: boolean;
+    } = {},
+  ) => {
+    const proofReadGeneration = proofReadGenerationRef.current;
+    if (blocking) setIsInspectingProof(true);
+    if (announce) setCaptureFeedback("Reading barcode or model label locally...");
 
     try {
       const signals = await inspectLocalScanProofPhoto(photoUri);
-      setProofSignalsByUri((current) => ({
-        ...current,
-        [photoUri]: signals,
-      }));
+      if (proofReadGeneration === proofReadGenerationRef.current) {
+        setProofSignalsByUri((current) => ({
+          ...current,
+          [photoUri]: signals,
+        }));
+      }
       return signals;
     } finally {
-      setIsInspectingProof(false);
+      if (blocking && proofReadGeneration === proofReadGenerationRef.current) {
+        setIsInspectingProof(false);
+      }
     }
   }, []);
 
@@ -1009,7 +1072,10 @@ export default function ScannerScreen() {
         return next;
       });
     }
-    if (nextPhotos.length === 0) setIsMultiReviewOpen(false);
+    if (nextPhotos.length === 0) {
+      setIsMultiReviewOpen(false);
+      setSmartEvidenceDetection(undefined);
+    }
     void Haptics.selectionAsync().catch(() => undefined);
   }, [multiScanPhotos]);
 
@@ -1081,6 +1147,14 @@ export default function ScannerScreen() {
       return;
     }
 
+    if (tool === "multi" && multiScanPhotos.length >= MAX_ANALYSIS_PHOTOS) {
+      setCaptureFeedback(
+        `The ${MAX_ANALYSIS_PHOTOS}-photo evidence set is complete. Review the photos or analyze this item.`,
+      );
+      setIsMultiReviewOpen(true);
+      return;
+    }
+
     const cognitionSeed: AnalysisCognitionSeed = {
       tool,
       localDetection: tool === "single" ? currentCameraCandidate : undefined,
@@ -1144,7 +1218,9 @@ export default function ScannerScreen() {
         setCaptureFeedback("The captured photo could not be saved.");
         return;
       }
-      await inspectCapturedPhotoProof(photoPath);
+      if (multiScanPhotos.length === 0) {
+        setSmartEvidenceDetection(currentCameraCandidate);
+      }
       setMultiScanPhotos((photos) => {
         const photo: MultiScanPhoto = {
           createdAt: Date.now(),
@@ -1155,6 +1231,12 @@ export default function ScannerScreen() {
         return [...photos, photo];
       });
       setCaptureFeedback(null);
+      // Local proof refines the guide after the photo is already ready for the
+      // next capture. It must never make the reseller wait at the camera.
+      void inspectCapturedPhotoProof(photoPath, {
+        announce: false,
+        blocking: false,
+      });
       return;
     }
 
@@ -1167,6 +1249,7 @@ export default function ScannerScreen() {
   const resetScannerSession = useCallback(() => {
     captureLockRef.current = false;
     uploadSequenceRef.current = 0;
+    proofReadGenerationRef.current += 1;
     scanIdRef.current = createScanId();
     pendingAnalysisSessionIdRef.current = null;
     barcodeLookupRequestRef.current += 1;
@@ -1179,12 +1262,13 @@ export default function ScannerScreen() {
     setBatchScanPhotos([]);
     setUploadedPhotos([]);
     setProofSignalsByUri({});
+    setSmartEvidenceDetection(undefined);
     setIsInspectingProof(false);
     setIsMultiReviewOpen(false);
     setIsUploadReviewOpen(false);
     setBarcodeLookup({ phase: "idle" });
     setActiveAnalysisSessionId(null);
-    setSelectedTool("single");
+    setSelectedTool("multi");
     setCaptureFeedback(null);
     setTorchEnabled(false);
   }, []);
@@ -1612,9 +1696,9 @@ export default function ScannerScreen() {
               height={screenHeight}
               marker={isBarcodeMode ? null : radarMarker}
               onMarkerPress={() => {
-                setSelectedTool("single");
+                setSelectedTool("multi");
                 void Haptics.selectionAsync().catch(() => undefined);
-                void handleToolActivate("single");
+                void handleToolActivate("multi");
               }}
               proof={
                 selectedTool === "multi" && scanProof.source === "on_device"
@@ -1689,7 +1773,9 @@ export default function ScannerScreen() {
                   },
                 ]}
               >
-                {selectedToolHeader.title}
+              {selectedTool === "multi"
+                ? "Smart evidence scan"
+                : selectedToolHeader.title}
               </Text>
               <View style={styles.headerHintRow}>
                 <IconSymbol
@@ -1698,12 +1784,16 @@ export default function ScannerScreen() {
                   size={14}
                 />
                 <Text
+                  numberOfLines={2}
                   style={[
                     styles.headerHint,
                     {
-                      color: scannerHeaderHasEvidence
-                        ? selectedToolAppearance.accent
-                        : theme.colors.text,
+                      color:
+                        selectedTool === "multi"
+                          ? theme.colors.cream
+                          : scannerHeaderHasEvidence
+                            ? selectedToolAppearance.accent
+                            : theme.colors.text,
                       fontSize: responsiveFont(12),
                       lineHeight: responsiveFont(16),
                     },
@@ -1846,48 +1936,8 @@ export default function ScannerScreen() {
           >
             <View pointerEvents="none" style={styles.frameColorWash} />
           </View>
-          {selectedTool === "multi" &&
-          multiScanPhotos.length > 0 &&
-          !isMultiReviewOpen ? (
-            <View style={styles.multiStackAnchor}>
-              <MultiScanPhotoStack
-                disabled={
-                  isCapturing ||
-                  isInspectingProof ||
-                  isPickingPhoto ||
-                  isMenuOpen
-                }
-                onOpen={openMultiReview}
-                photos={multiScanPhotos}
-              />
-            </View>
-          ) : null}
-          {selectedTool === "upload" &&
-          uploadedPhotos.length > 0 &&
-          !isUploadReviewOpen ? (
-            <View style={styles.multiStackAnchor}>
-              <MultiScanPhotoStack
-                accentColor={theme.colors.cream}
-                accessibilityContext="uploaded"
-                disabled={
-                  isCapturing ||
-                  isInspectingProof ||
-                  isPickingPhoto ||
-                  isMenuOpen
-                }
-                onOpen={openUploadReview}
-                photos={uploadedPhotos}
-              />
-            </View>
-          ) : null}
           {analysisButton ? (
-            <View
-              style={[
-                styles.analysisActionAnchor,
-                (selectedTool === "multi" || selectedTool === "upload") &&
-                  styles.analysisActionAnchorWithStack,
-              ]}
-            >
+            <View style={styles.analysisActionAnchor}>
               {analysisButton}
             </View>
           ) : null}
@@ -1921,6 +1971,40 @@ export default function ScannerScreen() {
             onSelect={handleToolSelect}
             selectedTool={selectedTool}
           />
+          {selectedTool === "multi" &&
+          multiScanPhotos.length > 0 &&
+          !isMultiReviewOpen ? (
+            <View style={styles.photoStackSidecar}>
+              <MultiScanPhotoStack
+                disabled={
+                  isCapturing ||
+                  isInspectingProof ||
+                  isPickingPhoto ||
+                  isMenuOpen
+                }
+                onOpen={openMultiReview}
+                photos={multiScanPhotos}
+              />
+            </View>
+          ) : null}
+          {selectedTool === "upload" &&
+          uploadedPhotos.length > 0 &&
+          !isUploadReviewOpen ? (
+            <View style={styles.photoStackSidecar}>
+              <MultiScanPhotoStack
+                accentColor={theme.colors.cream}
+                accessibilityContext="uploaded"
+                disabled={
+                  isCapturing ||
+                  isInspectingProof ||
+                  isPickingPhoto ||
+                  isMenuOpen
+                }
+                onOpen={openUploadReview}
+                photos={uploadedPhotos}
+              />
+            </View>
+          ) : null}
         </Animated.View>
       </Animated.View>
       </View>
@@ -2193,12 +2277,6 @@ const styles = StyleSheet.create({
     zIndex: 5,
     marginTop: 30,
   },
-  multiStackAnchor: {
-    position: "absolute",
-    right: -10,
-    bottom: 18,
-    zIndex: 14,
-  },
   analysisActionAnchor: {
     position: "absolute",
     right: 12,
@@ -2206,10 +2284,6 @@ const styles = StyleSheet.create({
     left: 12,
     zIndex: 15,
     alignItems: "center",
-  },
-  analysisActionAnchorWithStack: {
-    right: 82,
-    alignItems: "flex-start",
   },
   scanFrame: {
     borderRadius: theme.radii.large,
@@ -2321,5 +2395,15 @@ const styles = StyleSheet.create({
     color: theme.colors.goldBright,
     fontWeight: "400",
   },
-  bottomPanel: { alignItems: "center" },
+  bottomPanel: {
+    position: "relative",
+    alignItems: "center",
+  },
+  photoStackSidecar: {
+    position: "absolute",
+    top: 16,
+    right: -6,
+    zIndex: 40,
+    elevation: 40,
+  },
 });

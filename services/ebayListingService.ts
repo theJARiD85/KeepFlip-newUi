@@ -9,10 +9,12 @@ export type PublishEbayListingInput = {
   price: number;
   quantity?: number;
   categoryId: string;
-  merchantLocationKey: string;
-  paymentPolicyId: string;
-  fulfillmentPolicyId: string;
-  returnPolicyId: string;
+  // Optional per-listing overrides. The backend uses the saved Seller
+  // Account defaults when these are omitted.
+  merchantLocationKey?: string;
+  paymentPolicyId?: string;
+  fulfillmentPolicyId?: string;
+  returnPolicyId?: string;
   marketplaceId?: string;
   currency?: string;
   condition?: string;

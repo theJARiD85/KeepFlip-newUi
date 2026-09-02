@@ -1,7 +1,6 @@
-import { Asset } from "expo-asset";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
-import { useRouter, type Href } from "expo-router";
+import { type Href, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -11,184 +10,269 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
-import { InventoryCard } from "@/components/inventory/inventory-card";
-import type { ItemAnalysisState } from "@/components/scanner/analysis-visual-types";
-import { CerebroAnalysisField } from "@/components/scanner/cerebro-analysis-field.native";
-import {
-  ScannerToolCarousel,
-  type ScannerToolId,
-} from "@/components/scanner/scanner-tool-carousel";
-import { ValuationResultStage } from "@/components/scanner/valuation-result-stage";
-import {
-  ValueRadarOverlay,
-  type ValueRadarMarker,
-} from "@/components/scanner/value-radar.native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
-import type { InventoryItem } from "@/services/inventory-service";
+import {
+  buyRuleDayLimit,
+  DEFAULT_RESELLER_BUY_RULES,
+  type ResellerBuyRules,
+} from "@/services/reseller-buy-rules-service";
 import { completeScanInventoryWalkthrough } from "@/services/user-profile-onboarding-service";
 
-type WalkthroughStep = {
-  accent: string;
-  body: string;
+type FlipIcon =
+  | "barcode.viewfinder"
+  | "bolt.fill"
+  | "chart.bar.fill"
+  | "dollarsign.circle.fill"
+  | "gauge.with.dots.needle.67percent"
+  | "shippingbox.fill"
+  | "square.grid.2x2.fill"
+  | "star.fill"
+  | "tag.fill"
+  | "wrench.and.screwdriver.fill";
+
+type FlipChoice = {
+  detail: string;
+  icon: FlipIcon;
+  id: string;
+  isSelected: (rules: ResellerBuyRules) => boolean;
+  label: string;
+  update: (rules: ResellerBuyRules) => ResellerBuyRules;
+};
+
+type FlipQuestion = {
   eyebrow: string;
-  title: string;
+  id: string;
+  message: string;
+  prompt: string;
+  choices: FlipChoice[];
 };
 
-const WALKTHROUGH_ITEM_IMAGE = require("@/assets/images/walkthrough-coach-bag.jpeg");
-const WALKTHROUGH_ITEM_URI =
-  Asset.fromModule(WALKTHROUGH_ITEM_IMAGE).uri;
+const FLIP_MASCOT_IMAGE = require("@/assets/images/flip-mascot.png");
 
-const WALKTHROUGH_RADAR_MARKER: ValueRadarMarker = {
-  classId: 30,
-  height: 0.52,
-  label: "Handbag",
-  score: 0.93,
-  sourceHeight: 884,
-  sourceWidth: 884,
-  width: 0.76,
-  x: 0.12,
-  y: 0.25,
-};
-
-const WALKTHROUGH_STEPS: WalkthroughStep[] = [
+const FLIP_QUESTIONS: FlipQuestion[] = [
   {
-    accent: theme.colors.scannerCyan,
-    eyebrow: "01 / CAPTURE EVIDENCE",
-    title: "Center it. Lock it. Scan it.",
-    body: "When Value Radar locks, tap the target or Potential Find card to capture. The illuminated Single Scan control works too.",
-  },
-  {
-    accent: theme.colors.scannerViolet,
-    eyebrow: "02 / LOCK THE VALUE",
-    title: "Read the resale range.",
-    body: "Watch Cerebro lock the market range, inspect Value and Max Profit, then swipe up in the live result for the complete intelligence report.",
-  },
-  {
-    accent: theme.colors.goldBright,
-    eyebrow: "03 / INVENTORY CONFIRMED",
-    title: "Save the intelligence.",
-    body: "Choose Save to inventory. KeepFlip stores the item and makes this analysis available from Inventory.",
-  },
-];
-
-const SAMPLE_ANALYSIS_STATE: Extract<
-  ItemAnalysisState,
-  { status: "result" }
-> = {
-  status: "result",
-  data: {
-    condition: {
-      details: [
-        "Light handling wear at the corners",
-        "Hardware and stitching appear intact",
-      ],
-      label: "Very Good",
-      score: 0.88,
-    },
-    confidence: {
-      condition: 0.88,
-      identity: 0.96,
-      overall: 0.93,
-      valuation: 0.9,
-    },
-    evidence: [
+    eyebrow: "FIRST, YOUR LANE",
+    id: "lane",
+    message: "I do my best work when I know what feels natural to you.",
+    prompt: "What kind of flips sound most like you?",
+    choices: [
       {
-        id: "walkthrough-evidence-1",
-        label: "Maker mark",
-        source: "Photo text",
-        value: "COACH wordmark and signature C hardware resolved",
+        detail: "Games, media, and easy wins",
+        icon: "barcode.viewfinder",
+        id: "quick",
+        isSelected: (rules) =>
+          rules.inventoryFocus === "media_games" &&
+          rules.laborTolerance === "quick_listing",
+        label: "Quick & simple",
+        update: (rules) => ({
+          ...rules,
+          inventoryFocus: "media_games",
+          laborTolerance: "quick_listing",
+        }),
       },
       {
-        id: "walkthrough-evidence-2",
-        label: "Construction",
-        source: "Visual",
-        value: "Tabby silhouette, structured flap, and chain strap match",
+        detail: "Clothes, shoes, and style finds",
+        icon: "tag.fill",
+        id: "fashion",
+        isSelected: (rules) => rules.inventoryFocus === "fashion",
+        label: "Fashion finder",
+        update: (rules) => ({
+          ...rules,
+          inventoryFocus: "fashion",
+          laborTolerance: "standard_prep",
+        }),
+      },
+      {
+        detail: "I can clean, test, or repair",
+        icon: "wrench.and.screwdriver.fill",
+        id: "hands-on",
+        isSelected: (rules) => rules.laborTolerance === "hands_on",
+        label: "Worth the work",
+        update: (rules) => ({
+          ...rules,
+          inventoryFocus: "electronics",
+          laborTolerance: "hands_on",
+        }),
+      },
+      {
+        detail: "The hunt is half the fun",
+        icon: "square.grid.2x2.fill",
+        id: "general",
+        isSelected: (rules) =>
+          rules.inventoryFocus === "general" &&
+          rules.laborTolerance === "standard_prep",
+        label: "A little of everything",
+        update: (rules) => ({
+          ...rules,
+          inventoryFocus: "general",
+          laborTolerance: "standard_prep",
+        }),
       },
     ],
-    identity: {
-      brand: "Coach",
-      category: "Designer handbag",
-      confidence: 0.96,
-      model: "Tabby 26",
-      title: "Coach Tabby Shoulder Bag 26",
-      variant: "Black pebble leather",
-    },
-    profitPlan: {
-      actions: [
-        {
-          detail: "Open near $315 and use $265 as the evidence-backed offer target.",
-          id: "walkthrough-profit-price",
-          label: "Leave room for offers",
-        },
-        {
-          detail: "Lead with Coach Tabby 26 and black pebble leather in the listing title.",
-          id: "walkthrough-profit-title",
-          label: "Use the strongest search terms",
-        },
-        {
-          detail: "Photograph the corners, hardware, and stitching in sharp natural light.",
-          id: "walkthrough-profit-condition",
-          label: "Turn condition into trust",
-        },
-      ],
-      currency: "USD",
-      expectedSale: 265,
-      listTarget: 315,
-      quickSale: 215,
-    },
-    suggestedPhotos: [],
-    summary:
-      "Visual construction, logo placement, and hardware support a Coach Tabby 26 identification.",
-    valuation: {
-      basis: "Recent matching sold-market evidence",
-      comparableCount: 14,
-      currency: "USD",
-      high: 315,
-      low: 215,
-      median: 265,
-      source: "multi_market",
-    },
-    valuationReadiness: {
-      label: "Sold-market range ready",
-      reason: "Fourteen matching sold comparables survived KeepFlip filtering.",
-      score: 0.91,
-      status: "ready",
-    },
   },
-};
-
-const SAMPLE_INVENTORY_ITEM: InventoryItem = {
-  acquisitionCost: null,
-  aiConfidence: 93,
-  brand: "Coach",
-  category: "Designer handbag",
-  condition: "Very Good",
-  conditionNotes: "Light handling wear; hardware and stitching appear intact.",
-  coverPhotoId: null,
-  createdAt: new Date().toISOString(),
-  currency: "USD",
-  estimatedValue: 265,
-  flipComplexity: "easy",
-  flipDecision: "flip",
-  flipDecisionConfidence: 91,
-  flipVerdict: "flip",
-  id: "walkthrough-sample",
-  model: "Tabby 26",
-  modelFile: null,
-  photoCount: 1,
-  itemPhotos: [],
-  resaleTypicalDays: 18,
-  resaleVelocity: "fast",
-  status: "undecided",
-  title: "Coach Tabby Shoulder Bag 26",
-};
+  {
+    eyebrow: "YOUR FLIP STYLE",
+    id: "pace",
+    message: "Perfect. Now tell me how you like a good deal to feel.",
+    prompt: "What are we optimizing for?",
+    choices: [
+      {
+        detail: "Move it quickly and keep cash moving",
+        icon: "bolt.fill",
+        id: "fast",
+        isSelected: (rules) => rules.saleSpeed === "quick",
+        label: "Fast cash",
+        update: (rules) => ({
+          ...rules,
+          maximumTypicalDays: buyRuleDayLimit("quick"),
+          minimumRoiPercent: 30,
+          saleSpeed: "quick",
+        }),
+      },
+      {
+        detail: "A healthy mix of speed and margin",
+        icon: "gauge.with.dots.needle.67percent",
+        id: "balanced",
+        isSelected: (rules) => rules.saleSpeed === "steady",
+        label: "Good balance",
+        update: (rules) => ({
+          ...rules,
+          maximumTypicalDays: buyRuleDayLimit("steady"),
+          minimumRoiPercent: 50,
+          saleSpeed: "steady",
+        }),
+      },
+      {
+        detail: "I can wait for the better payday",
+        icon: "star.fill",
+        id: "profit",
+        isSelected: (rules) => rules.saleSpeed === "patient",
+        label: "Bigger payday",
+        update: (rules) => ({
+          ...rules,
+          maximumTypicalDays: buyRuleDayLimit("patient"),
+          minimumRoiPercent: 100,
+          saleSpeed: "patient",
+        }),
+      },
+    ],
+  },
+  {
+    eyebrow: "MAKE IT WORTH IT",
+    id: "profit",
+    message: "I will factor in the messy little costs. You tell me the win.",
+    prompt: "What is the smallest take-home profit worth your time?",
+    choices: [
+      {
+        detail: "Easy wins still count",
+        icon: "dollarsign.circle.fill",
+        id: "ten",
+        isSelected: (rules) => rules.minimumNetProfitCents === 1_000,
+        label: "$10",
+        update: (rules) => ({ ...rules, minimumNetProfitCents: 1_000 }),
+      },
+      {
+        detail: "A solid flip",
+        icon: "dollarsign.circle.fill",
+        id: "twenty",
+        isSelected: (rules) => rules.minimumNetProfitCents === 2_000,
+        label: "$20",
+        update: (rules) => ({ ...rules, minimumNetProfitCents: 2_000 }),
+      },
+      {
+        detail: "I want meaningful margin",
+        icon: "dollarsign.circle.fill",
+        id: "forty",
+        isSelected: (rules) => rules.minimumNetProfitCents === 4_000,
+        label: "$40",
+        update: (rules) => ({ ...rules, minimumNetProfitCents: 4_000 }),
+      },
+    ],
+  },
+  {
+    eyebrow: "PROTECT YOUR CASH",
+    id: "cash",
+    message: "Last thing I want is to recommend a deal that pins your bankroll.",
+    prompt: "What feels comfortable to put into one find?",
+    choices: [
+      {
+        detail: "Keep every buy light",
+        icon: "dollarsign.circle.fill",
+        id: "twenty-five",
+        isSelected: (rules) => rules.maximumItemCostCents === 2_500,
+        label: "Up to $25",
+        update: (rules) => ({ ...rules, maximumItemCostCents: 2_500 }),
+      },
+      {
+        detail: "My normal sourcing range",
+        icon: "dollarsign.circle.fill",
+        id: "seventy-five",
+        isSelected: (rules) => rules.maximumItemCostCents === 7_500,
+        label: "Up to $75",
+        update: (rules) => ({ ...rules, maximumItemCostCents: 7_500 }),
+      },
+      {
+        detail: "I can take on stronger finds",
+        icon: "dollarsign.circle.fill",
+        id: "one-fifty",
+        isSelected: (rules) => rules.maximumItemCostCents === 15_000,
+        label: "Up to $150",
+        update: (rules) => ({ ...rules, maximumItemCostCents: 15_000 }),
+      },
+      {
+        detail: "Show me higher-ticket opportunities",
+        icon: "dollarsign.circle.fill",
+        id: "three-hundred",
+        isSelected: (rules) => rules.maximumItemCostCents === 30_000,
+        label: "$300+",
+        update: (rules) => ({ ...rules, maximumItemCostCents: 30_000 }),
+      },
+    ],
+  },
+  {
+    eyebrow: "HOME BASE",
+    id: "storage",
+    message: "Then I can flag finds that may take up more room than they deserve.",
+    prompt: "Where do your future flips live before they sell?",
+    choices: [
+      {
+        detail: "Every inch matters",
+        icon: "shippingbox.fill",
+        id: "closet",
+        isSelected: (rules) => rules.storageCapacity === "closet_or_bin",
+        label: "Closet or bin",
+        update: (rules) => ({ ...rules, storageCapacity: "closet_or_bin" }),
+      },
+      {
+        detail: "I have some breathing room",
+        icon: "shippingbox.fill",
+        id: "room",
+        isSelected: (rules) => rules.storageCapacity === "dedicated_room",
+        label: "Dedicated room",
+        update: (rules) => ({ ...rules, storageCapacity: "dedicated_room" }),
+      },
+      {
+        detail: "Bring on the big finds",
+        icon: "shippingbox.fill",
+        id: "garage",
+        isSelected: (rules) =>
+          rules.storageCapacity === "garage_or_warehouse",
+        label: "Garage or warehouse",
+        update: (rules) => ({
+          ...rules,
+          storageCapacity: "garage_or_warehouse",
+        }),
+      },
+    ],
+  },
+];
 
 function selectionHaptic() {
   if (process.env.EXPO_OS === "ios") {
@@ -196,400 +280,262 @@ function selectionHaptic() {
   }
 }
 
-function SampleEvidenceTarget({
-  captured,
-  onLock,
-  previewWidth,
-}: {
-  captured: boolean;
-  onLock: () => void;
-  previewWidth: number;
-}) {
-  const radarWidth = Math.max(260, previewWidth - 28);
-  const radarHeight = 260;
-
-  return (
-    <View style={[styles.evidenceViewport, { height: radarHeight }]}>
-      <Image
-        accessibilityLabel="Coach bag used as the walkthrough scan target"
-        contentFit="cover"
-        source={WALKTHROUGH_ITEM_IMAGE}
-        style={styles.evidenceImage}
-        transition={180}
-      />
-      <View pointerEvents="none" style={styles.evidenceImageShade} />
-      <ValueRadarOverlay
-        disabled={captured}
-        focusBounds={{
-          height: 96,
-          previewHeight: radarHeight,
-          previewWidth: radarWidth,
-          width: radarWidth - 28,
-          x: 14,
-          y: 10,
-        }}
-        height={radarHeight}
-        marker={captured ? null : WALKTHROUGH_RADAR_MARKER}
-        onMarkerPress={onLock}
-        status="ready"
-        width={radarWidth}
-      />
-    </View>
-  );
+function completionHaptic() {
+  if (process.env.EXPO_OS === "ios") {
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }
 }
 
-function ScannerStagePreview({
-  onAnalysisReady,
-  previewWidth,
-}: {
-  onAnalysisReady: () => void;
-  previewWidth: number;
-}) {
-  const [selectedTool, setSelectedTool] =
-    useState<ScannerToolId>("single");
-  const [captured, setCaptured] = useState(false);
-
-  const handleActivate = useCallback((tool: ScannerToolId) => {
-    setSelectedTool(tool);
-    setCaptured(true);
-    selectionHaptic();
-  }, []);
-
-  return (
-    <View style={styles.scannerStage}>
-      <SampleEvidenceTarget
-        captured={captured}
-        onLock={() => handleActivate("single")}
-        previewWidth={previewWidth}
-      />
-
-      {captured ? (
-        <Animated.View entering={FadeIn.duration(180)} style={styles.analysisActionShell}>
-          <Pressable
-            accessibilityLabel="Analyze sample item"
-            accessibilityRole="button"
-            onPress={onAnalysisReady}
-            style={({ pressed }) => [
-              styles.analysisAction,
-              pressed && styles.pressed,
-            ]}
-          >
-            <View style={styles.analysisReticle}>
-              <View style={styles.analysisReticleDot} />
-            </View>
-            <View style={styles.analysisActionCopy}>
-              <Text style={styles.analysisEyebrow}>KEEPFLIP INTELLIGENCE</Text>
-              <Text style={styles.analysisTitle}>Analyze item</Text>
-            </View>
-            <IconSymbol
-              color={theme.colors.scannerCyan}
-              name="chevron.right"
-              size={23}
-            />
-          </Pressable>
-        </Animated.View>
-      ) : (
-        <Text style={styles.scannerHint}>
-          TAP THE LOCKED TARGET OR CENTER CONTROL
-        </Text>
-      )}
-
-      <View
-        style={[
-          styles.carouselHost,
-          { marginLeft: -(Math.max(previewWidth, 320) - previewWidth) / 2 },
-        ]}
-      >
-        <ScannerToolCarousel
-          badges={{ single: captured ? 1 : 0 }}
-          onActivate={handleActivate}
-          onSelect={setSelectedTool}
-          selectedTool={selectedTool}
-        />
-      </View>
-    </View>
-  );
+function firstName(name?: string | null) {
+  const cleaned = name?.trim().split(/\s+/)[0];
+  return cleaned || "there";
 }
 
-function AnalysisStagePreview({
-  onSave,
-  previewWidth,
-}: {
-  onSave: () => void;
-  previewWidth: number;
-}) {
-  return (
-    <View style={styles.analysisStage}>
-      <CerebroAnalysisField
-        active
-        activityProgress={1}
-        isValuating={false}
-        lockConfidence={
-          SAMPLE_ANALYSIS_STATE.data.confidence?.valuation ??
-          SAMPLE_ANALYSIS_STATE.data.valuationReadiness.score
-        }
-        photoUri={WALKTHROUGH_ITEM_URI}
-        style={styles.analysisCerebro}
-      />
-
-      <ValuationResultStage
-        bottomInset={0}
-        embedded
-        onSave={onSave}
-        projectionLabel="KEEPFLIP CEREBRO / MARKET LOCK"
-        saveLabel="Save to inventory"
-        state={SAMPLE_ANALYSIS_STATE}
-        topInset={0}
-        viewportWidth={previewWidth}
-      />
-    </View>
-  );
+function moneyFromCents(cents: number) {
+  return "$" + Math.round(cents / 100).toLocaleString("en-US");
 }
 
-function InventoryStagePreview() {
+function FlipCoin({ step }: { step: number }) {
   return (
-    <View style={styles.inventoryStage}>
-      <View style={styles.savedSignal}>
-        <View style={styles.savedSignalIcon}>
-          <IconSymbol
-            color={theme.colors.scannerCyan}
-            name="checkmark.shield.fill"
-            size={22}
+    <Animated.View
+      entering={FadeIn.duration(280)}
+      key={`flip-coin-${step}`}
+      style={styles.coinShell}
+    >
+      <View style={styles.coinOrbit}>
+        <View style={styles.coinFace}>
+          <Image
+            accessibilityLabel="Flip, KeepFlip's friendly gold coin resale sidekick"
+            contentFit="cover"
+            source={FLIP_MASCOT_IMAGE}
+            style={styles.coinImage}
+            transition={180}
           />
         </View>
-        <View style={styles.savedSignalCopy}>
-          <Text style={styles.savedSignalEyebrow}>DATABASE WRITE COMPLETE</Text>
-          <Text style={styles.savedSignalTitle}>Item secured in Inventory</Text>
-        </View>
       </View>
+      <View style={styles.coinSignal}>
+        <View style={styles.coinSignalDot} />
+        <Text style={styles.coinSignalText}>FLIP IS ONLINE</Text>
+      </View>
+    </Animated.View>
+  );
+}
 
-      <InventoryCard
-        coverImageSource={WALKTHROUGH_ITEM_IMAGE}
-        item={SAMPLE_INVENTORY_ITEM}
-        onPress={() => undefined}
-      />
-
-      <Text style={styles.inventoryHint}>
-        Tap any saved inventory card later to reopen its complete analysis.
-      </Text>
-    </View>
+function ChoiceCard({
+  choice,
+  onPress,
+  selected,
+}: {
+  choice: FlipChoice;
+  onPress: () => void;
+  selected: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityHint={choice.detail}
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.choiceCard,
+        selected && styles.choiceCardSelected,
+        pressed && styles.pressed,
+      ]}
+    >
+      <View style={[styles.choiceIcon, selected && styles.choiceIconSelected]}>
+        <IconSymbol
+          color={selected ? theme.colors.scannerCyan : theme.colors.goldBright}
+          name={choice.icon}
+          size={22}
+        />
+      </View>
+      <View style={styles.choiceCopy}>
+        <Text style={[styles.choiceTitle, selected && styles.choiceTitleSelected]}>
+          {choice.label}
+        </Text>
+        <Text style={styles.choiceDetail}>{choice.detail}</Text>
+      </View>
+      <View style={[styles.choiceRadio, selected && styles.choiceRadioSelected]}>
+        {selected ? <View style={styles.choiceRadioCore} /> : null}
+      </View>
+    </Pressable>
   );
 }
 
 export function ScanInventoryWalkthroughScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { height, width } = useWindowDimensions();
+  const { height } = useWindowDimensions();
   const { user } = useKeepFlipAuth();
-  const [activeStep, setActiveStep] = useState(0);
-  const [savingPreference, setSavingPreference] = useState(false);
-  const [preferenceError, setPreferenceError] = useState<string | null>(null);
+  const [screen, setScreen] = useState(0);
+  const [rules, setRules] = useState<ResellerBuyRules>(() => ({
+    ...DEFAULT_RESELLER_BUY_RULES,
+    includedCostTypes: [...DEFAULT_RESELLER_BUY_RULES.includedCostTypes],
+  }));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const step = WALKTHROUGH_STEPS[activeStep];
-  const previewWidth = Math.min(Math.max(width - 32, 288), 520);
-  const previewHeight =
-    activeStep === 0
-      ? 440
-      : Math.min(
-        activeStep === 1 ? 472 : 430,
-        Math.max(356, height * 0.53),
-      );
+  const question =
+    screen > 0 && screen <= FLIP_QUESTIONS.length
+      ? FLIP_QUESTIONS[screen - 1]
+      : null;
+  const summary = useMemo(() => {
+    const pace =
+      rules.saleSpeed === "quick"
+        ? "fast flips"
+        : rules.saleSpeed === "patient"
+          ? "bigger-payday holds"
+          : "balanced flips";
+    const storage =
+      rules.storageCapacity === "closet_or_bin"
+        ? "compact storage"
+        : rules.storageCapacity === "garage_or_warehouse"
+          ? "room for bigger finds"
+          : "room to breathe";
+    return {
+      line: `${moneyFromCents(rules.minimumNetProfitCents)}+ take-home · ${rules.minimumRoiPercent}%+ ROI`,
+      details: `${pace} · up to ${moneyFromCents(rules.maximumItemCostCents)} in one item · ${storage}`,
+    };
+  }, [rules]);
 
-  const goToStep = useCallback((nextStep: number) => {
+  const goBack = useCallback(() => {
+    if (saving || screen === 0) return;
     selectionHaptic();
-    setActiveStep(
-      Math.max(0, Math.min(WALKTHROUGH_STEPS.length - 1, nextStep)),
-    );
+    setError(null);
+    setScreen((current) => Math.max(0, current - 1));
+  }, [saving, screen]);
+
+  const choose = useCallback((choice: FlipChoice) => {
+    selectionHaptic();
+    setError(null);
+    setRules((current) => choice.update(current));
+    setScreen((current) => Math.min(FLIP_QUESTIONS.length + 1, current + 1));
   }, []);
 
-  const finish = useCallback(
-    async () => {
-      if (savingPreference) return;
+  const finish = useCallback(async () => {
+    if (saving) return;
 
-      setSavingPreference(true);
-      setPreferenceError(null);
-      try {
-        if (!user) {
-          throw new Error("Sign in before completing the walkthrough.");
-        }
-        await completeScanInventoryWalkthrough(user.$id, user.name);
-        router.replace("/" as Href);
-      } catch (error) {
-        setPreferenceError(
-          error instanceof Error
-            ? error.message
-            : "KeepFlip could not save your walkthrough preference.",
-        );
-      } finally {
-        setSavingPreference(false);
-      }
-    },
-    [router, savingPreference, user],
-  );
-
-  const stage = useMemo(() => {
-    if (activeStep === 0) {
-      return (
-        <ScannerStagePreview
-          onAnalysisReady={() => goToStep(1)}
-          previewWidth={previewWidth}
-        />
+    setSaving(true);
+    setError(null);
+    try {
+      if (!user) throw new Error("Sign in before finishing your Flip profile.");
+      await completeScanInventoryWalkthrough(user.$id, user.name, rules);
+      completionHaptic();
+      router.replace("/" as Href);
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Flip could not save your preferences. Please try again.",
       );
+    } finally {
+      setSaving(false);
     }
-
-    if (activeStep === 1) {
-      return (
-        <AnalysisStagePreview
-          onSave={() => goToStep(2)}
-          previewWidth={previewWidth}
-        />
-      );
-    }
-
-    return <InventoryStagePreview />;
-  }, [activeStep, goToStep, previewWidth]);
+  }, [router, rules, saving, user]);
 
   return (
     <KeepFlipBackground>
       <ScrollView
-        bounces={false}
-        contentContainerStyle={[
-          styles.content,
-          {
-            minHeight: height,
-            paddingBottom: insets.bottom + 18,
-            paddingTop: insets.top + 12,
-          },
-        ]}
-        contentInsetAdjustmentBehavior="never"
+        contentContainerStyle={[styles.content, { minHeight: height,  paddingTop: insets.top, paddingBottom: insets.bottom + 20  }]}
+        contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View entering={FadeInDown.duration(240)} style={styles.topBar}>
-          <View style={styles.brandCopy}>
-            <Text style={styles.brandEyebrow}>KEEPFLIP FIELD GUIDE</Text>
-            <Text style={styles.brandTitle}>First item protocol</Text>
+        <Animated.View entering={FadeInDown.duration(260)} style={styles.topBar}>
+          <View>
+            <Text style={styles.brandEyebrow}>KEEPFLIP PERSONALIZATION</Text>
+            <Text style={styles.brandTitle}>Meet Flip</Text>
           </View>
+          {screen > 0 ? (
+            <Pressable
+              accessibilityLabel="Go back"
+              accessibilityRole="button"
+              disabled={saving}
+              onPress={goBack}
+              style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+            >
+              <Text style={styles.backButtonText}>Back</Text>
+            </Pressable>
+          ) : null}
         </Animated.View>
 
-        <View style={styles.progressRail}>
-          {WALKTHROUGH_STEPS.map((candidate, index) => (
-            <Pressable
-              accessibilityLabel={`Open walkthrough step ${index + 1}: ${candidate.title}`}
-              accessibilityRole="button"
-              key={candidate.eyebrow}
-              onPress={() => goToStep(index)}
-              style={styles.progressTarget}
-            >
-              <View
-                style={[
-                  styles.progressSegment,
-                  index <= activeStep && {
-                    backgroundColor: candidate.accent,
-                    boxShadow: `0 0 9px ${candidate.accent}`,
-                  },
-                ]}
-              />
-            </Pressable>
+        <View accessibilityLabel="Onboarding progress" style={styles.progressRail}>
+          {FLIP_QUESTIONS.map((item, index) => (
+            <View
+              key={item.id}
+              style={[styles.progressSegment, index < screen && styles.progressSegmentActive]}
+            />
           ))}
         </View>
 
-        <Animated.View
-          entering={FadeIn.duration(180)}
-          key={`copy-${activeStep}`}
-          style={styles.stepCopy}
-        >
-          <Text style={[styles.stepEyebrow, { color: step.accent }]}>
-            {step.eyebrow}
-          </Text>
-          <Text style={styles.stepTitle}>{step.title}</Text>
-          <Text style={styles.stepBody}>{step.body}</Text>
-        </Animated.View>
+        <View style={styles.main}>
+          <FlipCoin step={screen} />
 
-        <Animated.View
-          entering={FadeIn.duration(180)}
-          key={`stage-${activeStep}`}
-          style={[
-            styles.previewFrame,
-            {
-              borderColor: `${step.accent}66`,
-              height: previewHeight,
-              width: previewWidth,
-            },
-          ]}
-        >
-          <View
-            pointerEvents="none"
-            style={[styles.previewSignal, { backgroundColor: step.accent }]}
-          />
-          {stage}
-        </Animated.View>
-
-        {preferenceError ? (
-          <Text accessibilityLiveRegion="polite" selectable style={styles.errorText}>
-            {preferenceError}
-          </Text>
-        ) : null}
-
-        <View style={styles.footer}>
-          <Pressable
-            accessibilityLabel="Previous walkthrough step"
-            accessibilityRole="button"
-            disabled={activeStep === 0 || savingPreference}
-            onPress={() => goToStep(activeStep - 1)}
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              activeStep === 0 && styles.buttonDisabled,
-              pressed && activeStep > 0 && styles.pressed,
-            ]}
-          >
-            <Text style={styles.secondaryButtonText}>BACK</Text>
-          </Pressable>
-
-          {activeStep === WALKTHROUGH_STEPS.length - 1 ? (
-            <Pressable
-              accessibilityLabel="Finish walkthrough and start scanning"
-              accessibilityRole="button"
-              disabled={savingPreference}
-              onPress={() => void finish()}
-              style={({ pressed }) => [
-                styles.primaryButton,
-                pressed && styles.pressed,
-                savingPreference && styles.buttonDisabled,
-              ]}
-            >
-              {savingPreference ? (
-                <ActivityIndicator
-                  color={theme.colors.backgroundDeep}
-                  size="small"
-                />
-              ) : (
-                <>
-                  <Text style={styles.primaryButtonText}>START SCANNING</Text>
-                  <IconSymbol
-                    color={theme.colors.backgroundDeep}
-                    name="viewfinder"
-                    size={19}
+          {screen === 0 ? (
+            <Animated.View entering={FadeInDown.duration(300)} style={styles.panel}>
+              <Text style={styles.hello}>Hey {firstName(user?.name)}.</Text>
+              <Text style={styles.headline}>I’m Flip, your resale sidekick.</Text>
+              <Text style={styles.body}>
+                Give me five quick answers and I’ll make every Buy or Pass call feel built around your business—not somebody else’s.
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  selectionHaptic();
+                  setScreen(1);
+                }}
+                style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}
+              >
+                <Text style={styles.primaryButtonText}>Let’s build my flip style</Text>
+                <IconSymbol color={theme.colors.backgroundDeep} name="arrow.right" size={21} />
+              </Pressable>
+            </Animated.View>
+          ) : question ? (
+            <Animated.View entering={FadeInDown.duration(260)} key={question.id} style={styles.panel}>
+              <View style={styles.messageBubble}>
+                <Text style={styles.messageLabel}>FLIP</Text>
+                <Text style={styles.messageText}>{question.message}</Text>
+              </View>
+              <Text style={styles.questionEyebrow}>{question.eyebrow}</Text>
+              <Text style={styles.questionTitle}>{question.prompt}</Text>
+              <View style={styles.choiceList}>
+                {question.choices.map((choice) => (
+                  <ChoiceCard
+                    choice={choice}
+                    key={choice.id}
+                    onPress={() => choose(choice)}
+                    selected={choice.isSelected(rules)}
                   />
-                </>
-              )}
-            </Pressable>
+                ))}
+              </View>
+            </Animated.View>
           ) : (
-            <Pressable
-              accessibilityLabel="Next walkthrough step"
-              accessibilityRole="button"
-              onPress={() => goToStep(activeStep + 1)}
-              style={({ pressed }) => [
-                styles.primaryButton,
-                pressed && styles.pressed,
-              ]}
-            >
-              <Text style={styles.primaryButtonText}>NEXT STEP</Text>
-              <IconSymbol
-                color={theme.colors.backgroundDeep}
-                name="arrow.right"
-                size={19}
-              />
-            </Pressable>
+            <Animated.View entering={FadeInDown.duration(300)} style={styles.panel}>
+              <Text style={styles.hello}>Locked in.</Text>
+              <Text style={styles.headline}>Now I know what a good flip looks like to you.</Text>
+              <View style={styles.summaryCard}>
+                <Text selectable style={styles.summaryPrimary}>{summary.line}</Text>
+                <Text selectable style={styles.summarySecondary}>{summary.details}</Text>
+              </View>
+              <Text style={styles.body}>
+                I’ll use this to make market-backed recommendations stricter when a find does not match your cash, pace, prep, or storage rules. The sold-market evidence stays separate and visible.
+              </Text>
+              {error ? <Text selectable style={styles.errorText}>{error}</Text> : null}
+              <Pressable
+                accessibilityRole="button"
+                disabled={saving}
+                onPress={() => void finish()}
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  saving && styles.buttonDisabled,
+                  pressed && !saving && styles.pressed,
+                ]}
+              >
+                {saving ? <ActivityIndicator color={theme.colors.backgroundDeep} /> : <>
+                  <Text style={styles.primaryButtonText}>Let’s find some flips</Text>
+                  <IconSymbol color={theme.colors.backgroundDeep} name="viewfinder" size={21} />
+                </>}
+              </Pressable>
+            </Animated.View>
           )}
         </View>
       </ScrollView>
@@ -598,297 +544,61 @@ export function ScanInventoryWalkthroughScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: {
-    width: "100%",
-    maxWidth: 760,
-    alignSelf: "center",
+  backButton: {
     alignItems: "center",
-    gap: 14,
-    paddingHorizontal: 16,
-  },
-  topBar: {
-    width: "100%",
-    maxWidth: 520,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  brandCopy: {
-    gap: 3,
-  },
-  brandEyebrow: {
-    color: theme.colors.gold,
-    fontSize: 9,
-    fontWeight: "900",
-    letterSpacing: 1.8,
-  },
-  brandTitle: {
-    color: theme.colors.cream,
-    fontSize: 20,
-    fontWeight: "900",
-  },
-  progressRail: {
-    width: "100%",
-    maxWidth: 520,
-    height: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-  },
-  progressTarget: {
-    flex: 1,
-    height: 14,
-    justifyContent: "center",
-  },
-  progressSegment: {
-    height: 3,
-    borderRadius: theme.radii.pill,
-    backgroundColor: "rgba(255, 255, 255, 0.12)",
-  },
-  stepCopy: {
-    width: "100%",
-    maxWidth: 520,
-    gap: 5,
-  },
-  stepEyebrow: {
-    fontFamily: theme.fonts.radar,
-    fontSize: 9,
-    fontWeight: "900",
-    letterSpacing: 1.45,
-  },
-  stepTitle: {
-    color: theme.colors.text,
-    fontSize: 25,
-    lineHeight: 29,
-    fontWeight: "900",
-  },
-  stepBody: {
-    color: theme.colors.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  previewFrame: {
-    position: "relative",
-    overflow: "hidden",
-    borderRadius: 24,
+    borderColor: "rgba(242, 237, 228, 0.18)",
     borderCurve: "continuous",
-    borderWidth: 1,
-    backgroundColor: "rgba(2, 4, 8, 0.92)",
-    boxShadow: "0 20px 46px rgba(0, 0, 0, 0.48)",
-  },
-  previewSignal: {
-    position: "absolute",
-    top: 0,
-    right: 28,
-    left: 28,
-    zIndex: 90,
-    height: 2,
-    boxShadow: "0 0 12px rgba(88, 223, 232, 0.7)",
-  },
-  scannerStage: {
-    flex: 1,
-    alignItems: "center",
-  },
-  evidenceViewport: {
-    position: "absolute",
-    top: 14,
-    right: 14,
-    left: 14,
-    overflow: "hidden",
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 17,
-    borderCurve: "continuous",
-    borderWidth: 1,
-    borderColor: "rgba(88, 223, 232, 0.18)",
-    backgroundColor: "rgba(3, 9, 13, 0.88)",
-  },
-  evidenceImage: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-  },
-  evidenceImageShade: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: "rgba(0, 9, 13, 0.20)",
-  },
-  scannerHint: {
-    position: "absolute",
-    top: 278,
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.radar,
-    fontSize: 7,
-    fontWeight: "900",
-    letterSpacing: 0.9,
-  },
-  carouselHost: {
-    position: "absolute",
-    bottom: 25,
-  },
-  analysisActionShell: {
-    position: "absolute",
-    top: 276,
-    right: 15,
-    left: 15,
-    zIndex: 20,
-  },
-  analysisAction: {
-    minHeight: 58,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 11,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 18,
-    borderCurve: "continuous",
-    borderWidth: 1,
-    borderColor: "rgba(88, 223, 232, 0.42)",
-    backgroundColor: "rgba(2, 9, 13, 0.94)",
-    boxShadow: "0 0 20px rgba(88, 223, 232, 0.12)",
-  },
-  analysisReticle: {
-    width: 38,
-    height: 38,
-    alignItems: "center",
-    justifyContent: "center",
     borderRadius: theme.radii.pill,
     borderWidth: 1,
-    borderColor: theme.colors.scannerCyan,
-  },
-  analysisReticleDot: {
-    width: 7,
-    height: 7,
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.scannerCyan,
-    boxShadow: "0 0 9px rgba(88, 223, 232, 0.9)",
-  },
-  analysisActionCopy: {
-    flex: 1,
-    gap: 2,
-  },
-  analysisEyebrow: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 7,
-    fontWeight: "900",
-    letterSpacing: 1,
-  },
-  analysisTitle: {
-    color: theme.colors.text,
-    fontSize: 15,
-    fontWeight: "900",
-  },
-  analysisStage: {
-    flex: 1,
-    overflow: "hidden",
-    backgroundColor: "#030308",
-  },
-  analysisCerebro: {
-    ...StyleSheet.absoluteFill,
-  },
-  inventoryStage: {
-    flex: 1,
     justifyContent: "center",
-    gap: 17,
+    minHeight: 34,
     paddingHorizontal: 14,
   },
-  savedSignal: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 11,
+  backButtonText: { color: theme.colors.cream, fontFamily: theme.fonts.medium, fontSize: 12 },
+  body: { color: theme.colors.textMuted, fontSize: 15, lineHeight: 22 },
+  brandEyebrow: { color: theme.colors.gold, fontFamily: theme.fonts.display, fontSize: 9, letterSpacing: 1.2 },
+  brandTitle: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 20, marginTop: 4 },
+  buttonDisabled: { opacity: 0.5 },
+  choiceCard: {
+    alignItems: "center", backgroundColor: "rgba(255, 255, 255, 0.035)", borderColor: "rgba(242, 237, 228, 0.13)", borderCurve: "continuous", borderRadius: 18, borderWidth: 1, flexDirection: "row", gap: 13, minHeight: 76, padding: 13,
   },
-  savedSignalIcon: {
-    width: 42,
-    height: 42,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: "rgba(88, 223, 232, 0.32)",
-    backgroundColor: "rgba(88, 223, 232, 0.08)",
-  },
-  savedSignalCopy: {
-    flex: 1,
-    gap: 2,
-  },
-  savedSignalEyebrow: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 7,
-    fontWeight: "900",
-    letterSpacing: 1,
-  },
-  savedSignalTitle: {
-    color: theme.colors.text,
-    fontSize: 16,
-    fontWeight: "900",
-  },
-  inventoryHint: {
-    color: theme.colors.textMuted,
-    fontSize: 11,
-    lineHeight: 16,
-    textAlign: "center",
-  },
-  errorText: {
-    width: "100%",
-    maxWidth: 520,
-    color: "#FFB8B1",
-    fontSize: 12,
-    lineHeight: 17,
-    textAlign: "center",
-  },
-  footer: {
-    width: "100%",
-    maxWidth: 520,
-    flexDirection: "row",
-    gap: 10,
-  },
-  secondaryButton: {
-    minWidth: 90,
-    minHeight: 50,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 17,
-    borderCurve: "continuous",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.16)",
-    backgroundColor: "rgba(255, 255, 255, 0.035)",
-  },
-  secondaryButtonText: {
-    color: theme.colors.textMuted,
-    fontSize: 9,
-    fontWeight: "900",
-    letterSpacing: 1.1,
-  },
-  primaryButton: {
-    minHeight: 50,
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 9,
-    borderRadius: 17,
-    borderCurve: "continuous",
-    backgroundColor: theme.colors.goldBright,
-    boxShadow: "0 0 20px rgba(242, 211, 138, 0.17)",
-  },
-  primaryButtonText: {
-    color: theme.colors.backgroundDeep,
-    fontSize: 10,
-    fontWeight: "900",
-    letterSpacing: 1.05,
-  },
-  pressed: {
-    opacity: 0.78,
-    transform: [{ scale: 0.985 }],
-  },
-  buttonDisabled: {
-    opacity: 0.35,
-  },
+  choiceCardSelected: { backgroundColor: "rgba(0, 255, 255, 0.09)", borderColor: "rgba(0, 255, 255, 0.72)", boxShadow: "0 0 20px rgba(0, 255, 255, 0.12)" },
+  choiceCopy: { flex: 1, gap: 3 },
+  choiceDetail: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 16 },
+  choiceIcon: { alignItems: "center", backgroundColor: "rgba(215, 168, 74, 0.10)", borderRadius: 14, height: 43, justifyContent: "center", width: 43 },
+  choiceIconSelected: { backgroundColor: "rgba(0, 255, 255, 0.12)" },
+  choiceList: { gap: 10 },
+  choiceRadio: { alignItems: "center", borderColor: "rgba(242, 237, 228, 0.28)", borderRadius: theme.radii.pill, borderWidth: 1, height: 19, justifyContent: "center", width: 19 },
+  choiceRadioCore: { backgroundColor: theme.colors.scannerCyan, borderRadius: theme.radii.pill, height: 9, width: 9 },
+  choiceRadioSelected: { borderColor: theme.colors.scannerCyan },
+  choiceTitle: { color: theme.colors.cream, fontFamily: theme.fonts.semibold, fontSize: 15 },
+  choiceTitleSelected: { color: theme.colors.scannerCyan },
+  coinFace: { backgroundColor: "rgba(8, 8, 12, 0.98)", borderColor: "rgba(242, 211, 138, 0.85)", borderRadius: theme.radii.pill, borderWidth: 2, height: 124, overflow: "hidden", width: 124 },
+  coinImage: { height: "100%", width: "100%" },
+  coinOrbit: { alignItems: "center", backgroundColor: "rgba(0, 255, 255, 0.08)", borderColor: "rgba(0, 255, 255, 0.4)", borderRadius: theme.radii.pill, boxShadow: "0 0 36px rgba(0, 255, 255, 0.22)", height: 146, justifyContent: "center", width: 146 },
+  coinShell: { alignItems: "center", gap: 10 },
+  coinSignal: { alignItems: "center", flexDirection: "row", gap: 6 },
+  coinSignalDot: { backgroundColor: theme.colors.scannerCyan, borderRadius: theme.radii.pill, boxShadow: "0 0 10px rgba(0, 255, 255, 0.9)", height: 7, width: 7 },
+  coinSignalText: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 1.2 },
+  content: { gap: 18, paddingBottom: 36, paddingHorizontal: 22, paddingTop: 28 },
+  errorText: { color: theme.colors.danger, fontSize: 13, lineHeight: 19 },
+  headline: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 28, letterSpacing: -0.55, lineHeight: 34 },
+  hello: { color: theme.colors.goldBright, fontFamily: theme.fonts.medium, fontSize: 17 },
+  main: { flex: 1, gap: 22, justifyContent: "center", marginHorizontal: "auto", maxWidth: 530, width: "100%" },
+  messageBubble: { backgroundColor: "rgba(141, 114, 255, 0.13)", borderColor: "rgba(141, 114, 255, 0.36)", borderCurve: "continuous", borderRadius: 18, borderTopLeftRadius: 5, borderWidth: 1, gap: 5, padding: 14 },
+  messageLabel: { color: theme.colors.scannerViolet, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 1.15 },
+  messageText: { color: theme.colors.cream, fontSize: 14, lineHeight: 20 },
+  panel: { backgroundColor: "rgba(8, 8, 12, 0.78)", borderColor: "rgba(242, 237, 228, 0.13)", borderCurve: "continuous", borderRadius: 26, borderWidth: 1, boxShadow: "0 16px 42px rgba(0, 0, 0, 0.34)", gap: 17, padding: 19 },
+  pressed: { opacity: 0.75, transform: [{ scale: 0.985 }] },
+  primaryButton: { alignItems: "center", backgroundColor: theme.colors.goldBright, borderCurve: "continuous", borderRadius: 17, flexDirection: "row", gap: 10, justifyContent: "center", minHeight: 56, paddingHorizontal: 18 },
+  primaryButtonText: { color: theme.colors.backgroundDeep, fontFamily: theme.fonts.bold, fontSize: 15 },
+  progressRail: { flexDirection: "row", gap: 7, marginHorizontal: "auto", maxWidth: 530, width: "100%" },
+  progressSegment: { backgroundColor: "rgba(242, 237, 228, 0.14)", borderRadius: theme.radii.pill, flex: 1, height: 3 },
+  progressSegmentActive: { backgroundColor: theme.colors.scannerCyan, boxShadow: "0 0 9px rgba(0, 255, 255, 0.75)" },
+  questionEyebrow: { color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 9, letterSpacing: 1.1, marginTop: 4 },
+  questionTitle: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 24, letterSpacing: -0.4, lineHeight: 30 },
+  summaryCard: { backgroundColor: "rgba(0, 255, 255, 0.075)", borderColor: "rgba(0, 255, 255, 0.28)", borderCurve: "continuous", borderRadius: 18, borderWidth: 1, gap: 6, padding: 15 },
+  summaryPrimary: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.bold, fontSize: 16, lineHeight: 22 },
+  summarySecondary: { color: theme.colors.cream, fontFamily: theme.fonts.medium, fontSize: 13, lineHeight: 19 },
+  topBar: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginHorizontal: "auto", maxWidth: 530, width: "100%"},
 });

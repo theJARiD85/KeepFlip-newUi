@@ -168,16 +168,25 @@ export function buildResellerBusinessOverview({
     );
   });
 
-  const onHandItems = inventory.filter((item) => !soldItemIds.has(item.id));
+  const onHandItems = inventory.filter(
+    (item) =>
+      item.quantityOnHand > 0 &&
+      !(soldItemIds.has(item.id) && item.quantityPurchased <= 1),
+  );
   let cashTiedUpCents = 0;
   let knownCostCount = 0;
   let missingCostCount = 0;
   let estimatedOnHandValueCents = 0;
 
   onHandItems.forEach((item) => {
+    const savedOnHandCostCents =
+      item.inventoryCostOnHand == null
+        ? null
+        : amountToCents(item.inventoryCostOnHand);
     const recordedPurchaseCents = purchaseCentsByItem.get(item.id) ?? 0;
     const savedCostCents = amountToCents(item.acquisitionCost);
-    const costCents = recordedPurchaseCents || savedCostCents;
+    const costCents =
+      savedOnHandCostCents ?? (recordedPurchaseCents || savedCostCents);
 
     if (costCents > 0) {
       cashTiedUpCents += costCents;
@@ -186,7 +195,8 @@ export function buildResellerBusinessOverview({
       missingCostCount += 1;
     }
 
-    estimatedOnHandValueCents += amountToCents(item.estimatedValue);
+    estimatedOnHandValueCents +=
+      amountToCents(item.estimatedValue) * item.quantityOnHand;
   });
 
   return {
@@ -196,10 +206,19 @@ export function buildResellerBusinessOverview({
       leftAfterCostsCents: currentMonthMoneyInCents - currentMonthMoneyOutCents,
     },
     inventory: {
-      onHandCount: onHandItems.length,
-      readyToFlipCount: onHandItems.filter((item) => item.status === 'flip').length,
-      keepCount: onHandItems.filter((item) => item.status === 'keep').length,
-      undecidedCount: onHandItems.filter((item) => item.status === 'undecided').length,
+      onHandCount: onHandItems.reduce(
+        (total, item) => total + item.quantityOnHand,
+        0,
+      ),
+      readyToFlipCount: onHandItems
+        .filter((item) => item.status === 'flip')
+        .reduce((total, item) => total + item.quantityOnHand, 0),
+      keepCount: onHandItems
+        .filter((item) => item.status === 'keep')
+        .reduce((total, item) => total + item.quantityOnHand, 0),
+      undecidedCount: onHandItems
+        .filter((item) => item.status === 'undecided')
+        .reduce((total, item) => total + item.quantityOnHand, 0),
       knownCostCount,
       missingCostCount,
       cashTiedUpCents,

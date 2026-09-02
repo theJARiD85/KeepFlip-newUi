@@ -758,7 +758,10 @@ function ProfitPanel({
         </Text>
       ) : null}
       {expanded && result.valuation ? (
-        <SmartProfitCalculator valuation={result.valuation} />
+        <SmartProfitCalculator
+          initialCost={result.acquisitionGuidance?.maxBuyPrice}
+          valuation={result.valuation}
+        />
       ) : null}
        {hasEnhancements ? (
         <>
@@ -1295,13 +1298,13 @@ export function ValuationResultStage({
   const hasSellerAction = Boolean(onOpenListing || onManagePhotos);
   const hasBottomActions = hasSaveAction || hasSellerAction;
   const hasIncorrectIdentificationReportAction = Boolean(onReportIncorrectIdentification);
-  const reportActionHeight = hasIncorrectIdentificationReportAction ? 36 : 0;
+  const reportActionHeight = hasIncorrectIdentificationReportAction ? 10 : 0;
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const width = Math.min(viewportWidth ?? windowWidth, 520);
   const [activeTab, setActiveTab] = useState<ResultTab>("valuation");
   const compactBooksHeight =
     activeTab === "valuation" && hasBooksRecordsProjection(result)
-      ? 54
+      ? 30
       : 0;
   const collapsedHeight =
     (hasBottomActions ? COLLAPSED_HEIGHT_WITH_SAVE : COLLAPSED_HEIGHT) +
@@ -1327,7 +1330,7 @@ export function ValuationResultStage({
     Math.min(MAX_EXPANDED_HEIGHT, windowHeight - topInset - 14),
   );
   const expansionEnabled =
-    !embedded && expandedHeight - collapsedHeight >= 56;
+    !embedded && expandedHeight - collapsedHeight >= 100;
   const reduceMotion = useReducedMotion();
   const [answerState, setAnswerState] = useState<{
     questionKey: string;
@@ -1993,8 +1996,8 @@ const styles = StyleSheet.create({
   panelBodyExpanded: { height: "auto" },
   panelScrollContent: { paddingTop: 12, paddingBottom: 12 },
   panelBody: { height: 186, paddingHorizontal: 3 },
-  gauge: { flex: 1, justifyContent: "center", gap: 10 },
-  gaugeHeader: { minHeight: 42, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  gauge: { flex: 1, justifyContent: "center", gap: 5 },
+  gaugeHeader: { minHeight: 30, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   microLabel: { color: "rgba(255, 255, 255, 0.48)", fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: "900", letterSpacing: 0.9 },
   gaugeStatus: { color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 9, fontWeight: "900", letterSpacing: 0.8 },
   medianValue: { maxWidth: 210, color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 40, lineHeight: 44, fontWeight: "900", fontVariant: ["tabular-nums"], textShadowColor: "rgba(242, 211, 138, 0.52)", textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 7 },

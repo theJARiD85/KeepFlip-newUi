@@ -58,6 +58,7 @@ type LedgerDraft = {
   itemId: string | null;
   notes: string;
   occurredOn: string;
+  quantity: string;
 };
 
 type MetricProps = {
@@ -92,6 +93,7 @@ function makeDraft(entryType: ResellerLedgerEntryType): LedgerDraft {
     itemId: null,
     notes: '',
     occurredOn: todayBusinessDate(),
+    quantity: '1',
   };
 }
 
@@ -438,6 +440,30 @@ export function BooksScreen() {
       return;
     }
 
+    const quantity = Number(draft.quantity);
+    if (
+      advancedBookkeepingConfigured &&
+      draft.entryType === 'sale_proceeds' &&
+      (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 100_000)
+    ) {
+      setFormError('How many sold must be a whole number from 1 to 100,000.');
+      return;
+    }
+
+    if (
+      advancedBookkeepingConfigured &&
+      draft.entryType === 'sale_proceeds' &&
+      selectedItem &&
+      quantity > selectedItem.quantityOnHand
+    ) {
+      setFormError(
+        `Only ${selectedItem.quantityOnHand.toLocaleString()} unit${
+          selectedItem.quantityOnHand === 1 ? '' : 's'
+        } remain for this item.`,
+      );
+      return;
+    }
+
     setSaving(true);
     setFormError(null);
     try {
@@ -476,6 +502,7 @@ export function BooksScreen() {
           itemId: draft.itemId,
           notes: advancedNotes || null,
           occurredAt,
+          ...(advancedEventType === 'sale' ? { quantity } : {}),
           summary: draftDetails.label,
         });
       } else {
@@ -974,6 +1001,35 @@ export function BooksScreen() {
                   </View>
                 ) : null}
               </View>
+
+              {advancedBookkeepingConfigured && draft.entryType === 'sale_proceeds' ? (
+                <View style={styles.formSection}>
+                  <Text style={styles.formLabel}>HOW MANY SOLD?</Text>
+                  <TextInput
+                    accessibilityLabel="Number of inventory units sold"
+                    keyboardType="number-pad"
+                    maxLength={6}
+                    onChangeText={(quantity) =>
+                      setDraft((current) => ({ ...current, quantity }))
+                    }
+                    placeholder="1"
+                    placeholderTextColor="rgba(173, 167, 178, 0.55)"
+                    style={styles.textInput}
+                    value={draft.quantity}
+                  />
+                  {selectedItem ? (
+                    <Text style={styles.typeHelp}>
+                      {selectedItem.quantityOnHand.toLocaleString()} on hand. KeepFlip moves
+                      only this many units of cost into your sold cost.
+                    </Text>
+                  ) : (
+                    <Text style={styles.typeHelp}>
+                      Choose an item above so KeepFlip can move the right cost into your sold
+                      cost.
+                    </Text>
+                  )}
+                </View>
+              ) : null}
 
               <View style={styles.formSection}>
                 <Text style={styles.formLabel}>NOTE (OPTIONAL)</Text>

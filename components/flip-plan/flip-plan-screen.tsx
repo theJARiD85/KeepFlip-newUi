@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -8,11 +8,9 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import {
-  KeepFlipText as Text,
-  KeepFlipTextInput as TextInput,
-} from '@/components/ui/keepflip-text';
+import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 
@@ -42,11 +40,11 @@ type LedgerAccount = {
 };
 
 const EMPTY_PLAN: PlanDraft = {
-  buyCost: '',
-  extraCost: '',
+  buyCost: '225',
+  extraCost: '35',
   feePercent: '',
-  partnerShare: '',
-  salePrice: '',
+  partnerShare: '35',
+  salePrice: '530',
   shippingCost: '',
 };
 
@@ -103,44 +101,6 @@ function percent(value: number) {
 
 function total(entries: LedgerEntry[]) {
   return entries.reduce((sum, entry) => sum + entry.amount, 0);
-}
-
-function PlanFieldInput({
-  helper,
-  label,
-  onChangeText,
-  suffix,
-  value,
-}: {
-  helper: string;
-  label: string;
-  onChangeText: (next: string) => void;
-  suffix?: string;
-  value: string;
-}) {
-  return (
-    <View style={styles.field}>
-      <View style={styles.fieldHeading}>
-        <Text style={styles.fieldLabel}>{label}</Text>
-        <Text style={styles.fieldHelper}>{helper}</Text>
-      </View>
-      <View style={styles.inputSurface}>
-        {suffix === '%' ? null : <Text style={styles.inputPrefix}>$</Text>}
-        <TextInput
-          accessibilityHint={helper}
-          accessibilityLabel={label}
-          keyboardType="decimal-pad"
-          onChangeText={onChangeText}
-          placeholder="0"
-          placeholderTextColor="rgba(234, 241, 236, 0.30)"
-          selectTextOnFocus
-          style={styles.input}
-          value={value}
-        />
-        {suffix ? <Text style={styles.inputSuffix}>{suffix}</Text> : null}
-      </View>
-    </View>
-  );
 }
 
 function StageToolButton({
@@ -281,6 +241,159 @@ function LedgerAccountCard({ account }: { account: LedgerAccount }) {
           {'Total: ' + money(creditTotal)}
         </Text>
       </View>
+    </View>
+  );
+}
+
+function snapToStep(
+  value: number,
+  minimumValue: number,
+  maximumValue: number,
+  step: number,
+) {
+  const boundedValue = Math.min(maximumValue, Math.max(minimumValue, value));
+  const steppedValue =
+    minimumValue + Math.round((boundedValue - minimumValue) / step) * step;
+
+  return Math.min(maximumValue, Math.max(minimumValue, steppedValue));
+}
+
+function GradientSlider({
+  accessibilityLabel,
+  maximumValue,
+  minimumValue,
+  onValueChange,
+  step,
+  value,
+}: {
+  accessibilityLabel: string;
+  maximumValue: number;
+  minimumValue: number;
+  onValueChange: (nextValue: number) => void;
+  step: number;
+  value: number;
+}) {
+  const [trackWidth, setTrackWidth] = useState(0);
+  const percentage = (
+    maximumValue === minimumValue
+      ? 0
+      : ((value - minimumValue) / (maximumValue - minimumValue)) * 100
+  ).toFixed(3) + '%';
+
+  const updateFromLocation = useCallback(
+    (locationX: number) => {
+      if (trackWidth <= 0) {
+        return;
+      }
+
+      const rawValue =
+        minimumValue + (locationX / trackWidth) * (maximumValue - minimumValue);
+      onValueChange(snapToStep(rawValue, minimumValue, maximumValue, step));
+    },
+    [maximumValue, minimumValue, onValueChange, step, trackWidth],
+  );
+
+  const decrease = () => {
+    onValueChange(snapToStep(value - step, minimumValue, maximumValue, step));
+  };
+
+  const increase = () => {
+    onValueChange(snapToStep(value + step, minimumValue, maximumValue, step));
+  };
+
+  return (
+    <View
+      accessible
+      accessibilityActions={[
+        { label: 'Decrease value', name: 'decrement' },
+        { label: 'Increase value', name: 'increment' },
+      ]}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="adjustable"
+      accessibilityValue={{
+        max: maximumValue,
+        min: minimumValue,
+        now: value,
+        text: String(value),
+      }}
+      onAccessibilityAction={(event) => {
+        if (event.nativeEvent.actionName === 'increment') {
+          increase();
+        }
+
+        if (event.nativeEvent.actionName === 'decrement') {
+          decrease();
+        }
+      }}
+      onLayout={(event) => setTrackWidth(event.nativeEvent.layout.width)}
+      onResponderGrant={(event) => updateFromLocation(event.nativeEvent.locationX)}
+      onResponderMove={(event) => updateFromLocation(event.nativeEvent.locationX)}
+      onStartShouldSetResponder={() => true}
+      pointerEvents="box-only"
+      style={styles.sliderTouch}>
+      <View pointerEvents="none" style={styles.sliderTrack}>
+        <LinearGradient
+          colors={[
+            theme.colors.scannerViolet,
+            theme.colors.goldBright,
+            theme.colors.scannerCyan,
+          ]}
+          end={{ x: 1, y: 0 }}
+          locations={[0, 0.5, 1]}
+          start={{ x: 0, y: 0 }}
+          style={[styles.sliderFill, { width: percentage as any }]}
+        />
+        <LinearGradient
+          colors={[
+            theme.colors.cream,
+            theme.colors.cream,
+            theme.colors.cream,
+          ]}
+          end={{ x: 1, y: 0 }}
+          locations={[0, 0.5, 1]}
+          start={{ x: 0, y: 0 }}
+          style={[styles.sliderThumb, { left: percentage as any }]}
+        />
+      </View>
+    </View>
+  );
+}
+
+function SliderControl({
+  accessibilityLabel,
+  label,
+  maximumValue,
+  minimumValue,
+  onValueChange,
+  step,
+  suffix,
+  value,
+}: {
+  accessibilityLabel: string;
+  label: string;
+  maximumValue: number;
+  minimumValue: number;
+  onValueChange: (nextValue: number) => void;
+  step: number;
+  suffix?: string;
+  value: number;
+}) {
+  return (
+    <View style={styles.sliderControl}>
+      <View style={styles.sliderLabelRow}>
+        <Text style={styles.sliderLabel}>{label}</Text>
+        <Text selectable style={styles.sliderValue}>
+          {suffix === '%' ? String(value) + '%' : money(value)}
+        </Text>
+      </View>
+      <GradientSlider
+        accessibilityLabel={accessibilityLabel}
+        maximumValue={maximumValue}
+        minimumValue={minimumValue}
+        onValueChange={onValueChange}
+        step={step}
+        value={value}
+      />
     </View>
   );
 }
@@ -446,7 +559,6 @@ export function FlipPlanScreen() {
   }, [activeStage, plan]);
 
   const stageCopy = STAGE_COPY[activeStage];
-  const hasFeesOrShipping = plan.feePercent > 0 || plan.shippingCost > 0;
 
   return (
     <KeepFlipBackground>
@@ -490,20 +602,23 @@ export function FlipPlanScreen() {
 
         <View style={styles.stagePanel}>
           <View style={styles.stageGrid}>
-            <StageToolButton
-              active={activeStage === 'buy'}
-              detail={money(plan.buyCost)}
-              icon="shippingbox.fill"
-              label="1. Buy Device"
-              onPress={() => setActiveStage('buy')}
-            />
-            <StageToolButton
-              active={activeStage === 'refurbish'}
-              detail={'+' + money(plan.extraCost)}
-              icon="wrench.and.screwdriver.fill"
-              label="2. Refurbish"
-              onPress={() => setActiveStage('refurbish')}
-            />
+            <View style={styles.stageRow}>
+              <StageToolButton
+                active={activeStage === 'buy'}
+                detail={money(plan.buyCost)}
+                icon="shippingbox.fill"
+                label="1. Buy Device"
+                onPress={() => setActiveStage('buy')}
+              />
+              <StageToolButton
+                active={activeStage === 'refurbish'}
+                detail={'+' + money(plan.extraCost)}
+                icon="wrench.and.screwdriver.fill"
+                label="2. Refurbish"
+                onPress={() => setActiveStage('refurbish')}
+              />
+            </View>
+            <View style={styles.stageRow}>
             <StageToolButton
               active={activeStage === 'sell'}
               detail={money(plan.salePrice)}
@@ -518,6 +633,7 @@ export function FlipPlanScreen() {
               label="4. Split Payout"
               onPress={() => setActiveStage('split')}
             />
+            </View>
           </View>
 
           <View style={styles.metricGrid}>
@@ -597,86 +713,53 @@ export function FlipPlanScreen() {
           </View>
         </View>
 
-        <View style={styles.toolPanel}>
-          <View style={styles.toolPanelHeading}>
-            <Text style={styles.sectionEyebrow}>ADJUST THIS TOOL</Text>
-            <Text style={styles.sectionTitle}>{stageCopy.title}</Text>
+        <View style={styles.sliderPanel}>
+          <View style={styles.sliderPanelHeading}>
+            <Text style={styles.sectionEyebrow}>FLIP INPUTS</Text>
+            <Text style={styles.sectionTitle}>Tune the plan</Text>
             <Text style={styles.sectionText}>
-              Update the amount for this step; every selected stage recalculates immediately.
+              Adjust any scale and every stage updates live.
             </Text>
           </View>
 
-          <View style={styles.fieldGrid}>
-            {activeStage === 'buy' ? (
-              <PlanFieldInput
-                helper="What you would pay to acquire the item"
-                label="Device purchase cost"
-                onChangeText={(value) => updateField('buyCost', value)}
-                value={draft.buyCost}
-              />
-            ) : null}
-
-            {activeStage === 'refurbish' ? (
-              <PlanFieldInput
-                helper="Cleaning, parts, or repair work"
-                label="Refurbishment and parts"
-                onChangeText={(value) => updateField('extraCost', value)}
-                value={draft.extraCost}
-              />
-            ) : null}
-
-            {activeStage === 'sell' ? (
-              <>
-                <PlanFieldInput
-                  helper="What you think the customer will pay"
-                  label="Resale consumer price"
-                  onChangeText={(value) => updateField('salePrice', value)}
-                  value={draft.salePrice}
-                />
-                <PlanFieldInput
-                  helper="Your actual label cost, if known"
-                  label="Shipping cost"
-                  onChangeText={(value) => updateField('shippingCost', value)}
-                  value={draft.shippingCost}
-                />
-                <PlanFieldInput
-                  helper="Enter the fee for your selling channel"
-                  label="Selling fee"
-                  onChangeText={(value) => updateField('feePercent', value)}
-                  suffix="%"
-                  value={draft.feePercent}
-                />
-              </>
-            ) : null}
-
-            {activeStage === 'split' ? (
-              <PlanFieldInput
-                helper="Applied only to positive estimated profit after sale costs"
-                label="Partner profit share"
-                onChangeText={(value) => updateField('partnerShare', value)}
-                suffix="%"
-                value={draft.partnerShare}
-              />
-            ) : null}
-          </View>
-
-          <View style={[styles.costNote, hasFeesOrShipping && styles.costNoteComplete]}>
-            <IconSymbol
-              color={hasFeesOrShipping ? theme.colors.scannerCyan : theme.colors.goldBright}
-              name={hasFeesOrShipping ? 'checkmark.shield.fill' : 'exclamationmark.triangle.fill'}
-              size={17}
+          <View style={styles.sliderGrid}>
+            <SliderControl
+              accessibilityLabel="Device Purchase Cost"
+              label="Item Purchase Cost"
+              maximumValue={400}
+              minimumValue={20}
+              onValueChange={(value) => updateField('buyCost', String(value))}
+              step={5}
+              value={plan.buyCost}
             />
-            <View style={styles.costNoteCopy}>
-              <Text style={styles.costNoteTitle}>
-                {hasFeesOrShipping
-                  ? 'Sale costs are included in your reseller keep'
-                  : 'Add selling fee and shipping when you know them'}
-              </Text>
-              <Text style={styles.costNoteText}>
-                Gross profit is sale price less accumulated COGS. Reseller keep also
-                accounts for the optional selling fee, shipping, and partner share.
-              </Text>
-            </View>
+            <SliderControl
+              accessibilityLabel="Refurbishment and Parts"
+              label="Refurbishment & Parts"
+              maximumValue={150}
+              minimumValue={0}
+              onValueChange={(value) => updateField('extraCost', String(value))}
+              step={5}
+              value={plan.extraCost}
+            />
+            <SliderControl
+              accessibilityLabel="Resale Consumer Price"
+              label="Resale Consumer Price"
+              maximumValue={800}
+              minimumValue={100}
+              onValueChange={(value) => updateField('salePrice', String(value))}
+              step={10}
+              value={plan.salePrice}
+            />
+            <SliderControl
+              accessibilityLabel="Partner Profit Share"
+              label="Partner Profit Share"
+              maximumValue={100}
+              minimumValue={0}
+              onValueChange={(value) => updateField('partnerShare', String(value))}
+              step={5}
+              suffix="%"
+              value={plan.partnerShare}
+            />
           </View>
         </View>
 
@@ -1070,7 +1153,8 @@ const styles = StyleSheet.create({
   },
   stageDetail: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 12 },
   stageDetailActive: { color: theme.colors.scannerCyan },
-  stageGrid: { flexDirection: 'row', gap: 6 },
+  stageGrid: { flexDirection: 'column', gap: 6 },
+  stageRow: { flexDirection: 'row', gap: 6 },
   stageIcon: {
     alignItems: 'center',
     backgroundColor: 'rgba(234, 241, 236, 0.075)',
@@ -1113,5 +1197,71 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   toolPanelHeading: { gap: 3 },
+  sliderControl: {
+    flexBasis: 238,
+    flexGrow: 1,
+    gap: 7,
+  },
+  sliderFill: {
+    borderRadius: 999,
+    height: 5,
+    left: 0,
+    position: 'absolute',
+    top: 0,
+  },
+  sliderGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 13,
+  },
+  sliderLabel: {
+    color: theme.colors.cream,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  sliderLabelRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  sliderPanel: {
+    backgroundColor: 'rgba(5, 16, 22, 0.86)',
+    borderColor: 'rgba(88, 223, 232, 0.24)',
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 13,
+    padding: 14,
+  },
+  sliderPanelHeading: { gap: 3 },
+  sliderThumb: {
+    color: theme.colors.cream,
+    borderColor: 'rgba(4, 10, 15, 0.88)',
+    borderRadius: 12,
+    borderWidth: 2,
+    height: 22,
+    marginLeft: -11,
+    position: 'absolute',
+    top: -9,
+    width: 22,
+  },
+  sliderTouch: {
+    height: 34,
+    justifyContent: 'center',
+    width: '100%',
+  },
+  sliderTrack: {
+    backgroundColor: 'rgba(234, 241, 236, 0.14)',
+    borderRadius: 999,
+    height: 5,
+    position: 'relative',
+    width: '100%',
+  },
+  sliderValue: {
+    color: theme.colors.goldBright,
+    fontSize: 11,
+    fontVariant: ['tabular-nums'],
+    fontWeight: '900',
+  },
   topBar: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
 });
+

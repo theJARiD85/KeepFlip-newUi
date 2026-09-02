@@ -49,10 +49,6 @@ type ListingPlatform =
 
 type EbayListingForm = {
   categoryId: string;
-  merchantLocationKey: string;
-  paymentPolicyId: string;
-  fulfillmentPolicyId: string;
-  returnPolicyId: string;
   quantity: string;
   marketplaceId: string;
 };
@@ -70,7 +66,7 @@ const CROSSLIST_PLATFORMS: {
     label: "eBay",
     mode: "LIVE LISTING",
     description:
-      "Publish the reviewed draft through your connected eBay account. eBay category, location, and policy settings are required.",
+      "Publish the reviewed draft through your connected eBay account. Choose the category, then KeepFlip uses your saved Seller Account setup.",
   },
   {
     id: "facebookMarketplace",
@@ -206,10 +202,6 @@ export default function ListingCreationGuideScreen() {
     useState<PublishEbayListingResult | null>(null);
   const [ebayForm, setEbayForm] = useState<EbayListingForm>({
     categoryId: "",
-    merchantLocationKey: "",
-    paymentPolicyId: "",
-    fulfillmentPolicyId: "",
-    returnPolicyId: "",
     quantity: "1",
     marketplaceId: "EBAY_US",
   });
@@ -512,12 +504,8 @@ export default function ListingCreationGuideScreen() {
   const publishListingToEbay = useCallback(async () => {
     if (!item || !generatedListing || ebayPublishing) return;
 
-    const requiredFields: Array<[keyof EbayListingForm, string]> = [
+    const requiredFields: [keyof EbayListingForm, string][] = [
       ["categoryId", "eBay category ID"],
-      ["merchantLocationKey", "merchant location key"],
-      ["paymentPolicyId", "payment policy ID"],
-      ["fulfillmentPolicyId", "fulfillment policy ID"],
-      ["returnPolicyId", "return policy ID"],
     ];
     const missingField = requiredFields.find(
       ([field]) => !ebayForm[field].trim(),
@@ -554,12 +542,12 @@ export default function ListingCreationGuideScreen() {
         price,
         quantity,
         categoryId: ebayForm.categoryId.trim(),
-        merchantLocationKey: ebayForm.merchantLocationKey.trim(),
-        paymentPolicyId: ebayForm.paymentPolicyId.trim(),
-        fulfillmentPolicyId: ebayForm.fulfillmentPolicyId.trim(),
-        returnPolicyId: ebayForm.returnPolicyId.trim(),
         marketplaceId: ebayForm.marketplaceId.trim() || "EBAY_US",
-        currency: item.currency || "USD",
+        currency:
+          ebayForm.marketplaceId.trim() === "" ||
+          ebayForm.marketplaceId.trim() === "EBAY_US"
+            ? item.currency || "USD"
+            : undefined,
         condition: generatedListing.conditionLabel,
         conditionDescription: generatedListing.conditionDisclosure,
         listingDuration: "GTC",
@@ -1002,7 +990,9 @@ export default function ListingCreationGuideScreen() {
                       ) : (
                         <>
                           <Text style={styles.ebayPublishHint}>
-                            These IDs come from your eBay seller account. KeepFlip sends them with the reviewed title, description, price, condition, and saved item photos.
+                            Choose the category and quantity. KeepFlip will use the
+                            shipping, payment, return, and inventory-location setup
+                            saved to your Seller Account.
                           </Text>
                           <View style={styles.ebayField}>
                             <Text style={styles.ebayFieldLabel}>CATEGORY ID</Text>
@@ -1022,103 +1012,34 @@ export default function ListingCreationGuideScreen() {
                               value={ebayForm.categoryId}
                             />
                           </View>
-                          <View style={styles.ebayField}>
-                            <Text style={styles.ebayFieldLabel}>
-                              MERCHANT LOCATION KEY
+                          <View style={styles.ebaySetupNotice}>
+                            <IconSymbol
+                              color={theme.colors.scannerCyan}
+                              name="checkmark.shield.fill"
+                              size={16}
+                            />
+                            <Text style={styles.ebaySetupNoticeText}>
+                              Saved eBay setup will be used automatically. Refresh
+                              Seller Account if KeepFlip says listing setup needs
+                              attention.
                             </Text>
+                          </View>
+                          <View style={styles.ebayField}>
+                            <Text style={styles.ebayFieldLabel}>QUANTITY</Text>
                             <TextInput
-                              autoCapitalize="none"
-                              autoCorrect={false}
+                              keyboardType="number-pad"
                               onChangeText={(value) =>
                                 setEbayForm((current) => ({
                                   ...current,
-                                  merchantLocationKey: value,
+                                  quantity: value,
                                 }))
                               }
-                              placeholder="Your eBay inventory location"
+                              placeholder="1"
                               placeholderTextColor="rgba(247, 242, 232, 0.38)"
                               style={styles.ebayFieldInput}
-                              value={ebayForm.merchantLocationKey}
+                              value={ebayForm.quantity}
                             />
-                          </View>
-                          <View style={styles.ebayFieldRow}>
-                            <View style={styles.ebayFieldHalf}>
-                              <Text style={styles.ebayFieldLabel}>
-                                PAYMENT POLICY ID
-                              </Text>
-                              <TextInput
-                                autoCapitalize="none"
-                                autoCorrect={false}
-                                onChangeText={(value) =>
-                                  setEbayForm((current) => ({
-                                    ...current,
-                                    paymentPolicyId: value,
-                                  }))
-                                }
-                                placeholder="Payment policy"
-                                placeholderTextColor="rgba(247, 242, 232, 0.38)"
-                                style={styles.ebayFieldInput}
-                                value={ebayForm.paymentPolicyId}
-                              />
-                            </View>
-                            <View style={styles.ebayFieldHalf}>
-                              <Text style={styles.ebayFieldLabel}>
-                                RETURN POLICY ID
-                              </Text>
-                              <TextInput
-                                autoCapitalize="none"
-                                autoCorrect={false}
-                                onChangeText={(value) =>
-                                  setEbayForm((current) => ({
-                                    ...current,
-                                    returnPolicyId: value,
-                                  }))
-                                }
-                                placeholder="Return policy"
-                                placeholderTextColor="rgba(247, 242, 232, 0.38)"
-                                style={styles.ebayFieldInput}
-                                value={ebayForm.returnPolicyId}
-                              />
-                            </View>
-                          </View>
-                          <View style={styles.ebayFieldRow}>
-                            <View style={styles.ebayFieldHalf}>
-                              <Text style={styles.ebayFieldLabel}>
-                                FULFILLMENT POLICY ID
-                              </Text>
-                              <TextInput
-                                autoCapitalize="none"
-                                autoCorrect={false}
-                                onChangeText={(value) =>
-                                  setEbayForm((current) => ({
-                                    ...current,
-                                    fulfillmentPolicyId: value,
-                                  }))
-                                }
-                                placeholder="Shipping policy"
-                                placeholderTextColor="rgba(247, 242, 232, 0.38)"
-                                style={styles.ebayFieldInput}
-                                value={ebayForm.fulfillmentPolicyId}
-                              />
-                            </View>
-                            <View style={styles.ebayFieldHalf}>
-                              <Text style={styles.ebayFieldLabel}>QUANTITY</Text>
-                              <TextInput
-                                keyboardType="number-pad"
-                                onChangeText={(value) =>
-                                  setEbayForm((current) => ({
-                                    ...current,
-                                    quantity: value,
-                                  }))
-                                }
-                                placeholder="1"
-                                placeholderTextColor="rgba(247, 242, 232, 0.38)"
-                                style={styles.ebayFieldInput}
-                                value={ebayForm.quantity}
-                              />
-                            </View>
-                          </View>
-                          <View style={styles.ebayField}>
+                          </View>                          <View style={styles.ebayField}>
                             <Text style={styles.ebayFieldLabel}>
                               MARKETPLACE
                             </Text>
@@ -1848,7 +1769,22 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 17,
   },
-  ebayField: {
+  ebaySetupNotice: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 9,
+    padding: 12,
+    borderRadius: theme.radii.medium,
+    borderWidth: 1,
+    borderColor: "rgba(88, 223, 232, 0.22)",
+    backgroundColor: "rgba(88, 223, 232, 0.06)",
+  },
+  ebaySetupNoticeText: {
+    flex: 1,
+    color: theme.colors.textMuted,
+    fontSize: 11,
+    lineHeight: 16,
+  },  ebayField: {
     gap: 6,
   },
   ebayFieldRow: {

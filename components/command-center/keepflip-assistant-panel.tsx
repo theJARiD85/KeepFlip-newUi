@@ -19,8 +19,30 @@ import {
   parseAssistantCommand,
   type AssistantTask,
 } from '@/services/keepflip-assistant-service';
+import {
+  cancelKeepFlipTaskReminder,
+  scheduleKeepFlipTaskReminder,
+} from '@/services/keepflip-notification-service';
 
 type AssistantRoute = '/inventory' | '/books' | '/deal-shelf' | '/account';
+
+async function scheduleTaskReminder(
+  task: AssistantTask,
+  requestPermission: boolean,
+) {
+  if (task.status !== 'open' || task.taskType !== 'reminder' || !task.dueAt) {
+    return { status: 'skipped' } as const;
+  }
+
+  return scheduleKeepFlipTaskReminder({
+    body: task.title,
+    dueAt: task.dueAt,
+    requestPermission,
+    taskId: task.id,
+    title: 'KeepFlip reminder',
+    url: '/command-center',
+  });
+}
 
 export function KeepFlipAssistantPanel({
   onNavigate,
@@ -34,6 +56,7 @@ export function KeepFlipAssistantPanel({
   const [isWorking, setIsWorking] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const userId = user?.$id ?? null;
 
   const openTasks = useMemo(
     () => tasks.filter((task) => task.status === 'open').slice(0, 4),
@@ -41,10 +64,18 @@ export function KeepFlipAssistantPanel({
   );
 
   const loadTasks = useCallback(async () => {
-    if (!user?.$id) return;
+    if (!userId) {
+      setTasks([]);
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     try {
-      setTasks(await listAssistantTasks(user.$id));
+      const loaded = await listAssistantTasks(userId);
+      setTasks(loaded);
+      void Promise.all(
+        loaded.map((task) => scheduleTaskReminder(task, false).catch(() => undefined)),
+      );
       setError(null);
     } catch (loadError) {
       setError(
@@ -55,10 +86,13 @@ export function KeepFlipAssistantPanel({
     } finally {
       setIsLoading(false);
     }
-  }, [user?.$id]);
+  }, [userId]);
 
   useEffect(() => {
-    void loadTasks();
+    const taskLoadTimer = setTimeout(() => {
+      void loadTasks();
+    }, 0);
+    return () => clearTimeout(taskLoadTimer);
   }, [loadTasks]);
 
   const runCommand = async (value = command) => {
@@ -99,11 +133,25 @@ export function KeepFlipAssistantPanel({
         }).catch(() => undefined);
         setTasks((current) => [task, ...current]);
         setCommand('');
-        setMessage(
-          parsed.taskType === 'reminder'
-            ? 'Reminder saved to your assistant queue.'
-            : 'Task added to your assistant queue.',
-        );
+
+        if (parsed.taskType === 'reminder' && task.dueAt) {
+          const scheduled = await scheduleTaskReminder(task, true).catch(
+            () => ({ status: 'permission_denied' } as const),
+          );
+          setMessage(
+            scheduled.status === 'scheduled'
+              ? 'Reminder saved and scheduled on this phone.'
+              : scheduled.status === 'permission_denied'
+                ? 'Reminder saved. Turn on KeepFlip notifications in your phone settings to receive the alert.'
+                : 'Reminder saved to your assistant queue.',
+          );
+        } else {
+          setMessage(
+            parsed.taskType === 'reminder'
+              ? 'Reminder saved. Add “tomorrow at 9 am” when you want a phone alert.'
+              : 'Task added to your assistant queue.',
+          );
+        }
         return;
       }
 
@@ -133,6 +181,7 @@ export function KeepFlipAssistantPanel({
     setError(null);
     try {
       const completed = await completeAssistantTask(user.$id, task.id);
+      await cancelKeepFlipTaskReminder(task.id).catch(() => undefined);
       setTasks((current) =>
         current.map((entry) => (entry.id === completed.id ? completed : entry)),
       );

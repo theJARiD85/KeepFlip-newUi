@@ -5,6 +5,7 @@ import Animated, {
   FadeInUp,
   FadeOut,
   LinearTransition,
+  withTiming,
 } from 'react-native-reanimated';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -42,6 +43,31 @@ export function toDisplayUri(path: string) {
   return `file://${path.startsWith('/') ? '' : '/'}${path}`;
 }
 
+const photoPileEnter = () => {
+  'worklet';
+
+  return {
+    initialValues: {
+      opacity: 0,
+      transform: [
+        { translateX: -92 },
+        { translateY: -150 },
+        { scale: 5.4 },
+        { rotateZ: '-5deg' },
+      ],
+    },
+    animations: {
+      opacity: withTiming(1, { duration: 210 }),
+      transform: [
+        { translateX: withTiming(0, { duration: 240 }) },
+        { translateY: withTiming(0, { duration: 240 }) },
+        { scale: withTiming(1, { duration: 240 }) },
+        { rotateZ: withTiming('0deg', { duration: 240 }) },
+      ],
+    },
+  };
+};
+
 export function MultiScanPhotoStack({
   accentColor = theme.colors.scannerCyan,
   accessibilityContext = 'multi-scan',
@@ -51,10 +77,10 @@ export function MultiScanPhotoStack({
 }: MultiScanPhotoStackProps) {
   if (photos.length === 0) return null;
 
-  const visiblePhotos = photos.slice(-3);
+  const visiblePhotos = photos.slice(-4);
 
   return (
-    <Animated.View entering={FadeInUp.duration(190)} exiting={FadeOut.duration(140)}>
+    <Animated.View entering={FadeIn.duration(130)} exiting={FadeOut.duration(140)}>
       <Pressable
         accessibilityHint="Opens every selected photo for this item"
         accessibilityLabel={`Review ${photos.length} ${accessibilityContext} photo${photos.length === 1 ? '' : 's'}`}
@@ -69,11 +95,11 @@ export function MultiScanPhotoStack({
         ]}>
         {visiblePhotos.map((photo, index) => {
           const depth = visiblePhotos.length - index - 1;
-          const rotation = depth === 2 ? '-9deg' : depth === 1 ? '6deg' : '-1deg';
+          const rotation = depth === 3 ? '-10deg' : depth === 2 ? '8deg' : depth === 1 ? '-5deg' : '-1deg';
 
           return (
             <Animated.View
-              entering={FadeIn.duration(160)}
+              entering={photoPileEnter}
               key={photo.id}
               layout={LinearTransition.duration(180)}
               style={[
@@ -83,10 +109,10 @@ export function MultiScanPhotoStack({
                   boxShadow: `0 8px 20px rgba(0, 0, 0, 0.55), 0 0 14px ${accentColor}`,
                   zIndex: index + 1,
                   transform: [
-                    { translateX: -depth * 7 },
-                    { translateY: depth * 4 },
+                    { translateX: -depth * 3 },
+                    { translateY: depth * 3 },
                     { rotateZ: rotation },
-                    { scale: 1 - depth * 0.04 },
+                    { scale: 1 - depth * 0.05 },
                   ],
                 },
               ]}>
@@ -206,8 +232,8 @@ export function MultiScanPhotoReview({
 
 const styles = StyleSheet.create({
   stackButton: {
-    width: 82,
-    height: 92,
+    width: 48,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -215,26 +241,28 @@ const styles = StyleSheet.create({
   stackButtonDisabled: { opacity: 0.48 },
   stackPhoto: {
     position: 'absolute',
-    width: 62,
-    height: 76,
+    right: 14,
+    bottom: 14,
+    width: 20,
+    height: 20,
     overflow: 'hidden',
-    borderRadius: theme.radii.small,
+    borderRadius: 5,
     borderCurve: 'continuous',
     borderWidth: 1,
     borderColor: 'rgba(88, 223, 232, 0.72)',
     backgroundColor: theme.colors.surface,
-    boxShadow: '0 8px 20px rgba(0, 0, 0, 0.55), 0 0 14px rgba(88, 223, 232, 0.22)',
+    boxShadow: '0 3px 8px rgba(0, 0, 0, 0.54), 0 0 8px rgba(88, 223, 232, 0.2)',
   },
   stackCount: {
     position: 'absolute',
-    right: 1,
+    right: 0,
     bottom: 0,
     zIndex: 8,
-    minWidth: 26,
-    height: 26,
+    minWidth: 16,
+    height: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 6,
+    paddingHorizontal: 3,
     borderRadius: theme.radii.pill,
     borderWidth: 1,
     borderColor: theme.colors.scannerCyan,
@@ -243,7 +271,7 @@ const styles = StyleSheet.create({
   },
   stackCountText: {
     color: theme.colors.scannerCyan,
-    fontSize: 11,
+    fontSize: 8,
     fontWeight: '900',
     fontVariant: ['tabular-nums'],
   },

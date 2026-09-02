@@ -23,6 +23,7 @@ import {
   MENU_CLOSE_DURATION_MS,
   useKeepFlipMenu,
 } from '@/components/navigation/keepflip-menu-context';
+import { SourcingTripControl } from '@/components/sourcing/sourcing-trip-control';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
@@ -202,7 +203,10 @@ export function KeepFlipSlideDownMenu() {
                   />
                   <View style={styles.brandCopy}>
                     <Text style={styles.brandName}>KEEPFLIP</Text>
-                    <Text style={styles.brandDescriptor}>Find Better, Flip Smarter.</Text>
+                    <View style={styles.brandDescriptor}>
+                    <Text numberOfLines={1} style={styles.brandDescriptor}>Beyond the flip.</Text>
+                      <Text numberOfLines={1} style={styles.brandDescriptor}>Built for your business.</Text>
+                    </View>
                   </View>
                 </View>
 
@@ -288,6 +292,11 @@ export function KeepFlipSlideDownMenu() {
                     );
                   })}
                 </View>
+              </View>
+
+              <View style={styles.workflowBlock}>
+                <Text style={styles.sectionLabel}>WORKFLOW</Text>
+                <SourcingTripControl />
               </View>
 
               <EbayMenuConnectionLink
@@ -411,6 +420,7 @@ const styles = StyleSheet.create({
   brandDescriptor: {
     color: theme.colors.gold,
     fontSize: 9,
+    maxWidth: 150,
     fontWeight: '800',
     letterSpacing: 1.8,
   },
@@ -435,6 +445,9 @@ const styles = StyleSheet.create({
     boxShadow: '0 0 12px rgba(215, 168, 74, 0.24)',
   },
   navigationBlock: {
+    gap: 10,
+  },
+  workflowBlock: {
     gap: 10,
   },
   sectionLabel: {

@@ -257,6 +257,38 @@ export type ItemMarketAcquisitionGuidance = {
   assumptions: string[];
   missingInputs: string[];
   summary: string;
+  /**
+   * Added locally after a user chooses Buy Rules. It never replaces the
+   * evidence-led market decision; it only preserves the private rule cap used
+   * to calculate this user's acquisition ceiling.
+   */
+  profileRules?: {
+    baseMaxBuyPrice: number;
+    includedCostTypes: string[];
+    inventoryFocus:
+      | 'general'
+      | 'fashion'
+      | 'electronics'
+      | 'media_games'
+      | 'collectibles';
+    laborTolerance: 'quick_listing' | 'standard_prep' | 'hands_on';
+    maximumItemCostCents: number;
+    maximumTypicalDays: number;
+    minimumNetProfitCents: number;
+    minimumRoiPercent: number;
+    outcome:
+      | 'within_rules'
+      | 'capped_by_return'
+      | 'capped_by_capital'
+      | 'outside_sale_speed'
+      | 'outside_labor_tolerance';
+    saleSpeed: 'quick' | 'steady' | 'patient';
+    storageCapacity:
+      | 'closet_or_bin'
+      | 'dedicated_room'
+      | 'garage_or_warehouse';
+    version: number;
+  };
 };
 
 export type ItemMarketVelocityWindow = {

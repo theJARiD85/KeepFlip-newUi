@@ -119,6 +119,12 @@ export const APPWRITE = {
   ledgerEntriesTableId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_LEDGER_ENTRIES_TABLE_ID,
   ),
+  sourcingTripsTableId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_SOURCING_TRIPS_TABLE_ID,
+  ),
+  sourcingTripFindsTableId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_SOURCING_TRIP_FINDS_TABLE_ID,
+  ),
   assistantTasksTableId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_ASSISTANT_TASKS_TABLE_ID,
   ),

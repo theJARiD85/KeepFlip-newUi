@@ -13,6 +13,11 @@ import {
   ITEM_ANALYSIS_CONTRACT_VERSION,
   type ItemAnalysisSuccess,
 } from "@/types/item-analysis";
+import {
+  applyResellerBuyRulesToAnalysis,
+  type ResellerBuyRules,
+} from "@/services/reseller-buy-rules-service";
+import { getResellerBuyRules } from "@/services/user-profile-onboarding-service";
 
 const DEAL_SHELF_TTL_MS = 72 * 60 * 60 * 1000;
 const DEAL_SHELF_ANALYSIS_SCHEMA_VERSION = 1 as const;
@@ -423,6 +428,28 @@ function rowToDealShelfItem(row: DealShelfRow): DealShelfItem | null {
   };
 }
 
+function dealWithCurrentBuyRules(
+  deal: DealShelfItem,
+  buyRules: ResellerBuyRules,
+): DealShelfItem {
+  const analysis = applyResellerBuyRulesToAnalysis(deal.analysis, buyRules);
+  const state = restoreResultState(analysis);
+  const updatedMaxBuyPrice = analysis.marketResearch?.acquisitionGuidance
+    ?.maxBuyPrice;
+
+  return {
+    ...deal,
+    analysis,
+    maxBuyPrice:
+      updatedMaxBuyPrice != null &&
+      Number.isFinite(updatedMaxBuyPrice) &&
+      updatedMaxBuyPrice >= 0
+        ? updatedMaxBuyPrice
+        : deal.maxBuyPrice,
+    state: state ?? deal.state,
+  };
+}
+
 function shelfData({
   analysis,
   coverPhotoId,
@@ -557,6 +584,7 @@ export async function listDealShelfItems(ownerId: string) {
     rows = response.rows as unknown as DealShelfRow[];
   }
 
+  const buyRules = await getResellerBuyRules(cleanOwnerId).catch(() => null);
   const now = Date.now();
   return rows
     .map(rowToDealShelfItem)
@@ -565,6 +593,9 @@ export async function listDealShelfItems(ownerId: string) {
       const expiresAt = Date.parse(deal.expiresAt);
       return Number.isFinite(expiresAt) && expiresAt > now;
     })
+    .map((deal) =>
+      buyRules ? dealWithCurrentBuyRules(deal, buyRules) : deal,
+    )
     .sort(
       (left, right) =>
         Date.parse(right.createdAt) - Date.parse(left.createdAt),

@@ -14,6 +14,7 @@ import { useKeepFlipFeedbackNudge } from "@/components/feedback/keepflip-feedbac
 import { inventoryItemToAnalysisState } from "@/components/scanner/inventory-analysis-view-model";
 import { useItemAnalysisResult } from "@/components/scanner/item-analysis-result-context";
 import { AddToInventoryForm, type AddToInventoryFormValues } from "@/components/scanner/add-to-inventory-form";
+import { useSourcingTrip } from "@/components/sourcing/sourcing-trip-context";
 import { ValuationResultStage } from "@/components/scanner/valuation-result-stage";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
@@ -32,10 +33,13 @@ import {
   isResellerBookkeepingConfigured,
   recordBookkeepingEvent,
 } from "@/services/reseller-bookkeeping-service";
+import { createInventoryMediaFollowUp } from "@/services/inventory-follow-up-service";
 import {
   getInventoryItem,
   saveAnalyzedItemToInventory,
 } from "@/services/inventory-service";
+import { applyResellerBuyRulesToAnalysis } from "@/services/reseller-buy-rules-service";
+import { getResellerBuyRules } from "@/services/user-profile-onboarding-service";
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -53,6 +57,10 @@ export function ItemAnalysisResultScreen() {
   const { user } = useKeepFlipAuth();
   const { recordCompletedAction } = useKeepFlipFeedbackNudge();
   const userId = user?.$id;
+  const userName = user?.name;
+  const { activeTrip, recordSavedItem } = useSourcingTrip();
+  const activeSourcingTrip =
+    activeTrip?.trip.status === "active" ? activeTrip : null;
   const { clearScannerResult, scannerResult } =
     useItemAnalysisResult();
   const scannerSession =
@@ -84,8 +92,15 @@ export function ItemAnalysisResultScreen() {
           );
         }
         const item = await getInventoryItem(userId, itemId);
+        const buyRules = await getResellerBuyRules(userId, userName).catch(
+          () => null,
+        );
+        const analysis =
+          item.analysisSnapshot && buyRules
+            ? applyResellerBuyRulesToAnalysis(item.analysisSnapshot, buyRules)
+            : item.analysisSnapshot ?? null;
         if (!active) return;
-        setSavedState(inventoryItemToAnalysisState(item));
+        setSavedState(inventoryItemToAnalysisState(item, analysis));
       } catch (caught) {
         if (!active) return;
         setError(
@@ -101,7 +116,7 @@ export function ItemAnalysisResultScreen() {
     return () => {
       active = false;
     };
-  }, [itemId, userId]);
+  }, [itemId, userId, userName]);
 
   useEffect(() => {
     finalizedRef.current = false;
@@ -168,12 +183,22 @@ export function ItemAnalysisResultScreen() {
     values: AddToInventoryFormValues,
   ) => {
     if (!scannerSession || saving || savingDeal || !userId) return;
+    const sourceTrip = activeSourcingTrip;
 
     const amountCents = centsFromLedgerAmount(values.acquisitionCost);
     if (!amountCents) {
       Alert.alert(
         "Actual cost required",
         "Enter what you actually paid, from $0.01 to $10,000,000.00.",
+      );
+      return;
+    }
+
+    const quantity = Number(values.quantity);
+    if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 100_000) {
+      Alert.alert(
+        "Check quantity",
+        "Enter a whole number from 1 through 100,000.",
       );
       return;
     }
@@ -189,30 +214,51 @@ export function ItemAnalysisResultScreen() {
 
     setSaving(true);
     let savedItemId: string | null = null;
-    let receiptFileId: string | null = null;
+    let receiptFileId: string | null = sourceTrip?.trip.receiptFileId ?? null;
+    let uploadedReceiptFileId: string | null = null;
     let receiptLinked = false;
     try {
       await scannerSession.ensurePhotosSaved?.();
       if (values.receiptReference.trim()) {
-        receiptFileId = await uploadLedgerReceipt({
+        uploadedReceiptFileId = await uploadLedgerReceipt({
           imageUri: values.receiptReference,
           ownerId: userId,
         });
+        receiptFileId = uploadedReceiptFileId;
       }
       const saved = await saveAnalyzedItemToInventory({
         acquiredAt: occurredAt,
         acquisitionCost: amountCents / 100,
         analysis: scannerSession.analysis,
+        itemSpecifics: values.itemSpecifics,
         modelFile: scannerSession.modelUrl,
         ownerId: userId,
+        purchaseNotes: values.notes,
+        purchaseSource: values.source,
+        quantity,
+        receiptFileId,
         scanId: scannerSession.scanId,
+        sku: values.sku,
+        storageLocation: values.location,
       });
 
       savedItemId = saved.item.id;
+      receiptLinked = true;
+
+      await createInventoryMediaFollowUp({
+        item: saved.item,
+        ownerId: userId,
+      }).catch(() => undefined);
+
       const purchaseDetails = [
+        `Quantity: ${quantity}`,
+        sourceTrip
+          ? `Sourcing trip: ${sourceTrip.trip.label || sourceTrip.trip.sourceName}`
+          : null,
         values.source.trim() ? `Purchase source: ${values.source.trim()}` : null,
         values.sku.trim() ? `SKU / tag: ${values.sku.trim()}` : null,
         values.location.trim() ? `Storage location: ${values.location.trim()}` : null,
+        values.itemSpecifics.trim() ? "Extra item details saved" : null,
         receiptFileId ? "Receipt photo attached" : null,
         values.notes.trim() ? values.notes.trim() : null,
       ].filter((value): value is string => Boolean(value));
@@ -240,23 +286,55 @@ export function ItemAnalysisResultScreen() {
         });
       }
 
-      receiptLinked = true;
+      let sourceTripWarning: string | null = null;
+      if (sourceTrip) {
+        const estimatedMedian = scannerSession.analysis.valuation.median;
+        const estimatedResaleCents =
+          typeof estimatedMedian === "number" &&
+          Number.isFinite(estimatedMedian) &&
+          estimatedMedian > 0
+            ? Math.round(estimatedMedian * 100)
+            : null;
+
+        try {
+          await recordSavedItem({
+            allocatedCostCents: amountCents,
+            estimatedResaleCents,
+            itemId: saved.item.id,
+            itemTitle: saved.item.title,
+            occurredAt,
+            quantity,
+          });
+        } catch (error) {
+          sourceTripWarning =
+            error instanceof Error
+              ? error.message
+              : "KeepFlip could not link this saved item to the sourcing trip.";
+        }
+      }
+
       setInventoryFormOpen(false);
       recordCompletedAction();
       finishScannerSession();
-      router.replace("/inventory");
-      if (saved.photoWarning) {
-        Alert.alert("Item added", saved.photoWarning);
+      router.replace(sourceTrip ? "/scanner" : "/inventory");
+      const saveWarning = [saved.photoWarning, sourceTripWarning]
+        .filter((value): value is string => Boolean(value))
+        .join(" ");
+      if (saveWarning) {
+        Alert.alert(
+          sourceTripWarning ? "Item added; source trip needs attention" : "Item added",
+          saveWarning,
+        );
       }
     } catch (caught) {
-      if (receiptFileId && !receiptLinked) {
-        await deleteLedgerReceipt(receiptFileId);
+      if (uploadedReceiptFileId && !receiptLinked) {
+        await deleteLedgerReceipt(uploadedReceiptFileId);
       }
       if (savedItemId) {
         setInventoryFormOpen(false);
         recordCompletedAction();
         finishScannerSession();
-        router.replace("/inventory");
+        router.replace(sourceTrip ? "/scanner" : "/inventory");
         Alert.alert(
           "Item added; Books needs attention",
           "The item was saved to inventory, but its purchase entry could not be recorded. Open Books to add the actual purchase manually." +
@@ -274,7 +352,9 @@ export function ItemAnalysisResultScreen() {
       setSaving(false);
     }
   }, [
+    activeSourcingTrip,
     finishScannerSession,
+    recordSavedItem,
     recordCompletedAction,
     router,
     saving,
@@ -400,6 +480,7 @@ export function ItemAnalysisResultScreen() {
         itemTitle={state.data.identity.title}
         onCancel={() => setInventoryFormOpen(false)}
         onSubmit={handleAddToInventory}
+        sourcingTrip={activeSourcingTrip}
         submitting={saving}
         visible={inventoryFormOpen}
       />

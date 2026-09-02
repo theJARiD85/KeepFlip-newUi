@@ -55,6 +55,12 @@ app-example
 /modules/keepflip-scan-proof/android/build/
 /modules/keepflip-scan-proof/android/.gradle/
 /modules/keepflip-scan-proof/android/.kotlin/
+/modules/keepflip-ar-measure/android/build/
+/modules/keepflip-ar-measure/android/.gradle/
+/modules/keepflip-ar-measure/android/.kotlin/
+/modules/keepflip-in-app-review/android/build/*
+/modules/keepflip-in-app-review/android/.gradle/*
+/modules/keepflip-in-app-review/android/.kotlin/*
 /backend
 /.appodeal-patch-work
 /.expo-dev-launcher-clean-patch

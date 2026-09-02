@@ -101,10 +101,6 @@ export function BusinessPulse({
           <Text style={styles.eyebrow}>BUSINESS PULSE</Text>
           <Text style={styles.title}>The numbers that matter</Text>
         </View>
-        <View style={styles.livePill}>
-          <View style={styles.liveDot} />
-          <Text style={styles.liveText}>SAVED DATA</Text>
-        </View>
       </View>
 
       <Text style={styles.description}>
