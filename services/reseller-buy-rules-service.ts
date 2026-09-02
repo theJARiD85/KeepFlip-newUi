@@ -227,6 +227,30 @@ function originalMarketCeiling(guidance: ItemMarketAcquisitionGuidance) {
   return savedBase ?? validCeiling(guidance.maxBuyPrice);
 }
 
+function sameRuleSnapshot(
+  guidance: ItemMarketAcquisitionGuidance,
+  rules: ResellerBuyRules,
+) {
+  const saved = guidance.profileRules;
+  if (!saved) return false;
+
+  return (
+    saved.version === rules.version &&
+    saved.inventoryFocus === rules.inventoryFocus &&
+    saved.laborTolerance === rules.laborTolerance &&
+    saved.maximumItemCostCents === rules.maximumItemCostCents &&
+    saved.maximumTypicalDays === rules.maximumTypicalDays &&
+    saved.minimumNetProfitCents === rules.minimumNetProfitCents &&
+    saved.minimumRoiPercent === rules.minimumRoiPercent &&
+    saved.saleSpeed === rules.saleSpeed &&
+    saved.storageCapacity === rules.storageCapacity &&
+    saved.includedCostTypes.length === rules.includedCostTypes.length &&
+    saved.includedCostTypes.every(
+      (costType, index) => costType === rules.includedCostTypes[index],
+    )
+  );
+}
+
 function userCostScope(rules: ResellerBuyRules) {
   const labels = rules.includedCostTypes.map((cost) => COST_LABELS[cost]);
   return ["inventory cost", ...labels].join(", ");
@@ -437,6 +461,13 @@ export function applyResellerBuyRulesToAnalysis(
   const marketResearch = analysis.marketResearch;
   const guidance = marketResearch?.acquisitionGuidance;
   if (!marketResearch || !guidance || guidance.status === "needs_evidence") {
+    return analysis;
+  }
+
+  // Fresh v2 Function responses already contain a server-validated snapshot
+  // of these exact rules. Keep this client calculation only as a migration
+  // fallback for older saved analysis snapshots.
+  if (sameRuleSnapshot(guidance, rules)) {
     return analysis;
   }
 

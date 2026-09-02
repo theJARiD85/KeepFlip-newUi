@@ -5,6 +5,11 @@ import {
 } from "../lib/appwrite";
 import type { ItemValuationSignals } from "./itemAiService";
 import { neutralizeMarketplaceBrand } from "./market-copy";
+import {
+  normalizeResellerBuyRules,
+  type ResellerBuyRuleOutcome,
+  type ResellerBuyRules,
+} from "./reseller-buy-rules-service";
 import type {
   ItemAnalysisSuccess,
   ItemMarketAnalysis,
@@ -329,6 +334,10 @@ export type SerpApiAcquisitionGuidance = {
   assumptions: string[];
   missingInputs: string[];
   summary: string;
+  profileRules?: ResellerBuyRules & {
+    baseMaxBuyPrice: number;
+    outcome: ResellerBuyRuleOutcome;
+  };
 };
 
 export type SerpApiDisplayReadyResult = {
@@ -441,6 +450,12 @@ export type SerpApiImageValuationResult = {
 export type SerpApiImageValuationInput = {
   bucketId: string;
   fileId: string;
+  /**
+   * Versioned preferences read from the signed-in owner's profile. The
+   * Function validates this snapshot and uses it only after neutral market
+   * evidence is complete, so it can tighten but never inflate a buy ceiling.
+   */
+  resellerBuyRules?: ResellerBuyRules | null;
   /**
    * Candidate identity from KeepFlip's separate multi-photo visual pass.
    * It remains unverified and the market Function must cross-check it against
@@ -1974,6 +1989,33 @@ function normalizedLadderConfidence(value: unknown): number | null {
   return normalizeConfidencePercent(raw >= 0 && raw <= 1 ? raw * 100 : raw);
 }
 
+function normalizeProfileRules(
+  value: unknown,
+): SerpApiAcquisitionGuidance["profileRules"] | null {
+  const source = asRecord(value);
+  const rules = normalizeResellerBuyRules(source);
+  const baseMaxBuyPrice = nonNegativeNumberOrNull(source?.baseMaxBuyPrice);
+  const outcome = asString(source?.outcome);
+
+  if (
+    !rules ||
+    baseMaxBuyPrice == null ||
+    (outcome !== "within_rules" &&
+      outcome !== "capped_by_return" &&
+      outcome !== "capped_by_capital" &&
+      outcome !== "outside_sale_speed" &&
+      outcome !== "outside_labor_tolerance")
+  ) {
+    return null;
+  }
+
+  return {
+    ...rules,
+    baseMaxBuyPrice,
+    outcome,
+  };
+}
+
 function normalizeAcquisitionGuidance(
   value: unknown,
 ): SerpApiAcquisitionGuidance | null {
@@ -1985,6 +2027,7 @@ function normalizeAcquisitionGuidance(
   const rawMaxBuyPrice = source?.maxBuyPrice;
   const maxBuyPrice = nonNegativeNumberOrNull(rawMaxBuyPrice);
   const resaleBasis = positiveNumberOrNull(source?.resaleBasis);
+  const profileRules = normalizeProfileRules(source?.profileRules);
 
   if (
     (status !== "provisional" &&
@@ -1996,7 +2039,8 @@ function normalizeAcquisitionGuidance(
     (rawMaxBuyPrice != null && maxBuyPrice == null) ||
     (status === "provisional" && (maxBuyPrice == null || maxBuyPrice <= 0)) ||
     (status === "needs_evidence" && maxBuyPrice != null) ||
-    (status === "not_viable" && maxBuyPrice !== 0)
+    (status === "not_viable" && maxBuyPrice !== 0) ||
+    (source?.profileRules != null && !profileRules)
   ) {
     return null;
   }
@@ -2008,9 +2052,10 @@ function normalizeAcquisitionGuidance(
     resaleBasis,
     currency,
     formula: cleanSerpApiIdentityText(source?.formula)?.slice(0, 280) ?? null,
-    assumptions: cleanSerpApiTextArray(source?.assumptions, 320).slice(0, 5),
-    missingInputs: cleanSerpApiTextArray(source?.missingInputs, 320).slice(0, 5),
+    assumptions: cleanSerpApiTextArray(source?.assumptions, 320).slice(0, 10),
+    missingInputs: cleanSerpApiTextArray(source?.missingInputs, 320).slice(0, 10),
     summary,
+    ...(profileRules ? { profileRules } : {}),
   };
 }
 
@@ -2231,6 +2276,7 @@ export async function runSerpApiImageValuation(
     .replace(/\s+/g, " ")
     .slice(0, MAX_REFINEMENT_CONTEXT_LENGTH)
     .trim();
+  const resellerBuyRules = normalizeResellerBuyRules(input.resellerBuyRules);
   const subsequentRequestToken = asString(input.subsequentRequestToken);
   if (
     subsequentRequestToken.length >
@@ -2248,6 +2294,7 @@ export async function runSerpApiImageValuation(
     fileId: input.fileId,
     ...(identityContext ? { identityContext } : {}),
     ...(refinementContext ? { refinementContext } : {}),
+    ...(resellerBuyRules ? { resellerBuyRules } : {}),
     ...(subsequentRequestToken ? { subsequentRequestToken } : {}),
     ...(input.hasRefinementImage ? { hasRefinementImage: true } : {}),
   });

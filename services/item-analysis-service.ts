@@ -23,6 +23,7 @@ import {
 } from "@/services/itemAiService";
 import { neutralizeMarketProviderBrand } from "@/services/market-copy";
 import { getScannerPhotoFileId } from "@/services/scan-photo-service";
+import { getResellerBuyRules } from "@/services/user-profile-onboarding-service";
 import {
   ITEM_ANALYSIS_CONTRACT_VERSION,
   ITEM_ANALYSIS_VERSION,
@@ -837,6 +838,13 @@ export async function analyzeItemPhotos(
   const { account, client } = getAppwriteCoreServices();
   const user = await account.get();
   throwIfAborted(options.signal);
+  // Read the owner-only profile while the scan photos are prepared and
+  // uploaded. The Function validates this compact snapshot and applies it
+  // only after it completes its neutral market evidence pass.
+  const resellerBuyRulesPromise = getResellerBuyRules(
+    user.$id,
+    user.name,
+  ).catch(() => null);
 
   const storage = new Storage(client);
   const uploadedFileIds: string[] = [];
@@ -897,10 +905,13 @@ export async function analyzeItemPhotos(
 
     let market: SerpApiImageValuationResult;
     try {
+      const resellerBuyRules = await resellerBuyRulesPromise;
+      throwIfAborted(options.signal);
       market = await runSerpApiImageValuation({
         bucketId: APPWRITE.itemImagesBucketId,
         fileId: uploadedFileIds[0],
         identityContext: marketIdentityContext(multiPhotoIdentification),
+        ...(resellerBuyRules ? { resellerBuyRules } : {}),
       });
     } catch (error) {
       throw new ItemAnalysisError(
@@ -1039,16 +1050,22 @@ export async function refineItemAnalysis({
           "SCAN_OWNER_MISMATCH",
         );
       }
+      const resellerBuyRulesPromise = getResellerBuyRules(
+        user.$id,
+        user.name,
+      ).catch(() => null);
 
       const fileId = await getScannerPhotoFileId(
         cleanOwnerId,
         cleanScanId,
         cleanPhotoFileId,
       );
+      const resellerBuyRules = await resellerBuyRulesPromise;
       const market = await runSerpApiImageValuation({
         bucketId: APPWRITE.itemImagesBucketId,
         fileId,
         ...(context ? { refinementContext: context } : {}),
+        ...(resellerBuyRules ? { resellerBuyRules } : {}),
         ...(subsequentRequestToken ? { subsequentRequestToken } : {}),
         ...(cleanPhotoFileId ? { hasRefinementImage: true } : {}),
       });

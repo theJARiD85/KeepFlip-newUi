@@ -258,9 +258,10 @@ export type ItemMarketAcquisitionGuidance = {
   missingInputs: string[];
   summary: string;
   /**
-   * Added locally after a user chooses Buy Rules. It never replaces the
-   * evidence-led market decision; it only preserves the private rule cap used
-   * to calculate this user's acquisition ceiling.
+   * Returned by ebay-sold-comps-v2 for fresh scans, or added locally only when
+   * opening an older saved result. It never replaces the evidence-led market
+   * decision; it only preserves the private rule cap used to calculate this
+   * user's acquisition ceiling.
    */
   profileRules?: {
     baseMaxBuyPrice: number;
