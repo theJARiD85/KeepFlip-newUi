@@ -7,6 +7,8 @@ import {
 import {
   createManualLedgerEntry,
   isResellerBooksConfigured,
+  listResellerLedgerEntries,
+  type ResellerLedgerEntry,
   type ResellerLedgerEntryType,
 } from '@/services/reseller-ledger-service';
 import {
@@ -229,7 +231,7 @@ function schemaMigrationError(cause: unknown) {
     /(?:row|document)_invalid_structure|unknown_(?:attribute|column)/i.test(detail)
   ) {
     const error = new Error(
-      'Add an optional Appwrite string column named profitPlanJson to the items table (12,000 characters or more), wait for the column to become available, then tap Punch in numbers again.',
+      'Add an optional Appwrite mediumtext column named profitPlanJson to the items table, wait for the column to become available, then tap Punch in numbers again.',
     );
     error.name = 'InventoryProfitPlanSchemaMigrationError';
     (error as Error & { cause?: unknown }).cause = cause;
@@ -260,17 +262,25 @@ function expenseValue(
   return desired[field];
 }
 
+function legacyIdempotencyMarker(idempotencyKey: string) {
+  return `KeepFlipId:${idempotencyKey}`;
+}
+
 async function recordExpenseIncrease({
+  advancedBooksConfigured,
   definition,
   desiredCents,
   itemId,
+  legacyEntries,
   ownerId,
   previousCents,
   occurredAt,
 }: {
+  advancedBooksConfigured: boolean;
   definition: ExpenseDefinition;
   desiredCents: number;
   itemId: string;
+  legacyEntries: ResellerLedgerEntry[] | null;
   ownerId: string;
   previousCents: number;
   occurredAt: string;
@@ -278,17 +288,20 @@ async function recordExpenseIncrease({
   const deltaCents = desiredCents - previousCents;
   if (deltaCents <= 0) return false;
 
+  const idempotencyKey =
+    `max-profit:${itemId}:${definition.field}:to:${desiredCents}`;
+  const marker = legacyIdempotencyMarker(idempotencyKey);
   const notes =
     `Recorded from Max Profit / Punch in numbers. ` +
     `This entry brings the item-specific ${definition.label.toLowerCase()} total to $${(
       desiredCents / 100
-    ).toFixed(2)}.`;
+    ).toFixed(2)}. ${marker}`;
 
-  if (isResellerBookkeepingConfigured()) {
+  if (advancedBooksConfigured) {
     await recordBookkeepingEvent({
       amountCents: deltaCents,
       eventType: definition.advancedType,
-      idempotencyKey: `max-profit:${itemId}:${definition.field}:to:${desiredCents}`,
+      idempotencyKey,
       itemId,
       notes,
       occurredAt,
@@ -297,8 +310,16 @@ async function recordExpenseIncrease({
     return true;
   }
 
-  if (isResellerBooksConfigured()) {
-    await createManualLedgerEntry({
+  if (legacyEntries) {
+    const existing = legacyEntries.some(
+      (entry) =>
+        entry.itemId === itemId &&
+        !entry.voidedAt &&
+        entry.notes?.includes(marker),
+    );
+    if (existing) return true;
+
+    const created = await createManualLedgerEntry({
       amountCents: deltaCents,
       channel: 'Max Profit',
       entryType: definition.legacyType,
@@ -307,6 +328,7 @@ async function recordExpenseIncrease({
       occurredAt,
       ownerId,
     });
+    legacyEntries.push(created);
     return true;
   }
 
@@ -380,8 +402,25 @@ export async function saveInventoryProfitPlan({
     throw schemaMigrationError(cause);
   }
 
-  const booksConfigured =
-    isResellerBookkeepingConfigured() || isResellerBooksConfigured();
+  const advancedBooksConfigured = isResellerBookkeepingConfigured();
+  const legacyBooksConfigured =
+    !advancedBooksConfigured && isResellerBooksConfigured();
+  let legacyEntries: ResellerLedgerEntry[] | null = null;
+
+  if (legacyBooksConfigured) {
+    try {
+      legacyEntries = await listResellerLedgerEntries(cleanOwnerId);
+    } catch (cause) {
+      warnings.push(
+        `KeepFlip saved the item numbers, but it could not verify existing classic Books entries, so no new classic transactions were posted${
+          cause instanceof Error && cause.message ? `: ${cause.message}` : '.'
+        }`,
+      );
+    }
+  }
+
+  const booksWritable = advancedBooksConfigured || legacyEntries !== null;
+  const booksConfigured = advancedBooksConfigured || legacyBooksConfigured;
   let recordedExpenseCount = 0;
 
   for (const definition of EXPENSE_DEFINITIONS) {
@@ -414,20 +453,22 @@ export async function saveInventoryProfitPlan({
 
     if (desiredCents === previouslyBookedCents || desiredCents === 0) continue;
 
-    if (!booksConfigured) {
+    if (!booksWritable) {
       warnings.push(
-        `${definition.label} was saved on the item, but Books is not configured, so its $${(
-          desiredCents / 100
-        ).toFixed(2)} transaction was not created yet.`,
+        `${definition.label} was saved on the item, but ${
+          booksConfigured ? 'Books could not be safely updated' : 'Books is not configured'
+        }, so its $${(desiredCents / 100).toFixed(2)} transaction was not created yet.`,
       );
       continue;
     }
 
     try {
       const recorded = await recordExpenseIncrease({
+        advancedBooksConfigured,
         definition,
         desiredCents,
         itemId: cleanItemId,
+        legacyEntries,
         ownerId: cleanOwnerId,
         previousCents: previouslyBookedCents,
         occurredAt: savedAt,
@@ -458,10 +499,14 @@ export async function saveInventoryProfitPlan({
 
   if (cogsManagedByProfitPlan) {
     const desiredCogs = desiredExpenses.costOfGoods;
-    const bookedCogs = plan.bookedExpenseCents.costOfGoods;
+    const cogsBookkeepingConfirmed =
+      desiredCogs > 0 && plan.bookedExpenseCents.costOfGoods === desiredCogs;
+    const canonicalAlreadyMatches =
+      desiredCogs > 0 && existingAcquisitionCents === desiredCogs;
     const mayUpdateCanonicalCost =
       desiredCogs > 0 &&
-      (bookedCogs === 0 || desiredCogs >= previousBooked.costOfGoods);
+      desiredCogs >= previousBooked.costOfGoods &&
+      (!booksWritable || cogsBookkeepingConfirmed || canonicalAlreadyMatches);
 
     if (mayUpdateCanonicalCost) {
       finalItemData.acquisitionCostCents = desiredCogs;
