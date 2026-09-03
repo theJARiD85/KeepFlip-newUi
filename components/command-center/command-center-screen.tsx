@@ -123,7 +123,7 @@ function formatReviewDate(value: string) {
 
 function reviewStatusLabel(item: BookkeepingReviewItem) {
   if (item.status === 'needs_item_match') return 'MATCH ITEM';
-  if (item.status === 'needs_item_cost') return 'ADD COST';
+  if (item.status === 'needs_item_cost') return 'COST REVIEW';
   return 'CHECK DETAILS';
 }
 
@@ -408,7 +408,7 @@ export function CommandCenterScreen() {
       hapticSuccess();
       setReviewActionMessage(
         result.needsItemCost
-          ? 'Sale matched and posted. The item still needs its actual cost before profit is complete.'
+          ? 'Sale matched and posted. The item still needs its original cost reconciled in Books.'
           : 'Review complete. The sale is posted and the inventory quantity is updated.',
       );
       setActiveReview(null);
@@ -553,16 +553,6 @@ export function CommandCenterScreen() {
         'Your device could not open email. Contact support@keep-flip.com for help.',
       );
     }
-  };
-
-  const openReviewItem = (itemId: string) => {
-    setReviewOpen(false);
-    setActiveReview(null);
-    hapticSelection();
-    router.push({
-      pathname: '/analysis-result',
-      params: { itemId },
-    });
   };
 
   return (
@@ -832,7 +822,7 @@ export function CommandCenterScreen() {
             }}
             style={StyleSheet.absoluteFill}
           />
-          <View style={[styles.reviewModal, { paddingBottom: Math.max(insets.bottom, 16) }]}> 
+          <View style={[styles.reviewModal, { paddingBottom: Math.max(insets.bottom, 16) }]}>
             <View style={styles.reviewModalHeader}>
               <View style={styles.reviewModalHeading}>
                 <Text style={styles.reviewModalEyebrow}>BOOKS / MONEY REVIEW</Text>
@@ -888,34 +878,22 @@ export function CommandCenterScreen() {
 
                 {activeReview.status === 'needs_item_cost' ? (
                   <View style={styles.reviewResolutionSection}>
-                    <Text style={styles.reviewResolutionTitle}>ACTUAL COST NEEDED</Text>
+                    <Text style={styles.reviewResolutionTitle}>COST RECONCILIATION NEEDED</Text>
                     <Text style={styles.reviewResolutionBody}>
-                      The sale is already in Books. Open the linked item and use Max Profit → Punch in numbers to add its actual COGS without guessing.
+                      The sale itself is already posted. KeepFlip is keeping this review open because the original inventory cost was missing when that sale posted. It will not guess the cost or create a second purchase from this screen.
                     </Text>
-                    {activeReview.itemId ? (
-                      <Pressable
-                        accessibilityRole="button"
-                        onPress={() => openReviewItem(activeReview.itemId!)}
-                        style={({ pressed }) => [
-                          styles.reviewPrimaryButton,
-                          pressed && styles.reviewPressed,
-                        ]}>
-                        <Text style={styles.reviewPrimaryButtonText}>OPEN ITEM · ADD COGS</Text>
-                      </Pressable>
-                    ) : (
-                      <Pressable
-                        accessibilityRole="button"
-                        onPress={() => {
-                          setReviewOpen(false);
-                          router.push('/inventory' as Href);
-                        }}
-                        style={({ pressed }) => [
-                          styles.reviewPrimaryButton,
-                          pressed && styles.reviewPressed,
-                        ]}>
-                        <Text style={styles.reviewPrimaryButtonText}>OPEN INVENTORY</Text>
-                      </Pressable>
-                    )}
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => {
+                        setReviewOpen(false);
+                        router.push('/books' as Href);
+                      }}
+                      style={({ pressed }) => [
+                        styles.reviewSecondaryButton,
+                        pressed && styles.reviewPressed,
+                      ]}>
+                      <Text style={styles.reviewSecondaryButtonText}>OPEN BOOKS · REVIEW COST</Text>
+                    </Pressable>
                   </View>
                 ) : activeReview.sourceType === 'sale' ? (
                   <View style={styles.reviewResolutionSection}>
@@ -931,7 +909,12 @@ export function CommandCenterScreen() {
                       style={styles.reviewSearchInput}
                       value={reviewItemSearch}
                     />
-                    <View style={styles.reviewInventoryList}>
+                    <ScrollView
+                      contentContainerStyle={styles.reviewInventoryListContent}
+                      keyboardShouldPersistTaps="handled"
+                      nestedScrollEnabled
+                      showsVerticalScrollIndicator
+                      style={styles.reviewInventoryList}>
                       {filteredReviewInventory.map((item) => {
                         const selected = item.id === selectedReviewItemId;
                         return (
@@ -965,7 +948,7 @@ export function CommandCenterScreen() {
                       {filteredReviewInventory.length === 0 ? (
                         <Text style={styles.reviewEmptyText}>No matching in-stock inventory items.</Text>
                       ) : null}
-                    </View>
+                    </ScrollView>
                     <View style={styles.reviewQuantityRow}>
                       <View style={styles.reviewQuantityCopy}>
                         <Text style={styles.reviewResolutionTitle}>QUANTITY SOLD</Text>
@@ -1283,6 +1266,8 @@ const styles = StyleSheet.create({
   },
   reviewInventoryList: {
     maxHeight: 240,
+  },
+  reviewInventoryListContent: {
     gap: 5,
   },
   reviewInventoryRow: {
