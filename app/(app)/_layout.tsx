@@ -69,12 +69,18 @@ function WalkthroughAutoLauncher() {
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useKeepFlipAuth();
+  const { snapshot, state: subscriptionState } = useKeepFlipSubscription();
   const checkedUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!user) {
       checkedUserIdRef.current = null;
       return;
+    }
+
+    if (areKeepFlipSubscriptionsEnforced()) {
+      if (subscriptionState !== 'ready') return;
+      if (!snapshot?.access.active) return;
     }
 
     if (
@@ -111,7 +117,13 @@ function WalkthroughAutoLauncher() {
       cancelled = true;
       if (frame !== null) cancelAnimationFrame(frame);
     };
-  }, [pathname, router, user]);
+  }, [
+    pathname,
+    router,
+    snapshot?.access.active,
+    subscriptionState,
+    user,
+  ]);
 
   return null;
 }
