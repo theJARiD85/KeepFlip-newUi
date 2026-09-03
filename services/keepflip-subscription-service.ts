@@ -8,6 +8,8 @@ import Purchases, {
   type StoreProductChangeInfo,
 } from 'react-native-purchases';
 
+import { APPWRITE, Query, tablesDB } from '@/lib/appwrite';
+
 export type KeepFlipPlanId = 'hobbyist' | 'serious' | 'power';
 export type KeepFlipBillingCadence = 'monthly' | 'annual';
 
@@ -48,10 +50,42 @@ export type KeepFlipSubscriptionCatalog = {
   >;
 };
 
+export type KeepFlipServerSubscriptionStatus =
+  | 'trialing'
+  | 'active'
+  | 'grace_period'
+  | 'billing_issue'
+  | 'cancelled'
+  | 'expired'
+  | 'revoked'
+  | 'unknown';
+
+export type KeepFlipServerSubscriptionRecord = {
+  id: string;
+  ownerId: string;
+  provider: string;
+  revenueCatCustomerId: string;
+  plan: KeepFlipPlanId | null;
+  entitlement: string | null;
+  status: KeepFlipServerSubscriptionStatus;
+  isTrial: boolean;
+  startedAt: string | null;
+  trialEndsAt: string | null;
+  currentPeriodEndsAt: string | null;
+  willRenew: boolean;
+  productId: string | null;
+  store: string | null;
+  lastEventId: string | null;
+  updatedAt: string | null;
+  isSandbox: boolean;
+};
+
 export type KeepFlipSubscriptionSnapshot = {
   access: KeepFlipSubscriptionAccess;
   catalog: KeepFlipSubscriptionCatalog;
   configured: boolean;
+  serverRecord: KeepFlipServerSubscriptionRecord | null;
+  serverRecordAvailable: boolean;
 };
 
 export const KEEPFLIP_SUBSCRIPTION_OFFERING_ID =
@@ -165,6 +199,128 @@ export function areKeepFlipSubscriptionsConfigured() {
 
 export function areKeepFlipSubscriptionsEnforced() {
   return process.env.EXPO_PUBLIC_KEEPFLIP_SUBSCRIPTIONS_ENFORCED === 'true';
+}
+
+export function isKeepFlipSubscriptionTableConfigured() {
+  return Boolean(APPWRITE.databaseId && APPWRITE.userSubscriptionsTableId);
+}
+
+function appwriteText(value: unknown, maximum = 255) {
+  return typeof value === 'string' && value.trim()
+    ? value.trim().slice(0, maximum)
+    : '';
+}
+
+function nullableAppwriteText(value: unknown, maximum = 255) {
+  return appwriteText(value, maximum) || null;
+}
+
+function serverSubscriptionStatus(
+  value: unknown,
+): KeepFlipServerSubscriptionStatus {
+  return value === 'trialing' ||
+    value === 'active' ||
+    value === 'grace_period' ||
+    value === 'billing_issue' ||
+    value === 'cancelled' ||
+    value === 'expired' ||
+    value === 'revoked'
+    ? value
+    : 'unknown';
+}
+
+function serverSubscriptionPlan(value: unknown): KeepFlipPlanId | null {
+  return value === 'hobbyist' || value === 'serious' || value === 'power'
+    ? value
+    : null;
+}
+
+function parseServerSubscriptionRecord(
+  value: unknown,
+): KeepFlipServerSubscriptionRecord | null {
+  const row =
+    value && typeof value === 'object' && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : null;
+  if (!row) return null;
+
+  const id = appwriteText(row.$id, 64);
+  const ownerId = appwriteText(row.ownerId, 64);
+  if (!id || !ownerId) return null;
+
+  const entitlement = nullableAppwriteText(row.entitlement, 64);
+  const plan =
+    serverSubscriptionPlan(row.plan) ||
+    (entitlement ? entitlementPlan(entitlement) : null);
+
+  return {
+    id,
+    ownerId,
+    provider: appwriteText(row.provider, 32) || 'revenuecat',
+    revenueCatCustomerId:
+      appwriteText(row.revenueCatCustomerId, 255) || ownerId,
+    plan,
+    entitlement,
+    status: serverSubscriptionStatus(row.status),
+    isTrial: row.isTrial === true,
+    startedAt: nullableAppwriteText(row.startedAt, 80),
+    trialEndsAt: nullableAppwriteText(row.trialEndsAt, 80),
+    currentPeriodEndsAt: nullableAppwriteText(row.currentPeriodEndsAt, 80),
+    willRenew: row.willRenew === true,
+    productId: nullableAppwriteText(row.productId, 128),
+    store: nullableAppwriteText(row.store, 32),
+    lastEventId: nullableAppwriteText(row.lastEventId, 255),
+    updatedAt: nullableAppwriteText(row.updatedAt, 80),
+    isSandbox: row.isSandbox === true,
+  };
+}
+
+function isAppwriteNotFound(error: unknown) {
+  return Boolean(
+    error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      Number((error as { code?: unknown }).code) === 404,
+  );
+}
+
+export async function loadKeepFlipServerSubscriptionRecord(userId: string) {
+  const cleanUserId = userId.trim();
+  if (!cleanUserId || !isKeepFlipSubscriptionTableConfigured()) return null;
+
+  try {
+    const row = await tablesDB.getRow({
+      databaseId: APPWRITE.databaseId,
+      tableId: APPWRITE.userSubscriptionsTableId,
+      rowId: cleanUserId,
+    });
+    const record = parseServerSubscriptionRecord(row);
+    return record?.ownerId === cleanUserId ? record : null;
+  } catch (error) {
+    if (!isAppwriteNotFound(error)) throw error;
+  }
+
+  const result = await tablesDB.listRows({
+    databaseId: APPWRITE.databaseId,
+    tableId: APPWRITE.userSubscriptionsTableId,
+    queries: [Query.equal('ownerId', [cleanUserId]), Query.limit(2)],
+    total: false,
+  });
+
+  const matches = result.rows
+    .map(parseServerSubscriptionRecord)
+    .filter(
+      (record): record is KeepFlipServerSubscriptionRecord =>
+        Boolean(record && record.ownerId === cleanUserId),
+    );
+
+  if (matches.length > 1) {
+    throw new Error(
+      'KeepFlip found more than one subscription record for this account.',
+    );
+  }
+
+  return matches[0] ?? null;
 }
 
 function entitlementPlan(identifier: string): KeepFlipPlanId | null {
@@ -321,16 +477,22 @@ export async function loadKeepFlipSubscription(
   userId: string,
 ): Promise<KeepFlipSubscriptionSnapshot> {
   if (!(await ensureRevenueCatUser(userId))) {
+    const serverRecord = await loadKeepFlipServerSubscriptionRecord(userId).catch(
+      () => null,
+    );
     return {
       access: EMPTY_ACCESS,
       catalog: EMPTY_CATALOG,
       configured: false,
+      serverRecord,
+      serverRecordAvailable: isKeepFlipSubscriptionTableConfigured(),
     };
   }
 
-  const [customerInfo, offerings] = await Promise.all([
+  const [customerInfo, offerings, serverRecord] = await Promise.all([
     Purchases.getCustomerInfo(),
     Purchases.getOfferings(),
+    loadKeepFlipServerSubscriptionRecord(userId).catch(() => null),
   ]);
   const offering = configuredOffering(offerings);
 
@@ -340,6 +502,24 @@ export async function loadKeepFlipSubscription(
       ? catalogFromPackages(offering.identifier, offering.availablePackages)
       : EMPTY_CATALOG,
     configured: true,
+    serverRecord,
+    serverRecordAvailable: isKeepFlipSubscriptionTableConfigured(),
+  };
+}
+
+export async function subscribeToKeepFlipSubscriptionUpdates(
+  userId: string,
+  listener: (access: KeepFlipSubscriptionAccess) => void,
+) {
+  if (!(await ensureRevenueCatUser(userId))) return () => undefined;
+
+  const customerInfoListener = (customerInfo: CustomerInfo) => {
+    listener(subscriptionAccessFromCustomerInfo(customerInfo));
+  };
+  Purchases.addCustomerInfoUpdateListener(customerInfoListener);
+
+  return () => {
+    Purchases.removeCustomerInfoUpdateListener(customerInfoListener);
   };
 }
 
