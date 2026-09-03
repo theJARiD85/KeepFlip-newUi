@@ -438,6 +438,13 @@ export function CommandCenterScreen() {
     setReviewActionMessage(null);
   };
 
+  const openReviewInBooks = (review: BookkeepingReviewItem) => {
+    hapticSelection();
+    setReviewOpen(false);
+    setActiveReview(null);
+    router.push(`/books?reviewId=${encodeURIComponent(review.id)}` as Href);
+  };
+
   const resolveActiveReview = async () => {
     if (!activeReview || reviewResolving) return;
     const quantity = Number(reviewQuantity);
@@ -948,10 +955,7 @@ export function CommandCenterScreen() {
                     </Text>
                     <Pressable
                       accessibilityRole="button"
-                      onPress={() => {
-                        setReviewOpen(false);
-                        router.push('/books' as Href);
-                      }}
+                      onPress={() => openReviewInBooks(activeReview)}
                       style={({ pressed }) => [
                         styles.reviewSecondaryButton,
                         pressed && styles.reviewPressed,
@@ -1053,10 +1057,7 @@ export function CommandCenterScreen() {
                     </Text>
                     <Pressable
                       accessibilityRole="button"
-                      onPress={() => {
-                        setReviewOpen(false);
-                        router.push('/books' as Href);
-                      }}
+                      onPress={() => openReviewInBooks(activeReview)}
                       style={({ pressed }) => [
                         styles.reviewSecondaryButton,
                         pressed && styles.reviewPressed,
