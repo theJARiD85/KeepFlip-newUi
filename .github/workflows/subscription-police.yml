@@ -1,0 +1,35 @@
+name: Subscription Police
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'appwrite/functions/keepflip-subscription-police/**'
+      - '.github/workflows/subscription-police.yml'
+  pull_request:
+    paths:
+      - 'appwrite/functions/keepflip-subscription-police/**'
+      - '.github/workflows/subscription-police.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: appwrite/functions/keepflip-subscription-police
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: appwrite/functions/keepflip-subscription-police/package.json
+      - name: Install
+        run: npm install --no-audit --no-fund
+      - name: Syntax check
+        run: npm run check
+      - name: Tests
+        run: npm test
