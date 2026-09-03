@@ -43,6 +43,7 @@ function PlanCard({
   monthlyPrice,
   annualPrice,
   purchasing,
+  checkoutEnabled,
   onPurchase,
 }: {
   definition: KeepFlipPlanDefinition;
@@ -50,6 +51,7 @@ function PlanCard({
   monthlyPrice: string | null;
   annualPrice: string | null;
   purchasing: boolean;
+  checkoutEnabled: boolean;
   onPurchase: (
     plan: KeepFlipPlanId,
     cadence: KeepFlipBillingCadence,
@@ -105,13 +107,17 @@ function PlanCard({
 
       <Pressable
         accessibilityRole="button"
-        disabled={purchasing || isCurrent}
+        disabled={!checkoutEnabled || purchasing || isCurrent}
         onPress={() => onPurchase(definition.id, 'monthly')}
         style={({ pressed }) => [
           styles.subscribeButton,
           definition.recommended && styles.subscribeButtonRecommended,
-          (purchasing || isCurrent) && styles.buttonDisabled,
-          pressed && !purchasing && !isCurrent && styles.buttonPressed,
+          (!checkoutEnabled || purchasing || isCurrent) && styles.buttonDisabled,
+          pressed &&
+            checkoutEnabled &&
+            !purchasing &&
+            !isCurrent &&
+            styles.buttonPressed,
         ]}>
         {purchasing ? (
           <ActivityIndicator
@@ -141,12 +147,15 @@ function PlanCard({
       {definition.id === 'hobbyist' && annualDisplay ? (
         <Pressable
           accessibilityRole="button"
-          disabled={purchasing}
+          disabled={!checkoutEnabled || purchasing}
           onPress={() => onPurchase('hobbyist', 'annual')}
           style={({ pressed }) => [
             styles.annualButton,
-            purchasing && styles.buttonDisabled,
-            pressed && !purchasing && styles.annualButtonPressed,
+            (!checkoutEnabled || purchasing) && styles.buttonDisabled,
+            pressed &&
+              checkoutEnabled &&
+              !purchasing &&
+              styles.annualButtonPressed,
           ]}>
           <Text style={styles.annualButtonText}>
             ANNUAL · {annualDisplay} / YEAR
@@ -178,6 +187,7 @@ export function KeepFlipSubscriptionScreen() {
 
   const access = snapshot?.access ?? null;
   const catalog = snapshot?.catalog ?? null;
+  const checkoutEnabled = state === 'ready' && snapshot?.configured === true;
   const trialEnds = formatDate(access?.isTrial ? access.expiresAt : null);
   const renewalDate = formatDate(
     access?.active && !access.isTrial ? access.expiresAt : null,
@@ -309,6 +319,7 @@ export function KeepFlipSubscriptionScreen() {
                 annualPrice={
                   catalog?.prices[definition.id].annual ?? null
                 }
+                checkoutEnabled={checkoutEnabled}
                 currentPlan={
                   access?.active ? access.plan : null
                 }
@@ -325,6 +336,21 @@ export function KeepFlipSubscriptionScreen() {
             ))}
           </View>
         )}
+
+        {!checkoutEnabled && state !== 'loading' ? (
+          <View style={styles.checkoutNotice}>
+            <IconSymbol
+              color={theme.colors.goldBright}
+              name="exclamationmark.triangle.fill"
+              size={16}
+            />
+            <Text style={styles.checkoutNoticeText}>
+              {state === 'unconfigured'
+                ? 'Checkout is intentionally disabled until the RevenueCat public SDK key and store offering are configured for this build.'
+                : 'Checkout is temporarily unavailable while KeepFlip verifies subscription access.'}
+            </Text>
+          </View>
+        ) : null}
 
         {errorMessage ? (
           <Text
@@ -361,12 +387,15 @@ export function KeepFlipSubscriptionScreen() {
 
           <Pressable
             accessibilityRole="button"
-            disabled={restoring}
+            disabled={!checkoutEnabled || restoring}
             onPress={() => void handleRestore()}
             style={({ pressed }) => [
               styles.utilityButton,
-              restoring && styles.buttonDisabled,
-              pressed && !restoring && styles.utilityButtonPressed,
+              (!checkoutEnabled || restoring) && styles.buttonDisabled,
+              pressed &&
+                checkoutEnabled &&
+                !restoring &&
+                styles.utilityButtonPressed,
             ]}>
             {restoring ? (
               <ActivityIndicator
@@ -623,6 +652,22 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: { opacity: 0.45 },
   buttonPressed: { opacity: 0.78 },
+  checkoutNotice: {
+    alignItems: 'flex-start',
+    backgroundColor: 'rgba(215, 168, 74, 0.055)',
+    borderColor: 'rgba(215, 168, 74, 0.26)',
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    gap: 9,
+    padding: 11,
+  },
+  checkoutNoticeText: {
+    color: theme.colors.textMuted,
+    flex: 1,
+    fontSize: 10,
+    lineHeight: 15,
+  },
   errorText: {
     color: theme.colors.danger,
     fontSize: 12,
