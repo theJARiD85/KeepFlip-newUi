@@ -60,8 +60,6 @@ export const KEEPFLIP_PLANS: Record<KeepFlipPlanId, KeepFlipPlanDefinition> = {
     },
     capabilities: ['basic_bookkeeping'],
     features: [
-      'Up to 50 active listings per month',
-      '100 AI valuation scans per month',
       'Basic bookkeeping reports',
       'Inventory and profit tracking',
     ],
@@ -90,8 +88,6 @@ export const KEEPFLIP_PLANS: Record<KeepFlipPlanId, KeepFlipPlanDefinition> = {
       'schedule_c_export',
     ],
     features: [
-      'Up to 250 active listings per month',
-      'Unlimited AI valuation scans',
       'Automated bookkeeping',
       'Schedule C tax export',
       'Marketplace money reconciliation',
@@ -123,8 +119,6 @@ export const KEEPFLIP_PLANS: Record<KeepFlipPlanId, KeepFlipPlanDefinition> = {
       'multi_user',
     ],
     features: [
-      'Unlimited active listings',
-      'Unlimited AI valuation scans',
       'Multi-user and employee access',
       'Advanced bookkeeping analytics',
       'Granular marketplace fee breakdowns',
