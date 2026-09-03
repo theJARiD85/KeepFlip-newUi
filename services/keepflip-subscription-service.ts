@@ -146,8 +146,8 @@ export const KEEPFLIP_PLAN_DEFINITIONS: KeepFlipPlanDefinition[] = [
     id: 'hobbyist',
     name: 'Part-Time Hobbyist',
     eyebrow: 'TIER 1',
-    monthlyPriceFallback: '$24.99',
-    annualPriceFallback: '$239.88',
+    monthlyPriceFallback: '$25',
+    annualPriceFallback: '$250',
     description:
       'The essentials for casual and part-time resellers who want one place to value, organize, and track their flips.',
     limits: ['Up to 50 active listings / month', '100 AI valuation scans / month'],
@@ -157,7 +157,7 @@ export const KEEPFLIP_PLAN_DEFINITIONS: KeepFlipPlanDefinition[] = [
     id: 'serious',
     name: 'Serious Reseller',
     eyebrow: 'TIER 2 / SWEET SPOT',
-    monthlyPriceFallback: '$44.99',
+    monthlyPriceFallback: '$45',
     annualPriceFallback: null,
     recommended: true,
     description:
@@ -173,7 +173,7 @@ export const KEEPFLIP_PLAN_DEFINITIONS: KeepFlipPlanDefinition[] = [
     id: 'power',
     name: 'Power Seller',
     eyebrow: 'TIER 3',
-    monthlyPriceFallback: '$89.99',
+    monthlyPriceFallback: '$100',
     annualPriceFallback: null,
     description:
       'Built for high-volume sourcing, liquidation inventory, and resale operations with more than one person involved.',
