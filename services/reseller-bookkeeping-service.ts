@@ -89,8 +89,10 @@ export type BookkeepingReviewItem = {
   id: string;
   status: BookkeepingReviewStatus;
   sourceType: string;
-  amountCents: number;
-  currency: string;
+  amountCents: number | null;
+  amountKnown: boolean;
+  currency: string | null;
+  legacyFallback: boolean;
   occurredAt: string;
   itemId: string | null;
   orderId: string | null;
@@ -174,32 +176,45 @@ function reviewItem(value: unknown): BookkeepingReviewItem | null {
     : {};
   const id = text(raw.id, 64);
   const status = reviewStatus(raw.status);
-  const sourceType = text(raw.sourceType, 60) || 'unknown';
-  const amountCents = Number(raw.amountCents);
+  const sourceType = text(raw.sourceType, 60).toLowerCase() || 'unclassified';
   const occurredAt = text(raw.occurredAt, 64);
   const externalKey = text(raw.externalKey, 255);
 
-  if (
-    !id ||
-    !status ||
-    !Number.isSafeInteger(amountCents) ||
-    amountCents < 0 ||
-    !occurredAt ||
-    !externalKey
-  ) {
+  if (!id || !status || !occurredAt || !externalKey) {
     return null;
   }
 
+  const rawAmountCents = Number(raw.amountCents);
+  const rawCurrency = text(raw.currency, 8).toUpperCase();
+  const legacyFallback =
+    raw.legacyFallback === true ||
+    (sourceType === 'unknown' && rawAmountCents === 0 && rawCurrency === 'USD');
+  const amountShapeValid =
+    Number.isSafeInteger(rawAmountCents) &&
+    rawAmountCents >= 0 &&
+    /^[A-Z]{3}$/.test(rawCurrency) &&
+    rawCurrency !== 'XXX';
+  const amountKnown =
+    raw.amountKnown === true
+      ? amountShapeValid
+      : raw.amountKnown === false
+        ? false
+        : amountShapeValid && !legacyFallback;
+
   return {
-    amountCents,
-    currency: text(raw.currency, 8).toUpperCase() || 'USD',
+    amountCents: amountKnown ? rawAmountCents : null,
+    amountKnown,
+    currency: amountKnown ? rawCurrency : null,
     externalKey,
     id,
     itemId: text(raw.itemId, 64) || null,
+    legacyFallback,
     occurredAt,
     orderId: text(raw.orderId, 180) || null,
     payoutId: text(raw.payoutId, 180) || null,
-    reason: text(raw.reason, 500) || 'This synced eBay record needs a quick review before KeepFlip can finish posting it.',
+    reason:
+      text(raw.reason, 500) ||
+      'This synced eBay record needs a quick review before KeepFlip can finish posting it.',
     sourceType,
     status,
   };
