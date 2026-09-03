@@ -10,6 +10,8 @@ import {
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import {
+  keepFlipPlanAllows,
+  keepFlipPlanLimit,
   loadKeepFlipSubscription,
   openKeepFlipSubscriptionManagement,
   purchaseKeepFlipPlan,
@@ -17,6 +19,7 @@ import {
   subscribeToKeepFlipSubscriptionUpdates,
   type KeepFlipBillingCadence,
   type KeepFlipPlanId,
+  type KeepFlipSubscriptionFeature,
   type KeepFlipSubscriptionSnapshot,
 } from '@/services/keepflip-subscription-service';
 
@@ -39,6 +42,10 @@ type KeepFlipSubscriptionContextValue = {
   ) => Promise<boolean>;
   restore: () => Promise<boolean>;
   manage: () => Promise<void>;
+  canUse: (feature: KeepFlipSubscriptionFeature) => boolean;
+  limitFor: (
+    limit: 'activeListingsPerMonth' | 'aiValuationScansPerMonth',
+  ) => number | null;
 };
 
 const KeepFlipSubscriptionContext =
@@ -223,17 +230,25 @@ export function KeepFlipSubscriptionProvider({
   }, [snapshot?.access.managementUrl, userId]);
 
   const value = useMemo<KeepFlipSubscriptionContextValue>(
-    () => ({
-      errorMessage: error,
-      manage,
-      purchase,
-      purchasing,
-      refresh,
-      restore,
-      restoring,
-      snapshot,
-      state,
-    }),
+    () => {
+      const activePlan = snapshot?.access.active
+        ? snapshot.access.plan
+        : null;
+
+      return {
+        canUse: (feature) => keepFlipPlanAllows(activePlan, feature),
+        errorMessage: error,
+        limitFor: (limit) => keepFlipPlanLimit(activePlan, limit),
+        manage,
+        purchase,
+        purchasing,
+        refresh,
+        restore,
+        restoring,
+        snapshot,
+        state,
+      };
+    },
     [
       error,
       manage,
