@@ -9,8 +9,13 @@ import { KeepFlipMenuProvider } from '@/components/navigation/keepflip-menu-cont
 import { KeepFlipSlideDownMenu } from '@/components/navigation/keepflip-slide-down-menu';
 import { ItemAnalysisResultProvider } from '@/components/scanner/item-analysis-result-context';
 import { SourcingTripProvider } from '@/components/sourcing/sourcing-trip-context';
+import {
+  KeepFlipSubscriptionProvider,
+  useKeepFlipSubscription,
+} from '@/components/subscription/keepflip-subscription-context';
 import { keepFlipTheme } from '@/constants/keepflip-theme';
 import { notificationRouteFromData } from '@/services/keepflip-notification-service';
+import { areKeepFlipSubscriptionsEnforced } from '@/services/keepflip-subscription-service';
 import { hasCompletedScanInventoryWalkthrough } from '@/services/user-profile-onboarding-service';
 
 export const unstable_settings = {
@@ -37,6 +42,25 @@ function NotificationNavigationObserver() {
     );
     return () => subscription.remove();
   }, [router]);
+
+  return null;
+}
+
+function SubscriptionAccessGate() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { snapshot, state } = useKeepFlipSubscription();
+
+  useEffect(() => {
+    if (!areKeepFlipSubscriptionsEnforced()) return;
+    if (state !== 'ready') return;
+    if (snapshot?.access.active) return;
+    if (pathname === '/subscription') return;
+
+    requestAnimationFrame(() => {
+      router.replace('/subscription' as Href);
+    });
+  }, [pathname, router, snapshot?.access.active, state]);
 
   return null;
 }
@@ -98,10 +122,12 @@ export default function AppShellLayout() {
       <EbayConnectionProvider>
         <ItemAnalysisResultProvider>
           <SourcingTripProvider>
-            <NotificationNavigationObserver />
-            <WalkthroughAutoLauncher />
-            <KeepFlipSlideDownMenu />
-            <View style={styles.root}>
+            <KeepFlipSubscriptionProvider>
+              <NotificationNavigationObserver />
+              <SubscriptionAccessGate />
+              <WalkthroughAutoLauncher />
+              <KeepFlipSlideDownMenu />
+              <View style={styles.root}>
               <Stack
                 screenOptions={{
                   animation: 'fade',
@@ -122,8 +148,10 @@ export default function AppShellLayout() {
                 <Stack.Screen name="ebay-connect" />
                 <Stack.Screen name="ebay-account" />
                 <Stack.Screen name="books" />
+                <Stack.Screen name="subscription" />
               </Stack>
-            </View>
+              </View>
+            </KeepFlipSubscriptionProvider>
           </SourcingTripProvider>
         </ItemAnalysisResultProvider>
       </EbayConnectionProvider>
