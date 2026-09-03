@@ -17,6 +17,7 @@ import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import {
   KEEPFLIP_PLAN_DEFINITIONS,
+  areKeepFlipSubscriptionsEnforced,
   type KeepFlipBillingCadence,
   type KeepFlipPlanDefinition,
   type KeepFlipPlanId,
@@ -188,6 +189,8 @@ export function KeepFlipSubscriptionScreen() {
   const access = snapshot?.access ?? null;
   const catalog = snapshot?.catalog ?? null;
   const checkoutEnabled = state === 'ready' && snapshot?.configured === true;
+  const canLeavePlanScreen =
+    !areKeepFlipSubscriptionsEnforced() || access?.active === true;
   const trialEnds = formatDate(access?.isTrial ? access.expiresAt : null);
   const renewalDate = formatDate(
     access?.active && !access.isTrial ? access.expiresAt : null,
@@ -267,20 +270,32 @@ export function KeepFlipSubscriptionScreen() {
         ]}
         showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
-          <Pressable
-            accessibilityLabel="Go back"
-            accessibilityRole="button"
-            onPress={() => router.back()}
-            style={({ pressed }) => [
-              styles.backButton,
-              pressed && styles.buttonPressed,
-            ]}>
-            <IconSymbol
-              color={theme.colors.cream}
-              name="chevron.left"
-              size={18}
-            />
-          </Pressable>
+          {canLeavePlanScreen ? (
+            <Pressable
+              accessibilityLabel="Go back"
+              accessibilityRole="button"
+              onPress={() => router.back()}
+              style={({ pressed }) => [
+                styles.backButton,
+                pressed && styles.buttonPressed,
+              ]}>
+              <IconSymbol
+                color={theme.colors.cream}
+                name="chevron.left"
+                size={18}
+              />
+            </Pressable>
+          ) : (
+            <View
+              accessibilityLabel="A KeepFlip plan is required to continue"
+              style={styles.planRequiredIcon}>
+              <IconSymbol
+                color={theme.colors.goldBright}
+                name="lock.fill"
+                size={17}
+              />
+            </View>
+          )}
 
           <View style={styles.headerCopy}>
             <Text style={styles.eyebrow}>KEEPFLIP / PLAN & BILLING</Text>
@@ -461,6 +476,16 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     flexDirection: 'row',
     gap: 11,
+  },
+  planRequiredIcon: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(215, 168, 74, 0.07)',
+    borderColor: 'rgba(215, 168, 74, 0.24)',
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
   },
   backButton: {
     alignItems: 'center',
