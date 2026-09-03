@@ -241,7 +241,7 @@ export default function InventoryScreen() {
           {
             paddingBottom: insets.bottom + 28,
             paddingHorizontal: pageGutter,
-            paddingTop: insets.top + 24,
+            paddingTop: insets.top / 2,
           },
         ]}
         style={[styles.list, {marginBottom: insets.bottom, marginTop: insets.top}]}

@@ -18,6 +18,7 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 *.ps1
+*.lock
 
 # Metro
 .metro-health-check*
@@ -100,4 +101,6 @@ app-example
 /output
 /modules/keepflip-ar-measure/android/build
 /modules/keepflip-ar-measure/android/.gradle
-
+.tmp.driveupload/*
+docs/*
+backend/functions/ebay-account-deletion

@@ -261,10 +261,11 @@ export default function EbayAccountScreen() {
         contentContainerStyle={[
           styles.content,
           {
-            paddingTop: insets.top + 24,
+            paddingTop: insets.top / 2,
             paddingBottom: insets.bottom + 32,
           },
         ]}
+        style={{marginBottom: insets.bottom, marginTop: insets.top}}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}>
         <Animated.View entering={FadeInDown.duration(220)} style={styles.topBar}>

@@ -581,8 +581,9 @@ export function BooksScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingBottom: insets.bottom + 34, paddingTop: insets.top + 68 },
+          { paddingBottom: insets.bottom, paddingTop: insets.top },
         ]}
+        style={{marginBottom: insets.bottom, marginTop: insets.top}}
         contentInsetAdjustmentBehavior="automatic"
         refreshControl={
           <RefreshControl
@@ -805,7 +806,7 @@ export function BooksScreen() {
             onPress={() => setSheetOpen(false)}
             style={styles.modalDismiss}
           />
-          <View style={[styles.sheet, { paddingBottom: insets.bottom + 18 }]}>
+          <View style={[styles.sheet, { paddingBottom: insets.bottom }]}>
             <View style={styles.sheetHeader}>
               <View>
                 <Text style={styles.sectionEyebrow}>MANUAL MONEY EVENT</Text>
@@ -1360,7 +1361,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
-    maxHeight: '90%',
+    maxHeight: '95%',
     paddingHorizontal: 18,
     paddingTop: 17,
   },

@@ -222,9 +222,10 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
             styles.content,
             {
               paddingBottom: insets.bottom + 28,
-              paddingTop: insets.top + 20,
+              paddingTop: insets.top / 2,
             },
           ]}
+          style={{marginBottom: insets.bottom, marginTop: insets.top}}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <View style={styles.header}>

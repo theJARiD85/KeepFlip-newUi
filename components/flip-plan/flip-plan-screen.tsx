@@ -567,9 +567,10 @@ export function FlipPlanScreen() {
           styles.content,
           {
             paddingBottom: Math.max(insets.bottom, 20) + 28,
-            paddingTop: insets.top + 16,
+            paddingTop: insets.top / 2,
           },
         ]}
+        style={{marginBottom: insets.bottom, marginTop: insets.top}}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <Animated.View entering={FadeInDown.duration(220)} style={styles.topBar}>

@@ -151,6 +151,7 @@ export default function EbayConnectScreen() {
             paddingBottom: insets.bottom + 32,
           },
         ]}
+        style={{marginBottom: insets.bottom, marginTop: insets.top}}
         contentInsetAdjustmentBehavior="never"
         showsVerticalScrollIndicator={false}>
         <View style={styles.topBar}>
