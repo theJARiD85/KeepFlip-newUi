@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import {
+  Account,
   Client,
   Permission,
   Role,
@@ -1028,16 +1029,37 @@ async function handleRevenueCatWebhook(req, tables, log) {
   };
 }
 
-function authenticatedUserId(req) {
-  const userId = validKeepFlipUserId(requestHeader(req, 'x-appwrite-user-id'));
-  if (!userId) {
+async function authenticatedUserId(req) {
+  const jwt = requestHeader(req, 'x-appwrite-user-jwt');
+  const hintedUserId = validKeepFlipUserId(
+    requestHeader(req, 'x-appwrite-user-id'),
+  );
+
+  if (!jwt || !hintedUserId) {
     throw new HttpError(
       401,
       'You must be signed in to check KeepFlip subscription access.',
       'AUTH_REQUIRED',
     );
   }
-  return userId;
+
+  const client = new Client()
+    .setEndpoint(functionEndpoint())
+    .setProject(functionProjectId())
+    .setJWT(jwt);
+
+  const account = await new Account(client).get();
+  const verifiedUserId = validKeepFlipUserId(account?.$id);
+
+  if (!verifiedUserId || verifiedUserId !== hintedUserId) {
+    throw new HttpError(
+      401,
+      'KeepFlip could not verify the signed-in subscription account.',
+      'AUTH_MISMATCH',
+    );
+  }
+
+  return verifiedUserId;
 }
 
 async function statusForUser(tables, userId, reconcile = false) {
@@ -1055,7 +1077,7 @@ async function statusForUser(tables, userId, reconcile = false) {
 }
 
 async function handleStatus(req, tables) {
-  const userId = authenticatedUserId(req);
+  const userId = await authenticatedUserId(req);
   const body = parseBody(req);
   const reconcile = body?.refresh === true;
 
@@ -1146,7 +1168,7 @@ function policyCheck(access, body) {
 }
 
 async function handleAccessCheck(req, tables) {
-  const userId = authenticatedUserId(req);
+  const userId = await authenticatedUserId(req);
   const body = parseBody(req);
   const result = await statusForUser(
     tables,
@@ -1163,7 +1185,7 @@ async function handleAccessCheck(req, tables) {
 }
 
 async function handleReconcile(req, tables) {
-  const userId = authenticatedUserId(req);
+  const userId = await authenticatedUserId(req);
   const row = await reconcileUser(tables, userId, null);
 
   return {
