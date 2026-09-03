@@ -9,8 +9,13 @@ import { KeepFlipMenuProvider } from '@/components/navigation/keepflip-menu-cont
 import { KeepFlipSlideDownMenu } from '@/components/navigation/keepflip-slide-down-menu';
 import { ItemAnalysisResultProvider } from '@/components/scanner/item-analysis-result-context';
 import { SourcingTripProvider } from '@/components/sourcing/sourcing-trip-context';
+import {
+  KeepFlipSubscriptionProvider,
+  useKeepFlipSubscription,
+} from '@/components/subscription/keepflip-subscription-context';
 import { keepFlipTheme } from '@/constants/keepflip-theme';
 import { notificationRouteFromData } from '@/services/keepflip-notification-service';
+import { areKeepFlipSubscriptionsEnforced } from '@/services/keepflip-subscription-service';
 import { hasCompletedScanInventoryWalkthrough } from '@/services/user-profile-onboarding-service';
 
 export const unstable_settings = {
@@ -41,16 +46,41 @@ function NotificationNavigationObserver() {
   return null;
 }
 
+function SubscriptionAccessGate() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { snapshot, state } = useKeepFlipSubscription();
+
+  useEffect(() => {
+    if (!areKeepFlipSubscriptionsEnforced()) return;
+    if (state !== 'ready') return;
+    if (snapshot?.access.active) return;
+    if (pathname === '/subscription') return;
+
+    requestAnimationFrame(() => {
+      router.replace('/subscription' as Href);
+    });
+  }, [pathname, router, snapshot?.access.active, state]);
+
+  return null;
+}
+
 function WalkthroughAutoLauncher() {
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useKeepFlipAuth();
+  const { snapshot, state: subscriptionState } = useKeepFlipSubscription();
   const checkedUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!user) {
       checkedUserIdRef.current = null;
       return;
+    }
+
+    if (areKeepFlipSubscriptionsEnforced()) {
+      if (subscriptionState !== 'ready') return;
+      if (!snapshot?.access.active) return;
     }
 
     if (
@@ -87,7 +117,13 @@ function WalkthroughAutoLauncher() {
       cancelled = true;
       if (frame !== null) cancelAnimationFrame(frame);
     };
-  }, [pathname, router, user]);
+  }, [
+    pathname,
+    router,
+    snapshot?.access.active,
+    subscriptionState,
+    user,
+  ]);
 
   return null;
 }
@@ -98,32 +134,38 @@ export default function AppShellLayout() {
       <EbayConnectionProvider>
         <ItemAnalysisResultProvider>
           <SourcingTripProvider>
-            <NotificationNavigationObserver />
-            <WalkthroughAutoLauncher />
-            <KeepFlipSlideDownMenu />
-            <View style={styles.root}>
-              <Stack
-                screenOptions={{
-                  animation: 'fade',
-                  contentStyle: { backgroundColor: keepFlipTheme.colors.backgroundDeep },
-                  headerShown: false,
-                }}>
-                <Stack.Screen name="index" />
-                <Stack.Screen name="scanner" />
-                <Stack.Screen name="deal-shelf" />
-                <Stack.Screen name="inventory" />
-                <Stack.Screen name="analysis" />
-                <Stack.Screen name="analysis-result" />
-                <Stack.Screen name="listing-guide" />
-                <Stack.Screen name="repair-assist" />
-                <Stack.Screen name="command-center" />
-                <Stack.Screen name="flip-plan" />
-                <Stack.Screen name="account" />
-                <Stack.Screen name="ebay-connect" />
-                <Stack.Screen name="ebay-account" />
-                <Stack.Screen name="books" />
-              </Stack>
-            </View>
+            <KeepFlipSubscriptionProvider>
+              <NotificationNavigationObserver />
+              <SubscriptionAccessGate />
+              <WalkthroughAutoLauncher />
+              <KeepFlipSlideDownMenu />
+              <View style={styles.root}>
+                <Stack
+                  screenOptions={{
+                    animation: 'fade',
+                    contentStyle: {
+                      backgroundColor: keepFlipTheme.colors.backgroundDeep,
+                    },
+                    headerShown: false,
+                  }}>
+                  <Stack.Screen name="index" />
+                  <Stack.Screen name="scanner" />
+                  <Stack.Screen name="deal-shelf" />
+                  <Stack.Screen name="inventory" />
+                  <Stack.Screen name="analysis" />
+                  <Stack.Screen name="analysis-result" />
+                  <Stack.Screen name="listing-guide" />
+                  <Stack.Screen name="repair-assist" />
+                  <Stack.Screen name="command-center" />
+                  <Stack.Screen name="flip-plan" />
+                  <Stack.Screen name="account" />
+                  <Stack.Screen name="ebay-connect" />
+                  <Stack.Screen name="ebay-account" />
+                  <Stack.Screen name="books" />
+                  <Stack.Screen name="subscription" />
+                </Stack>
+              </View>
+            </KeepFlipSubscriptionProvider>
           </SourcingTripProvider>
         </ItemAnalysisResultProvider>
       </EbayConnectionProvider>

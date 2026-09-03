@@ -120,6 +120,19 @@ function shortDate(value: string) {
   });
 }
 
+function fullDate(value: string) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return 'Unknown date';
+
+  return date.toLocaleString(undefined, {
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
 function hapticSelection() {
   if (process.env.EXPO_OS === 'ios') {
     void Haptics.selectionAsync().catch(() => undefined);
@@ -179,9 +192,11 @@ function Section({
 function TransactionRow({
   entry,
   inventoryNames,
+  onPress,
 }: {
   entry: ResellerLedgerEntry;
   inventoryNames: Map<string, string>;
+  onPress: () => void;
 }) {
   const details = ledgerEntryDetails(entry.entryType);
   const isIncome = entry.direction === 'income';
@@ -191,7 +206,14 @@ function TransactionRow({
     .join(' · ');
 
   return (
-    <View style={styles.transactionRow}>
+    <Pressable
+      accessibilityHint="Opens the full transaction details."
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.transactionRow,
+        pressed && styles.transactionRowPressed,
+      ]}>
       <View
         style={[
           styles.transactionMarker,
@@ -223,6 +245,30 @@ function TransactionRow({
         </Text>
         <Text style={styles.transactionSource}>{entry.source.toUpperCase()}</Text>
       </View>
+      <IconSymbol
+        color="rgba(173, 167, 178, 0.50)"
+        name="chevron.right"
+        size={13}
+      />
+    </Pressable>
+  );
+}
+
+function TransactionDetailRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | null | undefined;
+}) {
+  if (!value) return null;
+
+  return (
+    <View style={styles.transactionDetailRow}>
+      <Text style={styles.transactionDetailLabel}>{label}</Text>
+      <Text selectable style={styles.transactionDetailValue}>
+        {value}
+      </Text>
     </View>
   );
 }
@@ -291,6 +337,8 @@ export function BooksScreen() {
   const [setupNotice, setSetupNotice] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<ResellerLedgerEntry | null>(null);
   const [showItemPicker, setShowItemPicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -405,10 +453,18 @@ export function BooksScreen() {
   const selectedItem = draft.itemId
     ? inventory.find((item) => item.id === draft.itemId) ?? null
     : null;
+  const selectedTransactionItem = selectedTransaction?.itemId
+    ? inventory.find((item) => item.id === selectedTransaction.itemId) ?? null
+    : null;
   const draftDetails = ledgerEntryDetails(draft.entryType);
   const availableEntryTypeOptions = advancedBookkeepingConfigured
     ? ENTRY_TYPE_OPTIONS.filter((entryType) => entryType !== 'other_income')
     : ENTRY_TYPE_OPTIONS;
+
+  const openTransactionDetails = (entry: ResellerLedgerEntry) => {
+    hapticSelection();
+    setSelectedTransaction(entry);
+  };
 
   const openEntrySheet = (entryType: ResellerLedgerEntryType) => {
     if (!ledgerConfigured) {
@@ -769,6 +825,7 @@ export function BooksScreen() {
                   entry={entry}
                   inventoryNames={inventoryNames}
                   key={entry.id}
+                  onPress={() => openTransactionDetails(entry)}
                 />
               ))}
             </View>
@@ -791,6 +848,144 @@ export function BooksScreen() {
           </Text>
         </View>
       </ScrollView>
+
+      <Modal
+        animationType="fade"
+        onRequestClose={() => setSelectedTransaction(null)}
+        transparent
+        visible={selectedTransaction != null}>
+        <View style={styles.transactionDetailModalRoot}>
+          <Pressable
+            accessibilityLabel="Close transaction details"
+            accessibilityRole="button"
+            onPress={() => setSelectedTransaction(null)}
+            style={styles.modalDismiss}
+          />
+          {selectedTransaction ? (
+            <View
+              style={[
+                styles.transactionDetailSheet,
+                { paddingBottom: Math.max(insets.bottom + 16, 24) },
+              ]}>
+              <View style={styles.transactionDetailHeader}>
+                <View style={styles.transactionDetailHeaderCopy}>
+                  <Text style={styles.sectionEyebrow}>BOOKS / TRANSACTION</Text>
+                  <Text style={styles.transactionDetailTitle}>
+                    {ledgerEntryDetails(selectedTransaction.entryType).label}
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityLabel="Close transaction details"
+                  accessibilityRole="button"
+                  onPress={() => setSelectedTransaction(null)}
+                  style={styles.closeButton}>
+                  <IconSymbol color={theme.colors.cream} name="xmark" size={18} />
+                </Pressable>
+              </View>
+
+              <ScrollView
+                contentContainerStyle={styles.transactionDetailContent}
+                showsVerticalScrollIndicator={false}>
+                <View style={styles.transactionDetailAmountCard}>
+                  <Text style={styles.transactionDetailAmountLabel}>
+                    {selectedTransaction.direction === 'income'
+                      ? 'MONEY IN'
+                      : 'MONEY OUT'}
+                  </Text>
+                  <Text
+                    selectable
+                    style={[
+                      styles.transactionDetailAmount,
+                      selectedTransaction.direction === 'income'
+                        ? styles.transactionAmountIncome
+                        : styles.transactionAmountExpense,
+                    ]}>
+                    {selectedTransaction.direction === 'income' ? '+' : '−'}
+                    {formatMoney(selectedTransaction.amountCents)}
+                  </Text>
+                  <Text style={styles.transactionDetailDirection}>
+                    {selectedTransaction.direction === 'income'
+                      ? 'Income'
+                      : 'Expense'}{' '}
+                    · {selectedTransaction.currency}
+                  </Text>
+                </View>
+
+                <View style={styles.transactionDetailSection}>
+                  <Text style={styles.transactionDetailSectionTitle}>DETAILS</Text>
+                  <TransactionDetailRow
+                    label="Date"
+                    value={fullDate(selectedTransaction.occurredAt)}
+                  />
+                  <TransactionDetailRow
+                    label="Source"
+                    value={
+                      selectedTransaction.channel ||
+                      (selectedTransaction.source === 'migration'
+                        ? 'KeepFlip Books'
+                        : selectedTransaction.source.replace(/_/g, ' '))
+                    }
+                  />
+                  <TransactionDetailRow
+                    label="Linked item"
+                    value={
+                      selectedTransactionItem?.title ||
+                      (selectedTransaction.itemId
+                        ? 'Item ' + selectedTransaction.itemId
+                        : null)
+                    }
+                  />
+                  <TransactionDetailRow
+                    label="Notes"
+                    value={selectedTransaction.notes}
+                  />
+                  <TransactionDetailRow
+                    label="External ID"
+                    value={selectedTransaction.externalId}
+                  />
+                  <TransactionDetailRow
+                    label="Sale group"
+                    value={selectedTransaction.saleGroupId}
+                  />
+                  <TransactionDetailRow
+                    label="Receipt file"
+                    value={selectedTransaction.receiptFileId}
+                  />
+                </View>
+
+                <View style={styles.transactionDetailSection}>
+                  <Text style={styles.transactionDetailSectionTitle}>RECORD</Text>
+                  <TransactionDetailRow
+                    label="Transaction ID"
+                    value={selectedTransaction.id}
+                  />
+                  <TransactionDetailRow
+                    label="Recorded"
+                    value={fullDate(selectedTransaction.createdAt)}
+                  />
+                  {selectedTransaction.updatedAt !== selectedTransaction.createdAt ? (
+                    <TransactionDetailRow
+                      label="Last updated"
+                      value={fullDate(selectedTransaction.updatedAt)}
+                    />
+                  ) : null}
+                  {selectedTransaction.voidedAt ? (
+                    <TransactionDetailRow
+                      label="Voided"
+                      value={fullDate(selectedTransaction.voidedAt)}
+                    />
+                  ) : null}
+                </View>
+
+                <Text style={styles.transactionDetailHint}>
+                  This is the recorded Books transaction. Estimates, asking prices,
+                  and projected profit are not included here.
+                </Text>
+              </ScrollView>
+            </View>
+          ) : null}
+        </View>
+      </Modal>
 
       <Modal
         animationType="fade"
@@ -1304,7 +1499,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     minHeight: 67,
+    paddingHorizontal: 2,
     paddingVertical: 9,
+  },
+  transactionRowPressed: {
+    backgroundColor: 'rgba(242, 237, 228, 0.045)',
   },
   transactionMarker: { borderRadius: 2, height: 25, width: 3 },
   transactionMarkerIncome: { backgroundColor: theme.colors.scannerCyan },
@@ -1352,6 +1551,108 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 15,
     maxWidth: 560,
+  },
+  transactionDetailModalRoot: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  transactionDetailSheet: {
+    alignSelf: 'center',
+    backgroundColor: '#0a090d',
+    borderColor: 'rgba(0, 255, 255, 0.26)',
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    maxHeight: '84%',
+    maxWidth: 720,
+    paddingHorizontal: 18,
+    paddingTop: 17,
+    width: '100%',
+  },
+  transactionDetailHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  transactionDetailHeaderCopy: { flex: 1, gap: 2 },
+  transactionDetailTitle: {
+    color: theme.colors.cream,
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: -0.4,
+  },
+  transactionDetailContent: {
+    gap: 14,
+    paddingBottom: 4,
+  },
+  transactionDetailAmountCard: {
+    backgroundColor: 'rgba(0, 255, 255, 0.035)',
+    borderColor: 'rgba(0, 255, 255, 0.18)',
+    borderRadius: 11,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: 3,
+    padding: 14,
+  },
+  transactionDetailAmountLabel: {
+    color: theme.colors.textMuted,
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  transactionDetailAmount: {
+    fontSize: 27,
+    fontVariant: ['tabular-nums'],
+    fontWeight: '900',
+    letterSpacing: -0.5,
+  },
+  transactionDetailDirection: {
+    color: theme.colors.textMuted,
+    fontSize: 11,
+  },
+  transactionDetailSection: {
+    backgroundColor: 'rgba(242, 237, 228, 0.025)',
+    borderColor: 'rgba(242, 237, 228, 0.11)',
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+  },
+  transactionDetailSectionTitle: {
+    color: theme.colors.goldBright,
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 1,
+    paddingBottom: 7,
+    paddingHorizontal: 12,
+    paddingTop: 11,
+  },
+  transactionDetailRow: {
+    borderTopColor: 'rgba(242, 237, 228, 0.08)',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  transactionDetailLabel: {
+    color: theme.colors.textMuted,
+    fontFamily: theme.fonts.radar,
+    fontSize: 7,
+    fontWeight: '900',
+    letterSpacing: 0.75,
+    textTransform: 'uppercase',
+  },
+  transactionDetailValue: {
+    color: theme.colors.cream,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  transactionDetailHint: {
+    color: 'rgba(173, 167, 178, 0.72)',
+    fontSize: 10,
+    lineHeight: 15,
   },
   modalRoot: { flex: 1, justifyContent: 'flex-end' },
   modalDismiss: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(1, 1, 2, 0.76)' },
