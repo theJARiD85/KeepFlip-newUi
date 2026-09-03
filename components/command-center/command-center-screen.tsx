@@ -101,13 +101,17 @@ function hapticSuccess() {
 }
 
 function formatReviewMoney(item: BookkeepingReviewItem) {
+  if (!item.amountKnown || item.amountCents == null || !item.currency) {
+    return 'AMOUNT UNAVAILABLE';
+  }
+
   try {
     return new Intl.NumberFormat('en-US', {
-      currency: item.currency || 'USD',
+      currency: item.currency,
       style: 'currency',
     }).format(item.amountCents / 100);
   } catch {
-    return `$${(item.amountCents / 100).toFixed(2)}`;
+    return `${item.currency} ${(item.amountCents / 100).toFixed(2)}`;
   }
 }
 
@@ -128,9 +132,58 @@ function reviewStatusLabel(item: BookkeepingReviewItem) {
 }
 
 function reviewTypeLabel(sourceType: string) {
-  return sourceType
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  const normalized = sourceType.toLowerCase().replace(/_foreign_currency$/, '');
+  const labels: Record<string, string> = {
+    adjustment: 'Account adjustment',
+    credit: 'Marketplace credit',
+    credit_booking_unknown: 'Marketplace credit',
+    credit_debit: 'Marketplace credit debit',
+    dispute: 'Payment dispute',
+    loan_repayment: 'Loan repayment',
+    marketplace_credit: 'Marketplace credit',
+    non_sale_charge: 'eBay account charge',
+    non_sale_charge_booking_unknown: 'eBay account charge',
+    non_sale_charge_credit: 'eBay fee credit',
+    payout: 'Payout',
+    purchase: 'eBay purchase',
+    refund: 'Refund',
+    refund_booking_unknown: 'Refund',
+    refund_credit: 'Refund credit',
+    sale: 'Sale',
+    sale_booking_unknown: 'Sale',
+    sale_debit: 'Sale debit',
+    sale_multi_item: 'Multi-item sale',
+    sale_zero_amount: 'Zero-value sale',
+    shipping_label: 'Shipping label',
+    shipping_label_booking_unknown: 'Shipping label',
+    shipping_label_credit: 'Shipping label credit',
+    transfer: 'eBay transfer',
+    unclassified: 'Unclassified eBay record',
+    unknown: 'Legacy review record',
+    withdrawal: 'Withdrawal',
+  };
+
+  return (
+    labels[normalized] ??
+    normalized
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (letter) => letter.toUpperCase())
+  );
+}
+
+function reviewAmountNote(item: BookkeepingReviewItem) {
+  if (!item.amountKnown || item.amountCents == null || !item.currency) {
+    return item.legacyFallback
+      ? 'LEGACY REVIEW · SYNC MONEY AGAIN TO REFRESH SOURCE DETAILS'
+      : 'AMOUNT / CURRENCY UNAVAILABLE FROM SAVED SOURCE DATA';
+  }
+  if (item.amountCents === 0) {
+    return `EBAY REPORTED 0.00 ${item.currency}`;
+  }
+  if (item.currency !== 'USD') {
+    return `EBAY REPORTED ${item.currency} · NOT CONVERTED TO USD`;
+  }
+  return null;
 }
 
 function eBayStateDetails(
@@ -871,6 +924,17 @@ export function CommandCenterScreen() {
                     {reviewTypeLabel(activeReview.sourceType)} · {formatReviewDate(activeReview.occurredAt)}
                   </Text>
                   <Text selectable style={styles.reviewCardReason}>{activeReview.reason}</Text>
+                  {reviewAmountNote(activeReview) ? (
+                    <Text selectable style={styles.reviewCardMeta}>
+                      {reviewAmountNote(activeReview)}
+                    </Text>
+                  ) : null}
+                  <Text selectable style={styles.reviewCardMeta}>
+                    EBAY TYPE {activeReview.sourceType.toUpperCase()}
+                  </Text>
+                  <Text selectable style={styles.reviewCardMeta}>
+                    TRANSACTION {activeReview.externalKey}
+                  </Text>
                   {activeReview.orderId ? (
                     <Text selectable style={styles.reviewCardMeta}>ORDER {activeReview.orderId}</Text>
                   ) : null}
@@ -895,7 +959,9 @@ export function CommandCenterScreen() {
                       <Text style={styles.reviewSecondaryButtonText}>OPEN BOOKS · REVIEW COST</Text>
                     </Pressable>
                   </View>
-                ) : activeReview.sourceType === 'sale' ? (
+                ) : activeReview.sourceType === 'sale' &&
+                    activeReview.amountKnown &&
+                    activeReview.currency === 'USD' ? (
                   <View style={styles.reviewResolutionSection}>
                     <Text style={styles.reviewResolutionTitle}>MATCH THE SALE</Text>
                     <Text style={styles.reviewResolutionBody}>
@@ -983,7 +1049,7 @@ export function CommandCenterScreen() {
                   <View style={styles.reviewResolutionSection}>
                     <Text style={styles.reviewResolutionTitle}>MANUAL BOOKS CHECK</Text>
                     <Text style={styles.reviewResolutionBody}>
-                      KeepFlip does not have enough structured information to safely auto-post this event. It stays visible here until the Books workflow can resolve it.
+                      KeepFlip preserved the eBay transaction type, transaction ID, and the original amount and currency when eBay supplied them. There is not yet a safe automatic accounting rule for this record, so it stays held instead of being guessed.
                     </Text>
                     <Pressable
                       accessibilityRole="button"
@@ -1015,7 +1081,7 @@ export function CommandCenterScreen() {
                 contentContainerStyle={styles.reviewQueueContent}
                 showsVerticalScrollIndicator={false}>
                 <Text style={styles.reviewQueueIntro}>
-                  These records were held instead of guessed. Tap one to see exactly what is missing and finish supported sale reviews here.
+                  These records were held instead of guessed. Amounts and currencies shown are the values eBay reported. Older fallback rows show AMOUNT UNAVAILABLE until the next money sync refreshes them.
                 </Text>
                 {reviewItems.map((item) => (
                   <Pressable
@@ -1034,6 +1100,14 @@ export function CommandCenterScreen() {
                       {reviewTypeLabel(item.sourceType)} · {formatReviewDate(item.occurredAt)}
                     </Text>
                     <Text numberOfLines={2} style={styles.reviewCardReason}>{item.reason}</Text>
+                    {reviewAmountNote(item) ? (
+                      <Text numberOfLines={1} style={styles.reviewCardMeta}>
+                        {reviewAmountNote(item)}
+                      </Text>
+                    ) : null}
+                    <Text numberOfLines={1} style={styles.reviewCardMeta}>
+                      TXN {item.externalKey}
+                    </Text>
                     <Text style={styles.reviewCardAction}>REVIEW →</Text>
                   </Pressable>
                 ))}
