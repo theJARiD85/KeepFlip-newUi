@@ -162,7 +162,7 @@ function PlanCard({
             ANNUAL · {annualDisplay} / YEAR
           </Text>
           <Text style={styles.annualSavingsText}>
-            Equivalent to $19.99 / month
+            Save $50 / year · equivalent to $20.83 / month
           </Text>
         </Pressable>
       ) : null}
