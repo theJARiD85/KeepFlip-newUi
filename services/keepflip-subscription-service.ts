@@ -1,9 +1,11 @@
 import { Linking, Platform } from 'react-native';
 import Purchases, {
   LOG_LEVEL,
+  STORE_REPLACEMENT_MODE,
   type CustomerInfo,
   type PurchasesEntitlementInfo,
   type PurchasesPackage,
+  type StoreProductChangeInfo,
 } from 'react-native-purchases';
 
 export type KeepFlipPlanId = 'hobbyist' | 'serious' | 'power';
@@ -371,7 +373,38 @@ export async function purchaseKeepFlipPlan(
     );
   }
 
-  const result = await Purchases.purchasePackage(selectedPackage);
+  let productChangeInfo: StoreProductChangeInfo | null = null;
+  if (Platform.OS === 'android') {
+    const currentInfo = await Purchases.getCustomerInfo();
+    const currentAccess = subscriptionAccessFromCustomerInfo(currentInfo);
+    if (
+      currentAccess.active &&
+      currentAccess.productId &&
+      currentAccess.productId !== selectedPackage.product.identifier
+    ) {
+      const rank: Record<KeepFlipPlanId, number> = {
+        hobbyist: 1,
+        serious: 2,
+        power: 3,
+      };
+      const isDowngrade =
+        currentAccess.plan != null &&
+        rank[plan] < rank[currentAccess.plan];
+
+      productChangeInfo = {
+        oldProductIdentifier: currentAccess.productId,
+        replacementMode: isDowngrade
+          ? STORE_REPLACEMENT_MODE.DEFERRED
+          : STORE_REPLACEMENT_MODE.WITH_TIME_PRORATION,
+      };
+    }
+  }
+
+  const result = await Purchases.purchasePackage(
+    selectedPackage,
+    null,
+    productChangeInfo,
+  );
   return subscriptionAccessFromCustomerInfo(result.customerInfo);
 }
 
