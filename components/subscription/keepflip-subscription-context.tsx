@@ -14,6 +14,7 @@ import {
   openKeepFlipSubscriptionManagement,
   purchaseKeepFlipPlan,
   restoreKeepFlipPurchases,
+  subscribeToKeepFlipSubscriptionUpdates,
   type KeepFlipBillingCadence,
   type KeepFlipPlanId,
   type KeepFlipSubscriptionSnapshot,
@@ -100,6 +101,41 @@ export function KeepFlipSubscriptionProvider({
     setError(null);
     void refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    let cancelled = false;
+    let removeListener: (() => void) | null = null;
+
+    void subscribeToKeepFlipSubscriptionUpdates(userId, (access) => {
+      if (cancelled) return;
+      setSnapshot((current) =>
+        current ? { ...current, access, configured: true } : current,
+      );
+      setState('ready');
+    })
+      .then((remove) => {
+        if (cancelled) {
+          remove();
+          return;
+        }
+        removeListener = remove;
+      })
+      .catch((caughtError) => {
+        if (__DEV__) {
+          console.warn(
+            '[KeepFlip][Subscription] Could not attach RevenueCat updates:',
+            caughtError,
+          );
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      removeListener?.();
+    };
+  }, [userId]);
 
   const purchase = useCallback(
     async (
