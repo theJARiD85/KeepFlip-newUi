@@ -8,7 +8,13 @@ import Purchases, {
   type StoreProductChangeInfo,
 } from 'react-native-purchases';
 
-import { APPWRITE, Query, tablesDB } from '@/lib/appwrite';
+import {
+  APPWRITE,
+  ExecutionMethod,
+  Query,
+  functions,
+  tablesDB,
+} from '@/lib/appwrite';
 
 export type KeepFlipPlanId = 'hobbyist' | 'serious' | 'power';
 export type KeepFlipBillingCadence = 'monthly' | 'annual';
@@ -302,7 +308,7 @@ function parseServerSubscriptionRecord(
       : null;
   if (!row) return null;
 
-  const id = appwriteText(row.$id, 64);
+  const id = appwriteText(row.$id ?? row.id, 64);
   const ownerId = appwriteText(row.ownerId, 64);
   if (!id || !ownerId) return null;
 
@@ -342,7 +348,47 @@ function isAppwriteNotFound(error: unknown) {
   );
 }
 
-export async function loadKeepFlipServerSubscriptionRecord(userId: string) {
+type SubscriptionFunctionPayload = Record<string, unknown>;
+
+function parseSubscriptionFunctionPayload(value: string) {
+  try {
+    const parsed = JSON.parse(value || '{}');
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as SubscriptionFunctionPayload)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+async function loadKeepFlipServerSubscriptionViaFunction(refresh = false) {
+  const functionId = APPWRITE.subscriptionFunctionId;
+  if (!functionId) return { available: false as const, record: null };
+
+  const execution = await functions.createExecution({
+    async: false,
+    body: JSON.stringify({ refresh }),
+    functionId,
+    headers: { 'content-type': 'application/json' },
+    method: ExecutionMethod.POST,
+    xpath: '/status',
+  });
+
+  const payload = parseSubscriptionFunctionPayload(execution.responseBody);
+  if (execution.responseStatusCode !== 200 || payload.ok !== true) {
+    const message = appwriteText(payload.error, 1_000);
+    throw new Error(
+      message || 'KeepFlip could not verify server subscription access.',
+    );
+  }
+
+  return {
+    available: true as const,
+    record: parseServerSubscriptionRecord(payload.subscription),
+  };
+}
+
+async function loadKeepFlipServerSubscriptionRecordDirect(userId: string) {
   const cleanUserId = userId.trim();
   if (!cleanUserId || !isKeepFlipSubscriptionTableConfigured()) return null;
 
@@ -379,6 +425,30 @@ export async function loadKeepFlipServerSubscriptionRecord(userId: string) {
   }
 
   return matches[0] ?? null;
+}
+
+export async function loadKeepFlipServerSubscriptionRecord(
+  userId: string,
+  refresh = false,
+) {
+  const cleanUserId = userId.trim();
+  if (!cleanUserId) return null;
+
+  if (APPWRITE.subscriptionFunctionId) {
+    try {
+      const result = await loadKeepFlipServerSubscriptionViaFunction(refresh);
+      if (result.available) return result.record;
+    } catch (error) {
+      if (__DEV__) {
+        console.warn(
+          '[KeepFlip][Subscription] Subscription Police status failed; falling back to the read-only mirror.',
+          error,
+        );
+      }
+    }
+  }
+
+  return loadKeepFlipServerSubscriptionRecordDirect(cleanUserId);
 }
 
 function entitlementPlan(identifier: string): KeepFlipPlanId | null {
