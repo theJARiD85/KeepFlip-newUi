@@ -1,10 +1,13 @@
 import * as Haptics from 'expo-haptics';
 import { type Href, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
+  ActivityIndicator,
   Image,
+  Modal,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   View,
@@ -20,7 +23,10 @@ import {
   type KeepFlipStatusBadgeProps,
 } from '@/components/ui/keepflip-control-row';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
-import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
+import {
+  KeepFlipText as Text,
+  KeepFlipTextInput as TextInput,
+} from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import {
   connectEbayAccount,
@@ -33,11 +39,17 @@ import {
 } from '@/services/reseller-business-overview';
 import {
   getBookkeepingOverview,
+  getBookkeepingReviewQueue,
+  resolveBookkeepingReview,
   syncEbayBookkeeping,
   isResellerBookkeepingConfigured,
   type BookkeepingMoneyEvent,
+  type BookkeepingReviewItem,
 } from '@/services/reseller-bookkeeping-service';
-import { listInventoryItems } from '@/services/inventory-service';
+import {
+  listInventoryItems,
+  type InventoryItem,
+} from '@/services/inventory-service';
 import {
   isResellerBooksConfigured,
   listResellerLedgerEntries,
@@ -88,6 +100,39 @@ function hapticSuccess() {
   );
 }
 
+function formatReviewMoney(item: BookkeepingReviewItem) {
+  try {
+    return new Intl.NumberFormat('en-US', {
+      currency: item.currency || 'USD',
+      style: 'currency',
+    }).format(item.amountCents / 100);
+  } catch {
+    return `$${(item.amountCents / 100).toFixed(2)}`;
+  }
+}
+
+function formatReviewDate(value: string) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return 'Unknown date';
+  return date.toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    year: date.getFullYear() === new Date().getFullYear() ? undefined : 'numeric',
+  });
+}
+
+function reviewStatusLabel(item: BookkeepingReviewItem) {
+  if (item.status === 'needs_item_match') return 'MATCH ITEM';
+  if (item.status === 'needs_item_cost') return 'ADD COST';
+  return 'CHECK DETAILS';
+}
+
+function reviewTypeLabel(sourceType: string) {
+  return sourceType
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 function eBayStateDetails(
   state: EbayConnectionViewState,
   errorMessage: string | null,
@@ -133,12 +178,24 @@ export function CommandCenterScreen() {
   const [eBayErrorMessage, setEbayErrorMessage] = useState<string | null>(null);
   const eBayRequestId = useRef(0);
   const businessRequestId = useRef(0);
+  const reviewRequestId = useRef(0);
   const [businessOverview, setBusinessOverview] =
     useState<ResellerBusinessOverview | null>(null);
   const [businessLoading, setBusinessLoading] = useState(true);
   const [businessError, setBusinessError] = useState<string | null>(null);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [eBayBooksSyncing, setEbayBooksSyncing] = useState(false);
   const [eBayBooksSyncMessage, setEbayBooksSyncMessage] = useState<string | null>(null);
+  const [reviewItems, setReviewItems] = useState<BookkeepingReviewItem[]>([]);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [activeReview, setActiveReview] = useState<BookkeepingReviewItem | null>(null);
+  const [reviewItemSearch, setReviewItemSearch] = useState('');
+  const [selectedReviewItemId, setSelectedReviewItemId] = useState('');
+  const [reviewQuantity, setReviewQuantity] = useState('1');
+  const [reviewResolving, setReviewResolving] = useState(false);
+  const [reviewActionMessage, setReviewActionMessage] = useState<string | null>(null);
 
   const resolveEbayStatus = useCallback(async () => {
     try {
@@ -179,9 +236,38 @@ export function CommandCenterScreen() {
 
     return result.state;
   }, [resolveEbayStatus]);
+
+  const refreshReviewQueue = useCallback(async () => {
+    if (!user?.$id || !isResellerBookkeepingConfigured()) {
+      setReviewItems([]);
+      setReviewLoading(false);
+      setReviewError(null);
+      return;
+    }
+
+    const requestId = ++reviewRequestId.current;
+    setReviewLoading(true);
+    setReviewError(null);
+    try {
+      const result = await getBookkeepingReviewQueue();
+      if (requestId !== reviewRequestId.current) return;
+      setReviewItems(result.items);
+    } catch (error) {
+      if (requestId !== reviewRequestId.current) return;
+      setReviewError(
+        error instanceof Error
+          ? error.message
+          : 'KeepFlip could not load the money review queue.',
+      );
+    } finally {
+      if (requestId === reviewRequestId.current) setReviewLoading(false);
+    }
+  }, [user?.$id]);
+
   const refreshBusinessOverview = useCallback(async () => {
     if (!user?.$id) {
       setBusinessOverview(null);
+      setInventoryItems([]);
       setBusinessLoading(false);
       return;
     }
@@ -205,6 +291,7 @@ export function CommandCenterScreen() {
 
     if (inventoryResult.status !== 'fulfilled') {
       setBusinessOverview(null);
+      setInventoryItems([]);
       setBusinessError(
         inventoryResult.reason instanceof Error
           ? inventoryResult.reason.message
@@ -214,6 +301,7 @@ export function CommandCenterScreen() {
       return;
     }
 
+    setInventoryItems(inventoryResult.value);
     const entries: ResellerLedgerEntry[] = [];
     const notes: string[] = [];
     if (legacyResult.status === 'fulfilled') {
@@ -244,6 +332,7 @@ export function CommandCenterScreen() {
     setBusinessError(notes.join(' ') || null);
     setBusinessLoading(false);
   }, [user?.$id]);
+
   const handleEbayBooksSync = async () => {
     if (eBayBooksSyncing) return;
     if (eBayState !== 'connected') {
@@ -264,7 +353,7 @@ export function CommandCenterScreen() {
             : 'Everything matched cleanly.'),
       );
       hapticSuccess();
-      await refreshBusinessOverview();
+      await Promise.all([refreshBusinessOverview(), refreshReviewQueue()]);
     } catch (error) {
       setEbayBooksSyncMessage(
         error instanceof Error
@@ -278,6 +367,75 @@ export function CommandCenterScreen() {
       setEbayBooksSyncing(false);
     }
   };
+
+  const openReviewQueue = () => {
+    hapticSelection();
+    setReviewActionMessage(null);
+    setActiveReview(null);
+    setReviewOpen(true);
+    void refreshReviewQueue();
+  };
+
+  const chooseReview = (review: BookkeepingReviewItem) => {
+    hapticSelection();
+    setActiveReview(review);
+    setSelectedReviewItemId(review.itemId ?? '');
+    setReviewQuantity('1');
+    setReviewItemSearch('');
+    setReviewActionMessage(null);
+  };
+
+  const resolveActiveReview = async () => {
+    if (!activeReview || reviewResolving) return;
+    const quantity = Number(reviewQuantity);
+    if (!selectedReviewItemId) {
+      setReviewActionMessage('Choose the KeepFlip inventory item that sold.');
+      return;
+    }
+    if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 100_000) {
+      setReviewActionMessage('Quantity sold must be a whole number from 1 through 100,000.');
+      return;
+    }
+
+    setReviewResolving(true);
+    setReviewActionMessage(null);
+    try {
+      const result = await resolveBookkeepingReview({
+        itemId: selectedReviewItemId,
+        quantity,
+        reviewId: activeReview.id,
+      });
+      hapticSuccess();
+      setReviewActionMessage(
+        result.needsItemCost
+          ? 'Sale matched and posted. The item still needs its actual cost before profit is complete.'
+          : 'Review complete. The sale is posted and the inventory quantity is updated.',
+      );
+      setActiveReview(null);
+      await Promise.all([refreshReviewQueue(), refreshBusinessOverview()]);
+    } catch (error) {
+      setReviewActionMessage(
+        error instanceof Error
+          ? error.message
+          : 'KeepFlip could not finish that money review.',
+      );
+    } finally {
+      setReviewResolving(false);
+    }
+  };
+
+  const filteredReviewInventory = useMemo(() => {
+    const query = reviewItemSearch.trim().toLowerCase();
+    return inventoryItems
+      .filter((item) => item.quantityOnHand > 0 || item.id === activeReview?.itemId)
+      .filter((item) => {
+        if (!query) return true;
+        return [item.title, item.brand, item.model, item.sku]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(query));
+      })
+      .slice(0, 40);
+  }, [activeReview?.itemId, inventoryItems, reviewItemSearch]);
 
   useEffect(() => {
     const message =
@@ -304,12 +462,20 @@ export function CommandCenterScreen() {
       eBayRequestId.current += 1;
     };
   }, [resolveEbayStatus, user?.$id]);
+
   useEffect(() => {
     void refreshBusinessOverview();
     return () => {
       businessRequestId.current += 1;
     };
   }, [refreshBusinessOverview]);
+
+  useEffect(() => {
+    void refreshReviewQueue();
+    return () => {
+      reviewRequestId.current += 1;
+    };
+  }, [refreshReviewQueue]);
 
   if (!user) return null;
 
@@ -323,7 +489,6 @@ export function CommandCenterScreen() {
         : eBayState === 'error'
           ? 'RETRY'
           : undefined;
-
 
   const handleEbayConnection = async () => {
     if (eBayIsBusy) return;
@@ -390,6 +555,16 @@ export function CommandCenterScreen() {
     }
   };
 
+  const openReviewItem = (itemId: string) => {
+    setReviewOpen(false);
+    setActiveReview(null);
+    hapticSelection();
+    router.push({
+      pathname: '/analysis-result',
+      params: { itemId },
+    });
+  };
+
   return (
     <KeepFlipBackground>
       <ScrollView
@@ -397,7 +572,7 @@ export function CommandCenterScreen() {
           styles.content,
           { paddingTop: insets.top + 34, paddingBottom: insets.bottom + 32 },
         ]}
-        style={{marginBottom: insets.bottom}}
+        style={{ marginBottom: insets.bottom }}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}>
         <Animated.View entering={FadeInDown.duration(260)} style={styles.header}>
@@ -466,35 +641,59 @@ export function CommandCenterScreen() {
             />
           </View>
           {isResellerBookkeepingConfigured() ? (
-            <View style={styles.eBaySurface}>
-              <KeepFlipControlRow
-                accent="gold"
-                actionBusy={eBayBooksSyncing}
-                actionLabel={eBayState === 'connected' ? 'SYNC' : undefined}
-                accessibilityHint="Brings in eBay sales, fees, labels, refunds, and payouts using the connected seller account."
-                description={
-                  eBayBooksSyncMessage ??
-                  'Bring in eBay sales, fees, shipping labels, refunds, and payouts. Payouts are matched without counting them as a second sale.'
-                }
-                icon="chart.bar.fill"
-                label="eBay money sync"
-                onPress={eBayBooksSyncing ? undefined : () => void handleEbayBooksSync()}
-                status={{
-                  label:
-                    eBayBooksSyncing
-                      ? 'SYNCING'
-                      : eBayState === 'connected'
-                        ? 'READY'
-                        : 'CONNECT FIRST',
-                  tone:
-                    eBayBooksSyncing
-                      ? 'violet'
-                      : eBayState === 'connected'
-                        ? 'active'
-                        : 'muted',
-                }}
-              />
-            </View>
+            <>
+              <View style={styles.eBaySurface}>
+                <KeepFlipControlRow
+                  accent="gold"
+                  actionBusy={eBayBooksSyncing}
+                  actionLabel={eBayState === 'connected' ? 'SYNC' : undefined}
+                  accessibilityHint="Brings in eBay sales, fees, labels, refunds, and payouts using the connected seller account."
+                  description={
+                    eBayBooksSyncMessage ??
+                    'Bring in eBay sales, fees, shipping labels, refunds, and payouts. Payouts are matched without counting them as a second sale.'
+                  }
+                  icon="chart.bar.fill"
+                  label="eBay money sync"
+                  onPress={eBayBooksSyncing ? undefined : () => void handleEbayBooksSync()}
+                  status={{
+                    label:
+                      eBayBooksSyncing
+                        ? 'SYNCING'
+                        : eBayState === 'connected'
+                          ? 'READY'
+                          : 'CONNECT FIRST',
+                    tone:
+                      eBayBooksSyncing
+                        ? 'violet'
+                        : eBayState === 'connected'
+                          ? 'active'
+                          : 'muted',
+                  }}
+                />
+              </View>
+
+              {reviewItems.length > 0 || reviewError ? (
+                <View style={styles.reviewSurface}>
+                  <KeepFlipControlRow
+                    accent="gold"
+                    actionBusy={reviewLoading}
+                    actionLabel={reviewItems.length > 0 ? 'REVIEW' : 'RETRY'}
+                    accessibilityHint="Opens the synced money records that still need attention."
+                    description={
+                      reviewError ??
+                      `${reviewItems.length} synced eBay record${reviewItems.length === 1 ? '' : 's'} still need${reviewItems.length === 1 ? 's' : ''} attention. Open the queue to see the exact records and finish supported sale reviews here.`
+                    }
+                    icon="exclamationmark.triangle.fill"
+                    label="Money review"
+                    onPress={reviewLoading ? undefined : openReviewQueue}
+                    status={{
+                      label: reviewError ? 'CHECK' : `${reviewItems.length} OPEN`,
+                      tone: reviewError ? 'danger' : 'warning',
+                    }}
+                  />
+                </View>
+              ) : null}
+            </>
           ) : null}
         </Animated.View>
 
@@ -613,6 +812,253 @@ export function CommandCenterScreen() {
           </Text>
         ) : null}
       </ScrollView>
+
+      <Modal
+        animationType="fade"
+        onRequestClose={() => {
+          if (reviewResolving) return;
+          setReviewOpen(false);
+          setActiveReview(null);
+        }}
+        transparent
+        visible={reviewOpen}>
+        <View style={styles.reviewModalBackdrop}>
+          <Pressable
+            accessibilityLabel="Close money review"
+            disabled={reviewResolving}
+            onPress={() => {
+              setReviewOpen(false);
+              setActiveReview(null);
+            }}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={[styles.reviewModal, { paddingBottom: Math.max(insets.bottom, 16) }]}> 
+            <View style={styles.reviewModalHeader}>
+              <View style={styles.reviewModalHeading}>
+                <Text style={styles.reviewModalEyebrow}>BOOKS / MONEY REVIEW</Text>
+                <Text style={styles.reviewModalTitle}>
+                  {activeReview ? 'Finish this record' : 'Quick review queue'}
+                </Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                disabled={reviewResolving}
+                onPress={() => {
+                  if (activeReview) {
+                    setActiveReview(null);
+                    setReviewActionMessage(null);
+                  } else {
+                    setReviewOpen(false);
+                  }
+                }}
+                style={({ pressed }) => [
+                  styles.reviewCloseButton,
+                  pressed && styles.reviewPressed,
+                ]}>
+                <Text style={styles.reviewCloseText}>{activeReview ? 'BACK' : 'DONE'}</Text>
+              </Pressable>
+            </View>
+
+            {reviewActionMessage ? (
+              <Text selectable style={styles.reviewActionMessage}>
+                {reviewActionMessage}
+              </Text>
+            ) : null}
+
+            {activeReview ? (
+              <ScrollView
+                contentContainerStyle={styles.reviewDetailContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}>
+                <View style={styles.reviewDetailCard}>
+                  <View style={styles.reviewCardTopline}>
+                    <Text style={styles.reviewCardStatus}>{reviewStatusLabel(activeReview)}</Text>
+                    <Text selectable style={styles.reviewCardAmount}>
+                      {formatReviewMoney(activeReview)}
+                    </Text>
+                  </View>
+                  <Text style={styles.reviewCardTitle}>
+                    {reviewTypeLabel(activeReview.sourceType)} · {formatReviewDate(activeReview.occurredAt)}
+                  </Text>
+                  <Text selectable style={styles.reviewCardReason}>{activeReview.reason}</Text>
+                  {activeReview.orderId ? (
+                    <Text selectable style={styles.reviewCardMeta}>ORDER {activeReview.orderId}</Text>
+                  ) : null}
+                </View>
+
+                {activeReview.status === 'needs_item_cost' ? (
+                  <View style={styles.reviewResolutionSection}>
+                    <Text style={styles.reviewResolutionTitle}>ACTUAL COST NEEDED</Text>
+                    <Text style={styles.reviewResolutionBody}>
+                      The sale is already in Books. Open the linked item and use Max Profit → Punch in numbers to add its actual COGS without guessing.
+                    </Text>
+                    {activeReview.itemId ? (
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() => openReviewItem(activeReview.itemId!)}
+                        style={({ pressed }) => [
+                          styles.reviewPrimaryButton,
+                          pressed && styles.reviewPressed,
+                        ]}>
+                        <Text style={styles.reviewPrimaryButtonText}>OPEN ITEM · ADD COGS</Text>
+                      </Pressable>
+                    ) : (
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() => {
+                          setReviewOpen(false);
+                          router.push('/inventory' as Href);
+                        }}
+                        style={({ pressed }) => [
+                          styles.reviewPrimaryButton,
+                          pressed && styles.reviewPressed,
+                        ]}>
+                        <Text style={styles.reviewPrimaryButtonText}>OPEN INVENTORY</Text>
+                      </Pressable>
+                    )}
+                  </View>
+                ) : activeReview.sourceType === 'sale' ? (
+                  <View style={styles.reviewResolutionSection}>
+                    <Text style={styles.reviewResolutionTitle}>MATCH THE SALE</Text>
+                    <Text style={styles.reviewResolutionBody}>
+                      Choose the exact KeepFlip item, confirm how many units sold, then KeepFlip will post the sale and move the right inventory quantity and cost.
+                    </Text>
+                    <TextInput
+                      autoCapitalize="none"
+                      onChangeText={setReviewItemSearch}
+                      placeholder="Search inventory by item, brand, model, or SKU"
+                      placeholderTextColor="rgba(247, 242, 232, 0.34)"
+                      style={styles.reviewSearchInput}
+                      value={reviewItemSearch}
+                    />
+                    <View style={styles.reviewInventoryList}>
+                      {filteredReviewInventory.map((item) => {
+                        const selected = item.id === selectedReviewItemId;
+                        return (
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityState={{ selected }}
+                            key={item.id}
+                            onPress={() => {
+                              hapticSelection();
+                              setSelectedReviewItemId(item.id);
+                            }}
+                            style={({ pressed }) => [
+                              styles.reviewInventoryRow,
+                              selected && styles.reviewInventoryRowSelected,
+                              pressed && styles.reviewPressed,
+                            ]}>
+                            <View style={styles.reviewInventoryCopy}>
+                              <Text numberOfLines={1} style={styles.reviewInventoryTitle}>{item.title}</Text>
+                              <Text numberOfLines={1} style={styles.reviewInventoryMeta}>
+                                {[
+                                  item.brand,
+                                  item.model,
+                                  item.sku ? `SKU ${item.sku}` : null,
+                                ].filter(Boolean).join(' · ') || 'Saved inventory item'}
+                              </Text>
+                            </View>
+                            <Text style={styles.reviewInventoryQty}>{item.quantityOnHand} ON HAND</Text>
+                          </Pressable>
+                        );
+                      })}
+                      {filteredReviewInventory.length === 0 ? (
+                        <Text style={styles.reviewEmptyText}>No matching in-stock inventory items.</Text>
+                      ) : null}
+                    </View>
+                    <View style={styles.reviewQuantityRow}>
+                      <View style={styles.reviewQuantityCopy}>
+                        <Text style={styles.reviewResolutionTitle}>QUANTITY SOLD</Text>
+                        <Text style={styles.reviewResolutionBody}>Usually 1. Change it for a multi-unit order.</Text>
+                      </View>
+                      <TextInput
+                        keyboardType="number-pad"
+                        onChangeText={setReviewQuantity}
+                        selectTextOnFocus
+                        style={styles.reviewQuantityInput}
+                        value={reviewQuantity}
+                      />
+                    </View>
+                    <Pressable
+                      accessibilityRole="button"
+                      disabled={reviewResolving || !selectedReviewItemId}
+                      onPress={() => void resolveActiveReview()}
+                      style={({ pressed }) => [
+                        styles.reviewPrimaryButton,
+                        pressed && styles.reviewPressed,
+                        (reviewResolving || !selectedReviewItemId) && styles.reviewDisabled,
+                      ]}>
+                      {reviewResolving ? (
+                        <ActivityIndicator color={theme.colors.backgroundDeep} size="small" />
+                      ) : null}
+                      <Text style={styles.reviewPrimaryButtonText}>
+                        {reviewResolving ? 'POSTING REVIEW...' : 'CONFIRM & POST SALE'}
+                      </Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <View style={styles.reviewResolutionSection}>
+                    <Text style={styles.reviewResolutionTitle}>MANUAL BOOKS CHECK</Text>
+                    <Text style={styles.reviewResolutionBody}>
+                      KeepFlip does not have enough structured information to safely auto-post this event. It stays visible here until the Books workflow can resolve it.
+                    </Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => {
+                        setReviewOpen(false);
+                        router.push('/books' as Href);
+                      }}
+                      style={({ pressed }) => [
+                        styles.reviewSecondaryButton,
+                        pressed && styles.reviewPressed,
+                      ]}>
+                      <Text style={styles.reviewSecondaryButtonText}>OPEN BOOKS</Text>
+                    </Pressable>
+                  </View>
+                )}
+              </ScrollView>
+            ) : reviewLoading && reviewItems.length === 0 ? (
+              <View style={styles.reviewLoadingState}>
+                <ActivityIndicator color={theme.colors.goldBright} />
+                <Text style={styles.reviewEmptyText}>Checking synced money records…</Text>
+              </View>
+            ) : reviewItems.length === 0 ? (
+              <View style={styles.reviewLoadingState}>
+                <Text style={styles.reviewClearTitle}>ALL CLEAR</Text>
+                <Text style={styles.reviewEmptyText}>No synced money records need review right now.</Text>
+              </View>
+            ) : (
+              <ScrollView
+                contentContainerStyle={styles.reviewQueueContent}
+                showsVerticalScrollIndicator={false}>
+                <Text style={styles.reviewQueueIntro}>
+                  These records were held instead of guessed. Tap one to see exactly what is missing and finish supported sale reviews here.
+                </Text>
+                {reviewItems.map((item) => (
+                  <Pressable
+                    accessibilityRole="button"
+                    key={item.id}
+                    onPress={() => chooseReview(item)}
+                    style={({ pressed }) => [
+                      styles.reviewQueueCard,
+                      pressed && styles.reviewPressed,
+                    ]}>
+                    <View style={styles.reviewCardTopline}>
+                      <Text style={styles.reviewCardStatus}>{reviewStatusLabel(item)}</Text>
+                      <Text selectable style={styles.reviewCardAmount}>{formatReviewMoney(item)}</Text>
+                    </View>
+                    <Text style={styles.reviewCardTitle}>
+                      {reviewTypeLabel(item.sourceType)} · {formatReviewDate(item.occurredAt)}
+                    </Text>
+                    <Text numberOfLines={2} style={styles.reviewCardReason}>{item.reason}</Text>
+                    <Text style={styles.reviewCardAction}>REVIEW →</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
     </KeepFlipBackground>
   );
 }
@@ -666,6 +1112,13 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(88, 223, 232, 0.23)',
     backgroundColor: 'rgba(6, 11, 14, 0.76)',
   },
+  reviewSurface: {
+    overflow: 'hidden',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(242, 211, 138, 0.34)',
+    backgroundColor: 'rgba(19, 14, 5, 0.76)',
+  },
   eBayLogo: {
     width: 25,
     height: 27,
@@ -681,4 +1134,264 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     textAlign: 'center',
   },
+  reviewModalBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.72)',
+  },
+  reviewModal: {
+    width: '100%',
+    maxWidth: 760,
+    maxHeight: '88%',
+    alignSelf: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: 'rgba(242, 211, 138, 0.28)',
+    backgroundColor: 'rgba(6, 5, 8, 0.99)',
+  },
+  reviewModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  reviewModalHeading: { flex: 1, gap: 2 },
+  reviewModalEyebrow: {
+    color: theme.colors.goldBright,
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 1.25,
+  },
+  reviewModalTitle: {
+    color: theme.colors.cream,
+    fontSize: 20,
+    lineHeight: 25,
+    fontWeight: '900',
+  },
+  reviewCloseButton: {
+    minHeight: 34,
+    justifyContent: 'center',
+    paddingHorizontal: 11,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(247, 242, 232, 0.22)',
+    borderRadius: 8,
+  },
+  reviewCloseText: {
+    color: theme.colors.textMuted,
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+  },
+  reviewQueueContent: { gap: 9, paddingBottom: 8 },
+  reviewQueueIntro: {
+    color: theme.colors.textMuted,
+    fontSize: 11,
+    lineHeight: 16,
+    paddingBottom: 2,
+  },
+  reviewQueueCard: {
+    gap: 5,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(242, 211, 138, 0.18)',
+    borderRadius: 10,
+    backgroundColor: 'rgba(242, 211, 138, 0.045)',
+  },
+  reviewDetailContent: { gap: 12, paddingBottom: 8 },
+  reviewDetailCard: {
+    gap: 5,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(88, 223, 232, 0.18)',
+    borderRadius: 10,
+    backgroundColor: 'rgba(88, 223, 232, 0.04)',
+  },
+  reviewCardTopline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  reviewCardStatus: {
+    color: theme.colors.goldBright,
+    fontSize: 7,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  reviewCardAmount: {
+    color: theme.colors.cream,
+    fontSize: 15,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+  },
+  reviewCardTitle: {
+    color: theme.colors.text,
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '800',
+  },
+  reviewCardReason: {
+    color: theme.colors.textMuted,
+    fontSize: 10,
+    lineHeight: 15,
+  },
+  reviewCardMeta: {
+    color: 'rgba(247, 242, 232, 0.48)',
+    fontSize: 7,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  reviewCardAction: {
+    color: theme.colors.scannerCyan,
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+    textAlign: 'right',
+  },
+  reviewResolutionSection: {
+    gap: 9,
+    padding: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(247, 242, 232, 0.15)',
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.025)',
+  },
+  reviewResolutionTitle: {
+    color: theme.colors.goldBright,
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 0.9,
+  },
+  reviewResolutionBody: {
+    color: theme.colors.textMuted,
+    fontSize: 10,
+    lineHeight: 15,
+  },
+  reviewSearchInput: {
+    minHeight: 40,
+    paddingHorizontal: 11,
+    borderWidth: 1,
+    borderColor: 'rgba(88, 223, 232, 0.20)',
+    borderRadius: 8,
+    color: theme.colors.cream,
+    backgroundColor: 'rgba(0, 0, 0, 0.24)',
+  },
+  reviewInventoryList: {
+    maxHeight: 240,
+    gap: 5,
+  },
+  reviewInventoryRow: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(247, 242, 232, 0.12)',
+    borderRadius: 8,
+  },
+  reviewInventoryRowSelected: {
+    borderColor: 'rgba(88, 223, 232, 0.62)',
+    backgroundColor: 'rgba(88, 223, 232, 0.08)',
+  },
+  reviewInventoryCopy: { flex: 1, minWidth: 0, gap: 2 },
+  reviewInventoryTitle: {
+    color: theme.colors.text,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  reviewInventoryMeta: {
+    color: theme.colors.textMuted,
+    fontSize: 8,
+    lineHeight: 11,
+  },
+  reviewInventoryQty: {
+    color: theme.colors.scannerCyan,
+    fontSize: 7,
+    fontWeight: '900',
+    letterSpacing: 0.4,
+  },
+  reviewQuantityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  reviewQuantityCopy: { flex: 1, gap: 2 },
+  reviewQuantityInput: {
+    width: 72,
+    minHeight: 40,
+    textAlign: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(242, 211, 138, 0.28)',
+    borderRadius: 8,
+    color: theme.colors.cream,
+    fontSize: 15,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+    backgroundColor: 'rgba(0, 0, 0, 0.24)',
+  },
+  reviewPrimaryButton: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    borderRadius: 9,
+    backgroundColor: theme.colors.goldBright,
+  },
+  reviewPrimaryButtonText: {
+    color: theme.colors.backgroundDeep,
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.85,
+  },
+  reviewSecondaryButton: {
+    minHeight: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(88, 223, 232, 0.34)',
+    borderRadius: 9,
+    backgroundColor: 'rgba(88, 223, 232, 0.06)',
+  },
+  reviewSecondaryButtonText: {
+    color: theme.colors.scannerCyan,
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.85,
+  },
+  reviewActionMessage: {
+    color: theme.colors.goldBright,
+    fontSize: 10,
+    lineHeight: 15,
+    paddingHorizontal: 2,
+  },
+  reviewLoadingState: {
+    minHeight: 150,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  reviewClearTitle: {
+    color: '#46F5A2',
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1.3,
+  },
+  reviewEmptyText: {
+    color: theme.colors.textMuted,
+    fontSize: 10,
+    lineHeight: 15,
+    textAlign: 'center',
+  },
+  reviewPressed: { opacity: 0.72 },
+  reviewDisabled: { opacity: 0.45 },
 });
