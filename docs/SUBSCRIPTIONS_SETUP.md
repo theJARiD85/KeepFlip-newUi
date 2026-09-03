@@ -144,7 +144,41 @@ The app now:
 - shows Plan & Billing on the Account screen;
 - can route users without access to plan selection before onboarding once enforcement is enabled.
 
-## 7. Rollout switch
+## 7. Subscription Police backend
+
+The server-side subscription authority now lives at:
+
+```text
+appwrite/functions/keepflip-subscription-police
+```
+
+Create an Appwrite Function with ID:
+
+```text
+keepflip_subscription_police
+```
+
+and configure the Git root directory to:
+
+```text
+appwrite/functions/keepflip-subscription-police
+```
+
+Use `src/main.js` as the entrypoint and `npm install` as the build command.
+
+The function receives RevenueCat webhooks, verifies webhook authentication/signatures, mirrors subscription state to `user_subscription`, and exposes authenticated `/status`, `/reconcile`, and `/access/check` routes.
+
+See `appwrite/functions/keepflip-subscription-police/README.md` for the exact environment variables, scopes, webhook configuration, and test sequence.
+
+The mobile app is configured to use:
+
+```text
+EXPO_PUBLIC_APPWRITE_SUBSCRIPTION_FUNCTION_ID=keepflip_subscription_police
+```
+
+and falls back to its read-only `user_subscription` row if the function is temporarily unavailable.
+
+## 8. Rollout switch
 
 Do not change:
 
