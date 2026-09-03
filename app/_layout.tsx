@@ -14,6 +14,10 @@ import {
 } from "react";
 import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Platform } from 'react-native';
+import * as Notifications from 'expo-notifications';
+import * as SecureStore from 'expo-secure-store';
+import * as Device from 'expo-device';
 import "react-native-reanimated";
 import {
   KeepFlipAuthProvider,
@@ -22,6 +26,7 @@ import {
 import {
   getAppwriteCoreServices,
 } from '@/lib/appwrite';
+import { ID } from 'react-native-appwrite';
 import { KeepFlipFeedbackNudgeProvider } from "@/components/feedback/keepflip-feedback-nudge";
 import KeepFlipIntro from "@/components/intro/keepflip-intro.native";
 import { keepFlipTheme } from "@/constants/keepflip-theme";
@@ -29,6 +34,17 @@ import { keepFlipTheme } from "@/constants/keepflip-theme";
 void SplashScreen
   .preventAutoHideAsync()
   .catch(() => undefined);
+
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+  
 
 function ProtectedRootStack() {
   const {
@@ -153,6 +169,119 @@ export default function RootLayout() {
     fontError,
     fontsLoaded,
   ]);
+
+  useEffect(() => {
+    const checkPushRegistration = async () => {
+      if (!Device.isDevice) {
+        return;
+      }
+  
+      try {
+        const { status } =
+          await Notifications.getPermissionsAsync();
+  
+        if (status !== 'granted') {
+          await registerForPushNotifications();
+          return;
+        }
+  
+        const savedToken =
+          await SecureStore.getItemAsync('devicePushToken');
+  
+        const currentToken = String(
+          (
+            await Notifications.getDevicePushTokenAsync()
+          ).data,
+        );
+  
+        if (!savedToken) {
+          console.log('No saved push token. Registering...');
+          await registerForPushNotifications();
+          return;
+        }
+  
+        if (savedToken !== currentToken) {
+          console.log(
+            'Device push token changed. Re-registering...',
+          );
+  
+          await registerForPushNotifications();
+          return;
+        }
+  
+        console.log(
+          'Push notifications already registered.',
+        );
+      } catch (error) {
+        console.error(
+          'Error checking push registration:',
+          error,
+        );
+      }
+    };
+  
+    void checkPushRegistration();
+  }, []);
+
+  async function registerForPushNotifications() {
+    if (!Device.isDevice) {
+      console.log('Must use physical device for Push Notifications');
+      return;
+    }
+  
+    // Request permissions
+    const { status: existingStatus } =
+      await Notifications.getPermissionsAsync();
+  
+    let finalStatus = existingStatus;
+  
+    if (existingStatus !== 'granted') {
+      const { status } =
+        await Notifications.requestPermissionsAsync();
+  
+      finalStatus = status;
+    }
+  
+    if (finalStatus !== 'granted') {
+      console.log('Failed to get push token for push notification!');
+      return;
+    }
+  
+    try {
+      // Raw FCM token on Android / APNs token on iOS
+      const nativeToken = (
+        await Notifications.getDevicePushTokenAsync()
+      ).data;
+  
+      console.log(
+        'Native Device Token for Appwrite:',
+        nativeToken,
+      );
+  
+      const { account } = getAppwriteCoreServices();
+  
+      await account.createPushTarget({
+        targetId: ID.unique(),
+        identifier: String(nativeToken),
+        providerId: 'FCM',
+      });
+  
+      // Save locally AFTER Appwrite registration succeeds.
+      await SecureStore.setItemAsync(
+        'devicePushToken',
+        String(nativeToken),
+      );
+  
+      console.log(
+        'Successfully registered push target to Appwrite!',
+      );
+    } catch (error) {
+      console.error(
+        'Error setting up Appwrite Messaging target:',
+        error,
+      );
+    }
+  }
 
   const handleIntroComplete =
     useCallback(() => {

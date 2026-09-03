@@ -5,6 +5,7 @@ import {
   Realtime,
   Storage,
   TablesDB,
+  Messaging,
 } from 'react-native-appwrite';
 
 export {
@@ -284,6 +285,7 @@ export type AppwriteServices = {
   account: Account;
   storage: Storage;
   functions: Functions;
+  messaging: Messaging;
   configuration: AppwriteConfiguration;
 };
 
@@ -328,6 +330,7 @@ export function getAppwriteServices(): AppwriteServices {
     account: coreServices.account,
     storage: new Storage(coreServices.client),
     functions: new Functions(coreServices.client),
+    messaging: new Messaging(coreServices.client),
     configuration,
   };
   cachedSignature = signature;
@@ -369,6 +372,9 @@ function lazyService<T extends object>(resolve: () => T): T {
 
 export const functions = lazyService(
   () => getAppwriteServices().functions,
+);
+export const messaging = lazyService(
+  () => getAppwriteServices().messaging,
 );
 export const storage = lazyService(() => getAppwriteServices().storage);
 export const tablesDB = lazyService(

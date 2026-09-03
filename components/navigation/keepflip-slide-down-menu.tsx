@@ -186,7 +186,7 @@ export function KeepFlipSlideDownMenu() {
             pointerEvents={isMenuOpen ? 'auto' : 'none'}
             style={[
               styles.panel,
-              { height: panelHeight, paddingTop: insets.top + 14 },
+              { height: panelHeight, paddingTop: insets.top},
               panelStyle,
             ]}>
             <ScrollView
@@ -385,6 +385,7 @@ const styles = StyleSheet.create({
   panelContent: {
     flexGrow: 1,
     gap: 20,
+    top: 14,
     paddingHorizontal: 20,
     paddingBottom: 24,
   },
@@ -566,7 +567,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
   },
   systemStatus: {
-    marginTop: 'auto',
     minHeight: 54,
     flexDirection: 'row',
     alignItems: 'center',

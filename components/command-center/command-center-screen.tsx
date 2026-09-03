@@ -613,9 +613,9 @@ export function CommandCenterScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top + 34, paddingBottom: insets.bottom + 32 },
+          { paddingTop: insets.top, paddingBottom: insets.bottom + 32 },
         ]}
-        style={{ marginBottom: insets.bottom }}
+        style={{marginBottom: insets.bottom, marginTop: insets.top}}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}>
         <Animated.View entering={FadeInDown.duration(260)} style={styles.header}>

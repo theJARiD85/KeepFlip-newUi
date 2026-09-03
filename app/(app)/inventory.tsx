@@ -11,6 +11,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { InventoryCard } from "@/components/inventory/inventory-card";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -243,6 +244,7 @@ export default function InventoryScreen() {
             paddingTop: insets.top + 24,
           },
         ]}
+        style={[styles.list, {marginBottom: insets.bottom, marginTop: insets.top}]}
         data={feedRows}
         keyExtractor={(row) => row.id}
         ListHeaderComponent={
@@ -357,7 +359,6 @@ export default function InventoryScreen() {
           )
         }
         showsVerticalScrollIndicator={false}
-        style={styles.list}
       />
 
       <Modal
