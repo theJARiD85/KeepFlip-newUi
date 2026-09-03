@@ -80,6 +80,42 @@ export type EbayBookkeepingSyncResult = {
   transactionCount: number;
 };
 
+export type BookkeepingReviewStatus =
+  | 'needs_item_match'
+  | 'needs_item_cost'
+  | 'needs_review';
+
+export type BookkeepingReviewItem = {
+  id: string;
+  status: BookkeepingReviewStatus;
+  sourceType: string;
+  amountCents: number;
+  currency: string;
+  occurredAt: string;
+  itemId: string | null;
+  orderId: string | null;
+  payoutId: string | null;
+  externalKey: string;
+  reason: string;
+};
+
+export type BookkeepingReviewQueueResult = {
+  items: BookkeepingReviewItem[];
+  total: number;
+};
+
+export type ResolveBookkeepingReviewInput = {
+  reviewId: string;
+  itemId: string;
+  quantity?: number;
+};
+
+export type ResolveBookkeepingReviewResult = {
+  bookTransactionId: string;
+  needsItemCost: boolean;
+  status: 'posted' | 'needs_item_cost' | 'already_recorded';
+};
+
 type FunctionPayload = Record<string, unknown>;
 
 function bookkeepingFunctionId() {
@@ -123,8 +159,58 @@ function text(value: unknown, maximum = 255) {
     : '';
 }
 
+function reviewStatus(value: unknown): BookkeepingReviewStatus | null {
+  return value === 'needs_item_match' ||
+    value === 'needs_item_cost' ||
+    value === 'needs_review'
+    ? value
+    : null;
+}
+
+function reviewItem(value: unknown): BookkeepingReviewItem | null {
+  const raw = value && typeof value === 'object'
+    ? (value as FunctionPayload)
+    : {};
+  const id = text(raw.id, 64);
+  const status = reviewStatus(raw.status);
+  const sourceType = text(raw.sourceType, 60) || 'unknown';
+  const amountCents = Number(raw.amountCents);
+  const occurredAt = text(raw.occurredAt, 64);
+  const externalKey = text(raw.externalKey, 255);
+
+  if (
+    !id ||
+    !status ||
+    !Number.isSafeInteger(amountCents) ||
+    amountCents < 0 ||
+    !occurredAt ||
+    !externalKey
+  ) {
+    return null;
+  }
+
+  return {
+    amountCents,
+    currency: text(raw.currency, 8).toUpperCase() || 'USD',
+    externalKey,
+    id,
+    itemId: text(raw.itemId, 64) || null,
+    occurredAt,
+    orderId: text(raw.orderId, 180) || null,
+    payoutId: text(raw.payoutId, 180) || null,
+    reason: text(raw.reason, 500) || 'This synced eBay record needs a quick review before KeepFlip can finish posting it.',
+    sourceType,
+    status,
+  };
+}
+
 async function executeBookkeepingFunction(
-  xpath: '/record' | '/overview' | '/ebay/sync',
+  xpath:
+    | '/record'
+    | '/overview'
+    | '/ebay/sync'
+    | '/review/list'
+    | '/review/resolve',
   body: Record<string, unknown> = {},
 ) {
   return functions.createExecution({
@@ -235,6 +321,60 @@ export async function getBookkeepingOverview(): Promise<BookkeepingOverviewResul
   });
 
   return { moneyEvents, truncated: payload.truncated === true };
+}
+
+export async function getBookkeepingReviewQueue(): Promise<BookkeepingReviewQueueResult> {
+  const execution = await executeBookkeepingFunction('/review/list');
+  if (execution.responseStatusCode !== 200) {
+    throw functionError(
+      execution.responseBody,
+      'KeepFlip could not load the money review queue.',
+    );
+  }
+
+  const payload = parsePayload(execution.responseBody);
+  if (payload.ok !== true || !Array.isArray(payload.items)) {
+    throw new Error('The Books service returned an invalid review queue.');
+  }
+
+  const items = payload.items.flatMap((raw) => {
+    const item = reviewItem(raw);
+    return item ? [item] : [];
+  });
+
+  return {
+    items,
+    total: count(payload.total) || items.length,
+  };
+}
+
+export async function resolveBookkeepingReview(
+  input: ResolveBookkeepingReviewInput,
+): Promise<ResolveBookkeepingReviewResult> {
+  const execution = await executeBookkeepingFunction('/review/resolve', input);
+  if (execution.responseStatusCode !== 200) {
+    throw functionError(
+      execution.responseBody,
+      'KeepFlip could not finish that money review.',
+    );
+  }
+
+  const payload = parsePayload(execution.responseBody);
+  const bookTransactionId = text(payload.bookTransactionId, 64);
+  const status = text(payload.status, 40);
+  if (
+    payload.ok !== true ||
+    !bookTransactionId ||
+    !['posted', 'needs_item_cost', 'already_recorded'].includes(status)
+  ) {
+    throw new Error('The Books service did not confirm the reviewed sale.');
+  }
+
+  return {
+    bookTransactionId,
+    needsItemCost: payload.needsItemCost === true,
+    status: status as ResolveBookkeepingReviewResult['status'],
+  };
 }
 
 export async function syncEbayBookkeeping({
