@@ -74,13 +74,13 @@ function PlanCard({
           <Text style={styles.planEyebrow}>{definition.eyebrow}</Text>
           <Text style={styles.planName}>{definition.name}</Text>
         </View>
-        {definition.recommended ? (
-          <View style={styles.recommendedBadge}>
-            <Text style={styles.recommendedText}>RECOMMENDED</Text>
-          </View>
-        ) : isCurrent ? (
+        {isCurrent ? (
           <View style={styles.currentBadge}>
             <Text style={styles.currentText}>CURRENT</Text>
+          </View>
+        ) : definition.recommended ? (
+          <View style={styles.recommendedBadge}>
+            <Text style={styles.recommendedText}>RECOMMENDED</Text>
           </View>
         ) : null}
       </View>
@@ -372,17 +372,33 @@ export function KeepFlipSubscriptionScreen() {
 
         <View style={styles.accountActions}>
           {access?.active ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => void handleManage()}
-              style={({ pressed }) => [
-                styles.utilityButton,
-                pressed && styles.utilityButtonPressed,
-              ]}>
-              <Text style={styles.utilityButtonText}>
-                MANAGE SUBSCRIPTION
-              </Text>
-            </Pressable>
+            <>
+              <Pressable
+                accessibilityHint="Returns to KeepFlip with your active plan."
+                accessibilityRole="button"
+                onPress={() => {
+                  hapticSelection();
+                  router.replace('/');
+                }}
+                style={({ pressed }) => [
+                  styles.continueButton,
+                  pressed && styles.continueButtonPressed,
+                ]}>
+                <Text style={styles.continueButtonText}>CONTINUE TO KEEPFLIP</Text>
+              </Pressable>
+
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => void handleManage()}
+                style={({ pressed }) => [
+                  styles.utilityButton,
+                  pressed && styles.utilityButtonPressed,
+                ]}>
+                <Text style={styles.utilityButtonText}>
+                  MANAGE SUBSCRIPTION
+                </Text>
+              </Pressable>
+            </>
           ) : null}
 
           <Pressable
@@ -681,6 +697,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   accountActions: { gap: 8 },
+  continueButton: {
+    alignItems: 'center',
+    backgroundColor: theme.colors.scannerCyan,
+    borderRadius: 10,
+    justifyContent: 'center',
+    minHeight: 46,
+  },
+  continueButtonPressed: { opacity: 0.82 },
+  continueButtonText: {
+    color: theme.colors.backgroundDeep,
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 0.9,
+  },
   utilityButton: {
     alignItems: 'center',
     borderColor: 'rgba(215, 168, 74, 0.28)',
