@@ -1,5 +1,7 @@
+import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Pressable,
   StyleSheet,
   Text,
@@ -7,6 +9,7 @@ import {
   View,
 } from "react-native";
 
+import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import type { AnalysisValuation } from "@/components/scanner/analysis-visual-types";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import {
@@ -18,6 +21,10 @@ import {
   findBestRoiProjection,
   type ProfitProjection,
 } from "@/lib/reseller-profit-calculator";
+import {
+  loadInventoryProfitPlan,
+  saveInventoryProfitPlan,
+} from "@/services/inventory-profit-plan-service";
 
 type SmartProfitCalculatorProps = {
   initialCost?: number;
@@ -31,6 +38,10 @@ const POSITIVE_PROFIT = "#46F5A2";
 const BAR_COST = "rgba(247, 242, 232, 0.22)";
 const BAR_FEE = "rgba(232, 97, 88, 0.78)";
 const BAR_LOSS = "rgba(232, 97, 88, 0.94)";
+
+function firstParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
 
 function safeNumber(value: number | undefined) {
   return typeof value === "number" && Number.isFinite(value) && value > 0
@@ -67,6 +78,20 @@ function createDraft(
     packageWeightOz: "",
     customFeePercent: "",
     customFixedFee: "",
+  };
+}
+
+function draftFromInput(input: ProfitCalculatorInput): CalculatorDraft {
+  return {
+    targetSalePrice: inputValue(input.targetSalePrice),
+    buyerPaidShipping: inputValue(input.buyerPaidShipping),
+    costOfGoods: inputValue(input.costOfGoods),
+    outboundShipping: inputValue(input.outboundShipping),
+    prepAndRepair: inputValue(input.prepAndRepair),
+    returnReserve: inputValue(input.returnReserve),
+    packageWeightOz: inputValue(input.packageWeightOz),
+    customFeePercent: inputValue(input.customFeePercent),
+    customFixedFee: inputValue(input.customFixedFee),
   };
 }
 
@@ -215,19 +240,30 @@ function MarketBar({
 }
 
 /**
- * A local, estimate-only pricing planner. It never writes financial records or
- * invents a shipping quote: the reseller supplies the physical label cost.
+ * Item-aware resale planner. The projections remain estimates, while a saved
+ * inventory item can persist the user's exact inputs and post actual outlays
+ * into KeepFlip Books through Punch in numbers.
  */
 export function SmartProfitCalculator({
   initialCost,
   valuation,
 }: SmartProfitCalculatorProps) {
+  const params = useLocalSearchParams<{
+    itemId?: string | string[];
+  }>();
+  const itemId = firstParam(params.itemId);
+  const { user } = useKeepFlipAuth();
+  const userId = user?.$id;
   const [selectedMarketplace, setSelectedMarketplace] =
     useState<ProfitMarketplaceId>("ebay_standard");
   const [targetEdited, setTargetEdited] = useState(false);
   const [draft, setDraft] = useState<CalculatorDraft>(() =>
     createDraft(valuation, initialCost),
   );
+  const [loadingSavedPlan, setLoadingSavedPlan] = useState(Boolean(itemId));
+  const [savingNumbers, setSavingNumbers] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [saveWarnings, setSaveWarnings] = useState<string[]>([]);
 
   useEffect(() => {
     if (targetEdited) return;
@@ -236,6 +272,53 @@ export function SmartProfitCalculator({
       targetSalePrice: inputValue(valuation.median),
     }));
   }, [targetEdited, valuation.median]);
+
+  useEffect(() => {
+    if (!itemId || !userId) {
+      setLoadingSavedPlan(false);
+      return;
+    }
+
+    let active = true;
+    setLoadingSavedPlan(true);
+    setSaveMessage(null);
+    setSaveWarnings([]);
+
+    void loadInventoryProfitPlan({ itemId, ownerId: userId })
+      .then(({ acquisitionCost, plan }) => {
+        if (!active) return;
+
+        if (plan) {
+          setSelectedMarketplace(plan.marketplaceId);
+          setDraft(draftFromInput(plan.inputs));
+          setTargetEdited(plan.inputs.targetSalePrice > 0);
+          setSaveMessage("Saved Max Profit numbers loaded for this item.");
+          return;
+        }
+
+        if (acquisitionCost != null && acquisitionCost > 0) {
+          setDraft((current) => ({
+            ...current,
+            costOfGoods: inputValue(acquisitionCost),
+          }));
+        }
+      })
+      .catch((caught) => {
+        if (!active) return;
+        setSaveWarnings([
+          caught instanceof Error
+            ? caught.message
+            : "KeepFlip could not load the saved Max Profit numbers.",
+        ]);
+      })
+      .finally(() => {
+        if (active) setLoadingSavedPlan(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [itemId, userId]);
 
   const input = useMemo(() => numericInputFrom(draft), [draft]);
   const projections = useMemo(
@@ -258,7 +341,51 @@ export function SmartProfitCalculator({
 
   const updateField = (field: DraftField, next: string) => {
     if (field === "targetSalePrice") setTargetEdited(true);
+    setSaveMessage(null);
+    setSaveWarnings([]);
     setDraft((current) => ({ ...current, [field]: next }));
+  };
+
+  const chooseMarketplace = (marketplaceId: ProfitMarketplaceId) => {
+    setSelectedMarketplace(marketplaceId);
+    setSaveMessage(null);
+    setSaveWarnings([]);
+  };
+
+  const punchInNumbers = async () => {
+    if (!itemId || !userId || savingNumbers || loadingSavedPlan) return;
+
+    setSavingNumbers(true);
+    setSaveMessage(null);
+    setSaveWarnings([]);
+    try {
+      const saved = await saveInventoryProfitPlan({
+        inputs: input,
+        itemId,
+        marketplaceId: selectedMarketplace,
+        ownerId: userId,
+      });
+
+      setSelectedMarketplace(saved.plan.marketplaceId);
+      setDraft(draftFromInput(saved.plan.inputs));
+      setTargetEdited(saved.plan.inputs.targetSalePrice > 0);
+      setSaveMessage(
+        saved.recordedExpenseCount > 0
+          ? `Numbers saved · ${saved.recordedExpenseCount} Books ${
+              saved.recordedExpenseCount === 1 ? "entry" : "entries"
+            } recorded.`
+          : "Numbers saved to this inventory item.",
+      );
+      setSaveWarnings(saved.warnings);
+    } catch (caught) {
+      setSaveWarnings([
+        caught instanceof Error
+          ? caught.message
+          : "KeepFlip could not save these Max Profit numbers.",
+      ]);
+    } finally {
+      setSavingNumbers(false);
+    }
   };
 
   return (
@@ -293,7 +420,7 @@ export function SmartProfitCalculator({
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
                 key={marketplace.id}
-                onPress={() => setSelectedMarketplace(marketplace.id)}
+                onPress={() => chooseMarketplace(marketplace.id)}
                 style={({ pressed }) => [
                   styles.preset,
                   selected && styles.presetSelected,
@@ -378,6 +505,50 @@ export function SmartProfitCalculator({
       <Text selectable style={styles.shippingNote}>
         Package weight is here for your workflow. Enter the actual label cost—KeepFlip does not guess a shipping quote.
       </Text>
+
+      {itemId ? (
+        <View style={styles.persistSection}>
+          <Pressable
+            accessibilityHint="Saves these Max Profit values to the inventory item and records actual item costs in Books."
+            accessibilityRole="button"
+            disabled={!userId || loadingSavedPlan || savingNumbers}
+            onPress={() => {
+              void punchInNumbers();
+            }}
+            style={({ pressed }) => [
+              styles.persistButton,
+              pressed && styles.persistButtonPressed,
+              (!userId || loadingSavedPlan || savingNumbers) && styles.persistButtonDisabled,
+            ]}
+          >
+            {loadingSavedPlan || savingNumbers ? (
+              <ActivityIndicator color={theme.colors.backgroundDeep} size="small" />
+            ) : null}
+            <Text style={styles.persistButtonText}>
+              {loadingSavedPlan
+                ? "LOADING NUMBERS..."
+                : savingNumbers
+                  ? "PUNCHING IN..."
+                  : "PUNCH IN NUMBERS"}
+            </Text>
+          </Pressable>
+          <Text selectable style={styles.persistHint}>
+            Saves every input to this inventory item. Actual COGS, label cost, and prep / repair totals are also recorded in Books. Target price, buyer shipping, reserves, weight, and fee assumptions stay planning data until money actually moves.
+          </Text>
+          {saveMessage ? (
+            <Text selectable style={styles.persistSuccess}>{saveMessage}</Text>
+          ) : null}
+          {saveWarnings.map((warning, index) => (
+            <Text
+              key={`${warning}-${index}`}
+              selectable
+              style={styles.persistWarning}
+            >
+              {warning}
+            </Text>
+          ))}
+        </View>
+      ) : null}
 
       <View style={styles.selectedProjection}>
         <View style={styles.selectedProjectionHeader}>
@@ -568,6 +739,56 @@ const styles = StyleSheet.create({
     fontVariant: ["tabular-nums"],
   },
   shippingNote: { color: "rgba(255, 255, 255, 0.54)", fontFamily: theme.fonts.radar, fontSize: 8, lineHeight: 12 },
+  persistSection: {
+    gap: 7,
+    padding: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(70, 245, 162, 0.30)",
+    borderRadius: 4,
+    backgroundColor: "rgba(70, 245, 162, 0.045)",
+  },
+  persistButton: {
+    minHeight: 42,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingHorizontal: 14,
+    borderRadius: 4,
+    backgroundColor: POSITIVE_PROFIT,
+  },
+  persistButtonPressed: {
+    opacity: 0.78,
+    transform: [{ scale: 0.99 }],
+  },
+  persistButtonDisabled: { opacity: 0.5 },
+  persistButtonText: {
+    color: theme.colors.backgroundDeep,
+    fontFamily: theme.fonts.numbers,
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 1,
+  },
+  persistHint: {
+    color: "rgba(255, 255, 255, 0.58)",
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
+    lineHeight: 12,
+  },
+  persistSuccess: {
+    color: POSITIVE_PROFIT,
+    fontFamily: theme.fonts.numbers,
+    fontSize: 7,
+    fontWeight: "900",
+    lineHeight: 11,
+    letterSpacing: 0.3,
+  },
+  persistWarning: {
+    color: theme.colors.goldBright,
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
+    lineHeight: 12,
+  },
   selectedProjection: {
     gap: 10,
     padding: 11,
