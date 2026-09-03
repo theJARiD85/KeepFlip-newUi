@@ -105,7 +105,13 @@ Current KeepFlip pricing:
 
 Configure the seven-day free trial as a store introductory offer for eligible new subscribers. KeepFlip does not manufacture a client-side trial timer.
 
-## 4. Public mobile environment values
+## 4. Native app requirements
+
+KeepFlip includes `react-native-purchases` and the Android `com.android.vending.BILLING` permission.
+
+Real RevenueCat purchases require a rebuilt Expo development/production client after the native SDK is installed. Expo Go can preview subscription UI but cannot complete real store purchases.
+
+## 5. Public mobile environment values
 
 Development and production builds accept:
 
@@ -121,7 +127,7 @@ Only RevenueCat public SDK keys belong in the app. Never place a RevenueCat secr
 
 Leave subscription enforcement false until checkout and webhook synchronization have been tested.
 
-## 5. Current app behavior
+## 6. Current app behavior
 
 The app now:
 
@@ -138,7 +144,7 @@ The app now:
 - shows Plan & Billing on the Account screen;
 - can route users without access to plan selection before onboarding once enforcement is enabled.
 
-## 6. Rollout switch
+## 7. Rollout switch
 
 Do not change:
 
