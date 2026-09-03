@@ -13,6 +13,50 @@ import { APPWRITE, Query, tablesDB } from '@/lib/appwrite';
 export type KeepFlipPlanId = 'hobbyist' | 'serious' | 'power';
 export type KeepFlipBillingCadence = 'monthly' | 'annual';
 
+export type KeepFlipSubscriptionFeature =
+  | 'basic_books'
+  | 'automated_books'
+  | 'schedule_c_export'
+  | 'advanced_bookkeeping_analytics'
+  | 'multi_user';
+
+export type KeepFlipPlanLimits = {
+  activeListingsPerMonth: number | null;
+  aiValuationScansPerMonth: number | null;
+  features: ReadonlySet<KeepFlipSubscriptionFeature>;
+};
+
+export const KEEPFLIP_PLAN_LIMITS: Record<
+  KeepFlipPlanId,
+  KeepFlipPlanLimits
+> = {
+  hobbyist: {
+    activeListingsPerMonth: 50,
+    aiValuationScansPerMonth: 100,
+    features: new Set<KeepFlipSubscriptionFeature>(['basic_books']),
+  },
+  serious: {
+    activeListingsPerMonth: 250,
+    aiValuationScansPerMonth: null,
+    features: new Set<KeepFlipSubscriptionFeature>([
+      'basic_books',
+      'automated_books',
+      'schedule_c_export',
+    ]),
+  },
+  power: {
+    activeListingsPerMonth: null,
+    aiValuationScansPerMonth: null,
+    features: new Set<KeepFlipSubscriptionFeature>([
+      'basic_books',
+      'automated_books',
+      'schedule_c_export',
+      'advanced_bookkeeping_analytics',
+      'multi_user',
+    ]),
+  },
+};
+
 export type KeepFlipPlanDefinition = {
   id: KeepFlipPlanId;
   name: string;
@@ -199,6 +243,20 @@ export function areKeepFlipSubscriptionsConfigured() {
 
 export function areKeepFlipSubscriptionsEnforced() {
   return process.env.EXPO_PUBLIC_KEEPFLIP_SUBSCRIPTIONS_ENFORCED === 'true';
+}
+
+export function keepFlipPlanAllows(
+  plan: KeepFlipPlanId | null,
+  feature: KeepFlipSubscriptionFeature,
+) {
+  return plan ? KEEPFLIP_PLAN_LIMITS[plan].features.has(feature) : false;
+}
+
+export function keepFlipPlanLimit(
+  plan: KeepFlipPlanId | null,
+  limit: 'activeListingsPerMonth' | 'aiValuationScansPerMonth',
+) {
+  return plan ? KEEPFLIP_PLAN_LIMITS[plan][limit] : 0;
 }
 
 export function isKeepFlipSubscriptionTableConfigured() {
@@ -557,11 +615,7 @@ export async function purchaseKeepFlipPlan(
   if (Platform.OS === 'android') {
     const currentInfo = await Purchases.getCustomerInfo();
     const currentAccess = subscriptionAccessFromCustomerInfo(currentInfo);
-    if (
-      currentAccess.active &&
-      currentAccess.productId &&
-      currentAccess.productId !== selectedPackage.product.identifier
-    ) {
+    if (currentAccess.active && currentAccess.productId) {
       const rank: Record<KeepFlipPlanId, number> = {
         hobbyist: 1,
         serious: 2,
