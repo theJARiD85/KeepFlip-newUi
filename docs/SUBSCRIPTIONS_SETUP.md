@@ -99,9 +99,9 @@ Current KeepFlip pricing:
 
 | Plan | Monthly | Annual |
 | --- | ---: | ---: |
-| Part-Time Hobbyist | $24.99 | $239.88 |
-| Serious Reseller | $44.99 | — |
-| Power Seller | $89.99 | — |
+| Part-Time Hobbyist | $25 | $250 |
+| Serious Reseller | $45 | — |
+| Power Seller | $100 | — |
 
 Configure the seven-day free trial as a store introductory offer for eligible new subscribers. KeepFlip does not manufacture a client-side trial timer.
 
