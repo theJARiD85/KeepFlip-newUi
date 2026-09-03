@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { useKeepFlipFeedbackNudge } from '@/components/feedback/keepflip-feedback-nudge';
+import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
 import { EbayShoppingBagIcon } from '@/components/ebay/ebay-shopping-bag-icon';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipControlRow } from '@/components/ui/keepflip-control-row';
@@ -24,6 +25,7 @@ import {
   getEbayConnectionStatus,
   type EbayConnectionStatusResult,
 } from '@/services/ebayConnectionService';
+import { KEEPFLIP_PLAN_DEFINITIONS } from '@/services/keepflip-subscription-service';
 
 function formattedMemberDate(value: string) {
   const date = new Date(value);
@@ -45,6 +47,11 @@ export default function AccountScreen() {
   const insets = useSafeAreaInsets();
   const { isBusy, signOut, user } = useKeepFlipAuth();
   const { openFeedbackEmail, openStoreReview } = useKeepFlipFeedbackNudge();
+  const {
+    errorMessage: subscriptionError,
+    snapshot: subscriptionSnapshot,
+    state: subscriptionState,
+  } = useKeepFlipSubscription();
   const [signOutError, setSignOutError] = useState<string | null>(null);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
   const [ebayConnection, setEbayConnection] =
@@ -108,6 +115,37 @@ export default function AccountScreen() {
           : 'Connect eBay for authorized sourcing and messaging features.';
 
   const newEbayDestination = ebayConnection?.connected ? '/ebay-account' : '/ebay-connect';
+
+  const subscriptionAccess = subscriptionSnapshot?.access ?? null;
+  const subscriptionPlan = KEEPFLIP_PLAN_DEFINITIONS.find(
+    (plan) => plan.id === subscriptionAccess?.plan,
+  );
+
+  const subscriptionDescription =
+    subscriptionState === 'loading'
+      ? 'Checking your current KeepFlip plan and store access.'
+      : subscriptionState === 'unconfigured'
+        ? 'Plan checkout is ready for RevenueCat store configuration.'
+        : subscriptionState === 'error'
+          ? subscriptionError || 'Subscription status is unavailable right now.'
+          : subscriptionAccess?.isTrial
+            ? `${subscriptionPlan?.name ?? 'KeepFlip plan'} · 7-day free trial active.`
+            : subscriptionAccess?.active
+              ? `${subscriptionPlan?.name ?? 'KeepFlip plan'} is active on this account.`
+              : 'Choose Hobbyist, Serious Reseller, or Power Seller and start with 7 days free.';
+
+  const subscriptionStatus =
+    subscriptionState === 'error'
+      ? { label: 'CHECK', tone: 'danger' as const }
+      : subscriptionAccess?.billingIssue
+        ? { label: 'BILLING', tone: 'warning' as const }
+        : subscriptionAccess?.isTrial
+          ? { label: 'TRIAL', tone: 'violet' as const }
+          : subscriptionAccess?.active
+            ? { label: 'ACTIVE', tone: 'active' as const }
+            : subscriptionState === 'unconfigured'
+              ? { label: 'SETUP', tone: 'muted' as const }
+              : { label: 'NO PLAN', tone: 'muted' as const };
 
   const ebayStatus = ebayConnectionError
     ? { label: 'CHECK', tone: 'danger' as const }
@@ -244,6 +282,29 @@ export default function AccountScreen() {
 
         <Animated.View entering={FadeInDown.duration(260).delay(120)} style={styles.section}>
           <View style={styles.sectionHeading}>
+            <Text style={styles.sectionEyebrow}>PLAN & BILLING</Text>
+            <Text style={styles.sectionTitle}>KeepFlip subscription</Text>
+          </View>
+          <View style={styles.settingsList}>
+            <KeepFlipControlRow
+              accent="cyan"
+              accessibilityHint="Opens KeepFlip plans, billing, restore purchases, and subscription management."
+              actionBusy={subscriptionState === 'loading'}
+              actionLabel={subscriptionAccess?.active ? 'MANAGE' : 'VIEW PLANS'}
+              description={subscriptionDescription}
+              icon="creditcard.fill"
+              label={subscriptionPlan?.name ?? 'KeepFlip plan'}
+              onPress={() => {
+                hapticSelection();
+                router.push('/subscription' as Href);
+              }}
+              status={subscriptionState === 'loading' ? undefined : subscriptionStatus}
+            />
+          </View>
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.duration(260).delay(145)} style={styles.section}>
+          <View style={styles.sectionHeading}>
             <Text style={styles.sectionEyebrow}>CONNECTED SERVICES</Text>
             <Text style={styles.sectionTitle}>Marketplace access</Text>
           </View>
@@ -265,7 +326,7 @@ export default function AccountScreen() {
           </View>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.duration(260).delay(150)} style={styles.section}>
+        <Animated.View entering={FadeInDown.duration(260).delay(170)} style={styles.section}>
           <View style={styles.sectionHeading}>
             <Text style={styles.sectionEyebrow}>LEGAL & POLICY</Text>
             <Text style={styles.sectionTitle}>Your data and terms</Text>
@@ -295,7 +356,7 @@ export default function AccountScreen() {
           </View>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.duration(260).delay(180)} style={styles.section}>
+        <Animated.View entering={FadeInDown.duration(260).delay(195)} style={styles.section}>
           <View style={styles.sectionHeading}>
             <Text style={styles.sectionEyebrow}>SUPPORT</Text>
             <Text style={styles.sectionTitle}>Feedback & reviews</Text>
