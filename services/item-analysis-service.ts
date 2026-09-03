@@ -13,6 +13,7 @@ import {
   getAppwriteCoreServices,
 } from "@/lib/appwrite";
 import {
+  isSerpApiImageValuationProgress,
   runSerpApiImageValuation,
   type EbaySoldCompsResult,
   type SerpApiImageValuationResult,
@@ -507,6 +508,65 @@ function marketIdentityContext(
     .trim();
 }
 
+async function runMarketValuationForPhotos({
+  bucketId,
+  fileIds,
+  identityContext,
+  resellerBuyRules,
+  signal,
+}: {
+  bucketId: string;
+  fileIds: string[];
+  identityContext: string;
+  resellerBuyRules: Awaited<ReturnType<typeof getResellerBuyRules>>;
+  signal?: AbortSignal;
+}): Promise<SerpApiImageValuationResult> {
+  const photoCount = fileIds.length;
+  const firstPhotoSequence = photoCount > 1
+    ? { photoNumber: 1, photoCount }
+    : undefined;
+
+  throwIfAborted(signal);
+  let current = await runSerpApiImageValuation({
+    bucketId,
+    fileId: fileIds[0],
+    ...(identityContext ? { identityContext } : {}),
+    ...(resellerBuyRules ? { resellerBuyRules } : {}),
+    ...(firstPhotoSequence ? { photoSequence: firstPhotoSequence } : {}),
+  });
+
+  for (let index = 1; index < photoCount; index += 1) {
+    throwIfAborted(signal);
+    const subsequentRequestToken =
+      current.aiModeConversation?.subsequentRequestToken;
+    if (!subsequentRequestToken) {
+      throw new Error(
+        `KeepFlip AI could not continue the multi-photo analysis after photo ${index} of ${photoCount}.`,
+      );
+    }
+
+    current = await runSerpApiImageValuation({
+      bucketId,
+      fileId: fileIds[index],
+      ...(resellerBuyRules ? { resellerBuyRules } : {}),
+      subsequentRequestToken,
+      hasRefinementImage: true,
+      photoSequence: {
+        photoNumber: index + 1,
+        photoCount,
+      },
+    });
+  }
+
+  if (isSerpApiImageValuationProgress(current)) {
+    throw new Error(
+      "KeepFlip AI did not return the final multi-photo valuation. Try the analysis again.",
+    );
+  }
+
+  return current;
+}
+
 
 function analysisResultFromSerpApi(
   market: SerpApiImageValuationResult,
@@ -524,6 +584,10 @@ function analysisResultFromSerpApi(
   )
     ? multiPhotoIdentification
     : null;
+  const multiPhotoMarketPassCompleted =
+    imageCount > 1 && market.photoSequence?.status === "complete";
+  const multiPhotoAnalysisCompleted =
+    imageCount > 1 && (multiPhotoPassCompleted || multiPhotoMarketPassCompleted);
   const fusedTitle =
     marketDisplayName ??
     meaningfulIdentificationTitle(fusedIdentification?.title);
@@ -596,8 +660,12 @@ function analysisResultFromSerpApi(
     ...displayIdentity.candidateModels.map(
       (candidate) => `Possible model: ${candidate}`,
     ),
-    multiPhotoPassCompleted && imageCount > 1
-      ? `KeepFlip combined ${imageCount} captured views before market research.`
+    multiPhotoPassCompleted && multiPhotoMarketPassCompleted
+      ? `KeepFlip combined all ${imageCount} captured views through visual identification and market analysis.`
+      : multiPhotoMarketPassCompleted
+        ? `KeepFlip combined all ${imageCount} captured views in the sequential AI Mode market analysis; the separate visual identifier was unavailable.`
+        : multiPhotoPassCompleted && imageCount > 1
+          ? `KeepFlip's separate multi-photo visual identifier combined ${imageCount} views, but the market estimate used only the primary view.`
       : imageCount > 1
         ? "KeepFlip's multi-photo identifier was unavailable, so the market estimate used the primary view."
         : null,
@@ -608,7 +676,7 @@ function analysisResultFromSerpApi(
   const automaticEvidence = evidenceFromMultiPhotoIdentification(
     fusedIdentification,
   );
-  const analyzedImageCount = multiPhotoPassCompleted ? imageCount : 1;
+  const analyzedImageCount = imageCount <= 1 || multiPhotoAnalysisCompleted ? imageCount : 1;
   const verifiedQuality = verifiedSoldComps?.valuation ?? null;
   const verifiedSoldComparableEntries = verifiedSoldComps?.comps.map(
     (comp) => ({
@@ -634,7 +702,7 @@ function analysisResultFromSerpApi(
     ok: true,
     contractVersion: ITEM_ANALYSIS_CONTRACT_VERSION,
     version: `${ITEM_ANALYSIS_VERSION}-${
-      multiPhotoPassCompleted ? "evidence-fusion" : "serpapi-single-function"
+      multiPhotoAnalysisCompleted ? "evidence-fusion" : "serpapi-single-function"
     }`,
     status,
     input: {
@@ -692,7 +760,7 @@ function analysisResultFromSerpApi(
         category: displayIdentity.category ?? fusedIdentification?.category ?? null,
         conditionAdjustment:
           conditionSummary ||
-          (multiPhotoPassCompleted
+          (multiPhotoAnalysisCompleted
             ? "KeepFlip combined visible condition evidence across the captured views."
             : "Only the visible condition returned by KeepFlip AI was used."),
         positiveFactors: market.factors,
@@ -702,7 +770,7 @@ function analysisResultFromSerpApi(
     vision: {
       enabled: true,
       succeeded:
-        multiPhotoPassCompleted ||
+        multiPhotoAnalysisCompleted ||
         (status === "identified" && Boolean(marketDisplayName)),
       images: Array.from({ length: analyzedImageCount }, (_, imageIndex) => ({
         imageIndex,
@@ -907,11 +975,12 @@ export async function analyzeItemPhotos(
     try {
       const resellerBuyRules = await resellerBuyRulesPromise;
       throwIfAborted(options.signal);
-      market = await runSerpApiImageValuation({
+      market = await runMarketValuationForPhotos({
         bucketId: APPWRITE.itemImagesBucketId,
-        fileId: uploadedFileIds[0],
+        fileIds: uploadedFileIds,
         identityContext: marketIdentityContext(multiPhotoIdentification),
-        ...(resellerBuyRules ? { resellerBuyRules } : {}),
+        resellerBuyRules,
+        signal: options.signal,
       });
     } catch (error) {
       throw new ItemAnalysisError(
@@ -1069,6 +1138,11 @@ export async function refineItemAnalysis({
         ...(subsequentRequestToken ? { subsequentRequestToken } : {}),
         ...(cleanPhotoFileId ? { hasRefinementImage: true } : {}),
       });
+      if (isSerpApiImageValuationProgress(market)) {
+        throw new Error(
+          "KeepFlip received an incomplete multi-photo response while refining this valuation.",
+        );
+      }
       // Keep refinements on the KeepFlip AI path; do not trigger a direct
       // SerpApi eBay search after an image valuation.
       const verifiedSoldComps = null;

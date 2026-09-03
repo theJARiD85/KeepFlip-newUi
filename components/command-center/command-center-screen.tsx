@@ -397,6 +397,7 @@ export function CommandCenterScreen() {
           styles.content,
           { paddingTop: insets.top + 34, paddingBottom: insets.bottom + 32 },
         ]}
+        style={{marginBottom: insets.bottom}}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}>
         <Animated.View entering={FadeInDown.duration(260)} style={styles.header}>

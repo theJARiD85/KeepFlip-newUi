@@ -26,6 +26,21 @@ function formatMoney(value: number | null, currency: string) {
   }
 }
 
+function formatCost(value: number | null, currency: string) {
+  if (value == null) return "—";
+
+  try {
+    return new Intl.NumberFormat("en-US", {
+      currency,
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 2,
+      style: "currency",
+    }).format(value);
+  } catch {
+    return "$" + value.toFixed(2);
+  }
+}
+
 function formatDate(value: string) {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return "RECENT SCAN";
@@ -77,6 +92,7 @@ export function InventoryCard({
   const hasValuation = item.estimatedValue != null;
   const flipDecision = displaySignal(item.flipDecision ?? item.flipVerdict);
   const resaleVelocity = displaySignal(item.resaleVelocity);
+  const costBasis = item.acquisitionCost ?? item.inventoryCostOnHand;
 
   useEffect(() => {
     let active = true;
@@ -230,6 +246,32 @@ export function InventoryCard({
             {item.aiConfidence == null ? "—" : `${item.aiConfidence}%`}
           </Text>
           <Text style={styles.confidenceLabel}>CONFIDENCE</Text>
+        </View>
+      </View>
+      <View style={styles.recordStrip}>
+        <View style={styles.recordMetric}>
+          <Text style={styles.recordLabel}>COGS / ACTUAL PAID</Text>
+          <Text numberOfLines={1} style={styles.recordValue}>
+            {formatCost(costBasis, item.currency)}
+          </Text>
+        </View>
+        <View style={styles.recordMetric}>
+          <Text style={styles.recordLabel}>ON HAND</Text>
+          <Text numberOfLines={1} style={styles.recordValue}>
+            {item.quantityOnHand.toLocaleString()}
+          </Text>
+        </View>
+        <View style={styles.recordMetricStorage}>
+          <Text style={styles.recordLabel}>STORAGE</Text>
+          <Text
+            numberOfLines={1}
+            style={[
+              styles.recordValue,
+              !item.storageLocation && styles.recordValueMuted,
+            ]}
+          >
+            {item.storageLocation ?? "NOT SET"}
+          </Text>
         </View>
       </View>
       </Pressable>
@@ -540,6 +582,43 @@ const styles = StyleSheet.create({
     fontSize: 7,
     fontWeight: "900",
     letterSpacing: 0.65,
+  },
+  recordStrip: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(88, 223, 232, 0.20)",
+    backgroundColor: "rgba(0, 255, 255, 0.035)",
+  },
+  recordMetric: {
+    flex: 0.78,
+    minWidth: 0,
+    gap: 3,
+  },
+  recordMetricStorage: {
+    flex: 1.2,
+    minWidth: 0,
+    gap: 3,
+  },
+  recordLabel: {
+    color: "rgba(88, 223, 232, 0.62)",
+    fontFamily: theme.fonts.radar,
+    fontSize: 7,
+    fontWeight: "900",
+    letterSpacing: 0.65,
+  },
+  recordValue: {
+    color: theme.colors.cream,
+    fontFamily: theme.fonts.radar,
+    fontSize: 11,
+    fontWeight: "900",
+    fontVariant: ["tabular-nums"],
+  },
+  recordValueMuted: {
+    color: "rgba(255, 255, 255, 0.38)",
   },
   listingGuideButton: {
     position: "relative",

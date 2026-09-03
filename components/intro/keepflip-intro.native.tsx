@@ -27,6 +27,7 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Camera,
   DefaultLight,
@@ -1095,6 +1096,7 @@ export default function KeepFlipIntro({
   startupReady,
   onComplete,
 }: KeepFlipIntroProps): React.JSX.Element {
+  const insets = useSafeAreaInsets();
   const {
     height,
     width,
@@ -1473,6 +1475,7 @@ export default function KeepFlipIntro({
         {
           opacity:
             containerOpacity,
+            marginBottom: insets.bottom
         },
       ]}
     >
@@ -1736,8 +1739,7 @@ const styles =
 
     bottomBrand: {
       position: "absolute",
-      bottom: 88,
-
+      bottom: 55,
       alignItems: "center",
       gap: 10,
     },

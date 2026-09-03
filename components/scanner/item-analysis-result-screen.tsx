@@ -37,6 +37,7 @@ import { createInventoryMediaFollowUp } from "@/services/inventory-follow-up-ser
 import {
   getInventoryItem,
   saveAnalyzedItemToInventory,
+  type InventoryItem,
 } from "@/services/inventory-service";
 import { applyResellerBuyRulesToAnalysis } from "@/services/reseller-buy-rules-service";
 import { getResellerBuyRules } from "@/services/user-profile-onboarding-service";
@@ -70,6 +71,7 @@ export function ItemAnalysisResultScreen() {
   const [savedState, setSavedState] = useState<ReturnType<
     typeof inventoryItemToAnalysisState
   > | null>(null);
+  const [savedItem, setSavedItem] = useState<InventoryItem | null>(null);
   const [loading, setLoading] = useState(Boolean(itemId));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -100,6 +102,7 @@ export function ItemAnalysisResultScreen() {
             ? applyResellerBuyRulesToAnalysis(item.analysisSnapshot, buyRules)
             : item.analysisSnapshot ?? null;
         if (!active) return;
+        setSavedItem(item);
         setSavedState(inventoryItemToAnalysisState(item, analysis));
       } catch (caught) {
         if (!active) return;
@@ -451,6 +454,7 @@ export function ItemAnalysisResultScreen() {
             itemId && !scannerSession ? openSavedListingWorkspace : undefined
           }
           onReportIncorrectIdentification={handleReportIncorrectIdentification}
+          inventoryItem={scannerSession || savedItem?.id !== itemId ? undefined : savedItem ?? undefined}
           onSave={
             scannerSession
               ? () => {

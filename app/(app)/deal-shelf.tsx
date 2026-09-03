@@ -12,6 +12,10 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
+import {
+  AddToInventoryForm,
+  type AddToInventoryFormValues,
+} from "@/components/scanner/add-to-inventory-form";
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
@@ -23,8 +27,21 @@ import {
   type DealShelfItem,
 } from "@/services/deal-shelf-service";
 import { resolveInventoryCoverImageUri } from "@/services/inventory-cover-image";
+import { createInventoryMediaFollowUp } from "@/services/inventory-follow-up-service";
 import { saveAnalyzedItemToInventory } from "@/services/inventory-service";
 import { neutralizeMarketplaceBrand } from "@/services/market-copy";
+import {
+  centsFromLedgerAmount,
+  createManualLedgerEntry,
+  deleteLedgerReceipt,
+  isResellerBooksConfigured,
+  parseLedgerDate,
+  uploadLedgerReceipt,
+} from "@/services/reseller-ledger-service";
+import {
+  isResellerBookkeepingConfigured,
+  recordBookkeepingEvent,
+} from "@/services/reseller-bookkeeping-service";
 
 function formatMoney(value: number | null, currency: string) {
   if (value == null || !Number.isFinite(value)) return null;
@@ -232,6 +249,7 @@ export default function DealShelfScreen() {
   const [deals, setDeals] = useState<DealShelfItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [promotingId, setPromotingId] = useState<string | null>(null);
+  const [promotingDeal, setPromotingDeal] = useState<DealShelfItem | null>(null);
 
   const loadDeals = useCallback(async () => {
     if (!userId) {
@@ -273,34 +291,183 @@ export default function DealShelfScreen() {
   }, [deals]);
 
   const handlePromote = useCallback(
-    async (deal: DealShelfItem) => {
-      if (!userId || promotingId) return;
+    (deal: DealShelfItem) => {
+      if (!userId || promotingId || promotingDeal) return;
+      if (!isResellerBooksConfigured() && !isResellerBookkeepingConfigured()) {
+        Alert.alert(
+          "Books setup needed",
+          "Finish setting up Books before saving a purchase.",
+        );
+        return;
+      }
+      setPromotingDeal(deal);
+    },
+    [promotingDeal, promotingId, userId],
+  );
+
+  const handlePromoteWithDetails = useCallback(
+    async (values: AddToInventoryFormValues) => {
+      const deal = promotingDeal;
+      if (!deal || !userId || promotingId) return;
+
+      const amountCents = centsFromLedgerAmount(values.acquisitionCost);
+      if (!amountCents) {
+        Alert.alert(
+          "Actual cost required",
+          "Enter what you actually paid, from $0.01 to $10,000,000.00.",
+        );
+        return;
+      }
+
+      const quantity = Number(values.quantity);
+      if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 100_000) {
+        Alert.alert(
+          "Check quantity",
+          "Enter a whole number from 1 through 100,000.",
+        );
+        return;
+      }
+
+      const occurredAt = parseLedgerDate(values.acquiredAt);
+      if (!occurredAt) {
+        Alert.alert(
+          "Check the date",
+          "Use a real acquisition date in YYYY-MM-DD format.",
+        );
+        return;
+      }
+
       setPromotingId(deal.id);
+      let savedItemId: string | null = null;
+      let uploadedReceiptFileId: string | null = null;
+      let receiptLinked = false;
+
       try {
+        if (values.receiptReference.trim()) {
+          uploadedReceiptFileId = await uploadLedgerReceipt({
+            imageUri: values.receiptReference,
+            ownerId: userId,
+          });
+        }
+
         const saved = await saveAnalyzedItemToInventory({
+          acquiredAt: occurredAt,
+          acquisitionCost: amountCents / 100,
           analysis: deal.analysis,
+          itemSpecifics: values.itemSpecifics,
           modelFile: deal.modelFile,
           ownerId: userId,
+          purchaseNotes: values.notes,
+          purchaseSource: values.source,
+          quantity,
+          receiptFileId: uploadedReceiptFileId,
           scanId: deal.scanId,
+          sku: values.sku,
+          storageLocation: values.location,
         });
+
+        savedItemId = saved.item.id;
+        receiptLinked = true;
+
+        await createInventoryMediaFollowUp({
+          item: saved.item,
+          ownerId: userId,
+        }).catch(() => undefined);
+
+        const purchaseDetails = [
+          "Quantity: " + quantity,
+          values.source.trim()
+            ? "Purchase source: " + values.source.trim()
+            : null,
+          values.sku.trim() ? "SKU / tag: " + values.sku.trim() : null,
+          values.location.trim()
+            ? "Storage location: " + values.location.trim()
+            : null,
+          values.itemSpecifics.trim() ? "Extra item details saved" : null,
+          uploadedReceiptFileId ? "Receipt photo attached" : null,
+          values.notes.trim() ? values.notes.trim() : null,
+        ].filter((value): value is string => Boolean(value));
+
+        let booksWarning: string | null = null;
+        try {
+          if (isResellerBookkeepingConfigured()) {
+            await recordBookkeepingEvent({
+              amountCents,
+              eventType: "inventory_purchase",
+              idempotencyKey: "inventory-purchase:" + saved.item.id,
+              itemId: saved.item.id,
+              notes:
+                purchaseDetails.length > 0
+                  ? purchaseDetails.join(" | ")
+                  : null,
+              occurredAt,
+              summary: "Inventory purchase",
+            });
+          } else {
+            await createManualLedgerEntry({
+              amountCents,
+              channel: values.source.trim() || null,
+              entryType: "inventory_purchase",
+              itemId: saved.item.id,
+              notes:
+                purchaseDetails.length > 0
+                  ? purchaseDetails.join(" | ")
+                  : null,
+              occurredAt,
+              ownerId: userId,
+              receiptFileId: uploadedReceiptFileId,
+            });
+          }
+        } catch (caught) {
+          booksWarning =
+            caught instanceof Error
+              ? neutralizeMarketplaceBrand(caught.message)
+              : "The item was saved, but the Books purchase entry needs attention.";
+        }
+
         await markDealShelfPromoted({
           dealId: deal.id,
           itemId: saved.item.id,
           ownerId: userId,
         });
+        setPromotingDeal(null);
         router.replace("/inventory");
+
+        const saveWarning = [saved.photoWarning, booksWarning]
+          .filter((value): value is string => Boolean(value))
+          .join(" ");
+        if (saveWarning) {
+          Alert.alert(
+            booksWarning ? "Item added; Books needs attention" : "Item added",
+            saveWarning,
+          );
+        }
       } catch (caught) {
-        Alert.alert(
-          "Could not add to inventory",
-          caught instanceof Error
-            ? neutralizeMarketplaceBrand(caught.message)
-            : "KeepFlip could not move this deal into inventory.",
-        );
+        if (uploadedReceiptFileId && !receiptLinked) {
+          await deleteLedgerReceipt(uploadedReceiptFileId);
+        }
+
+        if (savedItemId) {
+          setPromotingDeal(null);
+          router.replace("/inventory");
+          Alert.alert(
+            "Item added; Deal Shelf needs attention",
+            "The item was saved to inventory, but KeepFlip could not finish moving this deal out of the shelf." +
+              (caught instanceof Error ? " " + caught.message : ""),
+          );
+        } else {
+          Alert.alert(
+            "Could not record purchase",
+            caught instanceof Error
+              ? neutralizeMarketplaceBrand(caught.message)
+              : "KeepFlip could not save the inventory and Books records.",
+          );
+        }
       } finally {
         setPromotingId(null);
       }
     },
-    [promotingId, router, userId],
+    [promotingDeal, promotingId, router, userId],
   );
 
   const handleRemove = useCallback(
@@ -384,12 +551,23 @@ export default function DealShelfScreen() {
                 deal={item}
                 onPromote={handlePromote}
                 onRemove={handleRemove}
-                promoting={promotingId === item.id}
+                promoting={
+                  promotingId === item.id || promotingDeal?.id === item.id
+                }
               />
             )}
             showsVerticalScrollIndicator={false}
           />
         )}
+
+        <AddToInventoryForm
+          key={promotingDeal?.id ?? "closed"}
+          itemTitle={promotingDeal?.title ?? "Saved deal"}
+          onCancel={() => setPromotingDeal(null)}
+          onSubmit={handlePromoteWithDetails}
+          submitting={Boolean(promotingId)}
+          visible={Boolean(promotingDeal)}
+        />
       </View>
     </KeepFlipBackground>
   );

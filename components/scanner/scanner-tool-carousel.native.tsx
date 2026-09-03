@@ -49,14 +49,6 @@ type ScannerTool = {
 
 export const scannerTools: ScannerTool[] = [
   {
-    id: "single",
-    label: "Single scan",
-    icon: "viewfinder",
-    accent: theme.colors.goldBright,
-    surface: "rgba(242, 211, 138, 0.15)",
-    glow: "rgba(242, 211, 138, 0.5)",
-  },
-  {
     id: "barcode",
     label: "Barcode scanner",
     icon: "barcode.viewfinder",
@@ -67,26 +59,26 @@ export const scannerTools: ScannerTool[] = [
   {
     id: "multi",
     label: "Multi-scan",
-    icon: "rectangle.stack.fill",
-    accent: theme.colors.scannerMagenta,
+    icon: "viewfinder",
+    accent: theme.colors.goldBright,
     surface: "rgba(88, 223, 232, 0.14)",
-    glow: "rgba(255, 0, 127, 0.5)",
+    glow: "rgba(242, 211, 138, 0.5)",
   },
   {
     id: "batch",
     label: "Batch-scan",
     icon: "square.grid.2x2.fill",
-    accent: theme.colors.cream,
+    accent: theme.colors.scannerViolet,
     surface: "rgba(247, 242, 232, 0.12)",
-    glow: "rgba(247, 242, 232, 0.5)",
+    glow: "rgba(141, 114, 255, 0.5)",
   },
   {
     id: "upload",
     label: "Upload photo",
     icon: "photo.on.rectangle.angled",
-    accent: theme.colors.scannerViolet,
+    accent: theme.colors.cream,
     surface: "rgba(141, 114, 255, 0.15)",
-    glow: "rgba(141, 114, 255, 0.5)",
+    glow: "rgba(247, 242, 232, 0.5)",
 
   },
 ];
@@ -497,7 +489,6 @@ export function ScannerToolCarousel({
     publishScannerHudSnapshot({
       selectedTool,
       badges: {
-        single: badges?.single,
         barcode: badges?.barcode,
         multi: badges?.multi,
         batch: badges?.batch,
@@ -508,7 +499,6 @@ export function ScannerToolCarousel({
     badges?.batch,
     badges?.barcode,
     badges?.multi,
-    badges?.single,
     badges?.upload,
     selectedTool,
   ]);

@@ -148,6 +148,7 @@ export type AnalysisProfitPlan = {
 
 export type ItemAnalysisResult = {
   acquisitionGuidance?: AnalysisAcquisitionGuidance;
+  aiModeConversationToken?: string;
   condition?: AnalysisCondition;
   confidence?: AnalysisConfidenceBreakdown;
   decisionCard?: AnalysisDecisionCard;

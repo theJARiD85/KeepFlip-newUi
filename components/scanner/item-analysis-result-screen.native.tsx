@@ -48,6 +48,7 @@ import { createInventoryMediaFollowUp } from "@/services/inventory-follow-up-ser
 import {
   getInventoryItem,
   saveAnalyzedItemToInventory,
+  type InventoryItem,
   updateInventoryAnalysisSnapshot,
 } from "@/services/inventory-service";
 import { getItemPhotos } from "@/services/itemPhotoService";
@@ -61,6 +62,7 @@ import { getResellerBuyRules } from "@/services/user-profile-onboarding-service"
 import type { ItemAnalysisSuccess } from "@/types/item-analysis";
 
 type InventoryResultPayload = {
+  item: InventoryItem;
   analysis: ItemAnalysisSuccess | null;
   photoUri: string | null;
   state: ReturnType<typeof inventoryItemToAnalysisState>;
@@ -307,6 +309,7 @@ async function loadInventoryResult(
 
   return {
     analysis,
+    item,
     photoUri: await resolveSavedItemImageUri(item, ownerId),
     state: inventoryItemToAnalysisState(item, analysis),
   };
@@ -989,6 +992,7 @@ export function ItemAnalysisResultScreen() {
             }
             onProfitabilityGuidance={handleProfitabilityGuidance}
             onReportIncorrectIdentification={handleReportIncorrectIdentification}
+            inventoryItem={scannerSession ? undefined : inventoryResult?.item}
             onRefine={
               scannerSession
                 ? (answers) => {

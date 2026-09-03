@@ -19,6 +19,7 @@ import type {
 
 const MAX_REFINEMENT_CONTEXT_LENGTH = 600;
 const MAX_SERPAPI_SUBSEQUENT_REQUEST_TOKEN_LENGTH = 24_000;
+const MAX_SERPAPI_PHOTO_SEQUENCE_COUNT = 4;
 
 export type EbaySoldComp = {
   title: string;
@@ -252,12 +253,15 @@ export type SerpApiProfitabilityGuidance = {
   steps: string[];
   summary: string | null;
   toolsOrParts: string[];
+  aiModeConversation: SerpApiAiModeConversation | null;
+  usedAiModeContinuation: boolean;
 };
 
 export type SerpApiProfitabilityGuidanceInput = {
   actionTitle: string;
   itemTitle: string;
   profitabilityContext?: string;
+  subsequentRequestToken?: string | null;
 };
 
 export type SerpApiRefinementQuestion = {
@@ -386,6 +390,15 @@ export type SerpApiAiModeConversation = {
   subsequentRequestToken: string;
 };
 
+export type SerpApiPhotoSequenceRequest = {
+  photoNumber: number;
+  photoCount: number;
+};
+
+export type SerpApiPhotoSequence = SerpApiPhotoSequenceRequest & {
+  status: "collecting" | "complete";
+};
+
 export type SerpApiImageReference = {
   bucketId: string;
   fileId: string;
@@ -402,6 +415,7 @@ export type SerpApiImageValuationResult = {
   image: SerpApiImageReference | null;
   sourceImage: SerpApiImageReference | null;
   aiModeConversation: SerpApiAiModeConversation | null;
+  photoSequence?: SerpApiPhotoSequence;
   browseMarketAnalysis?: ItemMarketAnalysis;
   valuation: {
     status: "ready" | "needs_comps";
@@ -469,7 +483,25 @@ export type SerpApiImageValuationInput = {
    */
   subsequentRequestToken?: string | null;
   hasRefinementImage?: boolean;
+  photoSequence?: SerpApiPhotoSequenceRequest;
 };
+
+export type SerpApiImageValuationProgress = {
+  ok: true;
+  phase: "photo_context";
+  purpose: "image_valuation";
+  provider: "keepflip_ai";
+  runId: string;
+  imageUrl: string | null;
+  image: SerpApiImageReference | null;
+  sourceImage: SerpApiImageReference | null;
+  aiModeConversation: SerpApiAiModeConversation;
+  photoSequence: SerpApiPhotoSequence & { status: "collecting" };
+};
+
+export type SerpApiImageValuationResponse =
+  | SerpApiImageValuationResult
+  | SerpApiImageValuationProgress;
 
 type JsonRecord = Record<string, unknown>;
 
@@ -2265,9 +2297,64 @@ function normalizeAiModeConversation(
   return { subsequentRequestToken };
 }
 
+function normalizePhotoSequenceRequest(
+  value: SerpApiPhotoSequenceRequest | null | undefined,
+): SerpApiPhotoSequenceRequest | undefined {
+  if (value == null) return undefined;
+
+  if (
+    !Number.isInteger(value.photoNumber) ||
+    !Number.isInteger(value.photoCount) ||
+    value.photoCount < 2 ||
+    value.photoCount > MAX_SERPAPI_PHOTO_SEQUENCE_COUNT ||
+    value.photoNumber < 1 ||
+    value.photoNumber > value.photoCount
+  ) {
+    throw new Error(
+      "KeepFlip could not start the multi-photo valuation sequence. Start a new item analysis.",
+    );
+  }
+
+  return {
+    photoNumber: value.photoNumber,
+    photoCount: value.photoCount,
+  };
+}
+
+function normalizePhotoSequence(
+  value: unknown,
+  fallback: SerpApiPhotoSequenceRequest | undefined,
+  expectedStatus?: SerpApiPhotoSequence["status"],
+): SerpApiPhotoSequence | null {
+  const source = asRecord(value);
+  const photoNumber = asNumber(source?.photoNumber) ?? fallback?.photoNumber;
+  const photoCount = asNumber(source?.photoCount) ?? fallback?.photoCount;
+  const status = asString(source?.status) || expectedStatus || "";
+
+  if (
+    !Number.isInteger(photoNumber) ||
+    !Number.isInteger(photoCount) ||
+    photoCount < 2 ||
+    photoCount > MAX_SERPAPI_PHOTO_SEQUENCE_COUNT ||
+    photoNumber < 1 ||
+    photoNumber > photoCount ||
+    (status !== "collecting" && status !== "complete")
+  ) {
+    return null;
+  }
+
+  return { photoNumber, photoCount, status };
+}
+
+export function isSerpApiImageValuationProgress(
+  value: SerpApiImageValuationResponse,
+): value is SerpApiImageValuationProgress {
+  return value.phase === "photo_context";
+}
+
 export async function runSerpApiImageValuation(
   input: SerpApiImageValuationInput
-): Promise<SerpApiImageValuationResult> {
+): Promise<SerpApiImageValuationResponse> {
   const refinementContext = asString(input.refinementContext)
     .replace(/\s+/g, " ")
     .slice(0, MAX_REFINEMENT_CONTEXT_LENGTH)
@@ -2277,6 +2364,7 @@ export async function runSerpApiImageValuation(
     .slice(0, MAX_REFINEMENT_CONTEXT_LENGTH)
     .trim();
   const resellerBuyRules = normalizeResellerBuyRules(input.resellerBuyRules);
+  const photoSequence = normalizePhotoSequenceRequest(input.photoSequence);
   const subsequentRequestToken = asString(input.subsequentRequestToken);
   if (
     subsequentRequestToken.length >
@@ -2297,7 +2385,40 @@ export async function runSerpApiImageValuation(
     ...(resellerBuyRules ? { resellerBuyRules } : {}),
     ...(subsequentRequestToken ? { subsequentRequestToken } : {}),
     ...(input.hasRefinementImage ? { hasRefinementImage: true } : {}),
+    ...(photoSequence ? { photoSequence } : {}),
   });
+  if (asString(payload.phase) === "photo_context") {
+    const aiModeConversation = normalizeAiModeConversation(
+      payload.aiModeConversation,
+    );
+    const responsePhotoSequence = normalizePhotoSequence(
+      payload.photoSequence,
+      photoSequence,
+      "collecting",
+    );
+    if (!aiModeConversation || !responsePhotoSequence || responsePhotoSequence.status !== "collecting") {
+      throw new Error(
+        "KeepFlip received an incomplete multi-photo continuation from the valuation Function.",
+      );
+    }
+
+    return {
+      ok: true,
+      phase: "photo_context",
+      purpose: "image_valuation",
+      provider: "keepflip_ai",
+      runId: asString(payload.runId ?? payload.id) || "photo-context",
+      imageUrl: null,
+      image: null,
+      sourceImage: null,
+      aiModeConversation,
+      photoSequence: {
+        photoNumber: responsePhotoSequence.photoNumber,
+        photoCount: responsePhotoSequence.photoCount,
+        status: "collecting",
+      },
+    };
+  }
   const display = decodeFunctionDisplayResult(payload.display);
   const valuation = asRecord(payload.valuation);
   if (!valuation) {
@@ -2379,6 +2500,17 @@ export async function runSerpApiImageValuation(
     });
   }
 
+  const responsePhotoSequence = normalizePhotoSequence(
+    payload.photoSequence,
+    photoSequence,
+    photoSequence ? "complete" : undefined,
+  );
+  if (photoSequence && (!responsePhotoSequence || responsePhotoSequence.status !== "complete")) {
+    throw new Error(
+      "KeepFlip received an incomplete final multi-photo valuation response.",
+    );
+  }
+
   return {
     ok: true,
     phase: "completed",
@@ -2391,6 +2523,7 @@ export async function runSerpApiImageValuation(
     aiModeConversation: normalizeAiModeConversation(
       payload.aiModeConversation,
     ),
+    ...(responsePhotoSequence ? { photoSequence: responsePhotoSequence } : {}),
     ...(browseMarketAnalysis ? { browseMarketAnalysis } : {}),
     valuation: {
       status: hasValuation ? "ready" : "needs_comps",
@@ -2456,6 +2589,12 @@ export async function runSerpApiProfitabilityGuidance(
     .replace(/\s+/g, " ")
     .slice(0, 600)
     .trim();
+  const subsequentRequestToken = asString(input.subsequentRequestToken);
+  if (subsequentRequestToken.length > MAX_SERPAPI_SUBSEQUENT_REQUEST_TOKEN_LENGTH) {
+    throw new Error(
+      "KeepFlip AI could not continue the profitability conversation. Start a new item valuation.",
+    );
+  }
 
   if (!itemTitle || !actionTitle) {
     throw new Error(
@@ -2469,7 +2608,9 @@ export async function runSerpApiProfitabilityGuidance(
     itemTitle,
     profitabilityAction: actionTitle,
     ...(profitabilityContext ? { profitabilityContext } : {}),
+    ...(subsequentRequestToken ? { subsequentRequestToken } : {}),
   });
+  const aiModeConversation = normalizeAiModeConversation(payload.aiModeConversation);
   const summary = toNullableString(payload.summary);
   const steps = asStringArray(payload.steps);
 
@@ -2488,6 +2629,8 @@ export async function runSerpApiProfitabilityGuidance(
     runId: asString(payload.runId ?? payload.id) || "completed",
     safetyWarnings: asStringArray(payload.safetyWarnings),
     searchedAt: asString(payload.searchedAt) || new Date().toISOString(),
+    aiModeConversation,
+    usedAiModeContinuation: Boolean(subsequentRequestToken),
     steps,
     summary,
     toolsOrParts: asStringArray(payload.partsOrTools),
@@ -2536,6 +2679,9 @@ export function applyProfitabilityGuidanceToAnalysis(
     marketResearch: {
       ...analysis.marketResearch,
       profitabilityGuidance,
+      ...(guidance.usedAiModeContinuation
+        ? { aiModeConversation: guidance.aiModeConversation }
+        : {}),
     },
   };
 }

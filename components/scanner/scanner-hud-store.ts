@@ -66,7 +66,7 @@ export function scannerHudCopy({
   if (selectedTool === "barcode") {
     return {
       eyebrow: "BARCODE LOOKUP",
-      title: "Scan a product barcode",
+      title: "Scan a barcode",
       helper:
         "Center a UPC, EAN, ISBN, or product code to identify the item.",
     };

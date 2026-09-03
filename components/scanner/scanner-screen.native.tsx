@@ -139,18 +139,9 @@ function scannerToolHeaderCopy({
   tool: ScannerToolId;
   uploadedCount: number;
 }) {
-  if (tool === "single") {
-    return {
-      title: "Scan an item",
-      hint: hasSinglePhoto
-        ? "Photo ready. Tap the scan tool to replace it."
-        : "One item, one photo.",
-    };
-  }
-
   if (tool === "barcode") {
     return {
-      title: "Scan a product barcode",
+      title: "Scan a barcode",
       hint: "Center a UPC, EAN, ISBN, or product code to identify the item.",
     };
   }

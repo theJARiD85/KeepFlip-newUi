@@ -763,6 +763,7 @@ function acquisitionGuidance(
 
 export function toItemAnalysisResult(result: ItemAnalysisSuccess): ItemAnalysisOverlayResult {
   const identity = result.analysis.identification;
+  const aiModeConversationToken = result.marketResearch?.aiModeConversation?.subsequentRequestToken ?? undefined;
   const confidence = result.analysis.confidence;
   const valuation = result.valuation;
   const valuationSource = String(valuation.source ?? 'none');
@@ -783,6 +784,7 @@ export function toItemAnalysisResult(result: ItemAnalysisSuccess): ItemAnalysisO
 
   return {
     acquisitionGuidance: acquisitionGuidance(result),
+    aiModeConversationToken,
     condition: observedCondition,
     confidence: {
       brand: confidence.brand,

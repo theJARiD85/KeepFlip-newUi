@@ -258,7 +258,7 @@ export function AddToInventoryForm({
               </View>
             </View>
             <Text style={styles.helper}>
-              Enter the full amount you paid. KeepFlip tracks the cost per item as units sell.
+              This actual amount becomes COGS. KeepFlip keeps the market buy ceiling separate and tracks the cost per item as units sell.
             </Text>
             <View style={styles.column}>
               <FieldLabel required>Acquisition date</FieldLabel>

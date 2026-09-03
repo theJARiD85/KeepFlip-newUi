@@ -51,6 +51,7 @@ import {
   type SerpApiProfitabilityGuidance,
 } from "@/services/ebaySoldCompsService";
 import { neutralizeMarketplaceBrand } from "@/services/market-copy";
+import type { InventoryItem } from "@/services/inventory-service";
 
 type ResultState = Extract<ItemAnalysisState, { status: "result" }>;
 type ResultData = ResultState["data"];
@@ -81,6 +82,7 @@ type ValuationResultStageProps = {
   saving?: boolean;
   showMarketDecisionStamp?: boolean;
   state: ResultState;
+  inventoryItem?: InventoryItem;
   topInset: number;
   viewportWidth?: number;
 };
@@ -116,6 +118,31 @@ function formatMoney(value: number, currency = "USD") {
     return `$${Math.round(value).toLocaleString("en-US")}`;
   }
 }
+function formatRecordMoney(
+  value: number | null | undefined,
+  currency = "USD",
+) {
+  if (value == null || !Number.isFinite(value)) return "Not recorded";
+
+  try {
+    return new Intl.NumberFormat("en-US", {
+      currency,
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 2,
+      style: "currency",
+    }).format(value);
+  } catch {
+    return "$" + value.toFixed(2);
+  }
+}
+
+function inventorySpecificsText(item: InventoryItem) {
+  const entries = Object.entries(item.itemSpecifics)
+    .map(([label, value]) => (label + ": " + value).trim())
+    .filter((value) => value.length > 0);
+  return entries.length > 0 ? entries.join(" · ") : undefined;
+}
+
 
 function percentage(value?: number) {
   if (value == null || !Number.isFinite(value)) return null;
@@ -693,12 +720,14 @@ function ProfitPanel({
   expanded,
   expandedActionId,
   guidance,
+  initialCost,
   onPressAction,
   result,
 }: {
   expanded: boolean;
   expandedActionId: string | null;
   guidance: Record<string, ProfitabilityGuidanceState>;
+  initialCost?: number;
   onPressAction: (action: AnalysisProfitAction) => void;
   result: ResultData;
 }) {
@@ -759,7 +788,7 @@ function ProfitPanel({
       ) : null}
       {expanded && result.valuation ? (
         <SmartProfitCalculator
-          initialCost={result.acquisitionGuidance?.maxBuyPrice}
+          initialCost={initialCost}
           valuation={result.valuation}
         />
       ) : null}
@@ -868,6 +897,7 @@ function IdentifierPanel({ result }: { result: ResultData }) {
 function ExpandedResultDetails({
   activeTab,
   answers,
+  inventoryItem,
   onAddToInventory,
   expandedActionId,
   guidance,
@@ -883,6 +913,7 @@ function ExpandedResultDetails({
 }: {
   activeTab: ResultTab;
   answers: Record<string, string>;
+  inventoryItem?: InventoryItem;
   onAddToInventory?: () => void;
   expandedActionId: string | null;
   guidance: Record<string, ProfitabilityGuidanceState>;
@@ -958,6 +989,54 @@ function ExpandedResultDetails({
         </View>
       ) : null}
 
+      {activeTab === "identifiers" && inventoryItem ? (
+        <View style={styles.detailSection}>
+          <Text style={styles.detailSectionTitle}>INVENTORY RECORD</Text>
+          <Text selectable style={styles.detailBody}>
+            User-entered purchase and handling records for this saved item.
+            COGS is the actual amount paid, separate from the market buy ceiling.
+          </Text>
+          <DetailFact
+            label="COGS / ACTUAL PAID"
+            value={formatRecordMoney(
+              inventoryItem.acquisitionCost,
+              inventoryItem.currency,
+            )}
+          />
+          <DetailFact
+            label="COST ON HAND"
+            value={formatRecordMoney(
+              inventoryItem.inventoryCostOnHand,
+              inventoryItem.currency,
+            )}
+          />
+          <DetailFact
+            label="UNITS"
+            value={inventoryItem.quantityOnHand.toLocaleString() + " on hand / " + inventoryItem.quantityPurchased.toLocaleString() + " purchased"}
+          />
+          <DetailFact
+            label="STORAGE LOCATION"
+            value={inventoryItem.storageLocation ?? "Not set"}
+          />
+          <DetailFact label="SKU / TAG" value={inventoryItem.sku ?? undefined} />
+          <DetailFact
+            label="PURCHASE SOURCE"
+            value={inventoryItem.purchaseSource ?? undefined}
+          />
+          <DetailFact
+            label="ACQUISITION DATE"
+            value={inventoryItem.acquiredAt ?? undefined}
+          />
+          <DetailFact
+            label="ITEM-SPECIFIC DETAILS"
+            value={inventorySpecificsText(inventoryItem)}
+          />
+          <DetailFact
+            label="PURCHASE NOTES"
+            value={inventoryItem.purchaseNotes ?? undefined}
+          />
+        </View>
+      ) : null}
       {activeTab === "valuation" ? (
         <View style={styles.detailSection}>
           <Text style={styles.detailSectionTitle}>MARKET DECISION DETAIL</Text>
@@ -1289,10 +1368,15 @@ export function ValuationResultStage({
   saving = false,
   showMarketDecisionStamp = false,
   state,
+  inventoryItem,
   topInset,
   viewportWidth,
 }: ValuationResultStageProps) {
   const result = state.data;
+  const profitInitialCost =
+    inventoryItem?.acquisitionCost ??
+    inventoryItem?.inventoryCostOnHand ??
+    undefined;
   const marketDecision = decisionCardForResult(result);
   const hasSaveAction = Boolean(onSave || onSaveToDealShelf);
   const hasSellerAction = Boolean(onOpenListing || onManagePhotos);
@@ -1576,6 +1660,7 @@ export function ValuationResultStage({
         actionTitle: action.label,
         itemTitle: result.identity.title,
         profitabilityContext: profitabilityTaskContext(result, action),
+        subsequentRequestToken: result.aiModeConversationToken,
       })
         .then((response) => {
           const value: NonNullable<AnalysisProfitAction["guidance"]> = {
@@ -1669,6 +1754,7 @@ export function ValuationResultStage({
           expanded={expanded}
           expandedActionId={expandedProfitActionId}
           guidance={profitabilityGuidance}
+          initialCost={profitInitialCost}
           onPressAction={requestProfitabilityGuidance}
           result={result}
         />
@@ -1772,6 +1858,7 @@ export function ValuationResultStage({
               <ExpandedResultDetails
                 activeTab={activeTab}
                 answers={answers}
+                inventoryItem={inventoryItem}
                 onAddToInventory={onSave}
                 expandedActionId={expandedProfitActionId}
                 guidance={profitabilityGuidance}
@@ -1996,8 +2083,8 @@ const styles = StyleSheet.create({
   panelBodyExpanded: { height: "auto" },
   panelScrollContent: { paddingTop: 12, paddingBottom: 12 },
   panelBody: { height: 186, paddingHorizontal: 3 },
-  gauge: { flex: 1, justifyContent: "center", gap: 5 },
-  gaugeHeader: { minHeight: 30, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  gauge: { flex: 1, justifyContent: "center", bottom: 15 },
+  gaugeHeader: { minHeight: 25, height: 45, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   microLabel: { color: "rgba(255, 255, 255, 0.48)", fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: "900", letterSpacing: 0.9 },
   gaugeStatus: { color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 9, fontWeight: "900", letterSpacing: 0.8 },
   medianValue: { maxWidth: 210, color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 40, lineHeight: 44, fontWeight: "900", fontVariant: ["tabular-nums"], textShadowColor: "rgba(242, 211, 138, 0.52)", textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 7 },
