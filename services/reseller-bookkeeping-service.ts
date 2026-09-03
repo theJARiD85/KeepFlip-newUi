@@ -108,6 +108,7 @@ export type ResolveBookkeepingReviewInput = {
   reviewId: string;
   itemId: string;
   quantity?: number;
+  environment?: EbayOAuthEnvironment;
 };
 
 export type ResolveBookkeepingReviewResult = {
@@ -351,7 +352,11 @@ export async function getBookkeepingReviewQueue(): Promise<BookkeepingReviewQueu
 export async function resolveBookkeepingReview(
   input: ResolveBookkeepingReviewInput,
 ): Promise<ResolveBookkeepingReviewResult> {
-  const execution = await executeBookkeepingFunction('/review/resolve', input);
+  const { environment = getEbayOAuthEnvironment(), ...review } = input;
+  const execution = await executeBookkeepingFunction('/review/resolve', {
+    ...review,
+    environment,
+  });
   if (execution.responseStatusCode !== 200) {
     throw functionError(
       execution.responseBody,
