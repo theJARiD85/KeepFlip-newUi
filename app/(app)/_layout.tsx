@@ -140,28 +140,30 @@ export default function AppShellLayout() {
               <WalkthroughAutoLauncher />
               <KeepFlipSlideDownMenu />
               <View style={styles.root}>
-              <Stack
-                screenOptions={{
-                  animation: 'fade',
-                  contentStyle: { backgroundColor: keepFlipTheme.colors.backgroundDeep },
-                  headerShown: false,
-                }}>
-                <Stack.Screen name="index" />
-                <Stack.Screen name="scanner" />
-                <Stack.Screen name="deal-shelf" />
-                <Stack.Screen name="inventory" />
-                <Stack.Screen name="analysis" />
-                <Stack.Screen name="analysis-result" />
-                <Stack.Screen name="listing-guide" />
-                <Stack.Screen name="repair-assist" />
-                <Stack.Screen name="command-center" />
-                <Stack.Screen name="flip-plan" />
-                <Stack.Screen name="account" />
-                <Stack.Screen name="ebay-connect" />
-                <Stack.Screen name="ebay-account" />
-                <Stack.Screen name="books" />
-                <Stack.Screen name="subscription" />
-              </Stack>
+                <Stack
+                  screenOptions={{
+                    animation: 'fade',
+                    contentStyle: {
+                      backgroundColor: keepFlipTheme.colors.backgroundDeep,
+                    },
+                    headerShown: false,
+                  }}>
+                  <Stack.Screen name="index" />
+                  <Stack.Screen name="scanner" />
+                  <Stack.Screen name="deal-shelf" />
+                  <Stack.Screen name="inventory" />
+                  <Stack.Screen name="analysis" />
+                  <Stack.Screen name="analysis-result" />
+                  <Stack.Screen name="listing-guide" />
+                  <Stack.Screen name="repair-assist" />
+                  <Stack.Screen name="command-center" />
+                  <Stack.Screen name="flip-plan" />
+                  <Stack.Screen name="account" />
+                  <Stack.Screen name="ebay-connect" />
+                  <Stack.Screen name="ebay-account" />
+                  <Stack.Screen name="books" />
+                  <Stack.Screen name="subscription" />
+                </Stack>
               </View>
             </KeepFlipSubscriptionProvider>
           </SourcingTripProvider>
