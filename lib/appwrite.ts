@@ -178,6 +178,9 @@ export const APPWRITE = {
   bookkeepingFunctionId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_BOOKKEEPING_FUNCTION_ID,
   ),
+  subscriptionFunctionId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_SUBSCRIPTION_FUNCTION_ID,
+  ),
   listingGeneratorFunctionId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_LISTING_GENERATOR_FUNCTION_ID,
   ),
