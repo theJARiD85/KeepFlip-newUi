@@ -170,16 +170,13 @@ const PACKAGE_IDS: Record<
   Partial<Record<KeepFlipBillingCadence, string>>
 > = {
   hobbyist: {
-    monthly: 'hobbyist_monthly',
-    annual: 'hobbyist_annual',
+    monthly: 'hobbyist-monthly',
+    annual: 'hobbyist-annual',
   },
   serious: {
-    monthly: 'serious_monthly',
-    annual: 'serious_annual',
+    monthly: 'serious-monthly',
+    annual: 'serious-annual',
   },
-  // Kept intentionally dormant for backward compatibility with any historical
-  // entitlement records. Power Seller is not purchasable at launch.
-  power: {},
 };
 
 const EMPTY_ACCESS: KeepFlipSubscriptionAccess = {
@@ -536,11 +533,17 @@ function packageForSelection(
   // which would display or purchase the wrong price. RevenueCat package IDs are
   // part of KeepFlip's billing contract and must match exactly.
   const normalizedExpected = expectedPackageId.toLowerCase();
+  const expectedPeriod = cadence === 'monthly' ? 'P1M' : 'P1Y';
+
   return (
-    packages.find(
-      (candidate) =>
-        candidate.identifier.trim().toLowerCase() === normalizedExpected,
-    ) ?? null
+    packages.find((candidate) => {
+      if (candidate.identifier.trim().toLowerCase() !== normalizedExpected) {
+        return false;
+      }
+
+      const actualPeriod = candidate.product.subscriptionPeriod;
+      return !actualPeriod || actualPeriod === expectedPeriod;
+    }) ?? null
   );
 }
 

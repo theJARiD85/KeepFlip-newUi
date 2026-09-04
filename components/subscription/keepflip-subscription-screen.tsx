@@ -58,11 +58,13 @@ function PlanCard({
     cadence: KeepFlipBillingCadence,
   ) => void;
 }) {
+  const { responsiveFont } = useResponsiveLayout();
   const isCurrent = currentPlan === definition.id;
   const primaryPrice = monthlyPrice || definition.monthlyPriceFallback;
   const annualDisplay =
     annualPrice || definition.annualPriceFallback;
-const { responsiveFont } = useResponsiveLayout();
+    annualPrice ?? definition.annualPriceFallback ?? '';
+
   return (
     <View
       style={[
@@ -166,7 +168,6 @@ const { responsiveFont } = useResponsiveLayout();
             Save $50 / year · equivalent to $20.83 / month
           </Text>
         </Pressable>
-      ) : null}
     </View>
   );
 }
