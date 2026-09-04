@@ -139,23 +139,23 @@ export const KEEPFLIP_PLAN_DEFINITIONS: KeepFlipPlanDefinition[] = [
   {
     id: 'hobbyist',
     name: 'Part-Time Hobbyist',
-    eyebrow: 'TIER 1',
+    eyebrow: 'PART-TIME / ESSENTIALS',
     monthlyPriceFallback: '$10',
     annualPriceFallback: '$100',
     description:
-      'The essentials for casual and part-time resellers who want one place to value, organize, and track their flips.',
+      'For part-time resellers who want smarter sourcing, organized inventory, reliable valuations, and a clearer view of costs and profit.',
     limits: ['Up to 50 active listings / month', '100 AI valuation scans / month'],
     features: ['Basic bookkeeping reports', 'Inventory and item profit tracking'],
   },
   {
     id: 'serious',
     name: 'Serious Reseller',
-    eyebrow: 'TIER 2 / SWEET SPOT',
+    eyebrow: 'SERIOUS / BEST FOR BUSINESS',
     monthlyPriceFallback: '$25',
     annualPriceFallback: '$250',
     recommended: true,
     description:
-      'The full automated resale workflow for sellers who want to save hours of comp research and expense matching.',
+      'For active resellers running a growing resale business with higher limits, unlimited AI valuations, and automated bookkeeping tools.',
     limits: ['Up to 250 active listings / month', 'Unlimited AI valuation scans'],
     features: [
       'Full automated bookkeeping',
@@ -177,6 +177,9 @@ const PACKAGE_IDS: Record<
     monthly: 'serious_monthly',
     annual: 'serious_annual',
   },
+  // Kept intentionally dormant for backward compatibility with any historical
+  // entitlement records. Power Seller is not purchasable at launch.
+  power: {},
 };
 
 const EMPTY_ACCESS: KeepFlipSubscriptionAccess = {
@@ -528,26 +531,16 @@ function packageForSelection(
   const expectedPackageId = PACKAGE_IDS[plan][cadence];
   if (!expectedPackageId) return null;
 
+  // Do not guess based on product names or billing periods. A fuzzy match can
+  // accidentally bind the annual Play base plan to the monthly KeepFlip slot,
+  // which would display or purchase the wrong price. RevenueCat package IDs are
+  // part of KeepFlip's billing contract and must match exactly.
   const normalizedExpected = expectedPackageId.toLowerCase();
-  const byPackage = packages.find(
-    (candidate) => candidate.identifier.toLowerCase() === normalizedExpected,
-  );
-  if (byPackage) return byPackage;
-
-  const planToken = plan.toLowerCase();
-  const cadenceToken = cadence.toLowerCase();
   return (
-    packages.find((candidate) => {
-      const packageId = candidate.identifier.toLowerCase();
-      const productId = candidate.product.identifier.toLowerCase();
-      return (
-        (packageId.includes(planToken) || productId.includes(planToken)) &&
-        (packageId.includes(cadenceToken) ||
-          productId.includes(cadenceToken) ||
-          (cadence === 'monthly' && candidate.product.subscriptionPeriod === 'P1M') ||
-          (cadence === 'annual' && candidate.product.subscriptionPeriod === 'P1Y'))
-      );
-    }) ?? null
+    packages.find(
+      (candidate) =>
+        candidate.identifier.trim().toLowerCase() === normalizedExpected,
+    ) ?? null
   );
 }
 

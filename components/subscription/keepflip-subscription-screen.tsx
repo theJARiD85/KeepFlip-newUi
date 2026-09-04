@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -108,17 +108,16 @@ function PlanCard({
 
       <Pressable
         accessibilityRole="button"
-        disabled={!checkoutEnabled || purchasing || isCurrent}
+        disabled={!checkoutEnabled || purchasing}
         onPress={() => onPurchase(definition.id, 'monthly')}
         style={({ pressed }) => [
           styles.subscribeButton,
           definition.recommended && styles.subscribeButtonRecommended,
-          (!checkoutEnabled || purchasing || isCurrent) && styles.buttonDisabled,
+          (!checkoutEnabled || purchasing) && styles.buttonDisabled,
           pressed &&
-          checkoutEnabled &&
-          !purchasing &&
-          !isCurrent &&
-          styles.buttonPressed,
+            checkoutEnabled &&
+            !purchasing &&
+            styles.buttonPressed,
         ]}>
         {purchasing ? (
           <ActivityIndicator
@@ -136,20 +135,20 @@ function PlanCard({
               definition.recommended &&
               styles.subscribeButtonTextRecommended,
             ]}>
-            {isCurrent
-              ? 'CURRENT PLAN'
-              : currentPlan
-                ? 'SWITCH TO THIS PLAN'
-                : 'START 7-DAY FREE TRIAL'}
+            {currentPlan
+              ? isCurrent
+                ? 'MONTHLY OPTION'
+                : 'SWITCH · MONTHLY'
+              : 'START 7-DAY FREE TRIAL · MONTHLY'}
           </Text>
         )}
       </Pressable>
 
-      {definition.id === 'hobbyist' && annualDisplay ? (
+      {annualDisplay ? (
         <Pressable
           accessibilityRole="button"
           disabled={!checkoutEnabled || purchasing}
-          onPress={() => onPurchase('hobbyist', 'annual')}
+          onPress={() => onPurchase(definition.id, 'annual')}
           style={({ pressed }) => [
             styles.annualButton,
             (!checkoutEnabled || purchasing) && styles.buttonDisabled,
@@ -162,7 +161,7 @@ function PlanCard({
             ANNUAL · {annualDisplay} / YEAR
           </Text>
           <Text style={styles.annualSavingsText}>
-            Save $50 / year · equivalent to $20.83 / month
+            LOWER EFFECTIVE MONTHLY COST · BEST VALUE
           </Text>
         </Pressable>
       ) : null}
@@ -172,6 +171,10 @@ function PlanCard({
 
 export function KeepFlipSubscriptionScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
+  const { source } = useLocalSearchParams<{ source?: string | string[] }>();
+  const isOnboarding =
+    (Array.isArray(source) ? source[0] : source) === 'onboarding';
   const insets = useSafeAreaInsets();
   const {
     errorMessage,
@@ -189,8 +192,19 @@ export function KeepFlipSubscriptionScreen() {
   const access = snapshot?.access ?? null;
   const catalog = snapshot?.catalog ?? null;
   const checkoutEnabled = state === 'ready' && snapshot?.configured === true;
-  const canLeavePlanScreen =
-    !areKeepFlipSubscriptionsEnforced() || access?.active === true;
+  const isPaywallLocked =
+    access?.active !== true &&
+    (isOnboarding || areKeepFlipSubscriptionsEnforced());
+  useEffect(() => {
+    if (!isPaywallLocked) return;
+
+    const unsubscribe = navigation.addListener('beforeRemove', (event) => {
+      event.preventDefault();
+    });
+
+    return unsubscribe;
+  }, [isPaywallLocked, navigation]);
+
   const trialEnds = formatDate(access?.isTrial ? access.expiresAt : null);
   const renewalDate = formatDate(
     access?.active && !access.isTrial ? access.expiresAt : null,
@@ -271,36 +285,27 @@ export function KeepFlipSubscriptionScreen() {
         style={{marginBottom: insets.bottom, marginTop: insets.top}}
         showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
-          {canLeavePlanScreen ? (
-            <Pressable
-              accessibilityLabel="Go back"
-              accessibilityRole="button"
-              onPress={() => router.back()}
-              style={({ pressed }) => [
-                styles.backButton,
-                pressed && styles.buttonPressed,
-              ]}>
-              <IconSymbol
-                color={theme.colors.cream}
-                name="chevron.left"
-                size={18}
-              />
-            </Pressable>
-          ) : (
-            <View
-              accessibilityLabel="A KeepFlip plan is required to continue"
-              style={styles.planRequiredIcon}>
-              <IconSymbol
-                color={theme.colors.goldBright}
-                name="lock.fill"
-                size={17}
-              />
-            </View>
-          )}
+          <View
+            accessibilityLabel={
+              isPaywallLocked
+                ? 'A KeepFlip plan is required to continue'
+                : 'KeepFlip plan and billing'
+            }
+            style={styles.planRequiredIcon}>
+            <IconSymbol
+              color={theme.colors.goldBright}
+              name={isPaywallLocked ? 'lock.fill' : 'creditcard.fill'}
+              size={17}
+            />
+          </View>
 
           <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>KEEPFLIP / PLAN & BILLING</Text>
-            <Text style={styles.title}>Built for the way you resell</Text>
+            <Text style={styles.eyebrow}>
+              {isOnboarding ? 'KEEPFLIP / CHOOSE YOUR PLAN' : 'KEEPFLIP / PLAN & BILLING'}
+            </Text>
+            <Text style={styles.title}>
+              {isOnboarding ? 'Choose how you want to KeepFlip' : 'Built for the way you resell'}
+            </Text>
           </View>
         </View>
 
@@ -482,16 +487,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(215, 168, 74, 0.07)',
     borderColor: 'rgba(215, 168, 74, 0.24)',
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    height: 40,
-    justifyContent: 'center',
-    width: 40,
-  },
-  backButton: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(242, 237, 228, 0.05)',
-    borderColor: 'rgba(242, 237, 228, 0.14)',
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
     height: 40,

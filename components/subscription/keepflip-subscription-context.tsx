@@ -52,9 +52,56 @@ const KeepFlipSubscriptionContext =
   createContext<KeepFlipSubscriptionContextValue | null>(null);
 
 function errorMessage(error: unknown, fallback: string) {
-  return error instanceof Error && error.message.trim()
-    ? error.message.trim()
-    : fallback;
+  if (!error || typeof error !== 'object') return fallback;
+
+  const candidate = error as {
+    message?: unknown;
+    underlyingErrorMessage?: unknown;
+    readableErrorCode?: unknown;
+    code?: unknown;
+    userInfo?: {
+      underlyingErrorMessage?: unknown;
+      readableErrorCode?: unknown;
+      readable_error_code?: unknown;
+      message?: unknown;
+    };
+  };
+
+  const underlying =
+    typeof candidate.underlyingErrorMessage === 'string'
+      ? candidate.underlyingErrorMessage.trim()
+      : typeof candidate.userInfo?.underlyingErrorMessage === 'string'
+        ? candidate.userInfo.underlyingErrorMessage.trim()
+        : '';
+
+  const message =
+    typeof candidate.message === 'string' ? candidate.message.trim() : '';
+
+  const readableCode =
+    typeof candidate.readableErrorCode === 'string'
+      ? candidate.readableErrorCode.trim()
+      : typeof candidate.userInfo?.readableErrorCode === 'string'
+        ? candidate.userInfo.readableErrorCode.trim()
+        : typeof candidate.userInfo?.readable_error_code === 'string'
+          ? candidate.userInfo.readable_error_code.trim()
+          : '';
+
+  const code =
+    typeof candidate.code === 'string' || typeof candidate.code === 'number'
+      ? String(candidate.code)
+      : '';
+
+  if (underlying) {
+    const prefix = readableCode || code;
+    return prefix ? `${underlying} (${prefix})` : underlying;
+  }
+
+  if (message) {
+    const prefix = readableCode || code;
+    return prefix ? `${message} (${prefix})` : message;
+  }
+
+  return fallback;
 }
 
 function isUserCancelledPurchase(error: unknown) {

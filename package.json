@@ -48,8 +48,6 @@
     "react-native-gesture-handler": "~2.32.0",
     "react-native-nitro-image": "0.15.0",
     "react-native-nitro-modules": "^0.35.9",
-    "react-native-purchases": "^10.9.0",
-    "react-native-purchases-ui": "^10.9.0",
     "react-native-reanimated": "4.5.1",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
