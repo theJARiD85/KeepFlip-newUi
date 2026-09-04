@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -108,16 +108,15 @@ function PlanCard({
 
       <Pressable
         accessibilityRole="button"
-        disabled={!checkoutEnabled || purchasing || isCurrent}
+        disabled={!checkoutEnabled || purchasing}
         onPress={() => onPurchase(definition.id, 'monthly')}
         style={({ pressed }) => [
           styles.subscribeButton,
           definition.recommended && styles.subscribeButtonRecommended,
-          (!checkoutEnabled || purchasing || isCurrent) && styles.buttonDisabled,
+          (!checkoutEnabled || purchasing) && styles.buttonDisabled,
           pressed &&
             checkoutEnabled &&
             !purchasing &&
-            !isCurrent &&
             styles.buttonPressed,
         ]}>
         {purchasing ? (
@@ -136,20 +135,20 @@ function PlanCard({
               definition.recommended &&
                 styles.subscribeButtonTextRecommended,
             ]}>
-            {isCurrent
-              ? 'CURRENT PLAN'
-              : currentPlan
-                ? 'SWITCH TO THIS PLAN'
-                : 'START 7-DAY FREE TRIAL'}
+            {currentPlan
+              ? isCurrent
+                ? 'MONTHLY OPTION'
+                : 'SWITCH · MONTHLY'
+              : 'START 7-DAY FREE TRIAL · MONTHLY'}
           </Text>
         )}
       </Pressable>
 
-      {definition.id === 'hobbyist' && annualDisplay ? (
+      {annualDisplay ? (
         <Pressable
           accessibilityRole="button"
           disabled={!checkoutEnabled || purchasing}
-          onPress={() => onPurchase('hobbyist', 'annual')}
+          onPress={() => onPurchase(definition.id, 'annual')}
           style={({ pressed }) => [
             styles.annualButton,
             (!checkoutEnabled || purchasing) && styles.buttonDisabled,
@@ -162,7 +161,7 @@ function PlanCard({
             ANNUAL · {annualDisplay} / YEAR
           </Text>
           <Text style={styles.annualSavingsText}>
-            Save $50 / year · equivalent to $20.83 / month
+            LOWER EFFECTIVE MONTHLY COST · BEST VALUE
           </Text>
         </Pressable>
       ) : null}
@@ -172,6 +171,9 @@ function PlanCard({
 
 export function KeepFlipSubscriptionScreen() {
   const router = useRouter();
+  const { source } = useLocalSearchParams<{ source?: string | string[] }>();
+  const isOnboarding =
+    (Array.isArray(source) ? source[0] : source) === 'onboarding';
   const insets = useSafeAreaInsets();
   const {
     errorMessage,
@@ -190,7 +192,8 @@ export function KeepFlipSubscriptionScreen() {
   const catalog = snapshot?.catalog ?? null;
   const checkoutEnabled = state === 'ready' && snapshot?.configured === true;
   const canLeavePlanScreen =
-    !areKeepFlipSubscriptionsEnforced() || access?.active === true;
+    !isOnboarding &&
+    (!areKeepFlipSubscriptionsEnforced() || access?.active === true);
   const trialEnds = formatDate(access?.isTrial ? access.expiresAt : null);
   const renewalDate = formatDate(
     access?.active && !access.isTrial ? access.expiresAt : null,
@@ -298,8 +301,12 @@ export function KeepFlipSubscriptionScreen() {
           )}
 
           <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>KEEPFLIP / PLAN & BILLING</Text>
-            <Text style={styles.title}>Built for the way you resell</Text>
+            <Text style={styles.eyebrow}>
+              {isOnboarding ? 'KEEPFLIP / CHOOSE YOUR PLAN' : 'KEEPFLIP / PLAN & BILLING'}
+            </Text>
+            <Text style={styles.title}>
+              {isOnboarding ? 'Choose how you want to KeepFlip' : 'Built for the way you resell'}
+            </Text>
           </View>
         </View>
 
