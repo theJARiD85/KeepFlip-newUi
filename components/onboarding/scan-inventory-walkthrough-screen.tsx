@@ -24,6 +24,10 @@ import {
   type ResellerBuyRules,
 } from "@/services/reseller-buy-rules-service";
 import { completeScanInventoryWalkthrough } from "@/services/user-profile-onboarding-service";
+import {
+  areKeepFlipSubscriptionsConfigured,
+  areKeepFlipSubscriptionsEnforced,
+} from "@/services/keepflip-subscription-service";
 
 type FlipIcon =
   | "barcode.viewfinder"
@@ -421,7 +425,16 @@ export function ScanInventoryWalkthroughScreen() {
       if (!user) throw new Error("Sign in before finishing your Flip profile.");
       await completeScanInventoryWalkthrough(user.$id, user.name, rules);
       completionHaptic();
-      router.replace("/" as Href);
+
+      const subscriptionOnboardingEnabled =
+        areKeepFlipSubscriptionsConfigured() ||
+        areKeepFlipSubscriptionsEnforced();
+
+      router.replace(
+        (subscriptionOnboardingEnabled
+          ? "/subscription?source=onboarding"
+          : "/") as Href,
+      );
     } catch (caught) {
       setError(
         caught instanceof Error
