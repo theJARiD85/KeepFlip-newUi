@@ -174,8 +174,8 @@ const PACKAGE_IDS: Record<
     annual: 'hobbyist_annual',
   },
   serious: {
-    monthly: 'serious_monthly',
-    annual: 'serious_annual',
+    monthly: 'serious-monthly',
+    annual: 'serious-annual',
   },
 };
 
