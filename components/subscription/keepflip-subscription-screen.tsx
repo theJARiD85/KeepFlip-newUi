@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -171,6 +171,7 @@ function PlanCard({
 
 export function KeepFlipSubscriptionScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { source } = useLocalSearchParams<{ source?: string | string[] }>();
   const isOnboarding =
     (Array.isArray(source) ? source[0] : source) === 'onboarding';
@@ -191,9 +192,19 @@ export function KeepFlipSubscriptionScreen() {
   const access = snapshot?.access ?? null;
   const catalog = snapshot?.catalog ?? null;
   const checkoutEnabled = state === 'ready' && snapshot?.configured === true;
-  const canLeavePlanScreen =
-    !isOnboarding &&
-    (!areKeepFlipSubscriptionsEnforced() || access?.active === true);
+  const isPaywallLocked =
+    access?.active !== true &&
+    (isOnboarding || areKeepFlipSubscriptionsEnforced());
+  useEffect(() => {
+    if (!isPaywallLocked) return;
+
+    const unsubscribe = navigation.addListener('beforeRemove', (event) => {
+      event.preventDefault();
+    });
+
+    return unsubscribe;
+  }, [isPaywallLocked, navigation]);
+
   const trialEnds = formatDate(access?.isTrial ? access.expiresAt : null);
   const renewalDate = formatDate(
     access?.active && !access.isTrial ? access.expiresAt : null,
@@ -273,32 +284,19 @@ export function KeepFlipSubscriptionScreen() {
         ]}
         showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
-          {canLeavePlanScreen ? (
-            <Pressable
-              accessibilityLabel="Go back"
-              accessibilityRole="button"
-              onPress={() => router.back()}
-              style={({ pressed }) => [
-                styles.backButton,
-                pressed && styles.buttonPressed,
-              ]}>
-              <IconSymbol
-                color={theme.colors.cream}
-                name="chevron.left"
-                size={18}
-              />
-            </Pressable>
-          ) : (
-            <View
-              accessibilityLabel="A KeepFlip plan is required to continue"
-              style={styles.planRequiredIcon}>
-              <IconSymbol
-                color={theme.colors.goldBright}
-                name="lock.fill"
-                size={17}
-              />
-            </View>
-          )}
+          <View
+            accessibilityLabel={
+              isPaywallLocked
+                ? 'A KeepFlip plan is required to continue'
+                : 'KeepFlip plan and billing'
+            }
+            style={styles.planRequiredIcon}>
+            <IconSymbol
+              color={theme.colors.goldBright}
+              name={isPaywallLocked ? 'lock.fill' : 'creditcard.fill'}
+              size={17}
+            />
+          </View>
 
           <View style={styles.headerCopy}>
             <Text style={styles.eyebrow}>
@@ -488,16 +486,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(215, 168, 74, 0.07)',
     borderColor: 'rgba(215, 168, 74, 0.24)',
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    height: 40,
-    justifyContent: 'center',
-    width: 40,
-  },
-  backButton: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(242, 237, 228, 0.05)',
-    borderColor: 'rgba(242, 237, 228, 0.14)',
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
     height: 40,
