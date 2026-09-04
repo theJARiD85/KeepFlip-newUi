@@ -544,26 +544,16 @@ function packageForSelection(
   const expectedPackageId = PACKAGE_IDS[plan][cadence];
   if (!expectedPackageId) return null;
 
+  // Do not guess based on product names or billing periods. A fuzzy match can
+  // accidentally bind the annual Play base plan to the monthly KeepFlip slot,
+  // which would display or purchase the wrong price. RevenueCat package IDs are
+  // part of KeepFlip's billing contract and must match exactly.
   const normalizedExpected = expectedPackageId.toLowerCase();
-  const byPackage = packages.find(
-    (candidate) => candidate.identifier.toLowerCase() === normalizedExpected,
-  );
-  if (byPackage) return byPackage;
-
-  const planToken = plan.toLowerCase();
-  const cadenceToken = cadence.toLowerCase();
   return (
-    packages.find((candidate) => {
-      const packageId = candidate.identifier.toLowerCase();
-      const productId = candidate.product.identifier.toLowerCase();
-      return (
-        (packageId.includes(planToken) || productId.includes(planToken)) &&
-        (packageId.includes(cadenceToken) ||
-          productId.includes(cadenceToken) ||
-          (cadence === 'monthly' && candidate.product.subscriptionPeriod === 'P1M') ||
-          (cadence === 'annual' && candidate.product.subscriptionPeriod === 'P1Y'))
-      );
-    }) ?? null
+    packages.find(
+      (candidate) =>
+        candidate.identifier.trim().toLowerCase() === normalizedExpected,
+    ) ?? null
   );
 }
 
@@ -577,7 +567,7 @@ function catalogFromPackages(
     power: { annual: null, monthly: null },
   };
 
-  for (const plan of ['hobbyist', 'serious', 'power'] as KeepFlipPlanId[]) {
+  for (const plan of ['hobbyist', 'serious'] as KeepFlipPlanId[]) {
     for (const cadence of ['monthly', 'annual'] as KeepFlipBillingCadence[]) {
       const selected = packageForSelection(packages, plan, cadence);
       if (selected) prices[plan][cadence] = selected.product.priceString;
