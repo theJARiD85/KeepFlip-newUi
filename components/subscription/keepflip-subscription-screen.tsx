@@ -115,10 +115,10 @@ function PlanCard({
           definition.recommended && styles.subscribeButtonRecommended,
           (!checkoutEnabled || purchasing || isCurrent) && styles.buttonDisabled,
           pressed &&
-            checkoutEnabled &&
-            !purchasing &&
-            !isCurrent &&
-            styles.buttonPressed,
+          checkoutEnabled &&
+          !purchasing &&
+          !isCurrent &&
+          styles.buttonPressed,
         ]}>
         {purchasing ? (
           <ActivityIndicator
@@ -134,7 +134,7 @@ function PlanCard({
             style={[
               styles.subscribeButtonText,
               definition.recommended &&
-                styles.subscribeButtonTextRecommended,
+              styles.subscribeButtonTextRecommended,
             ]}>
             {isCurrent
               ? 'CURRENT PLAN'
@@ -154,9 +154,9 @@ function PlanCard({
             styles.annualButton,
             (!checkoutEnabled || purchasing) && styles.buttonDisabled,
             pressed &&
-              checkoutEnabled &&
-              !purchasing &&
-              styles.annualButtonPressed,
+            checkoutEnabled &&
+            !purchasing &&
+            styles.annualButtonPressed,
           ]}>
           <Text style={styles.annualButtonText}>
             ANNUAL · {annualDisplay} / YEAR
@@ -264,10 +264,11 @@ export function KeepFlipSubscriptionScreen() {
         contentContainerStyle={[
           styles.content,
           {
-            paddingBottom: insets.bottom + 34,
-            paddingTop: insets.top + 24,
+            paddingBottom: insets.bottom,
+            paddingTop: insets.top / 2,
           },
         ]}
+        style={{marginBottom: insets.bottom, marginTop: insets.top}}
         showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
           {canLeavePlanScreen ? (
@@ -424,9 +425,9 @@ export function KeepFlipSubscriptionScreen() {
               styles.utilityButton,
               (!checkoutEnabled || restoring) && styles.buttonDisabled,
               pressed &&
-                checkoutEnabled &&
-                !restoring &&
-                styles.utilityButtonPressed,
+              checkoutEnabled &&
+              !restoring &&
+              styles.utilityButtonPressed,
             ]}>
             {restoring ? (
               <ActivityIndicator

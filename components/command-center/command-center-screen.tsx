@@ -12,6 +12,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -249,6 +250,19 @@ export function CommandCenterScreen() {
   const [reviewQuantity, setReviewQuantity] = useState('1');
   const [reviewResolving, setReviewResolving] = useState(false);
   const [reviewActionMessage, setReviewActionMessage] = useState<string | null>(null);
+    const {
+      contentWidth,
+      controlDockWidth,
+      height: screenHeight,
+      isCompactHeight,
+      moderateScale,
+      pageGutter,
+      responsiveFont,
+      scannerHeight,
+      scannerWidth,
+      verticalScale,
+      width: screenWidth,
+    } = useResponsiveLayout();
 
   const resolveEbayStatus = useCallback(async () => {
     try {
@@ -620,14 +634,14 @@ export function CommandCenterScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top, paddingBottom: insets.bottom + 32 },
+          { paddingHorizontal: pageGutter, paddingTop: insets.top / 2, paddingBottom: insets.bottom + 32 },
         ]}
         style={{marginBottom: insets.bottom, marginTop: insets.top}}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}>
         <Animated.View entering={FadeInDown.duration(260)} style={styles.header}>
-          <Text style={styles.eyebrow}>KEEPFLIP / COMMAND CENTER</Text>
-          <Text style={styles.title}>Run the business</Text>
+          <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>KEEPFLIP / COMMAND CENTER</Text>
+          <Text style={[styles.title, {fontSize: responsiveFont(26)}]}>Run the business</Text>
           <Text style={styles.subtitle}>
             Marketplace access, inventory, books, and workspace controls in one place.
           </Text>
@@ -1127,7 +1141,6 @@ const styles = StyleSheet.create({
     maxWidth: 760,
     alignSelf: 'center',
     gap: 16,
-    paddingHorizontal: 18,
   },
   header: { gap: 4 },
   eyebrow: {
@@ -1138,15 +1151,15 @@ const styles = StyleSheet.create({
   },
   title: {
     color: theme.colors.cream,
-    fontSize: 28,
     lineHeight: 33,
     fontWeight: '900',
     letterSpacing: -0.35,
   },
   subtitle: {
     maxWidth: 520,
+    fontFamily: theme.fonts.body,
     color: theme.colors.textMuted,
-    fontSize: 13,
+    fontSize: 12,
     lineHeight: 19,
   },
   section: { gap: 7 },

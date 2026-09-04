@@ -26,6 +26,7 @@ import {
   type InventoryListSort,
   type InventoryResaleVelocity,
 } from "@/services/inventory-service";
+import { InstancedMesh } from "three";
 
 const CARDS_BETWEEN_ADS = 0;
 const HEADER_BOTTOM_SPACING = 22;
@@ -249,9 +250,9 @@ export default function InventoryScreen() {
         keyExtractor={(row) => row.id}
         ListHeaderComponent={
           <View style={[styles.header, { width: contentWidth }]}>
-            <Text style={styles.eyebrow}>YOUR ITEMS</Text>
+            <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>YOUR ITEMS</Text>
             <Text
-              style={[styles.title, { fontSize: responsiveFont(31) }]}
+              style={[styles.title, { fontSize: responsiveFont(26) }]}
             >
               Inventory
             </Text>
@@ -538,10 +539,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
-    alignItems: "center",
+    alignItems: "flex-start",
+    justifyContent: "flex-start"
   },
   header: {
-    gap: 7,
     marginBottom: HEADER_BOTTOM_SPACING,
   },
   feedItem: {
@@ -549,20 +550,20 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     color: theme.colors.gold,
-    fontSize: 11,
     fontWeight: "900",
     letterSpacing: 2.4,
   },
   title: {
     color: theme.colors.cream,
     fontWeight: "900",
-    letterSpacing: -0.8,
+    letterSpacing: -0.6,
   },
   subtitle: {
     maxWidth: 560,
+    fontFamily: theme.fonts.body,
     color: theme.colors.textMuted,
-    fontSize: 14,
-    lineHeight: 21,
+    fontSize: 12,
+    lineHeight: 15,
   },
   filterTrigger: {
     alignItems: "center",

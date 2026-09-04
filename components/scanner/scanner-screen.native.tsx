@@ -1742,7 +1742,7 @@ export default function ScannerScreen() {
               style={[
                 styles.eyebrow,
                 {
-                  fontSize: responsiveFont(11),
+                  fontSize: responsiveFont(10),
                   letterSpacing: moderateScale(2.4, 0.28),
                 },
               ]}
@@ -1759,8 +1759,8 @@ export default function ScannerScreen() {
                 style={[
                   styles.title,
                   {
-                    fontSize: responsiveFont(25),
-                    lineHeight: responsiveFont(30),
+                    fontSize: responsiveFont(26),
+                    lineHeight: responsiveFont(35),
                   },
                 ]}
               >
@@ -2157,7 +2157,7 @@ const styles = StyleSheet.create({
     color: theme.colors.gold,
     fontWeight: "900",
   },
-  toolHeaderContent: { gap: 3 },
+  toolHeaderContent: { gap: 8 },
   title: {
     color: theme.colors.cream,
     fontWeight: "800",

@@ -132,7 +132,7 @@ export default function AccountScreen() {
             ? `${subscriptionPlan?.name ?? 'KeepFlip plan'} · 7-day free trial active.`
             : subscriptionAccess?.active
               ? `${subscriptionPlan?.name ?? 'KeepFlip plan'} is active on this account.`
-              : 'Choose Hobbyist, Serious Reseller, or Power Seller and start with 7 days free.';
+              : 'Choose Hobbyist or Serious Reseller and start with 7 days free.';
 
   const subscriptionStatus =
     subscriptionState === 'error'
@@ -204,8 +204,9 @@ export default function AccountScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top + 74, paddingBottom: insets.bottom + 32 },
+          { paddingTop: insets.top / 2, paddingBottom: insets.bottom },
         ]}
+        style={{marginTop: insets.top, marginBottom: insets.bottom}}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}>
         <Animated.View entering={FadeInDown.duration(260)} style={styles.header}>

@@ -227,14 +227,13 @@ export default function RootLayout() {
   useEffect(() => {
     Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
 
-    const androidApiKey = 'process.env.EXPO_PUBLIC_REVENUE_CAT_API_KEY';
-    const iosApiKey = 'process.env.EXPO_PUBLIC_REVENUE_CAT_API_KEY';
-
-    if (Platform.OS === 'ios') {
-       Purchases.configure({apiKey: iosApiKey});
-    } else if (Platform.OS === 'android') {
-       Purchases.configure({apiKey: androidApiKey});
+    const apiKey = process.env.EXPO_PUBLIC_REVENUE_CAT_API_KEY ?? '';
+    if (!apiKey) {
+      console.warn('RevenueCat API key is not set — skipping Purchases.configure');
+      return;
     }
+
+    Purchases.configure({ apiKey });
   }, []);
 
   async function registerForPushNotifications() {

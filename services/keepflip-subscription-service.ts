@@ -16,7 +16,7 @@ import {
   tablesDB,
 } from '@/lib/appwrite';
 
-export type KeepFlipPlanId = 'hobbyist' | 'serious' | 'power';
+export type KeepFlipPlanId = 'hobbyist' | 'serious';
 export type KeepFlipBillingCadence = 'monthly' | 'annual';
 
 export type KeepFlipSubscriptionFeature =
@@ -48,17 +48,6 @@ export const KEEPFLIP_PLAN_LIMITS: Record<
       'basic_books',
       'automated_books',
       'schedule_c_export',
-    ]),
-  },
-  power: {
-    activeListingsPerMonth: null,
-    aiValuationScansPerMonth: null,
-    features: new Set<KeepFlipSubscriptionFeature>([
-      'basic_books',
-      'automated_books',
-      'schedule_c_export',
-      'advanced_bookkeeping_analytics',
-      'multi_user',
     ]),
   },
 };
@@ -144,7 +133,6 @@ export const KEEPFLIP_SUBSCRIPTION_OFFERING_ID =
 export const KEEPFLIP_ENTITLEMENTS: Record<KeepFlipPlanId, string> = {
   hobbyist: 'keepflip_hobbyist',
   serious: 'keepflip_serious',
-  power: 'keepflip_power',
 };
 
 export const KEEPFLIP_PLAN_DEFINITIONS: KeepFlipPlanDefinition[] = [
@@ -152,8 +140,8 @@ export const KEEPFLIP_PLAN_DEFINITIONS: KeepFlipPlanDefinition[] = [
     id: 'hobbyist',
     name: 'Part-Time Hobbyist',
     eyebrow: 'TIER 1',
-    monthlyPriceFallback: '$25',
-    annualPriceFallback: '$250',
+    monthlyPriceFallback: '$10',
+    annualPriceFallback: '$100',
     description:
       'The essentials for casual and part-time resellers who want one place to value, organize, and track their flips.',
     limits: ['Up to 50 active listings / month', '100 AI valuation scans / month'],
@@ -163,8 +151,8 @@ export const KEEPFLIP_PLAN_DEFINITIONS: KeepFlipPlanDefinition[] = [
     id: 'serious',
     name: 'Serious Reseller',
     eyebrow: 'TIER 2 / SWEET SPOT',
-    monthlyPriceFallback: '$45',
-    annualPriceFallback: null,
+    monthlyPriceFallback: '$25',
+    annualPriceFallback: '$250',
     recommended: true,
     description:
       'The full automated resale workflow for sellers who want to save hours of comp research and expense matching.',
@@ -173,21 +161,6 @@ export const KEEPFLIP_PLAN_DEFINITIONS: KeepFlipPlanDefinition[] = [
       'Full automated bookkeeping',
       'Schedule C export',
       'eBay money reconciliation',
-    ],
-  },
-  {
-    id: 'power',
-    name: 'Power Seller',
-    eyebrow: 'TIER 3',
-    monthlyPriceFallback: '$100',
-    annualPriceFallback: null,
-    description:
-      'Built for high-volume sourcing, liquidation inventory, and resale operations with more than one person involved.',
-    limits: ['Unlimited active listings', 'Unlimited AI valuation scans'],
-    features: [
-      'Multi-user / employee access',
-      'Advanced bookkeeping analytics',
-      'Granular marketplace fee analysis',
     ],
   },
 ];
@@ -202,9 +175,7 @@ const PACKAGE_IDS: Record<
   },
   serious: {
     monthly: 'serious_monthly',
-  },
-  power: {
-    monthly: 'power_monthly',
+    annual: 'serious_annual',
   },
 };
 
@@ -227,7 +198,6 @@ const EMPTY_CATALOG: KeepFlipSubscriptionCatalog = {
   prices: {
     hobbyist: { annual: null, monthly: null },
     serious: { annual: null, monthly: null },
-    power: { annual: null, monthly: null },
   },
 };
 
@@ -294,7 +264,7 @@ function serverSubscriptionStatus(
 }
 
 function serverSubscriptionPlan(value: unknown): KeepFlipPlanId | null {
-  return value === 'hobbyist' || value === 'serious' || value === 'power'
+  return value === 'hobbyist' || value === 'serious'
     ? value
     : null;
 }
@@ -342,9 +312,9 @@ function parseServerSubscriptionRecord(
 function isAppwriteNotFound(error: unknown) {
   return Boolean(
     error &&
-      typeof error === 'object' &&
-      'code' in error &&
-      Number((error as { code?: unknown }).code) === 404,
+    typeof error === 'object' &&
+    'code' in error &&
+    Number((error as { code?: unknown }).code) === 404,
   );
 }
 
@@ -462,7 +432,7 @@ function entitlementPlan(identifier: string): KeepFlipPlanId | null {
 function strongestEntitlement(
   customerInfo: CustomerInfo,
 ): { plan: KeepFlipPlanId; info: PurchasesEntitlementInfo } | null {
-  const priority: KeepFlipPlanId[] = ['power', 'serious', 'hobbyist'];
+  const priority: KeepFlipPlanId[] = ['serious', 'hobbyist'];
 
   for (const plan of priority) {
     const entitlementId = KEEPFLIP_ENTITLEMENTS[plan];
@@ -588,10 +558,9 @@ function catalogFromPackages(
   const prices: KeepFlipSubscriptionCatalog['prices'] = {
     hobbyist: { annual: null, monthly: null },
     serious: { annual: null, monthly: null },
-    power: { annual: null, monthly: null },
   };
 
-  for (const plan of ['hobbyist', 'serious', 'power'] as KeepFlipPlanId[]) {
+  for (const plan of ['hobbyist', 'serious'] as KeepFlipPlanId[]) {
     for (const cadence of ['monthly', 'annual'] as KeepFlipBillingCadence[]) {
       const selected = packageForSelection(packages, plan, cadence);
       if (selected) prices[plan][cadence] = selected.product.priceString;
@@ -689,7 +658,6 @@ export async function purchaseKeepFlipPlan(
       const rank: Record<KeepFlipPlanId, number> = {
         hobbyist: 1,
         serious: 2,
-        power: 3,
       };
       const isDowngrade =
         currentAccess.plan != null &&
