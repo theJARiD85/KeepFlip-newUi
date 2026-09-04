@@ -56,9 +56,9 @@ keepflip_power
 Packages:
 
 ```text
-hobbyist_monthly
-hobbyist_annual
-serious_monthly
+hobbyist-monthly
+hobbyist-annual
+serious-monthly
 power_monthly
 ```
 
