@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
-import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'expo-router';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
@@ -62,7 +62,7 @@ function PlanCard({
   const primaryPrice = monthlyPrice || definition.monthlyPriceFallback;
   const annualDisplay =
     annualPrice || definition.annualPriceFallback;
-
+const { responsiveFont } = useResponsiveLayout();
   return (
     <View
       style={[
@@ -108,16 +108,17 @@ function PlanCard({
 
       <Pressable
         accessibilityRole="button"
-        disabled={!checkoutEnabled || purchasing}
+        disabled={!checkoutEnabled || purchasing || isCurrent}
         onPress={() => onPurchase(definition.id, 'monthly')}
         style={({ pressed }) => [
           styles.subscribeButton,
           definition.recommended && styles.subscribeButtonRecommended,
-          (!checkoutEnabled || purchasing) && styles.buttonDisabled,
+          (!checkoutEnabled || purchasing || isCurrent) && styles.buttonDisabled,
           pressed &&
-            checkoutEnabled &&
-            !purchasing &&
-            styles.buttonPressed,
+          checkoutEnabled &&
+          !purchasing &&
+          !isCurrent &&
+          styles.buttonPressed,
         ]}>
         {purchasing ? (
           <ActivityIndicator
@@ -134,21 +135,22 @@ function PlanCard({
               styles.subscribeButtonText,
               definition.recommended &&
               styles.subscribeButtonTextRecommended,
+              {fontSize: responsiveFont(11)}
             ]}>
-            {currentPlan
-              ? isCurrent
-                ? 'MONTHLY OPTION'
-                : 'SWITCH · MONTHLY'
-              : 'START 7-DAY FREE TRIAL · MONTHLY'}
+            {isCurrent
+              ? 'CURRENT PLAN'
+              : currentPlan
+                ? 'SWITCH TO THIS PLAN'
+                : 'START 7-DAY FREE TRIAL'}
           </Text>
         )}
       </Pressable>
 
-      {annualDisplay ? (
+      {definition.id === 'hobbyist' && annualDisplay ? (
         <Pressable
           accessibilityRole="button"
           disabled={!checkoutEnabled || purchasing}
-          onPress={() => onPurchase(definition.id, 'annual')}
+          onPress={() => onPurchase('hobbyist', 'annual')}
           style={({ pressed }) => [
             styles.annualButton,
             (!checkoutEnabled || purchasing) && styles.buttonDisabled,
@@ -161,7 +163,7 @@ function PlanCard({
             ANNUAL · {annualDisplay} / YEAR
           </Text>
           <Text style={styles.annualSavingsText}>
-            LOWER EFFECTIVE MONTHLY COST · BEST VALUE
+            Save $50 / year · equivalent to $20.83 / month
           </Text>
         </Pressable>
       ) : null}
@@ -171,10 +173,6 @@ function PlanCard({
 
 export function KeepFlipSubscriptionScreen() {
   const router = useRouter();
-  const navigation = useNavigation();
-  const { source } = useLocalSearchParams<{ source?: string | string[] }>();
-  const isOnboarding =
-    (Array.isArray(source) ? source[0] : source) === 'onboarding';
   const insets = useSafeAreaInsets();
   const {
     errorMessage,
@@ -188,23 +186,12 @@ export function KeepFlipSubscriptionScreen() {
     state,
   } = useKeepFlipSubscription();
   const [actionMessage, setActionMessage] = useState<string | null>(null);
-
+  const { responsiveFont } = useResponsiveLayout();
   const access = snapshot?.access ?? null;
   const catalog = snapshot?.catalog ?? null;
   const checkoutEnabled = state === 'ready' && snapshot?.configured === true;
-  const isPaywallLocked =
-    access?.active !== true &&
-    (isOnboarding || areKeepFlipSubscriptionsEnforced());
-  useEffect(() => {
-    if (!isPaywallLocked) return;
-
-    const unsubscribe = navigation.addListener('beforeRemove', (event) => {
-      event.preventDefault();
-    });
-
-    return unsubscribe;
-  }, [isPaywallLocked, navigation]);
-
+  const canLeavePlanScreen =
+    !areKeepFlipSubscriptionsEnforced() || access?.active === true;
   const trialEnds = formatDate(access?.isTrial ? access.expiresAt : null);
   const renewalDate = formatDate(
     access?.active && !access.isTrial ? access.expiresAt : null,
@@ -285,27 +272,36 @@ export function KeepFlipSubscriptionScreen() {
         style={{marginBottom: insets.bottom, marginTop: insets.top}}
         showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
-          <View
-            accessibilityLabel={
-              isPaywallLocked
-                ? 'A KeepFlip plan is required to continue'
-                : 'KeepFlip plan and billing'
-            }
-            style={styles.planRequiredIcon}>
-            <IconSymbol
-              color={theme.colors.goldBright}
-              name={isPaywallLocked ? 'lock.fill' : 'creditcard.fill'}
-              size={17}
-            />
-          </View>
+          {canLeavePlanScreen ? (
+            <Pressable
+              accessibilityLabel="Go back"
+              accessibilityRole="button"
+              onPress={() => router.back()}
+              style={({ pressed }) => [
+                styles.backButton,
+                pressed && styles.buttonPressed,
+              ]}>
+              <IconSymbol
+                color={theme.colors.cream}
+                name="chevron.left"
+                size={18}
+              />
+            </Pressable>
+          ) : (
+            <View
+              accessibilityLabel="A KeepFlip plan is required to continue"
+              style={styles.planRequiredIcon}>
+              <IconSymbol
+                color={theme.colors.goldBright}
+                name="lock.fill"
+                size={17}
+              />
+            </View>
+          )}
 
           <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>
-              {isOnboarding ? 'KEEPFLIP / CHOOSE YOUR PLAN' : 'KEEPFLIP / PLAN & BILLING'}
-            </Text>
-            <Text style={styles.title}>
-              {isOnboarding ? 'Choose how you want to KeepFlip' : 'Built for the way you resell'}
-            </Text>
+            <Text style={styles.eyebrow}>KEEPFLIP / PLAN & BILLING</Text>
+            <Text style={styles.title}>Built for the way you resell</Text>
           </View>
         </View>
 
@@ -415,7 +411,7 @@ export function KeepFlipSubscriptionScreen() {
                   styles.utilityButton,
                   pressed && styles.utilityButtonPressed,
                 ]}>
-                <Text style={styles.utilityButtonText}>
+                <Text style={[styles.utilityButtonText, { fontSize: responsiveFont(11)}]}>
                   MANAGE SUBSCRIPTION
                 </Text>
               </Pressable>
@@ -440,7 +436,7 @@ export function KeepFlipSubscriptionScreen() {
                 size="small"
               />
             ) : (
-              <Text style={styles.utilityButtonText}>
+              <Text style={[styles.utilityButtonText, { fontSize: responsiveFont(11)}]}>
                 RESTORE PURCHASES
               </Text>
             )}
@@ -453,7 +449,7 @@ export function KeepFlipSubscriptionScreen() {
               styles.refreshButton,
               pressed && styles.utilityButtonPressed,
             ]}>
-            <Text style={styles.refreshButtonText}>
+            <Text style={[styles.refreshButtonText, {fontSize: responsiveFont(9)}]}>
               REFRESH PLAN STATUS
             </Text>
           </Pressable>
@@ -487,6 +483,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(215, 168, 74, 0.07)',
     borderColor: 'rgba(215, 168, 74, 0.24)',
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+  },
+  backButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(242, 237, 228, 0.05)',
+    borderColor: 'rgba(242, 237, 228, 0.14)',
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
     height: 40,
@@ -747,7 +753,6 @@ const styles = StyleSheet.create({
   utilityButtonText: {
     color: theme.colors.goldBright,
     fontFamily: theme.fonts.radar,
-    fontSize: 8,
     fontWeight: '900',
     letterSpacing: 0.85,
   },

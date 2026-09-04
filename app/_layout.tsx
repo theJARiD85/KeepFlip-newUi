@@ -14,6 +14,8 @@ import {
 } from "react";
 import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Platform } from 'react-native';
+import Purchases, { LOG_LEVEL } from 'react-native-purchases';
 import * as Notifications from 'expo-notifications';
 import * as SecureStore from 'expo-secure-store';
 import * as Device from 'expo-device';
@@ -25,6 +27,7 @@ import {
 import {
   getAppwriteCoreServices,
 } from '@/lib/appwrite';
+import { ID } from 'react-native-appwrite';
 import { KeepFlipFeedbackNudgeProvider } from "@/components/feedback/keepflip-feedback-nudge";
 import KeepFlipIntro from "@/components/intro/keepflip-intro.native";
 import { keepFlipTheme } from "@/constants/keepflip-theme";
@@ -43,100 +46,6 @@ void SplashScreen
     }),
   });
   
-
-function AppwritePushTargetRegistrar() {
-  const { status, user } = useKeepFlipAuth();
-
-  useEffect(() => {
-    if (status !== 'signed-in' || !user || !Device.isDevice) return;
-
-    let cancelled = false;
-
-    const register = async () => {
-      try {
-        const existing = await Notifications.getPermissionsAsync();
-        let permissionStatus = existing.status;
-
-        if (permissionStatus !== 'granted') {
-          const requested = await Notifications.requestPermissionsAsync();
-          permissionStatus = requested.status;
-        }
-
-        if (permissionStatus !== 'granted' || cancelled) return;
-
-        const nativeToken = String(
-          (await Notifications.getDevicePushTokenAsync()).data,
-        );
-        if (!nativeToken || cancelled) return;
-
-        const savedToken = await SecureStore.getItemAsync('devicePushToken');
-        const savedUserId = await SecureStore.getItemAsync(
-          'devicePushTokenUserId',
-        );
-
-        if (savedToken === nativeToken && savedUserId === user.$id) {
-          return;
-        }
-
-        // createPushTarget is an Account endpoint. It must run only after
-        // Appwrite has an authenticated user session; otherwise Appwrite sees
-        // the caller as role:guests and rejects targets.write.
-        const { account } = getAppwriteCoreServices();
-        const targetId = `push-${user.$id.slice(0, 24)}`;
-
-        try {
-          await account.updatePushTarget({
-            targetId,
-            identifier: nativeToken,
-          });
-        } catch (updateError) {
-          const code =
-            updateError &&
-            typeof updateError === 'object' &&
-            'code' in updateError
-              ? Number((updateError as { code?: unknown }).code)
-              : null;
-
-          if (code !== 404) throw updateError;
-
-          await account.createPushTarget({
-            targetId,
-            identifier: nativeToken,
-          });
-        }
-
-        if (cancelled) return;
-
-        await Promise.all([
-          SecureStore.setItemAsync('devicePushToken', nativeToken),
-          SecureStore.setItemAsync('devicePushTokenUserId', user.$id),
-          SecureStore.setItemAsync('appwritePushTargetId', targetId),
-        ]);
-
-        if (__DEV__) {
-          console.log(
-            '[KeepFlip][Messaging] Push target registered for signed-in user.',
-          );
-        }
-      } catch (error) {
-        if (!cancelled) {
-          console.error(
-            'Error setting up Appwrite Messaging target:',
-            error,
-          );
-        }
-      }
-    };
-
-    void register();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [status, user]);
-
-  return null;
-}
 
 function ProtectedRootStack() {
   const {
@@ -196,6 +105,8 @@ export default function RootLayout() {
   __DEV__ ||
   process.env.EXPO_PUBLIC_APPODEAL_TESTING === "true";
 
+  const { account } = getAppwriteCoreServices();
+
   const [
     fontsLoaded,
     fontError,
@@ -234,6 +145,19 @@ export default function RootLayout() {
       require("@/assets/fonts/PlusJakartaSansSemiBold.otf"),
   });
 
+  useEffect(() => {
+    async function checkUser() {
+      try {
+        const currentUser = await account.get();
+        console.log(currentUser);
+      } catch (error) {
+        console.log('No user signed in');
+      }
+    }
+    
+    checkUser();
+  }, []);
+  
 
   useEffect(() => {
     if (
@@ -416,7 +340,6 @@ export default function RootLayout() {
           value={navigationTheme}
         >
           <KeepFlipAuthProvider>
-            <AppwritePushTargetRegistrar />
             <KeepFlipFeedbackNudgeProvider>
               <ProtectedRootStack />
             </KeepFlipFeedbackNudgeProvider>
