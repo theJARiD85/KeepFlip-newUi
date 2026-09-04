@@ -176,10 +176,32 @@ function PlanCard({
         )}
       </Pressable>
 
+<<<<<<< Updated upstream
       <Text style={styles.afterTrialText}>
         Then {selectedPrice} {cadence === 'annual' ? 'per year' : 'per month'}.
         Cancel anytime.
       </Text>
+=======
+        <Pressable
+          accessibilityRole="button"
+          disabled={!checkoutEnabled || purchasing}
+          onPress={() => onPurchase('hobbyist', 'annual')}
+          style={({ pressed }) => [
+            styles.annualButton,
+            (!checkoutEnabled || purchasing) && styles.buttonDisabled,
+            pressed &&
+            checkoutEnabled &&
+            !purchasing &&
+            styles.annualButtonPressed,
+          ]}>
+          <Text style={[styles.annualButtonText, { fontSize: responsiveFont(10)}]}>
+            ANNUAL · {annualDisplay} / YEAR
+          </Text>
+          <Text style={[styles.annualSavingsText, { fontSize: responsiveFont(9)}]}>
+            Save $50 / year · equivalent to $4.17 / month
+          </Text>
+        </Pressable>
+>>>>>>> Stashed changes
     </View>
   );
 }
