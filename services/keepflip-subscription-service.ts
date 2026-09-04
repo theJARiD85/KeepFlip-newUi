@@ -151,43 +151,28 @@ export const KEEPFLIP_PLAN_DEFINITIONS: KeepFlipPlanDefinition[] = [
   {
     id: 'hobbyist',
     name: 'Part-Time Hobbyist',
-    eyebrow: 'TIER 1',
-    monthlyPriceFallback: '$25',
-    annualPriceFallback: '$250',
+    eyebrow: 'PART-TIME / ESSENTIALS',
+    monthlyPriceFallback: '$10',
+    annualPriceFallback: '$100',
     description:
-      'The essentials for casual and part-time resellers who want one place to value, organize, and track their flips.',
+      'For part-time resellers who want smarter sourcing, organized inventory, reliable valuations, and a clearer view of costs and profit.',
     limits: ['Up to 50 active listings / month', '100 AI valuation scans / month'],
     features: ['Basic bookkeeping reports', 'Inventory and item profit tracking'],
   },
   {
     id: 'serious',
     name: 'Serious Reseller',
-    eyebrow: 'TIER 2 / SWEET SPOT',
-    monthlyPriceFallback: '$45',
-    annualPriceFallback: null,
+    eyebrow: 'SERIOUS / BEST FOR BUSINESS',
+    monthlyPriceFallback: '$25',
+    annualPriceFallback: '$250',
     recommended: true,
     description:
-      'The full automated resale workflow for sellers who want to save hours of comp research and expense matching.',
+      'For active resellers running a growing resale business with higher limits, unlimited AI valuations, and automated bookkeeping tools.',
     limits: ['Up to 250 active listings / month', 'Unlimited AI valuation scans'],
     features: [
       'Full automated bookkeeping',
       'Schedule C export',
       'eBay money reconciliation',
-    ],
-  },
-  {
-    id: 'power',
-    name: 'Power Seller',
-    eyebrow: 'TIER 3',
-    monthlyPriceFallback: '$100',
-    annualPriceFallback: null,
-    description:
-      'Built for high-volume sourcing, liquidation inventory, and resale operations with more than one person involved.',
-    limits: ['Unlimited active listings', 'Unlimited AI valuation scans'],
-    features: [
-      'Multi-user / employee access',
-      'Advanced bookkeeping analytics',
-      'Granular marketplace fee analysis',
     ],
   },
 ];
@@ -202,10 +187,11 @@ const PACKAGE_IDS: Record<
   },
   serious: {
     monthly: 'serious_monthly',
+    annual: 'serious_annual',
   },
-  power: {
-    monthly: 'power_monthly',
-  },
+  // Kept intentionally dormant for backward compatibility with any historical
+  // entitlement records. Power Seller is not purchasable at launch.
+  power: {},
 };
 
 const EMPTY_ACCESS: KeepFlipSubscriptionAccess = {
