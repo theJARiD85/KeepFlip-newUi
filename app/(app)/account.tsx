@@ -132,7 +132,7 @@ export default function AccountScreen() {
             ? `${subscriptionPlan?.name ?? 'KeepFlip plan'} · 7-day free trial active.`
             : subscriptionAccess?.active
               ? `${subscriptionPlan?.name ?? 'KeepFlip plan'} is active on this account.`
-              : 'Choose Hobbyist, Serious Reseller, or Power Seller and start with 7 days free.';
+              : 'Choose Hobbyist or Serious Reseller and start with 7 days free.';
 
   const subscriptionStatus =
     subscriptionState === 'error'
