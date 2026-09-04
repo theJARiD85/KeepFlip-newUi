@@ -1,6 +1,10 @@
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import {
+  useLocalSearchParams,
+  useNavigation,
+  useRouter,
+} from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -9,12 +13,13 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import {
   KEEPFLIP_PLAN_DEFINITIONS,
   areKeepFlipSubscriptionsEnforced,
@@ -38,21 +43,29 @@ function hapticSelection() {
   void Haptics.selectionAsync().catch(() => undefined);
 }
 
+function annualSavings(plan: KeepFlipPlanId) {
+  if (plan === 'hobbyist') return 'SAVE $20 / YEAR';
+  if (plan === 'serious') return 'SAVE $50 / YEAR';
+  return null;
+}
+
 function PlanCard({
-  definition,
+  cadence,
+  checkoutEnabled,
   currentPlan,
+  definition,
   monthlyPrice,
   annualPrice,
   purchasing,
-  checkoutEnabled,
   onPurchase,
 }: {
-  definition: KeepFlipPlanDefinition;
+  cadence: KeepFlipBillingCadence;
+  checkoutEnabled: boolean;
   currentPlan: KeepFlipPlanId | null;
+  definition: KeepFlipPlanDefinition;
   monthlyPrice: string | null;
   annualPrice: string | null;
   purchasing: boolean;
-  checkoutEnabled: boolean;
   onPurchase: (
     plan: KeepFlipPlanId,
     cadence: KeepFlipBillingCadence,
@@ -60,10 +73,12 @@ function PlanCard({
 }) {
   const { responsiveFont } = useResponsiveLayout();
   const isCurrent = currentPlan === definition.id;
-  const primaryPrice = monthlyPrice || definition.monthlyPriceFallback;
-  const annualDisplay =
-    annualPrice || definition.annualPriceFallback;
-    annualPrice ?? definition.annualPriceFallback ?? '';
+  const selectedPrice =
+    cadence === 'annual'
+      ? annualPrice ?? definition.annualPriceFallback
+      : monthlyPrice ?? definition.monthlyPriceFallback;
+  const periodLabel = cadence === 'annual' ? '/ year' : '/ month';
+  const savings = cadence === 'annual' ? annualSavings(definition.id) : null;
 
   return (
     <View
@@ -77,6 +92,7 @@ function PlanCard({
           <Text style={styles.planEyebrow}>{definition.eyebrow}</Text>
           <Text style={styles.planName}>{definition.name}</Text>
         </View>
+
         {isCurrent ? (
           <View style={styles.currentBadge}>
             <Text style={styles.currentText}>CURRENT</Text>
@@ -89,8 +105,23 @@ function PlanCard({
       </View>
 
       <View style={styles.priceRow}>
-        <Text style={styles.price}>{primaryPrice}</Text>
-        <Text style={styles.pricePeriod}>/ month</Text>
+        <Text style={styles.price}>{selectedPrice}</Text>
+        <Text style={styles.pricePeriod}>{periodLabel}</Text>
+      </View>
+
+      {savings ? (
+        <Text style={styles.savingsLine}>{savings}</Text>
+      ) : null}
+
+      <View style={styles.trialIncludedRow}>
+        <IconSymbol
+          color={theme.colors.scannerCyan}
+          name="sparkles"
+          size={14}
+        />
+        <Text style={styles.trialIncludedText}>
+          7-DAY FREE TRIAL INCLUDED
+        </Text>
       </View>
 
       <Text style={styles.planDescription}>{definition.description}</Text>
@@ -110,17 +141,16 @@ function PlanCard({
 
       <Pressable
         accessibilityRole="button"
-        disabled={!checkoutEnabled || purchasing || isCurrent}
-        onPress={() => onPurchase(definition.id, 'monthly')}
+        disabled={!checkoutEnabled || purchasing}
+        onPress={() => onPurchase(definition.id, cadence)}
         style={({ pressed }) => [
           styles.subscribeButton,
           definition.recommended && styles.subscribeButtonRecommended,
-          (!checkoutEnabled || purchasing || isCurrent) && styles.buttonDisabled,
+          (!checkoutEnabled || purchasing) && styles.buttonDisabled,
           pressed &&
-          checkoutEnabled &&
-          !purchasing &&
-          !isCurrent &&
-          styles.buttonPressed,
+            checkoutEnabled &&
+            !purchasing &&
+            styles.buttonPressed,
         ]}>
         {purchasing ? (
           <ActivityIndicator
@@ -136,45 +166,33 @@ function PlanCard({
             style={[
               styles.subscribeButtonText,
               definition.recommended &&
-              styles.subscribeButtonTextRecommended,
-              {fontSize: responsiveFont(11)}
+                styles.subscribeButtonTextRecommended,
+              { fontSize: responsiveFont(10) },
             ]}>
-            {isCurrent
-              ? 'CURRENT PLAN'
-              : currentPlan
-                ? 'SWITCH TO THIS PLAN'
-                : 'START 7-DAY FREE TRIAL'}
+            {currentPlan && !isCurrent
+              ? 'SWITCH PLAN'
+              : 'START 7-DAY FREE TRIAL'}
           </Text>
         )}
       </Pressable>
 
-      {definition.id === 'hobbyist' && annualDisplay ? (
-        <Pressable
-          accessibilityRole="button"
-          disabled={!checkoutEnabled || purchasing}
-          onPress={() => onPurchase('hobbyist', 'annual')}
-          style={({ pressed }) => [
-            styles.annualButton,
-            (!checkoutEnabled || purchasing) && styles.buttonDisabled,
-            pressed &&
-            checkoutEnabled &&
-            !purchasing &&
-            styles.annualButtonPressed,
-          ]}>
-          <Text style={styles.annualButtonText}>
-            ANNUAL · {annualDisplay} / YEAR
-          </Text>
-          <Text style={styles.annualSavingsText}>
-            Save $50 / year · equivalent to $20.83 / month
-          </Text>
-        </Pressable>
+      <Text style={styles.afterTrialText}>
+        Then {selectedPrice} {cadence === 'annual' ? 'per year' : 'per month'}.
+        Cancel anytime.
+      </Text>
     </View>
   );
 }
 
 export function KeepFlipSubscriptionScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
+  const { source } = useLocalSearchParams<{ source?: string | string[] }>();
+  const isOnboarding =
+    (Array.isArray(source) ? source[0] : source) === 'onboarding';
   const insets = useSafeAreaInsets();
+  const { responsiveFont } = useResponsiveLayout();
+
   const {
     errorMessage,
     manage,
@@ -186,13 +204,28 @@ export function KeepFlipSubscriptionScreen() {
     snapshot,
     state,
   } = useKeepFlipSubscription();
+
   const [actionMessage, setActionMessage] = useState<string | null>(null);
-  const { responsiveFont } = useResponsiveLayout();
+  const [cadence, setCadence] =
+    useState<KeepFlipBillingCadence>('monthly');
+
   const access = snapshot?.access ?? null;
   const catalog = snapshot?.catalog ?? null;
   const checkoutEnabled = state === 'ready' && snapshot?.configured === true;
-  const canLeavePlanScreen =
-    !areKeepFlipSubscriptionsEnforced() || access?.active === true;
+  const isPaywallLocked =
+    access?.active !== true &&
+    (isOnboarding || areKeepFlipSubscriptionsEnforced());
+
+  useEffect(() => {
+    if (!isPaywallLocked) return;
+
+    const unsubscribe = navigation.addListener('beforeRemove', (event) => {
+      event.preventDefault();
+    });
+
+    return unsubscribe;
+  }, [isPaywallLocked, navigation]);
+
   const trialEnds = formatDate(access?.isTrial ? access.expiresAt : null);
   const renewalDate = formatDate(
     access?.active && !access.isTrial ? access.expiresAt : null,
@@ -201,20 +234,22 @@ export function KeepFlipSubscriptionScreen() {
   const statusCopy = useMemo(() => {
     if (state === 'loading') return 'Checking your KeepFlip plan…';
     if (state === 'unconfigured') {
-      return 'Subscription checkout is staged in this build and will activate once the RevenueCat store keys are added.';
+      return 'Subscription checkout will activate when the RevenueCat store configuration is available in this build.';
     }
-    if (state === 'error') return 'KeepFlip could not verify subscription access.';
+    if (state === 'error') {
+      return 'KeepFlip could not verify subscription access.';
+    }
     if (access?.isTrial) {
       return trialEnds
         ? `Free trial active through ${trialEnds}.`
-        : 'Your 7-day free trial is active.';
+        : 'Your free trial is active.';
     }
     if (access?.active) {
       return renewalDate
         ? `${access.willRenew ? 'Renews' : 'Access continues'} through ${renewalDate}.`
         : 'Your subscription is active.';
     }
-    return 'Choose the level that matches how you resell. New subscribers start with a 7-day free trial.';
+    return 'Every KeepFlip plan starts with a 7-day free trial. Choose monthly or annual billing below.';
   }, [
     access?.active,
     access?.isTrial,
@@ -226,11 +261,11 @@ export function KeepFlipSubscriptionScreen() {
 
   const handlePurchase = async (
     plan: KeepFlipPlanId,
-    cadence: KeepFlipBillingCadence,
+    selectedCadence: KeepFlipBillingCadence,
   ) => {
     hapticSelection();
     setActionMessage(null);
-    const activated = await purchase(plan, cadence);
+    const activated = await purchase(plan, selectedCadence);
     if (activated) {
       setActionMessage('Your KeepFlip plan is active.');
       void Haptics.notificationAsync(
@@ -260,49 +295,49 @@ export function KeepFlipSubscriptionScreen() {
     }
   };
 
+  const selectCadence = (nextCadence: KeepFlipBillingCadence) => {
+    if (nextCadence === cadence) return;
+    hapticSelection();
+    setCadence(nextCadence);
+  };
+
   return (
     <KeepFlipBackground>
       <ScrollView
         contentContainerStyle={[
           styles.content,
           {
-            paddingBottom: insets.bottom,
-            paddingTop: insets.top / 2,
+            paddingBottom: insets.bottom + 24,
+            paddingTop: insets.top + 18,
           },
         ]}
-        style={{marginBottom: insets.bottom, marginTop: insets.top}}
         showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
-          {canLeavePlanScreen ? (
-            <Pressable
-              accessibilityLabel="Go back"
-              accessibilityRole="button"
-              onPress={() => router.back()}
-              style={({ pressed }) => [
-                styles.backButton,
-                pressed && styles.buttonPressed,
-              ]}>
-              <IconSymbol
-                color={theme.colors.cream}
-                name="chevron.left"
-                size={18}
-              />
-            </Pressable>
-          ) : (
-            <View
-              accessibilityLabel="A KeepFlip plan is required to continue"
-              style={styles.planRequiredIcon}>
-              <IconSymbol
-                color={theme.colors.goldBright}
-                name="lock.fill"
-                size={17}
-              />
-            </View>
-          )}
+          <View
+            accessibilityLabel={
+              isPaywallLocked
+                ? 'A KeepFlip plan is required to continue'
+                : 'KeepFlip plan and billing'
+            }
+            style={styles.planRequiredIcon}>
+            <IconSymbol
+              color={theme.colors.goldBright}
+              name={isPaywallLocked ? 'lock.fill' : 'creditcard.fill'}
+              size={17}
+            />
+          </View>
 
           <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>KEEPFLIP / PLAN & BILLING</Text>
-            <Text style={styles.title}>Built for the way you resell</Text>
+            <Text style={styles.eyebrow}>
+              {isOnboarding
+                ? 'KEEPFLIP / CHOOSE YOUR PLAN'
+                : 'KEEPFLIP / PLAN & BILLING'}
+            </Text>
+            <Text style={styles.title}>
+              {isOnboarding
+                ? 'Choose how you want to KeepFlip'
+                : 'Built for the way you resell'}
+            </Text>
           </View>
         </View>
 
@@ -315,8 +350,57 @@ export function KeepFlipSubscriptionScreen() {
             />
           </View>
           <View style={styles.trialCopy}>
-            <Text style={styles.trialTitle}>7 DAYS FREE</Text>
+            <Text style={styles.trialTitle}>7 DAYS FREE ON EITHER BILLING OPTION</Text>
             <Text style={styles.trialBody}>{statusCopy}</Text>
+          </View>
+        </View>
+
+        <View style={styles.billingSection}>
+          <Text style={styles.billingLabel}>BILLING</Text>
+          <View
+            accessibilityLabel="Billing frequency"
+            style={styles.billingToggle}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected: cadence === 'monthly' }}
+              onPress={() => selectCadence('monthly')}
+              style={[
+                styles.billingOption,
+                cadence === 'monthly' && styles.billingOptionSelected,
+              ]}>
+              <Text
+                style={[
+                  styles.billingOptionText,
+                  cadence === 'monthly' && styles.billingOptionTextSelected,
+                ]}>
+                MONTHLY
+              </Text>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected: cadence === 'annual' }}
+              onPress={() => selectCadence('annual')}
+              style={[
+                styles.billingOption,
+                cadence === 'annual' && styles.billingOptionSelected,
+              ]}>
+              <Text
+                style={[
+                  styles.billingOptionText,
+                  cadence === 'annual' && styles.billingOptionTextSelected,
+                ]}>
+                ANNUAL
+              </Text>
+              <Text
+                style={[
+                  styles.billingOptionSubtext,
+                  cadence === 'annual' &&
+                    styles.billingOptionSubtextSelected,
+                ]}>
+                SAVE 2 MONTHS
+              </Text>
+            </Pressable>
           </View>
         </View>
 
@@ -337,17 +421,16 @@ export function KeepFlipSubscriptionScreen() {
                 annualPrice={
                   catalog?.prices[definition.id].annual ?? null
                 }
+                cadence={cadence}
                 checkoutEnabled={checkoutEnabled}
-                currentPlan={
-                  access?.active ? access.plan : null
-                }
+                currentPlan={access?.active ? access.plan : null}
                 definition={definition}
                 key={definition.id}
                 monthlyPrice={
                   catalog?.prices[definition.id].monthly ?? null
                 }
-                onPurchase={(plan, cadence) =>
-                  void handlePurchase(plan, cadence)
+                onPurchase={(plan, selectedCadence) =>
+                  void handlePurchase(plan, selectedCadence)
                 }
                 purchasing={purchasing}
               />
@@ -364,7 +447,7 @@ export function KeepFlipSubscriptionScreen() {
             />
             <Text style={styles.checkoutNoticeText}>
               {state === 'unconfigured'
-                ? 'Checkout is intentionally disabled until the RevenueCat public SDK key and store offering are configured for this build.'
+                ? 'Checkout is disabled until the RevenueCat public SDK key and store offering are configured for this build.'
                 : 'Checkout is temporarily unavailable while KeepFlip verifies subscription access.'}
             </Text>
           </View>
@@ -402,7 +485,9 @@ export function KeepFlipSubscriptionScreen() {
                   styles.continueButton,
                   pressed && styles.continueButtonPressed,
                 ]}>
-                <Text style={styles.continueButtonText}>CONTINUE TO KEEPFLIP</Text>
+                <Text style={styles.continueButtonText}>
+                  CONTINUE TO KEEPFLIP
+                </Text>
               </Pressable>
 
               <Pressable
@@ -412,7 +497,11 @@ export function KeepFlipSubscriptionScreen() {
                   styles.utilityButton,
                   pressed && styles.utilityButtonPressed,
                 ]}>
-                <Text style={[styles.utilityButtonText, { fontSize: responsiveFont(11)}]}>
+                <Text
+                  style={[
+                    styles.utilityButtonText,
+                    { fontSize: responsiveFont(11) },
+                  ]}>
                   MANAGE SUBSCRIPTION
                 </Text>
               </Pressable>
@@ -427,9 +516,9 @@ export function KeepFlipSubscriptionScreen() {
               styles.utilityButton,
               (!checkoutEnabled || restoring) && styles.buttonDisabled,
               pressed &&
-              checkoutEnabled &&
-              !restoring &&
-              styles.utilityButtonPressed,
+                checkoutEnabled &&
+                !restoring &&
+                styles.utilityButtonPressed,
             ]}>
             {restoring ? (
               <ActivityIndicator
@@ -437,7 +526,11 @@ export function KeepFlipSubscriptionScreen() {
                 size="small"
               />
             ) : (
-              <Text style={[styles.utilityButtonText, { fontSize: responsiveFont(11)}]}>
+              <Text
+                style={[
+                  styles.utilityButtonText,
+                  { fontSize: responsiveFont(11) },
+                ]}>
                 RESTORE PURCHASES
               </Text>
             )}
@@ -450,17 +543,22 @@ export function KeepFlipSubscriptionScreen() {
               styles.refreshButton,
               pressed && styles.utilityButtonPressed,
             ]}>
-            <Text style={[styles.refreshButtonText, {fontSize: responsiveFont(9)}]}>
+            <Text
+              style={[
+                styles.refreshButtonText,
+                { fontSize: responsiveFont(9) },
+              ]}>
               REFRESH PLAN STATUS
             </Text>
           </Pressable>
         </View>
 
         <Text selectable style={styles.finePrint}>
-          Subscription billing, trial eligibility, renewals, upgrades, and
-          cancellations are confirmed by Google Play or the App Store. Your
-          store account controls payment. Cancel before the trial ends to avoid
-          the first paid renewal.
+          Free trial availability is determined by Google Play or the App Store
+          and is generally limited to eligible new subscribers. Billing begins
+          after the trial unless cancelled before it ends. Subscription billing,
+          renewals, upgrades, and cancellations are controlled by your store
+          account.
         </Text>
       </ScrollView>
     </KeepFlipBackground>
@@ -470,7 +568,7 @@ export function KeepFlipSubscriptionScreen() {
 const styles = StyleSheet.create({
   content: {
     alignSelf: 'center',
-    gap: 18,
+    gap: 16,
     maxWidth: 760,
     paddingHorizontal: 18,
     width: '100%',
@@ -484,16 +582,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(215, 168, 74, 0.07)',
     borderColor: 'rgba(215, 168, 74, 0.24)',
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    height: 40,
-    justifyContent: 'center',
-    width: 40,
-  },
-  backButton: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(242, 237, 228, 0.05)',
-    borderColor: 'rgba(242, 237, 228, 0.14)',
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
     height: 40,
@@ -537,14 +625,65 @@ const styles = StyleSheet.create({
   trialTitle: {
     color: theme.colors.scannerCyan,
     fontFamily: theme.fonts.radar,
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: '900',
-    letterSpacing: 1.1,
+    letterSpacing: 0.95,
   },
   trialBody: {
     color: theme.colors.textMuted,
     fontSize: 12,
     lineHeight: 17,
+  },
+  billingSection: { gap: 7 },
+  billingLabel: {
+    color: theme.colors.gold,
+    fontFamily: theme.fonts.radar,
+    fontSize: 7,
+    fontWeight: '900',
+    letterSpacing: 1.1,
+    paddingHorizontal: 2,
+  },
+  billingToggle: {
+    backgroundColor: 'rgba(8, 8, 12, 0.92)',
+    borderColor: 'rgba(242, 237, 228, 0.14)',
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    gap: 4,
+    padding: 4,
+  },
+  billingOption: {
+    alignItems: 'center',
+    borderRadius: 9,
+    flex: 1,
+    gap: 1,
+    justifyContent: 'center',
+    minHeight: 45,
+    paddingHorizontal: 10,
+  },
+  billingOptionSelected: {
+    backgroundColor: 'rgba(215, 168, 74, 0.14)',
+    borderColor: 'rgba(242, 211, 138, 0.42)',
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  billingOptionText: {
+    color: theme.colors.textMuted,
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 0.85,
+  },
+  billingOptionTextSelected: {
+    color: theme.colors.goldBright,
+  },
+  billingOptionSubtext: {
+    color: 'rgba(173, 167, 178, 0.66)',
+    fontSize: 7,
+    fontWeight: '800',
+    letterSpacing: 0.45,
+  },
+  billingOptionSubtextSelected: {
+    color: theme.colors.scannerCyan,
   },
   loadingCard: {
     alignItems: 'center',
@@ -564,7 +703,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(242, 237, 228, 0.15)',
     borderRadius: 15,
     borderWidth: StyleSheet.hairlineWidth,
-    gap: 12,
+    gap: 11,
     padding: 15,
   },
   planCardRecommended: {
@@ -623,14 +762,48 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 0.7,
   },
-  priceRow: { alignItems: 'baseline', flexDirection: 'row', gap: 4 },
+  priceRow: {
+    alignItems: 'baseline',
+    flexDirection: 'row',
+    gap: 4,
+  },
   price: {
     color: theme.colors.cream,
-    fontSize: 25,
+    fontSize: 27,
     fontVariant: ['tabular-nums'],
     fontWeight: '900',
   },
-  pricePeriod: { color: theme.colors.textMuted, fontSize: 11 },
+  pricePeriod: {
+    color: theme.colors.textMuted,
+    fontSize: 11,
+  },
+  savingsLine: {
+    color: theme.colors.goldBright,
+    fontFamily: theme.fonts.radar,
+    fontSize: 7,
+    fontWeight: '900',
+    letterSpacing: 0.75,
+    marginTop: -6,
+  },
+  trialIncludedRow: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(0, 255, 255, 0.055)',
+    borderColor: 'rgba(0, 255, 255, 0.2)',
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+  },
+  trialIncludedText: {
+    color: theme.colors.scannerCyan,
+    fontFamily: theme.fonts.radar,
+    fontSize: 7,
+    fontWeight: '900',
+    letterSpacing: 0.7,
+  },
   planDescription: {
     color: theme.colors.textMuted,
     fontSize: 12,
@@ -670,29 +843,11 @@ const styles = StyleSheet.create({
   subscribeButtonTextRecommended: {
     color: theme.colors.backgroundDeep,
   },
-  annualButton: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(215, 168, 74, 0.055)',
-    borderColor: 'rgba(215, 168, 74, 0.28)',
-    borderRadius: 9,
-    borderWidth: StyleSheet.hairlineWidth,
-    gap: 2,
-    justifyContent: 'center',
-    minHeight: 44,
-  },
-  annualButtonPressed: {
-    backgroundColor: 'rgba(215, 168, 74, 0.12)',
-  },
-  annualButtonText: {
-    color: theme.colors.goldBright,
-    fontFamily: theme.fonts.radar,
-    fontSize: 7,
-    fontWeight: '900',
-    letterSpacing: 0.7,
-  },
-  annualSavingsText: {
-    color: theme.colors.textMuted,
+  afterTrialText: {
+    color: 'rgba(173, 167, 178, 0.76)',
     fontSize: 9,
+    lineHeight: 13,
+    textAlign: 'center',
   },
   buttonDisabled: { opacity: 0.45 },
   buttonPressed: { opacity: 0.78 },
