@@ -170,8 +170,8 @@ const PACKAGE_IDS: Record<
   Partial<Record<KeepFlipBillingCadence, string>>
 > = {
   hobbyist: {
-    monthly: 'hobbyist_monthly',
-    annual: 'hobbyist_annual',
+    monthly: 'hobbyist-monthly',
+    annual: 'hobbyist-annual',
   },
   serious: {
     monthly: 'serious-monthly',
