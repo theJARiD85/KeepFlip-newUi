@@ -86,10 +86,10 @@ keepflip_default
 Add these package identifiers to that offering:
 
 ```text
-hobbyist_monthly
-hobbyist_annual
-serious_monthly
-serious_annual
+hobbyist-monthly
+hobbyist-annual
+serious-monthly
+serious-annual
 ```
 
 KeepFlip uses the authenticated Appwrite user ID as the RevenueCat App User ID.
