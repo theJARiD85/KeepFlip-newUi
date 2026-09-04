@@ -61,7 +61,7 @@ function PlanCard({
   const isCurrent = currentPlan === definition.id;
   const primaryPrice = monthlyPrice || definition.monthlyPriceFallback;
   const annualDisplay =
-    annualPrice || definition.annualPriceFallback;
+    annualPrice ?? definition.annualPriceFallback ?? '';
 
   return (
     <View
@@ -144,8 +144,7 @@ function PlanCard({
         )}
       </Pressable>
 
-      {annualDisplay ? (
-        <Pressable
+      <Pressable
           accessibilityRole="button"
           disabled={!checkoutEnabled || purchasing}
           onPress={() => onPurchase(definition.id, 'annual')}
@@ -164,7 +163,6 @@ function PlanCard({
             LOWER EFFECTIVE MONTHLY COST · BEST VALUE
           </Text>
         </Pressable>
-      ) : null}
     </View>
   );
 }
