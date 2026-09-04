@@ -41,6 +41,8 @@ serious
 power
 ```
 
+`power` remains reserved only for backward compatibility/future expansion and is not purchasable at launch.
+
 Expected status values:
 
 ```text
@@ -66,13 +68,14 @@ Recommended indexes:
 
 ## 2. RevenueCat project
 
-Create the following entitlements exactly:
+Create these launch entitlements exactly:
 
 ```text
 keepflip_hobbyist
 keepflip_serious
-keepflip_power
 ```
+
+`keepflip_power` may remain reserved in RevenueCat for future use, but it should not be attached to the launch offering.
 
 Create an offering:
 
@@ -86,7 +89,7 @@ Add these package identifiers to that offering:
 hobbyist_monthly
 hobbyist_annual
 serious_monthly
-power_monthly
+serious_annual
 ```
 
 KeepFlip uses the authenticated Appwrite user ID as the RevenueCat App User ID.
@@ -99,9 +102,8 @@ Current KeepFlip pricing:
 
 | Plan | Monthly | Annual |
 | --- | ---: | ---: |
-| Part-Time Hobbyist | $25 | $250 |
-| Serious Reseller | $45 | — |
-| Power Seller | $100 | — |
+| Part-Time Hobbyist | $10 | $100 |
+| Serious Reseller | $25 | $250 |
 
 Configure the seven-day free trial as a store introductory offer for eligible new subscribers. KeepFlip does not manufacture a client-side trial timer.
 
@@ -133,8 +135,8 @@ The app now:
 
 - configures RevenueCat with the Appwrite user ID;
 - loads current customer entitlements and localized store pricing;
-- exposes Hobbyist, Serious Reseller, and Power Seller plan cards;
-- purchases monthly plans and the Hobbyist annual plan;
+- exposes Hobbyist and Serious Reseller launch plan cards;
+- purchases monthly or annual billing for either launch plan;
 - restores purchases;
 - opens store subscription management;
 - supports Android plan replacement behavior;
@@ -142,14 +144,15 @@ The app now:
 - reads the server-side `user_subscription` mirror when available;
 - exposes plan capability/limit helpers to the rest of the app;
 - shows Plan & Billing on the Account screen;
-- can route users without access to plan selection before onboarding once enforcement is enabled.
+- routes newly completed onboarding into required plan selection when RevenueCat is configured;
+- can gate users without active access once subscription enforcement is enabled.
 
 ## 7. Subscription Police backend
 
-The server-side subscription authority now lives at:
+The server-side subscription authority lives in the standalone repository:
 
 ```text
-appwrite/functions/keepflip-subscription-police
+theJARiD85/keepflip-subscription-police
 ```
 
 Create an Appwrite Function with ID:
@@ -158,13 +161,7 @@ Create an Appwrite Function with ID:
 keepflip_subscription_police
 ```
 
-and configure the Git root directory to:
-
-```text
-appwrite/functions/keepflip-subscription-police
-```
-
-Use `src/main.js` as the entrypoint and `npm install` as the build command.
+using the standalone repository root. Leave Appwrite's Git root directory blank, use `src/main.js` as the entrypoint, and use the repository's npm install/build configuration.
 
 The function receives RevenueCat webhooks, verifies webhook authentication/signatures, mirrors subscription state to `user_subscription`, and exposes authenticated `/status`, `/reconcile`, and `/access/check` routes.
 
@@ -190,8 +187,8 @@ to `true` until all of the following are complete:
 
 1. RevenueCat public SDK key is present in the build.
 2. Store products/base plans are active for testing.
-3. The four package identifiers resolve in `keepflip_default`.
-4. All three entitlements activate correctly.
+3. The four launch package identifiers resolve in `keepflip_default`.
+4. Both launch entitlements activate correctly.
 5. The seven-day store trial is verified.
 6. Purchase and restore have been tested with store test accounts.
 7. The RevenueCat webhook/Appwrite subscription mirror is deployed and tested.
