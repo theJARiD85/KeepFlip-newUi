@@ -82,17 +82,35 @@ function AppwritePushTargetRegistrar() {
         // Appwrite has an authenticated user session; otherwise Appwrite sees
         // the caller as role:guests and rejects targets.write.
         const { account } = getAppwriteCoreServices();
-        const target = await account.createPushTarget({
-          targetId: `push-${user.$id.slice(0, 24)}`,
-          identifier: nativeToken,
-        });
+        const targetId = `push-${user.$id.slice(0, 24)}`;
+
+        try {
+          await account.updatePushTarget({
+            targetId,
+            identifier: nativeToken,
+          });
+        } catch (updateError) {
+          const code =
+            updateError &&
+            typeof updateError === 'object' &&
+            'code' in updateError
+              ? Number((updateError as { code?: unknown }).code)
+              : null;
+
+          if (code !== 404) throw updateError;
+
+          await account.createPushTarget({
+            targetId,
+            identifier: nativeToken,
+          });
+        }
 
         if (cancelled) return;
 
         await Promise.all([
           SecureStore.setItemAsync('devicePushToken', nativeToken),
           SecureStore.setItemAsync('devicePushTokenUserId', user.$id),
-          SecureStore.setItemAsync('appwritePushTargetId', target.$id),
+          SecureStore.setItemAsync('appwritePushTargetId', targetId),
         ]);
 
         if (__DEV__) {
