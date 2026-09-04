@@ -53,9 +53,9 @@ keepflip_default
 Add custom packages with exactly these identifiers:
 
 ```text
-hobbyist_monthly
-hobbyist_annual
-serious_monthly
+hobbyist-monthly
+hobbyist-annual
+serious-monthly
 power_monthly
 ```
 
