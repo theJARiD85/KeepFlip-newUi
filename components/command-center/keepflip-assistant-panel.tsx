@@ -10,6 +10,7 @@ import {
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
+import { FlipSellerDecisions } from '@/components/command-center/flip-seller-decisions';
 import { KeepFlipControlRow } from '@/components/ui/keepflip-control-row';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -27,7 +28,12 @@ import {
   scheduleKeepFlipTaskReminder,
 } from '@/services/keepflip-notification-service';
 
-type AssistantRoute = '/inventory' | '/books' | '/deal-shelf' | '/account';
+type AssistantRoute =
+  | '/inventory'
+  | '/books'
+  | '/deal-shelf'
+  | '/account'
+  | '/seller-center';
 
 const FLIP_MASCOT_IMAGE = require('@/assets/images/flip-mascot.png');
 
@@ -248,9 +254,9 @@ export function KeepFlipAssistantPanel({
                 <View style={styles.onlineDot} />
                 <Text style={styles.onlineText}>ONLINE</Text>
               </View>
-              <Text style={styles.title}>What should we handle?</Text>
+              <Text style={styles.title}>Ask Flip</Text>
               <Text style={styles.subtitle}>
-                Create reminders, queue reseller work, or jump straight to a business tool.
+                Seller decisions, reminders, and business tools in one conversation.
               </Text>
             </View>
             <Pressable
@@ -261,6 +267,15 @@ export function KeepFlipAssistantPanel({
               <IconSymbol color={theme.colors.textMuted} name="xmark" size={17} />
             </Pressable>
           </View>
+
+          {userId ? (
+            <FlipSellerDecisions
+              ownerId={userId}
+              onOpenSellerCenter={() => onNavigate('/seller-center')}
+            />
+          ) : (
+            <Text style={styles.empty}>Sign in so Flip can open your seller decisions.</Text>
+          )}
 
           <View style={styles.inputRow}>
             <View style={styles.inputShell}>

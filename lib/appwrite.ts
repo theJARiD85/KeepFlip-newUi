@@ -120,6 +120,9 @@ export const APPWRITE = {
   ledgerEntriesTableId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_LEDGER_ENTRIES_TABLE_ID,
   ),
+  sellerOrdersTableId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_SELLER_ORDERS_TABLE_ID,
+  ),
   sourcingTripsTableId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_SOURCING_TRIPS_TABLE_ID,
   ),
