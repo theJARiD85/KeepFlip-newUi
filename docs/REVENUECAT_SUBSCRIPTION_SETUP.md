@@ -26,7 +26,6 @@ Create exactly:
 ```text
 keepflip_hobbyist
 keepflip_serious
-keepflip_power
 ```
 
 ## 3. Products / base plans
@@ -38,7 +37,6 @@ The app expects these commercial choices:
 | Hobbyist | Monthly | $24.99 / month |
 | Hobbyist | Annual | $239.88 / year |
 | Serious Reseller | Monthly | $44.99 / month |
-| Power Seller | Monthly | $89.99 / month |
 
 Store product IDs may be chosen to fit Google Play / App Store conventions. RevenueCat packages are what KeepFlip uses to select them.
 
@@ -57,7 +55,6 @@ hobbyist_monthly
 hobbyist_annual
 serious_monthly
 serious_annual
-power_monthly
 ```
 
 Attach each package to its corresponding store product/base plan and entitlement.
@@ -123,8 +120,7 @@ With enforcement enabled, an authenticated account without an active entitlement
 
 KeepFlip currently uses these tier rules:
 
-- Hobbyist: 50 active listings/month, 100 AI valuations/month, basic Books.
-- Serious: 250 active listings/month, unlimited AI valuations, automated Books, Schedule C export.
-- Power: unlimited listings/AI valuations, Serious features plus advanced Books analytics and multi-user capability.
+- Hobbyist: up to 50 active listings, 100 AI valuations/month, and the Hobbyist feature set.
+- Serious: KeepFlip's top tier. Every feature is unlocked, AI valuations are unlimited, and the only plan limit is up to 250 active listings total.
 
 The app exposes these rules through `KEEPFLIP_PLAN_LIMITS`, `keepFlipPlanAllows()`, and `keepFlipPlanLimit()`. Server functions must enforce paid features and metered usage before enforcement is considered complete.
