@@ -3,6 +3,10 @@ import {
   ExecutionMethod,
   functions,
 } from "../lib/appwrite";
+import {
+  createGatedAiExecution,
+  subscriptionsAreEnforced,
+} from "@/services/subscription-ai-gateway-service";
 
 export type ItemEvidenceField = {
   key: string;
@@ -741,18 +745,18 @@ export async function identifyItemWithAI(
     );
   }
 
-  const execution = await functions.createExecution({
-    functionId: APPWRITE.itemAiFunctionId,
-    body: JSON.stringify({
-      fileIds,
-      notes: notes.trim(),
-    }),
-    async: false,
-    method: ExecutionMethod.POST,
-    headers: {
-      "content-type": "application/json",
-    },
-  });
+  const input = { fileIds, notes: notes.trim() };
+  const execution = subscriptionsAreEnforced()
+    ? await createGatedAiExecution("identify", input)
+    : await functions.createExecution({
+        functionId: APPWRITE.itemAiFunctionId,
+        body: JSON.stringify(input),
+        async: false,
+        method: ExecutionMethod.POST,
+        headers: {
+          "content-type": "application/json",
+        },
+      });
 
   let payload: IdentifyItemResponse;
 

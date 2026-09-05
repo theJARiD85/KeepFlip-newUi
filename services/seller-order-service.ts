@@ -61,6 +61,7 @@ export type CreateManualSellerOrderInput = {
   ownerId: string;
   sourceItemId: string;
   title: string;
+  currency?: string;
   quantity?: number;
   soldPriceCents: number;
   listPriceCents?: number | null;
@@ -246,116 +247,77 @@ function rowToOrder(row: SellerOrderRow): SellerOrder {
 }
 
 function assertManualOrdersConfigured() {
-  if (!APPWRITE.databaseId || !APPWRITE.sellerOrdersTableId) {
+  if (!APPWRITE.sellerOperationsFunctionId) {
     throw new Error(
-      'Manual order tracking needs EXPO_PUBLIC_APPWRITE_SELLER_ORDERS_TABLE_ID in this build.',
+      'Manual order tracking needs the seller operations Function configured in this build.',
     );
   }
 }
 
-export async function listManualSellerOrders(ownerId: string) {
-  assertManualOrdersConfigured();
-  const cleanOwnerId = ownerId.trim();
-  if (!cleanOwnerId) return [];
-
-  const response = (await tablesDB.listRows({
-    databaseId: APPWRITE.databaseId,
-    tableId: APPWRITE.sellerOrdersTableId,
-    queries: [
-      Query.equal('ownerId', [cleanOwnerId]),
-      Query.orderDesc('soldAt'),
-      Query.limit(250),
-    ],
-  })) as unknown as { rows: SellerOrderRow[] };
-
-  return response.rows.map(rowToOrder);
+function publicOrderToSellerOrder(value: unknown): SellerOrder {
+  const row = value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+  const money = row.money && typeof row.money === 'object' && !Array.isArray(row.money) ? row.money as Record<string, unknown> : {};
+  const numberOrNull = (candidate: unknown) => Number.isSafeInteger(candidate) && Number(candidate) >= 0 ? Number(candidate) : null;
+  const textOrNull = (candidate: unknown, maximum = 2_000) => typeof candidate === 'string' && candidate.trim() ? candidate.trim().slice(0, maximum) : null;
+  return {
+    id: textOrNull(row.id, 64) || '', ownerId: '', sourceItemId: textOrNull(row.itemId, 64),
+    channel: row.source === 'ebay' ? 'ebay' : 'manual', externalOrderId: null, externalOrderKey: null,
+    externalListingId: null, sellerSku: textOrNull(row.sku, 120), title: textOrNull(row.title, 500) || 'Sold item',
+    quantity: positiveQuantity(row.quantity), soldPriceCents: numberOrNull(row.saleCents), listPriceCents: null,
+    feesCents: numberOrNull(money.feesCents), shippingExpenseCents: numberOrNull(money.shippingCostCents),
+    refundCents: numberOrNull(money.refundsCents), payoutCents: numberOrNull(money.payoutCents),
+    shipBy: isoDate(row.shipBy, 'Ship-by date'), fulfillmentStatus: normalizedStatus(row.status), paymentStatus: 'manual',
+    trackingNumber: textOrNull(row.trackingNumber, 120), shippingCarrierCode: textOrNull(row.carrier, 100), packingNotes: null,
+    soldAt: isoDate(row.soldAt, 'Sold date'), lastSyncedAt: null, syncStatus: 'manual',
+    createdAt: isoDate(row.createdAt, 'Created date') || new Date().toISOString(),
+    updatedAt: isoDate(row.updatedAt, 'Updated date') || new Date().toISOString(),
+  };
 }
 
-export async function createManualSellerOrder(
-  input: CreateManualSellerOrderInput,
-): Promise<SellerOrder> {
+function parseSellerOperationPayload(body: string | undefined) {
+  try {
+    const value: unknown = JSON.parse(body || '{}');
+    return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+  } catch { throw new Error('The seller operations response could not be read.'); }
+}
+
+async function executeSellerOperation(xpath: string, body: Record<string, unknown>) {
   assertManualOrdersConfigured();
-  const ownerId = input.ownerId.trim();
-  const sourceItemId = input.sourceItemId.trim();
-  const title = cleanText(input.title, 500);
+  const execution = await functions.createExecution({ functionId: APPWRITE.sellerOperationsFunctionId, async: false, method: ExecutionMethod.POST, xpath, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  const payload = parseSellerOperationPayload(execution.responseBody);
+  if (execution.responseStatusCode < 200 || execution.responseStatusCode >= 300 || payload.error) {
+    const error = payload.error && typeof payload.error === 'object' ? (payload.error as Record<string, unknown>).message : payload.error;
+    throw new Error(typeof error === 'string' && error.trim() ? error : 'Seller operations could not complete this request.');
+  }
+  return payload;
+}
+
+export async function listManualSellerOrders(ownerId: string) {
+  assertManualOrdersConfigured();
+  if (!ownerId.trim()) return [];
+  const payload = await executeSellerOperation('/orders/list', {});
+  return Array.isArray(payload.orders) ? payload.orders.map(publicOrderToSellerOrder) : [];
+}
+export async function createManualSellerOrder(input: CreateManualSellerOrderInput): Promise<SellerOrder> {
+  assertManualOrdersConfigured();
+  const ownerId = input.ownerId.trim(), sourceItemId = input.sourceItemId.trim(), title = cleanText(input.title, 500);
   if (!ownerId) throw new Error('Sign in before recording a sale.');
   if (!sourceItemId) throw new Error('Choose the exact inventory item that sold.');
   if (!title) throw new Error('The sold item needs a title.');
-
-  const now = new Date().toISOString();
-  const data = {
-    ownerId,
-    sourceItemId,
-    channel: 'manual',
-    externalOrderId: null,
-    externalOrderKey: null,
-    externalListingId: null,
-    sellerSku: null,
-    title,
-    quantity: positiveQuantity(input.quantity),
-    soldPriceCents: nonNegativeMoney(input.soldPriceCents, true),
-    listPriceCents: nonNegativeMoney(input.listPriceCents),
-    feesCents: nonNegativeMoney(input.feesCents) ?? 0,
-    shippingExpenseCents: nonNegativeMoney(input.shippingExpenseCents) ?? 0,
-    refundCents: nonNegativeMoney(input.refundCents) ?? 0,
-    payoutCents: nonNegativeMoney(input.payoutCents),
-    shipBy: isoDate(input.shipBy, 'Ship-by date'),
-    fulfillmentStatus: 'unfulfilled',
-    paymentStatus: 'manual',
-    trackingNumber: null,
-    shippingCarrierCode: null,
-    packingNotes: cleanText(input.packingNotes, 2_000),
-    soldAt: isoDate(input.soldAt, 'Sold date', true),
-    lastSyncedAt: null,
-    syncStatus: 'manual',
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  const created = (await tablesDB.createRow({
-    databaseId: APPWRITE.databaseId,
-    tableId: APPWRITE.sellerOrdersTableId,
-    rowId: ID.unique(),
-    data,
-    permissions: ownerPermissions(ownerId),
-  })) as unknown as SellerOrderRow;
-
-  return rowToOrder(created);
+  const payload = await executeSellerOperation('/orders/create', {
+    idempotencyKey: `manual-sale-${ID.unique()}`,
+    input: { itemId: sourceItemId, quantity: positiveQuantity(input.quantity), channel: 'manual', saleCents: nonNegativeMoney(input.soldPriceCents, true), shippingChargedCents: 0, currency: input.currency || 'USD', soldAt: isoDate(input.soldAt, 'Sold date', true), shipBy: isoDate(input.shipBy, 'Ship-by date'), feesCents: nonNegativeMoney(input.feesCents), shippingExpenseCents: nonNegativeMoney(input.shippingExpenseCents), refundCents: nonNegativeMoney(input.refundCents), payoutCents: nonNegativeMoney(input.payoutCents), packingNotes: cleanText(input.packingNotes, 2_000) },
+  });
+  return publicOrderToSellerOrder(payload.order);
 }
-
-export async function markManualSellerOrderShipped({
-  ownerId,
-  orderId,
-  trackingNumber,
-  shippingCarrierCode,
-}: {
-  ownerId: string;
-  orderId: string;
-  trackingNumber?: string | null;
-  shippingCarrierCode?: string | null;
-}) {
+export async function markManualSellerOrderShipped({ ownerId, orderId, trackingNumber, shippingCarrierCode }: { ownerId: string; orderId: string; trackingNumber?: string | null; shippingCarrierCode?: string | null }) {
   assertManualOrdersConfigured();
-  const existing = (await tablesDB.getRow({
-    databaseId: APPWRITE.databaseId,
-    tableId: APPWRITE.sellerOrdersTableId,
-    rowId: orderId,
-  })) as unknown as SellerOrderRow;
-  if (existing.ownerId !== ownerId) throw new Error('That order is not available to this account.');
-
-  const updated = (await tablesDB.updateRow({
-    databaseId: APPWRITE.databaseId,
-    tableId: APPWRITE.sellerOrdersTableId,
-    rowId: orderId,
-    data: {
-      fulfillmentStatus: 'shipped',
-      trackingNumber: cleanText(trackingNumber, 120),
-      shippingCarrierCode: cleanText(shippingCarrierCode, 100),
-      updatedAt: new Date().toISOString(),
-    },
-  })) as unknown as SellerOrderRow;
-  return rowToOrder(updated);
+  const existing = (await listManualSellerOrders(ownerId)).find((order) => order.id === orderId);
+  if (!existing) throw new Error('That order is not available to this account.');
+  const packed = await executeSellerOperation('/orders/fulfillment', { idempotencyKey: `manual-fulfillment-${orderId}-${ID.unique()}`, orderId, expectedVersion: 1, input: { shipBy: existing.shipBy, packingLocation: null, packed: true, carrier: cleanText(shippingCarrierCode, 100), trackingNumber: cleanText(trackingNumber, 120) } });
+  const shipped = await executeSellerOperation('/orders/ship', { idempotencyKey: `manual-ship-${orderId}-${ID.unique()}`, orderId, expectedVersion: Number((packed.order as Record<string, unknown>)?.version || 2), input: { shippedAt: new Date().toISOString(), untracked: !trackingNumber && !shippingCarrierCode } });
+  return publicOrderToSellerOrder(shipped.order);
 }
-
 function parseExecutionPayload(body: string | undefined) {
   try {
     const value: unknown = JSON.parse(body || '{}');

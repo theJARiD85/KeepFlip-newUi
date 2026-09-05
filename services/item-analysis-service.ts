@@ -18,10 +18,7 @@ import {
   type EbaySoldCompsResult,
   type SerpApiImageValuationResult,
 } from "@/services/ebaySoldCompsService";
-import {
-  identifyItemWithAI,
-  type KeepFlipIdentification,
-} from "@/services/itemAiService";
+import type { KeepFlipIdentification } from "@/services/itemAiService";
 import { neutralizeMarketProviderBrand } from "@/services/market-copy";
 import { getScannerPhotoFileId } from "@/services/scan-photo-service";
 import { getResellerBuyRules } from "@/services/user-profile-onboarding-service";
@@ -952,21 +949,8 @@ export async function analyzeItemPhotos(
     let multiPhotoIdentification: KeepFlipIdentification | null = null;
     let multiPhotoPassCompleted = false;
 
-    if (APPWRITE.itemAiFunctionId) {
-      try {
-        /*
-         * This pass receives every selected view. It is deliberately optional:
-         * a temporarily unavailable identifier must not turn a usable market
-         * estimate into a hard failure.
-         */
-        multiPhotoIdentification = await identifyItemWithAI(uploadedFileIds);
-        multiPhotoPassCompleted = true;
-      } catch {
-        console.warn(
-          "[KeepFlip] The multi-photo identifier was unavailable; continuing with market visual analysis.",
-        );
-      }
-    }
+    // eBay sold comps v2 owns the active image identification and valuation pass.
+    // Keep the optional legacy identifier out of the live scan path.
 
     throwIfAborted(options.signal);
     reportStage(options.onStage, "researching_comps");

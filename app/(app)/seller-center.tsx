@@ -249,6 +249,7 @@ function SellerCenter({ ownerId }: { ownerId: string }) {
         ownerId,
         sourceItemId: selectedItem.id,
         title: selectedItem.title,
+        currency: selectedItem.currency,
         quantity,
         soldPriceCents,
         listPriceCents: parseMoneyInput(draft.listPrice),

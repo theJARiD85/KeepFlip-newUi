@@ -3,6 +3,11 @@ import {
   ExecutionMethod,
   functions,
 } from "../lib/appwrite";
+import {
+  createGatedAiExecution,
+  nextAiOperationId,
+  subscriptionsAreEnforced,
+} from "@/services/subscription-ai-gateway-service";
 import type { ItemValuationSignals } from "./itemAiService";
 import { neutralizeMarketplaceBrand } from "./market-copy";
 import {
@@ -1173,7 +1178,9 @@ async function callMarketCompsFunction(
   let execution;
 
   try {
-    execution = await functions.createExecution({
+    execution = subscriptionsAreEnforced()
+      ? await createGatedAiExecution("market", body, asString(body.operationId) || nextAiOperationId())
+      : await functions.createExecution({
       functionId,
       async: false,
       method: ExecutionMethod.POST,

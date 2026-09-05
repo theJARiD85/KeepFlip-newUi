@@ -178,6 +178,9 @@ export const APPWRITE = {
   ebayOauthFunctionId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_EBAY_OAUTH_FUNCTION_ID,
   ),
+  sellerOperationsFunctionId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_SELLER_OPERATIONS_FUNCTION_ID,
+  ),
   bookkeepingFunctionId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_BOOKKEEPING_FUNCTION_ID,
   ),
