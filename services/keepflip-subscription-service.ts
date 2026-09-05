@@ -260,7 +260,11 @@ export function keepFlipPlanAllows(
 
 export function keepFlipPlanLimit(
   plan: KeepFlipPlanId | null,
-  limit: 'activeListingsPerMonth' | 'aiValuationScansPerMonth',
+  limit:
+    | 'concurrentActiveListings'
+    | 'monthlyPublishQuota'
+    | 'activeListingsPerMonth'
+    | 'aiValuationScansPerMonth',
 ) {
   return plan ? KEEPFLIP_PLAN_LIMITS[plan][limit] : 0;
 }
