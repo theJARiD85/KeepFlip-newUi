@@ -17,8 +17,8 @@ The mobile app treats `user_subscription` as a **read-only server mirror** of Re
 | `ownerId` | string(64) | yes | Appwrite user ID. Add a unique index. |
 | `provider` | string(32) | yes | Use `revenuecat`. |
 | `revenueCatCustomerId` | string(255) | yes | KeepFlip uses the Appwrite user ID as RevenueCat App User ID. |
-| `plan` | enum/string | no | `hobbyist`, `serious`, `power`. |
-| `entitlement` | string(64) | no | `keepflip_hobbyist`, `keepflip_serious`, or `keepflip_power`. |
+| `plan` | enum/string | no | `hobbyist` or `serious`. |
+| `entitlement` | string(64) | no | `keepflip_hobbyist` or `keepflip_serious`. |
 | `status` | enum/string | yes | `trialing`, `active`, `grace_period`, `billing_issue`, `cancelled`, `expired`, `revoked`, `unknown`. |
 | `isTrial` | boolean | yes | True only while RevenueCat reports the active period as a trial. |
 | `startedAt` | datetime | no | First subscription/trial start. |
@@ -50,7 +50,6 @@ Entitlements:
 ```text
 keepflip_hobbyist
 keepflip_serious
-keepflip_power
 ```
 
 Packages:
@@ -60,7 +59,6 @@ hobbyist_monthly
 hobbyist_annual
 serious_monthly
 serious_annual
-power_monthly
 ```
 
 The prices themselves come from Google Play / App Store through RevenueCat. The values shown in code are only display fallbacks while store products are unavailable.
