@@ -13,6 +13,9 @@ import {
   View,
 } from "react-native";
 
+import { ListingReadinessPanel } from "@/components/seller/listing-readiness-panel";
+import { EMPTY_EBAY_LISTING_REVIEW, type EbayListingReview } from "@/services/ebay-listing-readiness-service";
+import { ListingNetProceedsPanel } from "@/components/seller/listing-net-proceeds-panel";
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { useKeepFlipFeedbackNudge } from "@/components/feedback/keepflip-feedback-nudge";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -29,6 +32,7 @@ import { getEbayOAuthEnvironment } from "@/services/ebayConnectionService";
 import {
   publishEbayListing,
   type PublishEbayListingResult,
+  type PublishEbayListingInput,
 } from "@/services/ebayListingService";
 import { appendPhotoToItem } from "@/services/itemPhotoService";
 import {
@@ -52,6 +56,19 @@ type EbayListingForm = {
   quantity: string;
   marketplaceId: string;
 };
+
+function ebayPublishInput(item: InventoryItem, listing: ListingGeneratorResult["listing"], form: EbayListingForm,
+  review: EbayListingReview, aspects: Record<string, string[]>, measurements: Record<string, string[]>): PublishEbayListingInput {
+  const marketplaceId = form.marketplaceId.trim() || "EBAY_US";
+  return {
+    environment: getEbayOAuthEnvironment(), itemId: item.id, title: listing.title,
+    description: [listing.description, listing.conditionDisclosure].filter(Boolean).join("\n\n"),
+    price: Number(listing.priceRange.targetPrice), quantity: Number(form.quantity), categoryId: form.categoryId.trim(),
+    marketplaceId, currency: marketplaceId === "EBAY_US" ? item.currency || "USD" : undefined,
+    condition: listing.conditionLabel, conditionDescription: listing.conditionDisclosure,
+    listingDuration: "GTC", sku: item.sku || undefined, review, aspects, measurements,
+  };
+}
 
 const MAX_LISTING_PHOTOS = 10;
 
@@ -197,6 +214,15 @@ export default function ListingCreationGuideScreen() {
   const [shareError, setShareError] = useState<string | null>(null);
   const [ebayPublishOpen, setEbayPublishOpen] = useState(false);
   const [ebayPublishing, setEbayPublishing] = useState(false);
+  const [ebayReady, setEbayReady] = useState(false);
+  const [ebayReview, setEbayReview] = useState<EbayListingReview>({ ...EMPTY_EBAY_LISTING_REVIEW });
+  const [ebayAspects, setEbayAspects] = useState<Record<string, string[]>>({});
+  const [ebayMeasurements, setEbayMeasurements] = useState<Record<string, string[]>>({});
+  useEffect(() => {
+    setEbayReady(false); setEbayReview({ ...EMPTY_EBAY_LISTING_REVIEW });
+    setEbayAspects({}); setEbayMeasurements({});
+  }, [item?.id]);
+
   const [ebayPublishError, setEbayPublishError] = useState<string | null>(null);
   const [ebayPublishResult, setEbayPublishResult] =
     useState<PublishEbayListingResult | null>(null);
@@ -503,6 +529,7 @@ export default function ListingCreationGuideScreen() {
 
   const publishListingToEbay = useCallback(async () => {
     if (!item || !generatedListing || ebayPublishing) return;
+    if (!ebayReady) { setEbayPublishError("Complete the readiness check before publishing."); return; }
 
     const requiredFields: [keyof EbayListingForm, string][] = [
       ["categoryId", "eBay category ID"],
@@ -529,29 +556,8 @@ export default function ListingCreationGuideScreen() {
     setEbayPublishing(true);
     setEbayPublishError(null);
     try {
-      const result = await publishEbayListing({
-        environment: getEbayOAuthEnvironment(),
-        itemId: item.id,
-        title: generatedListing.title,
-        description: [
-          generatedListing.description,
-          generatedListing.conditionDisclosure,
-        ]
-          .filter(Boolean)
-          .join("\n\n"),
-        price,
-        quantity,
-        categoryId: ebayForm.categoryId.trim(),
-        marketplaceId: ebayForm.marketplaceId.trim() || "EBAY_US",
-        currency:
-          ebayForm.marketplaceId.trim() === "" ||
-          ebayForm.marketplaceId.trim() === "EBAY_US"
-            ? item.currency || "USD"
-            : undefined,
-        condition: generatedListing.conditionLabel,
-        conditionDescription: generatedListing.conditionDisclosure,
-        listingDuration: "GTC",
-      });
+      const result = await publishEbayListing(ebayPublishInput(item, generatedListing, ebayForm,
+        ebayReview, ebayAspects, ebayMeasurements));
       if (userId) {
         try {
           await updateInventoryMarketplaceLink({
@@ -582,6 +588,10 @@ export default function ListingCreationGuideScreen() {
     }
   }, [
     ebayForm,
+    ebayReady,
+    ebayReview,
+    ebayAspects,
+    ebayMeasurements,
     ebayPublishing,
     generatedListing,
     item,
@@ -956,6 +966,13 @@ export default function ListingCreationGuideScreen() {
 
                   {ebayPublishOpen ? (
                     <View style={styles.ebayPublishPanel}>
+                      {item && generatedListing && userId ? (
+                        <ListingNetProceedsPanel key={item.id} item={item} ownerId={userId}
+                          prices={generatedListing.priceRange}
+                          onTargetPriceChange={(targetPrice) => setGeneratedListing((current) => current ? ({
+                            ...current, priceRange: { ...current.priceRange, targetPrice },
+                          }) : current)} />
+                      ) : null}
                       <View style={styles.ebayPublishHeader}>
                         <View style={styles.ebayPublishHeaderCopy}>
                           <Text style={styles.fieldLabel}>PUBLISH TO EBAY</Text>
@@ -1058,6 +1075,13 @@ export default function ListingCreationGuideScreen() {
                               value={ebayForm.marketplaceId}
                             />
                           </View>
+                          {item && generatedListing ? (
+                            <ListingReadinessPanel
+                              input={ebayPublishInput(item, generatedListing, ebayForm, ebayReview, ebayAspects, ebayMeasurements)}
+                              review={ebayReview} onReviewChange={setEbayReview}
+                              onAspectsChange={setEbayAspects} onMeasurementsChange={setEbayMeasurements}
+                              onReadyChange={setEbayReady} disabled={ebayPublishing} />
+                          ) : null}
                           {ebayPublishError ? (
                             <Text selectable style={styles.ebayPublishError}>
                               {ebayPublishError}
@@ -1077,12 +1101,12 @@ export default function ListingCreationGuideScreen() {
                             <Pressable
                               accessibilityLabel="Publish live eBay listing"
                               accessibilityRole="button"
-                              disabled={ebayPublishing}
+                              disabled={ebayPublishing || !ebayReady}
                               onPress={confirmEbayPublish}
                               style={({ pressed }) => [
                                 styles.ebayPublishButton,
                                 pressed && styles.pressed,
-                                ebayPublishing && styles.ebayPublishButtonDisabled,
+                                (ebayPublishing || !ebayReady) && styles.ebayPublishButtonDisabled,
                               ]}
                             >
                               {ebayPublishing ? (

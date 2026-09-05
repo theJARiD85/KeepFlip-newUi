@@ -86,13 +86,15 @@ keepflip_default
 Add these package identifiers to that offering:
 
 ```text
-hobbyist-monthly
-hobbyist-annual
-serious-monthly
-serious-annual
+hobbyist_monthly
+hobbyist_annual
+serious_monthly
+serious_annual
 ```
 
 KeepFlip uses the authenticated Appwrite user ID as the RevenueCat App User ID.
+These are RevenueCat package identifiers; the Google Play base-plan IDs may use
+hyphens and are configured on the products attached to each package.
 
 ## 3. Store products
 

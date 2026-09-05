@@ -79,7 +79,7 @@ export function BusinessPulse({
   }
 
   const maximumFlow = Math.max(
-    ...overview.moneyFlow.flatMap((month) => [month.moneyInCents, month.moneyOutCents]),
+    ...overview.moneyFlow.flatMap((date) => [date.moneyInCents, date.moneyOutCents]),
     1,
   );
   const attention = [
@@ -131,25 +131,25 @@ export function BusinessPulse({
           </View>
         </View>
         <View style={styles.chartBars}>
-          {overview.moneyFlow.map((month) => (
-            <View key={month.key} style={styles.monthGroup}>
+          {overview.moneyFlow.map((date) => (
+            <View key={date.key} style={styles.monthGroup}>
               <View style={styles.bars}>
                 <View
                   style={[
                     styles.bar,
                     styles.inBar,
-                    { height: barHeight(month.moneyInCents, maximumFlow) },
+                    { height: barHeight(date.moneyInCents, maximumFlow) },
                   ]}
                 />
                 <View
                   style={[
                     styles.bar,
                     styles.outBar,
-                    { height: barHeight(month.moneyOutCents, maximumFlow) },
+                    { height: barHeight(date.moneyOutCents, maximumFlow) },
                   ]}
                 />
               </View>
-              <Text style={styles.monthLabel}>{month.label}</Text>
+              <Text style={styles.monthLabel}>{date.label}</Text>
             </View>
           ))}
         </View>

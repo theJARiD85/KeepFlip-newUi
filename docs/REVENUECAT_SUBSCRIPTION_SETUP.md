@@ -53,13 +53,16 @@ keepflip_default
 Add custom packages with exactly these identifiers:
 
 ```text
-hobbyist-monthly
-hobbyist-annual
-serious-monthly
+hobbyist_monthly
+hobbyist_annual
+serious_monthly
+serious_annual
 power_monthly
 ```
 
 Attach each package to its corresponding store product/base plan and entitlement.
+The package identifiers use underscores in the live offering; Google Play base
+plan IDs are separate values and may use hyphens.
 
 ## 5. Seven-day trial
 

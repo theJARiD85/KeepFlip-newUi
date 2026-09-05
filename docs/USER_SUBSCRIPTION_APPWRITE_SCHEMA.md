@@ -22,7 +22,7 @@ The mobile app treats `user_subscription` as a **read-only server mirror** of Re
 | `status` | enum/string | yes | `trialing`, `active`, `grace_period`, `billing_issue`, `cancelled`, `expired`, `revoked`, `unknown`. |
 | `isTrial` | boolean | yes | True only while RevenueCat reports the active period as a trial. |
 | `startedAt` | datetime | no | First subscription/trial start. |
-| `trialEndsAt` | datetime | no | Trial expiration when applicable. |
+| `trialEndsAt` | datetime | no | First/most recent trial expiration. Keep this value after the trial converts or expires so the app can recognize that the store account has already used its trial. |
 | `currentPeriodEndsAt` | datetime | no | Current entitlement expiration/renewal boundary. |
 | `willRenew` | boolean | yes | RevenueCat/store renewal state. |
 | `productId` | string(128) | no | Store product that unlocked the entitlement. |
@@ -56,9 +56,10 @@ keepflip_power
 Packages:
 
 ```text
-hobbyist-monthly
-hobbyist-annual
-serious-monthly
+hobbyist_monthly
+hobbyist_annual
+serious_monthly
+serious_annual
 power_monthly
 ```
 
@@ -66,7 +67,7 @@ The prices themselves come from Google Play / App Store through RevenueCat. The 
 
 ## Trial rule
 
-Configure the 7-day free trial in the store subscription offer/base plan and RevenueCat. Do not generate trial dates in the mobile client. RevenueCat/store receipts remain the billing authority.
+Configure the 7-day free trial in the store subscription offer/base plan and RevenueCat. Do not generate trial dates in the mobile client. The Subscription Police Function should write `isTrial: true` and the trial expiration on the trial-start event, then set `isTrial: false` on paid renewal while preserving `trialEndsAt`. RevenueCat/store receipts remain the billing authority.
 
 ## Security
 

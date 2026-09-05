@@ -24,9 +24,21 @@ export type KeepFlipSubscriptionFeature =
   | 'automated_books'
   | 'schedule_c_export'
   | 'advanced_bookkeeping_analytics'
+  | 'net_proceeds_scenarios'
+  | 'automatic_order_sync'
+  | 'bulk_listings'
+  | 'offer_guardrails'
+  | 'automated_offers'
+  | 'automated_repricing'
+  | 'cross_marketplace_sync'
+  | 'automatic_delisting'
+  | 'seller_analytics'
   | 'multi_user';
 
 export type KeepFlipPlanLimits = {
+  concurrentActiveListings: number | null;
+  monthlyPublishQuota: number | null;
+  /** @deprecated Compatibility alias for concurrentActiveListings. */
   activeListingsPerMonth: number | null;
   aiValuationScansPerMonth: number | null;
   features: Set<KeepFlipSubscriptionFeature>;
@@ -37,17 +49,31 @@ export const KEEPFLIP_PLAN_LIMITS: Record<
   KeepFlipPlanLimits
 > = {
   hobbyist: {
+    concurrentActiveListings: 50,
+    monthlyPublishQuota: null,
     activeListingsPerMonth: 50,
     aiValuationScansPerMonth: 100,
     features: new Set<KeepFlipSubscriptionFeature>(['basic_books']),
   },
   serious: {
+    concurrentActiveListings: 250,
+    monthlyPublishQuota: null,
     activeListingsPerMonth: 250,
     aiValuationScansPerMonth: null,
     features: new Set<KeepFlipSubscriptionFeature>([
       'basic_books',
       'automated_books',
       'schedule_c_export',
+      'net_proceeds_scenarios',
+      'automatic_order_sync',
+      'bulk_listings',
+      'offer_guardrails',
+      'automated_offers',
+      'automated_repricing',
+      'cross_marketplace_sync',
+      'automatic_delisting',
+      'seller_analytics',
+      'advanced_bookkeeping_analytics',
     ]),
   },
 };
@@ -145,7 +171,7 @@ export const KEEPFLIP_PLAN_DEFINITIONS: KeepFlipPlanDefinition[] = [
     annualPriceFallback: '$100',
     description:
       'For part-time resellers who want smarter sourcing, organized inventory, reliable valuations, and a clearer view of costs and profit.',
-    limits: ['Up to 50 active listings / month', '100 AI valuation scans / month'],
+    limits: ['Up to 50 live listings at one time', '100 AI valuation scans / month'],
     features: ['Basic bookkeeping reports', 'Inventory and item profit tracking'],
   },
   {
@@ -157,7 +183,7 @@ export const KEEPFLIP_PLAN_DEFINITIONS: KeepFlipPlanDefinition[] = [
     recommended: true,
     description:
       'For active resellers running a growing resale business with higher limits, unlimited AI valuations, and automated bookkeeping tools.',
-    limits: ['Up to 250 active listings / month', 'Unlimited AI valuation scans'],
+    limits: ['Up to 250 live listings at one time', 'Unlimited AI valuation scans'],
     features: [
       'Full automated bookkeeping',
       'Schedule C export',

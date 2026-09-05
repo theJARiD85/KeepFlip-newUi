@@ -1,4 +1,5 @@
 import { ExecutionMethod, functions, APPWRITE } from "@/lib/appwrite";
+import type { EbayListingReview } from "@/services/ebay-listing-readiness-service";
 import type { EbayOAuthEnvironment } from "@/services/ebayConnectionService";
 
 export type PublishEbayListingInput = {
@@ -21,6 +22,9 @@ export type PublishEbayListingInput = {
   conditionDescription?: string;
   listingDuration?: string;
   sku?: string;
+  review?: EbayListingReview;
+  aspects?: Record<string, string[]>;
+  measurements?: Record<string, string[]>;
 };
 
 export type PublishEbayListingResult = {
@@ -77,9 +81,12 @@ export async function publishEbayListing(
     execution.responseStatusCode >= 400
   ) {
     throw new Error(
-      typeof payload.error === "string" && payload.error.trim()
-        ? payload.error
-        : "KeepFlip could not publish this item on eBay.",
+      Array.isArray(payload.checks)
+        ? payload.checks.filter((entry: { complete?: boolean }) => !entry.complete)
+          .map((entry: { detail?: string }) => entry.detail).filter(Boolean).join("\n") || "Complete the listing readiness checklist."
+        : typeof payload.error === "string" && payload.error.trim()
+          ? payload.error
+          : "KeepFlip could not publish this item on eBay.",
     );
   }
 
