@@ -68,6 +68,12 @@ const INVENTORY_LIST_COLUMNS = [
   'itemPhotos',
   'sku',
   'storageLocation',
+  'isListed',
+  'resaleStatus',
+  'ebaySku',
+  'ebayOfferId',
+  'ebayListingId',
+  'listedAt',
   'acquiredAt',
   'createdAt',
 ] as const;
@@ -131,6 +137,19 @@ export type InventoryItem = {
   purchaseSource: string | null;
   sku: string | null;
   storageLocation: string | null;
+  isListed: boolean;
+  resaleStatus: string | null;
+  listingChannel: string | null;
+  externalListingId: string | null;
+  externalOfferId: string | null;
+  listingCurrentPrice: number | null;
+  listingQuantity: number | null;
+  listingLastSyncedAt: string | null;
+  listingSyncStatus: string | null;
+  ebaySku: string | null;
+  ebayOfferId: string | null;
+  ebayListingId: string | null;
+  listedAt: string | null;
   receiptFileId: string | null;
   purchaseNotes: string | null;
   acquiredAt?: string | null;
@@ -171,6 +190,12 @@ type InventoryRow = {
   purchaseSource?: string | null;
   sku?: string | null;
   storageLocation?: string | null;
+  isListed?: boolean | null;
+  resaleStatus?: string | null;
+  ebaySku?: string | null;
+  ebayOfferId?: string | null;
+  ebayListingId?: string | null;
+  listedAt?: string | null;
   receiptFileId?: string | null;
   purchaseNotes?: string | null;
   photoCount?: number | null;
@@ -673,6 +698,22 @@ function rowToInventoryItem(row: InventoryRow): InventoryItem {
     purchaseSource: cleanText(row.purchaseSource),
     sku: cleanText(row.sku),
     storageLocation: cleanText(row.storageLocation),
+    isListed: row.isListed === true,
+    resaleStatus: cleanText(row.resaleStatus),
+    listingChannel:
+      row.isListed === true || row.ebayListingId || row.ebayOfferId || row.ebaySku
+        ? 'ebay'
+        : null,
+    externalListingId: cleanText(row.ebayListingId),
+    externalOfferId: cleanText(row.ebayOfferId),
+    listingCurrentPrice: null,
+    listingQuantity: null,
+    listingLastSyncedAt: null,
+    listingSyncStatus: row.isListed === true ? 'linked' : null,
+    ebaySku: cleanText(row.ebaySku) || cleanText(row.sku),
+    ebayOfferId: cleanText(row.ebayOfferId),
+    ebayListingId: cleanText(row.ebayListingId),
+    listedAt: row.listedAt || null,
     receiptFileId: cleanText(row.receiptFileId),
     purchaseNotes: cleanText(row.purchaseNotes),
     acquiredAt: row.acquiredAt || null,
