@@ -45,7 +45,11 @@ type KeepFlipSubscriptionContextValue = {
   manage: () => Promise<void>;
   canUse: (feature: KeepFlipSubscriptionFeature) => boolean;
   limitFor: (
-    limit: 'activeListingsPerMonth' | 'aiValuationScansPerMonth',
+    limit:
+      | 'concurrentActiveListings'
+      | 'monthlyPublishQuota'
+      | 'activeListingsPerMonth'
+      | 'aiValuationScansPerMonth',
   ) => number | null;
 };
 
