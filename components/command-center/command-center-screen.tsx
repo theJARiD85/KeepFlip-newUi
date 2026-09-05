@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { KeepFlipAssistantPanel } from '@/components/command-center/keepflip-assistant-panel';
 import { BusinessPulse } from '@/components/command-center/business-pulse';
+import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
 import {
   KeepFlipControlRow,
   type KeepFlipStatusBadgeProps,
@@ -226,6 +227,11 @@ export function CommandCenterScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useKeepFlipAuth();
+  const { canUse } = useKeepFlipSubscription();
+  const bookkeepingFunctionConfigured = isResellerBookkeepingConfigured();
+  const advancedBooksAllowed = canUse('automated_books');
+  const advancedBookkeepingConfigured =
+    bookkeepingFunctionConfigured && advancedBooksAllowed;
   const [supportError, setSupportError] = useState<string | null>(null);
   const [eBayState, setEbayState] =
     useState<EbayConnectionViewState>('checking');
@@ -305,7 +311,7 @@ export function CommandCenterScreen() {
   }, [resolveEbayStatus]);
 
   const refreshReviewQueue = useCallback(async () => {
-    if (!user?.$id || !isResellerBookkeepingConfigured()) {
+    if (!user?.$id || !advancedBookkeepingConfigured) {
       setReviewItems([]);
       setReviewLoading(false);
       setReviewError(null);
@@ -329,7 +335,7 @@ export function CommandCenterScreen() {
     } finally {
       if (requestId === reviewRequestId.current) setReviewLoading(false);
     }
-  }, [user?.$id]);
+  }, [advancedBookkeepingConfigured, user]);
 
   const refreshBusinessOverview = useCallback(async () => {
     if (!user?.$id) {
@@ -349,7 +355,7 @@ export function CommandCenterScreen() {
       isResellerBooksConfigured()
         ? listResellerLedgerEntries(ownerId)
         : Promise.resolve([]),
-      isResellerBookkeepingConfigured()
+      advancedBookkeepingConfigured
         ? getBookkeepingOverview()
         : Promise.resolve(null),
     ]);
@@ -386,7 +392,7 @@ export function CommandCenterScreen() {
       if (advancedResult.value.truncated) {
         notes.push('This view is showing the latest 1,000 Books lines.');
       }
-    } else if (isResellerBookkeepingConfigured()) {
+    } else if (advancedBookkeepingConfigured) {
       notes.push('Advanced Books is set up, but its latest records are unavailable right now.');
     }
 
@@ -398,10 +404,23 @@ export function CommandCenterScreen() {
     );
     setBusinessError(notes.join(' ') || null);
     setBusinessLoading(false);
-  }, [user?.$id]);
+  }, [advancedBookkeepingConfigured, user]);
 
   const handleEbayBooksSync = async () => {
     if (eBayBooksSyncing) return;
+    if (!advancedBooksAllowed) {
+      setEbayBooksSyncMessage(
+        'eBay money sync is included with the Serious Reseller plan.',
+      );
+      router.push('/subscription' as Href);
+      return;
+    }
+    if (!bookkeepingFunctionConfigured) {
+      setEbayBooksSyncMessage(
+        'Money sync is not configured in this build yet. Finish the Books Function setup, then rebuild KeepFlip.',
+      );
+      return;
+    }
     if (eBayState !== 'connected') {
       setEbayBooksSyncMessage('Connect eBay first, then sync its sales, fees, labels, refunds, and payouts.');
       return;
@@ -538,15 +557,23 @@ export function CommandCenterScreen() {
   }, [resolveEbayStatus, user?.$id]);
 
   useEffect(() => {
-    void refreshBusinessOverview();
+    const timer = setTimeout(() => {
+      void refreshBusinessOverview();
+    }, 0);
+
     return () => {
+      clearTimeout(timer);
       businessRequestId.current += 1;
     };
   }, [refreshBusinessOverview]);
 
   useEffect(() => {
-    void refreshReviewQueue();
+    const timer = setTimeout(() => {
+      void refreshReviewQueue();
+    }, 0);
+
     return () => {
+      clearTimeout(timer);
       reviewRequestId.current += 1;
     };
   }, [refreshReviewQueue]);
@@ -640,7 +667,7 @@ export function CommandCenterScreen() {
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}>
         <Animated.View entering={FadeInDown.duration(260)} style={styles.header}>
-          <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>KEEPFLIP / COMMAND CENTER</Text>
+          <Text style={[styles.eyebrow, { fontSize: responsiveFont(9) }]}>KEEPFLIP / COMMAND CENTER</Text>
           <Text style={[styles.title, {fontSize: responsiveFont(26)}]}>Run the business</Text>
           <Text style={styles.subtitle}>
             Marketplace access, inventory, books, and workspace controls in one place.
@@ -704,38 +731,58 @@ export function CommandCenterScreen() {
               status={eBayDetails.status}
             />
           </View>
-          {isResellerBookkeepingConfigured() ? (
-            <>
-              <View style={styles.eBaySurface}>
-                <KeepFlipControlRow
-                  accent="gold"
-                  actionBusy={eBayBooksSyncing}
-                  actionLabel={eBayState === 'connected' ? 'SYNC' : undefined}
-                  accessibilityHint="Brings in eBay sales, fees, labels, refunds, and payouts using the connected seller account."
-                  description={
-                    eBayBooksSyncMessage ??
-                    'Bring in eBay sales, fees, shipping labels, refunds, and payouts. Payouts are matched without counting them as a second sale.'
-                  }
-                  icon="chart.bar.fill"
-                  label="eBay money sync"
-                  onPress={eBayBooksSyncing ? undefined : () => void handleEbayBooksSync()}
-                  status={{
-                    label:
-                      eBayBooksSyncing
-                        ? 'SYNCING'
-                        : eBayState === 'connected'
-                          ? 'READY'
-                          : 'CONNECT FIRST',
-                    tone:
-                      eBayBooksSyncing
-                        ? 'violet'
-                        : eBayState === 'connected'
-                          ? 'active'
-                          : 'muted',
-                  }}
-                />
-              </View>
+          <View style={styles.eBaySurface}>
+            <KeepFlipControlRow
+              accent="gold"
+              actionBusy={eBayBooksSyncing}
+              actionLabel={
+                !advancedBooksAllowed
+                  ? 'SERIOUS'
+                  : eBayState === 'connected'
+                    ? 'SYNC'
+                    : undefined
+              }
+              accessibilityHint={
+                !advancedBooksAllowed
+                  ? 'Opens Plan and Billing so you can choose the Serious Reseller plan.'
+                  : 'Brings in eBay sales, fees, labels, refunds, and payouts using the connected seller account.'
+              }
+              description={
+                eBayBooksSyncMessage ??
+                (!advancedBooksAllowed
+                  ? 'Included with the Serious Reseller plan. Choose Serious to unlock eBay sales, fees, labels, refunds, and payout reconciliation.'
+                  : !bookkeepingFunctionConfigured
+                    ? 'Money sync is waiting for the Books Function to be configured in this build.'
+                    : 'Bring in eBay sales, fees, shipping labels, refunds, and payouts. Payouts are matched without counting them as a second sale.')
+              }
+              icon="chart.bar.fill"
+              label="eBay money sync"
+              onPress={eBayBooksSyncing ? undefined : () => void handleEbayBooksSync()}
+              status={{
+                label: !advancedBooksAllowed
+                  ? 'LOCKED'
+                  : !bookkeepingFunctionConfigured
+                    ? 'SETUP'
+                    : eBayBooksSyncing
+                      ? 'SYNCING'
+                      : eBayState === 'connected'
+                        ? 'READY'
+                        : 'CONNECT FIRST',
+                tone: !advancedBooksAllowed
+                  ? 'warning'
+                  : !bookkeepingFunctionConfigured
+                    ? 'muted'
+                    : eBayBooksSyncing
+                      ? 'violet'
+                      : eBayState === 'connected'
+                        ? 'active'
+                        : 'muted',
+              }}
+            />
+          </View>
 
+          {advancedBookkeepingConfigured ? (
+            <>
               {reviewItems.length > 0 || reviewError ? (
                 <View style={styles.reviewSurface}>
                   <KeepFlipControlRow

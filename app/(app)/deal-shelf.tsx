@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
+import { useKeepFlipSubscription } from "@/components/subscription/keepflip-subscription-context";
 import {
   AddToInventoryForm,
   type AddToInventoryFormValues,
@@ -245,7 +246,14 @@ export default function DealShelfScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useKeepFlipAuth();
+  const { canUse } = useKeepFlipSubscription();
   const userId = user?.$id ?? "";
+  const basicBooksAllowed = canUse("basic_books");
+  const advancedBooksAllowed = canUse("automated_books");
+  const legacyLedgerConfigured =
+    isResellerBooksConfigured() && basicBooksAllowed;
+  const advancedBookkeepingConfigured =
+    isResellerBookkeepingConfigured() && advancedBooksAllowed;
   const [deals, setDeals] = useState<DealShelfItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [promotingId, setPromotingId] = useState<string | null>(null);
@@ -293,16 +301,16 @@ export default function DealShelfScreen() {
   const handlePromote = useCallback(
     (deal: DealShelfItem) => {
       if (!userId || promotingId || promotingDeal) return;
-      if (!isResellerBooksConfigured() && !isResellerBookkeepingConfigured()) {
+      if (!legacyLedgerConfigured && !advancedBookkeepingConfigured) {
         Alert.alert(
-          "Books setup needed",
-          "Finish setting up Books before saving a purchase.",
+          "Books plan needed",
+          "Choose a KeepFlip plan before saving this purchase to Books.",
         );
         return;
       }
       setPromotingDeal(deal);
     },
-    [promotingDeal, promotingId, userId],
+    [advancedBookkeepingConfigured, legacyLedgerConfigured, promotingDeal, promotingId, userId],
   );
 
   const handlePromoteWithDetails = useCallback(
@@ -390,7 +398,7 @@ export default function DealShelfScreen() {
 
         let booksWarning: string | null = null;
         try {
-          if (isResellerBookkeepingConfigured()) {
+          if (advancedBookkeepingConfigured) {
             await recordBookkeepingEvent({
               amountCents,
               eventType: "inventory_purchase",
@@ -403,7 +411,7 @@ export default function DealShelfScreen() {
               occurredAt,
               summary: "Inventory purchase",
             });
-          } else {
+          } else if (legacyLedgerConfigured) {
             await createManualLedgerEntry({
               amountCents,
               channel: values.source.trim() || null,
@@ -417,6 +425,10 @@ export default function DealShelfScreen() {
               ownerId: userId,
               receiptFileId: uploadedReceiptFileId,
             });
+          } else {
+            throw new Error(
+              "Choose a KeepFlip plan before recording this purchase in Books.",
+            );
           }
         } catch (caught) {
           booksWarning =
@@ -467,7 +479,14 @@ export default function DealShelfScreen() {
         setPromotingId(null);
       }
     },
-    [promotingDeal, promotingId, router, userId],
+    [
+      advancedBookkeepingConfigured,
+      legacyLedgerConfigured,
+      promotingDeal,
+      promotingId,
+      router,
+      userId,
+    ],
   );
 
   const handleRemove = useCallback(

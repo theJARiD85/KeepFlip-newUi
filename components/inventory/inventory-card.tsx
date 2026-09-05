@@ -508,11 +508,11 @@ const styles = StyleSheet.create({
   },
   valuationSummary: {
     position: "relative",
-    minHeight: 88,
+    minHeight: 70,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 16,
-    paddingVertical: 13,
+    paddingVertical: 7,
     backgroundColor: "rgba(5, 5, 8, 0.98)",
     experimental_backgroundImage:
       "radial-gradient(circle at 50% 0%, rgba(242, 211, 138, 0.13) 0%, transparent 48%), linear-gradient(90deg, rgba(141, 114, 255, 0.08) 0%, rgba(5, 5, 8, 0) 28%, rgba(5, 5, 8, 0) 72%, rgba(88, 223, 232, 0.08) 100%)",
@@ -595,7 +595,7 @@ const styles = StyleSheet.create({
   },
   recordMetric: {
     flex: 0.78,
-    minWidth: 0,
+    minWidth: '25%',
     gap: 3,
   },
   recordMetricStorage: {

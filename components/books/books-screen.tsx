@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { useKeepFlipFeedbackNudge } from '@/components/feedback/keepflip-feedback-nudge';
+import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import {
@@ -324,10 +325,16 @@ function advancedEventTypeForLedgerEntry(
 export function BooksScreen() {
   const { user } = useKeepFlipAuth();
   const { recordCompletedAction } = useKeepFlipFeedbackNudge();
+  const { canUse } = useKeepFlipSubscription();
   const insets = useSafeAreaInsets();
   const userId = user?.$id;
-  const legacyLedgerConfigured = isResellerBooksConfigured();
-  const advancedBookkeepingConfigured = isResellerBookkeepingConfigured();
+  const basicBooksAllowed = canUse('basic_books');
+  const advancedBooksAllowed = canUse('automated_books');
+  const scheduleCExportAllowed = canUse('schedule_c_export');
+  const legacyLedgerConfigured =
+    isResellerBooksConfigured() && basicBooksAllowed;
+  const advancedBookkeepingConfigured =
+    isResellerBookkeepingConfigured() && advancedBooksAllowed;
   const ledgerConfigured = legacyLedgerConfigured || advancedBookkeepingConfigured;
   const [entries, setEntries] = useState<ResellerLedgerEntry[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -467,6 +474,13 @@ export function BooksScreen() {
   };
 
   const openEntrySheet = (entryType: ResellerLedgerEntryType) => {
+    if (!basicBooksAllowed && !advancedBooksAllowed) {
+      setStatusMessage(
+        'Books is included with a KeepFlip plan. Open Plan & Billing to continue.',
+      );
+      return;
+    }
+
     if (!ledgerConfigured) {
       setStatusMessage(
         'Books recording turns on after its private Appwrite ledger table is configured.',
@@ -589,6 +603,13 @@ export function BooksScreen() {
   };
 
   const exportLedger = async () => {
+    if (!scheduleCExportAllowed) {
+      setStatusMessage(
+        'CSV export is included with the Serious Reseller plan. Choose Serious in Plan & Billing to unlock it.',
+      );
+      return;
+    }
+
     if (!entries.length || exporting) return;
 
     setExporting(true);
@@ -795,7 +816,11 @@ export function BooksScreen() {
         <Section
           action={
             <Pressable
-              accessibilityHint="Creates a CSV of every recorded Books entry."
+              accessibilityHint={
+                scheduleCExportAllowed
+                  ? 'Creates a CSV of every recorded Books entry.'
+                  : 'Requires the Serious Reseller plan.'
+              }
               accessibilityRole="button"
               disabled={!entries.length || exporting}
               onPress={() => void exportLedger()}
@@ -807,7 +832,9 @@ export function BooksScreen() {
               {exporting ? (
                 <ActivityIndicator color={theme.colors.scannerCyan} size="small" />
               ) : (
-                <Text style={styles.exportButtonText}>EXPORT CSV</Text>
+                <Text style={styles.exportButtonText}>
+                  {scheduleCExportAllowed ? 'EXPORT CSV' : 'SERIOUS CSV'}
+                </Text>
               )}
             </Pressable>
           }

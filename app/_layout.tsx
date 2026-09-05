@@ -14,8 +14,6 @@ import {
 } from "react";
 import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { Platform } from 'react-native';
-import Purchases, { LOG_LEVEL } from 'react-native-purchases';
 import * as Notifications from 'expo-notifications';
 import * as SecureStore from 'expo-secure-store';
 import * as Device from 'expo-device';
@@ -222,18 +220,6 @@ export default function RootLayout() {
     };
   
     void checkPushRegistration();
-  }, []);
-
-  useEffect(() => {
-    Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
-
-    const apiKey = process.env.EXPO_PUBLIC_REVENUE_CAT_API_KEY ?? '';
-    if (!apiKey) {
-      console.warn('RevenueCat API key is not set — skipping Purchases.configure');
-      return;
-    }
-
-    Purchases.configure({ apiKey });
   }, []);
 
   async function registerForPushNotifications() {

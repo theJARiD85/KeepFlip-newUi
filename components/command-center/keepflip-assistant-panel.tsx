@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Image } from 'expo-image';
 import {
   ActivityIndicator,
   Pressable,
@@ -6,10 +7,12 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { KeepFlipControlRow } from '@/components/ui/keepflip-control-row';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import {
   completeAssistantTask,
@@ -25,6 +28,8 @@ import {
 } from '@/services/keepflip-notification-service';
 
 type AssistantRoute = '/inventory' | '/books' | '/deal-shelf' | '/account';
+
+const FLIP_MASCOT_IMAGE = require('@/assets/images/flip-mascot.png');
 
 async function scheduleTaskReminder(
   task: AssistantTask,
@@ -51,6 +56,7 @@ export function KeepFlipAssistantPanel({
 }) {
   const { user } = useKeepFlipAuth();
   const [command, setCommand] = useState('');
+  const [isExpanded, setIsExpanded] = useState(false);
   const [tasks, setTasks] = useState<AssistantTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isWorking, setIsWorking] = useState(false);
@@ -199,94 +205,149 @@ export function KeepFlipAssistantPanel({
 
   return (
     <View style={styles.surface}>
-      <View style={styles.heading}>
-        <View style={styles.headingCopy}>
-          <Text style={styles.eyebrow}>KEEPFLIP ASSISTANT</Text>
-          <Text style={styles.title}>What should we handle?</Text>
-          <Text style={styles.subtitle}>
-            Create reminders, queue reseller work, or jump straight to a business tool.
-          </Text>
-        </View>
-        <View style={styles.orb}>
-          <Text style={styles.orbText}>KF</Text>
-        </View>
-      </View>
-
-      <View style={styles.inputRow}>
-        <TextInput
-          accessibilityLabel="Ask KeepFlip Assistant"
-          autoCapitalize="sentences"
-          editable={!isWorking}
-          onChangeText={setCommand}
-          onSubmitEditing={() => void runCommand()}
-          placeholder="Ask or say: remind me to list the camera tomorrow"
-          placeholderTextColor={theme.colors.textMuted}
-          returnKeyType="send"
-          style={styles.input}
-          value={command}
-        />
-        <Pressable
-          accessibilityLabel="Run assistant command"
-          accessibilityRole="button"
-          disabled={!command.trim() || isWorking}
-          onPress={() => void runCommand()}
-          style={({ pressed }) => [
-            styles.sendButton,
-            (!command.trim() || isWorking) && styles.sendButtonDisabled,
-            pressed && styles.sendButtonPressed,
-          ]}>
-          {isWorking ? (
-            <ActivityIndicator color={theme.colors.background} size="small" />
-          ) : (
-            <Text style={styles.sendText}>RUN</Text>
-          )}
-        </Pressable>
-      </View>
-
-      <View style={styles.quickRow}>
-        {['Remind me to list an item', 'Open books', 'Open inventory'].map((quick) => (
+      {!isExpanded ? (
+        <Animated.View entering={FadeIn.duration(220)} exiting={FadeOut.duration(140)}>
           <Pressable
-            key={quick}
+            accessibilityHint="Expands Flip's assistant search bar."
+            accessibilityLabel="Ask Flip"
             accessibilityRole="button"
-            disabled={isWorking}
-            onPress={() => {
-              setCommand(quick);
-              void runCommand(quick);
-            }}
-            style={({ pressed }) => [styles.quickChip, pressed && styles.quickChipPressed]}>
-            <Text style={styles.quickText}>{quick}</Text>
+            onPress={() => setIsExpanded(true)}
+            style={({ pressed }) => [styles.searchBar, pressed && styles.searchBarPressed]}>
+            <View style={styles.flipAvatar}>
+              <Image
+                accessibilityLabel="Flip, KeepFlip's resale sidekick"
+                contentFit="cover"
+                source={FLIP_MASCOT_IMAGE}
+                style={styles.flipAvatarImage}
+              />
+            </View>
+            <View style={styles.searchCopy}>
+              <View style={styles.searchMeta}>
+                <Text style={styles.searchLabel}>ASK FLIP</Text>
+                <View style={styles.onlineDot} />
+                <Text style={styles.onlineText}>ONLINE</Text>
+              </View>
+              <Text numberOfLines={1} style={styles.searchPlaceholder}>
+                Ask Flip to open a tool or handle a task…
+              </Text>
+            </View>
+            <View style={styles.searchIcon}>
+              <IconSymbol color={theme.colors.scannerCyan} name="magnifyingglass" size={18} />
+            </View>
           </Pressable>
-        ))}
-      </View>
-
-      {message ? <Text style={styles.message}>{message}</Text> : null}
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-
-      <View style={styles.taskHeader}>
-        <Text style={styles.taskLabel}>UP NEXT</Text>
-        <Pressable accessibilityRole="button" onPress={() => void loadTasks()}>
-          <Text style={styles.refresh}>REFRESH</Text>
-        </Pressable>
-      </View>
-
-      {isLoading ? (
-        <ActivityIndicator color={theme.colors.scannerCyan} size="small" />
-      ) : openTasks.length ? (
-        <View style={styles.taskList}>
-          {openTasks.map((task) => (
-            <KeepFlipControlRow
-              key={task.id}
-              accent={task.taskType === 'reminder' ? 'cyan' : 'gold'}
-              actionLabel="DONE"
-              description={task.dueAt ? dueLabel(task.dueAt) : 'No due date'}
-              icon={task.taskType === 'reminder' ? 'envelope.fill' : 'checkmark.shield.fill'}
-              label={task.title}
-              onPress={() => void finishTask(task)}
-            />
-          ))}
-        </View>
+        </Animated.View>
       ) : (
-        <Text style={styles.empty}>No open tasks. Give the assistant something to handle.</Text>
+        <Animated.View
+          entering={FadeInDown.duration(220)}
+          exiting={FadeOut.duration(140)}
+          style={styles.expandedContent}>
+          <View style={styles.heading}>
+            <View style={styles.headingCopy}>
+              <View style={styles.searchMeta}>
+                <Text style={styles.eyebrow}>ASK FLIP</Text>
+                <View style={styles.onlineDot} />
+                <Text style={styles.onlineText}>ONLINE</Text>
+              </View>
+              <Text style={styles.title}>What should we handle?</Text>
+              <Text style={styles.subtitle}>
+                Create reminders, queue reseller work, or jump straight to a business tool.
+              </Text>
+            </View>
+            <Pressable
+              accessibilityLabel="Collapse Ask Flip"
+              accessibilityRole="button"
+              onPress={() => setIsExpanded(false)}
+              style={({ pressed }) => [styles.closeButton, pressed && styles.closeButtonPressed]}>
+              <IconSymbol color={theme.colors.textMuted} name="xmark" size={17} />
+            </Pressable>
+          </View>
+
+          <View style={styles.inputRow}>
+            <View style={styles.inputShell}>
+              <Image
+                accessibilityLabel="Flip"
+                contentFit="cover"
+                source={FLIP_MASCOT_IMAGE}
+                style={styles.inputAvatar}
+              />
+              <TextInput
+                accessibilityLabel="Ask Flip what to do"
+                autoCapitalize="sentences"
+                autoFocus
+                editable={!isWorking}
+                onChangeText={setCommand}
+                onSubmitEditing={() => void runCommand()}
+                placeholder="Ask Flip: remind me to list the camera tomorrow"
+                placeholderTextColor={theme.colors.textMuted}
+                returnKeyType="send"
+                style={styles.input}
+                value={command}
+              />
+            </View>
+            <Pressable
+              accessibilityLabel="Run request with Flip"
+              accessibilityRole="button"
+              disabled={!command.trim() || isWorking}
+              onPress={() => void runCommand()}
+              style={({ pressed }) => [
+                styles.sendButton,
+                (!command.trim() || isWorking) && styles.sendButtonDisabled,
+                pressed && styles.sendButtonPressed,
+              ]}>
+              {isWorking ? (
+                <ActivityIndicator color={theme.colors.background} size="small" />
+              ) : (
+                <Text style={styles.sendText}>RUN</Text>
+              )}
+            </Pressable>
+          </View>
+
+          <View style={styles.quickRow}>
+            {['Remind me to list an item', 'Open books', 'Open inventory'].map((quick) => (
+              <Pressable
+                key={quick}
+                accessibilityRole="button"
+                disabled={isWorking}
+                onPress={() => {
+                  setCommand(quick);
+                  void runCommand(quick);
+                }}
+                style={({ pressed }) => [styles.quickChip, pressed && styles.quickChipPressed]}>
+                <Text style={styles.quickText}>{quick}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {message ? <Text style={styles.message}>{message}</Text> : null}
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          <View style={styles.taskHeader}>
+            <Text style={styles.taskLabel}>UP NEXT</Text>
+            <Pressable accessibilityRole="button" onPress={() => void loadTasks()}>
+              <Text style={styles.refresh}>REFRESH</Text>
+            </Pressable>
+          </View>
+
+          {isLoading ? (
+            <ActivityIndicator color={theme.colors.scannerCyan} size="small" />
+          ) : openTasks.length ? (
+            <View style={styles.taskList}>
+              {openTasks.map((task) => (
+                <KeepFlipControlRow
+                  key={task.id}
+                  accent={task.taskType === 'reminder' ? 'cyan' : 'gold'}
+                  actionLabel="DONE"
+                  description={task.dueAt ? dueLabel(task.dueAt) : 'No due date'}
+                  icon={task.taskType === 'reminder' ? 'envelope.fill' : 'checkmark.shield.fill'}
+                  label={task.title}
+                  onPress={() => void finishTask(task)}
+                />
+              ))}
+            </View>
+          ) : (
+            <Text style={styles.empty}>No open tasks. Give Flip something to handle.</Text>
+          )}
+        </Animated.View>
       )}
     </View>
   );
@@ -300,12 +361,66 @@ function dueLabel(value: string) {
 
 const styles = StyleSheet.create({
   surface: {
-    gap: 12,
-    padding: 14,
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(88, 223, 232, 0.25)',
+    borderRadius: 16,
+    borderCurve: 'continuous',
     backgroundColor: 'rgba(5, 14, 18, 0.88)',
   },
+  searchBar: {
+    minHeight: 64,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  searchBarPressed: { backgroundColor: 'rgba(0, 255, 255, 0.06)' },
+  flipAvatar: {
+    width: 40,
+    height: 40,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(242, 211, 138, 0.48)',
+    borderRadius: 20,
+    borderCurve: 'continuous',
+    backgroundColor: 'rgba(242, 211, 138, 0.1)',
+  },
+  flipAvatarImage: { width: '100%', height: '100%' },
+  searchCopy: { flex: 1, minWidth: 0, gap: 3 },
+  searchMeta: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  searchLabel: {
+    color: theme.colors.scannerCyan,
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 1.4,
+  },
+  onlineDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: theme.colors.scannerCyan,
+  },
+  onlineText: {
+    color: theme.colors.textMuted,
+    fontSize: 7,
+    fontWeight: '900',
+    letterSpacing: 0.9,
+  },
+  searchPlaceholder: { color: theme.colors.text, fontSize: 12, fontWeight: '700' },
+  searchIcon: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 255, 255, 0.28)',
+    borderRadius: 17,
+    borderCurve: 'continuous',
+    backgroundColor: 'rgba(0, 255, 255, 0.08)',
+  },
+  expandedContent: { gap: 12, padding: 14 },
   heading: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headingCopy: { flex: 1, gap: 3 },
   eyebrow: {
@@ -316,26 +431,46 @@ const styles = StyleSheet.create({
   },
   title: { color: theme.colors.cream, fontSize: 18, fontWeight: '900' },
   subtitle: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 15 },
-  orb: {
-    width: 40,
-    height: 40,
+  closeButton: {
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(141, 114, 255, 0.42)',
-    backgroundColor: 'rgba(141, 114, 255, 0.12)',
+    borderColor: 'rgba(173, 167, 178, 0.25)',
+    borderRadius: 16,
+    borderCurve: 'continuous',
+    backgroundColor: 'rgba(173, 167, 178, 0.08)',
   },
-  orbText: { color: theme.colors.scannerViolet, fontSize: 12, fontWeight: '900' },
-  inputRow: { flexDirection: 'row', gap: 8 },
+  closeButtonPressed: { backgroundColor: 'rgba(173, 167, 178, 0.18)' },
+  inputRow: { flexDirection: 'row', alignItems: 'stretch', gap: 8 },
+  inputShell: {
+    minHeight: 48,
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(242, 211, 138, 0.22)',
+    borderRadius: 10,
+    borderCurve: 'continuous',
+    backgroundColor: 'rgba(0, 0, 0, 0.24)',
+  },
+  inputAvatar: {
+    width: 25,
+    height: 25,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(242, 211, 138, 0.38)',
+    borderRadius: 13,
+    borderCurve: 'continuous',
+  },
   input: {
     minHeight: 44,
     flex: 1,
-    paddingHorizontal: 12,
+    paddingHorizontal: 0,
     paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.22)',
-    backgroundColor: 'rgba(0, 0, 0, 0.24)',
     color: theme.colors.text,
     fontSize: 12,
   },
@@ -344,7 +479,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 10,
-    borderRadius: 7,
+    borderRadius: 10,
+    borderCurve: 'continuous',
     backgroundColor: theme.colors.goldBright,
   },
   sendButtonDisabled: { opacity: 0.42 },
@@ -356,6 +492,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderWidth: 1,
     borderColor: 'rgba(242, 211, 138, 0.18)',
+    borderRadius: 8,
+    borderCurve: 'continuous',
     backgroundColor: 'rgba(242, 211, 138, 0.04)',
   },
   quickChipPressed: { backgroundColor: 'rgba(242, 211, 138, 0.12)' },

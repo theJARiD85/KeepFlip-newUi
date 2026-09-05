@@ -56,6 +56,7 @@ function PlanCard({
   definition,
   monthlyPrice,
   annualPrice,
+  trialUsed,
   purchasing,
   onPurchase,
 }: {
@@ -65,6 +66,7 @@ function PlanCard({
   definition: KeepFlipPlanDefinition;
   monthlyPrice: string | null;
   annualPrice: string | null;
+  trialUsed: boolean;
   purchasing: boolean;
   onPurchase: (
     plan: KeepFlipPlanId,
@@ -120,7 +122,7 @@ function PlanCard({
           size={14}
         />
         <Text style={styles.trialIncludedText}>
-          7-DAY FREE TRIAL INCLUDED
+          {trialUsed ? '7-DAY TRIAL ALREADY USED' : '7-DAY FREE TRIAL INCLUDED'}
         </Text>
       </View>
 
@@ -140,16 +142,22 @@ function PlanCard({
       </View>
 
       <Pressable
+        accessibilityLabel={
+          isCurrent
+            ? `${definition.name}, current active plan`
+            : `${definition.name}, ${trialUsed ? 'subscribe' : 'start 7-day free trial'}`
+        }
         accessibilityRole="button"
-        disabled={!checkoutEnabled || purchasing}
+        disabled={!checkoutEnabled || purchasing || isCurrent}
         onPress={() => onPurchase(definition.id, cadence)}
         style={({ pressed }) => [
           styles.subscribeButton,
           definition.recommended && styles.subscribeButtonRecommended,
-          (!checkoutEnabled || purchasing) && styles.buttonDisabled,
+          (!checkoutEnabled || purchasing || isCurrent) && styles.buttonDisabled,
           pressed &&
             checkoutEnabled &&
             !purchasing &&
+            !isCurrent &&
             styles.buttonPressed,
         ]}>
         {purchasing ? (
@@ -169,16 +177,23 @@ function PlanCard({
                 styles.subscribeButtonTextRecommended,
               { fontSize: responsiveFont(10) },
             ]}>
-            {currentPlan && !isCurrent
-              ? 'SWITCH PLAN'
-              : 'START 7-DAY FREE TRIAL'}
+            {isCurrent
+              ? 'CURRENT PLAN'
+              : currentPlan
+                ? 'SWITCH PLAN'
+                : trialUsed
+                  ? 'SUBSCRIBE'
+                  : 'START 7-DAY FREE TRIAL'}
           </Text>
         )}
       </Pressable>
 
       <Text style={styles.afterTrialText}>
-        Then {selectedPrice} {cadence === 'annual' ? 'per year' : 'per month'}.
-        Cancel anytime.
+        {isCurrent
+          ? 'Active on this account. Manage or cancel through the store.'
+          : trialUsed
+            ? `${selectedPrice} ${cadence === 'annual' ? 'per year' : 'per month'}. Cancel anytime.`
+            : `Then ${selectedPrice} ${cadence === 'annual' ? 'per year' : 'per month'}. Cancel anytime.`}
       </Text>
     </View>
   );
@@ -211,6 +226,10 @@ export function KeepFlipSubscriptionScreen() {
 
   const access = snapshot?.access ?? null;
   const catalog = snapshot?.catalog ?? null;
+  const trialUsed =
+    access?.trialUsed === true ||
+    snapshot?.serverRecord?.isTrial === true ||
+    Boolean(snapshot?.serverRecord?.trialEndsAt);
   const checkoutEnabled = state === 'ready' && snapshot?.configured === true;
   const isPaywallLocked =
     access?.active !== true &&
@@ -249,6 +268,9 @@ export function KeepFlipSubscriptionScreen() {
         ? `${access.willRenew ? 'Renews' : 'Access continues'} through ${renewalDate}.`
         : 'Your subscription is active.';
     }
+    if (trialUsed) {
+      return 'Your 7-day free trial has already been used on this store account. Choose a plan to continue without another trial.';
+    }
     return 'Every KeepFlip plan starts with a 7-day free trial. Choose monthly or annual billing below.';
   }, [
     access?.active,
@@ -257,6 +279,7 @@ export function KeepFlipSubscriptionScreen() {
     renewalDate,
     state,
     trialEnds,
+    trialUsed,
   ]);
 
   const handlePurchase = async (
@@ -307,33 +330,21 @@ export function KeepFlipSubscriptionScreen() {
         contentContainerStyle={[
           styles.content,
           {
-            paddingBottom: insets.bottom + 24,
-            paddingTop: insets.top + 18,
+            paddingBottom: insets.bottom + 12,
+            paddingTop: insets.top / 2,
           },
         ]}
+        style={{marginTop: insets.top, marginBottom: insets.bottom}}
         showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
-          <View
-            accessibilityLabel={
-              isPaywallLocked
-                ? 'A KeepFlip plan is required to continue'
-                : 'KeepFlip plan and billing'
-            }
-            style={styles.planRequiredIcon}>
-            <IconSymbol
-              color={theme.colors.goldBright}
-              name={isPaywallLocked ? 'lock.fill' : 'creditcard.fill'}
-              size={17}
-            />
-          </View>
 
           <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>
+            <Text style={[styles.eyebrow, { fontSize: responsiveFont(10)}]}>
               {isOnboarding
                 ? 'KEEPFLIP / CHOOSE YOUR PLAN'
                 : 'KEEPFLIP / PLAN & BILLING'}
             </Text>
-            <Text style={styles.title}>
+            <Text style={[styles.title, { fontSize: responsiveFont(26)}]}>
               {isOnboarding
                 ? 'Choose how you want to KeepFlip'
                 : 'Built for the way you resell'}
@@ -350,7 +361,11 @@ export function KeepFlipSubscriptionScreen() {
             />
           </View>
           <View style={styles.trialCopy}>
-            <Text style={styles.trialTitle}>7 DAYS FREE ON EITHER BILLING OPTION</Text>
+            <Text style={styles.trialTitle}>
+              {trialUsed
+                ? '7-DAY TRIAL ALREADY USED ON THIS ACCOUNT'
+                : '7 DAYS FREE ON EITHER BILLING OPTION'}
+            </Text>
             <Text style={styles.trialBody}>{statusCopy}</Text>
           </View>
         </View>
@@ -372,6 +387,7 @@ export function KeepFlipSubscriptionScreen() {
                 style={[
                   styles.billingOptionText,
                   cadence === 'monthly' && styles.billingOptionTextSelected,
+                  {fontSize: responsiveFont(11)},
                 ]}>
                 MONTHLY
               </Text>
@@ -389,6 +405,7 @@ export function KeepFlipSubscriptionScreen() {
                 style={[
                   styles.billingOptionText,
                   cadence === 'annual' && styles.billingOptionTextSelected,
+                  {fontSize: responsiveFont(11)}
                 ]}>
                 ANNUAL
               </Text>
@@ -397,6 +414,7 @@ export function KeepFlipSubscriptionScreen() {
                   styles.billingOptionSubtext,
                   cadence === 'annual' &&
                     styles.billingOptionSubtextSelected,
+                    {fontSize: responsiveFont(9)}
                 ]}>
                 SAVE 2 MONTHS
               </Text>
@@ -433,6 +451,7 @@ export function KeepFlipSubscriptionScreen() {
                   void handlePurchase(plan, selectedCadence)
                 }
                 purchasing={purchasing}
+                trialUsed={trialUsed}
               />
             ))}
           </View>
@@ -588,7 +607,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 40,
   },
-  headerCopy: { flex: 1, gap: 3, paddingTop: 1 },
+  headerCopy: { flex: 1, gap: 3, maxWidth: '80%' },
   eyebrow: {
     color: theme.colors.gold,
     fontFamily: theme.fonts.radar,

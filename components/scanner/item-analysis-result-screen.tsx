@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { useKeepFlipFeedbackNudge } from "@/components/feedback/keepflip-feedback-nudge";
+import { useKeepFlipSubscription } from "@/components/subscription/keepflip-subscription-context";
 import { inventoryItemToAnalysisState } from "@/components/scanner/inventory-analysis-view-model";
 import { useItemAnalysisResult } from "@/components/scanner/item-analysis-result-context";
 import { AddToInventoryForm, type AddToInventoryFormValues } from "@/components/scanner/add-to-inventory-form";
@@ -57,7 +58,14 @@ export function ItemAnalysisResultScreen() {
   const sessionId = firstParam(params.sessionId);
   const { user } = useKeepFlipAuth();
   const { recordCompletedAction } = useKeepFlipFeedbackNudge();
+  const { canUse } = useKeepFlipSubscription();
   const userId = user?.$id;
+  const basicBooksAllowed = canUse("basic_books");
+  const advancedBooksAllowed = canUse("automated_books");
+  const legacyLedgerConfigured =
+    isResellerBooksConfigured() && basicBooksAllowed;
+  const advancedBookkeepingConfigured =
+    isResellerBookkeepingConfigured() && advancedBooksAllowed;
   const userName = user?.name;
   const { activeTrip, recordSavedItem } = useSourcingTrip();
   const activeSourcingTrip =
@@ -172,7 +180,14 @@ export function ItemAnalysisResultScreen() {
       );
       return;
     }
-    if (!isResellerBooksConfigured() && !isResellerBookkeepingConfigured()) {
+    if (!basicBooksAllowed && !advancedBooksAllowed) {
+      Alert.alert(
+        "Books plan needed",
+        "Choose a KeepFlip plan before saving a purchase to Books.",
+      );
+      return;
+    }
+    if (!legacyLedgerConfigured && !advancedBookkeepingConfigured) {
       Alert.alert(
         "Books setup needed",
         "Finish setting up Books before saving a purchase.",
@@ -180,7 +195,16 @@ export function ItemAnalysisResultScreen() {
       return;
     }
     setInventoryFormOpen(true);
-  }, [saving, savingDeal, scannerSession, userId]);
+  }, [
+    advancedBookkeepingConfigured,
+    advancedBooksAllowed,
+    basicBooksAllowed,
+    legacyLedgerConfigured,
+    saving,
+    savingDeal,
+    scannerSession,
+    userId,
+  ]);
 
   const handleAddToInventory = useCallback(async (
     values: AddToInventoryFormValues,
@@ -266,7 +290,7 @@ export function ItemAnalysisResultScreen() {
         values.notes.trim() ? values.notes.trim() : null,
       ].filter((value): value is string => Boolean(value));
 
-      if (isResellerBookkeepingConfigured()) {
+      if (advancedBookkeepingConfigured) {
         await recordBookkeepingEvent({
           amountCents,
           eventType: "inventory_purchase",
@@ -276,7 +300,7 @@ export function ItemAnalysisResultScreen() {
           occurredAt,
           summary: "Inventory purchase",
         });
-      } else {
+      } else if (legacyLedgerConfigured) {
         await createManualLedgerEntry({
           amountCents,
           channel: values.source.trim() || null,
@@ -287,6 +311,10 @@ export function ItemAnalysisResultScreen() {
           ownerId: userId,
           receiptFileId,
         });
+      } else {
+        throw new Error(
+          "Choose a KeepFlip plan before recording this purchase in Books.",
+        );
       }
 
       let sourceTripWarning: string | null = null;
@@ -357,6 +385,8 @@ export function ItemAnalysisResultScreen() {
   }, [
     activeSourcingTrip,
     finishScannerSession,
+    advancedBookkeepingConfigured,
+    legacyLedgerConfigured,
     recordSavedItem,
     recordCompletedAction,
     router,

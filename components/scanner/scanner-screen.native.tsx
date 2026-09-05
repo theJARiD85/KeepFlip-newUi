@@ -756,7 +756,10 @@ export default function ScannerScreen() {
       if (selectedAssets.length === 0) return;
 
       const firstSortOrder = uploadedPhotos.length;
-      for (const [index, asset] of selectedAssets.entries()) {
+      for (let index = 0; index < selectedAssets.length; index += 1) {
+        const asset = selectedAssets[index];
+        if (!asset) continue;
+
         await saveScannerPhoto({
           imageUri: asset.uri,
           ownerId: user.$id,
@@ -1647,7 +1650,7 @@ export default function ScannerScreen() {
               setIsZoomOpen(false);
               navigateToPendingAnalysis();
             }}
-            onError={(error) => {
+            onError={(error: Error) => {
               const feedback =
                 error.message ||
                 "Camera unavailable. Try reopening the scanner.";

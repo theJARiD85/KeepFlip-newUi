@@ -10,6 +10,7 @@ import {
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import {
+  areKeepFlipSubscriptionsEnforced,
   keepFlipPlanAllows,
   keepFlipPlanLimit,
   loadKeepFlipSubscription,
@@ -47,6 +48,20 @@ type KeepFlipSubscriptionContextValue = {
     limit: 'activeListingsPerMonth' | 'aiValuationScansPerMonth',
   ) => number | null;
 };
+
+function preserveKnownTrialHistory(
+  access: KeepFlipSubscriptionSnapshot['access'],
+  current: KeepFlipSubscriptionSnapshot | null,
+) {
+  return {
+    ...access,
+    trialUsed:
+      access.trialUsed ||
+      current?.access.trialUsed === true ||
+      current?.serverRecord?.isTrial === true ||
+      Boolean(current?.serverRecord?.trialEndsAt),
+  };
+}
 
 const KeepFlipSubscriptionContext =
   createContext<KeepFlipSubscriptionContextValue | null>(null);
@@ -150,10 +165,14 @@ export function KeepFlipSubscriptionProvider({
   }, [userId]);
 
   useEffect(() => {
-    setSnapshot(null);
-    setState('loading');
-    setError(null);
-    void refresh();
+    const timer = setTimeout(() => {
+      setSnapshot(null);
+      setState('loading');
+      setError(null);
+      void refresh();
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, [refresh]);
 
   useEffect(() => {
@@ -165,7 +184,13 @@ export function KeepFlipSubscriptionProvider({
     void subscribeToKeepFlipSubscriptionUpdates(userId, (access) => {
       if (cancelled) return;
       setSnapshot((current) =>
-        current ? { ...current, access, configured: true } : current,
+        current
+          ? {
+              ...current,
+              access: preserveKnownTrialHistory(access, current),
+              configured: true,
+            }
+          : current,
       );
       setState('ready');
     })
@@ -208,7 +233,11 @@ export function KeepFlipSubscriptionProvider({
         );
         setSnapshot((current) =>
           current
-            ? { ...current, access, configured: true }
+            ? {
+                ...current,
+                access: preserveKnownTrialHistory(access, current),
+                configured: true,
+              }
             : current,
         );
         await refresh();
@@ -238,7 +267,11 @@ export function KeepFlipSubscriptionProvider({
       const access = await restoreKeepFlipPurchases(userId);
       setSnapshot((current) =>
         current
-          ? { ...current, access, configured: true }
+          ? {
+              ...current,
+              access: preserveKnownTrialHistory(access, current),
+              configured: true,
+            }
           : current,
       );
       await refresh();
@@ -274,16 +307,21 @@ export function KeepFlipSubscriptionProvider({
       );
       throw caughtError;
     }
-  }, [snapshot?.access.managementUrl, userId]);
+  }, [snapshot, userId]);
 
   const value = useMemo<KeepFlipSubscriptionContextValue>(
     () => {
       const activePlan = snapshot?.access.active
         ? snapshot.access.plan
         : null;
+      const subscriptionsEnforced = areKeepFlipSubscriptionsEnforced();
 
       return {
-        canUse: (feature) => keepFlipPlanAllows(activePlan, feature),
+        // Keep the pre-subscription app usable while enforcement is off. Once
+        // enforcement is enabled, every paid feature must resolve from the
+        // active RevenueCat plan (and later the migration/grace policy).
+        canUse: (feature) =>
+          !subscriptionsEnforced || keepFlipPlanAllows(activePlan, feature),
         errorMessage: error,
         limitFor: (limit) => keepFlipPlanLimit(activePlan, limit),
         manage,

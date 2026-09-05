@@ -29,7 +29,7 @@ export type KeepFlipSubscriptionFeature =
 export type KeepFlipPlanLimits = {
   activeListingsPerMonth: number | null;
   aiValuationScansPerMonth: number | null;
-  features: ReadonlySet<KeepFlipSubscriptionFeature>;
+  features: Set<KeepFlipSubscriptionFeature>;
 };
 
 export const KEEPFLIP_PLAN_LIMITS: Record<
@@ -70,6 +70,7 @@ export type KeepFlipSubscriptionAccess = {
   entitlementId: string | null;
   expiresAt: string | null;
   isTrial: boolean;
+  trialUsed: boolean;
   managementUrl: string | null;
   periodType: string | null;
   plan: KeepFlipPlanId | null;
@@ -169,13 +170,15 @@ const PACKAGE_IDS: Record<
   KeepFlipPlanId,
   Partial<Record<KeepFlipBillingCadence, string>>
 > = {
+  // These are RevenueCat package identifiers from the live offering. The
+  // hyphenated values are Google Play base-plan IDs, not package IDs.
   hobbyist: {
-    monthly: 'hobbyist-monthly',
-    annual: 'hobbyist-annual',
+    monthly: 'hobbyist_monthly',
+    annual: 'hobbyist_annual',
   },
   serious: {
-    monthly: 'serious-monthly',
-    annual: 'serious-annual',
+    monthly: 'serious_monthly',
+    annual: 'serious_annual',
   },
 };
 
@@ -185,6 +188,7 @@ const EMPTY_ACCESS: KeepFlipSubscriptionAccess = {
   entitlementId: null,
   expiresAt: null,
   isTrial: false,
+  trialUsed: false,
   managementUrl: null,
   periodType: null,
   plan: null,
@@ -456,14 +460,40 @@ function strongestEntitlement(
   return fallback;
 }
 
+function customerInfoHasUsedTrial(customerInfo: CustomerInfo) {
+  const entitlementTrial = Object.values(
+    customerInfo.entitlements.all,
+  ).some((info) => info.periodType?.toUpperCase() === 'TRIAL');
+  const subscriptionTrial = Object.values(
+    customerInfo.subscriptionsByProductIdentifier ?? {},
+  ).some((info) => info.periodType?.toUpperCase() === 'TRIAL');
+
+  return entitlementTrial || subscriptionTrial;
+}
+
+function accessWithServerTrialHistory(
+  access: KeepFlipSubscriptionAccess,
+  serverRecord: KeepFlipServerSubscriptionRecord | null,
+) {
+  return {
+    ...access,
+    trialUsed:
+      access.trialUsed ||
+      serverRecord?.isTrial === true ||
+      Boolean(serverRecord?.trialEndsAt),
+  };
+}
+
 export function subscriptionAccessFromCustomerInfo(
   customerInfo: CustomerInfo,
 ): KeepFlipSubscriptionAccess {
   const matched = strongestEntitlement(customerInfo);
+  const trialUsed = customerInfoHasUsedTrial(customerInfo);
   if (!matched) {
     return {
       ...EMPTY_ACCESS,
       managementUrl: customerInfo.managementURL ?? null,
+      trialUsed,
     };
   }
 
@@ -474,6 +504,7 @@ export function subscriptionAccessFromCustomerInfo(
     entitlementId: info.identifier,
     expiresAt: info.expirationDate,
     isTrial: info.periodType.toUpperCase() === 'TRIAL',
+    trialUsed,
     managementUrl: customerInfo.managementURL ?? null,
     periodType: info.periodType || null,
     plan,
@@ -528,23 +559,46 @@ function packageForSelection(
   const expectedPackageId = PACKAGE_IDS[plan][cadence];
   if (!expectedPackageId) return null;
 
-  // Do not guess based on product names or billing periods. A fuzzy match can
-  // accidentally bind the annual Play base plan to the monthly KeepFlip slot,
-  // which would display or purchase the wrong price. RevenueCat package IDs are
-  // part of KeepFlip's billing contract and must match exactly.
-  const normalizedExpected = expectedPackageId.toLowerCase();
+  // RevenueCat package IDs are part of KeepFlip's billing contract. Normalize
+  // only underscore vs hyphen because those are commonly confused with the
+  // Google Play base-plan ID. The exact configured package remains preferred.
+  const normalizedExpected = expectedPackageId
+    .trim()
+    .toLowerCase()
+    .replace(/-/g, '_');
   const expectedPeriod = cadence === 'monthly' ? 'P1M' : 'P1Y';
 
-  return (
-    packages.find((candidate) => {
-      if (candidate.identifier.trim().toLowerCase() !== normalizedExpected) {
-        return false;
-      }
+  const exactPackage = packages.find((candidate) => {
+    const normalizedCandidate = candidate.identifier
+      .trim()
+      .toLowerCase()
+      .replace(/-/g, '_');
+    if (normalizedCandidate !== normalizedExpected) return false;
 
-      const actualPeriod = candidate.product.subscriptionPeriod;
-      return !actualPeriod || actualPeriod === expectedPeriod;
-    }) ?? null
-  );
+    const actualPeriod = candidate.product.subscriptionPeriod;
+    return !actualPeriod || actualPeriod === expectedPeriod;
+  });
+  if (exactPackage) return exactPackage;
+
+  // A package can be mislabeled in the offering while its attached Play base
+  // plan is still valid. Recover only within the same tier and only when the
+  // SDK reports the requested period, so cadence cannot silently cross over.
+  const periodMatchedPackage = packages.find((candidate) => {
+    const normalizedCandidate = candidate.identifier
+      .trim()
+      .toLowerCase()
+      .replace(/-/g, '_');
+    return (
+      normalizedCandidate.startsWith(`${plan}_`) &&
+      candidate.product.subscriptionPeriod === expectedPeriod
+    );
+  });
+  if (periodMatchedPackage && __DEV__) {
+    console.warn(
+      `[KeepFlip] RevenueCat package ${expectedPackageId} was not available for ${cadence}; using ${periodMatchedPackage.identifier} because its store period is ${expectedPeriod}. Fix the package/base-plan mapping in RevenueCat.`,
+    );
+  }
+  return periodMatchedPackage ?? null;
 }
 
 function catalogFromPackages(
@@ -574,7 +628,7 @@ export async function loadKeepFlipSubscription(
       () => null,
     );
     return {
-      access: EMPTY_ACCESS,
+      access: accessWithServerTrialHistory(EMPTY_ACCESS, serverRecord),
       catalog: EMPTY_CATALOG,
       configured: false,
       serverRecord,
@@ -588,9 +642,13 @@ export async function loadKeepFlipSubscription(
     loadKeepFlipServerSubscriptionRecord(userId).catch(() => null),
   ]);
   const offering = configuredOffering(offerings);
+  const access = accessWithServerTrialHistory(
+    subscriptionAccessFromCustomerInfo(customerInfo),
+    serverRecord,
+  );
 
   return {
-    access: subscriptionAccessFromCustomerInfo(customerInfo),
+    access,
     catalog: offering
       ? catalogFromPackages(offering.identifier, offering.availablePackages)
       : EMPTY_CATALOG,

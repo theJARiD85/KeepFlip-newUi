@@ -127,7 +127,7 @@ export default function AccountScreen() {
       : subscriptionState === 'unconfigured'
         ? 'Plan checkout is ready for RevenueCat store configuration.'
         : subscriptionState === 'error'
-          ? subscriptionError || 'Subscription status is unavailable right now.'
+          ? 'Subscription status is unavailable right now.'
           : subscriptionAccess?.isTrial
             ? `${subscriptionPlan?.name ?? 'KeepFlip plan'} · 7-day free trial active.`
             : subscriptionAccess?.active
