@@ -38,10 +38,7 @@ Allowed KeepFlip plans:
 ```text
 hobbyist
 serious
-power
 ```
-
-`power` remains reserved only for backward compatibility/future expansion and is not purchasable at launch.
 
 Expected status values:
 
@@ -74,8 +71,6 @@ Create these launch entitlements exactly:
 keepflip_hobbyist
 keepflip_serious
 ```
-
-`keepflip_power` may remain reserved in RevenueCat for future use, but it should not be attached to the launch offering.
 
 Create an offering:
 

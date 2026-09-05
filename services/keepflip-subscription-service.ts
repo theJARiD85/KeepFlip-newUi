@@ -64,6 +64,7 @@ export const KEEPFLIP_PLAN_LIMITS: Record<
       'basic_books',
       'automated_books',
       'schedule_c_export',
+      'advanced_bookkeeping_analytics',
       'net_proceeds_scenarios',
       'automatic_order_sync',
       'bulk_listings',
@@ -73,7 +74,7 @@ export const KEEPFLIP_PLAN_LIMITS: Record<
       'cross_marketplace_sync',
       'automatic_delisting',
       'seller_analytics',
-      'advanced_bookkeeping_analytics',
+      'multi_user',
     ]),
   },
 };
@@ -182,9 +183,11 @@ export const KEEPFLIP_PLAN_DEFINITIONS: KeepFlipPlanDefinition[] = [
     annualPriceFallback: '$250',
     recommended: true,
     description:
-      'For active resellers running a growing resale business with higher limits, unlimited AI valuations, and automated bookkeeping tools.',
-    limits: ['Up to 250 live listings at one time', 'Unlimited AI valuation scans'],
+      'KeepFlip\'s top tier for active resale businesses. Every KeepFlip feature is unlocked; the only plan limit is up to 250 active listings total.',
+    limits: ['Up to 250 active listings total'],
     features: [
+      'Every KeepFlip feature unlocked',
+      'Unlimited AI valuation scans',
       'Full automated bookkeeping',
       'Schedule C export',
       'eBay money reconciliation',
@@ -255,7 +258,14 @@ export function keepFlipPlanAllows(
   plan: KeepFlipPlanId | null,
   feature: KeepFlipSubscriptionFeature,
 ) {
-  return plan ? KEEPFLIP_PLAN_LIMITS[plan].features.has(feature) : false;
+  if (!plan) return false;
+
+  // Serious is KeepFlip's top tier. It intentionally unlocks every current
+  // and future feature; its only plan-level restriction is the 250 active
+  // listing cap enforced through keepFlipPlanLimit().
+  if (plan === 'serious') return true;
+
+  return KEEPFLIP_PLAN_LIMITS[plan].features.has(feature);
 }
 
 export function keepFlipPlanLimit(
