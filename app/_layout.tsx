@@ -8,7 +8,6 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import {
-  useCallback,
   useEffect,
   useState,
 } from "react";
@@ -27,7 +26,7 @@ import {
 } from '@/lib/appwrite';
 import { ID } from 'react-native-appwrite';
 import { KeepFlipFeedbackNudgeProvider } from "@/components/feedback/keepflip-feedback-nudge";
-import KeepFlipIntro from "@/components/intro/keepflip-intro.native";
+import KeepFlipLaunchExperience from "@/components/intro/keepflip-launch-experience.native";
 import { keepFlipTheme } from "@/constants/keepflip-theme";
 
 void SplashScreen
@@ -92,8 +91,8 @@ function ProtectedRootStack() {
 
 export default function RootLayout() {
   const [
-    introVisible,
-    setIntroVisible,
+    launchVisible,
+    setLaunchVisible,
   ] = useState(true);
 
   const appodealKey =
@@ -282,11 +281,6 @@ export default function RootLayout() {
     }
   }
 
-  const handleIntroComplete =
-    useCallback(() => {
-      setIntroVisible(false);
-    }, []);
-
   if (
     !fontsLoaded &&
     !fontError
@@ -329,24 +323,17 @@ export default function RootLayout() {
             <KeepFlipFeedbackNudgeProvider>
               <ProtectedRootStack />
             </KeepFlipFeedbackNudgeProvider>
+            <KeepFlipLaunchExperience onVisibilityChange={setLaunchVisible} />
           </KeepFlipAuthProvider>
 
           <StatusBar
             animated
-            hidden={introVisible}
+            hidden={launchVisible}
             style="light"
           />
         </ThemeProvider>
       </GestureHandlerRootView>
 
-      {introVisible ? (
-        <KeepFlipIntro
-          startupReady
-          onComplete={
-            handleIntroComplete
-          }
-        />
-      ) : null}
     </View>
   );
 }

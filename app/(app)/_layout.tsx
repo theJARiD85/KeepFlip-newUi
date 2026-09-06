@@ -17,6 +17,7 @@ import { keepFlipTheme } from '@/constants/keepflip-theme';
 import { notificationRouteFromData } from '@/services/keepflip-notification-service';
 import { areKeepFlipSubscriptionsEnforced } from '@/services/keepflip-subscription-service';
 import { hasCompletedScanInventoryWalkthrough } from '@/services/user-profile-onboarding-service';
+import { hasCompletedKeepFlipLaunchExperience } from '@/services/keepflip-launch-state-service';
 
 export const unstable_settings = {
   anchor: 'index',
@@ -94,9 +95,12 @@ function WalkthroughAutoLauncher() {
     let frame: number | null = null;
     checkedUserIdRef.current = user.$id;
 
-    void hasCompletedScanInventoryWalkthrough(user.$id, user.name)
+    void hasCompletedKeepFlipLaunchExperience()
+      .then((launchCompleted) => {
+        if (cancelled || launchCompleted) return null;
+        return hasCompletedScanInventoryWalkthrough(user.$id, user.name);
+      })
       .then((completed) => {
-        if (cancelled || completed) return;
         frame = requestAnimationFrame(() => {
           router.push('/walkthrough' as Href);
         });
