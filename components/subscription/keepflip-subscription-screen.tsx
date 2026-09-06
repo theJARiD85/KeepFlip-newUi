@@ -910,7 +910,7 @@ const styles = StyleSheet.create({
   continueButtonText: {
     color: theme.colors.backgroundDeep,
     fontFamily: theme.fonts.radar,
-    fontSize: 8,
+    fontSize: 10,
     fontWeight: '900',
     letterSpacing: 0.9,
   },

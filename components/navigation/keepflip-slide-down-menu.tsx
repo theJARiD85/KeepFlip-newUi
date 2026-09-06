@@ -45,7 +45,7 @@ const destinations: MenuDestination[] = [
   { eyebrow: 'IDENTIFY & VALUE', href: '/scanner' as Href, icon: 'viewfinder', label: 'Scanner' },
   { eyebrow: 'DEALS TO DECIDE', href: '/deal-shelf' as Href, icon: 'tag.fill', label: 'Deal Shelf' },
   { eyebrow: 'YOUR SAVED FINDS', href: '/inventory', icon: 'shippingbox.fill', label: 'Inventory' },
-  { eyebrow: 'ORDERS & PROFIT', href: '/seller-center' as Href, icon: 'shippingbox.fill', label: 'Seller Center' },
+
 ];
 
 function hapticSelection() {

@@ -42,7 +42,7 @@ export type FlipSellerDecision =
   | 'preferences'
   | 'review'
   | 'history'
-  | 'seller-center';
+  | 'seller-operations';
 
 const DECISIONS: {
   id: FlipSellerDecision;
@@ -70,9 +70,9 @@ const DECISIONS: {
     detail: 'Review the manual decisions Flip has helped record.',
   },
   {
-    id: 'seller-center',
+    id: 'seller-operations',
     title: 'Handle sold items, fulfillment, and realized profit',
-    detail: 'Open Seller Center for orders, shipping, Money Sync, and final margin.',
+    detail: 'Expand seller operations in Command Center for orders, shipping, Money Sync, and final margin.',
   },
 ];
 
@@ -84,10 +84,10 @@ function message(cause: unknown) {
 
 export function FlipSellerDecisions({
   ownerId,
-  onOpenSellerCenter,
+  onOpenSellerOperations,
 }: {
   ownerId: string;
-  onOpenSellerCenter: () => void;
+  onOpenSellerOperations: () => void;
 }) {
   const { canUse } = useKeepFlipSubscription();
   const [decision, setDecision] = useState<FlipSellerDecision | null>(null);
@@ -259,8 +259,8 @@ export function FlipSellerDecisions({
   function chooseDecision(next: FlipSellerDecision) {
     setNotice('');
     setVisibleCount(12);
-    if (next === 'seller-center') {
-      onOpenSellerCenter();
+    if (next === 'seller-operations') {
+      onOpenSellerOperations();
       return;
     }
     setDecision(next);
@@ -523,19 +523,19 @@ export function FlipSellerDecisions({
                 ) : null}
                 <Button
                   title="Open orders and realized profit"
-                  onPress={onOpenSellerCenter}
+                  onPress={onOpenSellerOperations}
                 />
               </Section>
               <Section title="Advanced seller performance · Serious">
                 <Text style={sellerStyles.muted}>
                   {canUse('seller_analytics')
-                    ? 'Seller Center can show aggregate seller performance from recorded orders.'
+                    ? 'Seller operations can show aggregate seller performance from recorded orders.'
                     : 'Serious adds aggregate seller analytics. Your basic manual history stays available here.'}
                 </Text>
                 {canUse('seller_analytics') ? (
                   <Button
                     title="Open advanced seller performance"
-                    onPress={onOpenSellerCenter}
+                    onPress={onOpenSellerOperations}
                   />
                 ) : null}
               </Section>

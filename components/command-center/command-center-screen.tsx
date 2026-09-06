@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { type Href, useRouter } from 'expo-router';
+import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { KeepFlipAssistantPanel } from '@/components/command-center/keepflip-assistant-panel';
 import { BusinessPulse } from '@/components/command-center/business-pulse';
+import { SellerOperationsPanel } from '@/components/command-center/seller-operations-panel';
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
 import {
   KeepFlipControlRow,
@@ -57,6 +58,7 @@ import {
   listResellerLedgerEntries,
   type ResellerLedgerEntry,
 } from '@/services/reseller-ledger-service';
+import { withAlpha } from '@/lib/withAlpha';
 
 type EbayConnectionViewState =
   | 'checking'
@@ -225,6 +227,9 @@ function eBayStateDetails(
 
 export function CommandCenterScreen() {
   const router = useRouter();
+  const { openReviewQueue: openReviewQueueParam } = useLocalSearchParams<{
+    openReviewQueue?: string | string[];
+  }>();
   const insets = useSafeAreaInsets();
   const { user } = useKeepFlipAuth();
   const { canUse } = useKeepFlipSubscription();
@@ -256,6 +261,10 @@ export function CommandCenterScreen() {
   const [reviewQuantity, setReviewQuantity] = useState('1');
   const [reviewResolving, setReviewResolving] = useState(false);
   const [reviewActionMessage, setReviewActionMessage] = useState<string | null>(null);
+  const [sellerOperationsOpen, setSellerOperationsOpen] = useState(false);
+  const shouldOpenReviewQueue = Array.isArray(openReviewQueueParam)
+    ? openReviewQueueParam[0] === '1'
+    : openReviewQueueParam === '1';
     const {
       contentWidth,
       controlDockWidth,
@@ -454,13 +463,24 @@ export function CommandCenterScreen() {
     }
   };
 
-  const openReviewQueue = () => {
+  const openReviewQueue = useCallback(() => {
     hapticSelection();
     setReviewActionMessage(null);
     setActiveReview(null);
     setReviewOpen(true);
     void refreshReviewQueue();
-  };
+  }, [refreshReviewQueue]);
+
+  useEffect(() => {
+    if (!shouldOpenReviewQueue || !user?.$id || !advancedBookkeepingConfigured) return;
+    const timer = setTimeout(() => openReviewQueue(), 0);
+    return () => clearTimeout(timer);
+  }, [
+    advancedBookkeepingConfigured,
+    openReviewQueue,
+    shouldOpenReviewQueue,
+    user?.$id,
+  ]);
 
   const chooseReview = (review: BookkeepingReviewItem) => {
     hapticSelection();
@@ -680,6 +700,10 @@ export function CommandCenterScreen() {
               hapticSelection();
               router.push(route as Href);
             }}
+            onOpenSellerOperations={() => {
+              hapticSelection();
+              setSellerOperationsOpen(true);
+            }}
           />
         </Animated.View>
         <Animated.View entering={FadeInDown.duration(260).delay(60)} style={styles.section}>
@@ -702,6 +726,33 @@ export function CommandCenterScreen() {
           />
         </Animated.View>
 
+        <Animated.View entering={FadeInDown.duration(260).delay(70)} style={styles.section}>
+          <View style={styles.sectionHeading}>
+            <Text style={styles.sectionEyebrow}>SELLER OPERATIONS</Text>
+            <Text style={styles.sectionTitle}>One workspace for the sale</Text>
+          </View>
+          <View style={styles.settingsList}>
+            <KeepFlipControlRow
+              accent="gold"
+              actionLabel={sellerOperationsOpen ? 'CLOSE' : 'OPEN'}
+              accessibilityHint="Expands orders, fulfillment, manual selling, Money Sync, and realized margin inside Command Center."
+              description="Keep each sale connected to its inventory item, storage location, fulfillment status, and final margin."
+              icon="shippingbox.fill"
+              label="Seller operations"
+              onPress={() => {
+                hapticSelection();
+                setSellerOperationsOpen((current) => !current);
+              }}
+              status={{
+                label: sellerOperationsOpen ? 'OPEN' : 'READY',
+                tone: sellerOperationsOpen ? 'active' : 'violet',
+              }}
+            />
+          </View>
+          {sellerOperationsOpen ? (
+            <SellerOperationsPanel key={user.$id} embedded ownerId={user.$id} />
+          ) : null}
+        </Animated.View>
         <Animated.View entering={FadeInDown.duration(260).delay(75)} style={styles.section}>
           <View style={styles.sectionHeading}>
             <Text style={styles.sectionEyebrow}>MARKETPLACE</Text>
@@ -784,9 +835,9 @@ export function CommandCenterScreen() {
           {advancedBookkeepingConfigured ? (
             <>
               {reviewItems.length > 0 || reviewError ? (
-                <View style={styles.reviewSurface}>
+                <View style={[styles.reviewSurface, {borderColor: theme.colors.danger, backgroundColor: withAlpha(theme.colors.danger, 0.15)}]}>
                   <KeepFlipControlRow
-                    accent="gold"
+                    accent="danger"
                     actionBusy={reviewLoading}
                     actionLabel={reviewItems.length > 0 ? 'REVIEW' : 'RETRY'}
                     accessibilityHint="Opens the synced money records that still need attention."
@@ -1234,7 +1285,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.34)',
     backgroundColor: 'rgba(19, 14, 5, 0.76)',
   },
   eBayLogo: {

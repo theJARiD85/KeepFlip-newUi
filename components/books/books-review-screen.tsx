@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+import { type Href, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -25,6 +25,7 @@ import {
   reviewAmountFromCents,
   type FocusedBookkeepingReviewItem,
 } from '@/services/bookkeeping-review-service';
+import { getBookkeepingReviewQueue } from '@/services/reseller-bookkeeping-service';
 
 function formatDate(value: string) {
   const date = new Date(value);
@@ -123,10 +124,27 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
     return [review.rawCurrency, review.rawAmountValue].filter(Boolean).join(' ');
   }, [review]);
 
+  const routeAfterReviewConfirmation = async () => {
+    let hasRemainingReviews = false;
+    try {
+      const queue = await getBookkeepingReviewQueue();
+      hasRemainingReviews = queue.total > 0 || queue.items.length > 0;
+    } catch {
+      // Command Center will retry the queue load. Opening it keeps an unresolved
+      // transaction visible instead of silently leaving the seller at home.
+      hasRemainingReviews = true;
+    }
+
+    router.replace(
+      (hasRemainingReviews
+        ? '/command-center?openReviewQueue=1'
+        : '/command-center') as Href,
+    );
+  };
   const finishReview = async () => {
     if (!review || saving) return;
     if (review.status === 'needs_item_match') {
-      router.replace('/command-center');
+      router.replace('/command-center?openReviewQueue=1' as Href);
       return;
     }
 
@@ -167,7 +185,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
       await Haptics.notificationAsync(
         Haptics.NotificationFeedbackType.Success,
       ).catch(() => undefined);
-      router.replace('/command-center');
+      await routeAfterReviewConfirmation();
     } catch (caught) {
       setError(
         caught instanceof Error

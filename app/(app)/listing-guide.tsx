@@ -12,7 +12,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ListingReadinessPanel } from "@/components/seller/listing-readiness-panel";
 import { EMPTY_EBAY_LISTING_REVIEW, type EbayListingReview } from "@/services/ebay-listing-readiness-service";
 import { ListingNetProceedsPanel } from "@/components/seller/listing-net-proceeds-panel";
@@ -617,34 +617,28 @@ export default function ListingCreationGuideScreen() {
         contentContainerStyle={[
           styles.content,
           {
-            paddingTop: insets.top + 22,
+            paddingTop: insets.top / 2,
             paddingBottom: insets.bottom + 32,
             paddingHorizontal: pageGutter,
           },
         ]}
+        style={{marginTop: insets.top, marginBottom: insets.bottom}}
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.page, { width: contentWidth }]}>
           <View style={styles.topRow}>
             <View style={styles.topCopy}>
-              <Text style={styles.eyebrow}>SELLER WORKFLOW</Text>
-              <Text style={[styles.title, { fontSize: responsiveFont(30) }]}>
-                Crosslisting Workspace
+              <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>SELLER WORKFLOW</Text>
+              <Text style={[styles.title, { fontSize: responsiveFont(26) }]}>
+                Listing Workspace
               </Text>
-            </View>
-            <Pressable
-              accessibilityLabel="Back to inventory"
-              accessibilityRole="button"
-              onPress={() => router.back()}
-              style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
-            >
-              <IconSymbol color={theme.colors.cream} name="xmark" size={20} />
-            </Pressable>
-          </View>
-
-          <Text style={styles.subtitle}>
+              <Text style={[styles.subtitle, { fontSize: responsiveFont(11) }]}>
             Draft once from the item facts, then hand off a platform-ready version to each marketplace. Review every destination before publishing.
           </Text>
+            </View>
+          </View>
+
+
 
           {loading ? (
             <View style={styles.loadingCard}>
@@ -1270,11 +1264,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 18,
   },
   topCopy: {
     flex: 1,
-    gap: 4,
+    gap: 8,
   },
   eyebrow: {
     color: theme.colors.scannerCyan,
@@ -1292,8 +1285,8 @@ const styles = StyleSheet.create({
   subtitle: {
     maxWidth: 620,
     color: theme.colors.textMuted,
-    fontSize: 14,
-    lineHeight: 21,
+    fontFamily: theme.fonts.body,
+    fontSize: 11,
   },
   backButton: {
     width: 44,
@@ -1317,6 +1310,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: theme.colors.cream,
+    fontFamily: theme.fonts.body,
     fontSize: 15,
     fontWeight: "800",
   },
@@ -1345,6 +1339,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: theme.colors.textMuted,
+    fontFamily: theme.fonts.body,
     fontSize: 14,
     lineHeight: 20,
     textAlign: "center",
@@ -1359,6 +1354,7 @@ const styles = StyleSheet.create({
   },
   retryText: {
     color: theme.colors.backgroundDeep,
+    fontFamily: theme.fonts.body,
     fontSize: 13,
     fontWeight: "900",
   },
@@ -1396,6 +1392,7 @@ const styles = StyleSheet.create({
   },
   itemMeta: {
     color: theme.colors.textMuted,
+    fontFamily: theme.fonts.body,
     fontSize: 13,
     lineHeight: 19,
   },
@@ -1425,6 +1422,7 @@ const styles = StyleSheet.create({
   },
   signalPillText: {
     color: theme.colors.cream,
+    fontFamily: theme.fonts.radar,
     fontSize: 10,
     fontWeight: "900",
     letterSpacing: 0.4,
@@ -1480,6 +1478,7 @@ const styles = StyleSheet.create({
   },
   fieldValue: {
     color: theme.colors.cream,
+    fontFamily: theme.fonts.bold,
     fontSize: 14,
     fontWeight: "700",
     lineHeight: 20,
@@ -1513,6 +1512,7 @@ const styles = StyleSheet.create({
   },
   generatorDescription: {
     color: theme.colors.textMuted,
+    fontFamily: theme.fonts.body,
     fontSize: 12,
     lineHeight: 18,
   },
@@ -1535,6 +1535,7 @@ const styles = StyleSheet.create({
   },
   generatorError: {
     color: theme.colors.danger,
+    fontFamily: theme.fonts.body,
     fontSize: 12,
     lineHeight: 17,
   },
@@ -1563,6 +1564,7 @@ const styles = StyleSheet.create({
   },
   generatedSubtitle: {
     color: theme.colors.textMuted,
+    fontFamily: theme.fonts.body,
     fontSize: 12,
     lineHeight: 17,
   },
@@ -1609,6 +1611,7 @@ const styles = StyleSheet.create({
   },
   generatedBody: {
     color: theme.colors.cream,
+    fontFamily: theme.fonts.body,
     fontSize: 13,
     lineHeight: 20,
   },
@@ -1631,6 +1634,7 @@ const styles = StyleSheet.create({
   },
   photoPrepText: {
     color: theme.colors.textMuted,
+    fontFamily: theme.fonts.body,
     fontSize: 12,
     lineHeight: 17,
   },
@@ -1655,6 +1659,7 @@ const styles = StyleSheet.create({
   },
   photoUploadError: {
     color: theme.colors.danger,
+    fontFamily: theme.fonts.body,
     fontSize: 12,
     lineHeight: 17,
   },
@@ -1682,6 +1687,7 @@ const styles = StyleSheet.create({
   },
   crosslistDescription: {
     color: theme.colors.textMuted,
+    fontFamily: theme.fonts.body,
     fontSize: 12,
     lineHeight: 18,
   },
@@ -1732,6 +1738,7 @@ const styles = StyleSheet.create({
   },
   destinationDescription: {
     color: theme.colors.textMuted,
+    fontFamily: theme.fonts.body,
     fontSize: 11,
     lineHeight: 16,
   },
@@ -1778,6 +1785,7 @@ const styles = StyleSheet.create({
   },
   ebayPublishTitle: {
     color: theme.colors.cream,
+    fontFamily: theme.fonts.bold,
     fontSize: 15,
     fontWeight: "900",
   },
@@ -1790,6 +1798,7 @@ const styles = StyleSheet.create({
   },
   ebayPublishHint: {
     color: theme.colors.textMuted,
+    fontFamily: theme.fonts.body,
     fontSize: 11,
     lineHeight: 17,
   },
@@ -1806,6 +1815,7 @@ const styles = StyleSheet.create({
   ebaySetupNoticeText: {
     flex: 1,
     color: theme.colors.textMuted,
+    fontFamily: theme.fonts.body,
     fontSize: 11,
     lineHeight: 16,
   },  ebayField: {

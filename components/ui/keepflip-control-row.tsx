@@ -19,7 +19,7 @@ export type KeepFlipStatusBadgeProps = {
 };
 
 export type KeepFlipControlRowProps = {
-  accent?: 'cyan' | 'gold' | 'violet';
+  accent?: 'cyan' | 'gold' | 'violet' | 'danger';
   actionBusy?: boolean;
   actionLabel?: string;
   accessibilityHint?: string;
@@ -84,7 +84,9 @@ export function KeepFlipControlRow({
       ? theme.colors.scannerCyan
       : accent === 'violet'
         ? theme.colors.scannerViolet
-        : theme.colors.goldBright;
+        : accent === 'danger'
+          ? theme.colors.danger
+          : theme.colors.goldBright;
   const iconStyle =
     accent === 'cyan'
       ? styles.rowIconCyan

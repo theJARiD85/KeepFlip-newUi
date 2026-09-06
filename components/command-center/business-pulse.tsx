@@ -1,9 +1,17 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import type { ResellerBusinessOverview } from '@/services/reseller-business-overview';
+import {
+  buildMoneyFlowBuckets,
+  getDefaultMoneyFlowGranularity,
+  getDefaultMoneyFlowRange,
+  moneyFlowRangeOptions,
+  type BusinessMoneyFlowGranularity,
+  type ResellerBusinessOverview,
+} from '@/services/reseller-business-overview';
 
 type BusinessPulseProps = {
   errorMessage?: string | null;
@@ -32,6 +40,17 @@ function barHeight(value: number, maximum: number) {
   return Math.max(8, Math.round((value / maximum) * 74));
 }
 
+function compactMoney(cents: number) {
+  const amount = Math.abs(cents) / 100;
+  if (amount >= 1_000_000) {
+    return `$${(amount / 1_000_000).toFixed(amount >= 10_000_000 ? 0 : 1)}M`;
+  }
+  if (amount >= 1_000) {
+    return `$${(amount / 1_000).toFixed(amount >= 10_000 ? 0 : 1)}K`;
+  }
+  return `$${Math.round(amount)}`;
+}
+
 export function BusinessPulse({
   errorMessage,
   loading,
@@ -40,6 +59,12 @@ export function BusinessPulse({
   onOpenFlipPlan,
   onOpenInventory,
 }: BusinessPulseProps) {
+  const [selectedGranularity, setSelectedGranularity] =
+    useState<BusinessMoneyFlowGranularity | null>(null);
+  const [selectedRangeCount, setSelectedRangeCount] = useState<number | null>(
+    null,
+  );
+
   if (loading && !overview) {
     return (
       <View style={styles.loadingCard}>
@@ -78,10 +103,35 @@ export function BusinessPulse({
     );
   }
 
+  const chartNow = new Date();
+  const automaticGranularity = getDefaultMoneyFlowGranularity(
+    overview.firstTransactionAt,
+    chartNow,
+  );
+  const granularity = selectedGranularity ?? automaticGranularity;
+  const rangeOptions = moneyFlowRangeOptions(granularity);
+  const defaultRangeCount = getDefaultMoneyFlowRange(
+    granularity,
+    overview.firstTransactionAt,
+    chartNow,
+  );
+  const rangeCount = rangeOptions.some(
+    (option) => option.count === selectedRangeCount,
+  )
+    ? selectedRangeCount!
+    : defaultRangeCount;
+  const selectedRange = rangeOptions.find((option) => option.count === rangeCount)!;
+  const moneyFlow = buildMoneyFlowBuckets({
+    bucketCount: rangeCount,
+    entries: overview.moneyFlowEntries,
+    granularity,
+    now: chartNow,
+  });
   const maximumFlow = Math.max(
-    ...overview.moneyFlow.flatMap((date) => [date.moneyInCents, date.moneyOutCents]),
+    ...moneyFlow.flatMap((date) => [date.moneyInCents, date.moneyOutCents]),
     1,
   );
+  const chartGrid = [1, 0.75, 0.5, 0.25, 0];
   const attention = [
     overview.inventory.missingCostCount > 0
       ? `${overview.inventory.missingCostCount} item${overview.inventory.missingCostCount === 1 ? '' : 's'} need${overview.inventory.missingCostCount === 1 ? 's' : ''} a real purchase price`
@@ -123,35 +173,144 @@ export function BusinessPulse({
         <View style={styles.chartHeading}>
           <View>
             <Text style={styles.chartLabel}>MONEY MOVEMENT</Text>
-            <Text style={styles.chartTitle}>Last six months</Text>
+            <Text style={styles.chartTitle}>{selectedRange.label}</Text>
           </View>
           <View style={styles.legend}>
             <Legend color={theme.colors.scannerCyan} label="In" />
             <Legend color={theme.colors.goldBright} label="Out" />
           </View>
         </View>
-        <View style={styles.chartBars}>
-          {overview.moneyFlow.map((date) => (
-            <View key={date.key} style={styles.monthGroup}>
-              <View style={styles.bars}>
-                <View
-                  style={[
-                    styles.bar,
-                    styles.inBar,
-                    { height: barHeight(date.moneyInCents, maximumFlow) },
+        <View style={styles.chartControls}>
+          <View style={styles.controlHeading}>
+            <Text style={styles.controlLabel}>BAR UNIT</Text>
+            <Text style={styles.controlValue}>
+              {granularity === 'days'
+                ? 'Daily'
+                : granularity === 'weeks'
+                  ? 'Weekly'
+                  : 'Monthly'}
+            </Text>
+          </View>
+          <View style={styles.segmentRow}>
+            {(['days', 'weeks', 'months'] as BusinessMoneyFlowGranularity[]).map(
+              (option) => {
+                const active = option === granularity;
+                return (
+                  <Pressable
+                    accessibilityLabel={`Show money movement by ${option}`}
+                    accessibilityRole="button"
+                    key={option}
+                    onPress={() => {
+                      setSelectedGranularity(option);
+                      setSelectedRangeCount(null);
+                    }}
+                    style={({ pressed }) => [
+                      styles.segmentButton,
+                      active && styles.segmentButtonActive,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.segmentText,
+                        active && styles.segmentTextActive,
+                      ]}
+                    >
+                      {option.toUpperCase()}
+                    </Text>
+                  </Pressable>
+                );
+              },
+            )}
+          </View>
+          <View style={styles.controlHeading}>
+            <Text style={styles.controlLabel}>TIME SPAN</Text>
+            <Text style={styles.controlValue}>{selectedRange.label}</Text>
+          </View>
+          <ScrollView
+            contentContainerStyle={styles.rangeRow}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+          >
+            {rangeOptions.map((option) => {
+              const active = option.count === rangeCount;
+              return (
+                <Pressable
+                  accessibilityLabel={`Show ${option.label}`}
+                  accessibilityRole="button"
+                  key={option.count}
+                  onPress={() => setSelectedRangeCount(option.count)}
+                  style={({ pressed }) => [
+                    styles.rangeChip,
+                    active && styles.rangeChipActive,
+                    pressed && styles.pressed,
                   ]}
-                />
-                <View
-                  style={[
-                    styles.bar,
-                    styles.outBar,
-                    { height: barHeight(date.moneyOutCents, maximumFlow) },
-                  ]}
-                />
+                >
+                  <Text
+                    style={[
+                      styles.rangeChipText,
+                      active && styles.rangeChipTextActive,
+                    ]}
+                  >
+                    {option.shortLabel}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+        <View style={styles.chartPlotRow}>
+          <View style={styles.yAxis}>
+            {chartGrid.map((fraction) => (
+              <Text key={fraction} style={styles.yAxisLabel}>
+                {compactMoney(Math.round(maximumFlow * fraction))}
+              </Text>
+            ))}
+          </View>
+          <ScrollView
+            contentContainerStyle={styles.chartBarsViewport}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.chartScroll}
+          >
+            <View style={styles.chartPlotContent}>
+              <View pointerEvents="none" style={styles.gridLayer}>
+                {chartGrid.map((fraction) => (
+                  <View
+                    key={fraction}
+                    style={[
+                      styles.gridLine,
+                      { bottom: Math.round(fraction * 77) },
+                      fraction === 0 && styles.gridBaseline,
+                    ]}
+                  />
+                ))}
               </View>
-              <Text style={styles.monthLabel}>{date.label}</Text>
+              <View style={styles.chartBars}>
+                {moneyFlow.map((date) => (
+                  <View key={date.key} style={styles.flowGroup}>
+                    <View style={styles.bars}>
+                      <View
+                        style={[
+                          styles.bar,
+                          styles.inBar,
+                          { height: barHeight(date.moneyInCents, maximumFlow) },
+                        ]}
+                      />
+                      <View
+                        style={[
+                          styles.bar,
+                          styles.outBar,
+                          { height: barHeight(date.moneyOutCents, maximumFlow) },
+                        ]}
+                      />
+                    </View>
+                    <Text style={styles.flowLabel}>{date.label}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
-          ))}
+          </ScrollView>
         </View>
       </View>
 
@@ -301,13 +460,36 @@ const styles = StyleSheet.create({
   legendItem: { alignItems: 'center', flexDirection: 'row', gap: 4 },
   legendDot: { borderRadius: 3, height: 6, width: 6 },
   legendText: { color: theme.colors.textMuted, fontSize: 9, fontWeight: '700' },
-  chartBars: { alignItems: 'flex-end', flexDirection: 'row', gap: 8, justifyContent: 'space-between', minHeight: 100 },
-  monthGroup: { alignItems: 'center', flex: 1, gap: 5 },
+  chartControls: { gap: 7 },
+  controlHeading: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  controlLabel: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 1 },
+  controlValue: { color: theme.colors.scannerCyan, fontSize: 9, fontWeight: '800' },
+  segmentRow: { backgroundColor: 'rgba(255, 255, 255, 0.035)', borderColor: 'rgba(255, 255, 255, 0.10)', borderRadius: 9, borderWidth: 1, flexDirection: 'row', padding: 3 },
+  segmentButton: { alignItems: 'center', borderRadius: 6, flex: 1, minHeight: 28, justifyContent: 'center', paddingHorizontal: 7 },
+  segmentButtonActive: { backgroundColor: 'rgba(88, 223, 232, 0.18)', borderColor: 'rgba(88, 223, 232, 0.32)', borderWidth: 1 },
+  segmentText: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 0.8 },
+  segmentTextActive: { color: theme.colors.scannerCyan },
+  rangeRow: { alignItems: 'center', gap: 7, paddingVertical: 1 },
+  rangeChip: { alignItems: 'center', borderColor: 'rgba(242, 211, 138, 0.22)', borderRadius: 999, borderWidth: 1, minHeight: 28, justifyContent: 'center', paddingHorizontal: 11 },
+  rangeChipActive: { backgroundColor: 'rgba(215, 168, 74, 0.16)', borderColor: 'rgba(242, 211, 138, 0.58)' },
+  rangeChipText: { color: theme.colors.textMuted, fontSize: 9, fontWeight: '900' },
+  rangeChipTextActive: { color: theme.colors.goldBright },
+  chartPlotRow: { flexDirection: 'row', minHeight: 100 },
+  yAxis: { height: 78, justifyContent: 'space-between', marginTop: 6, paddingRight: 6, width: 42 },
+  yAxisLabel: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '700', lineHeight: 10, textAlign: 'right' },
+  chartScroll: { flex: 1 },
+  chartBarsViewport: { minWidth: '100%' },
+  chartPlotContent: { minHeight: 100, minWidth: '100%', position: 'relative' },
+  gridLayer: { height: 78, left: 2, position: 'absolute', right: 2, top: 6 },
+  gridLine: { backgroundColor: 'rgba(173, 167, 178, 0.18)', height: 1, left: 0, position: 'absolute', right: 0 },
+  gridBaseline: { backgroundColor: 'rgba(242, 211, 138, 0.32)' },
+  chartBars: { alignItems: 'flex-end', flexDirection: 'row', gap: 8, justifyContent: 'space-between', minHeight: 100, minWidth: '100%', paddingHorizontal: 2, position: 'relative' },
+  flowGroup: { alignItems: 'center', gap: 5, width: 30 },
   bars: { alignItems: 'flex-end', flexDirection: 'row', gap: 3, height: 78 },
   bar: { borderRadius: 4, width: 7 },
   inBar: { backgroundColor: theme.colors.scannerCyan },
   outBar: { backgroundColor: theme.colors.goldBright },
-  monthLabel: { color: theme.colors.textMuted, fontSize: 9, fontWeight: '700' },
+  flowLabel: { color: theme.colors.textMuted, fontSize: 9, fontWeight: '700' },
   splitRow: { flexDirection: 'row', gap: 8 },
   inventorySurface: { backgroundColor: 'rgba(78, 41, 147, 0.16)', borderColor: 'rgba(190, 154, 255, 0.20)', borderRadius: 12, borderWidth: 1, flex: 1, gap: 3, padding: 11 },
   costSurface: { backgroundColor: 'rgba(21, 16, 5, 0.56)', borderColor: 'rgba(242, 211, 138, 0.17)', borderRadius: 12, borderWidth: 1, flex: 1, gap: 5, padding: 11 },

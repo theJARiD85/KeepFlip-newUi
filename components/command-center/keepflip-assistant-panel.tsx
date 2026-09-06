@@ -32,8 +32,7 @@ type AssistantRoute =
   | '/inventory'
   | '/books'
   | '/deal-shelf'
-  | '/account'
-  | '/seller-center';
+  | '/account';
 
 const FLIP_MASCOT_IMAGE = require('@/assets/images/flip-mascot.png');
 
@@ -57,8 +56,10 @@ async function scheduleTaskReminder(
 
 export function KeepFlipAssistantPanel({
   onNavigate,
+  onOpenSellerOperations,
 }: {
   onNavigate: (route: AssistantRoute) => void;
+  onOpenSellerOperations: () => void;
 }) {
   const { user } = useKeepFlipAuth();
   const [command, setCommand] = useState('');
@@ -271,7 +272,7 @@ export function KeepFlipAssistantPanel({
           {userId ? (
             <FlipSellerDecisions
               ownerId={userId}
-              onOpenSellerCenter={() => onNavigate('/seller-center')}
+              onOpenSellerOperations={onOpenSellerOperations}
             />
           ) : (
             <Text style={styles.empty}>Sign in so Flip can open your seller decisions.</Text>

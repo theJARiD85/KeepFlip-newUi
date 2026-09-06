@@ -28,7 +28,6 @@ export const keepFlipTheme = {
     cream: '#F2EDE4cc',
     text: '#F7F2E8',
     textMuted: '#ADA7B2',
-
     danger: '#E86158',
   },
   radii: {

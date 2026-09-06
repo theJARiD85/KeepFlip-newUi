@@ -1,5 +1,6 @@
 import type { InventoryItem } from '@/services/inventory-service';
 import type {
+  ResellerLedgerDirection,
   ResellerLedgerEntry,
   ResellerLedgerEntryType,
 } from '@/services/reseller-ledger-service';
@@ -25,6 +26,44 @@ export type BusinessMoneyFlowMonth = {
   label: string;
   moneyInCents: number;
   moneyOutCents: number;
+};
+
+export type BusinessMoneyFlowGranularity = 'days' | 'weeks' | 'months';
+
+export type BusinessMoneyFlowEntry = {
+  occurredAt: string;
+  direction: ResellerLedgerDirection;
+  amountCents: number;
+};
+
+export type BusinessMoneyFlowBucket = BusinessMoneyFlowMonth;
+
+export type BusinessMoneyFlowRangeOption = {
+  count: number;
+  label: string;
+  shortLabel: string;
+};
+
+const MONEY_FLOW_RANGE_OPTIONS: Record<
+  BusinessMoneyFlowGranularity,
+  BusinessMoneyFlowRangeOption[]
+> = {
+  days: [
+    { count: 7, label: 'Last 7 days', shortLabel: '7D' },
+    { count: 14, label: 'Last 14 days', shortLabel: '14D' },
+    { count: 30, label: 'Last 30 days', shortLabel: '30D' },
+  ],
+  weeks: [
+    { count: 4, label: 'Last 4 weeks', shortLabel: '4W' },
+    { count: 8, label: 'Last 8 weeks', shortLabel: '8W' },
+    { count: 12, label: 'Last 12 weeks', shortLabel: '12W' },
+    { count: 26, label: 'Last 6 months', shortLabel: '26W' },
+  ],
+  months: [
+    { count: 6, label: 'Last 6 months', shortLabel: '6M' },
+    { count: 12, label: 'Last 12 months', shortLabel: '12M' },
+    { count: 24, label: 'Last 2 years', shortLabel: '24M' },
+  ],
 };
 
 export type BusinessCostBreakdown = {
@@ -53,6 +92,8 @@ export type ResellerBusinessOverview = {
     unlinkedSaleCount: number;
     unlinkedInventoryCostCents: number;
   };
+  firstTransactionAt: string | null;
+  moneyFlowEntries: BusinessMoneyFlowEntry[];
   moneyFlow: BusinessMoneyFlowMonth[];
   topCostsThisMonth: BusinessCostBreakdown[];
   recordedMoneyEventCount: number;
@@ -94,6 +135,181 @@ function expenseLabel(entryType: ResellerLedgerEntryType) {
   return EXPENSE_LABELS[entryType] ?? 'Other costs';
 }
 
+export function moneyFlowRangeOptions(
+  granularity: BusinessMoneyFlowGranularity,
+) {
+  return MONEY_FLOW_RANGE_OPTIONS[granularity];
+}
+
+export function getDefaultMoneyFlowGranularity(
+  firstTransactionAt: string | null,
+  now = new Date(),
+): BusinessMoneyFlowGranularity {
+  if (!firstTransactionAt) return 'days';
+
+  const firstTransaction = new Date(firstTransactionAt);
+  if (!Number.isFinite(firstTransaction.getTime())) return 'days';
+
+  const thirtyDaysAgo = new Date(now);
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const sixMonthsAgo = new Date(now);
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+  if (firstTransaction <= sixMonthsAgo) return 'months';
+  if (firstTransaction <= thirtyDaysAgo) return 'weeks';
+  return 'days';
+}
+
+export function getDefaultMoneyFlowRange(
+  granularity: BusinessMoneyFlowGranularity,
+  firstTransactionAt: string | null,
+  now = new Date(),
+) {
+  const firstTransaction = firstTransactionAt
+    ? new Date(firstTransactionAt)
+    : null;
+  const ageDays =
+    firstTransaction && Number.isFinite(firstTransaction.getTime())
+      ? Math.max(
+          0,
+          Math.floor(
+            (now.getTime() - firstTransaction.getTime()) / 86_400_000,
+          ),
+        )
+      : 0;
+
+  if (granularity === 'days') {
+    if (ageDays <= 7) return 7;
+    if (ageDays <= 14) return 14;
+    return 30;
+  }
+
+  if (granularity === 'weeks') return ageDays <= 90 ? 12 : 26;
+  return ageDays <= 365 ? 6 : 12;
+}
+
+function dayKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function startOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function startOfWeek(date: Date) {
+  const result = startOfDay(date);
+  result.setDate(result.getDate() - result.getDay());
+  return result;
+}
+
+function startOfMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function addFlowPeriods(
+  date: Date,
+  granularity: BusinessMoneyFlowGranularity,
+  count: number,
+) {
+  const result = new Date(date);
+  if (granularity === 'days') result.setDate(result.getDate() + count);
+  else if (granularity === 'weeks') result.setDate(result.getDate() + count * 7);
+  else result.setMonth(result.getMonth() + count);
+  return result;
+}
+
+function flowPeriodStart(
+  date: Date,
+  granularity: BusinessMoneyFlowGranularity,
+) {
+  if (granularity === 'days') return startOfDay(date);
+  if (granularity === 'weeks') return startOfWeek(date);
+  return startOfMonth(date);
+}
+
+function flowPeriodKey(
+  date: Date,
+  granularity: BusinessMoneyFlowGranularity,
+) {
+  return granularity === 'months' ? monthKey(date) : dayKey(date);
+}
+
+function flowPeriodLabel(
+  date: Date,
+  granularity: BusinessMoneyFlowGranularity,
+  bucketCount: number,
+) {
+  if (granularity === 'days') {
+    return date.toLocaleDateString(undefined, {
+      day: 'numeric',
+      month: 'numeric',
+    });
+  }
+
+  if (granularity === 'weeks') {
+    return date.toLocaleDateString(undefined, {
+      day: 'numeric',
+      month: 'short',
+    });
+  }
+
+  return date.toLocaleDateString(undefined, {
+    month: 'short',
+    ...(bucketCount > 12 ? { year: '2-digit' } : {}),
+  });
+}
+
+export function buildMoneyFlowBuckets({
+  entries,
+  granularity,
+  bucketCount,
+  now = new Date(),
+}: {
+  entries: BusinessMoneyFlowEntry[];
+  granularity: BusinessMoneyFlowGranularity;
+  bucketCount: number;
+  now?: Date;
+}): BusinessMoneyFlowBucket[] {
+  const maximumBuckets =
+    granularity === 'days' ? 30 : granularity === 'weeks' ? 26 : 24;
+  const safeBucketCount = Math.max(
+    1,
+    Math.min(maximumBuckets, Math.round(bucketCount)),
+  );
+  const currentPeriodStart = flowPeriodStart(now, granularity);
+  const firstPeriodStart = addFlowPeriods(
+    currentPeriodStart,
+    granularity,
+    -(safeBucketCount - 1),
+  );
+  const buckets = Array.from({ length: safeBucketCount }, (_, index) => {
+    const date = addFlowPeriods(firstPeriodStart, granularity, index);
+    return {
+      key: flowPeriodKey(date, granularity),
+      label: flowPeriodLabel(date, granularity, safeBucketCount),
+      moneyInCents: 0,
+      moneyOutCents: 0,
+    };
+  });
+  const bucketByKey = new Map(buckets.map((bucket) => [bucket.key, bucket]));
+
+  entries.forEach((entry) => {
+    const occurredAt = new Date(entry.occurredAt);
+    if (!Number.isFinite(occurredAt.getTime())) return;
+
+    const bucket = bucketByKey.get(
+      flowPeriodKey(flowPeriodStart(occurredAt, granularity), granularity),
+    );
+    if (!bucket) return;
+
+    if (entry.direction === 'income') bucket.moneyInCents += entry.amountCents;
+    else bucket.moneyOutCents += entry.amountCents;
+  });
+
+  return buckets;
+}
+
 /**
  * Produces a presentation-ready business snapshot from the records KeepFlip
  * already owns. It deliberately treats estimates as a separate inventory
@@ -114,6 +330,13 @@ export function buildResellerBusinessOverview({
   );
   const currentMonthKey = monthKey(now);
   const activeEntries = entries.filter(entryHasUsableMoney);
+  const firstTransactionAt = activeEntries.reduce<string | null>(
+    (earliest, entry) =>
+      !earliest || new Date(entry.occurredAt) < new Date(earliest)
+        ? entry.occurredAt
+        : earliest,
+    null,
+  );
   const purchaseCentsByItem = new Map<string, number>();
   const soldItemIds = new Set<string>();
   const costsByType = new Map<ResellerLedgerEntryType, number>();
@@ -228,6 +451,12 @@ export function buildResellerBusinessOverview({
       unlinkedSaleCount,
       unlinkedInventoryCostCents,
     },
+    firstTransactionAt,
+    moneyFlowEntries: activeEntries.map((entry) => ({
+      amountCents: entry.amountCents,
+      direction: entry.direction,
+      occurredAt: entry.occurredAt,
+    })),
     moneyFlow: months.map((month) => flowByMonth.get(month.key)!),
     topCostsThisMonth: [...costsByType.entries()]
       .map(([entryType, amountCents]) => ({
