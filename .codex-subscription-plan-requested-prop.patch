@@ -1,0 +1,19 @@
+diff --git a/components/subscription/keepflip-subscription-screen.tsx b/components/subscription/keepflip-subscription-screen.tsx
+--- a/components/subscription/keepflip-subscription-screen.tsx
++++ b/components/subscription/keepflip-subscription-screen.tsx
+@@ -71,1 +71,2 @@
+-  purchasing,
++  purchasing,
++  requestedPlan,
+@@ -81,1 +81,2 @@
+-  purchasing: boolean;
++  purchasing: boolean;
++  requestedPlan: KeepFlipPlanId | null;
+@@ -88,1 +88,2 @@
+-  const isCurrent = currentPlan === definition.id;
++  const isCurrent = currentPlan === definition.id;
++  const isRequested = requestedPlan === definition.id;
+@@ -100,1 +100,2 @@
+-        definition.recommended && styles.planCardRecommended,
++        isRequested && styles.planCardRequested,
++        definition.recommended && styles.planCardRecommended,
