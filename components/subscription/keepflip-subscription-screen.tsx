@@ -42,6 +42,17 @@ function formatDate(value: string | null) {
 function hapticSelection() {
   void Haptics.selectionAsync().catch(() => undefined);
 }
+function paramValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function parseCadence(value: string | undefined): KeepFlipBillingCadence {
+  return value === 'annual' ? 'annual' : 'monthly';
+}
+
+function parsePlan(value: string | undefined): KeepFlipPlanId | null {
+  return value === 'hobbyist' || value === 'serious' ? value : null;
+}
 
 function annualSavings(plan: KeepFlipPlanId) {
   if (plan === 'hobbyist') return 'SAVE $20 / YEAR';
