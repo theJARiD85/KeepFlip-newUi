@@ -16,6 +16,10 @@ type AuthMode = 'sign-in' | 'create-account';
 type IconName = ComponentProps<typeof IconSymbol>['name'];
 type TextInputHandle = ComponentRef<typeof TextInput>;
 
+type KeepFlipAuthScreenProps = {
+  allowSignUp?: boolean;
+};
+
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function AuthField({
@@ -103,7 +107,9 @@ function SetupNotice({ missingKeys }: { missingKeys: string[] }) {
   );
 }
 
-export function KeepFlipAuthScreen() {
+export function KeepFlipAuthScreen({
+  allowSignUp = true,
+}: KeepFlipAuthScreenProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const {
@@ -227,7 +233,8 @@ export function KeepFlipAuthScreen() {
             </View>
 
             <Animated.View layout={LinearTransition.duration(180)} style={styles.authPanel}>
-              <View accessibilityRole="tablist" style={styles.modeSwitch}>
+              {allowSignUp ? (
+                <View accessibilityRole="tablist" style={styles.modeSwitch}>
                 <Pressable
                   accessibilityRole="tab"
                   accessibilityState={{ selected: mode === 'sign-in' }}
@@ -259,7 +266,8 @@ export function KeepFlipAuthScreen() {
                     CREATE ACCOUNT
                   </Text>
                 </Pressable>
-              </View>
+                </View>
+              ) : null}
 
               {setupRequired ? <SetupNotice missingKeys={missingKeys} /> : null}
 

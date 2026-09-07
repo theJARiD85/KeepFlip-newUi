@@ -1,4 +1,4 @@
-import { type Href, Stack, usePathname, useRouter } from 'expo-router';
+import { type Href, Stack, useGlobalSearchParams, usePathname, useRouter } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import { useEffect, useRef } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
@@ -50,18 +50,24 @@ function NotificationNavigationObserver() {
 function SubscriptionAccessGate() {
   const router = useRouter();
   const pathname = usePathname();
+  const { tab } = useGlobalSearchParams<{
+    tab?: string | string[];
+  }>();
+  const selectedTab = Array.isArray(tab) ? tab[0] : tab;
+  const isSubscriptionTab =
+    pathname === '/account' && selectedTab === 'subscription';
   const { snapshot, state } = useKeepFlipSubscription();
 
   useEffect(() => {
     if (!areKeepFlipSubscriptionsEnforced()) return;
     if (state !== 'ready') return;
     if (snapshot?.access.active) return;
-    if (pathname === '/subscription') return;
+    if (isSubscriptionTab) return;
 
     requestAnimationFrame(() => {
-      router.replace('/subscription' as Href);
+      router.replace('/account?tab=subscription' as Href);
     });
-  }, [pathname, router, snapshot?.access.active, state]);
+  }, [isSubscriptionTab, pathname, router, snapshot?.access.active, state]);
 
   return null;
 }
@@ -97,10 +103,11 @@ function WalkthroughAutoLauncher() {
 
     void hasCompletedKeepFlipLaunchExperience()
       .then((launchCompleted) => {
-        if (cancelled || launchCompleted) return null;
+        if (cancelled || launchCompleted) return true;
         return hasCompletedScanInventoryWalkthrough(user.$id, user.name);
       })
       .then((completed) => {
+        if (cancelled || completed) return;
         frame = requestAnimationFrame(() => {
           router.push('/walkthrough' as Href);
         });
@@ -166,7 +173,6 @@ export default function AppShellLayout() {
                   <Stack.Screen name="ebay-connect" />
                   <Stack.Screen name="ebay-account" />
                   <Stack.Screen name="books" />
-                  <Stack.Screen name="subscription" />
                 </Stack>
               </View>
             </KeepFlipSubscriptionProvider>

@@ -147,8 +147,8 @@ export default function EbayConnectScreen() {
         contentContainerStyle={[
           styles.content,
           {
-            paddingTop: insets.top + 24,
-            paddingBottom: insets.bottom + 32,
+            paddingTop: insets.top / 2,
+            paddingBottom: insets.bottom,
           },
         ]}
         style={{marginBottom: insets.bottom, marginTop: insets.top}}
@@ -168,8 +168,6 @@ export default function EbayConnectScreen() {
               style={styles.backIcon}
             />
           </Pressable>
-          <Text style={styles.topLabel}>EBAY CONNECTION</Text>
-          <View style={styles.topSpacer} />
         </View>
 
         <View style={styles.hero}>
@@ -264,13 +262,6 @@ export default function EbayConnectScreen() {
                 ? 'RECONNECT EBAY'
                 : 'CONTINUE TO EBAY'}
             </Text>
-            {!isConnecting ? (
-              <IconSymbol
-                color={theme.colors.backgroundDeep}
-                name="arrow.right"
-                size={20}
-              />
-            ) : null}
           </Pressable>
 
           <Pressable
@@ -290,7 +281,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 720,
     alignSelf: 'center',
-    gap: 24,
+    gap: 15,
     paddingHorizontal: 20,
   },
   topBar: {
@@ -327,9 +318,7 @@ const styles = StyleSheet.create({
   },
   hero: {
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 10,
+    gap: 7,
   },
   logoShell: {
     width: 108,
@@ -347,7 +336,7 @@ const styles = StyleSheet.create({
     color: theme.colors.gold,
     fontSize: 10,
     fontWeight: '900',
-    letterSpacing: 2,
+    letterSpacing: 2.4,
   },
   title: {
     color: theme.colors.cream,
@@ -425,6 +414,7 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     fontSize: 12,
     lineHeight: 18,
+    fontFamily: theme.fonts.body,
   },
   resultCard: {
     gap: 4,
@@ -449,6 +439,7 @@ const styles = StyleSheet.create({
   },
   resultBody: {
     color: theme.colors.textMuted,
+    fontFamily: theme.fonts.body,
     fontSize: 12,
     lineHeight: 18,
   },
@@ -457,6 +448,7 @@ const styles = StyleSheet.create({
     paddingTop: 2,
   },
   environmentLabel: {
+    fontFamily: theme.fonts.radar,
     color: theme.colors.scannerCyan,
     fontSize: 8,
     fontWeight: '900',
@@ -483,7 +475,7 @@ const styles = StyleSheet.create({
   },
   connectButtonText: {
     color: theme.colors.backgroundDeep,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '900',
     letterSpacing: 1.15,
   },
@@ -494,6 +486,7 @@ const styles = StyleSheet.create({
   },
   notNowText: {
     color: theme.colors.textMuted,
+    fontFamily: theme.fonts.display,
     fontSize: 10,
     fontWeight: '900',
     letterSpacing: 1.5,

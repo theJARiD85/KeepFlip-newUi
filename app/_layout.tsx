@@ -4,7 +4,7 @@ import {
   ThemeProvider,
 } from "expo-router/react-navigation";
 import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
+import { Stack, usePathname } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -14,18 +14,13 @@ import {
 import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as Notifications from 'expo-notifications';
-import * as SecureStore from 'expo-secure-store';
-import * as Device from 'expo-device';
 import "react-native-reanimated";
 import {
   KeepFlipAuthProvider,
   useKeepFlipAuth,
 } from "@/components/auth/keepflip-auth-context";
-import {
-  getAppwriteCoreServices,
-} from '@/lib/appwrite';
-import { ID } from 'react-native-appwrite';
 import { KeepFlipFeedbackNudgeProvider } from "@/components/feedback/keepflip-feedback-nudge";
+import { KeepFlipPushRegistration } from '@/components/notifications/keepflip-push-registration';
 import KeepFlipLaunchExperience from "@/components/intro/keepflip-launch-experience.native";
 import { keepFlipTheme } from "@/constants/keepflip-theme";
 
@@ -55,6 +50,13 @@ function ProtectedRootStack() {
   const isSignedIn =
     status === "signed-in";
 
+  const pathname = usePathname();
+  const keepSubscriptionSignupOpen =
+    pathname === "/subscription-setup";
+  const canShowOnboarding =
+    !isChecking &&
+    (!isSignedIn || keepSubscriptionSignupOpen);
+
   return (
     <Stack
       screenOptions={{
@@ -77,6 +79,10 @@ function ProtectedRootStack() {
         }
       >
         <Stack.Screen name="(auth)" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={canShowOnboarding}>
+        <Stack.Screen name="(onboarding)" />
       </Stack.Protected>
 
       <Stack.Protected guard={isSignedIn}>
@@ -102,7 +108,6 @@ export default function RootLayout() {
   __DEV__ ||
   process.env.EXPO_PUBLIC_APPODEAL_TESTING === "true";
 
-  const { account } = getAppwriteCoreServices();
 
   const [
     fontsLoaded,
@@ -142,18 +147,6 @@ export default function RootLayout() {
       require("@/assets/fonts/PlusJakartaSansSemiBold.otf"),
   });
 
-  useEffect(() => {
-    async function checkUser() {
-      try {
-        const currentUser = await account.get();
-        console.log(currentUser);
-      } catch (error) {
-        console.log('No user signed in');
-      }
-    }
-    
-    checkUser();
-  }, []);
   
 
   useEffect(() => {
@@ -168,118 +161,6 @@ export default function RootLayout() {
     fontsLoaded,
   ]);
 
-  useEffect(() => {
-    const checkPushRegistration = async () => {
-      if (!Device.isDevice) {
-        return;
-      }
-  
-      try {
-        const { status } =
-          await Notifications.getPermissionsAsync();
-  
-        if (status !== 'granted') {
-          await registerForPushNotifications();
-          return;
-        }
-  
-        const savedToken =
-          await SecureStore.getItemAsync('devicePushToken');
-  
-        const currentToken = String(
-          (
-            await Notifications.getDevicePushTokenAsync()
-          ).data,
-        );
-  
-        if (!savedToken) {
-          console.log('No saved push token. Registering...');
-          await registerForPushNotifications();
-          return;
-        }
-  
-        if (savedToken !== currentToken) {
-          console.log(
-            'Device push token changed. Re-registering...',
-          );
-  
-          await registerForPushNotifications();
-          return;
-        }
-  
-        console.log(
-          'Push notifications already registered.',
-        );
-      } catch (error) {
-        console.error(
-          'Error checking push registration:',
-          error,
-        );
-      }
-    };
-  
-    void checkPushRegistration();
-  }, []);
-
-  async function registerForPushNotifications() {
-    if (!Device.isDevice) {
-      console.log('Must use physical device for Push Notifications');
-      return;
-    }
-  
-    // Request permissions
-    const { status: existingStatus } =
-      await Notifications.getPermissionsAsync();
-  
-    let finalStatus = existingStatus;
-  
-    if (existingStatus !== 'granted') {
-      const { status } =
-        await Notifications.requestPermissionsAsync();
-  
-      finalStatus = status;
-    }
-  
-    if (finalStatus !== 'granted') {
-      console.log('Failed to get push token for push notification!');
-      return;
-    }
-  
-    try {
-      // Raw FCM token on Android / APNs token on iOS
-      const nativeToken = (
-        await Notifications.getDevicePushTokenAsync()
-      ).data;
-  
-      console.log(
-        'Native Device Token for Appwrite:',
-        nativeToken,
-      );
-  
-      const { account } = getAppwriteCoreServices();
-  
-      await account.createPushTarget({
-        targetId: ID.unique(),
-        identifier: String(nativeToken),
-        providerId: 'FCM',
-      });
-  
-      // Save locally AFTER Appwrite registration succeeds.
-      await SecureStore.setItemAsync(
-        'devicePushToken',
-        String(nativeToken),
-      );
-  
-      console.log(
-        'Successfully registered push target to Appwrite!',
-      );
-    } catch (error) {
-      console.error(
-        'Error setting up Appwrite Messaging target:',
-        error,
-      );
-    }
-  }
 
   if (
     !fontsLoaded &&
@@ -320,10 +201,22 @@ export default function RootLayout() {
           value={navigationTheme}
         >
           <KeepFlipAuthProvider>
+            <KeepFlipPushRegistration />
             <KeepFlipFeedbackNudgeProvider>
               <ProtectedRootStack />
             </KeepFlipFeedbackNudgeProvider>
-            <KeepFlipLaunchExperience onVisibilityChange={setLaunchVisible} />
+            <View
+              pointerEvents={launchVisible ? "auto" : "none"}
+              style={{
+                bottom: 0,
+                left: 0,
+                position: "absolute",
+                right: 0,
+                top: 0,
+              }}
+            >
+              <KeepFlipLaunchExperience onVisibilityChange={setLaunchVisible} />
+            </View>
           </KeepFlipAuthProvider>
 
           <StatusBar

@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
-import { type Href, useFocusEffect, useRouter } from 'expo-router';
+import { type Href, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -14,7 +14,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { useKeepFlipFeedbackNudge } from '@/components/feedback/keepflip-feedback-nudge';
+import { KeepFlipAccountTabs } from '@/components/account/keepflip-account-tabs';
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
+import { KeepFlipSubscriptionScreen } from '@/components/subscription/keepflip-subscription-screen';
 import { EbayShoppingBagIcon } from '@/components/ebay/ebay-shopping-bag-icon';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipControlRow } from '@/components/ui/keepflip-control-row';
@@ -43,6 +45,19 @@ function hapticSelection() {
 }
 
 export default function AccountScreen() {
+  const { tab } = useLocalSearchParams<{
+    tab?: string | string[];
+  }>();
+  const selectedTab = Array.isArray(tab) ? tab[0] : tab;
+
+  if (selectedTab === 'subscription') {
+    return <KeepFlipSubscriptionScreen accountTab />;
+  }
+
+  return <AccountDetailsTab />;
+}
+
+function AccountDetailsTab() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { isBusy, signOut, user } = useKeepFlipAuth();
@@ -217,6 +232,8 @@ export default function AccountScreen() {
           </Text>
         </Animated.View>
 
+        <KeepFlipAccountTabs active="account" />
+
         <Animated.View entering={FadeInDown.duration(260).delay(45)} style={styles.profileCard}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{avatarInitial}</Text>
@@ -297,7 +314,7 @@ export default function AccountScreen() {
               label={subscriptionPlan?.name ?? 'KeepFlip plan'}
               onPress={() => {
                 hapticSelection();
-                router.push('/subscription' as Href);
+                router.replace('/account?tab=subscription' as Href);
               }}
               status={subscriptionState === 'loading' ? undefined : subscriptionStatus}
             />

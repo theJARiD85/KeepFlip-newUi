@@ -550,6 +550,7 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     color: theme.colors.gold,
+    fontFamily: theme.fonts.display,
     fontWeight: "900",
     letterSpacing: 2.4,
   },

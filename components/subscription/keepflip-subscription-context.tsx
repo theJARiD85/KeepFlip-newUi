@@ -57,11 +57,29 @@ function preserveKnownTrialHistory(
   access: KeepFlipSubscriptionSnapshot['access'],
   current: KeepFlipSubscriptionSnapshot | null,
 ) {
+  const profileTrialEndsAt = current?.profileTrial?.trialEndDate;
+  const profileTrialStillActive =
+    current?.access.active === true &&
+    current.access.trialSource === 'profile' &&
+    typeof profileTrialEndsAt === 'string' &&
+    Number.isFinite(Date.parse(profileTrialEndsAt)) &&
+    Date.parse(profileTrialEndsAt) > Date.now();
+
+  // RevenueCat knows store entitlements, not KeepFlip's first-party trial.
+  // Do not let an inactive store update erase valid server-verified access.
+  if (!access.active && profileTrialStillActive && current) {
+    return {
+      ...current.access,
+      trialUsed: true,
+    };
+  }
+
   return {
     ...access,
     trialUsed:
       access.trialUsed ||
       current?.access.trialUsed === true ||
+      current?.profileTrial?.trialUsed === true ||
       current?.serverRecord?.isTrial === true ||
       Boolean(current?.serverRecord?.trialEndsAt),
   };
@@ -156,7 +174,9 @@ export function KeepFlipSubscriptionProvider({
     try {
       const next = await loadKeepFlipSubscription(userId);
       setSnapshot(next);
-      setState(next.configured ? 'ready' : 'unconfigured');
+      // A KeepFlip profile trial is valid access even when this development
+      // build has not been configured with a RevenueCat public SDK key yet.
+      setState(next.configured || next.access.active ? 'ready' : 'unconfigured');
     } catch (caughtError) {
       setState('error');
       setError(
@@ -315,9 +335,13 @@ export function KeepFlipSubscriptionProvider({
 
   const value = useMemo<KeepFlipSubscriptionContextValue>(
     () => {
-      const activePlan = snapshot?.access.active
-        ? snapshot.access.plan
-        : null;
+      const profileTrialActive =
+        snapshot?.access.active === true &&
+        snapshot.access.trialSource === 'profile';
+      let activePlan: KeepFlipPlanId | null = null;
+      if (snapshot?.access.active === true && !profileTrialActive) {
+        activePlan = snapshot.access.plan;
+      }
       const subscriptionsEnforced = areKeepFlipSubscriptionsEnforced();
 
       return {
@@ -325,9 +349,9 @@ export function KeepFlipSubscriptionProvider({
         // enforcement is enabled, every paid feature must resolve from the
         // active RevenueCat plan (and later the migration/grace policy).
         canUse: (feature) =>
-          !subscriptionsEnforced || keepFlipPlanAllows(activePlan, feature),
+          !subscriptionsEnforced || profileTrialActive || keepFlipPlanAllows(activePlan, feature),
         errorMessage: error,
-        limitFor: (limit) => keepFlipPlanLimit(activePlan, limit),
+        limitFor: (limit) => profileTrialActive ? (limit === 'aiValuationScansPerMonth' ? 25 : null) : keepFlipPlanLimit(activePlan, limit),
         manage,
         purchase,
         purchasing,

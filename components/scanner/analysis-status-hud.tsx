@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
 
+import { ConfusedFlipVideo } from "@/components/flip/confused-flip-video";
 import type { ItemAnalysisState } from "@/components/scanner/analysis-visual-types";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 
@@ -131,6 +132,11 @@ function StatePanel({
         <Text style={styles.stateEyebrow}>
           {isEvidence ? "VALUATION QUALITY HOLD" : "VALUATION SYSTEM"}
         </Text>
+        {isEvidence ? (
+          <View style={styles.confusedFlipFrame}>
+            <ConfusedFlipVideo style={styles.confusedFlipVideo} />
+          </View>
+        ) : null}
         <Text style={styles.stateTitle}>{title}</Text>
         <Text style={styles.stateMessage}>{message}</Text>
 
@@ -324,6 +330,14 @@ const styles = StyleSheet.create({
     borderColor: "rgba(242, 211, 138, 0.28)",
     backgroundColor: "rgba(3, 9, 20, 0.96)",
   },
+  confusedFlipFrame: {
+    width: "100%",
+    height: 156,
+    alignItems: "center",
+    justifyContent: "center",
+    marginVertical: -7,
+  },
+  confusedFlipVideo: { width: "100%", height: "100%" },
   stateEyebrow: {
     color: theme.colors.goldBright,
     fontFamily: theme.fonts.radar,

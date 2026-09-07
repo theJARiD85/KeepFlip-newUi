@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
@@ -47,6 +47,10 @@ type KeepFlipPreAuthScreenProps = {
 };
 
 const FLIP_MASCOT_IMAGE = require('@/assets/images/flip-mascot.png');
+
+const NAME_STEP = 0;
+const TOUR_STEP = 1;
+const FIRST_QUESTION_STEP = 2;
 
 const FEATURE_TOUR: Array<{ detail: string; icon: IconName; label: string }> = [
   {
@@ -217,12 +221,17 @@ function ChoiceCard({ choice, onPress, selected }: { choice: PreAuthChoice; onPr
 
 export function KeepFlipPreAuthScreen({ onBack, onComplete }: KeepFlipPreAuthScreenProps) {
   const insets = useSafeAreaInsets();
+  const { responsiveFont } = useResponsiveLayout();
   const { height } = useWindowDimensions();
-  const [screen, setScreen] = useState(0);
+  const [screen, setScreen] = useState(NAME_STEP);
   const [name, setName] = useState('');
   const [rules, setRules] = useState<ResellerBuyRules>(() => ({ ...DEFAULT_RESELLER_BUY_RULES, includedCostTypes: [...DEFAULT_RESELLER_BUY_RULES.includedCostTypes] }));
   const [error, setError] = useState<string | null>(null);
-  const question = screen > 0 && screen <= QUESTIONS.length ? QUESTIONS[screen - 1] : null;
+  const summaryStep = QUESTIONS.length + FIRST_QUESTION_STEP;
+  const question =
+    screen >= FIRST_QUESTION_STEP && screen < summaryStep
+      ? QUESTIONS[screen - FIRST_QUESTION_STEP]
+      : null;
   const summary = useMemo(() => ({ line: `${moneyFromCents(rules.minimumNetProfitCents)}+ take-home · ${rules.minimumRoiPercent}%+ ROI`, details: `${rules.saleSpeed} pace · up to ${moneyFromCents(rules.maximumItemCostCents)} in one item` }), [rules]);
 
   const goBack = useCallback(() => {
@@ -236,40 +245,47 @@ export function KeepFlipPreAuthScreen({ onBack, onComplete }: KeepFlipPreAuthScr
     selectionHaptic();
     setError(null);
     setRules((current) => choice.update(current));
-    setScreen((current) => Math.min(QUESTIONS.length + 1, current + 1));
-  }, []);
+    setScreen((current) => Math.min(summaryStep, current + 1));
+  }, [summaryStep]);
 
   const finish = useCallback(() => {
     const cleanName = name.replace(/\s+/g, ' ').trim();
-    if (cleanName.length < 2) { setError('Tell Flip what to call you before we continue.'); setScreen(0); return; }
+    if (cleanName.length < 2) { setError('Tell Flip what to call you before we continue.'); setScreen(NAME_STEP); return; }
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
     onComplete(cleanName, rules);
   }, [name, onComplete, rules]);
 
   return (
     <KeepFlipBackground>
-      <ScrollView contentContainerStyle={[styles.content, { minHeight: height, paddingBottom: insets.bottom + 24, paddingTop: insets.top + 12 }]} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, {paddingTop: insets.top / 4, height: 'auto', paddingBottom: insets.bottom }]} style={{height: height, marginTop: insets.top, marginBottom: insets.bottom}} showsVerticalScrollIndicator={false}>
+        <View pointerEvents="none" style={styles.authGlow} />
         <View style={styles.topBar}>
-          <View><Text style={styles.brandEyebrow}>KEEPFLIP / MEET FLIP</Text><Text style={styles.brandTitle}>Your resale sidekick.</Text></View>
-          {screen > 0 || onBack ? <Pressable accessibilityRole="button" onPress={goBack} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}><IconSymbol color={theme.colors.goldBright} name="chevron.left" size={17} /><Text style={styles.backButtonText}>BACK</Text></Pressable> : null}
+          <View><Text style={[styles.brandEyebrow, {fontSize: responsiveFont(10)}]}>MEET FLIP</Text><Text style={[styles.brandTitle, { fontSize: responsiveFont(26)}]}>Your resale sidekick.</Text></View>
         </View>
 
-        <View style={styles.progressRail}>{QUESTIONS.map((item, index) => <View key={item.id} style={[styles.progressSegment, index < screen && styles.progressSegmentActive]} />)}</View>
-        <View style={styles.main}>
+
+        <View style={[styles.main]}>
           <Animated.View entering={FadeIn.duration(260)} style={styles.coinShell}>
             <View style={styles.coinFace}><Image accessibilityLabel="Flip" contentFit="cover" source={FLIP_MASCOT_IMAGE} style={styles.coinImage} /></View>
             <View style={styles.onlineLine}><View style={styles.onlineDot} /><Text style={styles.onlineText}>FLIP IS ONLINE</Text></View>
           </Animated.View>
 
-          {screen === 0 ? (
+          {screen === NAME_STEP ? (
             <Animated.View entering={FadeInDown.duration(280)} style={styles.panel}>
-              <Text style={styles.hello}>Hi, I&apos;m Flip.</Text>
-              <Text style={styles.headline}>Let&apos;s build your resale edge.</Text>
-              <Text style={styles.body}>I&apos;ll help you find the flip, understand the evidence, get it listed, and keep the numbers honest.</Text>
-              <View style={styles.featureList}>{FEATURE_TOUR.map((feature) => <FeatureTile {...feature} key={feature.label} />)}</View>
-              <View style={styles.nameBlock}><Text style={styles.nameLabel}>WHAT SHOULD I CALL YOU?</Text><TextInput autoCapitalize="words" autoComplete="name" onChangeText={(value) => { setName(value); setError(null); }} placeholder="Your name" placeholderTextColor="rgba(173, 167, 178, 0.62)" style={styles.nameInput} value={name} /></View>
+              <Text style={[styles.hello, { fontSize: responsiveFont(20)}]}>Hi, I'm Flip.</Text>
+              <Text style={styles.headline}>What should I call you?</Text>
+              <Text style={styles.body}>A quick intro lets me tailor your seller setup to the way you actually flip.</Text>
+              <View style={styles.nameBlock}><Text style={styles.nameLabel}>YOUR NAME</Text><TextInput autoCapitalize="words" autoComplete="name" onChangeText={(value) => { setName(value); setError(null); }} style={styles.nameInput} value={name} /></View>
               {error ? <Text style={styles.errorText}>{error}</Text> : null}
-              <Pressable accessibilityRole="button" onPress={() => { if (name.trim().length < 2) { setError('Tell Flip what to call you before we continue.'); return; } selectionHaptic(); setScreen(1); }} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={styles.primaryButtonText}>LET&apos;S BUILD MY FLIP STYLE</Text><IconSymbol color={theme.colors.backgroundDeep} name="arrow.right" size={20} /></Pressable>
+              <Pressable accessibilityRole="button" onPress={() => { if (name.trim().length < 2) { setError('Tell Flip what to call you before we continue.'); return; } selectionHaptic(); setScreen(TOUR_STEP); }} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={styles.primaryButtonText}>CONTINUE</Text></Pressable>
+            </Animated.View>
+          ) : screen === TOUR_STEP ? (
+            <Animated.View entering={FadeInDown.duration(280)} style={styles.panel}>
+              <Text style={styles.hello}>Nice to meet you, {name.trim()}.</Text>
+              <Text style={styles.headline}>Here's how KeepFlip helps.</Text>
+              <Text style={styles.body}>From the first scan through the sale, Flip keeps your decisions and your money connected.</Text>
+              <View style={styles.featureList}>{FEATURE_TOUR.map((feature) => <FeatureTile {...feature} key={feature.label} />)}</View>
+              <Pressable accessibilityRole="button" onPress={() => { selectionHaptic(); setScreen(FIRST_QUESTION_STEP); }} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={styles.primaryButtonText}>BUILD MY SELLER SETUP</Text><IconSymbol color={theme.colors.backgroundDeep} name="arrow.right" size={20} /></Pressable>
             </Animated.View>
           ) : question ? (
             <Animated.View entering={FadeInDown.duration(260)} key={question.id} style={styles.panel}>
@@ -281,24 +297,34 @@ export function KeepFlipPreAuthScreen({ onBack, onComplete }: KeepFlipPreAuthScr
             <Animated.View entering={FadeInDown.duration(280)} style={styles.panel}>
               <Text style={styles.hello}>Locked in.</Text><Text style={styles.headline}>Flip knows what a good buy looks like to you.</Text>
               <View style={styles.summaryCard}><Text style={styles.summaryPrimary}>{summary.line}</Text><Text style={styles.summarySecondary}>{summary.details}</Text></View>
-              <Text style={styles.body}>Next, you&apos;ll create your login and choose the plan that fits the way you resell.</Text>
+              <Text style={styles.body}>Next, choose a plan and create the account that will keep your seller setup connected.</Text>
               {error ? <Text style={styles.errorText}>{error}</Text> : null}
-              <Pressable accessibilityRole="button" onPress={finish} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={styles.primaryButtonText}>CONTINUE TO ACCOUNT SETUP</Text><IconSymbol color={theme.colors.backgroundDeep} name="arrow.right" size={20} /></Pressable>
+              <Pressable accessibilityRole="button" onPress={finish} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={styles.primaryButtonText}>CONTINUE TO PLAN & ACCOUNT SETUP</Text></Pressable>
             </Animated.View>
           )}
         </View>
+        <View style={styles.progressRail}>{QUESTIONS.map((item, index) => <View key={item.id} style={[styles.progressSegment, index < Math.max(0, screen - TOUR_STEP) && styles.progressSegmentActive]} />)}</View>
       </ScrollView>
     </KeepFlipBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  authGlow: {
+    ...StyleSheet.absoluteFill,
+    experimental_backgroundImage: `
+    radial-gradient(circle at 82% 12%, rgba(88, 223, 232, 0.055) 0%, transparent 32%),
+    radial-gradient(circle at 70r% 94%, rgba(141, 114, 255, 0.07) 0%, transparent 34%), 
+      radial-gradient(circle at 25% 86%, rgba(224, 172, 75, 0.13) 0%, transparent 31%)
+      
+    `,
+  },
   backButton: { alignItems: 'center', borderColor: 'rgba(242, 237, 228, 0.18)', borderRadius: 999, borderWidth: 1, flexDirection: 'row', gap: 3, minHeight: 34, paddingHorizontal: 11 },
   backButtonText: { color: theme.colors.cream, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 0.85 },
-  body: { color: theme.colors.textMuted, fontSize: 14, lineHeight: 21 },
-  brandEyebrow: { color: theme.colors.gold, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 1.2 },
+  body: { color: theme.colors.textMuted, fontFamily: theme.fonts.body, fontSize: 13, lineHeight: 21 },
+  brandEyebrow: { color: theme.colors.gold, fontFamily: theme.fonts.display, letterSpacing: 2.4 },
   brandTitle: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 20, marginTop: 4 },
-  choiceCard: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.035)', borderColor: 'rgba(242,237,228,0.13)', borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 11, minHeight: 70, padding: 11 },
+  choiceCard: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.035)', borderColor: 'rgba(242,237,228,0.13)', borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 11, minHeight: 50, padding: 11 },
   choiceCardSelected: { backgroundColor: 'rgba(0,255,255,0.09)', borderColor: 'rgba(0,255,255,0.72)' },
   choiceCopy: { flex: 1, gap: 2 },
   choiceDetail: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 15 },
@@ -310,7 +336,7 @@ const styles = StyleSheet.create({
   coinFace: { backgroundColor: 'rgba(8,8,12,0.98)', borderColor: 'rgba(242,211,138,0.85)', borderRadius: 999, borderWidth: 2, height: 112, overflow: 'hidden', width: 112 },
   coinImage: { height: '100%', width: '100%' },
   coinShell: { alignItems: 'center', gap: 8 },
-  content: { gap: 18, paddingHorizontal: 20 },
+  content: { gap: 10, paddingHorizontal: 12 },
   errorText: { color: theme.colors.danger, fontSize: 12, lineHeight: 18 },
   featureCopy: { flex: 1, gap: 2 },
   featureDetail: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 14 },
@@ -318,32 +344,32 @@ const styles = StyleSheet.create({
   featureLabel: { color: theme.colors.cream, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 0.85 },
   featureList: { gap: 8 },
   featureTile: { alignItems: 'center', flexDirection: 'row', gap: 9 },
-  hello: { color: theme.colors.goldBright, fontFamily: theme.fonts.medium, fontSize: 16 },
+  hello: { color: theme.colors.goldBright, fontFamily: theme.fonts.display, fontSize: 16 },
   headline: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 26, lineHeight: 32 },
-  main: { gap: 20, marginHorizontal: 'auto', maxWidth: 560, width: '100%' },
+  main: { gap: 20,  maxWidth: 560, width: '100%', justifyContent: 'space-evenly' },
   messageBubble: { backgroundColor: 'rgba(141,114,255,0.13)', borderColor: 'rgba(141,114,255,0.36)', borderRadius: 16, borderTopLeftRadius: 5, borderWidth: 1, gap: 4, padding: 13 },
   messageLabel: { color: theme.colors.scannerViolet, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 1.1 },
   messageText: { color: theme.colors.cream, fontSize: 13, lineHeight: 19 },
   nameBlock: { gap: 6 },
   nameInput: { backgroundColor: 'rgba(2,2,4,0.82)', borderColor: 'rgba(242,211,138,0.2)', borderRadius: 12, borderWidth: 1, color: theme.colors.cream, fontSize: 15, minHeight: 52, paddingHorizontal: 14 },
-  nameLabel: { color: theme.colors.textMuted, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 1 },
+  nameLabel: { color: theme.colors.textMuted, fontFamily: theme.fonts.radar, fontSize: 11, letterSpacing: 1 },
   onlineDot: { backgroundColor: theme.colors.scannerCyan, borderRadius: 999, height: 6, width: 6 },
   onlineLine: { alignItems: 'center', flexDirection: 'row', gap: 6 },
-  onlineText: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 1.1 },
-  panel: { backgroundColor: 'rgba(8,8,12,0.80)', borderColor: 'rgba(242,237,228,0.13)', borderRadius: 24, borderWidth: 1, gap: 15, padding: 18 },
+  onlineText: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 10, letterSpacing: 1.1 },
+  panel: { backgroundColor: 'rgba(8,8,12,0.80)', borderColor: 'rgba(242,237,228,0.13)', justifyContent: 'space-evenly', borderRadius: 12, borderWidth: 1, gap: 15, padding: 12, height: '75%' },
   pressed: { opacity: 0.76, transform: [{ scale: 0.985 }] },
   primaryButton: { alignItems: 'center', backgroundColor: theme.colors.goldBright, borderRadius: 16, flexDirection: 'row', gap: 9, justifyContent: 'center', minHeight: 54, paddingHorizontal: 14 },
   primaryButtonText: { color: theme.colors.backgroundDeep, fontFamily: theme.fonts.bold, fontSize: 11, letterSpacing: 0.65 },
-  progressRail: { flexDirection: 'row', gap: 6, marginHorizontal: 'auto', maxWidth: 560, width: '100%' },
+  progressRail: { top: 10, flexDirection: 'row', gap: 6, marginHorizontal: 'auto', maxWidth: 560, width: '100%' },
   progressSegment: { backgroundColor: 'rgba(242,237,228,0.14)', borderRadius: 999, flex: 1, height: 3 },
   progressSegmentActive: { backgroundColor: theme.colors.scannerCyan, boxShadow: '0 0 9px rgba(0,255,255,0.75)' },
   questionEyebrow: { color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 1.1 },
-  questionTitle: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 23, lineHeight: 29 },
+  questionTitle: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 23, lineHeight: 22 },
   radio: { alignItems: 'center', borderColor: 'rgba(242,237,228,0.28)', borderRadius: 999, borderWidth: 1, height: 18, justifyContent: 'center', width: 18 },
   radioCore: { backgroundColor: theme.colors.scannerCyan, borderRadius: 999, height: 8, width: 8 },
   radioSelected: { borderColor: theme.colors.scannerCyan },
   summaryCard: { backgroundColor: 'rgba(0,255,255,0.075)', borderColor: 'rgba(0,255,255,0.28)', borderRadius: 16, borderWidth: 1, gap: 5, padding: 14 },
   summaryPrimary: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.bold, fontSize: 15 },
   summarySecondary: { color: theme.colors.cream, fontSize: 12, lineHeight: 18 },
-  topBar: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginHorizontal: 'auto', maxWidth: 560, width: '100%' },
+  topBar: { alignItems: 'center', flexDirection: 'row', maxWidth: 560, width: '100%' },
 });

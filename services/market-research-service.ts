@@ -1,8 +1,4 @@
-import {
-  APPWRITE,
-  ExecutionMethod,
-  functions,
-} from '@/lib/appwrite';
+import { createGatedAiExecution } from '@/services/subscription-ai-gateway-service';
 
 export type MarketplaceFeePreset = {
   id: 'ebay' | 'poshmark' | 'mercari' | 'depop' | 'etsy' | 'facebook';
@@ -155,25 +151,15 @@ function fallbackSummary(comps: MarketResearchComp[]) {
 }
 
 async function requestMarketResearch(query: string) {
-  const functionId = APPWRITE.ebaySoldCompsFunctionId;
-  if (!functionId) {
-    throw new Error(
-      'Add EXPO_PUBLIC_APPWRITE_EBAY_SOLD_COMPS_FUNCTION_ID before using Market Research.',
-    );
-  }
-
-  const execution = await functions.createExecution({
-    functionId,
-    async: false,
-    method: ExecutionMethod.POST,
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
+  const execution = await createGatedAiExecution(
+    'market',
+    {
       action: 'start',
       purpose: 'sold_comps',
       query,
       limit: 50,
-    }),
-  });
+    },
+  );
   const responseBody = execution.responseBody?.trim() ?? '';
 
   if (!responseBody) {

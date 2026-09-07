@@ -11,4 +11,14 @@ if (fs.existsSync(releaseEnvPath)) {
   loadEnvFiles([releaseEnvPath], { force: true, silent: true });
 }
 
-module.exports = ({ config }) => config;
+module.exports = ({ config }) => {
+  const plugins = Array.isArray(config.plugins) ? config.plugins : [];
+  const hasExpoVideoPlugin = plugins.some((plugin) =>
+    Array.isArray(plugin) ? plugin[0] === 'expo-video' : plugin === 'expo-video',
+  );
+
+  return {
+    ...config,
+    plugins: hasExpoVideoPlugin ? plugins : [...plugins, 'expo-video'],
+  };
+};

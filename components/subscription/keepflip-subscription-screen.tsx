@@ -1,5 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import {
+  type Href,
   useLocalSearchParams,
   useNavigation,
   useRouter,
@@ -15,6 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
+import { KeepFlipAccountTabs } from '@/components/account/keepflip-account-tabs';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
@@ -67,8 +69,8 @@ function PlanCard({
   definition,
   monthlyPrice,
   annualPrice,
-  trialUsed,
   purchasing,
+  requestedPlan,
   onPurchase,
 }: {
   cadence: KeepFlipBillingCadence;
@@ -77,8 +79,8 @@ function PlanCard({
   definition: KeepFlipPlanDefinition;
   monthlyPrice: string | null;
   annualPrice: string | null;
-  trialUsed: boolean;
   purchasing: boolean;
+  requestedPlan: KeepFlipPlanId | null;
   onPurchase: (
     plan: KeepFlipPlanId,
     cadence: KeepFlipBillingCadence,
@@ -86,6 +88,7 @@ function PlanCard({
 }) {
   const { responsiveFont } = useResponsiveLayout();
   const isCurrent = currentPlan === definition.id;
+  const isRequested = requestedPlan === definition.id;
   const selectedPrice =
     cadence === 'annual'
       ? annualPrice ?? definition.annualPriceFallback
@@ -97,6 +100,7 @@ function PlanCard({
     <View
       style={[
         styles.planCard,
+        isRequested && styles.planCardRequested,
         definition.recommended && styles.planCardRecommended,
         isCurrent && styles.planCardCurrent,
       ]}>
@@ -126,17 +130,6 @@ function PlanCard({
         <Text style={styles.savingsLine}>{savings}</Text>
       ) : null}
 
-      <View style={styles.trialIncludedRow}>
-        <IconSymbol
-          color={theme.colors.scannerCyan}
-          name="sparkles"
-          size={14}
-        />
-        <Text style={styles.trialIncludedText}>
-          {trialUsed ? '7-DAY TRIAL ALREADY USED' : '7-DAY FREE TRIAL INCLUDED'}
-        </Text>
-      </View>
-
       <Text style={styles.planDescription}>{definition.description}</Text>
 
       <View style={styles.featureList}>
@@ -156,7 +149,7 @@ function PlanCard({
         accessibilityLabel={
           isCurrent
             ? `${definition.name}, current active plan`
-            : `${definition.name}, ${trialUsed ? 'subscribe' : 'start 7-day free trial'}`
+            : `${definition.name}, subscribe`
         }
         accessibilityRole="button"
         disabled={!checkoutEnabled || purchasing || isCurrent}
@@ -192,9 +185,7 @@ function PlanCard({
               ? 'CURRENT PLAN'
               : currentPlan
                 ? 'SWITCH PLAN'
-                : trialUsed
-                  ? 'SUBSCRIBE'
-                  : 'START 7-DAY FREE TRIAL'}
+                : 'SUBSCRIBE'}
           </Text>
         )}
       </Pressable>
@@ -202,20 +193,35 @@ function PlanCard({
       <Text style={styles.afterTrialText}>
         {isCurrent
           ? 'Active on this account. Manage or cancel through the store.'
-          : trialUsed
-            ? `${selectedPrice} ${cadence === 'annual' ? 'per year' : 'per month'}. Cancel anytime.`
-            : `Then ${selectedPrice} ${cadence === 'annual' ? 'per year' : 'per month'}. Cancel anytime.`}
+          : `${selectedPrice} ${cadence === 'annual' ? 'per year' : 'per month'}. Cancel anytime.`}
       </Text>
     </View>
   );
 }
 
-export function KeepFlipSubscriptionScreen() {
+type KeepFlipSubscriptionScreenProps = {
+  accountTab?: boolean;
+};
+
+export function KeepFlipSubscriptionScreen({
+  accountTab = false,
+}: KeepFlipSubscriptionScreenProps) {
   const router = useRouter();
   const navigation = useNavigation();
-  const { source } = useLocalSearchParams<{ source?: string | string[] }>();
-  const isOnboarding =
-    (Array.isArray(source) ? source[0] : source) === 'onboarding';
+  const {
+    source,
+    plan,
+    cadence: cadenceParam,
+  } = useLocalSearchParams<{
+    source?: string | string[];
+    plan?: string | string[];
+    cadence?: string | string[];
+  }>();
+  const sourceValue = paramValue(source);
+  const isOnboarding = sourceValue === 'onboarding';
+  const isMigration = sourceValue === 'migration';
+  const requestedPlan = parsePlan(paramValue(plan));
+  const requestedCadence = parseCadence(paramValue(cadenceParam));
   const insets = useSafeAreaInsets();
   const { responsiveFont } = useResponsiveLayout();
 
@@ -233,18 +239,24 @@ export function KeepFlipSubscriptionScreen() {
 
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [cadence, setCadence] =
-    useState<KeepFlipBillingCadence>('monthly');
+    useState<KeepFlipBillingCadence>(() => requestedCadence);
 
   const access = snapshot?.access ?? null;
   const catalog = snapshot?.catalog ?? null;
+  const profileTrialActive =
+    access?.active === true && access.isTrial && access.trialSource === 'profile';
+  const profileTrialUsed =
+    snapshot?.profileTrial?.trialUsed === true ||
+    access?.trialSource === 'profile';
   const trialUsed =
     access?.trialUsed === true ||
+    profileTrialUsed ||
     snapshot?.serverRecord?.isTrial === true ||
     Boolean(snapshot?.serverRecord?.trialEndsAt);
   const checkoutEnabled = state === 'ready' && snapshot?.configured === true;
   const isPaywallLocked =
     access?.active !== true &&
-    (isOnboarding || areKeepFlipSubscriptionsEnforced());
+    (isOnboarding || isMigration || areKeepFlipSubscriptionsEnforced());
 
   useEffect(() => {
     if (!isPaywallLocked) return;
@@ -269,24 +281,34 @@ export function KeepFlipSubscriptionScreen() {
     if (state === 'error') {
       return 'KeepFlip could not verify subscription access.';
     }
+    if (profileTrialActive) {
+      return trialEnds
+        ? `Your KeepFlip trial is active through ${trialEnds}. You have full Serious access until then.`
+        : 'Your KeepFlip trial is active with full Serious access.';
+    }
     if (access?.isTrial) {
       return trialEnds
-        ? `Free trial active through ${trialEnds}.`
-        : 'Your free trial is active.';
+        ? `Store trial active through ${trialEnds}.`
+        : 'Your store trial is active.';
     }
     if (access?.active) {
       return renewalDate
         ? `${access.willRenew ? 'Renews' : 'Access continues'} through ${renewalDate}.`
         : 'Your subscription is active.';
     }
-    if (trialUsed) {
-      return 'Your 7-day free trial has already been used on this store account. Choose a plan to continue without another trial.';
+    if (profileTrialUsed) {
+      return 'Your 7-day KeepFlip trial has already been used on this device. Choose a plan to continue.';
     }
-    return 'Every KeepFlip plan starts with a 7-day free trial. Choose monthly or annual billing below.';
+    if (trialUsed) {
+      return 'Your initial trial has finished. Choose a paid plan to continue.';
+    }
+    return 'Choose monthly or annual billing to start a paid KeepFlip plan.';
   }, [
     access?.active,
     access?.isTrial,
     access?.willRenew,
+    profileTrialActive,
+    profileTrialUsed,
     renewalDate,
     state,
     trialEnds,
@@ -351,17 +373,23 @@ export function KeepFlipSubscriptionScreen() {
 
           <View style={styles.headerCopy}>
             <Text style={[styles.eyebrow, { fontSize: responsiveFont(10)}]}>
-              {isOnboarding
-                ? 'KEEPFLIP / CHOOSE YOUR PLAN'
-                : 'KEEPFLIP / PLAN & BILLING'}
+              {accountTab
+                ? 'KEEPFLIP / ACCOUNT'
+                : isOnboarding
+                  ? 'KEEPFLIP / CHOOSE YOUR PLAN'
+                  : 'KEEPFLIP / PLAN & BILLING'}
             </Text>
             <Text style={[styles.title, { fontSize: responsiveFont(26)}]}>
-              {isOnboarding
-                ? 'Choose how you want to KeepFlip'
-                : 'Built for the way you resell'}
+              {accountTab
+                ? 'Plan & billing'
+                : isOnboarding
+                  ? 'Choose how you want to KeepFlip'
+                  : 'Built for the way you resell'}
             </Text>
           </View>
         </View>
+
+        {accountTab ? <KeepFlipAccountTabs active="subscription" /> : null}
 
         <View style={styles.trialBanner}>
           <View style={styles.trialIcon}>
@@ -373,9 +401,15 @@ export function KeepFlipSubscriptionScreen() {
           </View>
           <View style={styles.trialCopy}>
             <Text style={styles.trialTitle}>
-              {trialUsed
-                ? '7-DAY TRIAL ALREADY USED ON THIS ACCOUNT'
-                : '7 DAYS FREE ON EITHER BILLING OPTION'}
+              {profileTrialActive
+                ? 'YOUR KEEPFLIP TRIAL IS ACTIVE'
+                : access?.isTrial
+                  ? 'YOUR STORE TRIAL IS ACTIVE'
+                : profileTrialUsed
+                  ? 'YOUR KEEPFLIP TRIAL HAS FINISHED'
+                  : trialUsed
+                    ? 'YOUR STORE TRIAL HAS FINISHED'
+                    : 'CHOOSE A PAID PLAN'}
             </Text>
             <Text style={styles.trialBody}>{statusCopy}</Text>
           </View>
@@ -453,6 +487,7 @@ export function KeepFlipSubscriptionScreen() {
                 cadence={cadence}
                 checkoutEnabled={checkoutEnabled}
                 currentPlan={access?.active ? access.plan : null}
+                requestedPlan={requestedPlan}
                 definition={definition}
                 key={definition.id}
                 monthlyPrice={
@@ -462,7 +497,6 @@ export function KeepFlipSubscriptionScreen() {
                   void handlePurchase(plan, selectedCadence)
                 }
                 purchasing={purchasing}
-                trialUsed={trialUsed}
               />
             ))}
           </View>
@@ -509,14 +543,14 @@ export function KeepFlipSubscriptionScreen() {
                 accessibilityRole="button"
                 onPress={() => {
                   hapticSelection();
-                  router.replace('/');
+                  router.replace((accountTab ? '/account' : '/') as Href);
                 }}
                 style={({ pressed }) => [
                   styles.continueButton,
                   pressed && styles.continueButtonPressed,
                 ]}>
                 <Text style={styles.continueButtonText}>
-                  CONTINUE TO KEEPFLIP
+                  {accountTab ? 'BACK TO ACCOUNT' : 'CONTINUE TO KEEPFLIP'}
                 </Text>
               </Pressable>
 
@@ -584,11 +618,9 @@ export function KeepFlipSubscriptionScreen() {
         </View>
 
         <Text selectable style={styles.finePrint}>
-          Free trial availability is determined by Google Play or the App Store
-          and is generally limited to eligible new subscribers. Billing begins
-          after the trial unless cancelled before it ends. Subscription billing,
-          renewals, upgrades, and cancellations are controlled by your store
-          account.
+          KeepFlip records its 7-day trial to your account and device. Store
+          subscription eligibility, billing, renewals, upgrades, and
+          cancellations are controlled by Google Play or the App Store.
         </Text>
       </ScrollView>
     </KeepFlipBackground>
@@ -742,6 +774,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.09,
     shadowRadius: 20,
   },
+  planCardRequested: {
+    borderColor: 'rgba(141, 114, 255, 0.62)',
+  },
   planCardCurrent: {
     borderColor: 'rgba(215, 168, 74, 0.44)',
   },
@@ -814,25 +849,6 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 0.75,
     marginTop: -6,
-  },
-  trialIncludedRow: {
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(0, 255, 255, 0.055)',
-    borderColor: 'rgba(0, 255, 255, 0.2)',
-    borderRadius: 999,
-    borderWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
-    gap: 6,
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-  },
-  trialIncludedText: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 7,
-    fontWeight: '900',
-    letterSpacing: 0.7,
   },
   planDescription: {
     color: theme.colors.textMuted,

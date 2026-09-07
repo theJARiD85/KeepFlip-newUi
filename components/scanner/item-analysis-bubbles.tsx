@@ -28,6 +28,7 @@ import type {
   AnalysisValuation,
   ItemAnalysisState,
 } from '@/components/scanner/item-analysis-overlay';
+import { ConfusedFlipVideo } from '@/components/flip/confused-flip-video';
 import { ScannerThoughtStream } from '@/components/scanner/scanner-thought-stream';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
@@ -500,9 +501,15 @@ function NonResultBubbles({ state }: { state: Exclude<ItemAnalysisState, { statu
   return (
     <>
       <GlassBubble accent={accent} style={styles.statusBubble}>
-        <View style={styles.statusIcon}>
-          <LiveSignal accent={accent} />
-        </View>
+        {state.status === 'insufficient-evidence' ? (
+          <View style={styles.confusedFlipFrame}>
+            <ConfusedFlipVideo style={styles.confusedFlipVideo} />
+          </View>
+        ) : (
+          <View style={styles.statusIcon}>
+            <LiveSignal accent={accent} />
+          </View>
+        )}
         <BubbleEyebrow accent={accent}>
           {isError ? 'KEEPFLIP ALERT' : isSetup ? 'SETUP REQUIRED' : 'PHOTO GUIDANCE'}
         </BubbleEyebrow>
@@ -832,6 +839,14 @@ const styles = StyleSheet.create({
   sourceTag: { color: theme.colors.textMuted, fontSize: 8, textTransform: 'uppercase' },
   evidenceValue: { color: theme.colors.text, fontSize: 10, lineHeight: 16 },
   statusBubble: { alignItems: 'center', paddingVertical: 22 },
+  confusedFlipFrame: {
+    width: '100%',
+    height: 156,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: -5,
+  },
+  confusedFlipVideo: { width: '100%', height: '100%' },
   statusIcon: {
     width: 30,
     height: 30,

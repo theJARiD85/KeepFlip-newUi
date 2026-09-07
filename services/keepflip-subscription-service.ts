@@ -15,6 +15,7 @@ import {
   functions,
   tablesDB,
 } from '@/lib/appwrite';
+import { getKeepFlipTrialDeviceIdHash } from '@/services/keepflip-trial-device-service';
 
 export type KeepFlipPlanId = 'hobbyist' | 'serious';
 export type KeepFlipBillingCadence = 'monthly' | 'annual';
@@ -103,7 +104,25 @@ export type KeepFlipSubscriptionAccess = {
   plan: KeepFlipPlanId | null;
   productId: string | null;
   store: string | null;
+  trialSource: 'profile' | 'store' | null;
   willRenew: boolean;
+};
+
+export type KeepFlipProfileTrial = {
+  active: boolean;
+  endedByScanLimit: boolean;
+  scanLimit: number | null;
+  scanUsage: number | null;
+  trialEndDate: string | null;
+  trialUsed: boolean;
+};
+
+export type KeepFlipAiValuationAccess = {
+  allowed: boolean;
+  limit: number | null;
+  profileTrial: KeepFlipProfileTrial | null;
+  reason: string;
+  usage: number | null;
 };
 
 export type KeepFlipSubscriptionCatalog = {
@@ -151,6 +170,7 @@ export type KeepFlipSubscriptionSnapshot = {
   access: KeepFlipSubscriptionAccess;
   catalog: KeepFlipSubscriptionCatalog;
   configured: boolean;
+  profileTrial: KeepFlipProfileTrial | null;
   serverRecord: KeepFlipServerSubscriptionRecord | null;
   serverRecordAvailable: boolean;
 };
@@ -223,6 +243,7 @@ const EMPTY_ACCESS: KeepFlipSubscriptionAccess = {
   plan: null,
   productId: null,
   store: null,
+  trialSource: null,
   willRenew: false,
 };
 
@@ -287,6 +308,13 @@ function appwriteText(value: unknown, maximum = 255) {
   return typeof value === 'string' && value.trim()
     ? value.trim().slice(0, maximum)
     : '';
+}
+
+function nonNegativeSafeInteger(value: unknown) {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) {
+    return null;
+  }
+  return value;
 }
 
 function nullableAppwriteText(value: unknown, maximum = 255) {
@@ -364,6 +392,13 @@ function isAppwriteNotFound(error: unknown) {
 
 type SubscriptionFunctionPayload = Record<string, unknown>;
 
+type KeepFlipServerStatusResponse = {
+  access: KeepFlipSubscriptionAccess | null;
+  available: boolean;
+  profileTrial: KeepFlipProfileTrial | null;
+  record: KeepFlipServerSubscriptionRecord | null;
+};
+
 function parseSubscriptionFunctionPayload(value: string) {
   try {
     const parsed = JSON.parse(value || '{}');
@@ -375,13 +410,72 @@ function parseSubscriptionFunctionPayload(value: string) {
   }
 }
 
-async function loadKeepFlipServerSubscriptionViaFunction(refresh = false) {
+function parseServerProfileTrial(value: unknown): KeepFlipProfileTrial | null {
+  const trial =
+    value && typeof value === 'object' && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : null;
+  if (!trial) return null;
+
+  const trialEndDate = nullableAppwriteText(trial.trialEndDate, 80);
+  return {
+    active: trial.active === true && Boolean(trialEndDate),
+    endedByScanLimit: trial.endedByScanLimit === true,
+    scanLimit: nonNegativeSafeInteger(trial.scanLimit),
+    scanUsage: nonNegativeSafeInteger(trial.scanUsage),
+    trialEndDate,
+    trialUsed: trial.trialUsed === true,
+  };
+}
+
+function parseServerSubscriptionAccess(
+  value: unknown,
+): KeepFlipSubscriptionAccess | null {
+  const access =
+    value && typeof value === 'object' && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : null;
+  if (!access) return null;
+
+  const trialSource =
+    access.trialSource === 'profile' || access.trialSource === 'store'
+      ? access.trialSource
+      : null;
+
+  return {
+    ...EMPTY_ACCESS,
+    active: access.active === true,
+    entitlementId: nullableAppwriteText(access.entitlementId, 64),
+    expiresAt: nullableAppwriteText(access.currentPeriodEndsAt, 80),
+    isTrial: access.isTrial === true,
+    periodType: nullableAppwriteText(access.status, 32),
+    plan: serverSubscriptionPlan(access.plan),
+    trialSource,
+    trialUsed: access.trialUsed === true,
+    willRenew: access.willRenew === true,
+  };
+}
+
+async function loadKeepFlipServerSubscriptionViaFunction(
+  deviceIdHash: string | null,
+  refresh = false,
+): Promise<KeepFlipServerStatusResponse> {
   const functionId = APPWRITE.subscriptionFunctionId;
-  if (!functionId) return { available: false as const, record: null };
+  if (!functionId) {
+    return {
+      access: null,
+      available: false,
+      profileTrial: null,
+      record: null,
+    };
+  }
 
   const execution = await functions.createExecution({
     async: false,
-    body: JSON.stringify({ refresh }),
+    body: JSON.stringify({
+      refresh,
+      ...(deviceIdHash ? { deviceIdHash } : {}),
+    }),
     functionId,
     headers: { 'content-type': 'application/json' },
     method: ExecutionMethod.POST,
@@ -397,8 +491,46 @@ async function loadKeepFlipServerSubscriptionViaFunction(refresh = false) {
   }
 
   return {
-    available: true as const,
+    access: parseServerSubscriptionAccess(payload.access),
+    available: true,
+    profileTrial: parseServerProfileTrial(payload.profileTrial),
     record: parseServerSubscriptionRecord(payload.subscription),
+  };
+}
+
+export async function checkKeepFlipAiValuationAccess(): Promise<KeepFlipAiValuationAccess> {
+  const functionId = APPWRITE.subscriptionFunctionId;
+  if (!functionId) {
+    throw new Error('KeepFlip scan access is not configured in this build.');
+  }
+
+  const deviceIdHash = await getKeepFlipTrialDeviceIdHash().catch(() => null);
+  const execution = await functions.createExecution({
+    async: false,
+    body: JSON.stringify({
+      capability: 'ai_valuation',
+      ...(deviceIdHash ? { deviceIdHash } : {}),
+    }),
+    functionId,
+    headers: { 'content-type': 'application/json' },
+    method: ExecutionMethod.POST,
+    xpath: '/access/check',
+  });
+
+  const payload = parseSubscriptionFunctionPayload(execution.responseBody);
+  if (execution.responseStatusCode !== 200 || payload.ok !== true) {
+    throw new Error(
+      appwriteText(payload.error, 1_000) ||
+        'KeepFlip could not verify scan access right now.',
+    );
+  }
+
+  return {
+    allowed: payload.allowed === true,
+    limit: nonNegativeSafeInteger(payload.limit),
+    profileTrial: parseServerProfileTrial(payload.profileTrial),
+    reason: appwriteText(payload.reason, 80) || 'access_unavailable',
+    usage: nonNegativeSafeInteger(payload.usage),
   };
 }
 
@@ -445,13 +577,36 @@ export async function loadKeepFlipServerSubscriptionRecord(
   userId: string,
   refresh = false,
 ) {
+  const result = await loadKeepFlipServerSubscriptionStatus(
+    userId,
+    null,
+    refresh,
+  );
+  return result.record;
+}
+
+async function loadKeepFlipServerSubscriptionStatus(
+  userId: string,
+  deviceIdHash: string | null,
+  refresh = false,
+): Promise<KeepFlipServerStatusResponse> {
   const cleanUserId = userId.trim();
-  if (!cleanUserId) return null;
+  if (!cleanUserId) {
+    return {
+      access: null,
+      available: false,
+      profileTrial: null,
+      record: null,
+    };
+  }
 
   if (APPWRITE.subscriptionFunctionId) {
     try {
-      const result = await loadKeepFlipServerSubscriptionViaFunction(refresh);
-      if (result.available) return result.record;
+      const result = await loadKeepFlipServerSubscriptionViaFunction(
+        deviceIdHash,
+        refresh,
+      );
+      if (result.available) return result;
     } catch (error) {
       if (__DEV__) {
         console.warn(
@@ -462,7 +617,12 @@ export async function loadKeepFlipServerSubscriptionRecord(
     }
   }
 
-  return loadKeepFlipServerSubscriptionRecordDirect(cleanUserId);
+  return {
+    access: null,
+    available: false,
+    profileTrial: null,
+    record: await loadKeepFlipServerSubscriptionRecordDirect(cleanUserId),
+  };
 }
 
 function entitlementPlan(identifier: string): KeepFlipPlanId | null {
@@ -514,13 +674,15 @@ function customerInfoHasUsedTrial(customerInfo: CustomerInfo) {
 function accessWithServerTrialHistory(
   access: KeepFlipSubscriptionAccess,
   serverRecord: KeepFlipServerSubscriptionRecord | null,
+  profileTrial: KeepFlipProfileTrial | null = null,
 ) {
   return {
     ...access,
     trialUsed:
       access.trialUsed ||
       serverRecord?.isTrial === true ||
-      Boolean(serverRecord?.trialEndsAt),
+      Boolean(serverRecord?.trialEndsAt) ||
+      profileTrial?.trialUsed === true,
   };
 }
 
@@ -550,6 +712,7 @@ export function subscriptionAccessFromCustomerInfo(
     plan,
     productId: info.productIdentifier || null,
     store: info.store || null,
+    trialSource: info.periodType.toUpperCase() === 'TRIAL' ? 'store' : null,
     willRenew: info.willRenew,
   };
 }
@@ -663,28 +826,52 @@ function catalogFromPackages(
 export async function loadKeepFlipSubscription(
   userId: string,
 ): Promise<KeepFlipSubscriptionSnapshot> {
+  const deviceIdHash = await getKeepFlipTrialDeviceIdHash().catch(() => null);
+  const serverStatusPromise = loadKeepFlipServerSubscriptionStatus(
+    userId,
+    deviceIdHash,
+  ).catch(() => ({
+    access: null,
+    available: false,
+    profileTrial: null,
+    record: null,
+  }));
+
   if (!(await ensureRevenueCatUser(userId))) {
-    const serverRecord = await loadKeepFlipServerSubscriptionRecord(userId).catch(
-      () => null,
-    );
+    const serverStatus = await serverStatusPromise;
+    const serverRecord = serverStatus.record;
+    const serverAccess = serverStatus.access;
     return {
-      access: accessWithServerTrialHistory(EMPTY_ACCESS, serverRecord),
+      access: accessWithServerTrialHistory(
+        serverAccess ?? EMPTY_ACCESS,
+        serverRecord,
+        serverStatus.profileTrial,
+      ),
       catalog: EMPTY_CATALOG,
       configured: false,
+      profileTrial: serverStatus.profileTrial,
       serverRecord,
-      serverRecordAvailable: isKeepFlipSubscriptionTableConfigured(),
+      serverRecordAvailable:
+        serverStatus.available || isKeepFlipSubscriptionTableConfigured(),
     };
   }
 
-  const [customerInfo, offerings, serverRecord] = await Promise.all([
+  const [customerInfo, offerings, serverStatus] = await Promise.all([
     Purchases.getCustomerInfo(),
     Purchases.getOfferings(),
-    loadKeepFlipServerSubscriptionRecord(userId).catch(() => null),
+    serverStatusPromise,
   ]);
   const offering = configuredOffering(offerings);
+  const localAccess = subscriptionAccessFromCustomerInfo(customerInfo);
+  const serverRecord = serverStatus.record;
+  const accessSource =
+    !localAccess.active && serverStatus.access?.active
+      ? serverStatus.access
+      : localAccess;
   const access = accessWithServerTrialHistory(
-    subscriptionAccessFromCustomerInfo(customerInfo),
+    accessSource,
     serverRecord,
+    serverStatus.profileTrial,
   );
 
   return {
@@ -693,8 +880,10 @@ export async function loadKeepFlipSubscription(
       ? catalogFromPackages(offering.identifier, offering.availablePackages)
       : EMPTY_CATALOG,
     configured: true,
+    profileTrial: serverStatus.profileTrial,
     serverRecord,
-    serverRecordAvailable: isKeepFlipSubscriptionTableConfigured(),
+    serverRecordAvailable:
+      serverStatus.available || isKeepFlipSubscriptionTableConfigured(),
   };
 }
 

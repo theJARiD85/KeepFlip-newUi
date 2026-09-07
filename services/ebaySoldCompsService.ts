@@ -1,12 +1,6 @@
 import {
-  APPWRITE,
-  ExecutionMethod,
-  functions,
-} from "../lib/appwrite";
-import {
   createGatedAiExecution,
   nextAiOperationId,
-  subscriptionsAreEnforced,
 } from "@/services/subscription-ai-gateway-service";
 import type { ItemValuationSignals } from "./itemAiService";
 import { neutralizeMarketplaceBrand } from "./market-copy";
@@ -1165,30 +1159,14 @@ async function callMarketCompsFunction(
   // SerpApi completes in the start invocation. The status compatibility path
   // remains for older asynchronous Function deployments during rollout.
   const action = asString(body.action).toLowerCase();
-  const functionId =
-    APPWRITE.marketResearchFunctionId ||
-    APPWRITE.ebaySoldCompsFunctionId;
-
-  if (!functionId) {
-    throw new Error(
-      "Add EXPO_PUBLIC_APPWRITE_MARKET_COMPS_FUNCTION_ID before researching sold comps."
-    );
-  }
-
   let execution;
 
   try {
-    execution = subscriptionsAreEnforced()
-      ? await createGatedAiExecution("market", body, asString(body.operationId) || nextAiOperationId())
-      : await functions.createExecution({
-      functionId,
-      async: false,
-      method: ExecutionMethod.POST,
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
+    execution = await createGatedAiExecution(
+      "market",
+      body,
+      asString(body.operationId) || nextAiOperationId(),
+    );
   } catch (error) {
     /*
       Appwrite stops a synchronous caller after 30 seconds even when the
@@ -1228,7 +1206,7 @@ async function callMarketCompsFunction(
       status: execution.status,
       responseStatusCode: execution.responseStatusCode,
       duration: execution.duration,
-      functionId,
+      provider: "market",
       action,
       purpose: asString(body.purpose),
     });

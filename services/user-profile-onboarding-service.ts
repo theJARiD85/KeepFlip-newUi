@@ -12,14 +12,22 @@ import {
 } from '@/services/reseller-buy-rules-service';
 
 export const USER_PROFILE_BUY_RULES_COLUMN = 'resellerBuyRulesJson';
+export const USER_PROFILE_TRIALING_COLUMN = 'isTrialing';
+export const USER_PROFILE_TRIAL_END_DATE_COLUMN = 'trialEndDate';
+
+const PROFILE_TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
 type UserProfileRow = {
   $id: string;
   createdAt?: string;
   defaultCurrency?: string;
   displayName?: string | null;
+  ebaySellerProfileId?: string | null;
+  isTrialing?: boolean;
   onboardingCompletedAt?: string | null;
   resellerBuyRulesJson?: string | null;
+  trialDeviceIdHash?: string | null;
+  trialEndDate?: string | null;
   updatedAt?: string;
   userId?: string;
   [key: string]: unknown;
@@ -77,6 +85,8 @@ function isProfileSchemaError(error: unknown) {
 
   return (
     details.includes(USER_PROFILE_BUY_RULES_COLUMN.toLowerCase()) ||
+    details.includes(USER_PROFILE_TRIALING_COLUMN.toLowerCase()) ||
+    details.includes(USER_PROFILE_TRIAL_END_DATE_COLUMN.toLowerCase()) ||
     /(?:row|document)_invalid_structure|unknown_(?:attribute|column)/i.test(
       type,
     )
@@ -85,9 +95,9 @@ function isProfileSchemaError(error: unknown) {
 
 function userProfileSchemaMigrationError(cause: unknown) {
   const error = new Error(
-    "KeepFlip's user_profiles table needs the " +
-      USER_PROFILE_BUY_RULES_COLUMN +
-      " mediumtext column before Buy Rules can be saved. Follow docs/USER_PROFILE_BUY_RULES_APPWRITE_SCHEMA.md, wait until the column is Available, then retry.",
+    "KeepFlip's user_profiles table is missing a required profile column. " +
+      'It needs resellerBuyRulesJson, isTrialing, and trialEndDate to be Available before the app can save this profile. ' +
+      'Follow docs/USER_PROFILE_TRIAL_APPWRITE_SCHEMA.md, then retry.',
   );
   error.name = 'UserProfileSchemaMigrationError';
   (error as Error & { cause?: unknown }).cause = cause;
@@ -165,7 +175,11 @@ export async function ensureUserProfile({
   const existing = await maybeFindUserProfileRow(cleanUserId);
   if (existing) return existing;
 
-  const now = new Date().toISOString();
+  const nowDate = new Date();
+  const now = nowDate.toISOString();
+  const trialEndDate = new Date(
+    nowDate.getTime() + PROFILE_TRIAL_DURATION_MS,
+  ).toISOString();
   const cleanDisplayName = displayName?.replace(/\s+/g, ' ').trim().slice(0, 100);
 
   try {
@@ -175,9 +189,16 @@ export async function ensureUserProfile({
       rowId: cleanUserId,
       data: {
         userId: cleanUserId,
-        ...(cleanDisplayName ? { displayName: cleanDisplayName } : {}),
+        // Appwrite requires this field, while new auth accounts can have no
+        // display name yet. The user can still personalize it later.
+        displayName: cleanDisplayName || 'KeepFlip Reseller',
         defaultCurrency: 'USD',
         createdAt: now,
+        // Let a first-run profile honestly reflect its seven-day trial right
+        // away. The Subscription Police Function recomputes and locks the
+        // authoritative cutoff from Appwrite's server-created $createdAt.
+        isTrialing: true,
+        trialEndDate,
         updatedAt: now,
       },
       permissions: profilePermissions(cleanUserId),

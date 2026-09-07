@@ -30,6 +30,7 @@ import {
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import {
   KEEPFLIP_PLAN_DEFINITIONS,
+  purchaseKeepFlipPlan,
   type KeepFlipBillingCadence,
   type KeepFlipPlanId,
 } from '@/services/keepflip-subscription-service';
@@ -46,6 +47,7 @@ export type AuthSubscriptionSelection = {
 type LaunchAuthMode = 'sign-in' | 'create-account';
 
 type KeepFlipLaunchAuthScreenProps = {
+  accountModeLocked?: boolean;
   initialBuyRules?: ResellerBuyRules | null;
   initialMode: LaunchAuthMode;
   initialName?: string;
@@ -114,58 +116,92 @@ function AuthField({
 function PlanSelection({
   value,
   onChange,
+  migrationMode = false,
 }: {
   value: AuthSubscriptionSelection;
   onChange: (next: AuthSubscriptionSelection) => void;
+  migrationMode?: boolean;
 }) {
   const cadence = value.cadence;
 
   return (
-    <View style={styles.planSection}>
-      <View style={styles.planSectionHeading}>
-        <View style={styles.planSectionIcon}>
-          <IconSymbol color={theme.colors.scannerCyan} name="sparkles" size={17} />
+    <View style={styles.checkoutSection}>
+      <View style={styles.checkoutBanner}>
+        <View style={styles.checkoutBannerIcon}>
+          <IconSymbol
+            color={theme.colors.scannerCyan}
+            name="sparkles"
+            size={20}
+          />
         </View>
-        <View style={styles.planSectionCopy}>
-          <Text style={styles.planSectionEyebrow}>CHOOSE YOUR KEEPFLIP PLAN</Text>
-          <Text style={styles.planSectionTitle}>Every tier includes a free trial.</Text>
+        <View style={styles.checkoutBannerCopy}>
+          <Text style={styles.checkoutBannerTitle}>
+            {migrationMode
+              ? 'TRIAL ELIGIBILITY IS CHECKED IN GOOGLE PLAY'
+              : '7 DAYS FREE ON EITHER BILLING OPTION'}
+          </Text>
+          <Text style={styles.checkoutBannerBody}>
+            Choose a plan now. After your KeepFlip account is created, the
+            selected plan opens its Google Play signup sheet right here.
+          </Text>
         </View>
       </View>
 
-      <Text style={styles.planSectionBody}>
-        Your choice is saved with account setup. The store checkout appears
-        after your login is created.
-      </Text>
-
-      <View accessibilityLabel="Billing frequency" style={styles.billingToggle}>
-        {(['monthly', 'annual'] as KeepFlipBillingCadence[]).map((option) => (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ selected: cadence === option }}
-            key={option}
-            onPress={() => {
-              if (cadence === option) return;
-              hapticSelection();
-              onChange({ ...value, cadence: option });
-            }}
-            style={[styles.billingOption, cadence === option && styles.billingOptionSelected]}>
-            <Text style={[styles.billingOptionText, cadence === option && styles.billingOptionTextSelected]}>
-              {option === 'monthly' ? 'MONTHLY' : 'ANNUAL'}
-            </Text>
-            {option === 'annual' ? (
-              <Text style={styles.billingOptionSubtext}>SAVE 2 MONTHS</Text>
-            ) : null}
-          </Pressable>
-        ))}
+      <View style={styles.checkoutBillingSection}>
+        <Text style={styles.checkoutBillingLabel}>BILLING</Text>
+        <View
+          accessibilityLabel="Billing frequency"
+          style={styles.checkoutBillingToggle}>
+          {(['monthly', 'annual'] as KeepFlipBillingCadence[]).map((option) => (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected: cadence === option }}
+              key={option}
+              onPress={() => {
+                if (cadence === option) return;
+                hapticSelection();
+                onChange({ ...value, cadence: option });
+              }}
+              style={[
+                styles.checkoutBillingOption,
+                cadence === option && styles.checkoutBillingOptionSelected,
+              ]}>
+              <Text
+                style={[
+                  styles.checkoutBillingOptionText,
+                  cadence === option && styles.checkoutBillingOptionTextSelected,
+                ]}>
+                {option === 'monthly' ? 'MONTHLY' : 'ANNUAL'}
+              </Text>
+              {option === 'annual' ? (
+                <Text
+                  style={[
+                    styles.checkoutBillingOptionSubtext,
+                    cadence === option &&
+                      styles.checkoutBillingOptionSubtextSelected,
+                  ]}>
+                  SAVE 2 MONTHS
+                </Text>
+              ) : null}
+            </Pressable>
+          ))}
+        </View>
       </View>
 
-      <View style={styles.planList}>
+      <View style={styles.checkoutPlanStack}>
         {KEEPFLIP_PLAN_DEFINITIONS.map((definition) => {
           const selected = value.plan === definition.id;
-          const price = cadence === 'annual'
-            ? definition.annualPriceFallback
-            : definition.monthlyPriceFallback;
+          const price =
+            cadence === 'annual'
+              ? definition.annualPriceFallback
+              : definition.monthlyPriceFallback;
           const period = cadence === 'annual' ? '/ year' : '/ month';
+          const savings =
+            cadence === 'annual'
+              ? definition.id === 'hobbyist'
+                ? 'SAVE $20 / YEAR'
+                : 'SAVE $50 / YEAR'
+              : null;
 
           return (
             <Pressable
@@ -179,25 +215,80 @@ function PlanSelection({
                 onChange({ ...value, plan: definition.id });
               }}
               style={({ pressed }) => [
-                styles.planOption,
-                selected && styles.planOptionSelected,
+                styles.checkoutPlanCard,
+                definition.recommended && styles.checkoutPlanCardRecommended,
+                selected && styles.checkoutPlanCardSelected,
                 pressed && styles.pressed,
               ]}>
-              <View style={styles.planOptionTopLine}>
-                <View style={styles.planOptionCopy}>
-                  <Text style={styles.planOptionEyebrow}>{definition.eyebrow}</Text>
-                  <Text style={styles.planOptionName}>{definition.name}</Text>
+              <View style={styles.checkoutPlanTopLine}>
+                <View style={styles.checkoutPlanHeading}>
+                  <Text style={styles.checkoutPlanEyebrow}>
+                    {definition.eyebrow}
+                  </Text>
+                  <Text style={styles.checkoutPlanName}>{definition.name}</Text>
                 </View>
-                <View style={[styles.planRadio, selected && styles.planRadioSelected]}>
-                  {selected ? <View style={styles.planRadioCore} /> : null}
-                </View>
+                {definition.recommended ? (
+                  <View style={styles.checkoutRecommendedBadge}>
+                    <Text style={styles.checkoutRecommendedText}>RECOMMENDED</Text>
+                  </View>
+                ) : null}
               </View>
-              <View style={styles.planPriceRow}>
-                <Text style={styles.planPrice}>{price}</Text>
-                <Text style={styles.planPeriod}>{period}</Text>
+
+              <View style={styles.checkoutPriceRow}>
+                <Text style={styles.checkoutPrice}>{price}</Text>
+                <Text style={styles.checkoutPricePeriod}>{period}</Text>
               </View>
-              <Text style={styles.planTrial}>7-DAY FREE TRIAL INCLUDED</Text>
-              <Text style={styles.planOptionDescription}>{definition.description}</Text>
+              {savings ? (
+                <Text style={styles.checkoutSavingsLine}>{savings}</Text>
+              ) : null}
+
+              <View style={styles.checkoutTrialIncludedRow}>
+                <IconSymbol
+                  color={theme.colors.scannerCyan}
+                  name="sparkles"
+                  size={14}
+                />
+                <Text style={styles.checkoutTrialIncludedText}>
+                  7-DAY FREE TRIAL INCLUDED
+                </Text>
+              </View>
+
+              <Text style={styles.checkoutPlanDescription}>
+                {definition.description}
+              </Text>
+              <View style={styles.checkoutFeatureList}>
+                {[...definition.limits, ...definition.features].map((feature) => (
+                  <View key={feature} style={styles.checkoutFeatureRow}>
+                    <IconSymbol
+                      color={theme.colors.scannerCyan}
+                      name="checkmark.circle.fill"
+                      size={15}
+                    />
+                    <Text style={styles.checkoutFeatureText}>{feature}</Text>
+                  </View>
+                ))}
+              </View>
+
+              <View
+                style={[
+                  styles.checkoutSelectAction,
+                  definition.recommended && styles.checkoutSelectActionRecommended,
+                  selected && styles.checkoutSelectActionSelected,
+                ]}>
+                <Text
+                  style={[
+                    styles.checkoutSelectActionText,
+                    definition.recommended &&
+                      styles.checkoutSelectActionTextRecommended,
+                    selected && styles.checkoutSelectActionTextSelected,
+                  ]}>
+                  {selected ? 'SELECTED PLAN' : 'SELECT THIS PLAN'}
+                </Text>
+              </View>
+              <Text style={styles.checkoutAfterTrialText}>
+                {price} {cadence === 'annual' ? 'per year' : 'per month'}
+                {' '}after any eligible trial. Cancel anytime through Google Play.
+              </Text>
             </Pressable>
           );
         })}
@@ -205,7 +296,6 @@ function PlanSelection({
     </View>
   );
 }
-
 function MigrationNotice() {
   return (
     <View style={styles.migrationNotice}>
@@ -217,7 +307,7 @@ function MigrationNotice() {
         <Text style={styles.migrationTitle}>KeepFlip is moving to subscriptions.</Text>
         <Text style={styles.migrationBody}>
           Your existing account stays yours. During this rollout, choose a
-          plan below to start your one-week trial and keep your inventory and
+          plan below to check eligibility for a one-week store trial and keep your inventory and
           history connected.
         </Text>
       </View>
@@ -226,6 +316,7 @@ function MigrationNotice() {
 }
 
 export function KeepFlipLaunchAuthScreen({
+  accountModeLocked = false,
   initialBuyRules,
   initialMode,
   initialName,
@@ -243,6 +334,7 @@ export function KeepFlipLaunchAuthScreen({
     signIn,
     signUp,
     status,
+    user,
   } = useKeepFlipAuth();
   const [mode, setMode] = useState<LaunchAuthMode>(initialMode);
   const [name, setName] = useState(initialName?.trim() ?? '');
@@ -256,69 +348,123 @@ export function KeepFlipLaunchAuthScreen({
     plan: 'serious',
   });
   const [localError, setLocalError] = useState<string | null>(null);
+  const [createdUserId, setCreatedUserId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [profileSavedForAccount, setProfileSavedForAccount] = useState(true);
 
-  const showPlanSelection = mode === 'create-account' || migrationMode;
+  const showPlanSelection = migrationMode;
+  const accountReady =
+    mode === 'create-account' &&
+    Boolean(createdUserId || (status === 'signed-in' && user?.$id));
 
   const submit = async () => {
-    if (isBusy || status === 'setup') return;
+    if (isBusy || isSubmitting || status === 'setup') return;
+
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedName = name.trim();
     setLocalError(null);
 
-    if (mode === 'create-account' && normalizedName.length < 2) {
-      setLocalError('Flip still needs the name you want shown on your account.');
-      return;
-    }
-    if (!EMAIL_PATTERN.test(normalizedEmail)) {
-      setLocalError('Enter a valid email address.');
-      return;
-    }
-    if (password.length < 8) {
-      setLocalError('Your password must contain at least 8 characters.');
-      return;
-    }
-    if (mode === 'create-account' && password !== confirmPassword) {
-      setLocalError('The passwords do not match.');
-      return;
+    if (mode === 'sign-in' || !accountReady) {
+      if (!EMAIL_PATTERN.test(normalizedEmail)) {
+        setLocalError('Enter a valid email address.');
+        return;
+      }
+      if (password.length < 8) {
+        setLocalError('Your password must contain at least 8 characters.');
+        return;
+      }
     }
 
+    if (mode === 'create-account' && !accountReady) {
+      if (normalizedName.length < 2) {
+        setLocalError('Flip still needs the name you want shown on your account.');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setLocalError('The passwords do not match.');
+        return;
+      }
+    }
+
+    setIsSubmitting(true);
     try {
-      let profileSaved = true;
       if (mode === 'sign-in') {
         await signIn(normalizedEmail, password);
-      } else {
+        void Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Success,
+        ).catch(() => undefined);
+        onAuthenticated?.(selection);
+        return;
+      }
+
+      let accountUserId =
+        createdUserId || (status === 'signed-in' ? user?.$id ?? null : null);
+      let profileSaved = profileSavedForAccount;
+
+      if (!accountUserId) {
         await signUp(normalizedName, normalizedEmail, password);
+        const { account } = getAppwriteCoreServices();
+        const currentUser = await account.get();
+        accountUserId = currentUser.$id;
+        setCreatedUserId(accountUserId);
+
         if (initialBuyRules) {
           try {
-            const { account } = getAppwriteCoreServices();
-            const currentUser = await account.get();
             await completeScanInventoryWalkthrough(
-              currentUser.$id,
+              accountUserId,
               currentUser.name || normalizedName,
               initialBuyRules,
             );
           } catch (error) {
             profileSaved = false;
+            setProfileSavedForAccount(false);
             if (__DEV__) {
-              console.warn('[KeepFlip][Onboarding] Seller setup could not be saved after account creation:', error);
+              console.warn(
+                '[KeepFlip][Onboarding] Seller setup could not be saved after account creation:',
+                error,
+              );
             }
           }
         }
       }
 
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
-        () => undefined,
+      const access = await purchaseKeepFlipPlan(
+        accountUserId,
+        selection.plan,
+        selection.cadence,
       );
-      onAuthenticated?.({ ...selection, ...(mode === 'create-account' ? { profileSaved } : {}) });
+      if (!access.active) {
+        throw new Error(
+          'KeepFlip could not confirm the subscription after the store purchase. Try again or restore purchases.',
+        );
+      }
+
+      void Haptics.notificationAsync(
+        Haptics.NotificationFeedbackType.Success,
+      ).catch(() => undefined);
+      onAuthenticated?.({ ...selection, profileSaved });
     } catch (error) {
+      const wasCancelled =
+        Boolean(
+          error &&
+            typeof error === 'object' &&
+            'userCancelled' in error &&
+            (error as { userCancelled?: unknown }).userCancelled === true,
+        );
       setLocalError(
-        error instanceof Error
-          ? error.message
-          : 'KeepFlip could not complete authentication. Please try again.',
+        wasCancelled
+          ? 'The Google Play signup was canceled. Your KeepFlip account is ready; choose a plan and try again.'
+          : error instanceof Error
+            ? error.message
+            : 'KeepFlip could not complete authentication and subscription signup. Please try again.',
       );
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(
-        () => undefined,
-      );
+      if (!wasCancelled) {
+        void Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Error,
+        ).catch(() => undefined);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -388,7 +534,7 @@ export function KeepFlipLaunchAuthScreen({
             ) : null}
 
             {showPlanSelection ? (
-              <PlanSelection value={selection} onChange={setSelection} />
+              <PlanSelection migrationMode={migrationMode} value={selection} onChange={setSelection} />
             ) : null}
 
             {setupRequired ? (
@@ -410,7 +556,8 @@ export function KeepFlipLaunchAuthScreen({
               </View>
             ) : null}
 
-            <View style={styles.modeSwitch}>
+            {!accountModeLocked ? (
+              <View style={styles.modeSwitch}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityState={{ selected: mode === 'sign-in' }}
@@ -427,8 +574,10 @@ export function KeepFlipLaunchAuthScreen({
                 style={[styles.modeButton, mode === 'create-account' && styles.modeButtonActive]}>
                 <Text style={[styles.modeText, mode === 'create-account' && styles.modeTextActive]}>CREATE ACCOUNT</Text>
               </Pressable>
-            </View>
+              </View>
+            ) : null}
 
+            {!accountReady ? (
             <View style={styles.form}>
               {mode === 'create-account' && !initialName ? (
                 <AuthField
@@ -488,18 +637,30 @@ export function KeepFlipLaunchAuthScreen({
                 />
               ) : null}
             </View>
+            ) : (
+              <View style={styles.accountReadyNotice}>
+                <IconSymbol
+                  color={theme.colors.scannerCyan}
+                  name="checkmark.shield.fill"
+                  size={18}
+                />
+                <Text style={styles.accountReadyText}>
+                  Your KeepFlip account is ready. Continue to open Google Play for the selected plan.
+                </Text>
+              </View>
+            )}
 
             <Pressable
               accessibilityRole="button"
-              accessibilityState={{ busy: isBusy, disabled: isBusy || setupRequired }}
-              disabled={isBusy || setupRequired}
+              accessibilityState={{ busy: isBusy || isSubmitting, disabled: isBusy || isSubmitting || setupRequired }}
+              disabled={isBusy || isSubmitting || setupRequired}
               onPress={() => void submit()}
-              style={({ pressed }) => [styles.submitButton, (isBusy || setupRequired) && styles.buttonDisabled, pressed && styles.pressed]}>
-              {isBusy ? (
+              style={({ pressed }) => [styles.submitButton, (isBusy || isSubmitting || setupRequired) && styles.buttonDisabled, pressed && styles.pressed]}>
+              {isBusy || isSubmitting ? (
                 <ActivityIndicator color={theme.colors.backgroundDeep} size="small" />
               ) : (
                 <>
-                  <Text style={styles.submitText}>{mode === 'sign-in' ? 'ENTER KEEPFLIP' : 'CREATE SECURE ACCOUNT'}</Text>
+                  <Text style={styles.submitText}>{mode === 'sign-in' ? 'ENTER KEEPFLIP' : accountReady ? 'START SELECTED PLAN' : 'CREATE ACCOUNT & START TRIAL'}</Text>
                   <IconSymbol color={theme.colors.backgroundDeep} name="arrow.right" size={19} />
                 </>
               )}
@@ -562,6 +723,7 @@ const styles = StyleSheet.create({
   panel: { backgroundColor: 'rgba(8, 8, 12, 0.93)', borderColor: 'rgba(224, 172, 75, 0.34)', borderRadius: 24, borderWidth: 1, gap: 16, maxWidth: 620, padding: 17, width: '100%' },
   planList: { gap: 9 },
   planOption: { backgroundColor: 'rgba(255, 255, 255, 0.035)', borderColor: 'rgba(242, 237, 228, 0.14)', borderRadius: 15, borderWidth: 1, gap: 7, padding: 12 },
+  planTrial: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 0.8 },
   planOptionDescription: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 },
   planOptionEyebrow: { color: theme.colors.gold, fontFamily: theme.fonts.radar, fontSize: 7, letterSpacing: 1.05 },
   planOptionName: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 17 },
@@ -592,5 +754,49 @@ const styles = StyleSheet.create({
   submitButton: { alignItems: 'center', backgroundColor: theme.colors.goldBright, borderRadius: 15, flexDirection: 'row', gap: 9, justifyContent: 'center', minHeight: 55 },
   submitText: { color: theme.colors.backgroundDeep, fontFamily: theme.fonts.bold, fontSize: 11, letterSpacing: 0.85 },
   title: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 31, letterSpacing: -0.6, textAlign: 'center' },
+  accountReadyNotice: { alignItems: 'center', backgroundColor: 'rgba(0, 255, 255, 0.055)', borderColor: 'rgba(0, 255, 255, 0.24)', borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 10, padding: 12 },
+  accountReadyText: { color: theme.colors.textMuted, flex: 1, fontSize: 12, lineHeight: 18 },
+  checkoutAfterTrialText: { color: 'rgba(173, 167, 178, 0.76)', fontSize: 9, lineHeight: 13, textAlign: 'center' },
+  checkoutBanner: { alignItems: 'center', backgroundColor: 'rgba(0, 255, 255, 0.055)', borderColor: 'rgba(0, 255, 255, 0.24)', borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 11, padding: 13 },
+  checkoutBannerBody: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 17 },
+  checkoutBannerCopy: { flex: 1, gap: 3 },
+  checkoutBannerIcon: { alignItems: 'center', backgroundColor: 'rgba(0, 255, 255, 0.08)', borderRadius: 10, height: 40, justifyContent: 'center', width: 40 },
+  checkoutBannerTitle: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 8, fontWeight: '900', letterSpacing: 0.95 },
+  checkoutBillingLabel: { color: theme.colors.gold, fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: '900', letterSpacing: 1.1, paddingHorizontal: 2 },
+  checkoutBillingOption: { alignItems: 'center', borderRadius: 9, flex: 1, gap: 1, justifyContent: 'center', minHeight: 45, paddingHorizontal: 10 },
+  checkoutBillingOptionSelected: { backgroundColor: 'rgba(215, 168, 74, 0.14)', borderColor: 'rgba(242, 211, 138, 0.42)', borderWidth: StyleSheet.hairlineWidth },
+  checkoutBillingOptionSubtext: { color: 'rgba(173, 167, 178, 0.66)', fontSize: 7, fontWeight: '800', letterSpacing: 0.45 },
+  checkoutBillingOptionSubtextSelected: { color: theme.colors.scannerCyan },
+  checkoutBillingOptionText: { color: theme.colors.textMuted, fontFamily: theme.fonts.radar, fontSize: 8, fontWeight: '900', letterSpacing: 0.85 },
+  checkoutBillingOptionTextSelected: { color: theme.colors.goldBright },
+  checkoutBillingSection: { gap: 7 },
+  checkoutBillingToggle: { backgroundColor: 'rgba(8, 8, 12, 0.92)', borderColor: 'rgba(242, 237, 228, 0.14)', borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 4, padding: 4 },
+  checkoutFeatureList: { gap: 7 },
+  checkoutFeatureRow: { alignItems: 'center', flexDirection: 'row', gap: 8 },
+  checkoutFeatureText: { color: theme.colors.text, flex: 1, fontSize: 11, lineHeight: 15 },
+  checkoutPlanCard: { backgroundColor: 'rgba(8, 8, 12, 0.92)', borderColor: 'rgba(242, 237, 228, 0.15)', borderRadius: 15, borderWidth: StyleSheet.hairlineWidth, gap: 11, padding: 15 },
+  checkoutPlanCardRecommended: { borderColor: 'rgba(0, 255, 255, 0.42)', shadowColor: theme.colors.scannerCyan, shadowOpacity: 0.09, shadowRadius: 20 },
+  checkoutPlanCardSelected: { borderColor: 'rgba(141, 114, 255, 0.72)', backgroundColor: 'rgba(141, 114, 255, 0.06)' },
+  checkoutPlanDescription: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 17 },
+  checkoutPlanEyebrow: { color: theme.colors.gold, fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: '900', letterSpacing: 1.15 },
+  checkoutPlanHeading: { flex: 1, gap: 2 },
+  checkoutPlanName: { color: theme.colors.cream, fontSize: 20, fontWeight: '900' },
+  checkoutPlanStack: { gap: 12 },
+  checkoutPlanTopLine: { alignItems: 'flex-start', flexDirection: 'row', gap: 10, justifyContent: 'space-between' },
+  checkoutPrice: { color: theme.colors.cream, fontSize: 27, fontVariant: ['tabular-nums'], fontWeight: '900' },
+  checkoutPricePeriod: { color: theme.colors.textMuted, fontSize: 11 },
+  checkoutPriceRow: { alignItems: 'baseline', flexDirection: 'row', gap: 4 },
+  checkoutRecommendedBadge: { backgroundColor: theme.colors.scannerCyan, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 5 },
+  checkoutRecommendedText: { color: theme.colors.backgroundDeep, fontFamily: theme.fonts.radar, fontSize: 6, fontWeight: '900', letterSpacing: 0.7 },
+  checkoutSavingsLine: { color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: '900', letterSpacing: 0.75, marginTop: -6 },
+  checkoutSection: { gap: 14 },
+  checkoutSelectAction: { alignItems: 'center', borderColor: 'rgba(0, 255, 255, 0.34)', borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, justifyContent: 'center', minHeight: 46 },
+  checkoutSelectActionRecommended: { borderColor: theme.colors.scannerCyan },
+  checkoutSelectActionSelected: { backgroundColor: 'rgba(141, 114, 255, 0.16)', borderColor: 'rgba(141, 114, 255, 0.62)' },
+  checkoutSelectActionText: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 8, fontWeight: '900', letterSpacing: 0.85 },
+  checkoutSelectActionTextRecommended: { color: theme.colors.scannerCyan },
+  checkoutSelectActionTextSelected: { color: theme.colors.cream },
+  checkoutTrialIncludedRow: { alignItems: 'center', alignSelf: 'flex-start', backgroundColor: 'rgba(0, 255, 255, 0.055)', borderColor: 'rgba(0, 255, 255, 0.2)', borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 6, paddingHorizontal: 9, paddingVertical: 6 },
+  checkoutTrialIncludedText: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: '900', letterSpacing: 0.7 },
   visibilityButton: { alignItems: 'center', borderRadius: 999, height: 36, justifyContent: 'center', width: 36 },
 });

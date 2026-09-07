@@ -1,1 +1,5 @@
-export { KeepFlipAuthScreen as default } from '@/components/auth/keepflip-auth-screen';
+import { KeepFlipAuthScreen } from '@/components/auth/keepflip-auth-screen';
+
+export default function SignInScreen() {
+  return <KeepFlipAuthScreen allowSignUp={false} />;
+}

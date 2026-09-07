@@ -432,7 +432,7 @@ export function ScanInventoryWalkthroughScreen() {
 
       router.replace(
         (subscriptionOnboardingEnabled
-          ? "/subscription?source=onboarding"
+          ? "/account?tab=subscription"
           : "/") as Href,
       );
     } catch (caught) {

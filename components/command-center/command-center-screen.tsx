@@ -421,7 +421,7 @@ export function CommandCenterScreen() {
       setEbayBooksSyncMessage(
         'eBay money sync is included with the Serious Reseller plan.',
       );
-      router.push('/subscription' as Href);
+      router.push('/account?tab=subscription' as Href);
       return;
     }
     if (!bookkeepingFunctionConfigured) {
