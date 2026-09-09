@@ -12,7 +12,6 @@ import type { RealtimeSubscription } from 'react-native-appwrite';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import {
-  areKeepFlipSubscriptionsEnforced,
   keepFlipPlanAllows,
   keepFlipPlanLimit,
   loadKeepFlipSubscription,
@@ -398,16 +397,22 @@ export function KeepFlipSubscriptionProvider({
       if (snapshot?.access.active === true && !profileTrialActive) {
         activePlan = snapshot.access.plan;
       }
-      const subscriptionsEnforced = areKeepFlipSubscriptionsEnforced();
+      const serverAccessVerified = snapshot?.serverRecordAvailable === true;
 
       return {
-        // Keep the pre-subscription app usable while enforcement is off. Once
-        // enforcement is enabled, every paid feature must resolve from the
-        // active RevenueCat plan (and later the migration/grace policy).
+        // UI availability is always derived from an authenticated Function
+        // check of the durable subscription state. RevenueCat may update
+        // purchase UI optimistically, but it cannot unlock app features.
         canUse: (feature) =>
-          !subscriptionsEnforced || profileTrialActive || keepFlipPlanAllows(activePlan, feature),
+          serverAccessVerified &&
+          (profileTrialActive || keepFlipPlanAllows(activePlan, feature)),
         errorMessage: error,
-        limitFor: (limit) => profileTrialActive ? (limit === 'aiValuationScansPerMonth' ? 25 : null) : keepFlipPlanLimit(activePlan, limit),
+        limitFor: (limit) =>
+          !serverAccessVerified
+            ? 0
+            : profileTrialActive
+              ? (limit === 'aiValuationScansPerMonth' ? 25 : null)
+              : keepFlipPlanLimit(activePlan, limit),
         manage,
         purchase,
         purchasing,

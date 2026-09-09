@@ -326,10 +326,6 @@ export function keepFlipPlanLimit(
   return plan ? KEEPFLIP_PLAN_LIMITS[plan][limit] : 0;
 }
 
-export function isKeepFlipSubscriptionTableConfigured() {
-  return Boolean(APPWRITE.databaseId && APPWRITE.userSubscriptionsTableId);
-}
-
 function appwriteText(value: unknown, maximum = 255) {
   return typeof value === 'string' && value.trim()
     ? value.trim().slice(0, maximum)
@@ -431,32 +427,6 @@ function serverRecordAllowsAccess(
   }
 
   return false;
-}
-
-function serverRecordRequiresAccessLock(
-  record: KeepFlipServerSubscriptionRecord | null,
-  now = Date.now(),
-) {
-  if (!record || record.status === 'unknown') return false;
-  if (record.status === 'expired' || record.status === 'revoked') return true;
-
-  const periodEnd = record.currentPeriodEndsAt
-    ? Date.parse(record.currentPeriodEndsAt)
-    : Number.NaN;
-
-  if (
-    record.status === 'cancelled' ||
-    record.status === 'billing_issue' ||
-    record.status === 'grace_period'
-  ) {
-    return !Number.isFinite(periodEnd) || periodEnd <= now;
-  }
-
-  if (record.status === 'trialing' || record.status === 'active') {
-    return Number.isFinite(periodEnd) && periodEnd <= now;
-  }
-
-  return true;
 }
 
 function subscriptionAccessFromServerRecord(
@@ -810,13 +780,19 @@ function effectiveSubscriptionAccess(
     serverStatus.access ||
     (serverRecord ? subscriptionAccessFromServerRecord(serverRecord) : null);
 
-  if (!serverAccess) return localAccess;
+  // RevenueCat is useful for purchase UI metadata, but it is never an
+  // authorization source. If the authenticated Function cannot resolve the
+  // durable entitlement, client feature gates fail closed.
+  if (!serverStatus.available || !serverAccess) {
+    return {
+      ...EMPTY_ACCESS,
+      managementUrl: localAccess.managementUrl,
+      trialUsed: localAccess.trialUsed,
+    };
+  }
 
   // RevenueCat supplies useful local metadata such as the management URL,
-  // while the server mirror supplies the authoritative entitlement state.
-  // Preserve the local entitlement only while the server has no materialized
-  // subscription row yet; once a row exists, terminal server states can lock
-  // paid access without waiting for the store SDK to refresh.
+  // while the authenticated server check supplies authoritative access.
   const mergedServerAccess: KeepFlipSubscriptionAccess = {
     ...localAccess,
     ...serverAccess,
@@ -830,11 +806,7 @@ function effectiveSubscriptionAccess(
     store: serverAccess.store || serverRecord?.store || localAccess.store,
   };
 
-  const serverShouldWin = serverRecord
-    ? mergedServerAccess.active || serverRecordRequiresAccessLock(serverRecord)
-    : !localAccess.active && mergedServerAccess.active;
-
-  return serverShouldWin ? mergedServerAccess : localAccess;
+  return mergedServerAccess;
 }
 
 export function subscriptionAccessFromCustomerInfo(
