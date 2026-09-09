@@ -15,10 +15,8 @@ import {
 import {
   APPWRITE,
   ExecutionMethod,
-  Query,
   functions,
   realtime,
-  tablesDB,
 } from '@/lib/appwrite';
 import { getKeepFlipTrialDeviceIdHash } from '@/services/keepflip-trial-device-service';
 
@@ -129,6 +127,29 @@ export type KeepFlipAiValuationAccess = {
   reason: string;
   usage: number | null;
 };
+
+/**
+ * Server-verified capability result. This is appropriate for deciding which
+ * subscription-only controls to render when a feature screen opens. It is
+ * deliberately not the enforcement boundary: the destination Function must
+ * make the same check before it performs protected work.
+ */
+export type KeepFlipCapabilityAccess = {
+  allowed: boolean;
+  limit: number | null;
+  profileTrial: KeepFlipProfileTrial | null;
+  reason: string;
+  usage: number | null;
+};
+
+export type KeepFlipSubscriptionCapability =
+  | KeepFlipSubscriptionFeature
+  | 'ai_valuation'
+  | 'active_listing';
+
+export type KeepFlipCapabilitiesAccess = Partial<
+  Record<KeepFlipSubscriptionCapability, KeepFlipCapabilityAccess>
+>;
 
 export type KeepFlipSubscriptionCatalog = {
   offeringId: string | null;
@@ -460,15 +481,6 @@ function subscriptionAccessFromServerRecord(
   };
 }
 
-function isAppwriteNotFound(error: unknown) {
-  return Boolean(
-    error &&
-    typeof error === 'object' &&
-    'code' in error &&
-    Number((error as { code?: unknown }).code) === 404,
-  );
-}
-
 type SubscriptionFunctionPayload = Record<string, unknown>;
 
 type KeepFlipServerStatusResponse = {
@@ -582,17 +594,35 @@ async function loadKeepFlipServerSubscriptionViaFunction(
   };
 }
 
-export async function checkKeepFlipAiValuationAccess(): Promise<KeepFlipAiValuationAccess> {
+function parseKeepFlipCapabilityAccess(
+  value: unknown,
+): KeepFlipCapabilityAccess {
+  const payload =
+    value && typeof value === 'object' && !Array.isArray(value)
+      ? (value as SubscriptionFunctionPayload)
+      : {};
+  return {
+    allowed: payload.allowed === true,
+    limit: nonNegativeSafeInteger(payload.limit),
+    profileTrial: parseServerProfileTrial(payload.profileTrial),
+    reason: appwriteText(payload.reason, 80) || 'access_unavailable',
+    usage: nonNegativeSafeInteger(payload.usage),
+  };
+}
+
+async function executeKeepFlipCapabilityCheck(
+  body: Record<string, unknown>,
+): Promise<SubscriptionFunctionPayload> {
   const functionId = APPWRITE.subscriptionFunctionId;
   if (!functionId) {
-    throw new Error('KeepFlip scan access is not configured in this build.');
+    throw new Error('KeepFlip subscription access is not configured in this build.');
   }
 
   const deviceIdHash = await getKeepFlipTrialDeviceIdHash().catch(() => null);
   const execution = await functions.createExecution({
     async: false,
     body: JSON.stringify({
-      capability: 'ai_valuation',
+      ...body,
       ...(deviceIdHash ? { deviceIdHash } : {}),
     }),
     functionId,
@@ -605,56 +635,54 @@ export async function checkKeepFlipAiValuationAccess(): Promise<KeepFlipAiValuat
   if (execution.responseStatusCode !== 200 || payload.ok !== true) {
     throw new Error(
       appwriteText(payload.error, 1_000) ||
-        'KeepFlip could not verify scan access right now.',
+        'KeepFlip could not verify subscription access right now.',
     );
   }
 
-  return {
-    allowed: payload.allowed === true,
-    limit: nonNegativeSafeInteger(payload.limit),
-    profileTrial: parseServerProfileTrial(payload.profileTrial),
-    reason: appwriteText(payload.reason, 80) || 'access_unavailable',
-    usage: nonNegativeSafeInteger(payload.usage),
-  };
+  return payload;
 }
 
-async function loadKeepFlipServerSubscriptionRecordDirect(userId: string) {
-  const cleanUserId = userId.trim();
-  if (!cleanUserId || !isKeepFlipSubscriptionTableConfigured()) return null;
+export async function checkKeepFlipCapabilityAccess(
+  capability: KeepFlipSubscriptionCapability,
+): Promise<KeepFlipCapabilityAccess> {
+  const payload = await executeKeepFlipCapabilityCheck({ capability });
+  return parseKeepFlipCapabilityAccess(payload);
+}
 
-  try {
-    const row = await tablesDB.getRow({
-      databaseId: APPWRITE.databaseId,
-      tableId: APPWRITE.userSubscriptionsTableId,
-      rowId: cleanUserId,
-    });
-    const record = parseServerSubscriptionRecord(row);
-    return record?.ownerId === cleanUserId ? record : null;
-  } catch (error) {
-    if (!isAppwriteNotFound(error)) throw error;
-  }
+/**
+ * Checks all feature flags a screen needs in one JWT-authenticated request.
+ * This is display gating only; each protected Function independently verifies
+ * the same user against the durable subscription row before doing work.
+ */
+export async function checkKeepFlipCapabilitiesAccess(
+  capabilities: readonly KeepFlipSubscriptionCapability[],
+): Promise<KeepFlipCapabilitiesAccess> {
+  const requested = [...new Set(capabilities)];
+  if (!requested.length) return {};
 
-  const result = await tablesDB.listRows({
-    databaseId: APPWRITE.databaseId,
-    tableId: APPWRITE.userSubscriptionsTableId,
-    queries: [Query.equal('ownerId', [cleanUserId]), Query.limit(2)],
-    total: false,
+  const payload = await executeKeepFlipCapabilityCheck({
+    capabilities: requested,
   });
+  const checks =
+    payload.checks && typeof payload.checks === 'object' && !Array.isArray(payload.checks)
+      ? (payload.checks as SubscriptionFunctionPayload)
+      : {};
 
-  const matches = result.rows
-    .map(parseServerSubscriptionRecord)
-    .filter(
-      (record): record is KeepFlipServerSubscriptionRecord =>
-        Boolean(record && record.ownerId === cleanUserId),
-    );
+  return requested.reduce<KeepFlipCapabilitiesAccess>((result, capability) => {
+    const check = checks[capability];
+    if (check && typeof check === 'object' && !Array.isArray(check)) {
+      result[capability] = parseKeepFlipCapabilityAccess({
+        ...(check as SubscriptionFunctionPayload),
+        // The batch response returns trial metadata once at the top level.
+        profileTrial: payload.profileTrial,
+      });
+    }
+    return result;
+  }, {});
+}
 
-  if (matches.length > 1) {
-    throw new Error(
-      'KeepFlip found more than one subscription record for this account.',
-    );
-  }
-
-  return matches[0] ?? null;
+export async function checkKeepFlipAiValuationAccess(): Promise<KeepFlipAiValuationAccess> {
+  return checkKeepFlipCapabilityAccess('ai_valuation');
 }
 
 export async function loadKeepFlipServerSubscriptionRecord(
@@ -674,8 +702,7 @@ async function loadKeepFlipServerSubscriptionStatus(
   deviceIdHash: string | null,
   refresh = false,
 ): Promise<KeepFlipServerStatusResponse> {
-  const cleanUserId = userId.trim();
-  if (!cleanUserId) {
+  if (!userId.trim()) {
     return {
       access: null,
       available: false,
@@ -694,20 +721,22 @@ async function loadKeepFlipServerSubscriptionStatus(
     } catch (error) {
       if (__DEV__) {
         console.warn(
-          '[KeepFlip][Subscription] Subscription Police status failed; falling back to the read-only mirror.',
+          '[KeepFlip][Subscription] Server subscription status check failed; protected features are unavailable until it recovers.',
           error,
         );
       }
     }
   }
 
-  const record = await loadKeepFlipServerSubscriptionRecordDirect(cleanUserId);
-
   return {
-    access: record ? subscriptionAccessFromServerRecord(record) : null,
+    // Never read the entitlement mirror directly in the mobile client. A
+    // Function-authenticated JWT check is the only source used to decide
+    // access, so a transient policy outage fails closed rather than quietly
+    // making a premium feature available from a readable database row.
+    access: null,
     available: false,
     profileTrial: null,
-    record,
+    record: null,
   };
 }
 
@@ -973,7 +1002,7 @@ export async function loadKeepFlipSubscription(
       profileTrial: serverStatus.profileTrial,
       serverRecord,
       serverRecordAvailable:
-        serverStatus.available || isKeepFlipSubscriptionTableConfigured(),
+        serverStatus.available,
     };
   }
 
@@ -1000,7 +1029,7 @@ export async function loadKeepFlipSubscription(
     profileTrial: serverStatus.profileTrial,
     serverRecord,
     serverRecordAvailable:
-      serverStatus.available || isKeepFlipSubscriptionTableConfigured(),
+      serverStatus.available,
   };
 }
 

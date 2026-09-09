@@ -12,6 +12,7 @@ import { KeepFlipText as Text, KeepFlipTextInput as TextInput } from '@/componen
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
+import { checkKeepFlipCapabilitiesAccess } from '@/services/keepflip-subscription-service';
 import {
   agingRecommendations,
   parseMoneyInput,
@@ -49,9 +50,10 @@ import {
   type EbaySellerOrder,
   type SellerOrder,
 } from '@/services/seller-order-service';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont from '@/lib/responsiveFont';
-import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
+import {
+  useResponsiveLayout,
+  useResponsiveStyles,
+} from '@/hooks/use-responsive-layout';
 function Section({ title, children }: PropsWithChildren<{ title: string }>) {
   const styles = useResponsiveStyles(createResponsiveStyles);
   const {
@@ -340,6 +342,20 @@ const EMPTY_DRAFT: SaleDraft = {
   packingNotes: '',
 };
 
+type SellerFeatureAccess = {
+  automaticBooks: boolean;
+  automaticOrders: boolean;
+  basicBooks: boolean;
+  sellerAnalytics: boolean;
+};
+
+const NO_SELLER_FEATURE_ACCESS: SellerFeatureAccess = {
+  automaticBooks: false,
+  automaticOrders: false,
+  basicBooks: false,
+  sellerAnalytics: false,
+};
+
 export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: string; embedded?: boolean }) {
   const styles = useResponsiveStyles(createResponsiveStyles);
   const {
@@ -347,7 +363,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
   } = useResponsiveLayout();
 
   const router = useRouter();
-  const { canUse, limitFor, snapshot } = useKeepFlipSubscription();
+  const { limitFor, snapshot } = useKeepFlipSubscription();
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [manualOrders, setManualOrders] = useState<SellerOrder[]>([]);
   const [ledger, setLedger] = useState<ResellerLedgerEntry[]>([]);
@@ -360,24 +376,59 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
   const [working, setWorking] = useState(false);
   const [notice, setNotice] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [serverFeatures, setServerFeatures] = useState<SellerFeatureAccess>(
+    NO_SELLER_FEATURE_ACCESS,
+  );
 
-  const automaticOrders = canUse('automatic_order_sync');
-  const automaticBooks = canUse('automated_books');
-  const advancedAnalytics = canUse('seller_analytics');
+  const automaticOrders = serverFeatures.automaticOrders;
+  const automaticBooks = serverFeatures.automaticBooks;
+  const basicBooks = serverFeatures.basicBooks;
+  const advancedAnalytics = serverFeatures.sellerAnalytics;
   const listingLimit = limitFor('concurrentActiveListings');
 
   const loadBase = useCallback(async () => {
     setLoading(true);
     setErrors({});
+
+    let nextFeatures = NO_SELLER_FEATURE_ACCESS;
+    let subscriptionError = '';
+    try {
+      const checks = await checkKeepFlipCapabilitiesAccess([
+        'basic_books',
+        'automated_books',
+        'automatic_order_sync',
+        'seller_analytics',
+      ]);
+      nextFeatures = {
+        automaticBooks: checks.automated_books?.allowed === true,
+        automaticOrders: checks.automatic_order_sync?.allowed === true,
+        basicBooks: checks.basic_books?.allowed === true,
+        sellerAnalytics: checks.seller_analytics?.allowed === true,
+      };
+    } catch (cause) {
+      // A feature screen must never use a cached plan or a direct table read
+      // when its authenticated server check is unavailable.
+      subscriptionError = message(
+        cause,
+        'KeepFlip could not verify subscription access. Protected tools are unavailable.',
+      );
+    }
+    setServerFeatures(nextFeatures);
+
     const [inventoryResult, orderResult, ledgerResult, sellerResult] =
       await Promise.allSettled([
         listInventoryItems(ownerId),
         listManualSellerOrders(ownerId),
-        listResellerLedgerEntries(ownerId),
-        getEbaySellerAccount(getEbayOAuthEnvironment()),
+        nextFeatures.basicBooks
+          ? listResellerLedgerEntries(ownerId)
+          : Promise.resolve([] as ResellerLedgerEntry[]),
+        nextFeatures.automaticOrders
+          ? getEbaySellerAccount(getEbayOAuthEnvironment())
+          : Promise.resolve(null),
       ]);
 
     const nextErrors: Record<string, string> = {};
+    if (subscriptionError) nextErrors.subscription = subscriptionError;
     if (inventoryResult.status === 'fulfilled') {
       setInventory(inventoryResult.value);
       setSelectedItemId((current) =>
@@ -393,7 +444,10 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
     if (ledgerResult.status === 'fulfilled') setLedger(ledgerResult.value);
     else nextErrors.books = message(ledgerResult.reason, 'Books could not load.');
 
-    if (sellerResult.status === 'fulfilled' && sellerResult.value.connected) {
+    if (
+      sellerResult.status === 'fulfilled' &&
+      sellerResult.value?.connected
+    ) {
       setEbayListings(sellerResult.value.listings);
     } else {
       setEbayListings([]);
@@ -405,7 +459,13 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
 
   useEffect(() => {
     void loadBase();
-  }, [loadBase]);
+  }, [
+    loadBase,
+    snapshot?.access.active,
+    snapshot?.access.expiresAt,
+    snapshot?.access.plan,
+    snapshot?.access.trialSource,
+  ]);
 
   const matchedEbayOrders = useMemo(
     () => matchEbayOrderLinesToInventory(ebayOrders, inventory),
@@ -480,7 +540,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
       setManualOrders((current) => [order, ...current]);
       setDraft({ ...EMPTY_DRAFT, soldAt: new Date().toISOString().slice(0, 10) });
 
-      if (isResellerBookkeepingConfigured()) {
+      if (basicBooks && isResellerBookkeepingConfigured()) {
         try {
           await postSellerOrderToBooks(order);
           setLedger(await listResellerLedgerEntries(ownerId));
@@ -490,8 +550,10 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
             `Sale saved. Books still needs review: ${message(cause)} The same reconciliation can be retried safely.`,
           );
         }
-      } else {
+      } else if (basicBooks) {
         setNotice('Sale saved. Configure Books to create the linked financial records.');
+      } else {
+        setNotice('Sale saved. Books posting requires an active KeepFlip subscription.');
       }
     } catch (cause) {
       setErrors((current) => ({ ...current, create: message(cause) }));
@@ -655,10 +717,6 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
             : `${activeListings} linked live listing${activeListings === 1 ? '' : 's'}.`}
         </Text>
         {inventory.filter((item) => item.isListed || item.listedAt).slice(0, 30).map((item) => {
-  const {
-    responsiveFont
-  } = useResponsiveLayout();
-
           const listing = listingForItem(item, ebayListings);
           const aging = agingRecommendations({
             listedAt: item.listedAt,
@@ -807,7 +865,11 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
             Serious adds automatic eBay sales, fee, refund and payout reconciliation.
           </Text>
         )}
-        <Button title="Open Books review queue" onPress={() => router.push('/books' as Href)} />
+        <Button
+          title="Open Books review queue"
+          disabled={!basicBooks}
+          onPress={() => router.push('/books' as Href)}
+        />
         {margins.map((margin) => (
           <View key={margin.itemId} style={styles.row}>
             <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: 18 }]}>{margin.title}</Text>
