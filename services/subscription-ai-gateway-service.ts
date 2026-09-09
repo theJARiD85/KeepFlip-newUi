@@ -26,20 +26,25 @@ export async function createGatedAiExecution(
     );
   }
 
-  // Subscription-enabled builds reserve provider execution through the
-  // subscription police Function. Older builds predate subscriptions and
-  // call the authenticated market Function directly; keep that path working
-  // until those clients migrate.
-  if (!subscriptionFunctionId) {
+  // The market Function owns its own server-side subscription and quota gate.
+  // Calling it directly avoids forwarding credentials through a second
+  // Function. The app only initiates the request; it cannot grant access.
+  if (provider === "market" && directMarketFunctionId) {
     return functions.createExecution({
       functionId: directMarketFunctionId!,
-      body: JSON.stringify(input),
+      body: JSON.stringify({ ...input, operationId }),
       async: false,
       method: ExecutionMethod.POST,
       headers: {
         "content-type": "application/json",
       },
     });
+  }
+
+  if (!subscriptionFunctionId) {
+    throw new Error(
+      "KeepFlip AI identification is not configured in this build.",
+    );
   }
 
   return functions.createExecution({
