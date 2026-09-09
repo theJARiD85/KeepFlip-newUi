@@ -9,7 +9,10 @@ import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { resolveInventoryCoverImageUri } from "@/services/inventory-cover-image";
 import type { InventoryItem } from "@/services/inventory-service";
 import { withAlpha } from '@/lib/withAlpha';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type CoverImageSource = ImageSource | number | string;
 
 function formatMoney(value: number | null, currency: string) {
@@ -70,6 +73,11 @@ export function InventoryCard({
   onListingGuidePress?: () => void;
   onAddPhotosPress?: () => void;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const coverPhotoId = item.coverPhotoId;
   const coverKey = coverPhotoId ?? "";
   const [coverState, setCoverState] = useState({
@@ -165,7 +173,7 @@ export function InventoryCard({
               name="photo.on.rectangle.angled"
               size={36}
             />
-            <Text style={styles.fallbackLabel}>
+            <Text style={[styles.fallbackLabel, { fontSize: responsiveFont(8) }]}>
               {item.coverPhotoId ? "LOADING COVER" : "NO COVER PHOTO"}
             </Text>
             </View>
@@ -183,11 +191,11 @@ export function InventoryCard({
 
         <View pointerEvents="none" style={styles.heroTopRail}>
           <View style={styles.conditionPill}>
-            <Text numberOfLines={1} style={styles.conditionText}>
+            <Text numberOfLines={1} style={[styles.conditionText, { fontSize: responsiveFont(8) }]}>
               {item.condition}
             </Text>
             {flipDecision && flipDecision !== "UNKNOWN" ? (
-              <Text numberOfLines={1} style={styles.flipDecisionText}>
+              <Text numberOfLines={1} style={[styles.flipDecisionText, { fontSize: responsiveFont(7) }]}>
                 {flipDecision}{resaleVelocity ? ` / ${resaleVelocity}` : ""}
               </Text>
             ) : null}
@@ -195,7 +203,7 @@ export function InventoryCard({
         </View>
 
         <View pointerEvents="none" style={styles.heroCopy}>
-          <Text numberOfLines={2} selectable style={styles.title}>
+          <Text numberOfLines={2} selectable style={[styles.title, { fontSize: responsiveFont(21), lineHeight: 25 }]}>
             {item.title}
           </Text>
           {meta ? (
@@ -205,8 +213,8 @@ export function InventoryCard({
           ) : null}
         </View>
         <View style={styles.savedAt}>
-          <Text style={styles.savedAtLabel}>SAVED</Text>
-          <Text style={styles.savedAtValue}>{formatDate(item.createdAt)}</Text>
+          <Text style={[styles.savedAtLabel, { fontSize: responsiveFont(7) }]}>SAVED</Text>
+          <Text style={[styles.savedAtValue, { fontSize: responsiveFont(8) }]}>{formatDate(item.createdAt)}</Text>
         </View>
       </View>
 
@@ -233,36 +241,36 @@ export function InventoryCard({
       <View style={styles.valuationSummary}>
 
         <View style={styles.medianBlock}>
-          <Text style={styles.medianLabel}>
+          <Text style={[styles.medianLabel, { fontSize: responsiveFont(8) }]}>
             {hasValuation ? "MARKET MEDIAN" : "MARKET VALUE"}
           </Text>
-          <Text selectable style={styles.medianValue}>
+          <Text selectable style={[styles.medianValue, { fontSize: responsiveFont(27), lineHeight: 31 }]}>
             {formatMoney(item.estimatedValue, item.currency)}
           </Text>
         </View>
 
         <View style={styles.confidenceBlock}>
-          <Text style={styles.confidenceValue}>
+          <Text style={[styles.confidenceValue, { fontSize: responsiveFont(16) }]}>
             {item.aiConfidence == null ? "—" : `${item.aiConfidence}%`}
           </Text>
-          <Text style={styles.confidenceLabel}>CONFIDENCE</Text>
+          <Text style={[styles.confidenceLabel, { fontSize: responsiveFont(7) }]}>CONFIDENCE</Text>
         </View>
       </View>
       <View style={styles.recordStrip}>
         <View style={styles.recordMetric}>
-          <Text style={styles.recordLabel}>COGS / ACTUAL PAID</Text>
-          <Text numberOfLines={1} style={styles.recordValue}>
+          <Text style={[styles.recordLabel, { fontSize: responsiveFont(7) }]}>COGS / ACTUAL PAID</Text>
+          <Text numberOfLines={1} style={[styles.recordValue, { fontSize: responsiveFont(11) }]}>
             {formatCost(costBasis, item.currency)}
           </Text>
         </View>
         <View style={styles.recordMetric}>
-          <Text style={styles.recordLabel}>ON HAND</Text>
-          <Text numberOfLines={1} style={styles.recordValue}>
+          <Text style={[styles.recordLabel, { fontSize: responsiveFont(7) }]}>ON HAND</Text>
+          <Text numberOfLines={1} style={[styles.recordValue, { fontSize: responsiveFont(11) }]}>
             {item.quantityOnHand.toLocaleString()}
           </Text>
         </View>
         <View style={styles.recordMetricStorage}>
-          <Text style={styles.recordLabel}>STORAGE</Text>
+          <Text style={[styles.recordLabel, { fontSize: responsiveFont(7) }]}>STORAGE</Text>
           <Text
             numberOfLines={1}
             style={[
@@ -306,8 +314,8 @@ export function InventoryCard({
             />
           </View>
           <View style={styles.listingGuideButtonCopy}>
-            <Text style={styles.listingGuideButtonEyebrow}>SELLER WORKFLOW</Text>
-            <Text style={styles.listingGuideButtonLabel}>List item</Text>
+            <Text style={[styles.listingGuideButtonEyebrow, { fontSize: responsiveFont(7) }]}>SELLER WORKFLOW</Text>
+            <Text style={[styles.listingGuideButtonLabel, { fontSize: responsiveFont(15) }]}>List item</Text>
           </View>
           <IconSymbol
             color={theme.colors.goldBright}
@@ -337,8 +345,8 @@ export function InventoryCard({
             />
           </View>
           <View style={styles.listingGuideButtonCopy}>
-            <Text style={styles.listingGuideButtonEyebrow}>PHOTO SET</Text>
-            <Text style={styles.listingGuideButtonLabel}> Add photos</Text>
+            <Text style={[styles.listingGuideButtonEyebrow, { fontSize: responsiveFont(7) }]}>PHOTO SET</Text>
+            <Text style={[styles.listingGuideButtonLabel, { fontSize: responsiveFont(15) }]}> Add photos</Text>
           </View>
           <IconSymbol
             color={theme.colors.scannerCyan}
@@ -351,7 +359,8 @@ export function InventoryCard({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   card: {
     overflow: "hidden",
     borderRadius: theme.radii.large,
@@ -397,7 +406,7 @@ const styles = StyleSheet.create({
   fallbackLabel: {
     color: "rgba(242, 211, 138, 0.72)",
     fontFamily: theme.fonts.radar,
-    fontSize: 8,
+    fontSize: responsiveFont(8),
     fontWeight: "900",
     letterSpacing: 1.1,
   },
@@ -429,7 +438,7 @@ const styles = StyleSheet.create({
   photoPillText: {
     color: theme.colors.scannerCyan,
     fontFamily: theme.fonts.radar,
-    fontSize: 8,
+    fontSize: responsiveFont(8),
     fontWeight: "900",
     letterSpacing: 0.75,
   },
@@ -445,7 +454,7 @@ const styles = StyleSheet.create({
   conditionText: {
     color: theme.colors.goldBright,
     fontFamily: theme.fonts.radar,
-    fontSize: 8,
+    fontSize: responsiveFont(8),
     fontWeight: "900",
     letterSpacing: 0.8,
     textTransform: "uppercase",
@@ -453,7 +462,7 @@ const styles = StyleSheet.create({
   flipDecisionText: {
     color: theme.colors.scannerCyan,
     fontFamily: theme.fonts.radar,
-    fontSize: 7,
+    fontSize: responsiveFont(7),
     fontWeight: "900",
     letterSpacing: 0.7,
     marginTop: 3,
@@ -467,7 +476,7 @@ const styles = StyleSheet.create({
   title: {
     color: "#FFFFFF",
     fontFamily: theme.fonts.bold,
-    fontSize: 21,
+    fontSize: responsiveFont(21),
     lineHeight: 25,
     fontWeight: "900",
     letterSpacing: -0.3,
@@ -478,7 +487,7 @@ const styles = StyleSheet.create({
   meta: {
     color: "rgba(235, 241, 244, 0.78)",
     fontFamily: theme.fonts.radar,
-    fontSize: 9,
+    fontSize: responsiveFont(9),
     lineHeight: 13,
     fontWeight: "800",
     letterSpacing: 0.4,
@@ -526,14 +535,14 @@ const styles = StyleSheet.create({
   savedAtLabel: {
     color: "rgba(255, 255, 255, 0.38)",
     fontFamily: theme.fonts.radar,
-    fontSize: 7,
+    fontSize: responsiveFont(7),
     fontWeight: "900",
     letterSpacing: 0.8,
   },
   savedAtValue: {
     color: "rgba(255, 255, 255, 0.66)",
     fontFamily: theme.fonts.radar,
-    fontSize: 8,
+    fontSize: responsiveFont(8),
     fontWeight: "900",
     letterSpacing: 0.5,
   },
@@ -544,14 +553,14 @@ const styles = StyleSheet.create({
   medianLabel: {
     color: "rgba(242, 211, 138, 0.70)",
     fontFamily: theme.fonts.radar,
-    fontSize: 8,
+    fontSize: responsiveFont(8),
     fontWeight: "900",
     letterSpacing: 1.1,
   },
   medianValue: {
     color: theme.colors.goldBright,
     fontFamily: theme.fonts.radar,
-    fontSize: 27,
+    fontSize: responsiveFont(27),
     lineHeight: 31,
     fontWeight: "900",
     fontVariant: ["tabular-nums"],
@@ -569,7 +578,7 @@ const styles = StyleSheet.create({
   confidenceValue: {
     color: theme.colors.scannerCyan,
     fontFamily: theme.fonts.radar,
-    fontSize: 16,
+    fontSize: responsiveFont(16),
     fontWeight: "900",
     fontVariant: ["tabular-nums"],
     textShadowColor: "rgba(88, 223, 232, 0.58)",
@@ -579,7 +588,7 @@ const styles = StyleSheet.create({
   confidenceLabel: {
     color: "rgba(88, 223, 232, 0.60)",
     fontFamily: theme.fonts.radar,
-    fontSize: 7,
+    fontSize: responsiveFont(7),
     fontWeight: "900",
     letterSpacing: 0.65,
   },
@@ -613,7 +622,7 @@ const styles = StyleSheet.create({
   recordValue: {
     color: theme.colors.cream,
     fontFamily: theme.fonts.radar,
-    fontSize: 11,
+    fontSize: responsiveFont(11),
     fontWeight: "900",
     fontVariant: ["tabular-nums"],
   },
@@ -656,15 +665,145 @@ const styles = StyleSheet.create({
   listingGuideButtonEyebrow: {
     color: "rgba(0, 255, 255, 0.66)",
     fontFamily: theme.fonts.radar,
-    fontSize: 7,
+    fontSize: responsiveFont(7),
     fontWeight: "900",
     letterSpacing: 0.75,
   },
   listingGuideButtonLabel: {
     color: theme.colors.cream,
     fontFamily: theme.fonts.bold,
-    fontSize: 15,
+    fontSize: responsiveFont(15),
     fontWeight: "900",
     letterSpacing: -0.12,
   },
 });
+  return {
+    ...staticStyles,
+  hero: [
+    staticStyles.hero,
+    {
+        height: responsiveLayout.responsiveHeight(240),
+    },
+  ],
+  fallbackLabel: [
+    staticStyles.fallbackLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  photoPillText: [
+    staticStyles.photoPillText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  conditionText: [
+    staticStyles.conditionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  flipDecisionText: [
+    staticStyles.flipDecisionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(21),
+        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(2) },
+    },
+  ],
+  meta: [
+    staticStyles.meta,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(1) },
+    },
+  ],
+  valuationDivider: [
+    staticStyles.valuationDivider,
+    {
+        height: responsiveLayout.responsiveHeight(7),
+    },
+  ],
+  dividerMedianMarker: [
+    staticStyles.dividerMedianMarker,
+    {
+        width: responsiveLayout.responsiveWidth(2),
+        height: responsiveLayout.responsiveHeight(13),
+    },
+  ],
+  savedAtLabel: [
+    staticStyles.savedAtLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  savedAtValue: [
+    staticStyles.savedAtValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  medianLabel: [
+    staticStyles.medianLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  medianValue: [
+    staticStyles.medianValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(27),
+        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(0) },
+    },
+  ],
+  confidenceValue: [
+    staticStyles.confidenceValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(16),
+        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(0) },
+    },
+  ],
+  confidenceLabel: [
+    staticStyles.confidenceLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  recordLabel: [
+    staticStyles.recordLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  recordValue: [
+    staticStyles.recordValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  listingGuideButtonIcon: [
+    staticStyles.listingGuideButtonIcon,
+    {
+        width: responsiveLayout.responsiveWidth(34),
+        height: responsiveLayout.responsiveHeight(34),
+    },
+  ],
+  listingGuideButtonEyebrow: [
+    staticStyles.listingGuideButtonEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  listingGuideButtonLabel: [
+    staticStyles.listingGuideButtonLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  };
+}

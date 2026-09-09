@@ -18,6 +18,8 @@ import { KeepFlipText as Text, KeepFlipTextInput as TextInput } from "@/componen
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { todayBusinessDate } from "@/services/reseller-ledger-service";
 import type { SourcingTripSummary } from "@/services/sourcing-trip-service";
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
 
 export type AddToInventoryFormValues = {
@@ -59,9 +61,316 @@ function money(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
+    modalLayer: { flex: 1 },
+    backdrop: {
+      flex: 1,
+      justifyContent: "flex-start",
+      backgroundColor: "rgba(3, 3, 5, 0.44)",
+    },
+    sheet: {
+      maxHeight: "95%",
+      borderBottomWidth: 1,
+      borderBottomColor: "rgba(0, 255, 255, 0.30)",
+      backgroundColor: theme.colors.surfaceSoft,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 16,
+      paddingHorizontal: 20,
+      paddingBottom: 14,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: "rgba(255,255,255,0.12)",
+    },
+    headerCopy: { flex: 1, gap: 5 },
+    sourceTripNotice: {
+      gap: 3,
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: "rgba(88, 223, 232, 0.28)",
+      backgroundColor: "rgba(88, 223, 232, 0.055)",
+    },
+    sourceTripEyebrow: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 9,
+      fontWeight: "900",
+      letterSpacing: 0.9,
+    },
+    sourceTripCopy: {
+      color: theme.colors.cream,
+      fontFamily: theme.fonts.body,
+      fontSize: 12,
+      fontWeight: "800",
+      lineHeight: 16,
+    },
+    sourceTripHelper: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.body,
+      fontSize: 11,
+      lineHeight: 15,
+    },
+    eyebrow: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 10,
+      fontWeight: "900",
+      letterSpacing: 1.2,
+    },
+    title: {
+      color: theme.colors.text,
+      fontFamily: theme.fonts.display,
+      fontSize: 22,
+      fontWeight: "800",
+      lineHeight: 27,
+    },
+    subtitle: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.body,
+      fontSize: 13,
+      lineHeight: 18,
+    },
+    closeButton: {
+      width: 30,
+      height: 30,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: "rgba(255,255,255,0.20)",
+    },
+    closeText: {
+      color: theme.colors.text,
+      fontSize: 24,
+      fontWeight: "300",
+      lineHeight: 26,
+    },
+    content: { gap: 8, padding: 20, paddingBottom: 34 },
+    fieldLabel: {
+      marginVertical: 5,
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.radar,
+      fontSize: 10,
+      fontWeight: "900",
+      letterSpacing: 0.8,
+    },
+    input: {
+      minHeight: 44,
+      paddingHorizontal: 12,
+      paddingVertical: 5,
+      borderWidth: 1,
+      borderColor: "rgba(255,255,255,0.16)",
+      backgroundColor: "rgba(255,255,255,0.045)",
+      color: theme.colors.text,
+      fontFamily: theme.fonts.body,
+      fontSize: 15,
+    },
+    receiptButton: {
+      minHeight: 58,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderWidth: 1,
+      borderColor: "rgba(0,255,255,0.32)",
+      backgroundColor: "rgba(0,255,255,0.045)",
+    },
+    receiptPreview: {
+      width: 42,
+      height: 42,
+      borderWidth: 1,
+      borderColor: "rgba(255,255,255,0.18)",
+    },
+    receiptButtonCopy: { flex: 1, minWidth: 0, gap: 3 },
+    receiptButtonTitle: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 10,
+      fontWeight: "900",
+      letterSpacing: 0.7,
+    },
+    receiptButtonSubtitle: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.body,
+      fontSize: 11,
+      lineHeight: 15,
+    },
+    receiptButtonArrow: {
+      color: theme.colors.scannerCyan,
+      fontSize: 24,
+      fontWeight: "300",
+    },
+    notesInput: { minHeight: 76, textAlignVertical: "top" },
+    helper: {
+      marginTop: -2,
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.body,
+      fontSize: 12,
+      lineHeight: 17,
+    },
+    twoColumn: { flexDirection: "row", gap: 10 },
+    column: { flex: 1, minWidth: 0 },
+    quantityColumn: { flex: 0.46, minWidth: 86 },
+    actions: {
+      flexDirection: "row",
+      gap: 10,
+      marginTop: 16,
+    },
+    cancelButton: {
+      minHeight: 46,
+      minWidth: 92,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 14,
+      borderWidth: 1,
+      borderColor: "rgba(255,255,255,0.20)",
+    },
+    submitButton: {
+      flex: 1,
+      minHeight: 46,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 14,
+      backgroundColor: theme.colors.goldBright,
+    },
+    cancelText: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.radar,
+      fontSize: 10,
+      fontWeight: "900",
+      letterSpacing: 0.7,
+    },
+    submitText: {
+      color: theme.colors.backgroundDeep,
+      fontFamily: theme.fonts.radar,
+      fontSize: 10,
+      fontWeight: "900",
+      letterSpacing: 0.6,
+      textAlign: "center",
+    },
+    pressed: { opacity: 0.78 },
+    disabled: { opacity: 0.5 },
+  });
+  return {
+    ...staticStyles,
+    sourceTripEyebrow: [
+      staticStyles.sourceTripEyebrow,
+      {
+          fontSize: responsiveLayout.responsiveFont(9),
+      },
+    ],
+    sourceTripCopy: [
+      staticStyles.sourceTripCopy,
+      {
+          fontSize: responsiveLayout.responsiveFont(12),
+      },
+    ],
+    sourceTripHelper: [
+      staticStyles.sourceTripHelper,
+      {
+          fontSize: responsiveLayout.responsiveFont(11),
+      },
+    ],
+    eyebrow: [
+      staticStyles.eyebrow,
+      {
+          fontSize: responsiveLayout.responsiveFont(10),
+      },
+    ],
+    title: [
+      staticStyles.title,
+      {
+          fontSize: responsiveLayout.responsiveFont(22),
+      },
+    ],
+    subtitle: [
+      staticStyles.subtitle,
+      {
+          fontSize: responsiveLayout.responsiveFont(13),
+      },
+    ],
+    closeButton: [
+      staticStyles.closeButton,
+      {
+          width: responsiveLayout.responsiveWidth(30),
+          height: responsiveLayout.responsiveHeight(30),
+      },
+    ],
+    closeText: [
+      staticStyles.closeText,
+      {
+          fontSize: responsiveLayout.responsiveFont(24),
+      },
+    ],
+    fieldLabel: [
+      staticStyles.fieldLabel,
+      {
+          fontSize: responsiveLayout.responsiveFont(10),
+      },
+    ],
+    input: [
+      staticStyles.input,
+      {
+          fontSize: responsiveLayout.responsiveFont(15),
+      },
+    ],
+    receiptPreview: [
+      staticStyles.receiptPreview,
+      {
+          width: responsiveLayout.responsiveWidth(42),
+          height: responsiveLayout.responsiveHeight(42),
+      },
+    ],
+    receiptButtonTitle: [
+      staticStyles.receiptButtonTitle,
+      {
+          fontSize: responsiveLayout.responsiveFont(10),
+      },
+    ],
+    receiptButtonSubtitle: [
+      staticStyles.receiptButtonSubtitle,
+      {
+          fontSize: responsiveLayout.responsiveFont(11),
+      },
+    ],
+    receiptButtonArrow: [
+      staticStyles.receiptButtonArrow,
+      {
+          fontSize: responsiveLayout.responsiveFont(24),
+      },
+    ],
+    helper: [
+      staticStyles.helper,
+      {
+          fontSize: responsiveLayout.responsiveFont(12),
+      },
+    ],
+    cancelText: [
+      staticStyles.cancelText,
+      {
+          fontSize: responsiveLayout.responsiveFont(10),
+      },
+    ],
+    submitText: [
+      staticStyles.submitText,
+      {
+          fontSize: responsiveLayout.responsiveFont(10),
+      },
+    ],
+  };
+}
+
 function FieldLabel({ children, required = false }: { children: string; required?: boolean }) {
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+  const styles = useResponsiveStyles(createResponsiveStyles);
+
   return (
-    <Text style={styles.fieldLabel}>
+    <Text style={[styles.fieldLabel, { fontSize: responsiveFont(10) }]}>
       {children.toUpperCase()}{required ? " · REQUIRED" : null }
     </Text>
   );
@@ -75,6 +384,10 @@ export function AddToInventoryForm({
   submitting = false,
   visible,
 }: AddToInventoryFormProps) {
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const [values, setValues] = useState<AddToInventoryFormValues>(() => emptyValues(sourcingTrip));
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
@@ -170,6 +483,8 @@ export function AddToInventoryForm({
     );
   };
 
+  const styles = useResponsiveStyles(createResponsiveStyles);
+
   return (
     <Modal
       animationType="none"
@@ -193,11 +508,11 @@ export function AddToInventoryForm({
             >
           <View style={[styles.header, { paddingTop: insets.top + 20}]}>
             <View style={styles.headerCopy}>
-              <Text style={styles.eyebrow}>BOOKS &amp; RECORDS</Text>
-              <Text numberOfLines={2} style={styles.title}>
+              <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>BOOKS &amp; RECORDS</Text>
+              <Text numberOfLines={2} style={[styles.title, { fontSize: responsiveFont(22), lineHeight: 27 }]}>
                 Add {itemTitle} to inventory
               </Text>
-              <Text style={styles.subtitle}>
+              <Text style={[styles.subtitle, { fontSize: responsiveFont(13), lineHeight: 18 }]}>
                 Confirm what you actually paid. KeepFlip&apos;s projection stays separate from these records.
               </Text>
             </View>
@@ -209,14 +524,14 @@ export function AddToInventoryForm({
               onPress={handleCancel}
               style={styles.closeButton}
             >
-              <Text style={styles.closeText}>×</Text>
+              <Text style={[styles.closeText, { fontSize: responsiveFont(24), lineHeight: 26 }]}>×</Text>
             </Pressable>
           </View>
 
           {sourcingTrip ? (
             <View style={styles.sourceTripNotice}>
-              <Text style={styles.sourceTripEyebrow}>ACTIVE SOURCE TRIP</Text>
-              <Text numberOfLines={2} style={styles.sourceTripCopy}>
+               <Text style={[styles.sourceTripEyebrow, { fontSize: responsiveFont(9) }]}>ACTIVE SOURCE TRIP</Text>
+              <Text numberOfLines={2} style={[styles.sourceTripCopy, { fontSize: responsiveFont(12), lineHeight: 16 }]}>
                 {sourcingTrip.trip.label || sourcingTrip.trip.sourceName} · {sourcingTrip.findCount} saved find{sourcingTrip.findCount === 1 ? "" : "s"} · {money(sourcingTrip.allocatedCostCents)} allocated
               </Text>
               <Text style={styles.sourceTripHelper}>
@@ -343,12 +658,12 @@ export function AddToInventoryForm({
                   />
                 ) : null}
                 <View style={styles.receiptButtonCopy}>
-                  <Text style={styles.receiptButtonTitle}>
+                  <Text style={[styles.receiptButtonTitle, { fontSize: responsiveFont(10) }]}>
                     {values.receiptReference
                       ? "RECEIPT ATTACHED"
                       : "ADD RECEIPT PHOTO"}
                   </Text>
-                  <Text style={styles.receiptButtonSubtitle}>
+                  <Text style={[styles.receiptButtonSubtitle, { fontSize: responsiveFont(11), lineHeight: 15 }]}>
                     {values.receiptReference
                       ? "Tap to replace the photo"
                       : sourcingTrip?.trip.receiptFileId
@@ -358,7 +673,7 @@ export function AddToInventoryForm({
                           : "Take a photo or choose one from your device"}
                   </Text>
                 </View>
-                <Text style={styles.receiptButtonArrow}>›</Text>
+                <Text style={[styles.receiptButtonArrow, { fontSize: responsiveFont(24) }]}>›</Text>
               </Pressable>
             </View>
             <View style={styles.column}>
@@ -380,7 +695,7 @@ export function AddToInventoryForm({
                 onPress={handleCancel}
                 style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}
               >
-                <Text style={styles.cancelText}>CANCEL</Text>
+                <Text style={[styles.cancelText, { fontSize: responsiveFont(10) }]}>CANCEL</Text>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
@@ -388,7 +703,7 @@ export function AddToInventoryForm({
                 onPress={() => void onSubmit(values)}
                 style={({ pressed }) => [styles.submitButton, pressed && styles.pressed, submitting && styles.disabled]}
               >
-                <Text style={styles.submitText}>{submitting ? "SAVING..." : "ADD TO INVENTORY & BOOKS"}</Text>
+                <Text style={[styles.submitText, { fontSize: responsiveFont(10) }]}>{submitting ? "SAVING..." : "ADD TO INVENTORY & BOOKS"}</Text>
               </Pressable>
             </View>
           </ScrollView>
@@ -398,197 +713,4 @@ export function AddToInventoryForm({
       ) : null}
     </Modal>
   );
-}
-
-const styles = StyleSheet.create({
-  modalLayer: { flex: 1 },
-  backdrop: {
-    flex: 1,
-    justifyContent: "flex-start",
-    backgroundColor: "rgba(3, 3, 5, 0.44)",
-  },
-  sheet: {
-    maxHeight: "95%",
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(0, 255, 255, 0.30)",
-    backgroundColor: theme.colors.surfaceSoft,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 16,
-    paddingHorizontal: 20,
-    paddingBottom: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(255,255,255,0.12)",
-  },
-  headerCopy: { flex: 1, gap: 5 },
-  sourceTripNotice: {
-    gap: 3,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(88, 223, 232, 0.28)",
-    backgroundColor: "rgba(88, 223, 232, 0.055)",
-  },
-  sourceTripEyebrow: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 9,
-    fontWeight: "900",
-    letterSpacing: 0.9,
-  },
-  sourceTripCopy: {
-    color: theme.colors.cream,
-    fontFamily: theme.fonts.body,
-    fontSize: 12,
-    fontWeight: "800",
-    lineHeight: 16,
-  },
-  sourceTripHelper: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.body,
-    fontSize: 11,
-    lineHeight: 15,
-  },
-  eyebrow: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 10,
-    fontWeight: "900",
-    letterSpacing: 1.2,
-  },
-  title: {
-    color: theme.colors.text,
-    fontFamily: theme.fonts.display,
-    fontSize: 22,
-    fontWeight: "800",
-    lineHeight: 27,
-  },
-  subtitle: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.body,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  closeButton: {
-    width: 30,
-    height: 30,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.20)",
-  },
-  closeText: {
-    color: theme.colors.text,
-    fontSize: 24,
-    fontWeight: "300",
-    lineHeight: 26,
-  },
-  content: { gap: 8, padding: 20, paddingBottom: 34 },
-  fieldLabel: {
-    marginVertical: 5,
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.radar,
-    fontSize: 10,
-    fontWeight: "900",
-    letterSpacing: 0.8,
-  },
-  input: {
-    minHeight: 44,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.16)",
-    backgroundColor: "rgba(255,255,255,0.045)",
-    color: theme.colors.text,
-    fontFamily: theme.fonts.body,
-    fontSize: 15,
-  },
-  receiptButton: {
-    minHeight: 58,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: "rgba(0,255,255,0.32)",
-    backgroundColor: "rgba(0,255,255,0.045)",
-  },
-  receiptPreview: {
-    width: 42,
-    height: 42,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.18)",
-  },
-  receiptButtonCopy: { flex: 1, minWidth: 0, gap: 3 },
-  receiptButtonTitle: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 10,
-    fontWeight: "900",
-    letterSpacing: 0.7,
-  },
-  receiptButtonSubtitle: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.body,
-    fontSize: 11,
-    lineHeight: 15,
-  },
-  receiptButtonArrow: {
-    color: theme.colors.scannerCyan,
-    fontSize: 24,
-    fontWeight: "300",
-  },
-  notesInput: { minHeight: 76, textAlignVertical: "top" },
-  helper: {
-    marginTop: -2,
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.body,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  twoColumn: { flexDirection: "row", gap: 10 },
-  column: { flex: 1, minWidth: 0 },
-  quantityColumn: { flex: 0.46, minWidth: 86 },
-  actions: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 16,
-  },
-  cancelButton: {
-    minHeight: 46,
-    minWidth: 92,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.20)",
-  },
-  submitButton: {
-    flex: 1,
-    minHeight: 46,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 14,
-    backgroundColor: theme.colors.goldBright,
-  },
-  cancelText: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.radar,
-    fontSize: 10,
-    fontWeight: "900",
-    letterSpacing: 0.7,
-  },
-  submitText: {
-    color: theme.colors.backgroundDeep,
-    fontFamily: theme.fonts.radar,
-    fontSize: 10,
-    fontWeight: "900",
-    letterSpacing: 0.6,
-    textAlign: "center",
-  },
-  pressed: { opacity: 0.78 },
-  disabled: { opacity: 0.5 },
-});
+};

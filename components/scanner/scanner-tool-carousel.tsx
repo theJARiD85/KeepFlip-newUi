@@ -16,7 +16,9 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export type ScannerToolId = 'single' | 'barcode' | 'multi' | 'batch' | 'upload';
 
 type ScannerTool = {
@@ -130,6 +132,11 @@ function ToolControl({
   tool,
   wheelRadius,
 }: ToolControlProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const direction = I18nManager.isRTL ? -1 : 1;
   const animatedStyle = useAnimatedStyle(() => {
     const rawDelta = index - position.value;
@@ -256,7 +263,7 @@ function ToolControl({
                 borderColor: tool.accent,
               },
             ]}>
-            <Animated.Text style={styles.badgeText}>{badge > 99 ? '99+' : badge}</Animated.Text>
+            <Animated.Text style={[styles.badgeText, { fontSize: responsiveFont(10) }]}>{badge > 99 ? '99+' : badge}</Animated.Text>
           </View>
         ) : null}
       </Pressable>
@@ -271,6 +278,7 @@ export function ScannerToolCarousel({
   onSelect,
   selectedTool,
 }: ScannerToolCarouselProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const {
     controlDockWidth,
     moderateScale,
@@ -439,7 +447,8 @@ export function ScannerToolCarousel({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   root: {
     alignItems: 'center',
   },
@@ -498,3 +507,13 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
 });
+  return {
+    ...staticStyles,
+  badgeText: [
+    staticStyles.badgeText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  };
+}

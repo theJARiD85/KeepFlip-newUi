@@ -43,7 +43,10 @@ import {
   isResellerBookkeepingConfigured,
   recordBookkeepingEvent,
 } from "@/services/reseller-bookkeeping-service";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 function formatMoney(value: number | null, currency: string) {
   if (value == null || !Number.isFinite(value)) return null;
   try {
@@ -82,6 +85,11 @@ function DealCard({
   onRemove: (deal: DealShelfItem) => void;
   promoting: boolean;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const quickSale = formatMoney(deal.quickSale, deal.currency);
   const targetSale = formatMoney(deal.targetSale, deal.currency);
   const maxBuyPrice = formatMoney(deal.maxBuyPrice, deal.currency);
@@ -148,7 +156,7 @@ function DealCard({
         </View>
 
         <View style={styles.cardCopy}>
-          <Text numberOfLines={2} style={styles.title}>
+          <Text numberOfLines={2} style={[styles.title, { fontSize: responsiveFont(18)}]}>
             {deal.title}
           </Text>
           <View style={styles.metaRow}>
@@ -164,23 +172,23 @@ function DealCard({
       <View style={styles.valueGrid}>
         {quickSale ? (
           <View style={styles.valueCell}>
-            <Text style={styles.valueLabel}>QUICK SALE</Text>
-            <Text adjustsFontSizeToFit numberOfLines={1} style={styles.valueText}>
+            <Text style={[styles.valueLabel, { fontSize: responsiveFont(7) }]}>QUICK SALE</Text>
+            <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.valueText, { fontSize: responsiveFont(14) }]}>
               {quickSale}
             </Text>
           </View>
         ) : null}
         {targetSale ? (
           <View style={styles.valueCell}>
-            <Text style={styles.valueLabel}>TARGET</Text>
-            <Text adjustsFontSizeToFit numberOfLines={1} style={styles.valueTextGold}>
+            <Text style={[styles.valueLabel, { fontSize: responsiveFont(7) }]}>TARGET</Text>
+            <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.valueTextGold, { fontSize: responsiveFont(14) }]}>
               {targetSale}
             </Text>
           </View>
         ) : null}
         <View style={styles.valueCell}>
-          <Text style={styles.valueLabel}>DECIDE BY</Text>
-          <Text adjustsFontSizeToFit numberOfLines={1} style={styles.valueText}>
+          <Text style={[styles.valueLabel, { fontSize: responsiveFont(7) }]}>DECIDE BY</Text>
+          <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.valueText, { fontSize: responsiveFont(14) }]}>
             {hoursRemaining(deal.expiresAt)}
           </Text>
         </View>
@@ -189,17 +197,17 @@ function DealCard({
       {maxBuyPrice != null ? (
         <View style={styles.buyCeilingRow}>
           <View>
-            <Text style={styles.buyCeilingLabel}>TOP DOLLAR TO PAY</Text>
-            <Text style={styles.buyCeilingHint}>Before buyer-side costs</Text>
+            <Text style={[styles.buyCeilingLabel, { fontSize: responsiveFont(8) }]}>TOP DOLLAR TO PAY</Text>
+            <Text style={[styles.buyCeilingHint, { fontSize: responsiveFont(9) }]}>Before buyer-side costs</Text>
           </View>
-          <Text adjustsFontSizeToFit numberOfLines={1} style={styles.buyCeilingValue}>
+          <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.buyCeilingValue, { fontSize: responsiveFont(20) }]}>
             {maxBuyPrice}
           </Text>
         </View>
       ) : null}
 
       {summary ? (
-        <Text numberOfLines={3} style={styles.summary}>
+        <Text numberOfLines={3} style={[styles.summary, { fontSize: responsiveFont(12)}]}>
           {summary}
         </Text>
       ) : null}
@@ -220,7 +228,7 @@ function DealCard({
             name="shippingbox.fill"
             size={15}
           />
-          <Text style={styles.primaryActionText}>
+          <Text style={[styles.primaryActionText, { fontSize: responsiveFont(10) }]}>
             {promoting ? "ADDING..." : "ADD TO INVENTORY"}
           </Text>
         </Pressable>
@@ -243,6 +251,14 @@ function DealCard({
 }
 
 export default function DealShelfScreen() {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    contentMaxWidth,
+    contentWidth,
+    pageGutter,
+    responsiveFont
+  } = useResponsiveLayout();
+
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useKeepFlipAuth();
@@ -500,23 +516,23 @@ export default function DealShelfScreen() {
 
   return (
     <KeepFlipBackground>
-      <View style={[styles.screen, { paddingTop: insets.top + 72 }]}>
+      <View style={[styles.screen, { paddingTop: insets.top + 72 }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
         <View style={styles.header}>
-          <Text style={styles.eyebrow}>DEAL SHELF</Text>
-          <Text style={styles.heading}>Deals to decide</Text>
-          <Text style={styles.headerBody}>
+          <Text style={[styles.eyebrow, { fontSize: responsiveFont(9) }]}>DEAL SHELF</Text>
+          <Text style={[styles.heading, { fontSize: responsiveFont(30) }]}>Deals to decide</Text>
+          <Text style={[styles.headerBody, { fontSize: responsiveFont(12)}]}>
             Park scans here before you buy. KeepFlip keeps the resale signal,
             deadline, and next action separate from owned inventory.
           </Text>
           <View style={styles.statRow}>
             <View style={styles.stat}>
-              <Text style={styles.statValue}>{headerStats.count}</Text>
-              <Text style={styles.statLabel}>ACTIVE DEALS</Text>
+              <Text style={[styles.statValue, { fontSize: responsiveFont(18) }]}>{headerStats.count}</Text>
+              <Text style={[styles.statLabel, { fontSize: responsiveFont(8) }]}>ACTIVE DEALS</Text>
             </View>
             {headerStats.targetTotal ? (
               <View style={styles.stat}>
-                <Text style={styles.statValue}>{headerStats.targetTotal}</Text>
-                <Text style={styles.statLabel}>TARGET VALUE</Text>
+                <Text style={[styles.statValue, { fontSize: responsiveFont(18) }]}>{headerStats.targetTotal}</Text>
+                <Text style={[styles.statLabel, { fontSize: responsiveFont(8) }]}>TARGET VALUE</Text>
               </View>
             ) : null}
           </View>
@@ -525,15 +541,13 @@ export default function DealShelfScreen() {
         {loading ? (
           <View style={styles.centerState}>
             <ActivityIndicator color={theme.colors.scannerCyan} />
-            <Text style={styles.centerText}>Loading deal shelf</Text>
+            <Text style={[styles.centerText, { fontSize: responsiveFont(12) }]}>Loading deal shelf</Text>
           </View>
         ) : (
           <FlatList
-            contentContainerStyle={[
-              styles.listContent,
+            contentContainerStyle={[styles.listContent,
               deals.length === 0 && styles.emptyListContent,
-              { paddingBottom: insets.bottom + 28 },
-            ]}
+              { paddingBottom: insets.bottom + 28 }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
             data={deals}
             keyExtractor={(deal) => deal.id}
             ListEmptyComponent={
@@ -543,8 +557,8 @@ export default function DealShelfScreen() {
                   name="tag.fill"
                   size={34}
                 />
-                <Text style={styles.emptyTitle}>No parked deals yet</Text>
-                <Text style={styles.emptyBody}>
+                <Text style={[styles.emptyTitle, { fontSize: responsiveFont(21) }]}>No parked deals yet</Text>
+                <Text style={[styles.emptyBody, { fontSize: responsiveFont(12)}]}>
                   After a scan, choose Park on Deal Shelf to hold a buy decision
                   without adding it to Inventory.
                 </Text>
@@ -561,7 +575,7 @@ export default function DealShelfScreen() {
                     name="viewfinder"
                     size={15}
                   />
-                  <Text style={styles.primaryActionText}>SCAN A DEAL</Text>
+                  <Text style={[styles.primaryActionText, { fontSize: responsiveFont(10) }]}>SCAN A DEAL</Text>
                 </Pressable>
               </View>
             }
@@ -592,7 +606,8 @@ export default function DealShelfScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   screen: {
     flex: 1,
     paddingHorizontal: 18,
@@ -851,3 +866,128 @@ const styles = StyleSheet.create({
     opacity: 0.48,
   },
 });
+  return {
+    ...staticStyles,
+  eyebrow: [
+    staticStyles.eyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  heading: [
+    staticStyles.heading,
+    {
+        fontSize: responsiveLayout.responsiveFont(30),
+    },
+  ],
+  headerBody: [
+    staticStyles.headerBody,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  statValue: [
+    staticStyles.statValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(18),
+    },
+  ],
+  statLabel: [
+    staticStyles.statLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  imageFrame: [
+    staticStyles.imageFrame,
+    {
+        width: responsiveLayout.responsiveWidth(82),
+        height: responsiveLayout.responsiveHeight(82),
+    },
+  ],
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(18),
+    },
+  ],
+  metaPill: [
+    staticStyles.metaPill,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  valueLabel: [
+    staticStyles.valueLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  valueText: [
+    staticStyles.valueText,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  valueTextGold: [
+    staticStyles.valueTextGold,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  buyCeilingLabel: [
+    staticStyles.buyCeilingLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  buyCeilingHint: [
+    staticStyles.buyCeilingHint,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  buyCeilingValue: [
+    staticStyles.buyCeilingValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(20),
+    },
+  ],
+  summary: [
+    staticStyles.summary,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  primaryActionText: [
+    staticStyles.primaryActionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  secondaryAction: [
+    staticStyles.secondaryAction,
+    {
+        width: responsiveLayout.responsiveWidth(44),
+    },
+  ],
+  centerText: [
+    staticStyles.centerText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  emptyTitle: [
+    staticStyles.emptyTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(21),
+    },
+  ],
+  emptyBody: [
+    staticStyles.emptyBody,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  };
+}

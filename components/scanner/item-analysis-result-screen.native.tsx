@@ -61,7 +61,10 @@ import {
 } from "@/services/scan-photo-service";
 import { getResellerBuyRules } from "@/services/user-profile-onboarding-service";
 import type { ItemAnalysisSuccess } from "@/types/item-analysis";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type InventoryResultPayload = {
   item: InventoryItem;
   analysis: ItemAnalysisSuccess | null;
@@ -317,6 +320,11 @@ async function loadInventoryResult(
 }
 
 export function ItemAnalysisResultScreen() {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
@@ -914,25 +922,25 @@ export function ItemAnalysisResultScreen() {
           style={[styles.resultScrim, styles.resultScrimWithProjection]}
         />
         <View style={styles.centerState}>
-          <Text style={styles.centerEyebrow}>
+          <Text style={[styles.centerEyebrow, { fontSize: responsiveFont(8) }]}>
             KEEPFLIP ANALYSIS ARCHIVE
           </Text>
           {loading ? (
             <>
               <ActivityIndicator color={theme.colors.scannerCyan} />
-              <Text style={styles.centerTitle}>
+              <Text style={[styles.centerTitle, { fontSize: responsiveFont(22), lineHeight: 27 }]}>
                 Reconstructing item intelligence
               </Text>
-              <Text style={styles.centerBody}>
+              <Text style={[styles.centerBody, { fontSize: responsiveFont(12), lineHeight: 18 }]}>
                 Loading the cover evidence and analysis snapshot.
               </Text>
             </>
           ) : (
             <>
-              <Text style={styles.centerTitle}>
+              <Text style={[styles.centerTitle, { fontSize: responsiveFont(22), lineHeight: 27 }]}>
                 Analysis unavailable
               </Text>
-              <Text selectable style={styles.centerBody}>
+              <Text selectable style={[styles.centerBody, { fontSize: responsiveFont(12), lineHeight: 18 }]}>
                 {resolvedError}
               </Text>
               {itemId ? (
@@ -948,7 +956,7 @@ export function ItemAnalysisResultScreen() {
                     pressed && styles.pressed,
                   ]}
                 >
-                  <Text style={styles.stateButtonText}>RETRY LOAD</Text>
+                  <Text style={[styles.stateButtonText, { fontSize: responsiveFont(11) }]}>RETRY LOAD</Text>
                 </Pressable>
               ) : null}
               <Pressable
@@ -958,7 +966,7 @@ export function ItemAnalysisResultScreen() {
                   pressed && styles.pressed,
                 ]}
               >
-                <Text style={styles.stateButtonText}>GO BACK</Text>
+                <Text style={[styles.stateButtonText, { fontSize: responsiveFont(11) }]}>GO BACK</Text>
               </Pressable>
             </>
           )}
@@ -1077,7 +1085,8 @@ export function ItemAnalysisResultScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   root: {
     flex: 1,
     overflow: "hidden",
@@ -1172,3 +1181,31 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.97 }],
   },
 });
+  return {
+    ...staticStyles,
+  centerEyebrow: [
+    staticStyles.centerEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  centerTitle: [
+    staticStyles.centerTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(22),
+    },
+  ],
+  centerBody: [
+    staticStyles.centerBody,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  stateButtonText: [
+    staticStyles.stateButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  };
+}

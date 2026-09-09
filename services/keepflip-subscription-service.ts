@@ -7,12 +7,17 @@ import Purchases, {
   type PurchasesPackage,
   type StoreProductChangeInfo,
 } from 'react-native-purchases';
+import {
+  Channel,
+  type RealtimeSubscription,
+} from 'react-native-appwrite';
 
 import {
   APPWRITE,
   ExecutionMethod,
   Query,
   functions,
+  realtime,
   tablesDB,
 } from '@/lib/appwrite';
 import { getKeepFlipTrialDeviceIdHash } from '@/services/keepflip-trial-device-service';
@@ -381,6 +386,80 @@ function parseServerSubscriptionRecord(
   };
 }
 
+function serverRecordAllowsAccess(
+  record: KeepFlipServerSubscriptionRecord,
+  now = Date.now(),
+) {
+  if (!record.plan) return false;
+  if (record.status === 'expired' || record.status === 'revoked') return false;
+
+  const periodEnd = record.currentPeriodEndsAt
+    ? Date.parse(record.currentPeriodEndsAt)
+    : Number.NaN;
+
+  if (
+    record.status === 'cancelled' ||
+    record.status === 'billing_issue' ||
+    record.status === 'grace_period'
+  ) {
+    return Number.isFinite(periodEnd) && periodEnd > now;
+  }
+
+  if (record.status === 'trialing' || record.status === 'active') {
+    return !Number.isFinite(periodEnd) || periodEnd > now;
+  }
+
+  return false;
+}
+
+function serverRecordRequiresAccessLock(
+  record: KeepFlipServerSubscriptionRecord | null,
+  now = Date.now(),
+) {
+  if (!record || record.status === 'unknown') return false;
+  if (record.status === 'expired' || record.status === 'revoked') return true;
+
+  const periodEnd = record.currentPeriodEndsAt
+    ? Date.parse(record.currentPeriodEndsAt)
+    : Number.NaN;
+
+  if (
+    record.status === 'cancelled' ||
+    record.status === 'billing_issue' ||
+    record.status === 'grace_period'
+  ) {
+    return !Number.isFinite(periodEnd) || periodEnd <= now;
+  }
+
+  if (record.status === 'trialing' || record.status === 'active') {
+    return Number.isFinite(periodEnd) && periodEnd <= now;
+  }
+
+  return true;
+}
+
+function subscriptionAccessFromServerRecord(
+  record: KeepFlipServerSubscriptionRecord,
+): KeepFlipSubscriptionAccess {
+  const active = serverRecordAllowsAccess(record);
+
+  return {
+    ...EMPTY_ACCESS,
+    active,
+    billingIssue: record.status === 'billing_issue',
+    entitlementId: record.entitlement,
+    expiresAt: record.currentPeriodEndsAt,
+    isTrial: record.isTrial && active,
+    periodType: record.status,
+    plan: record.plan,
+    productId: record.productId,
+    store: record.store,
+    trialSource: active && record.isTrial ? 'store' : null,
+    trialUsed: record.isTrial || Boolean(record.trialEndsAt),
+    willRenew: record.willRenew,
+  };
+}
+
 function isAppwriteNotFound(error: unknown) {
   return Boolean(
     error &&
@@ -445,11 +524,16 @@ function parseServerSubscriptionAccess(
   return {
     ...EMPTY_ACCESS,
     active: access.active === true,
+    billingIssue:
+      access.billingIssue === true || access.status === 'billing_issue',
     entitlementId: nullableAppwriteText(access.entitlementId, 64),
     expiresAt: nullableAppwriteText(access.currentPeriodEndsAt, 80),
     isTrial: access.isTrial === true,
+    managementUrl: nullableAppwriteText(access.managementUrl, 2_000),
     periodType: nullableAppwriteText(access.status, 32),
     plan: serverSubscriptionPlan(access.plan),
+    productId: nullableAppwriteText(access.productId, 128),
+    store: nullableAppwriteText(access.store, 32),
     trialSource,
     trialUsed: access.trialUsed === true,
     willRenew: access.willRenew === true,
@@ -617,11 +701,13 @@ async function loadKeepFlipServerSubscriptionStatus(
     }
   }
 
+  const record = await loadKeepFlipServerSubscriptionRecordDirect(cleanUserId);
+
   return {
-    access: null,
+    access: record ? subscriptionAccessFromServerRecord(record) : null,
     available: false,
     profileTrial: null,
-    record: await loadKeepFlipServerSubscriptionRecordDirect(cleanUserId),
+    record,
   };
 }
 
@@ -684,6 +770,42 @@ function accessWithServerTrialHistory(
       Boolean(serverRecord?.trialEndsAt) ||
       profileTrial?.trialUsed === true,
   };
+}
+
+function effectiveSubscriptionAccess(
+  localAccess: KeepFlipSubscriptionAccess,
+  serverStatus: KeepFlipServerStatusResponse,
+) {
+  const serverRecord = serverStatus.record;
+  const serverAccess =
+    serverStatus.access ||
+    (serverRecord ? subscriptionAccessFromServerRecord(serverRecord) : null);
+
+  if (!serverAccess) return localAccess;
+
+  // RevenueCat supplies useful local metadata such as the management URL,
+  // while the server mirror supplies the authoritative entitlement state.
+  // Preserve the local entitlement only while the server has no materialized
+  // subscription row yet; once a row exists, terminal server states can lock
+  // paid access without waiting for the store SDK to refresh.
+  const mergedServerAccess: KeepFlipSubscriptionAccess = {
+    ...localAccess,
+    ...serverAccess,
+    billingIssue:
+      serverAccess.billingIssue || serverRecord?.status === 'billing_issue',
+    managementUrl: serverAccess.managementUrl || localAccess.managementUrl,
+    productId:
+      serverAccess.productId ||
+      serverRecord?.productId ||
+      localAccess.productId,
+    store: serverAccess.store || serverRecord?.store || localAccess.store,
+  };
+
+  const serverShouldWin = serverRecord
+    ? mergedServerAccess.active || serverRecordRequiresAccessLock(serverRecord)
+    : !localAccess.active && mergedServerAccess.active;
+
+  return serverShouldWin ? mergedServerAccess : localAccess;
 }
 
 export function subscriptionAccessFromCustomerInfo(
@@ -840,10 +962,9 @@ export async function loadKeepFlipSubscription(
   if (!(await ensureRevenueCatUser(userId))) {
     const serverStatus = await serverStatusPromise;
     const serverRecord = serverStatus.record;
-    const serverAccess = serverStatus.access;
     return {
       access: accessWithServerTrialHistory(
-        serverAccess ?? EMPTY_ACCESS,
+        effectiveSubscriptionAccess(EMPTY_ACCESS, serverStatus),
         serverRecord,
         serverStatus.profileTrial,
       ),
@@ -864,12 +985,8 @@ export async function loadKeepFlipSubscription(
   const offering = configuredOffering(offerings);
   const localAccess = subscriptionAccessFromCustomerInfo(customerInfo);
   const serverRecord = serverStatus.record;
-  const accessSource =
-    !localAccess.active && serverStatus.access?.active
-      ? serverStatus.access
-      : localAccess;
   const access = accessWithServerTrialHistory(
-    accessSource,
+    effectiveSubscriptionAccess(localAccess, serverStatus),
     serverRecord,
     serverStatus.profileTrial,
   );
@@ -901,6 +1018,42 @@ export async function subscribeToKeepFlipSubscriptionUpdates(
   return () => {
     Purchases.removeCustomerInfoUpdateListener(customerInfoListener);
   };
+}
+
+/**
+ * Listen for server-side entitlement changes. RevenueCat webhooks update the
+ * user_subscription row, while profile-trial reconciliation may update the
+ * current user's user_profiles row. The callback deliberately asks the
+ * subscription context to reload the authoritative snapshot instead of
+ * trusting an event payload as an authorization decision.
+ */
+export async function subscribeToKeepFlipEntitlementUpdates(
+  userId: string,
+  listener: () => void,
+): Promise<RealtimeSubscription | null> {
+  const cleanUserId = userId.trim();
+  if (!cleanUserId || !APPWRITE.databaseId) return null;
+
+  const channels = [
+    ...(APPWRITE.userSubscriptionsTableId
+      ? [
+          Channel.tablesdb(APPWRITE.databaseId)
+            .table(APPWRITE.userSubscriptionsTableId)
+            .row(cleanUserId),
+        ]
+      : []),
+    ...(APPWRITE.userProfilesTableId
+      ? [
+          Channel.tablesdb(APPWRITE.databaseId)
+            .table(APPWRITE.userProfilesTableId)
+            .row(cleanUserId),
+        ]
+      : []),
+  ];
+
+  if (!channels.length) return null;
+
+  return realtime.subscribe(channels, () => listener());
 }
 
 export async function purchaseKeepFlipPlan(

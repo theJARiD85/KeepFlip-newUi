@@ -10,7 +10,10 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export type LegalSection = {
   body: string[];
   title: string;
@@ -29,6 +32,14 @@ export function LegalDocumentScreen({
   sections,
   title,
 }: LegalDocumentScreenProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    contentMaxWidth,
+    contentWidth,
+    pageGutter,
+    responsiveFont
+  } = useResponsiveLayout();
+
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -37,13 +48,11 @@ export function LegalDocumentScreen({
       <View pointerEvents="none" style={styles.glow} />
 
       <ScrollView
-        contentContainerStyle={[
-          styles.content,
+        contentContainerStyle={[styles.content,
           {
             paddingTop: insets.top + 18,
             paddingBottom: insets.bottom + 36,
-          },
-        ]}
+          }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
       >
@@ -59,16 +68,16 @@ export function LegalDocumentScreen({
         >
           <View style={styles.backButtonContent}>
             <Ionicons name="caret-back-sharp" size={20} color={theme.colors.goldBright} />
-            <Text style={styles.backButtonText}>BACK</Text>
+            <Text style={[styles.backButtonText, { fontSize: responsiveFont(11) }]}>BACK</Text>
           </View>
         </Pressable>
 
         <View style={styles.header}>
-          <Text style={styles.eyebrow}>KEEPFLIP / LEGAL</Text>
-          <Text selectable style={styles.title}>
+          <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>KEEPFLIP / LEGAL</Text>
+          <Text selectable style={[styles.title, { fontSize: responsiveFont(34)}]}>
             {title}
           </Text>
-          <Text style={styles.effectiveDate}>
+          <Text style={[styles.effectiveDate, { fontSize: responsiveFont(10) }]}>
             Effective {effectiveDate}
           </Text>
           <Text selectable style={styles.intro}>
@@ -76,7 +85,7 @@ export function LegalDocumentScreen({
           </Text>
         </View>
 
-        <View style={styles.document}>
+        <View style={[styles.document, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
           {sections.map((section, sectionIndex) => (
             <View
               key={`${section.title}-${sectionIndex}`}
@@ -86,7 +95,7 @@ export function LegalDocumentScreen({
                 <Text style={styles.sectionNumber}>
                   {String(sectionIndex + 1).padStart(2, "0")}
                 </Text>
-                <Text selectable style={styles.sectionTitle}>
+                <Text selectable style={[styles.sectionTitle, { fontSize: responsiveFont(19)}]}>
                   {section.title}
                 </Text>
               </View>
@@ -107,8 +116,8 @@ export function LegalDocumentScreen({
         </View>
 
         <View style={styles.contactBlock}>
-          <Text style={styles.contactLabel}>QUESTIONS</Text>
-          <Text selectable style={styles.contactText}>
+          <Text style={[styles.contactLabel, { fontSize: responsiveFont(9) }]}>QUESTIONS</Text>
+          <Text selectable style={[styles.contactText, { fontSize: responsiveFont(13)}]}>
             Contact KeepFlip at support@keep-flip.com.
           </Text>
         </View>
@@ -117,7 +126,8 @@ export function LegalDocumentScreen({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   glow: {
     ...StyleSheet.absoluteFill,
     experimental_backgroundImage: `
@@ -242,3 +252,67 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
+  return {
+    ...staticStyles,
+  backButtonText: [
+    staticStyles.backButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  eyebrow: [
+    staticStyles.eyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(34),
+    },
+  ],
+  effectiveDate: [
+    staticStyles.effectiveDate,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  intro: [
+    staticStyles.intro,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  sectionNumber: [
+    staticStyles.sectionNumber,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  sectionTitle: [
+    staticStyles.sectionTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(19),
+    },
+  ],
+  paragraph: [
+    staticStyles.paragraph,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  contactLabel: [
+    staticStyles.contactLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  contactText: [
+    staticStyles.contactText,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  };
+}

@@ -32,7 +32,10 @@ import { ConfusedFlipVideo } from '@/components/flip/confused-flip-video';
 import { ScannerThoughtStream } from '@/components/scanner/scanner-thought-stream';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type ItemAnalysisBubblesProps = {
   bottomInset: number;
   doneLabel?: string;
@@ -111,6 +114,7 @@ function GlassBubble({
   delay = 0,
   style,
 }: BubbleProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   return (
     <Animated.View
       entering={FadeInUp.duration(260).delay(delay)}
@@ -129,6 +133,7 @@ function GlassBubble({
 }
 
 function BubbleEyebrow({ accent, children }: { accent: string; children: ReactNode }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   return <Text style={[styles.bubbleEyebrow, { color: accent }]}>{children}</Text>;
 }
 
@@ -145,6 +150,7 @@ function BubbleButton({
   onPress: () => void;
   secondary?: boolean;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   return (
     <Pressable
       accessibilityRole="button"
@@ -169,6 +175,7 @@ function BubbleButton({
 }
 
 function LiveSignal({ accent }: { accent: string }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const reduceMotion = useReducedMotion();
   const pulse = useSharedValue(0.5);
 
@@ -207,6 +214,11 @@ function AnalysisProgressBubbles({
 }: {
   state: Extract<ItemAnalysisState, { status: 'analyzing' }>;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const accent = theme.colors.scannerCyan;
   const steps = state.steps ?? [];
   const activeStepIndex = Math.max(
@@ -275,7 +287,7 @@ function AnalysisProgressBubbles({
             })}
           </View>
           {activeStep ? (
-            <Text numberOfLines={1} style={styles.activeStepText}>
+            <Text numberOfLines={1} style={[styles.activeStepText, { fontSize: responsiveFont(9), lineHeight: 11 }]}>
               {activeStep.label}
             </Text>
           ) : null}
@@ -290,6 +302,7 @@ function ConfidenceBubbles({
 }: {
   confidence: NonNullable<Extract<ItemAnalysisState, { status: 'result' }>['data']['confidence']>;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const entries = [
     ['OVERALL', confidence.overall, theme.colors.goldBright],
     ['IDENTITY', confidence.identity, theme.colors.scannerCyan],
@@ -300,12 +313,16 @@ function ConfidenceBubbles({
   return (
     <View style={styles.metricCloud}>
       {entries.map(([label, value, accent], index) => {
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
         const score = percentage(value);
         if (score == null) return null;
         return (
           <GlassBubble accent={accent} delay={120 + index * 35} key={label} style={styles.metricBubble}>
             <Text style={[styles.metricValue, { color: accent }]}>{score}%</Text>
-            <Text style={styles.metricLabel}>{label}</Text>
+            <Text style={[styles.metricLabel, { fontSize: responsiveFont(8) }]}>{label}</Text>
           </GlassBubble>
         );
       })}
@@ -314,6 +331,11 @@ function ConfidenceBubbles({
 }
 
 function ResultBubbles({ state }: { state: Extract<ItemAnalysisState, { status: 'result' }> }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const result = state.data;
   const identity = result.identity;
   const identityMeta = [identity.brand, identity.model, identity.variant, identity.category]
@@ -330,7 +352,7 @@ function ResultBubbles({ state }: { state: Extract<ItemAnalysisState, { status: 
     <>
       <GlassBubble accent={theme.colors.goldBright} style={styles.identityBubble}>
         <BubbleEyebrow accent={theme.colors.goldBright}>ANALYSIS COMPLETE</BubbleEyebrow>
-        <Text selectable style={styles.identityTitle}>
+        <Text selectable style={[styles.identityTitle, { fontSize: responsiveFont(25), lineHeight: 30 }]}>
           {identity.title}
         </Text>
         {identityMeta ? (
@@ -342,7 +364,7 @@ function ResultBubbles({ state }: { state: Extract<ItemAnalysisState, { status: 
 
       {result.summary ? (
         <GlassBubble accent={theme.colors.scannerCyan} delay={45} style={styles.summaryBubble}>
-          <Text selectable style={styles.summaryText}>
+          <Text selectable style={[styles.summaryText, { fontSize: responsiveFont(12), lineHeight: 19 }]}>
             {result.summary}
           </Text>
         </GlassBubble>
@@ -420,14 +442,14 @@ function ResultBubbles({ state }: { state: Extract<ItemAnalysisState, { status: 
             ) : null}
           </View>
           {result.condition.summary ? (
-            <Text selectable style={styles.compactBody}>
+            <Text selectable style={[styles.compactBody, { fontSize: responsiveFont(11), lineHeight: 17 }]}>
               {result.condition.summary}
             </Text>
           ) : null}
           {result.condition.details?.slice(0, 4).map((detail, index) => (
             <View key={`${detail}-${index}`} style={styles.detailRow}>
               <View style={[styles.detailDot, { backgroundColor: theme.colors.scannerViolet }]} />
-              <Text selectable style={styles.detailText}>
+              <Text selectable style={[styles.detailText, { fontSize: responsiveFont(10), lineHeight: 16 }]}>
                 {detail}
               </Text>
             </View>
@@ -447,7 +469,7 @@ function ResultBubbles({ state }: { state: Extract<ItemAnalysisState, { status: 
             <BubbleEyebrow accent={theme.colors.scannerCyan}>{evidence.label}</BubbleEyebrow>
             {evidence.source ? <Text style={styles.sourceTag}>{evidence.source}</Text> : null}
           </View>
-          <Text selectable style={styles.evidenceValue}>
+          <Text selectable style={[styles.evidenceValue, { fontSize: responsiveFont(10), lineHeight: 16 }]}>
             {evidence.value}
           </Text>
         </GlassBubble>
@@ -459,7 +481,7 @@ function ResultBubbles({ state }: { state: Extract<ItemAnalysisState, { status: 
           {result.suggestedPhotos.slice(0, 4).map((photo, index) => (
             <View key={photo.id ?? `${photo.label}-${index}`} style={styles.detailRow}>
               <View style={[styles.detailDot, { backgroundColor: theme.colors.scannerAmber }]} />
-              <Text selectable style={styles.detailText}>
+              <Text selectable style={[styles.detailText, { fontSize: responsiveFont(10), lineHeight: 16 }]}>
                 {photo.label}
               </Text>
             </View>
@@ -471,6 +493,11 @@ function ResultBubbles({ state }: { state: Extract<ItemAnalysisState, { status: 
 }
 
 function NonResultBubbles({ state }: { state: Exclude<ItemAnalysisState, { status: 'analyzing' | 'result' }> }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const isError = state.status === 'error';
   const isSetup = state.status === 'setup';
   const accent = isError
@@ -513,10 +540,10 @@ function NonResultBubbles({ state }: { state: Exclude<ItemAnalysisState, { statu
         <BubbleEyebrow accent={accent}>
           {isError ? 'KEEPFLIP ALERT' : isSetup ? 'SETUP REQUIRED' : 'PHOTO GUIDANCE'}
         </BubbleEyebrow>
-        <Text selectable style={styles.statusTitle}>
+        <Text selectable style={[styles.statusTitle, { fontSize: responsiveFont(23), lineHeight: 29 }]}>
           {title}
         </Text>
-        <Text selectable style={styles.statusMessage}>
+        <Text selectable style={[styles.statusMessage, { fontSize: responsiveFont(12), lineHeight: 19 }]}>
           {message}
         </Text>
       </GlassBubble>
@@ -524,7 +551,7 @@ function NonResultBubbles({ state }: { state: Exclude<ItemAnalysisState, { statu
       {details.slice(0, 6).map((detail, index) => (
         <GlassBubble accent={accent} delay={70 + index * 40} key={`${detail}-${index}`} style={styles.guidanceBubble}>
           <Text style={[styles.guidanceIndex, { color: accent }]}>{String(index + 1).padStart(2, '0')}</Text>
-          <Text selectable style={styles.guidanceText}>
+          <Text selectable style={[styles.guidanceText, { fontSize: responsiveFont(11), lineHeight: 17 }]}>
             {detail}
           </Text>
         </GlassBubble>
@@ -545,6 +572,7 @@ export function ItemAnalysisBubbles({
   state,
   topInset,
 }: ItemAnalysisBubblesProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const isAnalyzing = state.status === 'analyzing';
   const isResult = state.status === 'result';
   const accent =
@@ -668,7 +696,8 @@ export function ItemAnalysisBubbles({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFill,
     zIndex: 44,
@@ -873,3 +902,216 @@ const styles = StyleSheet.create({
   },
   actionButtonText: { fontSize: 12, fontWeight: '900' },
 });
+  return {
+    ...staticStyles,
+  statusPillText: [
+    staticStyles.statusPillText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  liveSignal: [
+    staticStyles.liveSignal,
+    {
+        width: responsiveLayout.responsiveWidth(7),
+        height: responsiveLayout.responsiveHeight(7),
+    },
+  ],
+  closeBubble: [
+    staticStyles.closeBubble,
+    {
+        width: responsiveLayout.responsiveWidth(42),
+        height: responsiveLayout.responsiveHeight(42),
+    },
+  ],
+  stageNode: [
+    staticStyles.stageNode,
+    {
+        width: responsiveLayout.responsiveWidth(22),
+        height: responsiveLayout.responsiveHeight(22),
+    },
+  ],
+  stageNodeText: [
+    staticStyles.stageNodeText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  stageConnector: [
+    staticStyles.stageConnector,
+    {
+        width: responsiveLayout.responsiveWidth(22),
+    },
+  ],
+  activeStepText: [
+    staticStyles.activeStepText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  bubbleEyebrow: [
+    staticStyles.bubbleEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  identityTitle: [
+    staticStyles.identityTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(25),
+    },
+  ],
+  identityMeta: [
+    staticStyles.identityMeta,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  summaryText: [
+    staticStyles.summaryText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  valuationLabel: [
+    staticStyles.valuationLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  valuationValue: [
+    staticStyles.valuationValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  valuationValueFeatured: [
+    staticStyles.valuationValueFeatured,
+    {
+        fontSize: responsiveLayout.responsiveFont(17),
+    },
+  ],
+  valuationFootnote: [
+    staticStyles.valuationFootnote,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  readinessTitle: [
+    staticStyles.readinessTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  readinessScore: [
+    staticStyles.readinessScore,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  readinessReason: [
+    staticStyles.readinessReason,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  conditionGrade: [
+    staticStyles.conditionGrade,
+    {
+        fontSize: responsiveLayout.responsiveFont(20),
+    },
+  ],
+  conditionScore: [
+    staticStyles.conditionScore,
+    {
+        fontSize: responsiveLayout.responsiveFont(18),
+    },
+  ],
+  compactBody: [
+    staticStyles.compactBody,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  detailDot: [
+    staticStyles.detailDot,
+    {
+        width: responsiveLayout.responsiveWidth(6),
+        height: responsiveLayout.responsiveHeight(6),
+    },
+  ],
+  detailText: [
+    staticStyles.detailText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  metricValue: [
+    staticStyles.metricValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(19),
+    },
+  ],
+  metricLabel: [
+    staticStyles.metricLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  sourceTag: [
+    staticStyles.sourceTag,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  evidenceValue: [
+    staticStyles.evidenceValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  confusedFlipFrame: [
+    staticStyles.confusedFlipFrame,
+    {
+        height: responsiveLayout.responsiveHeight(156),
+    },
+  ],
+  statusIcon: [
+    staticStyles.statusIcon,
+    {
+        width: responsiveLayout.responsiveWidth(30),
+        height: responsiveLayout.responsiveHeight(30),
+    },
+  ],
+  statusTitle: [
+    staticStyles.statusTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(23),
+    },
+  ],
+  statusMessage: [
+    staticStyles.statusMessage,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  guidanceIndex: [
+    staticStyles.guidanceIndex,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  guidanceText: [
+    staticStyles.guidanceText,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  actionButtonText: [
+    staticStyles.actionButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  };
+}

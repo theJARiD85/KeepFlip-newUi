@@ -26,7 +26,10 @@ import {
   type FocusedBookkeepingReviewItem,
 } from '@/services/bookkeeping-review-service';
 import { getBookkeepingReviewQueue } from '@/services/reseller-bookkeeping-service';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 function formatDate(value: string) {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return 'Unknown date';
@@ -65,11 +68,16 @@ function reviewLabel(review: FocusedBookkeepingReviewItem) {
 }
 
 function DetailRow({ label, value }: { label: string; value: string | null }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   if (!value) return null;
   return (
     <View style={styles.detailRow}>
-      <Text style={styles.detailLabel}>{label}</Text>
-      <Text selectable style={styles.detailValue}>
+      <Text style={[styles.detailLabel, { fontSize: responsiveFont(7) }]}>{label}</Text>
+      <Text selectable style={[styles.detailValue, { fontSize: responsiveFont(10)}]}>
         {value}
       </Text>
     </View>
@@ -77,6 +85,14 @@ function DetailRow({ label, value }: { label: string; value: string | null }) {
 }
 
 export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont,
+    contentMaxWidth,
+    contentWidth,
+    pageGutter
+  } = useResponsiveLayout();
+
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [review, setReview] = useState<FocusedBookkeepingReviewItem | null>(null);
@@ -205,7 +221,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
       <KeepFlipBackground>
         <View style={styles.centerState}>
           <ActivityIndicator color={theme.colors.goldBright} size="large" />
-          <Text style={styles.centerText}>Loading the exact Books transaction…</Text>
+          <Text style={[styles.centerText, { fontSize: responsiveFont(11)}]}>Loading the exact Books transaction…</Text>
         </View>
       </KeepFlipBackground>
     );
@@ -215,12 +231,12 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
     return (
       <KeepFlipBackground>
         <View style={[styles.centerState, { paddingTop: insets.top + 20 }]}>
-          <Text style={styles.errorTitle}>TRANSACTION UNAVAILABLE</Text>
-          <Text selectable style={styles.centerText}>{error}</Text>
+          <Text style={[styles.errorTitle, { fontSize: responsiveFont(11) }]}>TRANSACTION UNAVAILABLE</Text>
+          <Text selectable style={[styles.centerText, { fontSize: responsiveFont(11)}]}>{error}</Text>
           <Pressable
             onPress={() => router.replace('/command-center')}
             style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}>
-            <Text style={styles.secondaryButtonText}>BACK TO COMMAND CENTER</Text>
+            <Text style={[styles.secondaryButtonText, { fontSize: responsiveFont(9) }]}>BACK TO COMMAND CENTER</Text>
           </Pressable>
         </View>
       </KeepFlipBackground>
@@ -236,35 +252,33 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.flex}>
         <ScrollView
-          contentContainerStyle={[
-            styles.content,
+          contentContainerStyle={[styles.content,
             {
               paddingBottom: insets.bottom + 28,
               paddingTop: insets.top / 2,
-            },
-          ]}
+            }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
           style={{marginBottom: insets.bottom, marginTop: insets.top}}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
-            <Text style={styles.eyebrow}>BOOKS / TRANSACTION REVIEW</Text>
-            <Text style={styles.title}>Review the actual record</Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.eyebrow, { fontSize: responsiveFont(9) }]}>BOOKS / TRANSACTION REVIEW</Text>
+            <Text style={[styles.title, { fontSize: responsiveFont(27)}]}>Review the actual record</Text>
+            <Text style={[styles.subtitle, { fontSize: responsiveFont(12)}]}>
               KeepFlip is showing the source record that triggered the review. Correct the editable value only when necessary; if it is already right, leave it alone and press Confirm.
             </Text>
           </View>
 
           <View style={styles.attentionCard}>
-            <Text style={styles.attentionEyebrow}>{reviewLabel(review)}</Text>
-            <Text style={styles.attentionTitle}>What needs review</Text>
-            <Text selectable style={styles.attentionBody}>{review.reason}</Text>
+            <Text style={[styles.attentionEyebrow, { fontSize: responsiveFont(8) }]}>{reviewLabel(review)}</Text>
+            <Text style={[styles.attentionTitle, { fontSize: responsiveFont(17) }]}>What needs review</Text>
+            <Text selectable style={[styles.attentionBody, { fontSize: responsiveFont(11)}]}>{review.reason}</Text>
           </View>
 
           <View style={styles.sourceCard}>
             <View style={styles.sourceTopline}>
               <View style={styles.sourceHeading}>
-                <Text style={styles.cardEyebrow}>EBAY SOURCE RECORD</Text>
-                <Text style={styles.cardTitle}>{sourceTypeLabel(review.sourceType)}</Text>
+                <Text style={[styles.cardEyebrow, { fontSize: responsiveFont(8) }]}>EBAY SOURCE RECORD</Text>
+                <Text style={[styles.cardTitle, { fontSize: responsiveFont(16) }]}>{sourceTypeLabel(review.sourceType)}</Text>
               </View>
               <Text selectable style={styles.sourceAmount}>
                 {formatMoney(review.amountCents, review.currency)}
@@ -282,34 +296,34 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
 
           {alreadyFinished ? (
             <View style={styles.confirmedCard}>
-              <Text style={styles.confirmedTitle}>REVIEW COMPLETE</Text>
-              <Text style={styles.confirmedBody}>
+              <Text style={[styles.confirmedTitle, { fontSize: responsiveFont(9) }]}>REVIEW COMPLETE</Text>
+              <Text style={[styles.confirmedBody, { fontSize: responsiveFont(11)}]}>
                 This source record has already been confirmed and no longer needs action.
               </Text>
             </View>
           ) : review.status === 'needs_item_match' ? (
             <View style={styles.editorCard}>
-              <Text style={styles.cardEyebrow}>INVENTORY MATCH REQUIRED</Text>
-              <Text style={styles.editorTitle}>Choose the item from Money Review</Text>
-              <Text style={styles.editorBody}>
+              <Text style={[styles.cardEyebrow, { fontSize: responsiveFont(8) }]}>INVENTORY MATCH REQUIRED</Text>
+              <Text style={[styles.editorTitle, { fontSize: responsiveFont(17) }]}>Choose the item from Money Review</Text>
+              <Text style={[styles.editorBody, { fontSize: responsiveFont(11)}]}>
                 This sale cannot be confirmed from Books until it is matched to the KeepFlip inventory item that actually sold. Return to Command Center and use the sale matching controls.
               </Text>
             </View>
           ) : review.status === 'needs_item_cost' ? (
             <View style={styles.editorCard}>
-              <Text style={styles.cardEyebrow}>EDITABLE REVIEW VALUE</Text>
-              <Text style={styles.editorTitle}>Actual item cost</Text>
-              <Text style={styles.editorBody}>
+              <Text style={[styles.cardEyebrow, { fontSize: responsiveFont(8) }]}>EDITABLE REVIEW VALUE</Text>
+              <Text style={[styles.editorTitle, { fontSize: responsiveFont(17) }]}>Actual item cost</Text>
+              <Text style={[styles.editorBody, { fontSize: responsiveFont(11)}]}>
                 The sale is already recorded. Enter the historical cost attributable to the sold item or sold units. Confirming this reconciles inventory and cost of goods sold without creating on-hand inventory after the sale.
               </Text>
               {review.item ? (
                 <View style={styles.itemChip}>
-                  <Text style={styles.itemChipLabel}>LINKED INVENTORY</Text>
-                  <Text style={styles.itemChipTitle}>{review.item.title}</Text>
+                  <Text style={[styles.itemChipLabel, { fontSize: responsiveFont(7) }]}>LINKED INVENTORY</Text>
+                  <Text style={[styles.itemChipTitle, { fontSize: responsiveFont(11) }]}>{review.item.title}</Text>
                 </View>
               ) : null}
               <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>COST OF GOODS SOLD</Text>
+                <Text style={[styles.fieldLabel, { fontSize: responsiveFont(8) }]}>COST OF GOODS SOLD</Text>
                 <View style={styles.moneyInputRow}>
                   <Text style={styles.currencyPrefix}>$</Text>
                   <TextInput
@@ -322,20 +336,20 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
                     value={itemCost}
                   />
                 </View>
-                <Text style={styles.fieldHint}>
+                <Text style={[styles.fieldHint, { fontSize: responsiveFont(9)}]}>
                   Use 0.00 only if this inventory was actually acquired at no cost.
                 </Text>
               </View>
             </View>
           ) : (
             <View style={styles.editorCard}>
-              <Text style={styles.cardEyebrow}>EDITABLE REVIEW VALUES</Text>
-              <Text style={styles.editorTitle}>Confirm the source transaction</Text>
-              <Text style={styles.editorBody}>
+              <Text style={[styles.cardEyebrow, { fontSize: responsiveFont(8) }]}>EDITABLE REVIEW VALUES</Text>
+              <Text style={[styles.editorTitle, { fontSize: responsiveFont(17) }]}>Confirm the source transaction</Text>
+              <Text style={[styles.editorBody, { fontSize: responsiveFont(11)}]}>
                 These are KeepFlip's review values. Editing them does not overwrite the immutable raw eBay fields shown above. If the values are already correct, do not change anything.
               </Text>
               <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>AMOUNT</Text>
+                <Text style={[styles.fieldLabel, { fontSize: responsiveFont(8) }]}>AMOUNT</Text>
                 <TextInput
                   keyboardType="decimal-pad"
                   onChangeText={setAmount}
@@ -347,7 +361,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
                 />
               </View>
               <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>CURRENCY</Text>
+                <Text style={[styles.fieldLabel, { fontSize: responsiveFont(8) }]}>CURRENCY</Text>
                 <TextInput
                   autoCapitalize="characters"
                   autoCorrect={false}
@@ -360,7 +374,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
                 />
               </View>
               <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>MEMO / REVIEW NOTE</Text>
+                <Text style={[styles.fieldLabel, { fontSize: responsiveFont(8) }]}>MEMO / REVIEW NOTE</Text>
                 <TextInput
                   multiline
                   onChangeText={setMemo}
@@ -375,7 +389,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
 
           {error ? (
             <View style={styles.errorCard}>
-              <Text selectable style={styles.errorText}>{error}</Text>
+              <Text selectable style={[styles.errorText, { fontSize: responsiveFont(10)}]}>{error}</Text>
             </View>
           ) : null}
 
@@ -393,7 +407,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
                 {saving ? (
                   <ActivityIndicator color={theme.colors.backgroundDeep} size="small" />
                 ) : null}
-                <Text style={styles.primaryButtonText}>
+                <Text style={[styles.primaryButtonText, { fontSize: responsiveFont(10) }]}>
                   {saving
                     ? 'CONFIRMING…'
                     : review.status === 'needs_item_match'
@@ -407,7 +421,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
               disabled={saving}
               onPress={() => router.replace('/command-center')}
               style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}>
-              <Text style={styles.secondaryButtonText}>BACK TO COMMAND CENTER</Text>
+              <Text style={[styles.secondaryButtonText, { fontSize: responsiveFont(9) }]}>BACK TO COMMAND CENTER</Text>
             </Pressable>
           </View>
         </ScrollView>
@@ -416,7 +430,8 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   flex: { flex: 1 },
   content: {
     width: '100%',
@@ -692,3 +707,169 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+  return {
+    ...staticStyles,
+  eyebrow: [
+    staticStyles.eyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(27),
+    },
+  ],
+  subtitle: [
+    staticStyles.subtitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  attentionEyebrow: [
+    staticStyles.attentionEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  attentionTitle: [
+    staticStyles.attentionTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(17),
+    },
+  ],
+  attentionBody: [
+    staticStyles.attentionBody,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  cardEyebrow: [
+    staticStyles.cardEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  cardTitle: [
+    staticStyles.cardTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(16),
+    },
+  ],
+  sourceAmount: [
+    staticStyles.sourceAmount,
+    {
+        fontSize: responsiveLayout.responsiveFont(17),
+    },
+  ],
+  detailLabel: [
+    staticStyles.detailLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  detailValue: [
+    staticStyles.detailValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  editorTitle: [
+    staticStyles.editorTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(17),
+    },
+  ],
+  editorBody: [
+    staticStyles.editorBody,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  fieldLabel: [
+    staticStyles.fieldLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  fieldHint: [
+    staticStyles.fieldHint,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  textField: [
+    staticStyles.textField,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  currencyPrefix: [
+    staticStyles.currencyPrefix,
+    {
+        fontSize: responsiveLayout.responsiveFont(17),
+    },
+  ],
+  moneyInput: [
+    staticStyles.moneyInput,
+    {
+        fontSize: responsiveLayout.responsiveFont(17),
+    },
+  ],
+  itemChipLabel: [
+    staticStyles.itemChipLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  itemChipTitle: [
+    staticStyles.itemChipTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  confirmedTitle: [
+    staticStyles.confirmedTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  confirmedBody: [
+    staticStyles.confirmedBody,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  errorText: [
+    staticStyles.errorText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  errorTitle: [
+    staticStyles.errorTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  primaryButtonText: [
+    staticStyles.primaryButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  secondaryButtonText: [
+    staticStyles.secondaryButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  centerText: [
+    staticStyles.centerText,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  };
+}

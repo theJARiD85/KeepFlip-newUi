@@ -4,10 +4,21 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export function KeepFlipAuthBootstrapScreen() {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    contentMaxWidth,
+    contentWidth,
+    pageGutter,
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
-    <KeepFlipBackground contentStyle={styles.content}>
+    <KeepFlipBackground contentStyle={[styles.content, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
       <View style={styles.lockup}>
         <View style={styles.logoHalo}>
           <Image
@@ -20,8 +31,8 @@ export function KeepFlipAuthBootstrapScreen() {
         <View accessibilityLiveRegion="polite" style={styles.statusRow}>
           <ActivityIndicator color={theme.colors.scannerCyan} size="small" />
           <View style={styles.statusCopy}>
-            <Text style={styles.eyebrow}>KEEPFLIP / SECURE ACCESS</Text>
-            <Text style={styles.status}>Verifying your session</Text>
+            <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>KEEPFLIP / SECURE ACCESS</Text>
+            <Text style={[styles.status, { fontSize: responsiveFont(14) }]}>Verifying your session</Text>
           </View>
         </View>
       </View>
@@ -29,7 +40,8 @@ export function KeepFlipAuthBootstrapScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   content: { alignItems: 'center', justifyContent: 'center', padding: 24 },
   lockup: { width: '100%', maxWidth: 360, alignItems: 'center', gap: 22 },
   logoHalo: {
@@ -67,3 +79,33 @@ const styles = StyleSheet.create({
   },
   status: { color: theme.colors.text, fontSize: 14, fontWeight: '800' },
 });
+  return {
+    ...staticStyles,
+  logoHalo: [
+    staticStyles.logoHalo,
+    {
+        width: responsiveLayout.responsiveWidth(148),
+        height: responsiveLayout.responsiveHeight(148),
+    },
+  ],
+  logo: [
+    staticStyles.logo,
+    {
+        width: responsiveLayout.responsiveWidth(134),
+        height: responsiveLayout.responsiveHeight(134),
+    },
+  ],
+  eyebrow: [
+    staticStyles.eyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  status: [
+    staticStyles.status,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  };
+}

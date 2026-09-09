@@ -5,8 +5,11 @@ import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export default function ScannerScreen() {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const {
     contentWidth,
     isCompactHeight,
@@ -14,19 +17,18 @@ export default function ScannerScreen() {
     pageGutter,
     responsiveFont,
     verticalScale,
+    contentMaxWidth
   } = useResponsiveLayout();
 
   return (
     <KeepFlipBackground>
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={[
-          styles.content,
+        contentContainerStyle={[styles.content,
           {
             paddingHorizontal: pageGutter,
             paddingVertical: verticalScale(isCompactHeight ? 24 : 40, 0.55),
-          },
-        ]}>
+          }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
         <View
           style={[
             styles.preview,
@@ -39,7 +41,7 @@ export default function ScannerScreen() {
 
           <View style={styles.liveBadge}>
             <View style={styles.liveDot} />
-            <Text style={styles.liveBadgeText}>SCANNER PREVIEW</Text>
+            <Text style={[styles.liveBadgeText, { fontSize: responsiveFont(9) }]}>SCANNER PREVIEW</Text>
           </View>
 
           <View style={[styles.corner, styles.topLeft]} />
@@ -70,7 +72,7 @@ export default function ScannerScreen() {
                 selectable
                 style={[
                   styles.body,
-                  { fontSize: responsiveFont(14), lineHeight: responsiveFont(21) },
+                  { fontSize: responsiveFont(14), lineHeight: 21 },
                 ]}>
                 Camera scanning runs in the KeepFlip iOS or Android development build. The web
                 preview keeps the scanner interface available without requesting camera access.
@@ -79,7 +81,7 @@ export default function ScannerScreen() {
 
             <View style={styles.buildPill}>
               <IconSymbol name="bolt.fill" size={15} color={theme.colors.scannerCyan} />
-              <Text selectable style={styles.buildPillText}>OPEN THE DEVELOPMENT BUILD TO SCAN</Text>
+              <Text selectable style={[styles.buildPillText, { fontSize: responsiveFont(9) }]}>OPEN THE DEVELOPMENT BUILD TO SCAN</Text>
             </View>
           </View>
         </View>
@@ -88,7 +90,8 @@ export default function ScannerScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   content: {
     flexGrow: 1,
     alignItems: 'center',
@@ -253,3 +256,64 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+  return {
+    ...staticStyles,
+  liveDot: [
+    staticStyles.liveDot,
+    {
+        width: responsiveLayout.responsiveWidth(6),
+        height: responsiveLayout.responsiveHeight(6),
+    },
+  ],
+  liveBadgeText: [
+    staticStyles.liveBadgeText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  corner: [
+    staticStyles.corner,
+    {
+        width: responsiveLayout.responsiveWidth(58),
+        height: responsiveLayout.responsiveHeight(58),
+    },
+  ],
+  scanLine: [
+    staticStyles.scanLine,
+    {
+        height: responsiveLayout.responsiveHeight(1),
+    },
+  ],
+  iconRing: [
+    staticStyles.iconRing,
+    {
+        width: responsiveLayout.responsiveWidth(66),
+        height: responsiveLayout.responsiveHeight(66),
+    },
+  ],
+  eyebrow: [
+    staticStyles.eyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(25),
+    },
+  ],
+  body: [
+    staticStyles.body,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  buildPillText: [
+    staticStyles.buildPillText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  };
+}

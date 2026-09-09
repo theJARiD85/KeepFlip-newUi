@@ -27,7 +27,21 @@ import {
   type EbayConnectionStatusResult,
   type EbaySellerAccountResult,
 } from '@/services/ebayConnectionService';
+import {
+  fetchEbayListingImportCandidates,
+  linkImportedEbayListing,
+} from '@/services/ebay-listing-import-service';
+import {
+  createImportedEbayInventoryItem,
+  listInventoryItems,
+  updateInventoryMarketplaceLink,
+  type InventoryItem,
+} from '@/services/inventory-service';
+import type { EbayListingImportCandidate } from '@/types/ebay-listing-import';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 function hapticSelection() {
   if (process.env.EXPO_OS === 'ios') {
     void Haptics.selectionAsync().catch(() => undefined);
@@ -74,6 +88,14 @@ function sellerSyncLabel(lastSyncedAt?: string, freshness?: 'current' | 'stale')
 }
 
 export default function EbayAccountScreen() {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    contentMaxWidth,
+    contentWidth,
+    pageGutter,
+    responsiveFont
+  } = useResponsiveLayout();
+
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useKeepFlipAuth();
@@ -85,7 +107,15 @@ export default function EbayAccountScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRevoking, setIsRevoking] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [importCandidates, setImportCandidates] = useState<EbayListingImportCandidate[]>([]);
+  const [importNextOffset, setImportNextOffset] = useState<number | null>(null);
+  const [importMessage, setImportMessage] = useState<string | null>(null);
+  const [isImportingListings, setIsImportingListings] = useState(false);
+  const [importingKey, setImportingKey] = useState<string | null>(null);
+  const [importedKeys, setImportedKeys] = useState<string[]>([]);
   const userId = user?.$id;
+  const activeConnection = connection?.connected === true;
+  const environment = connection?.environment ?? getEbayOAuthEnvironment();
 
   const refreshConnection = useCallback(async () => {
     setIsLoading(true);
@@ -194,6 +224,91 @@ export default function EbayAccountScreen() {
     }, [userId]),
   );
 
+  const discoverEbayListings = useCallback(
+    async (offset = 0) => {
+      if (!activeConnection || isImportingListings) return;
+
+      setIsImportingListings(true);
+      setImportMessage(null);
+      try {
+        const result = await fetchEbayListingImportCandidates(environment, { offset });
+        setImportCandidates((current) =>
+          offset === 0 ? result.candidates : [...current, ...result.candidates],
+        );
+        setImportNextOffset(result.nextOffset);
+        setImportMessage(
+          result.candidates.length
+            ? `Found ${result.candidates.length} active Inventory API listing${result.candidates.length === 1 ? '' : 's'} on this page.`
+            : 'No active Inventory API listings were found on this page.',
+        );
+      } catch (error) {
+        setImportMessage(
+          error instanceof Error
+            ? error.message
+            : 'KeepFlip could not import eBay listings.',
+        );
+      } finally {
+        setIsImportingListings(false);
+      }
+    },
+    [activeConnection, environment, isImportingListings],
+  );
+
+  const importEbayListing = useCallback(
+    async (candidate: EbayListingImportCandidate) => {
+      if (!userId || importingKey) return;
+
+      const key = candidate.sourceRecordKey;
+      setImportingKey(key);
+      setImportMessage(null);
+      try {
+        const inventory = await listInventoryItems(userId);
+        const existing = inventory.find(
+          (item: InventoryItem) =>
+            (candidate.listingId && item.ebayListingId === candidate.listingId) ||
+            item.ebayOfferId === candidate.offerId ||
+            (item.ebaySku && item.ebaySku.toLowerCase() === candidate.sku.toLowerCase()),
+        );
+        const item = existing ||
+          (await createImportedEbayInventoryItem({ ownerId: userId, candidate }));
+
+        if (existing) {
+          await updateInventoryMarketplaceLink({
+            ownerId: userId,
+            itemId: existing.id,
+            ebaySku: candidate.sku,
+            ebayOfferId: candidate.offerId,
+            ebayListingId: candidate.listingId,
+          });
+        }
+
+        await linkImportedEbayListing({
+          environment,
+          itemId: item.id,
+          candidate,
+        });
+        setImportedKeys((current) =>
+          current.includes(key) ? current : [...current, key],
+        );
+        setImportMessage(
+          existing
+            ? `Linked ${candidate.title} to its existing KeepFlip inventory item.`
+            : `Imported ${candidate.title} into KeepFlip inventory. Review its cost, photos, and analysis before relying on it for decisions.`,
+        );
+        await refreshConnection();
+      } catch (error) {
+        setImportMessage(
+          error instanceof Error
+            ? error.message
+            : 'KeepFlip could not import this eBay listing.',
+        );
+      } finally {
+        setImportingKey(null);
+      }
+    },
+    [environment, importingKey, refreshConnection, userId],
+  );
+
   const handleRevoke = async () => {
     if (isRevoking || !connection?.connected) return;
 
@@ -240,8 +355,6 @@ export default function EbayAccountScreen() {
     );
   };
 
-  const activeConnection = connection?.connected === true;
-  const environment = connection?.environment ?? getEbayOAuthEnvironment();
   const sellerProfile = sellerAccount?.profile;
   const accountName =
     sellerProfile?.username?.trim() || connection?.ebayUsername?.trim();
@@ -258,13 +371,11 @@ export default function EbayAccountScreen() {
   return (
     <KeepFlipBackground>
       <ScrollView
-        contentContainerStyle={[
-          styles.content,
+        contentContainerStyle={[styles.content,
           {
             paddingTop: insets.top / 2,
             paddingBottom: insets.bottom + 32,
-          },
-        ]}
+          }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         style={{marginBottom: insets.bottom, marginTop: insets.top}}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}>
@@ -282,7 +393,7 @@ export default function EbayAccountScreen() {
               style={styles.backIcon}
             />
           </Pressable>
-          <Text style={styles.topLabel}>SELLER ACCOUNT</Text>
+          <Text style={[styles.topLabel, { fontSize: responsiveFont(9) }]}>SELLER ACCOUNT</Text>
           <View style={styles.topSpacer} />
         </Animated.View>
 
@@ -290,11 +401,11 @@ export default function EbayAccountScreen() {
           <View style={styles.logoShell}>
             <EbayShoppingBagIcon size={70} />
           </View>
-          <Text style={styles.eyebrow}>KEEPFLIP + EBAY</Text>
-          <Text style={styles.title}>
+          <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>KEEPFLIP + EBAY</Text>
+          <Text style={[styles.title, { fontSize: responsiveFont(30) }]}>
             {activeConnection ? 'Your seller account' : 'eBay connection'}
           </Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.subtitle, { fontSize: responsiveFont(14)}]}>
             {activeConnection
               ? 'Seller details and KeepFlip-published listings, with secure account controls below.'
               : 'Connect an eBay account to manage authorized account-level features.'}
@@ -304,7 +415,7 @@ export default function EbayAccountScreen() {
         {isLoading ? (
           <View style={styles.loadingCard}>
             <ActivityIndicator color={theme.colors.scannerCyan} size="small" />
-            <Text style={styles.loadingText}>CHECKING YOUR EBAY CONNECTION</Text>
+            <Text style={[styles.loadingText, { fontSize: responsiveFont(9) }]}>CHECKING YOUR EBAY CONNECTION</Text>
           </View>
         ) : activeConnection ? (
           <>
@@ -318,7 +429,7 @@ export default function EbayAccountScreen() {
                   />
                 </View>
                 <View style={styles.accountCopy}>
-                  <Text style={styles.accountTitle}>
+                  <Text style={[styles.accountTitle, { fontSize: responsiveFont(17) }]}>
                     {sellerDisplayName || 'eBay access active'}
                   </Text>
                   <Text selectable style={styles.accountIdentity}>
@@ -329,19 +440,19 @@ export default function EbayAccountScreen() {
                 </View>
               </View>
               <View style={styles.accountMeta}>
-                <Text style={styles.metaLabel}>ENVIRONMENT</Text>
-                <Text style={styles.metaValue}>{environmentLabel(environment)}</Text>
+                <Text style={[styles.metaLabel, { fontSize: responsiveFont(8) }]}>ENVIRONMENT</Text>
+                <Text style={[styles.metaValue, { fontSize: responsiveFont(10) }]}>{environmentLabel(environment)}</Text>
               </View>
             </Animated.View>
 
             <Animated.View entering={FadeInDown.duration(250).delay(100)} style={styles.section}>
-              <Text style={styles.sectionEyebrow}>SELLER INFORMATION</Text>
+              <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>SELLER INFORMATION</Text>
               <View style={styles.settingsCard}>
                 <View style={styles.sellerSummary}>
-                  <Text style={styles.settingTitle}>
+                  <Text style={[styles.settingTitle, { fontSize: responsiveFont(14) }]}>
                     {sellerDisplayName || 'Seller details are syncing'}
                   </Text>
-                  <Text selectable style={styles.settingDescription}>
+                  <Text selectable style={[styles.settingDescription, { fontSize: responsiveFont(11)}]}>
                     {sellerProfile
                       ? 'eBay-managed account details update in eBay. KeepFlip securely refreshes the safe details shown here.'
                       : 'KeepFlip will show the safe account details eBay shares after the first secure sync.'}
@@ -350,16 +461,16 @@ export default function EbayAccountScreen() {
 
                 {sellerProfile?.username ? (
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>EBAY HANDLE</Text>
-                    <Text selectable style={styles.detailValue}>
+                    <Text style={[styles.detailLabel, { fontSize: responsiveFont(8) }]}>EBAY HANDLE</Text>
+                    <Text selectable style={[styles.detailValue, { fontSize: responsiveFont(12) }]}>
                       {sellerProfile.username}
                     </Text>
                   </View>
                 ) : null}
                 {sellerProfile?.accountType || sellerProfile?.accountStatus ? (
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>ACCOUNT</Text>
-                    <Text selectable style={styles.detailValue}>
+                    <Text style={[styles.detailLabel, { fontSize: responsiveFont(8) }]}>ACCOUNT</Text>
+                    <Text selectable style={[styles.detailValue, { fontSize: responsiveFont(12) }]}>
                       {[
                         readableEbayValue(sellerProfile?.accountType),
                         readableEbayValue(sellerProfile?.accountStatus),
@@ -371,16 +482,16 @@ export default function EbayAccountScreen() {
                 ) : null}
                 {sellerProfile?.registrationMarketplaceId ? (
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>MARKETPLACE</Text>
-                    <Text selectable style={styles.detailValue}>
+                    <Text style={[styles.detailLabel, { fontSize: responsiveFont(8) }]}>MARKETPLACE</Text>
+                    <Text selectable style={[styles.detailValue, { fontSize: responsiveFont(12) }]}>
                       {sellerProfile.registrationMarketplaceId.replace(/_/g, ' ')}
                     </Text>
                   </View>
                 ) : null}
                 {sellerProfile?.businessWebsiteUrl ? (
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>BUSINESS SITE</Text>
-                    <Text selectable numberOfLines={1} style={styles.detailValue}>
+                    <Text style={[styles.detailLabel, { fontSize: responsiveFont(8) }]}>BUSINESS SITE</Text>
+                    <Text selectable numberOfLines={1} style={[styles.detailValue, { fontSize: responsiveFont(12) }]}>
                       {sellerProfile.businessWebsiteUrl}
                     </Text>
                   </View>
@@ -399,7 +510,7 @@ export default function EbayAccountScreen() {
               <Animated.View
                 entering={FadeInDown.duration(250).delay(130)}
                 style={styles.section}>
-                <Text style={styles.sectionEyebrow}>LISTING SETUP</Text>
+                <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>LISTING SETUP</Text>
                 <View style={styles.settingsCard}>
                   <View style={styles.settingRow}>
                     <IconSymbol
@@ -416,14 +527,14 @@ export default function EbayAccountScreen() {
                       size={20}
                     />
                     <View style={styles.settingCopy}>
-                      <Text style={styles.settingTitle}>
+                      <Text style={[styles.settingTitle, { fontSize: responsiveFont(14) }]}>
                         {listingSetup.state === 'ready'
                           ? 'Ready to list'
                           : listingSetup.state === 'failed'
                             ? 'Setup needs a refresh'
                             : 'Listing setup needs attention'}
                       </Text>
-                      <Text style={styles.settingDescription}>
+                      <Text style={[styles.settingDescription, { fontSize: responsiveFont(11)}]}>
                         {listingSetup.message ||
                           'KeepFlip checks the eBay policies and inventory location needed to publish a listing.'}
                       </Text>
@@ -437,14 +548,14 @@ export default function EbayAccountScreen() {
                     </Text>
                   </View>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>SAVED DEFAULTS</Text>
-                    <Text selectable style={styles.detailValue}>
+                    <Text style={[styles.detailLabel, { fontSize: responsiveFont(8) }]}>SAVED DEFAULTS</Text>
+                    <Text selectable style={[styles.detailValue, { fontSize: responsiveFont(12) }]}>
                       {savedListingDefaultCount + ' of 4 ready'}
                     </Text>
                   </View>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>EBAY OPTIONS FOUND</Text>
-                    <Text selectable style={styles.detailValue}>
+                    <Text style={[styles.detailLabel, { fontSize: responsiveFont(8) }]}>EBAY OPTIONS FOUND</Text>
+                    <Text selectable style={[styles.detailValue, { fontSize: responsiveFont(12) }]}>
                       {[
                         listingSetup.policyCounts.payment + ' payment',
                         listingSetup.policyCounts.fulfillment + ' shipping',
@@ -464,11 +575,11 @@ export default function EbayAccountScreen() {
             ) : null}
 
             <Animated.View entering={FadeInDown.duration(250).delay(160)} style={styles.section}>
-              <Text style={styles.sectionEyebrow}>KEEPFLIP LISTINGS</Text>
+              <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>KEEPFLIP LISTINGS</Text>
               <View style={styles.settingsCard}>
                 <View style={styles.listingHeader}>
                   <View style={styles.settingCopy}>
-                    <Text style={styles.settingTitle}>
+                    <Text style={[styles.settingTitle, { fontSize: responsiveFont(14) }]}>
                       {sellerAccount?.listingCount
                         ? sellerAccount.listingCount +
                           (sellerAccount.listingCount === 1
@@ -476,7 +587,7 @@ export default function EbayAccountScreen() {
                             : ' saved listings')
                         : 'No listings saved yet'}
                     </Text>
-                    <Text style={styles.settingDescription}>
+                    <Text style={[styles.settingDescription, { fontSize: responsiveFont(11)}]}>
                       KeepFlip-published eBay listings appear here after they are created.
                     </Text>
                   </View>
@@ -494,7 +605,7 @@ export default function EbayAccountScreen() {
                       }
                       style={styles.listingRow}>
                       <View style={styles.listingCopy}>
-                        <Text numberOfLines={2} style={styles.listingTitle}>
+                        <Text numberOfLines={2} style={[styles.listingTitle, { fontSize: responsiveFont(12)}]}>
                           {listing.title || 'Saved eBay listing'}
                         </Text>
                         <Text style={styles.listingMeta}>
@@ -519,8 +630,114 @@ export default function EbayAccountScreen() {
               </View>
             </Animated.View>
 
+            <Animated.View entering={FadeInDown.duration(250).delay(185)} style={styles.section}>
+              <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>IMPORT ACTIVE EBAY LISTINGS</Text>
+              <View style={styles.settingsCard}>
+                <View style={styles.listingHeader}>
+                  <View style={styles.settingCopy}>
+                    <Text style={[styles.settingTitle, { fontSize: responsiveFont(14) }]}>Review before adding to inventory</Text>
+                    <Text style={[styles.settingDescription, { fontSize: responsiveFont(11)}]}>
+                      KeepFlip reads active listings managed by eBay&apos;s Inventory API. Each listing is matched by SKU, offer, or listing ID before it is linked or imported.
+                    </Text>
+                  </View>
+                  <Text style={styles.connectedPill}>{importCandidates.length ? importCandidates.length : 'READY'}</Text>
+                </View>
+
+                <Pressable
+                  accessibilityLabel="Import active eBay listings"
+                  accessibilityRole="button"
+                  accessibilityState={{ busy: isImportingListings, disabled: isImportingListings }}
+                  disabled={isImportingListings}
+                  onPress={() => {
+                    hapticSelection();
+                    void discoverEbayListings(0);
+                  }}
+                  style={({ pressed }) => [
+                    styles.importButton,
+                    isImportingListings && styles.buttonDisabled,
+                    pressed && !isImportingListings && styles.pressed,
+                  ]}>
+                  {isImportingListings ? (
+                    <ActivityIndicator color={theme.colors.backgroundDeep} size="small" />
+                  ) : (
+                    <IconSymbol color={theme.colors.backgroundDeep} name="arrow.right" size={18} />
+                  )}
+                  <Text style={[styles.importButtonText, { fontSize: responsiveFont(10) }]}>
+                    {isImportingListings ? 'READING EBAY' : 'IMPORT ACTIVE LISTINGS'}
+                  </Text>
+                </Pressable>
+
+                {importMessage ? (
+                  <Text selectable style={styles.profileSyncNote}>{importMessage}</Text>
+                ) : null}
+
+                {importCandidates.map((candidate) => {
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
+                  const imported = importedKeys.includes(candidate.sourceRecordKey);
+                  const busy = importingKey === candidate.sourceRecordKey;
+                  return (
+                    <View key={candidate.sourceRecordKey} style={styles.listingRow}>
+                      <View style={styles.listingCopy}>
+                        <Text numberOfLines={2} style={[styles.listingTitle, { fontSize: responsiveFont(12)}]}>{candidate.title}</Text>
+                        <Text style={styles.listingMeta}>
+                          {candidate.sku} · qty {candidate.quantityAvailable}
+                          {candidate.condition ? ' · ' + readableEbayValue(candidate.condition) : ''}
+                        </Text>
+                      </View>
+                      <View style={styles.importListingAction}>
+                        <Text style={styles.listingPrice}>
+                          {listingPriceLabel(candidate.currentPriceCents ?? undefined, candidate.currency ?? undefined)}
+                        </Text>
+                        <Pressable
+                          accessibilityLabel={imported ? 'Listing imported' : 'Import eBay listing'}
+                          accessibilityRole="button"
+                          accessibilityState={{ busy, disabled: imported || Boolean(importingKey) }}
+                          disabled={imported || Boolean(importingKey)}
+                          onPress={() => {
+                            hapticSelection();
+                            void importEbayListing(candidate);
+                          }}
+                          style={({ pressed }) => [
+                            styles.importRowButton,
+                            imported && styles.importRowButtonDone,
+                            (busy || Boolean(importingKey)) && !imported && styles.buttonDisabled,
+                            pressed && !imported && !busy && !importingKey && styles.pressed,
+                          ]}>
+                          {busy ? (
+                            <ActivityIndicator color={theme.colors.scannerCyan} size="small" />
+                          ) : (
+                            <Text style={[styles.importRowButtonText, { fontSize: responsiveFont(8) }]}>{imported ? 'IMPORTED' : 'IMPORT'}</Text>
+                          )}
+                        </Pressable>
+                      </View>
+                    </View>
+                  );
+                })}
+
+                {importNextOffset !== null ? (
+                  <Pressable
+                    accessibilityLabel="Load more eBay listings"
+                    accessibilityRole="button"
+                    disabled={isImportingListings}
+                    onPress={() => void discoverEbayListings(importNextOffset)}
+                    style={({ pressed }) => [styles.loadMoreButton, pressed && styles.pressed]}>
+                    <Text style={[styles.loadMoreText, { fontSize: responsiveFont(9) }]}>LOAD MORE LISTINGS</Text>
+                  </Pressable>
+                ) : null}
+
+                {importCandidates.length ? (
+                  <Text style={styles.importCoverageNote}>
+                    Older Seller Hub or legacy Trading API listings may require eBay migration before they appear through this Inventory API import.
+                  </Text>
+                ) : null}
+              </View>
+            </Animated.View>
+
             <Animated.View entering={FadeInDown.duration(250).delay(190)} style={styles.section}>
-              <Text style={styles.sectionEyebrow}>ACCESS SETTINGS</Text>
+              <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>ACCESS SETTINGS</Text>
               <View style={styles.settingsCard}>
                 <View style={styles.settingRow}>
                   <IconSymbol
@@ -529,8 +746,8 @@ export default function EbayAccountScreen() {
                     size={20}
                   />
                   <View style={styles.settingCopy}>
-                    <Text style={styles.settingTitle}>Authorization status</Text>
-                    <Text style={styles.settingDescription}>
+                    <Text style={[styles.settingTitle, { fontSize: responsiveFont(14) }]}>Authorization status</Text>
+                    <Text style={[styles.settingDescription, { fontSize: responsiveFont(11)}]}>
                       KeepFlip can use the eBay permissions you approved.
                     </Text>
                   </View>
@@ -557,8 +774,8 @@ export default function EbayAccountScreen() {
                   (isLoading || isRevoking) && styles.buttonDisabled,
                   pressed && !isLoading && !isRevoking && styles.pressed,
                 ]}>
-                    <Text style={styles.settingTitle}>Refresh seller details</Text>
-                    <Text style={styles.settingDescription}>
+                    <Text style={[styles.settingTitle, { fontSize: responsiveFont(14) }]}>Refresh seller details</Text>
+                    <Text style={[styles.settingDescription, { fontSize: responsiveFont(11)}]}>
                       Check the latest secure seller details and saved KeepFlip listings.
                     </Text>
                 </Pressable>
@@ -588,7 +805,7 @@ export default function EbayAccountScreen() {
                     size={20}
                   />
                 )}
-                <Text style={styles.revokeButtonText}>REVOKE EBAY ACCESS</Text>
+                <Text style={[styles.revokeButtonText, { fontSize: responsiveFont(11) }]}>REVOKE EBAY ACCESS</Text>
               </Pressable>
             </View>
           </>
@@ -600,10 +817,10 @@ export default function EbayAccountScreen() {
               size={25}
             />
             <View style={styles.emptyCopy}>
-              <Text style={styles.emptyTitle}>
+              <Text style={[styles.emptyTitle, { fontSize: responsiveFont(17) }]}>
                 {errorMessage ? 'Connection status unavailable' : 'No eBay account connected'}
               </Text>
-              <Text selectable style={styles.emptyBody}>
+              <Text selectable style={[styles.emptyBody, { fontSize: responsiveFont(12)}]}>
                 {errorMessage ??
                   'Link your eBay account to give KeepFlip the permissions you approve.'}
               </Text>
@@ -616,7 +833,7 @@ export default function EbayAccountScreen() {
                 router.replace('/ebay-connect');
               }}
               style={({ pressed }) => [styles.connectButton, pressed && styles.pressed]}>
-              <Text style={styles.connectButtonText}>CONNECT EBAY</Text>
+              <Text style={[styles.connectButtonText, { fontSize: responsiveFont(11) }]}>CONNECT EBAY</Text>
               <IconSymbol
                 color={theme.colors.backgroundDeep}
                 name="arrow.right"
@@ -629,7 +846,7 @@ export default function EbayAccountScreen() {
 
         {errorMessage && activeConnection ? (
           <View style={[styles.messageCard, styles.messageError]}>
-            <Text selectable style={styles.messageText}>
+            <Text selectable style={[styles.messageText, { fontSize: responsiveFont(12)}]}>
               {errorMessage}
             </Text>
           </View>
@@ -639,7 +856,8 @@ export default function EbayAccountScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   content: {
     width: '100%',
     maxWidth: 720,
@@ -903,6 +1121,66 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '900',
   },
+  importButton: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 9,
+    borderRadius: theme.radii.medium,
+    backgroundColor: theme.colors.goldBright,
+  },
+  importButtonText: {
+    color: theme.colors.backgroundDeep,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  importListingAction: {
+    alignItems: 'flex-end',
+    gap: 7,
+  },
+  importRowButton: {
+    minWidth: 72,
+    minHeight: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 9,
+    borderRadius: theme.radii.pill,
+    borderWidth: 1,
+    borderColor: 'rgba(88, 223, 232, 0.42)',
+    backgroundColor: 'rgba(88, 223, 232, 0.08)',
+  },
+  importRowButtonDone: {
+    borderColor: 'rgba(88, 223, 232, 0.18)',
+    backgroundColor: 'rgba(88, 223, 232, 0.04)',
+  },
+  importRowButtonText: {
+    color: theme.colors.scannerCyan,
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+  },
+  loadMoreButton: {
+    minHeight: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: theme.radii.medium,
+    borderWidth: 1,
+    borderColor: 'rgba(242, 211, 138, 0.24)',
+    backgroundColor: 'rgba(242, 211, 138, 0.05)',
+  },
+  loadMoreText: {
+    color: theme.colors.goldBright,
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  importCoverageNote: {
+    color: theme.colors.textMuted,
+    fontSize: 10,
+    lineHeight: 15,
+  },
   actions: {
     gap: 10,
   },
@@ -1020,3 +1298,215 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.988 }],
   },
 });
+  return {
+    ...staticStyles,
+  backButton: [
+    staticStyles.backButton,
+    {
+        width: responsiveLayout.responsiveWidth(44),
+        height: responsiveLayout.responsiveHeight(44),
+    },
+  ],
+  topLabel: [
+    staticStyles.topLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  topSpacer: [
+    staticStyles.topSpacer,
+    {
+        width: responsiveLayout.responsiveWidth(44),
+        height: responsiveLayout.responsiveHeight(44),
+    },
+  ],
+  logoShell: [
+    staticStyles.logoShell,
+    {
+        width: responsiveLayout.responsiveWidth(104),
+        height: responsiveLayout.responsiveHeight(104),
+    },
+  ],
+  eyebrow: [
+    staticStyles.eyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(30),
+    },
+  ],
+  subtitle: [
+    staticStyles.subtitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  loadingText: [
+    staticStyles.loadingText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  statusIcon: [
+    staticStyles.statusIcon,
+    {
+        width: responsiveLayout.responsiveWidth(48),
+        height: responsiveLayout.responsiveHeight(48),
+    },
+  ],
+  accountTitle: [
+    staticStyles.accountTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(17),
+    },
+  ],
+  accountIdentity: [
+    staticStyles.accountIdentity,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  metaLabel: [
+    staticStyles.metaLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  metaValue: [
+    staticStyles.metaValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  sectionEyebrow: [
+    staticStyles.sectionEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  settingTitle: [
+    staticStyles.settingTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  settingDescription: [
+    staticStyles.settingDescription,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  connectedPill: [
+    staticStyles.connectedPill,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  detailLabel: [
+    staticStyles.detailLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  detailValue: [
+    staticStyles.detailValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  profileSyncNote: [
+    staticStyles.profileSyncNote,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  listingTitle: [
+    staticStyles.listingTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  listingMeta: [
+    staticStyles.listingMeta,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  listingPrice: [
+    staticStyles.listingPrice,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  importButtonText: [
+    staticStyles.importButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  importRowButtonText: [
+    staticStyles.importRowButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  loadMoreText: [
+    staticStyles.loadMoreText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  importCoverageNote: [
+    staticStyles.importCoverageNote,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  secondaryButtonText: [
+    staticStyles.secondaryButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  reconnectButtonText: [
+    staticStyles.reconnectButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  revokeButtonText: [
+    staticStyles.revokeButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  emptyTitle: [
+    staticStyles.emptyTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(17),
+    },
+  ],
+  emptyBody: [
+    staticStyles.emptyBody,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  connectButtonText: [
+    staticStyles.connectButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  messageText: [
+    staticStyles.messageText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  };
+}

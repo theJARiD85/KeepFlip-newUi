@@ -52,7 +52,10 @@ import {
 } from "@/services/ebaySoldCompsService";
 import { neutralizeMarketplaceBrand } from "@/services/market-copy";
 import type { InventoryItem } from "@/services/inventory-service";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type ResultState = Extract<ItemAnalysisState, { status: "result" }>;
 type ResultData = ResultState["data"];
 type ResultTab = "valuation" | "profit" | "identifiers";
@@ -205,6 +208,11 @@ function DetailFact({
   label: string;
   value?: string;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const normalized = value?.trim() ?? "";
   if (isUnresolvedDisplayValue(normalized)) {
     return null;
@@ -213,11 +221,11 @@ function DetailFact({
 
   return (
     <View style={styles.detailFact}>
-      <Text style={styles.detailFactLabel}>{label}</Text>
+      <Text style={[styles.detailFactLabel, { fontSize: responsiveFont(7) }]}>{label}</Text>
       <View style={styles.detailFactValueRow}>
-        <Text selectable style={styles.detailFactValue}>{normalized}</Text>
+        <Text selectable style={[styles.detailFactValue, { fontSize: responsiveFont(12), lineHeight: 17 }]}>{normalized}</Text>
         {score == null ? null : (
-          <Text style={styles.detailFactConfidence}>{score}%</Text>
+          <Text style={[styles.detailFactConfidence, { fontSize: responsiveFont(11) }]}>{score}%</Text>
         )}
       </View>
     </View>
@@ -243,6 +251,11 @@ function ValuationGauge({
   result: ResultData;
   valuation: AnalysisValuation;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const reduceMotion = useReducedMotion();
   const sweep = useSharedValue(reduceMotion ? 1 : 0);
   const resolved = useSharedValue(reduceMotion ? 1 : 0);
@@ -308,8 +321,8 @@ function ValuationGauge({
     <View style={styles.gauge}>
       <Animated.View style={[styles.gaugeHeader, medianStyle]}>
         <View>
-          <Text style={styles.microLabel}>EXPECTED SALE</Text>
-          <Text style={styles.gaugeStatus}>
+          <Text style={[styles.microLabel, { fontSize: responsiveFont(7) }]}>EXPECTED SALE</Text>
+          <Text style={[styles.gaugeStatus, { fontSize: responsiveFont(9) }]}>
             {firmLock ? "MARKET LOCK" : "RANGE PROVISIONAL"}
           </Text>
         </View>
@@ -318,7 +331,7 @@ function ValuationGauge({
             adjustsFontSizeToFit
             minimumFontScale={0.72}
             numberOfLines={1}
-            style={styles.medianValue}
+            style={[styles.medianValue, { fontSize: responsiveFont(40), lineHeight: 44 }]}
           >
             {formatMoney(expectSale, valuation.currency)}
           </Text>
@@ -387,6 +400,11 @@ function ValuationGauge({
 }
 
 function ValuePanel({ result }: { result: ResultData }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const accent = readinessColor(result);
   const readiness = percentage(
     result.confidence?.valuation ?? result.valuationReadiness.score,
@@ -410,7 +428,7 @@ function ValuePanel({ result }: { result: ResultData }) {
             : "REFINE WITH VERIFIED DETAILS"}
         </Text>
         {result.refinementQuestions?.length ? (
-          <Text numberOfLines={2} style={styles.emptyBody}>
+          <Text numberOfLines={2} style={[styles.emptyBody, { fontSize: responsiveFont(11), lineHeight: 17 }]}>
             Add a requested photo or answer below to tighten this valuation.
           </Text>
         ) : null}
@@ -504,6 +522,7 @@ function MarketDecisionStamp({
   card: AnalysisDecisionCard;
   top: number;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const reduceMotion = useReducedMotion();
   const tone = decisionTone(card);
   const confidence = percentage(card.confidence);
@@ -652,6 +671,11 @@ function ProfitabilityActionRow({
   index: number;
   onPress: (action: AnalysisProfitAction) => void;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const guidance = guidanceState?.value ?? action.guidance;
   const loading = guidanceState?.status === "loading";
   const error = guidanceState?.status === "error" ? guidanceState.error : null;
@@ -670,13 +694,13 @@ function ProfitabilityActionRow({
         ]}
       >
         <View style={styles.profitIndex}>
-          <Text style={styles.profitIndexText}>{String(index + 1).padStart(2, "0")}</Text>
+          <Text style={[styles.profitIndexText, { fontSize: responsiveFont(7) }]}>{String(index + 1).padStart(2, "0")}</Text>
         </View>
         <View style={styles.profitCopy}>
-          <Text numberOfLines={expanded ? undefined : 1} style={styles.profitTitle}>
+          <Text numberOfLines={expanded ? undefined : 1} style={[styles.profitTitle, { fontSize: responsiveFont(10) }]}>
             {action.label}
           </Text>
-          <Text numberOfLines={expanded ? undefined : 2} style={styles.profitDetail}>
+          <Text numberOfLines={expanded ? undefined : 2} style={[styles.profitDetail, { fontSize: responsiveFont(8), lineHeight: 11 }]}>
             {action.detail}
           </Text>
         </View>
@@ -686,18 +710,18 @@ function ProfitabilityActionRow({
       {expanded ? (
         <View style={styles.profitGuidance}>
           {loading ? (
-            <Text style={styles.profitGuidanceStatus}>RESEARCHING ITEM-SPECIFIC HOW-TO...</Text>
+            <Text style={[styles.profitGuidanceStatus, { fontSize: responsiveFont(8) }]}>RESEARCHING ITEM-SPECIFIC HOW-TO...</Text>
           ) : null}
           {error ? (
-            <Text selectable style={styles.profitGuidanceError}>{error}</Text>
+            <Text selectable style={[styles.profitGuidanceError, { fontSize: responsiveFont(9), lineHeight: 14 }]}>{error}</Text>
           ) : null}
           {guidance?.summary ? (
-            <Text selectable style={styles.detailBody}>{guidance.summary}</Text>
+            <Text selectable style={[styles.detailBody, { fontSize: responsiveFont(10), lineHeight: 15 }]}>{guidance.summary}</Text>
           ) : null}
           {guidance?.steps.map((step, stepIndex) => (
             <View key={`${action.id}-step-${stepIndex}`} style={styles.detailBulletRow}>
-              <Text style={styles.detailBullet}>{stepIndex + 1}.</Text>
-              <Text selectable style={styles.detailBulletText}>{step}</Text>
+              <Text style={[styles.detailBullet, { fontSize: responsiveFont(11) }]}>{stepIndex + 1}.</Text>
+              <Text selectable style={[styles.detailBulletText, { fontSize: responsiveFont(10), lineHeight: 15 }]}>{step}</Text>
             </View>
           ))}
           {guidance?.toolsOrParts.length ? (
@@ -731,6 +755,11 @@ function ProfitPanel({
   onPressAction: (action: AnalysisProfitAction) => void;
   result: ResultData;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const currency =
     result.profitPlan.currency ?? result.valuation?.currency ?? "USD";
   const listTarget = result.profitPlan.listTarget;
@@ -758,7 +787,7 @@ function ProfitPanel({
               <Text style={[styles.profitStrategyLabel, { color: theme.colors.scannerCyan }]}>
                 LIST
               </Text>
-              <Text style={styles.profitStrategyValue}>
+              <Text style={[styles.profitStrategyValue, { fontSize: responsiveFont(11) }]}>
                 {formatMoney(listTarget!, currency)}
               </Text>
             </View> : null}
@@ -766,7 +795,7 @@ function ProfitPanel({
               <Text style={[styles.profitStrategyLabel, { color: theme.colors.goldBright }]}>
                 EXPECT
               </Text>
-              <Text style={styles.profitStrategyValue}>
+              <Text style={[styles.profitStrategyValue, { fontSize: responsiveFont(11) }]}>
                 {formatMoney(expectedSale!, currency)}
               </Text>
             </View> : null}
@@ -774,7 +803,7 @@ function ProfitPanel({
               <Text style={[styles.profitStrategyLabel, { color: theme.colors.scannerViolet }]}>
                 QUICK
               </Text>
-              <Text style={styles.profitStrategyValue}>
+              <Text style={[styles.profitStrategyValue, { fontSize: responsiveFont(11) }]}>
                 {formatMoney(quickSale!, currency)}
               </Text>
             </View> : null}
@@ -794,7 +823,7 @@ function ProfitPanel({
       ) : null}
        {hasEnhancements ? (
         <>
-          <Text style={styles.profitTapHint}>TAP AN ENHANCEMENT FOR ITS ITEM-SPECIFIC HOW-TO</Text>
+          <Text style={[styles.profitTapHint, { fontSize: responsiveFont(7) }]}>TAP AN ENHANCEMENT FOR ITS ITEM-SPECIFIC HOW-TO</Text>
           {enhancements.slice(0, compactActionLimit).map((action, index) => (
             <ProfitabilityActionRow
               action={action}
@@ -808,8 +837,8 @@ function ProfitPanel({
         </>
       ) : (
         <View style={styles.profitEmpty}>
-          <Text style={styles.profitEmptyTitle}>PROFIT TASKS PAUSED</Text>
-          <Text selectable style={styles.profitEmptyBody}>{emptyMessage}</Text>
+          <Text style={[styles.profitEmptyTitle, { fontSize: responsiveFont(8) }]}>PROFIT TASKS PAUSED</Text>
+          <Text selectable style={[styles.profitEmptyBody, { fontSize: responsiveFont(9), lineHeight: 13 }]}>{emptyMessage}</Text>
         </View>
       )}
     </View>
@@ -847,6 +876,11 @@ function profitabilityTaskContext(result: ResultData, action: AnalysisProfitActi
 }
 
 function IdentifierPanel({ result }: { result: ResultData }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const titleConfidence = percentage(
     result.confidence?.itemType ??
       result.confidence?.identity ??
@@ -861,8 +895,8 @@ function IdentifierPanel({ result }: { result: ResultData }) {
   return (
     <View style={styles.identifierPanel}>
       <View style={styles.identifierLead}>
-        <Text style={styles.microLabel}>{result.identity.titleLabel ?? "Exact Item Name"}</Text>
-        <Text numberOfLines={2} style={styles.identifierTitle}>
+        <Text style={[styles.microLabel, { fontSize: responsiveFont(7) }]}>{result.identity.titleLabel ?? "Exact Item Name"}</Text>
+        <Text numberOfLines={2} style={[styles.identifierTitle, { fontSize: responsiveFont(15), lineHeight: 19 }]}>
           {result.identity.title}
         </Text>
         {titleConfidence != null ? (
@@ -881,8 +915,8 @@ function IdentifierPanel({ result }: { result: ResultData }) {
         !isUnresolvedDisplayValue(String(entry[1]).trim()),
       ).map(([label, value, confidence]) => (
         <View key={String(label)} style={styles.identifierFactRow}>
-          <Text style={styles.identifierFactLabel}>{label}</Text>
-          <Text numberOfLines={1} style={styles.identifierFactValue}>
+          <Text style={[styles.identifierFactLabel, { fontSize: responsiveFont(7) }]}>{label}</Text>
+          <Text numberOfLines={1} style={[styles.identifierFactValue, { fontSize: responsiveFont(9) }]}>
             {value}
           </Text>
           <Text style={styles.identifierFactConfidence}>
@@ -927,6 +961,11 @@ function ExpandedResultDetails({
   scanningMorePhotos: boolean;
   result: ResultData;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const conditionDetails = result.condition?.details ?? [];
   const evidence = result.evidence ?? [];
   const references = result.marketReferences ?? [];
@@ -955,7 +994,7 @@ function ExpandedResultDetails({
       ) : null}
       {activeTab === "identifiers" ? (
         <View style={styles.detailSection}>
-          <Text style={styles.detailSectionTitle}>DISTINCT ITEM IDENTIFIERS</Text>
+          <Text style={[styles.detailSectionTitle, { fontSize: responsiveFont(8) }]}>DISTINCT ITEM IDENTIFIERS</Text>
         <DetailFact
           confidence={
             result.confidence?.itemType ??
@@ -991,8 +1030,8 @@ function ExpandedResultDetails({
 
       {activeTab === "identifiers" && inventoryItem ? (
         <View style={styles.detailSection}>
-          <Text style={styles.detailSectionTitle}>INVENTORY RECORD</Text>
-          <Text selectable style={styles.detailBody}>
+          <Text style={[styles.detailSectionTitle, { fontSize: responsiveFont(8) }]}>INVENTORY RECORD</Text>
+          <Text selectable style={[styles.detailBody, { fontSize: responsiveFont(10), lineHeight: 15 }]}>
             User-entered purchase and handling records for this saved item.
             COGS is the actual amount paid, separate from the market buy ceiling.
           </Text>
@@ -1039,12 +1078,12 @@ function ExpandedResultDetails({
       ) : null}
       {activeTab === "valuation" ? (
         <View style={styles.detailSection}>
-          <Text style={styles.detailSectionTitle}>MARKET DECISION DETAIL</Text>
-          <Text selectable style={styles.detailBody}>{decisionCard.summary}</Text>
+          <Text style={[styles.detailSectionTitle, { fontSize: responsiveFont(8) }]}>MARKET DECISION DETAIL</Text>
+          <Text selectable style={[styles.detailBody, { fontSize: responsiveFont(10), lineHeight: 15 }]}>{decisionCard.summary}</Text>
 
           {decisionCard.kind === "skip" ? (
             <>
-              <Text style={styles.decisionDetailHeading}>WHY THIS IS A SKIP</Text>
+              <Text style={[styles.decisionDetailHeading, { fontSize: responsiveFont(7) }]}>WHY THIS IS A SKIP</Text>
               {decisionCard.reasons.map((reason, index) => (
                 <View key={`${reason.factor}-${index}`} style={styles.decisionEvidenceRow}>
                   <Text style={styles.decisionEvidenceCode}>
@@ -1054,7 +1093,7 @@ function ExpandedResultDetails({
                     <Text selectable style={styles.decisionEvidenceFactor}>
                       {reason.factor}
                     </Text>
-                    <Text selectable style={styles.detailBody}>{reason.evidence}</Text>
+                    <Text selectable style={[styles.detailBody, { fontSize: responsiveFont(10), lineHeight: 15 }]}>{reason.evidence}</Text>
                     <Text selectable style={styles.decisionEvidenceImpact}>
                       {reason.impact}
                     </Text>
@@ -1066,18 +1105,18 @@ function ExpandedResultDetails({
 
           {decisionCard.kind === "flip" ? (
             <>
-              <Text selectable style={styles.decisionActionHint}>
+              <Text selectable style={[styles.decisionActionHint, { fontSize: responsiveFont(9), lineHeight: 14 }]}>
                 {decisionCard.status === "provisional"
                   ? "Market fit is promising, but the final Flip verdict is pending COGS, fee, shipping, and preparation inputs."
                   : "This is a market-first Flip decision. Open Max Profit for the supported preparation tasks."}
               </Text>
               {decisionCard.status === "provisional" && decisionCard.missingInputs.length > 0 ? (
                 <>
-                  <Text style={styles.decisionDetailHeading}>FINANCIAL CHECK REQUIRED</Text>
+                  <Text style={[styles.decisionDetailHeading, { fontSize: responsiveFont(7) }]}>FINANCIAL CHECK REQUIRED</Text>
                   {decisionCard.missingInputs.map((input, index) => (
                     <View key={input + "-" + String(index)} style={styles.detailBulletRow}>
-                      <Text style={styles.detailBullet}>+</Text>
-                      <Text selectable style={styles.detailBulletText}>{input}</Text>
+                      <Text style={[styles.detailBullet, { fontSize: responsiveFont(11) }]}>+</Text>
+                      <Text selectable style={[styles.detailBulletText, { fontSize: responsiveFont(10), lineHeight: 15 }]}>{input}</Text>
                     </View>
                   ))}
                 </>
@@ -1087,16 +1126,16 @@ function ExpandedResultDetails({
 
           {decisionCard.kind === "undetermined" ? (
             <>
-              <Text style={styles.decisionDetailHeading}>WHAT WOULD RESOLVE IT</Text>
+              <Text style={[styles.decisionDetailHeading, { fontSize: responsiveFont(7) }]}>WHAT WOULD RESOLVE IT</Text>
               {decisionCard.missingInputs.length > 0 ? (
                 decisionCard.missingInputs.map((input, index) => (
                   <View key={`${input}-${index}`} style={styles.detailBulletRow}>
-                    <Text style={styles.detailBullet}>+</Text>
-                    <Text selectable style={styles.detailBulletText}>{input}</Text>
+                    <Text style={[styles.detailBullet, { fontSize: responsiveFont(11) }]}>+</Text>
+                    <Text selectable style={[styles.detailBulletText, { fontSize: responsiveFont(10), lineHeight: 15 }]}>{input}</Text>
                   </View>
                 ))
               ) : (
-                <Text selectable style={styles.detailBody}>
+                <Text selectable style={[styles.detailBody, { fontSize: responsiveFont(10), lineHeight: 15 }]}>
                   Add a requested identifying or functionality detail so KeepFlip can make a market decision.
                 </Text>
               )}
@@ -1108,7 +1147,7 @@ function ExpandedResultDetails({
       {/* Market-data cards are intentionally omitted until their evidence source is reliable. */}
       {activeTab === "valuation" && (result.valuationLadder || result.summary || conditionDetails.length > 0) ? (
         <View style={styles.detailSection}>
-          <Text style={styles.detailSectionTitle}>VALUATION REASONS + CONFIDENCE</Text>
+          <Text style={[styles.detailSectionTitle, { fontSize: responsiveFont(8) }]}>VALUATION REASONS + CONFIDENCE</Text>
           {result.valuationLadder ? (
             <>
               <DetailFact
@@ -1118,7 +1157,7 @@ function ExpandedResultDetails({
               />
               {result.valuationLadder.reason &&
               !["Level 4", "Level 5"].includes(result.valuationLadder.level) ? (
-                <Text selectable style={styles.detailBody}>
+                <Text selectable style={[styles.detailBody, { fontSize: responsiveFont(10), lineHeight: 15 }]}>
                   {result.valuationLadder.reason}
                 </Text>
               ) : null}
@@ -1135,17 +1174,17 @@ function ExpandedResultDetails({
             />
           ) : null}
           {result.valuation && result.valuationReadiness.reason ? (
-            <Text selectable style={styles.detailBody}>
+            <Text selectable style={[styles.detailBody, { fontSize: responsiveFont(10), lineHeight: 15 }]}>
               {result.valuationReadiness.reason}
             </Text>
           ) : null}
           {result.valuation && result.summary ? (
-            <Text selectable style={styles.detailBody}>{result.summary}</Text>
+            <Text selectable style={[styles.detailBody, { fontSize: responsiveFont(10), lineHeight: 15 }]}>{result.summary}</Text>
           ) : null}
           {conditionDetails.map((detail, index) => (
             <View key={`${detail}-${index}`} style={styles.detailBulletRow}>
-              <Text style={styles.detailBullet}>+</Text>
-              <Text selectable style={styles.detailBulletText}>{detail}</Text>
+              <Text style={[styles.detailBullet, { fontSize: responsiveFont(11) }]}>+</Text>
+              <Text selectable style={[styles.detailBulletText, { fontSize: responsiveFont(10), lineHeight: 15 }]}>{detail}</Text>
             </View>
           ))}
         </View>
@@ -1153,7 +1192,7 @@ function ExpandedResultDetails({
 
       {activeTab === "valuation" && acquisitionGuidance ? (
         <View style={styles.detailSection}>
-          <Text style={styles.detailSectionTitle}>ACQUISITION CEILING</Text>
+          <Text style={[styles.detailSectionTitle, { fontSize: responsiveFont(8) }]}>ACQUISITION CEILING</Text>
           <DetailFact
             label={acquisitionGuidance.label}
             value={formatMoney(
@@ -1162,33 +1201,33 @@ function ExpandedResultDetails({
             )}
           />
           {acquisitionGuidance.summary ? (
-            <Text selectable style={styles.detailBody}>
+            <Text selectable style={[styles.detailBody, { fontSize: responsiveFont(10), lineHeight: 15 }]}>
               {acquisitionGuidance.summary}
             </Text>
           ) : null}
           {acquisitionGuidance.formula ? (
-            <Text selectable style={styles.detailBody}>
+            <Text selectable style={[styles.detailBody, { fontSize: responsiveFont(10), lineHeight: 15 }]}>
               {acquisitionGuidance.formula}
             </Text>
           ) : null}
           {acquisitionGuidance.assumptions.length > 0 ? (
             <>
-              <Text style={styles.decisionDetailHeading}>FORMULA ASSUMPTIONS</Text>
+              <Text style={[styles.decisionDetailHeading, { fontSize: responsiveFont(7) }]}>FORMULA ASSUMPTIONS</Text>
               {acquisitionGuidance.assumptions.map((assumption, index) => (
                 <View key={`${assumption}-${index}`} style={styles.detailBulletRow}>
-                  <Text style={styles.detailBullet}>+</Text>
-                  <Text selectable style={styles.detailBulletText}>{assumption}</Text>
+                  <Text style={[styles.detailBullet, { fontSize: responsiveFont(11) }]}>+</Text>
+                  <Text selectable style={[styles.detailBulletText, { fontSize: responsiveFont(10), lineHeight: 15 }]}>{assumption}</Text>
                 </View>
               ))}
             </>
           ) : null}
           {acquisitionGuidance.missingInputs.length > 0 ? (
             <>
-              <Text style={styles.decisionDetailHeading}>CHECK BEFORE BUYING</Text>
+              <Text style={[styles.decisionDetailHeading, { fontSize: responsiveFont(7) }]}>CHECK BEFORE BUYING</Text>
               {acquisitionGuidance.missingInputs.map((input, index) => (
                 <View key={`${input}-${index}`} style={styles.detailBulletRow}>
-                  <Text style={styles.detailBullet}>+</Text>
-                  <Text selectable style={styles.detailBulletText}>{input}</Text>
+                  <Text style={[styles.detailBullet, { fontSize: responsiveFont(11) }]}>+</Text>
+                  <Text selectable style={[styles.detailBulletText, { fontSize: responsiveFont(10), lineHeight: 15 }]}>{input}</Text>
                 </View>
               ))}
             </>
@@ -1198,7 +1237,7 @@ function ExpandedResultDetails({
 
       {activeTab === "profit" && additionalEnhancements.length > 0 ? (
         <View style={styles.detailSection}>
-          <Text style={styles.detailSectionTitle}>MORE PROFITABILITY ENHANCEMENTS</Text>
+          <Text style={[styles.detailSectionTitle, { fontSize: responsiveFont(8) }]}>MORE PROFITABILITY ENHANCEMENTS</Text>
           {additionalEnhancements.map((action, index) => (
             <ProfitabilityActionRow
               action={action}
@@ -1213,22 +1252,26 @@ function ExpandedResultDetails({
       ) : null}
       {activeTab === "valuation" && evidence.length > 0 ? (
         <View style={styles.detailSection}>
-          <Text style={styles.detailSectionTitle}>SUPPORTING EVIDENCE</Text>
+          <Text style={[styles.detailSectionTitle, { fontSize: responsiveFont(8) }]}>SUPPORTING EVIDENCE</Text>
           {evidence.map((item, index) => {
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
             const score = percentage(item.confidence);
             return (
               <View key={item.id ?? `${item.label}-${index}`} style={styles.expandedEvidenceRow}>
                 <Text style={styles.expandedEvidenceCode}>E{index + 1}</Text>
                 <View style={styles.expandedEvidenceCopy}>
                   <View style={styles.expandedEvidenceHeader}>
-                    <Text style={styles.expandedEvidenceLabel}>{item.label}</Text>
+                    <Text style={[styles.expandedEvidenceLabel, { fontSize: responsiveFont(9) }]}>{item.label}</Text>
                     {score == null ? null : (
-                      <Text style={styles.detailFactConfidence}>{score}% CONF</Text>
+                      <Text style={[styles.detailFactConfidence, { fontSize: responsiveFont(11) }]}>{score}% CONF</Text>
                     )}
                   </View>
-                  <Text selectable style={styles.detailBody}>{item.value}</Text>
+                  <Text selectable style={[styles.detailBody, { fontSize: responsiveFont(10), lineHeight: 15 }]}>{item.value}</Text>
                   {item.source ? (
-                    <Text style={styles.detailSource}>{item.source.toUpperCase()}</Text>
+                    <Text style={[styles.detailSource, { fontSize: responsiveFont(6) }]}>{item.source.toUpperCase()}</Text>
                   ) : null}
                 </View>
               </View>
@@ -1239,17 +1282,17 @@ function ExpandedResultDetails({
 
       {activeTab === "valuation" && references.length > 0 ? (
         <View style={styles.detailSection}>
-          <Text style={styles.detailSectionTitle}>MARKET REFERENCES</Text>
+          <Text style={[styles.detailSectionTitle, { fontSize: responsiveFont(8) }]}>MARKET REFERENCES</Text>
           {references.map((reference, index) => (
             <View key={reference.id} style={styles.referenceRow}>
               <Text style={styles.referenceCode}>R{index + 1}</Text>
               <View style={styles.referenceCopy}>
-                <Text selectable style={styles.referenceTitle}>{reference.title}</Text>
+                <Text selectable style={[styles.referenceTitle, { fontSize: responsiveFont(10), lineHeight: 14 }]}>{reference.title}</Text>
                 {reference.source ? (
-                  <Text style={styles.detailSource}>{reference.source.toUpperCase()}</Text>
+                  <Text style={[styles.detailSource, { fontSize: responsiveFont(6) }]}>{reference.source.toUpperCase()}</Text>
                 ) : null}
                 {reference.snippet ? (
-                  <Text selectable style={styles.detailBody}>{reference.snippet}</Text>
+                  <Text selectable style={[styles.detailBody, { fontSize: responsiveFont(10), lineHeight: 15 }]}>{reference.snippet}</Text>
                 ) : null}
                 {reference.link ? (
                   <Text numberOfLines={1} selectable style={styles.referenceLink}>
@@ -1264,8 +1307,8 @@ function ExpandedResultDetails({
 
       {activeTab === "valuation" && decisionCard.kind === "undetermined" && questions.length > 0 && (onRefine || onScanMorePhotos) ? (
         <View style={styles.detailSection}>
-          <Text style={styles.detailSectionTitle}>RESOLVE THIS DECISION</Text>
-          <Text style={styles.detailBody}>
+          <Text style={[styles.detailSectionTitle, { fontSize: responsiveFont(8) }]}>RESOLVE THIS DECISION</Text>
+          <Text style={[styles.detailBody, { fontSize: responsiveFont(10), lineHeight: 15 }]}>
             Add only what you can verify. KeepFlip can use these details to make a tighter market decision.
           </Text>
           {requestedPhotos.slice(0, 4).map((photo, index) => (
@@ -1296,7 +1339,7 @@ function ExpandedResultDetails({
                 name="camera.fill"
                 size={15}
               />
-              <Text style={styles.scanDetailButtonText}>
+              <Text style={[styles.scanDetailButtonText, { fontSize: responsiveFont(9) }]}>
                 {scanningMorePhotos
                   ? "OPENING CAMERA..."
                   : refinementPhotoReady
@@ -1307,11 +1350,11 @@ function ExpandedResultDetails({
           ) : null}
           {onRefine ? questions.map((question, index) => (
             <View key={question.id} style={styles.questionBlock}>
-              <Text style={styles.questionLabel}>
+              <Text style={[styles.questionLabel, { fontSize: responsiveFont(9), lineHeight: 14 }]}>
                 Q{index + 1} / {question.prompt}
               </Text>
               {question.reason ? (
-                <Text style={styles.questionReason}>{question.reason}</Text>
+                <Text style={[styles.questionReason, { fontSize: responsiveFont(8), lineHeight: 12 }]}>{question.reason}</Text>
               ) : null}
               <TextInput
                 editable={!refining}
@@ -1336,7 +1379,7 @@ function ExpandedResultDetails({
               !canSubmit && styles.disabled,
             ]}
           >
-            <Text style={styles.refineButtonText}>
+            <Text style={[styles.refineButtonText, { fontSize: responsiveFont(9) }]}>
               {refining ? "REFINING VALUATION..." : "REFINE VALUATION"}
             </Text>
           </Pressable>
@@ -1372,6 +1415,11 @@ export function ValuationResultStage({
   topInset,
   viewportWidth,
 }: ValuationResultStageProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const result = state.data;
   const profitInitialCost =
     inventoryItem?.acquisitionCost ??
@@ -1776,9 +1824,9 @@ export function ValuationResultStage({
       >
         <View style={styles.titleHeader}>
           <View style={styles.titleSignal} />
-          <Text style={styles.titleEyebrow}>KEEPFLIP / VALUATION COMPLETE</Text>
+          <Text style={[styles.titleEyebrow, { fontSize: responsiveFont(8) }]}>KEEPFLIP / VALUATION COMPLETE</Text>
         </View>
-        <Text adjustsFontSizeToFit minimumFontScale={11} numberOfLines={2} style={styles.itemTitle}>
+        <Text adjustsFontSizeToFit minimumFontScale={11} numberOfLines={2} style={[styles.itemTitle, { fontSize: responsiveFont(25), lineHeight: 28 }]}>
           {result.identity.title}
         </Text>
       </Animated.View>
@@ -1816,7 +1864,7 @@ export function ValuationResultStage({
                 style={styles.sheetHandleHitbox}
               >
                 <View style={styles.sheetHandle} />
-                <Text style={styles.sheetHandleLabel}>
+                <Text style={[styles.sheetHandleLabel, { fontSize: responsiveFont(7) }]}>
                   {expanded ? "SWIPE DOWN" : "SWIPE UP FOR FULL INTELLIGENCE"}
                 </Text>
               </Pressable>
@@ -1893,7 +1941,7 @@ export function ValuationResultStage({
                 ]}
               >
                 <IconSymbol color={theme.colors.goldBright} name="tag.fill" size={16} />
-                <Text style={styles.saveButtonTextSecondary}>
+                <Text style={[styles.saveButtonTextSecondary, { fontSize: responsiveFont(9) }]}>
                   {savingDeal ? "PARKING..." : saveDealLabel.toUpperCase()}
                 </Text>
               </Pressable>
@@ -1911,7 +1959,7 @@ export function ValuationResultStage({
                 ]}
               >
                 <IconSymbol color={theme.colors.backgroundDeep} name="save.fill" size={16} />
-                <Text style={styles.saveButtonText}>
+                <Text style={[styles.saveButtonText, { fontSize: responsiveFont(9) }]}>
                   {saving ? "SAVING..." : saveLabel.toUpperCase()}
                 </Text>
               </Pressable>
@@ -1934,7 +1982,7 @@ export function ValuationResultStage({
                   name="tag.fill"
                   size={16}
                 />
-                <Text style={styles.saveButtonText}>LIST ITEM</Text>
+                <Text style={[styles.saveButtonText, { fontSize: responsiveFont(9) }]}>LIST ITEM</Text>
               </Pressable>
             ) : null}
 
@@ -1956,7 +2004,7 @@ export function ValuationResultStage({
                   name="photo.on.rectangle.angled"
                   size={16}
                 />
-                <Text style={styles.saveButtonTextSecondary}>ADD PHOTOS</Text>
+                <Text style={[styles.saveButtonTextSecondary, { fontSize: responsiveFont(9) }]}>ADD PHOTOS</Text>
               </Pressable>
             ) : null}
           </View>
@@ -1974,7 +2022,7 @@ export function ValuationResultStage({
               (saving || savingDeal || refining || scanningMorePhotos) && styles.disabled,
             ]}>
             <IconSymbol color={theme.colors.textMuted} name="exclamationmark.triangle.fill" size={13} />
-            <Text style={styles.incorrectIdentificationActionText}>
+            <Text style={[styles.incorrectIdentificationActionText, { fontSize: responsiveFont(8) }]}>
               FLAG INCORRECT IDENTIFICATION
             </Text>
           </Pressable>
@@ -1984,7 +2032,8 @@ export function ValuationResultStage({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   backgroundGradience: {
     experimental_backgroundImage: `
     radial-gradient(circle at 84% 8%, rgba(224, 172, 75, 0.10) 0%, transparent 34%),
@@ -2618,3 +2667,508 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.72, transform: [{ scale: 0.98 }] },
   disabled: { opacity: 0.48 },
 });
+  return {
+    ...staticStyles,
+  titleSignal: [
+    staticStyles.titleSignal,
+    {
+        width: responsiveLayout.responsiveWidth(6),
+        height: responsiveLayout.responsiveHeight(6),
+    },
+  ],
+  titleEyebrow: [
+    staticStyles.titleEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  itemTitle: [
+    staticStyles.itemTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(25),
+        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(2) },
+    },
+  ],
+  projectionLabel: [
+    staticStyles.projectionLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  sheetHandle: [
+    staticStyles.sheetHandle,
+    {
+        width: responsiveLayout.responsiveWidth(52),
+        height: responsiveLayout.responsiveHeight(4),
+    },
+  ],
+  sheetHandleLabel: [
+    staticStyles.sheetHandleLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(1) },
+    },
+  ],
+  tabRail: [
+    staticStyles.tabRail,
+    {
+        height: responsiveLayout.responsiveHeight(34),
+    },
+  ],
+  tabText: [
+    staticStyles.tabText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  panelBody: [
+    staticStyles.panelBody,
+    {
+        height: responsiveLayout.responsiveHeight(186),
+    },
+  ],
+  gaugeHeader: [
+    staticStyles.gaugeHeader,
+    {
+        height: responsiveLayout.responsiveHeight(45),
+    },
+  ],
+  microLabel: [
+    staticStyles.microLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  gaugeStatus: [
+    staticStyles.gaugeStatus,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  medianValue: [
+    staticStyles.medianValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(40),
+        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(0) },
+    },
+  ],
+  gaugeTrack: [
+    staticStyles.gaugeTrack,
+    {
+        height: responsiveLayout.responsiveHeight(28),
+    },
+  ],
+  gaugeBand: [
+    staticStyles.gaugeBand,
+    {
+        height: responsiveLayout.responsiveHeight(9),
+    },
+  ],
+  gaugeTick: [
+    staticStyles.gaugeTick,
+    {
+        height: responsiveLayout.responsiveHeight(18),
+    },
+  ],
+  gaugeNeedle: [
+    staticStyles.gaugeNeedle,
+    {
+        width: responsiveLayout.responsiveWidth(0),
+        height: responsiveLayout.responsiveHeight(0),
+    },
+  ],
+  gaugeLabel: [
+    staticStyles.gaugeLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  gaugeAmount: [
+    staticStyles.gaugeAmount,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  buyCeilingLabel: [
+    staticStyles.buyCeilingLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  buyCeilingStatus: [
+    staticStyles.buyCeilingStatus,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  buyCeilingValue: [
+    staticStyles.buyCeilingValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(18),
+    },
+  ],
+  marketDecisionStampWord: [
+    staticStyles.marketDecisionStampWord,
+    {
+        fontSize: responsiveLayout.responsiveFont(36),
+        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(0) },
+    },
+  ],
+  marketDecisionStampSignal: [
+    staticStyles.marketDecisionStampSignal,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  marketDecisionStampConfidence: [
+    staticStyles.marketDecisionStampConfidence,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  readinessSignal: [
+    staticStyles.readinessSignal,
+    {
+        width: responsiveLayout.responsiveWidth(6),
+        height: responsiveLayout.responsiveHeight(6),
+    },
+  ],
+  readinessText: [
+    staticStyles.readinessText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  readinessScore: [
+    staticStyles.readinessScore,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  basisLine: [
+    staticStyles.basisLine,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  emptyTitle: [
+    staticStyles.emptyTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  emptyBody: [
+    staticStyles.emptyBody,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  profitStrategyLabel: [
+    staticStyles.profitStrategyLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  profitStrategyValue: [
+    staticStyles.profitStrategyValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  profitStrategyNotice: [
+    staticStyles.profitStrategyNotice,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  profitTapHint: [
+    staticStyles.profitTapHint,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  profitEmptyTitle: [
+    staticStyles.profitEmptyTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  profitEmptyBody: [
+    staticStyles.profitEmptyBody,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  profitIndex: [
+    staticStyles.profitIndex,
+    {
+        width: responsiveLayout.responsiveWidth(25),
+        height: responsiveLayout.responsiveHeight(25),
+    },
+  ],
+  profitIndexText: [
+    staticStyles.profitIndexText,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  profitTitle: [
+    staticStyles.profitTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  profitDetail: [
+    staticStyles.profitDetail,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  profitExpandMark: [
+    staticStyles.profitExpandMark,
+    {
+        fontSize: responsiveLayout.responsiveFont(18),
+    },
+  ],
+  profitGuidanceStatus: [
+    staticStyles.profitGuidanceStatus,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  profitGuidanceError: [
+    staticStyles.profitGuidanceError,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  profitGuidanceMeta: [
+    staticStyles.profitGuidanceMeta,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  profitGuidanceWarning: [
+    staticStyles.profitGuidanceWarning,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  identifierTitle: [
+    staticStyles.identifierTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  identifierConfidence: [
+    staticStyles.identifierConfidence,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  identifierFactLabel: [
+    staticStyles.identifierFactLabel,
+    {
+        width: responsiveLayout.responsiveWidth(96),
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  identifierFactValue: [
+    staticStyles.identifierFactValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  identifierFactConfidence: [
+    staticStyles.identifierFactConfidence,
+    {
+        width: responsiveLayout.responsiveWidth(28),
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  detailSectionTitle: [
+    staticStyles.detailSectionTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  detailFactLabel: [
+    staticStyles.detailFactLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  detailFactValue: [
+    staticStyles.detailFactValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  detailFactConfidence: [
+    staticStyles.detailFactConfidence,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  detailBody: [
+    staticStyles.detailBody,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  detailBullet: [
+    staticStyles.detailBullet,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  detailBulletText: [
+    staticStyles.detailBulletText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  detailSignal: [
+    staticStyles.detailSignal,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  detailSource: [
+    staticStyles.detailSource,
+    {
+        fontSize: responsiveLayout.responsiveFont(6),
+    },
+  ],
+  decisionDetailHeading: [
+    staticStyles.decisionDetailHeading,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  decisionEvidenceCode: [
+    staticStyles.decisionEvidenceCode,
+    {
+        width: responsiveLayout.responsiveWidth(22),
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  decisionEvidenceFactor: [
+    staticStyles.decisionEvidenceFactor,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  decisionEvidenceImpact: [
+    staticStyles.decisionEvidenceImpact,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  decisionActionHint: [
+    staticStyles.decisionActionHint,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  expandedProfitCode: [
+    staticStyles.expandedProfitCode,
+    {
+        width: responsiveLayout.responsiveWidth(24),
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  expandedProfitTitle: [
+    staticStyles.expandedProfitTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  expandedEvidenceCode: [
+    staticStyles.expandedEvidenceCode,
+    {
+        width: responsiveLayout.responsiveWidth(22),
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  expandedEvidenceLabel: [
+    staticStyles.expandedEvidenceLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  referenceCode: [
+    staticStyles.referenceCode,
+    {
+        width: responsiveLayout.responsiveWidth(22),
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  referenceTitle: [
+    staticStyles.referenceTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  referenceLink: [
+    staticStyles.referenceLink,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  questionLabel: [
+    staticStyles.questionLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  questionReason: [
+    staticStyles.questionReason,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  photoRequest: [
+    staticStyles.photoRequest,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  scanDetailButtonText: [
+    staticStyles.scanDetailButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  questionInput: [
+    staticStyles.questionInput,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  refineButtonText: [
+    staticStyles.refineButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  incorrectIdentificationActionText: [
+    staticStyles.incorrectIdentificationActionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  saveButtonText: [
+    staticStyles.saveButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  saveButtonTextSecondary: [
+    staticStyles.saveButtonTextSecondary,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  };
+}

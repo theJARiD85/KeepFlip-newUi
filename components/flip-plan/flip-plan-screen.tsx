@@ -13,7 +13,10 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type PlanField =
   | 'buyCost'
   | 'extraCost'
@@ -116,6 +119,7 @@ function StageToolButton({
   label: string;
   onPress: () => void;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   return (
     <Pressable
       accessibilityHint={'Shows the ' + label + ' projection'}
@@ -152,6 +156,11 @@ function SnapshotMetric({
   tone: 'cream' | 'cyan' | 'green' | 'red' | 'violet';
   value: string;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const valueStyle = {
     cream: styles.metricValueCream,
     cyan: styles.metricValueCyan,
@@ -162,7 +171,7 @@ function SnapshotMetric({
 
   return (
     <View style={styles.metric}>
-      <Text style={styles.metricLabel}>{label}</Text>
+      <Text style={[styles.metricLabel, { fontSize: responsiveFont(8) }]}>{label}</Text>
       <Text selectable style={[styles.metricValue, valueStyle]}>
         {value}
       </Text>
@@ -177,6 +186,11 @@ function LedgerEntryList({
   entries: LedgerEntry[];
   side: 'credit' | 'debit';
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const amountStyle = side === 'credit' ? styles.creditAmount : styles.debitAmount;
 
   return (
@@ -186,7 +200,7 @@ function LedgerEntryList({
       ) : (
         entries.map((entry) => (
           <View key={entry.label} style={styles.ledgerEntry}>
-            <Text numberOfLines={1} style={styles.entryLabel}>
+            <Text numberOfLines={1} style={[styles.entryLabel, { fontSize: responsiveFont(9)}]}>
               {entry.label}
             </Text>
             <Text selectable style={[styles.entryAmount, amountStyle]}>
@@ -200,6 +214,11 @@ function LedgerEntryList({
 }
 
 function LedgerAccountCard({ account }: { account: LedgerAccount }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const debitTotal = total(account.debits);
   const creditTotal = total(account.credits);
 
@@ -215,17 +234,17 @@ function LedgerAccountCard({ account }: { account: LedgerAccount }) {
       }
       style={styles.ledgerCard}>
       <View style={styles.ledgerCardHeader}>
-        <Text numberOfLines={1} style={styles.ledgerAccountTitle}>
+        <Text numberOfLines={1} style={[styles.ledgerAccountTitle, { fontSize: responsiveFont(11) }]}>
           {account.title}
         </Text>
         <View style={styles.accountTypePill}>
-          <Text style={styles.accountTypeText}>{account.type}</Text>
+          <Text style={[styles.accountTypeText, { fontSize: responsiveFont(8) }]}>{account.type}</Text>
         </View>
       </View>
 
       <View style={styles.ledgerColumnHeaders}>
         <Text style={[styles.ledgerColumnHeading, styles.ledgerHeadingDivider]}>DEBIT (DR)</Text>
-        <Text style={styles.ledgerColumnHeading}>CREDIT (CR)</Text>
+        <Text style={[styles.ledgerColumnHeading, { fontSize: responsiveFont(8) }]}>CREDIT (CR)</Text>
       </View>
 
       <View style={styles.ledgerColumns}>
@@ -273,6 +292,7 @@ function GradientSlider({
   step: number;
   value: number;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const [trackWidth, setTrackWidth] = useState(0);
   const percentage = (
     maximumValue === minimumValue
@@ -378,11 +398,16 @@ function SliderControl({
   suffix?: string;
   value: number;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
     <View style={styles.sliderControl}>
       <View style={styles.sliderLabelRow}>
-        <Text style={styles.sliderLabel}>{label}</Text>
-        <Text selectable style={styles.sliderValue}>
+        <Text style={[styles.sliderLabel, { fontSize: responsiveFont(11) }]}>{label}</Text>
+        <Text selectable style={[styles.sliderValue, { fontSize: responsiveFont(11) }]}>
           {suffix === '%' ? String(value) + '%' : money(value)}
         </Text>
       </View>
@@ -403,6 +428,14 @@ function SliderControl({
  * Books record, so planned transactions cannot be mistaken for real activity.
  */
 export function FlipPlanScreen() {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    contentMaxWidth,
+    contentWidth,
+    pageGutter,
+    responsiveFont
+  } = useResponsiveLayout();
+
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [draft, setDraft] = useState<PlanDraft>(EMPTY_PLAN);
@@ -563,13 +596,11 @@ export function FlipPlanScreen() {
   return (
     <KeepFlipBackground>
       <ScrollView
-        contentContainerStyle={[
-          styles.content,
+        contentContainerStyle={[styles.content,
           {
             paddingBottom: Math.max(insets.bottom, 20) + 28,
             paddingTop: insets.top / 2,
-          },
-        ]}
+          }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         style={{marginBottom: insets.bottom, marginTop: insets.top}}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
@@ -587,14 +618,14 @@ export function FlipPlanScreen() {
               style={styles.backIcon}
             />
           </Pressable>
-          <Text style={styles.topLabel}>SELLER ACCOUNT</Text>
+          <Text style={[styles.topLabel, { fontSize: responsiveFont(9) }]}>SELLER ACCOUNT</Text>
           <View style={styles.topSpacer} />
         </Animated.View>
 
         <View style={styles.header}>
-          <Text style={styles.eyebrow}>KEEPFLIP / FLIP PLAN</Text>
-          <Text style={styles.title}>Map each side of the flip</Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.eyebrow, { fontSize: responsiveFont(9) }]}>KEEPFLIP / FLIP PLAN</Text>
+          <Text style={[styles.title, { fontSize: responsiveFont(29)}]}>Map each side of the flip</Text>
+          <Text style={[styles.subtitle, { fontSize: responsiveFont(13)}]}>
             Buy, refurbish, sell, and split are separate planning tools. Each button
             reveals the cumulative projection for that stage, without posting real
             entries to Books.
@@ -662,8 +693,8 @@ export function FlipPlanScreen() {
 
           <View style={styles.impactRow}>
             <View style={styles.impactCopy}>
-              <Text style={styles.impactLabel}>DOUBLE-ENTRY IMPACT</Text>
-              <Text style={styles.impactText}>{stageCopy.impact}</Text>
+              <Text style={[styles.impactLabel, { fontSize: responsiveFont(8) }]}>DOUBLE-ENTRY IMPACT</Text>
+              <Text style={[styles.impactText, { fontSize: responsiveFont(11)}]}>{stageCopy.impact}</Text>
             </View>
             <View
               accessibilityLabel={
@@ -691,12 +722,12 @@ export function FlipPlanScreen() {
         <View style={styles.ledgerSection}>
           <View style={styles.ledgerSectionHeading}>
             <View style={styles.ledgerSectionCopy}>
-              <Text style={styles.sectionEyebrow}>{stageCopy.title.toUpperCase()}</Text>
-              <Text style={styles.sectionTitle}>Projected account movement</Text>
-              <Text style={styles.sectionText}>{stageCopy.description}</Text>
+              <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>{stageCopy.title.toUpperCase()}</Text>
+              <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16)}]}>Projected account movement</Text>
+              <Text style={[styles.sectionText, { fontSize: responsiveFont(11)}]}>{stageCopy.description}</Text>
             </View>
             <View style={styles.projectionPill}>
-              <Text style={styles.projectionPillText}>PLAN PROJECTION</Text>
+              <Text style={[styles.projectionPillText, { fontSize: responsiveFont(8) }]}>PLAN PROJECTION</Text>
             </View>
           </View>
 
@@ -707,8 +738,8 @@ export function FlipPlanScreen() {
           </View>
 
           <View style={styles.ledgerGrandTotals}>
-            <Text style={styles.ledgerGrandLabel}>STAGE TOTALS</Text>
-            <Text selectable style={styles.ledgerGrandValue}>
+            <Text style={[styles.ledgerGrandLabel, { fontSize: responsiveFont(9) }]}>STAGE TOTALS</Text>
+            <Text selectable style={[styles.ledgerGrandValue, { fontSize: responsiveFont(11) }]}>
               {'DR ' + money(ledger.debitTotal) + '  ·  CR ' + money(ledger.creditTotal)}
             </Text>
           </View>
@@ -716,9 +747,9 @@ export function FlipPlanScreen() {
 
         <View style={styles.sliderPanel}>
           <View style={styles.sliderPanelHeading}>
-            <Text style={styles.sectionEyebrow}>FLIP INPUTS</Text>
-            <Text style={styles.sectionTitle}>Tune the plan</Text>
-            <Text style={styles.sectionText}>
+            <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>FLIP INPUTS</Text>
+            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16)}]}>Tune the plan</Text>
+            <Text style={[styles.sectionText, { fontSize: responsiveFont(11)}]}>
               Adjust any scale and every stage updates live.
             </Text>
           </View>
@@ -766,7 +797,7 @@ export function FlipPlanScreen() {
 
         <View style={styles.planNote}>
           <IconSymbol color={theme.colors.textMuted} name="lock.fill" size={14} />
-          <Text style={styles.planNoteText}>
+          <Text style={[styles.planNoteText, { fontSize: responsiveFont(10)}]}>
             This is an estimate-only projection. It stays separate from Books, so a
             planned sale, cost, or payout cannot look like real business activity.
           </Text>
@@ -776,7 +807,8 @@ export function FlipPlanScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   accountTypePill: {
     backgroundColor: 'rgba(234, 241, 236, 0.07)',
     borderColor: 'rgba(234, 241, 236, 0.16)',
@@ -1265,4 +1297,263 @@ const styles = StyleSheet.create({
   },
   topBar: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
 });
+  return {
+    ...staticStyles,
+  accountTypeText: [
+    staticStyles.accountTypeText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  backButtonText: [
+    staticStyles.backButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  balanceText: [
+    staticStyles.balanceText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  costNoteText: [
+    staticStyles.costNoteText,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  costNoteTitle: [
+    staticStyles.costNoteTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  emptyEntry: [
+    staticStyles.emptyEntry,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  entryAmount: [
+    staticStyles.entryAmount,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  entryLabel: [
+    staticStyles.entryLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  eyebrow: [
+    staticStyles.eyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  fieldHelper: [
+    staticStyles.fieldHelper,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  fieldLabel: [
+    staticStyles.fieldLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  impactLabel: [
+    staticStyles.impactLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+    topLabel: [
+      staticStyles.topLabel,
+      {
+          fontSize: responsiveLayout.responsiveFont(9),
+      },
+    ],
+    topSpacer: [
+      staticStyles.topSpacer,
+      {
+          width: responsiveLayout.responsiveWidth(44),
+          height: responsiveLayout.responsiveHeight(44),
+      },
+    ],
+  impactText: [
+    staticStyles.impactText,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  input: [
+    staticStyles.input,
+    {
+        fontSize: responsiveLayout.responsiveFont(22),
+    },
+  ],
+  inputPrefix: [
+    staticStyles.inputPrefix,
+    {
+        fontSize: responsiveLayout.responsiveFont(20),
+    },
+  ],
+  inputSuffix: [
+    staticStyles.inputSuffix,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  ledgerAccountTitle: [
+    staticStyles.ledgerAccountTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  ledgerColumnHeading: [
+    staticStyles.ledgerColumnHeading,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  ledgerGrandLabel: [
+    staticStyles.ledgerGrandLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  ledgerGrandValue: [
+    staticStyles.ledgerGrandValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  ledgerTotal: [
+    staticStyles.ledgerTotal,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  metricLabel: [
+    staticStyles.metricLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  metricValue: [
+    staticStyles.metricValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(19),
+    },
+  ],
+  planNoteText: [
+    staticStyles.planNoteText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  projectionPillText: [
+    staticStyles.projectionPillText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  resetText: [
+    staticStyles.resetText,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  sectionEyebrow: [
+    staticStyles.sectionEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  sectionText: [
+    staticStyles.sectionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  sectionTitle: [
+    staticStyles.sectionTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(16),
+    },
+  ],
+  stageDetail: [
+    staticStyles.stageDetail,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  stageIcon: [
+    staticStyles.stageIcon,
+    {
+        height: responsiveLayout.responsiveHeight(25),
+        width: responsiveLayout.responsiveWidth(25),
+    },
+  ],
+  stageLabel: [
+    staticStyles.stageLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  subtitle: [
+    staticStyles.subtitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(29),
+    },
+  ],
+  sliderFill: [
+    staticStyles.sliderFill,
+    {
+        height: responsiveLayout.responsiveHeight(5),
+    },
+  ],
+  sliderLabel: [
+    staticStyles.sliderLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  sliderThumb: [
+    staticStyles.sliderThumb,
+    {
+        height: responsiveLayout.responsiveHeight(22),
+        width: responsiveLayout.responsiveWidth(22),
+    },
+  ],
+  sliderTouch: [
+    staticStyles.sliderTouch,
+    {
+        height: responsiveLayout.responsiveHeight(34),
+    },
+  ],
+  sliderTrack: [
+    staticStyles.sliderTrack,
+    {
+        height: responsiveLayout.responsiveHeight(5),
+    },
+  ],
+  sliderValue: [
+    staticStyles.sliderValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  };
+}
 

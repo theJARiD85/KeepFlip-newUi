@@ -97,6 +97,11 @@ app-example
 /tools
 /skills
 /scripts
+!/scripts/
+scripts/*
+!/scripts/apply-responsive-layout.cjs
+!/scripts/make-ui-values-responsive.cjs
+!/scripts/test-make-ui-values-responsive.cjs
 /runs
 /output
 /modules/keepflip-ar-measure/android/build

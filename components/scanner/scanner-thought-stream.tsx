@@ -22,7 +22,9 @@ import type {
   ItemAnalysisStage,
   ItemIdentificationSnapshot,
 } from "@/types/item-analysis";
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export type Thought = {
   confidence?: string;
   id: string;
@@ -532,6 +534,7 @@ function ThoughtCard({
   sequenceIndex: number;
   thought: Thought;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const reduceMotion = useReducedMotion();
   const entry = useSharedValue(reduceMotion ? 1 : 0);
   const drift = useSharedValue(0);
@@ -677,6 +680,7 @@ function ThoughtCard({
 export function ScannerThoughtStream({
   thoughts,
 }: ScannerThoughtStreamProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const { height, width } = useWindowDimensions();
   const isCompact = height < 720 || width < 380;
   const anchors = isCompact
@@ -745,7 +749,8 @@ export function ScannerThoughtStream({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFill,
     zIndex: 1,
@@ -826,3 +831,46 @@ const styles = StyleSheet.create({
     opacity: 0,
   },
 });
+  return {
+    ...staticStyles,
+  signalNotch: [
+    staticStyles.signalNotch,
+    {
+        width: responsiveLayout.responsiveWidth(18),
+        height: responsiveLayout.responsiveHeight(2),
+    },
+  ],
+  label: [
+    staticStyles.label,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  valueGlow: [
+    staticStyles.valueGlow,
+    {
+        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(0) },
+    },
+  ],
+  value: [
+    staticStyles.value,
+    {
+        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(3) },
+    },
+  ],
+  confidence: [
+    staticStyles.confidence,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(2) },
+    },
+  ],
+  accessibleTranscript: [
+    staticStyles.accessibleTranscript,
+    {
+        width: responsiveLayout.responsiveWidth(1),
+        height: responsiveLayout.responsiveHeight(1),
+    },
+  ],
+  };
+}

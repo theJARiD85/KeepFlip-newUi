@@ -3,7 +3,10 @@ import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { Image } from "expo-image";
 import { useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type HudImageFrameProps = {
   confidence?: number;
   height?: number;
@@ -30,6 +33,11 @@ export function HudImageFrame({
   statusText = "CAPTURED EVIDENCE",
   width = 330,
 }: HudImageFrameProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const confidenceLabel = percentage(confidence);
 
   // The current result flow normally supplies a local URI. Accepting photoBytes
@@ -68,12 +76,12 @@ export function HudImageFrame({
         />
       ) : (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>PHOTO SIGNAL UNAVAILABLE</Text>
+          <Text style={[styles.emptyText, { fontSize: responsiveFont(10) }]}>PHOTO SIGNAL UNAVAILABLE</Text>
         </View>
       )}
       <View style={styles.statusBar}>
         <View style={styles.liveDot} />
-        <Text numberOfLines={1} style={styles.statusText}>
+        <Text numberOfLines={1} style={[styles.statusText, { fontSize: responsiveFont(8) }]}>
           {statusText}
         </Text>
         {confidenceLabel != null ? (
@@ -90,7 +98,8 @@ export function HudImageFrame({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   frame: {
     position: "absolute",
     top: 50,
@@ -188,3 +197,39 @@ const styles = StyleSheet.create({
     fontVariant: ["tabular-nums"],
   },
 });
+  return {
+    ...staticStyles,
+  emptyText: [
+    staticStyles.emptyText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  corner: [
+    staticStyles.corner,
+    {
+        width: responsiveLayout.responsiveWidth(28),
+        height: responsiveLayout.responsiveHeight(28),
+    },
+  ],
+  liveDot: [
+    staticStyles.liveDot,
+    {
+        width: responsiveLayout.responsiveWidth(6),
+        height: responsiveLayout.responsiveHeight(6),
+    },
+  ],
+  statusText: [
+    staticStyles.statusText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  confidence: [
+    staticStyles.confidence,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  };
+}

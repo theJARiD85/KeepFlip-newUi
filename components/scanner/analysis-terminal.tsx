@@ -7,7 +7,10 @@ import {
 } from "react-native";
 
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type AnalysisTerminalProps = {
   detail?: string;
   stage?: string;
@@ -29,6 +32,11 @@ export function AnalysisTerminal({
   detail,
   stage,
 }: AnalysisTerminalProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const [dotCount, setDotCount] = useState(1);
 
   useEffect(() => {
@@ -56,11 +64,11 @@ export function AnalysisTerminal({
       <View style={styles.header}>
         <View style={styles.signal} />
 
-        <Text style={styles.headerText}>
+        <Text style={[styles.headerText, { fontSize: responsiveFont(8) }]}>
           KEEPFLIP://ITEM_ANALYSIS
         </Text>
 
-        <Text style={styles.statusText}>
+        <Text style={[styles.statusText, { fontSize: responsiveFont(7) }]}>
           ACTIVE
         </Text>
       </View>
@@ -68,7 +76,7 @@ export function AnalysisTerminal({
       <View style={styles.divider} />
 
       <View style={styles.commandRow}>
-        <Text style={styles.prompt}>
+        <Text style={[styles.prompt, { fontSize: responsiveFont(13) }]}>
           {">"}
         </Text>
 
@@ -86,14 +94,14 @@ export function AnalysisTerminal({
       {detail ? (
         <Text
           numberOfLines={2}
-          style={styles.detail}
+          style={[styles.detail, { fontSize: responsiveFont(8), lineHeight: 12 }]}
         >
           {detail}
         </Text>
       ) : null}
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>
+        <Text style={[styles.footerText, { fontSize: responsiveFont(6) }]}>
           NEURAL CHANNEL // SECURE
         </Text>
 
@@ -103,7 +111,8 @@ export function AnalysisTerminal({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   terminal: {
     width: "100%",
     maxWidth: 390,
@@ -248,3 +257,61 @@ const styles = StyleSheet.create({
       "0 0 7px rgba(88, 223, 232, 0.74)",
   },
 });
+  return {
+    ...staticStyles,
+  signal: [
+    staticStyles.signal,
+    {
+        width: responsiveLayout.responsiveWidth(6),
+        height: responsiveLayout.responsiveHeight(6),
+    },
+  ],
+  headerText: [
+    staticStyles.headerText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  statusText: [
+    staticStyles.statusText,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  prompt: [
+    staticStyles.prompt,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+        textShadowOffset: {
+        width: responsiveLayout.responsiveWidth(0),
+        height: responsiveLayout.responsiveHeight(0),
+        },
+    },
+  ],
+  command: [
+    staticStyles.command,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  detail: [
+    staticStyles.detail,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  footerText: [
+    staticStyles.footerText,
+    {
+        fontSize: responsiveLayout.responsiveFont(6),
+    },
+  ],
+  cursor: [
+    staticStyles.cursor,
+    {
+        width: responsiveLayout.responsiveWidth(6),
+        height: responsiveLayout.responsiveHeight(10),
+    },
+  ],
+  };
+}

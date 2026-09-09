@@ -8,12 +8,15 @@
     "reset-project": "node ./scripts/reset-project.js",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "responsive:ui": "node scripts/make-ui-values-responsive.cjs",
+    "responsive:ui:apply": "node scripts/make-ui-values-responsive.cjs --write",
+    "test:responsive:ui": "node scripts/test-make-ui-values-responsive.cjs"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
     "@shopify/react-native-skia": "2.6.2",
-    "expo": "~57.0.19",
+    "expo": "~57.0.21",
     "expo-application": "~57.0.2",
     "expo-asset": "~57.0.11",
     "expo-auth-session": "~57.0.11",
@@ -32,7 +35,7 @@
     "expo-linear-gradient": "~57.0.1",
     "expo-linking": "~57.0.9",
     "expo-notifications": "~57.0.16",
-    "expo-router": "~57.0.18",
+    "expo-router": "~57.0.20",
     "expo-secure-store": "~57.0.3",
     "expo-sharing": "~57.0.17",
     "expo-splash-screen": "~57.0.7",
@@ -41,6 +44,7 @@
     "expo-system-ui": "~57.0.2",
     "expo-video": "~57.0.3",
     "expo-web-browser": "~57.0.2",
+    "node-appwrite": "^29.0.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
@@ -62,7 +66,8 @@
     "react-native-webview": "13.16.1",
     "react-native-worklets": "0.10.1",
     "react-native-worklets-core": "^1.6.3",
-    "three": "0.172.0"
+    "three": "0.172.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/react": "~19.2.10",

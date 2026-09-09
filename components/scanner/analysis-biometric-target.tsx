@@ -4,7 +4,10 @@ import { Platform, StyleSheet, Text, View } from "react-native";
 import type { AnalysisCallout } from "@/components/scanner/analysis-visual-types";
 import { ValueRadarTargetGraphic } from "@/components/scanner/value-radar-target-graphic";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type AnalysisBiometricTargetProps = {
   active: boolean;
   callouts?: AnalysisCallout[];
@@ -24,6 +27,11 @@ export function AnalysisBiometricTarget({
   viewportHeight,
   viewportWidth,
 }: AnalysisBiometricTargetProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   if (!active) return null;
 
   const width = Math.min(382, Math.max(284, viewportWidth - 28));
@@ -66,8 +74,8 @@ export function AnalysisBiometricTarget({
         />
         {callouts.slice(0, 3).map((callout, index) => (
           <View key={callout.id} style={[styles.callout, { top: 54 + index * 72 }]}>
-            <Text style={styles.calloutLabel}>{callout.label}</Text>
-            <Text numberOfLines={1} style={styles.calloutValue}>{callout.value}</Text>
+            <Text style={[styles.calloutLabel, { fontSize: responsiveFont(6) }]}>{callout.label}</Text>
+            <Text numberOfLines={1} style={[styles.calloutValue, { fontSize: responsiveFont(9) }]}>{callout.value}</Text>
           </View>
         ))}
         <View style={styles.progressTrack}>
@@ -80,7 +88,8 @@ export function AnalysisBiometricTarget({
 
 const monoFont = Platform.OS === "ios" ? "Courier New" : "monospace";
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFill,
     alignItems: "center",
@@ -111,3 +120,25 @@ const styles = StyleSheet.create({
   progressTrack: { position: "absolute", right: 10, bottom: 9, left: 10, height: 3, backgroundColor: "rgba(0, 255, 255, 0.12)" },
   progressFill: { height: "100%", backgroundColor: theme.colors.goldBright },
 });
+  return {
+    ...staticStyles,
+  calloutLabel: [
+    staticStyles.calloutLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(6),
+    },
+  ],
+  calloutValue: [
+    staticStyles.calloutValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  progressTrack: [
+    staticStyles.progressTrack,
+    {
+        height: responsiveLayout.responsiveHeight(3),
+    },
+  ],
+  };
+}

@@ -12,7 +12,10 @@ import Animated, { FadeIn, FadeInUp, FadeOut } from "react-native-reanimated";
 import type { ItemAnalysisState } from "@/components/scanner/item-analysis-overlay";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type ResultState = Extract<ItemAnalysisState, { status: "result" }>;
 
 type ItemAnalysisResultStageProps = {
@@ -64,6 +67,7 @@ function ActionButton({
   onPress: () => void;
   secondary?: boolean;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   return (
     <Pressable
       accessibilityRole="button"
@@ -94,6 +98,11 @@ export function ItemAnalysisResultStage({
   state,
   topInset,
 }: ItemAnalysisResultStageProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const result = state.data;
   const identityMeta = useMemo(
     () =>
@@ -116,7 +125,7 @@ export function ItemAnalysisResultStage({
     >
       <View style={[styles.header, { top: topInset + 14 }]}>
         <View style={styles.headerCopy}>
-          <Text numberOfLines={2} selectable style={styles.title}>
+          <Text numberOfLines={2} selectable style={[styles.title, { fontSize: responsiveFont(27), lineHeight: 32 }]}>
             {result.identity.title}
           </Text>
           {identityMeta ? (
@@ -152,8 +161,8 @@ export function ItemAnalysisResultStage({
         >
           {result.summary ? (
             <View style={styles.card}>
-              <Text style={styles.eyebrow}>ITEM SUMMARY</Text>
-              <Text numberOfLines={6} selectable style={styles.body}>
+              <Text style={[styles.eyebrow, { fontSize: responsiveFont(9) }]}>ITEM SUMMARY</Text>
+              <Text numberOfLines={6} selectable style={[styles.body, { fontSize: responsiveFont(12), lineHeight: 18 }]}>
                 {result.summary}
               </Text>
             </View>
@@ -161,7 +170,7 @@ export function ItemAnalysisResultStage({
 
           {result.valuation ? (
             <View style={[styles.card, styles.valuationCard]}>
-              <Text style={styles.eyebrow}>SOLD MARKET VALUATION</Text>
+              <Text style={[styles.eyebrow, { fontSize: responsiveFont(9) }]}>SOLD MARKET VALUATION</Text>
               <View style={styles.valuationRow}>
                 {[
                   ["LOW", result.valuation.low],
@@ -169,7 +178,7 @@ export function ItemAnalysisResultStage({
                   ["HIGH", result.valuation.high],
                 ].map(([label, value]) => (
                   <View key={String(label)} style={styles.valuationMetric}>
-                    <Text style={styles.metricLabel}>{label}</Text>
+                    <Text style={[styles.metricLabel, { fontSize: responsiveFont(8) }]}>{label}</Text>
                     <Text
                       adjustsFontSizeToFit
                       numberOfLines={1}
@@ -189,11 +198,11 @@ export function ItemAnalysisResultStage({
           ) : null}
 
           <View style={styles.card}>
-            <Text style={styles.eyebrow}>CONFIDENCE</Text>
-            <Text style={styles.confidenceValue}>
+            <Text style={[styles.eyebrow, { fontSize: responsiveFont(9) }]}>CONFIDENCE</Text>
+            <Text style={[styles.confidenceValue, { fontSize: responsiveFont(34), lineHeight: 38 }]}>
               {percentage(result.confidence?.overall) ?? "--"}%
             </Text>
-            <Text style={styles.body}>
+            <Text style={[styles.body, { fontSize: responsiveFont(12), lineHeight: 18 }]}>
               {result.valuationReadiness.reason ??
                 result.valuationReadiness.label ??
                 "KeepFlip completed the available evidence review."}
@@ -202,12 +211,12 @@ export function ItemAnalysisResultStage({
 
           {result.condition ? (
             <View style={styles.card}>
-              <Text style={styles.eyebrow}>OBSERVED CONDITION</Text>
+              <Text style={[styles.eyebrow, { fontSize: responsiveFont(9) }]}>OBSERVED CONDITION</Text>
               <Text selectable style={styles.conditionGrade}>
                 {result.condition.label}
               </Text>
               {result.condition.summary ? (
-                <Text numberOfLines={4} selectable style={styles.body}>
+                <Text numberOfLines={4} selectable style={[styles.body, { fontSize: responsiveFont(12), lineHeight: 18 }]}>
                   {result.condition.summary}
                 </Text>
               ) : null}
@@ -235,7 +244,8 @@ export function ItemAnalysisResultStage({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFill,
     zIndex: 44,
@@ -400,3 +410,87 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
 });
+  return {
+    ...staticStyles,
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(27),
+    },
+  ],
+  meta: [
+    staticStyles.meta,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  closeButton: [
+    staticStyles.closeButton,
+    {
+        width: responsiveLayout.responsiveWidth(42),
+        height: responsiveLayout.responsiveHeight(42),
+    },
+  ],
+  card: [
+    staticStyles.card,
+    {
+        width: responsiveLayout.responsiveWidth(270),
+        height: responsiveLayout.responsiveHeight(146),
+    },
+  ],
+  valuationCard: [
+    staticStyles.valuationCard,
+    {
+        width: responsiveLayout.responsiveWidth(310),
+    },
+  ],
+  eyebrow: [
+    staticStyles.eyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  body: [
+    staticStyles.body,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  metricLabel: [
+    staticStyles.metricLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  metricValue: [
+    staticStyles.metricValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  metricValueFeatured: [
+    staticStyles.metricValueFeatured,
+    {
+        fontSize: responsiveLayout.responsiveFont(18),
+    },
+  ],
+  confidenceValue: [
+    staticStyles.confidenceValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(34),
+    },
+  ],
+  conditionGrade: [
+    staticStyles.conditionGrade,
+    {
+        fontSize: responsiveLayout.responsiveFont(21),
+    },
+  ],
+  actionText: [
+    staticStyles.actionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  };
+}

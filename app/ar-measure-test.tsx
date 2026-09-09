@@ -9,6 +9,9 @@ import {
   type ViewProps,
 } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type TrackingEvent = {
   state: string;
   reason?: string;
@@ -100,6 +103,11 @@ const NativeARMeasureView =
   );
 
 export default function ARMeasureTestScreen() {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const arRef = useRef<ARMeasureRef | null>(null);
 
   const [tracking, setTracking] =
@@ -216,7 +224,7 @@ export default function ARMeasureTestScreen() {
         <View style={styles.reticleDot} />
     </View>
 
-    <Text style={styles.reticleLabel}>
+    <Text style={[styles.reticleLabel, { fontSize: responsiveFont(12) }]}>
         {targetLabel}
     </Text>
     </View>
@@ -225,15 +233,15 @@ export default function ARMeasureTestScreen() {
         style={styles.overlay}
       >
         <View style={styles.statusCard}>
-          <Text style={styles.title}>
+          <Text style={[styles.title, { fontSize: responsiveFont(20) }]}>
             KeepFlip AR Measure
           </Text>
 
-          <Text style={styles.status}>
+          <Text style={[styles.status, { fontSize: responsiveFont(14) }]}>
             Tracking: {tracking}
           </Text>
 
-          <Text style={styles.status}>
+          <Text style={[styles.status, { fontSize: responsiveFont(14) }]}>
             Mode: silhouette wireframe scan
           </Text>
 
@@ -257,7 +265,7 @@ export default function ARMeasureTestScreen() {
           )}
 
           {error ? (
-            <Text style={styles.error}>
+            <Text style={[styles.error, { fontSize: responsiveFont(13) }]}>
               {error.code}: {error.message}
             </Text>
           ) : null}
@@ -282,7 +290,8 @@ export default function ARMeasureTestScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#000",
@@ -394,3 +403,63 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   }
 });
+  return {
+    ...staticStyles,
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(20),
+    },
+  ],
+  status: [
+    staticStyles.status,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  instructions: [
+    staticStyles.instructions,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  measurement: [
+    staticStyles.measurement,
+    {
+        fontSize: responsiveLayout.responsiveFont(34),
+    },
+  ],
+  secondaryMeasurement: [
+    staticStyles.secondaryMeasurement,
+    {
+        fontSize: responsiveLayout.responsiveFont(18),
+    },
+  ],
+  error: [
+    staticStyles.error,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  reticle: [
+    staticStyles.reticle,
+    {
+        width: responsiveLayout.responsiveWidth(58),
+        height: responsiveLayout.responsiveHeight(58),
+    },
+  ],
+  reticleDot: [
+    staticStyles.reticleDot,
+    {
+        width: responsiveLayout.responsiveWidth(7),
+        height: responsiveLayout.responsiveHeight(7),
+    },
+  ],
+  reticleLabel: [
+    staticStyles.reticleLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  };
+}

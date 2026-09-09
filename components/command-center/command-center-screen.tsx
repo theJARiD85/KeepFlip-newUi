@@ -17,7 +17,6 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
-import { KeepFlipAssistantPanel } from '@/components/command-center/keepflip-assistant-panel';
 import { BusinessPulse } from '@/components/command-center/business-pulse';
 import { SellerOperationsPanel } from '@/components/command-center/seller-operations-panel';
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
@@ -59,7 +58,9 @@ import {
   type ResellerLedgerEntry,
 } from '@/services/reseller-ledger-service';
 import { withAlpha } from '@/lib/withAlpha';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type EbayConnectionViewState =
   | 'checking'
   | 'connected'
@@ -226,9 +227,14 @@ function eBayStateDetails(
 }
 
 export function CommandCenterScreen() {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const router = useRouter();
-  const { openReviewQueue: openReviewQueueParam } = useLocalSearchParams<{
+  const {
+    openReviewQueue: openReviewQueueParam,
+    openSellerOperations: openSellerOperationsParam,
+  } = useLocalSearchParams<{
     openReviewQueue?: string | string[];
+    openSellerOperations?: string | string[];
   }>();
   const insets = useSafeAreaInsets();
   const { user } = useKeepFlipAuth();
@@ -265,8 +271,11 @@ export function CommandCenterScreen() {
   const shouldOpenReviewQueue = Array.isArray(openReviewQueueParam)
     ? openReviewQueueParam[0] === '1'
     : openReviewQueueParam === '1';
+  const shouldOpenSellerOperations = Array.isArray(openSellerOperationsParam)
+    ? openSellerOperationsParam[0] === '1'
+    : openSellerOperationsParam === '1';
     const {
-      contentWidth,
+    contentWidth,
       controlDockWidth,
       height: screenHeight,
       isCompactHeight,
@@ -277,7 +286,8 @@ export function CommandCenterScreen() {
       scannerWidth,
       verticalScale,
       width: screenWidth,
-    } = useResponsiveLayout();
+    contentMaxWidth
+  } = useResponsiveLayout();
 
   const resolveEbayStatus = useCallback(async () => {
     try {
@@ -482,6 +492,12 @@ export function CommandCenterScreen() {
     user?.$id,
   ]);
 
+  useEffect(() => {
+    if (!shouldOpenSellerOperations || !user?.$id) return;
+    const timer = setTimeout(() => setSellerOperationsOpen(true), 0);
+    return () => clearTimeout(timer);
+  }, [shouldOpenSellerOperations, user?.$id]);
+
   const chooseReview = (review: BookkeepingReviewItem) => {
     hapticSelection();
     setActiveReview(review);
@@ -679,33 +695,19 @@ export function CommandCenterScreen() {
   return (
     <KeepFlipBackground>
       <ScrollView
-        contentContainerStyle={[
-          styles.content,
-          { paddingHorizontal: pageGutter, paddingTop: insets.top / 2, paddingBottom: insets.bottom + 32 },
-        ]}
+        contentContainerStyle={[styles.content,
+          { paddingHorizontal: pageGutter, paddingTop: insets.top / 2, paddingBottom: insets.bottom + 32 }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         style={{marginBottom: insets.bottom, marginTop: insets.top}}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}>
         <Animated.View entering={FadeInDown.duration(260)} style={styles.header}>
           <Text style={[styles.eyebrow, { fontSize: responsiveFont(9) }]}>KEEPFLIP / COMMAND CENTER</Text>
           <Text style={[styles.title, {fontSize: responsiveFont(26)}]}>Run the business</Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.subtitle, { fontSize: responsiveFont(12)}]}>
             Marketplace access, inventory, books, and workspace controls in one place.
           </Text>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.duration(260).delay(45)} style={styles.section}>
-          <KeepFlipAssistantPanel
-            onNavigate={(route) => {
-              hapticSelection();
-              router.push(route as Href);
-            }}
-            onOpenSellerOperations={() => {
-              hapticSelection();
-              setSellerOperationsOpen(true);
-            }}
-          />
-        </Animated.View>
         <Animated.View entering={FadeInDown.duration(260).delay(60)} style={styles.section}>
           <BusinessPulse
             errorMessage={businessError}
@@ -728,8 +730,8 @@ export function CommandCenterScreen() {
 
         <Animated.View entering={FadeInDown.duration(260).delay(70)} style={styles.section}>
           <View style={styles.sectionHeading}>
-            <Text style={styles.sectionEyebrow}>SELLER OPERATIONS</Text>
-            <Text style={styles.sectionTitle}>One workspace for the sale</Text>
+            <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>SELLER OPERATIONS</Text>
+            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16)}]}>One workspace for the sale</Text>
           </View>
           <View style={styles.settingsList}>
             <KeepFlipControlRow
@@ -755,8 +757,8 @@ export function CommandCenterScreen() {
         </Animated.View>
         <Animated.View entering={FadeInDown.duration(260).delay(75)} style={styles.section}>
           <View style={styles.sectionHeading}>
-            <Text style={styles.sectionEyebrow}>MARKETPLACE</Text>
-            <Text style={styles.sectionTitle}>Connected services</Text>
+            <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>MARKETPLACE</Text>
+            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16)}]}>Connected services</Text>
           </View>
           <View style={styles.eBaySurface}>
             <KeepFlipControlRow
@@ -861,8 +863,8 @@ export function CommandCenterScreen() {
 
         <Animated.View entering={FadeInDown.duration(260).delay(90)} style={styles.section}>
           <View style={styles.sectionHeading}>
-            <Text style={styles.sectionEyebrow}>BUSINESS TOOLS</Text>
-            <Text style={styles.sectionTitle}>Seller workspace</Text>
+            <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>BUSINESS TOOLS</Text>
+            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16)}]}>Seller workspace</Text>
           </View>
           <View style={styles.settingsList}>
             <KeepFlipControlRow
@@ -902,8 +904,8 @@ export function CommandCenterScreen() {
 
         <Animated.View entering={FadeInDown.duration(260).delay(135)} style={styles.section}>
           <View style={styles.sectionHeading}>
-            <Text style={styles.sectionEyebrow}>WORKSPACE</Text>
-            <Text style={styles.sectionTitle}>KeepFlip controls</Text>
+            <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>WORKSPACE</Text>
+            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16)}]}>KeepFlip controls</Text>
           </View>
           <View style={styles.settingsList}>
             <KeepFlipControlRow
@@ -931,8 +933,8 @@ export function CommandCenterScreen() {
 
         <Animated.View entering={FadeInDown.duration(260).delay(180)} style={styles.section}>
           <View style={styles.sectionHeading}>
-            <Text style={styles.sectionEyebrow}>ACCOUNT & HELP</Text>
-            <Text style={styles.sectionTitle}>Your KeepFlip access</Text>
+            <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>ACCOUNT & HELP</Text>
+            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16)}]}>Your KeepFlip access</Text>
           </View>
           <View style={styles.settingsList}>
             <KeepFlipControlRow
@@ -969,7 +971,7 @@ export function CommandCenterScreen() {
         </Animated.View>
 
         {supportError ? (
-          <Text accessibilityLiveRegion="polite" selectable style={styles.errorText}>
+          <Text accessibilityLiveRegion="polite" selectable style={[styles.errorText, { fontSize: responsiveFont(11)}]}>
             {supportError}
           </Text>
         ) : null}
@@ -997,8 +999,8 @@ export function CommandCenterScreen() {
           <View style={[styles.reviewModal, { paddingBottom: Math.max(insets.bottom, 16) }]}>
             <View style={styles.reviewModalHeader}>
               <View style={styles.reviewModalHeading}>
-                <Text style={styles.reviewModalEyebrow}>BOOKS / MONEY REVIEW</Text>
-                <Text style={styles.reviewModalTitle}>
+                <Text style={[styles.reviewModalEyebrow, { fontSize: responsiveFont(8) }]}>BOOKS / MONEY REVIEW</Text>
+                <Text style={[styles.reviewModalTitle, { fontSize: responsiveFont(20)}]}>
                   {activeReview ? 'Finish this record' : 'Quick review queue'}
                 </Text>
               </View>
@@ -1017,12 +1019,12 @@ export function CommandCenterScreen() {
                   styles.reviewCloseButton,
                   pressed && styles.reviewPressed,
                 ]}>
-                <Text style={styles.reviewCloseText}>{activeReview ? 'BACK' : 'DONE'}</Text>
+                <Text style={[styles.reviewCloseText, { fontSize: responsiveFont(8) }]}>{activeReview ? 'BACK' : 'DONE'}</Text>
               </Pressable>
             </View>
 
             {reviewActionMessage ? (
-              <Text selectable style={styles.reviewActionMessage}>
+              <Text selectable style={[styles.reviewActionMessage, { fontSize: responsiveFont(10)}]}>
                 {reviewActionMessage}
               </Text>
             ) : null}
@@ -1034,12 +1036,12 @@ export function CommandCenterScreen() {
                 showsVerticalScrollIndicator={false}>
                 <View style={styles.reviewDetailCard}>
                   <View style={styles.reviewCardTopline}>
-                    <Text style={styles.reviewCardStatus}>{reviewStatusLabel(activeReview)}</Text>
+                    <Text style={[styles.reviewCardStatus, { fontSize: responsiveFont(7) }]}>{reviewStatusLabel(activeReview)}</Text>
                     <Text selectable style={styles.reviewCardAmount}>
                       {formatReviewMoney(activeReview)}
                     </Text>
                   </View>
-                  <Text style={styles.reviewCardTitle}>
+                  <Text style={[styles.reviewCardTitle, { fontSize: responsiveFont(12)}]}>
                     {reviewTypeLabel(activeReview.sourceType)} · {formatReviewDate(activeReview.occurredAt)}
                   </Text>
                   <Text selectable style={styles.reviewCardReason}>{activeReview.reason}</Text>
@@ -1061,8 +1063,8 @@ export function CommandCenterScreen() {
 
                 {activeReview.status === 'needs_item_cost' ? (
                   <View style={styles.reviewResolutionSection}>
-                    <Text style={styles.reviewResolutionTitle}>COST RECONCILIATION NEEDED</Text>
-                    <Text style={styles.reviewResolutionBody}>
+                    <Text style={[styles.reviewResolutionTitle, { fontSize: responsiveFont(8) }]}>COST RECONCILIATION NEEDED</Text>
+                    <Text style={[styles.reviewResolutionBody, { fontSize: responsiveFont(10)}]}>
                       The sale itself is already posted. KeepFlip is keeping this review open because the original inventory cost was missing when that sale posted. It will not guess the cost or create a second purchase from this screen.
                     </Text>
                     <Pressable
@@ -1072,15 +1074,15 @@ export function CommandCenterScreen() {
                         styles.reviewSecondaryButton,
                         pressed && styles.reviewPressed,
                       ]}>
-                      <Text style={styles.reviewSecondaryButtonText}>OPEN BOOKS · REVIEW COST</Text>
+                      <Text style={[styles.reviewSecondaryButtonText, { fontSize: responsiveFont(9) }]}>OPEN BOOKS · REVIEW COST</Text>
                     </Pressable>
                   </View>
                 ) : activeReview.sourceType === 'sale' &&
                     activeReview.amountKnown &&
                     activeReview.currency === 'USD' ? (
                   <View style={styles.reviewResolutionSection}>
-                    <Text style={styles.reviewResolutionTitle}>MATCH THE SALE</Text>
-                    <Text style={styles.reviewResolutionBody}>
+                    <Text style={[styles.reviewResolutionTitle, { fontSize: responsiveFont(8) }]}>MATCH THE SALE</Text>
+                    <Text style={[styles.reviewResolutionBody, { fontSize: responsiveFont(10)}]}>
                       Choose the exact KeepFlip item, confirm how many units sold, then KeepFlip will post the sale and move the right inventory quantity and cost.
                     </Text>
                     <TextInput
@@ -1098,6 +1100,10 @@ export function CommandCenterScreen() {
                       showsVerticalScrollIndicator
                       style={styles.reviewInventoryList}>
                       {filteredReviewInventory.map((item) => {
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
                         const selected = item.id === selectedReviewItemId;
                         return (
                           <Pressable
@@ -1114,7 +1120,7 @@ export function CommandCenterScreen() {
                               pressed && styles.reviewPressed,
                             ]}>
                             <View style={styles.reviewInventoryCopy}>
-                              <Text numberOfLines={1} style={styles.reviewInventoryTitle}>{item.title}</Text>
+                              <Text numberOfLines={1} style={[styles.reviewInventoryTitle, { fontSize: responsiveFont(11) }]}>{item.title}</Text>
                               <Text numberOfLines={1} style={styles.reviewInventoryMeta}>
                                 {[
                                   item.brand,
@@ -1128,13 +1134,13 @@ export function CommandCenterScreen() {
                         );
                       })}
                       {filteredReviewInventory.length === 0 ? (
-                        <Text style={styles.reviewEmptyText}>No matching in-stock inventory items.</Text>
+                        <Text style={[styles.reviewEmptyText, { fontSize: responsiveFont(10)}]}>No matching in-stock inventory items.</Text>
                       ) : null}
                     </ScrollView>
                     <View style={styles.reviewQuantityRow}>
                       <View style={styles.reviewQuantityCopy}>
-                        <Text style={styles.reviewResolutionTitle}>QUANTITY SOLD</Text>
-                        <Text style={styles.reviewResolutionBody}>Usually 1. Change it for a multi-unit order.</Text>
+                        <Text style={[styles.reviewResolutionTitle, { fontSize: responsiveFont(8) }]}>QUANTITY SOLD</Text>
+                        <Text style={[styles.reviewResolutionBody, { fontSize: responsiveFont(10)}]}>Usually 1. Change it for a multi-unit order.</Text>
                       </View>
                       <TextInput
                         keyboardType="number-pad"
@@ -1156,15 +1162,15 @@ export function CommandCenterScreen() {
                       {reviewResolving ? (
                         <ActivityIndicator color={theme.colors.backgroundDeep} size="small" />
                       ) : null}
-                      <Text style={styles.reviewPrimaryButtonText}>
+                      <Text style={[styles.reviewPrimaryButtonText, { fontSize: responsiveFont(9) }]}>
                         {reviewResolving ? 'POSTING REVIEW...' : 'CONFIRM & POST SALE'}
                       </Text>
                     </Pressable>
                   </View>
                 ) : (
                   <View style={styles.reviewResolutionSection}>
-                    <Text style={styles.reviewResolutionTitle}>MANUAL BOOKS CHECK</Text>
-                    <Text style={styles.reviewResolutionBody}>
+                    <Text style={[styles.reviewResolutionTitle, { fontSize: responsiveFont(8) }]}>MANUAL BOOKS CHECK</Text>
+                    <Text style={[styles.reviewResolutionBody, { fontSize: responsiveFont(10)}]}>
                       KeepFlip preserved the eBay transaction type, transaction ID, and the original amount and currency when eBay supplied them. There is not yet a safe automatic accounting rule for this record, so it stays held instead of being guessed.
                     </Text>
                     <Pressable
@@ -1174,7 +1180,7 @@ export function CommandCenterScreen() {
                         styles.reviewSecondaryButton,
                         pressed && styles.reviewPressed,
                       ]}>
-                      <Text style={styles.reviewSecondaryButtonText}>OPEN BOOKS</Text>
+                      <Text style={[styles.reviewSecondaryButtonText, { fontSize: responsiveFont(9) }]}>OPEN BOOKS</Text>
                     </Pressable>
                   </View>
                 )}
@@ -1182,12 +1188,12 @@ export function CommandCenterScreen() {
             ) : reviewLoading && reviewItems.length === 0 ? (
               <View style={styles.reviewLoadingState}>
                 <ActivityIndicator color={theme.colors.goldBright} />
-                <Text style={styles.reviewEmptyText}>Checking synced money records…</Text>
+                <Text style={[styles.reviewEmptyText, { fontSize: responsiveFont(10)}]}>Checking synced money records…</Text>
               </View>
             ) : reviewItems.length === 0 ? (
               <View style={styles.reviewLoadingState}>
-                <Text style={styles.reviewClearTitle}>ALL CLEAR</Text>
-                <Text style={styles.reviewEmptyText}>No synced money records need review right now.</Text>
+                <Text style={[styles.reviewClearTitle, { fontSize: responsiveFont(11) }]}>ALL CLEAR</Text>
+                <Text style={[styles.reviewEmptyText, { fontSize: responsiveFont(10)}]}>No synced money records need review right now.</Text>
               </View>
             ) : (
               <ScrollView
@@ -1206,10 +1212,10 @@ export function CommandCenterScreen() {
                       pressed && styles.reviewPressed,
                     ]}>
                     <View style={styles.reviewCardTopline}>
-                      <Text style={styles.reviewCardStatus}>{reviewStatusLabel(item)}</Text>
+                      <Text style={[styles.reviewCardStatus, { fontSize: responsiveFont(7) }]}>{reviewStatusLabel(item)}</Text>
                       <Text selectable style={styles.reviewCardAmount}>{formatReviewMoney(item)}</Text>
                     </View>
-                    <Text style={styles.reviewCardTitle}>
+                    <Text style={[styles.reviewCardTitle, { fontSize: responsiveFont(12)}]}>
                       {reviewTypeLabel(item.sourceType)} · {formatReviewDate(item.occurredAt)}
                     </Text>
                     <Text numberOfLines={2} style={styles.reviewCardReason}>{item.reason}</Text>
@@ -1233,7 +1239,8 @@ export function CommandCenterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   content: {
     width: '100%',
     maxWidth: 760,
@@ -1565,3 +1572,171 @@ const styles = StyleSheet.create({
   reviewPressed: { opacity: 0.72 },
   reviewDisabled: { opacity: 0.45 },
 });
+  return {
+    ...staticStyles,
+  eyebrow: [
+    staticStyles.eyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  subtitle: [
+    staticStyles.subtitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  sectionEyebrow: [
+    staticStyles.sectionEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  sectionTitle: [
+    staticStyles.sectionTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(16),
+    },
+  ],
+  eBayLogo: [
+    staticStyles.eBayLogo,
+    {
+        width: responsiveLayout.responsiveWidth(25),
+        height: responsiveLayout.responsiveHeight(27),
+    },
+  ],
+  errorText: [
+    staticStyles.errorText,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  reviewModalEyebrow: [
+    staticStyles.reviewModalEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  reviewModalTitle: [
+    staticStyles.reviewModalTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(20),
+    },
+  ],
+  reviewCloseText: [
+    staticStyles.reviewCloseText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  reviewQueueIntro: [
+    staticStyles.reviewQueueIntro,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  reviewCardStatus: [
+    staticStyles.reviewCardStatus,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  reviewCardAmount: [
+    staticStyles.reviewCardAmount,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  reviewCardTitle: [
+    staticStyles.reviewCardTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  reviewCardReason: [
+    staticStyles.reviewCardReason,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  reviewCardMeta: [
+    staticStyles.reviewCardMeta,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  reviewCardAction: [
+    staticStyles.reviewCardAction,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  reviewResolutionTitle: [
+    staticStyles.reviewResolutionTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  reviewResolutionBody: [
+    staticStyles.reviewResolutionBody,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  reviewInventoryTitle: [
+    staticStyles.reviewInventoryTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  reviewInventoryMeta: [
+    staticStyles.reviewInventoryMeta,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  reviewInventoryQty: [
+    staticStyles.reviewInventoryQty,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  reviewQuantityInput: [
+    staticStyles.reviewQuantityInput,
+    {
+        width: responsiveLayout.responsiveWidth(72),
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  reviewPrimaryButtonText: [
+    staticStyles.reviewPrimaryButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  reviewSecondaryButtonText: [
+    staticStyles.reviewSecondaryButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  reviewActionMessage: [
+    staticStyles.reviewActionMessage,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  reviewClearTitle: [
+    staticStyles.reviewClearTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  reviewEmptyText: [
+    staticStyles.reviewEmptyText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  };
+}

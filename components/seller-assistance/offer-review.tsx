@@ -3,7 +3,7 @@ import { Switch, Text, View } from 'react-native';
 import { assessOffer, parseMoneyInput, type ShippingPreset } from '@/lib/seller-assistance';
 import { type NetProceedsInput } from '@/lib/seller-net-proceeds';
 import { getSellerAssistanceCapabilities } from '@/services/seller-preferences-service';
-import { Button, Field, Section, styles } from './ui';
+import { Button, Field, Section, useSellerAssistanceStyles } from './ui';
 
 const MONEY_FIELDS = [
   ['salePriceCents', 'Offer / counteroffer price'], ['acquisitionCostCents', 'Acquisition cost for the units being sold'],
@@ -14,6 +14,7 @@ const MONEY_FIELDS = [
 type MoneyKey = (typeof MONEY_FIELDS)[number][0];
 const money = (cents: number | null) => cents === null ? 'Unknown' : `$${(cents / 100).toFixed(2)}`;
 export function OfferReview({ serious, presets, onRecord }: { serious: boolean; presets: ShippingPreset[]; onRecord: (notes: string) => Promise<boolean> }) {
+  const styles = useSellerAssistanceStyles();
   const [values, setValues] = useState<Record<MoneyKey, string>>({ salePriceCents: '', acquisitionCostCents: '', buyerShippingCents: '0', shippingExpenseCents: '', packagingCents: '0', fixedFeeCents: '0', discountCents: '0', refundAllowanceCents: '0', marketplaceCollectedTaxCents: '0', sellerTaxReserveCents: '0' });
   const [fee, setFee] = useState('');
   const [promoted, setPromoted] = useState('0');

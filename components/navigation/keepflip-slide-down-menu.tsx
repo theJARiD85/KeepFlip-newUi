@@ -27,7 +27,7 @@ import { SourcingTripControl } from '@/components/sourcing/sourcing-trip-control
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type MenuDestination = {
   eyebrow: string;
   href: Href;
@@ -66,6 +66,11 @@ function isDestinationActive(destinationPath: string, pathname: string) {
 }
 
 export function KeepFlipSlideDownMenu() {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
@@ -74,7 +79,7 @@ export function KeepFlipSlideDownMenu() {
   const isMenuDisabled = pathname === '/walkthrough';
   const progress = useSharedValue(0);
   const [isMenuMounted, setIsMenuMounted] = useState(isMenuOpen);
-  const panelHeight = Math.min(725, Math.max(543, height - insets.bottom - 30));
+  const panelHeight = Math.min(690, Math.max(543, height - insets.bottom - 30));
 
   useEffect(() => {
     let openFrame: number | undefined;
@@ -202,9 +207,9 @@ export function KeepFlipSlideDownMenu() {
                     style={styles.brandMark}
                   />
                   <View style={styles.brandCopy}>
-                    <Text style={styles.brandName}>KEEPFLIP</Text>
-                    <View style={styles.brandDescriptor}>
-                    <Text numberOfLines={1} style={styles.brandDescriptor}>Beyond the flip.</Text>
+                    <Text style={[styles.brandName, { fontSize: responsiveFont(22) }]}>KEEPFLIP</Text>
+                    <View style={styles.brandDescriptorContainer}>
+                      <Text numberOfLines={1} style={styles.brandDescriptor}>Sourcing </Text>
                       <Text numberOfLines={1} style={styles.brandDescriptor}>Built for your business.</Text>
                     </View>
                   </View>
@@ -226,7 +231,7 @@ export function KeepFlipSlideDownMenu() {
               <View pointerEvents="none" style={styles.goldRail} />
 
               <View style={styles.navigationBlock}>
-                <Text style={styles.sectionLabel}>NAVIGATION</Text>
+                <Text style={[styles.sectionLabel, { fontSize: responsiveFont(9) }]}>NAVIGATION</Text>
 
                 <View style={styles.destinationList}>
                   {destinations.map((destination, index) => {
@@ -269,7 +274,7 @@ export function KeepFlipSlideDownMenu() {
                             ]}>
                             {destination.label}
                           </Text>
-                          <Text style={styles.destinationEyebrow}>
+                          <Text style={[styles.destinationEyebrow, { fontSize: responsiveFont(8) }]}>
                             {destination.eyebrow}
                           </Text>
                         </View>
@@ -295,7 +300,7 @@ export function KeepFlipSlideDownMenu() {
               </View>
 
               <View style={styles.workflowBlock}>
-                <Text style={styles.sectionLabel}>WORKFLOW</Text>
+                <Text style={[styles.sectionLabel, { fontSize: responsiveFont(9) }]}>WORKFLOW</Text>
                 <SourcingTripControl />
               </View>
 
@@ -311,10 +316,10 @@ export function KeepFlipSlideDownMenu() {
               <View style={styles.systemStatus}>
                 <View style={styles.systemStatusDot} />
                 <View style={styles.systemStatusCopy}>
-                  <Text style={styles.systemStatusLabel}>KEEPFLIP VISION</Text>
-                  <Text style={styles.systemStatusValue}>SYSTEM READY</Text>
+                  <Text style={[styles.systemStatusLabel, { fontSize: responsiveFont(8) }]}>KEEPFLIP VISION</Text>
+                  <Text style={[styles.systemStatusValue, { fontSize: responsiveFont(10) }]}>SYSTEM READY</Text>
                 </View>
-                <Text style={styles.systemStatusCode}>KF//01</Text>
+                <Text style={[styles.systemStatusCode, { fontSize: responsiveFont(9) }]}>KF//01</Text>
               </View>
             </ScrollView>
           </Animated.View>
@@ -348,7 +353,8 @@ export function KeepFlipSlideDownMenu() {
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   overlayRoot: {
     ...StyleSheet.absoluteFill,
     zIndex: 10000,
@@ -418,10 +424,12 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 2.6,
   },
+  brandDescriptorContainer: {
+    maxWidth: 150,
+  },
   brandDescriptor: {
     color: theme.colors.gold,
     fontSize: 9,
-    maxWidth: 150,
     fontWeight: '800',
     letterSpacing: 1.8,
   },
@@ -637,3 +645,128 @@ const styles = StyleSheet.create({
     boxShadow: '0 0 7px rgba(88, 223, 232, 0.82)',
   },
 });
+  return {
+    ...staticStyles,
+  brandMark: [
+    staticStyles.brandMark,
+    {
+        width: responsiveLayout.responsiveWidth(65),
+        height: responsiveLayout.responsiveHeight(50),
+    },
+  ],
+  brandName: [
+    staticStyles.brandName,
+    {
+        fontSize: responsiveLayout.responsiveFont(22),
+    },
+  ],
+  brandDescriptor: [
+    staticStyles.brandDescriptor,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  closeButton: [
+    staticStyles.closeButton,
+    {
+        width: responsiveLayout.responsiveWidth(46),
+        height: responsiveLayout.responsiveHeight(46),
+    },
+  ],
+  goldRail: [
+    staticStyles.goldRail,
+    {
+        height: responsiveLayout.responsiveHeight(1),
+    },
+  ],
+  sectionLabel: [
+    staticStyles.sectionLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  destinationIcon: [
+    staticStyles.destinationIcon,
+    {
+        width: responsiveLayout.responsiveWidth(46),
+        height: responsiveLayout.responsiveHeight(46),
+    },
+  ],
+  destinationLabel: [
+    staticStyles.destinationLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(17),
+    },
+  ],
+  destinationEyebrow: [
+    staticStyles.destinationEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  activeIndicator: [
+    staticStyles.activeIndicator,
+    {
+        width: responsiveLayout.responsiveWidth(7),
+        height: responsiveLayout.responsiveHeight(7),
+    },
+  ],
+  destinationNumber: [
+    staticStyles.destinationNumber,
+    {
+        fontSize: responsiveLayout.responsiveFont(38),
+    },
+  ],
+  ebayLinkText: [
+    staticStyles.ebayLinkText,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  ebayLinkEyebrow: [
+    staticStyles.ebayLinkEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  systemStatusDot: [
+    staticStyles.systemStatusDot,
+    {
+        width: responsiveLayout.responsiveWidth(6),
+        height: responsiveLayout.responsiveHeight(6),
+    },
+  ],
+  systemStatusLabel: [
+    staticStyles.systemStatusLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  systemStatusValue: [
+    staticStyles.systemStatusValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  systemStatusCode: [
+    staticStyles.systemStatusCode,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  trigger: [
+    staticStyles.trigger,
+    {
+        width: responsiveLayout.responsiveWidth(48),
+        height: responsiveLayout.responsiveHeight(48),
+    },
+  ],
+  triggerStatusDot: [
+    staticStyles.triggerStatusDot,
+    {
+        width: responsiveLayout.responsiveWidth(5),
+        height: responsiveLayout.responsiveHeight(5),
+    },
+  ],
+  };
+}

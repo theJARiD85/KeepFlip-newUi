@@ -6,7 +6,10 @@ import { useEbayConnection } from '@/components/ebay/ebay-connection-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type EbayMenuConnectionLinkProps = {
   active: boolean;
   disabled: boolean;
@@ -20,6 +23,11 @@ export function EbayMenuConnectionLink({
   open,
   onPress,
 }: EbayMenuConnectionLinkProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const {
     connection,
     errorMessage,
@@ -79,7 +87,7 @@ export function EbayMenuConnectionLink({
       ]}>
       <EbayShoppingBagIcon size={29} />
       <View style={styles.copy}>
-        <Text numberOfLines={1} style={styles.label}>
+        <Text numberOfLines={1} style={[styles.label, { fontSize: responsiveFont(13) }]}>
           {label}
         </Text>
         <Text numberOfLines={1} style={[styles.detail, isConnected && styles.detailConnected]}>
@@ -95,7 +103,8 @@ export function EbayMenuConnectionLink({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   link: {
     minHeight: 54,
     flexDirection: 'row',
@@ -142,3 +151,19 @@ const styles = StyleSheet.create({
     color: theme.colors.scannerCyan,
   },
 });
+  return {
+    ...staticStyles,
+  label: [
+    staticStyles.label,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  detail: [
+    staticStyles.detail,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  };
+}

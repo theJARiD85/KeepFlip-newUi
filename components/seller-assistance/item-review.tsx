@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Text } from 'react-native';
 import { agingRecommendations, itemFactLines, parseMoneyInput } from '@/lib/seller-assistance';
 import { type InventoryItem } from '@/services/inventory-service';
-import { Button, Field, Section, styles } from './ui';
+import { Button, Field, Section, useSellerAssistanceStyles } from './ui';
 
 export function ItemReview({ item, onRecord }: { item: InventoryItem; onRecord: (notes: string) => Promise<boolean> }) {
+  const styles = useSellerAssistanceStyles();
   const [listedAt, setListedAt] = useState('');
   const [asking, setAsking] = useState('');
   const [comparable, setComparable] = useState('');

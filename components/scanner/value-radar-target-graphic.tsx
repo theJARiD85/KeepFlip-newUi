@@ -19,7 +19,10 @@ import Animated, {
 
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type ValueRadarTargetGraphicProps = {
   accessibilityHint?: string;
   accessibilityLabel?: string;
@@ -46,6 +49,11 @@ export function ValueRadarTargetGraphic({
   style,
   width,
 }: ValueRadarTargetGraphicProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const orbitProgress = useSharedValue(0);
   const pulseProgress = useSharedValue(0);
   const orbitSize = Math.max(48, Math.min(width, height) - 18);
@@ -159,7 +167,7 @@ export function ValueRadarTargetGraphic({
         style={[styles.targetScanBeam, scanBeamAnimatedStyle]}
       />
       <View pointerEvents="none" style={styles.targetCaption}>
-        <Text numberOfLines={1} style={styles.targetCaptionLabel}>
+        <Text numberOfLines={1} style={[styles.targetCaptionLabel, { fontSize: responsiveFont(7), lineHeight: 9 }]}>
           {label.toUpperCase()}
         </Text>
         <Text style={styles.targetCaptionScore}>{scoreText}</Text>
@@ -168,7 +176,8 @@ export function ValueRadarTargetGraphic({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   targetHost: {
     position: "absolute",
     zIndex: 8,
@@ -306,3 +315,67 @@ const styles = StyleSheet.create({
     textShadowRadius: 3,
   },
 });
+  return {
+    ...staticStyles,
+  targetInnerRing: [
+    staticStyles.targetInnerRing,
+    {
+        width: responsiveLayout.responsiveWidth(32),
+        height: responsiveLayout.responsiveHeight(32),
+    },
+  ],
+  targetCorner: [
+    staticStyles.targetCorner,
+    {
+        width: responsiveLayout.responsiveWidth(25),
+        height: responsiveLayout.responsiveHeight(25),
+    },
+  ],
+  crosshairHorizontal: [
+    staticStyles.crosshairHorizontal,
+    {
+        height: responsiveLayout.responsiveHeight(1),
+    },
+  ],
+  crosshairVertical: [
+    staticStyles.crosshairVertical,
+    {
+        width: responsiveLayout.responsiveWidth(1),
+    },
+  ],
+  targetCore: [
+    staticStyles.targetCore,
+    {
+        width: responsiveLayout.responsiveWidth(12),
+        height: responsiveLayout.responsiveHeight(12),
+    },
+  ],
+  targetCoreDot: [
+    staticStyles.targetCoreDot,
+    {
+        width: responsiveLayout.responsiveWidth(3),
+        height: responsiveLayout.responsiveHeight(3),
+    },
+  ],
+  targetScanBeam: [
+    staticStyles.targetScanBeam,
+    {
+        height: responsiveLayout.responsiveHeight(1),
+    },
+  ],
+  targetCaptionLabel: [
+    staticStyles.targetCaptionLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(1) },
+    },
+  ],
+  targetCaptionScore: [
+    staticStyles.targetCaptionScore,
+    {
+        fontSize: responsiveLayout.responsiveFont(6.5),
+        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(1) },
+    },
+  ],
+  };
+}

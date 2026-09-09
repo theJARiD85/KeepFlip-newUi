@@ -4,7 +4,10 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type KeepFlipControlIconName = ComponentProps<typeof IconSymbol>['name'];
 export type KeepFlipStatusTone =
   | 'active'
@@ -36,6 +39,7 @@ export function KeepFlipStatusBadge({
   label,
   tone,
 }: KeepFlipStatusBadgeProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const chipStyle = {
     active: styles.statusBadgeActive,
     muted: styles.statusBadgeMuted,
@@ -79,6 +83,11 @@ export function KeepFlipControlRow({
   staticLabel,
   status,
 }: KeepFlipControlRowProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const iconColor =
     accent === 'cyan'
       ? theme.colors.scannerCyan
@@ -102,16 +111,16 @@ export function KeepFlipControlRow({
       </View>
       <View style={styles.rowCopy}>
         <View style={styles.rowTitleLine}>
-          <Text style={styles.rowTitle}>{label}</Text>
+          <Text style={[styles.rowTitle, { fontSize: responsiveFont(14) }]}>{label}</Text>
           {status ? <KeepFlipStatusBadge label={status.label} tone={status.tone} /> : null}
         </View>
-        <Text style={styles.rowDescription}>{description}</Text>
+        <Text style={[styles.rowDescription, { fontSize: responsiveFont(10), lineHeight: 14 }]}>{description}</Text>
       </View>
       {actionBusy ? (
         <ActivityIndicator color={iconColor} size="small" style={styles.rowSpinner} />
       ) : isPressable && actionLabel ? (
         <View style={styles.rowAction}>
-          <Text style={styles.rowActionText}>{actionLabel}</Text>
+          <Text style={[styles.rowActionText, { fontSize: responsiveFont(7) }]}>{actionLabel}</Text>
         </View>
       ) : isPressable ? (
         <IconSymbol
@@ -121,7 +130,7 @@ export function KeepFlipControlRow({
           style={styles.rowChevron}
         />
       ) : staticLabel ? (
-        <Text style={styles.rowStaticLabel}>{staticLabel}</Text>
+        <Text style={[styles.rowStaticLabel, { fontSize: responsiveFont(7) }]}>{staticLabel}</Text>
       ) : null}
     </View>
   );
@@ -142,7 +151,8 @@ export function KeepFlipControlRow({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     paddingHorizontal: 8,
@@ -271,3 +281,51 @@ const styles = StyleSheet.create({
   statusBadgeTextDanger: { color: theme.colors.danger },
   statusBadgeTextViolet: { color: theme.colors.scannerViolet },
 });
+  return {
+    ...staticStyles,
+  rowIcon: [
+    staticStyles.rowIcon,
+    {
+        width: responsiveLayout.responsiveWidth(32),
+        height: responsiveLayout.responsiveHeight(32),
+    },
+  ],
+  rowTitle: [
+    staticStyles.rowTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  rowDescription: [
+    staticStyles.rowDescription,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  rowActionText: [
+    staticStyles.rowActionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  rowStaticLabel: [
+    staticStyles.rowStaticLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  statusBadgeDot: [
+    staticStyles.statusBadgeDot,
+    {
+        width: responsiveLayout.responsiveWidth(4),
+        height: responsiveLayout.responsiveHeight(4),
+    },
+  ],
+  statusBadgeText: [
+    staticStyles.statusBadgeText,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  };
+}

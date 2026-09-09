@@ -13,6 +13,7 @@ import {
   type ItemMarketFlipDecision,
   type ItemMarketResaleVelocity,
 } from '@/types/item-analysis';
+import type { EbayListingImportCandidate } from '@/types/ebay-listing-import';
 
 const ANALYSIS_SNAPSHOT_COLUMN = 'analysisSnapshotJson';
 const INVENTORY_RESELLER_COLUMNS = [
@@ -1107,6 +1108,109 @@ export async function updateInventoryMarketplaceLink({
     }
     throw cause;
   }
+}
+
+export async function createImportedEbayInventoryItem({
+  ownerId,
+  candidate,
+}: {
+  ownerId: string;
+  candidate: EbayListingImportCandidate;
+}): Promise<InventoryItem> {
+  assertInventoryConfigured();
+  const cleanOwnerId = ownerId.trim();
+  const title = boundedText(candidate.title, 300) || 'Imported eBay listing';
+  const sku = boundedText(candidate.sku, 120);
+  const quantityOnHand = savedQuantity(candidate.quantityAvailable, 0);
+  const now = new Date().toISOString();
+
+  if (!cleanOwnerId || !sku || !candidate.offerId) {
+    throw new Error('KeepFlip needs the signed-in owner and eBay listing identifiers before importing.');
+  }
+
+  const importedNotes = [
+    'Imported from an existing eBay listing.',
+    'Acquisition cost, receipt, storage location, and KeepFlip analysis were not inferred.',
+    candidate.categoryId ? `eBay category: ${candidate.categoryId}.` : null,
+    candidate.listingUrl ? `eBay listing: ${candidate.listingUrl}` : null,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .slice(0, 2_000);
+
+  let created: InventoryRow;
+  try {
+    created = (await tablesDB.createRow({
+      databaseId: APPWRITE.databaseId,
+      tableId: APPWRITE.itemsTableId,
+      rowId: ID.unique(),
+      data: {
+        ownerId: cleanOwnerId,
+        title,
+        category: 'Other',
+        brand: null,
+        model: null,
+        condition: boundedText(candidate.condition, 100) || 'UNKNOWN',
+        status: 'undecided',
+        description: importedNotes,
+        estimatedValueCents: null,
+        acquisitionCostCents: null,
+        inventoryCostCentsOnHand: null,
+        quantityPurchased: 1,
+        quantityOnHand,
+        purchaseSource: 'eBay import',
+        purchaseNotes: importedNotes,
+        sku,
+        storageLocation: null,
+        variant: null,
+        color: null,
+        era: null,
+        serialNumber: null,
+        itemSpecificsJson: JSON.stringify({
+          source: 'inventory_api',
+          marketplaceId: candidate.marketplaceId,
+          eBayCategoryId: candidate.categoryId,
+          eBayCondition: candidate.condition,
+        }),
+        coverPhotoId: null,
+        modelFile: null,
+        photoCount: 0,
+        itemPhotos: [],
+        isListed: true,
+        resaleStatus: 'listed',
+        ebaySku: sku,
+        ebayOfferId: candidate.offerId,
+        ebayListingId: candidate.listingId,
+        listedAt: now,
+        acquiredAt: null,
+        createdAt: now,
+        updatedAt: now,
+      },
+      permissions: ownerPermissions(cleanOwnerId),
+    })) as unknown as InventoryRow;
+  } catch (error) {
+    if (isInventorySchemaError(error)) {
+      throw inventorySchemaMigrationError(error);
+    }
+    throw error;
+  }
+
+  return rowToInventoryItem({
+    ...created,
+    quantityPurchased: 1,
+    quantityOnHand,
+    purchaseSource: 'eBay import',
+    purchaseNotes: importedNotes,
+    sku,
+    isListed: true,
+    resaleStatus: 'listed',
+    ebaySku: sku,
+    ebayOfferId: candidate.offerId,
+    ebayListingId: candidate.listingId,
+    listedAt: now,
+    itemPhotos: [],
+    photoCount: 0,
+  });
 }
 
 export async function getInventoryItem(

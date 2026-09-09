@@ -6,7 +6,9 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
+import { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 const FIX_SVG = require("@/assets/images/fix.svg");
 
 type RepairNeonSignProps = {
@@ -20,6 +22,7 @@ export function RepairNeonSign({
   onSignReady,
   style,
 }: RepairNeonSignProps): React.JSX.Element {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const notifiedReady = useRef(false);
 
   useEffect(() => {
@@ -40,7 +43,8 @@ export function RepairNeonSign({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   root: {
     alignItems: "center",
     justifyContent: "center",
@@ -96,3 +100,42 @@ const styles = StyleSheet.create({
     filter: "drop-shadow(0 0 24px rgba(0, 255, 255, 0.7)) drop-shadow(0 0 38px rgba(141, 114, 255, 0.45))",
   },
 });
+  return {
+    ...staticStyles,
+  cyanGlow: [
+    staticStyles.cyanGlow,
+    {
+        width: responsiveLayout.responsiveWidth(224),
+        height: responsiveLayout.responsiveHeight(224),
+    },
+  ],
+  violetGlow: [
+    staticStyles.violetGlow,
+    {
+        width: responsiveLayout.responsiveWidth(218),
+        height: responsiveLayout.responsiveHeight(218),
+    },
+  ],
+  goldGlow: [
+    staticStyles.goldGlow,
+    {
+        width: responsiveLayout.responsiveWidth(110),
+        height: responsiveLayout.responsiveHeight(110),
+    },
+  ],
+  outerRing: [
+    staticStyles.outerRing,
+    {
+        width: responsiveLayout.responsiveWidth(280),
+        height: responsiveLayout.responsiveHeight(280),
+    },
+  ],
+  innerRing: [
+    staticStyles.innerRing,
+    {
+        width: responsiveLayout.responsiveWidth(216),
+        height: responsiveLayout.responsiveHeight(216),
+    },
+  ],
+  };
+}

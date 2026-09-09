@@ -29,7 +29,9 @@ import {
   type KeepFlipPlanDefinition,
   type KeepFlipPlanId,
 } from '@/services/keepflip-subscription-service';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 function formatDate(value: string | null) {
   if (!value) return null;
   const date = new Date(value);
@@ -86,6 +88,7 @@ function PlanCard({
     cadence: KeepFlipBillingCadence,
   ) => void;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const { responsiveFont } = useResponsiveLayout();
   const isCurrent = currentPlan === definition.id;
   const isRequested = requestedPlan === definition.id;
@@ -106,17 +109,17 @@ function PlanCard({
       ]}>
       <View style={styles.planTopLine}>
         <View style={styles.planHeading}>
-          <Text style={styles.planEyebrow}>{definition.eyebrow}</Text>
-          <Text style={styles.planName}>{definition.name}</Text>
+          <Text style={[styles.planEyebrow, { fontSize: responsiveFont(7) }]}>{definition.eyebrow}</Text>
+          <Text style={[styles.planName, { fontSize: responsiveFont(20) }]}>{definition.name}</Text>
         </View>
 
         {isCurrent ? (
           <View style={styles.currentBadge}>
-            <Text style={styles.currentText}>CURRENT</Text>
+            <Text style={[styles.currentText, { fontSize: responsiveFont(6) }]}>CURRENT</Text>
           </View>
         ) : definition.recommended ? (
           <View style={styles.recommendedBadge}>
-            <Text style={styles.recommendedText}>RECOMMENDED</Text>
+            <Text style={[styles.recommendedText, { fontSize: responsiveFont(6) }]}>RECOMMENDED</Text>
           </View>
         ) : null}
       </View>
@@ -130,7 +133,7 @@ function PlanCard({
         <Text style={styles.savingsLine}>{savings}</Text>
       ) : null}
 
-      <Text style={styles.planDescription}>{definition.description}</Text>
+      <Text style={[styles.planDescription, { fontSize: responsiveFont(12)}]}>{definition.description}</Text>
 
       <View style={styles.featureList}>
         {[...definition.limits, ...definition.features].map((feature) => (
@@ -140,7 +143,7 @@ function PlanCard({
               name="checkmark.circle.fill"
               size={15}
             />
-            <Text style={styles.featureText}>{feature}</Text>
+            <Text style={[styles.featureText, { fontSize: responsiveFont(11)}]}>{feature}</Text>
           </View>
         ))}
       </View>
@@ -190,7 +193,7 @@ function PlanCard({
         )}
       </Pressable>
 
-      <Text style={styles.afterTrialText}>
+      <Text style={[styles.afterTrialText, { fontSize: responsiveFont(9)}]}>
         {isCurrent
           ? 'Active on this account. Manage or cancel through the store.'
           : `${selectedPrice} ${cadence === 'annual' ? 'per year' : 'per month'}. Cancel anytime.`}
@@ -206,6 +209,7 @@ type KeepFlipSubscriptionScreenProps = {
 export function KeepFlipSubscriptionScreen({
   accountTab = false,
 }: KeepFlipSubscriptionScreenProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const router = useRouter();
   const navigation = useNavigation();
   const {
@@ -223,7 +227,12 @@ export function KeepFlipSubscriptionScreen({
   const requestedPlan = parsePlan(paramValue(plan));
   const requestedCadence = parseCadence(paramValue(cadenceParam));
   const insets = useSafeAreaInsets();
-  const { responsiveFont } = useResponsiveLayout();
+  const {
+    responsiveFont,
+    contentMaxWidth,
+    contentWidth,
+    pageGutter
+  } = useResponsiveLayout();
 
   const {
     errorMessage,
@@ -360,13 +369,11 @@ export function KeepFlipSubscriptionScreen({
   return (
     <KeepFlipBackground>
       <ScrollView
-        contentContainerStyle={[
-          styles.content,
+        contentContainerStyle={[styles.content,
           {
             paddingBottom: insets.bottom + 12,
             paddingTop: insets.top / 2,
-          },
-        ]}
+          }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         style={{marginTop: insets.top, marginBottom: insets.bottom}}
         showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
@@ -400,7 +407,7 @@ export function KeepFlipSubscriptionScreen({
             />
           </View>
           <View style={styles.trialCopy}>
-            <Text style={styles.trialTitle}>
+            <Text style={[styles.trialTitle, { fontSize: responsiveFont(8) }]}>
               {profileTrialActive
                 ? 'YOUR KEEPFLIP TRIAL IS ACTIVE'
                 : access?.isTrial
@@ -411,12 +418,12 @@ export function KeepFlipSubscriptionScreen({
                     ? 'YOUR STORE TRIAL HAS FINISHED'
                     : 'CHOOSE A PAID PLAN'}
             </Text>
-            <Text style={styles.trialBody}>{statusCopy}</Text>
+            <Text style={[styles.trialBody, { fontSize: responsiveFont(12)}]}>{statusCopy}</Text>
           </View>
         </View>
 
         <View style={styles.billingSection}>
-          <Text style={styles.billingLabel}>BILLING</Text>
+          <Text style={[styles.billingLabel, { fontSize: responsiveFont(7) }]}>BILLING</Text>
           <View
             accessibilityLabel="Billing frequency"
             style={styles.billingToggle}>
@@ -459,7 +466,7 @@ export function KeepFlipSubscriptionScreen({
                   styles.billingOptionSubtext,
                   cadence === 'annual' &&
                     styles.billingOptionSubtextSelected,
-                    {fontSize: responsiveFont(9)}
+                    {fontSize: responsiveFont(7)}
                 ]}>
                 SAVE 2 MONTHS
               </Text>
@@ -473,7 +480,7 @@ export function KeepFlipSubscriptionScreen({
               color={theme.colors.scannerCyan}
               size="small"
             />
-            <Text style={styles.loadingText}>
+            <Text style={[styles.loadingText, { fontSize: responsiveFont(12) }]}>
               Loading store plans and current access
             </Text>
           </View>
@@ -509,7 +516,7 @@ export function KeepFlipSubscriptionScreen({
               name="exclamationmark.triangle.fill"
               size={16}
             />
-            <Text style={styles.checkoutNoticeText}>
+            <Text style={[styles.checkoutNoticeText, { fontSize: responsiveFont(10)}]}>
               {state === 'unconfigured'
                 ? 'Checkout is disabled until the RevenueCat public SDK key and store offering are configured for this build.'
                 : 'Checkout is temporarily unavailable while KeepFlip verifies subscription access.'}
@@ -521,7 +528,7 @@ export function KeepFlipSubscriptionScreen({
           <Text
             accessibilityLiveRegion="polite"
             selectable
-            style={styles.errorText}>
+            style={[styles.errorText, { fontSize: responsiveFont(12)}]}>
             {errorMessage}
           </Text>
         ) : null}
@@ -530,7 +537,7 @@ export function KeepFlipSubscriptionScreen({
           <Text
             accessibilityLiveRegion="polite"
             selectable
-            style={styles.successText}>
+            style={[styles.successText, { fontSize: responsiveFont(12)}]}>
             {actionMessage}
           </Text>
         ) : null}
@@ -549,7 +556,7 @@ export function KeepFlipSubscriptionScreen({
                   styles.continueButton,
                   pressed && styles.continueButtonPressed,
                 ]}>
-                <Text style={styles.continueButtonText}>
+                <Text style={[styles.continueButtonText, { fontSize: responsiveFont(10) }]}>
                   {accountTab ? 'BACK TO ACCOUNT' : 'CONTINUE TO KEEPFLIP'}
                 </Text>
               </Pressable>
@@ -627,7 +634,8 @@ export function KeepFlipSubscriptionScreen({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   content: {
     alignSelf: 'center',
     gap: 16,
@@ -882,7 +890,7 @@ const styles = StyleSheet.create({
   subscribeButtonText: {
     color: theme.colors.scannerCyan,
     fontFamily: theme.fonts.radar,
-    fontSize: 8,
+    fontSize: 10,
     fontWeight: '900',
     letterSpacing: 0.85,
   },
@@ -978,3 +986,171 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+  return {
+    ...staticStyles,
+  planRequiredIcon: [
+    staticStyles.planRequiredIcon,
+    {
+        height: responsiveLayout.responsiveHeight(40),
+        width: responsiveLayout.responsiveWidth(40),
+    },
+  ],
+  eyebrow: [
+    staticStyles.eyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(28),
+    },
+  ],
+  trialIcon: [
+    staticStyles.trialIcon,
+    {
+        height: responsiveLayout.responsiveHeight(40),
+        width: responsiveLayout.responsiveWidth(40),
+    },
+  ],
+  trialTitle: [
+    staticStyles.trialTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  trialBody: [
+    staticStyles.trialBody,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  billingLabel: [
+    staticStyles.billingLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  billingOptionText: [
+    staticStyles.billingOptionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  billingOptionSubtext: [
+    staticStyles.billingOptionSubtext,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  loadingText: [
+    staticStyles.loadingText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  planEyebrow: [
+    staticStyles.planEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  planName: [
+    staticStyles.planName,
+    {
+        fontSize: responsiveLayout.responsiveFont(20),
+    },
+  ],
+  recommendedText: [
+    staticStyles.recommendedText,
+    {
+        fontSize: responsiveLayout.responsiveFont(6),
+    },
+  ],
+  currentText: [
+    staticStyles.currentText,
+    {
+        fontSize: responsiveLayout.responsiveFont(6),
+    },
+  ],
+  price: [
+    staticStyles.price,
+    {
+        fontSize: responsiveLayout.responsiveFont(27),
+    },
+  ],
+  pricePeriod: [
+    staticStyles.pricePeriod,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  savingsLine: [
+    staticStyles.savingsLine,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  planDescription: [
+    staticStyles.planDescription,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  featureText: [
+    staticStyles.featureText,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  subscribeButtonText: [
+    staticStyles.subscribeButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  afterTrialText: [
+    staticStyles.afterTrialText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  checkoutNoticeText: [
+    staticStyles.checkoutNoticeText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  errorText: [
+    staticStyles.errorText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  successText: [
+    staticStyles.successText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  continueButtonText: [
+    staticStyles.continueButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  refreshButtonText: [
+    staticStyles.refreshButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  finePrint: [
+    staticStyles.finePrint,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  };
+}

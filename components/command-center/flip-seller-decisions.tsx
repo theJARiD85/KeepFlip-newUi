@@ -8,7 +8,7 @@ import {
   Button,
   Field,
   Section,
-  styles as sellerStyles,
+  useSellerAssistanceStyles,
 } from '@/components/seller-assistance/ui';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
@@ -36,7 +36,9 @@ import {
   saveSellerPreferences,
   type SellerPreferencesSnapshot,
 } from '@/services/seller-preferences-service';
+import responsiveFont from '@/lib/responsiveFont';
 
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export type FlipSellerDecision =
   | 'inbox'
   | 'preferences'
@@ -89,6 +91,8 @@ export function FlipSellerDecisions({
   ownerId: string;
   onOpenSellerOperations: () => void;
 }) {
+  const localStyles = useResponsiveStyles(createLocalStylesResponsiveStyles);
+  const sellerStyles = useSellerAssistanceStyles();
   const { canUse } = useKeepFlipSubscription();
   const [decision, setDecision] = useState<FlipSellerDecision | null>(null);
   const [snapshot, setSnapshot] = useState<SellerPreferencesSnapshot | null>(null);
@@ -547,7 +551,8 @@ export function FlipSellerDecisions({
   );
 }
 
-const localStyles = StyleSheet.create({
+function createLocalStylesResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   wrap: { gap: 12 },
   flipDialogue: {
     gap: 10,
@@ -627,3 +632,61 @@ const localStyles = StyleSheet.create({
     fontWeight: '800',
   },
 });
+  return {
+    ...staticStyles,
+  speaker: [
+    staticStyles.speaker,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  greeting: [
+    staticStyles.greeting,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  bullet: [
+    staticStyles.bullet,
+    {
+        fontSize: responsiveLayout.responsiveFont(18),
+    },
+  ],
+  decisionTitle: [
+    staticStyles.decisionTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  decisionDetail: [
+    staticStyles.decisionDetail,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  statusText: [
+    staticStyles.statusText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  notice: [
+    staticStyles.notice,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  activeEyebrow: [
+    staticStyles.activeEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  backText: [
+    staticStyles.backText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  };
+}

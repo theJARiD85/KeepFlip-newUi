@@ -3,7 +3,10 @@ import { Pressable, StyleSheet, View } from "react-native";
 import type { ItemAnalysisResult } from "@/components/scanner/analysis-visual-types";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type BooksRecordsProjectionProps = {
   compact?: boolean;
   onAddToInventory?: () => void;
@@ -37,6 +40,11 @@ export function BooksRecordsProjection({
   onAddToInventory,
   result,
 }: BooksRecordsProjectionProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const valuation = result.valuation;
   const marketValue = result.marketAnalysis?.marketValue;
   const currency =
@@ -68,24 +76,24 @@ export function BooksRecordsProjection({
     return (
       <View style={styles.compactSection}>
         <View style={styles.compactHeader}>
-          <Text style={styles.compactEyebrow}>BOOKS &amp; RECORDS</Text>
+          <Text style={[styles.compactEyebrow, { fontSize: responsiveFont(8) }]}>BOOKS &amp; RECORDS</Text>
           <Text style={styles.compactTag}>PROJECTION</Text>
         </View>
         <View style={styles.compactMetrics}>
           <View style={styles.compactMetric}>
-            <Text style={styles.compactLabel}>EXPECTED SALE</Text>
-            <Text numberOfLines={1} style={styles.compactValue}>
+            <Text style={[styles.compactLabel, { fontSize: responsiveFont(7) }]}>EXPECTED SALE</Text>
+            <Text numberOfLines={1} style={[styles.compactValue, { fontSize: responsiveFont(10) }]}>
               {formatMoney(expectedSale, currency)}
             </Text>
           </View>
           <View style={styles.compactMetric}>
-            <Text style={styles.compactLabel}>BUY CEILING</Text>
-            <Text numberOfLines={1} style={styles.compactValue}>
+            <Text style={[styles.compactLabel, { fontSize: responsiveFont(7) }]}>BUY CEILING</Text>
+            <Text numberOfLines={1} style={[styles.compactValue, { fontSize: responsiveFont(10) }]}>
               {formatMoney(buyCeiling, currency)}
             </Text>
           </View>
           <View style={styles.compactMetric}>
-            <Text numberOfLines={1} style={styles.compactLabel}>NET / ROI</Text>
+            <Text numberOfLines={1} style={[styles.compactLabel, { fontSize: responsiveFont(7) }]}>NET / ROI</Text>
             <Text numberOfLines={1} style={[styles.compactValue, netProfit == null && styles.compactPendingValue]}>
               {netProfitLabel}
             </Text>
@@ -99,36 +107,36 @@ export function BooksRecordsProjection({
     <View style={styles.section}>
       <View style={styles.header}>
         <View style={styles.headerCopy}>
-          <Text style={styles.eyebrow}>BOOKS &amp; RECORDS</Text>
-          <Text style={styles.title}>KEEPFLIP PROJECTION</Text>
+          <Text style={[styles.eyebrow, { fontSize: responsiveFont(9) }]}>BOOKS &amp; RECORDS</Text>
+          <Text style={[styles.title, { fontSize: responsiveFont(12) }]}>KEEPFLIP PROJECTION</Text>
         </View>
         <View style={styles.estimateTag}>
-          <Text style={styles.estimateTagText}>ESTIMATE</Text>
+          <Text style={[styles.estimateTagText, { fontSize: responsiveFont(8) }]}>ESTIMATE</Text>
         </View>
       </View>
-      <Text style={styles.description}>
+      <Text style={[styles.description, { fontSize: responsiveFont(11), lineHeight: 16 }]}>
         Market assumptions are shown here for planning. They do not become a book entry until you confirm the purchase details.
       </Text>
 
       <View style={styles.rows}>
         <View style={styles.row}>
-          <Text style={styles.label}>EXPECTED SALE</Text>
-          <Text style={styles.value}>{formatMoney(expectedSale, currency)}</Text>
+          <Text style={[styles.label, { fontSize: responsiveFont(8) }]}>EXPECTED SALE</Text>
+          <Text style={[styles.value, { fontSize: responsiveFont(11) }]}>{formatMoney(expectedSale, currency)}</Text>
         </View>
         <View style={styles.row}>
-          <Text style={styles.label}>OBSERVED SOLD RANGE</Text>
-          <Text style={styles.value}>{formatRange(low, high, currency)}</Text>
+          <Text style={[styles.label, { fontSize: responsiveFont(8) }]}>OBSERVED SOLD RANGE</Text>
+          <Text style={[styles.value, { fontSize: responsiveFont(11) }]}>{formatRange(low, high, currency)}</Text>
         </View>
         <View style={styles.row}>
-          <Text style={styles.label}>PROJECTED NET / ROI</Text>
+          <Text style={[styles.label, { fontSize: responsiveFont(8) }]}>PROJECTED NET / ROI</Text>
           <Text numberOfLines={1} style={[styles.value, netProfit == null && styles.pendingValue]}>
             {netProfitLabel}
           </Text>
         </View>
         {buyCeiling != null ? (
           <View style={styles.row}>
-            <Text style={styles.label}>PROVISIONAL BUY CEILING</Text>
-            <Text style={styles.value}>{formatMoney(buyCeiling, currency)}</Text>
+            <Text style={[styles.label, { fontSize: responsiveFont(8) }]}>PROVISIONAL BUY CEILING</Text>
+            <Text style={[styles.value, { fontSize: responsiveFont(11) }]}>{formatMoney(buyCeiling, currency)}</Text>
           </View>
         ) : null}
       </View>
@@ -140,11 +148,11 @@ export function BooksRecordsProjection({
           onPress={onAddToInventory}
           style={({ pressed }) => [styles.action, pressed && styles.pressed]}
         >
-          <Text style={styles.actionText}>ADD TO INVENTORY</Text>
+          <Text style={[styles.actionText, { fontSize: responsiveFont(9) }]}>ADD TO INVENTORY</Text>
           <Text style={styles.actionArrow}>›</Text>
         </Pressable>
       ) : (
-        <Text style={styles.savedHint}>
+        <Text style={[styles.savedHint, { fontSize: responsiveFont(11) }]}>
           Actual acquisition details are already stored with this inventory item.
         </Text>
       )}
@@ -168,7 +176,8 @@ export function hasBooksRecordsProjection(result: ItemAnalysisResult) {
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   compactSection: {
     marginTop: 6,
     paddingTop: 7,
@@ -335,3 +344,97 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.72 },
 });
+  return {
+    ...staticStyles,
+  compactEyebrow: [
+    staticStyles.compactEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  compactTag: [
+    staticStyles.compactTag,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  compactLabel: [
+    staticStyles.compactLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  compactValue: [
+    staticStyles.compactValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  compactPendingValue: [
+    staticStyles.compactPendingValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  eyebrow: [
+    staticStyles.eyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  estimateTagText: [
+    staticStyles.estimateTagText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  description: [
+    staticStyles.description,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  label: [
+    staticStyles.label,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  value: [
+    staticStyles.value,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  pendingValue: [
+    staticStyles.pendingValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  actionText: [
+    staticStyles.actionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  actionArrow: [
+    staticStyles.actionArrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(20),
+    },
+  ],
+  savedHint: [
+    staticStyles.savedHint,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  };
+}

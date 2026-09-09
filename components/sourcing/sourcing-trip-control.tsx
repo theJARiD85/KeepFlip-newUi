@@ -25,7 +25,10 @@ import {
   parseLedgerDate,
   todayBusinessDate,
 } from '@/services/reseller-ledger-service';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type TripFormValues = {
   sourceName: string;
   label: string;
@@ -53,14 +56,24 @@ function signedMoney(cents: number) {
 }
 
 function FieldLabel({ children, required = false }: { children: string; required?: boolean }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
-    <Text style={styles.fieldLabel}>
+    <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>
       {children.toUpperCase()}{required ? ' · REQUIRED' : null}
     </Text>
   );
 }
 
 export function SourcingTripControl() {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const insets = useSafeAreaInsets();
   const {
     activeTrip,
@@ -284,7 +297,7 @@ export function SourcingTripControl() {
           size={29}
         />
         <View style={styles.tripButtonCopy}>
-          <Text numberOfLines={1} style={styles.tripButtonTitle}>
+          <Text numberOfLines={1} style={[styles.tripButtonTitle, { fontSize: responsiveFont(13) }]}>
             {tripButtonTitle}
           </Text>
           <Text numberOfLines={1} style={[styles.tripButtonDetail, activeTrip && styles.tripButtonDetailActive]}>
@@ -319,9 +332,9 @@ export function SourcingTripControl() {
             <View style={styles.modalSurface}>
               <View style={styles.modalHeader}>
                 <View style={styles.modalHeaderCopy}>
-                  <Text style={styles.modalEyebrow}>SOURCE ONCE · SAVE AS YOU GO</Text>
-                  <Text style={styles.modalTitle}>Start a sourcing trip</Text>
-                  <Text style={styles.modalBody}>
+                  <Text style={[styles.modalEyebrow, { fontSize: responsiveFont(9) }]}>SOURCE ONCE · SAVE AS YOU GO</Text>
+                  <Text style={[styles.modalTitle, { fontSize: responsiveFont(24), lineHeight: 29 }]}>Start a sourcing trip</Text>
+                  <Text style={[styles.modalBody, { fontSize: responsiveFont(13), lineHeight: 18 }]}>
                     Keep each find, its actual cost, and the shared receipt connected without turning the scanner into a spreadsheet.
                   </Text>
                 </View>
@@ -332,7 +345,7 @@ export function SourcingTripControl() {
                   onPress={() => setDialog(null)}
                   style={styles.closeButton}
                 >
-                  <Text style={styles.closeText}>×</Text>
+                  <Text style={[styles.closeText, { fontSize: responsiveFont(24), lineHeight: 26 }]}>×</Text>
                 </Pressable>
               </View>
 
@@ -408,7 +421,7 @@ export function SourcingTripControl() {
                     onPress={() => setDialog(null)}
                     style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}
                   >
-                    <Text style={styles.cancelText}>CANCEL</Text>
+                    <Text style={[styles.cancelText, { fontSize: responsiveFont(9) }]}>CANCEL</Text>
                   </Pressable>
                   <Pressable
                     accessibilityRole="button"
@@ -420,7 +433,7 @@ export function SourcingTripControl() {
                       submitting && styles.disabled,
                     ]}
                   >
-                    <Text style={styles.primaryButtonText}>
+                    <Text style={[styles.primaryButtonText, { fontSize: responsiveFont(10) }]}>
                       {submitting ? 'STARTING...' : 'START & SCAN'}
                     </Text>
                   </Pressable>
@@ -453,9 +466,9 @@ export function SourcingTripControl() {
               <View style={styles.modalSurface}>
                 <View style={styles.modalHeader}>
                   <View style={styles.modalHeaderCopy}>
-                    <Text style={styles.modalEyebrow}>ACTIVE SOURCE TRIP</Text>
-                    <Text style={styles.modalTitle}>{activeName}</Text>
-                    <Text style={styles.modalBody}>
+                    <Text style={[styles.modalEyebrow, { fontSize: responsiveFont(9) }]}>ACTIVE SOURCE TRIP</Text>
+                    <Text style={[styles.modalTitle, { fontSize: responsiveFont(24), lineHeight: 29 }]}>{activeName}</Text>
+                    <Text style={[styles.modalBody, { fontSize: responsiveFont(13), lineHeight: 18 }]}>
                       {activeTrip.findCount} saved find{activeTrip.findCount === 1 ? '' : 's'} · {money(activeTrip.allocatedCostCents)} allocated
                     </Text>
                   </View>
@@ -466,19 +479,19 @@ export function SourcingTripControl() {
                     onPress={() => setDialog(null)}
                     style={styles.closeButton}
                   >
-                    <Text style={styles.closeText}>×</Text>
+                    <Text style={[styles.closeText, { fontSize: responsiveFont(24), lineHeight: 26 }]}>×</Text>
                   </Pressable>
                 </View>
 
                 <View style={styles.formContent}>
                   <View style={styles.summaryGrid}>
                     <View style={styles.summaryCell}>
-                      <Text style={styles.summaryLabel}>ACTUAL COSTS</Text>
-                      <Text style={styles.summaryValue}>{money(activeTrip.allocatedCostCents)}</Text>
+                      <Text style={[styles.summaryLabel, { fontSize: responsiveFont(7) }]}>ACTUAL COSTS</Text>
+                      <Text style={[styles.summaryValue, { fontSize: responsiveFont(17) }]}>{money(activeTrip.allocatedCostCents)}</Text>
                     </View>
                     <View style={styles.summaryCell}>
-                      <Text style={styles.summaryLabel}>EST. RESALE SIGNAL</Text>
-                      <Text style={styles.summaryValue}>
+                      <Text style={[styles.summaryLabel, { fontSize: responsiveFont(7) }]}>EST. RESALE SIGNAL</Text>
+                      <Text style={[styles.summaryValue, { fontSize: responsiveFont(17) }]}>
                         {activeTrip.estimatedFindCount > 0
                           ? money(activeTrip.estimatedResaleCents)
                           : '—'}
@@ -522,14 +535,14 @@ export function SourcingTripControl() {
                         <Image source={{ uri: receiptReference }} style={styles.receiptPreview} />
                       ) : null}
                       <View style={styles.receiptCopy}>
-                        <Text style={styles.receiptTitle}>
+                        <Text style={[styles.receiptTitle, { fontSize: responsiveFont(9) }]}>
                           {receiptReference
                             ? 'NEW RECEIPT READY'
                             : activeTrip.trip.receiptFileId
                               ? 'RECEIPT ALREADY ATTACHED'
                               : 'ADD SHARED RECEIPT'}
                         </Text>
-                        <Text style={styles.receiptSubtitle}>
+                        <Text style={[styles.receiptSubtitle, { fontSize: responsiveFont(11), lineHeight: 15 }]}>
                           {receiptReference
                             ? 'Tap to replace this photo before closing'
                             : activeTrip.trip.receiptFileId
@@ -563,7 +576,7 @@ export function SourcingTripControl() {
                       onPress={() => setDialog(null)}
                       style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}
                     >
-                      <Text style={styles.cancelText}>KEEP TRIP OPEN</Text>
+                      <Text style={[styles.cancelText, { fontSize: responsiveFont(9) }]}>KEEP TRIP OPEN</Text>
                     </Pressable>
                     <Pressable
                       accessibilityRole="button"
@@ -575,7 +588,7 @@ export function SourcingTripControl() {
                         submitting && styles.disabled,
                       ]}
                     >
-                      <Text style={styles.primaryButtonText}>
+                      <Text style={[styles.primaryButtonText, { fontSize: responsiveFont(10) }]}>
                         {submitting ? 'CLOSING...' : 'CLOSE TRIP'}
                       </Text>
                     </Pressable>
@@ -590,7 +603,8 @@ export function SourcingTripControl() {
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   tripButton: {
     width: '100%',
     minHeight: 54,
@@ -821,3 +835,129 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.76 },
   disabled: { opacity: 0.5 },
 });
+  return {
+    ...staticStyles,
+  tripButtonTitle: [
+    staticStyles.tripButtonTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  tripButtonDetail: [
+    staticStyles.tripButtonDetail,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  modalEyebrow: [
+    staticStyles.modalEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  modalTitle: [
+    staticStyles.modalTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(24),
+    },
+  ],
+  modalBody: [
+    staticStyles.modalBody,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  closeButton: [
+    staticStyles.closeButton,
+    {
+        width: responsiveLayout.responsiveWidth(30),
+        height: responsiveLayout.responsiveHeight(30),
+    },
+  ],
+  closeText: [
+    staticStyles.closeText,
+    {
+        fontSize: responsiveLayout.responsiveFont(24),
+    },
+  ],
+  fieldLabel: [
+    staticStyles.fieldLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  input: [
+    staticStyles.input,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  helper: [
+    staticStyles.helper,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  cancelText: [
+    staticStyles.cancelText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  primaryButtonText: [
+    staticStyles.primaryButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  summaryLabel: [
+    staticStyles.summaryLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  summaryValue: [
+    staticStyles.summaryValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(17),
+    },
+  ],
+  caution: [
+    staticStyles.caution,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  receiptPreview: [
+    staticStyles.receiptPreview,
+    {
+        width: responsiveLayout.responsiveWidth(43),
+        height: responsiveLayout.responsiveHeight(43),
+    },
+  ],
+  receiptTitle: [
+    staticStyles.receiptTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  receiptSubtitle: [
+    staticStyles.receiptSubtitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  receiptArrow: [
+    staticStyles.receiptArrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(24),
+    },
+  ],
+  reconcile: [
+    staticStyles.reconcile,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  };
+}

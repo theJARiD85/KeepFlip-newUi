@@ -30,7 +30,9 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout } from "@/hooks/use-responsive-layout";
+import responsiveFont from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export type ScannerToolId = ScannerHudToolId;
 
 type ScannerTool = {
@@ -169,6 +171,11 @@ function ToolControl({
   selected,
   tool,
 }: ToolControlProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const direction = I18nManager.isRTL ? -1 : 1;
   const concealed = selected === false && false;
   const badgeSize = Math.max(20, controlSize * 0.24);
@@ -362,7 +369,7 @@ function ToolControl({
               },
             ]}
           >
-            <Text style={styles.badgeText}>
+            <Text style={[styles.badgeText, { fontSize: responsiveFont(9) }]}>
               {badge > 99 ? "99+" : badge}
             </Text>
           </View>
@@ -379,6 +386,7 @@ export function ScannerToolCarousel({
   onSelect,
   selectedTool,
 }: ScannerToolCarouselProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const {
     controlDockWidth,
     moderateScale,
@@ -700,7 +708,8 @@ export function ScannerToolCarousel({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   root: {
     position: "relative",
     overflow: "visible",
@@ -763,3 +772,13 @@ const styles = StyleSheet.create({
     fontVariant: ["tabular-nums"],
   },
 });
+  return {
+    ...staticStyles,
+  badgeText: [
+    staticStyles.badgeText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  };
+}

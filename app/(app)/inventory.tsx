@@ -27,7 +27,9 @@ import {
   type InventoryResaleVelocity,
 } from "@/services/inventory-service";
 import { InstancedMesh } from "three";
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 const CARDS_BETWEEN_ADS = 0;
 const HEADER_BOTTOM_SPACING = 22;
 
@@ -128,10 +130,14 @@ function buildInventoryFeed(
 }
 
 export default function InventoryScreen() {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const router = useRouter();
   const { user } = useKeepFlipAuth();
   const userId = user?.$id;
-  const { contentWidth, insets, pageGutter, responsiveFont } =
+  const {
+    contentWidth, insets, pageGutter, responsiveFont,
+    contentMaxWidth
+  } =
     useResponsiveLayout();
 
   const [items, setItems] = useState<InventoryItem[]>([]);
@@ -237,14 +243,12 @@ export default function InventoryScreen() {
   return (
     <KeepFlipBackground>
       <FlatList
-        contentContainerStyle={[
-          styles.content,
+        contentContainerStyle={[styles.content,
           {
             paddingBottom: insets.bottom + 28,
             paddingHorizontal: pageGutter,
             paddingTop: insets.top / 2,
-          },
-        ]}
+          }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         style={[styles.list, {marginBottom: insets.bottom, marginTop: insets.top}]}
         data={feedRows}
         keyExtractor={(row) => row.id}
@@ -256,7 +260,7 @@ export default function InventoryScreen() {
             >
               Inventory
             </Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.subtitle, { fontSize: responsiveFont(12)}]}>
               Every saved scan, observed condition, and current market estimate
               in one place.
             </Text>
@@ -276,26 +280,26 @@ export default function InventoryScreen() {
                   name="line.3.horizontal"
                   size={16}
                 />
-                <Text style={styles.filterTriggerLabel}>
+                <Text style={[styles.filterTriggerLabel, { fontSize: responsiveFont(9) }]}>
                   FILTER &amp; SORT
                 </Text>
               </View>
 
-              <Text numberOfLines={1} style={styles.filterTriggerSummary}>
+              <Text numberOfLines={1} style={[styles.filterTriggerSummary, { fontSize: responsiveFont(8) }]}>
                 {appliedSelectionSummary}
               </Text>
             </Pressable>
 
             {error ? (
               <View style={styles.errorCard}>
-                <Text selectable style={styles.errorText}>
+                <Text selectable style={[styles.errorText, { fontSize: responsiveFont(13)}]}>
                   {error}
                 </Text>
                 <Pressable
                   onPress={() => void loadItems()}
                   style={styles.retryButton}
                 >
-                  <Text style={styles.retryText}>Retry</Text>
+                  <Text style={[styles.retryText, { fontSize: responsiveFont(12) }]}>Retry</Text>
                 </Pressable>
               </View>
             ) : null}
@@ -305,7 +309,7 @@ export default function InventoryScreen() {
           loading ? (
             <View style={[styles.emptyState, { width: contentWidth }]}>
               <ActivityIndicator color={theme.colors.scannerCyan} />
-              <Text style={styles.emptyTitle}>Loading inventory</Text>
+              <Text style={[styles.emptyTitle, { fontSize: responsiveFont(20) }]}>Loading inventory</Text>
             </View>
           ) : !error ? (
             <View style={[styles.emptyState, { width: contentWidth }]}>
@@ -316,8 +320,8 @@ export default function InventoryScreen() {
                   size={34}
                 />
               </View>
-              <Text style={styles.emptyTitle}>No saved scans yet</Text>
-              <Text style={styles.emptyBody}>
+              <Text style={[styles.emptyTitle, { fontSize: responsiveFont(20) }]}>No saved scans yet</Text>
+              <Text style={[styles.emptyBody, { fontSize: responsiveFont(13)}]}>
                 Complete an item analysis and choose Save to Inventory.
               </Text>
             </View>
@@ -384,10 +388,10 @@ export default function InventoryScreen() {
           >
             <View style={styles.filterSheetHeader}>
               <View>
-                <Text style={styles.filterSheetEyebrow}>
+                <Text style={[styles.filterSheetEyebrow, { fontSize: responsiveFont(8) }]}>
                   INVENTORY TOOLS
                 </Text>
-                <Text style={styles.filterSheetTitle}>Filter &amp; Sort</Text>
+                <Text style={[styles.filterSheetTitle, { fontSize: responsiveFont(24) }]}>Filter &amp; Sort</Text>
               </View>
 
               <Pressable
@@ -409,7 +413,7 @@ export default function InventoryScreen() {
               showsVerticalScrollIndicator={false}
             >
               <View style={styles.filterSection}>
-                <Text style={styles.controlLabel}>FLIP DECISION</Text>
+                <Text style={[styles.controlLabel, { fontSize: responsiveFont(8) }]}>FLIP DECISION</Text>
 
                 <View style={styles.controlOptions}>
                   {DECISION_FILTERS.map((option) => {
@@ -441,7 +445,7 @@ export default function InventoryScreen() {
               </View>
 
               <View style={styles.filterSection}>
-                <Text style={styles.controlLabel}>RESALE VELOCITY</Text>
+                <Text style={[styles.controlLabel, { fontSize: responsiveFont(8) }]}>RESALE VELOCITY</Text>
 
                 <View style={styles.controlOptions}>
                   {VELOCITY_FILTERS.map((option) => {
@@ -473,7 +477,7 @@ export default function InventoryScreen() {
               </View>
 
               <View style={styles.filterSection}>
-                <Text style={styles.controlLabel}>SORT INVENTORY</Text>
+                <Text style={[styles.controlLabel, { fontSize: responsiveFont(8) }]}>SORT INVENTORY</Text>
 
                 <View style={styles.controlOptions}>
                   {SORT_OPTIONS.map((option) => {
@@ -514,7 +518,7 @@ export default function InventoryScreen() {
                   }}
                   style={styles.clearFiltersButton}
                 >
-                  <Text style={styles.clearFiltersText}>CLEAR</Text>
+                  <Text style={[styles.clearFiltersText, { fontSize: responsiveFont(10) }]}>CLEAR</Text>
                 </Pressable>
 
                 <Pressable
@@ -522,7 +526,7 @@ export default function InventoryScreen() {
                   onPress={applyFilters}
                   style={styles.applyFiltersButton}
                 >
-                  <Text style={styles.applyFiltersText}>APPLY</Text>
+                  <Text style={[styles.applyFiltersText, { fontSize: responsiveFont(10) }]}>APPLY</Text>
                 </Pressable>
               </View>
             </ScrollView>
@@ -533,7 +537,8 @@ export default function InventoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   list: {
     flex: 1,
   },
@@ -788,3 +793,99 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
+  return {
+    ...staticStyles,
+  subtitle: [
+    staticStyles.subtitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  filterTriggerLabel: [
+    staticStyles.filterTriggerLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  filterTriggerSummary: [
+    staticStyles.filterTriggerSummary,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  filterSheetEyebrow: [
+    staticStyles.filterSheetEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  filterSheetTitle: [
+    staticStyles.filterSheetTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(24),
+    },
+  ],
+  filterCloseButton: [
+    staticStyles.filterCloseButton,
+    {
+        width: responsiveLayout.responsiveWidth(38),
+        height: responsiveLayout.responsiveHeight(38),
+    },
+  ],
+  controlLabel: [
+    staticStyles.controlLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  controlChipText: [
+    staticStyles.controlChipText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  clearFiltersText: [
+    staticStyles.clearFiltersText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  applyFiltersText: [
+    staticStyles.applyFiltersText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  errorText: [
+    staticStyles.errorText,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  retryText: [
+    staticStyles.retryText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  emptyIcon: [
+    staticStyles.emptyIcon,
+    {
+        width: responsiveLayout.responsiveWidth(74),
+        height: responsiveLayout.responsiveHeight(74),
+    },
+  ],
+  emptyTitle: [
+    staticStyles.emptyTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(20),
+    },
+  ],
+  emptyBody: [
+    staticStyles.emptyBody,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  };
+}

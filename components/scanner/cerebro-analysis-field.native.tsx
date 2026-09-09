@@ -28,7 +28,10 @@ import {
   type LineProgramController,
 } from "@/components/scanner/evidence-field.native";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export type CerebroValuation = {
   confidence?: number | null;
   currency?: string;
@@ -929,6 +932,11 @@ function valuationPosition(valuation: CerebroValuation) {
 }
 
 function ValuationGauge({ valuation }: { valuation: CerebroValuation }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const reveal = useRef(new Animated.Value(0)).current;
   const position = valuationPosition(valuation);
   const currency = valuation.currency || "USD";
@@ -989,7 +997,7 @@ function ValuationGauge({ valuation }: { valuation: CerebroValuation }) {
     <Animated.View pointerEvents="none" style={[styles.gauge, panelStyle]}>
       <View style={styles.gaugeHeader}>
         <View style={styles.successSignal} />
-        <Text style={styles.gaugeEyebrow}>VALUATION SIGNAL ACQUIRED</Text>
+        <Text style={[styles.gaugeEyebrow, { fontSize: responsiveFont(8), lineHeight: 10 }]}>VALUATION SIGNAL ACQUIRED</Text>
       </View>
 
       <View style={styles.arc}>
@@ -1033,13 +1041,13 @@ function ValuationGauge({ valuation }: { valuation: CerebroValuation }) {
         <View style={styles.needleHub} />
       </View>
 
-      <Text style={styles.valueLabel}>ESTIMATED RESALE VALUE</Text>
-      <Text adjustsFontSizeToFit numberOfLines={1} style={styles.valueText}>
+      <Text style={[styles.valueLabel, { fontSize: responsiveFont(7), lineHeight: 9 }]}>ESTIMATED RESALE VALUE</Text>
+      <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.valueText, { fontSize: responsiveFont(38), lineHeight: 43 }]}>
         {formatMoney(valuation.median, currency)}
       </Text>
 
       {finiteNumber(valuation.low) && finiteNumber(valuation.high) ? (
-        <Text style={styles.rangeText}>
+        <Text style={[styles.rangeText, { fontSize: responsiveFont(10), lineHeight: 13 }]}>
           {formatMoney(valuation.low!, currency)} — {formatMoney(valuation.high!, currency)}
         </Text>
       ) : null}
@@ -1057,6 +1065,7 @@ export function CerebroAnalysisField({
   style,
   valuation,
 }: CerebroAnalysisFieldProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const pixelRatio = useMemo(
     () => Math.min(1.75, Math.max(1, PixelRatio.get())),
     [],
@@ -1181,7 +1190,8 @@ export function CerebroAnalysisField({
 
 export default CerebroAnalysisField;
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFill,
     overflow: "hidden",
@@ -1316,3 +1326,74 @@ const styles = StyleSheet.create({
     `,
   },
 });
+  return {
+    ...staticStyles,
+  successSignal: [
+    staticStyles.successSignal,
+    {
+        width: responsiveLayout.responsiveWidth(7),
+        height: responsiveLayout.responsiveHeight(7),
+    },
+  ],
+  gaugeEyebrow: [
+    staticStyles.gaugeEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  arc: [
+    staticStyles.arc,
+    {
+        width: responsiveLayout.responsiveWidth(138),
+        height: responsiveLayout.responsiveHeight(82),
+    },
+  ],
+  segment: [
+    staticStyles.segment,
+    {
+        width: responsiveLayout.responsiveWidth(3),
+        height: responsiveLayout.responsiveHeight(13),
+    },
+  ],
+  needle: [
+    staticStyles.needle,
+    {
+        width: responsiveLayout.responsiveWidth(4),
+        height: responsiveLayout.responsiveHeight(48),
+    },
+  ],
+  needleLine: [
+    staticStyles.needleLine,
+    {
+        width: responsiveLayout.responsiveWidth(3),
+        height: responsiveLayout.responsiveHeight(43),
+    },
+  ],
+  needleHub: [
+    staticStyles.needleHub,
+    {
+        width: responsiveLayout.responsiveWidth(13),
+        height: responsiveLayout.responsiveHeight(13),
+    },
+  ],
+  valueLabel: [
+    staticStyles.valueLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  valueText: [
+    staticStyles.valueText,
+    {
+        fontSize: responsiveLayout.responsiveFont(38),
+        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(0) },
+    },
+  ],
+  rangeText: [
+    staticStyles.rangeText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  };
+}

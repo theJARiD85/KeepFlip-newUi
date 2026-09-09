@@ -19,6 +19,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
+import { FlipCompanion } from '@/components/flip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import {
   KeepFlipBackground,
@@ -37,7 +38,10 @@ import {
 import { completeScanInventoryWalkthrough } from '@/services/user-profile-onboarding-service';
 import type { ResellerBuyRules } from '@/services/reseller-buy-rules-service';
 import { getAppwriteCoreServices } from '@/lib/appwrite';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export type AuthSubscriptionSelection = {
   cadence: KeepFlipBillingCadence;
   plan: KeepFlipPlanId;
@@ -81,9 +85,14 @@ function AuthField({
   onToggleSecure?: () => void;
   secureVisible?: boolean;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
     <View style={styles.fieldGroup}>
-      <Text style={styles.fieldLabel}>{label}</Text>
+      <Text style={[styles.fieldLabel, { fontSize: responsiveFont(10) }]}>{label}</Text>
       <View style={styles.fieldShell}>
         <IconSymbol color={theme.colors.goldMuted} name={icon} size={18} />
         <TextInput
@@ -122,6 +131,11 @@ function PlanSelection({
   onChange: (next: AuthSubscriptionSelection) => void;
   migrationMode?: boolean;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const cadence = value.cadence;
 
   return (
@@ -135,12 +149,12 @@ function PlanSelection({
           />
         </View>
         <View style={styles.checkoutBannerCopy}>
-          <Text style={styles.checkoutBannerTitle}>
+          <Text style={[styles.checkoutBannerTitle, { fontSize: responsiveFont(8) }]}>
             {migrationMode
               ? 'TRIAL ELIGIBILITY IS CHECKED IN GOOGLE PLAY'
               : '7 DAYS FREE ON EITHER BILLING OPTION'}
           </Text>
-          <Text style={styles.checkoutBannerBody}>
+          <Text style={[styles.checkoutBannerBody, { fontSize: responsiveFont(12)}]}>
             Choose a plan now. After your KeepFlip account is created, the
             selected plan opens its Google Play signup sheet right here.
           </Text>
@@ -148,7 +162,7 @@ function PlanSelection({
       </View>
 
       <View style={styles.checkoutBillingSection}>
-        <Text style={styles.checkoutBillingLabel}>BILLING</Text>
+        <Text style={[styles.checkoutBillingLabel, { fontSize: responsiveFont(7) }]}>BILLING</Text>
         <View
           accessibilityLabel="Billing frequency"
           style={styles.checkoutBillingToggle}>
@@ -190,6 +204,10 @@ function PlanSelection({
 
       <View style={styles.checkoutPlanStack}>
         {KEEPFLIP_PLAN_DEFINITIONS.map((definition) => {
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
           const selected = value.plan === definition.id;
           const price =
             cadence === 'annual'
@@ -222,14 +240,14 @@ function PlanSelection({
               ]}>
               <View style={styles.checkoutPlanTopLine}>
                 <View style={styles.checkoutPlanHeading}>
-                  <Text style={styles.checkoutPlanEyebrow}>
+                  <Text style={[styles.checkoutPlanEyebrow, { fontSize: responsiveFont(7) }]}>
                     {definition.eyebrow}
                   </Text>
-                  <Text style={styles.checkoutPlanName}>{definition.name}</Text>
+                  <Text style={[styles.checkoutPlanName, { fontSize: responsiveFont(20) }]}>{definition.name}</Text>
                 </View>
                 {definition.recommended ? (
                   <View style={styles.checkoutRecommendedBadge}>
-                    <Text style={styles.checkoutRecommendedText}>RECOMMENDED</Text>
+                    <Text style={[styles.checkoutRecommendedText, { fontSize: responsiveFont(6) }]}>RECOMMENDED</Text>
                   </View>
                 ) : null}
               </View>
@@ -248,12 +266,12 @@ function PlanSelection({
                   name="sparkles"
                   size={14}
                 />
-                <Text style={styles.checkoutTrialIncludedText}>
+                <Text style={[styles.checkoutTrialIncludedText, { fontSize: responsiveFont(7) }]}>
                   7-DAY FREE TRIAL INCLUDED
                 </Text>
               </View>
 
-              <Text style={styles.checkoutPlanDescription}>
+              <Text style={[styles.checkoutPlanDescription, { fontSize: responsiveFont(12)}]}>
                 {definition.description}
               </Text>
               <View style={styles.checkoutFeatureList}>
@@ -264,7 +282,7 @@ function PlanSelection({
                       name="checkmark.circle.fill"
                       size={15}
                     />
-                    <Text style={styles.checkoutFeatureText}>{feature}</Text>
+                    <Text style={[styles.checkoutFeatureText, { fontSize: responsiveFont(11)}]}>{feature}</Text>
                   </View>
                 ))}
               </View>
@@ -285,7 +303,7 @@ function PlanSelection({
                   {selected ? 'SELECTED PLAN' : 'SELECT THIS PLAN'}
                 </Text>
               </View>
-              <Text style={styles.checkoutAfterTrialText}>
+              <Text style={[styles.checkoutAfterTrialText, { fontSize: responsiveFont(9)}]}>
                 {price} {cadence === 'annual' ? 'per year' : 'per month'}
                 {' '}after any eligible trial. Cancel anytime through Google Play.
               </Text>
@@ -297,15 +315,20 @@ function PlanSelection({
   );
 }
 function MigrationNotice() {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
     <View style={styles.migrationNotice}>
       <View style={styles.migrationIcon}>
         <IconSymbol color={theme.colors.scannerCyan} name="sparkles" size={17} />
       </View>
       <View style={styles.migrationCopy}>
-        <Text style={styles.migrationEyebrow}>EXISTING ACCOUNT UPDATE</Text>
-        <Text style={styles.migrationTitle}>KeepFlip is moving to subscriptions.</Text>
-        <Text style={styles.migrationBody}>
+        <Text style={[styles.migrationEyebrow, { fontSize: responsiveFont(8) }]}>EXISTING ACCOUNT UPDATE</Text>
+        <Text style={[styles.migrationTitle, { fontSize: responsiveFont(15)}]}>KeepFlip is moving to subscriptions.</Text>
+        <Text style={[styles.migrationBody, { fontSize: responsiveFont(12)}]}>
           Your existing account stays yours. During this rollout, choose a
           plan below to check eligibility for a one-week store trial and keep your inventory and
           history connected.
@@ -324,6 +347,14 @@ export function KeepFlipLaunchAuthScreen({
   onAuthenticated,
   onBack,
 }: KeepFlipLaunchAuthScreenProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    contentMaxWidth,
+    contentWidth,
+    pageGutter,
+    responsiveFont
+  } = useResponsiveLayout();
+
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const {
@@ -477,10 +508,8 @@ export function KeepFlipLaunchAuthScreen({
         behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined}
         style={styles.flex}>
         <ScrollView
-          contentContainerStyle={[
-            styles.content,
-            { paddingBottom: insets.bottom + 28, paddingTop: insets.top + 12 },
-          ]}
+          contentContainerStyle={[styles.content,
+            { paddingBottom: insets.bottom + 28, paddingTop: insets.top + 12 }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <View style={styles.headerRow}>
@@ -491,7 +520,7 @@ export function KeepFlipLaunchAuthScreen({
                 onPress={onBack}
                 style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
                 <IconSymbol color={theme.colors.goldBright} name="chevron.left" size={18} />
-                <Text style={styles.backButtonText}>BACK</Text>
+                <Text style={[styles.backButtonText, { fontSize: responsiveFont(9) }]}>BACK</Text>
               </Pressable>
             ) : null}
             <View style={styles.brandMark}>
@@ -505,11 +534,11 @@ export function KeepFlipLaunchAuthScreen({
           </View>
 
           <View style={styles.brandSection}>
-            <Text style={styles.brandEyebrow}>KEEPFLIP / SECURE ACCESS</Text>
-            <Text style={styles.title}>
+            <Text style={[styles.brandEyebrow, { fontSize: responsiveFont(9) }]}>KEEPFLIP / SECURE ACCESS</Text>
+            <Text style={[styles.title, { fontSize: responsiveFont(31) }]}>
               {migrationMode ? 'Welcome back.' : mode === 'create-account' ? 'Make your edge official.' : 'Welcome back.'}
             </Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.subtitle, { fontSize: responsiveFont(13)}]}>
               {migrationMode
                 ? 'Sign in to your existing KeepFlip account, then choose the tier you want to try.'
                 : mode === 'create-account'
@@ -523,13 +552,8 @@ export function KeepFlipLaunchAuthScreen({
 
             {mode === 'create-account' && initialName ? (
               <View style={styles.flipNameRow}>
-                <Image
-                  accessibilityLabel="Flip"
-                  contentFit="contain"
-                  source={require('@/assets/images/flip-mascot.png')}
-                  style={styles.flipImage}
-                />
-                <Text style={styles.flipNameText}>Flip will know you as {initialName}.</Text>
+                <FlipCompanion size={43} />
+                <Text style={[styles.flipNameText, { fontSize: responsiveFont(13)}]}>Flip will know you as {initialName}.</Text>
               </View>
             ) : null}
 
@@ -539,18 +563,18 @@ export function KeepFlipLaunchAuthScreen({
 
             {setupRequired ? (
               <View style={styles.setupNotice}>
-                <Text style={styles.setupTitle}>APPWRITE SETUP REQUIRED</Text>
-                <Text style={styles.setupBody}>Add the public Appwrite connection values, then restart this build.</Text>
+                <Text style={[styles.setupTitle, { fontSize: responsiveFont(8) }]}>APPWRITE SETUP REQUIRED</Text>
+                <Text style={[styles.setupBody, { fontSize: responsiveFont(11)}]}>Add the public Appwrite connection values, then restart this build.</Text>
                 {missingKeys.map((key) => <Text key={key} style={styles.setupKey}>{key}</Text>)}
               </View>
             ) : null}
 
             {displayedError ? (
               <View accessibilityLiveRegion="polite" style={styles.errorNotice}>
-                <Text selectable style={styles.errorText}>{displayedError}</Text>
+                <Text selectable style={[styles.errorText, { fontSize: responsiveFont(12)}]}>{displayedError}</Text>
                 {status === 'error' ? (
                   <Pressable accessibilityRole="button" disabled={isBusy} onPress={() => void retry()} style={styles.retryButton}>
-                    <Text style={styles.retryText}>RETRY CONNECTION</Text>
+                    <Text style={[styles.retryText, { fontSize: responsiveFont(9) }]}>RETRY CONNECTION</Text>
                   </Pressable>
                 ) : null}
               </View>
@@ -644,7 +668,7 @@ export function KeepFlipLaunchAuthScreen({
                   name="checkmark.shield.fill"
                   size={18}
                 />
-                <Text style={styles.accountReadyText}>
+                <Text style={[styles.accountReadyText, { fontSize: responsiveFont(12)}]}>
                   Your KeepFlip account is ready. Continue to open Google Play for the selected plan.
                 </Text>
               </View>
@@ -660,14 +684,14 @@ export function KeepFlipLaunchAuthScreen({
                 <ActivityIndicator color={theme.colors.backgroundDeep} size="small" />
               ) : (
                 <>
-                  <Text style={styles.submitText}>{mode === 'sign-in' ? 'ENTER KEEPFLIP' : accountReady ? 'START SELECTED PLAN' : 'CREATE ACCOUNT & START TRIAL'}</Text>
+                  <Text style={[styles.submitText, { fontSize: responsiveFont(11) }]}>{mode === 'sign-in' ? 'ENTER KEEPFLIP' : accountReady ? 'START SELECTED PLAN' : 'CREATE ACCOUNT & START TRIAL'}</Text>
                   <IconSymbol color={theme.colors.backgroundDeep} name="arrow.right" size={19} />
                 </>
               )}
             </Pressable>
 
             {mode === 'create-account' ? (
-              <Text style={styles.legalText}>
+              <Text style={[styles.legalText, { fontSize: responsiveFont(10)}]}>
                 By creating an account, you agree to KeepFlip&apos;s{' '}
                 <Text onPress={() => router.push('/terms')} style={styles.legalLink}>Terms of Service</Text>{' '}and{' '}
                 <Text onPress={() => router.push('/privacy')} style={styles.legalLink}>Privacy Policy</Text>.
@@ -680,7 +704,8 @@ export function KeepFlipLaunchAuthScreen({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   backButton: { alignItems: 'center', flexDirection: 'row', gap: 4, minHeight: 40, paddingHorizontal: 4 },
   backButtonText: { color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 9, letterSpacing: 1 },
   billingOption: { alignItems: 'center', borderRadius: 10, flex: 1, gap: 2, justifyContent: 'center', minHeight: 44 },
@@ -800,3 +825,346 @@ const styles = StyleSheet.create({
   checkoutTrialIncludedText: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: '900', letterSpacing: 0.7 },
   visibilityButton: { alignItems: 'center', borderRadius: 999, height: 36, justifyContent: 'center', width: 36 },
 });
+  return {
+    ...staticStyles,
+  backButtonText: [
+    staticStyles.backButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  billingOptionSubtext: [
+    staticStyles.billingOptionSubtext,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  billingOptionText: [
+    staticStyles.billingOptionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  brandEyebrow: [
+    staticStyles.brandEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  brandLogo: [
+    staticStyles.brandLogo,
+    {
+        height: responsiveLayout.responsiveHeight(52),
+        width: responsiveLayout.responsiveWidth(52),
+    },
+  ],
+  brandMark: [
+    staticStyles.brandMark,
+    {
+        height: responsiveLayout.responsiveHeight(60),
+        width: responsiveLayout.responsiveWidth(60),
+    },
+  ],
+  errorText: [
+    staticStyles.errorText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  fieldInput: [
+    staticStyles.fieldInput,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  fieldLabel: [
+    staticStyles.fieldLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  flipImage: [
+    staticStyles.flipImage,
+    {
+        height: responsiveLayout.responsiveHeight(43),
+        width: responsiveLayout.responsiveWidth(43),
+    },
+  ],
+  flipNameText: [
+    staticStyles.flipNameText,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  legalText: [
+    staticStyles.legalText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  migrationBody: [
+    staticStyles.migrationBody,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  migrationEyebrow: [
+    staticStyles.migrationEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  migrationIcon: [
+    staticStyles.migrationIcon,
+    {
+        height: responsiveLayout.responsiveHeight(36),
+        width: responsiveLayout.responsiveWidth(36),
+    },
+  ],
+  migrationTitle: [
+    staticStyles.migrationTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  modeText: [
+    staticStyles.modeText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  planTrial: [
+    staticStyles.planTrial,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  planOptionDescription: [
+    staticStyles.planOptionDescription,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  planOptionEyebrow: [
+    staticStyles.planOptionEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  planOptionName: [
+    staticStyles.planOptionName,
+    {
+        fontSize: responsiveLayout.responsiveFont(17),
+    },
+  ],
+  planPeriod: [
+    staticStyles.planPeriod,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  planPrice: [
+    staticStyles.planPrice,
+    {
+        fontSize: responsiveLayout.responsiveFont(24),
+    },
+  ],
+  planRadio: [
+    staticStyles.planRadio,
+    {
+        height: responsiveLayout.responsiveHeight(19),
+        width: responsiveLayout.responsiveWidth(19),
+    },
+  ],
+  planRadioCore: [
+    staticStyles.planRadioCore,
+    {
+        height: responsiveLayout.responsiveHeight(9),
+        width: responsiveLayout.responsiveWidth(9),
+    },
+  ],
+  planSectionBody: [
+    staticStyles.planSectionBody,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  planSectionEyebrow: [
+    staticStyles.planSectionEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  planSectionIcon: [
+    staticStyles.planSectionIcon,
+    {
+        height: responsiveLayout.responsiveHeight(34),
+        width: responsiveLayout.responsiveWidth(34),
+    },
+  ],
+  planSectionTitle: [
+    staticStyles.planSectionTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(16),
+    },
+  ],
+  retryText: [
+    staticStyles.retryText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  setupBody: [
+    staticStyles.setupBody,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  setupKey: [
+    staticStyles.setupKey,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  setupTitle: [
+    staticStyles.setupTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  subtitle: [
+    staticStyles.subtitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  submitText: [
+    staticStyles.submitText,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(31),
+    },
+  ],
+  accountReadyText: [
+    staticStyles.accountReadyText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  checkoutAfterTrialText: [
+    staticStyles.checkoutAfterTrialText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  checkoutBannerBody: [
+    staticStyles.checkoutBannerBody,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  checkoutBannerIcon: [
+    staticStyles.checkoutBannerIcon,
+    {
+        height: responsiveLayout.responsiveHeight(40),
+        width: responsiveLayout.responsiveWidth(40),
+    },
+  ],
+  checkoutBannerTitle: [
+    staticStyles.checkoutBannerTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  checkoutBillingLabel: [
+    staticStyles.checkoutBillingLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  checkoutBillingOptionSubtext: [
+    staticStyles.checkoutBillingOptionSubtext,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  checkoutBillingOptionText: [
+    staticStyles.checkoutBillingOptionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  checkoutFeatureText: [
+    staticStyles.checkoutFeatureText,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  checkoutPlanDescription: [
+    staticStyles.checkoutPlanDescription,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  checkoutPlanEyebrow: [
+    staticStyles.checkoutPlanEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  checkoutPlanName: [
+    staticStyles.checkoutPlanName,
+    {
+        fontSize: responsiveLayout.responsiveFont(20),
+    },
+  ],
+  checkoutPrice: [
+    staticStyles.checkoutPrice,
+    {
+        fontSize: responsiveLayout.responsiveFont(27),
+    },
+  ],
+  checkoutPricePeriod: [
+    staticStyles.checkoutPricePeriod,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  checkoutRecommendedText: [
+    staticStyles.checkoutRecommendedText,
+    {
+        fontSize: responsiveLayout.responsiveFont(6),
+    },
+  ],
+  checkoutSavingsLine: [
+    staticStyles.checkoutSavingsLine,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  checkoutSelectActionText: [
+    staticStyles.checkoutSelectActionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  checkoutTrialIncludedText: [
+    staticStyles.checkoutTrialIncludedText,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  visibilityButton: [
+    staticStyles.visibilityButton,
+    {
+        height: responsiveLayout.responsiveHeight(36),
+        width: responsiveLayout.responsiveWidth(36),
+    },
+  ],
+  };
+}

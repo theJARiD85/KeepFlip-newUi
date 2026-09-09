@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
+import { FlipAssistantOverlay } from '@/components/command-center/flip-assistant-overlay';
 import { EbayConnectionProvider } from '@/components/ebay/ebay-connection-context';
 import { KeepFlipMenuProvider } from '@/components/navigation/keepflip-menu-context';
 import { KeepFlipSlideDownMenu } from '@/components/navigation/keepflip-slide-down-menu';
@@ -18,6 +19,8 @@ import { notificationRouteFromData } from '@/services/keepflip-notification-serv
 import { areKeepFlipSubscriptionsEnforced } from '@/services/keepflip-subscription-service';
 import { hasCompletedScanInventoryWalkthrough } from '@/services/user-profile-onboarding-service';
 import { hasCompletedKeepFlipLaunchExperience } from '@/services/keepflip-launch-state-service';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+
 
 export const unstable_settings = {
   anchor: 'index',
@@ -140,7 +143,9 @@ function WalkthroughAutoLauncher() {
 }
 
 export default function AppShellLayout() {
+  const insets = useSafeAreaInsets();
   return (
+    <SafeAreaProvider style={{marginTop: insets.top, marginBottom: insets.bottom}}>
     <KeepFlipMenuProvider>
       <EbayConnectionProvider>
         <ItemAnalysisResultProvider>
@@ -173,13 +178,16 @@ export default function AppShellLayout() {
                   <Stack.Screen name="ebay-connect" />
                   <Stack.Screen name="ebay-account" />
                   <Stack.Screen name="books" />
+                  <Stack.Screen name="market-research" />
                 </Stack>
+                <FlipAssistantOverlay />
               </View>
             </KeepFlipSubscriptionProvider>
           </SourcingTripProvider>
         </ItemAnalysisResultProvider>
       </EbayConnectionProvider>
     </KeepFlipMenuProvider>
+    </SafeAreaProvider>
   );
 }
 

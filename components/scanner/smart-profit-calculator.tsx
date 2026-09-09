@@ -25,7 +25,10 @@ import {
   loadInventoryProfitPlan,
   saveInventoryProfitPlan,
 } from "@/services/inventory-profit-plan-service";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type SmartProfitCalculatorProps = {
   initialCost?: number;
   valuation: Pick<AnalysisValuation, "currency" | "high" | "low" | "median">;
@@ -151,10 +154,15 @@ function Metric({
   label: string;
   value: string;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
     <View style={styles.metric}>
       <Text style={[styles.metricLabel, { color: accent }]}>{label}</Text>
-      <Text selectable style={styles.metricValue}>{value}</Text>
+      <Text selectable style={[styles.metricValue, { fontSize: responsiveFont(15) }]}>{value}</Text>
     </View>
   );
 }
@@ -170,9 +178,14 @@ function CalculatorField({
   prefix?: string;
   value: string;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
     <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
+      <Text style={[styles.fieldLabel, { fontSize: responsiveFont(7) }]}>{label}</Text>
       <View style={styles.inputShell}>
         {prefix ? <Text style={styles.inputPrefix}>{prefix}</Text> : null}
         <TextInput
@@ -200,6 +213,11 @@ function MarketBar({
   projection: ProfitProjection;
   scale: number;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const hasPositiveProfit = projection.netProfit >= 0;
   const costFlex = Math.max(projection.operatingCosts / scale, 0.001);
   const feeFlex = Math.max(projection.platformFee / scale, 0.001);
@@ -208,7 +226,7 @@ function MarketBar({
   return (
     <View style={styles.marketRow}>
       <View style={styles.marketRowLead}>
-        <Text selectable style={styles.marketName}>{projection.marketplace.shortLabel}</Text>
+        <Text selectable style={[styles.marketName, { fontSize: responsiveFont(10) }]}>{projection.marketplace.shortLabel}</Text>
         <Text selectable style={styles.marketFee}>{projection.feeSummary}</Text>
       </View>
       <View style={styles.marketBarAndValue}>
@@ -248,6 +266,11 @@ export function SmartProfitCalculator({
   initialCost,
   valuation,
 }: SmartProfitCalculatorProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const params = useLocalSearchParams<{
     itemId?: string | string[];
   }>();
@@ -392,26 +415,26 @@ export function SmartProfitCalculator({
     <View style={styles.shell}>
       <View style={styles.header}>
         <View style={styles.headerCopy}>
-          <Text style={styles.eyebrow}>SMART PROFIT CALCULATOR</Text>
-          <Text selectable style={styles.title}>Price the flip</Text>
+          <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>SMART PROFIT CALCULATOR</Text>
+          <Text selectable style={[styles.title, { fontSize: responsiveFont(15), lineHeight: 19 }]}>Price the flip</Text>
         </View>
         <View style={styles.rangeReadout}>
-          <Text style={styles.rangeLabel}>MARKET MID</Text>
-          <Text selectable style={styles.rangeValue}>
+          <Text style={[styles.rangeLabel, { fontSize: responsiveFont(7) }]}>MARKET MID</Text>
+          <Text selectable style={[styles.rangeValue, { fontSize: responsiveFont(16) }]}>
             {formatMoney(valuation.median, currency)}
           </Text>
         </View>
       </View>
 
       <View style={styles.rangeLine}>
-        <Text selectable style={styles.rangeDetail}>
+        <Text selectable style={[styles.rangeDetail, { fontSize: responsiveFont(7) }]}>
           RANGE {formatMoney(valuation.low, currency)} – {formatMoney(valuation.high, currency)}
         </Text>
-        <Text selectable style={styles.rangeDetail}>TARGET {formatMoney(input.targetSalePrice, currency)}</Text>
+        <Text selectable style={[styles.rangeDetail, { fontSize: responsiveFont(7) }]}>TARGET {formatMoney(input.targetSalePrice, currency)}</Text>
       </View>
 
       <View style={styles.presetSection}>
-        <Text style={styles.sectionLabel}>SELLING CHANNEL</Text>
+        <Text style={[styles.sectionLabel, { fontSize: responsiveFont(7) }]}>SELLING CHANNEL</Text>
         <View style={styles.presetGrid}>
           {PROFIT_MARKETPLACES.map((marketplace) => {
             const selected = marketplace.id === selectedMarketplace;
@@ -524,7 +547,7 @@ export function SmartProfitCalculator({
             {loadingSavedPlan || savingNumbers ? (
               <ActivityIndicator color={theme.colors.backgroundDeep} size="small" />
             ) : null}
-            <Text style={styles.persistButtonText}>
+            <Text style={[styles.persistButtonText, { fontSize: responsiveFont(9) }]}>
               {loadingSavedPlan
                 ? "LOADING NUMBERS..."
                 : savingNumbers
@@ -532,7 +555,7 @@ export function SmartProfitCalculator({
                   : "PUNCH IN NUMBERS"}
             </Text>
           </Pressable>
-          <Text selectable style={styles.persistHint}>
+          <Text selectable style={[styles.persistHint, { fontSize: responsiveFont(8), lineHeight: 12 }]}>
             Saves every input to this inventory item. Actual COGS, label cost, and prep / repair totals are also recorded in Books. Target price, buyer shipping, reserves, weight, and fee assumptions stay planning data until money actually moves.
           </Text>
           {saveMessage ? (
@@ -552,7 +575,7 @@ export function SmartProfitCalculator({
 
       <View style={styles.selectedProjection}>
         <View style={styles.selectedProjectionHeader}>
-          <Text style={styles.sectionLabel}>{selectedProjection.marketplace.label.toUpperCase()} PROJECTION</Text>
+          <Text style={[styles.sectionLabel, { fontSize: responsiveFont(7) }]}>{selectedProjection.marketplace.label.toUpperCase()} PROJECTION</Text>
           <Text selectable style={styles.feeBase}>
             FEES ON {formatExactMoney(selectedProjection.feeBase, currency)}
           </Text>
@@ -579,13 +602,13 @@ export function SmartProfitCalculator({
           />
         </View>
         <View style={styles.breakdownRow}>
-          <Text selectable style={styles.breakdownText}>
+          <Text selectable style={[styles.breakdownText, { fontSize: responsiveFont(7) }]}>
             Revenue {formatExactMoney(selectedProjection.grossRevenue, currency)}
           </Text>
-          <Text selectable style={styles.breakdownText}>
+          <Text selectable style={[styles.breakdownText, { fontSize: responsiveFont(7) }]}>
             Fees {formatExactMoney(selectedProjection.platformFee, currency)}
           </Text>
-          <Text selectable style={styles.breakdownText}>
+          <Text selectable style={[styles.breakdownText, { fontSize: responsiveFont(7) }]}>
             Costs {formatExactMoney(selectedProjection.operatingCosts, currency)}
           </Text>
         </View>
@@ -593,17 +616,17 @@ export function SmartProfitCalculator({
 
       <View style={styles.comparisonHeader}>
         <View>
-          <Text style={styles.sectionLabel}>CHANNEL COMPARISON</Text>
+          <Text style={[styles.sectionLabel, { fontSize: responsiveFont(7) }]}>CHANNEL COMPARISON</Text>
           <Text selectable style={styles.legend}>
             COSTS <Text style={styles.legendDot}>●</Text> FEES <Text style={styles.legendFee}>●</Text> NET <Text style={styles.legendProfit}>●</Text>
           </Text>
         </View>
         <View style={styles.comparisonSummary}>
-          <Text style={styles.summaryLabel}>BEST TAKE-HOME</Text>
-          <Text selectable style={styles.summaryValue}>
+          <Text style={[styles.summaryLabel, { fontSize: responsiveFont(6) }]}>BEST TAKE-HOME</Text>
+          <Text selectable style={[styles.summaryValue, { fontSize: responsiveFont(9) }]}>
             {bestProfit ? `${bestProfit.marketplace.shortLabel} · ${formatMoney(bestProfit.netProfit, currency)}` : "—"}
           </Text>
-          <Text selectable style={styles.summaryRoi}>
+          <Text selectable style={[styles.summaryRoi, { fontSize: responsiveFont(6) }]}>
             BEST ROI {bestRoi ? `${bestRoi.marketplace.shortLabel} ${formatRoi(bestRoi.roiPercent)}` : "—"}
           </Text>
         </View>
@@ -627,7 +650,8 @@ export function SmartProfitCalculator({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   shell: {
     gap: 13,
     paddingTop: 16,
@@ -825,3 +849,188 @@ const styles = StyleSheet.create({
   marketNet: { width: 68, fontFamily: theme.fonts.radar, fontSize: 10, fontWeight: "900", fontVariant: ["tabular-nums"], textAlign: "right" },
   disclaimer: { color: "rgba(255, 255, 255, 0.42)", fontFamily: theme.fonts.numbers, fontSize: 6, fontWeight: "900", lineHeight: 10, letterSpacing: 0.36 },
 });
+  return {
+    ...staticStyles,
+  eyebrow: [
+    staticStyles.eyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  rangeLabel: [
+    staticStyles.rangeLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  rangeValue: [
+    staticStyles.rangeValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(16),
+    },
+  ],
+  rangeDetail: [
+    staticStyles.rangeDetail,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  sectionLabel: [
+    staticStyles.sectionLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  presetName: [
+    staticStyles.presetName,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  presetFee: [
+    staticStyles.presetFee,
+    {
+        fontSize: responsiveLayout.responsiveFont(6),
+    },
+  ],
+  presetNote: [
+    staticStyles.presetNote,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  fieldLabel: [
+    staticStyles.fieldLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  inputPrefix: [
+    staticStyles.inputPrefix,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  input: [
+    staticStyles.input,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  shippingNote: [
+    staticStyles.shippingNote,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  persistButtonText: [
+    staticStyles.persistButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  persistHint: [
+    staticStyles.persistHint,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  persistSuccess: [
+    staticStyles.persistSuccess,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  persistWarning: [
+    staticStyles.persistWarning,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  feeBase: [
+    staticStyles.feeBase,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  metricLabel: [
+    staticStyles.metricLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  metricValue: [
+    staticStyles.metricValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  breakdownText: [
+    staticStyles.breakdownText,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  legend: [
+    staticStyles.legend,
+    {
+        fontSize: responsiveLayout.responsiveFont(6),
+    },
+  ],
+  summaryLabel: [
+    staticStyles.summaryLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(6),
+    },
+  ],
+  summaryValue: [
+    staticStyles.summaryValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  summaryRoi: [
+    staticStyles.summaryRoi,
+    {
+        fontSize: responsiveLayout.responsiveFont(6),
+    },
+  ],
+  marketName: [
+    staticStyles.marketName,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  marketFee: [
+    staticStyles.marketFee,
+    {
+        fontSize: responsiveLayout.responsiveFont(6),
+    },
+  ],
+  marketBarTrack: [
+    staticStyles.marketBarTrack,
+    {
+        height: responsiveLayout.responsiveHeight(18),
+    },
+  ],
+  marketNet: [
+    staticStyles.marketNet,
+    {
+        width: responsiveLayout.responsiveWidth(68),
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  disclaimer: [
+    staticStyles.disclaimer,
+    {
+        fontSize: responsiveLayout.responsiveFont(6),
+    },
+  ],
+  };
+}

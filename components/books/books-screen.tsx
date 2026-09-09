@@ -50,7 +50,10 @@ import {
   listInventoryItems,
   type InventoryItem,
 } from '@/services/inventory-service';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type LedgerDraft = {
   amount: string;
   channel: string;
@@ -147,6 +150,11 @@ function hapticSuccess() {
 }
 
 function Metric({ detail, label, tone = 'gold', value }: MetricProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const toneStyle =
     tone === 'cyan'
       ? styles.metricCyan
@@ -156,11 +164,11 @@ function Metric({ detail, label, tone = 'gold', value }: MetricProps) {
 
   return (
     <View style={[styles.metric, toneStyle]}>
-      <Text style={styles.metricLabel}>{label}</Text>
-      <Text selectable style={styles.metricValue}>
+      <Text style={[styles.metricLabel, { fontSize: responsiveFont(8) }]}>{label}</Text>
+      <Text selectable style={[styles.metricValue, { fontSize: responsiveFont(21) }]}>
         {value}
       </Text>
-      <Text style={styles.metricDetail}>{detail}</Text>
+      <Text style={[styles.metricDetail, { fontSize: responsiveFont(10)}]}>{detail}</Text>
     </View>
   );
 }
@@ -176,12 +184,17 @@ function Section({
   eyebrow: string;
   title: string;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <View style={styles.sectionHeading}>
-          <Text style={styles.sectionEyebrow}>{eyebrow}</Text>
-          <Text style={styles.sectionTitle}>{title}</Text>
+          <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>{eyebrow}</Text>
+          <Text style={[styles.sectionTitle, { fontSize: responsiveFont(17) }]}>{title}</Text>
         </View>
         {action}
       </View>
@@ -199,6 +212,11 @@ function TransactionRow({
   inventoryNames: Map<string, string>;
   onPress: () => void;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const details = ledgerEntryDetails(entry.entryType);
   const isIncome = entry.direction === 'income';
   const itemName = entry.itemId ? inventoryNames.get(entry.itemId) : null;
@@ -222,7 +240,7 @@ function TransactionRow({
         ]}
       />
       <View style={styles.transactionCopy}>
-        <Text style={styles.transactionTitle}>{details.label}</Text>
+        <Text style={[styles.transactionTitle, { fontSize: responsiveFont(13) }]}>{details.label}</Text>
         <Text numberOfLines={1} style={styles.transactionSecondary}>
           {entry.notes || secondary || 'Manual transaction'}
         </Text>
@@ -262,12 +280,17 @@ function TransactionDetailRow({
   label: string;
   value: string | null | undefined;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   if (!value) return null;
 
   return (
     <View style={styles.transactionDetailRow}>
-      <Text style={styles.transactionDetailLabel}>{label}</Text>
-      <Text selectable style={styles.transactionDetailValue}>
+      <Text style={[styles.transactionDetailLabel, { fontSize: responsiveFont(7) }]}>{label}</Text>
+      <Text selectable style={[styles.transactionDetailValue, { fontSize: responsiveFont(12)}]}>
         {value}
       </Text>
     </View>
@@ -323,6 +346,14 @@ function advancedEventTypeForLedgerEntry(
 }
 
 export function BooksScreen() {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    contentMaxWidth,
+    contentWidth,
+    pageGutter,
+    responsiveFont
+  } = useResponsiveLayout();
+
   const { user } = useKeepFlipAuth();
   const { recordCompletedAction } = useKeepFlipFeedbackNudge();
   const { canUse } = useKeepFlipSubscription();
@@ -656,10 +687,8 @@ export function BooksScreen() {
   return (
     <KeepFlipBackground>
       <ScrollView
-        contentContainerStyle={[
-          styles.content,
-          { paddingBottom: insets.bottom, paddingTop: insets.top },
-        ]}
+        contentContainerStyle={[styles.content,
+          { paddingBottom: insets.bottom, paddingTop: insets.top }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         style={{marginBottom: insets.bottom, marginTop: insets.top}}
         contentInsetAdjustmentBehavior="automatic"
         refreshControl={
@@ -671,9 +700,9 @@ export function BooksScreen() {
         }
         showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.eyebrow}>KEEPFLIP / BOOKS</Text>
-          <Text style={styles.title}>Your money & items</Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.eyebrow, { fontSize: responsiveFont(9) }]}>KEEPFLIP / BOOKS</Text>
+          <Text style={[styles.title, { fontSize: responsiveFont(28) }]}>Your money & items</Text>
+          <Text style={[styles.subtitle, { fontSize: responsiveFont(14)}]}>
             Track money in, costs, and what is tied up in your items. Estimates and asking prices stay out of
             your books.
           </Text>
@@ -694,7 +723,7 @@ export function BooksScreen() {
                 name="dollarsign.circle.fill"
                 size={16}
               />
-              <Text style={styles.primaryActionText}>RECORD SALE</Text>
+              <Text style={[styles.primaryActionText, { fontSize: responsiveFont(9) }]}>RECORD SALE</Text>
             </Pressable>
             <Pressable
               accessibilityHint="Records a business expense or inventory cost."
@@ -707,7 +736,7 @@ export function BooksScreen() {
                 pressed && ledgerConfigured && styles.secondaryActionPressed,
               ]}>
               <IconSymbol color={theme.colors.goldBright} name="save.fill" size={15} />
-              <Text style={styles.secondaryActionText}>ADD EXPENSE</Text>
+              <Text style={[styles.secondaryActionText, { fontSize: responsiveFont(9) }]}>ADD EXPENSE</Text>
             </Pressable>
           </View>
         </View>
@@ -716,8 +745,8 @@ export function BooksScreen() {
           <View style={styles.setupNotice}>
             <IconSymbol color={theme.colors.goldBright} name="lock.fill" size={16} />
             <View style={styles.noticeCopy}>
-              <Text style={styles.noticeTitle}>PRIVATE LEDGER SETUP NEEDED</Text>
-              <Text selectable style={styles.noticeText}>
+              <Text style={[styles.noticeTitle, { fontSize: responsiveFont(9) }]}>PRIVATE LEDGER SETUP NEEDED</Text>
+              <Text selectable style={[styles.noticeText, { fontSize: responsiveFont(12)}]}>
                 {setupNotice}
               </Text>
             </View>
@@ -727,8 +756,8 @@ export function BooksScreen() {
         {error ? (
           <View style={styles.errorCard}>
             <View style={styles.noticeCopy}>
-              <Text style={styles.errorTitle}>BOOKS COULDN’T LOAD</Text>
-              <Text selectable style={styles.errorText}>
+              <Text style={[styles.errorTitle, { fontSize: responsiveFont(9) }]}>BOOKS COULDN’T LOAD</Text>
+              <Text selectable style={[styles.errorText, { fontSize: responsiveFont(12)}]}>
                 {error}
               </Text>
             </View>
@@ -737,13 +766,13 @@ export function BooksScreen() {
               accessibilityRole="button"
               onPress={() => void loadBooks()}
               style={styles.retryButton}>
-              <Text style={styles.retryText}>RETRY</Text>
+              <Text style={[styles.retryText, { fontSize: responsiveFont(8) }]}>RETRY</Text>
             </Pressable>
           </View>
         ) : null}
 
         {statusMessage ? (
-          <Text accessibilityLiveRegion="polite" selectable style={styles.statusMessage}>
+          <Text accessibilityLiveRegion="polite" selectable style={[styles.statusMessage, { fontSize: responsiveFont(12)}]}>
             {statusMessage}
           </Text>
         ) : null}
@@ -752,7 +781,7 @@ export function BooksScreen() {
           {loading ? (
             <View style={styles.loadingLine}>
               <ActivityIndicator color={theme.colors.scannerCyan} size="small" />
-              <Text style={styles.loadingText}>Loading your books</Text>
+              <Text style={[styles.loadingText, { fontSize: responsiveFont(12) }]}>Loading your books</Text>
             </View>
           ) : (
             <View style={styles.metricGrid}>
@@ -802,7 +831,7 @@ export function BooksScreen() {
             />
           </View>
           {summary.unlinkedInventoryPurchaseCents > 0 || summary.unlinkedSalesCount > 0 ? (
-            <Text selectable style={styles.summaryNote}>
+            <Text selectable style={[styles.summaryNote, { fontSize: responsiveFont(11)}]}>
               {summary.unlinkedInventoryPurchaseCents > 0
                 ? `${formatMoney(summary.unlinkedInventoryPurchaseCents)} of inventory cost is not linked to an item. `
                 : ''}
@@ -832,7 +861,7 @@ export function BooksScreen() {
               {exporting ? (
                 <ActivityIndicator color={theme.colors.scannerCyan} size="small" />
               ) : (
-                <Text style={styles.exportButtonText}>
+                <Text style={[styles.exportButtonText, { fontSize: responsiveFont(8) }]}>
                   {scheduleCExportAllowed ? 'EXPORT CSV' : 'SERIOUS CSV'}
                 </Text>
               )}
@@ -843,7 +872,7 @@ export function BooksScreen() {
           {loading ? (
             <View style={styles.loadingLine}>
               <ActivityIndicator color={theme.colors.goldBright} size="small" />
-              <Text style={styles.loadingText}>Reading transaction history</Text>
+              <Text style={[styles.loadingText, { fontSize: responsiveFont(12) }]}>Reading transaction history</Text>
             </View>
           ) : entries.length ? (
             <View style={styles.transactionList}>
@@ -858,8 +887,8 @@ export function BooksScreen() {
             </View>
           ) : (
             <View style={styles.emptyLedger}>
-              <Text style={styles.emptyLedgerTitle}>No money events recorded yet</Text>
-              <Text style={styles.emptyLedgerText}>
+              <Text style={[styles.emptyLedgerTitle, { fontSize: responsiveFont(14) }]}>No money events recorded yet</Text>
+              <Text style={[styles.emptyLedgerText, { fontSize: responsiveFont(12)}]}>
                 Start with an actual sale, the cost of inventory, marketplace fees,
                 shipping, or supplies.
               </Text>
@@ -868,7 +897,7 @@ export function BooksScreen() {
         </Section>
 
         <View style={styles.disclaimer}>
-          <Text selectable style={styles.disclaimerText}>
+          <Text selectable style={[styles.disclaimerText, { fontSize: responsiveFont(10)}]}>
             Books is a cash-basis reseller record and CSV export—not tax filing or
             tax advice. Review your records and reporting treatment with a qualified
             professional.
@@ -896,8 +925,8 @@ export function BooksScreen() {
               ]}>
               <View style={styles.transactionDetailHeader}>
                 <View style={styles.transactionDetailHeaderCopy}>
-                  <Text style={styles.sectionEyebrow}>BOOKS / TRANSACTION</Text>
-                  <Text style={styles.transactionDetailTitle}>
+                  <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>BOOKS / TRANSACTION</Text>
+                  <Text style={[styles.transactionDetailTitle, { fontSize: responsiveFont(22) }]}>
                     {ledgerEntryDetails(selectedTransaction.entryType).label}
                   </Text>
                 </View>
@@ -914,7 +943,7 @@ export function BooksScreen() {
                 contentContainerStyle={styles.transactionDetailContent}
                 showsVerticalScrollIndicator={false}>
                 <View style={styles.transactionDetailAmountCard}>
-                  <Text style={styles.transactionDetailAmountLabel}>
+                  <Text style={[styles.transactionDetailAmountLabel, { fontSize: responsiveFont(8) }]}>
                     {selectedTransaction.direction === 'income'
                       ? 'MONEY IN'
                       : 'MONEY OUT'}
@@ -930,7 +959,7 @@ export function BooksScreen() {
                     {selectedTransaction.direction === 'income' ? '+' : '−'}
                     {formatMoney(selectedTransaction.amountCents)}
                   </Text>
-                  <Text style={styles.transactionDetailDirection}>
+                  <Text style={[styles.transactionDetailDirection, { fontSize: responsiveFont(11) }]}>
                     {selectedTransaction.direction === 'income'
                       ? 'Income'
                       : 'Expense'}{' '}
@@ -939,7 +968,7 @@ export function BooksScreen() {
                 </View>
 
                 <View style={styles.transactionDetailSection}>
-                  <Text style={styles.transactionDetailSectionTitle}>DETAILS</Text>
+                  <Text style={[styles.transactionDetailSectionTitle, { fontSize: responsiveFont(8) }]}>DETAILS</Text>
                   <TransactionDetailRow
                     label="Date"
                     value={fullDate(selectedTransaction.occurredAt)}
@@ -981,7 +1010,7 @@ export function BooksScreen() {
                 </View>
 
                 <View style={styles.transactionDetailSection}>
-                  <Text style={styles.transactionDetailSectionTitle}>RECORD</Text>
+                  <Text style={[styles.transactionDetailSectionTitle, { fontSize: responsiveFont(8) }]}>RECORD</Text>
                   <TransactionDetailRow
                     label="Transaction ID"
                     value={selectedTransaction.id}
@@ -1004,7 +1033,7 @@ export function BooksScreen() {
                   ) : null}
                 </View>
 
-                <Text style={styles.transactionDetailHint}>
+                <Text style={[styles.transactionDetailHint, { fontSize: responsiveFont(10)}]}>
                   This is the recorded Books transaction. Estimates, asking prices,
                   and projected profit are not included here.
                 </Text>
@@ -1031,8 +1060,8 @@ export function BooksScreen() {
           <View style={[styles.sheet, { paddingBottom: insets.bottom }]}>
             <View style={styles.sheetHeader}>
               <View>
-                <Text style={styles.sectionEyebrow}>MANUAL MONEY EVENT</Text>
-                <Text style={styles.sheetTitle}>Record transaction</Text>
+                <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>MANUAL MONEY EVENT</Text>
+                <Text style={[styles.sheetTitle, { fontSize: responsiveFont(22) }]}>Record transaction</Text>
               </View>
               <Pressable
                 accessibilityLabel="Close transaction form"
@@ -1049,7 +1078,7 @@ export function BooksScreen() {
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}>
               <View style={styles.formSection}>
-                <Text style={styles.formLabel}>WHAT HAPPENED</Text>
+                <Text style={[styles.formLabel, { fontSize: responsiveFont(8) }]}>WHAT HAPPENED</Text>
                 <View style={styles.typeOptions}>
                   {availableEntryTypeOptions.map((entryType) => {
                     const selected = draft.entryType === entryType;
@@ -1086,7 +1115,7 @@ export function BooksScreen() {
 
               <View style={styles.formRow}>
                 <View style={styles.formFieldWide}>
-                  <Text style={styles.formLabel}>
+                  <Text style={[styles.formLabel, { fontSize: responsiveFont(8) }]}>
                     {draft.entryType === 'sale_proceeds'
                       ? 'GROSS PAID BY BUYER'
                       : 'AMOUNT'}
@@ -1109,7 +1138,7 @@ export function BooksScreen() {
                   </View>
                 </View>
                 <View style={styles.formFieldDate}>
-                  <Text style={styles.formLabel}>DATE</Text>
+                  <Text style={[styles.formLabel, { fontSize: responsiveFont(8) }]}>DATE</Text>
                   <TextInput
                     accessibilityLabel="Transaction date in year month day format"
                     autoCapitalize="none"
@@ -1127,7 +1156,7 @@ export function BooksScreen() {
               </View>
 
               <View style={styles.formSection}>
-                <Text style={styles.formLabel}>
+                <Text style={[styles.formLabel, { fontSize: responsiveFont(8) }]}>
                   {draft.entryType === 'sale_proceeds' ? 'SALE CHANNEL' : 'SOURCE / CHANNEL'}
                 </Text>
                 <TextInput
@@ -1149,7 +1178,7 @@ export function BooksScreen() {
               </View>
 
               <View style={styles.formSection}>
-                <Text style={styles.formLabel}>INVENTORY ITEM (OPTIONAL)</Text>
+                <Text style={[styles.formLabel, { fontSize: responsiveFont(8) }]}>INVENTORY ITEM (OPTIONAL)</Text>
                 <Pressable
                   accessibilityHint="Links this transaction to a saved inventory item."
                   accessibilityRole="button"
@@ -1162,10 +1191,10 @@ export function BooksScreen() {
                     pressed && styles.itemPickerButtonPressed,
                   ]}>
                   <View style={styles.itemPickerCopy}>
-                    <Text numberOfLines={1} style={styles.itemPickerTitle}>
+                    <Text numberOfLines={1} style={[styles.itemPickerTitle, { fontSize: responsiveFont(13) }]}>
                       {selectedItem?.title ?? 'No item linked'}
                     </Text>
-                    <Text style={styles.itemPickerDetail}>
+                    <Text style={[styles.itemPickerDetail, { fontSize: responsiveFont(10)}]}>
                       Link sales and related costs to calculate item-level profit.
                     </Text>
                   </View>
@@ -1187,10 +1216,14 @@ export function BooksScreen() {
                         setShowItemPicker(false);
                       }}
                       style={styles.itemOption}>
-                      <Text style={styles.itemOptionText}>No item linked</Text>
+                      <Text style={[styles.itemOptionText, { fontSize: responsiveFont(12) }]}>No item linked</Text>
                     </Pressable>
                     {inventory.length ? (
                       inventory.map((item) => {
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
                         const selected = draft.itemId === item.id;
                         return (
                           <Pressable
@@ -1205,7 +1238,7 @@ export function BooksScreen() {
                               styles.itemOption,
                               selected && styles.itemOptionSelected,
                             ]}>
-                            <Text numberOfLines={1} style={styles.itemOptionText}>
+                            <Text numberOfLines={1} style={[styles.itemOptionText, { fontSize: responsiveFont(12) }]}>
                               {item.title}
                             </Text>
                             {item.acquisitionCost != null ? (
@@ -1217,7 +1250,7 @@ export function BooksScreen() {
                         );
                       })
                     ) : (
-                      <Text style={styles.noItemText}>
+                      <Text style={[styles.noItemText, { fontSize: responsiveFont(12) }]}>
                         No inventory items are available to link yet.
                       </Text>
                     )}
@@ -1227,7 +1260,7 @@ export function BooksScreen() {
 
               {advancedBookkeepingConfigured && draft.entryType === 'sale_proceeds' ? (
                 <View style={styles.formSection}>
-                  <Text style={styles.formLabel}>HOW MANY SOLD?</Text>
+                  <Text style={[styles.formLabel, { fontSize: responsiveFont(8) }]}>HOW MANY SOLD?</Text>
                   <TextInput
                     accessibilityLabel="Number of inventory units sold"
                     keyboardType="number-pad"
@@ -1255,7 +1288,7 @@ export function BooksScreen() {
               ) : null}
 
               <View style={styles.formSection}>
-                <Text style={styles.formLabel}>NOTE (OPTIONAL)</Text>
+                <Text style={[styles.formLabel, { fontSize: responsiveFont(8) }]}>NOTE (OPTIONAL)</Text>
                 <TextInput
                   accessibilityLabel="Transaction note"
                   maxLength={2000}
@@ -1272,7 +1305,7 @@ export function BooksScreen() {
               </View>
 
               {formError ? (
-                <Text accessibilityLiveRegion="polite" selectable style={styles.formError}>
+                <Text accessibilityLiveRegion="polite" selectable style={[styles.formError, { fontSize: responsiveFont(12)}]}>
                   {formError}
                 </Text>
               ) : null}
@@ -1290,7 +1323,7 @@ export function BooksScreen() {
                 {saving ? (
                   <ActivityIndicator color={theme.colors.backgroundDeep} size="small" />
                 ) : (
-                  <Text style={styles.saveButtonText}>RECORD TRANSACTION</Text>
+                  <Text style={[styles.saveButtonText, { fontSize: responsiveFont(10) }]}>RECORD TRANSACTION</Text>
                 )}
               </Pressable>
             </ScrollView>
@@ -1301,7 +1334,8 @@ export function BooksScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   content: {
     alignSelf: 'center',
     gap: 26,
@@ -1856,3 +1890,328 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
 });
+  return {
+    ...staticStyles,
+  eyebrow: [
+    staticStyles.eyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(28),
+    },
+  ],
+  subtitle: [
+    staticStyles.subtitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  primaryActionText: [
+    staticStyles.primaryActionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  secondaryActionText: [
+    staticStyles.secondaryActionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  noticeTitle: [
+    staticStyles.noticeTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  noticeText: [
+    staticStyles.noticeText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  errorTitle: [
+    staticStyles.errorTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  errorText: [
+    staticStyles.errorText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  retryText: [
+    staticStyles.retryText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  statusMessage: [
+    staticStyles.statusMessage,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  sectionEyebrow: [
+    staticStyles.sectionEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  sectionTitle: [
+    staticStyles.sectionTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(17),
+    },
+  ],
+  loadingText: [
+    staticStyles.loadingText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  metricLabel: [
+    staticStyles.metricLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  metricValue: [
+    staticStyles.metricValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(21),
+    },
+  ],
+  metricDetail: [
+    staticStyles.metricDetail,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  summaryNote: [
+    staticStyles.summaryNote,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  exportButtonText: [
+    staticStyles.exportButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  transactionMarker: [
+    staticStyles.transactionMarker,
+    {
+        height: responsiveLayout.responsiveHeight(25),
+        width: responsiveLayout.responsiveWidth(3),
+    },
+  ],
+  transactionTitle: [
+    staticStyles.transactionTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  transactionSecondary: [
+    staticStyles.transactionSecondary,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  transactionTertiary: [
+    staticStyles.transactionTertiary,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  transactionAmount: [
+    staticStyles.transactionAmount,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  transactionSource: [
+    staticStyles.transactionSource,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  emptyLedgerTitle: [
+    staticStyles.emptyLedgerTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  emptyLedgerText: [
+    staticStyles.emptyLedgerText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  disclaimerText: [
+    staticStyles.disclaimerText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  transactionDetailTitle: [
+    staticStyles.transactionDetailTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(22),
+    },
+  ],
+  transactionDetailAmountLabel: [
+    staticStyles.transactionDetailAmountLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  transactionDetailAmount: [
+    staticStyles.transactionDetailAmount,
+    {
+        fontSize: responsiveLayout.responsiveFont(27),
+    },
+  ],
+  transactionDetailDirection: [
+    staticStyles.transactionDetailDirection,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  transactionDetailSectionTitle: [
+    staticStyles.transactionDetailSectionTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  transactionDetailLabel: [
+    staticStyles.transactionDetailLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  transactionDetailValue: [
+    staticStyles.transactionDetailValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  transactionDetailHint: [
+    staticStyles.transactionDetailHint,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  sheetTitle: [
+    staticStyles.sheetTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(22),
+    },
+  ],
+  closeButton: [
+    staticStyles.closeButton,
+    {
+        height: responsiveLayout.responsiveHeight(34),
+        width: responsiveLayout.responsiveWidth(34),
+    },
+  ],
+  formLabel: [
+    staticStyles.formLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  typeOptionText: [
+    staticStyles.typeOptionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  typeHelp: [
+    staticStyles.typeHelp,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  amountInputWrap: [
+    staticStyles.amountInputWrap,
+    {
+        height: responsiveLayout.responsiveHeight(45),
+    },
+  ],
+  currencyPrefix: [
+    staticStyles.currencyPrefix,
+    {
+        fontSize: responsiveLayout.responsiveFont(16),
+    },
+  ],
+  amountInput: [
+    staticStyles.amountInput,
+    {
+        fontSize: responsiveLayout.responsiveFont(17),
+    },
+  ],
+  dateInput: [
+    staticStyles.dateInput,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+        height: responsiveLayout.responsiveHeight(45),
+    },
+  ],
+  textInput: [
+    staticStyles.textInput,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  itemPickerTitle: [
+    staticStyles.itemPickerTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  itemPickerDetail: [
+    staticStyles.itemPickerDetail,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  itemOptionText: [
+    staticStyles.itemOptionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  itemOptionCost: [
+    staticStyles.itemOptionCost,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  noItemText: [
+    staticStyles.noItemText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  formError: [
+    staticStyles.formError,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  saveButtonText: [
+    staticStyles.saveButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  };
+}

@@ -42,12 +42,20 @@ import {
 } from "@/services/inventory-service";
 import { applyResellerBuyRulesToAnalysis } from "@/services/reseller-buy-rules-service";
 import { getResellerBuyRules } from "@/services/user-profile-onboarding-service";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
 export function ItemAnalysisResultScreen() {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
@@ -443,7 +451,7 @@ export function ItemAnalysisResultScreen() {
         {loading ? (
           <ActivityIndicator color={theme.colors.scannerCyan} />
         ) : (
-          <Text selectable style={styles.message}>
+          <Text selectable style={[styles.message, { fontSize: responsiveFont(13), lineHeight: 19 }]}>
             {resolvedError ?? "No analysis result was supplied."}
           </Text>
         )}
@@ -452,7 +460,7 @@ export function ItemAnalysisResultScreen() {
             onPress={() => router.back()}
             style={styles.backButton}
           >
-            <Text style={styles.backButtonText}>GO BACK</Text>
+            <Text style={[styles.backButtonText, { fontSize: responsiveFont(9) }]}>GO BACK</Text>
           </Pressable>
         ) : null}
       </View>
@@ -522,7 +530,8 @@ export function ItemAnalysisResultScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: theme.colors.backgroundDeep,
@@ -556,3 +565,19 @@ const styles = StyleSheet.create({
     letterSpacing: 1.1,
   },
 });
+  return {
+    ...staticStyles,
+  message: [
+    staticStyles.message,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  backButtonText: [
+    staticStyles.backButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  };
+}

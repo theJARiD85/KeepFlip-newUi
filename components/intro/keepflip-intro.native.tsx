@@ -47,7 +47,10 @@ import {
 } from "react-native-worklets-core";
 
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 const KEEPFLIP_ICON_GLB =
   require("@/assets/models/keepflip_icon.glb");
 
@@ -659,6 +662,7 @@ function TargetHud({
   spin: Animated.Value;
   width: number;
 }): React.JSX.Element {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const size =
     frameSize + 88;
 
@@ -1096,6 +1100,11 @@ export default function KeepFlipIntro({
   startupReady,
   onComplete,
 }: KeepFlipIntroProps): React.JSX.Element {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const insets = useSafeAreaInsets();
   const {
     height,
@@ -1539,7 +1548,7 @@ export default function KeepFlipIntro({
 
           <Text
             style={
-              styles.topReadoutText
+              [styles.topReadoutText, { fontSize: responsiveFont(9) }]
             }
           >
             KEEPFLIP // RESALE INTELLIGENCE
@@ -1567,7 +1576,7 @@ export default function KeepFlipIntro({
         >
           <Text
             style={
-              styles.targetStatusText
+              [styles.targetStatusText, { fontSize: responsiveFont(9) }]
             }
           >
             {statusText}
@@ -1581,7 +1590,7 @@ export default function KeepFlipIntro({
         >
           <Text
             style={
-              styles.brandName
+              [styles.brandName, { fontSize: responsiveFont(33) }]
             }
           >
             KEEPFLIP
@@ -1604,7 +1613,7 @@ export default function KeepFlipIntro({
 
         <Text
           style={
-            styles.loadingLabel
+            [styles.loadingLabel, { fontSize: responsiveFont(8) }]
           }
         >
           {loadingText}
@@ -1614,8 +1623,8 @@ export default function KeepFlipIntro({
   );
 }
 
-const styles =
-  StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
     container: {
       ...StyleSheet.absoluteFill,
 
@@ -1801,3 +1810,61 @@ const styles =
       letterSpacing: 1.5,
     },
   });
+  return {
+    ...staticStyles,
+    scanBeam: [
+      staticStyles.scanBeam,
+      {
+          height: responsiveLayout.responsiveHeight(42),
+      },
+    ],
+    statusDot: [
+      staticStyles.statusDot,
+      {
+          width: responsiveLayout.responsiveWidth(5),
+          height: responsiveLayout.responsiveHeight(5),
+      },
+    ],
+    topReadoutText: [
+      staticStyles.topReadoutText,
+      {
+          fontSize: responsiveLayout.responsiveFont(9),
+      },
+    ],
+    targetStatusText: [
+      staticStyles.targetStatusText,
+      {
+          fontSize: responsiveLayout.responsiveFont(9),
+      },
+    ],
+    brandName: [
+      staticStyles.brandName,
+      {
+          fontSize: responsiveLayout.responsiveFont(33),
+          textShadowOffset: {
+          width: responsiveLayout.responsiveWidth(0),
+          height: responsiveLayout.responsiveHeight(0),
+          },
+      },
+    ],
+    brandDivider: [
+      staticStyles.brandDivider,
+      {
+          width: responsiveLayout.responsiveWidth(64),
+          height: responsiveLayout.responsiveHeight(1),
+      },
+    ],
+    brandTagline: [
+      staticStyles.brandTagline,
+      {
+          fontSize: responsiveLayout.responsiveFont(9),
+      },
+    ],
+    loadingLabel: [
+      staticStyles.loadingLabel,
+      {
+          fontSize: responsiveLayout.responsiveFont(8),
+      },
+    ],
+  };
+}

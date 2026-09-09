@@ -7,6 +7,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  TextInput,
   useWindowDimensions,
   View,
 } from "react-native";
@@ -28,7 +29,10 @@ import {
   areKeepFlipSubscriptionsConfigured,
   areKeepFlipSubscriptionsEnforced,
 } from "@/services/keepflip-subscription-service";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type FlipIcon =
   | "barcode.viewfinder"
   | "bolt.fill"
@@ -55,7 +59,7 @@ type FlipQuestion = {
   id: string;
   message: string;
   prompt: string;
-  choices: FlipChoice[];
+  choices?: FlipChoice[];
 };
 
 const FLIP_MASCOT_IMAGE = require("@/assets/images/flip-mascot.png");
@@ -173,32 +177,6 @@ const FLIP_QUESTIONS: FlipQuestion[] = [
     id: "profit",
     message: "I will factor in the messy little costs. You tell me the win.",
     prompt: "What is the smallest take-home profit worth your time?",
-    choices: [
-      {
-        detail: "Easy wins still count",
-        icon: "dollarsign.circle.fill",
-        id: "ten",
-        isSelected: (rules) => rules.minimumNetProfitCents === 1_000,
-        label: "$10",
-        update: (rules) => ({ ...rules, minimumNetProfitCents: 1_000 }),
-      },
-      {
-        detail: "A solid flip",
-        icon: "dollarsign.circle.fill",
-        id: "twenty",
-        isSelected: (rules) => rules.minimumNetProfitCents === 2_000,
-        label: "$20",
-        update: (rules) => ({ ...rules, minimumNetProfitCents: 2_000 }),
-      },
-      {
-        detail: "I want meaningful margin",
-        icon: "dollarsign.circle.fill",
-        id: "forty",
-        isSelected: (rules) => rules.minimumNetProfitCents === 4_000,
-        label: "$40",
-        update: (rules) => ({ ...rules, minimumNetProfitCents: 4_000 }),
-      },
-    ],
   },
   {
     eyebrow: "PROTECT YOUR CASH",
@@ -296,10 +274,19 @@ function firstName(name?: string | null) {
 }
 
 function moneyFromCents(cents: number) {
-  return "$" + Math.round(cents / 100).toLocaleString("en-US");
+  const amount = cents / 100;
+  return "$" + amount.toLocaleString("en-US", {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
+  });
 }
 
 function FlipCoin({ step }: { step: number }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
     <Animated.View
       entering={FadeIn.duration(280)}
@@ -319,7 +306,7 @@ function FlipCoin({ step }: { step: number }) {
       </View>
       <View style={styles.coinSignal}>
         <View style={styles.coinSignalDot} />
-        <Text style={styles.coinSignalText}>FLIP IS ONLINE</Text>
+        <Text style={[styles.coinSignalText, { fontSize: responsiveFont(8) }]}>FLIP IS ONLINE</Text>
       </View>
     </Animated.View>
   );
@@ -334,6 +321,11 @@ function ChoiceCard({
   onPress: () => void;
   selected: boolean;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
     <Pressable
       accessibilityHint={choice.detail}
@@ -357,7 +349,7 @@ function ChoiceCard({
         <Text style={[styles.choiceTitle, selected && styles.choiceTitleSelected]}>
           {choice.label}
         </Text>
-        <Text style={styles.choiceDetail}>{choice.detail}</Text>
+        <Text style={[styles.choiceDetail, { fontSize: responsiveFont(12)}]}>{choice.detail}</Text>
       </View>
       <View style={[styles.choiceRadio, selected && styles.choiceRadioSelected]}>
         {selected ? <View style={styles.choiceRadioCore} /> : null}
@@ -367,6 +359,14 @@ function ChoiceCard({
 }
 
 export function ScanInventoryWalkthroughScreen() {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    contentMaxWidth,
+    contentWidth,
+    pageGutter,
+    responsiveFont
+  } = useResponsiveLayout();
+
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
@@ -376,6 +376,7 @@ export function ScanInventoryWalkthroughScreen() {
     ...DEFAULT_RESELLER_BUY_RULES,
     includedCostTypes: [...DEFAULT_RESELLER_BUY_RULES.includedCostTypes],
   }));
+  const [profitInput, setProfitInput] = useState(() => String(DEFAULT_RESELLER_BUY_RULES.minimumNetProfitCents / 100));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -416,6 +417,25 @@ export function ScanInventoryWalkthroughScreen() {
     setScreen((current) => Math.min(FLIP_QUESTIONS.length + 1, current + 1));
   }, []);
 
+  const continueFromProfit = useCallback(() => {
+    const normalized = profitInput.replace(/[$,\s]/g, "");
+    const amount = Number(normalized);
+    const isValidAmount = /^\d+(?:\.\d{0,2})?$/.test(normalized)
+      && Number.isFinite(amount)
+      && amount >= 0
+      && amount <= 1_000_000;
+
+    if (!isValidAmount) {
+      setError("Enter a take-home profit between $0 and $1,000,000.");
+      return;
+    }
+
+    selectionHaptic();
+    setError(null);
+    setRules((current) => ({ ...current, minimumNetProfitCents: Math.round(amount * 100) }));
+    setScreen((current) => Math.min(FLIP_QUESTIONS.length + 1, current + 1));
+  }, [profitInput]);
+
   const finish = useCallback(async () => {
     if (saving) return;
 
@@ -449,14 +469,14 @@ export function ScanInventoryWalkthroughScreen() {
   return (
     <KeepFlipBackground>
       <ScrollView
-        contentContainerStyle={[styles.content, { minHeight: height,  paddingTop: insets.top, paddingBottom: insets.bottom + 20  }]}
+        contentContainerStyle={[styles.content, { minHeight: height,  paddingTop: insets.top, paddingBottom: insets.bottom + 20  }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
       >
         <Animated.View entering={FadeInDown.duration(260)} style={styles.topBar}>
           <View>
-            <Text style={styles.brandEyebrow}>KEEPFLIP PERSONALIZATION</Text>
-            <Text style={styles.brandTitle}>Meet Flip</Text>
+            <Text style={[styles.brandEyebrow, { fontSize: responsiveFont(9) }]}>KEEPFLIP PERSONALIZATION</Text>
+            <Text style={[styles.brandTitle, { fontSize: responsiveFont(20) }]}>Meet Flip</Text>
           </View>
           {screen > 0 ? (
             <Pressable
@@ -466,7 +486,7 @@ export function ScanInventoryWalkthroughScreen() {
               onPress={goBack}
               style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
             >
-              <Text style={styles.backButtonText}>Back</Text>
+              <Text style={[styles.backButtonText, { fontSize: responsiveFont(12) }]}>Back</Text>
             </Pressable>
           ) : null}
         </Animated.View>
@@ -486,8 +506,8 @@ export function ScanInventoryWalkthroughScreen() {
           {screen === 0 ? (
             <Animated.View entering={FadeInDown.duration(300)} style={styles.panel}>
               <Text style={styles.hello}>Hey {firstName(user?.name)}.</Text>
-              <Text style={styles.headline}>I’m Flip, your resale sidekick.</Text>
-              <Text style={styles.body}>
+              <Text style={[styles.headline, { fontSize: responsiveFont(28)}]}>I’m Flip, your resale sidekick.</Text>
+              <Text style={[styles.body, { fontSize: responsiveFont(15)}]}>
                 Give me five quick answers and I’ll make every Buy or Pass call feel built around your business—not somebody else’s.
               </Text>
               <Pressable
@@ -498,41 +518,74 @@ export function ScanInventoryWalkthroughScreen() {
                 }}
                 style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}
               >
-                <Text style={styles.primaryButtonText}>Let’s build my flip style</Text>
+                <Text style={[styles.primaryButtonText, { fontSize: responsiveFont(15) }]}>Let’s build my flip style</Text>
                 <IconSymbol color={theme.colors.backgroundDeep} name="arrow.right" size={21} />
               </Pressable>
             </Animated.View>
           ) : question ? (
             <Animated.View entering={FadeInDown.duration(260)} key={question.id} style={styles.panel}>
               <View style={styles.messageBubble}>
-                <Text style={styles.messageLabel}>FLIP</Text>
-                <Text style={styles.messageText}>{question.message}</Text>
+                <Text style={[styles.messageLabel, { fontSize: responsiveFont(8) }]}>FLIP</Text>
+                <Text style={[styles.messageText, { fontSize: responsiveFont(14)}]}>{question.message}</Text>
               </View>
-              <Text style={styles.questionEyebrow}>{question.eyebrow}</Text>
-              <Text style={styles.questionTitle}>{question.prompt}</Text>
-              <View style={styles.choiceList}>
-                {question.choices.map((choice) => (
-                  <ChoiceCard
-                    choice={choice}
-                    key={choice.id}
-                    onPress={() => choose(choice)}
-                    selected={choice.isSelected(rules)}
-                  />
-                ))}
-              </View>
+              <Text style={[styles.questionEyebrow, { fontSize: responsiveFont(9) }]}>{question.eyebrow}</Text>
+              <Text style={[styles.questionTitle, { fontSize: responsiveFont(24)}]}>{question.prompt}</Text>
+              {question.id === "profit" ? (
+                <>
+                  <Text style={[styles.body, { fontSize: responsiveFont(15) }]}>Set the minimum profit you need after the flip&apos;s costs.</Text>
+                  <View style={{ gap: 6 }}>
+                    <Text style={[styles.nameLabel, { fontSize: responsiveFont(11) }]}>MINIMUM TAKE-HOME</Text>
+                    <View style={{ alignItems: "center", flexDirection: "row", gap: 8 }}>
+                      <Text style={{ color: theme.colors.goldBright, fontFamily: theme.fonts.bold, fontSize: responsiveFont(24) }}>$</Text>
+                      <TextInput
+                        accessibilityLabel="Minimum take-home profit"
+                        keyboardType="decimal-pad"
+                        onChangeText={(value) => { setProfitInput(value); setError(null); }}
+                        onSubmitEditing={continueFromProfit}
+                        placeholder="15.00"
+                        placeholderTextColor={theme.colors.textMuted}
+                        returnKeyType="done"
+                        selectTextOnFocus
+                        style={[styles.nameInput, { flex: 1 }]}
+                        value={profitInput}
+                      />
+                    </View>
+                  </View>
+                  {error ? <Text selectable style={[styles.errorText, { fontSize: responsiveFont(13) }]}>{error}</Text> : null}
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={continueFromProfit}
+                    style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}
+                  >
+                    <Text style={[styles.primaryButtonText, { fontSize: responsiveFont(15) }]}>Continue</Text>
+                    <IconSymbol color={theme.colors.backgroundDeep} name="arrow.right" size={21} />
+                  </Pressable>
+                </>
+              ) : (
+                <View style={styles.choiceList}>
+                  {question.choices?.map((choice) => (
+                    <ChoiceCard
+                      choice={choice}
+                      key={choice.id}
+                      onPress={() => choose(choice)}
+                      selected={choice.isSelected(rules)}
+                    />
+                  ))}
+                </View>
+              )}
             </Animated.View>
           ) : (
             <Animated.View entering={FadeInDown.duration(300)} style={styles.panel}>
               <Text style={styles.hello}>Locked in.</Text>
-              <Text style={styles.headline}>Now I know what a good flip looks like to you.</Text>
+              <Text style={[styles.headline, { fontSize: responsiveFont(28)}]}>Now I know what a good flip looks like to you.</Text>
               <View style={styles.summaryCard}>
-                <Text selectable style={styles.summaryPrimary}>{summary.line}</Text>
-                <Text selectable style={styles.summarySecondary}>{summary.details}</Text>
+                <Text selectable style={[styles.summaryPrimary, { fontSize: responsiveFont(16)}]}>{summary.line}</Text>
+                <Text selectable style={[styles.summarySecondary, { fontSize: responsiveFont(13)}]}>{summary.details}</Text>
               </View>
-              <Text style={styles.body}>
+              <Text style={[styles.body, { fontSize: responsiveFont(15)}]}>
                 I’ll use this to make market-backed recommendations stricter when a find does not match your cash, pace, prep, or storage rules. The sold-market evidence stays separate and visible.
               </Text>
-              {error ? <Text selectable style={styles.errorText}>{error}</Text> : null}
+              {error ? <Text selectable style={[styles.errorText, { fontSize: responsiveFont(13)}]}>{error}</Text> : null}
               <Pressable
                 accessibilityRole="button"
                 disabled={saving}
@@ -544,7 +597,7 @@ export function ScanInventoryWalkthroughScreen() {
                 ]}
               >
                 {saving ? <ActivityIndicator color={theme.colors.backgroundDeep} /> : <>
-                  <Text style={styles.primaryButtonText}>Let’s find some flips</Text>
+                  <Text style={[styles.primaryButtonText, { fontSize: responsiveFont(15) }]}>Let’s find some flips</Text>
                   <IconSymbol color={theme.colors.backgroundDeep} name="viewfinder" size={21} />
                 </>}
               </Pressable>
@@ -556,7 +609,8 @@ export function ScanInventoryWalkthroughScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   backButton: {
     alignItems: "center",
     borderColor: "rgba(242, 237, 228, 0.18)",
@@ -601,6 +655,8 @@ const styles = StyleSheet.create({
   messageBubble: { backgroundColor: "rgba(141, 114, 255, 0.13)", borderColor: "rgba(141, 114, 255, 0.36)", borderCurve: "continuous", borderRadius: 18, borderTopLeftRadius: 5, borderWidth: 1, gap: 5, padding: 14 },
   messageLabel: { color: theme.colors.scannerViolet, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 1.15 },
   messageText: { color: theme.colors.cream, fontSize: 14, lineHeight: 20 },
+  nameInput: { backgroundColor: "rgba(2, 2, 4, 0.82)", borderColor: "rgba(242, 211, 138, 0.2)", borderCurve: "continuous", borderRadius: 12, borderWidth: 1, color: theme.colors.cream, minHeight: 52, paddingHorizontal: 14 },
+  nameLabel: { color: theme.colors.textMuted, fontFamily: theme.fonts.radar, letterSpacing: 1 },
   panel: { backgroundColor: "rgba(8, 8, 12, 0.78)", borderColor: "rgba(242, 237, 228, 0.13)", borderCurve: "continuous", borderRadius: 26, borderWidth: 1, boxShadow: "0 16px 42px rgba(0, 0, 0, 0.34)", gap: 17, padding: 19 },
   pressed: { opacity: 0.75, transform: [{ scale: 0.985 }] },
   primaryButton: { alignItems: "center", backgroundColor: theme.colors.goldBright, borderCurve: "continuous", borderRadius: 17, flexDirection: "row", gap: 10, justifyContent: "center", minHeight: 56, paddingHorizontal: 18 },
@@ -615,3 +671,157 @@ const styles = StyleSheet.create({
   summarySecondary: { color: theme.colors.cream, fontFamily: theme.fonts.medium, fontSize: 13, lineHeight: 19 },
   topBar: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginHorizontal: "auto", maxWidth: 530, width: "100%"},
 });
+  return {
+    ...staticStyles,
+  backButtonText: [
+    staticStyles.backButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  body: [
+    staticStyles.body,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  brandEyebrow: [
+    staticStyles.brandEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  brandTitle: [
+    staticStyles.brandTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(20),
+    },
+  ],
+  choiceDetail: [
+    staticStyles.choiceDetail,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  choiceIcon: [
+    staticStyles.choiceIcon,
+    {
+        height: responsiveLayout.responsiveHeight(43),
+        width: responsiveLayout.responsiveWidth(43),
+    },
+  ],
+  choiceRadio: [
+    staticStyles.choiceRadio,
+    {
+        height: responsiveLayout.responsiveHeight(19),
+        width: responsiveLayout.responsiveWidth(19),
+    },
+  ],
+  choiceRadioCore: [
+    staticStyles.choiceRadioCore,
+    {
+        height: responsiveLayout.responsiveHeight(9),
+        width: responsiveLayout.responsiveWidth(9),
+    },
+  ],
+  choiceTitle: [
+    staticStyles.choiceTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  coinFace: [
+    staticStyles.coinFace,
+    {
+        height: responsiveLayout.responsiveHeight(124),
+        width: responsiveLayout.responsiveWidth(124),
+    },
+  ],
+  coinOrbit: [
+    staticStyles.coinOrbit,
+    {
+        height: responsiveLayout.responsiveHeight(146),
+        width: responsiveLayout.responsiveWidth(146),
+    },
+  ],
+  coinSignalDot: [
+    staticStyles.coinSignalDot,
+    {
+        height: responsiveLayout.responsiveHeight(7),
+        width: responsiveLayout.responsiveWidth(7),
+    },
+  ],
+  coinSignalText: [
+    staticStyles.coinSignalText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  errorText: [
+    staticStyles.errorText,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  headline: [
+    staticStyles.headline,
+    {
+        fontSize: responsiveLayout.responsiveFont(28),
+    },
+  ],
+  hello: [
+    staticStyles.hello,
+    {
+        fontSize: responsiveLayout.responsiveFont(17),
+    },
+  ],
+  messageLabel: [
+    staticStyles.messageLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  messageText: [
+    staticStyles.messageText,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  primaryButtonText: [
+    staticStyles.primaryButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  progressSegment: [
+    staticStyles.progressSegment,
+    {
+        height: responsiveLayout.responsiveHeight(3),
+    },
+  ],
+  questionEyebrow: [
+    staticStyles.questionEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  questionTitle: [
+    staticStyles.questionTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(24),
+    },
+  ],
+  summaryPrimary: [
+    staticStyles.summaryPrimary,
+    {
+        fontSize: responsiveLayout.responsiveFont(16),
+    },
+  ],
+  summarySecondary: [
+    staticStyles.summarySecondary,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  };
+}

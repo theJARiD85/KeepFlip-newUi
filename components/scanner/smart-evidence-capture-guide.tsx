@@ -4,7 +4,10 @@ import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import type { SmartEvidenceCapturePlan } from "@/services/smart-evidence-capture";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type SmartEvidenceCaptureGuideProps = {
   photoCount: number;
   plan: SmartEvidenceCapturePlan;
@@ -19,6 +22,11 @@ export function SmartEvidenceCaptureGuide({
   photoCount,
   plan,
 }: SmartEvidenceCaptureGuideProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const completedPhotoCount = Math.max(0, Math.min(photoCount, plan.steps.length));
   const isComplete = completedPhotoCount >= plan.steps.length;
   const currentStep = isComplete ? null : plan.steps[completedPhotoCount];
@@ -39,17 +47,17 @@ export function SmartEvidenceCaptureGuide({
         key={`${plan.category}-${completedPhotoCount}-${isComplete ? "ready" : "next"}`}
         style={styles.copy}>
         <View style={styles.headerRow}>
-          <Text style={styles.eyebrow}>SMART SCAN</Text>
+          <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>SMART SCAN</Text>
           <Text style={styles.count}>
             {completedPhotoCount}/{plan.steps.length}
           </Text>
         </View>
-        <Text numberOfLines={1} style={styles.title}>
+        <Text numberOfLines={1} style={[styles.title, { fontSize: responsiveFont(12) }]}>
           {isComplete
             ? "Evidence set ready"
             : `${plan.categoryLabel} · Next: ${currentStep?.title ?? "proof photo"}`}
         </Text>
-        <Text numberOfLines={1} style={styles.prompt}>
+        <Text numberOfLines={1} style={[styles.prompt, { fontSize: responsiveFont(9), lineHeight: 12 }]}>
           {prompt}
         </Text>
       </Animated.View>
@@ -57,7 +65,8 @@ export function SmartEvidenceCaptureGuide({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   root: {
     position: "absolute",
     top: 10,
@@ -101,3 +110,31 @@ const styles = StyleSheet.create({
     lineHeight: 12,
   },
 });
+  return {
+    ...staticStyles,
+  eyebrow: [
+    staticStyles.eyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  count: [
+    staticStyles.count,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  prompt: [
+    staticStyles.prompt,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  };
+}

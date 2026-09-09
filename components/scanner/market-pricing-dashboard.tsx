@@ -12,7 +12,10 @@ import type {
   EbaySoldComp,
   EbaySoldCompsResult,
 } from "@/services/ebaySoldCompsService";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type MarketPricingDashboardProps = {
   /**
    * The exact item query to pass to the live-comp loader. The component never
@@ -343,10 +346,15 @@ function PriceMetric({
   label: string;
   value: number;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
     <View style={styles.priceMetric}>
-      <Text style={styles.metricLabel}>{label}</Text>
-      <Text selectable style={styles.priceValue}>
+      <Text style={[styles.metricLabel, { fontSize: responsiveFont(7) }]}>{label}</Text>
+      <Text selectable style={[styles.priceValue, { fontSize: responsiveFont(19), lineHeight: 23 }]}>
         {formatMoney(value, currency)}
       </Text>
     </View>
@@ -360,10 +368,15 @@ function DetailMetric({
   label: string;
   value: string;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
     <View style={styles.detailMetric}>
-      <Text style={styles.metricLabel}>{label}</Text>
-      <Text selectable style={styles.detailValue}>
+      <Text style={[styles.metricLabel, { fontSize: responsiveFont(7) }]}>{label}</Text>
+      <Text selectable style={[styles.detailValue, { fontSize: responsiveFont(15) }]}>
         {value}
       </Text>
     </View>
@@ -377,6 +390,11 @@ function PriceTrend({
   currency: string;
   points: TrendPoint[];
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const minimum = Math.min(...points.map((point) => point.price));
   const maximum = Math.max(...points.map((point) => point.price));
   const span = maximum - minimum;
@@ -385,17 +403,21 @@ function PriceTrend({
     <View style={styles.trendSection}>
       <View style={styles.sectionHeader}>
         <View style={styles.sectionCopy}>
-          <Text style={styles.sectionLabel}>DATED SOLD-PRICE TREND</Text>
-          <Text selectable style={styles.sectionSubcopy}>
+          <Text style={[styles.sectionLabel, { fontSize: responsiveFont(7) }]}>DATED SOLD-PRICE TREND</Text>
+          <Text selectable style={[styles.sectionSubcopy, { fontSize: responsiveFont(8), lineHeight: 11 }]}>
             Returned completed sales with reliable dates
           </Text>
         </View>
-        <Text selectable style={styles.sectionValue}>
+        <Text selectable style={[styles.sectionValue, { fontSize: responsiveFont(7) }]}>
           {points.length} SALE{points.length === 1 ? "" : "S"}
         </Text>
       </View>
       <View style={styles.trendChart}>
         {points.map((point, index) => {
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
           const progress = span > 0 ? (point.price - minimum) / span : 0.5;
           const showPrice =
             index === 0 ||
@@ -424,7 +446,7 @@ function PriceTrend({
                   ]}
                 />
               </View>
-              <Text selectable style={styles.trendDate}>
+              <Text selectable style={[styles.trendDate, { fontSize: responsiveFont(6), lineHeight: 8 }]}>
                 {formatDate(point.date)}
               </Text>
             </View>
@@ -432,10 +454,10 @@ function PriceTrend({
         })}
       </View>
       <View style={styles.trendAxis}>
-        <Text selectable style={styles.trendAxisText}>
+        <Text selectable style={[styles.trendAxisText, { fontSize: responsiveFont(6) }]}>
           LOW {formatMoney(minimum, currency)}
         </Text>
-        <Text selectable style={styles.trendAxisText}>
+        <Text selectable style={[styles.trendAxisText, { fontSize: responsiveFont(6) }]}>
           HIGH {formatMoney(maximum, currency)}
         </Text>
       </View>
@@ -450,12 +472,17 @@ function ConditionVariance({
   bands: ConditionBand[];
   currency: string;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <View style={styles.sectionCopy}>
-          <Text style={styles.sectionLabel}>CONDITION VARIANCE</Text>
-          <Text selectable style={styles.sectionSubcopy}>
+          <Text style={[styles.sectionLabel, { fontSize: responsiveFont(7) }]}>CONDITION VARIANCE</Text>
+          <Text selectable style={[styles.sectionSubcopy, { fontSize: responsiveFont(8), lineHeight: 11 }]}>
             Price ranges from the returned sold sample
           </Text>
         </View>
@@ -464,7 +491,7 @@ function ConditionVariance({
         {bands.map((band) => (
           <View key={band.condition} style={styles.conditionRow}>
             <View style={styles.conditionLead}>
-              <Text selectable style={styles.conditionName}>
+              <Text selectable style={[styles.conditionName, { fontSize: responsiveFont(10) }]}>
                 {band.condition}
               </Text>
               {band.comparableCount != null ? (
@@ -514,12 +541,17 @@ function SupplyDemand({
   ratioNote: string | null;
   returnedSoldListings: number;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <View style={styles.sectionCopy}>
-          <Text style={styles.sectionLabel}>SUPPLY / DEMAND SNAPSHOT</Text>
-          <Text selectable style={styles.sectionSubcopy}>
+          <Text style={[styles.sectionLabel, { fontSize: responsiveFont(7) }]}>SUPPLY / DEMAND SNAPSHOT</Text>
+          <Text selectable style={[styles.sectionSubcopy, { fontSize: responsiveFont(8), lineHeight: 11 }]}>
             Current active listings paired with returned sold results
           </Text>
         </View>
@@ -539,7 +571,7 @@ function SupplyDemand({
         the current active snapshot.
       </Text>
       {ratioNote ? (
-        <Text selectable style={styles.evidenceText}>
+        <Text selectable style={[styles.evidenceText, { fontSize: responsiveFont(8), lineHeight: 12 }]}>
           {ratioNote}
         </Text>
       ) : null}
@@ -554,11 +586,16 @@ function MarketTiming({
   daysOnMarket: DaysOnMarket | null;
   seasonality: MarketDashboardData["seasonality"];
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   if (!daysOnMarket && !seasonality) return null;
 
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionLabel}>MARKET TIMING</Text>
+      <Text style={[styles.sectionLabel, { fontSize: responsiveFont(7) }]}>MARKET TIMING</Text>
       {daysOnMarket ? (
         <View style={styles.detailMetricRow}>
           {daysOnMarket.low != null ? (
@@ -584,12 +621,12 @@ function MarketTiming({
       {seasonality ? (
         <View style={styles.seasonality}>
           {seasonality.peakMonths.length ? (
-            <Text selectable style={styles.seasonalityText}>
+            <Text selectable style={[styles.seasonalityText, { fontSize: responsiveFont(7), lineHeight: 11 }]}>
               PEAK MONTHS · {seasonality.peakMonths.join(", ")}
             </Text>
           ) : null}
           {seasonality.slowMonths.length ? (
-            <Text selectable style={styles.seasonalityText}>
+            <Text selectable style={[styles.seasonalityText, { fontSize: responsiveFont(7), lineHeight: 11 }]}>
               SLOW MONTHS · {seasonality.slowMonths.join(", ")}
             </Text>
           ) : null}
@@ -613,6 +650,11 @@ export function MarketPricingDashboard({
   result,
   title,
 }: MarketPricingDashboardProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const [localError, setLocalError] = useState<string | null>(null);
   const [localLoading, setLocalLoading] = useState(false);
   const [localResult, setLocalResult] = useState<EbaySoldCompsResult | null>(
@@ -677,8 +719,8 @@ export function MarketPricingDashboard({
     <View style={styles.shell}>
       <View style={styles.header}>
         <View style={styles.headerCopy}>
-          <Text style={styles.eyebrow}>LIVE MARKET DASHBOARD</Text>
-          <Text selectable style={styles.title}>
+          <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>LIVE MARKET DASHBOARD</Text>
+          <Text selectable style={[styles.title, { fontSize: responsiveFont(15), lineHeight: 19 }]}>
             {title?.trim() || "Current item"}
           </Text>
           {normalizedQuery ? (
@@ -702,7 +744,7 @@ export function MarketPricingDashboard({
           {busy ? (
             <ActivityIndicator color={theme.colors.scannerCyan} size="small" />
           ) : null}
-          <Text style={styles.refreshButtonText}>
+          <Text style={[styles.refreshButtonText, { fontSize: responsiveFont(7) }]}>
             {busy
               ? "REFRESHING"
               : loadComps || onRefresh
@@ -713,15 +755,15 @@ export function MarketPricingDashboard({
       </View>
 
       {refreshError ? (
-        <Text selectable style={styles.error}>
+        <Text selectable style={[styles.error, { fontSize: responsiveFont(8), lineHeight: 12 }]}>
           {refreshError}
         </Text>
       ) : null}
 
       {!dashboard ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>NO LIVE COMPS LOADED</Text>
-          <Text selectable style={styles.emptyCopy}>
+          <Text style={[styles.emptyTitle, { fontSize: responsiveFont(8) }]}>NO LIVE COMPS LOADED</Text>
+          <Text selectable style={[styles.emptyCopy, { fontSize: responsiveFont(9), lineHeight: 13 }]}>
             Refresh live comps when you want a new sold-market snapshot. It
             will not run automatically.
           </Text>
@@ -730,7 +772,7 @@ export function MarketPricingDashboard({
         <>
           <View style={styles.snapshotHeader}>
             <View>
-              <Text style={styles.sectionLabel}>
+              <Text style={[styles.sectionLabel, { fontSize: responsiveFont(7) }]}>
                 {formatPeriod(
                   dashboard.periodDays,
                   dashboard.periodStart,
@@ -738,7 +780,7 @@ export function MarketPricingDashboard({
                 )}
               </Text>
               {dashboard.comparableCount != null ? (
-                <Text selectable style={styles.snapshotCopy}>
+                <Text selectable style={[styles.snapshotCopy, { fontSize: responsiveFont(7) }]}>
                   {dashboard.comparableCount} SOLD COMP
                   {dashboard.comparableCount === 1 ? "" : "S"}
                   {dashboard.lastUpdated
@@ -747,7 +789,7 @@ export function MarketPricingDashboard({
                 </Text>
               ) : null}
             </View>
-            <Text selectable style={styles.snapshotStatus}>
+            <Text selectable style={[styles.snapshotStatus, { fontSize: responsiveFont(7) }]}>
               {dashboard.analysisAvailable ? "LIVE SOLD DATA" : "SOLD SUMMARY"}
             </Text>
           </View>
@@ -770,7 +812,7 @@ export function MarketPricingDashboard({
           )}
 
           {dashboard.evidenceNote ? (
-            <Text selectable style={styles.evidenceText}>
+            <Text selectable style={[styles.evidenceText, { fontSize: responsiveFont(8), lineHeight: 12 }]}>
               {dashboard.evidenceNote}
             </Text>
           ) : null}
@@ -820,7 +862,8 @@ export function MarketPricingDashboard({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   shell: {
     gap: 13,
     paddingTop: 16,
@@ -1181,3 +1224,181 @@ const styles = StyleSheet.create({
     lineHeight: 10,
   },
 });
+  return {
+    ...staticStyles,
+  eyebrow: [
+    staticStyles.eyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  query: [
+    staticStyles.query,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  refreshButtonText: [
+    staticStyles.refreshButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  error: [
+    staticStyles.error,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  emptyTitle: [
+    staticStyles.emptyTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  emptyCopy: [
+    staticStyles.emptyCopy,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  snapshotCopy: [
+    staticStyles.snapshotCopy,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  snapshotStatus: [
+    staticStyles.snapshotStatus,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  metricLabel: [
+    staticStyles.metricLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  priceValue: [
+    staticStyles.priceValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(19),
+    },
+  ],
+  evidenceText: [
+    staticStyles.evidenceText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  unavailable: [
+    staticStyles.unavailable,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  sectionLabel: [
+    staticStyles.sectionLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  sectionSubcopy: [
+    staticStyles.sectionSubcopy,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  sectionValue: [
+    staticStyles.sectionValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  trendPriceSlot: [
+    staticStyles.trendPriceSlot,
+    {
+        height: responsiveLayout.responsiveHeight(16),
+    },
+  ],
+  trendPrice: [
+    staticStyles.trendPrice,
+    {
+        fontSize: responsiveLayout.responsiveFont(6),
+    },
+  ],
+  trendBarSlot: [
+    staticStyles.trendBarSlot,
+    {
+        height: responsiveLayout.responsiveHeight(80),
+    },
+  ],
+  trendDate: [
+    staticStyles.trendDate,
+    {
+        fontSize: responsiveLayout.responsiveFont(6),
+    },
+  ],
+  trendAxisText: [
+    staticStyles.trendAxisText,
+    {
+        fontSize: responsiveLayout.responsiveFont(6),
+    },
+  ],
+  conditionName: [
+    staticStyles.conditionName,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  conditionCount: [
+    staticStyles.conditionCount,
+    {
+        fontSize: responsiveLayout.responsiveFont(6),
+    },
+  ],
+  conditionMedian: [
+    staticStyles.conditionMedian,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  conditionDelta: [
+    staticStyles.conditionDelta,
+    {
+        fontSize: responsiveLayout.responsiveFont(6),
+    },
+  ],
+  detailValue: [
+    staticStyles.detailValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  caveat: [
+    staticStyles.caveat,
+    {
+        fontSize: responsiveLayout.responsiveFont(6),
+    },
+  ],
+  seasonalityText: [
+    staticStyles.seasonalityText,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  disclaimer: [
+    staticStyles.disclaimer,
+    {
+        fontSize: responsiveLayout.responsiveFont(6),
+    },
+  ],
+  };
+}

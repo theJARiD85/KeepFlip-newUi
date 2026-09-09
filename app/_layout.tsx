@@ -19,6 +19,10 @@ import {
   KeepFlipAuthProvider,
   useKeepFlipAuth,
 } from "@/components/auth/keepflip-auth-context";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import {
+  FlipCompanionProvider,
+} from '@/components/flip';
 import { KeepFlipFeedbackNudgeProvider } from "@/components/feedback/keepflip-feedback-nudge";
 import { KeepFlipPushRegistration } from '@/components/notifications/keepflip-push-registration';
 import KeepFlipLaunchExperience from "@/components/intro/keepflip-launch-experience.native";
@@ -194,39 +198,43 @@ export default function RootLayout() {
 
   return (
     <View style={{ flex: 1 }}>
-      <GestureHandlerRootView
-        style={{ flex: 1 }}
-      >
-        <ThemeProvider
-          value={navigationTheme}
+      <SafeAreaProvider>
+        <GestureHandlerRootView
+          style={{ flex: 1 }}
         >
-          <KeepFlipAuthProvider>
-            <KeepFlipPushRegistration />
-            <KeepFlipFeedbackNudgeProvider>
-              <ProtectedRootStack />
-            </KeepFlipFeedbackNudgeProvider>
-            <View
-              pointerEvents={launchVisible ? "auto" : "none"}
-              style={{
-                bottom: 0,
-                left: 0,
-                position: "absolute",
-                right: 0,
-                top: 0,
-              }}
+          <FlipCompanionProvider>
+            <ThemeProvider
+              value={navigationTheme}
             >
-              <KeepFlipLaunchExperience onVisibilityChange={setLaunchVisible} />
-            </View>
-          </KeepFlipAuthProvider>
+              <KeepFlipAuthProvider>
+                <KeepFlipPushRegistration />
+                <KeepFlipFeedbackNudgeProvider>
+                  <ProtectedRootStack />
+                </KeepFlipFeedbackNudgeProvider>
+                <View
+                  pointerEvents={launchVisible ? "auto" : "none"}
+                  style={{
+                    bottom: 0,
+                    left: 0,
+                    position: "absolute",
+                    right: 0,
+                    top: 0,
+                  }}
+                >
+                  <KeepFlipLaunchExperience onVisibilityChange={setLaunchVisible} />
+                </View>
+              </KeepFlipAuthProvider>
 
-          <StatusBar
-            animated
-            hidden={launchVisible}
-            style="light"
-          />
-        </ThemeProvider>
-      </GestureHandlerRootView>
+              <StatusBar
+                animated
+                hidden={launchVisible}
+                style="light"
+              />
+            </ThemeProvider>
+          </FlipCompanionProvider>
 
+        </GestureHandlerRootView>
+      </SafeAreaProvider>
     </View>
   );
 }

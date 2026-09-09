@@ -6,7 +6,10 @@ import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { calculateNetProceeds, type NetProceedsInput } from '@/lib/seller-net-proceeds';
 import { loadSellerProceedsPlan, saveSellerProceedsPlan } from '@/services/seller-net-proceeds-service';
 import type { InventoryItem } from '@/services/inventory-service';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type NumericField = Exclude<keyof NetProceedsInput, 'feesIncludeCollectedTax'>;
 const fields: { key: NumericField; label: string; percent?: boolean }[] = [
   { key: 'salePriceCents', label: 'Target sale price' },
@@ -34,6 +37,11 @@ export function ListingNetProceedsPanel({ item, ownerId, prices, onTargetPriceCh
   prices: { quickSale: number; targetPrice: number; highAsk: number };
   onTargetPriceChange: (price: number) => void;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const { canUse } = useKeepFlipSubscription();
   const scenariosAllowed = canUse('net_proceeds_scenarios');
   const [values, setValues] = useState<Record<NumericField, string>>(() => ({
@@ -87,32 +95,37 @@ export function ListingNetProceedsPanel({ item, ownerId, prices, onTargetPriceCh
     finally { setBusy(false); }
   }
   return <View style={styles.panel}>
-    <Text style={styles.title}>Net proceeds</Text>
-    <Text style={styles.hint}>Estimates per unit in {item.currency}. For a quantity listing, allocate acquisition, shipping and packaging costs to one unit. Blank costs stay unknown.</Text>
+    <Text style={[styles.title, { fontSize: responsiveFont(18) }]}>Net proceeds</Text>
+    <Text style={[styles.hint, { fontSize: responsiveFont(13), lineHeight: 20 }]}>Estimates per unit in {item.currency}. For a quantity listing, allocate acquisition, shipping and packaging costs to one unit. Blank costs stay unknown.</Text>
     {busy ? <ActivityIndicator color={theme.colors.scannerCyan} /> : null}
     <View style={styles.grid}>{fields.slice(0, expanded ? fields.length : 5).map((field) => <View key={field.key} style={styles.field}>
-      <Text style={styles.hint}>{field.label}</Text>
+      <Text style={[styles.hint, { fontSize: responsiveFont(13), lineHeight: 20 }]}>{field.label}</Text>
       <TextInput accessibilityLabel={field.label} editable={!busy} keyboardType="decimal-pad" value={values[field.key]} placeholder="Unknown" placeholderTextColor={theme.colors.textMuted} style={styles.input}
         onChangeText={(value) => setValues((current) => ({ ...current, [field.key]: value }))} />
     </View>)}</View>
     <Pressable accessibilityRole="button" onPress={() => setExpanded(!expanded)}><Text style={styles.link}>{expanded ? 'Fewer inputs' : 'Discounts, packaging, promotion, refunds and taxes'}</Text></Pressable>
     {expanded ? <View style={styles.row}><Text style={[styles.hint, { flex: 1 }]}>Include marketplace-collected tax in percentage fee base</Text><Switch accessibilityLabel="Fees include marketplace collected tax" value={includeTax} onValueChange={setIncludeTax} /></View> : null}
-    {scenariosAllowed ? <View style={styles.grid}>{[{ label: 'Quick sale price', value: quick, set: setQuick }, { label: 'High ask price', value: high, set: setHigh }].map((field) => <View key={field.label} style={styles.field}><Text style={styles.hint}>{field.label}</Text><TextInput accessibilityLabel={field.label} style={styles.input} value={field.value} onChangeText={field.set} keyboardType="decimal-pad" /></View>)}</View> : <Text style={styles.hint}>Serious adds side-by-side quick sale and high ask scenarios. Your target calculation is included.</Text>}
+    {scenariosAllowed ? <View style={styles.grid}>{[{ label: 'Quick sale price', value: quick, set: setQuick }, { label: 'High ask price', value: high, set: setHigh }].map((field) => <View key={field.label} style={styles.field}><Text style={[styles.hint, { fontSize: responsiveFont(13), lineHeight: 20 }]}>{field.label}</Text><TextInput accessibilityLabel={field.label} style={styles.input} value={field.value} onChangeText={field.set} keyboardType="decimal-pad" /></View>)}</View> : <Text style={[styles.hint, { fontSize: responsiveFont(13), lineHeight: 20 }]}>Serious adds side-by-side quick sale and high ask scenarios. Your target calculation is included.</Text>}
     {calculation.error ? <Text style={styles.error}>{calculation.error}</Text> : null}
     {calculation.projection?.missing.length ? <Text style={styles.error}>Missing: {calculation.projection.missing.join(', ')}</Text> : null}
     {scenarioRows.map(({ label, cents }) => {
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
       let projection = null;
       try { if (calculation.input && cents !== null) projection = calculateNetProceeds({ ...calculation.input, salePriceCents: cents }); } catch { /* Below-discount scenario cannot produce a result. */ }
-      return <View key={label} style={styles.result}><Text style={styles.title}>{label} · {money(cents)}</Text><Text style={styles.hint}>Proceeds {money(projection?.proceedsCents ?? null)} · Net profit {money(projection?.profitCents ?? null)}</Text><Text style={styles.hint}>ROI {projection?.roiPercent == null ? '—' : `${projection.roiPercent.toFixed(1)}%`} on acquisition, shipping and packaging</Text></View>;
+      return <View key={label} style={styles.result}><Text style={[styles.title, { fontSize: responsiveFont(18) }]}>{label} · {money(cents)}</Text><Text style={[styles.hint, { fontSize: responsiveFont(13), lineHeight: 20 }]}>Proceeds {money(projection?.proceedsCents ?? null)} · Net profit {money(projection?.profitCents ?? null)}</Text><Text style={[styles.hint, { fontSize: responsiveFont(13), lineHeight: 20 }]}>ROI {projection?.roiPercent == null ? '—' : `${projection.roiPercent.toFixed(1)}%`} on acquisition, shipping and packaging</Text></View>;
     })}
-    <Text style={styles.hint}>Seller-entered rates; no automatic fee quote. Marketplace-collected tax is excluded from revenue. Your tax reserve is a planning amount, not a calculated tax liability.</Text>
+    <Text style={[styles.hint, { fontSize: responsiveFont(13), lineHeight: 20 }]}>Seller-entered rates; no automatic fee quote. Marketplace-collected tax is excluded from revenue. Your tax reserve is a planning amount, not a calculated tax liability.</Text>
     <View style={styles.row}><Pressable accessibilityRole="button" disabled={busy || !calculation.input} onPress={() => void save()} style={styles.button}><Text style={styles.link}>Save assumptions</Text></Pressable>
       <Pressable accessibilityRole="button" disabled={busy || !calculation.input || calculation.input.salePriceCents <= 0} onPress={() => { if (calculation.input) onTargetPriceChange(calculation.input.salePriceCents / 100); }} style={styles.button}><Text style={styles.link}>Use target price</Text></Pressable></View>
-    {message ? <Text selectable style={styles.hint}>{message}</Text> : null}
+    {message ? <Text selectable style={[styles.hint, { fontSize: responsiveFont(13), lineHeight: 20 }]}>{message}</Text> : null}
   </View>;
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   panel: { padding: 16, borderRadius: 18, backgroundColor: theme.colors.surfaceSoft, gap: 12 },
   title: { fontSize: 18, color: theme.colors.text }, hint: { fontSize: 13, color: theme.colors.textMuted, lineHeight: 20 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 }, field: { flexGrow: 1, flexBasis: 140, gap: 5 },
@@ -121,3 +134,25 @@ const styles = StyleSheet.create({
   link: { color: theme.colors.scannerCyan, fontSize: 14 }, error: { color: theme.colors.danger },
   result: { gap: 5, borderTopWidth: 1, borderTopColor: theme.colors.goldMuted, paddingTop: 10 }, button: { paddingVertical: 12 },
 });
+  return {
+    ...staticStyles,
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(18),
+    },
+  ],
+  hint: [
+    staticStyles.hint,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  link: [
+    staticStyles.link,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  };
+}

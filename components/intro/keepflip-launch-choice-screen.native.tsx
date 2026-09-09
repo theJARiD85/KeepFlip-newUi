@@ -1,14 +1,19 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useEffect } from 'react';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { withAlpha } from '@/lib/withAlpha';
+import { FlipCompanion, useFlipCompanion } from '@/components/flip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type KeepFlipLaunchChoiceScreenProps = {
   onExistingLogin: () => void;
   onNewUser: () => void;
@@ -31,6 +36,7 @@ function LaunchAction({
   onPress: () => void;
   secondary?: boolean;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   return (
     <Pressable
       accessibilityRole="button"
@@ -56,23 +62,40 @@ export function KeepFlipLaunchChoiceScreen({
   onExistingLogin,
   onNewUser,
 }: KeepFlipLaunchChoiceScreenProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const insets = useSafeAreaInsets();
+  const { markActivity, react, state } = useFlipCompanion();
+  const { width, height } = useWindowDimensions();
+  const {
+    scannerWidth, scannerHeight,
+    contentMaxWidth,
+    contentWidth,
+    pageGutter,
+    responsiveHeight,
+    responsiveWidth,
+    responsiveFont
+  } = useResponsiveLayout();
+
+  useEffect(() => {
+    const wasAsleep = markActivity();
+    if (!wasAsleep) {
+      react('greeting');
+    }
+  }, [markActivity, react]);
 
   return (
     <KeepFlipBackground>
       <View pointerEvents="none" style={styles.authGlow} />
       
       <View
-        style={[
-          styles.content,
+        style={[styles.content,
           {
-            minHeight: '100%',
+            minHeight: scannerHeight,
+            minWidth: scannerWidth,
             paddingBottom: insets.bottom,
-            paddingTop: insets.top * 2,
             marginBottom: insets.bottom,
             marginTop: insets.top,
-          },
-        ]}
+          }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', justifyContent: 'space-around', paddingHorizontal: pageGutter }]}
       >
         <Animated.View entering={FadeIn.duration(260)} style={styles.brandLockup}>
           <View style={styles.logoHalo}>
@@ -83,12 +106,23 @@ export function KeepFlipLaunchChoiceScreen({
               style={styles.logo}
             />
           </View>
-          <Text style={styles.brandName}>KEEPFLIP</Text>
-          <Text style={styles.brandTagline}>THE PULSE OF YOUR RESALE BUSINESS</Text>
+          <Text style={[styles.brandName, { fontSize: responsiveFont(40) }]}>KEEPFLIP</Text>
+          <Text style={styles.brandTagline}>SOURCING SMARTER. FLIPPING BETTER.</Text>
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(120).duration(260)} style={styles.flipWelcome}>
+          <View style={styles.flipWelcomeAvatar}>
+            <Image style={{height: responsiveHeight(85), width: responsiveWidth(85), zIndex: 0, position: 'absolute', borderRadius: 16, overflow: 'hidden'}} source={require('@/assets/flip/background.jpg')}/>
+            <FlipCompanion size={85} />
+          </View>
+          <View style={styles.flipWelcomeCopy}>
+            <Text style={[styles.flipWelcomeEyebrow, { fontSize: responsiveFont(11) }]}>FLIP IS READY</Text>
+            <Text style={[styles.flipWelcomeText, {  }]}>Your resale sidekick is here to tailor KeepFlip to the way you flip.</Text>
+          </View>
         </Animated.View>
 
 
-          <View style={[styles.actions, {paddingBottom: insets.bottom + 25}]}>
+          <View style={[styles.actions, {paddingBottom: insets.bottom + 25}]}> 
             <View style={[styles.actionButton, { borderRadius: 17 }]}>
           <LaunchAction onPress={onExistingLogin} secondary>
               LOGIN
@@ -102,7 +136,8 @@ export function KeepFlipLaunchChoiceScreen({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   authGlow: {
     ...StyleSheet.absoluteFill,
     experimental_backgroundImage: `
@@ -139,7 +174,7 @@ const styles = StyleSheet.create({
   actions: { justifyContent: 'space-evenly', gap: 20, width: '100%', alignItems: 'center' },
   body: {
     color: theme.colors.textMuted,
-    fontSize: 14,
+    fontSize: 11,
     lineHeight: 21,
     textAlign: 'center',
   },
@@ -147,7 +182,7 @@ const styles = StyleSheet.create({
   brandName: {
     color: theme.colors.cream,
     fontFamily: theme.fonts.bold,
-    fontSize: 45,
+    fontSize: 40,
     letterSpacing: 5,
     textShadowColor: 'rgba(0,255,255,0.48)',
     textShadowOffset: { width: 0, height: 0 },
@@ -156,7 +191,7 @@ const styles = StyleSheet.create({
   brandTagline: {
     color: theme.colors.textMuted,
     fontFamily: theme.fonts.display,
-    fontSize: 10,
+    fontSize: 12,
     letterSpacing: 2.05,
     textAlign: 'center',
   },
@@ -169,15 +204,48 @@ const styles = StyleSheet.create({
   },
   content: {
     height: '100%',
-    justifyContent: 'space-between',
+    justifyContent: 'space-evenly',
     paddingHorizontal: 10,
   },
   eyebrow: {
     color: theme.colors.scannerCyan,
     fontFamily: theme.fonts.radar,
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 1.2,
   },
+  flipWelcome: {
+    alignSelf: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(141, 114, 255, 0.08)',
+    borderColor: 'rgba(141, 114, 255, 0.28)',
+    borderRadius: 18,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 11,
+    
+    paddingHorizontal: 8,
+    paddingVertical: 9,
+    width: '100%',
+  },
+  flipWelcomeAvatar: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(8, 8, 12, 0.75)',
+    borderColor: 'rgba(242, 211, 138, 0.38)',
+    borderRadius: 50,
+    borderWidth: 1,
+    height: 100,
+    justifyContent: 'center',
+    overflow: 'hidden',
+    width: 100,
+  },
+  flipWelcomeCopy: { flex: 1, gap: 3 },
+  flipWelcomeEyebrow: {
+    color: theme.colors.scannerCyan,
+    fontFamily: theme.fonts.radar,
+    fontSize: 11,
+    letterSpacing: 1.1,
+  },
+  flipWelcomeText: { color: theme.colors.cream, fontFamily: theme.fonts.body, fontSize: 13, lineHeight: 17 },
   logo: { height: 175, width: 175 },
   logoHalo: {
     alignItems: 'center',
@@ -186,9 +254,9 @@ const styles = StyleSheet.create({
     borderRadius: theme.radii.pill,
     borderWidth: 1.5,
     boxShadow: '0 0 44px rgba(224, 172, 75, 0.15)',
-    height: 200,
+    height: 175,
     justifyContent: 'center',
-    width: 200,
+    width: 175,
   },
   pressed: { opacity: 0.76, transform: [{ scale: 0.985 }] },
   title: {
@@ -199,3 +267,77 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+  return {
+    ...staticStyles,
+  actionButtonText: [
+    staticStyles.actionButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  body: [
+    staticStyles.body,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  brandName: [
+    staticStyles.brandName,
+    {
+        fontSize: responsiveLayout.responsiveFont(40),
+        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(0) },
+    },
+  ],
+  brandTagline: [
+    staticStyles.brandTagline,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  eyebrow: [
+    staticStyles.eyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  flipWelcomeAvatar: [
+    staticStyles.flipWelcomeAvatar,
+    {
+        height: responsiveLayout.responsiveHeight(100),
+        width: responsiveLayout.responsiveWidth(100),
+    },
+  ],
+  flipWelcomeEyebrow: [
+    staticStyles.flipWelcomeEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  flipWelcomeText: [
+    staticStyles.flipWelcomeText,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  logo: [
+    staticStyles.logo,
+    {
+        height: responsiveLayout.responsiveHeight(175),
+        width: responsiveLayout.responsiveWidth(175),
+    },
+  ],
+  logoHalo: [
+    staticStyles.logoHalo,
+    {
+        height: responsiveLayout.responsiveHeight(175),
+        width: responsiveLayout.responsiveWidth(175),
+    },
+  ],
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(28),
+    },
+  ],
+  };
+}

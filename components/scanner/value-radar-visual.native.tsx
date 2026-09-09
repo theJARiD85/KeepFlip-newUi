@@ -30,7 +30,10 @@ import {
 } from "@/components/scanner/yolov8-radar";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 const MIN_DETECTION_SCORE = 0.48;
 const FRAMES_BETWEEN_INFERENCES = 24;
 const STABLE_HITS_REQUIRED = 2;
@@ -633,6 +636,11 @@ export function ValueRadarOverlay({
   status,
   width,
 }: ValueRadarOverlayProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const hasMarker = marker != null;
   const markerClassId = marker?.classId;
   const orbitProgress = useSharedValue(0);
@@ -851,8 +859,8 @@ export function ValueRadarOverlay({
               status === "error" && styles.statusPulseError,
             ]}
           />
-          <Text style={styles.statusName}>VALUE RADAR</Text>
-          <Text style={styles.statusSeparator}>{"//"}</Text>
+          <Text style={[styles.statusName, { fontSize: responsiveFont(9), lineHeight: 11 }]}>VALUE RADAR</Text>
+          <Text style={[styles.statusSeparator, { fontSize: responsiveFont(8), lineHeight: 10 }]}>{"//"}</Text>
           <Text
             style={[
               styles.statusState,
@@ -864,7 +872,7 @@ export function ValueRadarOverlay({
           </Text>
         </View>
         <View style={styles.statusFooter}>
-          <Text numberOfLines={1} style={styles.statusMeta}>
+          <Text numberOfLines={1} style={[styles.statusMeta, { fontSize: responsiveFont(6.5), lineHeight: 8 }]}>
             {statusMeta}
           </Text>
           <View style={styles.signalBars}>
@@ -890,7 +898,7 @@ export function ValueRadarOverlay({
         ]}
       >
         <View style={styles.acquisitionIndex}>
-          <Text style={styles.acquisitionIndexText}>
+          <Text style={[styles.acquisitionIndexText, { fontSize: responsiveFont(7), lineHeight: 9 }]}>
             {marker && status === "ready" ? "01" : "--"}
           </Text>
         </View>
@@ -904,7 +912,7 @@ export function ValueRadarOverlay({
             ]}
           />
         </View>
-        <Text numberOfLines={1} style={styles.acquisitionText}>
+        <Text numberOfLines={1} style={[styles.acquisitionText, { fontSize: responsiveFont(6.5), lineHeight: 8 }]}>
           {acquisitionLabel}
         </Text>
       </View>
@@ -958,7 +966,7 @@ export function ValueRadarOverlay({
               style={[styles.targetScanBeam, scanBeamAnimatedStyle]}
             />
             <View style={styles.targetId}>
-              <Text style={styles.targetIdText}>T-01</Text>
+              <Text style={[styles.targetIdText, { fontSize: responsiveFont(6), lineHeight: 7 }]}>T-01</Text>
             </View>
           </Animated.View>
 
@@ -971,7 +979,7 @@ export function ValueRadarOverlay({
                 left: panelLeft,
                 top: panelTop,
                 width: panelWidth,
-                height: 100,
+                height: responsiveHeight(100),
               },
             ]}
           >
@@ -1005,9 +1013,9 @@ export function ValueRadarOverlay({
                 <View style={styles.lockGlyph}>
                   <View style={styles.lockGlyphCore} />
                 </View>
-                <Text style={styles.markerEyebrow}>POTENTIAL FIND</Text>
+                <Text style={[styles.markerEyebrow, { fontSize: responsiveFont(7.5), lineHeight: 9 }]}>POTENTIAL FIND</Text>
                 <View style={styles.confidencePill}>
-                  <Text style={styles.confidenceText}>
+                  <Text style={[styles.confidenceText, { fontSize: responsiveFont(6.5), lineHeight: 8 }]}>
                     {Math.round(marker.score * 100)
                       .toString()
                       .padStart(2, "0")}
@@ -1015,7 +1023,7 @@ export function ValueRadarOverlay({
                   </Text>
                 </View>
               </View>
-              <Text numberOfLines={1} style={styles.markerLabel}>
+              <Text numberOfLines={1} style={[styles.markerLabel, { fontSize: responsiveFont(17), lineHeight: 21 }]}>
                 {marker.label}
               </Text>
               <View style={styles.markerPanelFooter}>
@@ -1033,7 +1041,8 @@ export function ValueRadarOverlay({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   overlayRoot: {
     ...StyleSheet.absoluteFill,
     bottom: 40
@@ -1457,3 +1466,215 @@ const styles = StyleSheet.create({
     opacity: 0.46,
   },
 });
+  return {
+    ...staticStyles,
+  statusAccent: [
+    staticStyles.statusAccent,
+    {
+        width: responsiveLayout.responsiveWidth(2),
+    },
+  ],
+  statusPulse: [
+    staticStyles.statusPulse,
+    {
+        width: responsiveLayout.responsiveWidth(6),
+        height: responsiveLayout.responsiveHeight(6),
+    },
+  ],
+  statusName: [
+    staticStyles.statusName,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  statusSeparator: [
+    staticStyles.statusSeparator,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  statusState: [
+    staticStyles.statusState,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  statusMeta: [
+    staticStyles.statusMeta,
+    {
+        fontSize: responsiveLayout.responsiveFont(6.5),
+    },
+  ],
+  signalBars: [
+    staticStyles.signalBars,
+    {
+        height: responsiveLayout.responsiveHeight(10),
+    },
+  ],
+  signalBar: [
+    staticStyles.signalBar,
+    {
+        width: responsiveLayout.responsiveWidth(2),
+    },
+  ],
+  signalBarLow: [
+    staticStyles.signalBarLow,
+    {
+        height: responsiveLayout.responsiveHeight(3),
+    },
+  ],
+  signalBarMid: [
+    staticStyles.signalBarMid,
+    {
+        height: responsiveLayout.responsiveHeight(6),
+    },
+  ],
+  signalBarHigh: [
+    staticStyles.signalBarHigh,
+    {
+        height: responsiveLayout.responsiveHeight(9),
+    },
+  ],
+  acquisitionIndex: [
+    staticStyles.acquisitionIndex,
+    {
+        width: responsiveLayout.responsiveWidth(19),
+        height: responsiveLayout.responsiveHeight(14),
+    },
+  ],
+  acquisitionIndexText: [
+    staticStyles.acquisitionIndexText,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  acquisitionTrack: [
+    staticStyles.acquisitionTrack,
+    {
+        width: responsiveLayout.responsiveWidth(25),
+        height: responsiveLayout.responsiveHeight(8),
+    },
+  ],
+  acquisitionTrackLine: [
+    staticStyles.acquisitionTrackLine,
+    {
+        height: responsiveLayout.responsiveHeight(1),
+    },
+  ],
+  acquisitionTrackNode: [
+    staticStyles.acquisitionTrackNode,
+    {
+        width: responsiveLayout.responsiveWidth(6),
+        height: responsiveLayout.responsiveHeight(6),
+    },
+  ],
+  acquisitionText: [
+    staticStyles.acquisitionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(6.5),
+    },
+  ],
+  targetInnerRing: [
+    staticStyles.targetInnerRing,
+    {
+        width: responsiveLayout.responsiveWidth(32),
+        height: responsiveLayout.responsiveHeight(32),
+    },
+  ],
+  targetCorner: [
+    staticStyles.targetCorner,
+    {
+        width: responsiveLayout.responsiveWidth(25),
+        height: responsiveLayout.responsiveHeight(25),
+    },
+  ],
+  crosshairHorizontal: [
+    staticStyles.crosshairHorizontal,
+    {
+        height: responsiveLayout.responsiveHeight(1),
+    },
+  ],
+  crosshairVertical: [
+    staticStyles.crosshairVertical,
+    {
+        width: responsiveLayout.responsiveWidth(1),
+    },
+  ],
+  targetCore: [
+    staticStyles.targetCore,
+    {
+        width: responsiveLayout.responsiveWidth(12),
+        height: responsiveLayout.responsiveHeight(12),
+    },
+  ],
+  targetCoreDot: [
+    staticStyles.targetCoreDot,
+    {
+        width: responsiveLayout.responsiveWidth(3),
+        height: responsiveLayout.responsiveHeight(3),
+    },
+  ],
+  targetScanBeam: [
+    staticStyles.targetScanBeam,
+    {
+        height: responsiveLayout.responsiveHeight(1),
+    },
+  ],
+  targetIdText: [
+    staticStyles.targetIdText,
+    {
+        fontSize: responsiveLayout.responsiveFont(6),
+    },
+  ],
+  markerPanelAccent: [
+    staticStyles.markerPanelAccent,
+    {
+        width: responsiveLayout.responsiveWidth(2),
+    },
+  ],
+  lockGlyph: [
+    staticStyles.lockGlyph,
+    {
+        width: responsiveLayout.responsiveWidth(10),
+        height: responsiveLayout.responsiveHeight(10),
+    },
+  ],
+  lockGlyphCore: [
+    staticStyles.lockGlyphCore,
+    {
+        width: responsiveLayout.responsiveWidth(3),
+        height: responsiveLayout.responsiveHeight(3),
+    },
+  ],
+  markerEyebrow: [
+    staticStyles.markerEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(7.5),
+    },
+  ],
+  confidenceText: [
+    staticStyles.confidenceText,
+    {
+        fontSize: responsiveLayout.responsiveFont(6.5),
+    },
+  ],
+  markerLabel: [
+    staticStyles.markerLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(17),
+    },
+  ],
+  markerAction: [
+    staticStyles.markerAction,
+    {
+        fontSize: responsiveLayout.responsiveFont(6.5),
+    },
+  ],
+  markerChevron: [
+    staticStyles.markerChevron,
+    {
+        fontSize: responsiveLayout.responsiveFont(16),
+    },
+  ],
+  };
+}

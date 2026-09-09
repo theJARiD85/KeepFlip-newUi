@@ -43,6 +43,7 @@ const MAPPING = {
   'eye.slash.fill': 'visibility-off',
   'gauge.with.dots.needle.67percent': 'speed',
   'line.3.horizontal': 'menu',
+  'ellipsis': 'more-vert',
   'lock.fill': 'lock',
   'person.fill': 'person',
   'rectangle.portrait.and.arrow.right': 'logout',

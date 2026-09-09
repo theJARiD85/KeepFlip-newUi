@@ -40,7 +40,9 @@ import {
   type ListingGeneratorResult,
 } from "@/services/listingService";
 import { uploadItemImage } from "@/services/uploadItemImage";
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type ChecklistStep = {
   completeByDefault: boolean;
   detail: string;
@@ -182,6 +184,7 @@ function buildChecklist(item: InventoryItem): ChecklistStep[] {
 }
 
 export default function ListingCreationGuideScreen() {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const params = useLocalSearchParams<{
     focus?: string | string[];
     itemId?: string | string[];
@@ -192,7 +195,10 @@ export default function ListingCreationGuideScreen() {
   const { user } = useKeepFlipAuth();
   const { recordCompletedAction } = useKeepFlipFeedbackNudge();
   const userId = user?.$id;
-  const { contentWidth, insets, pageGutter, responsiveFont } =
+  const {
+    contentWidth, insets, pageGutter, responsiveFont,
+    contentMaxWidth
+  } =
     useResponsiveLayout();
   const [item, setItem] = useState<InventoryItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -614,18 +620,16 @@ export default function ListingCreationGuideScreen() {
   return (
     <KeepFlipBackground>
       <ScrollView
-        contentContainerStyle={[
-          styles.content,
+        contentContainerStyle={[styles.content,
           {
             paddingTop: insets.top / 2,
             paddingBottom: insets.bottom + 32,
             paddingHorizontal: pageGutter,
-          },
-        ]}
+          }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         style={{marginTop: insets.top, marginBottom: insets.bottom}}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.page, { width: contentWidth }]}>
+        <View style={[styles.page, { width: contentWidth }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
           <View style={styles.topRow}>
             <View style={styles.topCopy}>
               <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>SELLER WORKFLOW</Text>
@@ -643,15 +647,15 @@ export default function ListingCreationGuideScreen() {
           {loading ? (
             <View style={styles.loadingCard}>
               <ActivityIndicator color={theme.colors.scannerCyan} />
-              <Text style={styles.loadingText}>Preparing your listing guide</Text>
+              <Text style={[styles.loadingText, { fontSize: responsiveFont(15) }]}>Preparing your listing guide</Text>
             </View>
           ) : error || !item ? (
             <View style={styles.errorCard}>
               <View style={styles.errorIcon}>
                 <IconSymbol color={theme.colors.goldBright} name="tag.fill" size={28} />
               </View>
-              <Text style={styles.errorTitle}>Listing guide unavailable</Text>
-              <Text selectable style={styles.errorText}>
+              <Text style={[styles.errorTitle, { fontSize: responsiveFont(19) }]}>Listing guide unavailable</Text>
+              <Text selectable style={[styles.errorText, { fontSize: responsiveFont(14)}]}>
                 {error ?? "This item could not be opened."}
               </Text>
               <Pressable
@@ -660,15 +664,15 @@ export default function ListingCreationGuideScreen() {
                 onPress={() => void loadItem()}
                 style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
               >
-                <Text style={styles.retryText}>Try again</Text>
+                <Text style={[styles.retryText, { fontSize: responsiveFont(13) }]}>Try again</Text>
               </Pressable>
             </View>
           ) : (
             <>
               <View style={styles.itemCard}>
                 <View style={styles.itemCardRail} />
-                <Text style={styles.sectionEyebrow}>ITEM TO LIST</Text>
-                <Text selectable style={styles.itemTitle}>{title}</Text>
+                <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9) }]}>ITEM TO LIST</Text>
+                <Text selectable style={[styles.itemTitle, { fontSize: responsiveFont(22)}]}>{title}</Text>
                 <Text selectable style={styles.itemMeta}>
                   {[item.brand, item.model, item.category]
                     .filter(Boolean)
@@ -682,20 +686,20 @@ export default function ListingCreationGuideScreen() {
                       name="photo.on.rectangle.angled"
                       size={14}
                     />
-                    <Text style={styles.signalPillText}>
+                    <Text style={[styles.signalPillText, { fontSize: responsiveFont(10) }]}>
                       {item.photoCount} PHOTO{item.photoCount === 1 ? "" : "S"}
                     </Text>
                   </View>
                   <View style={styles.signalPill}>
-                    <Text style={styles.signalPillLabel}>CONDITION</Text>
-                    <Text style={styles.signalPillText}>{item.condition || "ADD"}</Text>
+                    <Text style={[styles.signalPillLabel, { fontSize: responsiveFont(8) }]}>CONDITION</Text>
+                    <Text style={[styles.signalPillText, { fontSize: responsiveFont(10) }]}>{item.condition || "ADD"}</Text>
                   </View>
                 </View>
 
                 <View style={styles.photoPrepRow}>
                   <View style={styles.photoPrepCopy}>
-                    <Text style={styles.fieldLabel}>LISTING PHOTO SET</Text>
-                    <Text style={styles.photoPrepText}>
+                    <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>LISTING PHOTO SET</Text>
+                    <Text style={[styles.photoPrepText, { fontSize: responsiveFont(12)}]}>
                       {item.photoCount} of {MAX_LISTING_PHOTOS} photos saved. Add
                       close-ups of labels, flaws, measurements, and the full item
                       before handing the draft to a marketplace.
@@ -716,7 +720,7 @@ export default function ListingCreationGuideScreen() {
                     {addingPhotos ? (
                       <ActivityIndicator color={theme.colors.backgroundDeep} />
                     ) : (
-                      <Text style={styles.addPhotosButtonText}>
+                      <Text style={[styles.addPhotosButtonText, { fontSize: responsiveFont(8) }]}>
                         {item.photoCount >= MAX_LISTING_PHOTOS
                           ? "FULL"
                           : "ADD PHOTOS"}
@@ -725,7 +729,7 @@ export default function ListingCreationGuideScreen() {
                   </Pressable>
                 </View>
                 {photoUploadError ? (
-                  <Text selectable style={styles.photoUploadError}>
+                  <Text selectable style={[styles.photoUploadError, { fontSize: responsiveFont(12)}]}>
                     {photoUploadError}
                   </Text>
                 ) : null}
@@ -734,28 +738,28 @@ export default function ListingCreationGuideScreen() {
               <View style={styles.draftCard}>
                 <View style={styles.sectionHeader}>
                   <View>
-                    <Text style={styles.sectionEyebrow}>LISTING BRIEF</Text>
-                    <Text style={styles.sectionTitle}>Start with the facts</Text>
+                    <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9) }]}>LISTING BRIEF</Text>
+                    <Text style={[styles.sectionTitle, { fontSize: responsiveFont(18)}]}>Start with the facts</Text>
                   </View>
                   <View style={styles.localPill}>
-                    <Text style={styles.localPillText}>LOCAL GUIDE</Text>
+                    <Text style={[styles.localPillText, { fontSize: responsiveFont(8) }]}>LOCAL GUIDE</Text>
                   </View>
                 </View>
 
                 <View style={styles.fieldBlock}>
-                  <Text style={styles.fieldLabel}>TITLE STARTER</Text>
-                  <Text selectable style={styles.fieldValue}>{title}</Text>
+                  <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>TITLE STARTER</Text>
+                  <Text selectable style={[styles.fieldValue, { fontSize: responsiveFont(14)}]}>{title}</Text>
                 </View>
                 <View style={styles.fieldBlock}>
-                  <Text style={styles.fieldLabel}>CONDITION DISCLOSURE</Text>
-                  <Text selectable style={styles.fieldValue}>
+                  <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>CONDITION DISCLOSURE</Text>
+                  <Text selectable style={[styles.fieldValue, { fontSize: responsiveFont(14)}]}>
                     {item.conditionNotes.trim() ||
                       "Add factual notes about testing, wear, missing pieces, and defects."}
                   </Text>
                 </View>
                 <View style={styles.fieldBlock}>
-                  <Text style={styles.fieldLabel}>MARKET REFERENCE</Text>
-                  <Text selectable style={styles.fieldValue}>
+                  <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>MARKET REFERENCE</Text>
+                  <Text selectable style={[styles.fieldValue, { fontSize: responsiveFont(14)}]}>
                     {priceReference
                       ? `${priceReference} saved estimate. It is a reference, not a recommended list price.`
                       : "No saved market estimate. Analyze the item before setting a price."}
@@ -766,14 +770,14 @@ export default function ListingCreationGuideScreen() {
               <View style={styles.generatorCard}>
                 <View style={styles.sectionHeader}>
                   <View style={styles.generatorHeading}>
-                    <Text style={styles.sectionEyebrow}>DRAFT BUILDER</Text>
-                    <Text style={styles.sectionTitle}>Generate the working draft</Text>
+                    <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9) }]}>DRAFT BUILDER</Text>
+                    <Text style={[styles.sectionTitle, { fontSize: responsiveFont(18)}]}>Generate the working draft</Text>
                   </View>
                   <View style={styles.generatorBadge}>
-                    <Text style={styles.generatorBadgeText}>MASTER DRAFT</Text>
+                    <Text style={[styles.generatorBadgeText, { fontSize: responsiveFont(8) }]}>MASTER DRAFT</Text>
                   </View>
                 </View>
-                <Text style={styles.generatorDescription}>
+                <Text style={[styles.generatorDescription, { fontSize: responsiveFont(12)}]}>
                   Use the saved item facts, photos, condition notes, and market reference to create platform-ready copy. Review every claim before publishing.
                 </Text>
                 <Pressable
@@ -790,13 +794,13 @@ export default function ListingCreationGuideScreen() {
                   {generatingListing ? (
                     <ActivityIndicator color={theme.colors.backgroundDeep} />
                   ) : (
-                    <Text style={styles.generateButtonText}>
+                    <Text style={[styles.generateButtonText, { fontSize: responsiveFont(10) }]}>
                       {generatedListing ? "REGENERATE DRAFT" : "GENERATE LISTING DRAFT"}
                     </Text>
                   )}
                 </Pressable>
                 {listingGenerationError ? (
-                  <Text selectable style={styles.generatorError}>
+                  <Text selectable style={[styles.generatorError, { fontSize: responsiveFont(12)}]}>
                     {listingGenerationError}
                   </Text>
                 ) : null}
@@ -804,14 +808,14 @@ export default function ListingCreationGuideScreen() {
                 {generatedListing ? (
                   <View style={styles.generatedCopy}>
                     <View style={styles.generatedTitleRow}>
-                      <Text selectable style={styles.generatedTitle}>
+                      <Text selectable style={[styles.generatedTitle, { fontSize: responsiveFont(18)}]}>
                         {generatedListing.title}
                       </Text>
-                      <Text style={styles.confidenceText}>
+                      <Text style={[styles.confidenceText, { fontSize: responsiveFont(8) }]}>
                         {formatConfidence(listingConfidence)}% CONFIDENCE
                       </Text>
                     </View>
-                    <Text selectable style={styles.generatedSubtitle}>
+                    <Text selectable style={[styles.generatedSubtitle, { fontSize: responsiveFont(12)}]}>
                       {generatedListing.subtitle}
                     </Text>
                     <View style={styles.generatedSignals}>
@@ -825,7 +829,7 @@ export default function ListingCreationGuideScreen() {
                         {generatedListing.sellingStrategy.replace(/_/g, " ").toUpperCase()}
                       </Text>
                     </View>
-                    <Text style={styles.fieldLabel}>PLATFORM COPY</Text>
+                    <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>PLATFORM COPY</Text>
                     <View style={styles.platformTabs}>
                       {(
                         Object.keys(generatedListing.platformCopy) as (keyof ListingGeneratorResult["listing"]["platformCopy"])[]
@@ -854,11 +858,11 @@ export default function ListingCreationGuideScreen() {
                         </Pressable>
                       ))}
                     </View>
-                    <Text selectable style={styles.generatedBody}>
+                    <Text selectable style={[styles.generatedBody, { fontSize: responsiveFont(13)}]}>
                       {generatedListing.platformCopy[selectedPlatform]}
                     </Text>
-                    <Text style={styles.fieldLabel}>CONDITION DISCLOSURE</Text>
-                    <Text selectable style={styles.generatedBody}>
+                    <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>CONDITION DISCLOSURE</Text>
+                    <Text selectable style={[styles.generatedBody, { fontSize: responsiveFont(13)}]}>
                       {generatedListing.conditionDisclosure}
                     </Text>
                     {generatedListing.warnings.length ? (
@@ -874,20 +878,24 @@ export default function ListingCreationGuideScreen() {
                 <View style={styles.crosslistCard}>
                   <View style={styles.sectionHeader}>
                     <View style={styles.generatorHeading}>
-                      <Text style={styles.sectionEyebrow}>CROSSLIST DESTINATIONS</Text>
-                      <Text style={styles.sectionTitle}>Send the draft where you sell</Text>
+                      <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9) }]}>CROSSLIST DESTINATIONS</Text>
+                      <Text style={[styles.sectionTitle, { fontSize: responsiveFont(18)}]}>Send the draft where you sell</Text>
                     </View>
                     <View style={styles.crosslistBadge}>
-                      <Text style={styles.crosslistBadgeText}>
+                      <Text style={[styles.crosslistBadgeText, { fontSize: responsiveFont(8) }]}>
                         {CROSSLIST_PLATFORMS.length} CHANNELS
                       </Text>
                     </View>
                   </View>
-                  <Text style={styles.crosslistDescription}>
+                  <Text style={[styles.crosslistDescription, { fontSize: responsiveFont(12)}]}>
                     KeepFlip keeps the item facts consistent across channels. eBay can publish the reviewed draft; the other destinations open Android&apos;s standard share sheet for an assisted handoff.
                   </Text>
                   <View style={styles.destinationList}>
                     {CROSSLIST_PLATFORMS.map((platform) => {
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
                       const shared = sharedPlatform === platform.id;
                       const isEbay = platform.id === "ebay";
                       return (
@@ -901,14 +909,14 @@ export default function ListingCreationGuideScreen() {
                           </View>
                           <View style={styles.destinationCopy}>
                             <View style={styles.destinationTopline}>
-                              <Text style={styles.destinationName}>
+                              <Text style={[styles.destinationName, { fontSize: responsiveFont(14) }]}>
                                 {platform.label}
                               </Text>
                               <Text style={styles.destinationMode}>
                                 {platform.mode}
                               </Text>
                             </View>
-                            <Text style={styles.destinationDescription}>
+                            <Text style={[styles.destinationDescription, { fontSize: responsiveFont(11)}]}>
                               {platform.description}
                             </Text>
                           </View>
@@ -969,8 +977,8 @@ export default function ListingCreationGuideScreen() {
                       ) : null}
                       <View style={styles.ebayPublishHeader}>
                         <View style={styles.ebayPublishHeaderCopy}>
-                          <Text style={styles.fieldLabel}>PUBLISH TO EBAY</Text>
-                          <Text style={styles.ebayPublishTitle}>
+                          <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>PUBLISH TO EBAY</Text>
+                          <Text style={[styles.ebayPublishTitle, { fontSize: responsiveFont(15) }]}>
                             Review seller settings
                           </Text>
                         </View>
@@ -986,12 +994,12 @@ export default function ListingCreationGuideScreen() {
                             size={22}
                           />
                           <View style={styles.ebayPublishSuccessCopy}>
-                            <Text style={styles.ebayPublishSuccessTitle}>
+                            <Text style={[styles.ebayPublishSuccessTitle, { fontSize: responsiveFont(14) }]}>
                               {ebayPublishResult.status === "already_published"
                                 ? "This item is already live on eBay."
                                 : "Live eBay listing created."}
                             </Text>
-                            <Text selectable style={styles.ebayPublishSuccessDetail}>
+                            <Text selectable style={[styles.ebayPublishSuccessDetail, { fontSize: responsiveFont(11)}]}>
                               {ebayPublishResult.listingId
                                 ? "Listing ID " + ebayPublishResult.listingId
                                 : "eBay accepted the listing."}
@@ -1000,13 +1008,13 @@ export default function ListingCreationGuideScreen() {
                         </View>
                       ) : (
                         <>
-                          <Text style={styles.ebayPublishHint}>
+                          <Text style={[styles.ebayPublishHint, { fontSize: responsiveFont(11)}]}>
                             Choose the category and quantity. KeepFlip will use the
                             shipping, payment, return, and inventory-location setup
                             saved to your Seller Account.
                           </Text>
                           <View style={styles.ebayField}>
-                            <Text style={styles.ebayFieldLabel}>CATEGORY ID</Text>
+                            <Text style={[styles.ebayFieldLabel, { fontSize: responsiveFont(8) }]}>CATEGORY ID</Text>
                             <TextInput
                               autoCapitalize="none"
                               autoCorrect={false}
@@ -1029,14 +1037,14 @@ export default function ListingCreationGuideScreen() {
                               name="checkmark.shield.fill"
                               size={16}
                             />
-                            <Text style={styles.ebaySetupNoticeText}>
+                            <Text style={[styles.ebaySetupNoticeText, { fontSize: responsiveFont(11)}]}>
                               Saved eBay setup will be used automatically. Refresh
                               Seller Account if KeepFlip says listing setup needs
                               attention.
                             </Text>
                           </View>
                           <View style={styles.ebayField}>
-                            <Text style={styles.ebayFieldLabel}>QUANTITY</Text>
+                            <Text style={[styles.ebayFieldLabel, { fontSize: responsiveFont(8) }]}>QUANTITY</Text>
                             <TextInput
                               keyboardType="number-pad"
                               onChangeText={(value) =>
@@ -1051,7 +1059,7 @@ export default function ListingCreationGuideScreen() {
                               value={ebayForm.quantity}
                             />
                           </View>                          <View style={styles.ebayField}>
-                            <Text style={styles.ebayFieldLabel}>
+                            <Text style={[styles.ebayFieldLabel, { fontSize: responsiveFont(8) }]}>
                               MARKETPLACE
                             </Text>
                             <TextInput
@@ -1077,7 +1085,7 @@ export default function ListingCreationGuideScreen() {
                               onReadyChange={setEbayReady} disabled={ebayPublishing} />
                           ) : null}
                           {ebayPublishError ? (
-                            <Text selectable style={styles.ebayPublishError}>
+                            <Text selectable style={[styles.ebayPublishError, { fontSize: responsiveFont(12)}]}>
                               {ebayPublishError}
                             </Text>
                           ) : null}
@@ -1090,7 +1098,7 @@ export default function ListingCreationGuideScreen() {
                                 pressed && styles.pressed,
                               ]}
                             >
-                              <Text style={styles.ebayCancelButtonText}>CLOSE</Text>
+                              <Text style={[styles.ebayCancelButtonText, { fontSize: responsiveFont(9) }]}>CLOSE</Text>
                             </Pressable>
                             <Pressable
                               accessibilityLabel="Publish live eBay listing"
@@ -1109,7 +1117,7 @@ export default function ListingCreationGuideScreen() {
                                   size="small"
                                 />
                               ) : (
-                                <Text style={styles.ebayPublishButtonText}>
+                                <Text style={[styles.ebayPublishButtonText, { fontSize: responsiveFont(9) }]}>
                                   PUBLISH LIVE LISTING
                                 </Text>
                               )}
@@ -1130,7 +1138,7 @@ export default function ListingCreationGuideScreen() {
                             pressed && styles.pressed,
                           ]}
                         >
-                          <Text style={styles.ebayOpenButtonText}>
+                          <Text style={[styles.ebayOpenButtonText, { fontSize: responsiveFont(9) }]}>
                             OPEN EBAY LISTING
                           </Text>
                         </Pressable>
@@ -1138,7 +1146,7 @@ export default function ListingCreationGuideScreen() {
                     </View>
                   ) : null}
                   {shareError ? (
-                    <Text selectable style={styles.crosslistError}>
+                    <Text selectable style={[styles.crosslistError, { fontSize: responsiveFont(12)}]}>
                       {shareError}
                     </Text>
                   ) : null}
@@ -1150,13 +1158,13 @@ export default function ListingCreationGuideScreen() {
               <View style={styles.progressCard}>
                 <View style={styles.progressHeader}>
                   <View>
-                    <Text style={styles.sectionEyebrow}>PUBLISHING READINESS</Text>
-                    <Text style={styles.sectionTitle}>
+                    <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9) }]}>PUBLISHING READINESS</Text>
+                    <Text style={[styles.sectionTitle, { fontSize: responsiveFont(18)}]}>
                       {completeStepCount} of {checklist.length} steps reviewed
                     </Text>
                   </View>
                   <View style={styles.progressCount}>
-                    <Text style={styles.progressCountText}>
+                    <Text style={[styles.progressCountText, { fontSize: responsiveFont(13) }]}>
                       {Math.round((completeStepCount / checklist.length) * 100)}%
                     </Text>
                   </View>
@@ -1175,6 +1183,10 @@ export default function ListingCreationGuideScreen() {
 
                 <View style={styles.checklist}>
                   {checklist.map((step, index) => {
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
                     const complete =
                       step.completeByDefault || confirmedStepIds.includes(step.id);
 
@@ -1214,8 +1226,8 @@ export default function ListingCreationGuideScreen() {
                           )}
                         </View>
                         <View style={styles.checklistCopy}>
-                          <Text style={styles.checklistLabel}>{step.label}</Text>
-                          <Text style={styles.checklistDetail}>{step.detail}</Text>
+                          <Text style={[styles.checklistLabel, { fontSize: responsiveFont(14) }]}>{step.label}</Text>
+                          <Text style={[styles.checklistDetail, { fontSize: responsiveFont(12)}]}>{step.detail}</Text>
                         </View>
                         {!step.completeByDefault ? (
                           <IconSymbol
@@ -1240,7 +1252,7 @@ export default function ListingCreationGuideScreen() {
                   name="tag.fill"
                   size={20}
                 />
-                <Text style={styles.publishNoticeText}>
+                <Text style={[styles.publishNoticeText, { fontSize: responsiveFont(13)}]}>
                   When you are ready to publish, confirm the live marketplace category, item specifics, shipping, returns, and fees before creating the listing.
                 </Text>
               </View>
@@ -1252,7 +1264,8 @@ export default function ListingCreationGuideScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   content: {
     flexGrow: 1,
   },
@@ -2057,3 +2070,371 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.985 }],
   },
 });
+  return {
+    ...staticStyles,
+  eyebrow: [
+    staticStyles.eyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  subtitle: [
+    staticStyles.subtitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  backButton: [
+    staticStyles.backButton,
+    {
+        width: responsiveLayout.responsiveWidth(44),
+        height: responsiveLayout.responsiveHeight(44),
+    },
+  ],
+  loadingText: [
+    staticStyles.loadingText,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  errorIcon: [
+    staticStyles.errorIcon,
+    {
+        width: responsiveLayout.responsiveWidth(56),
+        height: responsiveLayout.responsiveHeight(56),
+    },
+  ],
+  errorTitle: [
+    staticStyles.errorTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(19),
+    },
+  ],
+  errorText: [
+    staticStyles.errorText,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  retryText: [
+    staticStyles.retryText,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  itemCardRail: [
+    staticStyles.itemCardRail,
+    {
+        height: responsiveLayout.responsiveHeight(2),
+    },
+  ],
+  sectionEyebrow: [
+    staticStyles.sectionEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  itemTitle: [
+    staticStyles.itemTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(22),
+    },
+  ],
+  itemMeta: [
+    staticStyles.itemMeta,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  signalPillLabel: [
+    staticStyles.signalPillLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  signalPillText: [
+    staticStyles.signalPillText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  sectionTitle: [
+    staticStyles.sectionTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(18),
+    },
+  ],
+  localPillText: [
+    staticStyles.localPillText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  fieldLabel: [
+    staticStyles.fieldLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  fieldValue: [
+    staticStyles.fieldValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  generatorBadgeText: [
+    staticStyles.generatorBadgeText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  generatorDescription: [
+    staticStyles.generatorDescription,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  generateButtonText: [
+    staticStyles.generateButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  generatorError: [
+    staticStyles.generatorError,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  generatedTitle: [
+    staticStyles.generatedTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(18),
+    },
+  ],
+  confidenceText: [
+    staticStyles.confidenceText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  generatedSubtitle: [
+    staticStyles.generatedSubtitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  generatedSignal: [
+    staticStyles.generatedSignal,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  platformTabText: [
+    staticStyles.platformTabText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  generatedBody: [
+    staticStyles.generatedBody,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  generatorWarning: [
+    staticStyles.generatorWarning,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  photoPrepText: [
+    staticStyles.photoPrepText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  addPhotosButtonText: [
+    staticStyles.addPhotosButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  photoUploadError: [
+    staticStyles.photoUploadError,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  crosslistBadgeText: [
+    staticStyles.crosslistBadgeText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  crosslistDescription: [
+    staticStyles.crosslistDescription,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  destinationIcon: [
+    staticStyles.destinationIcon,
+    {
+        width: responsiveLayout.responsiveWidth(32),
+        height: responsiveLayout.responsiveHeight(32),
+    },
+  ],
+  destinationName: [
+    staticStyles.destinationName,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  destinationMode: [
+    staticStyles.destinationMode,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  destinationDescription: [
+    staticStyles.destinationDescription,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  shareDraftText: [
+    staticStyles.shareDraftText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  ebayPublishTitle: [
+    staticStyles.ebayPublishTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  ebayPublishMode: [
+    staticStyles.ebayPublishMode,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  ebayPublishHint: [
+    staticStyles.ebayPublishHint,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  ebaySetupNoticeText: [
+    staticStyles.ebaySetupNoticeText,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  ebayFieldLabel: [
+    staticStyles.ebayFieldLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  ebayFieldInput: [
+    staticStyles.ebayFieldInput,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  ebayCancelButtonText: [
+    staticStyles.ebayCancelButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  ebayPublishButtonText: [
+    staticStyles.ebayPublishButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  ebayPublishError: [
+    staticStyles.ebayPublishError,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  ebayPublishSuccessTitle: [
+    staticStyles.ebayPublishSuccessTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  ebayPublishSuccessDetail: [
+    staticStyles.ebayPublishSuccessDetail,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  ebayOpenButtonText: [
+    staticStyles.ebayOpenButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  crosslistError: [
+    staticStyles.crosslistError,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  crosslistFootnote: [
+    staticStyles.crosslistFootnote,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  progressCountText: [
+    staticStyles.progressCountText,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  progressTrack: [
+    staticStyles.progressTrack,
+    {
+        height: responsiveLayout.responsiveHeight(6),
+    },
+  ],
+  checkmark: [
+    staticStyles.checkmark,
+    {
+        width: responsiveLayout.responsiveWidth(31),
+        height: responsiveLayout.responsiveHeight(31),
+    },
+  ],
+  checkmarkNumber: [
+    staticStyles.checkmarkNumber,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  checklistLabel: [
+    staticStyles.checklistLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  checklistDetail: [
+    staticStyles.checklistDetail,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  publishNoticeText: [
+    staticStyles.publishNoticeText,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  };
+}

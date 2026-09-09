@@ -24,7 +24,10 @@ import Animated, {
 import type { AnalysisProfitPlan } from "@/components/scanner/analysis-visual-types";
 import type { Thought } from '@/components/scanner/scanner-thought-stream';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 const analysisTextStyle = { fontFamily: theme.fonts.radar } as const;
 
 function Text({ style, ...props }: TextProps) {
@@ -197,6 +200,11 @@ function valuationComparableLabel(
 }
 
 function StateHeader({ accent, eyebrow, title }: { accent: string; eyebrow: string; title: string }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
     <View style={styles.stateHeader}>
       <View style={[styles.stateMarker, { backgroundColor: accent, boxShadow: `0 0 18px ${accent}` }]} />
@@ -204,7 +212,7 @@ function StateHeader({ accent, eyebrow, title }: { accent: string; eyebrow: stri
         <Text selectable style={[styles.eyebrow, { color: accent }]}>
           {eyebrow}
         </Text>
-        <Text selectable style={styles.title}>
+        <Text selectable style={[styles.title, { fontSize: responsiveFont(29), lineHeight: 34 }]}>
           {title}
         </Text>
       </View>
@@ -213,6 +221,11 @@ function StateHeader({ accent, eyebrow, title }: { accent: string; eyebrow: stri
 }
 
 function AnalysisOrb({ progress }: { progress?: number }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const spin = useSharedValue(0);
   const pulse = useSharedValue(0);
   const barProgress = useSharedValue(normalizeScore(progress) ?? 0.12);
@@ -277,7 +290,7 @@ function AnalysisOrb({ progress }: { progress?: number }) {
         <Animated.View style={[styles.outerRing, outerRingStyle]} />
         <Animated.View style={[styles.innerRing, innerRingStyle]} />
         <Animated.View style={[styles.orbCore, pulseStyle]}>
-          <Text style={styles.orbText}>{progressPercent == null ? 'AI' : `${progressPercent}%`}</Text>
+          <Text style={[styles.orbText, { fontSize: responsiveFont(17) }]}>{progressPercent == null ? 'AI' : `${progressPercent}%`}</Text>
         </Animated.View>
       </View>
       <View style={styles.progressTrack}>
@@ -298,6 +311,7 @@ function ActionButton({
   onPress: () => void;
   secondary?: boolean;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   return (
     <Pressable
       accessibilityRole="button"
@@ -314,6 +328,11 @@ function ActionButton({
 }
 
 function RequirementList({ items, accent }: { accent: string; items: string[] }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
     <View style={styles.listCard}>
       {items.map((item, index) => (
@@ -321,7 +340,7 @@ function RequirementList({ items, accent }: { accent: string; items: string[] })
           <View style={[styles.listBullet, { borderColor: accent }]}>
             <Text style={[styles.listBulletText, { color: accent }]}>{index + 1}</Text>
           </View>
-          <Text selectable style={styles.listText}>
+          <Text selectable style={[styles.listText, { fontSize: responsiveFont(14), lineHeight: 20 }]}>
             {item}
           </Text>
         </View>
@@ -331,12 +350,17 @@ function RequirementList({ items, accent }: { accent: string; items: string[] })
 }
 
 function SuggestedPhotos({ photos }: { photos: AnalysisSuggestedPhoto[] }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   if (photos.length === 0) return null;
 
   return (
     <Section title="PHOTOS THAT WOULD IMPROVE THIS">
       <View style={styles.suggestionList}>
         {photos.map((photo, index) => {
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
           const required = photo.priority === 'required';
           const accent = required ? theme.colors.scannerAmber : theme.colors.scannerCyan;
 
@@ -351,7 +375,7 @@ function SuggestedPhotos({ photos }: { photos: AnalysisSuggestedPhoto[] }) {
               </View>
               <View style={styles.suggestionCopy}>
                 <View style={styles.suggestionTitleRow}>
-                  <Text selectable style={styles.suggestionTitle}>
+                  <Text selectable style={[styles.suggestionTitle, { fontSize: responsiveFont(14) }]}>
                     {photo.label}
                   </Text>
                   {required ? (
@@ -359,7 +383,7 @@ function SuggestedPhotos({ photos }: { photos: AnalysisSuggestedPhoto[] }) {
                   ) : null}
                 </View>
                 {photo.description ? (
-                  <Text selectable style={styles.suggestionDescription}>
+                  <Text selectable style={[styles.suggestionDescription, { fontSize: responsiveFont(12), lineHeight: 18 }]}>
                     {photo.description}
                   </Text>
                 ) : null}
@@ -373,9 +397,14 @@ function SuggestedPhotos({ photos }: { photos: AnalysisSuggestedPhoto[] }) {
 }
 
 function Section({ children, title }: { children: React.ReactNode; title: string }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <Text style={[styles.sectionTitle, { fontSize: responsiveFont(10) }]}>{title}</Text>
       {children}
     </View>
   );
@@ -390,13 +419,18 @@ function ConfidenceMeter({
   label: string;
   value?: number;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const score = percentage(value);
   const width = `${score ?? 0}%` as const;
 
   return (
     <View style={styles.confidenceRow}>
       <View style={styles.confidenceLabelRow}>
-        <Text selectable style={styles.confidenceLabel}>
+        <Text selectable style={[styles.confidenceLabel, { fontSize: responsiveFont(12) }]}>
           {label}
         </Text>
         <Text selectable style={[styles.confidenceValue, { color: accent }]}>
@@ -414,6 +448,11 @@ function ConfidenceMeter({
 }
 
 function SetupState({ state }: { state: Extract<ItemAnalysisState, { status: 'setup' }> }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const requirements = state.requirements ?? [
     'Connect the KeepFlip analysis function.',
     'Add server-side OpenAI and Google Vision credentials.',
@@ -427,7 +466,7 @@ function SetupState({ state }: { state: Extract<ItemAnalysisState, { status: 'se
         eyebrow="ANALYSIS SETUP"
         title={state.title ?? 'Connect item intelligence'}
       />
-      <Text selectable style={styles.leadText}>
+      <Text selectable style={[styles.leadText, { fontSize: responsiveFont(15), lineHeight: 23 }]}>
         {state.message ??
           'KeepFlip is ready to send photos through the secure analysis pipeline once its backend is configured.'}
       </Text>
@@ -437,6 +476,11 @@ function SetupState({ state }: { state: Extract<ItemAnalysisState, { status: 'se
 }
 
 function AnalyzingState({ state }: { state: Extract<ItemAnalysisState, { status: 'analyzing' }> }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const steps = state.steps ?? DEFAULT_ANALYSIS_STEPS;
 
   return (
@@ -446,7 +490,7 @@ function AnalyzingState({ state }: { state: Extract<ItemAnalysisState, { status:
         eyebrow="KEEPFLIP INTELLIGENCE"
         title={state.stage ?? 'Analyzing your item'}
       />
-      <Text selectable style={styles.leadText}>
+      <Text selectable style={[styles.leadText, { fontSize: responsiveFont(15), lineHeight: 23 }]}>
         {state.detail ?? 'Cross-checking image evidence before estimating market value.'}
       </Text>
       <AnalysisOrb progress={state.progress} />
@@ -483,6 +527,11 @@ function AnalyzingState({ state }: { state: Extract<ItemAnalysisState, { status:
 }
 
 function ErrorState({ state }: { state: Extract<ItemAnalysisState, { status: 'error' }> }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
     <>
       <StateHeader
@@ -491,16 +540,16 @@ function ErrorState({ state }: { state: Extract<ItemAnalysisState, { status: 'er
         title={state.title ?? 'We could not finish this analysis'}
       />
       <View style={styles.errorCard}>
-        <Text selectable style={styles.errorMessage}>
+        <Text selectable style={[styles.errorMessage, { fontSize: responsiveFont(16), lineHeight: 24 }]}>
           {state.message}
         </Text>
         {state.code ? (
-          <Text selectable style={styles.errorCode}>
+          <Text selectable style={[styles.errorCode, { fontSize: responsiveFont(11) }]}>
             Reference: {state.code}
           </Text>
         ) : null}
       </View>
-      <Text selectable style={styles.supportingText}>
+      <Text selectable style={[styles.supportingText, { fontSize: responsiveFont(14), lineHeight: 21 }]}>
         Your photos remain in this scan session. Retry when you are ready.
       </Text>
     </>
@@ -512,6 +561,11 @@ function InsufficientEvidenceState({
 }: {
   state: Extract<ItemAnalysisState, { status: 'insufficient-evidence' }>;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
     <>
       <StateHeader
@@ -519,7 +573,7 @@ function InsufficientEvidenceState({
         eyebrow="MORE EVIDENCE NEEDED"
         title={state.title ?? 'A confident match needs another angle'}
       />
-      <Text selectable style={styles.leadText}>
+      <Text selectable style={[styles.leadText, { fontSize: responsiveFont(15), lineHeight: 23 }]}>
         {state.message ??
           'The current photos contain useful clues, but not enough to identify the exact item and value it responsibly.'}
       </Text>
@@ -529,7 +583,7 @@ function InsufficientEvidenceState({
             {state.evidence.map((item, index) => (
               <View key={`${item}-${index}`} style={styles.verifiedRow}>
                 <View style={styles.verifiedDot} />
-                <Text selectable style={styles.verifiedText}>
+                <Text selectable style={[styles.verifiedText, { fontSize: responsiveFont(14), lineHeight: 20 }]}>
                   {item}
                 </Text>
               </View>
@@ -543,6 +597,11 @@ function InsufficientEvidenceState({
 }
 
 function IdentityCard({ identity }: { identity: AnalysisIdentity }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const identityFields = [
     ['BRAND', identity.brand],
     ['MODEL', identity.model],
@@ -552,15 +611,15 @@ function IdentityCard({ identity }: { identity: AnalysisIdentity }) {
 
   return (
     <View style={styles.identityCard}>
-      <Text selectable style={styles.identityTitle}>
+      <Text selectable style={[styles.identityTitle, { fontSize: responsiveFont(22), lineHeight: 28 }]}>
         {identity.title}
       </Text>
       {identityFields.length ? (
         <View style={styles.identityGrid}>
           {identityFields.map(([label, value]) => (
             <View key={label} style={styles.identityField}>
-              <Text style={styles.identityFieldLabel}>{label}</Text>
-              <Text selectable style={styles.identityFieldValue}>
+              <Text style={[styles.identityFieldLabel, { fontSize: responsiveFont(8) }]}>{label}</Text>
+              <Text selectable style={[styles.identityFieldValue, { fontSize: responsiveFont(13) }]}>
                 {value}
               </Text>
             </View>
@@ -575,6 +634,11 @@ function IdentityCard({ identity }: { identity: AnalysisIdentity }) {
 }
 
 function ConditionCard({ condition }: { condition: AnalysisCondition }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
     <View style={styles.conditionCard}>
       <View style={styles.conditionTopRow}>
@@ -588,7 +652,7 @@ function ConditionCard({ condition }: { condition: AnalysisCondition }) {
         ) : null}
       </View>
       {condition.summary ? (
-        <Text selectable style={styles.conditionSummary}>
+        <Text selectable style={[styles.conditionSummary, { fontSize: responsiveFont(14), lineHeight: 21 }]}>
           {condition.summary}
         </Text>
       ) : null}
@@ -597,7 +661,7 @@ function ConditionCard({ condition }: { condition: AnalysisCondition }) {
           {condition.details.map((detail, index) => (
             <View key={`${detail}-${index}`} style={styles.detailRow}>
               <View style={styles.detailBullet} />
-              <Text selectable style={styles.detailText}>
+              <Text selectable style={[styles.detailText, { fontSize: responsiveFont(13), lineHeight: 19 }]}>
                 {detail}
               </Text>
             </View>
@@ -609,6 +673,11 @@ function ConditionCard({ condition }: { condition: AnalysisCondition }) {
 }
 
 function EvidenceCard({ evidence }: { evidence: AnalysisEvidence[] }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   if (evidence.length === 0) return null;
 
   return (
@@ -616,16 +685,16 @@ function EvidenceCard({ evidence }: { evidence: AnalysisEvidence[] }) {
       {evidence.map((item, index) => (
         <View key={item.id ?? `${item.label}-${index}`} style={styles.evidenceRow}>
           <View style={styles.evidenceIndex}>
-            <Text style={styles.evidenceIndexText}>{String(index + 1).padStart(2, '0')}</Text>
+            <Text style={[styles.evidenceIndexText, { fontSize: responsiveFont(9) }]}>{String(index + 1).padStart(2, '0')}</Text>
           </View>
           <View style={styles.evidenceCopy}>
             <View style={styles.evidenceLabelRow}>
-              <Text selectable style={styles.evidenceLabel}>
+              <Text selectable style={[styles.evidenceLabel, { fontSize: responsiveFont(13) }]}>
                 {item.label}
               </Text>
               {item.source ? <Text style={styles.sourceTag}>{item.source.toUpperCase()}</Text> : null}
             </View>
-            <Text selectable style={styles.evidenceValue}>
+            <Text selectable style={[styles.evidenceValue, { fontSize: responsiveFont(12), lineHeight: 17 }]}>
               {item.value}
             </Text>
           </View>
@@ -641,6 +710,7 @@ function EvidenceCard({ evidence }: { evidence: AnalysisEvidence[] }) {
 }
 
 function ValuationReadinessCard({ readiness }: { readiness: AnalysisValuationReadiness }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const isReady = readiness.status === 'ready';
   const isLimited = readiness.status === 'limited';
   const accent = isReady
@@ -673,6 +743,7 @@ function ValuationReadinessCard({ readiness }: { readiness: AnalysisValuationRea
 }
 
 function ValuationCard({ valuation }: { valuation: AnalysisValuation }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const currency = valuation.currency ?? 'USD';
   const values = [
     ['LOW', valuation.low],
@@ -722,6 +793,11 @@ function ValuationCard({ valuation }: { valuation: AnalysisValuation }) {
 }
 
 function ResultState({ result }: { result: ItemAnalysisResult }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const confidence = result.confidence;
 
   return (
@@ -732,7 +808,7 @@ function ResultState({ result }: { result: ItemAnalysisResult }) {
         title="Evidence-backed result"
       />
       {result.summary ? (
-        <Text selectable style={styles.leadText}>
+        <Text selectable style={[styles.leadText, { fontSize: responsiveFont(15), lineHeight: 23 }]}>
           {result.summary}
         </Text>
       ) : null}
@@ -794,6 +870,11 @@ export function ItemAnalysisOverlay({
   state,
   topInset,
 }: ItemAnalysisOverlayProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const isAnalyzing = state.status === 'analyzing';
   const isResult = state.status === 'result';
   const accent =
@@ -820,12 +901,12 @@ export function ItemAnalysisOverlay({
             <View style={styles.brandReticle}>
               <View style={styles.brandReticleDot} />
             </View>
-            <Text style={styles.brandText}>KEEPFLIP / ANALYSIS</Text>
+            <Text style={[styles.brandText, { fontSize: responsiveFont(10) }]}>KEEPFLIP / ANALYSIS</Text>
           </View>
           {isAnalyzing ? (
             <View accessibilityLiveRegion="polite" style={styles.analysisLiveBadge}>
               <View style={styles.analysisLiveDot} />
-              <Text style={styles.analysisLiveText}>SECURE JOB RUNNING</Text>
+              <Text style={[styles.analysisLiveText, { fontSize: responsiveFont(8) }]}>SECURE JOB RUNNING</Text>
             </View>
           ) : (
             <Pressable
@@ -836,7 +917,7 @@ export function ItemAnalysisOverlay({
                 styles.headerDoneButton,
                 pressed && styles.buttonPressed,
               ]}>
-              <Text style={styles.headerDoneText}>{doneLabel}</Text>
+              <Text style={[styles.headerDoneText, { fontSize: responsiveFont(13) }]}>{doneLabel}</Text>
             </Pressable>
           )}
         </View>
@@ -880,7 +961,8 @@ export function ItemAnalysisOverlay({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFill,
     zIndex: 44,
@@ -1269,3 +1351,390 @@ const styles = StyleSheet.create({
   actionButtonSecondary: { backgroundColor: 'rgba(7, 7, 10, 0.72)' },
   actionButtonText: { color: theme.colors.backgroundDeep, fontSize: 14, fontWeight: '900', letterSpacing: 0.3 },
 });
+  return {
+    ...staticStyles,
+  brandReticle: [
+    staticStyles.brandReticle,
+    {
+        width: responsiveLayout.responsiveWidth(24),
+        height: responsiveLayout.responsiveHeight(24),
+    },
+  ],
+  brandReticleDot: [
+    staticStyles.brandReticleDot,
+    {
+        width: responsiveLayout.responsiveWidth(5),
+        height: responsiveLayout.responsiveHeight(5),
+    },
+  ],
+  brandText: [
+    staticStyles.brandText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  headerDoneText: [
+    staticStyles.headerDoneText,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  analysisLiveDot: [
+    staticStyles.analysisLiveDot,
+    {
+        width: responsiveLayout.responsiveWidth(6),
+        height: responsiveLayout.responsiveHeight(6),
+    },
+  ],
+  analysisLiveText: [
+    staticStyles.analysisLiveText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  stateMarker: [
+    staticStyles.stateMarker,
+    {
+        width: responsiveLayout.responsiveWidth(4),
+        height: responsiveLayout.responsiveHeight(52),
+    },
+  ],
+  eyebrow: [
+    staticStyles.eyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(29),
+    },
+  ],
+  leadText: [
+    staticStyles.leadText,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  supportingText: [
+    staticStyles.supportingText,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  listBullet: [
+    staticStyles.listBullet,
+    {
+        width: responsiveLayout.responsiveWidth(28),
+        height: responsiveLayout.responsiveHeight(28),
+    },
+  ],
+  listBulletText: [
+    staticStyles.listBulletText,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  listText: [
+    staticStyles.listText,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  orbShell: [
+    staticStyles.orbShell,
+    {
+        width: responsiveLayout.responsiveWidth(148),
+        height: responsiveLayout.responsiveHeight(148),
+    },
+  ],
+  outerRing: [
+    staticStyles.outerRing,
+    {
+        width: responsiveLayout.responsiveWidth(142),
+        height: responsiveLayout.responsiveHeight(142),
+    },
+  ],
+  innerRing: [
+    staticStyles.innerRing,
+    {
+        width: responsiveLayout.responsiveWidth(105),
+        height: responsiveLayout.responsiveHeight(105),
+    },
+  ],
+  orbCore: [
+    staticStyles.orbCore,
+    {
+        width: responsiveLayout.responsiveWidth(68),
+        height: responsiveLayout.responsiveHeight(68),
+    },
+  ],
+  orbText: [
+    staticStyles.orbText,
+    {
+        fontSize: responsiveLayout.responsiveFont(17),
+    },
+  ],
+  progressTrack: [
+    staticStyles.progressTrack,
+    {
+        height: responsiveLayout.responsiveHeight(4),
+    },
+  ],
+  stepDot: [
+    staticStyles.stepDot,
+    {
+        width: responsiveLayout.responsiveWidth(18),
+        height: responsiveLayout.responsiveHeight(18),
+    },
+  ],
+  stepDotCore: [
+    staticStyles.stepDotCore,
+    {
+        width: responsiveLayout.responsiveWidth(8),
+        height: responsiveLayout.responsiveHeight(8),
+    },
+  ],
+  stepText: [
+    staticStyles.stepText,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  stepStatus: [
+    staticStyles.stepStatus,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  errorMessage: [
+    staticStyles.errorMessage,
+    {
+        fontSize: responsiveLayout.responsiveFont(16),
+    },
+  ],
+  errorCode: [
+    staticStyles.errorCode,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  sectionTitle: [
+    staticStyles.sectionTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  verifiedDot: [
+    staticStyles.verifiedDot,
+    {
+        width: responsiveLayout.responsiveWidth(6),
+        height: responsiveLayout.responsiveHeight(6),
+    },
+  ],
+  verifiedText: [
+    staticStyles.verifiedText,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  suggestionIcon: [
+    staticStyles.suggestionIcon,
+    {
+        width: responsiveLayout.responsiveWidth(42),
+        height: responsiveLayout.responsiveHeight(42),
+    },
+  ],
+  suggestionFocus: [
+    staticStyles.suggestionFocus,
+    {
+        width: responsiveLayout.responsiveWidth(8),
+        height: responsiveLayout.responsiveHeight(8),
+    },
+  ],
+  suggestionTitle: [
+    staticStyles.suggestionTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  priorityTag: [
+    staticStyles.priorityTag,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  suggestionDescription: [
+    staticStyles.suggestionDescription,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  identityTitle: [
+    staticStyles.identityTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(22),
+    },
+  ],
+  identityFieldLabel: [
+    staticStyles.identityFieldLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  identityFieldValue: [
+    staticStyles.identityFieldValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  conditionGrade: [
+    staticStyles.conditionGrade,
+    {
+        fontSize: responsiveLayout.responsiveFont(20),
+    },
+  ],
+  conditionScore: [
+    staticStyles.conditionScore,
+    {
+        fontSize: responsiveLayout.responsiveFont(16),
+    },
+  ],
+  conditionSummary: [
+    staticStyles.conditionSummary,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  detailBullet: [
+    staticStyles.detailBullet,
+    {
+        width: responsiveLayout.responsiveWidth(5),
+        height: responsiveLayout.responsiveHeight(5),
+    },
+  ],
+  detailText: [
+    staticStyles.detailText,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  evidenceIndex: [
+    staticStyles.evidenceIndex,
+    {
+        width: responsiveLayout.responsiveWidth(29),
+        height: responsiveLayout.responsiveHeight(29),
+    },
+  ],
+  evidenceIndexText: [
+    staticStyles.evidenceIndexText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  evidenceLabel: [
+    staticStyles.evidenceLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  sourceTag: [
+    staticStyles.sourceTag,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  evidenceValue: [
+    staticStyles.evidenceValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  evidenceConfidence: [
+    staticStyles.evidenceConfidence,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  confidenceLabel: [
+    staticStyles.confidenceLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  confidenceValue: [
+    staticStyles.confidenceValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  meterTrack: [
+    staticStyles.meterTrack,
+    {
+        height: responsiveLayout.responsiveHeight(5),
+    },
+  ],
+  readinessSignal: [
+    staticStyles.readinessSignal,
+    {
+        width: responsiveLayout.responsiveWidth(9),
+        height: responsiveLayout.responsiveHeight(9),
+    },
+  ],
+  readinessLabel: [
+    staticStyles.readinessLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  readinessScore: [
+    staticStyles.readinessScore,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  readinessReason: [
+    staticStyles.readinessReason,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  valuationLabel: [
+    staticStyles.valuationLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  valuationValue: [
+    staticStyles.valuationValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(17),
+    },
+  ],
+  valuationValueFeatured: [
+    staticStyles.valuationValueFeatured,
+    {
+        fontSize: responsiveLayout.responsiveFont(22),
+    },
+  ],
+  valuationBasisStrong: [
+    staticStyles.valuationBasisStrong,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  valuationBasis: [
+    staticStyles.valuationBasis,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  actionButtonText: [
+    staticStyles.actionButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  };
+}

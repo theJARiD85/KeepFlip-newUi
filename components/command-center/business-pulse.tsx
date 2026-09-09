@@ -12,7 +12,10 @@ import {
   type BusinessMoneyFlowGranularity,
   type ResellerBusinessOverview,
 } from '@/services/reseller-business-overview';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type BusinessPulseProps = {
   errorMessage?: string | null;
   loading: boolean;
@@ -30,9 +33,8 @@ function money(cents: number) {
   })}`;
 }
 
-function metricTone(value: number) {
-  if (value < 0) return styles.metricNegativeValue;
-  return styles.metricValue;
+function metricTone(value: number): 'negative' | 'default' {
+  return value < 0 ? 'negative' : 'default';
 }
 
 function barHeight(value: number, maximum: number) {
@@ -59,6 +61,11 @@ export function BusinessPulse({
   onOpenFlipPlan,
   onOpenInventory,
 }: BusinessPulseProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const [selectedGranularity, setSelectedGranularity] =
     useState<BusinessMoneyFlowGranularity | null>(null);
   const [selectedRangeCount, setSelectedRangeCount] = useState<number | null>(
@@ -70,8 +77,8 @@ export function BusinessPulse({
       <View style={styles.loadingCard}>
         <IconSymbol color={theme.colors.scannerCyan} name="chart.bar.fill" size={20} />
         <View style={styles.loadingCopy}>
-          <Text style={styles.eyebrow}>BUSINESS PULSE</Text>
-          <Text style={styles.loadingText}>Loading your saved money and inventory records</Text>
+          <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>BUSINESS PULSE</Text>
+          <Text style={[styles.loadingText, { fontSize: responsiveFont(12), lineHeight: 17 }]}>Loading your saved money and inventory records</Text>
         </View>
       </View>
     );
@@ -84,9 +91,9 @@ export function BusinessPulse({
           <IconSymbol color={theme.colors.goldBright} name="chart.bar.fill" size={20} />
         </View>
         <View style={styles.emptyCopy}>
-          <Text style={styles.eyebrow}>BUSINESS PULSE</Text>
-          <Text style={styles.emptyTitle}>Your working numbers will show here</Text>
-          <Text style={styles.emptyText}>
+          <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>BUSINESS PULSE</Text>
+          <Text style={[styles.emptyTitle, { fontSize: responsiveFont(15), lineHeight: 20 }]}>Your working numbers will show here</Text>
+          <Text style={[styles.emptyText, { fontSize: responsiveFont(11), lineHeight: 16 }]}>
             Add an item with its real cost, then record a sale or expense to see a clear picture of your business.
           </Text>
           <Pressable
@@ -95,7 +102,7 @@ export function BusinessPulse({
             onPress={onOpenFlipPlan}
             style={({ pressed }) => [styles.emptyPlanAction, pressed && styles.pressed]}
           >
-            <Text style={styles.emptyPlanActionText}>Plan a possible flip</Text>
+            <Text style={[styles.emptyPlanActionText, { fontSize: responsiveFont(11) }]}>Plan a possible flip</Text>
             <IconSymbol color={theme.colors.scannerCyan} name="chevron.right" size={14} />
           </Pressable>
         </View>
@@ -148,12 +155,12 @@ export function BusinessPulse({
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <View>
-          <Text style={styles.eyebrow}>BUSINESS PULSE</Text>
-          <Text style={styles.title}>The numbers that matter</Text>
+          <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>BUSINESS PULSE</Text>
+          <Text style={[styles.title, { fontSize: responsiveFont(19), lineHeight: 24 }]}>The numbers that matter</Text>
         </View>
       </View>
 
-      <Text style={styles.description}>
+      <Text style={[styles.description, { fontSize: responsiveFont(11), lineHeight: 15 }]}>
         Real money stays separate from item estimates, so you can see what happened without the sometimes confusing accounting-speak.
       </Text>
 
@@ -163,7 +170,11 @@ export function BusinessPulse({
         <Metric
           label="LEFT AFTER COSTS"
           value={money(overview.currentMonth.leftAfterCostsCents)}
-          valueStyle={metricTone(overview.currentMonth.leftAfterCostsCents)}
+          valueStyle={
+            metricTone(overview.currentMonth.leftAfterCostsCents) === 'negative'
+              ? styles.metricNegativeValue
+              : undefined
+          }
           tone="violet"
         />
         <Metric label="CASH TIED UP" value={money(overview.inventory.cashTiedUpCents)} tone="muted" />
@@ -172,8 +183,8 @@ export function BusinessPulse({
       <View style={styles.chartSurface}>
         <View style={styles.chartHeading}>
           <View>
-            <Text style={styles.chartLabel}>MONEY MOVEMENT</Text>
-            <Text style={styles.chartTitle}>{selectedRange.label}</Text>
+            <Text style={[styles.chartLabel, { fontSize: responsiveFont(8) }]}>MONEY MOVEMENT</Text>
+            <Text style={[styles.chartTitle, { fontSize: responsiveFont(13), lineHeight: 17 }]}>{selectedRange.label}</Text>
           </View>
           <View style={styles.legend}>
             <Legend color={theme.colors.scannerCyan} label="In" />
@@ -182,8 +193,8 @@ export function BusinessPulse({
         </View>
         <View style={styles.chartControls}>
           <View style={styles.controlHeading}>
-            <Text style={styles.controlLabel}>BAR UNIT</Text>
-            <Text style={styles.controlValue}>
+            <Text style={[styles.controlLabel, { fontSize: responsiveFont(8) }]}>BAR UNIT</Text>
+            <Text style={[styles.controlValue, { fontSize: responsiveFont(9) }]}>
               {granularity === 'days'
                 ? 'Daily'
                 : granularity === 'weeks'
@@ -224,8 +235,8 @@ export function BusinessPulse({
             )}
           </View>
           <View style={styles.controlHeading}>
-            <Text style={styles.controlLabel}>TIME SPAN</Text>
-            <Text style={styles.controlValue}>{selectedRange.label}</Text>
+            <Text style={[styles.controlLabel, { fontSize: responsiveFont(8) }]}>TIME SPAN</Text>
+            <Text style={[styles.controlValue, { fontSize: responsiveFont(9) }]}>{selectedRange.label}</Text>
           </View>
           <ScrollView
             contentContainerStyle={styles.rangeRow}
@@ -262,7 +273,7 @@ export function BusinessPulse({
         <View style={styles.chartPlotRow}>
           <View style={styles.yAxis}>
             {chartGrid.map((fraction) => (
-              <Text key={fraction} style={styles.yAxisLabel}>
+              <Text key={fraction} style={[styles.yAxisLabel, { fontSize: responsiveFont(8), lineHeight: 10 }]}>
                 {compactMoney(Math.round(maximumFlow * fraction))}
               </Text>
             ))}
@@ -305,7 +316,7 @@ export function BusinessPulse({
                         ]}
                       />
                     </View>
-                    <Text style={styles.flowLabel}>{date.label}</Text>
+                    <Text style={[styles.flowLabel, { fontSize: responsiveFont(9) }]}>{date.label}</Text>
                   </View>
                 ))}
               </View>
@@ -316,26 +327,26 @@ export function BusinessPulse({
 
       <View style={styles.splitRow}>
         <View style={styles.inventorySurface}>
-          <Text style={styles.chartLabel}>ITEMS ON HAND</Text>
-          <Text style={styles.inventoryValue}>{overview.inventory.onHandCount}</Text>
-          <Text style={styles.inventoryCopy}>
+          <Text style={[styles.chartLabel, { fontSize: responsiveFont(8) }]}>ITEMS ON HAND</Text>
+          <Text style={[styles.inventoryValue, { fontSize: responsiveFont(25), lineHeight: 30 }]}>{overview.inventory.onHandCount}</Text>
+          <Text style={[styles.inventoryCopy, { fontSize: responsiveFont(10), lineHeight: 14 }]}>
             {overview.inventory.readyToFlipCount} ready to flip · {overview.inventory.undecidedCount} to decide
           </Text>
-          <Text style={styles.estimateCopy}>
+          <Text style={[styles.estimateCopy, { fontSize: responsiveFont(9), lineHeight: 13 }]}>
             Est. item value {money(overview.inventory.estimatedOnHandValueCents)} · not money earned
           </Text>
         </View>
         <View style={styles.costSurface}>
-          <Text style={styles.chartLabel}>BIGGEST COSTS</Text>
+          <Text style={[styles.chartLabel, { fontSize: responsiveFont(8) }]}>BIGGEST COSTS</Text>
           {overview.topCostsThisMonth.length ? (
             overview.topCostsThisMonth.map((cost) => (
               <View key={cost.entryType} style={styles.costRow}>
-                <Text numberOfLines={1} style={styles.costLabel}>{cost.label}</Text>
-                <Text style={styles.costValue}>{money(cost.amountCents)}</Text>
+                <Text numberOfLines={1} style={[styles.costLabel, { fontSize: responsiveFont(10), lineHeight: 14 }]}>{cost.label}</Text>
+                <Text style={[styles.costValue, { fontSize: responsiveFont(10) }]}>{money(cost.amountCents)}</Text>
               </View>
             ))
           ) : (
-            <Text style={styles.noCostsText}>No costs saved for this month yet.</Text>
+            <Text style={[styles.noCostsText, { fontSize: responsiveFont(10), lineHeight: 15 }]}>No costs saved for this month yet.</Text>
           )}
         </View>
       </View>
@@ -344,15 +355,15 @@ export function BusinessPulse({
         <View style={styles.attentionSurface}>
           <IconSymbol color={theme.colors.goldBright} name="exclamationmark.triangle.fill" size={18} />
           <View style={styles.attentionCopy}>
-            <Text style={styles.attentionTitle}>A couple things need your eyes</Text>
+            <Text style={[styles.attentionTitle, { fontSize: responsiveFont(11), lineHeight: 15 }]}>A couple things need your eyes</Text>
             {attention.slice(0, 2).map((message) => (
-              <Text key={message} style={styles.attentionText}>• {message}</Text>
+              <Text key={message} style={[styles.attentionText, { fontSize: responsiveFont(10), lineHeight: 14 }]}>• {message}</Text>
             ))}
           </View>
         </View>
       ) : null}
 
-      {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+      {errorMessage ? <Text style={[styles.errorText, { fontSize: responsiveFont(10), lineHeight: 14 }]}>{errorMessage}</Text> : null}
 
       <Pressable
         accessibilityHint="Opens a private calculator for planning a possible flip"
@@ -364,8 +375,8 @@ export function BusinessPulse({
           <IconSymbol color={theme.colors.scannerCyan} name="star.fill" size={16} />
         </View>
         <View style={styles.planActionCopy}>
-          <Text style={styles.planActionTitle}>Plan the next flip</Text>
-          <Text style={styles.planActionText}>Test the buy, fix-up, selling costs, and an optional partner split.</Text>
+          <Text style={[styles.planActionTitle, { fontSize: responsiveFont(12) }]}>Plan the next flip</Text>
+          <Text style={[styles.planActionText, { fontSize: responsiveFont(10), lineHeight: 14 }]}>Test the buy, fix-up, selling costs, and an optional partner split.</Text>
         </View>
         <IconSymbol color={theme.colors.scannerCyan} name="chevron.right" size={15} />
       </Pressable>
@@ -377,7 +388,7 @@ export function BusinessPulse({
           onPress={onOpenBooks}
           style={({ pressed }) => [styles.primaryAction, pressed && styles.pressed]}
         >
-          <Text style={styles.primaryActionText}>Open books</Text>
+          <Text style={[styles.primaryActionText, { fontSize: responsiveFont(12) }]}>Open books</Text>
           <IconSymbol color={theme.colors.backgroundDeep} name="chart.bar.fill" size={15} />
         </Pressable>
         <Pressable
@@ -386,7 +397,7 @@ export function BusinessPulse({
           onPress={onOpenInventory}
           style={({ pressed }) => [styles.secondaryAction, pressed && styles.pressed]}
         >
-          <Text style={styles.secondaryActionText}>See inventory</Text>
+          <Text style={[styles.secondaryActionText, { fontSize: responsiveFont(12) }]}>See inventory</Text>
         </Pressable>
       </View>
     </View>
@@ -404,6 +415,11 @@ function Metric({
   tone: 'cyan' | 'gold' | 'violet' | 'muted';
   valueStyle?: object;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const toneStyle = {
     cyan: styles.metricCyan,
     gold: styles.metricGold,
@@ -412,22 +428,28 @@ function Metric({
   }[tone];
   return (
     <View style={[styles.metric, toneStyle]}>
-      <Text style={styles.metricLabel}>{label}</Text>
+      <Text style={[styles.metricLabel, { fontSize: responsiveFont(8) }]}>{label}</Text>
       <Text numberOfLines={1} style={[styles.metricValue, valueStyle]}>{value}</Text>
     </View>
   );
 }
 
 function Legend({ color, label }: { color: string; label: string }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
     <View style={styles.legendItem}>
       <View style={[styles.legendDot, { backgroundColor: color }]} />
-      <Text style={styles.legendText}>{label}</Text>
+      <Text style={[styles.legendText, { fontSize: responsiveFont(9) }]}>{label}</Text>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   card: {
     gap: 14,
     borderColor: 'rgba(88, 223, 232, 0.27)',
@@ -527,3 +549,264 @@ const styles = StyleSheet.create({
   emptyPlanAction: { alignItems: 'center', alignSelf: 'flex-start', flexDirection: 'row', gap: 5, marginTop: 5, minHeight: 28 },
   emptyPlanActionText: { color: theme.colors.scannerCyan, fontSize: 11, fontWeight: '900' },
 });
+  return {
+    ...staticStyles,
+  eyebrow: [
+    staticStyles.eyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(19),
+    },
+  ],
+  description: [
+    staticStyles.description,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  liveDot: [
+    staticStyles.liveDot,
+    {
+        height: responsiveLayout.responsiveHeight(6),
+        width: responsiveLayout.responsiveWidth(6),
+    },
+  ],
+  liveText: [
+    staticStyles.liveText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  metricLabel: [
+    staticStyles.metricLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  metricValue: [
+    staticStyles.metricValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(21),
+    },
+  ],
+  chartLabel: [
+    staticStyles.chartLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  chartTitle: [
+    staticStyles.chartTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  legendDot: [
+    staticStyles.legendDot,
+    {
+        height: responsiveLayout.responsiveHeight(6),
+        width: responsiveLayout.responsiveWidth(6),
+    },
+  ],
+  legendText: [
+    staticStyles.legendText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  controlLabel: [
+    staticStyles.controlLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  controlValue: [
+    staticStyles.controlValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  segmentText: [
+    staticStyles.segmentText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  rangeChipText: [
+    staticStyles.rangeChipText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  yAxis: [
+    staticStyles.yAxis,
+    {
+        height: responsiveLayout.responsiveHeight(78),
+        width: responsiveLayout.responsiveWidth(42),
+    },
+  ],
+  yAxisLabel: [
+    staticStyles.yAxisLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  gridLayer: [
+    staticStyles.gridLayer,
+    {
+        height: responsiveLayout.responsiveHeight(78),
+    },
+  ],
+  gridLine: [
+    staticStyles.gridLine,
+    {
+        height: responsiveLayout.responsiveHeight(1),
+    },
+  ],
+  flowGroup: [
+    staticStyles.flowGroup,
+    {
+        width: responsiveLayout.responsiveWidth(30),
+    },
+  ],
+  bars: [
+    staticStyles.bars,
+    {
+        height: responsiveLayout.responsiveHeight(78),
+    },
+  ],
+  bar: [
+    staticStyles.bar,
+    {
+        width: responsiveLayout.responsiveWidth(7),
+    },
+  ],
+  flowLabel: [
+    staticStyles.flowLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  inventoryValue: [
+    staticStyles.inventoryValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(25),
+    },
+  ],
+  inventoryCopy: [
+    staticStyles.inventoryCopy,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  estimateCopy: [
+    staticStyles.estimateCopy,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  costLabel: [
+    staticStyles.costLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  costValue: [
+    staticStyles.costValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  noCostsText: [
+    staticStyles.noCostsText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  attentionTitle: [
+    staticStyles.attentionTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  attentionText: [
+    staticStyles.attentionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  planActionIcon: [
+    staticStyles.planActionIcon,
+    {
+        height: responsiveLayout.responsiveHeight(32),
+        width: responsiveLayout.responsiveWidth(32),
+    },
+  ],
+  planActionTitle: [
+    staticStyles.planActionTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  planActionText: [
+    staticStyles.planActionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  primaryActionText: [
+    staticStyles.primaryActionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  secondaryActionText: [
+    staticStyles.secondaryActionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  errorText: [
+    staticStyles.errorText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  loadingText: [
+    staticStyles.loadingText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  emptyIcon: [
+    staticStyles.emptyIcon,
+    {
+        height: responsiveLayout.responsiveHeight(39),
+        width: responsiveLayout.responsiveWidth(39),
+    },
+  ],
+  emptyTitle: [
+    staticStyles.emptyTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  emptyText: [
+    staticStyles.emptyText,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  emptyPlanActionText: [
+    staticStyles.emptyPlanActionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  };
+}

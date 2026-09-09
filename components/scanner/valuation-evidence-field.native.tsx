@@ -43,7 +43,10 @@ import type {
   AnalysisValuationReadiness,
 } from "@/components/scanner/analysis-visual-types";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 const MAX_NODES = 36;
 const RANGE_SPRING = {
   damping: 11,
@@ -216,6 +219,11 @@ export function ValuationEvidenceField({
   valuation,
   valuationReadiness,
 }: ValuationEvidenceFieldProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const reduceMotion = useReducedMotion();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const [layout, setLayout] = useState({
@@ -610,7 +618,7 @@ export function ValuationEvidenceField({
             <Text style={[styles.rangeEyebrow, { color: theme.colors.scannerViolet }]}>
               QUICK
             </Text>
-            <Text style={styles.rangeValue}>
+            <Text style={[styles.rangeValue, { fontSize: responsiveFont(11) }]}>
               {formatMoney(quickSale!, currency)}
             </Text>
           </View>
@@ -626,7 +634,7 @@ export function ValuationEvidenceField({
             <Text style={[styles.rangeEyebrow, { color: theme.colors.scannerCyan }]}>
               LIST
             </Text>
-            <Text style={styles.rangeValue}>
+            <Text style={[styles.rangeValue, { fontSize: responsiveFont(11) }]}>
               {firmReady ? formatMoney(listTarget!, currency) : "—"}
             </Text>
           </View>
@@ -645,10 +653,10 @@ export function ValuationEvidenceField({
             profitLabelStyle,
           ]}
         >
-          <Text style={styles.profitEyebrow}>MAX PROFIT UPSIDE</Text>
-          <Text style={styles.profitValue}>+{formatMoney(upside, currency)}</Text>
+          <Text style={[styles.profitEyebrow, { fontSize: responsiveFont(6) }]}>MAX PROFIT UPSIDE</Text>
+          <Text style={[styles.profitValue, { fontSize: responsiveFont(15) }]}>+{formatMoney(upside, currency)}</Text>
           {actionSparks[0] ? (
-            <Text numberOfLines={1} style={styles.profitHint}>
+            <Text numberOfLines={1} style={[styles.profitHint, { fontSize: responsiveFont(7) }]}>
               {actionSparks[0].label}
             </Text>
           ) : null}
@@ -660,7 +668,8 @@ export function ValuationEvidenceField({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   root: {
     ...StyleSheet.absoluteFill,
     overflow: "hidden",
@@ -768,3 +777,74 @@ const styles = StyleSheet.create({
     `,
   },
 });
+  return {
+    ...staticStyles,
+  thumbFrame: [
+    staticStyles.thumbFrame,
+    {
+        width: responsiveLayout.responsiveWidth(68),
+        height: responsiveLayout.responsiveHeight(68),
+    },
+  ],
+  rangeLabels: [
+    staticStyles.rangeLabels,
+    {
+        height: responsiveLayout.responsiveHeight(44),
+    },
+  ],
+  rangeCell: [
+    staticStyles.rangeCell,
+    {
+        width: responsiveLayout.responsiveWidth(84),
+    },
+  ],
+  rangeCellCenter: [
+    staticStyles.rangeCellCenter,
+    {
+        width: responsiveLayout.responsiveWidth(96),
+    },
+  ],
+  rangeEyebrow: [
+    staticStyles.rangeEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  rangeValue: [
+    staticStyles.rangeValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  rangeValueHero: [
+    staticStyles.rangeValueHero,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  profitCallout: [
+    staticStyles.profitCallout,
+    {
+        width: responsiveLayout.responsiveWidth(156),
+    },
+  ],
+  profitEyebrow: [
+    staticStyles.profitEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(6),
+    },
+  ],
+  profitValue: [
+    staticStyles.profitValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  profitHint: [
+    staticStyles.profitHint,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  };
+}

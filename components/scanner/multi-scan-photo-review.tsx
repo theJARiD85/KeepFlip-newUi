@@ -11,7 +11,10 @@ import Animated, {
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type MultiScanPhotoStackProps = {
   accentColor?: string;
   accessibilityContext?: string;
@@ -75,6 +78,7 @@ export function MultiScanPhotoStack({
   onOpen,
   photos,
 }: MultiScanPhotoStackProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   if (photos.length === 0) return null;
 
   const visiblePhotos = photos.slice(-4);
@@ -148,6 +152,11 @@ export function MultiScanPhotoReview({
   photos,
   topInset,
 }: MultiScanPhotoReviewProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const { width: viewportWidth } = useWindowDimensions();
   const gridWidth = Math.min(Math.max(viewportWidth - 40, 0), 760);
   const photoCardWidth = Math.floor((gridWidth - 12) / 2);
@@ -166,7 +175,7 @@ export function MultiScanPhotoReview({
         <View style={styles.reviewHeader}>
           <View style={styles.reviewTitleGroup}>
             <Text style={[styles.reviewEyebrow, { color: accentColor }]}>{eyebrow}</Text>
-            <Text style={styles.reviewTitle}>
+            <Text style={[styles.reviewTitle, { fontSize: responsiveFont(26) }]}>
               {photos.length} photo{photos.length === 1 ? '' : 's'}
             </Text>
           </View>
@@ -208,7 +217,7 @@ export function MultiScanPhotoReview({
                   transition={150}
                 />
                 <View pointerEvents="none" style={styles.photoNumber}>
-                  <Text style={styles.photoNumberText}>{index + 1}</Text>
+                  <Text style={[styles.photoNumberText, { fontSize: responsiveFont(11) }]}>{index + 1}</Text>
                 </View>
                 <Pressable
                   accessibilityLabel={`Remove ${accessibilityContext} photo ${index + 1} of ${photos.length}`}
@@ -230,7 +239,8 @@ export function MultiScanPhotoReview({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   stackButton: {
     width: 48,
     height: 48,
@@ -374,3 +384,70 @@ const styles = StyleSheet.create({
   },
   deleteButtonPressed: { opacity: 0.72, transform: [{ scale: 0.9 }] },
 });
+  return {
+    ...staticStyles,
+  stackButton: [
+    staticStyles.stackButton,
+    {
+        width: responsiveLayout.responsiveWidth(48),
+        height: responsiveLayout.responsiveHeight(48),
+    },
+  ],
+  stackPhoto: [
+    staticStyles.stackPhoto,
+    {
+        width: responsiveLayout.responsiveWidth(20),
+        height: responsiveLayout.responsiveHeight(20),
+    },
+  ],
+  stackCount: [
+    staticStyles.stackCount,
+    {
+        height: responsiveLayout.responsiveHeight(16),
+    },
+  ],
+  stackCountText: [
+    staticStyles.stackCountText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  reviewEyebrow: [
+    staticStyles.reviewEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  reviewTitle: [
+    staticStyles.reviewTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(26),
+    },
+  ],
+  doneButtonText: [
+    staticStyles.doneButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  photoNumber: [
+    staticStyles.photoNumber,
+    {
+        height: responsiveLayout.responsiveHeight(26),
+    },
+  ],
+  photoNumberText: [
+    staticStyles.photoNumberText,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  deleteButton: [
+    staticStyles.deleteButton,
+    {
+        width: responsiveLayout.responsiveWidth(42),
+        height: responsiveLayout.responsiveHeight(42),
+    },
+  ],
+  };
+}

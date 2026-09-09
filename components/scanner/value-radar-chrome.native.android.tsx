@@ -15,7 +15,10 @@ import type {
   ValueRadarStatus,
   ValueRadarViewport,
 } from "@/components/scanner/value-radar-visual.native";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export type ValueRadarBubbleProps = {
   status: ValueRadarStatus;
   style?: StyleProp<ViewStyle>;
@@ -80,6 +83,11 @@ export function ValueRadarBubble({
   style,
   width = 194,
 }: ValueRadarBubbleProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const cue = statusPresentation(status);
 
   return (
@@ -93,7 +101,7 @@ export function ValueRadarBubble({
           { backgroundColor: cue.color, boxShadow: cue.glow },
         ]}
       />
-      <Text style={styles.readinessName}>VALUE RADAR</Text>
+      <Text style={[styles.readinessName, { fontSize: responsiveFont(8.5), lineHeight: 10 }]}>VALUE RADAR</Text>
       <Text style={styles.readinessSeparator}>{"//"}</Text>
       <Text style={[styles.readinessState, { color: cue.color }]}>
         {cue.label}
@@ -113,6 +121,11 @@ export function ValueRadarBar({
   style,
   width = 224,
 }: ValueRadarBarProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const cue = statusPresentation(status);
   const targetCopy =
     status === "ready"
@@ -136,7 +149,7 @@ export function ValueRadarBar({
           { backgroundColor: cue.color, boxShadow: cue.glow },
         ]}
       />
-      <Text numberOfLines={1} style={styles.modelCueText}>
+      <Text numberOfLines={1} style={[styles.modelCueText, { fontSize: responsiveFont(7), lineHeight: 9 }]}>
         {targetCopy} {"//"} {cue.label}
       </Text>
     </View>
@@ -153,6 +166,7 @@ export function ValueRadarTargetOverlay({
   status,
   width,
 }: ValueRadarTargetOverlayProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const focusScaleX =
     focusBounds != null
       ? width / Math.max(focusBounds.previewWidth, 1)
@@ -261,7 +275,8 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
   return <ValueRadarTargetOverlay {...props} />;
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   readinessCue: {
     minHeight: 18,
     flexDirection: "row",
@@ -350,3 +365,88 @@ const styles = StyleSheet.create({
     elevation: 80,
   },
 });
+  return {
+    ...staticStyles,
+  readinessLight: [
+    staticStyles.readinessLight,
+    {
+        width: responsiveLayout.responsiveWidth(7),
+        height: responsiveLayout.responsiveHeight(7),
+    },
+  ],
+  readinessName: [
+    staticStyles.readinessName,
+    {
+        fontSize: responsiveLayout.responsiveFont(8.5),
+    },
+  ],
+  readinessSeparator: [
+    staticStyles.readinessSeparator,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  readinessState: [
+    staticStyles.readinessState,
+    {
+        fontSize: responsiveLayout.responsiveFont(7.5),
+    },
+  ],
+  signalBars: [
+    staticStyles.signalBars,
+    {
+        height: responsiveLayout.responsiveHeight(10),
+    },
+  ],
+  signalBar: [
+    staticStyles.signalBar,
+    {
+        width: responsiveLayout.responsiveWidth(2),
+    },
+  ],
+  signalBarLow: [
+    staticStyles.signalBarLow,
+    {
+        height: responsiveLayout.responsiveHeight(3),
+    },
+  ],
+  signalBarMid: [
+    staticStyles.signalBarMid,
+    {
+        height: responsiveLayout.responsiveHeight(6),
+    },
+  ],
+  signalBarHigh: [
+    staticStyles.signalBarHigh,
+    {
+        height: responsiveLayout.responsiveHeight(9),
+    },
+  ],
+  modelCueIndex: [
+    staticStyles.modelCueIndex,
+    {
+        fontSize: responsiveLayout.responsiveFont(7.5),
+    },
+  ],
+  modelCueLine: [
+    staticStyles.modelCueLine,
+    {
+        width: responsiveLayout.responsiveWidth(25),
+        height: responsiveLayout.responsiveHeight(1),
+    },
+  ],
+  modelCueLight: [
+    staticStyles.modelCueLight,
+    {
+        width: responsiveLayout.responsiveWidth(7),
+        height: responsiveLayout.responsiveHeight(7),
+    },
+  ],
+  modelCueText: [
+    staticStyles.modelCueText,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  };
+}

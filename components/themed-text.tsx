@@ -2,7 +2,9 @@ import { StyleSheet, type TextProps } from 'react-native';
 
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
+import responsiveFont from '@/lib/responsiveFont';
 
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export type ThemedTextProps = TextProps & {
   lightColor?: string;
   darkColor?: string;
@@ -16,6 +18,7 @@ export function ThemedText({
   type = 'default',
   ...rest
 }: ThemedTextProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const color = useThemeColor({ light: lightColor, dark: darkColor }, 'text');
 
   return (
@@ -34,7 +37,8 @@ export function ThemedText({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   default: {
     fontSize: 16,
     lineHeight: 24,
@@ -59,3 +63,37 @@ const styles = StyleSheet.create({
     color: '#0a7ea4',
   },
 });
+  return {
+    ...staticStyles,
+  default: [
+    staticStyles.default,
+    {
+        fontSize: responsiveLayout.responsiveFont(16),
+    },
+  ],
+  defaultSemiBold: [
+    staticStyles.defaultSemiBold,
+    {
+        fontSize: responsiveLayout.responsiveFont(16),
+    },
+  ],
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(32),
+    },
+  ],
+  subtitle: [
+    staticStyles.subtitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(20),
+    },
+  ],
+  link: [
+    staticStyles.link,
+    {
+        fontSize: responsiveLayout.responsiveFont(16),
+    },
+  ],
+  };
+}

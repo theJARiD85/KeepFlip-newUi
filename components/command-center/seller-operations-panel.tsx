@@ -49,10 +49,18 @@ import {
   type EbaySellerOrder,
   type SellerOrder,
 } from '@/services/seller-order-service';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont from '@/lib/responsiveFont';
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 function Section({ title, children }: PropsWithChildren<{ title: string }>) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
     <View style={styles.section}>
-      <Text accessibilityRole="header" style={styles.heading}>
+      <Text accessibilityRole="header" style={[styles.heading, { fontSize: responsiveFont(15), lineHeight: 20 }]}>
         {title}
       </Text>
       <View style={styles.sectionBody}>{children}</View>
@@ -69,6 +77,11 @@ function Button({
   onPress: () => void;
   disabled?: boolean;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
     <Pressable
       accessibilityLabel={title}
@@ -81,7 +94,7 @@ function Button({
         disabled && styles.disabled,
         pressed && styles.buttonPressed,
       ]}>
-      <Text style={styles.buttonText}>{title}</Text>
+      <Text style={[styles.buttonText, { fontSize: responsiveFont(11), lineHeight: 16 }]}>{title}</Text>
     </Pressable>
   );
 }
@@ -99,9 +112,14 @@ function Field({
   numeric?: boolean;
   multiline?: boolean;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
     <View style={styles.field}>
-      <Text style={styles.label}>{label.toUpperCase()}</Text>
+      <Text style={[styles.label, { fontSize: responsiveFont(8) }]}>{label.toUpperCase()}</Text>
       <TextInput
         accessibilityLabel={label}
         keyboardType={numeric ? 'decimal-pad' : 'default'}
@@ -115,7 +133,8 @@ function Field({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   page: {
     flex: 1,
     backgroundColor: theme.colors.backgroundDeep,
@@ -215,6 +234,52 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
 });
+  return {
+    ...staticStyles,
+  heading: [
+    staticStyles.heading,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  text: [
+    staticStyles.text,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  muted: [
+    staticStyles.muted,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  label: [
+    staticStyles.label,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  input: [
+    staticStyles.input,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  buttonText: [
+    staticStyles.buttonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  error: [
+    staticStyles.error,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  };
+}
 function message(cause: unknown, fallback = 'That action could not be completed.') {
   return cause instanceof Error && cause.message.trim() ? cause.message : fallback;
 }
@@ -276,6 +341,11 @@ const EMPTY_DRAFT: SaleDraft = {
 };
 
 export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: string; embedded?: boolean }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const router = useRouter();
   const { canUse, limitFor, snapshot } = useKeepFlipSubscription();
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -555,7 +625,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
 
   const content = (
     <>
-      <Text accessibilityRole="header" style={styles.heading}>
+      <Text accessibilityRole="header" style={[styles.heading, { fontSize: responsiveFont(15), lineHeight: 20 }]}>
         Orders, fulfillment and realized profit
       </Text>
       <Text style={styles.muted}>
@@ -567,11 +637,11 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
       {Object.entries(errors)
         .filter(([, value]) => value)
         .map(([key, value]) => (
-          <Text key={key} accessibilityRole="alert" style={styles.error}>
+          <Text key={key} accessibilityRole="alert" style={[styles.error, { fontSize: responsiveFont(11), lineHeight: 16 }]}>
             {key}: {value}
           </Text>
         ))}
-      {notice ? <Text style={styles.text}>{notice}</Text> : null}
+      {notice ? <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: 18 }]}>{notice}</Text> : null}
       <Button
         title={loading ? 'Refreshing…' : 'Refresh seller operations'}
         disabled={loading || working}
@@ -585,6 +655,10 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
             : `${activeListings} linked live listing${activeListings === 1 ? '' : 's'}.`}
         </Text>
         {inventory.filter((item) => item.isListed || item.listedAt).slice(0, 30).map((item) => {
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
           const listing = listingForItem(item, ebayListings);
           const aging = agingRecommendations({
             listedAt: item.listedAt,
@@ -598,7 +672,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
           });
           return (
             <View key={item.id} style={styles.row}>
-              <Text style={styles.text}>{item.title}</Text>
+              <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: 18 }]}>{item.title}</Text>
               <Text style={styles.muted}>
                 SKU {listing?.sku || item.ebaySku || item.sku || 'missing'} · storage {item.storageLocation || 'missing'}
               </Text>
@@ -617,7 +691,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
           );
         })}
         {!inventory.some((item) => item.isListed || item.listedAt) && !loading ? (
-          <Text style={styles.text}>No linked live listings yet.</Text>
+          <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: 18 }]}>No linked live listings yet.</Text>
         ) : null}
       </Section>
 
@@ -641,7 +715,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
         </View>
         {selectedItem ? (
           <>
-            <Text style={styles.text}>
+            <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: 18 }]}>
               {selectedItem.title} · stored at {selectedItem.storageLocation || 'location not set'}
             </Text>
             <Field label="Sold price" numeric value={draft.soldPrice} onChangeText={(soldPrice) => setDraft((current) => ({ ...current, soldPrice }))} />
@@ -657,7 +731,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
             <Button title="Save sale and reconcile Books" disabled={working} onPress={() => void recordManualSale()} />
           </>
         ) : (
-          <Text style={styles.text}>Save an inventory item before recording its sale.</Text>
+          <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: 18 }]}>Save an inventory item before recording its sale.</Text>
         )}
       </Section>
 
@@ -677,7 +751,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
 
         {manualOrders.map((order) => (
           <View key={order.id} style={styles.row}>
-            <Text style={styles.text}>{order.title}</Text>
+            <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: 18 }]}>{order.title}</Text>
             <Text style={styles.muted}>
               Sold {money(order.soldPriceCents)} · storage {inventory.find((item) => item.id === order.sourceItemId)?.storageLocation || 'not set'} · ship by {dateLabel(order.shipBy)}
             </Text>
@@ -695,7 +769,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
 
         {matchedEbayOrders.map((order) => (
           <View key={order.externalOrderKey} style={styles.row}>
-            <Text style={styles.text}>
+            <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: 18 }]}>
               eBay order {order.orderId} · {order.fulfillmentStatus || 'status unavailable'}
             </Text>
             <Text style={styles.muted}>
@@ -736,8 +810,8 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
         <Button title="Open Books review queue" onPress={() => router.push('/books' as Href)} />
         {margins.map((margin) => (
           <View key={margin.itemId} style={styles.row}>
-            <Text style={styles.text}>{margin.title}</Text>
-            <Text style={styles.text}>
+            <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: 18 }]}>{margin.title}</Text>
+            <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: 18 }]}>
               Bought for {money(margin.acquisitionCostCents)} → sold for {money(margin.soldProceedsCents)} → fees {money(margin.marketplaceFeesCents)} → shipping {money(margin.shippingExpenseCents)} → refunds {money(margin.refundCents)} → net profit {money(margin.netProfitCents)}
             </Text>
             <Text style={styles.muted}>
@@ -746,20 +820,20 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
           </View>
         ))}
         {!margins.length && !loading ? (
-          <Text style={styles.text}>No item-linked sale proceeds have posted to Books yet.</Text>
+          <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: 18 }]}>No item-linked sale proceeds have posted to Books yet.</Text>
         ) : null}
       </Section>
 
       <Section title="Seller performance">
         {advancedAnalytics ? (
           <>
-            <Text style={styles.text}>
+            <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: 18 }]}>
               Sell-through {percent(performance.sellThroughPercent)} · average days-to-sale {performance.averageDaysToSale == null ? '—' : performance.averageDaysToSale.toFixed(1)}
             </Text>
-            <Text style={styles.text}>
+            <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: 18 }]}>
               Realized profit {money(performance.realizedProfitCents)} · realized margin {percent(performance.realizedMarginPercent)} · average ROI {percent(performance.averageRoiPercent)}
             </Text>
-            <Text style={styles.text}>
+            <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: 18 }]}>
               Average discount {percent(performance.averageDiscountPercent)} · return rate {percent(performance.returnRatePercent)}
             </Text>
             {performance.bySource.map((row) => (

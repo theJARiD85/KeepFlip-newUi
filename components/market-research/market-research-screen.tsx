@@ -29,7 +29,9 @@ import {
   type MarketplaceFeePreset,
   type MarketResearchResult,
 } from '@/services/market-research-service';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 const DEFAULT_PLATFORM = MARKETPLACE_FEE_PRESETS[0];
 
 type NumberField =
@@ -82,11 +84,16 @@ function haptic() {
 }
 
 function MetricCard({ label, value, detail }: { label: string; value: string; detail?: string }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
     <View style={styles.metricCard}>
-      <Text style={styles.metricLabel}>{label}</Text>
-      <Text style={styles.metricValue}>{value}</Text>
-      {detail ? <Text style={styles.metricDetail}>{detail}</Text> : null}
+      <Text style={[styles.metricLabel, { fontSize: responsiveFont(10) }]}>{label}</Text>
+      <Text style={[styles.metricValue, { fontSize: responsiveFont(20) }]}>{value}</Text>
+      {detail ? <Text style={[styles.metricDetail, { fontSize: responsiveFont(10) }]}>{detail}</Text> : null}
     </View>
   );
 }
@@ -102,9 +109,14 @@ function NumberInput({
   onChangeText: (value: string) => void;
   suffix?: string;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
     <View style={styles.inputGroup}>
-      <Text style={styles.inputLabel}>{label}</Text>
+      <Text style={[styles.inputLabel, { fontSize: responsiveFont(10) }]}>{label}</Text>
       <View style={styles.numberInputShell}>
         <TextInput
           accessibilityLabel={label}
@@ -123,6 +135,11 @@ function NumberInput({
 }
 
 function PriceTrend({ result }: { result: MarketResearchResult }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const values = result.trend.map((point) => point.average ?? 0);
   const maximum = Math.max(...values, 1);
 
@@ -130,23 +147,27 @@ function PriceTrend({ result }: { result: MarketResearchResult }) {
     <View style={styles.chartCard}>
       <View style={styles.sectionHeadingRow}>
         <View>
-          <Text style={styles.sectionEyebrow}>90-DAY SIGNAL</Text>
-          <Text style={styles.sectionTitle}>Price trend</Text>
+          <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(10) }]}>90-DAY SIGNAL</Text>
+          <Text style={[styles.sectionTitle, { fontSize: responsiveFont(22) }]}>Price trend</Text>
         </View>
         <Text style={styles.chartCaption}>15-day sold-sample averages</Text>
       </View>
       <View style={styles.chart}>
         {result.trend.map((point) => {
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
           const barHeight = point.average == null ? 4 : Math.max(12, (point.average / maximum) * 104);
           return (
             <View key={point.label} style={styles.chartColumn}>
-              <Text style={styles.chartValue}>
+              <Text style={[styles.chartValue, { fontSize: responsiveFont(8) }]}>
                 {point.average == null ? '—' : money(point.average, result.summary.currency).replace('.00', '')}
               </Text>
               <View style={styles.chartTrack}>
                 <View style={[styles.chartBar, { height: barHeight }]} />
               </View>
-              <Text style={styles.chartLabel}>{point.label}</Text>
+              <Text style={[styles.chartLabel, { fontSize: responsiveFont(9) }]}>{point.label}</Text>
             </View>
           );
         })}
@@ -156,8 +177,13 @@ function PriceTrend({ result }: { result: MarketResearchResult }) {
 }
 
 export function MarketResearchScreen() {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const insets = useSafeAreaInsets();
-  const { pageGutter, contentMaxWidth } = useResponsiveLayout();
+  const {
+    pageGutter, contentMaxWidth,
+    contentWidth,
+    responsiveFont
+  } = useResponsiveLayout();
   const [query, setQuery] = useState('');
   const [result, setResult] = useState<MarketResearchResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -226,27 +252,25 @@ export function MarketResearchScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.flex}>
         <ScrollView
-          contentContainerStyle={[
-            styles.content,
+          contentContainerStyle={[styles.content,
             {
               maxWidth: contentMaxWidth,
               paddingHorizontal: pageGutter,
               paddingTop: insets.top + 34,
               paddingBottom: insets.bottom + 44,
-            },
-          ]}
+            }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <Animated.View entering={FadeInDown.duration(260)} style={styles.header}>
-            <Text style={styles.eyebrow}>KEEPFLIP / MARKET RESEARCH</Text>
-            <Text style={styles.title}>Know the market.{`\n`}Price the flip.</Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.eyebrow, { fontSize: responsiveFont(11) }]}>KEEPFLIP / MARKET RESEARCH</Text>
+            <Text style={[styles.title, { fontSize: responsiveFont(38)}]}>Know the market.{`\n`}Price the flip.</Text>
+            <Text style={[styles.subtitle, { fontSize: responsiveFont(15)}]}>
               Research sold comps, spot pricing momentum, and model profit without leaving KeepFlip.
             </Text>
           </Animated.View>
 
           <Animated.View entering={FadeInDown.duration(260).delay(40)} style={styles.searchCard}>
-            <Text style={styles.inputLabel}>ITEM, MODEL, OR KEYWORDS</Text>
+            <Text style={[styles.inputLabel, { fontSize: responsiveFont(10) }]}>ITEM, MODEL, OR KEYWORDS</Text>
             <View style={styles.searchRow}>
               <TextInput
                 accessibilityLabel="Market research query"
@@ -279,17 +303,17 @@ export function MarketResearchScreen() {
             <Text style={styles.sourceNote}>
               Sold-comp research is shown separately from the official eBay active-listing snapshot.
             </Text>
-            {error ? <Text accessibilityRole="alert" style={styles.errorText}>{error}</Text> : null}
+            {error ? <Text accessibilityRole="alert" style={[styles.errorText, { fontSize: responsiveFont(12)}]}>{error}</Text> : null}
           </Animated.View>
 
           {result ? (
             <Animated.View entering={FadeInDown.duration(280)} style={styles.resultsSection}>
               <View style={styles.resultHeader}>
                 <View style={styles.resultHeaderCopy}>
-                  <Text style={styles.sectionEyebrow}>MARKET SNAPSHOT</Text>
-                  <Text numberOfLines={2} style={styles.sectionTitle}>{result.query}</Text>
+                  <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(10) }]}>MARKET SNAPSHOT</Text>
+                  <Text numberOfLines={2} style={[styles.sectionTitle, { fontSize: responsiveFont(22) }]}>{result.query}</Text>
                 </View>
-                <View style={styles.liveBadge}><View style={styles.liveDot} /><Text style={styles.liveText}>LIVE</Text></View>
+                <View style={styles.liveBadge}><View style={styles.liveDot} /><Text style={[styles.liveText, { fontSize: responsiveFont(9) }]}>LIVE</Text></View>
               </View>
 
               <View style={styles.metricsGrid}>
@@ -307,8 +331,8 @@ export function MarketResearchScreen() {
 
               <View style={styles.sectionHeadingRow}>
                 <View>
-                  <Text style={styles.sectionEyebrow}>RECENT SALES</Text>
-                  <Text style={styles.sectionTitle}>Comparable listings</Text>
+                  <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(10) }]}>RECENT SALES</Text>
+                  <Text style={[styles.sectionTitle, { fontSize: responsiveFont(22) }]}>Comparable listings</Text>
                 </View>
                 <Text style={styles.chartCaption}>{result.datedCompCount} dated</Text>
               </View>
@@ -330,7 +354,7 @@ export function MarketResearchScreen() {
                       </View>
                     )}
                     <View style={styles.compContent}>
-                      <Text numberOfLines={2} style={styles.compTitle}>{comp.title}</Text>
+                      <Text numberOfLines={2} style={[styles.compTitle, { fontSize: responsiveFont(12)}]}>{comp.title}</Text>
                       <Text style={styles.compPrice}>{money(comp.totalPrice, comp.currency)}</Text>
                       <Text numberOfLines={1} style={styles.compMeta}>
                         {[comp.condition, comp.soldDate ? new Date(comp.soldDate).toLocaleDateString() : null]
@@ -345,9 +369,9 @@ export function MarketResearchScreen() {
           ) : null}
 
           <Animated.View entering={FadeInDown.duration(280).delay(80)} style={styles.calculatorSection}>
-            <Text style={styles.sectionEyebrow}>SMART MARGIN ESTIMATOR</Text>
-            <Text style={styles.sectionTitle}>What will you actually make?</Text>
-            <Text style={styles.sectionDescription}>
+            <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(10) }]}>SMART MARGIN ESTIMATOR</Text>
+            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(22) }]}>What will you actually make?</Text>
+            <Text style={[styles.sectionDescription, { fontSize: responsiveFont(13)}]}>
               Compare marketplace fees and adjust every cost. The sold-sample median fills automatically after research.
             </Text>
 
@@ -385,16 +409,16 @@ export function MarketResearchScreen() {
               <Text style={styles.feeNote}>{platform.note} Fixed fee estimate: {money(platform.fixed)}.</Text>
 
               <View style={styles.profitHero}>
-                <Text style={styles.profitLabel}>PROJECTED NET PROFIT</Text>
+                <Text style={[styles.profitLabel, { fontSize: responsiveFont(10) }]}>PROJECTED NET PROFIT</Text>
                 <Text style={[styles.profitValue, estimate.netProfit < 0 && styles.negative]}>{money(estimate.netProfit)}</Text>
                 <Text style={styles.profitSubline}>{percent(estimate.marginPercent)} margin · {percent(estimate.roiPercent)} ROI</Text>
               </View>
 
               <View style={styles.breakdown}>
-                <View style={styles.breakdownRow}><Text style={styles.breakdownLabel}>Gross revenue</Text><Text style={styles.breakdownValue}>{money(estimate.revenue)}</Text></View>
-                <View style={styles.breakdownRow}><Text style={styles.breakdownLabel}>Marketplace fees</Text><Text style={styles.breakdownValue}>− {money(estimate.marketplaceFees)}</Text></View>
-                <View style={styles.breakdownRow}><Text style={styles.breakdownLabel}>Total costs + fees</Text><Text style={styles.breakdownValue}>− {money(estimate.totalCosts)}</Text></View>
-                <View style={[styles.breakdownRow, styles.breakEvenRow]}><Text style={styles.breakEvenLabel}>Break-even sale price</Text><Text style={styles.breakEvenValue}>{money(estimate.breakEvenPrice)}</Text></View>
+                <View style={styles.breakdownRow}><Text style={[styles.breakdownLabel, { fontSize: responsiveFont(12) }]}>Gross revenue</Text><Text style={[styles.breakdownValue, { fontSize: responsiveFont(12) }]}>{money(estimate.revenue)}</Text></View>
+                <View style={styles.breakdownRow}><Text style={[styles.breakdownLabel, { fontSize: responsiveFont(12) }]}>Marketplace fees</Text><Text style={[styles.breakdownValue, { fontSize: responsiveFont(12) }]}>− {money(estimate.marketplaceFees)}</Text></View>
+                <View style={styles.breakdownRow}><Text style={[styles.breakdownLabel, { fontSize: responsiveFont(12) }]}>Total costs + fees</Text><Text style={[styles.breakdownValue, { fontSize: responsiveFont(12) }]}>− {money(estimate.totalCosts)}</Text></View>
+                <View style={[styles.breakdownRow, styles.breakEvenRow]}><Text style={[styles.breakEvenLabel, { fontSize: responsiveFont(13) }]}>Break-even sale price</Text><Text style={[styles.breakEvenValue, { fontSize: responsiveFont(15) }]}>{money(estimate.breakEvenPrice)}</Text></View>
               </View>
             </View>
             <Text style={styles.disclaimer}>Estimates only. Marketplace fees vary by category, seller status, region, taxes, and policy changes.</Text>
@@ -405,7 +429,8 @@ export function MarketResearchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   flex: { flex: 1 },
   content: { alignSelf: 'center', width: '100%', gap: 24 },
   header: { gap: 8 },
@@ -479,3 +504,237 @@ const styles = StyleSheet.create({
   breakEvenValue: { color: '#58DFE8', fontSize: 15, fontWeight: '700' },
   disclaimer: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 14, textAlign: 'center' },
 });
+  return {
+    ...staticStyles,
+  eyebrow: [
+    staticStyles.eyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(38),
+    },
+  ],
+  subtitle: [
+    staticStyles.subtitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  inputLabel: [
+    staticStyles.inputLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  searchInput: [
+    staticStyles.searchInput,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  searchButton: [
+    staticStyles.searchButton,
+    {
+        height: responsiveLayout.responsiveHeight(50),
+        width: responsiveLayout.responsiveWidth(50),
+    },
+  ],
+  sourceNote: [
+    staticStyles.sourceNote,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  errorText: [
+    staticStyles.errorText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  sectionEyebrow: [
+    staticStyles.sectionEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  sectionTitle: [
+    staticStyles.sectionTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(22),
+    },
+  ],
+  sectionDescription: [
+    staticStyles.sectionDescription,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  liveDot: [
+    staticStyles.liveDot,
+    {
+        height: responsiveLayout.responsiveHeight(6),
+        width: responsiveLayout.responsiveWidth(6),
+    },
+  ],
+  liveText: [
+    staticStyles.liveText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  metricLabel: [
+    staticStyles.metricLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  metricValue: [
+    staticStyles.metricValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(20),
+    },
+  ],
+  metricDetail: [
+    staticStyles.metricDetail,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  chartCaption: [
+    staticStyles.chartCaption,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  chart: [
+    staticStyles.chart,
+    {
+        height: responsiveLayout.responsiveHeight(155),
+    },
+  ],
+  chartValue: [
+    staticStyles.chartValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  chartTrack: [
+    staticStyles.chartTrack,
+    {
+        height: responsiveLayout.responsiveHeight(108),
+    },
+  ],
+  chartLabel: [
+    staticStyles.chartLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  compCard: [
+    staticStyles.compCard,
+    {
+        width: responsiveLayout.responsiveWidth(180),
+    },
+  ],
+  compImage: [
+    staticStyles.compImage,
+    {
+        height: responsiveLayout.responsiveHeight(112),
+    },
+  ],
+  compTitle: [
+    staticStyles.compTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  compPrice: [
+    staticStyles.compPrice,
+    {
+        fontSize: responsiveLayout.responsiveFont(18),
+    },
+  ],
+  compMeta: [
+    staticStyles.compMeta,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  platformText: [
+    staticStyles.platformText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  numberInput: [
+    staticStyles.numberInput,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  inputSuffix: [
+    staticStyles.inputSuffix,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  feeNote: [
+    staticStyles.feeNote,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  profitLabel: [
+    staticStyles.profitLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  profitValue: [
+    staticStyles.profitValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(38),
+    },
+  ],
+  profitSubline: [
+    staticStyles.profitSubline,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  breakdownLabel: [
+    staticStyles.breakdownLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  breakdownValue: [
+    staticStyles.breakdownValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  breakEvenLabel: [
+    staticStyles.breakEvenLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  breakEvenValue: [
+    staticStyles.breakEvenValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  disclaimer: [
+    staticStyles.disclaimer,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  };
+}

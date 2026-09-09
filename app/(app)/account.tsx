@@ -28,7 +28,10 @@ import {
   type EbayConnectionStatusResult,
 } from '@/services/ebayConnectionService';
 import { KEEPFLIP_PLAN_DEFINITIONS } from '@/services/keepflip-subscription-service';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 function formattedMemberDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return 'KeepFlip member';
@@ -58,6 +61,14 @@ export default function AccountScreen() {
 }
 
 function AccountDetailsTab() {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    contentMaxWidth,
+    contentWidth,
+    pageGutter,
+    responsiveFont
+  } = useResponsiveLayout();
+
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { isBusy, signOut, user } = useKeepFlipAuth();
@@ -217,17 +228,15 @@ function AccountDetailsTab() {
   return (
     <KeepFlipBackground>
       <ScrollView
-        contentContainerStyle={[
-          styles.content,
-          { paddingTop: insets.top / 2, paddingBottom: insets.bottom },
-        ]}
+        contentContainerStyle={[styles.content,
+          { paddingTop: insets.top / 2, paddingBottom: insets.bottom }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         style={{marginTop: insets.top, marginBottom: insets.bottom}}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}>
         <Animated.View entering={FadeInDown.duration(260)} style={styles.header}>
-          <Text style={styles.eyebrow}>KEEPFLIP / ACCOUNT</Text>
-          <Text style={styles.title}>Account & access</Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.eyebrow, { fontSize: responsiveFont(9) }]}>KEEPFLIP / ACCOUNT</Text>
+          <Text style={[styles.title, { fontSize: responsiveFont(28)}]}>Account & access</Text>
+          <Text style={[styles.subtitle, { fontSize: responsiveFont(13)}]}>
             Your identity, security, data controls, and connected services.
           </Text>
         </Animated.View>
@@ -236,16 +245,16 @@ function AccountDetailsTab() {
 
         <Animated.View entering={FadeInDown.duration(260).delay(45)} style={styles.profileCard}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{avatarInitial}</Text>
+            <Text style={[styles.avatarText, { fontSize: responsiveFont(22) }]}>{avatarInitial}</Text>
           </View>
           <View style={styles.profileCopy}>
-            <Text selectable style={styles.name}>
+            <Text selectable style={[styles.name, { fontSize: responsiveFont(18) }]}>
               {displayName}
             </Text>
             <Text selectable style={styles.email}>
               {user.email}
             </Text>
-            <Text style={styles.memberDate}>{formattedMemberDate(user.registration)}</Text>
+            <Text style={[styles.memberDate, { fontSize: responsiveFont(9) }]}>{formattedMemberDate(user.registration)}</Text>
             <View
               accessibilityLabel={user.emailVerification ? 'Email verified' : 'Email not verified'}
               style={[
@@ -271,8 +280,8 @@ function AccountDetailsTab() {
 
         <Animated.View entering={FadeInDown.duration(260).delay(90)} style={styles.section}>
           <View style={styles.sectionHeading}>
-            <Text style={styles.sectionEyebrow}>ACCOUNT</Text>
-            <Text style={styles.sectionTitle}>Profile & security</Text>
+            <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>ACCOUNT</Text>
+            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16)}]}>Profile & security</Text>
           </View>
           <View style={styles.settingsList}>
             <KeepFlipControlRow
@@ -300,8 +309,8 @@ function AccountDetailsTab() {
 
         <Animated.View entering={FadeInDown.duration(260).delay(120)} style={styles.section}>
           <View style={styles.sectionHeading}>
-            <Text style={styles.sectionEyebrow}>PLAN & BILLING</Text>
-            <Text style={styles.sectionTitle}>KeepFlip subscription</Text>
+            <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>PLAN & BILLING</Text>
+            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16)}]}>KeepFlip subscription</Text>
           </View>
           <View style={styles.settingsList}>
             <KeepFlipControlRow
@@ -323,8 +332,8 @@ function AccountDetailsTab() {
 
         <Animated.View entering={FadeInDown.duration(260).delay(145)} style={styles.section}>
           <View style={styles.sectionHeading}>
-            <Text style={styles.sectionEyebrow}>CONNECTED SERVICES</Text>
-            <Text style={styles.sectionTitle}>Marketplace access</Text>
+            <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>CONNECTED SERVICES</Text>
+            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16)}]}>Marketplace access</Text>
           </View>
           <View style={styles.settingsList}>
             <KeepFlipControlRow
@@ -346,8 +355,8 @@ function AccountDetailsTab() {
 
         <Animated.View entering={FadeInDown.duration(260).delay(170)} style={styles.section}>
           <View style={styles.sectionHeading}>
-            <Text style={styles.sectionEyebrow}>LEGAL & POLICY</Text>
-            <Text style={styles.sectionTitle}>Your data and terms</Text>
+            <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>LEGAL & POLICY</Text>
+            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16)}]}>Your data and terms</Text>
           </View>
           <View style={styles.settingsList}>
             <KeepFlipControlRow
@@ -376,8 +385,8 @@ function AccountDetailsTab() {
 
         <Animated.View entering={FadeInDown.duration(260).delay(195)} style={styles.section}>
           <View style={styles.sectionHeading}>
-            <Text style={styles.sectionEyebrow}>SUPPORT</Text>
-            <Text style={styles.sectionTitle}>Feedback & reviews</Text>
+            <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>SUPPORT</Text>
+            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16)}]}>Feedback & reviews</Text>
           </View>
           <View style={styles.settingsList}>
             <KeepFlipControlRow
@@ -398,7 +407,7 @@ function AccountDetailsTab() {
             />
           </View>
           {feedbackError ? (
-            <Text accessibilityLiveRegion="polite" selectable style={styles.errorText}>
+            <Text accessibilityLiveRegion="polite" selectable style={[styles.errorText, { fontSize: responsiveFont(11)}]}>
               {feedbackError}
             </Text>
           ) : null}
@@ -408,7 +417,7 @@ function AccountDetailsTab() {
           <Text
             accessibilityLiveRegion="polite"
             selectable
-            style={styles.errorText}>
+            style={[styles.errorText, { fontSize: responsiveFont(11)}]}>
             {signOutError}
           </Text>
         ) : null}
@@ -432,13 +441,13 @@ function AccountDetailsTab() {
               size={21}
             />
           )}
-          <Text style={styles.signOutText}>LOG OUT OF THIS DEVICE</Text>
+          <Text style={[styles.signOutText, { fontSize: responsiveFont(10) }]}>LOG OUT OF THIS DEVICE</Text>
         </Pressable>
 
         <View style={styles.versionFooter}>
           <View style={styles.versionDot} />
-          <Text style={styles.versionLabel}>KEEPFLIP</Text>
-          <Text selectable style={styles.versionValue}>
+          <Text style={[styles.versionLabel, { fontSize: responsiveFont(8) }]}>KEEPFLIP</Text>
+          <Text selectable style={[styles.versionValue, { fontSize: responsiveFont(9) }]}>
             v{appVersion}
           </Text>
         </View>
@@ -447,7 +456,8 @@ function AccountDetailsTab() {
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   content: {
     width: '100%',
     maxWidth: 760,
@@ -607,3 +617,112 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 });
+  return {
+    ...staticStyles,
+  eyebrow: [
+    staticStyles.eyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(28),
+    },
+  ],
+  subtitle: [
+    staticStyles.subtitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  avatar: [
+    staticStyles.avatar,
+    {
+        width: responsiveLayout.responsiveWidth(54),
+        height: responsiveLayout.responsiveHeight(54),
+    },
+  ],
+  avatarText: [
+    staticStyles.avatarText,
+    {
+        fontSize: responsiveLayout.responsiveFont(22),
+    },
+  ],
+  name: [
+    staticStyles.name,
+    {
+        fontSize: responsiveLayout.responsiveFont(18),
+    },
+  ],
+  email: [
+    staticStyles.email,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  memberDate: [
+    staticStyles.memberDate,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  verificationDot: [
+    staticStyles.verificationDot,
+    {
+        width: responsiveLayout.responsiveWidth(5),
+        height: responsiveLayout.responsiveHeight(5),
+    },
+  ],
+  verificationText: [
+    staticStyles.verificationText,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  sectionEyebrow: [
+    staticStyles.sectionEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  sectionTitle: [
+    staticStyles.sectionTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(16),
+    },
+  ],
+  errorText: [
+    staticStyles.errorText,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  signOutText: [
+    staticStyles.signOutText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  versionDot: [
+    staticStyles.versionDot,
+    {
+        width: responsiveLayout.responsiveWidth(4),
+        height: responsiveLayout.responsiveHeight(4),
+    },
+  ],
+  versionLabel: [
+    staticStyles.versionLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  versionValue: [
+    staticStyles.versionValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  };
+}

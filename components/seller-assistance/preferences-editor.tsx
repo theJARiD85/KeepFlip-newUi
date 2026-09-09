@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Switch, Text, View } from 'react-native';
 import { ID } from '@/lib/appwrite';
 import { parseMoneyInput, validateShippingPreset, type SellerPreferences } from '@/lib/seller-assistance';
-import { Button, Field, Section, styles } from './ui';
+import { Button, Field, Section, useSellerAssistanceStyles } from './ui';
 
 export function PreferencesEditor({ preferences, busy, onSave, onUseResponse }: { preferences: SellerPreferences; busy: boolean; onSave: (value: SellerPreferences) => Promise<boolean>; onUseResponse: (body: string) => void }) {
+  const styles = useSellerAssistanceStyles();
   const [responseId, setResponseId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');

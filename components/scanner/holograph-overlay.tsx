@@ -9,7 +9,9 @@ import Animated, {
   withTiming, 
   Easing 
 } from 'react-native-reanimated';
+import { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export interface HolographOverlayProps {
   width: number;
   height: number;
@@ -19,6 +21,7 @@ export function HolographOverlay({
   width,
   height,
 }: HolographOverlayProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const scanlineY = useSharedValue(-60);
 
   useEffect(() => {
@@ -76,7 +79,8 @@ export function HolographOverlay({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   container: {
     position: 'absolute',
     top: 0,
@@ -124,3 +128,29 @@ const styles = StyleSheet.create({
   bottomLeft: { bottom: 10, left: 10, borderBottomWidth: 3, borderLeftWidth: 3 },
   bottomRight: { bottom: 10, right: 10, borderBottomWidth: 3, borderRightWidth: 3 },
 });
+  return {
+    ...staticStyles,
+  laserBeam: [
+    staticStyles.laserBeam,
+    {
+        height: responsiveLayout.responsiveHeight(40),
+        shadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(0) },
+    },
+  ],
+  laserCore: [
+    staticStyles.laserCore,
+    {
+        height: responsiveLayout.responsiveHeight(2),
+        shadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(0) },
+    },
+  ],
+  corner: [
+    staticStyles.corner,
+    {
+        width: responsiveLayout.responsiveWidth(15),
+        height: responsiveLayout.responsiveHeight(15),
+        shadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(0) },
+    },
+  ],
+  };
+}

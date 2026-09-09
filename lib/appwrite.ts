@@ -9,6 +9,7 @@ import {
 } from 'react-native-appwrite';
 
 export {
+  Channel,
   ExecutionMethod,
   ID,
   Permission,
@@ -137,6 +138,12 @@ export const APPWRITE = {
   ),
   assistantPreferencesTableId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_ASSISTANT_PREFERENCES_TABLE_ID,
+  ),
+  assistantMessagesTableId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_ASSISTANT_MESSAGES_TABLE_ID,
+  ),
+  assistantFunctionId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_ASSISTANT_FUNCTION_ID,
   ),
   itemImagesBucketId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_ITEM_IMAGES_BUCKET_ID,

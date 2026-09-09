@@ -6,7 +6,9 @@ import type {
   AnalysisValuationReadiness,
 } from "@/components/scanner/analysis-visual-types";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export type ValuationEvidenceFieldProps = {
   ambient?: boolean;
   photoUri?: string | null;
@@ -21,6 +23,7 @@ export function ValuationEvidenceField({
   style,
   valuationReadiness,
 }: ValuationEvidenceFieldProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const accent =
     valuationReadiness.status === "ready"
       ? theme.colors.scannerCyan
@@ -43,7 +46,8 @@ export function ValuationEvidenceField({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   root: {
     ...StyleSheet.absoluteFill,
     alignItems: "center",
@@ -62,3 +66,14 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 255, 255, 0.06)",
   },
 });
+  return {
+    ...staticStyles,
+  core: [
+    staticStyles.core,
+    {
+        width: responsiveLayout.responsiveWidth(120),
+        height: responsiveLayout.responsiveHeight(120),
+    },
+  ],
+  };
+}

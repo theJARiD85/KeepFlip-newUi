@@ -8,7 +8,10 @@ import {
   View,
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
-
+import {
+  FlipCompanion,
+  useFlipCompanion,
+} from '@/components/flip';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { FlipSellerDecisions } from '@/components/command-center/flip-seller-decisions';
 import { KeepFlipControlRow } from '@/components/ui/keepflip-control-row';
@@ -27,7 +30,10 @@ import {
   cancelKeepFlipTaskReminder,
   scheduleKeepFlipTaskReminder,
 } from '@/services/keepflip-notification-service';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type AssistantRoute =
   | '/inventory'
   | '/books'
@@ -61,6 +67,11 @@ export function KeepFlipAssistantPanel({
   onNavigate: (route: AssistantRoute) => void;
   onOpenSellerOperations: () => void;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const { user } = useKeepFlipAuth();
   const [command, setCommand] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
@@ -70,6 +81,13 @@ export function KeepFlipAssistantPanel({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const userId = user?.$id ?? null;
+  const userName = user?.name ?? null;
+  const {
+    markActivity,
+    setMode,
+    react,
+  } = useFlipCompanion();
+  console.log('User name', userName);
 
   const openTasks = useMemo(
     () => tasks.filter((task) => task.status === 'open').slice(0, 4),
@@ -100,6 +118,12 @@ export function KeepFlipAssistantPanel({
       setIsLoading(false);
     }
   }, [userId]);
+
+  useEffect(() => {
+    if (!markActivity()) {
+      react('greeting');
+    }
+  }, [markActivity, react]);
 
   useEffect(() => {
     const taskLoadTimer = setTimeout(() => {
@@ -221,25 +245,17 @@ export function KeepFlipAssistantPanel({
             onPress={() => setIsExpanded(true)}
             style={({ pressed }) => [styles.searchBar, pressed && styles.searchBarPressed]}>
             <View style={styles.flipAvatar}>
-              <Image
-                accessibilityLabel="Flip, KeepFlip's resale sidekick"
-                contentFit="cover"
-                source={FLIP_MASCOT_IMAGE}
-                style={styles.flipAvatarImage}
-              />
+              <FlipCompanion size={190} />
             </View>
             <View style={styles.searchCopy}>
               <View style={styles.searchMeta}>
-                <Text style={styles.searchLabel}>ASK FLIP</Text>
+                <Text style={[styles.searchLabel, { fontSize: responsiveFont(9) }]}>FLIP</Text>
                 <View style={styles.onlineDot} />
-                <Text style={styles.onlineText}>ONLINE</Text>
+                <Text style={[styles.onlineText, { fontSize: responsiveFont(8) }]}>ONLINE</Text>
               </View>
-              <Text numberOfLines={1} style={styles.searchPlaceholder}>
-                Ask Flip to open a tool or handle a task…
+              <Text numberOfLines={5} style={styles.searchPlaceholder}>
+                Hey {userName}, anything I can help you with today?
               </Text>
-            </View>
-            <View style={styles.searchIcon}>
-              <IconSymbol color={theme.colors.scannerCyan} name="magnifyingglass" size={18} />
             </View>
           </Pressable>
         </Animated.View>
@@ -251,12 +267,12 @@ export function KeepFlipAssistantPanel({
           <View style={styles.heading}>
             <View style={styles.headingCopy}>
               <View style={styles.searchMeta}>
-                <Text style={styles.eyebrow}>ASK FLIP</Text>
+                <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>FLIP</Text>
                 <View style={styles.onlineDot} />
-                <Text style={styles.onlineText}>ONLINE</Text>
+                <Text style={[styles.onlineText, { fontSize: responsiveFont(8) }]}>ONLINE</Text>
               </View>
-              <Text style={styles.title}>Ask Flip</Text>
-              <Text style={styles.subtitle}>
+              <Text style={[styles.title, { fontSize: responsiveFont(18) }]}>Ask Flip</Text>
+              <Text style={[styles.subtitle, { fontSize: responsiveFont(11), lineHeight: 15 }]}>
                 Seller decisions, reminders, and business tools in one conversation.
               </Text>
             </View>
@@ -313,7 +329,7 @@ export function KeepFlipAssistantPanel({
               {isWorking ? (
                 <ActivityIndicator color={theme.colors.background} size="small" />
               ) : (
-                <Text style={styles.sendText}>RUN</Text>
+                <Text style={[styles.sendText, { fontSize: responsiveFont(9) }]}>RUN</Text>
               )}
             </Pressable>
           </View>
@@ -329,16 +345,16 @@ export function KeepFlipAssistantPanel({
                   void runCommand(quick);
                 }}
                 style={({ pressed }) => [styles.quickChip, pressed && styles.quickChipPressed]}>
-                <Text style={styles.quickText}>{quick}</Text>
+                <Text style={[styles.quickText, { fontSize: responsiveFont(9) }]}>{quick}</Text>
               </Pressable>
             ))}
           </View>
 
-          {message ? <Text style={styles.message}>{message}</Text> : null}
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {message ? <Text style={[styles.message, { fontSize: responsiveFont(10), lineHeight: 14 }]}>{message}</Text> : null}
+          {error ? <Text style={[styles.error, { fontSize: responsiveFont(10), lineHeight: 14 }]}>{error}</Text> : null}
 
           <View style={styles.taskHeader}>
-            <Text style={styles.taskLabel}>UP NEXT</Text>
+            <Text style={[styles.taskLabel, { fontSize: responsiveFont(8) }]}>UP NEXT</Text>
             <Pressable accessibilityRole="button" onPress={() => void loadTasks()}>
               <Text style={styles.refresh}>REFRESH</Text>
             </Pressable>
@@ -375,40 +391,34 @@ function dueLabel(value: string) {
   return `Due ${date.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   surface: {
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.25)',
-    borderRadius: 16,
+    borderColor: 'rgba(242, 211, 138, 0.48)',    borderRadius: 16,
     borderCurve: 'continuous',
-    backgroundColor: 'rgba(5, 14, 18, 0.88)',
+    backgroundColor: 'rgba(242, 211, 138, 0.1)',
   },
   searchBar: {
     minHeight: 64,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
   },
   searchBarPressed: { backgroundColor: 'rgba(0, 255, 255, 0.06)' },
   flipAvatar: {
-    width: 40,
-    height: 40,
+    width: 190,
+    height: 190,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.48)',
-    borderRadius: 20,
-    borderCurve: 'continuous',
-    backgroundColor: 'rgba(242, 211, 138, 0.1)',
   },
   flipAvatarImage: { width: '100%', height: '100%' },
-  searchCopy: { flex: 1, minWidth: 0, gap: 3 },
+  searchCopy: { flex: 1, minWidth: 0, gap: 3, padding: 5, justifyContent: 'flex-start', alignItems: 'flex-start', height: '90%' },
   searchMeta: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   searchLabel: {
-    color: theme.colors.scannerCyan,
-    fontSize: 8,
+    color: theme.colors.gold,
+    fontFamily: theme.fonts.radar,
+    fontSize: 9,
     fontWeight: '900',
     letterSpacing: 1.4,
   },
@@ -419,12 +429,13 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.scannerCyan,
   },
   onlineText: {
-    color: theme.colors.textMuted,
-    fontSize: 7,
+    color: theme.colors.scannerCyan,
+    fontFamily: theme.fonts.radar,
+    fontSize: 8,
     fontWeight: '900',
     letterSpacing: 0.9,
   },
-  searchPlaceholder: { color: theme.colors.text, fontSize: 12, fontWeight: '700' },
+  searchPlaceholder: { color: theme.colors.text, fontSize: 14, fontWeight: '700', fontFamily: theme.fonts.body},
   searchIcon: {
     width: 34,
     height: 34,
@@ -522,3 +533,126 @@ const styles = StyleSheet.create({
   taskList: { borderTopWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(242, 211, 138, 0.18)' },
   empty: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 15 },
 });
+  return {
+    ...staticStyles,
+  flipAvatar: [
+    staticStyles.flipAvatar,
+    {
+        width: responsiveLayout.responsiveWidth(190),
+        height: responsiveLayout.responsiveHeight(190),
+    },
+  ],
+  searchLabel: [
+    staticStyles.searchLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  onlineDot: [
+    staticStyles.onlineDot,
+    {
+        width: responsiveLayout.responsiveWidth(5),
+        height: responsiveLayout.responsiveHeight(5),
+    },
+  ],
+  onlineText: [
+    staticStyles.onlineText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  searchPlaceholder: [
+    staticStyles.searchPlaceholder,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  searchIcon: [
+    staticStyles.searchIcon,
+    {
+        width: responsiveLayout.responsiveWidth(34),
+        height: responsiveLayout.responsiveHeight(34),
+    },
+  ],
+  eyebrow: [
+    staticStyles.eyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(18),
+    },
+  ],
+  subtitle: [
+    staticStyles.subtitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  closeButton: [
+    staticStyles.closeButton,
+    {
+        width: responsiveLayout.responsiveWidth(32),
+        height: responsiveLayout.responsiveHeight(32),
+    },
+  ],
+  inputAvatar: [
+    staticStyles.inputAvatar,
+    {
+        width: responsiveLayout.responsiveWidth(25),
+        height: responsiveLayout.responsiveHeight(25),
+    },
+  ],
+  input: [
+    staticStyles.input,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  sendText: [
+    staticStyles.sendText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  quickText: [
+    staticStyles.quickText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  message: [
+    staticStyles.message,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  error: [
+    staticStyles.error,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  taskLabel: [
+    staticStyles.taskLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  refresh: [
+    staticStyles.refresh,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  empty: [
+    staticStyles.empty,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  };
+}

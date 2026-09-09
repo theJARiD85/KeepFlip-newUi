@@ -4,7 +4,10 @@ import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated"
 import { ConfusedFlipVideo } from "@/components/flip/confused-flip-video";
 import type { ItemAnalysisState } from "@/components/scanner/analysis-visual-types";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type AnalysisStatusHudProps = {
   bottomInset: number;
   doneLabel?: string;
@@ -29,6 +32,7 @@ function HudButton({
   onPress: () => void;
   primary?: boolean;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   return (
     <Pressable
       accessibilityRole="button"
@@ -53,6 +57,11 @@ function AnalysisFooter({
   bottomInset: number;
   state: Extract<ItemAnalysisState, { status: "analyzing" }>;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const progress = Math.max(0.02, Math.min(1, state.progress ?? 0.1));
   const activeStep = state.steps?.find((step) => step.status === "active");
   const completedCount = state.steps?.filter((step) => step.status === "complete").length ?? 0;
@@ -65,7 +74,7 @@ function AnalysisFooter({
     >
       <View style={styles.footerHeader}>
         <View style={styles.liveSignal} />
-        <Text numberOfLines={1} style={styles.stageLabel}>
+        <Text numberOfLines={1} style={[styles.stageLabel, { fontSize: responsiveFont(12) }]}>
           {state.stage ?? "VALUATION ENGINE ACTIVE"}
         </Text>
         <Text style={styles.stepCount}>
@@ -73,7 +82,7 @@ function AnalysisFooter({
         </Text>
       </View>
 
-      <Text numberOfLines={2} style={styles.detail}>
+      <Text numberOfLines={2} style={[styles.detail, { fontSize: responsiveFont(10), lineHeight: 15 }]}>
         {state.detail ?? "Calibrating the strongest resale value supported by this evidence."}
       </Text>
 
@@ -82,8 +91,8 @@ function AnalysisFooter({
       </View>
 
       <View style={styles.activeStepRow}>
-        <Text style={styles.activeStepLabel}>ACTIVE DIRECTIVE</Text>
-        <Text numberOfLines={1} style={styles.activeStepValue}>
+        <Text style={[styles.activeStepLabel, { fontSize: responsiveFont(7) }]}>ACTIVE DIRECTIVE</Text>
+        <Text numberOfLines={1} style={[styles.activeStepValue, { fontSize: responsiveFont(9) }]}>
           {activeStep?.label ?? "Lock the median valuation"}
         </Text>
       </View>
@@ -102,6 +111,11 @@ function StatePanel({
   doneLabel: string;
   state: IncompleteAnalysisState;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const isSetup = state.status === "setup";
   const isEvidence = state.status === "insufficient-evidence";
   const title =
@@ -129,7 +143,7 @@ function StatePanel({
       style={[styles.stateHost, { paddingBottom: bottomInset + 22 }]}
     >
       <View style={styles.statePanel}>
-        <Text style={styles.stateEyebrow}>
+        <Text style={[styles.stateEyebrow, { fontSize: responsiveFont(8) }]}>
           {isEvidence ? "VALUATION QUALITY HOLD" : "VALUATION SYSTEM"}
         </Text>
         {isEvidence ? (
@@ -137,13 +151,13 @@ function StatePanel({
             <ConfusedFlipVideo style={styles.confusedFlipVideo} />
           </View>
         ) : null}
-        <Text style={styles.stateTitle}>{title}</Text>
-        <Text style={styles.stateMessage}>{message}</Text>
+        <Text style={[styles.stateTitle, { fontSize: responsiveFont(22), lineHeight: 27 }]}>{title}</Text>
+        <Text style={[styles.stateMessage, { fontSize: responsiveFont(12), lineHeight: 18 }]}>{message}</Text>
 
         {suggestions.slice(0, 3).map((suggestion, index) => (
           <View key={`${suggestion}-${index}`} style={styles.suggestionRow}>
             <Text style={styles.suggestionIndex}>{String(index + 1).padStart(2, "0")}</Text>
-            <Text style={styles.suggestionText}>{suggestion}</Text>
+            <Text style={[styles.suggestionText, { fontSize: responsiveFont(10), lineHeight: 15 }]}>{suggestion}</Text>
           </View>
         ))}
 
@@ -165,6 +179,7 @@ export function AnalysisStatusHud({
   state,
   topInset,
 }: AnalysisStatusHudProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   return (
     <View pointerEvents="box-none" style={styles.overlay}>
       <Animated.View
@@ -195,7 +210,8 @@ export function AnalysisStatusHud({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFill,
     zIndex: 20,
@@ -411,3 +427,111 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.97 }],
   },
 });
+  return {
+    ...staticStyles,
+  brandSignal: [
+    staticStyles.brandSignal,
+    {
+        width: responsiveLayout.responsiveWidth(7),
+        height: responsiveLayout.responsiveHeight(7),
+    },
+  ],
+  brand: [
+    staticStyles.brand,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  headerState: [
+    staticStyles.headerState,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  liveSignal: [
+    staticStyles.liveSignal,
+    {
+        width: responsiveLayout.responsiveWidth(6),
+        height: responsiveLayout.responsiveHeight(6),
+    },
+  ],
+  stageLabel: [
+    staticStyles.stageLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  stepCount: [
+    staticStyles.stepCount,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  detail: [
+    staticStyles.detail,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  progressTrack: [
+    staticStyles.progressTrack,
+    {
+        height: responsiveLayout.responsiveHeight(4),
+    },
+  ],
+  activeStepLabel: [
+    staticStyles.activeStepLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  activeStepValue: [
+    staticStyles.activeStepValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  confusedFlipFrame: [
+    staticStyles.confusedFlipFrame,
+    {
+        height: responsiveLayout.responsiveHeight(156),
+    },
+  ],
+  stateEyebrow: [
+    staticStyles.stateEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  stateTitle: [
+    staticStyles.stateTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(22),
+    },
+  ],
+  stateMessage: [
+    staticStyles.stateMessage,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  suggestionIndex: [
+    staticStyles.suggestionIndex,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  suggestionText: [
+    staticStyles.suggestionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  buttonText: [
+    staticStyles.buttonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  };
+}

@@ -11,7 +11,10 @@ import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text, KeepFlipTextInput as TextInput } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useRouter } from "expo-router";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type AuthMode = 'sign-in' | 'create-account';
 type IconName = ComponentProps<typeof IconSymbol>['name'];
 type TextInputHandle = ComponentRef<typeof TextInput>;
@@ -36,11 +39,16 @@ function AuthField({
   onToggleSecure?: () => void;
   secureVisible?: boolean;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const [isFocused, setIsFocused] = useState(false);
 
   return (
     <View style={styles.fieldGroup}>
-      <Text style={styles.fieldLabel}>{label}</Text>
+      <Text style={[styles.fieldLabel, { fontSize: responsiveFont(10) }]}>{label}</Text>
       <View style={[styles.fieldShell, isFocused && styles.fieldShellFocused]}>
         <IconSymbol
           color={isFocused ? theme.colors.goldBright : theme.colors.goldMuted}
@@ -83,6 +91,11 @@ function AuthField({
 }
 
 function SetupNotice({ missingKeys }: { missingKeys: string[] }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
     <Animated.View entering={FadeInDown.duration(220)} style={styles.setupNotice}>
       <View style={styles.noticeHeading}>
@@ -90,8 +103,8 @@ function SetupNotice({ missingKeys }: { missingKeys: string[] }) {
           <IconSymbol color={theme.colors.scannerViolet} name="lock.fill" size={17} />
         </View>
         <View style={styles.noticeCopy}>
-          <Text style={styles.noticeEyebrow}>APPWRITE SETUP REQUIRED</Text>
-          <Text selectable style={styles.noticeText}>
+          <Text style={[styles.noticeEyebrow, { fontSize: responsiveFont(9) }]}>APPWRITE SETUP REQUIRED</Text>
+          <Text selectable style={[styles.noticeText, { fontSize: responsiveFont(12)}]}>
             Add the public project connection values, then restart the development build.
           </Text>
         </View>
@@ -110,6 +123,14 @@ function SetupNotice({ missingKeys }: { missingKeys: string[] }) {
 export function KeepFlipAuthScreen({
   allowSignUp = true,
 }: KeepFlipAuthScreenProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    contentMaxWidth,
+    contentWidth,
+    pageGutter,
+    responsiveFont
+  } = useResponsiveLayout();
+
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const {
@@ -208,10 +229,8 @@ export function KeepFlipAuthScreen({
         behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined}
         style={styles.flex}>
         <ScrollView
-          contentContainerStyle={[
-            styles.scrollContent,
-            { paddingTop: insets.top, paddingBottom: insets.bottom + 30 },
-          ]}
+          contentContainerStyle={[styles.scrollContent,
+            { paddingTop: insets.top, paddingBottom: insets.bottom + 30 }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
           contentInsetAdjustmentBehavior="automatic"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
@@ -225,9 +244,9 @@ export function KeepFlipAuthScreen({
                   style={styles.logo}
                 />
               </View>
-              <Text style={styles.brandEyebrow}>KEEPFLIP / SECURE ACCESS</Text>
-              <Text style={styles.title}>Know what it&apos;s worth.</Text>
-              <Text style={styles.subtitle}>
+              <Text style={[styles.brandEyebrow, { fontSize: responsiveFont(10) }]}>KEEPFLIP / SECURE ACCESS</Text>
+              <Text style={[styles.title, { fontSize: responsiveFont(34) }]}>Know what it&apos;s worth.</Text>
+              <Text style={[styles.subtitle, { fontSize: responsiveFont(14)}]}>
                 Sign in before KeepFlip activates the scanner and analyzes your inventory.
               </Text>
             </View>
@@ -277,7 +296,7 @@ export function KeepFlipAuthScreen({
                   entering={FadeInDown.duration(180)}
                   exiting={FadeOut.duration(130)}
                   style={styles.errorNotice}>
-                  <Text selectable style={styles.errorText}>
+                  <Text selectable style={[styles.errorText, { fontSize: responsiveFont(12)}]}>
                     {displayedError}
                   </Text>
                   {status === 'error' ? (
@@ -292,7 +311,7 @@ export function KeepFlipAuthScreen({
                         name="arrow.clockwise"
                         size={16}
                       />
-                      <Text style={styles.retryText}>RETRY CONNECTION</Text>
+                      <Text style={[styles.retryText, { fontSize: responsiveFont(9) }]}>RETRY CONNECTION</Text>
                     </Pressable>
                   ) : null}
                 </Animated.View>
@@ -418,17 +437,18 @@ export function KeepFlipAuthScreen({
                   <ActivityIndicator color={theme.colors.backgroundDeep} size="small" />
                 ) : (
                   <>
-                    <Text style={styles.submitText}>
+                    <Text style={[styles.submitText, { fontSize: responsiveFont(12) }]}>
                       {mode === 'sign-in' ? 'ENTER KEEPFLIP' : 'CREATE SECURE ACCOUNT'}
                     </Text>
                     <IconSymbol color={theme.colors.backgroundDeep} name="arrow.right" size={19} />
                   </>
                 )}
               </Pressable>
+                <View>
+                <Text numberOfLines={1} style={[styles.legalConsentText, { fontSize: responsiveFont(10), maxWidth: '75%'}]}>By creating an account, you agree to KeepFlip's</Text>
+                  
+                  </View>
 
-              {mode === "create-account" ? (
-                <Text style={styles.legalConsentText}>
-                  By creating an account, you agree to KeepFlip&apos;s{" "}
                   <Text
                     accessibilityHint="Opens KeepFlip's Terms of Service"
                     accessibilityRole="link"
@@ -436,8 +456,9 @@ export function KeepFlipAuthScreen({
                     style={styles.legalLink}
                   >
                     Terms of Service
-                  </Text>{" "}
-                  and{" "}
+                  </Text>
+                  <Text>
+                  and</Text>
                   <Text
                     accessibilityHint="Opens KeepFlip's Privacy Policy"
                     accessibilityRole="link"
@@ -446,13 +467,13 @@ export function KeepFlipAuthScreen({
                   >
                     Privacy Policy
                   </Text>
+                  <Text>
                   .
                 </Text>
-              ) : null}
 
               <View style={styles.securityLine}>
                 <IconSymbol color={theme.colors.scannerCyan} name="lock.fill" size={14} />
-                <Text style={styles.securityText}>
+                <Text style={[styles.securityText, { fontSize: responsiveFont(10)}]}>
                   All sessions are managed by Appwrite. Private information is never shared without your consent.
                 </Text>
               </View>
@@ -464,7 +485,8 @@ export function KeepFlipAuthScreen({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   flex: { flex: 1 },
   authGlow: {
     ...StyleSheet.absoluteFill,
@@ -702,3 +724,119 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.65 },
 });
+  return {
+    ...staticStyles,
+  logoHalo: [
+    staticStyles.logoHalo,
+    {
+        width: responsiveLayout.responsiveWidth(138),
+        height: responsiveLayout.responsiveHeight(138),
+    },
+  ],
+  logo: [
+    staticStyles.logo,
+    {
+        width: responsiveLayout.responsiveWidth(126),
+        height: responsiveLayout.responsiveHeight(126),
+    },
+  ],
+  brandEyebrow: [
+    staticStyles.brandEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(34),
+    },
+  ],
+  subtitle: [
+    staticStyles.subtitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  modeButtonText: [
+    staticStyles.modeButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  fieldLabel: [
+    staticStyles.fieldLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  fieldInput: [
+    staticStyles.fieldInput,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  visibilityButton: [
+    staticStyles.visibilityButton,
+    {
+        width: responsiveLayout.responsiveWidth(36),
+        height: responsiveLayout.responsiveHeight(36),
+    },
+  ],
+  submitText: [
+    staticStyles.submitText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  legalConsentText: [
+    staticStyles.legalConsentText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  securityText: [
+    staticStyles.securityText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  noticeIcon: [
+    staticStyles.noticeIcon,
+    {
+        width: responsiveLayout.responsiveWidth(32),
+        height: responsiveLayout.responsiveHeight(32),
+    },
+  ],
+  noticeEyebrow: [
+    staticStyles.noticeEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  noticeText: [
+    staticStyles.noticeText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  missingKey: [
+    staticStyles.missingKey,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  errorText: [
+    staticStyles.errorText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  retryText: [
+    staticStyles.retryText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  };
+}

@@ -7,7 +7,10 @@ import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import type { EbayBarcodeLookupResult } from "@/services/ebaySoldCompsService";
 import { neutralizeMarketplaceBrand } from "@/services/market-copy";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export type BarcodeLookupOverlayState =
   | { phase: "idle" }
   | { phase: "searching"; barcode: string }
@@ -42,6 +45,11 @@ export function BarcodeLookupOverlay({
   state,
   topInset,
 }: BarcodeLookupOverlayProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const result = state.phase === "result" ? state.result : null;
   const product = result?.product ?? null;
   const isSearching = state.phase === "searching";
@@ -65,8 +73,8 @@ export function BarcodeLookupOverlay({
 
       <View style={styles.header}>
         <View style={styles.headerCopy}>
-          <Text style={styles.eyebrow}>BARCODE LOOKUP</Text>
-          <Text style={styles.headerTitle}>
+          <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>BARCODE LOOKUP</Text>
+          <Text style={[styles.headerTitle, { fontSize: responsiveFont(23) }]}>
             {isSearching
               ? "Checking..."
               : product
@@ -96,7 +104,7 @@ export function BarcodeLookupOverlay({
             name="barcode.viewfinder"
             size={18}
           />
-          <Text selectable style={styles.codeText}>
+          <Text selectable style={[styles.codeText, { fontSize: responsiveFont(12) }]}>
             {barcode || "SCANNED CODE"}
           </Text>
         </View>
@@ -106,8 +114,8 @@ export function BarcodeLookupOverlay({
             <View style={styles.loadingIcon}>
               <ActivityIndicator color={theme.colors.scannerCyan} />
             </View>
-            <Text style={styles.title}>Finding the matching product</Text>
-            <Text style={styles.body}>
+            <Text style={[styles.title, { fontSize: responsiveFont(21) }]}>Finding the matching product</Text>
+            <Text style={[styles.body, { fontSize: responsiveFont(14), lineHeight: 21 }]}>
               KeepFlip is checking this code against current market evidence. Your photo-analysis tools remain separate from this search.
             </Text>
           </View>
@@ -130,10 +138,10 @@ export function BarcodeLookupOverlay({
             )}
 
             <View style={styles.productCopy}>
-              <Text selectable style={styles.title}>
+              <Text selectable style={[styles.title, { fontSize: responsiveFont(21) }]}>
                 {neutralizeMarketplaceBrand(product.title)}
               </Text>
-              <Text selectable style={styles.body}>
+              <Text selectable style={[styles.body, { fontSize: responsiveFont(14), lineHeight: 21 }]}>
                 {neutralizeMarketplaceBrand(product.description)}
               </Text>
             </View>
@@ -142,8 +150,8 @@ export function BarcodeLookupOverlay({
               <View style={styles.details}>
                 {rows.map(([label, value]) => (
                   <View key={label} style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>{label}</Text>
-                    <Text selectable style={styles.detailValue}>
+                    <Text style={[styles.detailLabel, { fontSize: responsiveFont(11) }]}>{label}</Text>
+                    <Text selectable style={[styles.detailValue, { fontSize: responsiveFont(13) }]}>
                       {value}
                     </Text>
                   </View>
@@ -166,10 +174,10 @@ export function BarcodeLookupOverlay({
                 size={32}
               />
             </View>
-            <Text style={styles.title}>
+            <Text style={[styles.title, { fontSize: responsiveFont(21) }]}>
               {state.phase === "error" ? "Lookup needs another try" : "No product match yet"}
             </Text>
-            <Text style={styles.body}>
+            <Text style={[styles.body, { fontSize: responsiveFont(14), lineHeight: 21 }]}>
               {state.phase === "error"
                 ? neutralizeMarketplaceBrand(state.message)
                 : "Scan the full code again in bright, even light. UPC, EAN, ISBN, and product codes work best."}
@@ -191,7 +199,7 @@ export function BarcodeLookupOverlay({
               name="barcode.viewfinder"
               size={20}
             />
-            <Text style={styles.primaryActionText}>Scan another code</Text>
+            <Text style={[styles.primaryActionText, { fontSize: responsiveFont(15) }]}>Scan another code</Text>
           </Pressable>
           <Pressable
             accessibilityLabel="Back to scanner tools"
@@ -199,7 +207,7 @@ export function BarcodeLookupOverlay({
             onPress={onDismiss}
             style={({ pressed }) => [styles.secondaryAction, pressed && styles.pressed]}
           >
-            <Text style={styles.secondaryActionText}>Back to tools</Text>
+            <Text style={[styles.secondaryActionText, { fontSize: responsiveFont(14) }]}>Back to tools</Text>
           </Pressable>
         </View>
       ) : null}
@@ -207,7 +215,8 @@ export function BarcodeLookupOverlay({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   root: {
     ...StyleSheet.absoluteFill,
     justifyContent: "space-between",
@@ -329,3 +338,95 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.42 },
   pressed: { opacity: 0.76, transform: [{ scale: 0.98 }] },
 });
+  return {
+    ...staticStyles,
+  eyebrow: [
+    staticStyles.eyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  headerTitle: [
+    staticStyles.headerTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(23),
+    },
+  ],
+  closeButton: [
+    staticStyles.closeButton,
+    {
+        width: responsiveLayout.responsiveWidth(42),
+        height: responsiveLayout.responsiveHeight(42),
+    },
+  ],
+  codeText: [
+    staticStyles.codeText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  loadingIcon: [
+    staticStyles.loadingIcon,
+    {
+        width: responsiveLayout.responsiveWidth(72),
+        height: responsiveLayout.responsiveHeight(72),
+    },
+  ],
+  productImage: [
+    staticStyles.productImage,
+    {
+        width: responsiveLayout.responsiveWidth(146),
+        height: responsiveLayout.responsiveHeight(146),
+    },
+  ],
+  productImageFallback: [
+    staticStyles.productImageFallback,
+    {
+        width: responsiveLayout.responsiveWidth(112),
+        height: responsiveLayout.responsiveHeight(112),
+    },
+  ],
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(21),
+    },
+  ],
+  body: [
+    staticStyles.body,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  detailLabel: [
+    staticStyles.detailLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  detailValue: [
+    staticStyles.detailValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  evidenceNote: [
+    staticStyles.evidenceNote,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  primaryActionText: [
+    staticStyles.primaryActionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  secondaryActionText: [
+    staticStyles.secondaryActionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  };
+}

@@ -11,7 +11,10 @@ import {
   type ValueRadarTargetOverlayProps,
 } from "@/components/scanner/value-radar-chrome.native.android";
 import { useValueRadar } from "@/components/scanner/value-radar-visual.native";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export type {
   ValueRadarMarker,
   ValueRadarStatus,
@@ -33,6 +36,11 @@ function clamp(value: number, minimum: number, maximum: number) {
 }
 
 export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const {
     avoidBottomAction = false,
     disabled = false,
@@ -174,8 +182,8 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
                   size={16}
                 />
               </View>
-              <Text style={styles.markerEyebrow}>POTENTIAL FIND</Text>
-              <Text style={styles.confidenceText}>
+              <Text style={[styles.markerEyebrow, { fontSize: responsiveFont(9), lineHeight: 12 }]}>POTENTIAL FIND</Text>
+              <Text style={[styles.confidenceText, { fontSize: responsiveFont(8), lineHeight: 10 }]}>
                 {Math.round(marker.score * 100)
                   .toString()
                   .padStart(2, "0")}
@@ -184,14 +192,14 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
             </View>
 
             <View pointerEvents="none" style={styles.markerContent}>
-              <Text numberOfLines={1} style={styles.markerLabel}>
+              <Text numberOfLines={1} style={[styles.markerLabel, { fontSize: responsiveFont(18), lineHeight: 22 }]}>
                 {marker.label}
               </Text>
 
               {proof ? (
                 <View style={styles.proofRow}>
                   <View style={styles.proofSignal} />
-                  <Text numberOfLines={1} style={styles.proofLabel}>
+                  <Text numberOfLines={1} style={[styles.proofLabel, { fontSize: responsiveFont(6.5), lineHeight: 8 }]}>
                     AI EVIDENCE // {proof.evidenceDetail.toUpperCase()}
                   </Text>
                 </View>
@@ -215,7 +223,8 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   markerPanelHost: {
     position: "absolute",
     zIndex: 22,
@@ -357,3 +366,76 @@ const styles = StyleSheet.create({
     opacity: 0.46,
   },
 });
+  return {
+    ...staticStyles,
+  markerAccent: [
+    staticStyles.markerAccent,
+    {
+        width: responsiveLayout.responsiveWidth(3),
+    },
+  ],
+  markerHeading: [
+    staticStyles.markerHeading,
+    {
+        height: responsiveLayout.responsiveHeight(38),
+    },
+  ],
+  markerIcon: [
+    staticStyles.markerIcon,
+    {
+        width: responsiveLayout.responsiveWidth(25),
+        height: responsiveLayout.responsiveHeight(25),
+    },
+  ],
+  markerEyebrow: [
+    staticStyles.markerEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  confidenceText: [
+    staticStyles.confidenceText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  markerLabel: [
+    staticStyles.markerLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(18),
+    },
+  ],
+  proofSignal: [
+    staticStyles.proofSignal,
+    {
+        width: responsiveLayout.responsiveWidth(5),
+        height: responsiveLayout.responsiveHeight(5),
+    },
+  ],
+  proofLabel: [
+    staticStyles.proofLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(6.5),
+    },
+  ],
+  markerFooterSignal: [
+    staticStyles.markerFooterSignal,
+    {
+        width: responsiveLayout.responsiveWidth(6),
+        height: responsiveLayout.responsiveHeight(6),
+    },
+  ],
+  markerAction: [
+    staticStyles.markerAction,
+    {
+        fontSize: responsiveLayout.responsiveFont(6.5),
+    },
+  ],
+  markerChevron: [
+    staticStyles.markerChevron,
+    {
+        fontSize: responsiveLayout.responsiveFont(18),
+    },
+  ],
+  };
+}

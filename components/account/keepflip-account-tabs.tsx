@@ -3,7 +3,9 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import responsiveFont from '@/lib/responsiveFont';
 
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export type KeepFlipAccountTab = 'account' | 'subscription';
 
 export function KeepFlipAccountTabs({
@@ -11,6 +13,7 @@ export function KeepFlipAccountTabs({
 }: {
   active: KeepFlipAccountTab;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const router = useRouter();
 
   return (
@@ -54,7 +57,8 @@ export function KeepFlipAccountTabs({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   tab: {
     alignItems: 'center',
     borderRadius: 10,
@@ -70,7 +74,7 @@ const styles = StyleSheet.create({
   tabText: {
     color: theme.colors.textMuted,
     fontFamily: theme.fonts.radar,
-    fontSize: 8,
+    fontSize: 10,
     fontWeight: '900',
     letterSpacing: 0.95,
   },
@@ -85,3 +89,13 @@ const styles = StyleSheet.create({
     padding: 4,
   },
 });
+  return {
+    ...staticStyles,
+  tabText: [
+    staticStyles.tabText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  };
+}

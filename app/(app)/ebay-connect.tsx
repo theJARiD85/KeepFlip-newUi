@@ -21,7 +21,10 @@ import {
   getEbayOAuthEnvironment,
   type EbayConnectionResult,
 } from '@/services/ebayConnectionService';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 const BENEFITS = [
   {
     icon: 'magnifyingglass' as const,
@@ -77,6 +80,14 @@ function resultMessage(result: EbayConnectionResult) {
 }
 
 export default function EbayConnectScreen() {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    contentMaxWidth,
+    contentWidth,
+    pageGutter,
+    responsiveFont
+  } = useResponsiveLayout();
+
   const router = useRouter();
   const params = useLocalSearchParams<{ reconnect?: string | string[] }>();
   const {
@@ -144,13 +155,11 @@ export default function EbayConnectScreen() {
   return (
     <KeepFlipBackground>
       <ScrollView
-        contentContainerStyle={[
-          styles.content,
+        contentContainerStyle={[styles.content,
           {
             paddingTop: insets.top / 2,
             paddingBottom: insets.bottom,
-          },
-        ]}
+          }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         style={{marginBottom: insets.bottom, marginTop: insets.top}}
         contentInsetAdjustmentBehavior="never"
         showsVerticalScrollIndicator={false}>
@@ -174,16 +183,16 @@ export default function EbayConnectScreen() {
           <View style={styles.logoShell}>
             <EbayShoppingBagIcon size={76} />
           </View>
-          <Text style={styles.eyebrow}>KEEPFLIP + EBAY</Text>
-          <Text style={styles.title}>Link your eBay account</Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>KEEPFLIP + EBAY</Text>
+          <Text style={[styles.title, { fontSize: responsiveFont(31) }]}>Link your eBay account</Text>
+          <Text style={[styles.subtitle, { fontSize: responsiveFont(14)}]}>
             Connecting eBay gives KeepFlip permission to use the eBay features you
             approve while keeping your eBay sign-in credentials with eBay.
           </Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionEyebrow}>WHAT THIS UNLOCKS</Text>
+          <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9) }]}>WHAT THIS UNLOCKS</Text>
           <View style={styles.benefitList}>
             {BENEFITS.map((benefit) => (
               <View key={benefit.title} style={styles.benefitRow}>
@@ -195,8 +204,8 @@ export default function EbayConnectScreen() {
                   />
                 </View>
                 <View style={styles.benefitCopy}>
-                  <Text style={styles.benefitTitle}>{benefit.title}</Text>
-                  <Text style={styles.benefitDescription}>{benefit.description}</Text>
+                  <Text style={[styles.benefitTitle, { fontSize: responsiveFont(15) }]}>{benefit.title}</Text>
+                  <Text style={[styles.benefitDescription, { fontSize: responsiveFont(12)}]}>{benefit.description}</Text>
                 </View>
               </View>
             ))}
@@ -209,7 +218,7 @@ export default function EbayConnectScreen() {
             name="checkmark.shield.fill"
             size={21}
           />
-          <Text style={styles.permissionText}>
+          <Text style={[styles.permissionText, { fontSize: responsiveFont(12)}]}>
             Nothing is listed, purchased, or messaged automatically. eBay shows the
             permissions being requested before you approve the connection.
           </Text>
@@ -222,15 +231,15 @@ export default function EbayConnectScreen() {
               message.tone === 'success' && styles.resultSuccess,
               message.tone === 'error' && styles.resultError,
             ]}>
-            <Text style={styles.resultTitle}>{message.title}</Text>
-            <Text style={styles.resultBody}>{message.body}</Text>
+            <Text style={[styles.resultTitle, { fontSize: responsiveFont(14) }]}>{message.title}</Text>
+            <Text style={[styles.resultBody, { fontSize: responsiveFont(12)}]}>{message.body}</Text>
           </View>
         ) : null}
 
         {connectionError ? (
           <View style={[styles.resultCard, styles.resultError]}>
-            <Text style={styles.resultTitle}>Could not start eBay sign-in</Text>
-            <Text selectable style={styles.resultBody}>
+            <Text style={[styles.resultTitle, { fontSize: responsiveFont(14) }]}>Could not start eBay sign-in</Text>
+            <Text selectable style={[styles.resultBody, { fontSize: responsiveFont(12)}]}>
               {connectionError}
             </Text>
           </View>
@@ -238,7 +247,7 @@ export default function EbayConnectScreen() {
 
         <View style={styles.actions}>
           {environment === 'sandbox' ? (
-            <Text style={styles.environmentLabel}>TEST MODE · EBAY SANDBOX</Text>
+            <Text style={[styles.environmentLabel, { fontSize: responsiveFont(8) }]}>TEST MODE · EBAY SANDBOX</Text>
           ) : null}
 
           <Pressable
@@ -257,7 +266,7 @@ export default function EbayConnectScreen() {
             ) : (
               <EbayShoppingBagIcon size={28} />
             )}
-            <Text style={styles.connectButtonText}>
+            <Text style={[styles.connectButtonText, { fontSize: responsiveFont(12) }]}>
               {connectionResult?.status === 'connected'
                 ? 'RECONNECT EBAY'
                 : 'CONTINUE TO EBAY'}
@@ -268,7 +277,7 @@ export default function EbayConnectScreen() {
             accessibilityRole="button"
             onPress={() => router.back()}
             style={({ pressed }) => [styles.notNowButton, pressed && styles.pressed]}>
-            <Text style={styles.notNowText}>NOT NOW</Text>
+            <Text style={[styles.notNowText, { fontSize: responsiveFont(10) }]}>NOT NOW</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -276,7 +285,8 @@ export default function EbayConnectScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   content: {
     width: '100%',
     maxWidth: 720,
@@ -492,3 +502,113 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
   },
 });
+  return {
+    ...staticStyles,
+  backButton: [
+    staticStyles.backButton,
+    {
+        width: responsiveLayout.responsiveWidth(44),
+        height: responsiveLayout.responsiveHeight(44),
+    },
+  ],
+  topLabel: [
+    staticStyles.topLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  topSpacer: [
+    staticStyles.topSpacer,
+    {
+        width: responsiveLayout.responsiveWidth(44),
+        height: responsiveLayout.responsiveHeight(44),
+    },
+  ],
+  logoShell: [
+    staticStyles.logoShell,
+    {
+        width: responsiveLayout.responsiveWidth(108),
+        height: responsiveLayout.responsiveHeight(108),
+    },
+  ],
+  eyebrow: [
+    staticStyles.eyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  title: [
+    staticStyles.title,
+    {
+        fontSize: responsiveLayout.responsiveFont(31),
+    },
+  ],
+  subtitle: [
+    staticStyles.subtitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  sectionEyebrow: [
+    staticStyles.sectionEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  benefitIcon: [
+    staticStyles.benefitIcon,
+    {
+        width: responsiveLayout.responsiveWidth(42),
+        height: responsiveLayout.responsiveHeight(42),
+    },
+  ],
+  benefitTitle: [
+    staticStyles.benefitTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  benefitDescription: [
+    staticStyles.benefitDescription,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  permissionText: [
+    staticStyles.permissionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  resultTitle: [
+    staticStyles.resultTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  resultBody: [
+    staticStyles.resultBody,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  environmentLabel: [
+    staticStyles.environmentLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  connectButtonText: [
+    staticStyles.connectButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  notNowText: [
+    staticStyles.notNowText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  };
+}

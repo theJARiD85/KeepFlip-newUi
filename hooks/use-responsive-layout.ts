@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -21,7 +22,7 @@ export function useResponsiveLayout() {
   const isCompactHeight = height < 700;
   const isTallPhone = !isTablet && height / Math.max(width, 1) >= 2;
 
-  const pageGutter = isWideTablet ? 32 : isTablet ? 24 : isCompactWidth ? 10: 15
+  const pageGutter = isWideTablet ? 32 : isTablet ? 24 : isCompactWidth ? 10 : 15;
   const contentMaxWidth = isWideTablet ? 1040 : isTablet ? 720 : 560;
   const availableWidth = Math.max(0, width - pageGutter * 2);
   const contentWidth = Math.min(availableWidth, contentMaxWidth);
@@ -44,6 +45,8 @@ export function useResponsiveLayout() {
   };
 
   const responsiveFont = (value: number, factor = 0.35) => moderateScale(value, factor);
+  const responsiveWidth = (value: number, factor = 0.5) => moderateScale(value, factor);
+  const responsiveHeight = (value: number, factor = 1) => verticalScale(value, factor);
 
   const scannerWidth = clamp(
     contentWidth * (isTablet ? 0.72 : 0.88),
@@ -94,6 +97,8 @@ export function useResponsiveLayout() {
     moderateScale,
     verticalScale,
     responsiveFont,
+    responsiveWidth,
+    responsiveHeight,
     scannerWidth,
     scannerHeight,
     captureButtonSize,
@@ -106,4 +111,15 @@ export function useResponsiveLayout() {
     scannerWheelRadius,
     gridColumns: isWideTablet ? 3 : 2,
   };
+}
+
+export function useResponsiveStyles<T>(
+  createStyles: (layout: ReturnType<typeof useResponsiveLayout>) => T,
+) {
+  const layout = useResponsiveLayout();
+
+  return useMemo(
+    () => createStyles(layout),
+    [createStyles, layout.widthScale, layout.heightScale],
+  );
 }

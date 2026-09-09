@@ -16,7 +16,10 @@ import Animated, {
 import type { AnalysisCallout } from "@/components/scanner/analysis-visual-types";
 import { ValueRadarTargetGraphic } from "@/components/scanner/value-radar-target-graphic";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type AnalysisBiometricTargetProps = {
   active: boolean;
   callouts?: AnalysisCallout[];
@@ -51,6 +54,7 @@ function FrameCorner({
   horizontal: "left" | "right";
   vertical: "top" | "bottom";
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   return (
     <View
       style={[
@@ -73,6 +77,11 @@ function ActiveBiometricTarget({
   viewportHeight,
   viewportWidth,
 }: Omit<AnalysisBiometricTargetProps, "active">) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   const reduceMotion = useReducedMotion();
   const reveal = useSharedValue(reduceMotion ? 1 : 0);
   const scan = useSharedValue(0);
@@ -175,7 +184,7 @@ function ActiveBiometricTarget({
           </View>
         ) : (
           <View style={styles.placeholder}>
-            <Text style={styles.placeholderText}>SALE EVIDENCE ACQUIRING</Text>
+            <Text style={[styles.placeholderText, { fontSize: responsiveFont(8) }]}>SALE EVIDENCE ACQUIRING</Text>
           </View>
         )}
 
@@ -201,6 +210,10 @@ function ActiveBiometricTarget({
         <Animated.View style={[styles.scanLine, scanStyle]} />
 
         {visibleCallouts.map((callout, index) => {
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
           const accent = accentColor(callout.accent);
           return (
             <View
@@ -215,7 +228,7 @@ function ActiveBiometricTarget({
               <Text numberOfLines={1} style={[styles.calloutLabel, { color: accent }]}>
                 {callout.label}
               </Text>
-              <Text numberOfLines={1} style={styles.calloutValue}>
+              <Text numberOfLines={1} style={[styles.calloutValue, { fontSize: responsiveFont(9) }]}>
                 {callout.value}
               </Text>
             </View>
@@ -228,7 +241,7 @@ function ActiveBiometricTarget({
         <FrameCorner horizontal="right" vertical="bottom" />
 
         <View style={styles.telemetryHeader}>
-          <Text style={styles.telemetryTitle}>BIOMETRIC VALUE TARGET</Text>
+          <Text style={[styles.telemetryTitle, { fontSize: responsiveFont(7) }]}>BIOMETRIC VALUE TARGET</Text>
           <Text style={styles.telemetryCode}>KF / VAL-01</Text>
         </View>
 
@@ -247,7 +260,8 @@ export function AnalysisBiometricTarget(props: AnalysisBiometricTargetProps) {
 
 const monoFont = Platform.OS === "ios" ? "Courier New" : "monospace";
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFill,
     zIndex: 1,
@@ -438,3 +452,92 @@ const styles = StyleSheet.create({
     boxShadow: "0 0 8px rgba(242, 211, 138, 0.82)",
   },
 });
+  return {
+    ...staticStyles,
+  placeholderText: [
+    staticStyles.placeholderText,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  featureZoneA: [
+    staticStyles.featureZoneA,
+    {
+        width: responsiveLayout.responsiveWidth(64),
+        height: responsiveLayout.responsiveHeight(42),
+    },
+  ],
+  featureZoneB: [
+    staticStyles.featureZoneB,
+    {
+        width: responsiveLayout.responsiveWidth(78),
+        height: responsiveLayout.responsiveHeight(36),
+    },
+  ],
+  scanLine: [
+    staticStyles.scanLine,
+    {
+        height: responsiveLayout.responsiveHeight(2),
+    },
+  ],
+  calloutSignal: [
+    staticStyles.calloutSignal,
+    {
+        width: responsiveLayout.responsiveWidth(4),
+        height: responsiveLayout.responsiveHeight(4),
+    },
+  ],
+  calloutLabel: [
+    staticStyles.calloutLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(6),
+    },
+  ],
+  calloutValue: [
+    staticStyles.calloutValue,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(1) },
+    },
+  ],
+  frameCorner: [
+    staticStyles.frameCorner,
+    {
+        width: responsiveLayout.responsiveWidth(24),
+        height: responsiveLayout.responsiveHeight(24),
+    },
+  ],
+  cornerHorizontal: [
+    staticStyles.cornerHorizontal,
+    {
+        width: responsiveLayout.responsiveWidth(22),
+        height: responsiveLayout.responsiveHeight(2),
+    },
+  ],
+  cornerVertical: [
+    staticStyles.cornerVertical,
+    {
+        width: responsiveLayout.responsiveWidth(2),
+        height: responsiveLayout.responsiveHeight(22),
+    },
+  ],
+  telemetryTitle: [
+    staticStyles.telemetryTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(7),
+    },
+  ],
+  telemetryCode: [
+    staticStyles.telemetryCode,
+    {
+        fontSize: responsiveLayout.responsiveFont(6),
+    },
+  ],
+  progressTrack: [
+    staticStyles.progressTrack,
+    {
+        height: responsiveLayout.responsiveHeight(3),
+    },
+  ],
+  };
+}

@@ -28,7 +28,10 @@ import {
   openKeepFlipGooglePlayReviews,
 } from '@/lib/keepflip-feedback';
 import { getAppwriteCoreServices } from '@/lib/appwrite';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type FeedbackPromptPreference = {
   actionCount: number;
   feedbackOpenedAt?: string;
@@ -142,6 +145,11 @@ function FeedbackPrompt({
   onOpenReview: () => void;
   visible: boolean;
 }) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const {
+    responsiveFont
+  } = useResponsiveLayout();
+
   return (
     <Modal
       animationType="fade"
@@ -156,7 +164,7 @@ function FeedbackPrompt({
           style={styles.promptSurface}>
           <View style={styles.promptSignalRow}>
             <View style={styles.promptSignal} />
-            <Text style={styles.promptEyebrow}>KEEPFLIP CHECK-IN</Text>
+            <Text style={[styles.promptEyebrow, { fontSize: responsiveFont(8) }]}>KEEPFLIP CHECK-IN</Text>
           </View>
 
           <View style={styles.promptHeading}>
@@ -164,15 +172,15 @@ function FeedbackPrompt({
               <IconSymbol color={theme.colors.goldBright} name="bubble.left.and.bubble.right.fill" size={20} />
             </View>
             <View style={styles.promptCopy}>
-              <Text style={styles.promptTitle}>Help shape what comes next.</Text>
-              <Text style={styles.promptBody}>
+              <Text style={[styles.promptTitle, { fontSize: responsiveFont(20), lineHeight: 24 }]}>Help shape what comes next.</Text>
+              <Text style={[styles.promptBody, { fontSize: responsiveFont(13), lineHeight: 19 }]}>
                 A quick note about what worked—or what got in your way—helps KeepFlip get more useful for real resellers.
               </Text>
             </View>
           </View>
 
           {errorMessage ? (
-            <Text accessibilityLiveRegion="polite" selectable style={styles.promptError}>
+            <Text accessibilityLiveRegion="polite" selectable style={[styles.promptError, { fontSize: responsiveFont(11), lineHeight: 16 }]}>
               {errorMessage}
             </Text>
           ) : null}
@@ -193,7 +201,7 @@ function FeedbackPrompt({
               ) : (
                 <IconSymbol color={theme.colors.backgroundDeep} name="paperplane.fill" size={16} />
               )}
-              <Text style={styles.primaryActionText}>SHARE FEEDBACK</Text>
+              <Text style={[styles.primaryActionText, { fontSize: responsiveFont(10) }]}>SHARE FEEDBACK</Text>
             </Pressable>
 
             <Pressable
@@ -211,7 +219,7 @@ function FeedbackPrompt({
               ) : (
                 <IconSymbol color={theme.colors.goldBright} name="star.fill" size={16} />
               )}
-              <Text style={styles.secondaryActionText}>RATE ON GOOGLE PLAY</Text>
+              <Text style={[styles.secondaryActionText, { fontSize: responsiveFont(10) }]}>RATE ON GOOGLE PLAY</Text>
             </Pressable>
           </View>
 
@@ -224,7 +232,7 @@ function FeedbackPrompt({
               styles.dismissAction,
               pressed && busyAction === null && styles.dismissActionPressed,
             ]}>
-            <Text style={styles.dismissActionText}>NOT NOW</Text>
+            <Text style={[styles.dismissActionText, { fontSize: responsiveFont(9) }]}>NOT NOW</Text>
           </Pressable>
         </Animated.View>
       </Animated.View>
@@ -445,7 +453,8 @@ export function useKeepFlipFeedbackNudge() {
   return context;
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   backdrop: {
     flex: 1,
     alignItems: 'center',
@@ -566,3 +575,63 @@ const styles = StyleSheet.create({
     letterSpacing: 1.1,
   },
 });
+  return {
+    ...staticStyles,
+  promptSignal: [
+    staticStyles.promptSignal,
+    {
+        width: responsiveLayout.responsiveWidth(6),
+        height: responsiveLayout.responsiveHeight(6),
+    },
+  ],
+  promptEyebrow: [
+    staticStyles.promptEyebrow,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  promptIcon: [
+    staticStyles.promptIcon,
+    {
+        width: responsiveLayout.responsiveWidth(38),
+        height: responsiveLayout.responsiveHeight(38),
+    },
+  ],
+  promptTitle: [
+    staticStyles.promptTitle,
+    {
+        fontSize: responsiveLayout.responsiveFont(20),
+    },
+  ],
+  promptBody: [
+    staticStyles.promptBody,
+    {
+        fontSize: responsiveLayout.responsiveFont(13),
+    },
+  ],
+  promptError: [
+    staticStyles.promptError,
+    {
+        fontSize: responsiveLayout.responsiveFont(11),
+    },
+  ],
+  primaryActionText: [
+    staticStyles.primaryActionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  secondaryActionText: [
+    staticStyles.secondaryActionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  dismissActionText: [
+    staticStyles.dismissActionText,
+    {
+        fontSize: responsiveLayout.responsiveFont(9),
+    },
+  ],
+  };
+}

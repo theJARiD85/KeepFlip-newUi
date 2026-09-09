@@ -15,6 +15,7 @@ import {
   Pressable,
   StyleSheet,
   View,
+  useWindowDimensions,
 } from "react-native";
 import {
   Camera,
@@ -80,7 +81,9 @@ import {
 import {
   getSmartEvidenceCapturePlan,
 } from "@/services/smart-evidence-capture";
+import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
+import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type AnalysisCognitionSeed = {
   localDetection?: {
     label: string;
@@ -188,8 +191,10 @@ function formatZoomLabel(value: number) {
 }
 
 export default function ScannerScreen() {
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const router = useRouter();
   const { user } = useKeepFlipAuth();
+  const { width } = useWindowDimensions();
   const { openScannerAnalysis } =
     useItemAnalysisResult() as unknown as ScannerAnalysisActions;
   const {
@@ -205,6 +210,7 @@ export default function ScannerScreen() {
     scannerWidth,
     verticalScale,
     width: screenWidth,
+    contentMaxWidth
   } = useResponsiveLayout();
   const torchButtonSize = moderateScale(35, 0.65);
   const permissionCardWidth = Math.min(contentWidth, 480);
@@ -1387,7 +1393,7 @@ export default function ScannerScreen() {
           <Text
             style={[
               styles.analyzeButtonArrow,
-              { fontSize: responsiveFont(27), lineHeight: responsiveFont(30) },
+              { fontSize: responsiveFont(27), lineHeight: 30 },
             ]}
           >
             ›
@@ -1428,7 +1434,7 @@ export default function ScannerScreen() {
   if (!hasPermission) {
     return (
       <KeepFlipBackground
-        contentStyle={[styles.centeredState, { paddingHorizontal: pageGutter }]}
+        contentStyle={[styles.centeredState, { paddingHorizontal: pageGutter }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
       >
         {activeAnalysisSessionId == null ? (
           <Animated.View
@@ -1469,9 +1475,7 @@ export default function ScannerScreen() {
               style={[
                 styles.permissionBody,
                 {
-                  fontSize: responsiveFont(15),
-                  lineHeight: responsiveFont(22),
-                },
+                  fontSize: responsiveFont(15)},
               ]}
             >
               {canRequestPermission
@@ -1482,7 +1486,7 @@ export default function ScannerScreen() {
               onPress={handlePermissionAction}
               style={styles.permissionButton}
             >
-              <Text style={styles.permissionButtonText}>
+              <Text style={[styles.permissionButtonText, { fontSize: responsiveFont(16) }]}>
                 {canRequestPermission ? "Enable camera" : "Open settings"}
               </Text>
             </Pressable>
@@ -1501,7 +1505,7 @@ export default function ScannerScreen() {
                 size={20}
                 color={theme.colors.cream}
               />
-              <Text style={styles.secondaryButtonText}>
+              <Text style={[styles.secondaryButtonText, { fontSize: responsiveFont(15) }]}>
                 {isPickingPhoto
                   ? "Opening photos..."
                   : uploadedPhotos.length > 0
@@ -1520,7 +1524,7 @@ export default function ScannerScreen() {
             ) : null}
             {analysisButton}
             {uploadedPhotos.length > 0 ? (
-              <Text style={styles.permissionStatus}>
+              <Text style={[styles.permissionStatus, { fontSize: responsiveFont(12) }]}>
                 {`${uploadedPhotos.length} of ${MAX_ANALYSIS_PHOTOS} photos ready for AI analysis.`}
               </Text>
             ) : null}
@@ -1534,7 +1538,7 @@ export default function ScannerScreen() {
   if (device == null) {
     return (
       <KeepFlipBackground
-        contentStyle={[styles.centeredState, { paddingHorizontal: pageGutter }]}
+        contentStyle={[styles.centeredState, { paddingHorizontal: pageGutter }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
       >
         {activeAnalysisSessionId == null ? (
           <Animated.View
@@ -1556,7 +1560,7 @@ export default function ScannerScreen() {
             >
               Starting camera
             </Text>
-            <Text style={styles.deviceStateText}>
+            <Text style={[styles.deviceStateText, { fontSize: responsiveFont(14) }]}>
               Looking for a back camera...
             </Text>
             <Pressable
@@ -1574,7 +1578,7 @@ export default function ScannerScreen() {
                 size={20}
                 color={theme.colors.cream}
               />
-              <Text style={styles.secondaryButtonText}>
+              <Text style={[styles.secondaryButtonText, { fontSize: responsiveFont(15) }]}>
                 {isPickingPhoto
                   ? "Opening photos..."
                   : uploadedPhotos.length > 0
@@ -1593,7 +1597,7 @@ export default function ScannerScreen() {
             ) : null}
             {analysisButton}
             {uploadedPhotos.length > 0 ? (
-              <Text style={styles.permissionStatus}>
+              <Text style={[styles.permissionStatus, { fontSize: responsiveFont(12) }]}>
                 {`${uploadedPhotos.length} of ${MAX_ANALYSIS_PHOTOS} photos ready for AI analysis.`}
               </Text>
             ) : null}
@@ -1605,7 +1609,7 @@ export default function ScannerScreen() {
   }
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, { width: width, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
       <View pointerEvents="none" style={styles.cameraLayer}>
         {shouldMountCamera ? (
           <Camera
@@ -1720,16 +1724,14 @@ export default function ScannerScreen() {
           isScannerOverlayOpen ? "no-hide-descendants" : "auto"
         }
         pointerEvents={isScannerOverlayOpen ? "none" : "auto"}
-        style={[
-          styles.content,
+        style={[styles.content,
           {
             paddingHorizontal: pageGutter,
             paddingTop: insets.top + verticalScale(14, 0.5),
             paddingBottom:
               insets.bottom + verticalScale(isCompactHeight ? 4 : 10, 0.5),
           },
-          scannerChromeAnimatedStyle,
-        ]}
+          scannerChromeAnimatedStyle, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
       >
         <View
           style={[
@@ -1762,9 +1764,7 @@ export default function ScannerScreen() {
                 style={[
                   styles.title,
                   {
-                    fontSize: responsiveFont(26),
-                    lineHeight: responsiveFont(35),
-                  },
+                    fontSize: responsiveFont(26)},
                 ]}
               >
               {selectedTool === "multi"
@@ -1788,9 +1788,7 @@ export default function ScannerScreen() {
                           : scannerHeaderHasEvidence
                             ? selectedToolAppearance.accent
                             : theme.colors.text,
-                      fontSize: responsiveFont(12),
-                      lineHeight: responsiveFont(16),
-                    },
+                      fontSize: responsiveFont(12)},
                   ]}
                 >
                   {scannerHeaderHint}
@@ -1849,7 +1847,7 @@ export default function ScannerScreen() {
                   exiting={SlideOutRight.duration(120)}
                   style={styles.zoomPanel}
                 >
-                  <Text style={styles.zoomControlLabel}>ZOOM</Text>
+                  <Text style={[styles.zoomControlLabel, { fontSize: responsiveFont(8) }]}>ZOOM</Text>
                   <View style={styles.zoomPresetRow}>
                     {zoomPresets.map((preset) => {
                       const selected =
@@ -1911,7 +1909,7 @@ export default function ScannerScreen() {
                   },
                 ]}
               >
-                <Text style={styles.zoomButtonText}>
+                <Text style={[styles.zoomButtonText, { fontSize: responsiveFont(10) }]}>
                   {formatZoomLabel(zoomDisplayFactor)}
                 </Text>
               </Pressable>
@@ -2021,7 +2019,7 @@ export default function ScannerScreen() {
         <Text
           style={{
             color: theme.colors.goldBright,
-            fontSize: 12,
+            fontSize: responsiveFont(12),
             fontWeight: "800",
           }}
         >
@@ -2032,7 +2030,8 @@ export default function ScannerScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
+    const staticStyles = StyleSheet.create({
   screen: {
     flex: 1,
     position: "relative",
@@ -2401,3 +2400,86 @@ const styles = StyleSheet.create({
     elevation: 40,
   },
 });
+  return {
+    ...staticStyles,
+  permissionButtonText: [
+    staticStyles.permissionButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(16),
+    },
+  ],
+  secondaryButtonText: [
+    staticStyles.secondaryButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(15),
+    },
+  ],
+  permissionStatus: [
+    staticStyles.permissionStatus,
+    {
+        fontSize: responsiveLayout.responsiveFont(12),
+    },
+  ],
+  deviceStateText: [
+    staticStyles.deviceStateText,
+    {
+        fontSize: responsiveLayout.responsiveFont(14),
+    },
+  ],
+  zoomButtonText: [
+    staticStyles.zoomButtonText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  zoomControlLabel: [
+    staticStyles.zoomControlLabel,
+    {
+        fontSize: responsiveLayout.responsiveFont(8),
+    },
+  ],
+  zoomPreset: [
+    staticStyles.zoomPreset,
+    {
+        height: responsiveLayout.responsiveHeight(28),
+    },
+  ],
+  zoomPresetText: [
+    staticStyles.zoomPresetText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  barcodeGuideStrip: [
+    staticStyles.barcodeGuideStrip,
+    {
+        height: responsiveLayout.responsiveHeight(94),
+    },
+  ],
+  barcodeGuideLine: [
+    staticStyles.barcodeGuideLine,
+    {
+        width: responsiveLayout.responsiveWidth(5),
+    },
+  ],
+  barcodeGuideLineWide: [
+    staticStyles.barcodeGuideLineWide,
+    {
+        width: responsiveLayout.responsiveWidth(12),
+    },
+  ],
+  barcodeGuideText: [
+    staticStyles.barcodeGuideText,
+    {
+        fontSize: responsiveLayout.responsiveFont(10),
+    },
+  ],
+  analyzeReticleDot: [
+    staticStyles.analyzeReticleDot,
+    {
+        width: responsiveLayout.responsiveWidth(7),
+        height: responsiveLayout.responsiveHeight(7),
+    },
+  ],
+  };
+}

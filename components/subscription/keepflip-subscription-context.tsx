@@ -7,6 +7,8 @@ import {
   useMemo,
   useState,
 } from 'react';
+import { AppState } from 'react-native';
+import type { RealtimeSubscription } from 'react-native-appwrite';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import {
@@ -17,6 +19,7 @@ import {
   openKeepFlipSubscriptionManagement,
   purchaseKeepFlipPlan,
   restoreKeepFlipPurchases,
+  subscribeToKeepFlipEntitlementUpdates,
   subscribeToKeepFlipSubscriptionUpdates,
   type KeepFlipBillingCadence,
   type KeepFlipPlanId,
@@ -239,6 +242,59 @@ export function KeepFlipSubscriptionProvider({
       removeListener?.();
     };
   }, [userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    let cancelled = false;
+    let realtimeSubscription: RealtimeSubscription | null = null;
+
+    void subscribeToKeepFlipEntitlementUpdates(userId, () => {
+      if (cancelled) return;
+
+      // Realtime is the wake-up signal, not the authorization source. Reload
+      // the server-verified snapshot so profile trials, grace periods, and
+      // terminal subscription states all use the same policy path.
+      void refresh();
+    })
+      .then((nextSubscription) => {
+        if (cancelled) {
+          void nextSubscription?.unsubscribe();
+          return;
+        }
+        realtimeSubscription = nextSubscription;
+      })
+      .catch((caughtError) => {
+        if (__DEV__) {
+          console.warn(
+            '[KeepFlip][Subscription] Could not attach Appwrite entitlement updates:',
+            caughtError,
+          );
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      void realtimeSubscription?.unsubscribe();
+    };
+  }, [refresh, userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    let previousState = AppState.currentState;
+    const appStateSubscription = AppState.addEventListener(
+      'change',
+      (nextState) => {
+        const resumed =
+          nextState === 'active' && previousState !== 'active';
+        previousState = nextState;
+        if (resumed) void refresh();
+      },
+    );
+
+    return () => appStateSubscription.remove();
+  }, [refresh, userId]);
 
   const purchase = useCallback(
     async (
