@@ -27,6 +27,7 @@ import {
   listAssistantConversation,
   listOlderAssistantConversation,
   listAssistantTasks,
+  parseAssistantCommand,
   runKeepFlipAssistant,
   subscribeToAssistantConversation,
   type AssistantAction,
@@ -432,6 +433,9 @@ export function FlipConversationalAssistantPanel({
   const sendMessage = async (value = command) => {
     const input = value.trim();
     if (!input || !userId || isInteractionLocked) return;
+    const directCommand = parseAssistantCommand(input);
+    const directNavigation =
+      directCommand.type === 'navigate' ? directCommand : null;
     const initialReaction = isFlipQuestionOrTask(input)
       ? 'aha'
       : 'acknowledge';
@@ -453,6 +457,12 @@ export function FlipConversationalAssistantPanel({
     react(initialReaction);
 
     try {
+      // Navigation is an app command. Honor it immediately instead of making
+      // the seller wait for an AI response or accepting a nearby route the
+      // model may have guessed.
+      if (directNavigation) {
+        await applyAction(directNavigation);
+      }
       const reply = await runKeepFlipAssistant({
         conversationId: conversationId ?? undefined,
         message: input,
@@ -460,7 +470,9 @@ export function FlipConversationalAssistantPanel({
         context: workspaceContext(),
         ownerId: userId,
       });
-      await applyAction(reply.action);
+      if (!directNavigation) {
+        await applyAction(reply.action);
+      }
       if (reply.persistedMessages.length) {
         setMessages((current) =>
           mergeConversationMessages(
@@ -573,7 +585,11 @@ export function FlipConversationalAssistantPanel({
       {!isExpanded ? (
         <Animated.View entering={FadeIn.duration(220)} exiting={FadeOut.duration(140)}>
           <Pressable
-            accessibilityHint="Opens a conversation with Flip."
+            accessibilityHint={
+              isOverlay
+                ? 'Tap to open a conversation with Flip. Drag the minimized button to move it.'
+                : 'Opens a conversation with Flip.'
+            }
             accessibilityLabel="Talk to Flip"
             accessibilityRole="button"
             onPress={() => {
@@ -590,7 +606,7 @@ export function FlipConversationalAssistantPanel({
                 styles.collapsedAvatar,
                 isOverlay && styles.overlayCollapsedAvatar,
               ]}>
-              <FlipCompanion size={isOverlay ? 50 : 46} />
+              <FlipCompanion size={isOverlay ? 38 : 46} />
               {isOverlay ? <View style={styles.overlayStatusDot} /> : null}
             </View>
             {!isOverlay ? (
@@ -670,9 +686,84 @@ export function FlipConversationalAssistantPanel({
                 contentContainerStyle={styles.conversationContent}
                 keyboardShouldPersistTaps="handled"
                 nestedScrollEnabled
+                onContentSizeChange={(_width, contentHeight) => {
+                  const previousContentHeight = conversationContentHeightRef.current;
+                  conversationContentHeightRef.current = contentHeight;
+                  if (!shouldRestoreHistoryScrollRef.current) return;
+
+                  shouldRestoreHistoryScrollRef.current = false;
+                  const nextOffset = conversationOffsetRef.current + Math.max(
+                    0,
+                    contentHeight - previousContentHeight,
+                  );
+                  conversationOffsetRef.current = nextOffset;
+                  requestAnimationFrame(() => {
+                    conversationScrollRef.current?.scrollTo({
+                      animated: false,
+                      y: nextOffset,
+                    });
+                  });
+                }}
+                onScroll={(event) => {
+                  const offsetY = event.nativeEvent.contentOffset.y;
+                  conversationOffsetRef.current = offsetY;
+                  if (
+                    offsetY <= 24 &&
+                    canLoadOlderOnScrollRef.current &&
+                    hasOlderMessages &&
+                    !isLoadingOlderMessages
+                  ) {
+                    canLoadOlderOnScrollRef.current = false;
+                    void loadOlderMessages();
+                  }
+                }}
+                onScrollBeginDrag={() => {
+                  canLoadOlderOnScrollRef.current = true;
+                }}
                 ref={conversationScrollRef}
+                scrollEventThrottle={16}
                 showsVerticalScrollIndicator={isOverlay}
-                style={[styles.conversation, isOverlay && styles.overlayConversation]}>
+                style={[
+                  styles.conversation,
+                  isOverlay && styles.overlayConversation,
+                  isOverlay && overlayConversationMaxHeight != null
+                    ? { maxHeight: overlayConversationMaxHeight }
+                    : null,
+                ]}>
+                {historyError ? (
+                  <Pressable
+                    accessibilityLabel="Retry loading earlier Flip messages"
+                    accessibilityRole="button"
+                    onPress={() => void loadOlderMessages()}
+                    style={({ pressed }) => [
+                      styles.historyLoadButton,
+                      pressed && styles.historyLoadButtonPressed,
+                    ]}>
+                    <Text style={[styles.historyLoadText, { fontSize: responsiveFont(8) }]}>
+                      EARLIER MESSAGES COULDN'T LOAD - TAP TO RETRY
+                    </Text>
+                  </Pressable>
+                ) : isLoadingOlderMessages ? (
+                  <View style={styles.historyLoading}>
+                    <ActivityIndicator color={theme.colors.scannerCyan} size="small" />
+                    <Text style={[styles.historyLoadText, { fontSize: responsiveFont(8) }]}>
+                      LOADING EARLIER MESSAGES...
+                    </Text>
+                  </View>
+                ) : hasOlderMessages ? (
+                  <Pressable
+                    accessibilityLabel="Load earlier Flip messages"
+                    accessibilityRole="button"
+                    onPress={() => void loadOlderMessages()}
+                    style={({ pressed }) => [
+                      styles.historyLoadButton,
+                      pressed && styles.historyLoadButtonPressed,
+                    ]}>
+                    <Text style={[styles.historyLoadText, { fontSize: responsiveFont(8) }]}>
+                      LOAD EARLIER MESSAGES
+                    </Text>
+                  </Pressable>
+                ) : null}
                 {isLoading && !visibleMessages.length ? (
                   <View style={styles.loadingConversation}>
                     <ActivityIndicator color={theme.colors.scannerCyan} size="small" />
@@ -887,8 +978,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     elevation: 8,
   },
   overlaySurfaceCollapsed: {
-    width: 60,
-    borderRadius: 30,
+    width: 46,
+    borderRadius: 23,
+    opacity: 0.74,
   },
   collapsedBar: {
     minHeight: 70,
@@ -899,12 +991,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     paddingVertical: 10,
   },
   overlayCollapsedBar: {
-    width: 60,
-    minHeight: 60,
+    width: 46,
+    minHeight: 46,
     justifyContent: 'center',
     gap: 0,
-    paddingHorizontal: 5,
-    paddingVertical: 5,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
   },
   collapsedBarPressed: { backgroundColor: 'rgba(0, 255, 255, 0.06)' },
   collapsedAvatar: {
@@ -918,19 +1010,19 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     backgroundColor: 'rgba(242, 211, 138, 0.1)',
   },
   overlayCollapsedAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
   },
   overlayStatusDot: {
     position: 'absolute',
-    right: 2,
-    bottom: 2,
-    width: 10,
-    height: 10,
-    borderWidth: 2,
+    right: 0,
+    bottom: 0,
+    width: 8,
+    height: 8,
+    borderWidth: 1,
     borderColor: theme.colors.background,
-    borderRadius: 5,
+    borderRadius: 4,
     backgroundColor: theme.colors.scannerCyan,
   },
   collapsedCopy: { flex: 1, minWidth: 0, gap: 4 },
@@ -1028,6 +1120,30 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   },
   overlayConversation: {
     maxHeight: 240,
+  },
+  historyLoadButton: {
+    alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(88, 223, 232, 0.2)',
+    borderRadius: 10,
+    borderCurve: 'continuous',
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(88, 223, 232, 0.05)',
+  },
+  historyLoadButtonPressed: { opacity: 0.68 },
+  historyLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    paddingVertical: 4,
+  },
+  historyLoadText: {
+    color: theme.colors.scannerCyan,
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 0.8,
   },
   loadingConversation: {
     minHeight: 66,

@@ -24,6 +24,7 @@ import {
   createAssistantTask,
   listAssistantTasks,
   parseAssistantCommand,
+  type AssistantRoute,
   type AssistantTask,
 } from '@/services/keepflip-assistant-service';
 import {
@@ -34,11 +35,6 @@ import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
-type AssistantRoute =
-  | '/inventory'
-  | '/books'
-  | '/deal-shelf'
-  | '/account';
 
 const FLIP_MASCOT_IMAGE = require('@/assets/images/flip-mascot.png');
 

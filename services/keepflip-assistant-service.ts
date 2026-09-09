@@ -716,7 +716,11 @@ export function parseAssistantCommand(input: string): ParsedAssistantCommand {
     lower.includes('open scanner') ||
     lower.includes('open the scanner') ||
     lower.includes('go to scanner') ||
-    lower.includes('take me to scanner')
+    lower.includes('go to the scanner') ||
+    lower.includes('show scanner') ||
+    lower.includes('show the scanner') ||
+    lower.includes('take me to scanner') ||
+    lower.includes('take me to the scanner')
   ) {
     return { type: 'navigate', route: '/scanner' };
   }
@@ -1138,9 +1142,27 @@ export async function runKeepFlipAssistant({
     throw new Error('Flip could not save this conversation response.');
   }
 
+  // Explicit navigation belongs to the app, not to a probabilistic model. The
+  // Function may still supply the conversational answer, but it cannot reroute
+  // a direct command such as "open Scanner" to a nearby screen like Inventory.
+  const directCommand = parseAssistantCommand(cleanMessage);
+  const directNavigation =
+    directCommand.type === 'navigate' ? directCommand : null;
+  const correctedReply = directNavigation
+    ? {
+        ...reply,
+        action: directNavigation,
+        reaction: fallback.reaction,
+        reply: fallback.reply,
+      }
+    : reply;
+  const correctedAssistantMessage = directNavigation
+    ? { ...assistantMessage, content: fallback.reply }
+    : assistantMessage;
+
   return {
-    ...reply,
+    ...correctedReply,
     conversationId: cleanConversationId,
-    persistedMessages: [userMessage, assistantMessage],
+    persistedMessages: [userMessage, correctedAssistantMessage],
   };
 }
