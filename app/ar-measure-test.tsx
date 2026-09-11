@@ -1,6 +1,8 @@
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
+import { responsiveWidth } from '@/lib/responsiveFont';
+import * as Haptics from "expo-haptics";
 import { requireNativeViewManager } from "expo-modules-core";
 import { useRef, useState, type Ref } from "react";
-import * as Haptics from "expo-haptics";
 import {
   Pressable,
   StyleSheet,
@@ -9,9 +11,6 @@ import {
   type ViewProps,
 } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
-import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type TrackingEvent = {
   state: string;
   reason?: string;
@@ -42,23 +41,23 @@ type ItemMeasurementEvent = BoxMeasurementEvent & {
 };
 
 type TargetEvent = {
-    state:
-      | "searching"
-      | "searching_corner"
-      | "searching_item"
-      | "item_depth_required"
-      | "scanning_item"
-      | "move_around_item"
-      | "corner_no_depth"
-      | "stabilizing"
-      | "locked"
-      | "move_to_next"
-      | "third_point_not_perpendicular"
-      | "finding_support_plane"
-      | "complete";
-  
-    progress: number;
-  };
+  state:
+  | "searching"
+  | "searching_corner"
+  | "searching_item"
+  | "item_depth_required"
+  | "scanning_item"
+  | "move_around_item"
+  | "corner_no_depth"
+  | "stabilizing"
+  | "locked"
+  | "move_to_next"
+  | "third_point_not_perpendicular"
+  | "finding_support_plane"
+  | "complete";
+
+  progress: number;
+};
 
 type ErrorEvent = {
   code: string;
@@ -181,17 +180,17 @@ export default function ARMeasureTestScreen() {
           setTarget(event.nativeEvent);
         }}
         onPointPlaced={(event) => {
-            const index =
-              event.nativeEvent.index;
-          
-            setPointCount(
-              index + 1,
-            );
-          
-            void Haptics.performAndroidHapticsAsync(
-              Haptics.AndroidHaptics.Confirm,
-            );
-          }}
+          const index =
+            event.nativeEvent.index;
+
+          setPointCount(
+            index + 1,
+          );
+
+          void Haptics.performAndroidHapticsAsync(
+            Haptics.AndroidHaptics.Confirm,
+          );
+        }}
         onItemMeasurement={(event) => {
           setMeasurement(event.nativeEvent);
           void Haptics.performAndroidHapticsAsync(
@@ -204,30 +203,30 @@ export default function ARMeasureTestScreen() {
           );
         }}
       />
-    <View
-    pointerEvents="none"
-    style={styles.reticleContainer}
-    >
-    <View
-        style={[
-        styles.reticle,
-        target.state === "stabilizing" &&
+      <View
+        pointerEvents="none"
+        style={styles.reticleContainer}
+      >
+        <View
+          style={[
+            styles.reticle,
+            target.state === "stabilizing" &&
             styles.reticleLocking,
 
-        (
-            target.state === "locked" ||
-            target.state === "complete"
-        ) &&
+            (
+              target.state === "locked" ||
+              target.state === "complete"
+            ) &&
             styles.reticleLocked,
-        ]}
-    >
-        <View style={styles.reticleDot} />
-    </View>
+          ]}
+        >
+          <View style={styles.reticleDot} />
+        </View>
 
-    <Text style={[styles.reticleLabel, { fontSize: responsiveFont(12) }]}>
-        {targetLabel}
-    </Text>
-    </View>
+        <Text style={[styles.reticleLabel, { fontSize: responsiveFont(12) }]}>
+          {targetLabel}
+        </Text>
+      </View>
       <SafeAreaView
         pointerEvents="box-none"
         style={styles.overlay}
@@ -291,175 +290,176 @@ export default function ARMeasureTestScreen() {
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#000",
-  },
+  const { responsiveFont, responsiveWidth, responsiveHeight } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: "#000",
+    },
 
-  overlay: {
-    ...StyleSheet.absoluteFill,
-    justifyContent: "flex-end",
-    padding: 20,
-  },
+    overlay: {
+      ...StyleSheet.absoluteFill,
+      justifyContent: "flex-end",
+      padding: 20,
+    },
 
-  statusCard: {
-    backgroundColor: "rgba(0, 0, 0, 0.72)",
-    borderRadius: 20,
-    padding: 18,
-    gap: 6,
-  },
+    statusCard: {
+      backgroundColor: "rgba(0, 0, 0, 0.72)",
+      borderRadius: 20,
+      padding: 18,
+      gap: 6,
+    },
 
-  title: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "700",
-  },
+    title: {
+      color: "#fff",
+      fontSize: 20,
+      fontWeight: "700",
+    },
 
-  status: {
-    color: "#fff",
-    fontSize: 14,
-  },
+    status: {
+      color: "#fff",
+      fontSize: 14,
+    },
 
-  instructions: {
-    color: "#ddd",
-    fontSize: 15,
-    marginTop: 8,
-  },
+    instructions: {
+      color: "#ddd",
+      fontSize: 15,
+      marginTop: 8,
+    },
 
-  measurement: {
-    color: "#fff",
-    fontSize: 34,
-    fontWeight: "700",
-    marginTop: 8,
-  },
+    measurement: {
+      color: "#fff",
+      fontSize: 34,
+      fontWeight: "700",
+      marginTop: 8,
+    },
 
-  secondaryMeasurement: {
-    color: "#ddd",
-    fontSize: 18,
-  },
+    secondaryMeasurement: {
+      color: "#ddd",
+      fontSize: 18,
+    },
 
-  error: {
-    color: "#ffb4b4",
-    fontSize: 13,
-    marginTop: 8,
-  },
+    error: {
+      color: "#ffb4b4",
+      fontSize: 13,
+      marginTop: 8,
+    },
 
-  button: {
-    marginTop: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.35)",
-    borderRadius: 14,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
+    button: {
+      marginTop: 12,
+      borderWidth: 1,
+      borderColor: "rgba(255,255,255,0.35)",
+      borderRadius: 14,
+      paddingVertical: 12,
+      alignItems: "center",
+    },
 
-  buttonText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-  reticleContainer: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: "42%",
-    alignItems: "center",
-  },
-  
-  reticle: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.7)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  
-  reticleLocking: {
-    borderWidth: 3,
-  },
-  
-  reticleLocked: {
-    borderWidth: 4,
-  },
-  
-  reticleDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: "#fff",
-  },
-  
-  reticleLabel: {
-    marginTop: 12,
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 1.4,
-    backgroundColor: "rgba(0,0,0,0.55)",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-  }
-});
+    buttonText: {
+      color: "#fff",
+      fontWeight: "600",
+    },
+    reticleContainer: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      top: "42%",
+      alignItems: "center",
+    },
+
+    reticle: {
+      width: 58,
+      height: 58,
+      borderRadius: 29,
+      borderWidth: 2,
+      borderColor: "rgba(255,255,255,0.7)",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+    reticleLocking: {
+      borderWidth: 3,
+    },
+
+    reticleLocked: {
+      borderWidth: 4,
+    },
+
+    reticleDot: {
+      width: 7,
+      height: 7,
+      borderRadius: 4,
+      backgroundColor: "#fff",
+    },
+
+    reticleLabel: {
+      marginTop: 12,
+      color: "#fff",
+      fontSize: 12,
+      fontWeight: "800",
+      letterSpacing: 1.4,
+      backgroundColor: "rgba(0,0,0,0.55)",
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 10,
+    }
+  });
   return {
     ...staticStyles,
-  title: [
-    staticStyles.title,
-    {
-        fontSize: responsiveLayout.responsiveFont(20),
-    },
-  ],
-  status: [
-    staticStyles.status,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
-  instructions: [
-    staticStyles.instructions,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  measurement: [
-    staticStyles.measurement,
-    {
-        fontSize: responsiveLayout.responsiveFont(34),
-    },
-  ],
-  secondaryMeasurement: [
-    staticStyles.secondaryMeasurement,
-    {
-        fontSize: responsiveLayout.responsiveFont(18),
-    },
-  ],
-  error: [
-    staticStyles.error,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  reticle: [
-    staticStyles.reticle,
-    {
-        width: responsiveLayout.responsiveWidth(58),
-        height: responsiveLayout.responsiveHeight(58),
-    },
-  ],
-  reticleDot: [
-    staticStyles.reticleDot,
-    {
-        width: responsiveLayout.responsiveWidth(7),
-        height: responsiveLayout.responsiveHeight(7),
-    },
-  ],
-  reticleLabel: [
-    staticStyles.reticleLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
+    title: [
+      staticStyles.title,
+      {
+        fontSize: responsiveFont(20),
+      },
+    ],
+    status: [
+      staticStyles.status,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
+    instructions: [
+      staticStyles.instructions,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    measurement: [
+      staticStyles.measurement,
+      {
+        fontSize: responsiveFont(34),
+      },
+    ],
+    secondaryMeasurement: [
+      staticStyles.secondaryMeasurement,
+      {
+        fontSize: responsiveFont(18),
+      },
+    ],
+    error: [
+      staticStyles.error,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    reticle: [
+      staticStyles.reticle,
+      {
+        width: responsiveWidth(58),
+        height: responsiveHeight(58),
+      },
+    ],
+    reticleDot: [
+      staticStyles.reticleDot,
+      {
+        width: responsiveWidth(7),
+        height: responsiveHeight(7),
+      },
+    ],
+    reticleLabel: [
+      staticStyles.reticleLabel,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
   };
 }

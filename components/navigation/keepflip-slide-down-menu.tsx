@@ -43,7 +43,6 @@ const destinations: MenuDestination[] = [
     label: 'Command Center',
   },
   { eyebrow: 'IDENTIFY & VALUE', href: '/scanner' as Href, icon: 'viewfinder', label: 'Scanner' },
-  { eyebrow: 'DEALS TO DECIDE', href: '/deal-shelf' as Href, icon: 'tag.fill', label: 'Deal Shelf' },
   { eyebrow: 'YOUR SAVED FINDS', href: '/inventory', icon: 'shippingbox.fill', label: 'Inventory' },
 
 ];
@@ -191,7 +190,7 @@ export function KeepFlipSlideDownMenu() {
             pointerEvents={isMenuOpen ? 'auto' : 'none'}
             style={[
               styles.panel,
-              { height: panelHeight, paddingTop: insets.top},
+              { height: panelHeight, paddingTop: insets.top },
               panelStyle,
             ]}>
             <ScrollView
@@ -209,8 +208,8 @@ export function KeepFlipSlideDownMenu() {
                   <View style={styles.brandCopy}>
                     <Text style={[styles.brandName, { fontSize: responsiveFont(22) }]}>KEEPFLIP</Text>
                     <View style={styles.brandDescriptorContainer}>
-                      <Text numberOfLines={1} style={styles.brandDescriptor}>Sourcing </Text>
-                      <Text numberOfLines={1} style={styles.brandDescriptor}>Built for your business.</Text>
+                      <Text numberOfLines={1} style={styles.brandDescriptor}>Sourcing smarter. </Text>
+                      <Text numberOfLines={1} style={styles.brandDescriptor}>Flipping better.</Text>
                     </View>
                   </View>
                 </View>
@@ -354,419 +353,420 @@ export function KeepFlipSlideDownMenu() {
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  overlayRoot: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 10000,
-    elevation: 10000,
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 10000,
-    elevation: 10000,
-    backgroundColor: 'rgba(1, 1, 2, 0.68)',
-  },
-  panel: {
-    position: 'absolute',
-    zIndex: 10001,
-    elevation: 10001,
-    top: 0,
-    right: 0,
-    left: 0,
-    overflow: 'hidden',
-    borderRightWidth: 1,
-    borderBottomWidth: 1,
-    borderLeftWidth: 1,
-    borderColor: 'rgba(215, 168, 74, 0.30)',
-    borderBottomRightRadius: theme.radii.large,
-    borderBottomLeftRadius: theme.radii.large,
-    backgroundColor: 'rgba(7, 7, 11, 0.98)',
-    experimental_backgroundImage: `
+  const { responsiveWidth, responsiveHeight, responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    overlayRoot: {
+      ...StyleSheet.absoluteFill,
+      zIndex: 10000,
+      elevation: 10000,
+    },
+    backdrop: {
+      ...StyleSheet.absoluteFill,
+      zIndex: 10000,
+      elevation: 10000,
+      backgroundColor: 'rgba(1, 1, 2, 0.68)',
+    },
+    panel: {
+      position: 'absolute',
+      zIndex: 10001,
+      elevation: 10001,
+      top: 0,
+      right: 0,
+      left: 0,
+      overflow: 'hidden',
+      borderRightWidth: 1,
+      borderBottomWidth: 1,
+      borderLeftWidth: 1,
+      borderColor: 'rgba(215, 168, 74, 0.30)',
+      borderBottomRightRadius: theme.radii.large,
+      borderBottomLeftRadius: theme.radii.large,
+      backgroundColor: 'rgba(7, 7, 11, 0.98)',
+      experimental_backgroundImage: `
       radial-gradient(circle at 86% 0%, rgba(224, 172, 75, 0.17) 0%, transparent 34%),
       radial-gradient(circle at 2% 100%, rgba(141, 114, 255, 0.09) 0%, transparent 38%),
       linear-gradient(155deg, rgba(18, 15, 22, 0.99) 0%, rgba(3, 3, 6, 0.99) 74%)
     `,
-    boxShadow: '0 22px 60px rgba(0, 0, 0, 0.72), 0 0 30px rgba(215, 168, 74, 0.10)',
-  },
-  panelContent: {
-    flexGrow: 1,
-    gap: 20,
-    top: 14,
-    paddingHorizontal: 20,
-    paddingBottom: 24,
-  },
-  brandRow: {
-    minHeight: 58,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  brandLockup: {
-    minWidth: 0,
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  brandMark: {
-    width: 65,
-    height: 50,
-  },
-  brandCopy: {
-    minWidth: 0,
-    gap: 5,
-    bottom: 5,
-  },
-  brandName: {
-    color: theme.colors.cream,
-    fontSize: 22,
-    fontWeight: '900',
-    letterSpacing: 2.6,
-  },
-  brandDescriptorContainer: {
-    maxWidth: 150,
-  },
-  brandDescriptor: {
-    color: theme.colors.gold,
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 1.8,
-  },
-  closeButton: {
-    width: 46,
-    height: 46,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.38)',
-    backgroundColor: 'rgba(5, 5, 8, 0.72)',
-  },
-  controlPressed: {
-    opacity: 0.72,
-    transform: [{ scale: 0.95 }],
-  },
-  goldRail: {
-    height: 1,
-    experimental_backgroundImage:
-      'linear-gradient(90deg, transparent 0%, rgba(215, 168, 74, 0.55) 20%, rgba(242, 211, 138, 0.92) 50%, rgba(215, 168, 74, 0.55) 80%, transparent 100%)',
-    boxShadow: '0 0 12px rgba(215, 168, 74, 0.24)',
-  },
-  navigationBlock: {
-    gap: 10,
-  },
-  workflowBlock: {
-    gap: 10,
-  },
-  sectionLabel: {
-    color: theme.colors.textMuted,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 2.2,
-  },
-  destinationList: {
-    gap: 9,
-  },
-  destination: {
-    minHeight: 76,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 13,
-    overflow: 'hidden',
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    borderRadius: theme.radii.medium,
-    borderWidth: 1,
-    borderColor: 'rgba(138, 100, 43, 0.18)',
-    backgroundColor: 'rgba(8, 8, 11, 0.68)',
-  },
-  destinationActive: {
-    borderColor: 'rgba(242, 211, 138, 0.42)',
-    backgroundColor: 'rgba(215, 168, 74, 0.13)',
-    boxShadow: 'inset 0 0 22px rgba(215, 168, 74, 0.06), 0 0 20px rgba(215, 168, 74, 0.07)',
-  },
-  destinationPressed: {
-    opacity: 0.78,
-    transform: [{ scale: 0.985 }],
-  },
-  destinationIcon: {
-    width: 46,
-    height: 46,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: theme.radii.medium,
-    borderWidth: 1,
-    borderColor: 'rgba(138, 100, 43, 0.24)',
-    backgroundColor: 'rgba(3, 3, 5, 0.60)',
-  },
-  destinationIconActive: {
-    borderColor: 'rgba(242, 211, 138, 0.48)',
-    backgroundColor: 'rgba(215, 168, 74, 0.12)',
-  },
-  destinationCopy: {
-    minWidth: 0,
-    flex: 1,
-    gap: 3,
-  },
-  destinationLabel: {
-    color: theme.colors.text,
-    fontSize: 17,
-    fontWeight: '800',
-  },
-  destinationLabelActive: {
-    color: theme.colors.cream,
-  },
-  destinationEyebrow: {
-    color: theme.colors.textMuted,
-    fontSize: 8,
-    fontWeight: '800',
-    letterSpacing: 1.35,
-  },
-  activeIndicator: {
-    width: 7,
-    height: 7,
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.scannerCyan,
-    boxShadow: '0 0 10px rgba(88, 223, 232, 0.88)',
-  },
-  destinationNumber: {
-    position: 'absolute',
-    right: 8,
-    bottom: -6,
-    color: 'rgba(242, 211, 138, 0.055)',
-    fontSize: 38,
-    fontWeight: '900',
-    letterSpacing: -2,
-  },
-  ebayLink: {
-    minHeight: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 11,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: theme.radii.medium,
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.18)',
-    backgroundColor: 'rgba(6, 6, 9, 0.62)',
-  },
-  ebayLinkActive: {
-    borderColor: 'rgba(242, 211, 138, 0.36)',
-    backgroundColor: 'rgba(215, 168, 74, 0.09)',
-  },
-  ebayLinkPressed: {
-    opacity: 0.76,
-  },
-  ebayLinkCopy: {
-    minWidth: 0,
-    flex: 1,
-    gap: 2,
-  },
-  ebayLinkText: {
-    color: theme.colors.cream,
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  ebayLinkEyebrow: {
-    color: theme.colors.textMuted,
-    fontSize: 7,
-    fontWeight: '900',
-    letterSpacing: 1.2,
-  },
-  systemStatus: {
-    minHeight: 54,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: theme.radii.medium,
-    borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.18)',
-    backgroundColor: 'rgba(3, 3, 6, 0.62)',
-  },
-  systemStatusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.scannerCyan,
-    boxShadow: '0 0 10px rgba(88, 223, 232, 0.85)',
-  },
-  systemStatusCopy: {
-    flex: 1,
-    gap: 1,
-  },
-  systemStatusLabel: {
-    color: theme.colors.textMuted,
-    fontSize: 8,
-    fontWeight: '800',
-    letterSpacing: 1.35,
-  },
-  systemStatusValue: {
-    color: theme.colors.scannerCyan,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1.2,
-  },
-  systemStatusCode: {
-    color: theme.colors.goldMuted,
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-  triggerWrap: {
-    position: 'absolute',
-    right: 20,
-    zIndex: 10002,
-    elevation: 10002,
-  },
-  trigger: {
-    width: 48,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.48)',
-    backgroundColor: 'rgba(7, 7, 11, 0.88)',
-    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.48), 0 0 18px rgba(215, 168, 74, 0.12)',
-  },
-  triggerStatusDot: {
-    position: 'absolute',
-    right: 5,
-    bottom: 5,
-    width: 5,
-    height: 5,
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: theme.colors.background,
-    backgroundColor: theme.colors.scannerCyan,
-    boxShadow: '0 0 7px rgba(88, 223, 232, 0.82)',
-  },
-});
+      boxShadow: '0 22px 60px rgba(0, 0, 0, 0.72), 0 0 30px rgba(215, 168, 74, 0.10)',
+    },
+    panelContent: {
+      flexGrow: 1,
+      gap: 20,
+      top: 14,
+      paddingHorizontal: 20,
+      paddingBottom: 24,
+    },
+    brandRow: {
+      minHeight: 58,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 10,
+    },
+    brandLockup: {
+      minWidth: 0,
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    brandMark: {
+      width: 65,
+      height: 50,
+    },
+    brandCopy: {
+      minWidth: 0,
+      gap: 5,
+      bottom: 5,
+    },
+    brandName: {
+      color: theme.colors.cream,
+      fontSize: 22,
+      fontWeight: '900',
+      letterSpacing: 2.6,
+    },
+    brandDescriptorContainer: {
+      maxWidth: 150,
+    },
+    brandDescriptor: {
+      color: theme.colors.gold,
+      fontSize: 9,
+      fontWeight: '800',
+      letterSpacing: 1.8,
+    },
+    closeButton: {
+      width: 46,
+      height: 46,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.38)',
+      backgroundColor: 'rgba(5, 5, 8, 0.72)',
+    },
+    controlPressed: {
+      opacity: 0.72,
+      transform: [{ scale: 0.95 }],
+    },
+    goldRail: {
+      height: 1,
+      experimental_backgroundImage:
+        'linear-gradient(90deg, transparent 0%, rgba(215, 168, 74, 0.55) 20%, rgba(242, 211, 138, 0.92) 50%, rgba(215, 168, 74, 0.55) 80%, transparent 100%)',
+      boxShadow: '0 0 12px rgba(215, 168, 74, 0.24)',
+    },
+    navigationBlock: {
+      gap: 10,
+    },
+    workflowBlock: {
+      gap: 10,
+    },
+    sectionLabel: {
+      color: theme.colors.textMuted,
+      fontSize: 9,
+      fontWeight: '900',
+      letterSpacing: 2.2,
+    },
+    destinationList: {
+      gap: 9,
+    },
+    destination: {
+      minHeight: 76,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 13,
+      overflow: 'hidden',
+      paddingHorizontal: 14,
+      paddingVertical: 11,
+      borderRadius: theme.radii.medium,
+      borderWidth: 1,
+      borderColor: 'rgba(138, 100, 43, 0.18)',
+      backgroundColor: 'rgba(8, 8, 11, 0.68)',
+    },
+    destinationActive: {
+      borderColor: 'rgba(242, 211, 138, 0.42)',
+      backgroundColor: 'rgba(215, 168, 74, 0.13)',
+      boxShadow: 'inset 0 0 22px rgba(215, 168, 74, 0.06), 0 0 20px rgba(215, 168, 74, 0.07)',
+    },
+    destinationPressed: {
+      opacity: 0.78,
+      transform: [{ scale: 0.985 }],
+    },
+    destinationIcon: {
+      width: 46,
+      height: 46,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.medium,
+      borderWidth: 1,
+      borderColor: 'rgba(138, 100, 43, 0.24)',
+      backgroundColor: 'rgba(3, 3, 5, 0.60)',
+    },
+    destinationIconActive: {
+      borderColor: 'rgba(242, 211, 138, 0.48)',
+      backgroundColor: 'rgba(215, 168, 74, 0.12)',
+    },
+    destinationCopy: {
+      minWidth: 0,
+      flex: 1,
+      gap: 3,
+    },
+    destinationLabel: {
+      color: theme.colors.text,
+      fontSize: 17,
+      fontWeight: '800',
+    },
+    destinationLabelActive: {
+      color: theme.colors.cream,
+    },
+    destinationEyebrow: {
+      color: theme.colors.textMuted,
+      fontSize: 8,
+      fontWeight: '800',
+      letterSpacing: 1.35,
+    },
+    activeIndicator: {
+      width: 7,
+      height: 7,
+      borderRadius: theme.radii.pill,
+      backgroundColor: theme.colors.scannerCyan,
+      boxShadow: '0 0 10px rgba(88, 223, 232, 0.88)',
+    },
+    destinationNumber: {
+      position: 'absolute',
+      right: 8,
+      bottom: -6,
+      color: 'rgba(242, 211, 138, 0.055)',
+      fontSize: 38,
+      fontWeight: '900',
+      letterSpacing: -2,
+    },
+    ebayLink: {
+      minHeight: 48,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 11,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: theme.radii.medium,
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.18)',
+      backgroundColor: 'rgba(6, 6, 9, 0.62)',
+    },
+    ebayLinkActive: {
+      borderColor: 'rgba(242, 211, 138, 0.36)',
+      backgroundColor: 'rgba(215, 168, 74, 0.09)',
+    },
+    ebayLinkPressed: {
+      opacity: 0.76,
+    },
+    ebayLinkCopy: {
+      minWidth: 0,
+      flex: 1,
+      gap: 2,
+    },
+    ebayLinkText: {
+      color: theme.colors.cream,
+      fontSize: 13,
+      fontWeight: '800',
+    },
+    ebayLinkEyebrow: {
+      color: theme.colors.textMuted,
+      fontSize: 7,
+      fontWeight: '900',
+      letterSpacing: 1.2,
+    },
+    systemStatus: {
+      minHeight: 54,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: theme.radii.medium,
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.18)',
+      backgroundColor: 'rgba(3, 3, 6, 0.62)',
+    },
+    systemStatusDot: {
+      width: 6,
+      height: 6,
+      borderRadius: theme.radii.pill,
+      backgroundColor: theme.colors.scannerCyan,
+      boxShadow: '0 0 10px rgba(88, 223, 232, 0.85)',
+    },
+    systemStatusCopy: {
+      flex: 1,
+      gap: 1,
+    },
+    systemStatusLabel: {
+      color: theme.colors.textMuted,
+      fontSize: 8,
+      fontWeight: '800',
+      letterSpacing: 1.35,
+    },
+    systemStatusValue: {
+      color: theme.colors.scannerCyan,
+      fontSize: 10,
+      fontWeight: '900',
+      letterSpacing: 1.2,
+    },
+    systemStatusCode: {
+      color: theme.colors.goldMuted,
+      fontSize: 9,
+      fontWeight: '800',
+      letterSpacing: 1,
+    },
+    triggerWrap: {
+      position: 'absolute',
+      right: 20,
+      zIndex: 10002,
+      elevation: 10002,
+    },
+    trigger: {
+      width: 48,
+      height: 48,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.48)',
+      backgroundColor: 'rgba(7, 7, 11, 0.88)',
+      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.48), 0 0 18px rgba(215, 168, 74, 0.12)',
+    },
+    triggerStatusDot: {
+      position: 'absolute',
+      right: 5,
+      bottom: 5,
+      width: 5,
+      height: 5,
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: theme.colors.background,
+      backgroundColor: theme.colors.scannerCyan,
+      boxShadow: '0 0 7px rgba(88, 223, 232, 0.82)',
+    },
+  });
   return {
     ...staticStyles,
-  brandMark: [
-    staticStyles.brandMark,
-    {
-        width: responsiveLayout.responsiveWidth(65),
-        height: responsiveLayout.responsiveHeight(50),
-    },
-  ],
-  brandName: [
-    staticStyles.brandName,
-    {
-        fontSize: responsiveLayout.responsiveFont(22),
-    },
-  ],
-  brandDescriptor: [
-    staticStyles.brandDescriptor,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  closeButton: [
-    staticStyles.closeButton,
-    {
-        width: responsiveLayout.responsiveWidth(46),
-        height: responsiveLayout.responsiveHeight(46),
-    },
-  ],
-  goldRail: [
-    staticStyles.goldRail,
-    {
-        height: responsiveLayout.responsiveHeight(1),
-    },
-  ],
-  sectionLabel: [
-    staticStyles.sectionLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  destinationIcon: [
-    staticStyles.destinationIcon,
-    {
-        width: responsiveLayout.responsiveWidth(46),
-        height: responsiveLayout.responsiveHeight(46),
-    },
-  ],
-  destinationLabel: [
-    staticStyles.destinationLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(17),
-    },
-  ],
-  destinationEyebrow: [
-    staticStyles.destinationEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  activeIndicator: [
-    staticStyles.activeIndicator,
-    {
-        width: responsiveLayout.responsiveWidth(7),
-        height: responsiveLayout.responsiveHeight(7),
-    },
-  ],
-  destinationNumber: [
-    staticStyles.destinationNumber,
-    {
-        fontSize: responsiveLayout.responsiveFont(38),
-    },
-  ],
-  ebayLinkText: [
-    staticStyles.ebayLinkText,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  ebayLinkEyebrow: [
-    staticStyles.ebayLinkEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  systemStatusDot: [
-    staticStyles.systemStatusDot,
-    {
-        width: responsiveLayout.responsiveWidth(6),
-        height: responsiveLayout.responsiveHeight(6),
-    },
-  ],
-  systemStatusLabel: [
-    staticStyles.systemStatusLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  systemStatusValue: [
-    staticStyles.systemStatusValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  systemStatusCode: [
-    staticStyles.systemStatusCode,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  trigger: [
-    staticStyles.trigger,
-    {
-        width: responsiveLayout.responsiveWidth(48),
-        height: responsiveLayout.responsiveHeight(48),
-    },
-  ],
-  triggerStatusDot: [
-    staticStyles.triggerStatusDot,
-    {
-        width: responsiveLayout.responsiveWidth(5),
-        height: responsiveLayout.responsiveHeight(5),
-    },
-  ],
+    brandMark: [
+      staticStyles.brandMark,
+      {
+        width: responsiveWidth(65),
+        height: responsiveHeight(50),
+      },
+    ],
+    brandName: [
+      staticStyles.brandName,
+      {
+        fontSize: responsiveFont(22),
+      },
+    ],
+    brandDescriptor: [
+      staticStyles.brandDescriptor,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    closeButton: [
+      staticStyles.closeButton,
+      {
+        width: responsiveWidth(46),
+        height: responsiveHeight(46),
+      },
+    ],
+    goldRail: [
+      staticStyles.goldRail,
+      {
+        height: responsiveHeight(1),
+      },
+    ],
+    sectionLabel: [
+      staticStyles.sectionLabel,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    destinationIcon: [
+      staticStyles.destinationIcon,
+      {
+        width: responsiveWidth(46),
+        height: responsiveHeight(46),
+      },
+    ],
+    destinationLabel: [
+      staticStyles.destinationLabel,
+      {
+        fontSize: responsiveFont(17),
+      },
+    ],
+    destinationEyebrow: [
+      staticStyles.destinationEyebrow,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    activeIndicator: [
+      staticStyles.activeIndicator,
+      {
+        width: responsiveWidth(7),
+        height: responsiveHeight(7),
+      },
+    ],
+    destinationNumber: [
+      staticStyles.destinationNumber,
+      {
+        fontSize: responsiveFont(38),
+      },
+    ],
+    ebayLinkText: [
+      staticStyles.ebayLinkText,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    ebayLinkEyebrow: [
+      staticStyles.ebayLinkEyebrow,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    systemStatusDot: [
+      staticStyles.systemStatusDot,
+      {
+        width: responsiveWidth(6),
+        height: responsiveHeight(6),
+      },
+    ],
+    systemStatusLabel: [
+      staticStyles.systemStatusLabel,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    systemStatusValue: [
+      staticStyles.systemStatusValue,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    systemStatusCode: [
+      staticStyles.systemStatusCode,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    trigger: [
+      staticStyles.trigger,
+      {
+        width: responsiveWidth(48),
+        height: responsiveHeight(48),
+      },
+    ],
+    triggerStatusDot: [
+      staticStyles.triggerStatusDot,
+      {
+        width: responsiveWidth(5),
+        height: responsiveHeight(5),
+      },
+    ],
   };
 }

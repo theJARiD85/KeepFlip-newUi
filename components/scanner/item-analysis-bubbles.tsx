@@ -24,16 +24,16 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { ConfusedFlipVideo } from '@/components/flip/confused-flip-video';
 import type {
   AnalysisValuation,
   ItemAnalysisState,
 } from '@/components/scanner/item-analysis-overlay';
-import { ConfusedFlipVideo } from '@/components/flip/confused-flip-video';
 import { ScannerThoughtStream } from '@/components/scanner/scanner-thought-stream';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
+import { responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type ItemAnalysisBubblesProps = {
@@ -303,6 +303,7 @@ function ConfidenceBubbles({
   confidence: NonNullable<Extract<ItemAnalysisState, { status: 'result' }>['data']['confidence']>;
 }) {
   const styles = useResponsiveStyles(createResponsiveStyles);
+  const { responsiveFont } = useResponsiveLayout();
   const entries = [
     ['OVERALL', confidence.overall, theme.colors.goldBright],
     ['IDENTITY', confidence.identity, theme.colors.scannerCyan],
@@ -313,10 +314,6 @@ function ConfidenceBubbles({
   return (
     <View style={styles.metricCloud}>
       {entries.map(([label, value, accent], index) => {
-  const {
-    responsiveFont
-  } = useResponsiveLayout();
-
         const score = percentage(value);
         if (score == null) return null;
         return (
@@ -697,421 +694,422 @@ export function ItemAnalysisBubbles({
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 44,
-    backgroundColor: 'rgba(1, 1, 3, 0.16)',
-    experimental_backgroundImage: `
+  const { responsiveFont, responsiveWidth, responsiveHeight } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    overlay: {
+      ...StyleSheet.absoluteFill,
+      zIndex: 44,
+      backgroundColor: 'rgba(1, 1, 3, 0.16)',
+      experimental_backgroundImage: `
       radial-gradient(circle at 12% 18%, rgba(88, 223, 232, 0.08) 0%, transparent 30%),
       radial-gradient(circle at 86% 76%, rgba(215, 168, 74, 0.08) 0%, transparent 34%)
     `,
-  },
-  topChrome: {
-    position: 'absolute',
-    top: 0,
-    right: 16,
-    left: 16,
-    zIndex: 4,
-    minHeight: 58,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  statusPill: {
-    minHeight: 38,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 13,
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    backgroundColor: 'rgba(4, 4, 7, 0.84)',
-  },
-  statusPillText: { fontSize: 9, fontWeight: '900', letterSpacing: 1.15 },
-  liveSignal: { width: 7, height: 7, borderRadius: theme.radii.pill },
-  closeBubble: {
-    width: 42,
-    height: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.42)',
-    backgroundColor: 'rgba(4, 4, 7, 0.84)',
-    boxShadow: '0 8px 20px rgba(0, 0, 0, 0.42)',
-  },
-  pressed: { opacity: 0.7, transform: [{ scale: 0.95 }] },
-  disabled: { opacity: 0.52 },
-  analyzingContent: {
-    flex: 1,
-    zIndex: 2,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 18,
-  },
-  progressBubbles: { width: '100%', maxWidth: 370, alignItems: 'center', gap: 9 },
-  stageRail: {
-    width: '92%',
-    minHeight: 48,
-    alignItems: 'center',
-    gap: 7,
-    paddingHorizontal: 13,
-    paddingVertical: 9,
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.18)',
-    backgroundColor: 'rgba(3, 5, 8, 0.74)',
-    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.42)',
-  },
-  stageRailNodes: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stageNodeGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  stageNode: {
-    width: 22,
-    height: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-  },
-  stageNodeText: {
-    fontSize: 8,
-    fontWeight: '900',
-    fontVariant: ['tabular-nums'],
-  },
-  stageConnector: {
-    width: 22,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(138, 100, 43, 0.42)',
-  },
-  stageConnectorComplete: {
-    backgroundColor: 'rgba(242, 211, 138, 0.66)',
-  },
-  activeStepText: {
-    maxWidth: '92%',
-    color: theme.colors.scannerCyan,
-    fontSize: 9,
-    lineHeight: 11,
-    fontWeight: '900',
-    letterSpacing: 0.7,
-    textAlign: 'center',
-  },
-  scrollView: { flex: 1, width: '100%' },
-  scrollContent: { width: '100%', alignItems: 'center', paddingHorizontal: 16 },
-  bubbleColumn: { width: '100%', maxWidth: 560, gap: 12 },
-  bubble: {
-    width: '100%',
-    gap: 9,
-    paddingHorizontal: 17,
-    paddingVertical: 15,
-    borderRadius: 26,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    backgroundColor: 'rgba(5, 5, 8, 0.82)',
-  },
-  bubbleEyebrow: { fontSize: 9, fontWeight: '900', letterSpacing: 1.4 },
-  identityBubble: { alignItems: 'center', paddingVertical: 20 },
-  identityTitle: { color: theme.colors.cream, fontSize: 25, lineHeight: 30, textAlign: 'center' },
-  identityMeta: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 16, textAlign: 'center' },
-  summaryBubble: { alignSelf: 'center', width: '92%' },
-  summaryText: { color: theme.colors.text, fontSize: 12, lineHeight: 19, textAlign: 'center' },
-  valuationBubble: { paddingTop: 18 },
-  valuationRow: { flexDirection: 'row', alignItems: 'stretch', gap: 7 },
-  valuationMetric: {
-    flex: 1,
-    minWidth: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingHorizontal: 5,
-    paddingVertical: 12,
-    borderRadius: 18,
-    backgroundColor: 'rgba(242, 211, 138, 0.05)',
-  },
-  valuationMetricFeatured: {
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.42)',
-    backgroundColor: 'rgba(215, 168, 74, 0.13)',
-  },
-  valuationLabel: { color: theme.colors.textMuted, fontSize: 8, letterSpacing: 1 },
-  valuationLabelFeatured: { color: theme.colors.goldBright },
-  valuationValue: { color: theme.colors.text, fontSize: 14 },
-  valuationValueFeatured: { color: theme.colors.goldBright, fontSize: 17 },
-  valuationFootnote: { color: theme.colors.textMuted, fontSize: 9, textAlign: 'center' },
-  readinessBubble: { alignSelf: 'flex-end', width: '95%' },
-  readinessRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  readinessTitle: { flex: 1, fontSize: 12, lineHeight: 17 },
-  readinessScore: { fontSize: 15 },
-  readinessReason: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 16 },
-  conditionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 14 },
-  conditionGrade: { color: theme.colors.cream, fontSize: 20, lineHeight: 25 },
-  conditionScore: { fontSize: 18 },
-  compactBody: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 17 },
-  detailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 9 },
-  detailDot: { width: 6, height: 6, marginTop: 5, borderRadius: theme.radii.pill },
-  detailText: { flex: 1, color: theme.colors.text, fontSize: 10, lineHeight: 16 },
-  metricCloud: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  metricBubble: { width: '48%', alignItems: 'center', paddingVertical: 12 },
-  metricValue: { fontSize: 19 },
-  metricLabel: { color: theme.colors.textMuted, fontSize: 8, letterSpacing: 1.1 },
-  evidenceBubble: { alignSelf: 'center', width: '94%', paddingVertical: 13 },
-  evidenceHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  sourceTag: { color: theme.colors.textMuted, fontSize: 8, textTransform: 'uppercase' },
-  evidenceValue: { color: theme.colors.text, fontSize: 10, lineHeight: 16 },
-  statusBubble: { alignItems: 'center', paddingVertical: 22 },
-  confusedFlipFrame: {
-    width: '100%',
-    height: 156,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: -5,
-  },
-  confusedFlipVideo: { width: '100%', height: '100%' },
-  statusIcon: {
-    width: 30,
-    height: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.18)',
-  },
-  statusTitle: { color: theme.colors.cream, fontSize: 23, lineHeight: 29, textAlign: 'center' },
-  statusMessage: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 19, textAlign: 'center' },
-  guidanceBubble: { alignSelf: 'center', width: '94%', flexDirection: 'row', alignItems: 'flex-start', gap: 11 },
-  guidanceIndex: { fontSize: 10, fontVariant: ['tabular-nums'] },
-  guidanceText: { flex: 1, color: theme.colors.text, fontSize: 11, lineHeight: 17 },
-  actions: { flexDirection: 'row', justifyContent: 'center', gap: 10, paddingTop: 4 },
-  actionButton: {
-    minWidth: 126,
-    minHeight: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-  },
-  actionButtonText: { fontSize: 12, fontWeight: '900' },
-});
+    },
+    topChrome: {
+      position: 'absolute',
+      top: 0,
+      right: 16,
+      left: 16,
+      zIndex: 4,
+      minHeight: 58,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    statusPill: {
+      minHeight: 38,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingHorizontal: 13,
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      backgroundColor: 'rgba(4, 4, 7, 0.84)',
+    },
+    statusPillText: { fontSize: 9, fontWeight: '900', letterSpacing: 1.15 },
+    liveSignal: { width: 7, height: 7, borderRadius: theme.radii.pill },
+    closeBubble: {
+      width: 42,
+      height: 42,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.42)',
+      backgroundColor: 'rgba(4, 4, 7, 0.84)',
+      boxShadow: '0 8px 20px rgba(0, 0, 0, 0.42)',
+    },
+    pressed: { opacity: 0.7, transform: [{ scale: 0.95 }] },
+    disabled: { opacity: 0.52 },
+    analyzingContent: {
+      flex: 1,
+      zIndex: 2,
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      paddingHorizontal: 18,
+    },
+    progressBubbles: { width: '100%', maxWidth: 370, alignItems: 'center', gap: 9 },
+    stageRail: {
+      width: '92%',
+      minHeight: 48,
+      alignItems: 'center',
+      gap: 7,
+      paddingHorizontal: 13,
+      paddingVertical: 9,
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.18)',
+      backgroundColor: 'rgba(3, 5, 8, 0.74)',
+      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.42)',
+    },
+    stageRailNodes: {
+      width: '100%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    stageNodeGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    stageNode: {
+      width: 22,
+      height: 22,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+    },
+    stageNodeText: {
+      fontSize: 8,
+      fontWeight: '900',
+      fontVariant: ['tabular-nums'],
+    },
+    stageConnector: {
+      width: 22,
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: 'rgba(138, 100, 43, 0.42)',
+    },
+    stageConnectorComplete: {
+      backgroundColor: 'rgba(242, 211, 138, 0.66)',
+    },
+    activeStepText: {
+      maxWidth: '92%',
+      color: theme.colors.scannerCyan,
+      fontSize: 9,
+      lineHeight: 11,
+      fontWeight: '900',
+      letterSpacing: 0.7,
+      textAlign: 'center',
+    },
+    scrollView: { flex: 1, width: '100%' },
+    scrollContent: { width: '100%', alignItems: 'center', paddingHorizontal: 16 },
+    bubbleColumn: { width: '100%', maxWidth: 560, gap: 12 },
+    bubble: {
+      width: '100%',
+      gap: 9,
+      paddingHorizontal: 17,
+      paddingVertical: 15,
+      borderRadius: 26,
+      borderCurve: 'continuous',
+      borderWidth: 1,
+      backgroundColor: 'rgba(5, 5, 8, 0.82)',
+    },
+    bubbleEyebrow: { fontSize: 9, fontWeight: '900', letterSpacing: 1.4 },
+    identityBubble: { alignItems: 'center', paddingVertical: 20 },
+    identityTitle: { color: theme.colors.cream, fontSize: 25, lineHeight: 30, textAlign: 'center' },
+    identityMeta: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 16, textAlign: 'center' },
+    summaryBubble: { alignSelf: 'center', width: '92%' },
+    summaryText: { color: theme.colors.text, fontSize: 12, lineHeight: 19, textAlign: 'center' },
+    valuationBubble: { paddingTop: 18 },
+    valuationRow: { flexDirection: 'row', alignItems: 'stretch', gap: 7 },
+    valuationMetric: {
+      flex: 1,
+      minWidth: 0,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+      paddingHorizontal: 5,
+      paddingVertical: 12,
+      borderRadius: 18,
+      backgroundColor: 'rgba(242, 211, 138, 0.05)',
+    },
+    valuationMetricFeatured: {
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.42)',
+      backgroundColor: 'rgba(215, 168, 74, 0.13)',
+    },
+    valuationLabel: { color: theme.colors.textMuted, fontSize: 8, letterSpacing: 1 },
+    valuationLabelFeatured: { color: theme.colors.goldBright },
+    valuationValue: { color: theme.colors.text, fontSize: 14 },
+    valuationValueFeatured: { color: theme.colors.goldBright, fontSize: 17 },
+    valuationFootnote: { color: theme.colors.textMuted, fontSize: 9, textAlign: 'center' },
+    readinessBubble: { alignSelf: 'flex-end', width: '95%' },
+    readinessRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+    readinessTitle: { flex: 1, fontSize: 12, lineHeight: 17 },
+    readinessScore: { fontSize: 15 },
+    readinessReason: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 16 },
+    conditionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 14 },
+    conditionGrade: { color: theme.colors.cream, fontSize: 20, lineHeight: 25 },
+    conditionScore: { fontSize: 18 },
+    compactBody: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 17 },
+    detailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 9 },
+    detailDot: { width: 6, height: 6, marginTop: 5, borderRadius: theme.radii.pill },
+    detailText: { flex: 1, color: theme.colors.text, fontSize: 10, lineHeight: 16 },
+    metricCloud: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    metricBubble: { width: '48%', alignItems: 'center', paddingVertical: 12 },
+    metricValue: { fontSize: 19 },
+    metricLabel: { color: theme.colors.textMuted, fontSize: 8, letterSpacing: 1.1 },
+    evidenceBubble: { alignSelf: 'center', width: '94%', paddingVertical: 13 },
+    evidenceHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+    sourceTag: { color: theme.colors.textMuted, fontSize: 8, textTransform: 'uppercase' },
+    evidenceValue: { color: theme.colors.text, fontSize: 10, lineHeight: 16 },
+    statusBubble: { alignItems: 'center', paddingVertical: 22 },
+    confusedFlipFrame: {
+      width: '100%',
+      height: 156,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: -5,
+    },
+    confusedFlipVideo: { width: '100%', height: '100%' },
+    statusIcon: {
+      width: 30,
+      height: 30,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.18)',
+    },
+    statusTitle: { color: theme.colors.cream, fontSize: 23, lineHeight: 29, textAlign: 'center' },
+    statusMessage: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 19, textAlign: 'center' },
+    guidanceBubble: { alignSelf: 'center', width: '94%', flexDirection: 'row', alignItems: 'flex-start', gap: 11 },
+    guidanceIndex: { fontSize: 10, fontVariant: ['tabular-nums'] },
+    guidanceText: { flex: 1, color: theme.colors.text, fontSize: 11, lineHeight: 17 },
+    actions: { flexDirection: 'row', justifyContent: 'center', gap: 10, paddingTop: 4 },
+    actionButton: {
+      minWidth: 126,
+      minHeight: 48,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 20,
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+    },
+    actionButtonText: { fontSize: 12, fontWeight: '900' },
+  });
   return {
     ...staticStyles,
-  statusPillText: [
-    staticStyles.statusPillText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  liveSignal: [
-    staticStyles.liveSignal,
-    {
-        width: responsiveLayout.responsiveWidth(7),
-        height: responsiveLayout.responsiveHeight(7),
-    },
-  ],
-  closeBubble: [
-    staticStyles.closeBubble,
-    {
-        width: responsiveLayout.responsiveWidth(42),
-        height: responsiveLayout.responsiveHeight(42),
-    },
-  ],
-  stageNode: [
-    staticStyles.stageNode,
-    {
-        width: responsiveLayout.responsiveWidth(22),
-        height: responsiveLayout.responsiveHeight(22),
-    },
-  ],
-  stageNodeText: [
-    staticStyles.stageNodeText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  stageConnector: [
-    staticStyles.stageConnector,
-    {
-        width: responsiveLayout.responsiveWidth(22),
-    },
-  ],
-  activeStepText: [
-    staticStyles.activeStepText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  bubbleEyebrow: [
-    staticStyles.bubbleEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  identityTitle: [
-    staticStyles.identityTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(25),
-    },
-  ],
-  identityMeta: [
-    staticStyles.identityMeta,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  summaryText: [
-    staticStyles.summaryText,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  valuationLabel: [
-    staticStyles.valuationLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  valuationValue: [
-    staticStyles.valuationValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
-  valuationValueFeatured: [
-    staticStyles.valuationValueFeatured,
-    {
-        fontSize: responsiveLayout.responsiveFont(17),
-    },
-  ],
-  valuationFootnote: [
-    staticStyles.valuationFootnote,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  readinessTitle: [
-    staticStyles.readinessTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  readinessScore: [
-    staticStyles.readinessScore,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  readinessReason: [
-    staticStyles.readinessReason,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  conditionGrade: [
-    staticStyles.conditionGrade,
-    {
-        fontSize: responsiveLayout.responsiveFont(20),
-    },
-  ],
-  conditionScore: [
-    staticStyles.conditionScore,
-    {
-        fontSize: responsiveLayout.responsiveFont(18),
-    },
-  ],
-  compactBody: [
-    staticStyles.compactBody,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  detailDot: [
-    staticStyles.detailDot,
-    {
-        width: responsiveLayout.responsiveWidth(6),
-        height: responsiveLayout.responsiveHeight(6),
-    },
-  ],
-  detailText: [
-    staticStyles.detailText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  metricValue: [
-    staticStyles.metricValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(19),
-    },
-  ],
-  metricLabel: [
-    staticStyles.metricLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  sourceTag: [
-    staticStyles.sourceTag,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  evidenceValue: [
-    staticStyles.evidenceValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  confusedFlipFrame: [
-    staticStyles.confusedFlipFrame,
-    {
-        height: responsiveLayout.responsiveHeight(156),
-    },
-  ],
-  statusIcon: [
-    staticStyles.statusIcon,
-    {
-        width: responsiveLayout.responsiveWidth(30),
-        height: responsiveLayout.responsiveHeight(30),
-    },
-  ],
-  statusTitle: [
-    staticStyles.statusTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(23),
-    },
-  ],
-  statusMessage: [
-    staticStyles.statusMessage,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  guidanceIndex: [
-    staticStyles.guidanceIndex,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  guidanceText: [
-    staticStyles.guidanceText,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  actionButtonText: [
-    staticStyles.actionButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
+    statusPillText: [
+      staticStyles.statusPillText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    liveSignal: [
+      staticStyles.liveSignal,
+      {
+        width: responsiveWidth(7),
+        height: responsiveHeight(7),
+      },
+    ],
+    closeBubble: [
+      staticStyles.closeBubble,
+      {
+        width: responsiveWidth(42),
+        height: responsiveHeight(42),
+      },
+    ],
+    stageNode: [
+      staticStyles.stageNode,
+      {
+        width: responsiveWidth(22),
+        height: responsiveHeight(22),
+      },
+    ],
+    stageNodeText: [
+      staticStyles.stageNodeText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    stageConnector: [
+      staticStyles.stageConnector,
+      {
+        width: responsiveWidth(22),
+      },
+    ],
+    activeStepText: [
+      staticStyles.activeStepText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    bubbleEyebrow: [
+      staticStyles.bubbleEyebrow,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    identityTitle: [
+      staticStyles.identityTitle,
+      {
+        fontSize: responsiveFont(25),
+      },
+    ],
+    identityMeta: [
+      staticStyles.identityMeta,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    summaryText: [
+      staticStyles.summaryText,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    valuationLabel: [
+      staticStyles.valuationLabel,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    valuationValue: [
+      staticStyles.valuationValue,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
+    valuationValueFeatured: [
+      staticStyles.valuationValueFeatured,
+      {
+        fontSize: responsiveFont(17),
+      },
+    ],
+    valuationFootnote: [
+      staticStyles.valuationFootnote,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    readinessTitle: [
+      staticStyles.readinessTitle,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    readinessScore: [
+      staticStyles.readinessScore,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    readinessReason: [
+      staticStyles.readinessReason,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    conditionGrade: [
+      staticStyles.conditionGrade,
+      {
+        fontSize: responsiveFont(20),
+      },
+    ],
+    conditionScore: [
+      staticStyles.conditionScore,
+      {
+        fontSize: responsiveFont(18),
+      },
+    ],
+    compactBody: [
+      staticStyles.compactBody,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    detailDot: [
+      staticStyles.detailDot,
+      {
+        width: responsiveWidth(6),
+        height: responsiveHeight(6),
+      },
+    ],
+    detailText: [
+      staticStyles.detailText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    metricValue: [
+      staticStyles.metricValue,
+      {
+        fontSize: responsiveFont(19),
+      },
+    ],
+    metricLabel: [
+      staticStyles.metricLabel,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    sourceTag: [
+      staticStyles.sourceTag,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    evidenceValue: [
+      staticStyles.evidenceValue,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    confusedFlipFrame: [
+      staticStyles.confusedFlipFrame,
+      {
+        height: responsiveHeight(156),
+      },
+    ],
+    statusIcon: [
+      staticStyles.statusIcon,
+      {
+        width: responsiveWidth(30),
+        height: responsiveHeight(30),
+      },
+    ],
+    statusTitle: [
+      staticStyles.statusTitle,
+      {
+        fontSize: responsiveFont(23),
+      },
+    ],
+    statusMessage: [
+      staticStyles.statusMessage,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    guidanceIndex: [
+      staticStyles.guidanceIndex,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    guidanceText: [
+      staticStyles.guidanceText,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    actionButtonText: [
+      staticStyles.actionButtonText,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
   };
 }

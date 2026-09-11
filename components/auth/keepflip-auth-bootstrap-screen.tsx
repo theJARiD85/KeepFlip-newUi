@@ -2,10 +2,9 @@ import { Image } from 'expo-image';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
-import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
+import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export function KeepFlipAuthBootstrapScreen() {
@@ -41,71 +40,72 @@ export function KeepFlipAuthBootstrapScreen() {
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  content: { alignItems: 'center', justifyContent: 'center', padding: 24 },
-  lockup: { width: '100%', maxWidth: 360, alignItems: 'center', gap: 22 },
-  logoHalo: {
-    width: 148,
-    height: 148,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.24)',
-    backgroundColor: 'rgba(6, 5, 7, 0.64)',
-    boxShadow: '0 0 44px rgba(215, 168, 74, 0.15)',
-  },
-  logo: { width: 134, height: 134 },
-  statusRow: {
-    minHeight: 58,
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 13,
-    paddingHorizontal: 18,
-    borderRadius: theme.radii.medium,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.18)',
-    backgroundColor: 'rgba(8, 8, 11, 0.76)',
-  },
-  statusCopy: { gap: 3 },
-  eyebrow: {
-    color: theme.colors.gold,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 1.5,
-  },
-  status: { color: theme.colors.text, fontSize: 14, fontWeight: '800' },
-});
+  const { responsiveFont, responsiveHeight, responsiveWidth } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    content: { alignItems: 'center', justifyContent: 'center', padding: 24 },
+    lockup: { width: '100%', maxWidth: 360, alignItems: 'center', gap: 22 },
+    logoHalo: {
+      width: 148,
+      height: 148,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.24)',
+      backgroundColor: 'rgba(6, 5, 7, 0.64)',
+      boxShadow: '0 0 44px rgba(215, 168, 74, 0.15)',
+    },
+    logo: { width: 134, height: 134 },
+    statusRow: {
+      minHeight: 58,
+      width: '100%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 13,
+      paddingHorizontal: 18,
+      borderRadius: theme.radii.medium,
+      borderCurve: 'continuous',
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.18)',
+      backgroundColor: 'rgba(8, 8, 11, 0.76)',
+    },
+    statusCopy: { gap: 3 },
+    eyebrow: {
+      color: theme.colors.gold,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 1.5,
+    },
+    status: { color: theme.colors.text, fontSize: 14, fontWeight: '800' },
+  });
   return {
     ...staticStyles,
-  logoHalo: [
-    staticStyles.logoHalo,
-    {
-        width: responsiveLayout.responsiveWidth(148),
-        height: responsiveLayout.responsiveHeight(148),
-    },
-  ],
-  logo: [
-    staticStyles.logo,
-    {
-        width: responsiveLayout.responsiveWidth(134),
-        height: responsiveLayout.responsiveHeight(134),
-    },
-  ],
-  eyebrow: [
-    staticStyles.eyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  status: [
-    staticStyles.status,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
+    logoHalo: [
+      staticStyles.logoHalo,
+      {
+        width: responsiveWidth(148),
+        height: responsiveHeight(148),
+      },
+    ],
+    logo: [
+      staticStyles.logo,
+      {
+        width: responsiveWidth(134),
+        height: responsiveHeight(134),
+      },
+    ],
+    eyebrow: [
+      staticStyles.eyebrow,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    status: [
+      staticStyles.status,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
   };
 }

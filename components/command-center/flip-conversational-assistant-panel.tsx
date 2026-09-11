@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image } from 'expo-image';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -11,22 +11,24 @@ import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { FlipCompanion, useFlipCompanion } from '@/components/flip';
-import { KeepFlipControlRow } from '@/components/ui/keepflip-control-row';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { KeepFlipControlRow } from '@/components/ui/keepflip-control-row';
 import {
   KeepFlipText as Text,
   KeepFlipTextInput as TextInput,
 } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import { responsiveWidth } from '@/lib/responsiveFont';
 import {
+  ASSISTANT_CONVERSATION_PAGE_SIZE,
   completeAssistantTask,
   createAssistantActionRun,
   createAssistantTask,
   defaultAssistantConversationId,
-  ASSISTANT_CONVERSATION_PAGE_SIZE,
   listAssistantConversation,
-  listOlderAssistantConversation,
   listAssistantTasks,
+  listOlderAssistantConversation,
   parseAssistantCommand,
   runKeepFlipAssistant,
   subscribeToAssistantConversation,
@@ -36,13 +38,11 @@ import {
   type AssistantRoute,
   type AssistantTask,
 } from '@/services/keepflip-assistant-service';
-import { getResellerBuyRules } from '@/services/user-profile-onboarding-service';
 import {
   cancelKeepFlipTaskReminder,
   scheduleKeepFlipTaskReminder,
 } from '@/services/keepflip-notification-service';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
+import { getResellerBuyRules } from '@/services/user-profile-onboarding-service';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 const FLIP_MASCOT_IMAGE = require('@/assets/images/flip-mascot.png');
@@ -104,23 +104,23 @@ function mergeConversationMessage(
   const optimisticIndex =
     existingIndex < 0 && next.role === 'user'
       ? withoutWelcome.findIndex((message) => {
-          if (
-            message.role !== 'user' ||
-            !message.id.startsWith(OPTIMISTIC_USER_MESSAGE_PREFIX) ||
-            message.content !== next.content
-          ) {
-            return false;
-          }
+        if (
+          message.role !== 'user' ||
+          !message.id.startsWith(OPTIMISTIC_USER_MESSAGE_PREFIX) ||
+          message.content !== next.content
+        ) {
+          return false;
+        }
 
-          const optimisticCreatedAt = Date.parse(message.createdAt);
-          const persistedCreatedAt = Date.parse(next.createdAt);
-          return (
-            Number.isFinite(optimisticCreatedAt) &&
-            Number.isFinite(persistedCreatedAt) &&
-            Math.abs(persistedCreatedAt - optimisticCreatedAt) <=
-              OPTIMISTIC_MESSAGE_MATCH_WINDOW_MS
-          );
-        })
+        const optimisticCreatedAt = Date.parse(message.createdAt);
+        const persistedCreatedAt = Date.parse(next.createdAt);
+        return (
+          Number.isFinite(optimisticCreatedAt) &&
+          Number.isFinite(persistedCreatedAt) &&
+          Math.abs(persistedCreatedAt - optimisticCreatedAt) <=
+          OPTIMISTIC_MESSAGE_MATCH_WINDOW_MS
+        );
+      })
       : -1;
   const matchedIndex = existingIndex >= 0 ? existingIndex : optimisticIndex;
   const merged =
@@ -526,10 +526,10 @@ export function FlipConversationalAssistantPanel({
 
   const finishTask = async (task: AssistantTask) => {
     if (!userId || isInteractionLocked) return;
-      setIsWorking(true);
-      setError(null);
-      setIsReplying(false);
-      markActivity();
+    setIsWorking(true);
+    setError(null);
+    setIsReplying(false);
+    markActivity();
     setMode('speaking');
     react('aha');
     try {
@@ -960,518 +960,534 @@ function dueLabel(value: string) {
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  surface: {
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.25)',
-    borderRadius: 16,
-    borderCurve: 'continuous',
-    backgroundColor: 'rgba(5, 14, 18, 0.88)',
-  },
-  overlaySurface: {
-    width: '100%',
-    alignSelf: 'flex-end',
-    borderRadius: 18,
-    backgroundColor: 'rgba(5, 14, 18, 0.97)',
-    boxShadow: '0 16px 36px rgba(0, 0, 0, 0.42), 0 0 18px rgba(88, 223, 232, 0.12)',
-    elevation: 8,
-  },
-  overlaySurfaceCollapsed: {
-    width: 46,
-    borderRadius: 23,
-    opacity: 0.74,
-  },
-  collapsedBar: {
-    minHeight: 70,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  overlayCollapsedBar: {
-    width: 46,
-    minHeight: 46,
-    justifyContent: 'center',
-    gap: 0,
-    paddingHorizontal: 4,
-    paddingVertical: 4,
-  },
-  collapsedBarPressed: { backgroundColor: 'rgba(0, 255, 255, 0.06)' },
-  collapsedAvatar: {
-    width: 48,
-    height: 48,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.48)',
-    borderRadius: 24,
-    borderCurve: 'continuous',
-    backgroundColor: 'rgba(242, 211, 138, 0.1)',
-  },
-  overlayCollapsedAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-  },
-  overlayStatusDot: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0,
-    width: 8,
-    height: 8,
-    borderWidth: 1,
-    borderColor: theme.colors.background,
-    borderRadius: 4,
-    backgroundColor: theme.colors.scannerCyan,
-  },
-  collapsedCopy: { flex: 1, minWidth: 0, gap: 4 },
-  searchMeta: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  searchLabel: {
-    color: theme.colors.scannerCyan,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 1.4,
-  },
-  onlineDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: theme.colors.scannerCyan,
-  },
-  onlineText: {
-    color: theme.colors.textMuted,
-    fontSize: 7,
-    fontWeight: '900',
-    letterSpacing: 0.9,
-  },
-  searchPlaceholder: { color: theme.colors.text, fontSize: 12, fontWeight: '700' },
-  chevronButton: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 255, 255, 0.28)',
-    borderRadius: 16,
-    borderCurve: 'continuous',
-    backgroundColor: 'rgba(0, 255, 255, 0.08)',
-  },
-  expandedContent: { gap: 12, padding: 14 },
-  heading: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  headingAvatar: {
-    width: 46,
-    height: 46,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.44)',
-    borderRadius: 23,
-    borderCurve: 'continuous',
-    backgroundColor: 'rgba(242, 211, 138, 0.08)',
-  },
-  headingCopy: { flex: 1, gap: 3 },
-  headingActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  eyebrow: {
-    color: theme.colors.scannerCyan,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 1.5,
-  },
-  title: { color: theme.colors.cream, fontSize: 17, fontWeight: '900' },
-  subtitle: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 14 },
-  menuButton: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.22)',
-    borderRadius: 16,
-    borderCurve: 'continuous',
-    backgroundColor: 'rgba(88, 223, 232, 0.06)',
-  },
-  menuButtonOpen: {
-    borderColor: 'rgba(242, 211, 138, 0.42)',
-    backgroundColor: 'rgba(242, 211, 138, 0.1)',
-  },
-  menuButtonPressed: { opacity: 0.72 },
-  closeButton: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(173, 167, 178, 0.25)',
-    borderRadius: 16,
-    borderCurve: 'continuous',
-    backgroundColor: 'rgba(173, 167, 178, 0.08)',
-  },
-  closeButtonPressed: { backgroundColor: 'rgba(173, 167, 178, 0.18)' },
-  conversation: {
-    borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.16)',
-    borderRadius: 12,
-    borderCurve: 'continuous',
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-  },
-  conversationContent: {
-    gap: 9,
-    padding: 10,
-  },
-  overlayConversation: {
-    maxHeight: 240,
-  },
-  historyLoadButton: {
-    alignSelf: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.2)',
-    borderRadius: 10,
-    borderCurve: 'continuous',
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    backgroundColor: 'rgba(88, 223, 232, 0.05)',
-  },
-  historyLoadButtonPressed: { opacity: 0.68 },
-  historyLoading: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 7,
-    paddingVertical: 4,
-  },
-  historyLoadText: {
-    color: theme.colors.scannerCyan,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.8,
-  },
-  loadingConversation: {
-    minHeight: 66,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  messageRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 7,
-  },
-  messageRowUser: { justifyContent: 'flex-end' },
-  messageAvatar: {
-    width: 24,
-    height: 24,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.34)',
-    borderRadius: 12,
-    borderCurve: 'continuous',
-  },
-  messageBubble: {
-    maxWidth: '86%',
-    paddingHorizontal: 11,
-    paddingVertical: 9,
-    borderRadius: 13,
-    borderCurve: 'continuous',
-  },
-  assistantBubble: {
-    borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.19)',
-    borderBottomLeftRadius: 4,
-    backgroundColor: 'rgba(88, 223, 232, 0.08)',
-  },
-  userBubble: {
-    borderBottomRightRadius: 4,
-    backgroundColor: 'rgba(242, 211, 138, 0.9)',
-  },
-  messageText: {
-    color: theme.colors.text,
-    fontSize: 11,
-    lineHeight: 16,
-  },
-  typingRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  typingBubble: {
-    minHeight: 34,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.16)',
-    borderRadius: 10,
-    backgroundColor: 'rgba(88, 223, 232, 0.06)',
-  },
-  typingText: { color: theme.colors.textMuted, fontSize: 10 },
-  promptRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  promptChip: {
-    paddingHorizontal: 9,
-    paddingVertical: 7,
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.2)',
-    borderRadius: 10,
-    borderCurve: 'continuous',
-    backgroundColor: 'rgba(242, 211, 138, 0.045)',
-  },
-  promptChipPressed: { backgroundColor: 'rgba(242, 211, 138, 0.12)' },
-  promptText: { color: theme.colors.goldMuted, fontSize: 9, fontWeight: '700' },
-  inputRow: { flexDirection: 'row', alignItems: 'stretch', gap: 8 },
-  inputShell: {
-    minHeight: 48,
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.22)',
-    borderRadius: 12,
-    borderCurve: 'continuous',
-    backgroundColor: 'rgba(0, 0, 0, 0.24)',
-  },
-  inputAvatar: {
-    width: 25,
-    height: 25,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.38)',
-    borderRadius: 13,
-    borderCurve: 'continuous',
-  },
-  input: {
-    minHeight: 44,
-    flex: 1,
-    paddingHorizontal: 0,
-    paddingVertical: 8,
-    color: theme.colors.text,
-    fontSize: 12,
-  },
-  sendButton: {
-    width: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
-    borderCurve: 'continuous',
-    backgroundColor: theme.colors.goldBright,
-  },
-  sendButtonDisabled: { opacity: 0.42 },
-  sendButtonPressed: { opacity: 0.75 },
-  memoryStrip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.13)',
-    borderRadius: 10,
-    borderCurve: 'continuous',
-    backgroundColor: 'rgba(88, 223, 232, 0.035)',
-  },
-  memoryCopy: { flex: 1, gap: 2 },
-  memoryLabel: {
-    color: theme.colors.scannerCyan,
-    fontSize: 7,
-    fontWeight: '900',
-    letterSpacing: 1.2,
-  },
-  memoryText: { color: theme.colors.textMuted, fontSize: 10 },
-  refreshButton: {
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 14,
-  },
-  refreshButtonPressed: { backgroundColor: 'rgba(88, 223, 232, 0.1)' },
-  taskSection: { gap: 7 },
-  taskHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  taskLabel: {
-    color: theme.colors.goldBright,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 1.3,
-  },
-  taskHint: { color: theme.colors.textMuted, fontSize: 8 },
-  taskList: {
-    gap: 4,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(242, 211, 138, 0.18)',
-  },
-  empty: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 15 },
-  error: { color: '#FFB8B1', fontSize: 10, lineHeight: 14 },
-});
+  const { responsiveWidth, responsiveHeight, responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    surface: {
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.25)',
+      borderRadius: 16,
+      borderCurve: 'continuous',
+      backgroundColor: 'rgba(5, 14, 18, 0.88)',
+    },
+    overlaySurface: {
+      width: '100%',
+      alignSelf: 'flex-end',
+      borderRadius: 18,
+      backgroundColor: 'rgba(5, 14, 18, 0.97)',
+      boxShadow: '0 16px 36px rgba(0, 0, 0, 0.42), 0 0 18px rgba(88, 223, 232, 0.12)',
+      elevation: 8,
+    },
+    overlaySurfaceCollapsed: {
+      width: 46,
+      borderRadius: 23,
+      opacity: 0.74,
+    },
+    collapsedBar: {
+      minHeight: 70,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+    overlayCollapsedBar: {
+      width: 46,
+      minHeight: 46,
+      justifyContent: 'center',
+      gap: 0,
+      paddingHorizontal: 4,
+      paddingVertical: 4,
+    },
+    collapsedBarPressed: { backgroundColor: 'rgba(0, 255, 255, 0.06)' },
+    collapsedAvatar: {
+      width: 48,
+      height: 48,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.48)',
+      borderRadius: 24,
+      borderCurve: 'continuous',
+      backgroundColor: 'rgba(242, 211, 138, 0.1)',
+    },
+    overlayCollapsedAvatar: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+    },
+    overlayStatusDot: {
+      position: 'absolute',
+      right: 0,
+      bottom: 0,
+      width: 8,
+      height: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.background,
+      borderRadius: 4,
+      backgroundColor: theme.colors.scannerCyan,
+    },
+    collapsedCopy: { flex: 1, minWidth: 0, gap: 4 },
+    searchMeta: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+    searchLabel: {
+      color: theme.colors.scannerCyan,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 1.4,
+    },
+    onlineDot: {
+      width: 5,
+      height: 5,
+      borderRadius: 3,
+      backgroundColor: theme.colors.scannerCyan,
+    },
+    onlineText: {
+      color: theme.colors.textMuted,
+      fontSize: 7,
+      fontWeight: '900',
+      letterSpacing: 0.9,
+    },
+    searchPlaceholder: { color: theme.colors.text, fontSize: 12, fontWeight: '700' },
+    chevronButton: {
+      width: 32,
+      height: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: 'rgba(0, 255, 255, 0.28)',
+      borderRadius: 16,
+      borderCurve: 'continuous',
+      backgroundColor: 'rgba(0, 255, 255, 0.08)',
+    },
+    expandedContent: { gap: 12, padding: 14 },
+    heading: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    headingAvatar: {
+      width: 46,
+      height: 46,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.44)',
+      borderRadius: 23,
+      borderCurve: 'continuous',
+      backgroundColor: 'rgba(242, 211, 138, 0.08)',
+    },
+    headingCopy: { flex: 1, gap: 3 },
+    headingActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    eyebrow: {
+      color: theme.colors.scannerCyan,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 1.5,
+    },
+    title: { color: theme.colors.cream, fontSize: 17, fontWeight: '900' },
+    subtitle: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 14 },
+    menuButton: {
+      width: 32,
+      height: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.22)',
+      borderRadius: 16,
+      borderCurve: 'continuous',
+      backgroundColor: 'rgba(88, 223, 232, 0.06)',
+    },
+    menuButtonOpen: {
+      borderColor: 'rgba(242, 211, 138, 0.42)',
+      backgroundColor: 'rgba(242, 211, 138, 0.1)',
+    },
+    menuButtonPressed: { opacity: 0.72 },
+    closeButton: {
+      width: 32,
+      height: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: 'rgba(173, 167, 178, 0.25)',
+      borderRadius: 16,
+      borderCurve: 'continuous',
+      backgroundColor: 'rgba(173, 167, 178, 0.08)',
+    },
+    closeButtonPressed: { backgroundColor: 'rgba(173, 167, 178, 0.18)' },
+    conversation: {
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.16)',
+      borderRadius: 12,
+      borderCurve: 'continuous',
+      backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    },
+    conversationContent: {
+      gap: 9,
+      padding: 10,
+    },
+    overlayConversation: {
+      maxHeight: 240,
+    },
+    historyLoadButton: {
+      alignSelf: 'center',
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.2)',
+      borderRadius: 10,
+      borderCurve: 'continuous',
+      paddingHorizontal: 9,
+      paddingVertical: 6,
+      backgroundColor: 'rgba(88, 223, 232, 0.05)',
+    },
+    historyLoadButtonPressed: { opacity: 0.68 },
+    historyLoading: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 7,
+      paddingVertical: 4,
+    },
+    historyLoadText: {
+      color: theme.colors.scannerCyan,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 0.8,
+    },
+    loadingConversation: {
+      minHeight: 66,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+    },
+    messageRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      gap: 7,
+    },
+    messageRowUser: { justifyContent: 'flex-end' },
+    messageAvatar: {
+      width: 24,
+      height: 24,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.34)',
+      borderRadius: 12,
+      borderCurve: 'continuous',
+    },
+    messageBubble: {
+      maxWidth: '86%',
+      paddingHorizontal: 11,
+      paddingVertical: 9,
+      borderRadius: 13,
+      borderCurve: 'continuous',
+    },
+    assistantBubble: {
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.19)',
+      borderBottomLeftRadius: 4,
+      backgroundColor: 'rgba(88, 223, 232, 0.08)',
+    },
+    userBubble: {
+      borderBottomRightRadius: 4,
+      backgroundColor: 'rgba(242, 211, 138, 0.9)',
+    },
+    messageText: {
+      color: theme.colors.text,
+      fontSize: 11,
+      lineHeight: 16,
+    },
+    typingRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+    typingBubble: {
+      minHeight: 34,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 7,
+      paddingHorizontal: 10,
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.16)',
+      borderRadius: 10,
+      backgroundColor: 'rgba(88, 223, 232, 0.06)',
+    },
+    typingText: { color: theme.colors.textMuted, fontSize: 10 },
+    promptRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+    promptChip: {
+      paddingHorizontal: 9,
+      paddingVertical: 7,
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.2)',
+      borderRadius: 10,
+      borderCurve: 'continuous',
+      backgroundColor: 'rgba(242, 211, 138, 0.045)',
+    },
+    promptChipPressed: { backgroundColor: 'rgba(242, 211, 138, 0.12)' },
+    promptText: { color: theme.colors.goldMuted, fontSize: 9, fontWeight: '700' },
+    inputRow: { flexDirection: 'row', alignItems: 'stretch', gap: 8 },
+    inputShell: {
+      minHeight: 48,
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingHorizontal: 10,
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.22)',
+      borderRadius: 12,
+      borderCurve: 'continuous',
+      backgroundColor: 'rgba(0, 0, 0, 0.24)',
+    },
+    inputAvatar: {
+      width: 25,
+      height: 25,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.38)',
+      borderRadius: 13,
+      borderCurve: 'continuous',
+    },
+    input: {
+      minHeight: 44,
+      flex: 1,
+      paddingHorizontal: 0,
+      paddingVertical: 8,
+      color: theme.colors.text,
+      fontSize: 12,
+    },
+    sendButton: {
+      width: 48,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 12,
+      borderCurve: 'continuous',
+      backgroundColor: theme.colors.goldBright,
+    },
+    sendButtonDisabled: { opacity: 0.42 },
+    sendButtonPressed: { opacity: 0.75 },
+    memoryStrip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 10,
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.13)',
+      borderRadius: 10,
+      borderCurve: 'continuous',
+      backgroundColor: 'rgba(88, 223, 232, 0.035)',
+    },
+    memoryCopy: { flex: 1, gap: 2 },
+    memoryLabel: {
+      color: theme.colors.scannerCyan,
+      fontSize: 7,
+      fontWeight: '900',
+      letterSpacing: 1.2,
+    },
+    memoryText: { color: theme.colors.textMuted, fontSize: 10 },
+    refreshButton: {
+      width: 28,
+      height: 28,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 14,
+    },
+    refreshButtonPressed: { backgroundColor: 'rgba(88, 223, 232, 0.1)' },
+    taskSection: { gap: 7 },
+    taskHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 8,
+    },
+    taskLabel: {
+      color: theme.colors.goldBright,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 1.3,
+    },
+    taskHint: { color: theme.colors.textMuted, fontSize: 8 },
+    taskList: {
+      gap: 4,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderColor: 'rgba(242, 211, 138, 0.18)',
+    },
+    empty: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 15 },
+    error: { color: '#FFB8B1', fontSize: 10, lineHeight: 14 },
+  });
   return {
     ...staticStyles,
-  collapsedAvatar: [
-    staticStyles.collapsedAvatar,
-    {
-        width: responsiveLayout.responsiveWidth(48),
-        height: responsiveLayout.responsiveHeight(48),
-    },
-  ],
-  searchLabel: [
-    staticStyles.searchLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  onlineDot: [
-    staticStyles.onlineDot,
-    {
-        width: responsiveLayout.responsiveWidth(5),
-        height: responsiveLayout.responsiveHeight(5),
-    },
-  ],
-  onlineText: [
-    staticStyles.onlineText,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  searchPlaceholder: [
-    staticStyles.searchPlaceholder,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  chevronButton: [
-    staticStyles.chevronButton,
-    {
-        width: responsiveLayout.responsiveWidth(32),
-        height: responsiveLayout.responsiveHeight(32),
-    },
-  ],
-  headingAvatar: [
-    staticStyles.headingAvatar,
-    {
-        width: responsiveLayout.responsiveWidth(46),
-        height: responsiveLayout.responsiveHeight(46),
-    },
-  ],
-  eyebrow: [
-    staticStyles.eyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  title: [
-    staticStyles.title,
-    {
-        fontSize: responsiveLayout.responsiveFont(17),
-    },
-  ],
-  subtitle: [
-    staticStyles.subtitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  menuButton: [
-    staticStyles.menuButton,
-    {
-        width: responsiveLayout.responsiveWidth(32),
-        height: responsiveLayout.responsiveHeight(32),
-    },
-  ],
-  closeButton: [
-    staticStyles.closeButton,
-    {
-        width: responsiveLayout.responsiveWidth(32),
-        height: responsiveLayout.responsiveHeight(32),
-    },
-  ],
-  messageAvatar: [
-    staticStyles.messageAvatar,
-    {
-        width: responsiveLayout.responsiveWidth(24),
-        height: responsiveLayout.responsiveHeight(24),
-    },
-  ],
-  messageText: [
-    staticStyles.messageText,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  typingText: [
-    staticStyles.typingText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  promptText: [
-    staticStyles.promptText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  inputAvatar: [
-    staticStyles.inputAvatar,
-    {
-        width: responsiveLayout.responsiveWidth(25),
-        height: responsiveLayout.responsiveHeight(25),
-    },
-  ],
-  input: [
-    staticStyles.input,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  sendButton: [
-    staticStyles.sendButton,
-    {
-        width: responsiveLayout.responsiveWidth(48),
-    },
-  ],
-  memoryLabel: [
-    staticStyles.memoryLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  memoryText: [
-    staticStyles.memoryText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  refreshButton: [
-    staticStyles.refreshButton,
-    {
-        width: responsiveLayout.responsiveWidth(28),
-        height: responsiveLayout.responsiveHeight(28),
-    },
-  ],
-  taskLabel: [
-    staticStyles.taskLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  taskHint: [
-    staticStyles.taskHint,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  empty: [
-    staticStyles.empty,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  error: [
-    staticStyles.error,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
+    overlaySurfaceCollapsed: [
+      staticStyles.overlaySurfaceCollapsed,
+      {
+        width: responsiveWidth(48),
+        borderRadius: responsiveWidth(24),
+      },
+    ],
+    overlayCollapsedBar: [
+      staticStyles.overlayCollapsedBar,
+      {
+        width: responsiveWidth(48),
+        height: responsiveHeight(48),
+        minHeight: responsiveHeight(48),
+      },
+    ],
+    collapsedAvatar: [
+      staticStyles.collapsedAvatar,
+      {
+        width: responsiveWidth(48),
+        height: responsiveHeight(48),
+      },
+    ],
+    searchLabel: [
+      staticStyles.searchLabel,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    onlineDot: [
+      staticStyles.onlineDot,
+      {
+        width: responsiveWidth(5),
+        height: responsiveHeight(5),
+      },
+    ],
+    onlineText: [
+      staticStyles.onlineText,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    searchPlaceholder: [
+      staticStyles.searchPlaceholder,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    chevronButton: [
+      staticStyles.chevronButton,
+      {
+        width: responsiveWidth(32),
+        height: responsiveHeight(32),
+      },
+    ],
+    headingAvatar: [
+      staticStyles.headingAvatar,
+      {
+        width: responsiveWidth(46),
+        height: responsiveHeight(46),
+      },
+    ],
+    eyebrow: [
+      staticStyles.eyebrow,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    title: [
+      staticStyles.title,
+      {
+        fontSize: responsiveFont(17),
+      },
+    ],
+    subtitle: [
+      staticStyles.subtitle,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    menuButton: [
+      staticStyles.menuButton,
+      {
+        width: responsiveWidth(32),
+        height: responsiveHeight(32),
+      },
+    ],
+    closeButton: [
+      staticStyles.closeButton,
+      {
+        width: responsiveWidth(32),
+        height: responsiveHeight(32),
+      },
+    ],
+    messageAvatar: [
+      staticStyles.messageAvatar,
+      {
+        width: responsiveWidth(24),
+        height: responsiveHeight(24),
+      },
+    ],
+    messageText: [
+      staticStyles.messageText,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    typingText: [
+      staticStyles.typingText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    promptText: [
+      staticStyles.promptText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    inputAvatar: [
+      staticStyles.inputAvatar,
+      {
+        width: responsiveWidth(25),
+        height: responsiveHeight(25),
+      },
+    ],
+    input: [
+      staticStyles.input,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    sendButton: [
+      staticStyles.sendButton,
+      {
+        width: responsiveWidth(48),
+      },
+    ],
+    memoryLabel: [
+      staticStyles.memoryLabel,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    memoryText: [
+      staticStyles.memoryText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    refreshButton: [
+      staticStyles.refreshButton,
+      {
+        width: responsiveWidth(28),
+        height: responsiveHeight(28),
+      },
+    ],
+    taskLabel: [
+      staticStyles.taskLabel,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    taskHint: [
+      staticStyles.taskHint,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    empty: [
+      staticStyles.empty,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    error: [
+      staticStyles.error,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
   };
 }

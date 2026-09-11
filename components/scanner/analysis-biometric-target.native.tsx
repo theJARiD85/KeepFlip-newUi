@@ -17,7 +17,7 @@ import type { AnalysisCallout } from "@/components/scanner/analysis-visual-types
 import { ValueRadarTargetGraphic } from "@/components/scanner/value-radar-target-graphic";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
+import { responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type AnalysisBiometricTargetProps = {
@@ -210,10 +210,6 @@ function ActiveBiometricTarget({
         <Animated.View style={[styles.scanLine, scanStyle]} />
 
         {visibleCallouts.map((callout, index) => {
-  const {
-    responsiveFont
-  } = useResponsiveLayout();
-
           const accent = accentColor(callout.accent);
           return (
             <View
@@ -261,283 +257,284 @@ export function AnalysisBiometricTarget(props: AnalysisBiometricTargetProps) {
 const monoFont = Platform.OS === "ios" ? "Courier New" : "monospace";
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  container: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 1,
-    alignItems: "center",
-    overflow: "hidden",
-    backgroundColor: "#01040A",
-  },
-  atmosphere: {
-    ...StyleSheet.absoluteFill,
-    experimental_backgroundImage: `
+  const { responsiveFont, responsiveWidth, responsiveHeight } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    container: {
+      ...StyleSheet.absoluteFill,
+      zIndex: 1,
+      alignItems: "center",
+      overflow: "hidden",
+      backgroundColor: "#01040A",
+    },
+    atmosphere: {
+      ...StyleSheet.absoluteFill,
+      experimental_backgroundImage: `
       radial-gradient(circle at 50% 42%, rgba(0, 255, 255, 0.10) 0%, transparent 38%),
       radial-gradient(circle at 14% 72%, rgba(141, 114, 255, 0.09) 0%, transparent 34%),
       linear-gradient(to bottom, #020307 0%, #01040A 58%, #061126 100%)
     `,
-  },
-  frame: {
-    position: "absolute",
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(0, 255, 255, 0.56)",
-    borderRadius: 3,
-    backgroundColor: "#05070A",
-    boxShadow: "0 18px 52px rgba(0, 0, 0, 0.78), 0 0 24px rgba(0, 255, 255, 0.12)",
-  },
-  monochromeImage: {
-    filter: "grayscale(1) contrast(1.24)",
-  },
-  placeholder: {
-    ...StyleSheet.absoluteFill,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  placeholderText: {
-    color: theme.colors.scannerCyan,
-    fontFamily: monoFont,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 1.4,
-  },
-  monochromeWash: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(4, 12, 20, 0.22)",
-    mixBlendMode: "color",
-  },
-  imageContrast: {
-    ...StyleSheet.absoluteFill,
-    experimental_backgroundImage: `
+    },
+    frame: {
+      position: "absolute",
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: "rgba(0, 255, 255, 0.56)",
+      borderRadius: 3,
+      backgroundColor: "#05070A",
+      boxShadow: "0 18px 52px rgba(0, 0, 0, 0.78), 0 0 24px rgba(0, 255, 255, 0.12)",
+    },
+    monochromeImage: {
+      filter: "grayscale(1) contrast(1.24)",
+    },
+    placeholder: {
+      ...StyleSheet.absoluteFill,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    placeholderText: {
+      color: theme.colors.scannerCyan,
+      fontFamily: monoFont,
+      fontSize: 8,
+      fontWeight: "900",
+      letterSpacing: 1.4,
+    },
+    monochromeWash: {
+      ...StyleSheet.absoluteFill,
+      backgroundColor: "rgba(4, 12, 20, 0.22)",
+      mixBlendMode: "color",
+    },
+    imageContrast: {
+      ...StyleSheet.absoluteFill,
+      experimental_backgroundImage: `
       radial-gradient(ellipse at center, transparent 0%, transparent 44%, rgba(0, 3, 8, 0.36) 72%, rgba(0, 2, 6, 0.86) 100%),
       linear-gradient(to bottom, rgba(0, 0, 0, 0.20) 0%, transparent 42%, rgba(0, 6, 16, 0.34) 100%)
     `,
-  },
-  grid: {
-    ...StyleSheet.absoluteFill,
-    opacity: 0.27,
-    experimental_backgroundImage: `
+    },
+    grid: {
+      ...StyleSheet.absoluteFill,
+      opacity: 0.27,
+      experimental_backgroundImage: `
       repeating-linear-gradient(to right, transparent 0px, transparent 39px, rgba(0, 255, 255, 0.10) 40px),
       repeating-linear-gradient(to bottom, transparent 0px, transparent 31px, rgba(0, 255, 255, 0.08) 32px)
     `,
-  },
-  featureZone: {
-    position: "absolute",
-    borderWidth: 2,
-    borderColor: theme.colors.goldBright,
-    backgroundColor: "rgba(242, 211, 138, 0.09)",
-    boxShadow: "0 0 14px rgba(242, 211, 138, 0.52)",
-  },
-  featureZoneA: {
-    top: "31%",
-    right: "16%",
-    width: 64,
-    height: 42,
-  },
-  featureZoneB: {
-    bottom: "21%",
-    left: "18%",
-    width: 78,
-    height: 36,
-    borderColor: theme.colors.scannerViolet,
-    backgroundColor: "rgba(141, 114, 255, 0.10)",
-  },
-  scanLine: {
-    position: "absolute",
-    zIndex: 8,
-    top: 0,
-    right: 2,
-    left: 2,
-    height: 2,
-    backgroundColor: theme.colors.scannerCyan,
-    boxShadow: "0 0 12px rgba(0, 255, 255, 0.96), 0 0 26px rgba(0, 255, 255, 0.44)",
-  },
-  callout: {
-    position: "absolute",
-    zIndex: 12,
-    maxWidth: "58%",
-    minWidth: 112,
-    gap: 1,
-    paddingHorizontal: 7,
-    paddingVertical: 5,
-    borderLeftWidth: 2,
-    backgroundColor: "rgba(0, 4, 11, 0.78)",
-  },
-  calloutSignal: {
-    position: "absolute",
-    top: 5,
-    right: 5,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-  },
-  calloutLabel: {
-    paddingRight: 8,
-    fontFamily: monoFont,
-    fontSize: 6,
-    fontWeight: "900",
-    letterSpacing: 1,
-  },
-  calloutValue: {
-    color: "#FFFFFF",
-    fontFamily: monoFont,
-    fontSize: 9,
-    fontWeight: "900",
-    letterSpacing: 0.2,
-    textShadowColor: "rgba(0, 0, 0, 0.96)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  frameCorner: {
-    position: "absolute",
-    zIndex: 14,
-    width: 24,
-    height: 24,
-  },
-  cornerHorizontal: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: 22,
-    height: 2,
-    backgroundColor: theme.colors.scannerCyan,
-  },
-  cornerVertical: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: 2,
-    height: 22,
-    backgroundColor: theme.colors.scannerCyan,
-  },
-  telemetryHeader: {
-    position: "absolute",
-    zIndex: 12,
-    top: 10,
-    right: 12,
-    left: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  telemetryTitle: {
-    color: theme.colors.scannerCyan,
-    fontFamily: monoFont,
-    fontSize: 7,
-    fontWeight: "900",
-    letterSpacing: 1.2,
-  },
-  telemetryCode: {
-    color: theme.colors.goldBright,
-    fontFamily: monoFont,
-    fontSize: 6,
-    fontWeight: "900",
-    letterSpacing: 0.8,
-  },
-  progressTrack: {
-    position: "absolute",
-    zIndex: 12,
-    right: 10,
-    bottom: 9,
-    left: 10,
-    height: 3,
-    overflow: "hidden",
-    backgroundColor: "rgba(0, 255, 255, 0.12)",
-  },
-  progressFill: {
-    width: "100%",
-    height: "100%",
-    backgroundColor: theme.colors.goldBright,
-    transformOrigin: "left",
-    boxShadow: "0 0 8px rgba(242, 211, 138, 0.82)",
-  },
-});
+    },
+    featureZone: {
+      position: "absolute",
+      borderWidth: 2,
+      borderColor: theme.colors.goldBright,
+      backgroundColor: "rgba(242, 211, 138, 0.09)",
+      boxShadow: "0 0 14px rgba(242, 211, 138, 0.52)",
+    },
+    featureZoneA: {
+      top: "31%",
+      right: "16%",
+      width: 64,
+      height: 42,
+    },
+    featureZoneB: {
+      bottom: "21%",
+      left: "18%",
+      width: 78,
+      height: 36,
+      borderColor: theme.colors.scannerViolet,
+      backgroundColor: "rgba(141, 114, 255, 0.10)",
+    },
+    scanLine: {
+      position: "absolute",
+      zIndex: 8,
+      top: 0,
+      right: 2,
+      left: 2,
+      height: 2,
+      backgroundColor: theme.colors.scannerCyan,
+      boxShadow: "0 0 12px rgba(0, 255, 255, 0.96), 0 0 26px rgba(0, 255, 255, 0.44)",
+    },
+    callout: {
+      position: "absolute",
+      zIndex: 12,
+      maxWidth: "58%",
+      minWidth: 112,
+      gap: 1,
+      paddingHorizontal: 7,
+      paddingVertical: 5,
+      borderLeftWidth: 2,
+      backgroundColor: "rgba(0, 4, 11, 0.78)",
+    },
+    calloutSignal: {
+      position: "absolute",
+      top: 5,
+      right: 5,
+      width: 4,
+      height: 4,
+      borderRadius: 2,
+    },
+    calloutLabel: {
+      paddingRight: 8,
+      fontFamily: monoFont,
+      fontSize: 6,
+      fontWeight: "900",
+      letterSpacing: 1,
+    },
+    calloutValue: {
+      color: "#FFFFFF",
+      fontFamily: monoFont,
+      fontSize: 9,
+      fontWeight: "900",
+      letterSpacing: 0.2,
+      textShadowColor: "rgba(0, 0, 0, 0.96)",
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 3,
+    },
+    frameCorner: {
+      position: "absolute",
+      zIndex: 14,
+      width: 24,
+      height: 24,
+    },
+    cornerHorizontal: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: 22,
+      height: 2,
+      backgroundColor: theme.colors.scannerCyan,
+    },
+    cornerVertical: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: 2,
+      height: 22,
+      backgroundColor: theme.colors.scannerCyan,
+    },
+    telemetryHeader: {
+      position: "absolute",
+      zIndex: 12,
+      top: 10,
+      right: 12,
+      left: 12,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    telemetryTitle: {
+      color: theme.colors.scannerCyan,
+      fontFamily: monoFont,
+      fontSize: 7,
+      fontWeight: "900",
+      letterSpacing: 1.2,
+    },
+    telemetryCode: {
+      color: theme.colors.goldBright,
+      fontFamily: monoFont,
+      fontSize: 6,
+      fontWeight: "900",
+      letterSpacing: 0.8,
+    },
+    progressTrack: {
+      position: "absolute",
+      zIndex: 12,
+      right: 10,
+      bottom: 9,
+      left: 10,
+      height: 3,
+      overflow: "hidden",
+      backgroundColor: "rgba(0, 255, 255, 0.12)",
+    },
+    progressFill: {
+      width: "100%",
+      height: "100%",
+      backgroundColor: theme.colors.goldBright,
+      transformOrigin: "left",
+      boxShadow: "0 0 8px rgba(242, 211, 138, 0.82)",
+    },
+  });
   return {
     ...staticStyles,
-  placeholderText: [
-    staticStyles.placeholderText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  featureZoneA: [
-    staticStyles.featureZoneA,
-    {
-        width: responsiveLayout.responsiveWidth(64),
-        height: responsiveLayout.responsiveHeight(42),
-    },
-  ],
-  featureZoneB: [
-    staticStyles.featureZoneB,
-    {
-        width: responsiveLayout.responsiveWidth(78),
-        height: responsiveLayout.responsiveHeight(36),
-    },
-  ],
-  scanLine: [
-    staticStyles.scanLine,
-    {
-        height: responsiveLayout.responsiveHeight(2),
-    },
-  ],
-  calloutSignal: [
-    staticStyles.calloutSignal,
-    {
-        width: responsiveLayout.responsiveWidth(4),
-        height: responsiveLayout.responsiveHeight(4),
-    },
-  ],
-  calloutLabel: [
-    staticStyles.calloutLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(6),
-    },
-  ],
-  calloutValue: [
-    staticStyles.calloutValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(1) },
-    },
-  ],
-  frameCorner: [
-    staticStyles.frameCorner,
-    {
-        width: responsiveLayout.responsiveWidth(24),
-        height: responsiveLayout.responsiveHeight(24),
-    },
-  ],
-  cornerHorizontal: [
-    staticStyles.cornerHorizontal,
-    {
-        width: responsiveLayout.responsiveWidth(22),
-        height: responsiveLayout.responsiveHeight(2),
-    },
-  ],
-  cornerVertical: [
-    staticStyles.cornerVertical,
-    {
-        width: responsiveLayout.responsiveWidth(2),
-        height: responsiveLayout.responsiveHeight(22),
-    },
-  ],
-  telemetryTitle: [
-    staticStyles.telemetryTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  telemetryCode: [
-    staticStyles.telemetryCode,
-    {
-        fontSize: responsiveLayout.responsiveFont(6),
-    },
-  ],
-  progressTrack: [
-    staticStyles.progressTrack,
-    {
-        height: responsiveLayout.responsiveHeight(3),
-    },
-  ],
+    placeholderText: [
+      staticStyles.placeholderText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    featureZoneA: [
+      staticStyles.featureZoneA,
+      {
+        width: responsiveWidth(64),
+        height: responsiveHeight(42),
+      },
+    ],
+    featureZoneB: [
+      staticStyles.featureZoneB,
+      {
+        width: responsiveWidth(78),
+        height: responsiveHeight(36),
+      },
+    ],
+    scanLine: [
+      staticStyles.scanLine,
+      {
+        height: responsiveHeight(2),
+      },
+    ],
+    calloutSignal: [
+      staticStyles.calloutSignal,
+      {
+        width: responsiveWidth(4),
+        height: responsiveHeight(4),
+      },
+    ],
+    calloutLabel: [
+      staticStyles.calloutLabel,
+      {
+        fontSize: responsiveFont(6),
+      },
+    ],
+    calloutValue: [
+      staticStyles.calloutValue,
+      {
+        fontSize: responsiveFont(9),
+        textShadowOffset: { width: responsiveWidth(0), height: responsiveHeight(1) },
+      },
+    ],
+    frameCorner: [
+      staticStyles.frameCorner,
+      {
+        width: responsiveWidth(24),
+        height: responsiveHeight(24),
+      },
+    ],
+    cornerHorizontal: [
+      staticStyles.cornerHorizontal,
+      {
+        width: responsiveWidth(22),
+        height: responsiveHeight(2),
+      },
+    ],
+    cornerVertical: [
+      staticStyles.cornerVertical,
+      {
+        width: responsiveWidth(2),
+        height: responsiveHeight(22),
+      },
+    ],
+    telemetryTitle: [
+      staticStyles.telemetryTitle,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    telemetryCode: [
+      staticStyles.telemetryCode,
+      {
+        fontSize: responsiveFont(6),
+      },
+    ],
+    progressTrack: [
+      staticStyles.progressTrack,
+      {
+        height: responsiveHeight(3),
+      },
+    ],
   };
 }

@@ -20,13 +20,13 @@ import {
   KeepFlipTextInput as TextInput,
 } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import { responsiveWidth } from '@/lib/responsiveFont';
 import {
   centsFromLedgerAmount,
   parseLedgerDate,
   todayBusinessDate,
 } from '@/services/reseller-ledger-service';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type TripFormValues = {
@@ -562,11 +562,10 @@ export function SourcingTripControl() {
                     >
                       {activeTrip.receiptVarianceCents === 0
                         ? 'Receipt is fully allocated across saved finds.'
-                        : `${signedMoney(activeTrip.receiptVarianceCents ?? 0)} remains ${
-                            (activeTrip.receiptVarianceCents ?? 0) >= 0
-                              ? 'unallocated from the receipt'
-                              : 'over the receipt total'
-                          }.`}
+                        : `${signedMoney(activeTrip.receiptVarianceCents ?? 0)} remains ${(activeTrip.receiptVarianceCents ?? 0) >= 0
+                          ? 'unallocated from the receipt'
+                          : 'over the receipt total'
+                        }.`}
                     </Text>
                   ) : null}
                   <View style={styles.actions}>
@@ -604,360 +603,361 @@ export function SourcingTripControl() {
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  tripButton: {
-    width: '100%',
-    minHeight: 54,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 11,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: theme.radii.medium,
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.18)',
-    backgroundColor: 'rgba(6, 6, 9, 0.62)',
-  },
-  tripButtonActive: {
-    borderColor: 'rgba(88, 223, 232, 0.48)',
-    backgroundColor: 'rgba(88, 223, 232, 0.08)',
-  },
-  tripButtonPressed: { opacity: 0.76 },
-  tripButtonCopy: {
-    minWidth: 0,
-    flex: 1,
-    gap: 2,
-  },
-  tripButtonTitle: {
-    color: theme.colors.cream,
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  tripButtonDetail: {
-    color: theme.colors.textMuted,
-    fontSize: 7,
-    fontWeight: '900',
-    letterSpacing: 1.2,
-  },
-  tripButtonDetailActive: { color: theme.colors.scannerCyan },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(2, 2, 5, 0.78)',
-  },
-  modalScroll: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-  },
-  modalSurface: {
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.36)',
-    backgroundColor: theme.colors.surfaceSoft,
-    boxShadow: '0 20px 50px rgba(0, 0, 0, 0.52)',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 14,
-    padding: 19,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.12)',
-  },
-  modalHeaderCopy: { flex: 1, gap: 5 },
-  modalEyebrow: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 1.05,
-  },
-  modalTitle: {
-    color: theme.colors.cream,
-    fontFamily: theme.fonts.display,
-    fontSize: 24,
-    fontWeight: '800',
-    lineHeight: 29,
-  },
-  modalBody: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.body,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  closeButton: {
-    width: 30,
-    height: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.22)',
-  },
-  closeText: {
-    color: theme.colors.text,
-    fontSize: 24,
-    fontWeight: '300',
-    lineHeight: 26,
-  },
-  formContent: { gap: 12, padding: 19 },
-  fieldLabel: {
-    marginBottom: 6,
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.radar,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.75,
-  },
-  input: {
-    minHeight: 44,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.16)',
-    backgroundColor: 'rgba(255,255,255,0.045)',
-    color: theme.colors.text,
-    fontFamily: theme.fonts.body,
-    fontSize: 15,
-  },
-  notesInput: { minHeight: 76, textAlignVertical: 'top' },
-  helper: {
-    marginTop: 5,
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.body,
-    fontSize: 11,
-    lineHeight: 16,
-  },
-  twoColumn: { flexDirection: 'row', gap: 10 },
-  column: { flex: 1.2, minWidth: 0 },
-  dateColumn: { flex: 1, minWidth: 0 },
-  actions: { flexDirection: 'row', gap: 10, marginTop: 6 },
-  cancelButton: {
-    minHeight: 46,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 13,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-  },
-  primaryButton: {
-    flex: 1,
-    minHeight: 46,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 12,
-    backgroundColor: theme.colors.goldBright,
-  },
-  cancelText: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.radar,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.65,
-  },
-  primaryButtonText: {
-    color: theme.colors.backgroundDeep,
-    fontFamily: theme.fonts.radar,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 0.65,
-  },
-  summaryGrid: { flexDirection: 'row', gap: 9 },
-  summaryCell: {
-    flex: 1,
-    gap: 4,
-    padding: 11,
-    borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.21)',
-    backgroundColor: 'rgba(88, 223, 232, 0.045)',
-  },
-  summaryLabel: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.radar,
-    fontSize: 7,
-    fontWeight: '900',
-    letterSpacing: 0.65,
-  },
-  summaryValue: {
-    color: theme.colors.cream,
-    fontFamily: theme.fonts.numbers,
-    fontSize: 17,
-    fontWeight: '900',
-  },
-  caution: {
-    color: theme.colors.goldBright,
-    fontFamily: theme.fonts.body,
-    fontSize: 11,
-    lineHeight: 16,
-  },
-  receiptButton: {
-    minHeight: 60,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(0,255,255,0.32)',
-    backgroundColor: 'rgba(0,255,255,0.045)',
-  },
-  receiptPreview: {
-    width: 43,
-    height: 43,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
-  },
-  receiptCopy: { flex: 1, minWidth: 0, gap: 3 },
-  receiptTitle: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.7,
-  },
-  receiptSubtitle: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.body,
-    fontSize: 11,
-    lineHeight: 15,
-  },
-  receiptArrow: {
-    color: theme.colors.scannerCyan,
-    fontSize: 24,
-    fontWeight: '300',
-  },
-  reconcile: {
-    color: theme.colors.goldBright,
-    fontFamily: theme.fonts.body,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  reconcileBalanced: { color: theme.colors.scannerCyan },
-  pressed: { opacity: 0.76 },
-  disabled: { opacity: 0.5 },
-});
+  const { responsiveFont, responsiveWidth, responsiveHeight } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    tripButton: {
+      width: '100%',
+      minHeight: 54,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 11,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: theme.radii.medium,
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.18)',
+      backgroundColor: 'rgba(6, 6, 9, 0.62)',
+    },
+    tripButtonActive: {
+      borderColor: 'rgba(88, 223, 232, 0.48)',
+      backgroundColor: 'rgba(88, 223, 232, 0.08)',
+    },
+    tripButtonPressed: { opacity: 0.76 },
+    tripButtonCopy: {
+      minWidth: 0,
+      flex: 1,
+      gap: 2,
+    },
+    tripButtonTitle: {
+      color: theme.colors.cream,
+      fontSize: 13,
+      fontWeight: '800',
+    },
+    tripButtonDetail: {
+      color: theme.colors.textMuted,
+      fontSize: 7,
+      fontWeight: '900',
+      letterSpacing: 1.2,
+    },
+    tripButtonDetailActive: { color: theme.colors.scannerCyan },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(2, 2, 5, 0.78)',
+    },
+    modalScroll: {
+      flexGrow: 1,
+      justifyContent: 'center',
+      paddingHorizontal: 16,
+    },
+    modalSurface: {
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.36)',
+      backgroundColor: theme.colors.surfaceSoft,
+      boxShadow: '0 20px 50px rgba(0, 0, 0, 0.52)',
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 14,
+      padding: 19,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: 'rgba(255,255,255,0.12)',
+    },
+    modalHeaderCopy: { flex: 1, gap: 5 },
+    modalEyebrow: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 9,
+      fontWeight: '900',
+      letterSpacing: 1.05,
+    },
+    modalTitle: {
+      color: theme.colors.cream,
+      fontFamily: theme.fonts.display,
+      fontSize: 24,
+      fontWeight: '800',
+      lineHeight: 29,
+    },
+    modalBody: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.body,
+      fontSize: 13,
+      lineHeight: 18,
+    },
+    closeButton: {
+      width: 30,
+      height: 30,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.22)',
+    },
+    closeText: {
+      color: theme.colors.text,
+      fontSize: 24,
+      fontWeight: '300',
+      lineHeight: 26,
+    },
+    formContent: { gap: 12, padding: 19 },
+    fieldLabel: {
+      marginBottom: 6,
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.radar,
+      fontSize: 9,
+      fontWeight: '900',
+      letterSpacing: 0.75,
+    },
+    input: {
+      minHeight: 44,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.16)',
+      backgroundColor: 'rgba(255,255,255,0.045)',
+      color: theme.colors.text,
+      fontFamily: theme.fonts.body,
+      fontSize: 15,
+    },
+    notesInput: { minHeight: 76, textAlignVertical: 'top' },
+    helper: {
+      marginTop: 5,
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.body,
+      fontSize: 11,
+      lineHeight: 16,
+    },
+    twoColumn: { flexDirection: 'row', gap: 10 },
+    column: { flex: 1.2, minWidth: 0 },
+    dateColumn: { flex: 1, minWidth: 0 },
+    actions: { flexDirection: 'row', gap: 10, marginTop: 6 },
+    cancelButton: {
+      minHeight: 46,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 13,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.2)',
+    },
+    primaryButton: {
+      flex: 1,
+      minHeight: 46,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 12,
+      backgroundColor: theme.colors.goldBright,
+    },
+    cancelText: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.radar,
+      fontSize: 9,
+      fontWeight: '900',
+      letterSpacing: 0.65,
+    },
+    primaryButtonText: {
+      color: theme.colors.backgroundDeep,
+      fontFamily: theme.fonts.radar,
+      fontSize: 10,
+      fontWeight: '900',
+      letterSpacing: 0.65,
+    },
+    summaryGrid: { flexDirection: 'row', gap: 9 },
+    summaryCell: {
+      flex: 1,
+      gap: 4,
+      padding: 11,
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.21)',
+      backgroundColor: 'rgba(88, 223, 232, 0.045)',
+    },
+    summaryLabel: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.radar,
+      fontSize: 7,
+      fontWeight: '900',
+      letterSpacing: 0.65,
+    },
+    summaryValue: {
+      color: theme.colors.cream,
+      fontFamily: theme.fonts.numbers,
+      fontSize: 17,
+      fontWeight: '900',
+    },
+    caution: {
+      color: theme.colors.goldBright,
+      fontFamily: theme.fonts.body,
+      fontSize: 11,
+      lineHeight: 16,
+    },
+    receiptButton: {
+      minHeight: 60,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderWidth: 1,
+      borderColor: 'rgba(0,255,255,0.32)',
+      backgroundColor: 'rgba(0,255,255,0.045)',
+    },
+    receiptPreview: {
+      width: 43,
+      height: 43,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.18)',
+    },
+    receiptCopy: { flex: 1, minWidth: 0, gap: 3 },
+    receiptTitle: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 9,
+      fontWeight: '900',
+      letterSpacing: 0.7,
+    },
+    receiptSubtitle: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.body,
+      fontSize: 11,
+      lineHeight: 15,
+    },
+    receiptArrow: {
+      color: theme.colors.scannerCyan,
+      fontSize: 24,
+      fontWeight: '300',
+    },
+    reconcile: {
+      color: theme.colors.goldBright,
+      fontFamily: theme.fonts.body,
+      fontSize: 12,
+      lineHeight: 17,
+    },
+    reconcileBalanced: { color: theme.colors.scannerCyan },
+    pressed: { opacity: 0.76 },
+    disabled: { opacity: 0.5 },
+  });
   return {
     ...staticStyles,
-  tripButtonTitle: [
-    staticStyles.tripButtonTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  tripButtonDetail: [
-    staticStyles.tripButtonDetail,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  modalEyebrow: [
-    staticStyles.modalEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  modalTitle: [
-    staticStyles.modalTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(24),
-    },
-  ],
-  modalBody: [
-    staticStyles.modalBody,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  closeButton: [
-    staticStyles.closeButton,
-    {
-        width: responsiveLayout.responsiveWidth(30),
-        height: responsiveLayout.responsiveHeight(30),
-    },
-  ],
-  closeText: [
-    staticStyles.closeText,
-    {
-        fontSize: responsiveLayout.responsiveFont(24),
-    },
-  ],
-  fieldLabel: [
-    staticStyles.fieldLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  input: [
-    staticStyles.input,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  helper: [
-    staticStyles.helper,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  cancelText: [
-    staticStyles.cancelText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  primaryButtonText: [
-    staticStyles.primaryButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  summaryLabel: [
-    staticStyles.summaryLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  summaryValue: [
-    staticStyles.summaryValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(17),
-    },
-  ],
-  caution: [
-    staticStyles.caution,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  receiptPreview: [
-    staticStyles.receiptPreview,
-    {
-        width: responsiveLayout.responsiveWidth(43),
-        height: responsiveLayout.responsiveHeight(43),
-    },
-  ],
-  receiptTitle: [
-    staticStyles.receiptTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  receiptSubtitle: [
-    staticStyles.receiptSubtitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  receiptArrow: [
-    staticStyles.receiptArrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(24),
-    },
-  ],
-  reconcile: [
-    staticStyles.reconcile,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
+    tripButtonTitle: [
+      staticStyles.tripButtonTitle,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    tripButtonDetail: [
+      staticStyles.tripButtonDetail,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    modalEyebrow: [
+      staticStyles.modalEyebrow,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    modalTitle: [
+      staticStyles.modalTitle,
+      {
+        fontSize: responsiveFont(24),
+      },
+    ],
+    modalBody: [
+      staticStyles.modalBody,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    closeButton: [
+      staticStyles.closeButton,
+      {
+        width: responsiveWidth(30),
+        height: responsiveHeight(30),
+      },
+    ],
+    closeText: [
+      staticStyles.closeText,
+      {
+        fontSize: responsiveFont(24),
+      },
+    ],
+    fieldLabel: [
+      staticStyles.fieldLabel,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    input: [
+      staticStyles.input,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    helper: [
+      staticStyles.helper,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    cancelText: [
+      staticStyles.cancelText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    primaryButtonText: [
+      staticStyles.primaryButtonText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    summaryLabel: [
+      staticStyles.summaryLabel,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    summaryValue: [
+      staticStyles.summaryValue,
+      {
+        fontSize: responsiveFont(17),
+      },
+    ],
+    caution: [
+      staticStyles.caution,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    receiptPreview: [
+      staticStyles.receiptPreview,
+      {
+        width: responsiveWidth(43),
+        height: responsiveHeight(43),
+      },
+    ],
+    receiptTitle: [
+      staticStyles.receiptTitle,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    receiptSubtitle: [
+      staticStyles.receiptSubtitle,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    receiptArrow: [
+      staticStyles.receiptArrow,
+      {
+        fontSize: responsiveFont(24),
+      },
+    ],
+    reconcile: [
+      staticStyles.reconcile,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
   };
 }

@@ -25,11 +25,11 @@ type ScannerTool = {
   accent: string;
   glow: string;
   icon:
-    | 'viewfinder'
-    | 'barcode.viewfinder'
-    | 'rectangle.stack.fill'
-    | 'square.grid.2x2.fill'
-    | 'photo.on.rectangle.angled';
+  | 'viewfinder'
+  | 'barcode.viewfinder'
+  | 'rectangle.stack.fill'
+  | 'square.grid.2x2.fill'
+  | 'photo.on.rectangle.angled';
   id: ScannerToolId;
   label: string;
   surface: string;
@@ -157,11 +157,11 @@ function ToolControl({
       layer === 'rear'
         ? interpolate(depth, [REAR_CROSSOVER_DEPTH, 0.76], [1, 0], 'clamp')
         : interpolate(
-            depth,
-            [0.42, REAR_CROSSOVER_DEPTH, 0.82, 1],
-            [0, 0.18, 0.9, 1],
-            'clamp',
-          );
+          depth,
+          [0.42, REAR_CROSSOVER_DEPTH, 0.82, 1],
+          [0, 0.18, 0.9, 1],
+          'clamp',
+        );
 
     return {
       opacity: orbitOpacity * layerOpacity,
@@ -448,72 +448,73 @@ export function ScannerToolCarousel({
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  root: {
-    alignItems: 'center',
-  },
-  rootDisabled: {
-    opacity: 0.58,
-  },
-  housingBottom: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 0,
-  },
-  housingTop: {
-    ...StyleSheet.absoluteFill,
-    zIndex: HOUSING_TOP_LAYER,
-  },
-  controlPosition: {
-    position: 'absolute',
-    top: 0,
-  },
-  control: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  controlPressed: {
-    opacity: 0.78,
-    transform: [{ scale: 0.94 }],
-  },
-  focusGlow: {
-    position: 'absolute',
-    top: -1,
-    right: -1,
-    bottom: -1,
-    left: -1,
-    borderWidth: 3,
-  },
-  controlCore: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  badge: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 5,
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    backgroundColor: theme.colors.background,
-  },
-  badgeText: {
-    color: theme.colors.cream,
-    fontSize: 10,
-    fontWeight: '900',
-    fontVariant: ['tabular-nums'],
-  },
-});
+  const { responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    root: {
+      alignItems: 'center',
+    },
+    rootDisabled: {
+      opacity: 0.58,
+    },
+    housingBottom: {
+      ...StyleSheet.absoluteFill,
+      zIndex: 0,
+    },
+    housingTop: {
+      ...StyleSheet.absoluteFill,
+      zIndex: HOUSING_TOP_LAYER,
+    },
+    controlPosition: {
+      position: 'absolute',
+      top: 0,
+    },
+    control: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+    },
+    controlPressed: {
+      opacity: 0.78,
+      transform: [{ scale: 0.94 }],
+    },
+    focusGlow: {
+      position: 'absolute',
+      top: -1,
+      right: -1,
+      bottom: -1,
+      left: -1,
+      borderWidth: 3,
+    },
+    controlCore: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+    },
+    badge: {
+      position: 'absolute',
+      top: -2,
+      right: -2,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 5,
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      backgroundColor: theme.colors.background,
+    },
+    badgeText: {
+      color: theme.colors.cream,
+      fontSize: 10,
+      fontWeight: '900',
+      fontVariant: ['tabular-nums'],
+    },
+  });
   return {
     ...staticStyles,
-  badgeText: [
-    staticStyles.badgeText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
+    badgeText: [
+      staticStyles.badgeText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
   };
 }

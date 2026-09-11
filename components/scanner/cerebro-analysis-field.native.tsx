@@ -1,8 +1,8 @@
-import { Image } from "expo-image";
 import {
-  type ExpoWebGLRenderingContext,
   GLView,
+  type ExpoWebGLRenderingContext,
 } from "expo-gl";
+import { Image } from "expo-image";
 import {
   useCallback,
   useEffect,
@@ -29,7 +29,7 @@ import {
 } from "@/components/scanner/evidence-field.native";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
+import { responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export type CerebroValuation = {
@@ -917,7 +917,7 @@ function valuationPosition(valuation: CerebroValuation) {
       Math.min(
         0.95,
         (valuation.median - valuation.low!) /
-          (valuation.high! - valuation.low!),
+        (valuation.high! - valuation.low!),
       ),
     );
   }
@@ -1191,209 +1191,210 @@ export function CerebroAnalysisField({
 export default CerebroAnalysisField;
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  container: {
-    ...StyleSheet.absoluteFill,
-    overflow: "hidden",
-    backgroundColor: theme.colors.backgroundDeep,
-  },
-  photo: {
-    ...StyleSheet.absoluteFill,
-    opacity: 0.18,
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(3, 3, 8, 0.46)",
-    experimental_backgroundImage: `
+  const { responsiveWidth, responsiveHeight, responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    container: {
+      ...StyleSheet.absoluteFill,
+      overflow: "hidden",
+      backgroundColor: theme.colors.backgroundDeep,
+    },
+    photo: {
+      ...StyleSheet.absoluteFill,
+      opacity: 0.18,
+    },
+    backdrop: {
+      ...StyleSheet.absoluteFill,
+      backgroundColor: "rgba(3, 3, 8, 0.46)",
+      experimental_backgroundImage: `
       radial-gradient(circle at 50% 45%, rgba(138, 43, 226, 0.14) 0%, transparent 34%),
       radial-gradient(circle at 18% 58%, rgba(0, 243, 255, 0.10) 0%, transparent 42%),
       radial-gradient(circle at 82% 62%, rgba(255, 60, 199, 0.08) 0%, transparent 40%),
       linear-gradient(to bottom, rgba(3, 3, 8, 0.72) 0%, rgba(3, 3, 8, 0.10) 48%, rgba(3, 3, 8, 0.82) 100%)
     `,
-  },
-  canvas: {
-    ...StyleSheet.absoluteFill,
-  },
-  gauge: {
-    position: "absolute",
-    right: 18,
-    bottom: 42,
-    left: 18,
-    minHeight: 210,
-    alignItems: "center",
-    paddingHorizontal: 18,
-    paddingTop: 13,
-    paddingBottom: 16,
-    borderRadius: 14,
-    borderCurve: "continuous",
-    borderWidth: 1,
-    borderColor: "rgba(0, 255, 136, 0.38)",
-    backgroundColor: "rgba(4, 3, 8, 0.88)",
-    boxShadow:
-      "0 18px 44px rgba(0,0,0,0.54), 0 0 24px rgba(0,255,136,0.10)",
-  },
-  gaugeHeader: {
-    alignSelf: "stretch",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-  },
-  successSignal: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: "#00FF88",
-    boxShadow: "0 0 10px rgba(0,255,136,0.90)",
-  },
-  gaugeEyebrow: {
-    color: "#00FF88",
-    fontSize: 8,
-    lineHeight: 10,
-    fontWeight: "900",
-    letterSpacing: 1.05,
-  },
-  arc: {
-    width: 138,
-    height: 82,
-    marginTop: 7,
-    alignItems: "center",
-    justifyContent: "flex-end",
-  },
-  segment: {
-    position: "absolute",
-    bottom: 5,
-    width: 3,
-    height: 13,
-    borderRadius: 2,
-    transformOrigin: "50% 49px",
-  },
-  needle: {
-    position: "absolute",
-    bottom: 6,
-    width: 4,
-    height: 48,
-    alignItems: "center",
-    transformOrigin: "50% 100%",
-  },
-  needleLine: {
-    width: 3,
-    height: 43,
-    borderRadius: 2,
-    backgroundColor: "#F2D38A",
-    boxShadow: "0 0 10px rgba(242,211,138,0.90)",
-  },
-  needleHub: {
-    position: "absolute",
-    bottom: 0,
-    width: 13,
-    height: 13,
-    borderRadius: 7,
-    borderWidth: 2,
-    borderColor: "#F2D38A",
-    backgroundColor: "#05040A",
-  },
-  valueLabel: {
-    color: "rgba(255,255,255,0.48)",
-    fontSize: 7,
-    lineHeight: 9,
-    fontWeight: "900",
-    letterSpacing: 1.15,
-  },
-  valueText: {
-    maxWidth: "100%",
-    color: "#FFFFFF",
-    fontSize: 38,
-    lineHeight: 43,
-    fontWeight: "900",
-    fontVariant: ["tabular-nums"],
-    textShadowColor: "rgba(0,255,136,0.44)",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 10,
-  },
-  rangeText: {
-    color: "rgba(242,211,138,0.82)",
-    fontSize: 10,
-    lineHeight: 13,
-    fontWeight: "900",
-    fontVariant: ["tabular-nums"],
-    letterSpacing: 0.35,
-  },
-  edgeFade: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: "transparent",
-    experimental_backgroundImage: `
+    },
+    canvas: {
+      ...StyleSheet.absoluteFill,
+    },
+    gauge: {
+      position: "absolute",
+      right: 18,
+      bottom: 42,
+      left: 18,
+      minHeight: 210,
+      alignItems: "center",
+      paddingHorizontal: 18,
+      paddingTop: 13,
+      paddingBottom: 16,
+      borderRadius: 14,
+      borderCurve: "continuous",
+      borderWidth: 1,
+      borderColor: "rgba(0, 255, 136, 0.38)",
+      backgroundColor: "rgba(4, 3, 8, 0.88)",
+      boxShadow:
+        "0 18px 44px rgba(0,0,0,0.54), 0 0 24px rgba(0,255,136,0.10)",
+    },
+    gaugeHeader: {
+      alignSelf: "stretch",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 7,
+    },
+    successSignal: {
+      width: 7,
+      height: 7,
+      borderRadius: 4,
+      backgroundColor: "#00FF88",
+      boxShadow: "0 0 10px rgba(0,255,136,0.90)",
+    },
+    gaugeEyebrow: {
+      color: "#00FF88",
+      fontSize: 8,
+      lineHeight: 10,
+      fontWeight: "900",
+      letterSpacing: 1.05,
+    },
+    arc: {
+      width: 138,
+      height: 82,
+      marginTop: 7,
+      alignItems: "center",
+      justifyContent: "flex-end",
+    },
+    segment: {
+      position: "absolute",
+      bottom: 5,
+      width: 3,
+      height: 13,
+      borderRadius: 2,
+      transformOrigin: "50% 49px",
+    },
+    needle: {
+      position: "absolute",
+      bottom: 6,
+      width: 4,
+      height: 48,
+      alignItems: "center",
+      transformOrigin: "50% 100%",
+    },
+    needleLine: {
+      width: 3,
+      height: 43,
+      borderRadius: 2,
+      backgroundColor: "#F2D38A",
+      boxShadow: "0 0 10px rgba(242,211,138,0.90)",
+    },
+    needleHub: {
+      position: "absolute",
+      bottom: 0,
+      width: 13,
+      height: 13,
+      borderRadius: 7,
+      borderWidth: 2,
+      borderColor: "#F2D38A",
+      backgroundColor: "#05040A",
+    },
+    valueLabel: {
+      color: "rgba(255,255,255,0.48)",
+      fontSize: 7,
+      lineHeight: 9,
+      fontWeight: "900",
+      letterSpacing: 1.15,
+    },
+    valueText: {
+      maxWidth: "100%",
+      color: "#FFFFFF",
+      fontSize: 38,
+      lineHeight: 43,
+      fontWeight: "900",
+      fontVariant: ["tabular-nums"],
+      textShadowColor: "rgba(0,255,136,0.44)",
+      textShadowOffset: { width: 0, height: 0 },
+      textShadowRadius: 10,
+    },
+    rangeText: {
+      color: "rgba(242,211,138,0.82)",
+      fontSize: 10,
+      lineHeight: 13,
+      fontWeight: "900",
+      fontVariant: ["tabular-nums"],
+      letterSpacing: 0.35,
+    },
+    edgeFade: {
+      ...StyleSheet.absoluteFill,
+      backgroundColor: "transparent",
+      experimental_backgroundImage: `
       radial-gradient(circle at 50% 47%, transparent 0%, transparent 44%, rgba(3,3,8,0.20) 72%, rgba(3,3,8,0.72) 100%)
     `,
-  },
-});
+    },
+  });
   return {
     ...staticStyles,
-  successSignal: [
-    staticStyles.successSignal,
-    {
-        width: responsiveLayout.responsiveWidth(7),
-        height: responsiveLayout.responsiveHeight(7),
-    },
-  ],
-  gaugeEyebrow: [
-    staticStyles.gaugeEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  arc: [
-    staticStyles.arc,
-    {
-        width: responsiveLayout.responsiveWidth(138),
-        height: responsiveLayout.responsiveHeight(82),
-    },
-  ],
-  segment: [
-    staticStyles.segment,
-    {
-        width: responsiveLayout.responsiveWidth(3),
-        height: responsiveLayout.responsiveHeight(13),
-    },
-  ],
-  needle: [
-    staticStyles.needle,
-    {
-        width: responsiveLayout.responsiveWidth(4),
-        height: responsiveLayout.responsiveHeight(48),
-    },
-  ],
-  needleLine: [
-    staticStyles.needleLine,
-    {
-        width: responsiveLayout.responsiveWidth(3),
-        height: responsiveLayout.responsiveHeight(43),
-    },
-  ],
-  needleHub: [
-    staticStyles.needleHub,
-    {
-        width: responsiveLayout.responsiveWidth(13),
-        height: responsiveLayout.responsiveHeight(13),
-    },
-  ],
-  valueLabel: [
-    staticStyles.valueLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  valueText: [
-    staticStyles.valueText,
-    {
-        fontSize: responsiveLayout.responsiveFont(38),
-        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(0) },
-    },
-  ],
-  rangeText: [
-    staticStyles.rangeText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
+    successSignal: [
+      staticStyles.successSignal,
+      {
+        width: responsiveWidth(7),
+        height: responsiveHeight(7),
+      },
+    ],
+    gaugeEyebrow: [
+      staticStyles.gaugeEyebrow,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    arc: [
+      staticStyles.arc,
+      {
+        width: responsiveWidth(138),
+        height: responsiveHeight(82),
+      },
+    ],
+    segment: [
+      staticStyles.segment,
+      {
+        width: responsiveWidth(3),
+        height: responsiveHeight(13),
+      },
+    ],
+    needle: [
+      staticStyles.needle,
+      {
+        width: responsiveWidth(4),
+        height: responsiveHeight(48),
+      },
+    ],
+    needleLine: [
+      staticStyles.needleLine,
+      {
+        width: responsiveWidth(3),
+        height: responsiveHeight(43),
+      },
+    ],
+    needleHub: [
+      staticStyles.needleHub,
+      {
+        width: responsiveWidth(13),
+        height: responsiveHeight(13),
+      },
+    ],
+    valueLabel: [
+      staticStyles.valueLabel,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    valueText: [
+      staticStyles.valueText,
+      {
+        fontSize: responsiveFont(38),
+        textShadowOffset: { width: responsiveWidth(0), height: responsiveHeight(0) },
+      },
+    ],
+    rangeText: [
+      staticStyles.rangeText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
   };
 }

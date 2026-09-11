@@ -58,44 +58,45 @@ export function KeepFlipAccountTabs({
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  tab: {
-    alignItems: 'center',
-    borderRadius: 10,
-    flex: 1,
-    justifyContent: 'center',
-    minHeight: 42,
-  },
-  tabActive: {
-    backgroundColor: 'rgba(215, 168, 74, 0.14)',
-    borderColor: 'rgba(242, 211, 138, 0.38)',
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  tabText: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.radar,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 0.95,
-  },
-  tabTextActive: { color: theme.colors.goldBright },
-  tabs: {
-    backgroundColor: 'rgba(8, 8, 12, 0.78)',
-    borderColor: 'rgba(242, 237, 228, 0.14)',
-    borderRadius: 13,
-    borderWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
-    gap: 4,
-    padding: 4,
-  },
-});
+  const { responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    tab: {
+      alignItems: 'center',
+      borderRadius: 10,
+      flex: 1,
+      justifyContent: 'center',
+      minHeight: 42,
+    },
+    tabActive: {
+      backgroundColor: 'rgba(215, 168, 74, 0.14)',
+      borderColor: 'rgba(242, 211, 138, 0.38)',
+      borderWidth: StyleSheet.hairlineWidth,
+    },
+    tabText: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.radar,
+      fontSize: 10,
+      fontWeight: '900',
+      letterSpacing: 0.95,
+    },
+    tabTextActive: { color: theme.colors.goldBright },
+    tabs: {
+      backgroundColor: 'rgba(8, 8, 12, 0.78)',
+      borderColor: 'rgba(242, 237, 228, 0.14)',
+      borderRadius: 13,
+      borderWidth: StyleSheet.hairlineWidth,
+      flexDirection: 'row',
+      gap: 4,
+      padding: 4,
+    },
+  });
   return {
     ...staticStyles,
-  tabText: [
-    staticStyles.tabText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
+    tabText: [
+      staticStyles.tabText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
   };
 }

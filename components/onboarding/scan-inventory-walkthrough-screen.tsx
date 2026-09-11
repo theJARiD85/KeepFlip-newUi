@@ -11,26 +11,26 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import { responsiveWidth } from '@/lib/responsiveFont';
+import {
+  areKeepFlipSubscriptionsConfigured,
+  areKeepFlipSubscriptionsEnforced,
+} from "@/services/keepflip-subscription-service";
 import {
   buyRuleDayLimit,
   DEFAULT_RESELLER_BUY_RULES,
   type ResellerBuyRules,
 } from "@/services/reseller-buy-rules-service";
 import { completeScanInventoryWalkthrough } from "@/services/user-profile-onboarding-service";
-import {
-  areKeepFlipSubscriptionsConfigured,
-  areKeepFlipSubscriptionsEnforced,
-} from "@/services/keepflip-subscription-service";
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type FlipIcon =
@@ -349,7 +349,7 @@ function ChoiceCard({
         <Text style={[styles.choiceTitle, selected && styles.choiceTitleSelected]}>
           {choice.label}
         </Text>
-        <Text style={[styles.choiceDetail, { fontSize: responsiveFont(12)}]}>{choice.detail}</Text>
+        <Text style={[styles.choiceDetail, { fontSize: responsiveFont(12) }]}>{choice.detail}</Text>
       </View>
       <View style={[styles.choiceRadio, selected && styles.choiceRadioSelected]}>
         {selected ? <View style={styles.choiceRadioCore} /> : null}
@@ -469,7 +469,7 @@ export function ScanInventoryWalkthroughScreen() {
   return (
     <KeepFlipBackground>
       <ScrollView
-        contentContainerStyle={[styles.content, { minHeight: height,  paddingTop: insets.top, paddingBottom: insets.bottom + 20  }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+        contentContainerStyle={[styles.content, { minHeight: height, paddingTop: insets.top, paddingBottom: insets.bottom + 20 }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
       >
@@ -506,8 +506,8 @@ export function ScanInventoryWalkthroughScreen() {
           {screen === 0 ? (
             <Animated.View entering={FadeInDown.duration(300)} style={styles.panel}>
               <Text style={styles.hello}>Hey {firstName(user?.name)}.</Text>
-              <Text style={[styles.headline, { fontSize: responsiveFont(28)}]}>I’m Flip, your resale sidekick.</Text>
-              <Text style={[styles.body, { fontSize: responsiveFont(15)}]}>
+              <Text style={[styles.headline, { fontSize: responsiveFont(28) }]}>I’m Flip, your resale sidekick.</Text>
+              <Text style={[styles.body, { fontSize: responsiveFont(15) }]}>
                 Give me five quick answers and I’ll make every Buy or Pass call feel built around your business—not somebody else’s.
               </Text>
               <Pressable
@@ -526,10 +526,10 @@ export function ScanInventoryWalkthroughScreen() {
             <Animated.View entering={FadeInDown.duration(260)} key={question.id} style={styles.panel}>
               <View style={styles.messageBubble}>
                 <Text style={[styles.messageLabel, { fontSize: responsiveFont(8) }]}>FLIP</Text>
-                <Text style={[styles.messageText, { fontSize: responsiveFont(14)}]}>{question.message}</Text>
+                <Text style={[styles.messageText, { fontSize: responsiveFont(14) }]}>{question.message}</Text>
               </View>
               <Text style={[styles.questionEyebrow, { fontSize: responsiveFont(9) }]}>{question.eyebrow}</Text>
-              <Text style={[styles.questionTitle, { fontSize: responsiveFont(24)}]}>{question.prompt}</Text>
+              <Text style={[styles.questionTitle, { fontSize: responsiveFont(24) }]}>{question.prompt}</Text>
               {question.id === "profit" ? (
                 <>
                   <Text style={[styles.body, { fontSize: responsiveFont(15) }]}>Set the minimum profit you need after the flip&apos;s costs.</Text>
@@ -577,15 +577,15 @@ export function ScanInventoryWalkthroughScreen() {
           ) : (
             <Animated.View entering={FadeInDown.duration(300)} style={styles.panel}>
               <Text style={styles.hello}>Locked in.</Text>
-              <Text style={[styles.headline, { fontSize: responsiveFont(28)}]}>Now I know what a good flip looks like to you.</Text>
+              <Text style={[styles.headline, { fontSize: responsiveFont(28) }]}>Now I know what a good flip looks like to you.</Text>
               <View style={styles.summaryCard}>
-                <Text selectable style={[styles.summaryPrimary, { fontSize: responsiveFont(16)}]}>{summary.line}</Text>
-                <Text selectable style={[styles.summarySecondary, { fontSize: responsiveFont(13)}]}>{summary.details}</Text>
+                <Text selectable style={[styles.summaryPrimary, { fontSize: responsiveFont(16) }]}>{summary.line}</Text>
+                <Text selectable style={[styles.summarySecondary, { fontSize: responsiveFont(13) }]}>{summary.details}</Text>
               </View>
-              <Text style={[styles.body, { fontSize: responsiveFont(15)}]}>
+              <Text style={[styles.body, { fontSize: responsiveFont(15) }]}>
                 I’ll use this to make market-backed recommendations stricter when a find does not match your cash, pace, prep, or storage rules. The sold-market evidence stays separate and visible.
               </Text>
-              {error ? <Text selectable style={[styles.errorText, { fontSize: responsiveFont(13)}]}>{error}</Text> : null}
+              {error ? <Text selectable style={[styles.errorText, { fontSize: responsiveFont(13) }]}>{error}</Text> : null}
               <Pressable
                 accessibilityRole="button"
                 disabled={saving}
@@ -610,218 +610,219 @@ export function ScanInventoryWalkthroughScreen() {
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  backButton: {
-    alignItems: "center",
-    borderColor: "rgba(242, 237, 228, 0.18)",
-    borderCurve: "continuous",
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    justifyContent: "center",
-    minHeight: 34,
-    paddingHorizontal: 14,
-  },
-  backButtonText: { color: theme.colors.cream, fontFamily: theme.fonts.medium, fontSize: 12 },
-  body: { color: theme.colors.textMuted, fontSize: 15, lineHeight: 22 },
-  brandEyebrow: { color: theme.colors.gold, fontFamily: theme.fonts.display, fontSize: 9, letterSpacing: 1.2 },
-  brandTitle: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 20, marginTop: 4 },
-  buttonDisabled: { opacity: 0.5 },
-  choiceCard: {
-    alignItems: "center", backgroundColor: "rgba(255, 255, 255, 0.035)", borderColor: "rgba(242, 237, 228, 0.13)", borderCurve: "continuous", borderRadius: 18, borderWidth: 1, flexDirection: "row", gap: 13, minHeight: 76, padding: 13,
-  },
-  choiceCardSelected: { backgroundColor: "rgba(0, 255, 255, 0.09)", borderColor: "rgba(0, 255, 255, 0.72)", boxShadow: "0 0 20px rgba(0, 255, 255, 0.12)" },
-  choiceCopy: { flex: 1, gap: 3 },
-  choiceDetail: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 16 },
-  choiceIcon: { alignItems: "center", backgroundColor: "rgba(215, 168, 74, 0.10)", borderRadius: 14, height: 43, justifyContent: "center", width: 43 },
-  choiceIconSelected: { backgroundColor: "rgba(0, 255, 255, 0.12)" },
-  choiceList: { gap: 10 },
-  choiceRadio: { alignItems: "center", borderColor: "rgba(242, 237, 228, 0.28)", borderRadius: theme.radii.pill, borderWidth: 1, height: 19, justifyContent: "center", width: 19 },
-  choiceRadioCore: { backgroundColor: theme.colors.scannerCyan, borderRadius: theme.radii.pill, height: 9, width: 9 },
-  choiceRadioSelected: { borderColor: theme.colors.scannerCyan },
-  choiceTitle: { color: theme.colors.cream, fontFamily: theme.fonts.semibold, fontSize: 15 },
-  choiceTitleSelected: { color: theme.colors.scannerCyan },
-  coinFace: { backgroundColor: "rgba(8, 8, 12, 0.98)", borderColor: "rgba(242, 211, 138, 0.85)", borderRadius: theme.radii.pill, borderWidth: 2, height: 124, overflow: "hidden", width: 124 },
-  coinImage: { height: "100%", width: "100%" },
-  coinOrbit: { alignItems: "center", backgroundColor: "rgba(0, 255, 255, 0.08)", borderColor: "rgba(0, 255, 255, 0.4)", borderRadius: theme.radii.pill, boxShadow: "0 0 36px rgba(0, 255, 255, 0.22)", height: 146, justifyContent: "center", width: 146 },
-  coinShell: { alignItems: "center", gap: 10 },
-  coinSignal: { alignItems: "center", flexDirection: "row", gap: 6 },
-  coinSignalDot: { backgroundColor: theme.colors.scannerCyan, borderRadius: theme.radii.pill, boxShadow: "0 0 10px rgba(0, 255, 255, 0.9)", height: 7, width: 7 },
-  coinSignalText: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 1.2 },
-  content: { gap: 18, paddingBottom: 36, paddingHorizontal: 22, paddingTop: 28 },
-  errorText: { color: theme.colors.danger, fontSize: 13, lineHeight: 19 },
-  headline: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 28, letterSpacing: -0.55, lineHeight: 34 },
-  hello: { color: theme.colors.goldBright, fontFamily: theme.fonts.medium, fontSize: 17 },
-  main: { flex: 1, gap: 22, justifyContent: "center", marginHorizontal: "auto", maxWidth: 530, width: "100%" },
-  messageBubble: { backgroundColor: "rgba(141, 114, 255, 0.13)", borderColor: "rgba(141, 114, 255, 0.36)", borderCurve: "continuous", borderRadius: 18, borderTopLeftRadius: 5, borderWidth: 1, gap: 5, padding: 14 },
-  messageLabel: { color: theme.colors.scannerViolet, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 1.15 },
-  messageText: { color: theme.colors.cream, fontSize: 14, lineHeight: 20 },
-  nameInput: { backgroundColor: "rgba(2, 2, 4, 0.82)", borderColor: "rgba(242, 211, 138, 0.2)", borderCurve: "continuous", borderRadius: 12, borderWidth: 1, color: theme.colors.cream, minHeight: 52, paddingHorizontal: 14 },
-  nameLabel: { color: theme.colors.textMuted, fontFamily: theme.fonts.radar, letterSpacing: 1 },
-  panel: { backgroundColor: "rgba(8, 8, 12, 0.78)", borderColor: "rgba(242, 237, 228, 0.13)", borderCurve: "continuous", borderRadius: 26, borderWidth: 1, boxShadow: "0 16px 42px rgba(0, 0, 0, 0.34)", gap: 17, padding: 19 },
-  pressed: { opacity: 0.75, transform: [{ scale: 0.985 }] },
-  primaryButton: { alignItems: "center", backgroundColor: theme.colors.goldBright, borderCurve: "continuous", borderRadius: 17, flexDirection: "row", gap: 10, justifyContent: "center", minHeight: 56, paddingHorizontal: 18 },
-  primaryButtonText: { color: theme.colors.backgroundDeep, fontFamily: theme.fonts.bold, fontSize: 15 },
-  progressRail: { flexDirection: "row", gap: 7, marginHorizontal: "auto", maxWidth: 530, width: "100%" },
-  progressSegment: { backgroundColor: "rgba(242, 237, 228, 0.14)", borderRadius: theme.radii.pill, flex: 1, height: 3 },
-  progressSegmentActive: { backgroundColor: theme.colors.scannerCyan, boxShadow: "0 0 9px rgba(0, 255, 255, 0.75)" },
-  questionEyebrow: { color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 9, letterSpacing: 1.1, marginTop: 4 },
-  questionTitle: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 24, letterSpacing: -0.4, lineHeight: 30 },
-  summaryCard: { backgroundColor: "rgba(0, 255, 255, 0.075)", borderColor: "rgba(0, 255, 255, 0.28)", borderCurve: "continuous", borderRadius: 18, borderWidth: 1, gap: 6, padding: 15 },
-  summaryPrimary: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.bold, fontSize: 16, lineHeight: 22 },
-  summarySecondary: { color: theme.colors.cream, fontFamily: theme.fonts.medium, fontSize: 13, lineHeight: 19 },
-  topBar: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginHorizontal: "auto", maxWidth: 530, width: "100%"},
-});
+  const { responsiveFont, responsiveHeight, responsiveWidth } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    backButton: {
+      alignItems: "center",
+      borderColor: "rgba(242, 237, 228, 0.18)",
+      borderCurve: "continuous",
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      justifyContent: "center",
+      minHeight: 34,
+      paddingHorizontal: 14,
+    },
+    backButtonText: { color: theme.colors.cream, fontFamily: theme.fonts.medium, fontSize: 12 },
+    body: { color: theme.colors.textMuted, fontSize: 15, lineHeight: 22 },
+    brandEyebrow: { color: theme.colors.gold, fontFamily: theme.fonts.display, fontSize: 9, letterSpacing: 1.2 },
+    brandTitle: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 20, marginTop: 4 },
+    buttonDisabled: { opacity: 0.5 },
+    choiceCard: {
+      alignItems: "center", backgroundColor: "rgba(255, 255, 255, 0.035)", borderColor: "rgba(242, 237, 228, 0.13)", borderCurve: "continuous", borderRadius: 18, borderWidth: 1, flexDirection: "row", gap: 13, minHeight: 76, padding: 13,
+    },
+    choiceCardSelected: { backgroundColor: "rgba(0, 255, 255, 0.09)", borderColor: "rgba(0, 255, 255, 0.72)", boxShadow: "0 0 20px rgba(0, 255, 255, 0.12)" },
+    choiceCopy: { flex: 1, gap: 3 },
+    choiceDetail: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 16 },
+    choiceIcon: { alignItems: "center", backgroundColor: "rgba(215, 168, 74, 0.10)", borderRadius: 14, height: 43, justifyContent: "center", width: 43 },
+    choiceIconSelected: { backgroundColor: "rgba(0, 255, 255, 0.12)" },
+    choiceList: { gap: 10 },
+    choiceRadio: { alignItems: "center", borderColor: "rgba(242, 237, 228, 0.28)", borderRadius: theme.radii.pill, borderWidth: 1, height: 19, justifyContent: "center", width: 19 },
+    choiceRadioCore: { backgroundColor: theme.colors.scannerCyan, borderRadius: theme.radii.pill, height: 9, width: 9 },
+    choiceRadioSelected: { borderColor: theme.colors.scannerCyan },
+    choiceTitle: { color: theme.colors.cream, fontFamily: theme.fonts.semibold, fontSize: 15 },
+    choiceTitleSelected: { color: theme.colors.scannerCyan },
+    coinFace: { backgroundColor: "rgba(8, 8, 12, 0.98)", borderColor: "rgba(242, 211, 138, 0.85)", borderRadius: theme.radii.pill, borderWidth: 2, height: 124, overflow: "hidden", width: 124 },
+    coinImage: { height: "100%", width: "100%" },
+    coinOrbit: { alignItems: "center", backgroundColor: "rgba(0, 255, 255, 0.08)", borderColor: "rgba(0, 255, 255, 0.4)", borderRadius: theme.radii.pill, boxShadow: "0 0 36px rgba(0, 255, 255, 0.22)", height: 146, justifyContent: "center", width: 146 },
+    coinShell: { alignItems: "center", gap: 10 },
+    coinSignal: { alignItems: "center", flexDirection: "row", gap: 6 },
+    coinSignalDot: { backgroundColor: theme.colors.scannerCyan, borderRadius: theme.radii.pill, boxShadow: "0 0 10px rgba(0, 255, 255, 0.9)", height: 7, width: 7 },
+    coinSignalText: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 1.2 },
+    content: { gap: 18, paddingBottom: 36, paddingHorizontal: 22, paddingTop: 28 },
+    errorText: { color: theme.colors.danger, fontSize: 13, lineHeight: 19 },
+    headline: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 28, letterSpacing: -0.55, lineHeight: 34 },
+    hello: { color: theme.colors.goldBright, fontFamily: theme.fonts.medium, fontSize: 17 },
+    main: { flex: 1, gap: 22, justifyContent: "center", marginHorizontal: "auto", maxWidth: 530, width: "100%" },
+    messageBubble: { backgroundColor: "rgba(141, 114, 255, 0.13)", borderColor: "rgba(141, 114, 255, 0.36)", borderCurve: "continuous", borderRadius: 18, borderTopLeftRadius: 5, borderWidth: 1, gap: 5, padding: 14 },
+    messageLabel: { color: theme.colors.scannerViolet, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 1.15 },
+    messageText: { color: theme.colors.cream, fontSize: 14, lineHeight: 20 },
+    nameInput: { backgroundColor: "rgba(2, 2, 4, 0.82)", borderColor: "rgba(242, 211, 138, 0.2)", borderCurve: "continuous", borderRadius: 12, borderWidth: 1, color: theme.colors.cream, minHeight: 52, paddingHorizontal: 14 },
+    nameLabel: { color: theme.colors.textMuted, fontFamily: theme.fonts.radar, letterSpacing: 1 },
+    panel: { backgroundColor: "rgba(8, 8, 12, 0.78)", borderColor: "rgba(242, 237, 228, 0.13)", borderCurve: "continuous", borderRadius: 26, borderWidth: 1, boxShadow: "0 16px 42px rgba(0, 0, 0, 0.34)", gap: 17, padding: 19 },
+    pressed: { opacity: 0.75, transform: [{ scale: 0.985 }] },
+    primaryButton: { alignItems: "center", backgroundColor: theme.colors.goldBright, borderCurve: "continuous", borderRadius: 17, flexDirection: "row", gap: 10, justifyContent: "center", minHeight: 56, paddingHorizontal: 18 },
+    primaryButtonText: { color: theme.colors.backgroundDeep, fontFamily: theme.fonts.bold, fontSize: 15 },
+    progressRail: { flexDirection: "row", gap: 7, marginHorizontal: "auto", maxWidth: 530, width: "100%" },
+    progressSegment: { backgroundColor: "rgba(242, 237, 228, 0.14)", borderRadius: theme.radii.pill, flex: 1, height: 3 },
+    progressSegmentActive: { backgroundColor: theme.colors.scannerCyan, boxShadow: "0 0 9px rgba(0, 255, 255, 0.75)" },
+    questionEyebrow: { color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 9, letterSpacing: 1.1, marginTop: 4 },
+    questionTitle: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 24, letterSpacing: -0.4, lineHeight: 30 },
+    summaryCard: { backgroundColor: "rgba(0, 255, 255, 0.075)", borderColor: "rgba(0, 255, 255, 0.28)", borderCurve: "continuous", borderRadius: 18, borderWidth: 1, gap: 6, padding: 15 },
+    summaryPrimary: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.bold, fontSize: 16, lineHeight: 22 },
+    summarySecondary: { color: theme.colors.cream, fontFamily: theme.fonts.medium, fontSize: 13, lineHeight: 19 },
+    topBar: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginHorizontal: "auto", maxWidth: 530, width: "100%" },
+  });
   return {
     ...staticStyles,
-  backButtonText: [
-    staticStyles.backButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  body: [
-    staticStyles.body,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  brandEyebrow: [
-    staticStyles.brandEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  brandTitle: [
-    staticStyles.brandTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(20),
-    },
-  ],
-  choiceDetail: [
-    staticStyles.choiceDetail,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  choiceIcon: [
-    staticStyles.choiceIcon,
-    {
-        height: responsiveLayout.responsiveHeight(43),
-        width: responsiveLayout.responsiveWidth(43),
-    },
-  ],
-  choiceRadio: [
-    staticStyles.choiceRadio,
-    {
-        height: responsiveLayout.responsiveHeight(19),
-        width: responsiveLayout.responsiveWidth(19),
-    },
-  ],
-  choiceRadioCore: [
-    staticStyles.choiceRadioCore,
-    {
-        height: responsiveLayout.responsiveHeight(9),
-        width: responsiveLayout.responsiveWidth(9),
-    },
-  ],
-  choiceTitle: [
-    staticStyles.choiceTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  coinFace: [
-    staticStyles.coinFace,
-    {
-        height: responsiveLayout.responsiveHeight(124),
-        width: responsiveLayout.responsiveWidth(124),
-    },
-  ],
-  coinOrbit: [
-    staticStyles.coinOrbit,
-    {
-        height: responsiveLayout.responsiveHeight(146),
-        width: responsiveLayout.responsiveWidth(146),
-    },
-  ],
-  coinSignalDot: [
-    staticStyles.coinSignalDot,
-    {
-        height: responsiveLayout.responsiveHeight(7),
-        width: responsiveLayout.responsiveWidth(7),
-    },
-  ],
-  coinSignalText: [
-    staticStyles.coinSignalText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  errorText: [
-    staticStyles.errorText,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  headline: [
-    staticStyles.headline,
-    {
-        fontSize: responsiveLayout.responsiveFont(28),
-    },
-  ],
-  hello: [
-    staticStyles.hello,
-    {
-        fontSize: responsiveLayout.responsiveFont(17),
-    },
-  ],
-  messageLabel: [
-    staticStyles.messageLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  messageText: [
-    staticStyles.messageText,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
-  primaryButtonText: [
-    staticStyles.primaryButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  progressSegment: [
-    staticStyles.progressSegment,
-    {
-        height: responsiveLayout.responsiveHeight(3),
-    },
-  ],
-  questionEyebrow: [
-    staticStyles.questionEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  questionTitle: [
-    staticStyles.questionTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(24),
-    },
-  ],
-  summaryPrimary: [
-    staticStyles.summaryPrimary,
-    {
-        fontSize: responsiveLayout.responsiveFont(16),
-    },
-  ],
-  summarySecondary: [
-    staticStyles.summarySecondary,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
+    backButtonText: [
+      staticStyles.backButtonText,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    body: [
+      staticStyles.body,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    brandEyebrow: [
+      staticStyles.brandEyebrow,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    brandTitle: [
+      staticStyles.brandTitle,
+      {
+        fontSize: responsiveFont(20),
+      },
+    ],
+    choiceDetail: [
+      staticStyles.choiceDetail,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    choiceIcon: [
+      staticStyles.choiceIcon,
+      {
+        height: responsiveHeight(43),
+        width: responsiveWidth(43),
+      },
+    ],
+    choiceRadio: [
+      staticStyles.choiceRadio,
+      {
+        height: responsiveHeight(19),
+        width: responsiveWidth(19),
+      },
+    ],
+    choiceRadioCore: [
+      staticStyles.choiceRadioCore,
+      {
+        height: responsiveHeight(9),
+        width: responsiveWidth(9),
+      },
+    ],
+    choiceTitle: [
+      staticStyles.choiceTitle,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    coinFace: [
+      staticStyles.coinFace,
+      {
+        height: responsiveHeight(124),
+        width: responsiveWidth(124),
+      },
+    ],
+    coinOrbit: [
+      staticStyles.coinOrbit,
+      {
+        height: responsiveHeight(146),
+        width: responsiveWidth(146),
+      },
+    ],
+    coinSignalDot: [
+      staticStyles.coinSignalDot,
+      {
+        height: responsiveHeight(7),
+        width: responsiveWidth(7),
+      },
+    ],
+    coinSignalText: [
+      staticStyles.coinSignalText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    errorText: [
+      staticStyles.errorText,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    headline: [
+      staticStyles.headline,
+      {
+        fontSize: responsiveFont(28),
+      },
+    ],
+    hello: [
+      staticStyles.hello,
+      {
+        fontSize: responsiveFont(17),
+      },
+    ],
+    messageLabel: [
+      staticStyles.messageLabel,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    messageText: [
+      staticStyles.messageText,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
+    primaryButtonText: [
+      staticStyles.primaryButtonText,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    progressSegment: [
+      staticStyles.progressSegment,
+      {
+        height: responsiveHeight(3),
+      },
+    ],
+    questionEyebrow: [
+      staticStyles.questionEyebrow,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    questionTitle: [
+      staticStyles.questionTitle,
+      {
+        fontSize: responsiveFont(24),
+      },
+    ],
+    summaryPrimary: [
+      staticStyles.summaryPrimary,
+      {
+        fontSize: responsiveFont(16),
+      },
+    ],
+    summarySecondary: [
+      staticStyles.summarySecondary,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
   };
 }

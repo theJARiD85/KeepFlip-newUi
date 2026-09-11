@@ -10,9 +10,9 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text, KeepFlipTextInput as TextInput } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useRouter } from "expo-router";
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
+import { responsiveWidth } from '@/lib/responsiveFont';
+import { useRouter } from "expo-router";
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type AuthMode = 'sign-in' | 'create-account';
@@ -104,7 +104,7 @@ function SetupNotice({ missingKeys }: { missingKeys: string[] }) {
         </View>
         <View style={styles.noticeCopy}>
           <Text style={[styles.noticeEyebrow, { fontSize: responsiveFont(9) }]}>APPWRITE SETUP REQUIRED</Text>
-          <Text selectable style={[styles.noticeText, { fontSize: responsiveFont(12)}]}>
+          <Text selectable style={[styles.noticeText, { fontSize: responsiveFont(12) }]}>
             Add the public project connection values, then restart the development build.
           </Text>
         </View>
@@ -230,7 +230,7 @@ export function KeepFlipAuthScreen({
         style={styles.flex}>
         <ScrollView
           contentContainerStyle={[styles.scrollContent,
-            { paddingTop: insets.top, paddingBottom: insets.bottom + 30 }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+          { paddingTop: insets.top, paddingBottom: insets.bottom + 30 }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
           contentInsetAdjustmentBehavior="automatic"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
@@ -246,7 +246,7 @@ export function KeepFlipAuthScreen({
               </View>
               <Text style={[styles.brandEyebrow, { fontSize: responsiveFont(10) }]}>KEEPFLIP / SECURE ACCESS</Text>
               <Text style={[styles.title, { fontSize: responsiveFont(34) }]}>Know what it&apos;s worth.</Text>
-              <Text style={[styles.subtitle, { fontSize: responsiveFont(14)}]}>
+              <Text style={[styles.subtitle, { fontSize: responsiveFont(14) }]}>
                 Sign in before KeepFlip activates the scanner and analyzes your inventory.
               </Text>
             </View>
@@ -254,37 +254,37 @@ export function KeepFlipAuthScreen({
             <Animated.View layout={LinearTransition.duration(180)} style={styles.authPanel}>
               {allowSignUp ? (
                 <View accessibilityRole="tablist" style={styles.modeSwitch}>
-                <Pressable
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: mode === 'sign-in' }}
-                  disabled={isBusy}
-                  onPress={() => switchMode('sign-in')}
-                  style={[styles.modeButton, mode === 'sign-in' && styles.modeButtonActive]}>
-                  <Text
+                  <Pressable
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: mode === 'sign-in' }}
+                    disabled={isBusy}
+                    onPress={() => switchMode('sign-in')}
+                    style={[styles.modeButton, mode === 'sign-in' && styles.modeButtonActive]}>
+                    <Text
+                      style={[
+                        styles.modeButtonText,
+                        mode === 'sign-in' && styles.modeButtonTextActive,
+                      ]}>
+                      SIGN IN
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: mode === 'create-account' }}
+                    disabled={isBusy}
+                    onPress={() => switchMode('create-account')}
                     style={[
-                      styles.modeButtonText,
-                      mode === 'sign-in' && styles.modeButtonTextActive,
+                      styles.modeButton,
+                      mode === 'create-account' && styles.modeButtonActive,
                     ]}>
-                    SIGN IN
-                  </Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: mode === 'create-account' }}
-                  disabled={isBusy}
-                  onPress={() => switchMode('create-account')}
-                  style={[
-                    styles.modeButton,
-                    mode === 'create-account' && styles.modeButtonActive,
-                  ]}>
-                  <Text
-                    style={[
-                      styles.modeButtonText,
-                      mode === 'create-account' && styles.modeButtonTextActive,
-                    ]}>
-                    CREATE ACCOUNT
-                  </Text>
-                </Pressable>
+                    <Text
+                      style={[
+                        styles.modeButtonText,
+                        mode === 'create-account' && styles.modeButtonTextActive,
+                      ]}>
+                      CREATE ACCOUNT
+                    </Text>
+                  </Pressable>
                 </View>
               ) : null}
 
@@ -296,7 +296,7 @@ export function KeepFlipAuthScreen({
                   entering={FadeInDown.duration(180)}
                   exiting={FadeOut.duration(130)}
                   style={styles.errorNotice}>
-                  <Text selectable style={[styles.errorText, { fontSize: responsiveFont(12)}]}>
+                  <Text selectable style={[styles.errorText, { fontSize: responsiveFont(12) }]}>
                     {displayedError}
                   </Text>
                   {status === 'error' ? (
@@ -444,36 +444,36 @@ export function KeepFlipAuthScreen({
                   </>
                 )}
               </Pressable>
-                <View>
-                <Text numberOfLines={1} style={[styles.legalConsentText, { fontSize: responsiveFont(10), maxWidth: '75%'}]}>By creating an account, you agree to KeepFlip's</Text>
-                  
-                  </View>
+              <View>
+                <Text numberOfLines={1} style={[styles.legalConsentText, { fontSize: responsiveFont(10), maxWidth: '75%' }]}>By creating an account, you agree to KeepFlip's</Text>
 
-                  <Text
-                    accessibilityHint="Opens KeepFlip's Terms of Service"
-                    accessibilityRole="link"
-                    onPress={() => router.push("/terms")}
-                    style={styles.legalLink}
-                  >
-                    Terms of Service
-                  </Text>
-                  <Text>
-                  and</Text>
-                  <Text
-                    accessibilityHint="Opens KeepFlip's Privacy Policy"
-                    accessibilityRole="link"
-                    onPress={() => router.push("/privacy")}
-                    style={styles.legalLink}
-                  >
-                    Privacy Policy
-                  </Text>
-                  <Text>
-                  .
-                </Text>
+              </View>
+
+              <Text
+                accessibilityHint="Opens KeepFlip's Terms of Service"
+                accessibilityRole="link"
+                onPress={() => router.push("/terms")}
+                style={styles.legalLink}
+              >
+                Terms of Service
+              </Text>
+              <Text>
+                and</Text>
+              <Text
+                accessibilityHint="Opens KeepFlip's Privacy Policy"
+                accessibilityRole="link"
+                onPress={() => router.push("/privacy")}
+                style={styles.legalLink}
+              >
+                Privacy Policy
+              </Text>
+              <Text>
+                .
+              </Text>
 
               <View style={styles.securityLine}>
                 <IconSymbol color={theme.colors.scannerCyan} name="lock.fill" size={14} />
-                <Text style={[styles.securityText, { fontSize: responsiveFont(10)}]}>
+                <Text style={[styles.securityText, { fontSize: responsiveFont(10) }]}>
                   All sessions are managed by Appwrite. Private information is never shared without your consent.
                 </Text>
               </View>
@@ -486,357 +486,358 @@ export function KeepFlipAuthScreen({
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  flex: { flex: 1 },
-  authGlow: {
-    ...StyleSheet.absoluteFill,
-    experimental_backgroundImage: `
+  const { responsiveWidth, responsiveHeight, responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    flex: { flex: 1 },
+    authGlow: {
+      ...StyleSheet.absoluteFill,
+      experimental_backgroundImage: `
       radial-gradient(circle at 50% 16%, rgba(224, 172, 75, 0.13) 0%, transparent 31%),
       radial-gradient(circle at 12% 82%, rgba(88, 223, 232, 0.055) 0%, transparent 32%),
       radial-gradient(circle at 94% 70%, rgba(141, 114, 255, 0.07) 0%, transparent 34%)
     `,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 10,
-  },
-  shell: { width: '100%', maxWidth: 520, gap: 25 },
-  brandSection: { alignItems: 'center', gap: 8, paddingHorizontal: 12 },
-  logoHalo: {
-    width: 138,
-    height: 138,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: theme.radii.pill,
-    borderWidth: 1.5,
-    borderColor: 'rgba(224, 172, 75, 0.18)',
-    backgroundColor: 'rgba(5, 4, 5, 0.44)',
-    boxShadow: '0 0 44px rgba(224, 172, 75, 0.15)',
-  },
-  logo: { width: 126, height: 126 },
-  brandEyebrow: {
-    color: theme.colors.gold,
-    fontFamily: theme.fonts.medium,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 2.2,
-  },
-  title: {
-    color: theme.colors.cream,
-    fontSize: 34,
-    fontWeight: '900',
-    letterSpacing: -0.8,
-    textAlign: 'center',
-  },
-  subtitle: {
-    maxWidth: 390,
-    color: theme.colors.textMuted,
-    fontSize: 14,
-    lineHeight: 21,
-    textAlign: 'center',
-  },
-  authPanel: {
-    gap: 17,
-    padding: 20,
-    borderRadius: theme.radii.large,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    borderColor: 'rgba(224, 172, 75, 0.34)',
-    backgroundColor: 'rgba(8, 8, 11, 0.93)',
-    boxShadow: '0 18px 55px rgba(0, 0, 0, 0.46), 0 0 24px rgba(224, 172, 75, 0.055)',
-  },
-  modeSwitch: {
-    minHeight: 45,
-    flexDirection: 'row',
-    gap: 4,
-    padding: 4,
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.13)',
-    backgroundColor: 'rgba(1, 1, 2, 0.68)',
-  },
-  modeButton: {
-    flex: 1,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 9,
-    borderRadius: theme.radii.pill,
-  },
-  modeButtonActive: {
-    backgroundColor: 'rgba(215, 168, 74, 0.14)',
-    boxShadow: 'inset 0 0 0 1px rgba(242, 211, 138, 0.2)',
-  },
-  modeButtonText: {
-    color: theme.colors.textMuted,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1.1,
-  },
-  modeButtonTextActive: { color: theme.colors.goldBright },
-  form: { gap: 14 },
-  fieldGroup: { gap: 7 },
-  fieldLabel: {
-    color: theme.colors.textMuted,
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1.15,
-    textTransform: 'uppercase',
-  },
-  fieldShell: {
-    minHeight: 54,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 11,
-    paddingHorizontal: 15,
-    borderRadius: theme.radii.small,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.16)',
-    backgroundColor: 'rgba(2, 2, 4, 0.82)',
-  },
-  fieldShellFocused: {
-    borderColor: 'rgba(242, 211, 138, 0.68)',
-    boxShadow: '0 0 18px rgba(215, 168, 74, 0.09)',
-  },
-  fieldInput: {
-    minWidth: 0,
-    flex: 1,
-    paddingVertical: 13,
-    color: theme.colors.text,
-    fontSize: 15,
-  },
-  visibilityButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: theme.radii.pill,
-  },
-  submitButton: {
-    minHeight: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    paddingHorizontal: 18,
-    borderRadius: theme.radii.medium,
-    borderCurve: 'continuous',
-    backgroundColor: theme.colors.goldBright,
-    boxShadow: '0 0 24px rgba(242, 211, 138, 0.22)',
-  },
-  submitButtonPressed: { opacity: 0.84, transform: [{ scale: 0.985 }] },
-  submitButtonDisabled: { opacity: 0.42 },
-  submitText: {
-    color: theme.colors.backgroundDeep,
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 1.1,
-  },
-  legalConsentText: {
-    paddingHorizontal: 8,
-    color: theme.colors.textMuted,
-    fontSize: 10,
-    lineHeight: 16,
-    textAlign: "center",
-  },
-  legalLink: {
-    color: theme.colors.goldBright,
-    fontWeight: "800",
-    textDecorationLine: "underline",
-  },
-  securityLine: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingHorizontal: 8,
-  },
-  securityText: {
-    flexShrink: 1,
-    color: theme.colors.textMuted,
-    fontSize: 10,
-    lineHeight: 15,
-    textAlign: 'center',
-  },
-  setupNotice: {
-    gap: 13,
-    padding: 15,
-    borderRadius: theme.radii.small,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    borderColor: 'rgba(141, 114, 255, 0.36)',
-    backgroundColor: 'rgba(141, 114, 255, 0.075)',
-  },
-  noticeHeading: { flexDirection: 'row', alignItems: 'flex-start', gap: 11 },
-  noticeIcon: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(141, 114, 255, 0.36)',
-  },
-  noticeCopy: { flex: 1, gap: 4 },
-  noticeEyebrow: {
-    color: theme.colors.scannerViolet,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 1.2,
-  },
-  noticeText: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 18 },
-  missingList: { gap: 5 },
-  missingKey: {
-    color: theme.colors.goldBright,
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.25,
-  },
-  errorNotice: {
-    gap: 11,
-    padding: 14,
-    borderRadius: theme.radii.small,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    borderColor: 'rgba(232, 97, 88, 0.42)',
-    backgroundColor: 'rgba(232, 97, 88, 0.075)',
-  },
-  errorText: { color: '#FFB8B1', fontSize: 12, lineHeight: 18 },
-  retryButton: {
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 7,
-    paddingHorizontal: 10,
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(224, 172, 75, 0.34)',
-  },
-  retryText: {
-    color: theme.colors.scannerAmber,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.85,
-  },
-  pressed: { opacity: 0.65 },
-});
+    },
+    scrollContent: {
+      flexGrow: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 10,
+    },
+    shell: { width: '100%', maxWidth: 520, gap: 25 },
+    brandSection: { alignItems: 'center', gap: 8, paddingHorizontal: 12 },
+    logoHalo: {
+      width: 138,
+      height: 138,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.pill,
+      borderWidth: 1.5,
+      borderColor: 'rgba(224, 172, 75, 0.18)',
+      backgroundColor: 'rgba(5, 4, 5, 0.44)',
+      boxShadow: '0 0 44px rgba(224, 172, 75, 0.15)',
+    },
+    logo: { width: 126, height: 126 },
+    brandEyebrow: {
+      color: theme.colors.gold,
+      fontFamily: theme.fonts.medium,
+      fontSize: 10,
+      fontWeight: '900',
+      letterSpacing: 2.2,
+    },
+    title: {
+      color: theme.colors.cream,
+      fontSize: 34,
+      fontWeight: '900',
+      letterSpacing: -0.8,
+      textAlign: 'center',
+    },
+    subtitle: {
+      maxWidth: 390,
+      color: theme.colors.textMuted,
+      fontSize: 14,
+      lineHeight: 21,
+      textAlign: 'center',
+    },
+    authPanel: {
+      gap: 17,
+      padding: 20,
+      borderRadius: theme.radii.large,
+      borderCurve: 'continuous',
+      borderWidth: 1,
+      borderColor: 'rgba(224, 172, 75, 0.34)',
+      backgroundColor: 'rgba(8, 8, 11, 0.93)',
+      boxShadow: '0 18px 55px rgba(0, 0, 0, 0.46), 0 0 24px rgba(224, 172, 75, 0.055)',
+    },
+    modeSwitch: {
+      minHeight: 45,
+      flexDirection: 'row',
+      gap: 4,
+      padding: 4,
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.13)',
+      backgroundColor: 'rgba(1, 1, 2, 0.68)',
+    },
+    modeButton: {
+      flex: 1,
+      minHeight: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 9,
+      borderRadius: theme.radii.pill,
+    },
+    modeButtonActive: {
+      backgroundColor: 'rgba(215, 168, 74, 0.14)',
+      boxShadow: 'inset 0 0 0 1px rgba(242, 211, 138, 0.2)',
+    },
+    modeButtonText: {
+      color: theme.colors.textMuted,
+      fontSize: 10,
+      fontWeight: '900',
+      letterSpacing: 1.1,
+    },
+    modeButtonTextActive: { color: theme.colors.goldBright },
+    form: { gap: 14 },
+    fieldGroup: { gap: 7 },
+    fieldLabel: {
+      color: theme.colors.textMuted,
+      fontSize: 10,
+      fontWeight: '800',
+      letterSpacing: 1.15,
+      textTransform: 'uppercase',
+    },
+    fieldShell: {
+      minHeight: 54,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 11,
+      paddingHorizontal: 15,
+      borderRadius: theme.radii.small,
+      borderCurve: 'continuous',
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.16)',
+      backgroundColor: 'rgba(2, 2, 4, 0.82)',
+    },
+    fieldShellFocused: {
+      borderColor: 'rgba(242, 211, 138, 0.68)',
+      boxShadow: '0 0 18px rgba(215, 168, 74, 0.09)',
+    },
+    fieldInput: {
+      minWidth: 0,
+      flex: 1,
+      paddingVertical: 13,
+      color: theme.colors.text,
+      fontSize: 15,
+    },
+    visibilityButton: {
+      width: 36,
+      height: 36,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.pill,
+    },
+    submitButton: {
+      minHeight: 56,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+      paddingHorizontal: 18,
+      borderRadius: theme.radii.medium,
+      borderCurve: 'continuous',
+      backgroundColor: theme.colors.goldBright,
+      boxShadow: '0 0 24px rgba(242, 211, 138, 0.22)',
+    },
+    submitButtonPressed: { opacity: 0.84, transform: [{ scale: 0.985 }] },
+    submitButtonDisabled: { opacity: 0.42 },
+    submitText: {
+      color: theme.colors.backgroundDeep,
+      fontSize: 12,
+      fontWeight: '900',
+      letterSpacing: 1.1,
+    },
+    legalConsentText: {
+      paddingHorizontal: 8,
+      color: theme.colors.textMuted,
+      fontSize: 10,
+      lineHeight: 16,
+      textAlign: "center",
+    },
+    legalLink: {
+      color: theme.colors.goldBright,
+      fontWeight: "800",
+      textDecorationLine: "underline",
+    },
+    securityLine: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      paddingHorizontal: 8,
+    },
+    securityText: {
+      flexShrink: 1,
+      color: theme.colors.textMuted,
+      fontSize: 10,
+      lineHeight: 15,
+      textAlign: 'center',
+    },
+    setupNotice: {
+      gap: 13,
+      padding: 15,
+      borderRadius: theme.radii.small,
+      borderCurve: 'continuous',
+      borderWidth: 1,
+      borderColor: 'rgba(141, 114, 255, 0.36)',
+      backgroundColor: 'rgba(141, 114, 255, 0.075)',
+    },
+    noticeHeading: { flexDirection: 'row', alignItems: 'flex-start', gap: 11 },
+    noticeIcon: {
+      width: 32,
+      height: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: 'rgba(141, 114, 255, 0.36)',
+    },
+    noticeCopy: { flex: 1, gap: 4 },
+    noticeEyebrow: {
+      color: theme.colors.scannerViolet,
+      fontSize: 9,
+      fontWeight: '900',
+      letterSpacing: 1.2,
+    },
+    noticeText: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 18 },
+    missingList: { gap: 5 },
+    missingKey: {
+      color: theme.colors.goldBright,
+      fontSize: 10,
+      fontWeight: '700',
+      letterSpacing: 0.25,
+    },
+    errorNotice: {
+      gap: 11,
+      padding: 14,
+      borderRadius: theme.radii.small,
+      borderCurve: 'continuous',
+      borderWidth: 1,
+      borderColor: 'rgba(232, 97, 88, 0.42)',
+      backgroundColor: 'rgba(232, 97, 88, 0.075)',
+    },
+    errorText: { color: '#FFB8B1', fontSize: 12, lineHeight: 18 },
+    retryButton: {
+      minHeight: 44,
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      gap: 7,
+      paddingHorizontal: 10,
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: 'rgba(224, 172, 75, 0.34)',
+    },
+    retryText: {
+      color: theme.colors.scannerAmber,
+      fontSize: 9,
+      fontWeight: '900',
+      letterSpacing: 0.85,
+    },
+    pressed: { opacity: 0.65 },
+  });
   return {
     ...staticStyles,
-  logoHalo: [
-    staticStyles.logoHalo,
-    {
-        width: responsiveLayout.responsiveWidth(138),
-        height: responsiveLayout.responsiveHeight(138),
-    },
-  ],
-  logo: [
-    staticStyles.logo,
-    {
-        width: responsiveLayout.responsiveWidth(126),
-        height: responsiveLayout.responsiveHeight(126),
-    },
-  ],
-  brandEyebrow: [
-    staticStyles.brandEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  title: [
-    staticStyles.title,
-    {
-        fontSize: responsiveLayout.responsiveFont(34),
-    },
-  ],
-  subtitle: [
-    staticStyles.subtitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
-  modeButtonText: [
-    staticStyles.modeButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  fieldLabel: [
-    staticStyles.fieldLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  fieldInput: [
-    staticStyles.fieldInput,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  visibilityButton: [
-    staticStyles.visibilityButton,
-    {
-        width: responsiveLayout.responsiveWidth(36),
-        height: responsiveLayout.responsiveHeight(36),
-    },
-  ],
-  submitText: [
-    staticStyles.submitText,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  legalConsentText: [
-    staticStyles.legalConsentText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  securityText: [
-    staticStyles.securityText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  noticeIcon: [
-    staticStyles.noticeIcon,
-    {
-        width: responsiveLayout.responsiveWidth(32),
-        height: responsiveLayout.responsiveHeight(32),
-    },
-  ],
-  noticeEyebrow: [
-    staticStyles.noticeEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  noticeText: [
-    staticStyles.noticeText,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  missingKey: [
-    staticStyles.missingKey,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  errorText: [
-    staticStyles.errorText,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  retryText: [
-    staticStyles.retryText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
+    logoHalo: [
+      staticStyles.logoHalo,
+      {
+        width: responsiveWidth(138),
+        height: responsiveHeight(138),
+      },
+    ],
+    logo: [
+      staticStyles.logo,
+      {
+        width: responsiveWidth(126),
+        height: responsiveHeight(126),
+      },
+    ],
+    brandEyebrow: [
+      staticStyles.brandEyebrow,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    title: [
+      staticStyles.title,
+      {
+        fontSize: responsiveFont(34),
+      },
+    ],
+    subtitle: [
+      staticStyles.subtitle,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
+    modeButtonText: [
+      staticStyles.modeButtonText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    fieldLabel: [
+      staticStyles.fieldLabel,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    fieldInput: [
+      staticStyles.fieldInput,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    visibilityButton: [
+      staticStyles.visibilityButton,
+      {
+        width: responsiveWidth(36),
+        height: responsiveHeight(36),
+      },
+    ],
+    submitText: [
+      staticStyles.submitText,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    legalConsentText: [
+      staticStyles.legalConsentText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    securityText: [
+      staticStyles.securityText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    noticeIcon: [
+      staticStyles.noticeIcon,
+      {
+        width: responsiveWidth(32),
+        height: responsiveHeight(32),
+      },
+    ],
+    noticeEyebrow: [
+      staticStyles.noticeEyebrow,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    noticeText: [
+      staticStyles.noticeText,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    missingKey: [
+      staticStyles.missingKey,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    errorText: [
+      staticStyles.errorText,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    retryText: [
+      staticStyles.retryText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
   };
 }

@@ -49,6 +49,35 @@ export type EbaySellerListing = {
   lastSyncedAt?: string;
 };
 
+export type EbaySellerBusinessPolicyOption = {
+  policyType: 'payment' | 'fulfillment' | 'return';
+  policyId: string;
+  marketplaceId?: string;
+  policyName?: string;
+  categoryType?: string;
+  returnsAccepted?: boolean;
+  returnPeriodDays?: number;
+  returnShippingCostPayer?: string;
+  refundMethod?: string;
+  handlingTimeDays?: number;
+  shippingOptionCount?: number;
+};
+
+export type EbaySellerInventoryLocationOption = {
+  merchantLocationKey: string;
+  locationName?: string;
+  locationType?: string;
+  countryCode?: string;
+  locationStatus?: string;
+};
+
+export type EbaySellerListingDefaults = {
+  defaultMerchantLocationKey: string | null;
+  defaultPaymentPolicyId: string | null;
+  defaultFulfillmentPolicyId: string | null;
+  defaultReturnPolicyId: string | null;
+};
+
 export type EbaySellerListingSetup = {
   state: 'ready' | 'needs_setup' | 'failed';
   marketplaceId: string;
@@ -64,6 +93,9 @@ export type EbaySellerListingSetup = {
     hasFulfillmentPolicy: boolean;
     hasReturnPolicy: boolean;
   };
+  defaults: EbaySellerListingDefaults;
+  policyOptions: EbaySellerBusinessPolicyOption[];
+  locationOptions: EbaySellerInventoryLocationOption[];
   lastCheckedAt?: string;
   issueCode?: string;
   message?: string;
@@ -77,6 +109,53 @@ export type EbaySellerAccountResult = {
   listingSetup?: EbaySellerListingSetup;
   listingCount: number;
   listings: EbaySellerListing[];
+};
+
+export type EbaySellerMetric = {
+  metricKey?: string;
+  name?: string;
+  type?: string;
+  level?: string;
+  valueDisplay?: string;
+  valueNumber?: number;
+  ratePercent?: number;
+  numerator?: number;
+  denominator?: number;
+  amountCents?: number;
+  currency?: string;
+  thresholdLowerBound?: number;
+  lookbackStartDate?: string;
+  lookbackEndDate?: string;
+};
+
+export type EbaySellerStandardsProfile = {
+  cycle: 'CURRENT' | 'PROJECTED';
+  program: string;
+  standardsLevel?: string;
+  evaluationDate?: string;
+  metrics: EbaySellerMetric[];
+};
+
+export type EbaySellerReturnMetrics = {
+  available: boolean;
+  reason?: 'sandbox' | 'no_profile' | 'unavailable';
+  count?: number;
+  denominator?: number;
+  ratePercent?: number;
+  lookbackStartDate?: string;
+  lookbackEndDate?: string;
+  byReason?: { label: string; count: number }[];
+};
+
+export type EbaySellerPerformanceResult = {
+  connected: boolean;
+  environment: EbayOAuthEnvironment;
+  marketplaceId: string;
+  program: string;
+  current?: EbaySellerStandardsProfile;
+  projected?: EbaySellerStandardsProfile;
+  returns?: EbaySellerReturnMetrics;
+  lastSyncedAt?: string;
 };
 
 type FunctionPayload = {
@@ -98,6 +177,12 @@ type FunctionPayload = {
   listingCount?: unknown;
   listings?: unknown;
   listingSetup?: unknown;
+  marketplaceId?: unknown;
+  program?: unknown;
+  current?: unknown;
+  projected?: unknown;
+  returns?: unknown;
+  lastSyncedAt?: unknown;
   error?: unknown;
 };
 
@@ -275,6 +360,66 @@ function parseSellerListingSetup(
       ? defaultSelection.hasReturnPolicy
       : undefined;
 
+  const defaults = recordValue(setup.defaults);
+  const policyOptions = Array.isArray(
+    setup.policyOptions,
+  )
+    ? setup.policyOptions
+        .map((option): EbaySellerBusinessPolicyOption | undefined => {
+          const record = recordValue(option);
+          const policyType =
+            record?.policyType === 'payment' ||
+            record?.policyType === 'fulfillment' ||
+            record?.policyType === 'return'
+              ? record.policyType
+              : undefined;
+          const policyId = optionalText(record?.policyId, 100);
+          if (!policyType || !policyId) return undefined;
+          return {
+            policyType,
+            policyId,
+            marketplaceId: optionalText(record?.marketplaceId, 64),
+            policyName: optionalText(record?.policyName, 160),
+            categoryType: optionalText(record?.categoryType, 64),
+            returnsAccepted:
+              typeof record?.returnsAccepted === 'boolean'
+                ? record.returnsAccepted
+                : undefined,
+            returnPeriodDays: optionalNonNegativeInteger(record?.returnPeriodDays),
+            returnShippingCostPayer: optionalText(record?.returnShippingCostPayer, 32),
+            refundMethod: optionalText(record?.refundMethod, 32),
+            handlingTimeDays: optionalNonNegativeInteger(record?.handlingTimeDays),
+            shippingOptionCount: optionalNonNegativeInteger(record?.shippingOptionCount),
+          } satisfies EbaySellerBusinessPolicyOption;
+        })
+        .filter(
+          (option): option is EbaySellerBusinessPolicyOption => Boolean(option),
+        )
+        .slice(0, 100)
+    : [];
+  const locationOptions = Array.isArray(
+    setup.locationOptions,
+  )
+    ? setup.locationOptions
+        .map((option): EbaySellerInventoryLocationOption | undefined => {
+          const record = recordValue(option);
+          const merchantLocationKey = optionalText(record?.merchantLocationKey, 100);
+          return merchantLocationKey
+            ? {
+                merchantLocationKey,
+                locationName: optionalText(record?.locationName, 160),
+                locationType: optionalText(record?.locationType, 64),
+                countryCode: optionalText(record?.countryCode, 3),
+                locationStatus: optionalText(record?.locationStatus, 32),
+              }
+            : undefined;
+        })
+        .filter(
+          (option): option is EbaySellerInventoryLocationOption => Boolean(option),
+        )
+        .slice(0, 100)
+    : [];
+
   if (
     !state ||
     !marketplaceId ||
@@ -304,9 +449,108 @@ function parseSellerListingSetup(
       hasFulfillmentPolicy,
       hasReturnPolicy,
     },
+    defaults: {
+      defaultMerchantLocationKey:
+        optionalText(defaults?.defaultMerchantLocationKey, 100) ?? null,
+      defaultPaymentPolicyId:
+        optionalText(defaults?.defaultPaymentPolicyId, 100) ?? null,
+      defaultFulfillmentPolicyId:
+        optionalText(defaults?.defaultFulfillmentPolicyId, 100) ?? null,
+      defaultReturnPolicyId:
+        optionalText(defaults?.defaultReturnPolicyId, 100) ?? null,
+    },
+    policyOptions,
+    locationOptions,
     lastCheckedAt: optionalText(setup.lastCheckedAt, 64),
     issueCode: optionalText(setup.issueCode, 64),
     message: optionalText(setup.message, 512),
+  };
+}
+
+function optionalFiniteNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function parseSellerMetric(value: unknown): EbaySellerMetric | undefined {
+  const metric = recordValue(value);
+  if (!metric) return undefined;
+
+  const result: EbaySellerMetric = {
+    metricKey: optionalText(metric.metricKey, 80),
+    name: optionalText(metric.name, 160),
+    type: optionalText(metric.type, 64),
+    level: optionalText(metric.level, 64),
+    valueDisplay: optionalText(metric.valueDisplay, 160),
+    valueNumber: optionalFiniteNumber(metric.valueNumber),
+    ratePercent: optionalFiniteNumber(metric.ratePercent),
+    numerator: optionalNonNegativeInteger(metric.numerator),
+    denominator: optionalNonNegativeInteger(metric.denominator),
+    amountCents: optionalNonNegativeInteger(metric.amountCents),
+    currency: optionalText(metric.currency, 3),
+    thresholdLowerBound: optionalFiniteNumber(metric.thresholdLowerBound),
+    lookbackStartDate: optionalText(metric.lookbackStartDate, 64),
+    lookbackEndDate: optionalText(metric.lookbackEndDate, 64),
+  };
+
+  return Object.values(result).some((entry) => entry !== undefined)
+    ? result
+    : undefined;
+}
+
+function parseSellerStandardsProfile(
+  value: unknown,
+  fallbackCycle: 'CURRENT' | 'PROJECTED',
+): EbaySellerStandardsProfile | undefined {
+  const profile = recordValue(value);
+  if (!profile) return undefined;
+
+  const cycle = profile.cycle === 'PROJECTED' ? 'PROJECTED' : fallbackCycle;
+  const metrics = Array.isArray(profile.metrics)
+    ? profile.metrics
+        .map(parseSellerMetric)
+        .filter((metric): metric is EbaySellerMetric => Boolean(metric))
+        .slice(0, 40)
+    : [];
+
+  return {
+    cycle,
+    program: optionalText(profile.program, 64) || 'PROGRAM_US',
+    standardsLevel: optionalText(profile.standardsLevel, 64),
+    evaluationDate: optionalText(profile.evaluationDate, 64),
+    metrics,
+  };
+}
+
+function parseSellerReturnMetrics(value: unknown): EbaySellerReturnMetrics | undefined {
+  const returns = recordValue(value);
+  if (!returns || typeof returns.available !== 'boolean') return undefined;
+
+  const byReason = Array.isArray(returns.byReason)
+    ? returns.byReason
+        .map((entry) => {
+          const item = recordValue(entry);
+          const label = optionalText(item?.label, 120);
+          const count = optionalNonNegativeInteger(item?.count);
+          return label && count !== undefined ? { label, count } : undefined;
+        })
+        .filter((entry): entry is { label: string; count: number } => Boolean(entry))
+        .slice(0, 8)
+    : undefined;
+
+  return {
+    available: returns.available,
+    reason:
+      returns.reason === 'sandbox' ||
+      returns.reason === 'no_profile' ||
+      returns.reason === 'unavailable'
+        ? returns.reason
+        : undefined,
+    count: optionalNonNegativeInteger(returns.count),
+    denominator: optionalNonNegativeInteger(returns.denominator),
+    ratePercent: optionalFiniteNumber(returns.ratePercent),
+    lookbackStartDate: optionalText(returns.lookbackStartDate, 64),
+    lookbackEndDate: optionalText(returns.lookbackEndDate, 64),
+    ...(byReason?.length ? { byReason } : {}),
   };
 }
 function functionError(responseBody: string, fallback: string): Error {
@@ -320,7 +564,14 @@ function functionError(responseBody: string, fallback: string): Error {
 }
 
 async function executeOAuthFunction(
-  path: '/connect' | '/status' | '/refresh' | '/revoke' | '/seller-account',
+  path:
+    | '/connect'
+    | '/status'
+    | '/refresh'
+    | '/revoke'
+    | '/seller-account'
+    | '/seller-setup'
+    | '/seller-performance',
   environment: EbayOAuthEnvironment,
   extra: Record<string, unknown> = {},
 ) {
@@ -418,10 +669,11 @@ export async function connectEbayAccount(
     const browserSession = await startEbayLogin({
       environment: activeEnvironment,
       authorizationState,
-      // A reconnect authorizes sensitive marketplace access. Never let an
-      // existing eBay browser session silently approve it on a borrowed or
-      // unlocked phone.
-      prompt: 'login',
+      // Leave eBay's optional prompt parameter unset. In Sandbox, forcing
+      // prompt=login can keep the browser on the sign-in/account surface
+      // instead of advancing the already-authenticated session to the Grant
+      // Application Access page. A user who needs a genuinely fresh grant
+      // can revoke the existing eBay app access and reconnect.
     });
     pendingState = browserSession.authorizationState || browserSession.clientState;
 
@@ -558,6 +810,88 @@ export async function getEbaySellerAccount(
 }
 
 /**
+ * Saves the eBay policy and inventory-location IDs KeepFlip should apply to
+ * future Inventory API offers. The backend verifies every ID against the
+ * connected seller's current eBay account before persisting the defaults.
+ */
+export async function updateEbaySellerListingDefaults(
+  defaults: EbaySellerListingDefaults,
+  environment: EbayOAuthEnvironment = getEbayOAuthEnvironment(),
+  marketplaceId = 'EBAY_US',
+): Promise<EbaySellerListingSetup> {
+  const execution = await executeOAuthFunction('/seller-setup', environment, {
+    marketplaceId,
+    ...defaults,
+  });
+
+  if (execution.responseStatusCode !== 200) {
+    throw functionError(
+      execution.responseBody,
+      'KeepFlip could not save your eBay listing setup.',
+    );
+  }
+
+  const payload = parseFunctionPayload(execution.responseBody);
+  if (payload.connected !== true) {
+    throw new Error('Connect eBay before saving listing setup.');
+  }
+
+  const listingSetup = parseSellerListingSetup(payload.listingSetup);
+  if (!listingSetup) {
+    throw new Error(
+      'The eBay OAuth Function returned an invalid listing setup result.',
+    );
+  }
+
+  return listingSetup;
+}
+
+/**
+ * Reads eBay's current and projected Seller Standards profiles. The backend
+ * returns only normalized metric fields; OAuth credentials and provider
+ * payloads remain server-side.
+ */
+export async function getEbaySellerPerformance(
+  environment: EbayOAuthEnvironment = getEbayOAuthEnvironment(),
+  marketplaceId?: string,
+): Promise<EbaySellerPerformanceResult> {
+  const execution = await executeOAuthFunction(
+    '/seller-performance',
+    environment,
+    marketplaceId ? { marketplaceId } : {},
+  );
+
+  if (execution.responseStatusCode !== 200) {
+    throw functionError(
+      execution.responseBody,
+      'KeepFlip could not read eBay seller performance.',
+    );
+  }
+
+  const payload = parseFunctionPayload(execution.responseBody);
+  if (typeof payload.connected !== 'boolean') {
+    throw new Error(
+      'The eBay OAuth Function returned an invalid seller performance result.',
+    );
+  }
+
+  const responseEnvironment = normalizeEnvironment(payload.environment) ?? environment;
+  const responseMarketplaceId = optionalText(payload.marketplaceId, 64) || 'EBAY_US';
+  const responseProgram = optionalText(payload.program, 64) || 'PROGRAM_US';
+
+  return {
+    connected: payload.connected,
+    environment: responseEnvironment,
+    marketplaceId: responseMarketplaceId,
+    program: responseProgram,
+    current: parseSellerStandardsProfile(payload.current, 'CURRENT'),
+    projected: parseSellerStandardsProfile(payload.projected, 'PROJECTED'),
+    returns: parseSellerReturnMetrics(payload.returns),
+    lastSyncedAt: optionalText(payload.lastSyncedAt, 64),
+  };
+}
+
+/**
  * Explicitly asks the backend to use the stored eBay refresh token to mint a
  * fresh access token. The new token remains server-side.
  */
@@ -626,7 +960,3 @@ export async function revokeEbayConnection(
       : {}),
   };
 }
-
-
-
-

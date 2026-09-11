@@ -22,14 +22,14 @@ import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import { getAppwriteCoreServices } from '@/lib/appwrite';
 import {
   keepFlipFeedbackEmailAddress,
   openKeepFlipFeedbackEmail,
   openKeepFlipGooglePlayReviews,
 } from '@/lib/keepflip-feedback';
-import { getAppwriteCoreServices } from '@/lib/appwrite';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
+import { responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type FeedbackPromptPreference = {
@@ -454,184 +454,185 @@ export function useKeepFlipFeedbackNudge() {
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 22,
-    backgroundColor: 'rgba(0, 0, 0, 0.74)',
-  },
-  promptSurface: {
-    width: '100%',
-    maxWidth: 430,
-    gap: 16,
-    padding: 20,
-    borderRadius: 16,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.34)',
-    backgroundColor: 'rgba(10, 10, 14, 0.98)',
-    boxShadow: '0 18px 48px rgba(0, 0, 0, 0.48)',
-  },
-  promptSignalRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-  },
-  promptSignal: {
-    width: 6,
-    height: 6,
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.scannerCyan,
-  },
-  promptEyebrow: {
-    color: theme.colors.goldBright,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 1.35,
-  },
-  promptHeading: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  promptIcon: {
-    width: 38,
-    height: 38,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.28)',
-    backgroundColor: 'rgba(215, 168, 74, 0.10)',
-  },
-  promptCopy: { flex: 1, gap: 5 },
-  promptTitle: {
-    color: theme.colors.cream,
-    fontSize: 20,
-    lineHeight: 24,
-    fontWeight: '900',
-    letterSpacing: -0.2,
-  },
-  promptBody: {
-    color: theme.colors.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  promptError: {
-    color: '#FFB8B1',
-    fontSize: 11,
-    lineHeight: 16,
-  },
-  promptActions: { gap: 9 },
-  primaryAction: {
-    minHeight: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderRadius: 11,
-    borderCurve: 'continuous',
-    backgroundColor: theme.colors.goldBright,
-  },
-  primaryActionText: {
-    color: theme.colors.backgroundDeep,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 0.9,
-  },
-  secondaryAction: {
-    minHeight: 46,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderRadius: 11,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.38)',
-    backgroundColor: 'rgba(215, 168, 74, 0.06)',
-  },
-  secondaryActionText: {
-    color: theme.colors.goldBright,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 0.82,
-  },
-  actionDisabled: { opacity: 0.55 },
-  actionPressed: { opacity: 0.76, transform: [{ scale: 0.988 }] },
-  dismissAction: {
-    minHeight: 38,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dismissActionPressed: { opacity: 0.62 },
-  dismissActionText: {
-    color: theme.colors.textMuted,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 1.1,
-  },
-});
+  const { responsiveWidth, responsiveHeight, responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 22,
+      backgroundColor: 'rgba(0, 0, 0, 0.74)',
+    },
+    promptSurface: {
+      width: '100%',
+      maxWidth: 430,
+      gap: 16,
+      padding: 20,
+      borderRadius: 16,
+      borderCurve: 'continuous',
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.34)',
+      backgroundColor: 'rgba(10, 10, 14, 0.98)',
+      boxShadow: '0 18px 48px rgba(0, 0, 0, 0.48)',
+    },
+    promptSignalRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 7,
+    },
+    promptSignal: {
+      width: 6,
+      height: 6,
+      borderRadius: theme.radii.pill,
+      backgroundColor: theme.colors.scannerCyan,
+    },
+    promptEyebrow: {
+      color: theme.colors.goldBright,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 1.35,
+    },
+    promptHeading: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 12,
+    },
+    promptIcon: {
+      width: 38,
+      height: 38,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 12,
+      borderCurve: 'continuous',
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.28)',
+      backgroundColor: 'rgba(215, 168, 74, 0.10)',
+    },
+    promptCopy: { flex: 1, gap: 5 },
+    promptTitle: {
+      color: theme.colors.cream,
+      fontSize: 20,
+      lineHeight: 24,
+      fontWeight: '900',
+      letterSpacing: -0.2,
+    },
+    promptBody: {
+      color: theme.colors.textMuted,
+      fontSize: 13,
+      lineHeight: 19,
+    },
+    promptError: {
+      color: '#FFB8B1',
+      fontSize: 11,
+      lineHeight: 16,
+    },
+    promptActions: { gap: 9 },
+    primaryAction: {
+      minHeight: 48,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      borderRadius: 11,
+      borderCurve: 'continuous',
+      backgroundColor: theme.colors.goldBright,
+    },
+    primaryActionText: {
+      color: theme.colors.backgroundDeep,
+      fontSize: 10,
+      fontWeight: '900',
+      letterSpacing: 0.9,
+    },
+    secondaryAction: {
+      minHeight: 46,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      borderRadius: 11,
+      borderCurve: 'continuous',
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.38)',
+      backgroundColor: 'rgba(215, 168, 74, 0.06)',
+    },
+    secondaryActionText: {
+      color: theme.colors.goldBright,
+      fontSize: 10,
+      fontWeight: '900',
+      letterSpacing: 0.82,
+    },
+    actionDisabled: { opacity: 0.55 },
+    actionPressed: { opacity: 0.76, transform: [{ scale: 0.988 }] },
+    dismissAction: {
+      minHeight: 38,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    dismissActionPressed: { opacity: 0.62 },
+    dismissActionText: {
+      color: theme.colors.textMuted,
+      fontSize: 9,
+      fontWeight: '900',
+      letterSpacing: 1.1,
+    },
+  });
   return {
     ...staticStyles,
-  promptSignal: [
-    staticStyles.promptSignal,
-    {
-        width: responsiveLayout.responsiveWidth(6),
-        height: responsiveLayout.responsiveHeight(6),
-    },
-  ],
-  promptEyebrow: [
-    staticStyles.promptEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  promptIcon: [
-    staticStyles.promptIcon,
-    {
-        width: responsiveLayout.responsiveWidth(38),
-        height: responsiveLayout.responsiveHeight(38),
-    },
-  ],
-  promptTitle: [
-    staticStyles.promptTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(20),
-    },
-  ],
-  promptBody: [
-    staticStyles.promptBody,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  promptError: [
-    staticStyles.promptError,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  primaryActionText: [
-    staticStyles.primaryActionText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  secondaryActionText: [
-    staticStyles.secondaryActionText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  dismissActionText: [
-    staticStyles.dismissActionText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
+    promptSignal: [
+      staticStyles.promptSignal,
+      {
+        width: responsiveWidth(6),
+        height: responsiveHeight(6),
+      },
+    ],
+    promptEyebrow: [
+      staticStyles.promptEyebrow,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    promptIcon: [
+      staticStyles.promptIcon,
+      {
+        width: responsiveWidth(38),
+        height: responsiveHeight(38),
+      },
+    ],
+    promptTitle: [
+      staticStyles.promptTitle,
+      {
+        fontSize: responsiveFont(20),
+      },
+    ],
+    promptBody: [
+      staticStyles.promptBody,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    promptError: [
+      staticStyles.promptError,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    primaryActionText: [
+      staticStyles.primaryActionText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    secondaryActionText: [
+      staticStyles.secondaryActionText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    dismissActionText: [
+      staticStyles.dismissActionText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
   };
 }

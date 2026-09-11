@@ -1,5 +1,6 @@
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import * as Haptics from 'expo-haptics';
-import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
@@ -12,7 +13,6 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -20,53 +20,57 @@ import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { BusinessPulse } from '@/components/command-center/business-pulse';
 import { SellerOperationsPanel } from '@/components/command-center/seller-operations-panel';
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
+import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import {
   KeepFlipControlRow,
   type KeepFlipStatusBadgeProps,
 } from '@/components/ui/keepflip-control-row';
-import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import {
   KeepFlipText as Text,
   KeepFlipTextInput as TextInput,
 } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { openKeepFlipSupportEmail } from '@/lib/keepflip-feedback';
+import { responsiveWidth } from '@/lib/responsiveFont';
+import { withAlpha } from '@/lib/withAlpha';
 import {
   connectEbayAccount,
   getEbayConnectionStatus,
 } from '@/services/ebayConnectionService';
-import { openKeepFlipSupportEmail } from '@/lib/keepflip-feedback';
-import {
-  buildResellerBusinessOverview,
-  type ResellerBusinessOverview,
-} from '@/services/reseller-business-overview';
-import {
-  getBookkeepingOverview,
-  getBookkeepingReviewQueue,
-  resolveBookkeepingReview,
-  syncEbayBookkeeping,
-  isResellerBookkeepingConfigured,
-  type BookkeepingMoneyEvent,
-  type BookkeepingReviewItem,
-} from '@/services/reseller-bookkeeping-service';
 import {
   listInventoryItems,
   type InventoryItem,
 } from '@/services/inventory-service';
 import {
+  getBookkeepingOverview,
+  getBookkeepingReviewQueue,
+  isResellerBookkeepingConfigured,
+  resolveBookkeepingReview,
+  syncEbayBookkeeping,
+  type BookkeepingMoneyEvent,
+  type BookkeepingReviewItem,
+} from '@/services/reseller-bookkeeping-service';
+import {
+  buildResellerBusinessOverview,
+  type ResellerBusinessOverview,
+} from '@/services/reseller-business-overview';
+import {
   isResellerBooksConfigured,
   listResellerLedgerEntries,
   type ResellerLedgerEntry,
 } from '@/services/reseller-ledger-service';
-import { withAlpha } from '@/lib/withAlpha';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
+import { InstancedMesh } from 'three';
+import { isNativePlatformSupported } from 'react-native-screens/lib/typescript/core';
 type EbayConnectionViewState =
   | 'checking'
   | 'connected'
   | 'connecting'
   | 'disconnected'
   | 'error';
+
+type CommandCenterTab = 'pulse' | 'operations';
 
 function bookkeepingEventsForBusinessPulse(
   ownerId: string,
@@ -267,27 +271,33 @@ export function CommandCenterScreen() {
   const [reviewQuantity, setReviewQuantity] = useState('1');
   const [reviewResolving, setReviewResolving] = useState(false);
   const [reviewActionMessage, setReviewActionMessage] = useState<string | null>(null);
-  const [sellerOperationsOpen, setSellerOperationsOpen] = useState(false);
+  const [commandCenterTab, setCommandCenterTab] =
+    useState<CommandCenterTab>('pulse');
   const shouldOpenReviewQueue = Array.isArray(openReviewQueueParam)
     ? openReviewQueueParam[0] === '1'
     : openReviewQueueParam === '1';
   const shouldOpenSellerOperations = Array.isArray(openSellerOperationsParam)
     ? openSellerOperationsParam[0] === '1'
     : openSellerOperationsParam === '1';
-    const {
+  const {
     contentWidth,
-      controlDockWidth,
-      height: screenHeight,
-      isCompactHeight,
-      moderateScale,
-      pageGutter,
-      responsiveFont,
-      scannerHeight,
-      scannerWidth,
-      verticalScale,
-      width: screenWidth,
+    controlDockWidth,
+    height: screenHeight,
+    isCompactHeight,
+    moderateScale,
+    pageGutter,
+    responsiveFont,
+    responsiveHeight,
+    scannerHeight,
+    scannerWidth,
+    verticalScale,
+    width: screenWidth,
     contentMaxWidth
   } = useResponsiveLayout();
+  const reviewModalBottomReserve = Math.max(
+    insets.bottom,
+    Platform.OS === 'android' ? responsiveHeight(56) : responsiveHeight(12),
+  );
 
   const resolveEbayStatus = useCallback(async () => {
     try {
@@ -453,9 +463,9 @@ export function CommandCenterScreen() {
       const attention = result.needsItemMatch + result.needsItemCost + result.needsReview;
       setEbayBooksSyncMessage(
         `${result.posted} record${result.posted === 1 ? '' : 's'} added from eBay. ` +
-          (attention > 0
-            ? `${attention} item${attention === 1 ? '' : 's'} need${attention === 1 ? 's' : ''} a quick review.`
-            : 'Everything matched cleanly.'),
+        (attention > 0
+          ? `${attention} item${attention === 1 ? '' : 's'} need${attention === 1 ? 's' : ''} a quick review.`
+          : 'Everything matched cleanly.'),
       );
       hapticSuccess();
       await Promise.all([refreshBusinessOverview(), refreshReviewQueue()]);
@@ -494,7 +504,7 @@ export function CommandCenterScreen() {
 
   useEffect(() => {
     if (!shouldOpenSellerOperations || !user?.$id) return;
-    const timer = setTimeout(() => setSellerOperationsOpen(true), 0);
+    const timer = setTimeout(() => setCommandCenterTab('operations'), 0);
     return () => clearTimeout(timer);
   }, [shouldOpenSellerOperations, user?.$id]);
 
@@ -694,20 +704,57 @@ export function CommandCenterScreen() {
 
   return (
     <KeepFlipBackground>
+      <View style={{marginBottom: insets.bottom, marginTop: insets.top}}>
       <ScrollView
         contentContainerStyle={[styles.content,
-          { paddingHorizontal: pageGutter, paddingTop: insets.top / 2, paddingBottom: insets.bottom + 32 }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
-        style={{marginBottom: insets.bottom, marginTop: insets.top}}
+        { paddingHorizontal: pageGutter, paddingTop: insets.top + 15, paddingBottom: insets.bottom + 30 }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}>
         <Animated.View entering={FadeInDown.duration(260)} style={styles.header}>
-          <Text style={[styles.eyebrow, { fontSize: responsiveFont(9) }]}>KEEPFLIP / COMMAND CENTER</Text>
-          <Text style={[styles.title, {fontSize: responsiveFont(26)}]}>Run the business</Text>
-          <Text style={[styles.subtitle, { fontSize: responsiveFont(12)}]}>
+          <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>KEEPFLIP / COMMAND CENTER</Text>
+          <Text style={[styles.title, { fontSize: responsiveFont(26) }]}>Run the business</Text>
+          <Text style={[styles.subtitle, { maxWidth: '90%', fontSize: responsiveFont(12), fontFamily: theme.fonts.display }]}>
             Marketplace access, inventory, books, and workspace controls in one place.
           </Text>
         </Animated.View>
 
+        <View style={styles.commandTabs}>
+          <Pressable
+            accessibilityRole="tab"
+            accessibilityState={{ selected: commandCenterTab === 'pulse' }}
+            onPress={() => {
+              hapticSelection();
+              setCommandCenterTab('pulse');
+            }}
+            style={({ pressed }) => [
+              styles.commandTab,
+              commandCenterTab === 'pulse' && styles.commandTabActive,
+              pressed && styles.commandTabPressed,
+            ]}>
+            <Text style={[styles.commandTabLabel, commandCenterTab === 'pulse' && styles.commandTabLabelActive, { fontSize: responsiveFont(9) }]}>BUSINESS PULSE</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="tab"
+            accessibilityState={{ selected: commandCenterTab === 'operations' }}
+            onPress={() => {
+              hapticSelection();
+              setCommandCenterTab('operations');
+            }}
+            style={({ pressed }) => [
+              styles.commandTab,
+              commandCenterTab === 'operations' && styles.commandTabActive,
+              pressed && styles.commandTabPressed,
+            ]}>
+            <Text style={[styles.commandTabLabel, commandCenterTab === 'operations' && styles.commandTabLabelActive, { fontSize: responsiveFont(9) }]}>SELLER OPERATIONS</Text>
+          </Pressable>
+        </View>
+
+        {commandCenterTab === 'operations' ? (
+          <Animated.View entering={FadeInDown.duration(260).delay(60)} style={styles.operationsTab}>
+            <SellerOperationsPanel key={user.$id} embedded ownerId={user.$id} />
+          </Animated.View>
+        ) : (
+          <>
         <Animated.View entering={FadeInDown.duration(260).delay(60)} style={styles.section}>
           <BusinessPulse
             errorMessage={businessError}
@@ -728,37 +775,10 @@ export function CommandCenterScreen() {
           />
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.duration(260).delay(70)} style={styles.section}>
-          <View style={styles.sectionHeading}>
-            <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>SELLER OPERATIONS</Text>
-            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16)}]}>One workspace for the sale</Text>
-          </View>
-          <View style={styles.settingsList}>
-            <KeepFlipControlRow
-              accent="gold"
-              actionLabel={sellerOperationsOpen ? 'CLOSE' : 'OPEN'}
-              accessibilityHint="Expands orders, fulfillment, manual selling, Money Sync, and realized margin inside Command Center."
-              description="Keep each sale connected to its inventory item, storage location, fulfillment status, and final margin."
-              icon="shippingbox.fill"
-              label="Seller operations"
-              onPress={() => {
-                hapticSelection();
-                setSellerOperationsOpen((current) => !current);
-              }}
-              status={{
-                label: sellerOperationsOpen ? 'OPEN' : 'READY',
-                tone: sellerOperationsOpen ? 'active' : 'violet',
-              }}
-            />
-          </View>
-          {sellerOperationsOpen ? (
-            <SellerOperationsPanel key={user.$id} embedded ownerId={user.$id} />
-          ) : null}
-        </Animated.View>
         <Animated.View entering={FadeInDown.duration(260).delay(75)} style={styles.section}>
           <View style={styles.sectionHeading}>
             <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>MARKETPLACE</Text>
-            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16)}]}>Connected services</Text>
+            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>Connected services</Text>
           </View>
           <View style={styles.eBaySurface}>
             <KeepFlipControlRow
@@ -837,7 +857,7 @@ export function CommandCenterScreen() {
           {advancedBookkeepingConfigured ? (
             <>
               {reviewItems.length > 0 || reviewError ? (
-                <View style={[styles.reviewSurface, {borderColor: theme.colors.danger, backgroundColor: withAlpha(theme.colors.danger, 0.15)}]}>
+                <View style={[styles.reviewSurface, { borderColor: theme.colors.danger, backgroundColor: withAlpha(theme.colors.danger, 0.15) }]}>
                   <KeepFlipControlRow
                     accent="danger"
                     actionBusy={reviewLoading}
@@ -864,7 +884,7 @@ export function CommandCenterScreen() {
         <Animated.View entering={FadeInDown.duration(260).delay(90)} style={styles.section}>
           <View style={styles.sectionHeading}>
             <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>BUSINESS TOOLS</Text>
-            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16)}]}>Seller workspace</Text>
+            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>Seller workspace</Text>
           </View>
           <View style={styles.settingsList}>
             <KeepFlipControlRow
@@ -889,23 +909,13 @@ export function CommandCenterScreen() {
                 router.push('/inventory' as Href);
               }}
             />
-            <KeepFlipControlRow
-              accessibilityHint="Opens your collection of possible buys."
-              description="Review pending finds before you commit money or shelf space."
-              icon="tag.fill"
-              label="Deal shelf"
-              onPress={() => {
-                hapticSelection();
-                router.push('/deal-shelf' as Href);
-              }}
-            />
           </View>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.duration(260).delay(135)} style={styles.section}>
           <View style={styles.sectionHeading}>
             <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>WORKSPACE</Text>
-            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16)}]}>KeepFlip controls</Text>
+            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>KeepFlip controls</Text>
           </View>
           <View style={styles.settingsList}>
             <KeepFlipControlRow
@@ -934,7 +944,7 @@ export function CommandCenterScreen() {
         <Animated.View entering={FadeInDown.duration(260).delay(180)} style={styles.section}>
           <View style={styles.sectionHeading}>
             <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>ACCOUNT & HELP</Text>
-            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16)}]}>Your KeepFlip access</Text>
+            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>Your KeepFlip access</Text>
           </View>
           <View style={styles.settingsList}>
             <KeepFlipControlRow
@@ -971,10 +981,12 @@ export function CommandCenterScreen() {
         </Animated.View>
 
         {supportError ? (
-          <Text accessibilityLiveRegion="polite" selectable style={[styles.errorText, { fontSize: responsiveFont(11)}]}>
+          <Text accessibilityLiveRegion="polite" selectable style={[styles.errorText, { fontSize: responsiveFont(11) }]}>
             {supportError}
           </Text>
         ) : null}
+          </>
+        )}
       </ScrollView>
 
       <Modal
@@ -986,21 +998,21 @@ export function CommandCenterScreen() {
         }}
         transparent
         visible={reviewOpen}>
-        <View style={styles.reviewModalBackdrop}>
-          <Pressable
-            accessibilityLabel="Close money review"
-            disabled={reviewResolving}
-            onPress={() => {
-              setReviewOpen(false);
-              setActiveReview(null);
-            }}
-            style={StyleSheet.absoluteFill}
-          />
-          <View style={[styles.reviewModal, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+        <View style={[styles.reviewModalBackdrop, { paddingBottom: reviewModalBottomReserve }]}>
+              <Pressable
+                accessibilityLabel="Close money review"
+                disabled={reviewResolving}
+                onPress={() => {
+                  setReviewOpen(false);
+                  setActiveReview(null);
+                }}
+                style={StyleSheet.absoluteFill}
+              />
+              <View style={styles.reviewModal}>
             <View style={styles.reviewModalHeader}>
               <View style={styles.reviewModalHeading}>
                 <Text style={[styles.reviewModalEyebrow, { fontSize: responsiveFont(8) }]}>BOOKS / MONEY REVIEW</Text>
-                <Text style={[styles.reviewModalTitle, { fontSize: responsiveFont(20)}]}>
+                <Text style={[styles.reviewModalTitle, { fontSize: responsiveFont(20) }]}>
                   {activeReview ? 'Finish this record' : 'Quick review queue'}
                 </Text>
               </View>
@@ -1024,7 +1036,7 @@ export function CommandCenterScreen() {
             </View>
 
             {reviewActionMessage ? (
-              <Text selectable style={[styles.reviewActionMessage, { fontSize: responsiveFont(10)}]}>
+              <Text selectable style={[styles.reviewActionMessage, { fontSize: responsiveFont(10) }]}>
                 {reviewActionMessage}
               </Text>
             ) : null}
@@ -1041,7 +1053,7 @@ export function CommandCenterScreen() {
                       {formatReviewMoney(activeReview)}
                     </Text>
                   </View>
-                  <Text style={[styles.reviewCardTitle, { fontSize: responsiveFont(12)}]}>
+                  <Text style={[styles.reviewCardTitle, { fontSize: responsiveFont(12) }]}>
                     {reviewTypeLabel(activeReview.sourceType)} · {formatReviewDate(activeReview.occurredAt)}
                   </Text>
                   <Text selectable style={styles.reviewCardReason}>{activeReview.reason}</Text>
@@ -1064,7 +1076,7 @@ export function CommandCenterScreen() {
                 {activeReview.status === 'needs_item_cost' ? (
                   <View style={styles.reviewResolutionSection}>
                     <Text style={[styles.reviewResolutionTitle, { fontSize: responsiveFont(8) }]}>COST RECONCILIATION NEEDED</Text>
-                    <Text style={[styles.reviewResolutionBody, { fontSize: responsiveFont(10)}]}>
+                    <Text style={[styles.reviewResolutionBody, { fontSize: responsiveFont(10) }]}>
                       The sale itself is already posted. KeepFlip is keeping this review open because the original inventory cost was missing when that sale posted. It will not guess the cost or create a second purchase from this screen.
                     </Text>
                     <Pressable
@@ -1078,11 +1090,11 @@ export function CommandCenterScreen() {
                     </Pressable>
                   </View>
                 ) : activeReview.sourceType === 'sale' &&
-                    activeReview.amountKnown &&
-                    activeReview.currency === 'USD' ? (
+                  activeReview.amountKnown &&
+                  activeReview.currency === 'USD' ? (
                   <View style={styles.reviewResolutionSection}>
                     <Text style={[styles.reviewResolutionTitle, { fontSize: responsiveFont(8) }]}>MATCH THE SALE</Text>
-                    <Text style={[styles.reviewResolutionBody, { fontSize: responsiveFont(10)}]}>
+                    <Text style={[styles.reviewResolutionBody, { fontSize: responsiveFont(10) }]}>
                       Choose the exact KeepFlip item, confirm how many units sold, then KeepFlip will post the sale and move the right inventory quantity and cost.
                     </Text>
                     <TextInput
@@ -1100,10 +1112,6 @@ export function CommandCenterScreen() {
                       showsVerticalScrollIndicator
                       style={styles.reviewInventoryList}>
                       {filteredReviewInventory.map((item) => {
-  const {
-    responsiveFont
-  } = useResponsiveLayout();
-
                         const selected = item.id === selectedReviewItemId;
                         return (
                           <Pressable
@@ -1134,13 +1142,13 @@ export function CommandCenterScreen() {
                         );
                       })}
                       {filteredReviewInventory.length === 0 ? (
-                        <Text style={[styles.reviewEmptyText, { fontSize: responsiveFont(10)}]}>No matching in-stock inventory items.</Text>
+                        <Text style={[styles.reviewEmptyText, { fontSize: responsiveFont(10) }]}>No matching in-stock inventory items.</Text>
                       ) : null}
                     </ScrollView>
                     <View style={styles.reviewQuantityRow}>
                       <View style={styles.reviewQuantityCopy}>
                         <Text style={[styles.reviewResolutionTitle, { fontSize: responsiveFont(8) }]}>QUANTITY SOLD</Text>
-                        <Text style={[styles.reviewResolutionBody, { fontSize: responsiveFont(10)}]}>Usually 1. Change it for a multi-unit order.</Text>
+                        <Text style={[styles.reviewResolutionBody, { fontSize: responsiveFont(10) }]}>Usually 1. Change it for a multi-unit order.</Text>
                       </View>
                       <TextInput
                         keyboardType="number-pad"
@@ -1170,7 +1178,7 @@ export function CommandCenterScreen() {
                 ) : (
                   <View style={styles.reviewResolutionSection}>
                     <Text style={[styles.reviewResolutionTitle, { fontSize: responsiveFont(8) }]}>MANUAL BOOKS CHECK</Text>
-                    <Text style={[styles.reviewResolutionBody, { fontSize: responsiveFont(10)}]}>
+                    <Text style={[styles.reviewResolutionBody, { fontSize: responsiveFont(10) }]}>
                       KeepFlip preserved the eBay transaction type, transaction ID, and the original amount and currency when eBay supplied them. There is not yet a safe automatic accounting rule for this record, so it stays held instead of being guessed.
                     </Text>
                     <Pressable
@@ -1188,12 +1196,12 @@ export function CommandCenterScreen() {
             ) : reviewLoading && reviewItems.length === 0 ? (
               <View style={styles.reviewLoadingState}>
                 <ActivityIndicator color={theme.colors.goldBright} />
-                <Text style={[styles.reviewEmptyText, { fontSize: responsiveFont(10)}]}>Checking synced money records…</Text>
+                <Text style={[styles.reviewEmptyText, { fontSize: responsiveFont(10) }]}>Checking synced money records…</Text>
               </View>
             ) : reviewItems.length === 0 ? (
               <View style={styles.reviewLoadingState}>
                 <Text style={[styles.reviewClearTitle, { fontSize: responsiveFont(11) }]}>ALL CLEAR</Text>
-                <Text style={[styles.reviewEmptyText, { fontSize: responsiveFont(10)}]}>No synced money records need review right now.</Text>
+                <Text style={[styles.reviewEmptyText, { fontSize: responsiveFont(10) }]}>No synced money records need review right now.</Text>
               </View>
             ) : (
               <ScrollView
@@ -1215,7 +1223,7 @@ export function CommandCenterScreen() {
                       <Text style={[styles.reviewCardStatus, { fontSize: responsiveFont(7) }]}>{reviewStatusLabel(item)}</Text>
                       <Text selectable style={styles.reviewCardAmount}>{formatReviewMoney(item)}</Text>
                     </View>
-                    <Text style={[styles.reviewCardTitle, { fontSize: responsiveFont(12)}]}>
+                    <Text style={[styles.reviewCardTitle, { fontSize: responsiveFont(12) }]}>
                       {reviewTypeLabel(item.sourceType)} · {formatReviewDate(item.occurredAt)}
                     </Text>
                     <Text numberOfLines={2} style={styles.reviewCardReason}>{item.reason}</Text>
@@ -1232,511 +1240,554 @@ export function CommandCenterScreen() {
                 ))}
               </ScrollView>
             )}
-          </View>
+              </View>
         </View>
       </Modal>
+      </View>
     </KeepFlipBackground>
   );
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  content: {
-    width: '100%',
-    maxWidth: 760,
-    alignSelf: 'center',
-    gap: 16,
-  },
-  header: { gap: 4 },
-  eyebrow: {
-    color: theme.colors.gold,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 1.7,
-  },
-  title: {
-    color: theme.colors.cream,
-    lineHeight: 33,
-    fontWeight: '900',
-    letterSpacing: -0.35,
-  },
-  subtitle: {
-    maxWidth: 520,
-    fontFamily: theme.fonts.body,
-    color: theme.colors.textMuted,
-    fontSize: 12,
-    lineHeight: 19,
-  },
-  section: { gap: 7 },
-  sectionHeading: { gap: 2 },
-  sectionEyebrow: {
-    color: theme.colors.goldBright,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 1.4,
-  },
-  sectionTitle: {
-    color: theme.colors.text,
-    fontSize: 16,
-    lineHeight: 20,
-    fontWeight: '800',
-  },
-  eBaySurface: {
-    overflow: 'hidden',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.23)',
-    backgroundColor: 'rgba(6, 11, 14, 0.76)',
-  },
-  reviewSurface: {
-    overflow: 'hidden',
-    borderRadius: 10,
-    borderWidth: 1,
-    backgroundColor: 'rgba(19, 14, 5, 0.76)',
-  },
-  eBayLogo: {
-    width: 25,
-    height: 27,
-  },
-  settingsList: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(242, 211, 138, 0.20)',
-  },
-  errorText: {
-    color: '#FFB8B1',
-    fontSize: 11,
-    lineHeight: 16,
-    textAlign: 'center',
-  },
-  reviewModalBackdrop: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.72)',
-  },
-  reviewModal: {
-    width: '100%',
-    maxWidth: 760,
-    maxHeight: '88%',
-    alignSelf: 'center',
-    gap: 10,
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    borderWidth: 1,
-    borderBottomWidth: 0,
-    borderColor: 'rgba(242, 211, 138, 0.28)',
-    backgroundColor: 'rgba(6, 5, 8, 0.99)',
-  },
-  reviewModalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  reviewModalHeading: { flex: 1, gap: 2 },
-  reviewModalEyebrow: {
-    color: theme.colors.goldBright,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 1.25,
-  },
-  reviewModalTitle: {
-    color: theme.colors.cream,
-    fontSize: 20,
-    lineHeight: 25,
-    fontWeight: '900',
-  },
-  reviewCloseButton: {
-    minHeight: 34,
-    justifyContent: 'center',
-    paddingHorizontal: 11,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(247, 242, 232, 0.22)',
-    borderRadius: 8,
-  },
-  reviewCloseText: {
-    color: theme.colors.textMuted,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.8,
-  },
-  reviewQueueContent: { gap: 9, paddingBottom: 8 },
-  reviewQueueIntro: {
-    color: theme.colors.textMuted,
-    fontSize: 11,
-    lineHeight: 16,
-    paddingBottom: 2,
-  },
-  reviewQueueCard: {
-    gap: 5,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.18)',
-    borderRadius: 10,
-    backgroundColor: 'rgba(242, 211, 138, 0.045)',
-  },
-  reviewDetailContent: { gap: 12, paddingBottom: 8 },
-  reviewDetailCard: {
-    gap: 5,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.18)',
-    borderRadius: 10,
-    backgroundColor: 'rgba(88, 223, 232, 0.04)',
-  },
-  reviewCardTopline: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  reviewCardStatus: {
-    color: theme.colors.goldBright,
-    fontSize: 7,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-  reviewCardAmount: {
-    color: theme.colors.cream,
-    fontSize: 15,
-    fontWeight: '900',
-    fontVariant: ['tabular-nums'],
-  },
-  reviewCardTitle: {
-    color: theme.colors.text,
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '800',
-  },
-  reviewCardReason: {
-    color: theme.colors.textMuted,
-    fontSize: 10,
-    lineHeight: 15,
-  },
-  reviewCardMeta: {
-    color: 'rgba(247, 242, 232, 0.48)',
-    fontSize: 7,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  reviewCardAction: {
-    color: theme.colors.scannerCyan,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.8,
-    textAlign: 'right',
-  },
-  reviewResolutionSection: {
-    gap: 9,
-    padding: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(247, 242, 232, 0.15)',
-    borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.025)',
-  },
-  reviewResolutionTitle: {
-    color: theme.colors.goldBright,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.9,
-  },
-  reviewResolutionBody: {
-    color: theme.colors.textMuted,
-    fontSize: 10,
-    lineHeight: 15,
-  },
-  reviewSearchInput: {
-    minHeight: 40,
-    paddingHorizontal: 11,
-    borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.20)',
-    borderRadius: 8,
-    color: theme.colors.cream,
-    backgroundColor: 'rgba(0, 0, 0, 0.24)',
-  },
-  reviewInventoryList: {
-    maxHeight: 240,
-  },
-  reviewInventoryListContent: {
-    gap: 5,
-  },
-  reviewInventoryRow: {
-    minHeight: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 9,
-    paddingVertical: 7,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(247, 242, 232, 0.12)',
-    borderRadius: 8,
-  },
-  reviewInventoryRowSelected: {
-    borderColor: 'rgba(88, 223, 232, 0.62)',
-    backgroundColor: 'rgba(88, 223, 232, 0.08)',
-  },
-  reviewInventoryCopy: { flex: 1, minWidth: 0, gap: 2 },
-  reviewInventoryTitle: {
-    color: theme.colors.text,
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  reviewInventoryMeta: {
-    color: theme.colors.textMuted,
-    fontSize: 8,
-    lineHeight: 11,
-  },
-  reviewInventoryQty: {
-    color: theme.colors.scannerCyan,
-    fontSize: 7,
-    fontWeight: '900',
-    letterSpacing: 0.4,
-  },
-  reviewQuantityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  reviewQuantityCopy: { flex: 1, gap: 2 },
-  reviewQuantityInput: {
-    width: 72,
-    minHeight: 40,
-    textAlign: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.28)',
-    borderRadius: 8,
-    color: theme.colors.cream,
-    fontSize: 15,
-    fontWeight: '900',
-    fontVariant: ['tabular-nums'],
-    backgroundColor: 'rgba(0, 0, 0, 0.24)',
-  },
-  reviewPrimaryButton: {
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingHorizontal: 14,
-    borderRadius: 9,
-    backgroundColor: theme.colors.goldBright,
-  },
-  reviewPrimaryButtonText: {
-    color: theme.colors.backgroundDeep,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.85,
-  },
-  reviewSecondaryButton: {
-    minHeight: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.34)',
-    borderRadius: 9,
-    backgroundColor: 'rgba(88, 223, 232, 0.06)',
-  },
-  reviewSecondaryButtonText: {
-    color: theme.colors.scannerCyan,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.85,
-  },
-  reviewActionMessage: {
-    color: theme.colors.goldBright,
-    fontSize: 10,
-    lineHeight: 15,
-    paddingHorizontal: 2,
-  },
-  reviewLoadingState: {
-    minHeight: 150,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  reviewClearTitle: {
-    color: '#46F5A2',
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 1.3,
-  },
-  reviewEmptyText: {
-    color: theme.colors.textMuted,
-    fontSize: 10,
-    lineHeight: 15,
-    textAlign: 'center',
-  },
-  reviewPressed: { opacity: 0.72 },
-  reviewDisabled: { opacity: 0.45 },
-});
+  const { responsiveFont, responsiveHeight, responsiveWidth } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    content: {
+      width: '100%',
+      maxWidth: 760,
+      alignSelf: 'center',
+      gap: 16,
+    },
+    header: { gap: 4 },
+    eyebrow: {
+      color: theme.colors.gold,
+      fontSize: 9,
+      fontWeight: '900',
+      letterSpacing: 1.7,
+    },
+    title: {
+      color: theme.colors.cream,
+      lineHeight: 33,
+      fontWeight: '900',
+      letterSpacing: -0.35,
+    },
+    subtitle: {
+      maxWidth: 520,
+      fontFamily: theme.fonts.body,
+      color: theme.colors.textMuted,
+      fontSize: 12,
+      lineHeight: 19,
+    },
+    section: { gap: 7 },
+    sectionHeading: { gap: 2 },
+    commandTabs: {
+      flexDirection: 'row',
+      gap: 6,
+      padding: 4,
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.20)',
+      borderRadius: 12,
+      backgroundColor: 'rgba(6, 11, 14, 0.72)',
+    },
+    commandTab: {
+      flex: 1,
+      minHeight: 42,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 8,
+      borderRadius: 8,
+    },
+    commandTabActive: {
+      backgroundColor: 'rgba(88, 223, 232, 0.12)',
+    },
+    commandTabPressed: {
+      opacity: 0.72,
+    },
+    commandTabLabel: {
+      color: theme.colors.textMuted,
+      fontSize: 9,
+      fontWeight: '900',
+      letterSpacing: 0.85,
+      textAlign: 'center',
+    },
+    commandTabLabelActive: {
+      color: theme.colors.scannerCyan,
+    },
+    operationsTab: {
+      gap: 10,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.18)',
+      borderRadius: 14,
+      backgroundColor: 'rgba(11, 10, 14, 0.84)',
+    },
+    sectionEyebrow: {
+      color: theme.colors.goldBright,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 1.4,
+    },
+    sectionTitle: {
+      color: theme.colors.text,
+      fontSize: 16,
+      lineHeight: 20,
+      fontWeight: '800',
+    },
+    eBaySurface: {
+      overflow: 'hidden',
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.23)',
+      backgroundColor: 'rgba(6, 11, 14, 0.76)',
+    },
+    reviewSurface: {
+      overflow: 'hidden',
+      borderRadius: 10,
+      borderWidth: 1,
+      backgroundColor: 'rgba(19, 14, 5, 0.76)',
+    },
+    eBayLogo: {
+      width: 25,
+      height: 27,
+    },
+    settingsList: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderColor: 'rgba(242, 211, 138, 0.20)',
+    },
+    errorText: {
+      color: '#FFB8B1',
+      fontSize: 11,
+      lineHeight: 16,
+      textAlign: 'center',
+    },
+    reviewModalBackdrop: {
+      flex: 1,
+      justifyContent: 'flex-end',
+      backgroundColor: 'rgba(0, 0, 0, 0.72)',
+    },
+    reviewModal: {
+      width: '100%',
+      maxWidth: 760,
+      maxHeight: '88%',
+      alignSelf: 'center',
+      gap: 10,
+      paddingHorizontal: 16,
+      paddingTop: 20,
+      borderTopLeftRadius: 22,
+      borderTopRightRadius: 22,
+      borderWidth: 1,
+      borderBottomWidth: 0,
+      borderColor: 'rgba(242, 211, 138, 0.28)',
+      backgroundColor: 'rgba(6, 5, 8, 0.99)',
+    },
+    reviewModalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    reviewModalHeading: { flex: 1, gap: 2 },
+    reviewModalEyebrow: {
+      color: theme.colors.goldBright,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 1.25,
+    },
+    reviewModalTitle: {
+      color: theme.colors.cream,
+      fontSize: 20,
+      lineHeight: 25,
+      fontWeight: '900',
+    },
+    reviewCloseButton: {
+      minHeight: 34,
+      justifyContent: 'center',
+      paddingHorizontal: 11,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: 'rgba(247, 242, 232, 0.22)',
+      borderRadius: 8,
+    },
+    reviewCloseText: {
+      color: theme.colors.textMuted,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 0.8,
+    },
+    reviewQueueContent: { gap: 9, paddingBottom: 8 },
+    reviewQueueIntro: {
+      color: theme.colors.textMuted,
+      fontSize: 11,
+      lineHeight: 16,
+      paddingBottom: 2,
+    },
+    reviewQueueCard: {
+      gap: 5,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.18)',
+      borderRadius: 10,
+      backgroundColor: 'rgba(242, 211, 138, 0.045)',
+    },
+    reviewDetailContent: { gap: 12, paddingBottom: 8 },
+    reviewDetailCard: {
+      gap: 5,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.18)',
+      borderRadius: 10,
+      backgroundColor: 'rgba(88, 223, 232, 0.04)',
+    },
+    reviewCardTopline: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 10,
+    },
+    reviewCardStatus: {
+      color: theme.colors.goldBright,
+      fontSize: 7,
+      fontWeight: '900',
+      letterSpacing: 1,
+    },
+    reviewCardAmount: {
+      color: theme.colors.cream,
+      fontSize: 15,
+      fontWeight: '900',
+      fontVariant: ['tabular-nums'],
+    },
+    reviewCardTitle: {
+      color: theme.colors.text,
+      fontSize: 12,
+      lineHeight: 16,
+      fontWeight: '800',
+    },
+    reviewCardReason: {
+      color: theme.colors.textMuted,
+      fontSize: 10,
+      lineHeight: 15,
+    },
+    reviewCardMeta: {
+      color: 'rgba(247, 242, 232, 0.48)',
+      fontSize: 7,
+      fontWeight: '800',
+      letterSpacing: 0.5,
+    },
+    reviewCardAction: {
+      color: theme.colors.scannerCyan,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 0.8,
+      textAlign: 'right',
+    },
+    reviewResolutionSection: {
+      gap: 9,
+      padding: 12,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: 'rgba(247, 242, 232, 0.15)',
+      borderRadius: 10,
+      backgroundColor: 'rgba(255, 255, 255, 0.025)',
+    },
+    reviewResolutionTitle: {
+      color: theme.colors.goldBright,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 0.9,
+    },
+    reviewResolutionBody: {
+      color: theme.colors.textMuted,
+      fontSize: 10,
+      lineHeight: 15,
+    },
+    reviewSearchInput: {
+      minHeight: 40,
+      paddingHorizontal: 11,
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.20)',
+      borderRadius: 8,
+      color: theme.colors.cream,
+      backgroundColor: 'rgba(0, 0, 0, 0.24)',
+    },
+    reviewInventoryList: {
+      maxHeight: 240,
+    },
+    reviewInventoryListContent: {
+      gap: 5,
+    },
+    reviewInventoryRow: {
+      minHeight: 48,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingHorizontal: 9,
+      paddingVertical: 7,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: 'rgba(247, 242, 232, 0.12)',
+      borderRadius: 8,
+    },
+    reviewInventoryRowSelected: {
+      borderColor: 'rgba(88, 223, 232, 0.62)',
+      backgroundColor: 'rgba(88, 223, 232, 0.08)',
+    },
+    reviewInventoryCopy: { flex: 1, minWidth: 0, gap: 2 },
+    reviewInventoryTitle: {
+      color: theme.colors.text,
+      fontSize: 11,
+      fontWeight: '800',
+    },
+    reviewInventoryMeta: {
+      color: theme.colors.textMuted,
+      fontSize: 8,
+      lineHeight: 11,
+    },
+    reviewInventoryQty: {
+      color: theme.colors.scannerCyan,
+      fontSize: 7,
+      fontWeight: '900',
+      letterSpacing: 0.4,
+    },
+    reviewQuantityRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    reviewQuantityCopy: { flex: 1, gap: 2 },
+    reviewQuantityInput: {
+      width: 72,
+      minHeight: 40,
+      textAlign: 'center',
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.28)',
+      borderRadius: 8,
+      color: theme.colors.cream,
+      fontSize: 15,
+      fontWeight: '900',
+      fontVariant: ['tabular-nums'],
+      backgroundColor: 'rgba(0, 0, 0, 0.24)',
+    },
+    reviewPrimaryButton: {
+      minHeight: 44,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      paddingHorizontal: 14,
+      borderRadius: 9,
+      backgroundColor: theme.colors.goldBright,
+    },
+    reviewPrimaryButtonText: {
+      color: theme.colors.backgroundDeep,
+      fontSize: 9,
+      fontWeight: '900',
+      letterSpacing: 0.85,
+    },
+    reviewSecondaryButton: {
+      minHeight: 42,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 14,
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.34)',
+      borderRadius: 9,
+      backgroundColor: 'rgba(88, 223, 232, 0.06)',
+    },
+    reviewSecondaryButtonText: {
+      color: theme.colors.scannerCyan,
+      fontSize: 9,
+      fontWeight: '900',
+      letterSpacing: 0.85,
+    },
+    reviewActionMessage: {
+      color: theme.colors.goldBright,
+      fontSize: 10,
+      lineHeight: 15,
+      paddingHorizontal: 2,
+    },
+    reviewLoadingState: {
+      minHeight: 150,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+    },
+    reviewClearTitle: {
+      color: '#46F5A2',
+      fontSize: 11,
+      fontWeight: '900',
+      letterSpacing: 1.3,
+    },
+    reviewEmptyText: {
+      color: theme.colors.textMuted,
+      fontSize: 10,
+      lineHeight: 15,
+      textAlign: 'center',
+    },
+    reviewPressed: { opacity: 0.72 },
+    reviewDisabled: { opacity: 0.45 },
+  });
   return {
     ...staticStyles,
-  eyebrow: [
-    staticStyles.eyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  subtitle: [
-    staticStyles.subtitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  sectionEyebrow: [
-    staticStyles.sectionEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  sectionTitle: [
-    staticStyles.sectionTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(16),
-    },
-  ],
-  eBayLogo: [
-    staticStyles.eBayLogo,
-    {
-        width: responsiveLayout.responsiveWidth(25),
-        height: responsiveLayout.responsiveHeight(27),
-    },
-  ],
-  errorText: [
-    staticStyles.errorText,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  reviewModalEyebrow: [
-    staticStyles.reviewModalEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  reviewModalTitle: [
-    staticStyles.reviewModalTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(20),
-    },
-  ],
-  reviewCloseText: [
-    staticStyles.reviewCloseText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  reviewQueueIntro: [
-    staticStyles.reviewQueueIntro,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  reviewCardStatus: [
-    staticStyles.reviewCardStatus,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  reviewCardAmount: [
-    staticStyles.reviewCardAmount,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  reviewCardTitle: [
-    staticStyles.reviewCardTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  reviewCardReason: [
-    staticStyles.reviewCardReason,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  reviewCardMeta: [
-    staticStyles.reviewCardMeta,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  reviewCardAction: [
-    staticStyles.reviewCardAction,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  reviewResolutionTitle: [
-    staticStyles.reviewResolutionTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  reviewResolutionBody: [
-    staticStyles.reviewResolutionBody,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  reviewInventoryTitle: [
-    staticStyles.reviewInventoryTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  reviewInventoryMeta: [
-    staticStyles.reviewInventoryMeta,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  reviewInventoryQty: [
-    staticStyles.reviewInventoryQty,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  reviewQuantityInput: [
-    staticStyles.reviewQuantityInput,
-    {
-        width: responsiveLayout.responsiveWidth(72),
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  reviewPrimaryButtonText: [
-    staticStyles.reviewPrimaryButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  reviewSecondaryButtonText: [
-    staticStyles.reviewSecondaryButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  reviewActionMessage: [
-    staticStyles.reviewActionMessage,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  reviewClearTitle: [
-    staticStyles.reviewClearTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  reviewEmptyText: [
-    staticStyles.reviewEmptyText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
+    eyebrow: [
+      staticStyles.eyebrow,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    subtitle: [
+      staticStyles.subtitle,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    sectionEyebrow: [
+      staticStyles.sectionEyebrow,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    sectionTitle: [
+      staticStyles.sectionTitle,
+      {
+        fontSize: responsiveFont(16),
+      },
+    ],
+    eBayLogo: [
+      staticStyles.eBayLogo,
+      {
+        width: responsiveWidth(25),
+        height: responsiveHeight(27),
+      },
+    ],
+    errorText: [
+      staticStyles.errorText,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    reviewModalEyebrow: [
+      staticStyles.reviewModalEyebrow,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    reviewModalTitle: [
+      staticStyles.reviewModalTitle,
+      {
+        fontSize: responsiveFont(20),
+      },
+    ],
+    reviewCloseText: [
+      staticStyles.reviewCloseText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    reviewQueueIntro: [
+      staticStyles.reviewQueueIntro,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    reviewCardStatus: [
+      staticStyles.reviewCardStatus,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    reviewCardAmount: [
+      staticStyles.reviewCardAmount,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    reviewCardTitle: [
+      staticStyles.reviewCardTitle,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    reviewCardReason: [
+      staticStyles.reviewCardReason,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    reviewCardMeta: [
+      staticStyles.reviewCardMeta,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    reviewCardAction: [
+      staticStyles.reviewCardAction,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    reviewResolutionTitle: [
+      staticStyles.reviewResolutionTitle,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    reviewResolutionBody: [
+      staticStyles.reviewResolutionBody,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    reviewInventoryTitle: [
+      staticStyles.reviewInventoryTitle,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    reviewInventoryMeta: [
+      staticStyles.reviewInventoryMeta,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    reviewInventoryQty: [
+      staticStyles.reviewInventoryQty,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    reviewQuantityInput: [
+      staticStyles.reviewQuantityInput,
+      {
+        width: responsiveWidth(72),
+        fontSize: responsiveFont(15),
+      },
+    ],
+    reviewPrimaryButtonText: [
+      staticStyles.reviewPrimaryButtonText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    reviewSecondaryButtonText: [
+      staticStyles.reviewSecondaryButtonText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    reviewActionMessage: [
+      staticStyles.reviewActionMessage,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    reviewClearTitle: [
+      staticStyles.reviewClearTitle,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    reviewEmptyText: [
+      staticStyles.reviewEmptyText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
   };
 }

@@ -20,7 +20,7 @@ import Animated, {
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
+import { responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type ValueRadarTargetGraphicProps = {
@@ -177,205 +177,206 @@ export function ValueRadarTargetGraphic({
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  targetHost: {
-    position: "absolute",
-    zIndex: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  targetHalo: {
-    ...StyleSheet.absoluteFill,
-    borderRadius: 999,
-    experimental_backgroundImage: `
+  const { responsiveWidth, responsiveHeight, responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    targetHost: {
+      position: "absolute",
+      zIndex: 8,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    targetHalo: {
+      ...StyleSheet.absoluteFill,
+      borderRadius: 999,
+      experimental_backgroundImage: `
       radial-gradient(circle at center, rgba(88, 223, 232, 0.19) 0%, rgba(141, 114, 255, 0.08) 38%, transparent 72%)
     `,
-  },
-  targetOrbit: {
-    position: "absolute",
-    borderRadius: 999,
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: "rgba(141, 114, 255, 0.66)",
-    boxShadow: "0 0 12px rgba(141, 114, 255, 0.18)",
-  },
-  targetInnerRing: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(88, 223, 232, 0.42)",
-    backgroundColor: "rgba(3, 8, 13, 0.16)",
-  },
-  targetCorner: {
-    position: "absolute",
-    width: 25,
-    height: 25,
-    borderColor: theme.colors.scannerCyan,
-  },
-  targetCornerTopLeft: {
-    top: 0,
-    left: 0,
-    borderTopWidth: 2,
-    borderLeftWidth: 2,
-    boxShadow: "-2px -2px 10px rgba(88, 223, 232, 0.34)",
-  },
-  targetCornerTopRight: {
-    top: 0,
-    right: 0,
-    borderTopWidth: 2,
-    borderRightWidth: 2,
-    borderColor: theme.colors.scannerViolet,
-    boxShadow: "2px -2px 10px rgba(141, 114, 255, 0.34)",
-  },
-  targetCornerBottomLeft: {
-    bottom: 0,
-    left: 0,
-    borderBottomWidth: 2,
-    borderLeftWidth: 2,
-    borderColor: theme.colors.goldBright,
-    boxShadow: "-2px 2px 10px rgba(242, 211, 138, 0.26)",
-  },
-  targetCornerBottomRight: {
-    right: 0,
-    bottom: 0,
-    borderRightWidth: 2,
-    borderBottomWidth: 2,
-    boxShadow: "2px 2px 10px rgba(88, 223, 232, 0.34)",
-  },
-  crosshairHorizontal: {
-    position: "absolute",
-    left: "31%",
-    right: "31%",
-    height: 1,
-    backgroundColor: "rgba(88, 223, 232, 0.42)",
-  },
-  crosshairVertical: {
-    position: "absolute",
-    top: "31%",
-    bottom: "31%",
-    width: 1,
-    backgroundColor: "rgba(88, 223, 232, 0.42)",
-  },
-  targetCore: {
-    position: "absolute",
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "rgba(242, 211, 138, 0.64)",
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: "0 0 10px rgba(242, 211, 138, 0.34)",
-  },
-  targetCoreDot: {
-    width: 3,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: theme.colors.goldBright,
-  },
-  targetScanBeam: {
-    position: "absolute",
-    top: 0,
-    right: 5,
-    left: 5,
-    height: 1,
-    backgroundColor: theme.colors.scannerCyan,
-    boxShadow: "0 0 8px rgba(88, 223, 232, 0.82)",
-  },
-  targetCaption: {
-    position: "absolute",
-    right: 8,
-    bottom: 8,
-    left: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 6,
-  },
-  targetCaptionLabel: {
-    flexShrink: 1,
-    color: theme.colors.text,
-    fontFamily: theme.fonts.radar,
-    fontSize: 7,
-    lineHeight: 9,
-    letterSpacing: 0.8,
-    textShadowColor: "rgba(0, 0, 0, 0.92)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  targetCaptionScore: {
-    color: theme.colors.goldBright,
-    fontFamily: theme.fonts.radar,
-    fontSize: 6.5,
-    lineHeight: 8,
-    letterSpacing: 0.35,
-    textShadowColor: "rgba(0, 0, 0, 0.92)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-});
+    },
+    targetOrbit: {
+      position: "absolute",
+      borderRadius: 999,
+      borderWidth: 1,
+      borderStyle: "dashed",
+      borderColor: "rgba(141, 114, 255, 0.66)",
+      boxShadow: "0 0 12px rgba(141, 114, 255, 0.18)",
+    },
+    targetInnerRing: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: "rgba(88, 223, 232, 0.42)",
+      backgroundColor: "rgba(3, 8, 13, 0.16)",
+    },
+    targetCorner: {
+      position: "absolute",
+      width: 25,
+      height: 25,
+      borderColor: theme.colors.scannerCyan,
+    },
+    targetCornerTopLeft: {
+      top: 0,
+      left: 0,
+      borderTopWidth: 2,
+      borderLeftWidth: 2,
+      boxShadow: "-2px -2px 10px rgba(88, 223, 232, 0.34)",
+    },
+    targetCornerTopRight: {
+      top: 0,
+      right: 0,
+      borderTopWidth: 2,
+      borderRightWidth: 2,
+      borderColor: theme.colors.scannerViolet,
+      boxShadow: "2px -2px 10px rgba(141, 114, 255, 0.34)",
+    },
+    targetCornerBottomLeft: {
+      bottom: 0,
+      left: 0,
+      borderBottomWidth: 2,
+      borderLeftWidth: 2,
+      borderColor: theme.colors.goldBright,
+      boxShadow: "-2px 2px 10px rgba(242, 211, 138, 0.26)",
+    },
+    targetCornerBottomRight: {
+      right: 0,
+      bottom: 0,
+      borderRightWidth: 2,
+      borderBottomWidth: 2,
+      boxShadow: "2px 2px 10px rgba(88, 223, 232, 0.34)",
+    },
+    crosshairHorizontal: {
+      position: "absolute",
+      left: "31%",
+      right: "31%",
+      height: 1,
+      backgroundColor: "rgba(88, 223, 232, 0.42)",
+    },
+    crosshairVertical: {
+      position: "absolute",
+      top: "31%",
+      bottom: "31%",
+      width: 1,
+      backgroundColor: "rgba(88, 223, 232, 0.42)",
+    },
+    targetCore: {
+      position: "absolute",
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: "rgba(242, 211, 138, 0.64)",
+      alignItems: "center",
+      justifyContent: "center",
+      boxShadow: "0 0 10px rgba(242, 211, 138, 0.34)",
+    },
+    targetCoreDot: {
+      width: 3,
+      height: 3,
+      borderRadius: 2,
+      backgroundColor: theme.colors.goldBright,
+    },
+    targetScanBeam: {
+      position: "absolute",
+      top: 0,
+      right: 5,
+      left: 5,
+      height: 1,
+      backgroundColor: theme.colors.scannerCyan,
+      boxShadow: "0 0 8px rgba(88, 223, 232, 0.82)",
+    },
+    targetCaption: {
+      position: "absolute",
+      right: 8,
+      bottom: 8,
+      left: 8,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 6,
+    },
+    targetCaptionLabel: {
+      flexShrink: 1,
+      color: theme.colors.text,
+      fontFamily: theme.fonts.radar,
+      fontSize: 7,
+      lineHeight: 9,
+      letterSpacing: 0.8,
+      textShadowColor: "rgba(0, 0, 0, 0.92)",
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 3,
+    },
+    targetCaptionScore: {
+      color: theme.colors.goldBright,
+      fontFamily: theme.fonts.radar,
+      fontSize: 6.5,
+      lineHeight: 8,
+      letterSpacing: 0.35,
+      textShadowColor: "rgba(0, 0, 0, 0.92)",
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 3,
+    },
+  });
   return {
     ...staticStyles,
-  targetInnerRing: [
-    staticStyles.targetInnerRing,
-    {
-        width: responsiveLayout.responsiveWidth(32),
-        height: responsiveLayout.responsiveHeight(32),
-    },
-  ],
-  targetCorner: [
-    staticStyles.targetCorner,
-    {
-        width: responsiveLayout.responsiveWidth(25),
-        height: responsiveLayout.responsiveHeight(25),
-    },
-  ],
-  crosshairHorizontal: [
-    staticStyles.crosshairHorizontal,
-    {
-        height: responsiveLayout.responsiveHeight(1),
-    },
-  ],
-  crosshairVertical: [
-    staticStyles.crosshairVertical,
-    {
-        width: responsiveLayout.responsiveWidth(1),
-    },
-  ],
-  targetCore: [
-    staticStyles.targetCore,
-    {
-        width: responsiveLayout.responsiveWidth(12),
-        height: responsiveLayout.responsiveHeight(12),
-    },
-  ],
-  targetCoreDot: [
-    staticStyles.targetCoreDot,
-    {
-        width: responsiveLayout.responsiveWidth(3),
-        height: responsiveLayout.responsiveHeight(3),
-    },
-  ],
-  targetScanBeam: [
-    staticStyles.targetScanBeam,
-    {
-        height: responsiveLayout.responsiveHeight(1),
-    },
-  ],
-  targetCaptionLabel: [
-    staticStyles.targetCaptionLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(1) },
-    },
-  ],
-  targetCaptionScore: [
-    staticStyles.targetCaptionScore,
-    {
-        fontSize: responsiveLayout.responsiveFont(6.5),
-        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(1) },
-    },
-  ],
+    targetInnerRing: [
+      staticStyles.targetInnerRing,
+      {
+        width: responsiveWidth(32),
+        height: responsiveHeight(32),
+      },
+    ],
+    targetCorner: [
+      staticStyles.targetCorner,
+      {
+        width: responsiveWidth(25),
+        height: responsiveHeight(25),
+      },
+    ],
+    crosshairHorizontal: [
+      staticStyles.crosshairHorizontal,
+      {
+        height: responsiveHeight(1),
+      },
+    ],
+    crosshairVertical: [
+      staticStyles.crosshairVertical,
+      {
+        width: responsiveWidth(1),
+      },
+    ],
+    targetCore: [
+      staticStyles.targetCore,
+      {
+        width: responsiveWidth(12),
+        height: responsiveHeight(12),
+      },
+    ],
+    targetCoreDot: [
+      staticStyles.targetCoreDot,
+      {
+        width: responsiveWidth(3),
+        height: responsiveHeight(3),
+      },
+    ],
+    targetScanBeam: [
+      staticStyles.targetScanBeam,
+      {
+        height: responsiveHeight(1),
+      },
+    ],
+    targetCaptionLabel: [
+      staticStyles.targetCaptionLabel,
+      {
+        fontSize: responsiveFont(7),
+        textShadowOffset: { width: responsiveWidth(0), height: responsiveHeight(1) },
+      },
+    ],
+    targetCaptionScore: [
+      staticStyles.targetCaptionScore,
+      {
+        fontSize: responsiveFont(6.5),
+        textShadowOffset: { width: responsiveWidth(0), height: responsiveHeight(1) },
+      },
+    ],
   };
 }

@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
-import { type Href, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -12,24 +12,24 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
-import { useKeepFlipFeedbackNudge } from '@/components/feedback/keepflip-feedback-nudge';
 import { KeepFlipAccountTabs } from '@/components/account/keepflip-account-tabs';
+import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
+import { EbayShoppingBagIcon } from '@/components/ebay/ebay-shopping-bag-icon';
+import { useKeepFlipFeedbackNudge } from '@/components/feedback/keepflip-feedback-nudge';
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
 import { KeepFlipSubscriptionScreen } from '@/components/subscription/keepflip-subscription-screen';
-import { EbayShoppingBagIcon } from '@/components/ebay/ebay-shopping-bag-icon';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { KeepFlipControlRow } from '@/components/ui/keepflip-control-row';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
-import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { KeepFlipControlRow } from '@/components/ui/keepflip-control-row';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
+import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import { responsiveWidth } from '@/lib/responsiveFont';
 import {
   getEbayConnectionStatus,
   type EbayConnectionStatusResult,
 } from '@/services/ebayConnectionService';
 import { KEEPFLIP_PLAN_DEFINITIONS } from '@/services/keepflip-subscription-service';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 function formattedMemberDate(value: string) {
@@ -154,8 +154,14 @@ function AccountDetailsTab() {
         ? 'Plan checkout is ready for RevenueCat store configuration.'
         : subscriptionState === 'error'
           ? 'Subscription status is unavailable right now.'
-          : subscriptionAccess?.isTrial
-            ? `${subscriptionPlan?.name ?? 'KeepFlip plan'} · 7-day free trial active.`
+            : subscriptionAccess?.isTrial
+              ? `${subscriptionPlan?.name ?? 'KeepFlip plan'} · 7-day free trial active.`
+            : subscriptionAccess?.billingIssue
+              ? subscriptionAccess.active
+                ? subscriptionAccess.expiresAt
+                  ? `Payment issue detected. Access remains available through ${new Date(subscriptionAccess.expiresAt).toLocaleDateString()} while you update your payment method.`
+                  : 'Payment issue detected. Access remains available for 7 days while you update your payment method.'
+                : 'Your payment grace period has ended. Update your payment method to restore access.'
             : subscriptionAccess?.active
               ? `${subscriptionPlan?.name ?? 'KeepFlip plan'} is active on this account.`
               : 'Choose Hobbyist or Serious Reseller and start with 7 days free.';
@@ -229,14 +235,14 @@ function AccountDetailsTab() {
     <KeepFlipBackground>
       <ScrollView
         contentContainerStyle={[styles.content,
-          { paddingTop: insets.top / 2, paddingBottom: insets.bottom }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
-        style={{marginTop: insets.top, marginBottom: insets.bottom}}
+        { paddingTop: insets.top + 15, paddingBottom: insets.bottom + 30 }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+        style={{ marginTop: insets.top, marginBottom: insets.bottom }}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}>
         <Animated.View entering={FadeInDown.duration(260)} style={styles.header}>
           <Text style={[styles.eyebrow, { fontSize: responsiveFont(9) }]}>KEEPFLIP / ACCOUNT</Text>
-          <Text style={[styles.title, { fontSize: responsiveFont(28)}]}>Account & access</Text>
-          <Text style={[styles.subtitle, { fontSize: responsiveFont(13)}]}>
+          <Text style={[styles.title, { fontSize: responsiveFont(28) }]}>Account & access</Text>
+          <Text style={[styles.subtitle, { fontSize: responsiveFont(13) }]}>
             Your identity, security, data controls, and connected services.
           </Text>
         </Animated.View>
@@ -281,7 +287,7 @@ function AccountDetailsTab() {
         <Animated.View entering={FadeInDown.duration(260).delay(90)} style={styles.section}>
           <View style={styles.sectionHeading}>
             <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>ACCOUNT</Text>
-            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16)}]}>Profile & security</Text>
+            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>Profile & security</Text>
           </View>
           <View style={styles.settingsList}>
             <KeepFlipControlRow
@@ -310,7 +316,7 @@ function AccountDetailsTab() {
         <Animated.View entering={FadeInDown.duration(260).delay(120)} style={styles.section}>
           <View style={styles.sectionHeading}>
             <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>PLAN & BILLING</Text>
-            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16)}]}>KeepFlip subscription</Text>
+            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>KeepFlip subscription</Text>
           </View>
           <View style={styles.settingsList}>
             <KeepFlipControlRow
@@ -333,7 +339,7 @@ function AccountDetailsTab() {
         <Animated.View entering={FadeInDown.duration(260).delay(145)} style={styles.section}>
           <View style={styles.sectionHeading}>
             <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>CONNECTED SERVICES</Text>
-            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16)}]}>Marketplace access</Text>
+            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>Marketplace access</Text>
           </View>
           <View style={styles.settingsList}>
             <KeepFlipControlRow
@@ -356,7 +362,7 @@ function AccountDetailsTab() {
         <Animated.View entering={FadeInDown.duration(260).delay(170)} style={styles.section}>
           <View style={styles.sectionHeading}>
             <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>LEGAL & POLICY</Text>
-            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16)}]}>Your data and terms</Text>
+            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>Your data and terms</Text>
           </View>
           <View style={styles.settingsList}>
             <KeepFlipControlRow
@@ -386,7 +392,7 @@ function AccountDetailsTab() {
         <Animated.View entering={FadeInDown.duration(260).delay(195)} style={styles.section}>
           <View style={styles.sectionHeading}>
             <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>SUPPORT</Text>
-            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16)}]}>Feedback & reviews</Text>
+            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>Feedback & reviews</Text>
           </View>
           <View style={styles.settingsList}>
             <KeepFlipControlRow
@@ -407,7 +413,7 @@ function AccountDetailsTab() {
             />
           </View>
           {feedbackError ? (
-            <Text accessibilityLiveRegion="polite" selectable style={[styles.errorText, { fontSize: responsiveFont(11)}]}>
+            <Text accessibilityLiveRegion="polite" selectable style={[styles.errorText, { fontSize: responsiveFont(11) }]}>
               {feedbackError}
             </Text>
           ) : null}
@@ -417,7 +423,7 @@ function AccountDetailsTab() {
           <Text
             accessibilityLiveRegion="polite"
             selectable
-            style={[styles.errorText, { fontSize: responsiveFont(11)}]}>
+            style={[styles.errorText, { fontSize: responsiveFont(11) }]}>
             {signOutError}
           </Text>
         ) : null}
@@ -457,272 +463,273 @@ function AccountDetailsTab() {
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  content: {
-    width: '100%',
-    maxWidth: 760,
-    alignSelf: 'center',
-    gap: 16,
-    paddingHorizontal: 18,
-  },
-  header: { gap: 4 },
-  eyebrow: {
-    color: theme.colors.gold,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 1.7,
-  },
-  title: {
-    color: theme.colors.cream,
-    fontSize: 28,
-    lineHeight: 33,
-    fontWeight: '900',
-    letterSpacing: -0.35,
-  },
-  subtitle: {
-    maxWidth: 520,
-    color: theme.colors.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  profileCard: {
-    minHeight: 108,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 15,
-    borderRadius: 16,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.31)',
-    backgroundColor: 'rgba(9, 8, 12, 0.91)',
-    boxShadow: '0 12px 28px rgba(0, 0, 0, 0.28)',
-  },
-  avatar: {
-    width: 54,
-    height: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.56)',
-    backgroundColor: 'rgba(215, 168, 74, 0.12)',
-  },
-  avatarText: { color: theme.colors.goldBright, fontSize: 22, fontWeight: '900' },
-  profileCopy: { minWidth: 0, flex: 1, gap: 3 },
-  name: { color: theme.colors.text, fontSize: 18, fontWeight: '900' },
-  email: { color: theme.colors.textMuted, fontSize: 12 },
-  memberDate: { color: theme.colors.goldBright, fontSize: 9, fontWeight: '800' },
-  verificationBadge: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 7,
-    paddingVertical: 4,
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.28)',
-    backgroundColor: 'rgba(88, 223, 232, 0.06)',
-  },
-  verificationBadgePending: {
-    borderColor: 'rgba(224, 172, 75, 0.3)',
-    backgroundColor: 'rgba(224, 172, 75, 0.06)',
-  },
-  verificationDot: {
-    width: 5,
-    height: 5,
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.scannerCyan,
-    boxShadow: '0 0 8px rgba(88, 223, 232, 0.88)',
-  },
-  verificationDotPending: {
-    backgroundColor: theme.colors.scannerAmber,
-    boxShadow: '0 0 8px rgba(224, 172, 75, 0.72)',
-  },
-  verificationText: {
-    color: theme.colors.scannerCyan,
-    fontSize: 7,
-    fontWeight: '900',
-    letterSpacing: 0.65,
-  },
-  verificationTextPending: { color: theme.colors.scannerAmber },
-  section: { gap: 7 },
-  sectionHeading: { gap: 2 },
-  sectionEyebrow: {
-    color: theme.colors.goldBright,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 1.4,
-  },
-  sectionTitle: {
-    color: theme.colors.text,
-    fontSize: 16,
-    lineHeight: 20,
-    fontWeight: '800',
-  },
-  settingsList: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(242, 211, 138, 0.20)',
-  },
-  errorText: {
-    color: '#FFB8B1',
-    fontSize: 11,
-    lineHeight: 16,
-    textAlign: 'center',
-  },
-  signOutButton: {
-    minHeight: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    borderRadius: 12,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    borderColor: 'rgba(232, 97, 88, 0.42)',
-    backgroundColor: 'rgba(232, 97, 88, 0.06)',
-  },
-  signOutButtonPressed: { opacity: 0.72, transform: [{ scale: 0.985 }] },
-  signOutButtonDisabled: { opacity: 0.45 },
-  signOutText: {
-    color: theme.colors.danger,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1.05,
-  },
-  versionFooter: {
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingTop: 1,
-  },
-  versionDot: {
-    width: 4,
-    height: 4,
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.scannerCyan,
-  },
-  versionLabel: {
-    color: theme.colors.textMuted,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 1.25,
-  },
-  versionValue: {
-    color: theme.colors.goldMuted,
-    fontSize: 9,
-    fontWeight: '800',
-  },
-});
+  const { responsiveFont, responsiveWidth, responsiveHeight } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    content: {
+      width: '100%',
+      maxWidth: 760,
+      alignSelf: 'center',
+      gap: 16,
+      paddingHorizontal: 18,
+    },
+    header: { gap: 4 },
+    eyebrow: {
+      color: theme.colors.gold,
+      fontSize: 9,
+      fontWeight: '900',
+      letterSpacing: 1.7,
+    },
+    title: {
+      color: theme.colors.cream,
+      fontSize: 28,
+      lineHeight: 33,
+      fontWeight: '900',
+      letterSpacing: -0.35,
+    },
+    subtitle: {
+      maxWidth: 520,
+      color: theme.colors.textMuted,
+      fontSize: 13,
+      lineHeight: 19,
+    },
+    profileCard: {
+      minHeight: 108,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      padding: 15,
+      borderRadius: 16,
+      borderCurve: 'continuous',
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.31)',
+      backgroundColor: 'rgba(9, 8, 12, 0.91)',
+      boxShadow: '0 12px 28px rgba(0, 0, 0, 0.28)',
+    },
+    avatar: {
+      width: 54,
+      height: 54,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.56)',
+      backgroundColor: 'rgba(215, 168, 74, 0.12)',
+    },
+    avatarText: { color: theme.colors.goldBright, fontSize: 22, fontWeight: '900' },
+    profileCopy: { minWidth: 0, flex: 1, gap: 3 },
+    name: { color: theme.colors.text, fontSize: 18, fontWeight: '900' },
+    email: { color: theme.colors.textMuted, fontSize: 12 },
+    memberDate: { color: theme.colors.goldBright, fontSize: 9, fontWeight: '800' },
+    verificationBadge: {
+      alignSelf: 'flex-start',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      paddingHorizontal: 7,
+      paddingVertical: 4,
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.28)',
+      backgroundColor: 'rgba(88, 223, 232, 0.06)',
+    },
+    verificationBadgePending: {
+      borderColor: 'rgba(224, 172, 75, 0.3)',
+      backgroundColor: 'rgba(224, 172, 75, 0.06)',
+    },
+    verificationDot: {
+      width: 5,
+      height: 5,
+      borderRadius: theme.radii.pill,
+      backgroundColor: theme.colors.scannerCyan,
+      boxShadow: '0 0 8px rgba(88, 223, 232, 0.88)',
+    },
+    verificationDotPending: {
+      backgroundColor: theme.colors.scannerAmber,
+      boxShadow: '0 0 8px rgba(224, 172, 75, 0.72)',
+    },
+    verificationText: {
+      color: theme.colors.scannerCyan,
+      fontSize: 7,
+      fontWeight: '900',
+      letterSpacing: 0.65,
+    },
+    verificationTextPending: { color: theme.colors.scannerAmber },
+    section: { gap: 7 },
+    sectionHeading: { gap: 2 },
+    sectionEyebrow: {
+      color: theme.colors.goldBright,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 1.4,
+    },
+    sectionTitle: {
+      color: theme.colors.text,
+      fontSize: 16,
+      lineHeight: 20,
+      fontWeight: '800',
+    },
+    settingsList: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderColor: 'rgba(242, 211, 138, 0.20)',
+    },
+    errorText: {
+      color: '#FFB8B1',
+      fontSize: 11,
+      lineHeight: 16,
+      textAlign: 'center',
+    },
+    signOutButton: {
+      minHeight: 48,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+      borderRadius: 12,
+      borderCurve: 'continuous',
+      borderWidth: 1,
+      borderColor: 'rgba(232, 97, 88, 0.42)',
+      backgroundColor: 'rgba(232, 97, 88, 0.06)',
+    },
+    signOutButtonPressed: { opacity: 0.72, transform: [{ scale: 0.985 }] },
+    signOutButtonDisabled: { opacity: 0.45 },
+    signOutText: {
+      color: theme.colors.danger,
+      fontSize: 10,
+      fontWeight: '900',
+      letterSpacing: 1.05,
+    },
+    versionFooter: {
+      alignSelf: 'center',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingTop: 1,
+    },
+    versionDot: {
+      width: 4,
+      height: 4,
+      borderRadius: theme.radii.pill,
+      backgroundColor: theme.colors.scannerCyan,
+    },
+    versionLabel: {
+      color: theme.colors.textMuted,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 1.25,
+    },
+    versionValue: {
+      color: theme.colors.goldMuted,
+      fontSize: 9,
+      fontWeight: '800',
+    },
+  });
   return {
     ...staticStyles,
-  eyebrow: [
-    staticStyles.eyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  title: [
-    staticStyles.title,
-    {
-        fontSize: responsiveLayout.responsiveFont(28),
-    },
-  ],
-  subtitle: [
-    staticStyles.subtitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  avatar: [
-    staticStyles.avatar,
-    {
-        width: responsiveLayout.responsiveWidth(54),
-        height: responsiveLayout.responsiveHeight(54),
-    },
-  ],
-  avatarText: [
-    staticStyles.avatarText,
-    {
-        fontSize: responsiveLayout.responsiveFont(22),
-    },
-  ],
-  name: [
-    staticStyles.name,
-    {
-        fontSize: responsiveLayout.responsiveFont(18),
-    },
-  ],
-  email: [
-    staticStyles.email,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  memberDate: [
-    staticStyles.memberDate,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  verificationDot: [
-    staticStyles.verificationDot,
-    {
-        width: responsiveLayout.responsiveWidth(5),
-        height: responsiveLayout.responsiveHeight(5),
-    },
-  ],
-  verificationText: [
-    staticStyles.verificationText,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  sectionEyebrow: [
-    staticStyles.sectionEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  sectionTitle: [
-    staticStyles.sectionTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(16),
-    },
-  ],
-  errorText: [
-    staticStyles.errorText,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  signOutText: [
-    staticStyles.signOutText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  versionDot: [
-    staticStyles.versionDot,
-    {
-        width: responsiveLayout.responsiveWidth(4),
-        height: responsiveLayout.responsiveHeight(4),
-    },
-  ],
-  versionLabel: [
-    staticStyles.versionLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  versionValue: [
-    staticStyles.versionValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
+    eyebrow: [
+      staticStyles.eyebrow,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    title: [
+      staticStyles.title,
+      {
+        fontSize: responsiveFont(28),
+      },
+    ],
+    subtitle: [
+      staticStyles.subtitle,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    avatar: [
+      staticStyles.avatar,
+      {
+        width: responsiveWidth(54),
+        height: responsiveHeight(54),
+      },
+    ],
+    avatarText: [
+      staticStyles.avatarText,
+      {
+        fontSize: responsiveFont(22),
+      },
+    ],
+    name: [
+      staticStyles.name,
+      {
+        fontSize: responsiveFont(18),
+      },
+    ],
+    email: [
+      staticStyles.email,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    memberDate: [
+      staticStyles.memberDate,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    verificationDot: [
+      staticStyles.verificationDot,
+      {
+        width: responsiveWidth(5),
+        height: responsiveHeight(5),
+      },
+    ],
+    verificationText: [
+      staticStyles.verificationText,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    sectionEyebrow: [
+      staticStyles.sectionEyebrow,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    sectionTitle: [
+      staticStyles.sectionTitle,
+      {
+        fontSize: responsiveFont(16),
+      },
+    ],
+    errorText: [
+      staticStyles.errorText,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    signOutText: [
+      staticStyles.signOutText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    versionDot: [
+      staticStyles.versionDot,
+      {
+        width: responsiveWidth(4),
+        height: responsiveHeight(4),
+      },
+    ],
+    versionLabel: [
+      staticStyles.versionLabel,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    versionValue: [
+      staticStyles.versionValue,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
   };
 }

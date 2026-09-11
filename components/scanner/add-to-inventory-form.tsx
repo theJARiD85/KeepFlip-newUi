@@ -1,6 +1,11 @@
+import { KeepFlipText as Text, KeepFlipTextInput as TextInput } from "@/components/ui/keepflip-text";
+import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
+import { responsiveWidth } from '@/lib/responsiveFont';
+import { todayBusinessDate } from "@/services/reseller-ledger-service";
+import type { SourcingTripSummary } from "@/services/sourcing-trip-service";
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
-import Animated, { FadeIn, SlideInUp } from "react-native-reanimated";
 import {
   Alert,
   Image,
@@ -13,13 +18,8 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
+import Animated, { FadeIn, SlideInUp } from "react-native-reanimated";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { KeepFlipText as Text, KeepFlipTextInput as TextInput } from "@/components/ui/keepflip-text";
-import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
-import { todayBusinessDate } from "@/services/reseller-ledger-service";
-import type { SourcingTripSummary } from "@/services/sourcing-trip-service";
-import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
 
 export type AddToInventoryFormValues = {
@@ -62,7 +62,8 @@ function money(cents: number) {
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
+  const { responsiveFont, responsiveWidth, responsiveHeight } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
     modalLayer: { flex: 1 },
     backdrop: {
       flex: 1,
@@ -259,105 +260,105 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     sourceTripEyebrow: [
       staticStyles.sourceTripEyebrow,
       {
-          fontSize: responsiveLayout.responsiveFont(9),
+        fontSize: responsiveFont(9),
       },
     ],
     sourceTripCopy: [
       staticStyles.sourceTripCopy,
       {
-          fontSize: responsiveLayout.responsiveFont(12),
+        fontSize: responsiveFont(12),
       },
     ],
     sourceTripHelper: [
       staticStyles.sourceTripHelper,
       {
-          fontSize: responsiveLayout.responsiveFont(11),
+        fontSize: responsiveFont(11),
       },
     ],
     eyebrow: [
       staticStyles.eyebrow,
       {
-          fontSize: responsiveLayout.responsiveFont(10),
+        fontSize: responsiveFont(10),
       },
     ],
     title: [
       staticStyles.title,
       {
-          fontSize: responsiveLayout.responsiveFont(22),
+        fontSize: responsiveFont(22),
       },
     ],
     subtitle: [
       staticStyles.subtitle,
       {
-          fontSize: responsiveLayout.responsiveFont(13),
+        fontSize: responsiveFont(13),
       },
     ],
     closeButton: [
       staticStyles.closeButton,
       {
-          width: responsiveLayout.responsiveWidth(30),
-          height: responsiveLayout.responsiveHeight(30),
+        width: responsiveWidth(30),
+        height: responsiveHeight(30),
       },
     ],
     closeText: [
       staticStyles.closeText,
       {
-          fontSize: responsiveLayout.responsiveFont(24),
+        fontSize: responsiveFont(24),
       },
     ],
     fieldLabel: [
       staticStyles.fieldLabel,
       {
-          fontSize: responsiveLayout.responsiveFont(10),
+        fontSize: responsiveFont(10),
       },
     ],
     input: [
       staticStyles.input,
       {
-          fontSize: responsiveLayout.responsiveFont(15),
+        fontSize: responsiveFont(15),
       },
     ],
     receiptPreview: [
       staticStyles.receiptPreview,
       {
-          width: responsiveLayout.responsiveWidth(42),
-          height: responsiveLayout.responsiveHeight(42),
+        width: responsiveWidth(42),
+        height: responsiveHeight(42),
       },
     ],
     receiptButtonTitle: [
       staticStyles.receiptButtonTitle,
       {
-          fontSize: responsiveLayout.responsiveFont(10),
+        fontSize: responsiveFont(10),
       },
     ],
     receiptButtonSubtitle: [
       staticStyles.receiptButtonSubtitle,
       {
-          fontSize: responsiveLayout.responsiveFont(11),
+        fontSize: responsiveFont(11),
       },
     ],
     receiptButtonArrow: [
       staticStyles.receiptButtonArrow,
       {
-          fontSize: responsiveLayout.responsiveFont(24),
+        fontSize: responsiveFont(24),
       },
     ],
     helper: [
       staticStyles.helper,
       {
-          fontSize: responsiveLayout.responsiveFont(12),
+        fontSize: responsiveFont(12),
       },
     ],
     cancelText: [
       staticStyles.cancelText,
       {
-          fontSize: responsiveLayout.responsiveFont(10),
+        fontSize: responsiveFont(10),
       },
     ],
     submitText: [
       staticStyles.submitText,
       {
-          fontSize: responsiveLayout.responsiveFont(10),
+        fontSize: responsiveFont(10),
       },
     ],
   };
@@ -371,7 +372,7 @@ function FieldLabel({ children, required = false }: { children: string; required
 
   return (
     <Text style={[styles.fieldLabel, { fontSize: responsiveFont(10) }]}>
-      {children.toUpperCase()}{required ? " · REQUIRED" : null }
+      {children.toUpperCase()}{required ? " · REQUIRED" : null}
     </Text>
   );
 }
@@ -391,7 +392,7 @@ export function AddToInventoryForm({
   const [values, setValues] = useState<AddToInventoryFormValues>(() => emptyValues(sourcingTrip));
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
-  
+
   const handleCancel = () => {
     if (submitting) return;
     setValues(emptyValues(sourcingTrip));
@@ -504,209 +505,209 @@ export function AddToInventoryForm({
           >
             <Animated.View
               entering={SlideInUp.duration(500)}
-              style={[styles.sheet, { maxHeight: height - insets.bottom}]}
+              style={[styles.sheet, { maxHeight: height - insets.bottom }]}
             >
-          <View style={[styles.header, { paddingTop: insets.top + 20}]}>
-            <View style={styles.headerCopy}>
-              <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>BOOKS &amp; RECORDS</Text>
-              <Text numberOfLines={2} style={[styles.title, { fontSize: responsiveFont(22), lineHeight: 27 }]}>
-                Add {itemTitle} to inventory
-              </Text>
-              <Text style={[styles.subtitle, { fontSize: responsiveFont(13), lineHeight: 18 }]}>
-                Confirm what you actually paid. KeepFlip&apos;s projection stays separate from these records.
-              </Text>
-            </View>
-            <Pressable
-              accessibilityLabel="Close add to inventory form"
-              accessibilityRole="button"
-              disabled={submitting}
-              hitSlop={10}
-              onPress={handleCancel}
-              style={styles.closeButton}
-            >
-              <Text style={[styles.closeText, { fontSize: responsiveFont(24), lineHeight: 26 }]}>×</Text>
-            </Pressable>
-          </View>
-
-          {sourcingTrip ? (
-            <View style={styles.sourceTripNotice}>
-               <Text style={[styles.sourceTripEyebrow, { fontSize: responsiveFont(9) }]}>ACTIVE SOURCE TRIP</Text>
-              <Text numberOfLines={2} style={[styles.sourceTripCopy, { fontSize: responsiveFont(12), lineHeight: 16 }]}>
-                {sourcingTrip.trip.label || sourcingTrip.trip.sourceName} · {sourcingTrip.findCount} saved find{sourcingTrip.findCount === 1 ? "" : "s"} · {money(sourcingTrip.allocatedCostCents)} allocated
-              </Text>
-              <Text style={styles.sourceTripHelper}>
-                This item keeps its own actual cost, then returns you to the scanner for the next find.
-              </Text>
-            </View>
-          ) : null}
-
-          <ScrollView
-            contentContainerStyle={styles.content}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.twoColumn}>
-              <View style={styles.column}>
-                <FieldLabel required>Total paid</FieldLabel>
-                <TextInput
-                  autoFocus
-                  editable={!submitting}
-                  keyboardType="decimal-pad"
-                  onChangeText={(value) => update("acquisitionCost", value)}
-                  placeholder="$0.00"
-                  placeholderTextColor="rgba(255,255,255,0.34)"
-                  style={styles.input}
-                  value={values.acquisitionCost}
-                />
-              </View>
-              <View style={styles.quantityColumn}>
-                <FieldLabel required>How many?</FieldLabel>
-                <TextInput
-                  editable={!submitting}
-                  keyboardType="number-pad"
-                  onChangeText={(value) => update("quantity", value)}
-                  placeholder="1"
-                  placeholderTextColor="rgba(255,255,255,0.34)"
-                  style={styles.input}
-                  value={values.quantity}
-                />
-              </View>
-            </View>
-            <Text style={styles.helper}>
-              This actual amount becomes COGS. KeepFlip keeps the market buy ceiling separate and tracks the cost per item as units sell.
-            </Text>
-            <View style={styles.column}>
-              <FieldLabel required>Acquisition date</FieldLabel>
-              <TextInput
-                editable={!submitting}
-                keyboardType="numbers-and-punctuation"
-                onChangeText={(value) => update("acquiredAt", value)}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor="rgba(255,255,255,0.34)"
-                style={styles.input}
-                value={values.acquiredAt}
-              />
-            </View>
-            <View style={styles.twoColumn}>
-              <View style={styles.column}>
-                <FieldLabel>Purchase source</FieldLabel>
-                <TextInput
-                  editable={!submitting}
-                  onChangeText={(value) => update("source", value)}
-                  placeholder="Thrift store, auction..."
-                  placeholderTextColor="rgba(255,255,255,0.34)"
-                  style={styles.input}
-                  value={values.source}
-                />
-              </View>
-              <View style={styles.column}>
-                <FieldLabel>SKU / tag</FieldLabel>
-                <TextInput
-                  editable={!submitting}
-                  onChangeText={(value) => update("sku", value)}
-                  placeholder="Optional"
-                  placeholderTextColor="rgba(255,255,255,0.34)"
-                  style={styles.input}
-                  value={values.sku}
-                />
-              </View>
-            </View>
-            <View style={styles.column}>
-              <FieldLabel>Storage location</FieldLabel>
-              <TextInput
-                editable={!submitting}
-                onChangeText={(value) => update("location", value)}
-                placeholder="Bin, shelf, or room"
-                placeholderTextColor="rgba(255,255,255,0.34)"
-                style={styles.input}
-                value={values.location}
-              />
-            </View>
-            <View style={styles.column}>
-              <FieldLabel>Extra item details</FieldLabel>
-              <TextInput
-                editable={!submitting}
-                multiline
-                onChangeText={(value) => update("itemSpecifics", value)}
-                placeholder={"Size: Large\nMaterial: Leather\nMeasurements: 20 in"}
-                placeholderTextColor="rgba(255,255,255,0.34)"
-                style={[styles.input, styles.notesInput]}
-                value={values.itemSpecifics}
-              />
-              <Text style={styles.helper}>
-                Add one detail per line. These stay with the item for future listings.
-              </Text>
-            </View>
-            <View style={styles.column}>
-              <FieldLabel>Receipt photo</FieldLabel>
-              <Pressable
-                accessibilityHint="Opens the camera or photo library to attach a receipt"
-                accessibilityRole="button"
-                disabled={submitting}
-                onPress={chooseReceiptSource}
-                style={({ pressed }) => [
-                  styles.receiptButton,
-                  pressed && styles.pressed,
-                  submitting && styles.disabled,
-                ]}
-              >
-                {values.receiptReference ? (
-                  <Image
-                    resizeMode="cover"
-                    source={{ uri: values.receiptReference }}
-                    style={styles.receiptPreview}
-                  />
-                ) : null}
-                <View style={styles.receiptButtonCopy}>
-                  <Text style={[styles.receiptButtonTitle, { fontSize: responsiveFont(10) }]}>
-                    {values.receiptReference
-                      ? "RECEIPT ATTACHED"
-                      : "ADD RECEIPT PHOTO"}
+              <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
+                <View style={styles.headerCopy}>
+                  <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>BOOKS &amp; RECORDS</Text>
+                  <Text numberOfLines={2} style={[styles.title, { fontSize: responsiveFont(22), lineHeight: 27 }]}>
+                    Add {itemTitle} to inventory
                   </Text>
-                  <Text style={[styles.receiptButtonSubtitle, { fontSize: responsiveFont(11), lineHeight: 15 }]}>
-                    {values.receiptReference
-                      ? "Tap to replace the photo"
-                      : sourcingTrip?.trip.receiptFileId
-                        ? "A shared trip receipt is already on file"
-                        : sourcingTrip
-                          ? "Attach an item receipt, or add the shared trip receipt when you close it"
-                          : "Take a photo or choose one from your device"}
+                  <Text style={[styles.subtitle, { fontSize: responsiveFont(13), lineHeight: 18 }]}>
+                    Confirm what you actually paid. KeepFlip&apos;s projection stays separate from these records.
                   </Text>
                 </View>
-                <Text style={[styles.receiptButtonArrow, { fontSize: responsiveFont(24) }]}>›</Text>
-              </Pressable>
-            </View>
-            <View style={styles.column}>
-              <FieldLabel>Purchase notes</FieldLabel>
-              <TextInput
-                editable={!submitting}
-                multiline
-                onChangeText={(value) => update("notes", value)}
-                placeholder="Anything useful about this purchase"
-                placeholderTextColor="rgba(255,255,255,0.34)"
-                style={[styles.input, styles.notesInput]}
-                value={values.notes}
-              />
-            </View>
-            <View style={styles.actions}>
-              <Pressable
-                accessibilityRole="button"
-                disabled={submitting}
-                onPress={handleCancel}
-                style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}
+                <Pressable
+                  accessibilityLabel="Close add to inventory form"
+                  accessibilityRole="button"
+                  disabled={submitting}
+                  hitSlop={10}
+                  onPress={handleCancel}
+                  style={styles.closeButton}
+                >
+                  <Text style={[styles.closeText, { fontSize: responsiveFont(24), lineHeight: 26 }]}>×</Text>
+                </Pressable>
+              </View>
+
+              {sourcingTrip ? (
+                <View style={styles.sourceTripNotice}>
+                  <Text style={[styles.sourceTripEyebrow, { fontSize: responsiveFont(9) }]}>ACTIVE SOURCE TRIP</Text>
+                  <Text numberOfLines={2} style={[styles.sourceTripCopy, { fontSize: responsiveFont(12), lineHeight: 16 }]}>
+                    {sourcingTrip.trip.label || sourcingTrip.trip.sourceName} · {sourcingTrip.findCount} saved find{sourcingTrip.findCount === 1 ? "" : "s"} · {money(sourcingTrip.allocatedCostCents)} allocated
+                  </Text>
+                  <Text style={styles.sourceTripHelper}>
+                    This item keeps its own actual cost, then returns you to the scanner for the next find.
+                  </Text>
+                </View>
+              ) : null}
+
+              <ScrollView
+                contentContainerStyle={styles.content}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
               >
-                <Text style={[styles.cancelText, { fontSize: responsiveFont(10) }]}>CANCEL</Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                disabled={submitting}
-                onPress={() => void onSubmit(values)}
-                style={({ pressed }) => [styles.submitButton, pressed && styles.pressed, submitting && styles.disabled]}
-              >
-                <Text style={[styles.submitText, { fontSize: responsiveFont(10) }]}>{submitting ? "SAVING..." : "ADD TO INVENTORY & BOOKS"}</Text>
-              </Pressable>
-            </View>
-          </ScrollView>
+                <View style={styles.twoColumn}>
+                  <View style={styles.column}>
+                    <FieldLabel required>Total paid</FieldLabel>
+                    <TextInput
+                      autoFocus
+                      editable={!submitting}
+                      keyboardType="decimal-pad"
+                      onChangeText={(value) => update("acquisitionCost", value)}
+                      placeholder="$0.00"
+                      placeholderTextColor="rgba(255,255,255,0.34)"
+                      style={styles.input}
+                      value={values.acquisitionCost}
+                    />
+                  </View>
+                  <View style={styles.quantityColumn}>
+                    <FieldLabel required>How many?</FieldLabel>
+                    <TextInput
+                      editable={!submitting}
+                      keyboardType="number-pad"
+                      onChangeText={(value) => update("quantity", value)}
+                      placeholder="1"
+                      placeholderTextColor="rgba(255,255,255,0.34)"
+                      style={styles.input}
+                      value={values.quantity}
+                    />
+                  </View>
+                </View>
+                <Text style={styles.helper}>
+                  This actual amount becomes COGS. KeepFlip keeps the market buy ceiling separate and tracks the cost per item as units sell.
+                </Text>
+                <View style={styles.column}>
+                  <FieldLabel required>Acquisition date</FieldLabel>
+                  <TextInput
+                    editable={!submitting}
+                    keyboardType="numbers-and-punctuation"
+                    onChangeText={(value) => update("acquiredAt", value)}
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor="rgba(255,255,255,0.34)"
+                    style={styles.input}
+                    value={values.acquiredAt}
+                  />
+                </View>
+                <View style={styles.twoColumn}>
+                  <View style={styles.column}>
+                    <FieldLabel>Purchase source</FieldLabel>
+                    <TextInput
+                      editable={!submitting}
+                      onChangeText={(value) => update("source", value)}
+                      placeholder="Thrift store, auction..."
+                      placeholderTextColor="rgba(255,255,255,0.34)"
+                      style={styles.input}
+                      value={values.source}
+                    />
+                  </View>
+                  <View style={styles.column}>
+                    <FieldLabel>SKU / tag</FieldLabel>
+                    <TextInput
+                      editable={!submitting}
+                      onChangeText={(value) => update("sku", value)}
+                      placeholder="Optional"
+                      placeholderTextColor="rgba(255,255,255,0.34)"
+                      style={styles.input}
+                      value={values.sku}
+                    />
+                  </View>
+                </View>
+                <View style={styles.column}>
+                  <FieldLabel>Storage location</FieldLabel>
+                  <TextInput
+                    editable={!submitting}
+                    onChangeText={(value) => update("location", value)}
+                    placeholder="Bin, shelf, or room"
+                    placeholderTextColor="rgba(255,255,255,0.34)"
+                    style={styles.input}
+                    value={values.location}
+                  />
+                </View>
+                <View style={styles.column}>
+                  <FieldLabel>Extra item details</FieldLabel>
+                  <TextInput
+                    editable={!submitting}
+                    multiline
+                    onChangeText={(value) => update("itemSpecifics", value)}
+                    placeholder={"Size: Large\nMaterial: Leather\nMeasurements: 20 in"}
+                    placeholderTextColor="rgba(255,255,255,0.34)"
+                    style={[styles.input, styles.notesInput]}
+                    value={values.itemSpecifics}
+                  />
+                  <Text style={styles.helper}>
+                    Add one detail per line. These stay with the item for future listings.
+                  </Text>
+                </View>
+                <View style={styles.column}>
+                  <FieldLabel>Receipt photo</FieldLabel>
+                  <Pressable
+                    accessibilityHint="Opens the camera or photo library to attach a receipt"
+                    accessibilityRole="button"
+                    disabled={submitting}
+                    onPress={chooseReceiptSource}
+                    style={({ pressed }) => [
+                      styles.receiptButton,
+                      pressed && styles.pressed,
+                      submitting && styles.disabled,
+                    ]}
+                  >
+                    {values.receiptReference ? (
+                      <Image
+                        resizeMode="cover"
+                        source={{ uri: values.receiptReference }}
+                        style={styles.receiptPreview}
+                      />
+                    ) : null}
+                    <View style={styles.receiptButtonCopy}>
+                      <Text style={[styles.receiptButtonTitle, { fontSize: responsiveFont(10) }]}>
+                        {values.receiptReference
+                          ? "RECEIPT ATTACHED"
+                          : "ADD RECEIPT PHOTO"}
+                      </Text>
+                      <Text style={[styles.receiptButtonSubtitle, { fontSize: responsiveFont(11), lineHeight: 15 }]}>
+                        {values.receiptReference
+                          ? "Tap to replace the photo"
+                          : sourcingTrip?.trip.receiptFileId
+                            ? "A shared trip receipt is already on file"
+                            : sourcingTrip
+                              ? "Attach an item receipt, or add the shared trip receipt when you close it"
+                              : "Take a photo or choose one from your device"}
+                      </Text>
+                    </View>
+                    <Text style={[styles.receiptButtonArrow, { fontSize: responsiveFont(24) }]}>›</Text>
+                  </Pressable>
+                </View>
+                <View style={styles.column}>
+                  <FieldLabel>Purchase notes</FieldLabel>
+                  <TextInput
+                    editable={!submitting}
+                    multiline
+                    onChangeText={(value) => update("notes", value)}
+                    placeholder="Anything useful about this purchase"
+                    placeholderTextColor="rgba(255,255,255,0.34)"
+                    style={[styles.input, styles.notesInput]}
+                    value={values.notes}
+                  />
+                </View>
+                <View style={styles.actions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={submitting}
+                    onPress={handleCancel}
+                    style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}
+                  >
+                    <Text style={[styles.cancelText, { fontSize: responsiveFont(10) }]}>CANCEL</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={submitting}
+                    onPress={() => void onSubmit(values)}
+                    style={({ pressed }) => [styles.submitButton, pressed && styles.pressed, submitting && styles.disabled]}
+                  >
+                    <Text style={[styles.submitText, { fontSize: responsiveFont(10) }]}>{submitting ? "SAVING..." : "ADD TO INVENTORY & BOOKS"}</Text>
+                  </Pressable>
+                </View>
+              </ScrollView>
             </Animated.View>
           </KeyboardAvoidingView>
         </Animated.View>

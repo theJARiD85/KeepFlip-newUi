@@ -16,15 +16,6 @@ buildscript {
 
 allprojects {
   repositories {
-    maven {
-      url 'https://artifactory.appodeal.com/appodeal'
-      content {
-        includeGroupByRegex 'com[.]appodeal([.].*)?'
-        includeGroupByRegex 'com[.]explorestack([.].*)?'
-        includeGroupByRegex 'io[.]bidmachine([.].*)?'
-        includeGroupByRegex 'org[.]bidon([.].*)?'
-      }
-    }
 
     maven {
       url 'https://dl-maven-android.mintegral.com/repository/mbridge_android_sdk_oversea/'

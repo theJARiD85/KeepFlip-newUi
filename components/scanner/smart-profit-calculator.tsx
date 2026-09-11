@@ -12,21 +12,21 @@ import {
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import type { AnalysisValuation } from "@/components/scanner/analysis-visual-types";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import {
-  calculateMarketplaceProjections,
-  type ProfitCalculatorInput,
-  type ProfitMarketplaceId,
   PROFIT_MARKETPLACES,
+  calculateMarketplaceProjections,
   findBestProfitProjection,
   findBestRoiProjection,
+  type ProfitCalculatorInput,
+  type ProfitMarketplaceId,
   type ProfitProjection,
 } from "@/lib/reseller-profit-calculator";
+import { responsiveWidth } from '@/lib/responsiveFont';
 import {
   loadInventoryProfitPlan,
   saveInventoryProfitPlan,
 } from "@/services/inventory-profit-plan-service";
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type SmartProfitCalculatorProps = {
@@ -394,9 +394,8 @@ export function SmartProfitCalculator({
       setTargetEdited(saved.plan.inputs.targetSalePrice > 0);
       setSaveMessage(
         saved.recordedExpenseCount > 0
-          ? `Numbers saved · ${saved.recordedExpenseCount} Books ${
-              saved.recordedExpenseCount === 1 ? "entry" : "entries"
-            } recorded.`
+          ? `Numbers saved · ${saved.recordedExpenseCount} Books ${saved.recordedExpenseCount === 1 ? "entry" : "entries"
+          } recorded.`
           : "Numbers saved to this inventory item.",
       );
       setSaveWarnings(saved.warnings);
@@ -651,386 +650,387 @@ export function SmartProfitCalculator({
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  shell: {
-    gap: 13,
-    paddingTop: 16,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(255, 255, 255, 0.14)",
-  },
-  header: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
-  headerCopy: { flex: 1, gap: 4 },
-  eyebrow: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.numbers,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 1.05,
-  },
-  title: {
-    color: "#FFFFFF",
-    fontFamily: theme.fonts.radar,
-    fontSize: 15,
-    fontWeight: "900",
-    lineHeight: 19,
-  },
-  rangeReadout: { alignItems: "flex-end", gap: 2 },
-  rangeLabel: {
-    color: "rgba(255, 255, 255, 0.46)",
-    fontFamily: theme.fonts.numbers,
-    fontSize: 7,
-    fontWeight: "900",
-    letterSpacing: 0.7,
-  },
-  rangeValue: {
-    color: theme.colors.goldBright,
-    fontFamily: theme.fonts.radar,
-    fontSize: 16,
-    fontWeight: "900",
-    fontVariant: ["tabular-nums"],
-  },
-  rangeLine: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-    paddingVertical: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255, 255, 255, 0.10)",
-  },
-  rangeDetail: {
-    color: "rgba(255, 255, 255, 0.66)",
-    fontFamily: theme.fonts.numbers,
-    fontSize: 7,
-    fontWeight: "900",
-    letterSpacing: 0.5,
-  },
-  presetSection: { gap: 8 },
-  sectionLabel: {
-    color: "rgba(255, 255, 255, 0.50)",
-    fontFamily: theme.fonts.numbers,
-    fontSize: 7,
-    fontWeight: "900",
-    letterSpacing: 0.92,
-  },
-  presetGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  preset: {
-    flexGrow: 1,
-    minWidth: 96,
-    gap: 2,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255, 255, 255, 0.14)",
-    borderRadius: 4,
-    backgroundColor: "rgba(255, 255, 255, 0.025)",
-  },
-  presetSelected: {
-    borderColor: "rgba(0, 255, 255, 0.78)",
-    backgroundColor: "rgba(0, 255, 255, 0.08)",
-  },
-  presetPressed: { opacity: 0.74 },
-  presetName: { color: "rgba(255, 255, 255, 0.78)", fontFamily: theme.fonts.radar, fontSize: 9, fontWeight: "900" },
-  presetNameSelected: { color: "#FFFFFF" },
-  presetFee: { color: "rgba(255, 255, 255, 0.44)", fontFamily: theme.fonts.numbers, fontSize: 6, fontWeight: "900", lineHeight: 9 },
-  presetFeeSelected: { color: theme.colors.scannerCyan },
-  presetNote: { color: "rgba(255, 255, 255, 0.54)", fontFamily: theme.fonts.radar, fontSize: 8, lineHeight: 12 },
-  inputGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  customGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  field: { flexGrow: 1, flexBasis: "45%", minWidth: 112, gap: 5 },
-  fieldLabel: { color: "rgba(255, 255, 255, 0.52)", fontFamily: theme.fonts.numbers, fontSize: 7, fontWeight: "900", letterSpacing: 0.55 },
-  inputShell: {
-    minHeight: 36,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 9,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255, 255, 255, 0.16)",
-    borderRadius: 4,
-    backgroundColor: "rgba(0, 0, 0, 0.26)",
-  },
-  inputPrefix: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 11, fontWeight: "900" },
-  input: {
-    flex: 1,
-    minWidth: 0,
-    paddingVertical: 4,
-    color: "#FFFFFF",
-    fontFamily: theme.fonts.radar,
-    fontSize: 12,
-    fontWeight: "900",
-    fontVariant: ["tabular-nums"],
-  },
-  shippingNote: { color: "rgba(255, 255, 255, 0.54)", fontFamily: theme.fonts.radar, fontSize: 8, lineHeight: 12 },
-  persistSection: {
-    gap: 7,
-    padding: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(70, 245, 162, 0.30)",
-    borderRadius: 4,
-    backgroundColor: "rgba(70, 245, 162, 0.045)",
-  },
-  persistButton: {
-    minHeight: 42,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingHorizontal: 14,
-    borderRadius: 4,
-    backgroundColor: POSITIVE_PROFIT,
-  },
-  persistButtonPressed: {
-    opacity: 0.78,
-    transform: [{ scale: 0.99 }],
-  },
-  persistButtonDisabled: { opacity: 0.5 },
-  persistButtonText: {
-    color: theme.colors.backgroundDeep,
-    fontFamily: theme.fonts.numbers,
-    fontSize: 9,
-    fontWeight: "900",
-    letterSpacing: 1,
-  },
-  persistHint: {
-    color: "rgba(255, 255, 255, 0.58)",
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    lineHeight: 12,
-  },
-  persistSuccess: {
-    color: POSITIVE_PROFIT,
-    fontFamily: theme.fonts.numbers,
-    fontSize: 7,
-    fontWeight: "900",
-    lineHeight: 11,
-    letterSpacing: 0.3,
-  },
-  persistWarning: {
-    color: theme.colors.goldBright,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    lineHeight: 12,
-  },
-  selectedProjection: {
-    gap: 10,
-    padding: 11,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(242, 211, 138, 0.30)",
-    borderRadius: 4,
-    backgroundColor: "rgba(242, 211, 138, 0.045)",
-  },
-  selectedProjectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
-  feeBase: { color: "rgba(255, 255, 255, 0.52)", fontFamily: theme.fonts.numbers, fontSize: 7, fontWeight: "900", letterSpacing: 0.45 },
-  metricRow: { flexDirection: "row", gap: 6 },
-  metric: { flex: 1, minWidth: 0, gap: 3, alignItems: "center" },
-  metricLabel: { fontFamily: theme.fonts.numbers, fontSize: 7, fontWeight: "900", letterSpacing: 0.55, textAlign: "center" },
-  metricValue: { color: "#FFFFFF", fontFamily: theme.fonts.radar, fontSize: 15, fontWeight: "900", fontVariant: ["tabular-nums"], textAlign: "center" },
-  breakdownRow: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 6, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(255, 255, 255, 0.10)" },
-  breakdownText: { color: "rgba(255, 255, 255, 0.56)", fontFamily: theme.fonts.numbers, fontSize: 7, fontWeight: "900", letterSpacing: 0.35 },
-  comparisonHeader: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", gap: 12 },
-  legend: { marginTop: 4, color: "rgba(255, 255, 255, 0.48)", fontFamily: theme.fonts.numbers, fontSize: 6, fontWeight: "900", letterSpacing: 0.38 },
-  legendDot: { color: BAR_COST },
-  legendFee: { color: theme.colors.danger },
-  legendProfit: { color: POSITIVE_PROFIT },
-  comparisonSummary: { alignItems: "flex-end", gap: 2 },
-  summaryLabel: { color: "rgba(255, 255, 255, 0.45)", fontFamily: theme.fonts.numbers, fontSize: 6, fontWeight: "900", letterSpacing: 0.55 },
-  summaryValue: { color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 9, fontWeight: "900", fontVariant: ["tabular-nums"], textAlign: "right" },
-  summaryRoi: { color: "rgba(255, 255, 255, 0.56)", fontFamily: theme.fonts.numbers, fontSize: 6, fontWeight: "900", letterSpacing: 0.35, textAlign: "right" },
-  marketRows: { gap: 7 },
-  marketRow: { gap: 5 },
-  marketRowLead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
-  marketName: { color: "rgba(255, 255, 255, 0.86)", fontFamily: theme.fonts.radar, fontSize: 10, fontWeight: "900" },
-  marketFee: { flexShrink: 1, color: "rgba(255, 255, 255, 0.42)", fontFamily: theme.fonts.numbers, fontSize: 6, fontWeight: "900", letterSpacing: 0.25, textAlign: "right" },
-  marketBarAndValue: { flexDirection: "row", alignItems: "center", gap: 8 },
-  marketBarTrack: { height: 18, flex: 1, flexDirection: "row", overflow: "hidden", borderRadius: 3, backgroundColor: "rgba(255, 255, 255, 0.06)" },
-  barSegment: { minWidth: 2, height: "100%" },
-  marketNet: { width: 68, fontFamily: theme.fonts.radar, fontSize: 10, fontWeight: "900", fontVariant: ["tabular-nums"], textAlign: "right" },
-  disclaimer: { color: "rgba(255, 255, 255, 0.42)", fontFamily: theme.fonts.numbers, fontSize: 6, fontWeight: "900", lineHeight: 10, letterSpacing: 0.36 },
-});
+  const { responsiveFont, responsiveHeight, responsiveWidth } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    shell: {
+      gap: 13,
+      paddingTop: 16,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: "rgba(255, 255, 255, 0.14)",
+    },
+    header: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
+    headerCopy: { flex: 1, gap: 4 },
+    eyebrow: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.numbers,
+      fontSize: 8,
+      fontWeight: "900",
+      letterSpacing: 1.05,
+    },
+    title: {
+      color: "#FFFFFF",
+      fontFamily: theme.fonts.radar,
+      fontSize: 15,
+      fontWeight: "900",
+      lineHeight: 19,
+    },
+    rangeReadout: { alignItems: "flex-end", gap: 2 },
+    rangeLabel: {
+      color: "rgba(255, 255, 255, 0.46)",
+      fontFamily: theme.fonts.numbers,
+      fontSize: 7,
+      fontWeight: "900",
+      letterSpacing: 0.7,
+    },
+    rangeValue: {
+      color: theme.colors.goldBright,
+      fontFamily: theme.fonts.radar,
+      fontSize: 16,
+      fontWeight: "900",
+      fontVariant: ["tabular-nums"],
+    },
+    rangeLine: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 8,
+      paddingVertical: 8,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderColor: "rgba(255, 255, 255, 0.10)",
+    },
+    rangeDetail: {
+      color: "rgba(255, 255, 255, 0.66)",
+      fontFamily: theme.fonts.numbers,
+      fontSize: 7,
+      fontWeight: "900",
+      letterSpacing: 0.5,
+    },
+    presetSection: { gap: 8 },
+    sectionLabel: {
+      color: "rgba(255, 255, 255, 0.50)",
+      fontFamily: theme.fonts.numbers,
+      fontSize: 7,
+      fontWeight: "900",
+      letterSpacing: 0.92,
+    },
+    presetGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+    preset: {
+      flexGrow: 1,
+      minWidth: 96,
+      gap: 2,
+      paddingHorizontal: 8,
+      paddingVertical: 8,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: "rgba(255, 255, 255, 0.14)",
+      borderRadius: 4,
+      backgroundColor: "rgba(255, 255, 255, 0.025)",
+    },
+    presetSelected: {
+      borderColor: "rgba(0, 255, 255, 0.78)",
+      backgroundColor: "rgba(0, 255, 255, 0.08)",
+    },
+    presetPressed: { opacity: 0.74 },
+    presetName: { color: "rgba(255, 255, 255, 0.78)", fontFamily: theme.fonts.radar, fontSize: 9, fontWeight: "900" },
+    presetNameSelected: { color: "#FFFFFF" },
+    presetFee: { color: "rgba(255, 255, 255, 0.44)", fontFamily: theme.fonts.numbers, fontSize: 6, fontWeight: "900", lineHeight: 9 },
+    presetFeeSelected: { color: theme.colors.scannerCyan },
+    presetNote: { color: "rgba(255, 255, 255, 0.54)", fontFamily: theme.fonts.radar, fontSize: 8, lineHeight: 12 },
+    inputGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+    customGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+    field: { flexGrow: 1, flexBasis: "45%", minWidth: 112, gap: 5 },
+    fieldLabel: { color: "rgba(255, 255, 255, 0.52)", fontFamily: theme.fonts.numbers, fontSize: 7, fontWeight: "900", letterSpacing: 0.55 },
+    inputShell: {
+      minHeight: 36,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      paddingHorizontal: 9,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: "rgba(255, 255, 255, 0.16)",
+      borderRadius: 4,
+      backgroundColor: "rgba(0, 0, 0, 0.26)",
+    },
+    inputPrefix: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 11, fontWeight: "900" },
+    input: {
+      flex: 1,
+      minWidth: 0,
+      paddingVertical: 4,
+      color: "#FFFFFF",
+      fontFamily: theme.fonts.radar,
+      fontSize: 12,
+      fontWeight: "900",
+      fontVariant: ["tabular-nums"],
+    },
+    shippingNote: { color: "rgba(255, 255, 255, 0.54)", fontFamily: theme.fonts.radar, fontSize: 8, lineHeight: 12 },
+    persistSection: {
+      gap: 7,
+      padding: 10,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: "rgba(70, 245, 162, 0.30)",
+      borderRadius: 4,
+      backgroundColor: "rgba(70, 245, 162, 0.045)",
+    },
+    persistButton: {
+      minHeight: 42,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      paddingHorizontal: 14,
+      borderRadius: 4,
+      backgroundColor: POSITIVE_PROFIT,
+    },
+    persistButtonPressed: {
+      opacity: 0.78,
+      transform: [{ scale: 0.99 }],
+    },
+    persistButtonDisabled: { opacity: 0.5 },
+    persistButtonText: {
+      color: theme.colors.backgroundDeep,
+      fontFamily: theme.fonts.numbers,
+      fontSize: 9,
+      fontWeight: "900",
+      letterSpacing: 1,
+    },
+    persistHint: {
+      color: "rgba(255, 255, 255, 0.58)",
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      lineHeight: 12,
+    },
+    persistSuccess: {
+      color: POSITIVE_PROFIT,
+      fontFamily: theme.fonts.numbers,
+      fontSize: 7,
+      fontWeight: "900",
+      lineHeight: 11,
+      letterSpacing: 0.3,
+    },
+    persistWarning: {
+      color: theme.colors.goldBright,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      lineHeight: 12,
+    },
+    selectedProjection: {
+      gap: 10,
+      padding: 11,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: "rgba(242, 211, 138, 0.30)",
+      borderRadius: 4,
+      backgroundColor: "rgba(242, 211, 138, 0.045)",
+    },
+    selectedProjectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+    feeBase: { color: "rgba(255, 255, 255, 0.52)", fontFamily: theme.fonts.numbers, fontSize: 7, fontWeight: "900", letterSpacing: 0.45 },
+    metricRow: { flexDirection: "row", gap: 6 },
+    metric: { flex: 1, minWidth: 0, gap: 3, alignItems: "center" },
+    metricLabel: { fontFamily: theme.fonts.numbers, fontSize: 7, fontWeight: "900", letterSpacing: 0.55, textAlign: "center" },
+    metricValue: { color: "#FFFFFF", fontFamily: theme.fonts.radar, fontSize: 15, fontWeight: "900", fontVariant: ["tabular-nums"], textAlign: "center" },
+    breakdownRow: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 6, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(255, 255, 255, 0.10)" },
+    breakdownText: { color: "rgba(255, 255, 255, 0.56)", fontFamily: theme.fonts.numbers, fontSize: 7, fontWeight: "900", letterSpacing: 0.35 },
+    comparisonHeader: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", gap: 12 },
+    legend: { marginTop: 4, color: "rgba(255, 255, 255, 0.48)", fontFamily: theme.fonts.numbers, fontSize: 6, fontWeight: "900", letterSpacing: 0.38 },
+    legendDot: { color: BAR_COST },
+    legendFee: { color: theme.colors.danger },
+    legendProfit: { color: POSITIVE_PROFIT },
+    comparisonSummary: { alignItems: "flex-end", gap: 2 },
+    summaryLabel: { color: "rgba(255, 255, 255, 0.45)", fontFamily: theme.fonts.numbers, fontSize: 6, fontWeight: "900", letterSpacing: 0.55 },
+    summaryValue: { color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 9, fontWeight: "900", fontVariant: ["tabular-nums"], textAlign: "right" },
+    summaryRoi: { color: "rgba(255, 255, 255, 0.56)", fontFamily: theme.fonts.numbers, fontSize: 6, fontWeight: "900", letterSpacing: 0.35, textAlign: "right" },
+    marketRows: { gap: 7 },
+    marketRow: { gap: 5 },
+    marketRowLead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+    marketName: { color: "rgba(255, 255, 255, 0.86)", fontFamily: theme.fonts.radar, fontSize: 10, fontWeight: "900" },
+    marketFee: { flexShrink: 1, color: "rgba(255, 255, 255, 0.42)", fontFamily: theme.fonts.numbers, fontSize: 6, fontWeight: "900", letterSpacing: 0.25, textAlign: "right" },
+    marketBarAndValue: { flexDirection: "row", alignItems: "center", gap: 8 },
+    marketBarTrack: { height: 18, flex: 1, flexDirection: "row", overflow: "hidden", borderRadius: 3, backgroundColor: "rgba(255, 255, 255, 0.06)" },
+    barSegment: { minWidth: 2, height: "100%" },
+    marketNet: { width: 68, fontFamily: theme.fonts.radar, fontSize: 10, fontWeight: "900", fontVariant: ["tabular-nums"], textAlign: "right" },
+    disclaimer: { color: "rgba(255, 255, 255, 0.42)", fontFamily: theme.fonts.numbers, fontSize: 6, fontWeight: "900", lineHeight: 10, letterSpacing: 0.36 },
+  });
   return {
     ...staticStyles,
-  eyebrow: [
-    staticStyles.eyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  title: [
-    staticStyles.title,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  rangeLabel: [
-    staticStyles.rangeLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  rangeValue: [
-    staticStyles.rangeValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(16),
-    },
-  ],
-  rangeDetail: [
-    staticStyles.rangeDetail,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  sectionLabel: [
-    staticStyles.sectionLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  presetName: [
-    staticStyles.presetName,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  presetFee: [
-    staticStyles.presetFee,
-    {
-        fontSize: responsiveLayout.responsiveFont(6),
-    },
-  ],
-  presetNote: [
-    staticStyles.presetNote,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  fieldLabel: [
-    staticStyles.fieldLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  inputPrefix: [
-    staticStyles.inputPrefix,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  input: [
-    staticStyles.input,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  shippingNote: [
-    staticStyles.shippingNote,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  persistButtonText: [
-    staticStyles.persistButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  persistHint: [
-    staticStyles.persistHint,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  persistSuccess: [
-    staticStyles.persistSuccess,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  persistWarning: [
-    staticStyles.persistWarning,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  feeBase: [
-    staticStyles.feeBase,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  metricLabel: [
-    staticStyles.metricLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  metricValue: [
-    staticStyles.metricValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  breakdownText: [
-    staticStyles.breakdownText,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  legend: [
-    staticStyles.legend,
-    {
-        fontSize: responsiveLayout.responsiveFont(6),
-    },
-  ],
-  summaryLabel: [
-    staticStyles.summaryLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(6),
-    },
-  ],
-  summaryValue: [
-    staticStyles.summaryValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  summaryRoi: [
-    staticStyles.summaryRoi,
-    {
-        fontSize: responsiveLayout.responsiveFont(6),
-    },
-  ],
-  marketName: [
-    staticStyles.marketName,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  marketFee: [
-    staticStyles.marketFee,
-    {
-        fontSize: responsiveLayout.responsiveFont(6),
-    },
-  ],
-  marketBarTrack: [
-    staticStyles.marketBarTrack,
-    {
-        height: responsiveLayout.responsiveHeight(18),
-    },
-  ],
-  marketNet: [
-    staticStyles.marketNet,
-    {
-        width: responsiveLayout.responsiveWidth(68),
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  disclaimer: [
-    staticStyles.disclaimer,
-    {
-        fontSize: responsiveLayout.responsiveFont(6),
-    },
-  ],
+    eyebrow: [
+      staticStyles.eyebrow,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    title: [
+      staticStyles.title,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    rangeLabel: [
+      staticStyles.rangeLabel,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    rangeValue: [
+      staticStyles.rangeValue,
+      {
+        fontSize: responsiveFont(16),
+      },
+    ],
+    rangeDetail: [
+      staticStyles.rangeDetail,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    sectionLabel: [
+      staticStyles.sectionLabel,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    presetName: [
+      staticStyles.presetName,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    presetFee: [
+      staticStyles.presetFee,
+      {
+        fontSize: responsiveFont(6),
+      },
+    ],
+    presetNote: [
+      staticStyles.presetNote,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    fieldLabel: [
+      staticStyles.fieldLabel,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    inputPrefix: [
+      staticStyles.inputPrefix,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    input: [
+      staticStyles.input,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    shippingNote: [
+      staticStyles.shippingNote,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    persistButtonText: [
+      staticStyles.persistButtonText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    persistHint: [
+      staticStyles.persistHint,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    persistSuccess: [
+      staticStyles.persistSuccess,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    persistWarning: [
+      staticStyles.persistWarning,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    feeBase: [
+      staticStyles.feeBase,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    metricLabel: [
+      staticStyles.metricLabel,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    metricValue: [
+      staticStyles.metricValue,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    breakdownText: [
+      staticStyles.breakdownText,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    legend: [
+      staticStyles.legend,
+      {
+        fontSize: responsiveFont(6),
+      },
+    ],
+    summaryLabel: [
+      staticStyles.summaryLabel,
+      {
+        fontSize: responsiveFont(6),
+      },
+    ],
+    summaryValue: [
+      staticStyles.summaryValue,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    summaryRoi: [
+      staticStyles.summaryRoi,
+      {
+        fontSize: responsiveFont(6),
+      },
+    ],
+    marketName: [
+      staticStyles.marketName,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    marketFee: [
+      staticStyles.marketFee,
+      {
+        fontSize: responsiveFont(6),
+      },
+    ],
+    marketBarTrack: [
+      staticStyles.marketBarTrack,
+      {
+        height: responsiveHeight(18),
+      },
+    ],
+    marketNet: [
+      staticStyles.marketNet,
+      {
+        width: responsiveWidth(68),
+        fontSize: responsiveFont(10),
+      },
+    ],
+    disclaimer: [
+      staticStyles.disclaimer,
+      {
+        fontSize: responsiveFont(6),
+      },
+    ],
   };
 }

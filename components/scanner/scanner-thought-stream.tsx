@@ -18,11 +18,11 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { responsiveWidth } from '@/lib/responsiveFont';
 import type {
   ItemAnalysisStage,
   ItemIdentificationSnapshot,
 } from "@/types/item-analysis";
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export type Thought = {
@@ -750,127 +750,128 @@ export function ScannerThoughtStream({
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  container: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 1,
-  },
-  card: {
-    position: "absolute",
-    minHeight: 54,
-    justifyContent: "center",
-    gap: 3,
-    paddingHorizontal: 11,
-    paddingVertical: 8,
-    overflow: "visible",
-    borderLeftWidth: 1,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderRadius: 5,
-    backgroundColor: "rgba(1, 7, 11, 0.68)",
-  },
-  cardRight: {
-    alignItems: "flex-end",
-    borderLeftWidth: 0,
-    borderRightWidth: 1,
-  },
-  signalNotch: {
-    position: "absolute",
-    top: -2,
-    width: 18,
-    height: 2,
-  },
-  signalNotchLeft: { left: -1 },
-  signalNotchRight: { right: -1 },
-  label: {
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    lineHeight: 10,
-    fontWeight: "900",
-    letterSpacing: 1.05,
-    opacity: 0.88,
-  },
-  valueStack: {
-    position: "relative",
-    alignSelf: "stretch",
-  },
-  valueGlow: {
-    fontFamily: theme.fonts.radar,
-    fontWeight: "900",
-    opacity: 0.62,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 12,
-  },
-  value: {
-    color: "#E9FDFF",
-    fontFamily: theme.fonts.radar,
-    fontWeight: "900",
-    textShadowColor: "rgba(0, 0, 0, 0.98)",
-    textShadowOffset: { width: 0, height: 3 },
-    textShadowRadius: 4,
-  },
-  valueFront: {
-    ...StyleSheet.absoluteFill,
-  },
-  confidence: {
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    lineHeight: 10,
-    fontWeight: "800",
-    letterSpacing: 0.72,
-    opacity: 0.76,
-    textShadowColor: "rgba(0, 0, 0, 0.95)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 3,
-  },
-  accessibleTranscript: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: 1,
-    height: 1,
-    opacity: 0,
-  },
-});
+  const { responsiveWidth, responsiveHeight, responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    container: {
+      ...StyleSheet.absoluteFill,
+      zIndex: 1,
+    },
+    card: {
+      position: "absolute",
+      minHeight: 54,
+      justifyContent: "center",
+      gap: 3,
+      paddingHorizontal: 11,
+      paddingVertical: 8,
+      overflow: "visible",
+      borderLeftWidth: 1,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderRadius: 5,
+      backgroundColor: "rgba(1, 7, 11, 0.68)",
+    },
+    cardRight: {
+      alignItems: "flex-end",
+      borderLeftWidth: 0,
+      borderRightWidth: 1,
+    },
+    signalNotch: {
+      position: "absolute",
+      top: -2,
+      width: 18,
+      height: 2,
+    },
+    signalNotchLeft: { left: -1 },
+    signalNotchRight: { right: -1 },
+    label: {
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      lineHeight: 10,
+      fontWeight: "900",
+      letterSpacing: 1.05,
+      opacity: 0.88,
+    },
+    valueStack: {
+      position: "relative",
+      alignSelf: "stretch",
+    },
+    valueGlow: {
+      fontFamily: theme.fonts.radar,
+      fontWeight: "900",
+      opacity: 0.62,
+      textShadowOffset: { width: 0, height: 0 },
+      textShadowRadius: 12,
+    },
+    value: {
+      color: "#E9FDFF",
+      fontFamily: theme.fonts.radar,
+      fontWeight: "900",
+      textShadowColor: "rgba(0, 0, 0, 0.98)",
+      textShadowOffset: { width: 0, height: 3 },
+      textShadowRadius: 4,
+    },
+    valueFront: {
+      ...StyleSheet.absoluteFill,
+    },
+    confidence: {
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      lineHeight: 10,
+      fontWeight: "800",
+      letterSpacing: 0.72,
+      opacity: 0.76,
+      textShadowColor: "rgba(0, 0, 0, 0.95)",
+      textShadowOffset: { width: 0, height: 2 },
+      textShadowRadius: 3,
+    },
+    accessibleTranscript: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: 1,
+      height: 1,
+      opacity: 0,
+    },
+  });
   return {
     ...staticStyles,
-  signalNotch: [
-    staticStyles.signalNotch,
-    {
-        width: responsiveLayout.responsiveWidth(18),
-        height: responsiveLayout.responsiveHeight(2),
-    },
-  ],
-  label: [
-    staticStyles.label,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  valueGlow: [
-    staticStyles.valueGlow,
-    {
-        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(0) },
-    },
-  ],
-  value: [
-    staticStyles.value,
-    {
-        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(3) },
-    },
-  ],
-  confidence: [
-    staticStyles.confidence,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(2) },
-    },
-  ],
-  accessibleTranscript: [
-    staticStyles.accessibleTranscript,
-    {
-        width: responsiveLayout.responsiveWidth(1),
-        height: responsiveLayout.responsiveHeight(1),
-    },
-  ],
+    signalNotch: [
+      staticStyles.signalNotch,
+      {
+        width: responsiveWidth(18),
+        height: responsiveHeight(2),
+      },
+    ],
+    label: [
+      staticStyles.label,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    valueGlow: [
+      staticStyles.valueGlow,
+      {
+        textShadowOffset: { width: responsiveWidth(0), height: responsiveHeight(0) },
+      },
+    ],
+    value: [
+      staticStyles.value,
+      {
+        textShadowOffset: { width: responsiveWidth(0), height: responsiveHeight(3) },
+      },
+    ],
+    confidence: [
+      staticStyles.confidence,
+      {
+        fontSize: responsiveFont(8),
+        textShadowOffset: { width: responsiveWidth(0), height: responsiveHeight(2) },
+      },
+    ],
+    accessibleTranscript: [
+      staticStyles.accessibleTranscript,
+      {
+        width: responsiveWidth(1),
+        height: responsiveHeight(1),
+      },
+    ],
   };
 }

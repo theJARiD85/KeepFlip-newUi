@@ -1,9 +1,9 @@
 import * as Haptics from 'expo-haptics';
 import {
-  type Href,
   useLocalSearchParams,
   useNavigation,
   useRouter,
+  type Href,
 } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -15,13 +15,14 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
 import { KeepFlipAccountTabs } from '@/components/account/keepflip-account-tabs';
+import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import { responsiveWidth } from '@/lib/responsiveFont';
 import {
   KEEPFLIP_PLAN_DEFINITIONS,
   areKeepFlipSubscriptionsEnforced,
@@ -29,7 +30,6 @@ import {
   type KeepFlipPlanDefinition,
   type KeepFlipPlanId,
 } from '@/services/keepflip-subscription-service';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 function formatDate(value: string | null) {
@@ -133,7 +133,7 @@ function PlanCard({
         <Text style={styles.savingsLine}>{savings}</Text>
       ) : null}
 
-      <Text style={[styles.planDescription, { fontSize: responsiveFont(12)}]}>{definition.description}</Text>
+      <Text style={[styles.planDescription, { fontSize: responsiveFont(12) }]}>{definition.description}</Text>
 
       <View style={styles.featureList}>
         {[...definition.limits, ...definition.features].map((feature) => (
@@ -143,7 +143,7 @@ function PlanCard({
               name="checkmark.circle.fill"
               size={15}
             />
-            <Text style={[styles.featureText, { fontSize: responsiveFont(11)}]}>{feature}</Text>
+            <Text style={[styles.featureText, { fontSize: responsiveFont(11) }]}>{feature}</Text>
           </View>
         ))}
       </View>
@@ -162,10 +162,10 @@ function PlanCard({
           definition.recommended && styles.subscribeButtonRecommended,
           (!checkoutEnabled || purchasing || isCurrent) && styles.buttonDisabled,
           pressed &&
-            checkoutEnabled &&
-            !purchasing &&
-            !isCurrent &&
-            styles.buttonPressed,
+          checkoutEnabled &&
+          !purchasing &&
+          !isCurrent &&
+          styles.buttonPressed,
         ]}>
         {purchasing ? (
           <ActivityIndicator
@@ -181,7 +181,7 @@ function PlanCard({
             style={[
               styles.subscribeButtonText,
               definition.recommended &&
-                styles.subscribeButtonTextRecommended,
+              styles.subscribeButtonTextRecommended,
               { fontSize: responsiveFont(10) },
             ]}>
             {isCurrent
@@ -193,7 +193,7 @@ function PlanCard({
         )}
       </Pressable>
 
-      <Text style={[styles.afterTrialText, { fontSize: responsiveFont(9)}]}>
+      <Text style={[styles.afterTrialText, { fontSize: responsiveFont(9) }]}>
         {isCurrent
           ? 'Active on this account. Manage or cancel through the store.'
           : `${selectedPrice} ${cadence === 'annual' ? 'per year' : 'per month'}. Cancel anytime.`}
@@ -281,6 +281,9 @@ export function KeepFlipSubscriptionScreen({
   const renewalDate = formatDate(
     access?.active && !access.isTrial ? access.expiresAt : null,
   );
+  const graceEnds = formatDate(
+    access?.billingIssue ? access.expiresAt : null,
+  );
 
   const statusCopy = useMemo(() => {
     if (state === 'loading') return 'Checking your KeepFlip plan…';
@@ -300,6 +303,16 @@ export function KeepFlipSubscriptionScreen({
         ? `Store trial active through ${trialEnds}.`
         : 'Your store trial is active.';
     }
+    if (access?.billingIssue) {
+      if (!access.active) {
+        return graceEnds
+          ? `Your 7-day payment grace period ended on ${graceEnds}. Update your payment method to restore KeepFlip access.`
+          : 'Your 7-day payment grace period has ended. Update your payment method to restore KeepFlip access.';
+      }
+      return graceEnds
+        ? `There was a payment problem. Your KeepFlip access remains available through ${graceEnds} while you update your payment method.`
+        : 'There was a payment problem. Your KeepFlip access remains available for 7 days while you update your payment method.';
+    }
     if (access?.active) {
       return renewalDate
         ? `${access.willRenew ? 'Renews' : 'Access continues'} through ${renewalDate}.`
@@ -314,10 +327,12 @@ export function KeepFlipSubscriptionScreen({
     return 'Choose monthly or annual billing to start a paid KeepFlip plan.';
   }, [
     access?.active,
+    access?.billingIssue,
     access?.isTrial,
     access?.willRenew,
     profileTrialActive,
     profileTrialUsed,
+    graceEnds,
     renewalDate,
     state,
     trialEnds,
@@ -370,23 +385,23 @@ export function KeepFlipSubscriptionScreen({
     <KeepFlipBackground>
       <ScrollView
         contentContainerStyle={[styles.content,
-          {
-            paddingBottom: insets.bottom + 12,
-            paddingTop: insets.top / 2,
-          }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
-        style={{marginTop: insets.top, marginBottom: insets.bottom}}
+        {
+          paddingBottom: insets.bottom + 30,
+          paddingTop: insets.top + 15,
+        }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+        style={{ marginTop: insets.top, marginBottom: insets.bottom }}
         showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
 
           <View style={styles.headerCopy}>
-            <Text style={[styles.eyebrow, { fontSize: responsiveFont(10)}]}>
+            <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>
               {accountTab
                 ? 'KEEPFLIP / ACCOUNT'
                 : isOnboarding
                   ? 'KEEPFLIP / CHOOSE YOUR PLAN'
                   : 'KEEPFLIP / PLAN & BILLING'}
             </Text>
-            <Text style={[styles.title, { fontSize: responsiveFont(26)}]}>
+            <Text style={[styles.title, { fontSize: responsiveFont(26) }]}>
               {accountTab
                 ? 'Plan & billing'
                 : isOnboarding
@@ -412,13 +427,17 @@ export function KeepFlipSubscriptionScreen({
                 ? 'YOUR KEEPFLIP TRIAL IS ACTIVE'
                 : access?.isTrial
                   ? 'YOUR STORE TRIAL IS ACTIVE'
-                : profileTrialUsed
-                  ? 'YOUR KEEPFLIP TRIAL HAS FINISHED'
-                  : trialUsed
-                    ? 'YOUR STORE TRIAL HAS FINISHED'
-                    : 'CHOOSE A PAID PLAN'}
+                  : access?.billingIssue
+                    ? access.active
+                      ? 'PAYMENT ISSUE · 7-DAY GRACE'
+                      : 'PAYMENT ISSUE · ACTION REQUIRED'
+                    : profileTrialUsed
+                      ? 'YOUR KEEPFLIP TRIAL HAS FINISHED'
+                      : trialUsed
+                        ? 'YOUR STORE TRIAL HAS FINISHED'
+                        : 'CHOOSE A PAID PLAN'}
             </Text>
-            <Text style={[styles.trialBody, { fontSize: responsiveFont(12)}]}>{statusCopy}</Text>
+            <Text style={[styles.trialBody, { fontSize: responsiveFont(12) }]}>{statusCopy}</Text>
           </View>
         </View>
 
@@ -439,7 +458,7 @@ export function KeepFlipSubscriptionScreen({
                 style={[
                   styles.billingOptionText,
                   cadence === 'monthly' && styles.billingOptionTextSelected,
-                  {fontSize: responsiveFont(11)},
+                  { fontSize: responsiveFont(11) },
                 ]}>
                 MONTHLY
               </Text>
@@ -457,7 +476,7 @@ export function KeepFlipSubscriptionScreen({
                 style={[
                   styles.billingOptionText,
                   cadence === 'annual' && styles.billingOptionTextSelected,
-                  {fontSize: responsiveFont(11)}
+                  { fontSize: responsiveFont(11) }
                 ]}>
                 ANNUAL
               </Text>
@@ -465,8 +484,8 @@ export function KeepFlipSubscriptionScreen({
                 style={[
                   styles.billingOptionSubtext,
                   cadence === 'annual' &&
-                    styles.billingOptionSubtextSelected,
-                    {fontSize: responsiveFont(7)}
+                  styles.billingOptionSubtextSelected,
+                  { fontSize: responsiveFont(7) }
                 ]}>
                 SAVE 2 MONTHS
               </Text>
@@ -516,7 +535,7 @@ export function KeepFlipSubscriptionScreen({
               name="exclamationmark.triangle.fill"
               size={16}
             />
-            <Text style={[styles.checkoutNoticeText, { fontSize: responsiveFont(10)}]}>
+            <Text style={[styles.checkoutNoticeText, { fontSize: responsiveFont(10) }]}>
               {state === 'unconfigured'
                 ? 'Checkout is disabled until the RevenueCat public SDK key and store offering are configured for this build.'
                 : 'Checkout is temporarily unavailable while KeepFlip verifies subscription access.'}
@@ -528,7 +547,7 @@ export function KeepFlipSubscriptionScreen({
           <Text
             accessibilityLiveRegion="polite"
             selectable
-            style={[styles.errorText, { fontSize: responsiveFont(12)}]}>
+            style={[styles.errorText, { fontSize: responsiveFont(12) }]}>
             {errorMessage}
           </Text>
         ) : null}
@@ -537,7 +556,7 @@ export function KeepFlipSubscriptionScreen({
           <Text
             accessibilityLiveRegion="polite"
             selectable
-            style={[styles.successText, { fontSize: responsiveFont(12)}]}>
+            style={[styles.successText, { fontSize: responsiveFont(12) }]}>
             {actionMessage}
           </Text>
         ) : null}
@@ -587,9 +606,9 @@ export function KeepFlipSubscriptionScreen({
               styles.utilityButton,
               (!checkoutEnabled || restoring) && styles.buttonDisabled,
               pressed &&
-                checkoutEnabled &&
-                !restoring &&
-                styles.utilityButtonPressed,
+              checkoutEnabled &&
+              !restoring &&
+              styles.utilityButtonPressed,
             ]}>
             {restoring ? (
               <ActivityIndicator
@@ -635,522 +654,523 @@ export function KeepFlipSubscriptionScreen({
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  content: {
-    alignSelf: 'center',
-    gap: 16,
-    maxWidth: 760,
-    paddingHorizontal: 18,
-    width: '100%',
-  },
-  headerRow: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-    gap: 11,
-  },
-  planRequiredIcon: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(215, 168, 74, 0.07)',
-    borderColor: 'rgba(215, 168, 74, 0.24)',
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    height: 40,
-    justifyContent: 'center',
-    width: 40,
-  },
-  headerCopy: { flex: 1, gap: 3, maxWidth: '80%' },
-  eyebrow: {
-    color: theme.colors.gold,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 1.35,
-  },
-  title: {
-    color: theme.colors.cream,
-    fontSize: 28,
-    fontWeight: '900',
-    letterSpacing: -0.55,
-    lineHeight: 33,
-  },
-  trialBanner: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 255, 255, 0.055)',
-    borderColor: 'rgba(0, 255, 255, 0.24)',
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
-    gap: 11,
-    padding: 13,
-  },
-  trialIcon: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 255, 255, 0.08)',
-    borderRadius: 10,
-    height: 40,
-    justifyContent: 'center',
-    width: 40,
-  },
-  trialCopy: { flex: 1, gap: 3 },
-  trialTitle: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.95,
-  },
-  trialBody: {
-    color: theme.colors.textMuted,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  billingSection: { gap: 7 },
-  billingLabel: {
-    color: theme.colors.gold,
-    fontFamily: theme.fonts.radar,
-    fontSize: 7,
-    fontWeight: '900',
-    letterSpacing: 1.1,
-    paddingHorizontal: 2,
-  },
-  billingToggle: {
-    backgroundColor: 'rgba(8, 8, 12, 0.92)',
-    borderColor: 'rgba(242, 237, 228, 0.14)',
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
-    gap: 4,
-    padding: 4,
-  },
-  billingOption: {
-    alignItems: 'center',
-    borderRadius: 9,
-    flex: 1,
-    gap: 1,
-    justifyContent: 'center',
-    minHeight: 45,
-    paddingHorizontal: 10,
-  },
-  billingOptionSelected: {
-    backgroundColor: 'rgba(215, 168, 74, 0.14)',
-    borderColor: 'rgba(242, 211, 138, 0.42)',
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  billingOptionText: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.85,
-  },
-  billingOptionTextSelected: {
-    color: theme.colors.goldBright,
-  },
-  billingOptionSubtext: {
-    color: 'rgba(173, 167, 178, 0.66)',
-    fontSize: 7,
-    fontWeight: '800',
-    letterSpacing: 0.45,
-  },
-  billingOptionSubtextSelected: {
-    color: theme.colors.scannerCyan,
-  },
-  loadingCard: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(7, 7, 10, 0.52)',
-    borderColor: 'rgba(242, 237, 228, 0.12)',
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
-    gap: 10,
-    minHeight: 76,
-    padding: 14,
-  },
-  loadingText: { color: theme.colors.textMuted, fontSize: 12 },
-  planStack: { gap: 12 },
-  planCard: {
-    backgroundColor: 'rgba(8, 8, 12, 0.92)',
-    borderColor: 'rgba(242, 237, 228, 0.15)',
-    borderRadius: 15,
-    borderWidth: StyleSheet.hairlineWidth,
-    gap: 11,
-    padding: 15,
-  },
-  planCardRecommended: {
-    borderColor: 'rgba(0, 255, 255, 0.42)',
-    shadowColor: theme.colors.scannerCyan,
-    shadowOpacity: 0.09,
-    shadowRadius: 20,
-  },
-  planCardRequested: {
-    borderColor: 'rgba(141, 114, 255, 0.62)',
-  },
-  planCardCurrent: {
-    borderColor: 'rgba(215, 168, 74, 0.44)',
-  },
-  planTopLine: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-    gap: 10,
-    justifyContent: 'space-between',
-  },
-  planHeading: { flex: 1, gap: 2 },
-  planEyebrow: {
-    color: theme.colors.gold,
-    fontFamily: theme.fonts.radar,
-    fontSize: 7,
-    fontWeight: '900',
-    letterSpacing: 1.15,
-  },
-  planName: {
-    color: theme.colors.cream,
-    fontSize: 20,
-    fontWeight: '900',
-  },
-  recommendedBadge: {
-    backgroundColor: theme.colors.scannerCyan,
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-  },
-  recommendedText: {
-    color: theme.colors.backgroundDeep,
-    fontFamily: theme.fonts.radar,
-    fontSize: 6,
-    fontWeight: '900',
-    letterSpacing: 0.7,
-  },
-  currentBadge: {
-    backgroundColor: 'rgba(215, 168, 74, 0.12)',
-    borderColor: 'rgba(215, 168, 74, 0.34)',
-    borderRadius: 999,
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-  },
-  currentText: {
-    color: theme.colors.goldBright,
-    fontFamily: theme.fonts.radar,
-    fontSize: 6,
-    fontWeight: '900',
-    letterSpacing: 0.7,
-  },
-  priceRow: {
-    alignItems: 'baseline',
-    flexDirection: 'row',
-    gap: 4,
-  },
-  price: {
-    color: theme.colors.cream,
-    fontSize: 27,
-    fontVariant: ['tabular-nums'],
-    fontWeight: '900',
-  },
-  pricePeriod: {
-    color: theme.colors.textMuted,
-    fontSize: 11,
-  },
-  savingsLine: {
-    color: theme.colors.goldBright,
-    fontFamily: theme.fonts.radar,
-    fontSize: 7,
-    fontWeight: '900',
-    letterSpacing: 0.75,
-    marginTop: -6,
-  },
-  planDescription: {
-    color: theme.colors.textMuted,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  featureList: { gap: 7 },
-  featureRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
-  },
-  featureText: {
-    color: theme.colors.text,
-    flex: 1,
-    fontSize: 11,
-    lineHeight: 15,
-  },
-  subscribeButton: {
-    alignItems: 'center',
-    borderColor: 'rgba(0, 255, 255, 0.34)',
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    justifyContent: 'center',
-    minHeight: 46,
-  },
-  subscribeButtonRecommended: {
-    backgroundColor: theme.colors.scannerCyan,
-    borderColor: theme.colors.scannerCyan,
-  },
-  subscribeButtonText: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 0.85,
-  },
-  subscribeButtonTextRecommended: {
-    color: theme.colors.backgroundDeep,
-  },
-  afterTrialText: {
-    color: 'rgba(173, 167, 178, 0.76)',
-    fontSize: 9,
-    lineHeight: 13,
-    textAlign: 'center',
-  },
-  buttonDisabled: { opacity: 0.45 },
-  buttonPressed: { opacity: 0.78 },
-  checkoutNotice: {
-    alignItems: 'flex-start',
-    backgroundColor: 'rgba(215, 168, 74, 0.055)',
-    borderColor: 'rgba(215, 168, 74, 0.26)',
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
-    gap: 9,
-    padding: 11,
-  },
-  checkoutNoticeText: {
-    color: theme.colors.textMuted,
-    flex: 1,
-    fontSize: 10,
-    lineHeight: 15,
-  },
-  errorText: {
-    color: theme.colors.danger,
-    fontSize: 12,
-    lineHeight: 17,
-    textAlign: 'center',
-  },
-  successText: {
-    color: theme.colors.scannerCyan,
-    fontSize: 12,
-    lineHeight: 17,
-    textAlign: 'center',
-  },
-  accountActions: { gap: 8 },
-  continueButton: {
-    alignItems: 'center',
-    backgroundColor: theme.colors.scannerCyan,
-    borderRadius: 10,
-    justifyContent: 'center',
-    minHeight: 46,
-  },
-  continueButtonPressed: { opacity: 0.82 },
-  continueButtonText: {
-    color: theme.colors.backgroundDeep,
-    fontFamily: theme.fonts.radar,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 0.9,
-  },
-  utilityButton: {
-    alignItems: 'center',
-    borderColor: 'rgba(215, 168, 74, 0.28)',
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    justifyContent: 'center',
-    minHeight: 44,
-  },
-  utilityButtonPressed: {
-    backgroundColor: 'rgba(242, 237, 228, 0.055)',
-  },
-  utilityButtonText: {
-    color: theme.colors.goldBright,
-    fontFamily: theme.fonts.radar,
-    fontWeight: '900',
-    letterSpacing: 0.85,
-  },
-  refreshButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 36,
-  },
-  refreshButtonText: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.radar,
-    fontSize: 7,
-    fontWeight: '900',
-    letterSpacing: 0.7,
-  },
-  finePrint: {
-    color: 'rgba(173, 167, 178, 0.68)',
-    fontSize: 9,
-    lineHeight: 14,
-    paddingHorizontal: 4,
-    textAlign: 'center',
-  },
-});
+  const { responsiveHeight, responsiveWidth, responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    content: {
+      alignSelf: 'center',
+      gap: 16,
+      maxWidth: 760,
+      paddingHorizontal: 18,
+      width: '100%',
+    },
+    headerRow: {
+      alignItems: 'flex-start',
+      flexDirection: 'row',
+      gap: 11,
+    },
+    planRequiredIcon: {
+      alignItems: 'center',
+      backgroundColor: 'rgba(215, 168, 74, 0.07)',
+      borderColor: 'rgba(215, 168, 74, 0.24)',
+      borderRadius: 10,
+      borderWidth: StyleSheet.hairlineWidth,
+      height: 40,
+      justifyContent: 'center',
+      width: 40,
+    },
+    headerCopy: { flex: 1, gap: 3, maxWidth: '80%' },
+    eyebrow: {
+      color: theme.colors.gold,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 1.35,
+    },
+    title: {
+      color: theme.colors.cream,
+      fontSize: 28,
+      fontWeight: '900',
+      letterSpacing: -0.55,
+      lineHeight: 33,
+    },
+    trialBanner: {
+      alignItems: 'center',
+      backgroundColor: 'rgba(0, 255, 255, 0.055)',
+      borderColor: 'rgba(0, 255, 255, 0.24)',
+      borderRadius: 14,
+      borderWidth: StyleSheet.hairlineWidth,
+      flexDirection: 'row',
+      gap: 11,
+      padding: 13,
+    },
+    trialIcon: {
+      alignItems: 'center',
+      backgroundColor: 'rgba(0, 255, 255, 0.08)',
+      borderRadius: 10,
+      height: 40,
+      justifyContent: 'center',
+      width: 40,
+    },
+    trialCopy: { flex: 1, gap: 3 },
+    trialTitle: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 0.95,
+    },
+    trialBody: {
+      color: theme.colors.textMuted,
+      fontSize: 12,
+      lineHeight: 17,
+    },
+    billingSection: { gap: 7 },
+    billingLabel: {
+      color: theme.colors.gold,
+      fontFamily: theme.fonts.radar,
+      fontSize: 7,
+      fontWeight: '900',
+      letterSpacing: 1.1,
+      paddingHorizontal: 2,
+    },
+    billingToggle: {
+      backgroundColor: 'rgba(8, 8, 12, 0.92)',
+      borderColor: 'rgba(242, 237, 228, 0.14)',
+      borderRadius: 12,
+      borderWidth: StyleSheet.hairlineWidth,
+      flexDirection: 'row',
+      gap: 4,
+      padding: 4,
+    },
+    billingOption: {
+      alignItems: 'center',
+      borderRadius: 9,
+      flex: 1,
+      gap: 1,
+      justifyContent: 'center',
+      minHeight: 45,
+      paddingHorizontal: 10,
+    },
+    billingOptionSelected: {
+      backgroundColor: 'rgba(215, 168, 74, 0.14)',
+      borderColor: 'rgba(242, 211, 138, 0.42)',
+      borderWidth: StyleSheet.hairlineWidth,
+    },
+    billingOptionText: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 0.85,
+    },
+    billingOptionTextSelected: {
+      color: theme.colors.goldBright,
+    },
+    billingOptionSubtext: {
+      color: 'rgba(173, 167, 178, 0.66)',
+      fontSize: 7,
+      fontWeight: '800',
+      letterSpacing: 0.45,
+    },
+    billingOptionSubtextSelected: {
+      color: theme.colors.scannerCyan,
+    },
+    loadingCard: {
+      alignItems: 'center',
+      backgroundColor: 'rgba(7, 7, 10, 0.52)',
+      borderColor: 'rgba(242, 237, 228, 0.12)',
+      borderRadius: 12,
+      borderWidth: StyleSheet.hairlineWidth,
+      flexDirection: 'row',
+      gap: 10,
+      minHeight: 76,
+      padding: 14,
+    },
+    loadingText: { color: theme.colors.textMuted, fontSize: 12 },
+    planStack: { gap: 12 },
+    planCard: {
+      backgroundColor: 'rgba(8, 8, 12, 0.92)',
+      borderColor: 'rgba(242, 237, 228, 0.15)',
+      borderRadius: 15,
+      borderWidth: StyleSheet.hairlineWidth,
+      gap: 11,
+      padding: 15,
+    },
+    planCardRecommended: {
+      borderColor: 'rgba(0, 255, 255, 0.42)',
+      shadowColor: theme.colors.scannerCyan,
+      shadowOpacity: 0.09,
+      shadowRadius: 20,
+    },
+    planCardRequested: {
+      borderColor: 'rgba(141, 114, 255, 0.62)',
+    },
+    planCardCurrent: {
+      borderColor: 'rgba(215, 168, 74, 0.44)',
+    },
+    planTopLine: {
+      alignItems: 'flex-start',
+      flexDirection: 'row',
+      gap: 10,
+      justifyContent: 'space-between',
+    },
+    planHeading: { flex: 1, gap: 2 },
+    planEyebrow: {
+      color: theme.colors.gold,
+      fontFamily: theme.fonts.radar,
+      fontSize: 7,
+      fontWeight: '900',
+      letterSpacing: 1.15,
+    },
+    planName: {
+      color: theme.colors.cream,
+      fontSize: 20,
+      fontWeight: '900',
+    },
+    recommendedBadge: {
+      backgroundColor: theme.colors.scannerCyan,
+      borderRadius: 999,
+      paddingHorizontal: 8,
+      paddingVertical: 5,
+    },
+    recommendedText: {
+      color: theme.colors.backgroundDeep,
+      fontFamily: theme.fonts.radar,
+      fontSize: 6,
+      fontWeight: '900',
+      letterSpacing: 0.7,
+    },
+    currentBadge: {
+      backgroundColor: 'rgba(215, 168, 74, 0.12)',
+      borderColor: 'rgba(215, 168, 74, 0.34)',
+      borderRadius: 999,
+      borderWidth: StyleSheet.hairlineWidth,
+      paddingHorizontal: 8,
+      paddingVertical: 5,
+    },
+    currentText: {
+      color: theme.colors.goldBright,
+      fontFamily: theme.fonts.radar,
+      fontSize: 6,
+      fontWeight: '900',
+      letterSpacing: 0.7,
+    },
+    priceRow: {
+      alignItems: 'baseline',
+      flexDirection: 'row',
+      gap: 4,
+    },
+    price: {
+      color: theme.colors.cream,
+      fontSize: 27,
+      fontVariant: ['tabular-nums'],
+      fontWeight: '900',
+    },
+    pricePeriod: {
+      color: theme.colors.textMuted,
+      fontSize: 11,
+    },
+    savingsLine: {
+      color: theme.colors.goldBright,
+      fontFamily: theme.fonts.radar,
+      fontSize: 7,
+      fontWeight: '900',
+      letterSpacing: 0.75,
+      marginTop: -6,
+    },
+    planDescription: {
+      color: theme.colors.textMuted,
+      fontSize: 12,
+      lineHeight: 17,
+    },
+    featureList: { gap: 7 },
+    featureRow: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: 8,
+    },
+    featureText: {
+      color: theme.colors.text,
+      flex: 1,
+      fontSize: 11,
+      lineHeight: 15,
+    },
+    subscribeButton: {
+      alignItems: 'center',
+      borderColor: 'rgba(0, 255, 255, 0.34)',
+      borderRadius: 10,
+      borderWidth: StyleSheet.hairlineWidth,
+      justifyContent: 'center',
+      minHeight: 46,
+    },
+    subscribeButtonRecommended: {
+      backgroundColor: theme.colors.scannerCyan,
+      borderColor: theme.colors.scannerCyan,
+    },
+    subscribeButtonText: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 10,
+      fontWeight: '900',
+      letterSpacing: 0.85,
+    },
+    subscribeButtonTextRecommended: {
+      color: theme.colors.backgroundDeep,
+    },
+    afterTrialText: {
+      color: 'rgba(173, 167, 178, 0.76)',
+      fontSize: 9,
+      lineHeight: 13,
+      textAlign: 'center',
+    },
+    buttonDisabled: { opacity: 0.45 },
+    buttonPressed: { opacity: 0.78 },
+    checkoutNotice: {
+      alignItems: 'flex-start',
+      backgroundColor: 'rgba(215, 168, 74, 0.055)',
+      borderColor: 'rgba(215, 168, 74, 0.26)',
+      borderRadius: 10,
+      borderWidth: StyleSheet.hairlineWidth,
+      flexDirection: 'row',
+      gap: 9,
+      padding: 11,
+    },
+    checkoutNoticeText: {
+      color: theme.colors.textMuted,
+      flex: 1,
+      fontSize: 10,
+      lineHeight: 15,
+    },
+    errorText: {
+      color: theme.colors.danger,
+      fontSize: 12,
+      lineHeight: 17,
+      textAlign: 'center',
+    },
+    successText: {
+      color: theme.colors.scannerCyan,
+      fontSize: 12,
+      lineHeight: 17,
+      textAlign: 'center',
+    },
+    accountActions: { gap: 8 },
+    continueButton: {
+      alignItems: 'center',
+      backgroundColor: theme.colors.scannerCyan,
+      borderRadius: 10,
+      justifyContent: 'center',
+      minHeight: 46,
+    },
+    continueButtonPressed: { opacity: 0.82 },
+    continueButtonText: {
+      color: theme.colors.backgroundDeep,
+      fontFamily: theme.fonts.radar,
+      fontSize: 10,
+      fontWeight: '900',
+      letterSpacing: 0.9,
+    },
+    utilityButton: {
+      alignItems: 'center',
+      borderColor: 'rgba(215, 168, 74, 0.28)',
+      borderRadius: 10,
+      borderWidth: StyleSheet.hairlineWidth,
+      justifyContent: 'center',
+      minHeight: 44,
+    },
+    utilityButtonPressed: {
+      backgroundColor: 'rgba(242, 237, 228, 0.055)',
+    },
+    utilityButtonText: {
+      color: theme.colors.goldBright,
+      fontFamily: theme.fonts.radar,
+      fontWeight: '900',
+      letterSpacing: 0.85,
+    },
+    refreshButton: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 36,
+    },
+    refreshButtonText: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.radar,
+      fontSize: 7,
+      fontWeight: '900',
+      letterSpacing: 0.7,
+    },
+    finePrint: {
+      color: 'rgba(173, 167, 178, 0.68)',
+      fontSize: 9,
+      lineHeight: 14,
+      paddingHorizontal: 4,
+      textAlign: 'center',
+    },
+  });
   return {
     ...staticStyles,
-  planRequiredIcon: [
-    staticStyles.planRequiredIcon,
-    {
-        height: responsiveLayout.responsiveHeight(40),
-        width: responsiveLayout.responsiveWidth(40),
-    },
-  ],
-  eyebrow: [
-    staticStyles.eyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  title: [
-    staticStyles.title,
-    {
-        fontSize: responsiveLayout.responsiveFont(28),
-    },
-  ],
-  trialIcon: [
-    staticStyles.trialIcon,
-    {
-        height: responsiveLayout.responsiveHeight(40),
-        width: responsiveLayout.responsiveWidth(40),
-    },
-  ],
-  trialTitle: [
-    staticStyles.trialTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  trialBody: [
-    staticStyles.trialBody,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  billingLabel: [
-    staticStyles.billingLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  billingOptionText: [
-    staticStyles.billingOptionText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  billingOptionSubtext: [
-    staticStyles.billingOptionSubtext,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  loadingText: [
-    staticStyles.loadingText,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  planEyebrow: [
-    staticStyles.planEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  planName: [
-    staticStyles.planName,
-    {
-        fontSize: responsiveLayout.responsiveFont(20),
-    },
-  ],
-  recommendedText: [
-    staticStyles.recommendedText,
-    {
-        fontSize: responsiveLayout.responsiveFont(6),
-    },
-  ],
-  currentText: [
-    staticStyles.currentText,
-    {
-        fontSize: responsiveLayout.responsiveFont(6),
-    },
-  ],
-  price: [
-    staticStyles.price,
-    {
-        fontSize: responsiveLayout.responsiveFont(27),
-    },
-  ],
-  pricePeriod: [
-    staticStyles.pricePeriod,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  savingsLine: [
-    staticStyles.savingsLine,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  planDescription: [
-    staticStyles.planDescription,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  featureText: [
-    staticStyles.featureText,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  subscribeButtonText: [
-    staticStyles.subscribeButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  afterTrialText: [
-    staticStyles.afterTrialText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  checkoutNoticeText: [
-    staticStyles.checkoutNoticeText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  errorText: [
-    staticStyles.errorText,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  successText: [
-    staticStyles.successText,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  continueButtonText: [
-    staticStyles.continueButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  refreshButtonText: [
-    staticStyles.refreshButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  finePrint: [
-    staticStyles.finePrint,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
+    planRequiredIcon: [
+      staticStyles.planRequiredIcon,
+      {
+        height: responsiveHeight(40),
+        width: responsiveWidth(40),
+      },
+    ],
+    eyebrow: [
+      staticStyles.eyebrow,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    title: [
+      staticStyles.title,
+      {
+        fontSize: responsiveFont(28),
+      },
+    ],
+    trialIcon: [
+      staticStyles.trialIcon,
+      {
+        height: responsiveHeight(40),
+        width: responsiveWidth(40),
+      },
+    ],
+    trialTitle: [
+      staticStyles.trialTitle,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    trialBody: [
+      staticStyles.trialBody,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    billingLabel: [
+      staticStyles.billingLabel,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    billingOptionText: [
+      staticStyles.billingOptionText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    billingOptionSubtext: [
+      staticStyles.billingOptionSubtext,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    loadingText: [
+      staticStyles.loadingText,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    planEyebrow: [
+      staticStyles.planEyebrow,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    planName: [
+      staticStyles.planName,
+      {
+        fontSize: responsiveFont(20),
+      },
+    ],
+    recommendedText: [
+      staticStyles.recommendedText,
+      {
+        fontSize: responsiveFont(6),
+      },
+    ],
+    currentText: [
+      staticStyles.currentText,
+      {
+        fontSize: responsiveFont(6),
+      },
+    ],
+    price: [
+      staticStyles.price,
+      {
+        fontSize: responsiveFont(27),
+      },
+    ],
+    pricePeriod: [
+      staticStyles.pricePeriod,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    savingsLine: [
+      staticStyles.savingsLine,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    planDescription: [
+      staticStyles.planDescription,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    featureText: [
+      staticStyles.featureText,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    subscribeButtonText: [
+      staticStyles.subscribeButtonText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    afterTrialText: [
+      staticStyles.afterTrialText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    checkoutNoticeText: [
+      staticStyles.checkoutNoticeText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    errorText: [
+      staticStyles.errorText,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    successText: [
+      staticStyles.successText,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    continueButtonText: [
+      staticStyles.continueButtonText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    refreshButtonText: [
+      staticStyles.refreshButtonText,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    finePrint: [
+      staticStyles.finePrint,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
   };
 }

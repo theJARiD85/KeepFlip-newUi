@@ -3,9 +3,9 @@ import {
   Canvas,
   Circle,
   Line,
-  LinearGradient as SkiaLinearGradient,
   RadialGradient,
   Rect,
+  LinearGradient as SkiaLinearGradient,
   SweepGradient,
   vec,
 } from "@shopify/react-native-skia";
@@ -27,7 +27,6 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Camera,
   DefaultLight,
@@ -41,6 +40,7 @@ import {
   type Float3,
   type RenderCallback,
 } from "react-native-filament";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   useSharedValue,
   type ISharedValue,
@@ -48,7 +48,7 @@ import {
 
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
+import { responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 const KEEPFLIP_ICON_GLB =
@@ -407,7 +407,7 @@ function TargetCore({
         p2={
           vec(
             left +
-              bracketLength,
+            bracketLength,
             top,
           )
         }
@@ -432,7 +432,7 @@ function TargetCore({
           vec(
             left,
             top +
-              bracketLength,
+            bracketLength,
           )
         }
         color={CYAN}
@@ -455,7 +455,7 @@ function TargetCore({
         p2={
           vec(
             right -
-              bracketLength,
+            bracketLength,
             top,
           )
         }
@@ -480,7 +480,7 @@ function TargetCore({
           vec(
             right,
             top +
-              bracketLength,
+            bracketLength,
           )
         }
         color={GOLD}
@@ -503,7 +503,7 @@ function TargetCore({
         p2={
           vec(
             left +
-              bracketLength,
+            bracketLength,
             bottom,
           )
         }
@@ -528,7 +528,7 @@ function TargetCore({
           vec(
             left,
             bottom -
-              bracketLength,
+            bracketLength,
           )
         }
         color={GOLD}
@@ -551,7 +551,7 @@ function TargetCore({
         p2={
           vec(
             right -
-              bracketLength,
+            bracketLength,
             bottom,
           )
         }
@@ -576,7 +576,7 @@ function TargetCore({
           vec(
             right,
             bottom -
-              bracketLength,
+            bracketLength,
           )
         }
         color={CYAN}
@@ -932,7 +932,7 @@ function KeepFlipFilamentModel({
   useEffect(() => {
     if (
       model.state !==
-        "loaded" ||
+      "loaded" ||
       notifiedRef.current
     ) {
       return;
@@ -979,41 +979,41 @@ function FilamentStage({
 
   const renderCallback:
     RenderCallback =
-      useCallback(
-        (
-          frameInfo,
-        ) => {
-          "worklet";
+    useCallback(
+      (
+        frameInfo,
+      ) => {
+        "worklet";
 
-          if (
-            reduceMotion
-          ) {
-            return;
-          }
+        if (
+          reduceMotion
+        ) {
+          return;
+        }
 
-          const frameDelta =
-            Math.min(
-              Math.max(
-                frameInfo.timeSinceLastFrame,
-                0,
-              ),
-              0.05,
-            );
+        const frameDelta =
+          Math.min(
+            Math.max(
+              frameInfo.timeSinceLastFrame,
+              0,
+            ),
+            0.05,
+          );
 
-          // react-native-worklets-core shared values are intentionally mutable.
-          // eslint-disable-next-line react-hooks/immutability
-          rotation.value = [
-            0,
-            frameDelta *
-              MODEL_ROTATION_RADIANS_PER_SECOND,
-            0,
-          ];
-        },
-        [
-          reduceMotion,
-          rotation,
-        ],
-      );
+        // react-native-worklets-core shared values are intentionally mutable.
+        // eslint-disable-next-line react-hooks/immutability
+        rotation.value = [
+          0,
+          frameDelta *
+          MODEL_ROTATION_RADIANS_PER_SECOND,
+          0,
+        ];
+      },
+      [
+        reduceMotion,
+        rotation,
+      ],
+    );
 
   return (
     <FilamentView
@@ -1484,7 +1484,7 @@ export default function KeepFlipIntro({
         {
           opacity:
             containerOpacity,
-            marginBottom: insets.bottom
+          marginBottom: insets.bottom
         },
       ]}
     >
@@ -1624,7 +1624,8 @@ export default function KeepFlipIntro({
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
+  const { responsiveHeight, responsiveWidth, responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
     container: {
       ...StyleSheet.absoluteFill,
 
@@ -1815,55 +1816,55 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     scanBeam: [
       staticStyles.scanBeam,
       {
-          height: responsiveLayout.responsiveHeight(42),
+        height: responsiveHeight(42),
       },
     ],
     statusDot: [
       staticStyles.statusDot,
       {
-          width: responsiveLayout.responsiveWidth(5),
-          height: responsiveLayout.responsiveHeight(5),
+        width: responsiveWidth(5),
+        height: responsiveHeight(5),
       },
     ],
     topReadoutText: [
       staticStyles.topReadoutText,
       {
-          fontSize: responsiveLayout.responsiveFont(9),
+        fontSize: responsiveFont(9),
       },
     ],
     targetStatusText: [
       staticStyles.targetStatusText,
       {
-          fontSize: responsiveLayout.responsiveFont(9),
+        fontSize: responsiveFont(9),
       },
     ],
     brandName: [
       staticStyles.brandName,
       {
-          fontSize: responsiveLayout.responsiveFont(33),
-          textShadowOffset: {
-          width: responsiveLayout.responsiveWidth(0),
-          height: responsiveLayout.responsiveHeight(0),
-          },
+        fontSize: responsiveFont(33),
+        textShadowOffset: {
+          width: responsiveWidth(0),
+          height: responsiveHeight(0),
+        },
       },
     ],
     brandDivider: [
       staticStyles.brandDivider,
       {
-          width: responsiveLayout.responsiveWidth(64),
-          height: responsiveLayout.responsiveHeight(1),
+        width: responsiveWidth(64),
+        height: responsiveHeight(1),
       },
     ],
     brandTagline: [
       staticStyles.brandTagline,
       {
-          fontSize: responsiveLayout.responsiveFont(9),
+        fontSize: responsiveFont(9),
       },
     ],
     loadingLabel: [
       staticStyles.loadingLabel,
       {
-          fontSize: responsiveLayout.responsiveFont(8),
+        fontSize: responsiveFont(8),
       },
     ],
   };

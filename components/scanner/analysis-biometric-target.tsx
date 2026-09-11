@@ -5,7 +5,7 @@ import type { AnalysisCallout } from "@/components/scanner/analysis-visual-types
 import { ValueRadarTargetGraphic } from "@/components/scanner/value-radar-target-graphic";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight } from '@/lib/responsiveFont';
+import { responsiveHeight } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type AnalysisBiometricTargetProps = {
@@ -89,56 +89,57 @@ export function AnalysisBiometricTarget({
 const monoFont = Platform.OS === "ios" ? "Courier New" : "monospace";
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  container: {
-    ...StyleSheet.absoluteFill,
-    alignItems: "center",
-    overflow: "hidden",
-    backgroundColor: "#01040A",
-  },
-  frame: {
-    position: "absolute",
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: theme.colors.scannerCyan,
-    backgroundColor: "#05070A",
-  },
-  image: { filter: "grayscale(1) contrast(1.24)" },
-  wash: { ...StyleSheet.absoluteFill, backgroundColor: "rgba(4, 12, 20, 0.25)" },
-  callout: {
-    position: "absolute",
-    right: 10,
-    maxWidth: "55%",
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderLeftWidth: 2,
-    borderLeftColor: theme.colors.goldBright,
-    backgroundColor: "rgba(0, 4, 11, 0.8)",
-  },
-  calloutLabel: { color: theme.colors.goldBright, fontFamily: monoFont, fontSize: 6, fontWeight: "900", letterSpacing: 1 },
-  calloutValue: { color: "#FFFFFF", fontFamily: monoFont, fontSize: 9, fontWeight: "900" },
-  progressTrack: { position: "absolute", right: 10, bottom: 9, left: 10, height: 3, backgroundColor: "rgba(0, 255, 255, 0.12)" },
-  progressFill: { height: "100%", backgroundColor: theme.colors.goldBright },
-});
+  const { responsiveFont, responsiveHeight } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    container: {
+      ...StyleSheet.absoluteFill,
+      alignItems: "center",
+      overflow: "hidden",
+      backgroundColor: "#01040A",
+    },
+    frame: {
+      position: "absolute",
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: theme.colors.scannerCyan,
+      backgroundColor: "#05070A",
+    },
+    image: { filter: "grayscale(1) contrast(1.24)" },
+    wash: { ...StyleSheet.absoluteFill, backgroundColor: "rgba(4, 12, 20, 0.25)" },
+    callout: {
+      position: "absolute",
+      right: 10,
+      maxWidth: "55%",
+      paddingHorizontal: 8,
+      paddingVertical: 5,
+      borderLeftWidth: 2,
+      borderLeftColor: theme.colors.goldBright,
+      backgroundColor: "rgba(0, 4, 11, 0.8)",
+    },
+    calloutLabel: { color: theme.colors.goldBright, fontFamily: monoFont, fontSize: 6, fontWeight: "900", letterSpacing: 1 },
+    calloutValue: { color: "#FFFFFF", fontFamily: monoFont, fontSize: 9, fontWeight: "900" },
+    progressTrack: { position: "absolute", right: 10, bottom: 9, left: 10, height: 3, backgroundColor: "rgba(0, 255, 255, 0.12)" },
+    progressFill: { height: "100%", backgroundColor: theme.colors.goldBright },
+  });
   return {
     ...staticStyles,
-  calloutLabel: [
-    staticStyles.calloutLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(6),
-    },
-  ],
-  calloutValue: [
-    staticStyles.calloutValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  progressTrack: [
-    staticStyles.progressTrack,
-    {
-        height: responsiveLayout.responsiveHeight(3),
-    },
-  ],
+    calloutLabel: [
+      staticStyles.calloutLabel,
+      {
+        fontSize: responsiveFont(6),
+      },
+    ],
+    calloutValue: [
+      staticStyles.calloutValue,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    progressTrack: [
+      staticStyles.progressTrack,
+      {
+        height: responsiveHeight(3),
+      },
+    ],
   };
 }

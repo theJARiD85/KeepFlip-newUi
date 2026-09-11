@@ -1,16 +1,16 @@
-import { Image, type ImageSource } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
-import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
 import { AdvancedHoloOverlay } from '@/components/scanner/advanced-holo-overlay';
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont, { responsiveWidth } from '@/lib/responsiveFont';
+import { withAlpha } from '@/lib/withAlpha';
 import { resolveInventoryCoverImageUri } from "@/services/inventory-cover-image";
 import type { InventoryItem } from "@/services/inventory-service";
-import { withAlpha } from '@/lib/withAlpha';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
+import { Image, type ImageSource } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import { useEffect, useState } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type CoverImageSource = ImageSource | number | string;
@@ -148,140 +148,140 @@ export function InventoryCard({
           pressed && styles.cardPressed,
         ]}
       >
-      <View style={styles.hero}>
-        <AdvancedHoloOverlay width={500} height={240} />
-        {resolvedSource && !imageUnavailable ? (
-          
-          <Image
-            accessibilityLabel={`${item.title} cover photo`}
-            contentFit="cover"
-            onError={() =>
-              setCoverState((current) =>
-                current.key === coverKey
-                  ? { ...current, unavailable: true }
-                  : current,
-              )
-            }
-            source={resolvedSource}
-            style={styles.coverImage}
-            transition={180}
-          />
-        ) : (
-          <View style={styles.coverFallback}>
-            <IconSymbol
-              color={theme.colors.goldBright}
-              name="photo.on.rectangle.angled"
-              size={36}
-            />
-            <Text style={[styles.fallbackLabel, { fontSize: responsiveFont(8) }]}>
-              {item.coverPhotoId ? "LOADING COVER" : "NO COVER PHOTO"}
-            </Text>
-            </View>
-        )}
-        <LinearGradient
-          colors={[
-            "rgba(1, 1, 2, 0.04)",
-            "rgba(1, 1, 2, 0.14)",
-            "rgba(1, 1, 2, 0.94)",
-          ]}
-          locations={[0, 0.42, 1]}
-          pointerEvents="none"
-          style={styles.heroShade}
-        />
+        <View style={styles.hero}>
+          <AdvancedHoloOverlay width={500} height={240} />
+          {resolvedSource && !imageUnavailable ? (
 
-        <View pointerEvents="none" style={styles.heroTopRail}>
-          <View style={styles.conditionPill}>
-            <Text numberOfLines={1} style={[styles.conditionText, { fontSize: responsiveFont(8) }]}>
-              {item.condition}
+            <Image
+              accessibilityLabel={`${item.title} cover photo`}
+              contentFit="cover"
+              onError={() =>
+                setCoverState((current) =>
+                  current.key === coverKey
+                    ? { ...current, unavailable: true }
+                    : current,
+                )
+              }
+              source={resolvedSource}
+              style={styles.coverImage}
+              transition={180}
+            />
+          ) : (
+            <View style={styles.coverFallback}>
+              <IconSymbol
+                color={theme.colors.goldBright}
+                name="photo.on.rectangle.angled"
+                size={36}
+              />
+              <Text style={[styles.fallbackLabel, { fontSize: responsiveFont(8) }]}>
+                {item.coverPhotoId ? "LOADING COVER" : "NO COVER PHOTO"}
+              </Text>
+            </View>
+          )}
+          <LinearGradient
+            colors={[
+              "rgba(1, 1, 2, 0.04)",
+              "rgba(1, 1, 2, 0.14)",
+              "rgba(1, 1, 2, 0.94)",
+            ]}
+            locations={[0, 0.42, 1]}
+            pointerEvents="none"
+            style={styles.heroShade}
+          />
+
+          <View pointerEvents="none" style={styles.heroTopRail}>
+            <View style={styles.conditionPill}>
+              <Text numberOfLines={1} style={[styles.conditionText, { fontSize: responsiveFont(8) }]}>
+                {item.condition}
+              </Text>
+              {flipDecision && flipDecision !== "UNKNOWN" ? (
+                <Text numberOfLines={1} style={[styles.flipDecisionText, { fontSize: responsiveFont(7) }]}>
+                  {flipDecision}{resaleVelocity ? ` / ${resaleVelocity}` : ""}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+
+          <View pointerEvents="none" style={styles.heroCopy}>
+            <Text numberOfLines={2} selectable style={[styles.title, { fontSize: responsiveFont(21), lineHeight: 25 }]}>
+              {item.title}
             </Text>
-            {flipDecision && flipDecision !== "UNKNOWN" ? (
-              <Text numberOfLines={1} style={[styles.flipDecisionText, { fontSize: responsiveFont(7) }]}>
-                {flipDecision}{resaleVelocity ? ` / ${resaleVelocity}` : ""}
+            {meta ? (
+              <Text numberOfLines={2} selectable style={styles.meta}>
+                {meta}
               </Text>
             ) : null}
           </View>
+          <View style={styles.savedAt}>
+            <Text style={[styles.savedAtLabel, { fontSize: responsiveFont(7) }]}>SAVED</Text>
+            <Text style={[styles.savedAtValue, { fontSize: responsiveFont(8) }]}>{formatDate(item.createdAt)}</Text>
+          </View>
         </View>
 
-        <View pointerEvents="none" style={styles.heroCopy}>
-          <Text numberOfLines={2} selectable style={[styles.title, { fontSize: responsiveFont(21), lineHeight: 25 }]}>
-            {item.title}
-          </Text>
-          {meta ? (
-            <Text numberOfLines={2} selectable style={styles.meta}>
-              {meta}
-            </Text>
-          ) : null}
-        </View>
-        <View style={styles.savedAt}>
-          <Text style={[styles.savedAtLabel, { fontSize: responsiveFont(7) }]}>SAVED</Text>
-          <Text style={[styles.savedAtValue, { fontSize: responsiveFont(8) }]}>{formatDate(item.createdAt)}</Text>
-        </View>
-      </View>
-
-      <View
-        style={[
-          styles.valuationDivider,
-          !hasValuation && styles.valuationDividerPending,
-        ]}
-      >
-        <LinearGradient
-          colors={[
-            withAlpha(theme.colors.scannerViolet,1),
-            withAlpha(theme.colors.goldBright,1),
-            withAlpha(theme.colors.scannerCyan,1),
+        <View
+          style={[
+            styles.valuationDivider,
+            !hasValuation && styles.valuationDividerPending,
           ]}
-          end={{ x: 1, y: 0.5 }}
-          locations={[0, 0.5, 1]}
-          start={{ x: 0, y: 0.5 }}
-          style={StyleSheet.absoluteFill}
-        />
-        <View style={styles.dividerMedianMarker} />
-      </View>
-
-      <View style={styles.valuationSummary}>
-
-        <View style={styles.medianBlock}>
-          <Text style={[styles.medianLabel, { fontSize: responsiveFont(8) }]}>
-            {hasValuation ? "MARKET MEDIAN" : "MARKET VALUE"}
-          </Text>
-          <Text selectable style={[styles.medianValue, { fontSize: responsiveFont(27), lineHeight: 31 }]}>
-            {formatMoney(item.estimatedValue, item.currency)}
-          </Text>
-        </View>
-
-        <View style={styles.confidenceBlock}>
-          <Text style={[styles.confidenceValue, { fontSize: responsiveFont(16) }]}>
-            {item.aiConfidence == null ? "—" : `${item.aiConfidence}%`}
-          </Text>
-          <Text style={[styles.confidenceLabel, { fontSize: responsiveFont(7) }]}>CONFIDENCE</Text>
-        </View>
-      </View>
-      <View style={styles.recordStrip}>
-        <View style={styles.recordMetric}>
-          <Text style={[styles.recordLabel, { fontSize: responsiveFont(7) }]}>COGS / ACTUAL PAID</Text>
-          <Text numberOfLines={1} style={[styles.recordValue, { fontSize: responsiveFont(11) }]}>
-            {formatCost(costBasis, item.currency)}
-          </Text>
-        </View>
-        <View style={styles.recordMetric}>
-          <Text style={[styles.recordLabel, { fontSize: responsiveFont(7) }]}>ON HAND</Text>
-          <Text numberOfLines={1} style={[styles.recordValue, { fontSize: responsiveFont(11) }]}>
-            {item.quantityOnHand.toLocaleString()}
-          </Text>
-        </View>
-        <View style={styles.recordMetricStorage}>
-          <Text style={[styles.recordLabel, { fontSize: responsiveFont(7) }]}>STORAGE</Text>
-          <Text
-            numberOfLines={1}
-            style={[
-              styles.recordValue,
-              !item.storageLocation && styles.recordValueMuted,
+        >
+          <LinearGradient
+            colors={[
+              withAlpha(theme.colors.scannerViolet, 1),
+              withAlpha(theme.colors.goldBright, 1),
+              withAlpha(theme.colors.scannerCyan, 1),
             ]}
-          >
-            {item.storageLocation ?? "NOT SET"}
-          </Text>
+            end={{ x: 1, y: 0.5 }}
+            locations={[0, 0.5, 1]}
+            start={{ x: 0, y: 0.5 }}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={styles.dividerMedianMarker} />
         </View>
-      </View>
+
+        <View style={styles.valuationSummary}>
+
+          <View style={styles.medianBlock}>
+            <Text style={[styles.medianLabel, { fontSize: responsiveFont(8) }]}>
+              {hasValuation ? "MARKET MEDIAN" : "MARKET VALUE"}
+            </Text>
+            <Text selectable style={[styles.medianValue, { fontSize: responsiveFont(27), lineHeight: 31 }]}>
+              {formatMoney(item.estimatedValue, item.currency)}
+            </Text>
+          </View>
+
+          <View style={styles.confidenceBlock}>
+            <Text style={[styles.confidenceValue, { fontSize: responsiveFont(16) }]}>
+              {item.aiConfidence == null ? "—" : `${item.aiConfidence}%`}
+            </Text>
+            <Text style={[styles.confidenceLabel, { fontSize: responsiveFont(7) }]}>CONFIDENCE</Text>
+          </View>
+        </View>
+        <View style={styles.recordStrip}>
+          <View style={styles.recordMetric}>
+            <Text style={[styles.recordLabel, { fontSize: responsiveFont(7) }]}>COGS / ACTUAL PAID</Text>
+            <Text numberOfLines={1} style={[styles.recordValue, { fontSize: responsiveFont(11) }]}>
+              {formatCost(costBasis, item.currency)}
+            </Text>
+          </View>
+          <View style={styles.recordMetric}>
+            <Text style={[styles.recordLabel, { fontSize: responsiveFont(7) }]}>ON HAND</Text>
+            <Text numberOfLines={1} style={[styles.recordValue, { fontSize: responsiveFont(11) }]}>
+              {item.quantityOnHand.toLocaleString()}
+            </Text>
+          </View>
+          <View style={styles.recordMetricStorage}>
+            <Text style={[styles.recordLabel, { fontSize: responsiveFont(7) }]}>STORAGE</Text>
+            <Text
+              numberOfLines={1}
+              style={[
+                styles.recordValue,
+                !item.storageLocation && styles.recordValueMuted,
+              ]}
+            >
+              {item.storageLocation ?? "NOT SET"}
+            </Text>
+          </View>
+        </View>
       </Pressable>
 
       {onListingGuidePress ? (
@@ -360,450 +360,451 @@ export function InventoryCard({
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  card: {
-    overflow: "hidden",
-    borderRadius: theme.radii.large,
-    borderCurve: "continuous",
-    borderWidth: 1,
-    borderColor: "rgba(215, 168, 74, 0.32)",
-    backgroundColor: "rgba(5, 5, 8, 0.98)",
-    boxShadow:
-      "0 18px 42px rgba(0, 0, 0, 0.46), 0 0 28px rgba(215, 168, 74, 0.08)",
-  },
-  cardPressTarget: {
-    backgroundColor: "rgba(5, 5, 8, 0.98)",
-  },
-  cardPressed: {
-    opacity: 0.86,
-    transform: [{ scale: 0.985 }],
-  },
-  hero: {
-    height: 240,
-    justifyContent: "space-between",
-    backgroundColor: "#08070C",
-  },
-  coverImage: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-  },
-  coverFallback: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: "#08070C",
-    experimental_backgroundImage:
-      "radial-gradient(circle at 50% 26%, rgba(141, 114, 255, 0.28) 0%, transparent 34%), radial-gradient(circle at 74% 72%, rgba(88, 223, 232, 0.16) 0%, transparent 38%), linear-gradient(145deg, #100B18 0%, #030305 76%)",
-  },
-  fallbackLabel: {
-    color: "rgba(242, 211, 138, 0.72)",
-    fontFamily: theme.fonts.radar,
-    fontSize: responsiveFont(8),
-    fontWeight: "900",
-    letterSpacing: 1.1,
-  },
-  heroShade: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-  },
-  heroTopRail: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-    padding: 14,
-  },
-  photoPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: theme.radii.pill,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(88, 223, 232, 0.42)",
-    backgroundColor: "rgba(0, 8, 13, 0.70)",
-  },
-  photoPillText: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: responsiveFont(8),
-    fontWeight: "900",
-    letterSpacing: 0.75,
-  },
-  conditionPill: {
-    maxWidth: "58%",
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    borderRadius: theme.radii.pill,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(242, 211, 138, 0.36)",
-    backgroundColor: "rgba(7, 5, 10, 0.72)",
-  },
-  conditionText: {
-    color: theme.colors.goldBright,
-    fontFamily: theme.fonts.radar,
-    fontSize: responsiveFont(8),
-    fontWeight: "900",
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-  },
-  flipDecisionText: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: responsiveFont(7),
-    fontWeight: "900",
-    letterSpacing: 0.7,
-    marginTop: 3,
-    textTransform: "uppercase",
-  },
-  heroCopy: {
-    gap: 5,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  title: {
-    color: "#FFFFFF",
-    fontFamily: theme.fonts.bold,
-    fontSize: responsiveFont(21),
-    lineHeight: 25,
-    fontWeight: "900",
-    letterSpacing: -0.3,
-    textShadowColor: "rgba(0, 0, 0, 0.96)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 7,
-  },
-  meta: {
-    color: "rgba(235, 241, 244, 0.78)",
-    fontFamily: theme.fonts.radar,
-    fontSize: responsiveFont(9),
-    lineHeight: 13,
-    fontWeight: "800",
-    letterSpacing: 0.4,
-    textShadowColor: "rgba(0, 0, 0, 0.98)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
-  },
-  valuationDivider: {
-    height: 7,
-    overflow: "visible",
-    backgroundColor: theme.colors.goldBright,
-    boxShadow:
-      "0 0 12px rgba(141, 114, 255, 0.46), 0 0 18px rgba(242, 211, 138, 0.56), 0 0 12px rgba(88, 223, 232, 0.42)",
-  },
-  valuationDividerPending: {
-    opacity: 0.36,
-  },
-  dividerMedianMarker: {
-    position: "absolute",
-    top: -3,
-    left: "50%",
-    width: 2,
-    height: 13,
-    marginLeft: -1,
-    backgroundColor: "#FFFFFF",
-    boxShadow: "0 0 8px rgba(255, 255, 255, 0.96)",
-  },
-  valuationSummary: {
-    position: "relative",
-    minHeight: 70,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 7,
-    backgroundColor: "rgba(5, 5, 8, 0.98)",
-    experimental_backgroundImage:
-      "radial-gradient(circle at 50% 0%, rgba(242, 211, 138, 0.13) 0%, transparent 48%), linear-gradient(90deg, rgba(141, 114, 255, 0.08) 0%, rgba(5, 5, 8, 0) 28%, rgba(5, 5, 8, 0) 72%, rgba(88, 223, 232, 0.08) 100%)",
-  },
-  savedAt: {
-    position: "absolute",
-    bottom: 18,
-    left: 16,
-    gap: 3,
-  },
-  savedAtLabel: {
-    color: "rgba(255, 255, 255, 0.38)",
-    fontFamily: theme.fonts.radar,
-    fontSize: responsiveFont(7),
-    fontWeight: "900",
-    letterSpacing: 0.8,
-  },
-  savedAtValue: {
-    color: "rgba(255, 255, 255, 0.66)",
-    fontFamily: theme.fonts.radar,
-    fontSize: responsiveFont(8),
-    fontWeight: "900",
-    letterSpacing: 0.5,
-  },
-  medianBlock: {
-    alignItems: "center",
-    gap: 3,
-  },
-  medianLabel: {
-    color: "rgba(242, 211, 138, 0.70)",
-    fontFamily: theme.fonts.radar,
-    fontSize: responsiveFont(8),
-    fontWeight: "900",
-    letterSpacing: 1.1,
-  },
-  medianValue: {
-    color: theme.colors.goldBright,
-    fontFamily: theme.fonts.radar,
-    fontSize: responsiveFont(27),
-    lineHeight: 31,
-    fontWeight: "900",
-    fontVariant: ["tabular-nums"],
-    textShadowColor: "rgba(242, 211, 138, 0.52)",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 9,
-  },
-  confidenceBlock: {
-    position: "absolute",
-    right: 16,
-    bottom: 17,
-    alignItems: "flex-end",
-    gap: 3,
-  },
-  confidenceValue: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: responsiveFont(16),
-    fontWeight: "900",
-    fontVariant: ["tabular-nums"],
-    textShadowColor: "rgba(88, 223, 232, 0.58)",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 7,
-  },
-  confidenceLabel: {
-    color: "rgba(88, 223, 232, 0.60)",
-    fontFamily: theme.fonts.radar,
-    fontSize: responsiveFont(7),
-    fontWeight: "900",
-    letterSpacing: 0.65,
-  },
-  recordStrip: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 11,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(88, 223, 232, 0.20)",
-    backgroundColor: "rgba(0, 255, 255, 0.035)",
-  },
-  recordMetric: {
-    flex: 0.78,
-    minWidth: '25%',
-    gap: 3,
-  },
-  recordMetricStorage: {
-    flex: 1.2,
-    minWidth: 0,
-    gap: 3,
-  },
-  recordLabel: {
-    color: "rgba(88, 223, 232, 0.62)",
-    fontFamily: theme.fonts.radar,
-    fontSize: 7,
-    fontWeight: "900",
-    letterSpacing: 0.65,
-  },
-  recordValue: {
-    color: theme.colors.cream,
-    fontFamily: theme.fonts.radar,
-    fontSize: responsiveFont(11),
-    fontWeight: "900",
-    fontVariant: ["tabular-nums"],
-  },
-  recordValueMuted: {
-    color: "rgba(255, 255, 255, 0.38)",
-  },
-  listingGuideButton: {
-    position: "relative",
-    minHeight: 53,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 11,
-    paddingHorizontal: 15,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(0, 255, 255, 0.28)",
-    backgroundColor: "rgba(4, 8, 12, 0.96)",
-  },
-  listingGuideButtonPressed: {
-    opacity: 0.76,
-  },
-  photoManagerButton: {
-    borderTopColor: "rgba(88, 223, 232, 0.22)",
-    backgroundColor: "rgba(7, 12, 18, 0.96)",
-  },
-  listingGuideButtonIcon: {
-    width: 34,
-    height: 34,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: theme.radii.small,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(0, 255, 255, 0.42)",
-    backgroundColor: "rgba(0, 255, 255, 0.08)",
-    boxShadow: "0 0 16px rgba(0, 255, 255, 0.16)",
-  },
-  listingGuideButtonCopy: {
-    flex: 1,
-    gap: 2,
-  },
-  listingGuideButtonEyebrow: {
-    color: "rgba(0, 255, 255, 0.66)",
-    fontFamily: theme.fonts.radar,
-    fontSize: responsiveFont(7),
-    fontWeight: "900",
-    letterSpacing: 0.75,
-  },
-  listingGuideButtonLabel: {
-    color: theme.colors.cream,
-    fontFamily: theme.fonts.bold,
-    fontSize: responsiveFont(15),
-    fontWeight: "900",
-    letterSpacing: -0.12,
-  },
-});
+  const { responsiveFont, responsiveHeight, responsiveWidth } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    card: {
+      overflow: "hidden",
+      borderRadius: theme.radii.large,
+      borderCurve: "continuous",
+      borderWidth: 1,
+      borderColor: "rgba(215, 168, 74, 0.32)",
+      backgroundColor: "rgba(5, 5, 8, 0.98)",
+      boxShadow:
+        "0 18px 42px rgba(0, 0, 0, 0.46), 0 0 28px rgba(215, 168, 74, 0.08)",
+    },
+    cardPressTarget: {
+      backgroundColor: "rgba(5, 5, 8, 0.98)",
+    },
+    cardPressed: {
+      opacity: 0.86,
+      transform: [{ scale: 0.985 }],
+    },
+    hero: {
+      height: 240,
+      justifyContent: "space-between",
+      backgroundColor: "#08070C",
+    },
+    coverImage: {
+      position: "absolute",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+    },
+    coverFallback: {
+      position: "absolute",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      backgroundColor: "#08070C",
+      experimental_backgroundImage:
+        "radial-gradient(circle at 50% 26%, rgba(141, 114, 255, 0.28) 0%, transparent 34%), radial-gradient(circle at 74% 72%, rgba(88, 223, 232, 0.16) 0%, transparent 38%), linear-gradient(145deg, #100B18 0%, #030305 76%)",
+    },
+    fallbackLabel: {
+      color: "rgba(242, 211, 138, 0.72)",
+      fontFamily: theme.fonts.radar,
+      fontSize: responsiveFont(8),
+      fontWeight: "900",
+      letterSpacing: 1.1,
+    },
+    heroShade: {
+      position: "absolute",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+    },
+    heroTopRail: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 10,
+      padding: 14,
+    },
+    photoPill: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+      borderRadius: theme.radii.pill,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: "rgba(88, 223, 232, 0.42)",
+      backgroundColor: "rgba(0, 8, 13, 0.70)",
+    },
+    photoPillText: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: responsiveFont(8),
+      fontWeight: "900",
+      letterSpacing: 0.75,
+    },
+    conditionPill: {
+      maxWidth: "58%",
+      paddingHorizontal: 9,
+      paddingVertical: 6,
+      borderRadius: theme.radii.pill,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: "rgba(242, 211, 138, 0.36)",
+      backgroundColor: "rgba(7, 5, 10, 0.72)",
+    },
+    conditionText: {
+      color: theme.colors.goldBright,
+      fontFamily: theme.fonts.radar,
+      fontSize: responsiveFont(8),
+      fontWeight: "900",
+      letterSpacing: 0.8,
+      textTransform: "uppercase",
+    },
+    flipDecisionText: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: responsiveFont(7),
+      fontWeight: "900",
+      letterSpacing: 0.7,
+      marginTop: 3,
+      textTransform: "uppercase",
+    },
+    heroCopy: {
+      gap: 5,
+      paddingHorizontal: 16,
+      paddingBottom: 16,
+    },
+    title: {
+      color: "#FFFFFF",
+      fontFamily: theme.fonts.bold,
+      fontSize: responsiveFont(21),
+      lineHeight: 25,
+      fontWeight: "900",
+      letterSpacing: -0.3,
+      textShadowColor: "rgba(0, 0, 0, 0.96)",
+      textShadowOffset: { width: 0, height: 2 },
+      textShadowRadius: 7,
+    },
+    meta: {
+      color: "rgba(235, 241, 244, 0.78)",
+      fontFamily: theme.fonts.radar,
+      fontSize: responsiveFont(9),
+      lineHeight: 13,
+      fontWeight: "800",
+      letterSpacing: 0.4,
+      textShadowColor: "rgba(0, 0, 0, 0.98)",
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 4,
+    },
+    valuationDivider: {
+      height: 7,
+      overflow: "visible",
+      backgroundColor: theme.colors.goldBright,
+      boxShadow:
+        "0 0 12px rgba(141, 114, 255, 0.46), 0 0 18px rgba(242, 211, 138, 0.56), 0 0 12px rgba(88, 223, 232, 0.42)",
+    },
+    valuationDividerPending: {
+      opacity: 0.36,
+    },
+    dividerMedianMarker: {
+      position: "absolute",
+      top: -3,
+      left: "50%",
+      width: 2,
+      height: 13,
+      marginLeft: -1,
+      backgroundColor: "#FFFFFF",
+      boxShadow: "0 0 8px rgba(255, 255, 255, 0.96)",
+    },
+    valuationSummary: {
+      position: "relative",
+      minHeight: 70,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 16,
+      paddingVertical: 7,
+      backgroundColor: "rgba(5, 5, 8, 0.98)",
+      experimental_backgroundImage:
+        "radial-gradient(circle at 50% 0%, rgba(242, 211, 138, 0.13) 0%, transparent 48%), linear-gradient(90deg, rgba(141, 114, 255, 0.08) 0%, rgba(5, 5, 8, 0) 28%, rgba(5, 5, 8, 0) 72%, rgba(88, 223, 232, 0.08) 100%)",
+    },
+    savedAt: {
+      position: "absolute",
+      bottom: 18,
+      left: 16,
+      gap: 3,
+    },
+    savedAtLabel: {
+      color: "rgba(255, 255, 255, 0.38)",
+      fontFamily: theme.fonts.radar,
+      fontSize: responsiveFont(7),
+      fontWeight: "900",
+      letterSpacing: 0.8,
+    },
+    savedAtValue: {
+      color: "rgba(255, 255, 255, 0.66)",
+      fontFamily: theme.fonts.radar,
+      fontSize: responsiveFont(8),
+      fontWeight: "900",
+      letterSpacing: 0.5,
+    },
+    medianBlock: {
+      alignItems: "center",
+      gap: 3,
+    },
+    medianLabel: {
+      color: "rgba(242, 211, 138, 0.70)",
+      fontFamily: theme.fonts.radar,
+      fontSize: responsiveFont(8),
+      fontWeight: "900",
+      letterSpacing: 1.1,
+    },
+    medianValue: {
+      color: theme.colors.goldBright,
+      fontFamily: theme.fonts.radar,
+      fontSize: responsiveFont(27),
+      lineHeight: 31,
+      fontWeight: "900",
+      fontVariant: ["tabular-nums"],
+      textShadowColor: "rgba(242, 211, 138, 0.52)",
+      textShadowOffset: { width: 0, height: 0 },
+      textShadowRadius: 9,
+    },
+    confidenceBlock: {
+      position: "absolute",
+      right: 16,
+      bottom: 17,
+      alignItems: "flex-end",
+      gap: 3,
+    },
+    confidenceValue: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: responsiveFont(16),
+      fontWeight: "900",
+      fontVariant: ["tabular-nums"],
+      textShadowColor: "rgba(88, 223, 232, 0.58)",
+      textShadowOffset: { width: 0, height: 0 },
+      textShadowRadius: 7,
+    },
+    confidenceLabel: {
+      color: "rgba(88, 223, 232, 0.60)",
+      fontFamily: theme.fonts.radar,
+      fontSize: responsiveFont(7),
+      fontWeight: "900",
+      letterSpacing: 0.65,
+    },
+    recordStrip: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 12,
+      paddingHorizontal: 16,
+      paddingVertical: 11,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: "rgba(88, 223, 232, 0.20)",
+      backgroundColor: "rgba(0, 255, 255, 0.035)",
+    },
+    recordMetric: {
+      flex: 0.78,
+      minWidth: '25%',
+      gap: 3,
+    },
+    recordMetricStorage: {
+      flex: 1.2,
+      minWidth: 0,
+      gap: 3,
+    },
+    recordLabel: {
+      color: "rgba(88, 223, 232, 0.62)",
+      fontFamily: theme.fonts.radar,
+      fontSize: 7,
+      fontWeight: "900",
+      letterSpacing: 0.65,
+    },
+    recordValue: {
+      color: theme.colors.cream,
+      fontFamily: theme.fonts.radar,
+      fontSize: responsiveFont(11),
+      fontWeight: "900",
+      fontVariant: ["tabular-nums"],
+    },
+    recordValueMuted: {
+      color: "rgba(255, 255, 255, 0.38)",
+    },
+    listingGuideButton: {
+      position: "relative",
+      minHeight: 53,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 11,
+      paddingHorizontal: 15,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: "rgba(0, 255, 255, 0.28)",
+      backgroundColor: "rgba(4, 8, 12, 0.96)",
+    },
+    listingGuideButtonPressed: {
+      opacity: 0.76,
+    },
+    photoManagerButton: {
+      borderTopColor: "rgba(88, 223, 232, 0.22)",
+      backgroundColor: "rgba(7, 12, 18, 0.96)",
+    },
+    listingGuideButtonIcon: {
+      width: 34,
+      height: 34,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: theme.radii.small,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: "rgba(0, 255, 255, 0.42)",
+      backgroundColor: "rgba(0, 255, 255, 0.08)",
+      boxShadow: "0 0 16px rgba(0, 255, 255, 0.16)",
+    },
+    listingGuideButtonCopy: {
+      flex: 1,
+      gap: 2,
+    },
+    listingGuideButtonEyebrow: {
+      color: "rgba(0, 255, 255, 0.66)",
+      fontFamily: theme.fonts.radar,
+      fontSize: responsiveFont(7),
+      fontWeight: "900",
+      letterSpacing: 0.75,
+    },
+    listingGuideButtonLabel: {
+      color: theme.colors.cream,
+      fontFamily: theme.fonts.bold,
+      fontSize: responsiveFont(15),
+      fontWeight: "900",
+      letterSpacing: -0.12,
+    },
+  });
   return {
     ...staticStyles,
-  hero: [
-    staticStyles.hero,
-    {
-        height: responsiveLayout.responsiveHeight(240),
-    },
-  ],
-  fallbackLabel: [
-    staticStyles.fallbackLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  photoPillText: [
-    staticStyles.photoPillText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  conditionText: [
-    staticStyles.conditionText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  flipDecisionText: [
-    staticStyles.flipDecisionText,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  title: [
-    staticStyles.title,
-    {
-        fontSize: responsiveLayout.responsiveFont(21),
-        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(2) },
-    },
-  ],
-  meta: [
-    staticStyles.meta,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(1) },
-    },
-  ],
-  valuationDivider: [
-    staticStyles.valuationDivider,
-    {
-        height: responsiveLayout.responsiveHeight(7),
-    },
-  ],
-  dividerMedianMarker: [
-    staticStyles.dividerMedianMarker,
-    {
-        width: responsiveLayout.responsiveWidth(2),
-        height: responsiveLayout.responsiveHeight(13),
-    },
-  ],
-  savedAtLabel: [
-    staticStyles.savedAtLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  savedAtValue: [
-    staticStyles.savedAtValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  medianLabel: [
-    staticStyles.medianLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  medianValue: [
-    staticStyles.medianValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(27),
-        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(0) },
-    },
-  ],
-  confidenceValue: [
-    staticStyles.confidenceValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(16),
-        textShadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(0) },
-    },
-  ],
-  confidenceLabel: [
-    staticStyles.confidenceLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  recordLabel: [
-    staticStyles.recordLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  recordValue: [
-    staticStyles.recordValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  listingGuideButtonIcon: [
-    staticStyles.listingGuideButtonIcon,
-    {
-        width: responsiveLayout.responsiveWidth(34),
-        height: responsiveLayout.responsiveHeight(34),
-    },
-  ],
-  listingGuideButtonEyebrow: [
-    staticStyles.listingGuideButtonEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  listingGuideButtonLabel: [
-    staticStyles.listingGuideButtonLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
+    hero: [
+      staticStyles.hero,
+      {
+        height: responsiveHeight(240),
+      },
+    ],
+    fallbackLabel: [
+      staticStyles.fallbackLabel,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    photoPillText: [
+      staticStyles.photoPillText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    conditionText: [
+      staticStyles.conditionText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    flipDecisionText: [
+      staticStyles.flipDecisionText,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    title: [
+      staticStyles.title,
+      {
+        fontSize: responsiveFont(21),
+        textShadowOffset: { width: responsiveWidth(0), height: responsiveHeight(2) },
+      },
+    ],
+    meta: [
+      staticStyles.meta,
+      {
+        fontSize: responsiveFont(9),
+        textShadowOffset: { width: responsiveWidth(0), height: responsiveHeight(1) },
+      },
+    ],
+    valuationDivider: [
+      staticStyles.valuationDivider,
+      {
+        height: responsiveHeight(7),
+      },
+    ],
+    dividerMedianMarker: [
+      staticStyles.dividerMedianMarker,
+      {
+        width: responsiveWidth(2),
+        height: responsiveHeight(13),
+      },
+    ],
+    savedAtLabel: [
+      staticStyles.savedAtLabel,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    savedAtValue: [
+      staticStyles.savedAtValue,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    medianLabel: [
+      staticStyles.medianLabel,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    medianValue: [
+      staticStyles.medianValue,
+      {
+        fontSize: responsiveFont(27),
+        textShadowOffset: { width: responsiveWidth(0), height: responsiveHeight(0) },
+      },
+    ],
+    confidenceValue: [
+      staticStyles.confidenceValue,
+      {
+        fontSize: responsiveFont(16),
+        textShadowOffset: { width: responsiveWidth(0), height: responsiveHeight(0) },
+      },
+    ],
+    confidenceLabel: [
+      staticStyles.confidenceLabel,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    recordLabel: [
+      staticStyles.recordLabel,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    recordValue: [
+      staticStyles.recordValue,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    listingGuideButtonIcon: [
+      staticStyles.listingGuideButtonIcon,
+      {
+        width: responsiveWidth(34),
+        height: responsiveHeight(34),
+      },
+    ],
+    listingGuideButtonEyebrow: [
+      staticStyles.listingGuideButtonEyebrow,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    listingGuideButtonLabel: [
+      staticStyles.listingGuideButtonLabel,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
   };
 }

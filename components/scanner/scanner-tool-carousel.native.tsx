@@ -39,11 +39,11 @@ type ScannerTool = {
   accent: string;
   glow: string;
   icon:
-    | "viewfinder"
-    | "barcode.viewfinder"
-    | "rectangle.stack.fill"
-    | "square.grid.2x2.fill"
-    | "photo.on.rectangle.angled";
+  | "viewfinder"
+  | "barcode.viewfinder"
+  | "rectangle.stack.fill"
+  | "square.grid.2x2.fill"
+  | "photo.on.rectangle.angled";
   id: ScannerToolId;
   label: string;
   surface: string;
@@ -295,7 +295,7 @@ function ToolControl({
             onSelect();
             return;
           }
-        
+
           onActivate();
         }}
         style={({ pressed }) => [
@@ -320,8 +320,8 @@ function ToolControl({
               width: controlCoreSize,
               height: controlCoreSize,
             },
-             iconOpacityStyle,
-              orbitalStyle,
+            iconOpacityStyle,
+            orbitalStyle,
           ]}
         >
           <View
@@ -427,8 +427,8 @@ export function ScannerToolCarousel({
   const baseAnchorY = Math.max(
     0,
     scannerCarouselHeight -
-      scannerControlSize -
-      bottomInset,
+    scannerControlSize -
+    bottomInset,
   );
 
   const anchorY = Math.max(
@@ -582,7 +582,7 @@ export function ScannerToolCarousel({
             Math.max(
               -1,
               -(direction * translationX) /
-                dragDistance,
+              dragDistance,
             ),
           );
 
@@ -709,76 +709,77 @@ export function ScannerToolCarousel({
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  root: {
-    position: "relative",
-    overflow: "visible",
-  },
-  rootDisabled: {
-    opacity: 0.9,
-  },
-  platterHost: {
-    position: "absolute",
-    zIndex: 0,
-    top: 5
-  },
-  controlPosition: {
-    position: "absolute",
-  },
-  control: {
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 3,
-    backgroundColor: "transparent",
-  },
-  controlPressed: {
-    opacity: 0.82,
-    transform: [{ scale: 0.94 }],
-  },
-  iconStack: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  iconGhost: {
-    position: "absolute",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  iconGhostCyan: {
-    opacity: 0.3,
-    transform: [{ translateX: 1}, {translateY: -1 }],
-  },
-  iconGhostViolet: {
-    opacity: 0.3,
-    transform: [{ translateX: -1}, {translateY: 1 }],
-  },
-  badge: {
-    position: "absolute",
-    top: -2,
-    right: -2,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 5,
-    borderRadius: theme.radii.pill,
-    borderWidth: 3,
-    backgroundColor: "rgba(3, 7, 12, 0.9)",
-    boxShadow:
-      "0 0 8px rgba(88, 223, 232, 0.32)",
-  },
-  badgeText: {
-    color: theme.colors.cream,
-    fontSize: 9,
-    fontWeight: "900",
-    fontVariant: ["tabular-nums"],
-  },
-});
+  const { responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    root: {
+      position: "relative",
+      overflow: "visible",
+    },
+    rootDisabled: {
+      opacity: 0.9,
+    },
+    platterHost: {
+      position: "absolute",
+      zIndex: 0,
+      top: 5
+    },
+    controlPosition: {
+      position: "absolute",
+    },
+    control: {
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 3,
+      backgroundColor: "transparent",
+    },
+    controlPressed: {
+      opacity: 0.82,
+      transform: [{ scale: 0.94 }],
+    },
+    iconStack: {
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    iconGhost: {
+      position: "absolute",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    iconGhostCyan: {
+      opacity: 0.3,
+      transform: [{ translateX: 1 }, { translateY: -1 }],
+    },
+    iconGhostViolet: {
+      opacity: 0.3,
+      transform: [{ translateX: -1 }, { translateY: 1 }],
+    },
+    badge: {
+      position: "absolute",
+      top: -2,
+      right: -2,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 5,
+      borderRadius: theme.radii.pill,
+      borderWidth: 3,
+      backgroundColor: "rgba(3, 7, 12, 0.9)",
+      boxShadow:
+        "0 0 8px rgba(88, 223, 232, 0.32)",
+    },
+    badgeText: {
+      color: theme.colors.cream,
+      fontSize: 9,
+      fontWeight: "900",
+      fontVariant: ["tabular-nums"],
+    },
+  });
   return {
     ...staticStyles,
-  badgeText: [
-    staticStyles.badgeText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
+    badgeText: [
+      staticStyles.badgeText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
   };
 }

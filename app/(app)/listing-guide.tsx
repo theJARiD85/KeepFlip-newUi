@@ -1,46 +1,45 @@
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
-import * as ImagePicker from "expo-image-picker";
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  Linking,
-  Share,
-  StyleSheet,
-  TextInput,
-  View,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ListingReadinessPanel } from "@/components/seller/listing-readiness-panel";
-import { EMPTY_EBAY_LISTING_REVIEW, type EbayListingReview } from "@/services/ebay-listing-readiness-service";
-import { ListingNetProceedsPanel } from "@/components/seller/listing-net-proceeds-panel";
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { useKeepFlipFeedbackNudge } from "@/components/feedback/keepflip-feedback-nudge";
+import { ListingNetProceedsPanel } from "@/components/seller/listing-net-proceeds-panel";
+import { ListingReadinessPanel } from "@/components/seller/listing-readiness-panel";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout } from "@/hooks/use-responsive-layout";
+import { EMPTY_EBAY_LISTING_REVIEW, type EbayListingReview } from "@/services/ebay-listing-readiness-service";
+import { getEbayOAuthEnvironment } from "@/services/ebayConnectionService";
+import {
+  publishEbayListing,
+  type PublishEbayListingInput,
+  type PublishEbayListingResult,
+} from "@/services/ebayListingService";
 import {
   getInventoryItem,
   updateInventoryMarketplaceLink,
   type InventoryItem,
 } from "@/services/inventory-service";
-import { getEbayOAuthEnvironment } from "@/services/ebayConnectionService";
-import {
-  publishEbayListing,
-  type PublishEbayListingResult,
-  type PublishEbayListingInput,
-} from "@/services/ebayListingService";
 import { appendPhotoToItem } from "@/services/itemPhotoService";
 import {
   runListingGenerator,
   type ListingGeneratorResult,
 } from "@/services/listingService";
 import { uploadItemImage } from "@/services/uploadItemImage";
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
+import * as ImagePicker from "expo-image-picker";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Linking,
+  Pressable,
+  ScrollView,
+  Share,
+  StyleSheet,
+  TextInput,
+  View,
+  useWindowDimensions,
+} from "react-native";
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type ChecklistStep = {
@@ -80,28 +79,28 @@ const CROSSLIST_PLATFORMS: {
   mode: string;
   description: string;
 }[] = [
-  {
-    id: "ebay",
-    label: "eBay",
-    mode: "LIVE LISTING",
-    description:
-      "Publish the reviewed draft through your connected eBay account. Choose the category, then KeepFlip uses your saved Seller Account setup.",
-  },
-  {
-    id: "facebookMarketplace",
-    label: "Facebook Marketplace",
-    mode: "ASSISTED HANDOFF",
-    description:
-      "Send the prepared copy to Facebook, then confirm category, pickup, and listing details.",
-  },
-  {
-    id: "offerUp",
-    label: "OfferUp",
-    mode: "ASSISTED HANDOFF",
-    description:
-      "Send the prepared copy to OfferUp, then confirm category, shipping, and listing details.",
-  },
-];
+    {
+      id: "ebay",
+      label: "eBay",
+      mode: "LIVE LISTING",
+      description:
+        "Publish the reviewed draft through your connected eBay account. Choose the category, then KeepFlip uses your saved Seller Account setup.",
+    },
+    {
+      id: "facebookMarketplace",
+      label: "Facebook Marketplace",
+      mode: "ASSISTED HANDOFF",
+      description:
+        "Send the prepared copy to Facebook, then confirm category, pickup, and listing details.",
+    },
+    {
+      id: "offerUp",
+      label: "OfferUp",
+      mode: "ASSISTED HANDOFF",
+      description:
+        "Send the prepared copy to OfferUp, then confirm category, shipping, and listing details.",
+    },
+  ];
 
 
 function formatMoney(value: number | null, currency: string) {
@@ -197,9 +196,12 @@ export default function ListingCreationGuideScreen() {
   const userId = user?.$id;
   const {
     contentWidth, insets, pageGutter, responsiveFont,
+    responsiveWidth,
+    responsiveHeight,
     contentMaxWidth
   } =
     useResponsiveLayout();
+    const { width } = useWindowDimensions();
   const [item, setItem] = useState<InventoryItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -224,6 +226,9 @@ export default function ListingCreationGuideScreen() {
   const [ebayReview, setEbayReview] = useState<EbayListingReview>({ ...EMPTY_EBAY_LISTING_REVIEW });
   const [ebayAspects, setEbayAspects] = useState<Record<string, string[]>>({});
   const [ebayMeasurements, setEbayMeasurements] = useState<Record<string, string[]>>({});
+  const handleEbayReadyChange = useCallback((ready: boolean) => {
+    setEbayReady(ready);
+  }, []);
   useEffect(() => {
     setEbayReady(false); setEbayReview({ ...EMPTY_EBAY_LISTING_REVIEW });
     setEbayAspects({}); setEbayMeasurements({});
@@ -326,6 +331,35 @@ export default function ListingCreationGuideScreen() {
     }
   }, [item, recordCompletedAction]);
 
+  const updateGeneratedText = useCallback(
+    (
+      field: "title" | "subtitle" | "description" | "conditionDisclosure",
+      value: string,
+    ) => {
+      setGeneratedListing((current) =>
+        current ? { ...current, [field]: value } : current,
+      );
+    },
+    [],
+  );
+
+  const updateGeneratedPlatformCopy = useCallback(
+    (platform: ListingPlatform, value: string) => {
+      setGeneratedListing((current) =>
+        current
+          ? {
+              ...current,
+              platformCopy: {
+                ...current.platformCopy,
+                [platform]: value,
+              },
+            }
+          : current,
+      );
+    },
+    [],
+  );
+
   const uploadAdditionalPhotoAssets = useCallback(
     async (assets: readonly ImagePicker.ImagePickerAsset[]) => {
       if (!item || !userId || addingPhotos) return;
@@ -359,13 +393,13 @@ export default function ListingCreationGuideScreen() {
           const fileName =
             asset.fileName?.trim() ||
             "keepflip-item-" +
-              item.id +
-              "-" +
-              Date.now() +
-              "-" +
-              index +
-              "." +
-              extension;
+            item.id +
+            "-" +
+            Date.now() +
+            "-" +
+            index +
+            "." +
+            extension;
           const fileMimeType = asset.mimeType || "image/jpeg";
           const uploaded = await uploadItemImage(
             asset.uri,
@@ -496,6 +530,7 @@ export default function ListingCreationGuideScreen() {
       const message = [
         generatedListing.title,
         generatedListing.subtitle,
+        generatedListing.description,
         generatedListing.platformCopy[platform],
         "Condition: " + generatedListing.conditionDisclosure,
         price ? "Target price: " + price : null,
@@ -577,7 +612,7 @@ export default function ListingCreationGuideScreen() {
         } catch (linkError) {
           setEbayPublishError(
             "Your eBay listing is live, but KeepFlip could not save its tracking link. Add the eBay tracking columns to inventory, then publish or open this item again to reconnect it." +
-              (linkError instanceof Error ? " " + linkError.message : ""),
+            (linkError instanceof Error ? " " + linkError.message : ""),
           );
         }
       }
@@ -607,6 +642,10 @@ export default function ListingCreationGuideScreen() {
 
   const confirmEbayPublish = useCallback(() => {
     if (ebayPublishing || ebayPublishResult) return;
+    if (!ebayReady) {
+      setEbayPublishError("Check listing readiness above before publishing on eBay.");
+      return;
+    }
     Alert.alert(
       "Publish on eBay?",
       "This sends the reviewed draft to eBay and creates a live listing on the connected seller account.",
@@ -615,30 +654,30 @@ export default function ListingCreationGuideScreen() {
         { text: "Publish listing", onPress: () => void publishListingToEbay() },
       ],
     );
-  }, [ebayPublishResult, ebayPublishing, publishListingToEbay]);
+  }, [ebayPublishResult, ebayPublishing, ebayReady, publishListingToEbay]);
 
   return (
     <KeepFlipBackground>
       <ScrollView
         contentContainerStyle={[styles.content,
-          {
-            paddingTop: insets.top / 2,
-            paddingBottom: insets.bottom + 32,
-            paddingHorizontal: pageGutter,
-          }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
-        style={{marginTop: insets.top, marginBottom: insets.bottom}}
+        {
+          paddingTop: insets.top + 15,
+          paddingBottom: insets.bottom + 30,
+          paddingHorizontal: pageGutter,
+        }, { width: width, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+        style={{ marginTop: insets.top, marginBottom: insets.bottom }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.page, { width: contentWidth }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
+        <View style={[styles.page, { width: width }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
           <View style={styles.topRow}>
             <View style={styles.topCopy}>
               <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>SELLER WORKFLOW</Text>
-              <Text style={[styles.title, { fontSize: responsiveFont(26) }]}>
+              <Text style={[styles.title, { fontFamily: theme.fonts.bold, fontSize: responsiveFont(26) }]}>
                 Listing Workspace
               </Text>
-              <Text style={[styles.subtitle, { fontSize: responsiveFont(11) }]}>
-            Draft once from the item facts, then hand off a platform-ready version to each marketplace. Review every destination before publishing.
-          </Text>
+              <Text style={[styles.subtitle, { fontSize: responsiveFont(12) }]}>
+                Draft once from the item facts, then hand off a platform-ready version to each marketplace. Review every destination before publishing.
+              </Text>
             </View>
           </View>
 
@@ -655,7 +694,7 @@ export default function ListingCreationGuideScreen() {
                 <IconSymbol color={theme.colors.goldBright} name="tag.fill" size={28} />
               </View>
               <Text style={[styles.errorTitle, { fontSize: responsiveFont(19) }]}>Listing guide unavailable</Text>
-              <Text selectable style={[styles.errorText, { fontSize: responsiveFont(14)}]}>
+              <Text selectable style={[styles.errorText, { fontSize: responsiveFont(14) }]}>
                 {error ?? "This item could not be opened."}
               </Text>
               <Pressable
@@ -671,8 +710,8 @@ export default function ListingCreationGuideScreen() {
             <>
               <View style={styles.itemCard}>
                 <View style={styles.itemCardRail} />
-                <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9) }]}>ITEM TO LIST</Text>
-                <Text selectable style={[styles.itemTitle, { fontSize: responsiveFont(22)}]}>{title}</Text>
+                <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(10) }]}>ITEM TO LIST</Text>
+                <Text selectable style={[styles.itemTitle, { fontSize: responsiveFont(26) }]}>{title}</Text>
                 <Text selectable style={styles.itemMeta}>
                   {[item.brand, item.model, item.category]
                     .filter(Boolean)
@@ -699,7 +738,7 @@ export default function ListingCreationGuideScreen() {
                 <View style={styles.photoPrepRow}>
                   <View style={styles.photoPrepCopy}>
                     <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>LISTING PHOTO SET</Text>
-                    <Text style={[styles.photoPrepText, { fontSize: responsiveFont(12)}]}>
+                    <Text style={[styles.photoPrepText, { fontSize: responsiveFont(12) }]}>
                       {item.photoCount} of {MAX_LISTING_PHOTOS} photos saved. Add
                       close-ups of labels, flaws, measurements, and the full item
                       before handing the draft to a marketplace.
@@ -714,7 +753,7 @@ export default function ListingCreationGuideScreen() {
                       styles.addPhotosButton,
                       pressed && styles.pressed,
                       (addingPhotos || item.photoCount >= MAX_LISTING_PHOTOS) &&
-                        styles.addPhotosButtonDisabled,
+                      styles.addPhotosButtonDisabled,
                     ]}
                   >
                     {addingPhotos ? (
@@ -729,7 +768,7 @@ export default function ListingCreationGuideScreen() {
                   </Pressable>
                 </View>
                 {photoUploadError ? (
-                  <Text selectable style={[styles.photoUploadError, { fontSize: responsiveFont(12)}]}>
+                  <Text selectable style={[styles.photoUploadError, { fontSize: responsiveFont(12) }]}>
                     {photoUploadError}
                   </Text>
                 ) : null}
@@ -739,7 +778,7 @@ export default function ListingCreationGuideScreen() {
                 <View style={styles.sectionHeader}>
                   <View>
                     <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9) }]}>LISTING BRIEF</Text>
-                    <Text style={[styles.sectionTitle, { fontSize: responsiveFont(18)}]}>Start with the facts</Text>
+                    <Text style={[styles.sectionTitle, { fontSize: responsiveFont(18) }]}>Start with the facts</Text>
                   </View>
                   <View style={styles.localPill}>
                     <Text style={[styles.localPillText, { fontSize: responsiveFont(8) }]}>LOCAL GUIDE</Text>
@@ -748,18 +787,18 @@ export default function ListingCreationGuideScreen() {
 
                 <View style={styles.fieldBlock}>
                   <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>TITLE STARTER</Text>
-                  <Text selectable style={[styles.fieldValue, { fontSize: responsiveFont(14)}]}>{title}</Text>
+                  <Text selectable style={[styles.fieldValue, { fontSize: responsiveFont(14) }]}>{title}</Text>
                 </View>
                 <View style={styles.fieldBlock}>
                   <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>CONDITION DISCLOSURE</Text>
-                  <Text selectable style={[styles.fieldValue, { fontSize: responsiveFont(14)}]}>
+                  <Text selectable style={[styles.fieldValue, { fontSize: responsiveFont(14) }]}>
                     {item.conditionNotes.trim() ||
                       "Add factual notes about testing, wear, missing pieces, and defects."}
                   </Text>
                 </View>
                 <View style={styles.fieldBlock}>
                   <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>MARKET REFERENCE</Text>
-                  <Text selectable style={[styles.fieldValue, { fontSize: responsiveFont(14)}]}>
+                  <Text selectable style={[styles.fieldValue, { fontSize: responsiveFont(14) }]}>
                     {priceReference
                       ? `${priceReference} saved estimate. It is a reference, not a recommended list price.`
                       : "No saved market estimate. Analyze the item before setting a price."}
@@ -770,14 +809,14 @@ export default function ListingCreationGuideScreen() {
               <View style={styles.generatorCard}>
                 <View style={styles.sectionHeader}>
                   <View style={styles.generatorHeading}>
-                    <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9) }]}>DRAFT BUILDER</Text>
-                    <Text style={[styles.sectionTitle, { fontSize: responsiveFont(18)}]}>Generate the working draft</Text>
+                    <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9), fontFamily: theme.fonts.display }]}>DRAFT BUILDER</Text>
+                    <Text style={[styles.sectionTitle, { fontSize: responsiveFont(18) }]}>Generate the working draft</Text>
                   </View>
                   <View style={styles.generatorBadge}>
                     <Text style={[styles.generatorBadgeText, { fontSize: responsiveFont(8) }]}>MASTER DRAFT</Text>
                   </View>
                 </View>
-                <Text style={[styles.generatorDescription, { fontSize: responsiveFont(12)}]}>
+                <Text style={[styles.generatorDescription, { fontSize: responsiveFont(12) }]}>
                   Use the saved item facts, photos, condition notes, and market reference to create platform-ready copy. Review every claim before publishing.
                 </Text>
                 <Pressable
@@ -800,7 +839,7 @@ export default function ListingCreationGuideScreen() {
                   )}
                 </Pressable>
                 {listingGenerationError ? (
-                  <Text selectable style={[styles.generatorError, { fontSize: responsiveFont(12)}]}>
+                  <Text selectable style={[styles.generatorError, { fontSize: responsiveFont(12) }]}>
                     {listingGenerationError}
                   </Text>
                 ) : null}
@@ -808,16 +847,39 @@ export default function ListingCreationGuideScreen() {
                 {generatedListing ? (
                   <View style={styles.generatedCopy}>
                     <View style={styles.generatedTitleRow}>
-                      <Text selectable style={[styles.generatedTitle, { fontSize: responsiveFont(18)}]}>
-                        {generatedListing.title}
-                      </Text>
+                      <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>TITLE</Text>
+                      <TextInput
+                        accessibilityLabel="Edit generated listing title"
+                        autoCapitalize="sentences"
+                        onChangeText={(value) => updateGeneratedText("title", value)}
+                        style={[
+                          styles.generatedTitle,
+                          styles.generatedEditorInput,
+                          styles.generatedTitleInput,
+                          { fontSize: responsiveFont(13) },
+                        ]}
+                        value={generatedListing.title}
+                      />
                       <Text style={[styles.confidenceText, { fontSize: responsiveFont(8) }]}>
                         {formatConfidence(listingConfidence)}% CONFIDENCE
                       </Text>
                     </View>
-                    <Text selectable style={[styles.generatedSubtitle, { fontSize: responsiveFont(12)}]}>
-                      {generatedListing.subtitle}
-                    </Text>
+                    <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>SUBTITLE</Text>
+                    <TextInput
+                      accessibilityLabel="Edit generated listing subtitle"
+                      autoCapitalize="sentences"
+                      multiline
+                      onChangeText={(value) => updateGeneratedText("subtitle", value)}
+                      style={[
+                        styles.generatedSubtitle,
+                        styles.generatedEditorInput,
+                        styles.generatedSubtitleInput,
+                        { fontSize: responsiveFont(13),
+                          height: 'auto',
+                        },
+                      ]}
+                      value={generatedListing.subtitle}
+                    />
                     <View style={styles.generatedSignals}>
                       <Text style={styles.generatedSignal}>
                         {generatedListing.conditionLabel.replace(/_/g, " ").toUpperCase()}
@@ -858,13 +920,48 @@ export default function ListingCreationGuideScreen() {
                         </Pressable>
                       ))}
                     </View>
-                    <Text selectable style={[styles.generatedBody, { fontSize: responsiveFont(13)}]}>
-                      {generatedListing.platformCopy[selectedPlatform]}
-                    </Text>
+                    <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>LONG DESCRIPTION</Text>
+                    <TextInput
+                      accessibilityLabel="Edit generated listing description"
+                      autoCapitalize="sentences"
+                      multiline
+                      onChangeText={(value) => updateGeneratedText("description", value)}
+                      style={[
+                        styles.generatedBody,
+                        styles.generatedEditorInput,
+                        styles.generatedDescriptionInput,
+                        { fontSize: responsiveFont(13) },
+                      ]}
+                      value={generatedListing.description}
+                    />
+                    <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>MARKETPLACE COPY</Text>
+                    <TextInput
+                      accessibilityLabel={`Edit ${selectedPlatform} marketplace copy`}
+                      autoCapitalize="sentences"
+                      multiline
+                      onChangeText={(value) => updateGeneratedPlatformCopy(selectedPlatform, value)}
+                      style={[
+                        styles.generatedBody,
+                        styles.generatedEditorInput,
+                        styles.generatedPlatformInput,
+                        { fontSize: responsiveFont(13) },
+                      ]}
+                      value={generatedListing.platformCopy[selectedPlatform]}
+                    />
                     <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>CONDITION DISCLOSURE</Text>
-                    <Text selectable style={[styles.generatedBody, { fontSize: responsiveFont(13)}]}>
-                      {generatedListing.conditionDisclosure}
-                    </Text>
+                    <TextInput
+                      accessibilityLabel="Edit generated condition disclosure"
+                      autoCapitalize="sentences"
+                      multiline
+                      onChangeText={(value) => updateGeneratedText("conditionDisclosure", value)}
+                      style={[
+                        styles.generatedBody,
+                        styles.generatedEditorInput,
+                        styles.generatedConditionInput,
+                        { fontSize: responsiveFont(13) },
+                      ]}
+                      value={generatedListing.conditionDisclosure}
+                    />
                     {generatedListing.warnings.length ? (
                       <Text selectable style={styles.generatorWarning}>
                         Review: {generatedListing.warnings.join(" ")}
@@ -878,24 +975,20 @@ export default function ListingCreationGuideScreen() {
                 <View style={styles.crosslistCard}>
                   <View style={styles.sectionHeader}>
                     <View style={styles.generatorHeading}>
-                      <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9) }]}>CROSSLIST DESTINATIONS</Text>
-                      <Text style={[styles.sectionTitle, { fontSize: responsiveFont(18)}]}>Send the draft where you sell</Text>
+                      <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(10) }]}>CROSSLIST DESTINATIONS</Text>
+                      <Text style={[styles.sectionTitle, { fontSize: responsiveFont(18) }]}>Send the draft where you sell</Text>
                     </View>
                     <View style={styles.crosslistBadge}>
-                      <Text style={[styles.crosslistBadgeText, { fontSize: responsiveFont(8) }]}>
+                      <Text style={[styles.crosslistBadgeText, { fontSize: responsiveFont(9) }]}>
                         {CROSSLIST_PLATFORMS.length} CHANNELS
                       </Text>
                     </View>
                   </View>
-                  <Text style={[styles.crosslistDescription, { fontSize: responsiveFont(12)}]}>
+                  <Text style={[styles.crosslistDescription, { fontSize: responsiveFont(12) }]}>
                     KeepFlip keeps the item facts consistent across channels. eBay can publish the reviewed draft; the other destinations open Android&apos;s standard share sheet for an assisted handoff.
                   </Text>
                   <View style={styles.destinationList}>
                     {CROSSLIST_PLATFORMS.map((platform) => {
-  const {
-    responsiveFont
-  } = useResponsiveLayout();
-
                       const shared = sharedPlatform === platform.id;
                       const isEbay = platform.id === "ebay";
                       return (
@@ -916,7 +1009,7 @@ export default function ListingCreationGuideScreen() {
                                 {platform.mode}
                               </Text>
                             </View>
-                            <Text style={[styles.destinationDescription, { fontSize: responsiveFont(11)}]}>
+                            <Text style={[styles.destinationDescription, { fontSize: responsiveFont(11) }]}>
                               {platform.description}
                             </Text>
                           </View>
@@ -927,9 +1020,9 @@ export default function ListingCreationGuideScreen() {
                                   ? "Open published eBay listing"
                                   : "Publish listing on eBay"
                                 : (shared ? "Share again" : "Share") +
-                                  " " +
-                                  platform.label +
-                                  " listing draft"
+                                " " +
+                                platform.label +
+                                " listing draft"
                             }
                             accessibilityRole="button"
                             onPress={() =>
@@ -940,7 +1033,7 @@ export default function ListingCreationGuideScreen() {
                             style={({ pressed }) => [
                               styles.shareDraftButton,
                               (shared || (isEbay && ebayPublishResult)) &&
-                                styles.shareDraftButtonDone,
+                              styles.shareDraftButtonDone,
                               pressed && styles.pressed,
                             ]}
                           >
@@ -999,7 +1092,7 @@ export default function ListingCreationGuideScreen() {
                                 ? "This item is already live on eBay."
                                 : "Live eBay listing created."}
                             </Text>
-                            <Text selectable style={[styles.ebayPublishSuccessDetail, { fontSize: responsiveFont(11)}]}>
+                            <Text selectable style={[styles.ebayPublishSuccessDetail, { fontSize: responsiveFont(11) }]}>
                               {ebayPublishResult.listingId
                                 ? "Listing ID " + ebayPublishResult.listingId
                                 : "eBay accepted the listing."}
@@ -1008,7 +1101,7 @@ export default function ListingCreationGuideScreen() {
                         </View>
                       ) : (
                         <>
-                          <Text style={[styles.ebayPublishHint, { fontSize: responsiveFont(11)}]}>
+                          <Text style={[styles.ebayPublishHint, { fontSize: responsiveFont(11) }]}>
                             Choose the category and quantity. KeepFlip will use the
                             shipping, payment, return, and inventory-location setup
                             saved to your Seller Account.
@@ -1037,7 +1130,7 @@ export default function ListingCreationGuideScreen() {
                               name="checkmark.shield.fill"
                               size={16}
                             />
-                            <Text style={[styles.ebaySetupNoticeText, { fontSize: responsiveFont(11)}]}>
+                            <Text style={[styles.ebaySetupNoticeText, { fontSize: responsiveFont(11) }]}>
                               Saved eBay setup will be used automatically. Refresh
                               Seller Account if KeepFlip says listing setup needs
                               attention.
@@ -1082,10 +1175,10 @@ export default function ListingCreationGuideScreen() {
                               input={ebayPublishInput(item, generatedListing, ebayForm, ebayReview, ebayAspects, ebayMeasurements)}
                               review={ebayReview} onReviewChange={setEbayReview}
                               onAspectsChange={setEbayAspects} onMeasurementsChange={setEbayMeasurements}
-                              onReadyChange={setEbayReady} disabled={ebayPublishing} />
+                              onReadyChange={handleEbayReadyChange} disabled={ebayPublishing} />
                           ) : null}
                           {ebayPublishError ? (
-                            <Text selectable style={[styles.ebayPublishError, { fontSize: responsiveFont(12)}]}>
+                            <Text selectable style={[styles.ebayPublishError, { fontSize: responsiveFont(12) }]}>
                               {ebayPublishError}
                             </Text>
                           ) : null}
@@ -1103,12 +1196,13 @@ export default function ListingCreationGuideScreen() {
                             <Pressable
                               accessibilityLabel="Publish live eBay listing"
                               accessibilityRole="button"
-                              disabled={ebayPublishing || !ebayReady}
+                              disabled={ebayPublishing}
                               onPress={confirmEbayPublish}
                               style={({ pressed }) => [
                                 styles.ebayPublishButton,
                                 pressed && styles.pressed,
-                                (ebayPublishing || !ebayReady) && styles.ebayPublishButtonDisabled,
+                                ebayPublishing && styles.ebayPublishButtonDisabled,
+                                !ebayReady && styles.ebayPublishButtonNeedsReadiness,
                               ]}
                             >
                               {ebayPublishing ? (
@@ -1146,7 +1240,7 @@ export default function ListingCreationGuideScreen() {
                     </View>
                   ) : null}
                   {shareError ? (
-                    <Text selectable style={[styles.crosslistError, { fontSize: responsiveFont(12)}]}>
+                    <Text selectable style={[styles.crosslistError, { fontSize: responsiveFont(12) }]}>
                       {shareError}
                     </Text>
                   ) : null}
@@ -1159,7 +1253,7 @@ export default function ListingCreationGuideScreen() {
                 <View style={styles.progressHeader}>
                   <View>
                     <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9) }]}>PUBLISHING READINESS</Text>
-                    <Text style={[styles.sectionTitle, { fontSize: responsiveFont(18)}]}>
+                    <Text style={[styles.sectionTitle, { fontSize: responsiveFont(18) }]}>
                       {completeStepCount} of {checklist.length} steps reviewed
                     </Text>
                   </View>
@@ -1183,10 +1277,6 @@ export default function ListingCreationGuideScreen() {
 
                 <View style={styles.checklist}>
                   {checklist.map((step, index) => {
-  const {
-    responsiveFont
-  } = useResponsiveLayout();
-
                     const complete =
                       step.completeByDefault || confirmedStepIds.includes(step.id);
 
@@ -1227,7 +1317,7 @@ export default function ListingCreationGuideScreen() {
                         </View>
                         <View style={styles.checklistCopy}>
                           <Text style={[styles.checklistLabel, { fontSize: responsiveFont(14) }]}>{step.label}</Text>
-                          <Text style={[styles.checklistDetail, { fontSize: responsiveFont(12)}]}>{step.detail}</Text>
+                          <Text style={[styles.checklistDetail, { fontSize: responsiveFont(12) }]}>{step.detail}</Text>
                         </View>
                         {!step.completeByDefault ? (
                           <IconSymbol
@@ -1252,7 +1342,7 @@ export default function ListingCreationGuideScreen() {
                   name="tag.fill"
                   size={20}
                 />
-                <Text style={[styles.publishNoticeText, { fontSize: responsiveFont(13)}]}>
+                <Text style={[styles.publishNoticeText, { fontSize: responsiveFont(12) }]}>
                   When you are ready to publish, confirm the live marketplace category, item specifics, shipping, returns, and fees before creating the listing.
                 </Text>
               </View>
@@ -1265,1176 +1355,1207 @@ export default function ListingCreationGuideScreen() {
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  content: {
-    flexGrow: 1,
-  },
-  page: {
-    alignSelf: "center",
-    gap: 16,
-  },
-  topRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-  },
-  topCopy: {
-    flex: 1,
-    gap: 8,
-  },
-  eyebrow: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 10,
-    fontWeight: "900",
-    letterSpacing: 2,
-  },
-  title: {
-    color: theme.colors.cream,
-    fontFamily: theme.fonts.bold,
-    fontWeight: "900",
-    letterSpacing: -0.7,
-  },
-  subtitle: {
-    maxWidth: 620,
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.body,
-    fontSize: 11,
-  },
-  backButton: {
-    width: 44,
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: "rgba(242, 211, 138, 0.34)",
-    backgroundColor: "rgba(7, 7, 12, 0.78)",
-  },
-  loadingCard: {
-    minHeight: 180,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
-    borderRadius: theme.radii.large,
-    borderWidth: 1,
-    borderColor: "rgba(0, 255, 255, 0.22)",
-    backgroundColor: "rgba(7, 10, 15, 0.88)",
-  },
-  loadingText: {
-    color: theme.colors.cream,
-    fontFamily: theme.fonts.body,
-    fontSize: 15,
-    fontWeight: "800",
-  },
-  errorCard: {
-    alignItems: "center",
-    gap: 12,
-    padding: 24,
-    borderRadius: theme.radii.large,
-    borderWidth: 1,
-    borderColor: "rgba(232, 97, 88, 0.42)",
-    backgroundColor: "rgba(41, 9, 12, 0.58)",
-  },
-  errorIcon: {
-    width: 56,
-    height: 56,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: theme.radii.pill,
-    backgroundColor: "rgba(242, 211, 138, 0.11)",
-  },
-  errorTitle: {
-    color: theme.colors.cream,
-    fontFamily: theme.fonts.bold,
-    fontSize: 19,
-    fontWeight: "900",
-  },
-  errorText: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.body,
-    fontSize: 14,
-    lineHeight: 20,
-    textAlign: "center",
-  },
-  retryButton: {
-    minHeight: 42,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 16,
-    borderRadius: theme.radii.medium,
-    backgroundColor: theme.colors.scannerViolet,
-  },
-  retryText: {
-    color: theme.colors.backgroundDeep,
-    fontFamily: theme.fonts.body,
-    fontSize: 13,
-    fontWeight: "900",
-  },
-  itemCard: {
-    overflow: "hidden",
-    gap: 8,
-    padding: 20,
-    borderRadius: theme.radii.large,
-    borderWidth: 1,
-    borderColor: "rgba(0, 255, 255, 0.28)",
-    backgroundColor: "rgba(5, 10, 14, 0.90)",
-    boxShadow: "0 0 26px rgba(0, 255, 255, 0.07)",
-  },
-  itemCardRail: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    left: 0,
-    height: 2,
-    backgroundColor: theme.colors.scannerCyan,
-  },
-  sectionEyebrow: {
-    color: theme.colors.gold,
-    fontFamily: theme.fonts.radar,
-    fontSize: 9,
-    fontWeight: "900",
-    letterSpacing: 1.7,
-  },
-  itemTitle: {
-    color: theme.colors.cream,
-    fontFamily: theme.fonts.bold,
-    fontSize: 22,
-    fontWeight: "900",
-    lineHeight: 28,
-  },
-  itemMeta: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.body,
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  itemSignals: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 5,
-  },
-  signalPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: "rgba(247, 242, 232, 0.16)",
-    backgroundColor: "rgba(247, 242, 232, 0.05)",
-  },
-  signalPillLabel: {
-    color: theme.colors.goldMuted,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 0.7,
-  },
-  signalPillText: {
-    color: theme.colors.cream,
-    fontFamily: theme.fonts.radar,
-    fontSize: 10,
-    fontWeight: "900",
-    letterSpacing: 0.4,
-  },
-  draftCard: {
-    gap: 12,
-    padding: 20,
-    borderRadius: theme.radii.large,
-    borderWidth: 1,
-    borderColor: "rgba(141, 114, 255, 0.30)",
-    backgroundColor: "rgba(13, 9, 20, 0.84)",
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  sectionTitle: {
-    color: theme.colors.cream,
-    fontFamily: theme.fonts.bold,
-    fontSize: 18,
-    fontWeight: "900",
-    lineHeight: 23,
-  },
-  localPill: {
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: "rgba(141, 114, 255, 0.40)",
-    backgroundColor: "rgba(141, 114, 255, 0.12)",
-  },
-  localPillText: {
-    color: theme.colors.scannerViolet,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 0.8,
-  },
-  fieldBlock: {
-    gap: 5,
-    paddingTop: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(247, 242, 232, 0.13)",
-  },
-  fieldLabel: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 9,
-    fontWeight: "900",
-    letterSpacing: 1.1,
-  },
-  fieldValue: {
-    color: theme.colors.cream,
-    fontFamily: theme.fonts.bold,
-    fontSize: 14,
-    fontWeight: "700",
-    lineHeight: 20,
-  },
-  generatorCard: {
-    gap: 12,
-    padding: 20,
-    borderRadius: theme.radii.large,
-    borderWidth: 1,
-    borderColor: "rgba(0, 255, 255, 0.28)",
-    backgroundColor: "rgba(5, 14, 18, 0.88)",
-  },
-  generatorHeading: {
-    flex: 1,
-    gap: 2,
-  },
-  generatorBadge: {
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: "rgba(0, 255, 255, 0.35)",
-    backgroundColor: "rgba(0, 255, 255, 0.08)",
-  },
-  generatorBadgeText: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 0.8,
-  },
-  generatorDescription: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.body,
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  generateButton: {
-    minHeight: 46,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: theme.radii.medium,
-    backgroundColor: theme.colors.goldBright,
-  },
-  generateButtonBusy: {
-    opacity: 0.68,
-  },
-  generateButtonText: {
-    color: theme.colors.backgroundDeep,
-    fontFamily: theme.fonts.radar,
-    fontSize: 10,
-    fontWeight: "900",
-    letterSpacing: 0.9,
-  },
-  generatorError: {
-    color: theme.colors.danger,
-    fontFamily: theme.fonts.body,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  generatedCopy: {
-    gap: 10,
-    paddingTop: 14,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(0, 255, 255, 0.20)",
-  },
-  generatedTitleRow: {
-    gap: 6,
-  },
-  generatedTitle: {
-    color: theme.colors.cream,
-    fontFamily: theme.fonts.bold,
-    fontSize: 18,
-    fontWeight: "900",
-    lineHeight: 24,
-  },
-  confidenceText: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 0.8,
-  },
-  generatedSubtitle: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.body,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  generatedSignals: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-  },
-  generatedSignal: {
-    paddingHorizontal: 7,
-    paddingVertical: 5,
-    borderWidth: 1,
-    borderColor: "rgba(242, 211, 138, 0.20)",
-    color: theme.colors.goldBright,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 0.6,
-  },
-  platformTabs: {
-    flexDirection: "row",
-    gap: 6,
-  },
-  platformTab: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: "rgba(247, 242, 232, 0.16)",
-    backgroundColor: "rgba(247, 242, 232, 0.04)",
-  },
-  platformTabActive: {
-    borderColor: "rgba(0, 255, 255, 0.44)",
-    backgroundColor: "rgba(0, 255, 255, 0.10)",
-  },
-  platformTabText: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 0.6,
-  },
-  platformTabTextActive: {
-    color: theme.colors.scannerCyan,
-  },
-  generatedBody: {
-    color: theme.colors.cream,
-    fontFamily: theme.fonts.body,
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  generatorWarning: {
-    color: theme.colors.goldBright,
-    fontSize: 11,
-    lineHeight: 16,
-  },
-  photoPrepRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingTop: 14,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(247, 242, 232, 0.13)",
-  },
-  photoPrepCopy: {
-    flex: 1,
-    gap: 5,
-  },
-  photoPrepText: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.body,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  addPhotosButton: {
-    minHeight: 38,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: "rgba(0, 255, 255, 0.42)",
-    backgroundColor: "rgba(0, 255, 255, 0.11)",
-  },
-  addPhotosButtonDisabled: {
-    opacity: 0.48,
-  },
-  addPhotosButtonText: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 0.6,
-  },
-  photoUploadError: {
-    color: theme.colors.danger,
-    fontFamily: theme.fonts.body,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  crosslistCard: {
-    gap: 14,
-    padding: 20,
-    borderRadius: theme.radii.large,
-    borderWidth: 1,
-    borderColor: "rgba(0, 255, 255, 0.28)",
-    backgroundColor: "rgba(7, 12, 18, 0.88)",
-  },
-  crosslistBadge: {
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: "rgba(0, 255, 255, 0.34)",
-    backgroundColor: "rgba(0, 255, 255, 0.08)",
-  },
-  crosslistBadgeText: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 0.8,
-  },
-  crosslistDescription: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.body,
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  destinationList: {
-    gap: 0,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(247, 242, 232, 0.13)",
-  },
-  destinationRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 13,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(247, 242, 232, 0.13)",
-  },
-  destinationIcon: {
-    width: 32,
-    height: 32,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(0, 255, 255, 0.24)",
-    backgroundColor: "rgba(0, 255, 255, 0.06)",
-  },
-  destinationCopy: {
-    flex: 1,
-    gap: 4,
-  },
-  destinationTopline: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: 7,
-  },
-  destinationName: {
-    color: theme.colors.cream,
-    fontFamily: theme.fonts.semibold,
-    fontSize: 14,
-    fontWeight: "900",
-  },
-  destinationMode: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 0.7,
-  },
-  destinationDescription: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.body,
-    fontSize: 11,
-    lineHeight: 16,
-  },
-  shareDraftButton: {
-    minWidth: 58,
-    minHeight: 34,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 8,
-    borderWidth: 1,
-    borderColor: "rgba(242, 211, 138, 0.42)",
-    backgroundColor: "rgba(242, 211, 138, 0.10)",
-  },
-  shareDraftButtonDone: {
-    borderColor: "rgba(0, 255, 255, 0.42)",
-    backgroundColor: "rgba(0, 255, 255, 0.10)",
-  },
-  shareDraftText: {
-    color: theme.colors.goldBright,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 0.6,
-  },
-  shareDraftTextDone: {
-    color: theme.colors.scannerCyan,
-  },
-  ebayPublishPanel: {
-    gap: 12,
-    marginTop: 14,
-    paddingTop: 14,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(247, 242, 232, 0.14)",
-  },
-  ebayPublishHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 10,
-  },
-  ebayPublishHeaderCopy: {
-    flex: 1,
-    gap: 4,
-  },
-  ebayPublishTitle: {
-    color: theme.colors.cream,
-    fontFamily: theme.fonts.bold,
-    fontSize: 15,
-    fontWeight: "900",
-  },
-  ebayPublishMode: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 0.7,
-  },
-  ebayPublishHint: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.body,
-    fontSize: 11,
-    lineHeight: 17,
-  },
-  ebaySetupNotice: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 9,
-    padding: 12,
-    borderRadius: theme.radii.medium,
-    borderWidth: 1,
-    borderColor: "rgba(88, 223, 232, 0.22)",
-    backgroundColor: "rgba(88, 223, 232, 0.06)",
-  },
-  ebaySetupNoticeText: {
-    flex: 1,
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.body,
-    fontSize: 11,
-    lineHeight: 16,
-  },  ebayField: {
-    gap: 6,
-  },
-  ebayFieldRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  ebayFieldHalf: {
-    flex: 1,
-    gap: 6,
-  },
-  ebayFieldLabel: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 0.7,
-  },
-  ebayFieldInput: {
-    minHeight: 42,
-    borderWidth: 1,
-    borderColor: "rgba(247, 242, 232, 0.18)",
-    backgroundColor: "rgba(247, 242, 232, 0.06)",
-    color: theme.colors.cream,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    fontSize: 13,
-    borderRadius: 4,
-  },
-  ebayPublishActions: {
-    flexDirection: "row",
-    gap: 10,
-    justifyContent: "flex-end",
-  },
-  ebayCancelButton: {
-    minHeight: 40,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: "rgba(247, 242, 232, 0.18)",
-    borderRadius: 4,
-  },
-  ebayCancelButtonText: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.radar,
-    fontSize: 9,
-    fontWeight: "900",
-    letterSpacing: 0.8,
-  },
-  ebayPublishButton: {
-    minHeight: 40,
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 14,
-    backgroundColor: theme.colors.goldBright,
-    borderRadius: 4,
-  },
-  ebayPublishButtonDisabled: {
-    opacity: 0.6,
-  },
-  ebayPublishButtonText: {
-    color: theme.colors.backgroundDeep,
-    fontFamily: theme.fonts.radar,
-    fontSize: 9,
-    fontWeight: "900",
-    letterSpacing: 0.8,
-  },
-  ebayPublishError: {
-    color: theme.colors.danger,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  ebayPublishSuccess: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "rgba(0, 255, 255, 0.28)",
-    backgroundColor: "rgba(0, 255, 255, 0.06)",
-    borderRadius: 4,
-  },
-  ebayPublishSuccessCopy: {
-    flex: 1,
-    gap: 4,
-  },
-  ebayPublishSuccessTitle: {
-    color: theme.colors.cream,
-    fontSize: 14,
-    fontWeight: "900",
-  },
-  ebayPublishSuccessDetail: {
-    color: theme.colors.textMuted,
-    fontSize: 11,
-    lineHeight: 16,
-  },
-  ebayOpenButton: {
-    minHeight: 40,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(0, 255, 255, 0.34)",
-    backgroundColor: "rgba(0, 255, 255, 0.08)",
-    borderRadius: 4,
-  },
-  ebayOpenButtonText: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 9,
-    fontWeight: "900",
-    letterSpacing: 0.8,
-  },
-  crosslistError: {
-    color: theme.colors.danger,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  crosslistFootnote: {
-    color: theme.colors.textMuted,
-    fontSize: 11,
-    lineHeight: 16,
-  },
-  progressCard: {
-    gap: 15,
-    padding: 20,
-    borderRadius: theme.radii.large,
-    borderWidth: 1,
-    borderColor: "rgba(242, 211, 138, 0.28)",
-    backgroundColor: "rgba(13, 11, 8, 0.86)",
-  },
-  progressHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 16,
-  },
-  progressCount: {
-    minWidth: 48,
-    minHeight: 48,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: "rgba(242, 211, 138, 0.38)",
-    backgroundColor: "rgba(242, 211, 138, 0.12)",
-  },
-  progressCountText: {
-    color: theme.colors.goldBright,
-    fontFamily: theme.fonts.bold,
-    fontSize: 13,
-    fontWeight: "900",
-  },
-  progressTrack: {
-    height: 6,
-    overflow: "hidden",
-    borderRadius: theme.radii.pill,
-    backgroundColor: "rgba(247, 242, 232, 0.10)",
-  },
-  progressFill: {
-    height: "100%",
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.scannerCyan,
-  },
-  checklist: {
-    gap: 9,
-  },
-  checklistStep: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    padding: 13,
-    borderRadius: theme.radii.medium,
-    borderWidth: 1,
-    borderColor: "rgba(247, 242, 232, 0.13)",
-    backgroundColor: "rgba(4, 4, 8, 0.64)",
-  },
-  checklistStepComplete: {
-    borderColor: "rgba(0, 255, 255, 0.30)",
-    backgroundColor: "rgba(0, 255, 255, 0.07)",
-  },
-  checkmark: {
-    width: 31,
-    height: 31,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: "rgba(242, 211, 138, 0.30)",
-    backgroundColor: "rgba(242, 211, 138, 0.08)",
-  },
-  checkmarkComplete: {
-    borderColor: "rgba(0, 255, 255, 0.62)",
-    backgroundColor: theme.colors.scannerCyan,
-  },
-  checkmarkNumber: {
-    color: theme.colors.goldBright,
-    fontFamily: theme.fonts.radar,
-    fontSize: 9,
-    fontWeight: "900",
-  },
-  checklistCopy: {
-    flex: 1,
-    gap: 3,
-  },
-  checklistLabel: {
-    color: theme.colors.cream,
-    fontFamily: theme.fonts.semibold,
-    fontSize: 14,
-    fontWeight: "900",
-  },
-  checklistDetail: {
-    color: theme.colors.textMuted,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  publishNotice: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 11,
-    padding: 16,
-    borderRadius: theme.radii.medium,
-    borderWidth: 1,
-    borderColor: "rgba(242, 211, 138, 0.28)",
-    backgroundColor: "rgba(215, 168, 74, 0.10)",
-  },
-  publishNoticeText: {
-    flex: 1,
-    color: theme.colors.goldBright,
-    fontSize: 13,
-    fontWeight: "700",
-    lineHeight: 19,
-  },
-  pressed: {
-    opacity: 0.76,
-    transform: [{ scale: 0.985 }],
-  },
-});
+  const { responsiveFont, responsiveHeight, responsiveWidth } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    content: {
+      flexGrow: 1,
+    },
+    page: {
+      alignSelf: "center",
+      gap: 16,
+    },
+    topRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+    },
+    topCopy: {
+      flex: 1,
+      gap: 8,
+    },
+    eyebrow: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 10,
+      fontWeight: "900",
+      letterSpacing: 2,
+    },
+    title: {
+      color: theme.colors.cream,
+      fontFamily: theme.fonts.bold,
+      fontWeight: "900",
+      letterSpacing: -0.7,
+    },
+    subtitle: {
+      maxWidth: 620,
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.body,
+      fontSize: 11,
+    },
+    backButton: {
+      width: 44,
+      height: 44,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: "rgba(242, 211, 138, 0.34)",
+      backgroundColor: "rgba(7, 7, 12, 0.78)",
+    },
+    loadingCard: {
+      minHeight: 180,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 12,
+      borderRadius: theme.radii.large,
+      borderWidth: 1,
+      borderColor: "rgba(0, 255, 255, 0.22)",
+      backgroundColor: "rgba(7, 10, 15, 0.88)",
+    },
+    loadingText: {
+      color: theme.colors.cream,
+      fontFamily: theme.fonts.body,
+      fontSize: 15,
+      fontWeight: "800",
+    },
+    errorCard: {
+      alignItems: "center",
+      gap: 12,
+      padding: 24,
+      borderRadius: theme.radii.large,
+      borderWidth: 1,
+      borderColor: "rgba(232, 97, 88, 0.42)",
+      backgroundColor: "rgba(41, 9, 12, 0.58)",
+    },
+    errorIcon: {
+      width: 56,
+      height: 56,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: theme.radii.pill,
+      backgroundColor: "rgba(242, 211, 138, 0.11)",
+    },
+    errorTitle: {
+      color: theme.colors.cream,
+      fontFamily: theme.fonts.bold,
+      fontSize: 19,
+      fontWeight: "900",
+    },
+    errorText: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.body,
+      fontSize: 14,
+      lineHeight: 20,
+      textAlign: "center",
+    },
+    retryButton: {
+      minHeight: 42,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 16,
+      borderRadius: theme.radii.medium,
+      backgroundColor: theme.colors.scannerViolet,
+    },
+    retryText: {
+      color: theme.colors.backgroundDeep,
+      fontFamily: theme.fonts.body,
+      fontSize: 13,
+      fontWeight: "900",
+    },
+    itemCard: {
+      overflow: "hidden",
+      gap: 8,
+      padding: 20,
+      borderRadius: theme.radii.large,
+      borderWidth: 1,
+      borderColor: "rgba(0, 255, 255, 0.28)",
+      backgroundColor: "rgba(5, 10, 14, 0.90)",
+      boxShadow: "0 0 26px rgba(0, 255, 255, 0.07)",
+    },
+    itemCardRail: {
+      position: "absolute",
+      top: 0,
+      right: 0,
+      left: 0,
+      height: 2,
+      backgroundColor: theme.colors.scannerCyan,
+    },
+    sectionEyebrow: {
+      color: theme.colors.gold,
+      fontFamily: theme.fonts.radar,
+      fontSize: 9,
+      fontWeight: "900",
+      letterSpacing: 1.7,
+    },
+    itemTitle: {
+      color: theme.colors.cream,
+      fontFamily: theme.fonts.bold,
+      fontSize: 22,
+      fontWeight: "900",
+      lineHeight: 28,
+    },
+    itemMeta: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.body,
+      fontSize: 13,
+      lineHeight: 19,
+    },
+    itemSignals: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+      marginTop: 5,
+    },
+    signalPill: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      paddingHorizontal: 10,
+      paddingVertical: 7,
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: "rgba(247, 242, 232, 0.16)",
+      backgroundColor: "rgba(247, 242, 232, 0.05)",
+    },
+    signalPillLabel: {
+      color: theme.colors.goldMuted,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: "900",
+      letterSpacing: 0.7,
+    },
+    signalPillText: {
+      color: theme.colors.cream,
+      fontFamily: theme.fonts.radar,
+      fontSize: 10,
+      fontWeight: "900",
+      letterSpacing: 0.4,
+    },
+    draftCard: {
+      gap: 12,
+      padding: 20,
+      borderRadius: theme.radii.large,
+      borderWidth: 1,
+      borderColor: "rgba(141, 114, 255, 0.30)",
+      backgroundColor: "rgba(13, 9, 20, 0.84)",
+    },
+    sectionHeader: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+      gap: 12,
+    },
+    sectionTitle: {
+      color: theme.colors.cream,
+      fontFamily: theme.fonts.bold,
+      fontSize: 18,
+      fontWeight: "900",
+      lineHeight: 23,
+    },
+    localPill: {
+      paddingHorizontal: 9,
+      paddingVertical: 6,
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: "rgba(141, 114, 255, 0.40)",
+      backgroundColor: "rgba(141, 114, 255, 0.12)",
+    },
+    localPillText: {
+      color: theme.colors.scannerViolet,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: "900",
+      letterSpacing: 0.8,
+    },
+    fieldBlock: {
+      gap: 5,
+      paddingTop: 12,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: "rgba(247, 242, 232, 0.13)",
+    },
+    fieldLabel: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 9,
+      fontWeight: "900",
+      letterSpacing: 1.1,
+    },
+    fieldValue: {
+      color: theme.colors.cream,
+      fontFamily: theme.fonts.body,
+      fontSize: 14,
+      fontWeight: "700",
+      lineHeight: 20,
+    },
+    generatorCard: {
+      gap: 12,
+      padding: 20,
+      borderRadius: theme.radii.large,
+      borderWidth: 1,
+      borderColor: "rgba(0, 255, 255, 0.28)",
+      backgroundColor: "rgba(5, 14, 18, 0.88)",
+    },
+    generatorHeading: {
+      flex: 1,
+      gap: 2,
+    },
+    generatorBadge: {
+      paddingHorizontal: 9,
+      paddingVertical: 6,
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: "rgba(0, 255, 255, 0.35)",
+      backgroundColor: "rgba(0, 255, 255, 0.08)",
+    },
+    generatorBadgeText: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: "900",
+      letterSpacing: 0.8,
+    },
+    generatorDescription: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.body,
+      fontSize: 12,
+      lineHeight: 18,
+    },
+    generateButton: {
+      minHeight: 46,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: theme.radii.medium,
+      backgroundColor: theme.colors.goldBright,
+    },
+    generateButtonBusy: {
+      opacity: 0.68,
+    },
+    generateButtonText: {
+      color: theme.colors.backgroundDeep,
+      fontFamily: theme.fonts.radar,
+      fontSize: 10,
+      fontWeight: "900",
+      letterSpacing: 0.9,
+    },
+    generatorError: {
+      color: theme.colors.danger,
+      fontFamily: theme.fonts.body,
+      fontSize: 12,
+      lineHeight: 17,
+    },
+    generatedCopy: {
+      gap: 10,
+      paddingTop: 14,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: "rgba(0, 255, 255, 0.20)",
+    },
+    generatedTitleRow: {
+      gap: 6,
+    },
+    generatedTitle: {
+      color: theme.colors.cream,
+      fontFamily: theme.fonts.bold,
+      fontSize: 18,
+      fontWeight: "900",
+      lineHeight: 24,
+    },
+    generatedEditorInput: {
+      borderWidth: 1,
+      borderColor: "rgba(0, 255, 255, 0.24)",
+      borderRadius: 6,
+      backgroundColor: "rgba(247, 242, 232, 0.04)",
+      color: theme.colors.cream,
+      paddingHorizontal: 10,
+      paddingVertical: 9,
+      textAlignVertical: "top",
+    },
+    generatedTitleInput: {
+      minHeight: 48,
+      textAlignVertical: "center",
+    },
+    generatedSubtitleInput: {
+      minHeight: 64,
+    },
+    generatedDescriptionInput: {
+      minHeight: 132,
+    },
+    generatedPlatformInput: {
+      minHeight: 150,
+    },
+    generatedConditionInput: {
+      minHeight: 108,
+    },
+    confidenceText: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: "900",
+      letterSpacing: 0.8,
+    },
+    generatedSubtitle: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.body,
+      fontSize: 12,
+      lineHeight: 17,
+    },
+    generatedSignals: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 6,
+    },
+    generatedSignal: {
+      paddingHorizontal: 7,
+      paddingVertical: 5,
+      borderWidth: 1,
+      borderColor: "rgba(242, 211, 138, 0.20)",
+      color: theme.colors.goldBright,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: "900",
+      letterSpacing: 0.6,
+    },
+    platformTabs: {
+      flexDirection: "row",
+      gap: 6,
+    },
+    platformTab: {
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+      borderWidth: 1,
+      borderColor: "rgba(247, 242, 232, 0.16)",
+      backgroundColor: "rgba(247, 242, 232, 0.04)",
+    },
+    platformTabActive: {
+      borderColor: "rgba(0, 255, 255, 0.44)",
+      backgroundColor: "rgba(0, 255, 255, 0.10)",
+    },
+    platformTabText: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: "900",
+      letterSpacing: 0.6,
+    },
+    platformTabTextActive: {
+      color: theme.colors.scannerCyan,
+    },
+    generatedBody: {
+      color: theme.colors.cream,
+      fontFamily: theme.fonts.body,
+      fontSize: 13,
+      lineHeight: 20,
+    },
+    generatorWarning: {
+      color: theme.colors.goldBright,
+      fontSize: 11,
+      lineHeight: 16,
+    },
+    photoPrepRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      paddingTop: 14,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: "rgba(247, 242, 232, 0.13)",
+    },
+    photoPrepCopy: {
+      flex: 1,
+      gap: 5,
+    },
+    photoPrepText: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.body,
+      fontSize: 12,
+      lineHeight: 17,
+    },
+    addPhotosButton: {
+      minHeight: 38,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 10,
+      borderWidth: 1,
+      borderColor: "rgba(0, 255, 255, 0.42)",
+      backgroundColor: "rgba(0, 255, 255, 0.11)",
+    },
+    addPhotosButtonDisabled: {
+      opacity: 0.48,
+    },
+    addPhotosButtonText: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: "900",
+      letterSpacing: 0.6,
+    },
+    photoUploadError: {
+      color: theme.colors.danger,
+      fontFamily: theme.fonts.body,
+      fontSize: 12,
+      lineHeight: 17,
+    },
+    crosslistCard: {
+      gap: 14,
+      padding: 20,
+      borderRadius: theme.radii.large,
+      borderWidth: 1,
+      borderColor: "rgba(0, 255, 255, 0.28)",
+      backgroundColor: "rgba(7, 12, 18, 0.88)",
+    },
+    crosslistBadge: {
+      paddingHorizontal: 9,
+      paddingVertical: 6,
+      borderWidth: 1,
+      borderColor: "rgba(0, 255, 255, 0.34)",
+      backgroundColor: "rgba(0, 255, 255, 0.08)",
+    },
+    crosslistBadgeText: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: "900",
+      letterSpacing: 0.8,
+    },
+    crosslistDescription: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.body,
+      fontSize: 12,
+      lineHeight: 18,
+    },
+    destinationList: {
+      gap: 0,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: "rgba(247, 242, 232, 0.13)",
+    },
+    destinationRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      paddingVertical: 13,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: "rgba(247, 242, 232, 0.13)",
+    },
+    destinationIcon: {
+      width: 32,
+      height: 32,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: "rgba(0, 255, 255, 0.24)",
+      backgroundColor: "rgba(0, 255, 255, 0.06)",
+    },
+    destinationCopy: {
+      flex: 1,
+      gap: 4,
+    },
+    destinationTopline: {
+      flexDirection: "row",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: 7,
+    },
+    destinationName: {
+      color: theme.colors.cream,
+      fontFamily: theme.fonts.semibold,
+      fontSize: 14,
+      fontWeight: "900",
+    },
+    destinationMode: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: "900",
+      letterSpacing: 0.7,
+    },
+    destinationDescription: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.body,
+      fontSize: 11,
+      lineHeight: 16,
+    },
+    shareDraftButton: {
+      minWidth: 58,
+      minHeight: 34,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 8,
+      borderWidth: 1,
+      borderColor: "rgba(242, 211, 138, 0.42)",
+      backgroundColor: "rgba(242, 211, 138, 0.10)",
+    },
+    shareDraftButtonDone: {
+      borderColor: "rgba(0, 255, 255, 0.42)",
+      backgroundColor: "rgba(0, 255, 255, 0.10)",
+    },
+    shareDraftText: {
+      color: theme.colors.goldBright,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: "900",
+      letterSpacing: 0.6,
+    },
+    shareDraftTextDone: {
+      color: theme.colors.scannerCyan,
+    },
+    ebayPublishPanel: {
+      gap: 12,
+      marginTop: 14,
+      paddingTop: 14,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: "rgba(247, 242, 232, 0.14)",
+    },
+    ebayPublishHeader: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+      gap: 10,
+    },
+    ebayPublishHeaderCopy: {
+      flex: 1,
+      gap: 4,
+    },
+    ebayPublishTitle: {
+      color: theme.colors.cream,
+      fontFamily: theme.fonts.bold,
+      fontSize: 15,
+      fontWeight: "900",
+    },
+    ebayPublishMode: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: "900",
+      letterSpacing: 0.7,
+    },
+    ebayPublishHint: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.body,
+      fontSize: 11,
+      lineHeight: 17,
+    },
+    ebaySetupNotice: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 9,
+      padding: 12,
+      borderRadius: theme.radii.medium,
+      borderWidth: 1,
+      borderColor: "rgba(88, 223, 232, 0.22)",
+      backgroundColor: "rgba(88, 223, 232, 0.06)",
+    },
+    ebaySetupNoticeText: {
+      flex: 1,
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.body,
+      fontSize: 11,
+      lineHeight: 16,
+    }, ebayField: {
+      gap: 6,
+    },
+    ebayFieldRow: {
+      flexDirection: "row",
+      gap: 10,
+    },
+    ebayFieldHalf: {
+      flex: 1,
+      gap: 6,
+    },
+    ebayFieldLabel: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: "900",
+      letterSpacing: 0.7,
+    },
+    ebayFieldInput: {
+      minHeight: 42,
+      borderWidth: 1,
+      borderColor: "rgba(247, 242, 232, 0.18)",
+      backgroundColor: "rgba(247, 242, 232, 0.06)",
+      color: theme.colors.cream,
+      paddingHorizontal: 12,
+      paddingVertical: 9,
+      fontSize: 13,
+      borderRadius: 4,
+    },
+    ebayPublishActions: {
+      flexDirection: "row",
+      gap: 10,
+      justifyContent: "flex-end",
+    },
+    ebayCancelButton: {
+      minHeight: 40,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 14,
+      borderWidth: 1,
+      borderColor: "rgba(247, 242, 232, 0.18)",
+      borderRadius: 4,
+    },
+    ebayCancelButtonText: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.radar,
+      fontSize: 9,
+      fontWeight: "900",
+      letterSpacing: 0.8,
+    },
+    ebayPublishButton: {
+      minHeight: 40,
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 14,
+      backgroundColor: theme.colors.goldBright,
+      borderRadius: 4,
+    },
+    ebayPublishButtonDisabled: {
+      opacity: 0.6,
+    },
+    ebayPublishButtonNeedsReadiness: {
+      opacity: 0.72,
+    },
+    ebayPublishButtonText: {
+      color: theme.colors.backgroundDeep,
+      fontFamily: theme.fonts.radar,
+      fontSize: 9,
+      fontWeight: "900",
+      letterSpacing: 0.8,
+    },
+    ebayPublishError: {
+      color: theme.colors.danger,
+      fontSize: 12,
+      lineHeight: 17,
+    },
+    ebayPublishSuccess: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 10,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: "rgba(0, 255, 255, 0.28)",
+      backgroundColor: "rgba(0, 255, 255, 0.06)",
+      borderRadius: 4,
+    },
+    ebayPublishSuccessCopy: {
+      flex: 1,
+      gap: 4,
+    },
+    ebayPublishSuccessTitle: {
+      color: theme.colors.cream,
+      fontSize: 14,
+      fontWeight: "900",
+    },
+    ebayPublishSuccessDetail: {
+      color: theme.colors.textMuted,
+      fontSize: 11,
+      lineHeight: 16,
+    },
+    ebayOpenButton: {
+      minHeight: 40,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: "rgba(0, 255, 255, 0.34)",
+      backgroundColor: "rgba(0, 255, 255, 0.08)",
+      borderRadius: 4,
+    },
+    ebayOpenButtonText: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 9,
+      fontWeight: "900",
+      letterSpacing: 0.8,
+    },
+    crosslistError: {
+      color: theme.colors.danger,
+      fontSize: 12,
+      lineHeight: 17,
+    },
+    crosslistFootnote: {
+      color: theme.colors.textMuted,
+      fontSize: 11,
+      lineHeight: 16,
+    },
+    progressCard: {
+      gap: 15,
+      padding: 20,
+      borderRadius: theme.radii.large,
+      borderWidth: 1,
+      borderColor: "rgba(242, 211, 138, 0.28)",
+      backgroundColor: "rgba(13, 11, 8, 0.86)",
+    },
+    progressHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 16,
+    },
+    progressCount: {
+      minWidth: 48,
+      minHeight: 48,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: "rgba(242, 211, 138, 0.38)",
+      backgroundColor: "rgba(242, 211, 138, 0.12)",
+    },
+    progressCountText: {
+      color: theme.colors.goldBright,
+      fontFamily: theme.fonts.bold,
+      fontSize: 13,
+      fontWeight: "900",
+    },
+    progressTrack: {
+      height: 6,
+      overflow: "hidden",
+      borderRadius: theme.radii.pill,
+      backgroundColor: "rgba(247, 242, 232, 0.10)",
+    },
+    progressFill: {
+      height: "100%",
+      borderRadius: theme.radii.pill,
+      backgroundColor: theme.colors.scannerCyan,
+    },
+    checklist: {
+      gap: 9,
+    },
+    checklistStep: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      padding: 13,
+      borderRadius: theme.radii.medium,
+      borderWidth: 1,
+      borderColor: "rgba(247, 242, 232, 0.13)",
+      backgroundColor: "rgba(4, 4, 8, 0.64)",
+    },
+    checklistStepComplete: {
+      borderColor: "rgba(0, 255, 255, 0.30)",
+      backgroundColor: "rgba(0, 255, 255, 0.07)",
+    },
+    checkmark: {
+      width: 31,
+      height: 31,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: "rgba(242, 211, 138, 0.30)",
+      backgroundColor: "rgba(242, 211, 138, 0.08)",
+    },
+    checkmarkComplete: {
+      borderColor: "rgba(0, 255, 255, 0.62)",
+      backgroundColor: theme.colors.scannerCyan,
+    },
+    checkmarkNumber: {
+      color: theme.colors.goldBright,
+      fontFamily: theme.fonts.radar,
+      fontSize: 9,
+      fontWeight: "900",
+    },
+    checklistCopy: {
+      flex: 1,
+      gap: 3,
+    },
+    checklistLabel: {
+      color: theme.colors.cream,
+      fontFamily: theme.fonts.semibold,
+      fontSize: 14,
+      fontWeight: "900",
+    },
+    checklistDetail: {
+      color: theme.colors.textMuted,
+      fontSize: 12,
+      lineHeight: 17,
+    },
+    publishNotice: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 11,
+      padding: 16,
+      borderRadius: theme.radii.medium,
+      borderWidth: 1,
+      borderColor: "rgba(242, 211, 138, 0.28)",
+      backgroundColor: "rgba(215, 168, 74, 0.10)",
+    },
+    publishNoticeText: {
+      flex: 1,
+      fontFamily: theme.fonts.display,
+      color: theme.colors.goldBright,
+      fontSize: 13,
+      fontWeight: "700",
+      lineHeight: 19,
+    },
+    pressed: {
+      opacity: 0.76,
+      transform: [{ scale: 0.985 }],
+    },
+  });
   return {
     ...staticStyles,
-  eyebrow: [
-    staticStyles.eyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  subtitle: [
-    staticStyles.subtitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  backButton: [
-    staticStyles.backButton,
-    {
-        width: responsiveLayout.responsiveWidth(44),
-        height: responsiveLayout.responsiveHeight(44),
-    },
-  ],
-  loadingText: [
-    staticStyles.loadingText,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  errorIcon: [
-    staticStyles.errorIcon,
-    {
-        width: responsiveLayout.responsiveWidth(56),
-        height: responsiveLayout.responsiveHeight(56),
-    },
-  ],
-  errorTitle: [
-    staticStyles.errorTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(19),
-    },
-  ],
-  errorText: [
-    staticStyles.errorText,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
-  retryText: [
-    staticStyles.retryText,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  itemCardRail: [
-    staticStyles.itemCardRail,
-    {
-        height: responsiveLayout.responsiveHeight(2),
-    },
-  ],
-  sectionEyebrow: [
-    staticStyles.sectionEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  itemTitle: [
-    staticStyles.itemTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(22),
-    },
-  ],
-  itemMeta: [
-    staticStyles.itemMeta,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  signalPillLabel: [
-    staticStyles.signalPillLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  signalPillText: [
-    staticStyles.signalPillText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  sectionTitle: [
-    staticStyles.sectionTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(18),
-    },
-  ],
-  localPillText: [
-    staticStyles.localPillText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  fieldLabel: [
-    staticStyles.fieldLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  fieldValue: [
-    staticStyles.fieldValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
-  generatorBadgeText: [
-    staticStyles.generatorBadgeText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  generatorDescription: [
-    staticStyles.generatorDescription,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  generateButtonText: [
-    staticStyles.generateButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  generatorError: [
-    staticStyles.generatorError,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  generatedTitle: [
-    staticStyles.generatedTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(18),
-    },
-  ],
-  confidenceText: [
-    staticStyles.confidenceText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  generatedSubtitle: [
-    staticStyles.generatedSubtitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  generatedSignal: [
-    staticStyles.generatedSignal,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  platformTabText: [
-    staticStyles.platformTabText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  generatedBody: [
-    staticStyles.generatedBody,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  generatorWarning: [
-    staticStyles.generatorWarning,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  photoPrepText: [
-    staticStyles.photoPrepText,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  addPhotosButtonText: [
-    staticStyles.addPhotosButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  photoUploadError: [
-    staticStyles.photoUploadError,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  crosslistBadgeText: [
-    staticStyles.crosslistBadgeText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  crosslistDescription: [
-    staticStyles.crosslistDescription,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  destinationIcon: [
-    staticStyles.destinationIcon,
-    {
-        width: responsiveLayout.responsiveWidth(32),
-        height: responsiveLayout.responsiveHeight(32),
-    },
-  ],
-  destinationName: [
-    staticStyles.destinationName,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
-  destinationMode: [
-    staticStyles.destinationMode,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  destinationDescription: [
-    staticStyles.destinationDescription,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  shareDraftText: [
-    staticStyles.shareDraftText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  ebayPublishTitle: [
-    staticStyles.ebayPublishTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  ebayPublishMode: [
-    staticStyles.ebayPublishMode,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  ebayPublishHint: [
-    staticStyles.ebayPublishHint,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  ebaySetupNoticeText: [
-    staticStyles.ebaySetupNoticeText,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  ebayFieldLabel: [
-    staticStyles.ebayFieldLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  ebayFieldInput: [
-    staticStyles.ebayFieldInput,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  ebayCancelButtonText: [
-    staticStyles.ebayCancelButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  ebayPublishButtonText: [
-    staticStyles.ebayPublishButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  ebayPublishError: [
-    staticStyles.ebayPublishError,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  ebayPublishSuccessTitle: [
-    staticStyles.ebayPublishSuccessTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
-  ebayPublishSuccessDetail: [
-    staticStyles.ebayPublishSuccessDetail,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  ebayOpenButtonText: [
-    staticStyles.ebayOpenButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  crosslistError: [
-    staticStyles.crosslistError,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  crosslistFootnote: [
-    staticStyles.crosslistFootnote,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  progressCountText: [
-    staticStyles.progressCountText,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  progressTrack: [
-    staticStyles.progressTrack,
-    {
-        height: responsiveLayout.responsiveHeight(6),
-    },
-  ],
-  checkmark: [
-    staticStyles.checkmark,
-    {
-        width: responsiveLayout.responsiveWidth(31),
-        height: responsiveLayout.responsiveHeight(31),
-    },
-  ],
-  checkmarkNumber: [
-    staticStyles.checkmarkNumber,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  checklistLabel: [
-    staticStyles.checklistLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
-  checklistDetail: [
-    staticStyles.checklistDetail,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  publishNoticeText: [
-    staticStyles.publishNoticeText,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
+    eyebrow: [
+      staticStyles.eyebrow,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    subtitle: [
+      staticStyles.subtitle,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    backButton: [
+      staticStyles.backButton,
+      {
+        width: responsiveWidth(44),
+        height: responsiveHeight(44),
+      },
+    ],
+    loadingText: [
+      staticStyles.loadingText,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    errorIcon: [
+      staticStyles.errorIcon,
+      {
+        width: responsiveWidth(56),
+        height: responsiveHeight(56),
+      },
+    ],
+    errorTitle: [
+      staticStyles.errorTitle,
+      {
+        fontSize: responsiveFont(19),
+      },
+    ],
+    errorText: [
+      staticStyles.errorText,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
+    retryText: [
+      staticStyles.retryText,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    itemCardRail: [
+      staticStyles.itemCardRail,
+      {
+        height: responsiveHeight(2),
+      },
+    ],
+    sectionEyebrow: [
+      staticStyles.sectionEyebrow,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    itemTitle: [
+      staticStyles.itemTitle,
+      {
+        fontSize: responsiveFont(22),
+      },
+    ],
+    itemMeta: [
+      staticStyles.itemMeta,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    signalPillLabel: [
+      staticStyles.signalPillLabel,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    signalPillText: [
+      staticStyles.signalPillText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    sectionTitle: [
+      staticStyles.sectionTitle,
+      {
+        fontSize: responsiveFont(18),
+      },
+    ],
+    localPillText: [
+      staticStyles.localPillText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    fieldLabel: [
+      staticStyles.fieldLabel,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    fieldValue: [
+      staticStyles.fieldValue,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
+    generatorBadgeText: [
+      staticStyles.generatorBadgeText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    generatorDescription: [
+      staticStyles.generatorDescription,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    generateButtonText: [
+      staticStyles.generateButtonText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    generatorError: [
+      staticStyles.generatorError,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    generatedTitle: [
+      staticStyles.generatedTitle,
+      {
+        fontSize: responsiveFont(18),
+      },
+    ],
+    confidenceText: [
+      staticStyles.confidenceText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    generatedSubtitle: [
+      staticStyles.generatedSubtitle,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    generatedSignal: [
+      staticStyles.generatedSignal,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    platformTabText: [
+      staticStyles.platformTabText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    generatedBody: [
+      staticStyles.generatedBody,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    generatorWarning: [
+      staticStyles.generatorWarning,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    photoPrepText: [
+      staticStyles.photoPrepText,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    addPhotosButtonText: [
+      staticStyles.addPhotosButtonText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    photoUploadError: [
+      staticStyles.photoUploadError,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    crosslistBadgeText: [
+      staticStyles.crosslistBadgeText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    crosslistDescription: [
+      staticStyles.crosslistDescription,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    destinationIcon: [
+      staticStyles.destinationIcon,
+      {
+        width: responsiveWidth(32),
+        height: responsiveHeight(32),
+      },
+    ],
+    destinationName: [
+      staticStyles.destinationName,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
+    destinationMode: [
+      staticStyles.destinationMode,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    destinationDescription: [
+      staticStyles.destinationDescription,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    shareDraftText: [
+      staticStyles.shareDraftText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    ebayPublishTitle: [
+      staticStyles.ebayPublishTitle,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    ebayPublishMode: [
+      staticStyles.ebayPublishMode,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    ebayPublishHint: [
+      staticStyles.ebayPublishHint,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    ebaySetupNoticeText: [
+      staticStyles.ebaySetupNoticeText,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    ebayFieldLabel: [
+      staticStyles.ebayFieldLabel,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    ebayFieldInput: [
+      staticStyles.ebayFieldInput,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    ebayCancelButtonText: [
+      staticStyles.ebayCancelButtonText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    ebayPublishButtonText: [
+      staticStyles.ebayPublishButtonText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    ebayPublishError: [
+      staticStyles.ebayPublishError,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    ebayPublishSuccessTitle: [
+      staticStyles.ebayPublishSuccessTitle,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
+    ebayPublishSuccessDetail: [
+      staticStyles.ebayPublishSuccessDetail,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    ebayOpenButtonText: [
+      staticStyles.ebayOpenButtonText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    crosslistError: [
+      staticStyles.crosslistError,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    crosslistFootnote: [
+      staticStyles.crosslistFootnote,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    progressCountText: [
+      staticStyles.progressCountText,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    progressTrack: [
+      staticStyles.progressTrack,
+      {
+        height: responsiveHeight(6),
+      },
+    ],
+    checkmark: [
+      staticStyles.checkmark,
+      {
+        width: responsiveWidth(31),
+        height: responsiveHeight(31),
+      },
+    ],
+    checkmarkNumber: [
+      staticStyles.checkmarkNumber,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    checklistLabel: [
+      staticStyles.checklistLabel,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
+    checklistDetail: [
+      staticStyles.checklistDetail,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    publishNoticeText: [
+      staticStyles.publishNoticeText,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
   };
 }

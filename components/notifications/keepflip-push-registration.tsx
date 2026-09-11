@@ -1,42 +1,70 @@
 import { useEffect, useRef } from 'react';
 
-import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import * as SecureStore from 'expo-secure-store';
 import { ID } from 'react-native-appwrite';
+import { Platform } from 'react-native';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { getAppwriteCoreServices } from '@/lib/appwrite';
+import { ensureKeepFlipNotificationPermission } from '@/services/keepflip-notification-service';
 
-const PUSH_TOKEN_STORAGE_KEY = 'devicePushToken';
+const PUSH_TOKEN_STORAGE_PREFIX = 'keepflip.devicePushToken.';
+const PUSH_TARGET_STORAGE_PREFIX = 'keepflip.appwritePushTargetId.';
+const PUSH_PROVIDER_ID = process.env.EXPO_PUBLIC_APPWRITE_PUSH_PROVIDER_ID?.trim();
 
-async function registerPushTarget() {
-  const { status: existingStatus } =
-    await Notifications.getPermissionsAsync();
+function storageKey(prefix: string, userId: string) {
+  return `${prefix}${userId}`;
+}
 
-  let permissionStatus = existingStatus;
-  if (permissionStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    permissionStatus = status;
-  }
+function errorCode(error: unknown) {
+  if (!error || typeof error !== 'object' || !('code' in error)) return null;
+  const code = Number((error as { code?: unknown }).code);
+  return Number.isFinite(code) ? code : null;
+}
 
-  if (permissionStatus !== 'granted') return;
+async function registerPushTarget(userId: string, token?: string) {
+  const allowed = await ensureKeepFlipNotificationPermission({
+    requestIfNeeded: !token,
+  });
+  if (!allowed) return false;
 
-  const nativeToken = String(
+  const nativeToken = token ?? String(
     (await Notifications.getDevicePushTokenAsync()).data,
   );
-  const savedToken = await SecureStore.getItemAsync(PUSH_TOKEN_STORAGE_KEY);
+  if (!nativeToken.trim()) return false;
 
-  if (savedToken === nativeToken) return;
+  const tokenStorageKey = storageKey(PUSH_TOKEN_STORAGE_PREFIX, userId);
+  const targetStorageKey = storageKey(PUSH_TARGET_STORAGE_PREFIX, userId);
+  const [savedToken, savedTargetId] = await Promise.all([
+    SecureStore.getItemAsync(tokenStorageKey),
+    SecureStore.getItemAsync(targetStorageKey),
+  ]);
+  const targetId = savedTargetId || `push-${ID.unique()}`;
+
+  if (savedToken === nativeToken && savedTargetId) return true;
 
   const { account } = getAppwriteCoreServices();
-  await account.createPushTarget({
-    targetId: ID.unique(),
-    identifier: nativeToken,
-    providerId: 'FCM',
-  });
+  try {
+    await account.updatePushTarget({
+      targetId,
+      identifier: nativeToken,
+    });
+  } catch (error) {
+    if (errorCode(error) !== 404) throw error;
 
-  await SecureStore.setItemAsync(PUSH_TOKEN_STORAGE_KEY, nativeToken);
+    await account.createPushTarget({
+      targetId,
+      identifier: nativeToken,
+      ...(PUSH_PROVIDER_ID ? { providerId: PUSH_PROVIDER_ID } : {}),
+    });
+  }
+
+  await Promise.all([
+    SecureStore.setItemAsync(tokenStorageKey, nativeToken),
+    SecureStore.setItemAsync(targetStorageKey, targetId),
+  ]);
+  return true;
 }
 
 /**
@@ -49,7 +77,7 @@ export function KeepFlipPushRegistration() {
   const attemptedUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (status !== 'signed-in' || !user || !Device.isDevice) {
+    if (status !== 'signed-in' || !user || Platform.OS === 'web') {
       attemptedUserIdRef.current = null;
       return;
     }
@@ -57,11 +85,24 @@ export function KeepFlipPushRegistration() {
     if (attemptedUserIdRef.current === user.$id) return;
     attemptedUserIdRef.current = user.$id;
 
-    void registerPushTarget().catch((error: unknown) => {
+    const tokenSubscription = Notifications.addPushTokenListener((token) => {
+      void registerPushTarget(user.$id, String(token.data)).catch((error: unknown) => {
+        if (__DEV__) {
+          console.warn('[KeepFlip][Push] Could not refresh the device target:', error);
+        }
+      });
+    });
+
+    void registerPushTarget(user.$id).catch((error: unknown) => {
+      if (attemptedUserIdRef.current === user.$id) {
+        attemptedUserIdRef.current = null;
+      }
       if (__DEV__) {
         console.warn('[KeepFlip][Push] Could not register the device:', error);
       }
     });
+
+    return () => tokenSubscription.remove();
   }, [status, user]);
 
   return null;

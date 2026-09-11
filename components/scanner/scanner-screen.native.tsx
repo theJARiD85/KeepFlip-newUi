@@ -1,6 +1,6 @@
 import * as Haptics from "expo-haptics";
-import type { Href } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
+import type { Href } from "expo-router";
 import {
   useIsFocused,
   useRouter,
@@ -17,14 +17,6 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
-import {
-  Camera,
-  CommonResolutions,
-  type CameraRef,
-  useCameraDevice,
-  useCameraPermission,
-  usePhotoOutput,
-} from "react-native-vision-camera";
 import Animated, {
   FadeIn,
   FadeOut,
@@ -33,35 +25,44 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
 } from "react-native-reanimated";
+import {
+  Camera,
+  CommonResolutions,
+  useCameraDevice,
+  useCameraPermission,
+  usePhotoOutput,
+  type CameraRef,
+} from "react-native-vision-camera";
 
+import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
+import { useKeepFlipMenu } from "@/components/navigation/keepflip-menu-context";
 import {
   BarcodeLookupOverlay,
   type BarcodeLookupOverlayState,
 } from "@/components/scanner/barcode-lookup-overlay.native";
-import {
-  ValueRadarOverlay,
-  useValueRadar,
-  type ValueRadarViewport,
-} from "@/components/scanner/value-radar.native";
-import {
-  ScannerToolCarousel,
-  scannerTools,
-  type ScannerToolId,
-} from "@/components/scanner/scanner-tool-carousel";
+import { useItemAnalysisResult } from "@/components/scanner/item-analysis-result-context";
 import {
   MultiScanPhotoReview,
   MultiScanPhotoStack,
   toDisplayUri,
   type MultiScanPhoto,
 } from "@/components/scanner/multi-scan-photo-review";
-import { useItemAnalysisResult } from "@/components/scanner/item-analysis-result-context";
-import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
-import { useKeepFlipMenu } from "@/components/navigation/keepflip-menu-context";
+import {
+  ScannerToolCarousel,
+  scannerTools,
+  type ScannerToolId,
+} from "@/components/scanner/scanner-tool-carousel";
+import {
+  ValueRadarOverlay,
+  useValueRadar,
+  type ValueRadarViewport,
+} from "@/components/scanner/value-radar.native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout } from "@/hooks/use-responsive-layout";
+import { responsiveWidth } from '@/lib/responsiveFont';
 import { lookupBarcodeWithEbay } from "@/services/ebaySoldCompsService";
 import { MAX_ANALYSIS_PHOTOS } from "@/services/item-analysis-service";
 import { neutralizeMarketplaceBrand } from "@/services/market-copy";
@@ -81,7 +82,6 @@ import {
 import {
   getSmartEvidenceCapturePlan,
 } from "@/services/smart-evidence-capture";
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type AnalysisCognitionSeed = {
@@ -370,9 +370,9 @@ export default function ScannerScreen() {
     () =>
       radarMarker && radarMarker.score >= 0.55
         ? {
-            label: radarMarker.label,
-            score: radarMarker.score,
-          }
+          label: radarMarker.label,
+          score: radarMarker.score,
+        }
         : undefined,
     [radarMarker],
   );
@@ -426,9 +426,9 @@ export default function ScannerScreen() {
     selectedTool === "multi"
       ? smartScanTip
       : captureFeedback ??
-        (scanProof.source === "on_device"
-          ? `${scanProof.evidenceDetail}. ${scanProof.processingDetail}`
-          : selectedToolHeader.hint);
+      (scanProof.source === "on_device"
+        ? `${scanProof.evidenceDetail}. ${scanProof.processingDetail}`
+        : selectedToolHeader.hint);
   const scannerHeaderHasEvidence =
     captureFeedback != null || scanProof.source === "on_device";
 
@@ -1334,8 +1334,8 @@ export default function ScannerScreen() {
 
   const analysisButton =
     canAnalyzeCurrentTool &&
-    activeAnalysisSessionId == null &&
-    !isPhotoReviewOpen ? (
+      activeAnalysisSessionId == null &&
+      !isPhotoReviewOpen ? (
       <Animated.View
         entering={FadeIn.duration(180)}
         exiting={FadeOut.duration(130)}
@@ -1353,7 +1353,7 @@ export default function ScannerScreen() {
             styles.analyzeButton,
             pressed && styles.analyzeButtonPressed,
             (isCapturing || isInspectingProof || isPickingPhoto || isMenuOpen) &&
-              styles.buttonDisabled,
+            styles.buttonDisabled,
           ]}
         >
           <View
@@ -1475,7 +1475,8 @@ export default function ScannerScreen() {
               style={[
                 styles.permissionBody,
                 {
-                  fontSize: responsiveFont(15)},
+                  fontSize: responsiveFont(15)
+                },
               ]}
             >
               {canRequestPermission
@@ -1719,286 +1720,292 @@ export default function ScannerScreen() {
         ) : null}
 
         <Animated.View
-        accessibilityElementsHidden={isScannerOverlayOpen}
-        importantForAccessibility={
-          isScannerOverlayOpen ? "no-hide-descendants" : "auto"
-        }
-        pointerEvents={isScannerOverlayOpen ? "none" : "auto"}
-        style={[styles.content,
-          {
-            paddingHorizontal: pageGutter,
-            paddingTop: insets.top + verticalScale(14, 0.5),
-            paddingBottom:
-              insets.bottom + verticalScale(isCompactHeight ? 4 : 10, 0.5),
-          },
-          scannerChromeAnimatedStyle, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
-      >
-        <View
-          style={[
-            styles.topBar,
-            {
-              marginBottom: verticalScale(12, 0.55),
-              paddingRight: moderateScale(60, 0.35),
-            },
-          ]}
-        >
-          <View style={styles.headerCopy}>
-            <Text
-              style={[
-                styles.eyebrow,
-                {
-                  fontSize: responsiveFont(10),
-                  letterSpacing: moderateScale(2.4, 0.28),
-                },
-              ]}
-            >
-              KEEPFLIP AI
-            </Text>
-            <Animated.View
-              accessibilityLiveRegion="polite"
-              entering={FadeIn.duration(180)}
-              key={selectedTool}
-              style={styles.toolHeaderContent}
-            >
-              <Text
-                style={[
-                  styles.title,
-                  {
-                    fontSize: responsiveFont(26)},
-                ]}
-              >
-              {selectedTool === "multi"
-                ? "Smart evidence scan"
-                : selectedToolHeader.title}
-              </Text>
-              <View style={styles.headerHintRow}>
-                <IconSymbol
-                  color={selectedToolAppearance.accent}
-                  name={selectedToolAppearance.icon}
-                  size={14}
-                />
-                <Text
-                  numberOfLines={2}
-                  style={[
-                    styles.headerHint,
-                    {
-                      color:
-                        selectedTool === "multi"
-                          ? theme.colors.cream
-                          : scannerHeaderHasEvidence
-                            ? selectedToolAppearance.accent
-                            : theme.colors.text,
-                      fontSize: responsiveFont(12)},
-                  ]}
-                >
-                  {scannerHeaderHint}
-                </Text>
-              </View>
-            </Animated.View>
-          </View>
-        </View>
-        <View style={styles.scannerArea}>
-        <Pressable
-                  accessibilityLabel="Toggle flashlight"
-                  accessibilityState={{
-                    disabled:
-                      !canUseTorch ||
-                      !isCameraActive ||
-                      !isCameraReady ||
-                      isTorchUpdating,
-                  }}
-                  disabled={
-                    !canUseTorch ||
-                    !isCameraActive ||
-                    !isCameraReady ||
-                    isTorchUpdating
-                  }
-                  onPress={() => void handleToggleTorch()}
-                  style={[
-                    styles.iconButton,
-                    {
-                      width: torchButtonSize,
-                      height: torchButtonSize,
-                      borderRadius: torchButtonSize / 2,
-                    },
-                    torchEnabled && styles.iconButtonActive,
-                    (!canUseTorch ||
-                      !isCameraActive ||
-                      !isCameraReady ||
-                      isTorchUpdating) &&
-                      styles.iconButtonDisabled,
-                  ]}
-                >
-                  <IconSymbol
-                    name={torchEnabled ? "bolt.fill" : "bolt.slash.fill"}
-                    size={Math.round(moderateScale(22, 0.6))}
-                    color={
-                      torchEnabled
-                        ? theme.colors.background
-                        : theme.colors.goldBright
-                    }
-                  />
-                </Pressable>
-          <View style={styles.zoomControlAnchor}>
-            <View style={styles.zoomControlRow}>
-              {isZoomOpen ? (
-                <Animated.View
-                  entering={SlideInRight.duration(180)}
-                  exiting={SlideOutRight.duration(120)}
-                  style={styles.zoomPanel}
-                >
-                  <Text style={[styles.zoomControlLabel, { fontSize: responsiveFont(8) }]}>ZOOM</Text>
-                  <View style={styles.zoomPresetRow}>
-                    {zoomPresets.map((preset) => {
-                      const selected =
-                        Math.abs(zoomDisplayFactor - preset) < 0.05;
-                      return (
-                        <Pressable
-                          accessibilityLabel={`Set camera zoom to ${formatZoomLabel(preset)}`}
-                          accessibilityRole="button"
-                          accessibilityState={{
-                            disabled: zoomControlDisabled,
-                            selected,
-                          }}
-                          disabled={zoomControlDisabled}
-                          key={preset}
-                          onPress={() => void handleZoomChange(preset)}
-                          style={({ pressed }) => [
-                            styles.zoomPreset,
-                            selected && styles.zoomPresetSelected,
-                            pressed && styles.zoomPresetPressed,
-                            zoomControlDisabled && styles.zoomPresetDisabled,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.zoomPresetText,
-                              selected && styles.zoomPresetTextSelected,
-                            ]}
-                          >
-                            {formatZoomLabel(preset)}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                </Animated.View>
-              ) : null}
-              <Pressable
-                accessibilityLabel={
-                  isZoomOpen
-                    ? "Hide camera zoom controls"
-                    : `Show camera zoom controls at ${formatZoomLabel(zoomDisplayFactor)}`
-                }
-                accessibilityRole="button"
-                accessibilityState={{
-                  disabled: zoomControlDisabled,
-                  expanded: isZoomOpen,
-                }}
-                disabled={zoomControlDisabled}
-                onPress={handleToggleZoom}
-                style={({ pressed }) => [
-                  styles.zoomButton,
-                  isZoomOpen && styles.zoomButtonActive,
-                  pressed && styles.zoomButtonPressed,
-                  zoomControlDisabled && styles.zoomButtonDisabled,
-                  {
-                    width: torchButtonSize,
-                    height: torchButtonSize,
-                    borderRadius: 5,
-                  },
-                ]}
-              >
-                <Text style={[styles.zoomButtonText, { fontSize: responsiveFont(10) }]}>
-                  {formatZoomLabel(zoomDisplayFactor)}
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-          <View
-            ref={scanFrameRef}
-            onLayout={handleScanFrameLayout}
-            style={[
-              styles.scanFrame,
-              {
-                width: scannerWidth,
-                height: scannerHeight,
-              },
-            ]}
-          >
-            <View pointerEvents="none" style={styles.frameColorWash} />
-          </View>
-          {analysisButton ? (
-            <View style={styles.analysisActionAnchor}>
-              {analysisButton}
-            </View>
-          ) : null}
-        </View>
-
-        <Animated.View
           accessibilityElementsHidden={isScannerOverlayOpen}
           importantForAccessibility={
             isScannerOverlayOpen ? "no-hide-descendants" : "auto"
           }
           pointerEvents={isScannerOverlayOpen ? "none" : "auto"}
-          style={[
-            styles.bottomPanel,
-            { width: controlDockWidth },
-            toolbarAnimatedStyle,
-          ]}
+          style={[styles.content,
+          {
+            paddingHorizontal: pageGutter,
+            paddingTop: insets.top + 15,
+            paddingBottom:
+              insets.bottom + 30,
+          },
+            scannerChromeAnimatedStyle, { width: contentMaxWidth, maxWidth: width, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         >
-          <ScannerToolCarousel
-            badges={{
-              single: singlePhotoUri ? 1 : 0,
-              batch: batchScanPhotos.length,
-              upload: uploadedPhotos.length,
-            }}
-            disabled={
-              isCapturing ||
-              isInspectingProof ||
-              isPickingPhoto ||
-              isMenuOpen
+          <View
+            style={[
+              styles.topBar,
+              {
+                marginBottom: verticalScale(12, 0.55),
+                paddingRight: moderateScale(60, 0.35),
+              },
+            ]}
+          >
+            <View style={styles.headerCopy}>
+              <Text
+                style={[
+                  styles.eyebrow,
+                  {
+                    fontSize: responsiveFont(10),
+                    letterSpacing: moderateScale(2.4, 0.28),
+                  },
+                ]}
+              >
+                KEEPFLIP AI
+              </Text>
+              <Animated.View
+                accessibilityLiveRegion="polite"
+                entering={FadeIn.duration(180)}
+                key={selectedTool}
+                style={styles.toolHeaderContent}
+              >
+                <Text
+                  style={[
+                    styles.title,
+                    {
+                      fontFamily: theme.fonts.bold,
+                      fontSize: responsiveFont(26)
+                    },
+                  ]}
+                >
+                  {selectedTool === "multi"
+                    ? "Smart evidence scan"
+                    : selectedToolHeader.title}
+                </Text>
+                <View style={styles.headerHintRow}>
+                  <IconSymbol
+                    color={selectedToolAppearance.accent}
+                    name={selectedToolAppearance.icon}
+                    size={16}
+                    style={{alignItems: 'center', justifyContent: 'center', top: 6}}
+                  />
+                  <Text
+                    numberOfLines={2}
+                    style={[
+                      styles.headerHint,
+                      {
+                        color:
+                          selectedTool === "multi"
+                            ? theme.colors.cream
+                            : scannerHeaderHasEvidence
+                              ? selectedToolAppearance.accent
+                              : theme.colors.text,
+                        fontSize: responsiveFont(12),
+                        textAlignVertical: 'top',
+                        textAlign: 'left'
+                      },
+                    ]}
+                  >
+                    {scannerHeaderHint}
+                  </Text>
+                </View>
+              </Animated.View>
+            </View>
+          </View>
+          <View style={styles.scannerArea}>
+            <Pressable
+              accessibilityLabel="Toggle flashlight"
+              accessibilityState={{
+                disabled:
+                  !canUseTorch ||
+                  !isCameraActive ||
+                  !isCameraReady ||
+                  isTorchUpdating,
+              }}
+              disabled={
+                !canUseTorch ||
+                !isCameraActive ||
+                !isCameraReady ||
+                isTorchUpdating
+              }
+              onPress={() => void handleToggleTorch()}
+              style={[
+                styles.iconButton,
+                {
+                  width: torchButtonSize,
+                  height: torchButtonSize,
+                  borderRadius: torchButtonSize / 2,
+                },
+                torchEnabled && styles.iconButtonActive,
+                (!canUseTorch ||
+                  !isCameraActive ||
+                  !isCameraReady ||
+                  isTorchUpdating) &&
+                styles.iconButtonDisabled,
+              ]}
+            >
+              <IconSymbol
+                name={torchEnabled ? "bolt.fill" : "bolt.slash.fill"}
+                size={Math.round(moderateScale(22, 0.6))}
+                color={
+                  torchEnabled
+                    ? theme.colors.background
+                    : theme.colors.goldBright
+                }
+              />
+            </Pressable>
+            <View style={styles.zoomControlAnchor}>
+              <View style={styles.zoomControlRow}>
+                {isZoomOpen ? (
+                  <Animated.View
+                    entering={SlideInRight.duration(180)}
+                    exiting={SlideOutRight.duration(120)}
+                    style={styles.zoomPanel}
+                  >
+                    <Text style={[styles.zoomControlLabel, { fontSize: responsiveFont(8) }]}>ZOOM</Text>
+                    <View style={styles.zoomPresetRow}>
+                      {zoomPresets.map((preset) => {
+                        const selected =
+                          Math.abs(zoomDisplayFactor - preset) < 0.05;
+                        return (
+                          <Pressable
+                            accessibilityLabel={`Set camera zoom to ${formatZoomLabel(preset)}`}
+                            accessibilityRole="button"
+                            accessibilityState={{
+                              disabled: zoomControlDisabled,
+                              selected,
+                            }}
+                            disabled={zoomControlDisabled}
+                            key={preset}
+                            onPress={() => void handleZoomChange(preset)}
+                            style={({ pressed }) => [
+                              styles.zoomPreset,
+                              selected && styles.zoomPresetSelected,
+                              pressed && styles.zoomPresetPressed,
+                              zoomControlDisabled && styles.zoomPresetDisabled,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.zoomPresetText,
+                                selected && styles.zoomPresetTextSelected,
+                              ]}
+                            >
+                              {formatZoomLabel(preset)}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </Animated.View>
+                ) : null}
+                <Pressable
+                  accessibilityLabel={
+                    isZoomOpen
+                      ? "Hide camera zoom controls"
+                      : `Show camera zoom controls at ${formatZoomLabel(zoomDisplayFactor)}`
+                  }
+                  accessibilityRole="button"
+                  accessibilityState={{
+                    disabled: zoomControlDisabled,
+                    expanded: isZoomOpen,
+                  }}
+                  disabled={zoomControlDisabled}
+                  onPress={handleToggleZoom}
+                  style={({ pressed }) => [
+                    styles.zoomButton,
+                    isZoomOpen && styles.zoomButtonActive,
+                    pressed && styles.zoomButtonPressed,
+                    zoomControlDisabled && styles.zoomButtonDisabled,
+                    {
+                      width: torchButtonSize,
+                      height: torchButtonSize,
+                      borderRadius: 5,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.zoomButtonText, { fontSize: responsiveFont(10) }]}>
+                    {formatZoomLabel(zoomDisplayFactor)}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+            <View
+              ref={scanFrameRef}
+              onLayout={handleScanFrameLayout}
+              style={[
+                styles.scanFrame,
+                {
+                  width: scannerWidth,
+                  height: scannerHeight,
+                },
+              ]}
+            >
+              <View pointerEvents="none" style={styles.frameColorWash} />
+            </View>
+            {analysisButton ? (
+              <View style={styles.analysisActionAnchor}>
+                {analysisButton}
+              </View>
+            ) : null}
+          </View>
+
+          <Animated.View
+            accessibilityElementsHidden={isScannerOverlayOpen}
+            importantForAccessibility={
+              isScannerOverlayOpen ? "no-hide-descendants" : "auto"
             }
-            onActivate={(tool) => void handleToolActivate(tool)}
-            onSelect={handleToolSelect}
-            selectedTool={selectedTool}
-          />
-          {selectedTool === "multi" &&
-          multiScanPhotos.length > 0 &&
-          !isMultiReviewOpen ? (
-            <View style={styles.photoStackSidecar}>
-              <MultiScanPhotoStack
-                disabled={
-                  isCapturing ||
-                  isInspectingProof ||
-                  isPickingPhoto ||
-                  isMenuOpen
-                }
-                onOpen={openMultiReview}
-                photos={multiScanPhotos}
-              />
-            </View>
-          ) : null}
-          {selectedTool === "upload" &&
-          uploadedPhotos.length > 0 &&
-          !isUploadReviewOpen ? (
-            <View style={styles.photoStackSidecar}>
-              <MultiScanPhotoStack
-                accentColor={theme.colors.cream}
-                accessibilityContext="uploaded"
-                disabled={
-                  isCapturing ||
-                  isInspectingProof ||
-                  isPickingPhoto ||
-                  isMenuOpen
-                }
-                onOpen={openUploadReview}
-                photos={uploadedPhotos}
-              />
-            </View>
-          ) : null}
+            pointerEvents={isScannerOverlayOpen ? "none" : "auto"}
+            style={[
+              styles.bottomPanel,
+              { width: width },
+              toolbarAnimatedStyle,
+            ]}
+          >
+            <ScannerToolCarousel
+              badges={{
+                single: singlePhotoUri ? 1 : 0,
+                batch: batchScanPhotos.length,
+                upload: uploadedPhotos.length,
+              }}
+              disabled={
+                isCapturing ||
+                isInspectingProof ||
+                isPickingPhoto ||
+                isMenuOpen
+              }
+              onActivate={(tool) => void handleToolActivate(tool)}
+              onSelect={handleToolSelect}
+              selectedTool={selectedTool}
+            />
+            {selectedTool === "multi" &&
+              multiScanPhotos.length > 0 &&
+              !isMultiReviewOpen ? (
+              <View style={styles.photoStackSidecar}>
+                <MultiScanPhotoStack
+                  disabled={
+                    isCapturing ||
+                    isInspectingProof ||
+                    isPickingPhoto ||
+                    isMenuOpen
+                  }
+                  onOpen={openMultiReview}
+                  photos={multiScanPhotos}
+                />
+              </View>
+            ) : null}
+            {selectedTool === "upload" &&
+              uploadedPhotos.length > 0 &&
+              !isUploadReviewOpen ? (
+              <View style={styles.photoStackSidecar}>
+                <MultiScanPhotoStack
+                  accentColor={theme.colors.cream}
+                  accessibilityContext="uploaded"
+                  disabled={
+                    isCapturing ||
+                    isInspectingProof ||
+                    isPickingPhoto ||
+                    isMenuOpen
+                  }
+                  onOpen={openUploadReview}
+                  photos={uploadedPhotos}
+                />
+              </View>
+            ) : null}
+          </Animated.View>
         </Animated.View>
-      </Animated.View>
       </View>
 
       <Pressable
@@ -2031,455 +2038,458 @@ export default function ScannerScreen() {
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    position: "relative",
-    overflow: "hidden",
-    backgroundColor: theme.colors.background,
-  },
-  cameraLayer: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 20,
-  },
-  interfaceLayer: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 20,
-    elevation: 20,
-  },
-  photoOverlayHost: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 100,
-    elevation: 80,
-  },
-  content: { flex: 1 },
-  centeredState: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-  },
-  cameraScrim: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    experimental_backgroundImage: `
+  const { responsiveFont, responsiveHeight, responsiveWidth } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    screen: {
+      flex: 1,
+      position: "relative",
+      overflow: "hidden",
+      backgroundColor: theme.colors.background,
+    },
+    cameraLayer: {
+      ...StyleSheet.absoluteFill,
+      zIndex: 20,
+    },
+    interfaceLayer: {
+      ...StyleSheet.absoluteFill,
+      zIndex: 20,
+      elevation: 20,
+    },
+    photoOverlayHost: {
+      ...StyleSheet.absoluteFill,
+      zIndex: 100,
+      elevation: 80,
+    },
+    content: { flex: 1 },
+    centeredState: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 24,
+    },
+    cameraScrim: {
+      position: "absolute",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      experimental_backgroundImage: `
       radial-gradient(circle at 72% 44%, rgba(88, 223, 232, 0.09) 0%, transparent 34%),
       radial-gradient(circle at 24% 62%, rgba(141, 114, 255, 0.10) 0%, transparent 38%),
       linear-gradient(to bottom, rgba(2, 2, 4, 0.94) 0%, rgba(3, 3, 7, 0.12) 44%, rgba(6, 4, 10, 0.90) 100%)
     `,
-  },
-  radarOverlayHost: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 14,
-    bottom: 60,
-  },
-  permissionCard: {
-    alignItems: "center",
-    borderRadius: theme.radii.large,
-    borderWidth: 0.5,
-    borderColor: "rgba(215, 168, 74, 0.38)",
-    backgroundColor: theme.colors.surface,
-    experimental_backgroundImage: `
+    },
+    radarOverlayHost: {
+      ...StyleSheet.absoluteFill,
+      zIndex: 14,
+      bottom: 60,
+    },
+    permissionCard: {
+      alignItems: "center",
+      borderRadius: theme.radii.large,
+      borderWidth: 0.5,
+      borderColor: "rgba(215, 168, 74, 0.38)",
+      backgroundColor: theme.colors.surface,
+      experimental_backgroundImage: `
       radial-gradient(circle at 88% 4%, rgba(88, 223, 232, 0.08) 0%, transparent 34%),
       linear-gradient(145deg, rgba(18, 15, 22, 0.98) 0%, rgba(5, 5, 8, 0.98) 72%)
     `,
-    boxShadow:
-      "0 0 44px rgba(0, 0, 0, 0.62), 0 0 26px rgba(215, 168, 74, 0.10)",
-  },
-  permissionIcon: {
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(215,168,74,0.12)",
-    borderWidth: 1,
-    borderColor: "rgba(244,213,139,0.55)",
-  },
-  permissionTitle: {
-    color: theme.colors.text,
-    fontWeight: "800",
-  },
-  permissionBody: {
-    color: theme.colors.textMuted,
-    textAlign: "center",
-  },
-  permissionButton: {
-    marginTop: 8,
-    width: "100%",
-    alignItems: "center",
-    paddingVertical: 15,
-    borderRadius: theme.radii.medium,
-    backgroundColor: theme.colors.gold,
-  },
-  permissionButtonText: {
-    color: theme.colors.background,
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  secondaryButton: {
-    width: "100%",
-    minHeight: 50,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 9,
-    paddingHorizontal: 16,
-    borderRadius: theme.radii.medium,
-    borderWidth: 1,
-    borderColor: "rgba(242, 211, 138, 0.34)",
-    backgroundColor: "rgba(242, 211, 138, 0.08)",
-  },
-  secondaryButtonPressed: { opacity: 0.76, transform: [{ scale: 0.98 }] },
-  secondaryButtonText: {
-    color: theme.colors.cream,
-    fontSize: 15,
-    fontWeight: "800",
-  },
-  buttonDisabled: { opacity: 0.5 },
-  permissionStatus: {
-    color: theme.colors.scannerCyan,
-    fontSize: 12,
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  deviceStateText: {
-    color: theme.colors.textMuted,
-    fontSize: 14,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-  },
-  headerCopy: { flex: 1, minWidth: 0 },
-  eyebrow: {
-    color: theme.colors.gold,
-    fontWeight: "900",
-  },
-  toolHeaderContent: { gap: 8 },
-  title: {
-    color: theme.colors.cream,
-    fontWeight: "800",
-    letterSpacing: -0.6,
-  },
-  headerHintRow: {
-    minHeight: 32,
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 7,
-    paddingTop: 1,
-  },
-  headerHint: {
-    flex: 1,
-    maxWidth: 340,
-    fontWeight: "700",
-  },
-  iconButton: {
-    position: 'absolute',
-    top: -30,
-    left: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(242, 211, 138, 0.42)",
-    backgroundColor: "rgba(9, 9, 13, 0.78)",
-    zIndex: 3,
-  },
-  iconButtonActive: { backgroundColor: theme.colors.goldBright },
-  iconButtonDisabled: { opacity: 0.42 },
-  zoomControlAnchor: {
-    position: "absolute",
-    top: -30,
-    right: 10,
-    zIndex: 4,
-  },
-  zoomControlRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  zoomButton: {
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(88, 223, 232, 0.42)",
-    backgroundColor: "rgba(9, 9, 13, 0.78)",
-  },
-  zoomButtonActive: {
-    borderColor: theme.colors.scannerCyan,
-    backgroundColor: "rgba(88, 223, 232, 0.18)",
-  },
-  zoomButtonPressed: { opacity: 0.72, transform: [{ scale: 0.94 }] },
-  zoomButtonDisabled: { opacity: 0.42 },
-  zoomButtonText: {
-    color: theme.colors.scannerCyan,
-    fontSize: 10,
-    fontWeight: "900",
-  },
-  zoomPanel: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    padding: 4,
-    borderWidth: 1,
-    borderRightWidth: 0,
-    borderColor: "rgba(88, 223, 232, 0.34)",
-    backgroundColor: "rgba(8, 8, 12, 0.86)",
-  },
-  zoomControlLabel: {
-    marginHorizontal: 4,
-    color: theme.colors.scannerCyan,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 1,
-  },
-  zoomPresetRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-  },
-  zoomPreset: {
-    minWidth: 34,
-    height: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 5,
-    borderWidth: 1,
-    borderColor: "rgba(242, 242, 232, 0.20)",
-    backgroundColor: "rgba(247, 242, 232, 0.05)",
-  },
-  zoomPresetSelected: {
-    borderColor: theme.colors.scannerCyan,
-    backgroundColor: "rgba(88, 223, 232, 0.18)",
-  },
-  zoomPresetPressed: { opacity: 0.72, transform: [{ scale: 0.96 }] },
-  zoomPresetDisabled: { opacity: 0.42 },
-  zoomPresetText: {
-    color: theme.colors.textMuted,
-    fontSize: 10,
-    fontWeight: "800",
-  },
-  zoomPresetTextSelected: { color: theme.colors.cream },
-  scannerArea: {
-    flex: 1,
-    minHeight: 0,
-    alignItems: "center",
-    justifyContent: "flex-start",
-    zIndex: 5,
-    marginTop: 30,
-  },
-  analysisActionAnchor: {
-    position: "absolute",
-    right: 12,
-    bottom: 18,
-    left: 12,
-    zIndex: 15,
-    alignItems: "center",
-  },
-  scanFrame: {
-    borderRadius: theme.radii.large,
-    alignSelf: "center",
-    justifyContent: "flex-start",
-  },
-  barcodeGuide: {
-    ...StyleSheet.absoluteFill,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 15,
-    paddingHorizontal: 30,
-  },
-  barcodeGuideStrip: {
-    width: "100%",
-    maxWidth: 250,
-    height: 94,
-    flexDirection: "row",
-    alignItems: "stretch",
-    justifyContent: "center",
-    gap: 7,
-    paddingHorizontal: 22,
-    paddingVertical: 10,
-    borderRadius: theme.radii.medium,
-    borderWidth: 1,
-    borderColor: "rgba(141, 114, 255, 0.78)",
-    backgroundColor: "rgba(4, 3, 9, 0.48)",
-    boxShadow: "0 0 28px rgba(141, 114, 255, 0.24)",
-  },
-  barcodeGuideLine: {
-    width: 5,
-    borderRadius: 3,
-    backgroundColor: theme.colors.scannerMagenta,
-  },
-  barcodeGuideLineWide: {
-    width: 12,
-    borderRadius: 3,
-    backgroundColor: theme.colors.scannerCyan,
-  },
-  barcodeGuideText: {
-    color: theme.colors.scannerMagenta,
-    fontSize: 10,
-    fontWeight: "900",
-    letterSpacing: 2,
-  },
-  frameColorWash: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    opacity: 1,
-    experimental_backgroundImage: `
+      boxShadow:
+        "0 0 44px rgba(0, 0, 0, 0.62), 0 0 26px rgba(215, 168, 74, 0.10)",
+    },
+    permissionIcon: {
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "rgba(215,168,74,0.12)",
+      borderWidth: 1,
+      borderColor: "rgba(244,213,139,0.55)",
+    },
+    permissionTitle: {
+      color: theme.colors.text,
+      fontWeight: "800",
+    },
+    permissionBody: {
+      color: theme.colors.textMuted,
+      textAlign: "center",
+    },
+    permissionButton: {
+      marginTop: 8,
+      width: "100%",
+      alignItems: "center",
+      paddingVertical: 15,
+      borderRadius: theme.radii.medium,
+      backgroundColor: theme.colors.gold,
+    },
+    permissionButtonText: {
+      color: theme.colors.background,
+      fontSize: 16,
+      fontWeight: "800",
+    },
+    secondaryButton: {
+      width: "100%",
+      minHeight: 50,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 9,
+      paddingHorizontal: 16,
+      borderRadius: theme.radii.medium,
+      borderWidth: 1,
+      borderColor: "rgba(242, 211, 138, 0.34)",
+      backgroundColor: "rgba(242, 211, 138, 0.08)",
+    },
+    secondaryButtonPressed: { opacity: 0.76, transform: [{ scale: 0.98 }] },
+    secondaryButtonText: {
+      color: theme.colors.cream,
+      fontSize: 15,
+      fontWeight: "800",
+    },
+    buttonDisabled: { opacity: 0.5 },
+    permissionStatus: {
+      color: theme.colors.scannerCyan,
+      fontSize: 12,
+      fontWeight: "700",
+      textAlign: "center",
+    },
+    deviceStateText: {
+      color: theme.colors.textMuted,
+      fontSize: 14,
+      fontWeight: "600",
+      textAlign: "center",
+    },
+    topBar: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+    },
+    headerCopy: { flex: 1, minWidth: 0 },
+    eyebrow: {
+      color: theme.colors.gold,
+      fontFamily: theme.fonts.display,
+      fontWeight: "900",
+    },
+    toolHeaderContent: { gap: 0 },
+    title: {
+      color: theme.colors.cream,
+      fontWeight: "800",
+      letterSpacing: -0.6,
+    },
+    headerHintRow: {
+      minHeight: 32,
+      flexDirection: "row",
+      alignItems: "flex-start",
+      justifyContent: "center",
+      gap: 7,
+      paddingTop: 1,
+    },
+    headerHint: {
+      flex: 1,
+      maxWidth: 340,
+      fontWeight: "700",
+    },
+    iconButton: {
+      position: 'absolute',
+      top: -30,
+      left: 10,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: "rgba(242, 211, 138, 0.42)",
+      backgroundColor: "rgba(9, 9, 13, 0.78)",
+      zIndex: 3,
+    },
+    iconButtonActive: { backgroundColor: theme.colors.goldBright },
+    iconButtonDisabled: { opacity: 0.42 },
+    zoomControlAnchor: {
+      position: "absolute",
+      top: -30,
+      right: 10,
+      zIndex: 4,
+    },
+    zoomControlRow: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    zoomButton: {
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: "rgba(88, 223, 232, 0.42)",
+      backgroundColor: "rgba(9, 9, 13, 0.78)",
+    },
+    zoomButtonActive: {
+      borderColor: theme.colors.scannerCyan,
+      backgroundColor: "rgba(88, 223, 232, 0.18)",
+    },
+    zoomButtonPressed: { opacity: 0.72, transform: [{ scale: 0.94 }] },
+    zoomButtonDisabled: { opacity: 0.42 },
+    zoomButtonText: {
+      color: theme.colors.scannerCyan,
+      fontSize: 10,
+      fontWeight: "900",
+    },
+    zoomPanel: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      padding: 4,
+      borderWidth: 1,
+      borderRightWidth: 0,
+      borderColor: "rgba(88, 223, 232, 0.34)",
+      backgroundColor: "rgba(8, 8, 12, 0.86)",
+    },
+    zoomControlLabel: {
+      marginHorizontal: 4,
+      color: theme.colors.scannerCyan,
+      fontSize: 8,
+      fontWeight: "900",
+      letterSpacing: 1,
+    },
+    zoomPresetRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 3,
+    },
+    zoomPreset: {
+      minWidth: 34,
+      height: 28,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 5,
+      borderWidth: 1,
+      borderColor: "rgba(242, 242, 232, 0.20)",
+      backgroundColor: "rgba(247, 242, 232, 0.05)",
+    },
+    zoomPresetSelected: {
+      borderColor: theme.colors.scannerCyan,
+      backgroundColor: "rgba(88, 223, 232, 0.18)",
+    },
+    zoomPresetPressed: { opacity: 0.72, transform: [{ scale: 0.96 }] },
+    zoomPresetDisabled: { opacity: 0.42 },
+    zoomPresetText: {
+      color: theme.colors.textMuted,
+      fontSize: 10,
+      fontWeight: "800",
+    },
+    zoomPresetTextSelected: { color: theme.colors.cream },
+    scannerArea: {
+      flex: 1,
+      minHeight: 0,
+      alignItems: "center",
+      justifyContent: "flex-start",
+      zIndex: 5,
+      marginTop: 30,
+    },
+    analysisActionAnchor: {
+      position: "absolute",
+      right: 12,
+      bottom: 18,
+      left: 12,
+      zIndex: 15,
+      alignItems: "center",
+    },
+    scanFrame: {
+      borderRadius: theme.radii.large,
+      alignSelf: "center",
+      justifyContent: "flex-start",
+    },
+    barcodeGuide: {
+      ...StyleSheet.absoluteFill,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 15,
+      paddingHorizontal: 30,
+    },
+    barcodeGuideStrip: {
+      width: "100%",
+      maxWidth: 250,
+      height: 94,
+      flexDirection: "row",
+      alignItems: "stretch",
+      justifyContent: "center",
+      gap: 7,
+      paddingHorizontal: 22,
+      paddingVertical: 10,
+      borderRadius: theme.radii.medium,
+      borderWidth: 1,
+      borderColor: "rgba(141, 114, 255, 0.78)",
+      backgroundColor: "rgba(4, 3, 9, 0.48)",
+      boxShadow: "0 0 28px rgba(141, 114, 255, 0.24)",
+    },
+    barcodeGuideLine: {
+      width: 5,
+      borderRadius: 3,
+      backgroundColor: theme.colors.scannerMagenta,
+    },
+    barcodeGuideLineWide: {
+      width: 12,
+      borderRadius: 3,
+      backgroundColor: theme.colors.scannerCyan,
+    },
+    barcodeGuideText: {
+      color: theme.colors.scannerMagenta,
+      fontSize: 10,
+      fontWeight: "900",
+      letterSpacing: 2,
+    },
+    frameColorWash: {
+      position: "absolute",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      opacity: 1,
+      experimental_backgroundImage: `
       radial-gradient(circle at 62% 42%, rgba(88, 223, 232, 0.11) 0%, transparent 34%),
       radial-gradient(circle at 34% 66%, rgba(141, 114, 255, 0.11) 0%, transparent 38%),
       radial-gradient(circle at 50% 52%, rgba(224, 172, 75, 0.06) 0%, transparent 52%)
     `,
-  },
-  analyzeButtonShell: {
-    width: "100%",
-  },
-  analyzeButton: {
-    width: "100%",
-    minHeight: 58,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 15,
-    paddingVertical: 9,
-    borderRadius: theme.radii.medium,
-    borderCurve: "continuous",
-    borderWidth: 1,
-    borderColor: "rgba(242, 211, 138, 0.46)",
-    backgroundColor: "rgba(16, 12, 8, 0.92)",
-    experimental_backgroundImage: `
+    },
+    analyzeButtonShell: {
+      width: "100%",
+    },
+    analyzeButton: {
+      width: "100%",
+      minHeight: 58,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      paddingHorizontal: 15,
+      paddingVertical: 9,
+      borderRadius: theme.radii.medium,
+      borderCurve: "continuous",
+      borderWidth: 1,
+      borderColor: "rgba(242, 211, 138, 0.46)",
+      backgroundColor: "rgba(16, 12, 8, 0.92)",
+      experimental_backgroundImage: `
       radial-gradient(circle at 8% 50%, rgba(88, 223, 232, 0.12) 0%, transparent 34%),
       linear-gradient(115deg, rgba(33, 23, 10, 0.98) 0%, rgba(8, 7, 10, 0.98) 72%)
     `,
-    boxShadow:
-      "0 8px 24px rgba(0, 0, 0, 0.42), 0 0 20px rgba(215, 168, 74, 0.12)",
-  },
-  analyzeButtonPressed: { opacity: 0.78, transform: [{ scale: 0.98 }] },
-  analyzeReticle: {
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: theme.colors.scannerCyan,
-    backgroundColor: "rgba(88, 223, 232, 0.08)",
-    boxShadow: "0 0 14px rgba(88, 223, 232, 0.28)",
-  },
-  analyzeReticleDot: {
-    width: 7,
-    height: 7,
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.goldBright,
-    boxShadow: "0 0 10px rgba(242, 211, 138, 0.92)",
-  },
-  analyzeButtonCopy: { flex: 1, gap: 2 },
-  analyzeButtonEyebrow: {
-    color: theme.colors.scannerCyan,
-    fontWeight: "900",
-    letterSpacing: 1.25,
-  },
-  analyzeButtonText: {
-    color: theme.colors.cream,
-    fontWeight: "900",
-  },
-  analyzeButtonArrow: {
-    color: theme.colors.goldBright,
-    fontWeight: "400",
-  },
-  bottomPanel: {
-    position: "relative",
-    alignItems: "center",
-  },
-  photoStackSidecar: {
-    position: "absolute",
-    top: 16,
-    right: -6,
-    zIndex: 40,
-    elevation: 40,
-  },
-});
+      boxShadow:
+        "0 8px 24px rgba(0, 0, 0, 0.42), 0 0 20px rgba(215, 168, 74, 0.12)",
+    },
+    analyzeButtonPressed: { opacity: 0.78, transform: [{ scale: 0.98 }] },
+    analyzeReticle: {
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: theme.colors.scannerCyan,
+      backgroundColor: "rgba(88, 223, 232, 0.08)",
+      boxShadow: "0 0 14px rgba(88, 223, 232, 0.28)",
+    },
+    analyzeReticleDot: {
+      width: 7,
+      height: 7,
+      borderRadius: theme.radii.pill,
+      backgroundColor: theme.colors.goldBright,
+      boxShadow: "0 0 10px rgba(242, 211, 138, 0.92)",
+    },
+    analyzeButtonCopy: { flex: 1, gap: 2 },
+    analyzeButtonEyebrow: {
+      color: theme.colors.scannerCyan,
+      fontWeight: "900",
+      letterSpacing: 1.25,
+    },
+    analyzeButtonText: {
+      color: theme.colors.cream,
+      fontWeight: "900",
+    },
+    analyzeButtonArrow: {
+      color: theme.colors.goldBright,
+      fontWeight: "400",
+    },
+    bottomPanel: {
+      position: "relative",
+      alignItems: "center",
+    },
+    photoStackSidecar: {
+      position: "absolute",
+      top: 16,
+      right: -6,
+      zIndex: 40,
+      elevation: 40,
+    },
+  });
   return {
     ...staticStyles,
-  permissionButtonText: [
-    staticStyles.permissionButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(16),
-    },
-  ],
-  secondaryButtonText: [
-    staticStyles.secondaryButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  permissionStatus: [
-    staticStyles.permissionStatus,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  deviceStateText: [
-    staticStyles.deviceStateText,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
-  zoomButtonText: [
-    staticStyles.zoomButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  zoomControlLabel: [
-    staticStyles.zoomControlLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  zoomPreset: [
-    staticStyles.zoomPreset,
-    {
-        height: responsiveLayout.responsiveHeight(28),
-    },
-  ],
-  zoomPresetText: [
-    staticStyles.zoomPresetText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  barcodeGuideStrip: [
-    staticStyles.barcodeGuideStrip,
-    {
-        height: responsiveLayout.responsiveHeight(94),
-    },
-  ],
-  barcodeGuideLine: [
-    staticStyles.barcodeGuideLine,
-    {
-        width: responsiveLayout.responsiveWidth(5),
-    },
-  ],
-  barcodeGuideLineWide: [
-    staticStyles.barcodeGuideLineWide,
-    {
-        width: responsiveLayout.responsiveWidth(12),
-    },
-  ],
-  barcodeGuideText: [
-    staticStyles.barcodeGuideText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  analyzeReticleDot: [
-    staticStyles.analyzeReticleDot,
-    {
-        width: responsiveLayout.responsiveWidth(7),
-        height: responsiveLayout.responsiveHeight(7),
-    },
-  ],
+    permissionButtonText: [
+      staticStyles.permissionButtonText,
+      {
+        fontSize: responsiveFont(16),
+      },
+    ],
+    secondaryButtonText: [
+      staticStyles.secondaryButtonText,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    permissionStatus: [
+      staticStyles.permissionStatus,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    deviceStateText: [
+      staticStyles.deviceStateText,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
+    zoomButtonText: [
+      staticStyles.zoomButtonText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    zoomControlLabel: [
+      staticStyles.zoomControlLabel,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    zoomPreset: [
+      staticStyles.zoomPreset,
+      {
+        height: responsiveHeight(28),
+      },
+    ],
+    zoomPresetText: [
+      staticStyles.zoomPresetText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    barcodeGuideStrip: [
+      staticStyles.barcodeGuideStrip,
+      {
+        height: responsiveHeight(94),
+      },
+    ],
+    barcodeGuideLine: [
+      staticStyles.barcodeGuideLine,
+      {
+        width: responsiveWidth(5),
+      },
+    ],
+    barcodeGuideLineWide: [
+      staticStyles.barcodeGuideLineWide,
+      {
+        width: responsiveWidth(12),
+      },
+    ],
+    barcodeGuideText: [
+      staticStyles.barcodeGuideText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    analyzeReticleDot: [
+      staticStyles.analyzeReticleDot,
+      {
+        width: responsiveWidth(7),
+        height: responsiveHeight(7),
+      },
+    ],
   };
 }

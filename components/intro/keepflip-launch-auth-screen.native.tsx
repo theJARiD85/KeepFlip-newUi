@@ -23,23 +23,23 @@ import { FlipCompanion } from '@/components/flip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import {
   KeepFlipBackground,
-  } from '@/components/ui/keepflip-background';
+} from '@/components/ui/keepflip-background';
 import {
   KeepFlipText as Text,
   KeepFlipTextInput as TextInput,
 } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import { getAppwriteCoreServices } from '@/lib/appwrite';
+import { responsiveWidth } from '@/lib/responsiveFont';
 import {
   KEEPFLIP_PLAN_DEFINITIONS,
   purchaseKeepFlipPlan,
   type KeepFlipBillingCadence,
   type KeepFlipPlanId,
 } from '@/services/keepflip-subscription-service';
-import { completeScanInventoryWalkthrough } from '@/services/user-profile-onboarding-service';
 import type { ResellerBuyRules } from '@/services/reseller-buy-rules-service';
-import { getAppwriteCoreServices } from '@/lib/appwrite';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
+import { completeScanInventoryWalkthrough } from '@/services/user-profile-onboarding-service';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export type AuthSubscriptionSelection = {
@@ -154,7 +154,7 @@ function PlanSelection({
               ? 'TRIAL ELIGIBILITY IS CHECKED IN GOOGLE PLAY'
               : '7 DAYS FREE ON EITHER BILLING OPTION'}
           </Text>
-          <Text style={[styles.checkoutBannerBody, { fontSize: responsiveFont(12)}]}>
+          <Text style={[styles.checkoutBannerBody, { fontSize: responsiveFont(12) }]}>
             Choose a plan now. After your KeepFlip account is created, the
             selected plan opens its Google Play signup sheet right here.
           </Text>
@@ -192,7 +192,7 @@ function PlanSelection({
                   style={[
                     styles.checkoutBillingOptionSubtext,
                     cadence === option &&
-                      styles.checkoutBillingOptionSubtextSelected,
+                    styles.checkoutBillingOptionSubtextSelected,
                   ]}>
                   SAVE 2 MONTHS
                 </Text>
@@ -204,10 +204,6 @@ function PlanSelection({
 
       <View style={styles.checkoutPlanStack}>
         {KEEPFLIP_PLAN_DEFINITIONS.map((definition) => {
-  const {
-    responsiveFont
-  } = useResponsiveLayout();
-
           const selected = value.plan === definition.id;
           const price =
             cadence === 'annual'
@@ -271,7 +267,7 @@ function PlanSelection({
                 </Text>
               </View>
 
-              <Text style={[styles.checkoutPlanDescription, { fontSize: responsiveFont(12)}]}>
+              <Text style={[styles.checkoutPlanDescription, { fontSize: responsiveFont(12) }]}>
                 {definition.description}
               </Text>
               <View style={styles.checkoutFeatureList}>
@@ -282,7 +278,7 @@ function PlanSelection({
                       name="checkmark.circle.fill"
                       size={15}
                     />
-                    <Text style={[styles.checkoutFeatureText, { fontSize: responsiveFont(11)}]}>{feature}</Text>
+                    <Text style={[styles.checkoutFeatureText, { fontSize: responsiveFont(11) }]}>{feature}</Text>
                   </View>
                 ))}
               </View>
@@ -297,13 +293,13 @@ function PlanSelection({
                   style={[
                     styles.checkoutSelectActionText,
                     definition.recommended &&
-                      styles.checkoutSelectActionTextRecommended,
+                    styles.checkoutSelectActionTextRecommended,
                     selected && styles.checkoutSelectActionTextSelected,
                   ]}>
                   {selected ? 'SELECTED PLAN' : 'SELECT THIS PLAN'}
                 </Text>
               </View>
-              <Text style={[styles.checkoutAfterTrialText, { fontSize: responsiveFont(9)}]}>
+              <Text style={[styles.checkoutAfterTrialText, { fontSize: responsiveFont(9) }]}>
                 {price} {cadence === 'annual' ? 'per year' : 'per month'}
                 {' '}after any eligible trial. Cancel anytime through Google Play.
               </Text>
@@ -327,8 +323,8 @@ function MigrationNotice() {
       </View>
       <View style={styles.migrationCopy}>
         <Text style={[styles.migrationEyebrow, { fontSize: responsiveFont(8) }]}>EXISTING ACCOUNT UPDATE</Text>
-        <Text style={[styles.migrationTitle, { fontSize: responsiveFont(15)}]}>KeepFlip is moving to subscriptions.</Text>
-        <Text style={[styles.migrationBody, { fontSize: responsiveFont(12)}]}>
+        <Text style={[styles.migrationTitle, { fontSize: responsiveFont(15) }]}>KeepFlip is moving to subscriptions.</Text>
+        <Text style={[styles.migrationBody, { fontSize: responsiveFont(12) }]}>
           Your existing account stays yours. During this rollout, choose a
           plan below to check eligibility for a one-week store trial and keep your inventory and
           history connected.
@@ -478,9 +474,9 @@ export function KeepFlipLaunchAuthScreen({
       const wasCancelled =
         Boolean(
           error &&
-            typeof error === 'object' &&
-            'userCancelled' in error &&
-            (error as { userCancelled?: unknown }).userCancelled === true,
+          typeof error === 'object' &&
+          'userCancelled' in error &&
+          (error as { userCancelled?: unknown }).userCancelled === true,
         );
       setLocalError(
         wasCancelled
@@ -509,7 +505,7 @@ export function KeepFlipLaunchAuthScreen({
         style={styles.flex}>
         <ScrollView
           contentContainerStyle={[styles.content,
-            { paddingBottom: insets.bottom + 28, paddingTop: insets.top + 12 }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+          { paddingBottom: insets.bottom + 28, paddingTop: insets.top + 12 }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <View style={styles.headerRow}>
@@ -538,7 +534,7 @@ export function KeepFlipLaunchAuthScreen({
             <Text style={[styles.title, { fontSize: responsiveFont(31) }]}>
               {migrationMode ? 'Welcome back.' : mode === 'create-account' ? 'Make your edge official.' : 'Welcome back.'}
             </Text>
-            <Text style={[styles.subtitle, { fontSize: responsiveFont(13)}]}>
+            <Text style={[styles.subtitle, { fontSize: responsiveFont(13) }]}>
               {migrationMode
                 ? 'Sign in to your existing KeepFlip account, then choose the tier you want to try.'
                 : mode === 'create-account'
@@ -553,7 +549,7 @@ export function KeepFlipLaunchAuthScreen({
             {mode === 'create-account' && initialName ? (
               <View style={styles.flipNameRow}>
                 <FlipCompanion size={43} />
-                <Text style={[styles.flipNameText, { fontSize: responsiveFont(13)}]}>Flip will know you as {initialName}.</Text>
+                <Text style={[styles.flipNameText, { fontSize: responsiveFont(13) }]}>Flip will know you as {initialName}.</Text>
               </View>
             ) : null}
 
@@ -564,14 +560,14 @@ export function KeepFlipLaunchAuthScreen({
             {setupRequired ? (
               <View style={styles.setupNotice}>
                 <Text style={[styles.setupTitle, { fontSize: responsiveFont(8) }]}>APPWRITE SETUP REQUIRED</Text>
-                <Text style={[styles.setupBody, { fontSize: responsiveFont(11)}]}>Add the public Appwrite connection values, then restart this build.</Text>
+                <Text style={[styles.setupBody, { fontSize: responsiveFont(11) }]}>Add the public Appwrite connection values, then restart this build.</Text>
                 {missingKeys.map((key) => <Text key={key} style={styles.setupKey}>{key}</Text>)}
               </View>
             ) : null}
 
             {displayedError ? (
               <View accessibilityLiveRegion="polite" style={styles.errorNotice}>
-                <Text selectable style={[styles.errorText, { fontSize: responsiveFont(12)}]}>{displayedError}</Text>
+                <Text selectable style={[styles.errorText, { fontSize: responsiveFont(12) }]}>{displayedError}</Text>
                 {status === 'error' ? (
                   <Pressable accessibilityRole="button" disabled={isBusy} onPress={() => void retry()} style={styles.retryButton}>
                     <Text style={[styles.retryText, { fontSize: responsiveFont(9) }]}>RETRY CONNECTION</Text>
@@ -582,85 +578,85 @@ export function KeepFlipLaunchAuthScreen({
 
             {!accountModeLocked ? (
               <View style={styles.modeSwitch}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityState={{ selected: mode === 'sign-in' }}
-                disabled={isBusy}
-                onPress={() => setMode('sign-in')}
-                style={[styles.modeButton, mode === 'sign-in' && styles.modeButtonActive]}>
-                <Text style={[styles.modeText, mode === 'sign-in' && styles.modeTextActive]}>SIGN IN</Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityState={{ selected: mode === 'create-account' }}
-                disabled={isBusy}
-                onPress={() => setMode('create-account')}
-                style={[styles.modeButton, mode === 'create-account' && styles.modeButtonActive]}>
-                <Text style={[styles.modeText, mode === 'create-account' && styles.modeTextActive]}>CREATE ACCOUNT</Text>
-              </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: mode === 'sign-in' }}
+                  disabled={isBusy}
+                  onPress={() => setMode('sign-in')}
+                  style={[styles.modeButton, mode === 'sign-in' && styles.modeButtonActive]}>
+                  <Text style={[styles.modeText, mode === 'sign-in' && styles.modeTextActive]}>SIGN IN</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: mode === 'create-account' }}
+                  disabled={isBusy}
+                  onPress={() => setMode('create-account')}
+                  style={[styles.modeButton, mode === 'create-account' && styles.modeButtonActive]}>
+                  <Text style={[styles.modeText, mode === 'create-account' && styles.modeTextActive]}>CREATE ACCOUNT</Text>
+                </Pressable>
               </View>
             ) : null}
 
             {!accountReady ? (
-            <View style={styles.form}>
-              {mode === 'create-account' && !initialName ? (
-                <AuthField
-                  autoCapitalize="words"
-                  autoComplete="name"
-                  editable={!isBusy && !setupRequired}
-                  icon="person.fill"
-                  label="Display name"
-                  onChangeText={(value) => { setName(value); setLocalError(null); }}
-                  placeholder="Your name"
-                  textContentType="name"
-                  value={name}
-                />
-              ) : null}
-              <AuthField
-                autoCapitalize="none"
-                autoComplete="email"
-                autoCorrect={false}
-                editable={!isBusy && !setupRequired}
-                icon="envelope.fill"
-                inputMode="email"
-                keyboardType="email-address"
-                label="Email"
-                onChangeText={(value) => { setEmail(value); setLocalError(null); }}
-                placeholder="you@example.com"
-                textContentType="emailAddress"
-                value={email}
-              />
-              <AuthField
-                autoCapitalize="none"
-                autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
-                editable={!isBusy && !setupRequired}
-                icon="lock.fill"
-                label="Password"
-                onChangeText={(value) => { setPassword(value); setLocalError(null); }}
-                onToggleSecure={() => setPasswordVisible((current) => !current)}
-                placeholder="At least 8 characters"
-                secureTextEntry={!passwordVisible}
-                secureVisible={passwordVisible}
-                textContentType={mode === 'sign-in' ? 'password' : 'newPassword'}
-                value={password}
-              />
-              {mode === 'create-account' ? (
+              <View style={styles.form}>
+                {mode === 'create-account' && !initialName ? (
+                  <AuthField
+                    autoCapitalize="words"
+                    autoComplete="name"
+                    editable={!isBusy && !setupRequired}
+                    icon="person.fill"
+                    label="Display name"
+                    onChangeText={(value) => { setName(value); setLocalError(null); }}
+                    placeholder="Your name"
+                    textContentType="name"
+                    value={name}
+                  />
+                ) : null}
                 <AuthField
                   autoCapitalize="none"
-                  autoComplete="new-password"
+                  autoComplete="email"
+                  autoCorrect={false}
                   editable={!isBusy && !setupRequired}
-                  icon="checkmark.shield.fill"
-                  label="Confirm password"
-                  onChangeText={(value) => { setConfirmPassword(value); setLocalError(null); }}
-                  onToggleSecure={() => setConfirmPasswordVisible((current) => !current)}
-                  placeholder="Repeat your password"
-                  secureTextEntry={!confirmPasswordVisible}
-                  secureVisible={confirmPasswordVisible}
-                  textContentType="newPassword"
-                  value={confirmPassword}
+                  icon="envelope.fill"
+                  inputMode="email"
+                  keyboardType="email-address"
+                  label="Email"
+                  onChangeText={(value) => { setEmail(value); setLocalError(null); }}
+                  placeholder="you@example.com"
+                  textContentType="emailAddress"
+                  value={email}
                 />
-              ) : null}
-            </View>
+                <AuthField
+                  autoCapitalize="none"
+                  autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
+                  editable={!isBusy && !setupRequired}
+                  icon="lock.fill"
+                  label="Password"
+                  onChangeText={(value) => { setPassword(value); setLocalError(null); }}
+                  onToggleSecure={() => setPasswordVisible((current) => !current)}
+                  placeholder="At least 8 characters"
+                  secureTextEntry={!passwordVisible}
+                  secureVisible={passwordVisible}
+                  textContentType={mode === 'sign-in' ? 'password' : 'newPassword'}
+                  value={password}
+                />
+                {mode === 'create-account' ? (
+                  <AuthField
+                    autoCapitalize="none"
+                    autoComplete="new-password"
+                    editable={!isBusy && !setupRequired}
+                    icon="checkmark.shield.fill"
+                    label="Confirm password"
+                    onChangeText={(value) => { setConfirmPassword(value); setLocalError(null); }}
+                    onToggleSecure={() => setConfirmPasswordVisible((current) => !current)}
+                    placeholder="Repeat your password"
+                    secureTextEntry={!confirmPasswordVisible}
+                    secureVisible={confirmPasswordVisible}
+                    textContentType="newPassword"
+                    value={confirmPassword}
+                  />
+                ) : null}
+              </View>
             ) : (
               <View style={styles.accountReadyNotice}>
                 <IconSymbol
@@ -668,7 +664,7 @@ export function KeepFlipLaunchAuthScreen({
                   name="checkmark.shield.fill"
                   size={18}
                 />
-                <Text style={[styles.accountReadyText, { fontSize: responsiveFont(12)}]}>
+                <Text style={[styles.accountReadyText, { fontSize: responsiveFont(12) }]}>
                   Your KeepFlip account is ready. Continue to open Google Play for the selected plan.
                 </Text>
               </View>
@@ -691,7 +687,7 @@ export function KeepFlipLaunchAuthScreen({
             </Pressable>
 
             {mode === 'create-account' ? (
-              <Text style={[styles.legalText, { fontSize: responsiveFont(10)}]}>
+              <Text style={[styles.legalText, { fontSize: responsiveFont(10) }]}>
                 By creating an account, you agree to KeepFlip&apos;s{' '}
                 <Text onPress={() => router.push('/terms')} style={styles.legalLink}>Terms of Service</Text>{' '}and{' '}
                 <Text onPress={() => router.push('/privacy')} style={styles.legalLink}>Privacy Policy</Text>.
@@ -705,466 +701,467 @@ export function KeepFlipLaunchAuthScreen({
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  backButton: { alignItems: 'center', flexDirection: 'row', gap: 4, minHeight: 40, paddingHorizontal: 4 },
-  backButtonText: { color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 9, letterSpacing: 1 },
-  billingOption: { alignItems: 'center', borderRadius: 10, flex: 1, gap: 2, justifyContent: 'center', minHeight: 44 },
-  billingOptionSelected: { backgroundColor: 'rgba(215, 168, 74, 0.16)', borderColor: 'rgba(242, 211, 138, 0.4)', borderWidth: StyleSheet.hairlineWidth },
-  billingOptionSubtext: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 7, letterSpacing: 0.55 },
-  billingOptionText: { color: theme.colors.textMuted, fontFamily: theme.fonts.radar, fontSize: 9, letterSpacing: 0.9 },
-  billingOptionTextSelected: { color: theme.colors.goldBright },
-  billingToggle: { backgroundColor: 'rgba(1, 1, 2, 0.72)', borderColor: 'rgba(242, 237, 228, 0.14)', borderRadius: 13, borderWidth: 1, flexDirection: 'row', gap: 4, padding: 4 },
-  brandEyebrow: { color: theme.colors.gold, fontFamily: theme.fonts.radar, fontSize: 9, letterSpacing: 1.3 },
-  brandLogo: { height: 52, width: 52 },
-  brandMark: { alignItems: 'center', backgroundColor: 'rgba(5, 4, 5, 0.65)', borderColor: 'rgba(224, 172, 75, 0.25)', borderRadius: 28, borderWidth: 1, height: 60, justifyContent: 'center', width: 60 },
-  brandSection: { alignItems: 'center', gap: 8, paddingHorizontal: 10 },
-  buttonDisabled: { opacity: 0.42 },
-  content: { alignItems: 'center', gap: 20, paddingHorizontal: 16 },
-  errorNotice: { backgroundColor: 'rgba(232, 97, 88, 0.08)', borderColor: 'rgba(232, 97, 88, 0.42)', borderRadius: 12, borderWidth: 1, gap: 10, padding: 12 },
-  errorText: { color: '#FFB8B1', fontSize: 12, lineHeight: 18 },
-  fieldGroup: { gap: 7 },
-  fieldInput: { color: theme.colors.text, flex: 1, fontSize: 15, minWidth: 0, paddingVertical: 13 },
-  fieldLabel: { color: theme.colors.textMuted, fontSize: 10, fontWeight: '800', letterSpacing: 1.1, textTransform: 'uppercase' },
-  fieldShell: { alignItems: 'center', backgroundColor: 'rgba(2, 2, 4, 0.82)', borderColor: 'rgba(242, 211, 138, 0.16)', borderRadius: 12, borderWidth: 1, flexDirection: 'row', gap: 11, minHeight: 54, paddingHorizontal: 15 },
-  flex: { flex: 1 },
-  flipImage: { height: 43, width: 43 },
-  flipNameRow: { alignItems: 'center', backgroundColor: 'rgba(141, 114, 255, 0.09)', borderColor: 'rgba(141, 114, 255, 0.28)', borderRadius: 14, borderWidth: 1, flexDirection: 'row', gap: 10, padding: 10 },
-  flipNameText: { color: theme.colors.cream, flex: 1, fontSize: 13, lineHeight: 19 },
-  form: { gap: 14 },
-  headerRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', width: '100%' },
-  legalLink: { color: theme.colors.goldBright, fontWeight: '800', textDecorationLine: 'underline' },
-  legalText: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 16, textAlign: 'center' },
-  migrationBody: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 18 },
-  migrationCopy: { flex: 1, gap: 4 },
-  migrationEyebrow: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 1 },
-  migrationIcon: { alignItems: 'center', backgroundColor: 'rgba(0, 255, 255, 0.08)', borderRadius: 11, height: 36, justifyContent: 'center', width: 36 },
-  migrationNotice: { backgroundColor: 'rgba(0, 255, 255, 0.055)', borderColor: 'rgba(0, 255, 255, 0.24)', borderRadius: 14, borderWidth: 1, flexDirection: 'row', gap: 10, padding: 12 },
-  migrationTitle: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 15, lineHeight: 20 },
-  modeButton: { alignItems: 'center', borderRadius: 999, flex: 1, justifyContent: 'center', minHeight: 42 },
-  modeButtonActive: { backgroundColor: 'rgba(215, 168, 74, 0.16)' },
-  modeSwitch: { backgroundColor: 'rgba(1, 1, 2, 0.68)', borderColor: 'rgba(242, 211, 138, 0.13)', borderRadius: 999, borderWidth: 1, flexDirection: 'row', gap: 4, padding: 4 },
-  modeText: { color: theme.colors.textMuted, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
-  modeTextActive: { color: theme.colors.goldBright },
-  panel: { backgroundColor: 'rgba(8, 8, 12, 0.93)', borderColor: 'rgba(224, 172, 75, 0.34)', borderRadius: 24, borderWidth: 1, gap: 16, maxWidth: 620, padding: 17, width: '100%' },
-  planList: { gap: 9 },
-  planOption: { backgroundColor: 'rgba(255, 255, 255, 0.035)', borderColor: 'rgba(242, 237, 228, 0.14)', borderRadius: 15, borderWidth: 1, gap: 7, padding: 12 },
-  planTrial: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 0.8 },
-  planOptionDescription: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 },
-  planOptionEyebrow: { color: theme.colors.gold, fontFamily: theme.fonts.radar, fontSize: 7, letterSpacing: 1.05 },
-  planOptionName: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 17 },
-  planOptionSelected: { backgroundColor: 'rgba(0, 255, 255, 0.075)', borderColor: 'rgba(0, 255, 255, 0.62)' },
-  planOptionTopLine: { alignItems: 'center', flexDirection: 'row', gap: 8, justifyContent: 'space-between' },
-  planOptionCopy: { flex: 1, gap: 2 },
-  planPeriod: { color: theme.colors.textMuted, fontSize: 10 },
-  planPrice: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 24 },
-  planPriceRow: { alignItems: 'baseline', flexDirection: 'row', gap: 4 },
-  planRadio: { alignItems: 'center', borderColor: 'rgba(242, 237, 228, 0.35)', borderRadius: 999, borderWidth: 1, height: 19, justifyContent: 'center', width: 19 },
-  planRadioCore: { backgroundColor: theme.colors.scannerCyan, borderRadius: 999, height: 9, width: 9 },
-  planRadioSelected: { borderColor: theme.colors.scannerCyan },
-  planSection: { gap: 10 },
-  planSectionBody: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 },
-  planSectionCopy: { flex: 1, gap: 2 },
-  planSectionEyebrow: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 1.05 },
-  planSectionHeading: { alignItems: 'center', flexDirection: 'row', gap: 9 },
-  planSectionIcon: { alignItems: 'center', backgroundColor: 'rgba(0, 255, 255, 0.08)', borderRadius: 10, height: 34, justifyContent: 'center', width: 34 },
-  planSectionTitle: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 16 },
-  pressed: { opacity: 0.74, transform: [{ scale: 0.985 }] },
-  retryButton: { alignSelf: 'flex-start', borderColor: 'rgba(224, 172, 75, 0.34)', borderRadius: 999, borderWidth: 1, minHeight: 38, paddingHorizontal: 11, paddingVertical: 8 },
-  retryText: { color: theme.colors.scannerAmber, fontFamily: theme.fonts.radar, fontSize: 9, letterSpacing: 0.8 },
-  setupBody: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 },
-  setupKey: { color: theme.colors.goldBright, fontSize: 10, fontWeight: '700' },
-  setupNotice: { backgroundColor: 'rgba(141, 114, 255, 0.075)', borderColor: 'rgba(141, 114, 255, 0.36)', borderRadius: 12, borderWidth: 1, gap: 6, padding: 12 },
-  setupTitle: { color: theme.colors.scannerViolet, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 1.05 },
-  subtitle: { color: theme.colors.textMuted, fontSize: 13, lineHeight: 20, maxWidth: 470, textAlign: 'center' },
-  submitButton: { alignItems: 'center', backgroundColor: theme.colors.goldBright, borderRadius: 15, flexDirection: 'row', gap: 9, justifyContent: 'center', minHeight: 55 },
-  submitText: { color: theme.colors.backgroundDeep, fontFamily: theme.fonts.bold, fontSize: 11, letterSpacing: 0.85 },
-  title: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 31, letterSpacing: -0.6, textAlign: 'center' },
-  accountReadyNotice: { alignItems: 'center', backgroundColor: 'rgba(0, 255, 255, 0.055)', borderColor: 'rgba(0, 255, 255, 0.24)', borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 10, padding: 12 },
-  accountReadyText: { color: theme.colors.textMuted, flex: 1, fontSize: 12, lineHeight: 18 },
-  checkoutAfterTrialText: { color: 'rgba(173, 167, 178, 0.76)', fontSize: 9, lineHeight: 13, textAlign: 'center' },
-  checkoutBanner: { alignItems: 'center', backgroundColor: 'rgba(0, 255, 255, 0.055)', borderColor: 'rgba(0, 255, 255, 0.24)', borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 11, padding: 13 },
-  checkoutBannerBody: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 17 },
-  checkoutBannerCopy: { flex: 1, gap: 3 },
-  checkoutBannerIcon: { alignItems: 'center', backgroundColor: 'rgba(0, 255, 255, 0.08)', borderRadius: 10, height: 40, justifyContent: 'center', width: 40 },
-  checkoutBannerTitle: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 8, fontWeight: '900', letterSpacing: 0.95 },
-  checkoutBillingLabel: { color: theme.colors.gold, fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: '900', letterSpacing: 1.1, paddingHorizontal: 2 },
-  checkoutBillingOption: { alignItems: 'center', borderRadius: 9, flex: 1, gap: 1, justifyContent: 'center', minHeight: 45, paddingHorizontal: 10 },
-  checkoutBillingOptionSelected: { backgroundColor: 'rgba(215, 168, 74, 0.14)', borderColor: 'rgba(242, 211, 138, 0.42)', borderWidth: StyleSheet.hairlineWidth },
-  checkoutBillingOptionSubtext: { color: 'rgba(173, 167, 178, 0.66)', fontSize: 7, fontWeight: '800', letterSpacing: 0.45 },
-  checkoutBillingOptionSubtextSelected: { color: theme.colors.scannerCyan },
-  checkoutBillingOptionText: { color: theme.colors.textMuted, fontFamily: theme.fonts.radar, fontSize: 8, fontWeight: '900', letterSpacing: 0.85 },
-  checkoutBillingOptionTextSelected: { color: theme.colors.goldBright },
-  checkoutBillingSection: { gap: 7 },
-  checkoutBillingToggle: { backgroundColor: 'rgba(8, 8, 12, 0.92)', borderColor: 'rgba(242, 237, 228, 0.14)', borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 4, padding: 4 },
-  checkoutFeatureList: { gap: 7 },
-  checkoutFeatureRow: { alignItems: 'center', flexDirection: 'row', gap: 8 },
-  checkoutFeatureText: { color: theme.colors.text, flex: 1, fontSize: 11, lineHeight: 15 },
-  checkoutPlanCard: { backgroundColor: 'rgba(8, 8, 12, 0.92)', borderColor: 'rgba(242, 237, 228, 0.15)', borderRadius: 15, borderWidth: StyleSheet.hairlineWidth, gap: 11, padding: 15 },
-  checkoutPlanCardRecommended: { borderColor: 'rgba(0, 255, 255, 0.42)', shadowColor: theme.colors.scannerCyan, shadowOpacity: 0.09, shadowRadius: 20 },
-  checkoutPlanCardSelected: { borderColor: 'rgba(141, 114, 255, 0.72)', backgroundColor: 'rgba(141, 114, 255, 0.06)' },
-  checkoutPlanDescription: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 17 },
-  checkoutPlanEyebrow: { color: theme.colors.gold, fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: '900', letterSpacing: 1.15 },
-  checkoutPlanHeading: { flex: 1, gap: 2 },
-  checkoutPlanName: { color: theme.colors.cream, fontSize: 20, fontWeight: '900' },
-  checkoutPlanStack: { gap: 12 },
-  checkoutPlanTopLine: { alignItems: 'flex-start', flexDirection: 'row', gap: 10, justifyContent: 'space-between' },
-  checkoutPrice: { color: theme.colors.cream, fontSize: 27, fontVariant: ['tabular-nums'], fontWeight: '900' },
-  checkoutPricePeriod: { color: theme.colors.textMuted, fontSize: 11 },
-  checkoutPriceRow: { alignItems: 'baseline', flexDirection: 'row', gap: 4 },
-  checkoutRecommendedBadge: { backgroundColor: theme.colors.scannerCyan, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 5 },
-  checkoutRecommendedText: { color: theme.colors.backgroundDeep, fontFamily: theme.fonts.radar, fontSize: 6, fontWeight: '900', letterSpacing: 0.7 },
-  checkoutSavingsLine: { color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: '900', letterSpacing: 0.75, marginTop: -6 },
-  checkoutSection: { gap: 14 },
-  checkoutSelectAction: { alignItems: 'center', borderColor: 'rgba(0, 255, 255, 0.34)', borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, justifyContent: 'center', minHeight: 46 },
-  checkoutSelectActionRecommended: { borderColor: theme.colors.scannerCyan },
-  checkoutSelectActionSelected: { backgroundColor: 'rgba(141, 114, 255, 0.16)', borderColor: 'rgba(141, 114, 255, 0.62)' },
-  checkoutSelectActionText: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 8, fontWeight: '900', letterSpacing: 0.85 },
-  checkoutSelectActionTextRecommended: { color: theme.colors.scannerCyan },
-  checkoutSelectActionTextSelected: { color: theme.colors.cream },
-  checkoutTrialIncludedRow: { alignItems: 'center', alignSelf: 'flex-start', backgroundColor: 'rgba(0, 255, 255, 0.055)', borderColor: 'rgba(0, 255, 255, 0.2)', borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 6, paddingHorizontal: 9, paddingVertical: 6 },
-  checkoutTrialIncludedText: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: '900', letterSpacing: 0.7 },
-  visibilityButton: { alignItems: 'center', borderRadius: 999, height: 36, justifyContent: 'center', width: 36 },
-});
+  const { responsiveFont, responsiveHeight, responsiveWidth } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    backButton: { alignItems: 'center', flexDirection: 'row', gap: 4, minHeight: 40, paddingHorizontal: 4 },
+    backButtonText: { color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 9, letterSpacing: 1 },
+    billingOption: { alignItems: 'center', borderRadius: 10, flex: 1, gap: 2, justifyContent: 'center', minHeight: 44 },
+    billingOptionSelected: { backgroundColor: 'rgba(215, 168, 74, 0.16)', borderColor: 'rgba(242, 211, 138, 0.4)', borderWidth: StyleSheet.hairlineWidth },
+    billingOptionSubtext: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 7, letterSpacing: 0.55 },
+    billingOptionText: { color: theme.colors.textMuted, fontFamily: theme.fonts.radar, fontSize: 9, letterSpacing: 0.9 },
+    billingOptionTextSelected: { color: theme.colors.goldBright },
+    billingToggle: { backgroundColor: 'rgba(1, 1, 2, 0.72)', borderColor: 'rgba(242, 237, 228, 0.14)', borderRadius: 13, borderWidth: 1, flexDirection: 'row', gap: 4, padding: 4 },
+    brandEyebrow: { color: theme.colors.gold, fontFamily: theme.fonts.radar, fontSize: 9, letterSpacing: 1.3 },
+    brandLogo: { height: 52, width: 52 },
+    brandMark: { alignItems: 'center', backgroundColor: 'rgba(5, 4, 5, 0.65)', borderColor: 'rgba(224, 172, 75, 0.25)', borderRadius: 28, borderWidth: 1, height: 60, justifyContent: 'center', width: 60 },
+    brandSection: { alignItems: 'center', gap: 8, paddingHorizontal: 10 },
+    buttonDisabled: { opacity: 0.42 },
+    content: { alignItems: 'center', gap: 20, paddingHorizontal: 16 },
+    errorNotice: { backgroundColor: 'rgba(232, 97, 88, 0.08)', borderColor: 'rgba(232, 97, 88, 0.42)', borderRadius: 12, borderWidth: 1, gap: 10, padding: 12 },
+    errorText: { color: '#FFB8B1', fontSize: 12, lineHeight: 18 },
+    fieldGroup: { gap: 7 },
+    fieldInput: { color: theme.colors.text, flex: 1, fontSize: 15, minWidth: 0, paddingVertical: 13 },
+    fieldLabel: { color: theme.colors.textMuted, fontSize: 10, fontWeight: '800', letterSpacing: 1.1, textTransform: 'uppercase' },
+    fieldShell: { alignItems: 'center', backgroundColor: 'rgba(2, 2, 4, 0.82)', borderColor: 'rgba(242, 211, 138, 0.16)', borderRadius: 12, borderWidth: 1, flexDirection: 'row', gap: 11, minHeight: 54, paddingHorizontal: 15 },
+    flex: { flex: 1 },
+    flipImage: { height: 43, width: 43 },
+    flipNameRow: { alignItems: 'center', backgroundColor: 'rgba(141, 114, 255, 0.09)', borderColor: 'rgba(141, 114, 255, 0.28)', borderRadius: 14, borderWidth: 1, flexDirection: 'row', gap: 10, padding: 10 },
+    flipNameText: { color: theme.colors.cream, flex: 1, fontSize: 13, lineHeight: 19 },
+    form: { gap: 14 },
+    headerRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', width: '100%' },
+    legalLink: { color: theme.colors.goldBright, fontWeight: '800', textDecorationLine: 'underline' },
+    legalText: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 16, textAlign: 'center' },
+    migrationBody: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 18 },
+    migrationCopy: { flex: 1, gap: 4 },
+    migrationEyebrow: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 1 },
+    migrationIcon: { alignItems: 'center', backgroundColor: 'rgba(0, 255, 255, 0.08)', borderRadius: 11, height: 36, justifyContent: 'center', width: 36 },
+    migrationNotice: { backgroundColor: 'rgba(0, 255, 255, 0.055)', borderColor: 'rgba(0, 255, 255, 0.24)', borderRadius: 14, borderWidth: 1, flexDirection: 'row', gap: 10, padding: 12 },
+    migrationTitle: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 15, lineHeight: 20 },
+    modeButton: { alignItems: 'center', borderRadius: 999, flex: 1, justifyContent: 'center', minHeight: 42 },
+    modeButtonActive: { backgroundColor: 'rgba(215, 168, 74, 0.16)' },
+    modeSwitch: { backgroundColor: 'rgba(1, 1, 2, 0.68)', borderColor: 'rgba(242, 211, 138, 0.13)', borderRadius: 999, borderWidth: 1, flexDirection: 'row', gap: 4, padding: 4 },
+    modeText: { color: theme.colors.textMuted, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+    modeTextActive: { color: theme.colors.goldBright },
+    panel: { backgroundColor: 'rgba(8, 8, 12, 0.93)', borderColor: 'rgba(224, 172, 75, 0.34)', borderRadius: 24, borderWidth: 1, gap: 16, maxWidth: 620, padding: 17, width: '100%' },
+    planList: { gap: 9 },
+    planOption: { backgroundColor: 'rgba(255, 255, 255, 0.035)', borderColor: 'rgba(242, 237, 228, 0.14)', borderRadius: 15, borderWidth: 1, gap: 7, padding: 12 },
+    planTrial: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 0.8 },
+    planOptionDescription: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 },
+    planOptionEyebrow: { color: theme.colors.gold, fontFamily: theme.fonts.radar, fontSize: 7, letterSpacing: 1.05 },
+    planOptionName: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 17 },
+    planOptionSelected: { backgroundColor: 'rgba(0, 255, 255, 0.075)', borderColor: 'rgba(0, 255, 255, 0.62)' },
+    planOptionTopLine: { alignItems: 'center', flexDirection: 'row', gap: 8, justifyContent: 'space-between' },
+    planOptionCopy: { flex: 1, gap: 2 },
+    planPeriod: { color: theme.colors.textMuted, fontSize: 10 },
+    planPrice: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 24 },
+    planPriceRow: { alignItems: 'baseline', flexDirection: 'row', gap: 4 },
+    planRadio: { alignItems: 'center', borderColor: 'rgba(242, 237, 228, 0.35)', borderRadius: 999, borderWidth: 1, height: 19, justifyContent: 'center', width: 19 },
+    planRadioCore: { backgroundColor: theme.colors.scannerCyan, borderRadius: 999, height: 9, width: 9 },
+    planRadioSelected: { borderColor: theme.colors.scannerCyan },
+    planSection: { gap: 10 },
+    planSectionBody: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 },
+    planSectionCopy: { flex: 1, gap: 2 },
+    planSectionEyebrow: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 1.05 },
+    planSectionHeading: { alignItems: 'center', flexDirection: 'row', gap: 9 },
+    planSectionIcon: { alignItems: 'center', backgroundColor: 'rgba(0, 255, 255, 0.08)', borderRadius: 10, height: 34, justifyContent: 'center', width: 34 },
+    planSectionTitle: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 16 },
+    pressed: { opacity: 0.74, transform: [{ scale: 0.985 }] },
+    retryButton: { alignSelf: 'flex-start', borderColor: 'rgba(224, 172, 75, 0.34)', borderRadius: 999, borderWidth: 1, minHeight: 38, paddingHorizontal: 11, paddingVertical: 8 },
+    retryText: { color: theme.colors.scannerAmber, fontFamily: theme.fonts.radar, fontSize: 9, letterSpacing: 0.8 },
+    setupBody: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 },
+    setupKey: { color: theme.colors.goldBright, fontSize: 10, fontWeight: '700' },
+    setupNotice: { backgroundColor: 'rgba(141, 114, 255, 0.075)', borderColor: 'rgba(141, 114, 255, 0.36)', borderRadius: 12, borderWidth: 1, gap: 6, padding: 12 },
+    setupTitle: { color: theme.colors.scannerViolet, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 1.05 },
+    subtitle: { color: theme.colors.textMuted, fontSize: 13, lineHeight: 20, maxWidth: 470, textAlign: 'center' },
+    submitButton: { alignItems: 'center', backgroundColor: theme.colors.goldBright, borderRadius: 15, flexDirection: 'row', gap: 9, justifyContent: 'center', minHeight: 55 },
+    submitText: { color: theme.colors.backgroundDeep, fontFamily: theme.fonts.bold, fontSize: 11, letterSpacing: 0.85 },
+    title: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 31, letterSpacing: -0.6, textAlign: 'center' },
+    accountReadyNotice: { alignItems: 'center', backgroundColor: 'rgba(0, 255, 255, 0.055)', borderColor: 'rgba(0, 255, 255, 0.24)', borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 10, padding: 12 },
+    accountReadyText: { color: theme.colors.textMuted, flex: 1, fontSize: 12, lineHeight: 18 },
+    checkoutAfterTrialText: { color: 'rgba(173, 167, 178, 0.76)', fontSize: 9, lineHeight: 13, textAlign: 'center' },
+    checkoutBanner: { alignItems: 'center', backgroundColor: 'rgba(0, 255, 255, 0.055)', borderColor: 'rgba(0, 255, 255, 0.24)', borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 11, padding: 13 },
+    checkoutBannerBody: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 17 },
+    checkoutBannerCopy: { flex: 1, gap: 3 },
+    checkoutBannerIcon: { alignItems: 'center', backgroundColor: 'rgba(0, 255, 255, 0.08)', borderRadius: 10, height: 40, justifyContent: 'center', width: 40 },
+    checkoutBannerTitle: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 8, fontWeight: '900', letterSpacing: 0.95 },
+    checkoutBillingLabel: { color: theme.colors.gold, fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: '900', letterSpacing: 1.1, paddingHorizontal: 2 },
+    checkoutBillingOption: { alignItems: 'center', borderRadius: 9, flex: 1, gap: 1, justifyContent: 'center', minHeight: 45, paddingHorizontal: 10 },
+    checkoutBillingOptionSelected: { backgroundColor: 'rgba(215, 168, 74, 0.14)', borderColor: 'rgba(242, 211, 138, 0.42)', borderWidth: StyleSheet.hairlineWidth },
+    checkoutBillingOptionSubtext: { color: 'rgba(173, 167, 178, 0.66)', fontSize: 7, fontWeight: '800', letterSpacing: 0.45 },
+    checkoutBillingOptionSubtextSelected: { color: theme.colors.scannerCyan },
+    checkoutBillingOptionText: { color: theme.colors.textMuted, fontFamily: theme.fonts.radar, fontSize: 8, fontWeight: '900', letterSpacing: 0.85 },
+    checkoutBillingOptionTextSelected: { color: theme.colors.goldBright },
+    checkoutBillingSection: { gap: 7 },
+    checkoutBillingToggle: { backgroundColor: 'rgba(8, 8, 12, 0.92)', borderColor: 'rgba(242, 237, 228, 0.14)', borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 4, padding: 4 },
+    checkoutFeatureList: { gap: 7 },
+    checkoutFeatureRow: { alignItems: 'center', flexDirection: 'row', gap: 8 },
+    checkoutFeatureText: { color: theme.colors.text, flex: 1, fontSize: 11, lineHeight: 15 },
+    checkoutPlanCard: { backgroundColor: 'rgba(8, 8, 12, 0.92)', borderColor: 'rgba(242, 237, 228, 0.15)', borderRadius: 15, borderWidth: StyleSheet.hairlineWidth, gap: 11, padding: 15 },
+    checkoutPlanCardRecommended: { borderColor: 'rgba(0, 255, 255, 0.42)', shadowColor: theme.colors.scannerCyan, shadowOpacity: 0.09, shadowRadius: 20 },
+    checkoutPlanCardSelected: { borderColor: 'rgba(141, 114, 255, 0.72)', backgroundColor: 'rgba(141, 114, 255, 0.06)' },
+    checkoutPlanDescription: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 17 },
+    checkoutPlanEyebrow: { color: theme.colors.gold, fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: '900', letterSpacing: 1.15 },
+    checkoutPlanHeading: { flex: 1, gap: 2 },
+    checkoutPlanName: { color: theme.colors.cream, fontSize: 20, fontWeight: '900' },
+    checkoutPlanStack: { gap: 12 },
+    checkoutPlanTopLine: { alignItems: 'flex-start', flexDirection: 'row', gap: 10, justifyContent: 'space-between' },
+    checkoutPrice: { color: theme.colors.cream, fontSize: 27, fontVariant: ['tabular-nums'], fontWeight: '900' },
+    checkoutPricePeriod: { color: theme.colors.textMuted, fontSize: 11 },
+    checkoutPriceRow: { alignItems: 'baseline', flexDirection: 'row', gap: 4 },
+    checkoutRecommendedBadge: { backgroundColor: theme.colors.scannerCyan, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 5 },
+    checkoutRecommendedText: { color: theme.colors.backgroundDeep, fontFamily: theme.fonts.radar, fontSize: 6, fontWeight: '900', letterSpacing: 0.7 },
+    checkoutSavingsLine: { color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: '900', letterSpacing: 0.75, marginTop: -6 },
+    checkoutSection: { gap: 14 },
+    checkoutSelectAction: { alignItems: 'center', borderColor: 'rgba(0, 255, 255, 0.34)', borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, justifyContent: 'center', minHeight: 46 },
+    checkoutSelectActionRecommended: { borderColor: theme.colors.scannerCyan },
+    checkoutSelectActionSelected: { backgroundColor: 'rgba(141, 114, 255, 0.16)', borderColor: 'rgba(141, 114, 255, 0.62)' },
+    checkoutSelectActionText: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 8, fontWeight: '900', letterSpacing: 0.85 },
+    checkoutSelectActionTextRecommended: { color: theme.colors.scannerCyan },
+    checkoutSelectActionTextSelected: { color: theme.colors.cream },
+    checkoutTrialIncludedRow: { alignItems: 'center', alignSelf: 'flex-start', backgroundColor: 'rgba(0, 255, 255, 0.055)', borderColor: 'rgba(0, 255, 255, 0.2)', borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 6, paddingHorizontal: 9, paddingVertical: 6 },
+    checkoutTrialIncludedText: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: '900', letterSpacing: 0.7 },
+    visibilityButton: { alignItems: 'center', borderRadius: 999, height: 36, justifyContent: 'center', width: 36 },
+  });
   return {
     ...staticStyles,
-  backButtonText: [
-    staticStyles.backButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  billingOptionSubtext: [
-    staticStyles.billingOptionSubtext,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  billingOptionText: [
-    staticStyles.billingOptionText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  brandEyebrow: [
-    staticStyles.brandEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  brandLogo: [
-    staticStyles.brandLogo,
-    {
-        height: responsiveLayout.responsiveHeight(52),
-        width: responsiveLayout.responsiveWidth(52),
-    },
-  ],
-  brandMark: [
-    staticStyles.brandMark,
-    {
-        height: responsiveLayout.responsiveHeight(60),
-        width: responsiveLayout.responsiveWidth(60),
-    },
-  ],
-  errorText: [
-    staticStyles.errorText,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  fieldInput: [
-    staticStyles.fieldInput,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  fieldLabel: [
-    staticStyles.fieldLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  flipImage: [
-    staticStyles.flipImage,
-    {
-        height: responsiveLayout.responsiveHeight(43),
-        width: responsiveLayout.responsiveWidth(43),
-    },
-  ],
-  flipNameText: [
-    staticStyles.flipNameText,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  legalText: [
-    staticStyles.legalText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  migrationBody: [
-    staticStyles.migrationBody,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  migrationEyebrow: [
-    staticStyles.migrationEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  migrationIcon: [
-    staticStyles.migrationIcon,
-    {
-        height: responsiveLayout.responsiveHeight(36),
-        width: responsiveLayout.responsiveWidth(36),
-    },
-  ],
-  migrationTitle: [
-    staticStyles.migrationTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  modeText: [
-    staticStyles.modeText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  planTrial: [
-    staticStyles.planTrial,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  planOptionDescription: [
-    staticStyles.planOptionDescription,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  planOptionEyebrow: [
-    staticStyles.planOptionEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  planOptionName: [
-    staticStyles.planOptionName,
-    {
-        fontSize: responsiveLayout.responsiveFont(17),
-    },
-  ],
-  planPeriod: [
-    staticStyles.planPeriod,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  planPrice: [
-    staticStyles.planPrice,
-    {
-        fontSize: responsiveLayout.responsiveFont(24),
-    },
-  ],
-  planRadio: [
-    staticStyles.planRadio,
-    {
-        height: responsiveLayout.responsiveHeight(19),
-        width: responsiveLayout.responsiveWidth(19),
-    },
-  ],
-  planRadioCore: [
-    staticStyles.planRadioCore,
-    {
-        height: responsiveLayout.responsiveHeight(9),
-        width: responsiveLayout.responsiveWidth(9),
-    },
-  ],
-  planSectionBody: [
-    staticStyles.planSectionBody,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  planSectionEyebrow: [
-    staticStyles.planSectionEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  planSectionIcon: [
-    staticStyles.planSectionIcon,
-    {
-        height: responsiveLayout.responsiveHeight(34),
-        width: responsiveLayout.responsiveWidth(34),
-    },
-  ],
-  planSectionTitle: [
-    staticStyles.planSectionTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(16),
-    },
-  ],
-  retryText: [
-    staticStyles.retryText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  setupBody: [
-    staticStyles.setupBody,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  setupKey: [
-    staticStyles.setupKey,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  setupTitle: [
-    staticStyles.setupTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  subtitle: [
-    staticStyles.subtitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  submitText: [
-    staticStyles.submitText,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  title: [
-    staticStyles.title,
-    {
-        fontSize: responsiveLayout.responsiveFont(31),
-    },
-  ],
-  accountReadyText: [
-    staticStyles.accountReadyText,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  checkoutAfterTrialText: [
-    staticStyles.checkoutAfterTrialText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  checkoutBannerBody: [
-    staticStyles.checkoutBannerBody,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  checkoutBannerIcon: [
-    staticStyles.checkoutBannerIcon,
-    {
-        height: responsiveLayout.responsiveHeight(40),
-        width: responsiveLayout.responsiveWidth(40),
-    },
-  ],
-  checkoutBannerTitle: [
-    staticStyles.checkoutBannerTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  checkoutBillingLabel: [
-    staticStyles.checkoutBillingLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  checkoutBillingOptionSubtext: [
-    staticStyles.checkoutBillingOptionSubtext,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  checkoutBillingOptionText: [
-    staticStyles.checkoutBillingOptionText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  checkoutFeatureText: [
-    staticStyles.checkoutFeatureText,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  checkoutPlanDescription: [
-    staticStyles.checkoutPlanDescription,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  checkoutPlanEyebrow: [
-    staticStyles.checkoutPlanEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  checkoutPlanName: [
-    staticStyles.checkoutPlanName,
-    {
-        fontSize: responsiveLayout.responsiveFont(20),
-    },
-  ],
-  checkoutPrice: [
-    staticStyles.checkoutPrice,
-    {
-        fontSize: responsiveLayout.responsiveFont(27),
-    },
-  ],
-  checkoutPricePeriod: [
-    staticStyles.checkoutPricePeriod,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  checkoutRecommendedText: [
-    staticStyles.checkoutRecommendedText,
-    {
-        fontSize: responsiveLayout.responsiveFont(6),
-    },
-  ],
-  checkoutSavingsLine: [
-    staticStyles.checkoutSavingsLine,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  checkoutSelectActionText: [
-    staticStyles.checkoutSelectActionText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  checkoutTrialIncludedText: [
-    staticStyles.checkoutTrialIncludedText,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  visibilityButton: [
-    staticStyles.visibilityButton,
-    {
-        height: responsiveLayout.responsiveHeight(36),
-        width: responsiveLayout.responsiveWidth(36),
-    },
-  ],
+    backButtonText: [
+      staticStyles.backButtonText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    billingOptionSubtext: [
+      staticStyles.billingOptionSubtext,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    billingOptionText: [
+      staticStyles.billingOptionText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    brandEyebrow: [
+      staticStyles.brandEyebrow,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    brandLogo: [
+      staticStyles.brandLogo,
+      {
+        height: responsiveHeight(52),
+        width: responsiveWidth(52),
+      },
+    ],
+    brandMark: [
+      staticStyles.brandMark,
+      {
+        height: responsiveHeight(60),
+        width: responsiveWidth(60),
+      },
+    ],
+    errorText: [
+      staticStyles.errorText,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    fieldInput: [
+      staticStyles.fieldInput,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    fieldLabel: [
+      staticStyles.fieldLabel,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    flipImage: [
+      staticStyles.flipImage,
+      {
+        height: responsiveHeight(43),
+        width: responsiveWidth(43),
+      },
+    ],
+    flipNameText: [
+      staticStyles.flipNameText,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    legalText: [
+      staticStyles.legalText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    migrationBody: [
+      staticStyles.migrationBody,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    migrationEyebrow: [
+      staticStyles.migrationEyebrow,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    migrationIcon: [
+      staticStyles.migrationIcon,
+      {
+        height: responsiveHeight(36),
+        width: responsiveWidth(36),
+      },
+    ],
+    migrationTitle: [
+      staticStyles.migrationTitle,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    modeText: [
+      staticStyles.modeText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    planTrial: [
+      staticStyles.planTrial,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    planOptionDescription: [
+      staticStyles.planOptionDescription,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    planOptionEyebrow: [
+      staticStyles.planOptionEyebrow,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    planOptionName: [
+      staticStyles.planOptionName,
+      {
+        fontSize: responsiveFont(17),
+      },
+    ],
+    planPeriod: [
+      staticStyles.planPeriod,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    planPrice: [
+      staticStyles.planPrice,
+      {
+        fontSize: responsiveFont(24),
+      },
+    ],
+    planRadio: [
+      staticStyles.planRadio,
+      {
+        height: responsiveHeight(19),
+        width: responsiveWidth(19),
+      },
+    ],
+    planRadioCore: [
+      staticStyles.planRadioCore,
+      {
+        height: responsiveHeight(9),
+        width: responsiveWidth(9),
+      },
+    ],
+    planSectionBody: [
+      staticStyles.planSectionBody,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    planSectionEyebrow: [
+      staticStyles.planSectionEyebrow,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    planSectionIcon: [
+      staticStyles.planSectionIcon,
+      {
+        height: responsiveHeight(34),
+        width: responsiveWidth(34),
+      },
+    ],
+    planSectionTitle: [
+      staticStyles.planSectionTitle,
+      {
+        fontSize: responsiveFont(16),
+      },
+    ],
+    retryText: [
+      staticStyles.retryText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    setupBody: [
+      staticStyles.setupBody,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    setupKey: [
+      staticStyles.setupKey,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    setupTitle: [
+      staticStyles.setupTitle,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    subtitle: [
+      staticStyles.subtitle,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    submitText: [
+      staticStyles.submitText,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    title: [
+      staticStyles.title,
+      {
+        fontSize: responsiveFont(31),
+      },
+    ],
+    accountReadyText: [
+      staticStyles.accountReadyText,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    checkoutAfterTrialText: [
+      staticStyles.checkoutAfterTrialText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    checkoutBannerBody: [
+      staticStyles.checkoutBannerBody,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    checkoutBannerIcon: [
+      staticStyles.checkoutBannerIcon,
+      {
+        height: responsiveHeight(40),
+        width: responsiveWidth(40),
+      },
+    ],
+    checkoutBannerTitle: [
+      staticStyles.checkoutBannerTitle,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    checkoutBillingLabel: [
+      staticStyles.checkoutBillingLabel,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    checkoutBillingOptionSubtext: [
+      staticStyles.checkoutBillingOptionSubtext,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    checkoutBillingOptionText: [
+      staticStyles.checkoutBillingOptionText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    checkoutFeatureText: [
+      staticStyles.checkoutFeatureText,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    checkoutPlanDescription: [
+      staticStyles.checkoutPlanDescription,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    checkoutPlanEyebrow: [
+      staticStyles.checkoutPlanEyebrow,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    checkoutPlanName: [
+      staticStyles.checkoutPlanName,
+      {
+        fontSize: responsiveFont(20),
+      },
+    ],
+    checkoutPrice: [
+      staticStyles.checkoutPrice,
+      {
+        fontSize: responsiveFont(27),
+      },
+    ],
+    checkoutPricePeriod: [
+      staticStyles.checkoutPricePeriod,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    checkoutRecommendedText: [
+      staticStyles.checkoutRecommendedText,
+      {
+        fontSize: responsiveFont(6),
+      },
+    ],
+    checkoutSavingsLine: [
+      staticStyles.checkoutSavingsLine,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    checkoutSelectActionText: [
+      staticStyles.checkoutSelectActionText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    checkoutTrialIncludedText: [
+      staticStyles.checkoutTrialIncludedText,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    visibilityButton: [
+      staticStyles.visibilityButton,
+      {
+        height: responsiveHeight(36),
+        width: responsiveWidth(36),
+      },
+    ],
   };
 }

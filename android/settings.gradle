@@ -38,3 +38,6 @@ expoAutolinking.useExpoVersionCatalog()
 include ':app'
 includeBuild(expoAutolinking.reactNativeGradlePlugin)
 include ':keepflip-scan-proof'
+include ':keepflip-ar-measure'
+include ':keepflip-in-app-review'
+

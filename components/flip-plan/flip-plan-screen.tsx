@@ -1,3 +1,11 @@
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { KeepFlipBackground } from '@/components/ui/keepflip-background';
+import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
+import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import { responsiveWidth } from '@/lib/responsiveFont';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   Pressable,
@@ -5,16 +13,8 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
-import { KeepFlipBackground } from '@/components/ui/keepflip-background';
-import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type PlanField =
@@ -200,7 +200,7 @@ function LedgerEntryList({
       ) : (
         entries.map((entry) => (
           <View key={entry.label} style={styles.ledgerEntry}>
-            <Text numberOfLines={1} style={[styles.entryLabel, { fontSize: responsiveFont(9)}]}>
+            <Text numberOfLines={1} style={[styles.entryLabel, { fontSize: responsiveFont(9) }]}>
               {entry.label}
             </Text>
             <Text selectable style={[styles.entryAmount, amountStyle]}>
@@ -597,11 +597,11 @@ export function FlipPlanScreen() {
     <KeepFlipBackground>
       <ScrollView
         contentContainerStyle={[styles.content,
-          {
-            paddingBottom: Math.max(insets.bottom, 20) + 28,
-            paddingTop: insets.top / 2,
-          }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
-        style={{marginBottom: insets.bottom, marginTop: insets.top}}
+        {
+          paddingBottom: Math.max(insets.bottom, 20) + 28,
+          paddingTop: insets.top / 2,
+        }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+        style={{ marginBottom: insets.bottom, marginTop: insets.top }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <Animated.View entering={FadeInDown.duration(220)} style={styles.topBar}>
@@ -624,8 +624,8 @@ export function FlipPlanScreen() {
 
         <View style={styles.header}>
           <Text style={[styles.eyebrow, { fontSize: responsiveFont(9) }]}>KEEPFLIP / FLIP PLAN</Text>
-          <Text style={[styles.title, { fontSize: responsiveFont(29)}]}>Map each side of the flip</Text>
-          <Text style={[styles.subtitle, { fontSize: responsiveFont(13)}]}>
+          <Text style={[styles.title, { fontSize: responsiveFont(29) }]}>Map each side of the flip</Text>
+          <Text style={[styles.subtitle, { fontSize: responsiveFont(13) }]}>
             Buy, refurbish, sell, and split are separate planning tools. Each button
             reveals the cumulative projection for that stage, without posting real
             entries to Books.
@@ -651,20 +651,20 @@ export function FlipPlanScreen() {
               />
             </View>
             <View style={styles.stageRow}>
-            <StageToolButton
-              active={activeStage === 'sell'}
-              detail={money(plan.salePrice)}
-              icon="tag.fill"
-              label="3. Sell Item"
-              onPress={() => setActiveStage('sell')}
-            />
-            <StageToolButton
-              active={activeStage === 'split'}
-              detail={percent(plan.partnerShare) + ' Split'}
-              icon="person.fill"
-              label="4. Split Payout"
-              onPress={() => setActiveStage('split')}
-            />
+              <StageToolButton
+                active={activeStage === 'sell'}
+                detail={money(plan.salePrice)}
+                icon="tag.fill"
+                label="3. Sell Item"
+                onPress={() => setActiveStage('sell')}
+              />
+              <StageToolButton
+                active={activeStage === 'split'}
+                detail={percent(plan.partnerShare) + ' Split'}
+                icon="person.fill"
+                label="4. Split Payout"
+                onPress={() => setActiveStage('split')}
+              />
             </View>
           </View>
 
@@ -694,7 +694,7 @@ export function FlipPlanScreen() {
           <View style={styles.impactRow}>
             <View style={styles.impactCopy}>
               <Text style={[styles.impactLabel, { fontSize: responsiveFont(8) }]}>DOUBLE-ENTRY IMPACT</Text>
-              <Text style={[styles.impactText, { fontSize: responsiveFont(11)}]}>{stageCopy.impact}</Text>
+              <Text style={[styles.impactText, { fontSize: responsiveFont(11) }]}>{stageCopy.impact}</Text>
             </View>
             <View
               accessibilityLabel={
@@ -723,8 +723,8 @@ export function FlipPlanScreen() {
           <View style={styles.ledgerSectionHeading}>
             <View style={styles.ledgerSectionCopy}>
               <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>{stageCopy.title.toUpperCase()}</Text>
-              <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16)}]}>Projected account movement</Text>
-              <Text style={[styles.sectionText, { fontSize: responsiveFont(11)}]}>{stageCopy.description}</Text>
+              <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>Projected account movement</Text>
+              <Text style={[styles.sectionText, { fontSize: responsiveFont(11) }]}>{stageCopy.description}</Text>
             </View>
             <View style={styles.projectionPill}>
               <Text style={[styles.projectionPillText, { fontSize: responsiveFont(8) }]}>PLAN PROJECTION</Text>
@@ -748,8 +748,8 @@ export function FlipPlanScreen() {
         <View style={styles.sliderPanel}>
           <View style={styles.sliderPanelHeading}>
             <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>FLIP INPUTS</Text>
-            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16)}]}>Tune the plan</Text>
-            <Text style={[styles.sectionText, { fontSize: responsiveFont(11)}]}>
+            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>Tune the plan</Text>
+            <Text style={[styles.sectionText, { fontSize: responsiveFont(11) }]}>
               Adjust any scale and every stage updates live.
             </Text>
           </View>
@@ -797,7 +797,7 @@ export function FlipPlanScreen() {
 
         <View style={styles.planNote}>
           <IconSymbol color={theme.colors.textMuted} name="lock.fill" size={14} />
-          <Text style={[styles.planNoteText, { fontSize: responsiveFont(10)}]}>
+          <Text style={[styles.planNoteText, { fontSize: responsiveFont(10) }]}>
             This is an estimate-only projection. It stays separate from Books, so a
             planned sale, cost, or payout cannot look like real business activity.
           </Text>
@@ -808,138 +808,139 @@ export function FlipPlanScreen() {
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  accountTypePill: {
-    backgroundColor: 'rgba(234, 241, 236, 0.07)',
-    borderColor: 'rgba(234, 241, 236, 0.16)',
-    borderRadius: 5,
-    borderWidth: 1,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-  },
-  accountTypeText: {
-    color: theme.colors.textMuted,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.45,
-  },
-  backButton: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 4,
-    minHeight: 34,
-    paddingRight: 8,
-  },
-  backButtonText: { color: theme.colors.cream, fontSize: 12, fontWeight: '800' },
-  backIcon: { transform: [{ rotate: '180deg' }] },
-  balancePill: {
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(88, 223, 232, 0.10)',
-    borderColor: 'rgba(88, 223, 232, 0.25)',
-    borderRadius: 999,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-  },
-  balancePillUnbalanced: {
-    backgroundColor: 'rgba(242, 211, 138, 0.10)',
-    borderColor: 'rgba(242, 211, 138, 0.28)',
-  },
-  balanceText: {
-    color: theme.colors.scannerCyan,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.25,
-    textTransform: 'uppercase',
-  },
-  balanceTextUnbalanced: { color: theme.colors.goldBright },
-  content: {
-    alignSelf: 'center',
-    gap: 16,
-    maxWidth: 760,
-    paddingHorizontal: 18,
-    width: '100%',
-  },
-  costNote: {
-    alignItems: 'flex-start',
-    backgroundColor: 'rgba(242, 211, 138, 0.07)',
-    borderColor: 'rgba(242, 211, 138, 0.22)',
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 10,
-    padding: 12,
-  },
-  costNoteComplete: {
-    backgroundColor: 'rgba(88, 223, 232, 0.06)',
-    borderColor: 'rgba(88, 223, 232, 0.22)',
-  },
-  costNoteCopy: { flex: 1, gap: 2 },
-  costNoteText: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 },
-  costNoteTitle: { color: theme.colors.cream, fontSize: 11, fontWeight: '900', lineHeight: 15 },
-  creditAmount: { color: theme.colors.goldBright },
-  creditColumn: { borderLeftColor: 'rgba(234, 241, 236, 0.10)', borderLeftWidth: 1 },
-  debitAmount: { color: theme.colors.cream },
-  emptyEntry: {
-    color: 'rgba(234, 241, 236, 0.24)',
-    fontSize: 13,
-    paddingHorizontal: 5,
-    paddingTop: 7,
-    textAlign: 'center',
-  },
-  entryAmount: { fontSize: 11, fontWeight: '900', textAlign: 'right' },
-  entryLabel: {
-    color: theme.colors.textMuted,
-    fontSize: 9,
-    lineHeight: 12,
-  },
-  eyebrow: {
-    color: theme.colors.gold,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 1.6,
-  },
-  field: {
-    backgroundColor: 'rgba(4, 10, 15, 0.68)',
-    borderColor: 'rgba(234, 241, 236, 0.12)',
-    borderRadius: 12,
-    borderWidth: 1,
-    flexBasis: 190,
-    flexGrow: 1,
-    gap: 8,
-    minHeight: 108,
-    padding: 12,
-  },
-  fieldGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  fieldHeading: { gap: 3 },
-  fieldHelper: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 14 },
-  fieldLabel: {
-    color: theme.colors.cream,
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 0.2,
-  },
-  header: { gap: 5 },
-  impactCopy: { flex: 1, gap: 3 },
-  impactLabel: {
-    color: theme.colors.scannerCyan,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-  impactRow: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(234, 241, 236, 0.045)',
-    borderColor: 'rgba(234, 241, 236, 0.07)',
-    borderRadius: 10,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 10,
-    padding: 11,
-  },
+  const { responsiveFont, responsiveWidth, responsiveHeight } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    accountTypePill: {
+      backgroundColor: 'rgba(234, 241, 236, 0.07)',
+      borderColor: 'rgba(234, 241, 236, 0.16)',
+      borderRadius: 5,
+      borderWidth: 1,
+      paddingHorizontal: 6,
+      paddingVertical: 3,
+    },
+    accountTypeText: {
+      color: theme.colors.textMuted,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 0.45,
+    },
+    backButton: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: 4,
+      minHeight: 34,
+      paddingRight: 8,
+    },
+    backButtonText: { color: theme.colors.cream, fontSize: 12, fontWeight: '800' },
+    backIcon: { transform: [{ rotate: '180deg' }] },
+    balancePill: {
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      backgroundColor: 'rgba(88, 223, 232, 0.10)',
+      borderColor: 'rgba(88, 223, 232, 0.25)',
+      borderRadius: 999,
+      borderWidth: 1,
+      flexDirection: 'row',
+      gap: 5,
+      paddingHorizontal: 8,
+      paddingVertical: 5,
+    },
+    balancePillUnbalanced: {
+      backgroundColor: 'rgba(242, 211, 138, 0.10)',
+      borderColor: 'rgba(242, 211, 138, 0.28)',
+    },
+    balanceText: {
+      color: theme.colors.scannerCyan,
+      fontSize: 9,
+      fontWeight: '900',
+      letterSpacing: 0.25,
+      textTransform: 'uppercase',
+    },
+    balanceTextUnbalanced: { color: theme.colors.goldBright },
+    content: {
+      alignSelf: 'center',
+      gap: 16,
+      maxWidth: 760,
+      paddingHorizontal: 18,
+      width: '100%',
+    },
+    costNote: {
+      alignItems: 'flex-start',
+      backgroundColor: 'rgba(242, 211, 138, 0.07)',
+      borderColor: 'rgba(242, 211, 138, 0.22)',
+      borderRadius: 12,
+      borderWidth: 1,
+      flexDirection: 'row',
+      gap: 10,
+      padding: 12,
+    },
+    costNoteComplete: {
+      backgroundColor: 'rgba(88, 223, 232, 0.06)',
+      borderColor: 'rgba(88, 223, 232, 0.22)',
+    },
+    costNoteCopy: { flex: 1, gap: 2 },
+    costNoteText: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 },
+    costNoteTitle: { color: theme.colors.cream, fontSize: 11, fontWeight: '900', lineHeight: 15 },
+    creditAmount: { color: theme.colors.goldBright },
+    creditColumn: { borderLeftColor: 'rgba(234, 241, 236, 0.10)', borderLeftWidth: 1 },
+    debitAmount: { color: theme.colors.cream },
+    emptyEntry: {
+      color: 'rgba(234, 241, 236, 0.24)',
+      fontSize: 13,
+      paddingHorizontal: 5,
+      paddingTop: 7,
+      textAlign: 'center',
+    },
+    entryAmount: { fontSize: 11, fontWeight: '900', textAlign: 'right' },
+    entryLabel: {
+      color: theme.colors.textMuted,
+      fontSize: 9,
+      lineHeight: 12,
+    },
+    eyebrow: {
+      color: theme.colors.gold,
+      fontSize: 9,
+      fontWeight: '900',
+      letterSpacing: 1.6,
+    },
+    field: {
+      backgroundColor: 'rgba(4, 10, 15, 0.68)',
+      borderColor: 'rgba(234, 241, 236, 0.12)',
+      borderRadius: 12,
+      borderWidth: 1,
+      flexBasis: 190,
+      flexGrow: 1,
+      gap: 8,
+      minHeight: 108,
+      padding: 12,
+    },
+    fieldGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    fieldHeading: { gap: 3 },
+    fieldHelper: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 14 },
+    fieldLabel: {
+      color: theme.colors.cream,
+      fontSize: 11,
+      fontWeight: '900',
+      letterSpacing: 0.2,
+    },
+    header: { gap: 5 },
+    impactCopy: { flex: 1, gap: 3 },
+    impactLabel: {
+      color: theme.colors.scannerCyan,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 1,
+    },
+    impactRow: {
+      alignItems: 'center',
+      backgroundColor: 'rgba(234, 241, 236, 0.045)',
+      borderColor: 'rgba(234, 241, 236, 0.07)',
+      borderRadius: 10,
+      borderWidth: 1,
+      flexDirection: 'row',
+      gap: 10,
+      padding: 11,
+    },
     topLabel: {
       color: theme.colors.textMuted,
       fontSize: 9,
@@ -950,610 +951,610 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       width: 44,
       height: 44,
     },
-  impactText: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 },
-  input: {
-    color: theme.colors.cream,
-    flex: 1,
-    fontSize: 22,
-    fontWeight: '900',
-    minHeight: 42,
-    paddingHorizontal: 4,
-    paddingVertical: 0,
-  },
-  inputPrefix: {
-    color: theme.colors.scannerCyan,
-    fontSize: 20,
-    fontWeight: '900',
-    paddingLeft: 1,
-  },
-  inputSuffix: {
-    color: theme.colors.textMuted,
-    fontSize: 14,
-    fontWeight: '900',
-    paddingRight: 3,
-  },
-  inputSurface: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(88, 223, 232, 0.055)',
-    borderColor: 'rgba(88, 223, 232, 0.18)',
-    borderRadius: 9,
-    borderWidth: 1,
-    flexDirection: 'row',
-    minHeight: 46,
-    paddingHorizontal: 9,
-  },
-  ledgerAccountTitle: {
-    color: theme.colors.cream,
-    flex: 1,
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: -0.1,
-  },
-  ledgerCard: {
-    backgroundColor: 'rgba(4, 10, 15, 0.74)',
-    borderColor: 'rgba(234, 241, 236, 0.14)',
-    borderRadius: 13,
-    borderWidth: 1,
-    flexBasis: 245,
-    flexGrow: 1,
-    minHeight: 176,
-    overflow: 'hidden',
-  },
-  ledgerCardHeader: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(234, 241, 236, 0.055)',
-    borderBottomColor: 'rgba(234, 241, 236, 0.10)',
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-    gap: 8,
-    minHeight: 39,
-    paddingHorizontal: 10,
-  },
-  ledgerColumn: { flex: 1, gap: 5, padding: 6 },
-  ledgerColumnHeading: {
-    color: theme.colors.textMuted,
-    flex: 1,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.45,
-    paddingVertical: 7,
-    textAlign: 'center',
-  },
-  ledgerColumnHeaders: {
-    backgroundColor: 'rgba(234, 241, 236, 0.025)',
-    borderBottomColor: 'rgba(234, 241, 236, 0.08)',
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-  },
-  ledgerColumns: { flex: 1, flexDirection: 'row', minHeight: 78 },
-  ledgerEntry: {
-    backgroundColor: 'rgba(234, 241, 236, 0.035)',
-    borderColor: 'rgba(234, 241, 236, 0.08)',
-    borderRadius: 6,
-    borderWidth: 1,
-    gap: 3,
-    minHeight: 42,
-    justifyContent: 'center',
-    paddingHorizontal: 5,
-    paddingVertical: 4,
-  },
-  ledgerGrandLabel: {
-    color: theme.colors.textMuted,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.9,
-  },
-  ledgerGrandTotals: {
-    alignItems: 'center',
-    borderTopColor: 'rgba(234, 241, 236, 0.10)',
-    borderTopWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 2,
-    paddingTop: 12,
-  },
-  ledgerGrandValue: {
-    color: theme.colors.cream,
-    fontSize: 11,
-    fontWeight: '900',
-  },
-  ledgerGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  ledgerHeadingDivider: {
-    borderRightColor: 'rgba(234, 241, 236, 0.10)',
-    borderRightWidth: 1,
-  },
-  ledgerSection: {
-    backgroundColor: 'rgba(5, 16, 22, 0.90)',
-    borderColor: 'rgba(88, 223, 232, 0.23)',
-    borderRadius: 16,
-    borderWidth: 1,
-    gap: 13,
-    padding: 13,
-  },
-  ledgerSectionCopy: { flex: 1, gap: 3 },
-  ledgerSectionHeading: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-    gap: 10,
-    justifyContent: 'space-between',
-  },
-  ledgerTotal: {
-    color: theme.colors.cream,
-    flex: 1,
-    fontSize: 10,
-    fontWeight: '900',
-    paddingVertical: 8,
-    textAlign: 'center',
-  },
-  ledgerTotalDivider: {
-    borderRightColor: 'rgba(234, 241, 236, 0.10)',
-    borderRightWidth: 1,
-  },
-  ledgerTotals: {
-    backgroundColor: 'rgba(234, 241, 236, 0.055)',
-    borderTopColor: 'rgba(234, 241, 236, 0.10)',
-    borderTopWidth: 1,
-    flexDirection: 'row',
-  },
-  metric: {
-    backgroundColor: 'rgba(4, 10, 15, 0.68)',
-    borderColor: 'rgba(234, 241, 236, 0.12)',
-    borderRadius: 12,
-    borderWidth: 1,
-    flexBasis: 128,
-    flexGrow: 1,
-    gap: 4,
-    minHeight: 78,
-    padding: 11,
-  },
-  metricGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  metricLabel: {
-    color: theme.colors.textMuted,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.8,
-  },
-  metricValue: { fontSize: 19, fontWeight: '900', letterSpacing: -0.4 },
-  metricValueCream: { color: theme.colors.cream },
-  metricValueCyan: { color: theme.colors.scannerCyan },
-  metricValueGreen: { color: '#42d989' },
-  metricValueRed: { color: '#ff827b' },
-  metricValueViolet: { color: theme.colors.scannerViolet },
-  planNote: {
-    alignItems: 'flex-start',
-    backgroundColor: 'rgba(234, 241, 236, 0.035)',
-    borderColor: 'rgba(234, 241, 236, 0.09)',
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 8,
-    padding: 11,
-  },
-  planNoteText: { color: theme.colors.textMuted, flex: 1, fontSize: 10, lineHeight: 15 },
-  pressed: { opacity: 0.72, transform: [{ scale: 0.985 }] },
-  projectionPill: {
-    backgroundColor: 'rgba(88, 223, 232, 0.10)',
-    borderColor: 'rgba(88, 223, 232, 0.24)',
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 7,
-    paddingVertical: 5,
-  },
-  projectionPillText: {
-    color: theme.colors.scannerCyan,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.6,
-  },
-  resetButton: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 5,
-    minHeight: 34,
-    paddingHorizontal: 8,
-  },
-  resetText: { color: theme.colors.textMuted, fontSize: 11, fontWeight: '800' },
-  sectionEyebrow: {
-    color: theme.colors.scannerCyan,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 1.1,
-  },
-  sectionText: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16, maxWidth: 540 },
-  sectionTitle: {
-    color: theme.colors.cream,
-    fontSize: 16,
-    fontWeight: '900',
-    letterSpacing: -0.2,
-    lineHeight: 21,
-  },
-  stageButton: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(4, 10, 15, 0.55)',
-    borderColor: 'rgba(234, 241, 236, 0.10)',
-    borderRadius: 11,
-    borderWidth: 1,
-    flex: 1,
-    gap: 3,
-    justifyContent: 'center',
-    minHeight: 82,
-    paddingHorizontal: 4,
-    paddingVertical: 8,
-  },
-  stageButtonActive: {
-    backgroundColor: 'rgba(88, 223, 232, 0.13)',
-    borderColor: 'rgba(88, 223, 232, 0.42)',
-  },
-  stageDetail: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 12 },
-  stageDetailActive: { color: theme.colors.scannerCyan },
-  stageGrid: { flexDirection: 'column', gap: 6 },
-  stageRow: { flexDirection: 'row', gap: 6 },
-  stageIcon: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(234, 241, 236, 0.075)',
-    borderRadius: 7,
-    height: 25,
-    justifyContent: 'center',
-    width: 25,
-  },
-  stageIconActive: { backgroundColor: theme.colors.scannerCyan },
-  stageLabel: {
-    color: theme.colors.cream,
-    fontSize: 9,
-    fontWeight: '900',
-    lineHeight: 12,
-    textAlign: 'center',
-  },
-  stageLabelActive: { color: theme.colors.scannerCyan },
-  stagePanel: {
-    backgroundColor: 'rgba(5, 16, 22, 0.90)',
-    borderColor: 'rgba(88, 223, 232, 0.25)',
-    borderRadius: 16,
-    borderWidth: 1,
-    gap: 12,
-    padding: 11,
-  },
-  subtitle: { color: theme.colors.textMuted, fontSize: 13, lineHeight: 19, maxWidth: 600 },
-  title: {
-    color: theme.colors.cream,
-    fontSize: 29,
-    fontWeight: '900',
-    letterSpacing: -0.55,
-    lineHeight: 34,
-  },
-  toolPanel: {
-    backgroundColor: 'rgba(5, 16, 22, 0.86)',
-    borderColor: 'rgba(234, 241, 236, 0.14)',
-    borderRadius: 16,
-    borderWidth: 1,
-    gap: 13,
-    padding: 14,
-  },
-  toolPanelHeading: { gap: 3 },
-  sliderControl: {
-    flexBasis: 238,
-    flexGrow: 1,
-    gap: 7,
-  },
-  sliderFill: {
-    borderRadius: 999,
-    height: 5,
-    left: 0,
-    position: 'absolute',
-    top: 0,
-  },
-  sliderGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 13,
-  },
-  sliderLabel: {
-    color: theme.colors.cream,
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  sliderLabelRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  sliderPanel: {
-    backgroundColor: 'rgba(5, 16, 22, 0.86)',
-    borderColor: 'rgba(88, 223, 232, 0.24)',
-    borderRadius: 16,
-    borderWidth: 1,
-    gap: 13,
-    padding: 14,
-  },
-  sliderPanelHeading: { gap: 3 },
-  sliderThumb: {
-    color: theme.colors.cream,
-    borderColor: 'rgba(4, 10, 15, 0.88)',
-    borderRadius: 12,
-    borderWidth: 2,
-    height: 22,
-    marginLeft: -11,
-    position: 'absolute',
-    top: -9,
-    width: 22,
-  },
-  sliderTouch: {
-    height: 34,
-    justifyContent: 'center',
-    width: '100%',
-  },
-  sliderTrack: {
-    backgroundColor: 'rgba(234, 241, 236, 0.14)',
-    borderRadius: 999,
-    height: 5,
-    position: 'relative',
-    width: '100%',
-  },
-  sliderValue: {
-    color: theme.colors.goldBright,
-    fontSize: 11,
-    fontVariant: ['tabular-nums'],
-    fontWeight: '900',
-  },
-  topBar: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
-});
+    impactText: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 },
+    input: {
+      color: theme.colors.cream,
+      flex: 1,
+      fontSize: 22,
+      fontWeight: '900',
+      minHeight: 42,
+      paddingHorizontal: 4,
+      paddingVertical: 0,
+    },
+    inputPrefix: {
+      color: theme.colors.scannerCyan,
+      fontSize: 20,
+      fontWeight: '900',
+      paddingLeft: 1,
+    },
+    inputSuffix: {
+      color: theme.colors.textMuted,
+      fontSize: 14,
+      fontWeight: '900',
+      paddingRight: 3,
+    },
+    inputSurface: {
+      alignItems: 'center',
+      backgroundColor: 'rgba(88, 223, 232, 0.055)',
+      borderColor: 'rgba(88, 223, 232, 0.18)',
+      borderRadius: 9,
+      borderWidth: 1,
+      flexDirection: 'row',
+      minHeight: 46,
+      paddingHorizontal: 9,
+    },
+    ledgerAccountTitle: {
+      color: theme.colors.cream,
+      flex: 1,
+      fontSize: 11,
+      fontWeight: '900',
+      letterSpacing: -0.1,
+    },
+    ledgerCard: {
+      backgroundColor: 'rgba(4, 10, 15, 0.74)',
+      borderColor: 'rgba(234, 241, 236, 0.14)',
+      borderRadius: 13,
+      borderWidth: 1,
+      flexBasis: 245,
+      flexGrow: 1,
+      minHeight: 176,
+      overflow: 'hidden',
+    },
+    ledgerCardHeader: {
+      alignItems: 'center',
+      backgroundColor: 'rgba(234, 241, 236, 0.055)',
+      borderBottomColor: 'rgba(234, 241, 236, 0.10)',
+      borderBottomWidth: 1,
+      flexDirection: 'row',
+      gap: 8,
+      minHeight: 39,
+      paddingHorizontal: 10,
+    },
+    ledgerColumn: { flex: 1, gap: 5, padding: 6 },
+    ledgerColumnHeading: {
+      color: theme.colors.textMuted,
+      flex: 1,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 0.45,
+      paddingVertical: 7,
+      textAlign: 'center',
+    },
+    ledgerColumnHeaders: {
+      backgroundColor: 'rgba(234, 241, 236, 0.025)',
+      borderBottomColor: 'rgba(234, 241, 236, 0.08)',
+      borderBottomWidth: 1,
+      flexDirection: 'row',
+    },
+    ledgerColumns: { flex: 1, flexDirection: 'row', minHeight: 78 },
+    ledgerEntry: {
+      backgroundColor: 'rgba(234, 241, 236, 0.035)',
+      borderColor: 'rgba(234, 241, 236, 0.08)',
+      borderRadius: 6,
+      borderWidth: 1,
+      gap: 3,
+      minHeight: 42,
+      justifyContent: 'center',
+      paddingHorizontal: 5,
+      paddingVertical: 4,
+    },
+    ledgerGrandLabel: {
+      color: theme.colors.textMuted,
+      fontSize: 9,
+      fontWeight: '900',
+      letterSpacing: 0.9,
+    },
+    ledgerGrandTotals: {
+      alignItems: 'center',
+      borderTopColor: 'rgba(234, 241, 236, 0.10)',
+      borderTopWidth: 1,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: 2,
+      paddingTop: 12,
+    },
+    ledgerGrandValue: {
+      color: theme.colors.cream,
+      fontSize: 11,
+      fontWeight: '900',
+    },
+    ledgerGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    ledgerHeadingDivider: {
+      borderRightColor: 'rgba(234, 241, 236, 0.10)',
+      borderRightWidth: 1,
+    },
+    ledgerSection: {
+      backgroundColor: 'rgba(5, 16, 22, 0.90)',
+      borderColor: 'rgba(88, 223, 232, 0.23)',
+      borderRadius: 16,
+      borderWidth: 1,
+      gap: 13,
+      padding: 13,
+    },
+    ledgerSectionCopy: { flex: 1, gap: 3 },
+    ledgerSectionHeading: {
+      alignItems: 'flex-start',
+      flexDirection: 'row',
+      gap: 10,
+      justifyContent: 'space-between',
+    },
+    ledgerTotal: {
+      color: theme.colors.cream,
+      flex: 1,
+      fontSize: 10,
+      fontWeight: '900',
+      paddingVertical: 8,
+      textAlign: 'center',
+    },
+    ledgerTotalDivider: {
+      borderRightColor: 'rgba(234, 241, 236, 0.10)',
+      borderRightWidth: 1,
+    },
+    ledgerTotals: {
+      backgroundColor: 'rgba(234, 241, 236, 0.055)',
+      borderTopColor: 'rgba(234, 241, 236, 0.10)',
+      borderTopWidth: 1,
+      flexDirection: 'row',
+    },
+    metric: {
+      backgroundColor: 'rgba(4, 10, 15, 0.68)',
+      borderColor: 'rgba(234, 241, 236, 0.12)',
+      borderRadius: 12,
+      borderWidth: 1,
+      flexBasis: 128,
+      flexGrow: 1,
+      gap: 4,
+      minHeight: 78,
+      padding: 11,
+    },
+    metricGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    metricLabel: {
+      color: theme.colors.textMuted,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 0.8,
+    },
+    metricValue: { fontSize: 19, fontWeight: '900', letterSpacing: -0.4 },
+    metricValueCream: { color: theme.colors.cream },
+    metricValueCyan: { color: theme.colors.scannerCyan },
+    metricValueGreen: { color: '#42d989' },
+    metricValueRed: { color: '#ff827b' },
+    metricValueViolet: { color: theme.colors.scannerViolet },
+    planNote: {
+      alignItems: 'flex-start',
+      backgroundColor: 'rgba(234, 241, 236, 0.035)',
+      borderColor: 'rgba(234, 241, 236, 0.09)',
+      borderRadius: 12,
+      borderWidth: 1,
+      flexDirection: 'row',
+      gap: 8,
+      padding: 11,
+    },
+    planNoteText: { color: theme.colors.textMuted, flex: 1, fontSize: 10, lineHeight: 15 },
+    pressed: { opacity: 0.72, transform: [{ scale: 0.985 }] },
+    projectionPill: {
+      backgroundColor: 'rgba(88, 223, 232, 0.10)',
+      borderColor: 'rgba(88, 223, 232, 0.24)',
+      borderRadius: 999,
+      borderWidth: 1,
+      paddingHorizontal: 7,
+      paddingVertical: 5,
+    },
+    projectionPillText: {
+      color: theme.colors.scannerCyan,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 0.6,
+    },
+    resetButton: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: 5,
+      minHeight: 34,
+      paddingHorizontal: 8,
+    },
+    resetText: { color: theme.colors.textMuted, fontSize: 11, fontWeight: '800' },
+    sectionEyebrow: {
+      color: theme.colors.scannerCyan,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 1.1,
+    },
+    sectionText: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16, maxWidth: 540 },
+    sectionTitle: {
+      color: theme.colors.cream,
+      fontSize: 16,
+      fontWeight: '900',
+      letterSpacing: -0.2,
+      lineHeight: 21,
+    },
+    stageButton: {
+      alignItems: 'center',
+      backgroundColor: 'rgba(4, 10, 15, 0.55)',
+      borderColor: 'rgba(234, 241, 236, 0.10)',
+      borderRadius: 11,
+      borderWidth: 1,
+      flex: 1,
+      gap: 3,
+      justifyContent: 'center',
+      minHeight: 82,
+      paddingHorizontal: 4,
+      paddingVertical: 8,
+    },
+    stageButtonActive: {
+      backgroundColor: 'rgba(88, 223, 232, 0.13)',
+      borderColor: 'rgba(88, 223, 232, 0.42)',
+    },
+    stageDetail: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 12 },
+    stageDetailActive: { color: theme.colors.scannerCyan },
+    stageGrid: { flexDirection: 'column', gap: 6 },
+    stageRow: { flexDirection: 'row', gap: 6 },
+    stageIcon: {
+      alignItems: 'center',
+      backgroundColor: 'rgba(234, 241, 236, 0.075)',
+      borderRadius: 7,
+      height: 25,
+      justifyContent: 'center',
+      width: 25,
+    },
+    stageIconActive: { backgroundColor: theme.colors.scannerCyan },
+    stageLabel: {
+      color: theme.colors.cream,
+      fontSize: 9,
+      fontWeight: '900',
+      lineHeight: 12,
+      textAlign: 'center',
+    },
+    stageLabelActive: { color: theme.colors.scannerCyan },
+    stagePanel: {
+      backgroundColor: 'rgba(5, 16, 22, 0.90)',
+      borderColor: 'rgba(88, 223, 232, 0.25)',
+      borderRadius: 16,
+      borderWidth: 1,
+      gap: 12,
+      padding: 11,
+    },
+    subtitle: { color: theme.colors.textMuted, fontSize: 13, lineHeight: 19, maxWidth: 600 },
+    title: {
+      color: theme.colors.cream,
+      fontSize: 29,
+      fontWeight: '900',
+      letterSpacing: -0.55,
+      lineHeight: 34,
+    },
+    toolPanel: {
+      backgroundColor: 'rgba(5, 16, 22, 0.86)',
+      borderColor: 'rgba(234, 241, 236, 0.14)',
+      borderRadius: 16,
+      borderWidth: 1,
+      gap: 13,
+      padding: 14,
+    },
+    toolPanelHeading: { gap: 3 },
+    sliderControl: {
+      flexBasis: 238,
+      flexGrow: 1,
+      gap: 7,
+    },
+    sliderFill: {
+      borderRadius: 999,
+      height: 5,
+      left: 0,
+      position: 'absolute',
+      top: 0,
+    },
+    sliderGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 13,
+    },
+    sliderLabel: {
+      color: theme.colors.cream,
+      fontSize: 11,
+      fontWeight: '800',
+    },
+    sliderLabelRow: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    sliderPanel: {
+      backgroundColor: 'rgba(5, 16, 22, 0.86)',
+      borderColor: 'rgba(88, 223, 232, 0.24)',
+      borderRadius: 16,
+      borderWidth: 1,
+      gap: 13,
+      padding: 14,
+    },
+    sliderPanelHeading: { gap: 3 },
+    sliderThumb: {
+      color: theme.colors.cream,
+      borderColor: 'rgba(4, 10, 15, 0.88)',
+      borderRadius: 12,
+      borderWidth: 2,
+      height: 22,
+      marginLeft: -11,
+      position: 'absolute',
+      top: -9,
+      width: 22,
+    },
+    sliderTouch: {
+      height: 34,
+      justifyContent: 'center',
+      width: '100%',
+    },
+    sliderTrack: {
+      backgroundColor: 'rgba(234, 241, 236, 0.14)',
+      borderRadius: 999,
+      height: 5,
+      position: 'relative',
+      width: '100%',
+    },
+    sliderValue: {
+      color: theme.colors.goldBright,
+      fontSize: 11,
+      fontVariant: ['tabular-nums'],
+      fontWeight: '900',
+    },
+    topBar: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  });
   return {
     ...staticStyles,
-  accountTypeText: [
-    staticStyles.accountTypeText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  backButtonText: [
-    staticStyles.backButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  balanceText: [
-    staticStyles.balanceText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  costNoteText: [
-    staticStyles.costNoteText,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  costNoteTitle: [
-    staticStyles.costNoteTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  emptyEntry: [
-    staticStyles.emptyEntry,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  entryAmount: [
-    staticStyles.entryAmount,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  entryLabel: [
-    staticStyles.entryLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  eyebrow: [
-    staticStyles.eyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  fieldHelper: [
-    staticStyles.fieldHelper,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  fieldLabel: [
-    staticStyles.fieldLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  impactLabel: [
-    staticStyles.impactLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
+    accountTypeText: [
+      staticStyles.accountTypeText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    backButtonText: [
+      staticStyles.backButtonText,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    balanceText: [
+      staticStyles.balanceText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    costNoteText: [
+      staticStyles.costNoteText,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    costNoteTitle: [
+      staticStyles.costNoteTitle,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    emptyEntry: [
+      staticStyles.emptyEntry,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    entryAmount: [
+      staticStyles.entryAmount,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    entryLabel: [
+      staticStyles.entryLabel,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    eyebrow: [
+      staticStyles.eyebrow,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    fieldHelper: [
+      staticStyles.fieldHelper,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    fieldLabel: [
+      staticStyles.fieldLabel,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    impactLabel: [
+      staticStyles.impactLabel,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
     topLabel: [
       staticStyles.topLabel,
       {
-          fontSize: responsiveLayout.responsiveFont(9),
+        fontSize: responsiveFont(9),
       },
     ],
     topSpacer: [
       staticStyles.topSpacer,
       {
-          width: responsiveLayout.responsiveWidth(44),
-          height: responsiveLayout.responsiveHeight(44),
+        width: responsiveWidth(44),
+        height: responsiveHeight(44),
       },
     ],
-  impactText: [
-    staticStyles.impactText,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  input: [
-    staticStyles.input,
-    {
-        fontSize: responsiveLayout.responsiveFont(22),
-    },
-  ],
-  inputPrefix: [
-    staticStyles.inputPrefix,
-    {
-        fontSize: responsiveLayout.responsiveFont(20),
-    },
-  ],
-  inputSuffix: [
-    staticStyles.inputSuffix,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
-  ledgerAccountTitle: [
-    staticStyles.ledgerAccountTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  ledgerColumnHeading: [
-    staticStyles.ledgerColumnHeading,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  ledgerGrandLabel: [
-    staticStyles.ledgerGrandLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  ledgerGrandValue: [
-    staticStyles.ledgerGrandValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  ledgerTotal: [
-    staticStyles.ledgerTotal,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  metricLabel: [
-    staticStyles.metricLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  metricValue: [
-    staticStyles.metricValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(19),
-    },
-  ],
-  planNoteText: [
-    staticStyles.planNoteText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  projectionPillText: [
-    staticStyles.projectionPillText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  resetText: [
-    staticStyles.resetText,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  sectionEyebrow: [
-    staticStyles.sectionEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  sectionText: [
-    staticStyles.sectionText,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  sectionTitle: [
-    staticStyles.sectionTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(16),
-    },
-  ],
-  stageDetail: [
-    staticStyles.stageDetail,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  stageIcon: [
-    staticStyles.stageIcon,
-    {
-        height: responsiveLayout.responsiveHeight(25),
-        width: responsiveLayout.responsiveWidth(25),
-    },
-  ],
-  stageLabel: [
-    staticStyles.stageLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  subtitle: [
-    staticStyles.subtitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  title: [
-    staticStyles.title,
-    {
-        fontSize: responsiveLayout.responsiveFont(29),
-    },
-  ],
-  sliderFill: [
-    staticStyles.sliderFill,
-    {
-        height: responsiveLayout.responsiveHeight(5),
-    },
-  ],
-  sliderLabel: [
-    staticStyles.sliderLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  sliderThumb: [
-    staticStyles.sliderThumb,
-    {
-        height: responsiveLayout.responsiveHeight(22),
-        width: responsiveLayout.responsiveWidth(22),
-    },
-  ],
-  sliderTouch: [
-    staticStyles.sliderTouch,
-    {
-        height: responsiveLayout.responsiveHeight(34),
-    },
-  ],
-  sliderTrack: [
-    staticStyles.sliderTrack,
-    {
-        height: responsiveLayout.responsiveHeight(5),
-    },
-  ],
-  sliderValue: [
-    staticStyles.sliderValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
+    impactText: [
+      staticStyles.impactText,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    input: [
+      staticStyles.input,
+      {
+        fontSize: responsiveFont(22),
+      },
+    ],
+    inputPrefix: [
+      staticStyles.inputPrefix,
+      {
+        fontSize: responsiveFont(20),
+      },
+    ],
+    inputSuffix: [
+      staticStyles.inputSuffix,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
+    ledgerAccountTitle: [
+      staticStyles.ledgerAccountTitle,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    ledgerColumnHeading: [
+      staticStyles.ledgerColumnHeading,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    ledgerGrandLabel: [
+      staticStyles.ledgerGrandLabel,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    ledgerGrandValue: [
+      staticStyles.ledgerGrandValue,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    ledgerTotal: [
+      staticStyles.ledgerTotal,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    metricLabel: [
+      staticStyles.metricLabel,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    metricValue: [
+      staticStyles.metricValue,
+      {
+        fontSize: responsiveFont(19),
+      },
+    ],
+    planNoteText: [
+      staticStyles.planNoteText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    projectionPillText: [
+      staticStyles.projectionPillText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    resetText: [
+      staticStyles.resetText,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    sectionEyebrow: [
+      staticStyles.sectionEyebrow,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    sectionText: [
+      staticStyles.sectionText,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    sectionTitle: [
+      staticStyles.sectionTitle,
+      {
+        fontSize: responsiveFont(16),
+      },
+    ],
+    stageDetail: [
+      staticStyles.stageDetail,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    stageIcon: [
+      staticStyles.stageIcon,
+      {
+        height: responsiveHeight(25),
+        width: responsiveWidth(25),
+      },
+    ],
+    stageLabel: [
+      staticStyles.stageLabel,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    subtitle: [
+      staticStyles.subtitle,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    title: [
+      staticStyles.title,
+      {
+        fontSize: responsiveFont(29),
+      },
+    ],
+    sliderFill: [
+      staticStyles.sliderFill,
+      {
+        height: responsiveHeight(5),
+      },
+    ],
+    sliderLabel: [
+      staticStyles.sliderLabel,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    sliderThumb: [
+      staticStyles.sliderThumb,
+      {
+        height: responsiveHeight(22),
+        width: responsiveWidth(22),
+      },
+    ],
+    sliderTouch: [
+      staticStyles.sliderTouch,
+      {
+        height: responsiveHeight(34),
+      },
+    ],
+    sliderTrack: [
+      staticStyles.sliderTrack,
+      {
+        height: responsiveHeight(5),
+      },
+    ],
+    sliderValue: [
+      staticStyles.sliderValue,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
   };
 }
 

@@ -5,10 +5,10 @@ import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import { responsiveWidth } from '@/lib/responsiveFont';
 import type { EbayBarcodeLookupResult } from "@/services/ebaySoldCompsService";
 import { neutralizeMarketplaceBrand } from "@/services/market-copy";
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export type BarcodeLookupOverlayState =
@@ -216,217 +216,218 @@ export function BarcodeLookupOverlay({
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  root: {
-    ...StyleSheet.absoluteFill,
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    backgroundColor: "rgba(3, 3, 7, 0.98)",
-  },
-  atmosphere: {
-    ...StyleSheet.absoluteFill,
-    experimental_backgroundImage: `
+  const { responsiveFont, responsiveWidth, responsiveHeight } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    root: {
+      ...StyleSheet.absoluteFill,
+      justifyContent: "space-between",
+      paddingHorizontal: 20,
+      backgroundColor: "rgba(3, 3, 7, 0.98)",
+    },
+    atmosphere: {
+      ...StyleSheet.absoluteFill,
+      experimental_backgroundImage: `
       radial-gradient(circle at 84% 8%, rgba(141, 114, 255, 0.24) 0%, transparent 34%),
       radial-gradient(circle at 12% 75%, rgba(88, 223, 232, 0.16) 0%, transparent 36%),
       linear-gradient(160deg, rgba(11, 8, 18, 0.98) 0%, rgba(4, 4, 8, 0.99) 72%)
     `,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 16,
-  },
-  headerCopy: { flex: 1, gap: 3 },
-  eyebrow: {
-    color: theme.colors.scannerViolet,
-    fontSize: 10,
-    fontWeight: "900",
-    letterSpacing: 2.1,
-  },
-  headerTitle: { color: theme.colors.cream, fontSize: 23, fontWeight: "800" },
-  closeButton: {
-    width: 42,
-    height: 42,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 21,
-    borderWidth: 1,
-    borderColor: "rgba(247, 242, 232, 0.22)",
-    backgroundColor: "rgba(247, 242, 232, 0.07)",
-  },
-  content: { flex: 1, justifyContent: "center", gap: 22, paddingVertical: 20 },
-  codePill: {
-    alignSelf: "center",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 13,
-    paddingVertical: 9,
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: "rgba(141, 114, 255, 0.40)",
-    backgroundColor: "rgba(141, 114, 255, 0.12)",
-  },
-  codeText: { color: theme.colors.cream, fontSize: 12, fontWeight: "800", letterSpacing: 0.7 },
-  loadingState: { alignItems: "center", gap: 12, paddingHorizontal: 18 },
-  loadingIcon: {
-    width: 72,
-    height: 72,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 36,
-    borderWidth: 1,
-    borderColor: "rgba(88, 223, 232, 0.42)",
-    backgroundColor: "rgba(88, 223, 232, 0.09)",
-    boxShadow: "0 0 30px rgba(88, 223, 232, 0.18)",
-  },
-  resultState: { alignItems: "center", gap: 16 },
-  productImage: {
-    width: 146,
-    height: 146,
-    borderRadius: theme.radii.large,
-    backgroundColor: "rgba(247, 242, 232, 0.06)",
-  },
-  productImageFallback: {
-    width: 112,
-    height: 112,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: theme.radii.large,
-    borderWidth: 1,
-    borderColor: "rgba(88, 223, 232, 0.34)",
-    backgroundColor: "rgba(88, 223, 232, 0.08)",
-  },
-  productCopy: { width: "100%", alignItems: "center", gap: 8 },
-  title: { color: theme.colors.cream, fontSize: 21, fontWeight: "800", textAlign: "center" },
-  body: { color: theme.colors.textMuted, fontSize: 14, lineHeight: 21, textAlign: "center" },
-  details: {
-    width: "100%",
-    gap: 1,
-    overflow: "hidden",
-    borderRadius: theme.radii.medium,
-    borderWidth: 1,
-    borderColor: "rgba(247, 242, 232, 0.14)",
-    backgroundColor: "rgba(247, 242, 232, 0.05)",
-  },
-  detailRow: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    justifyContent: "space-between",
-    gap: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    backgroundColor: "rgba(7, 7, 12, 0.74)",
-  },
-  detailLabel: { color: theme.colors.scannerCyan, fontSize: 11, fontWeight: "800", letterSpacing: 0.8 },
-  detailValue: { flex: 1, color: theme.colors.cream, fontSize: 13, fontWeight: "700", textAlign: "right" },
-  evidenceNote: { color: theme.colors.goldBright, fontSize: 12, fontWeight: "700", lineHeight: 18, textAlign: "center" },
-  actions: { gap: 10 },
-  primaryAction: {
-    minHeight: 54,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 9,
-    borderRadius: theme.radii.medium,
-    backgroundColor: theme.colors.scannerViolet,
-  },
-  primaryActionText: { color: theme.colors.background, fontSize: 15, fontWeight: "900" },
-  secondaryAction: { minHeight: 48, alignItems: "center", justifyContent: "center", borderRadius: theme.radii.medium, borderWidth: 1, borderColor: "rgba(247, 242, 232, 0.20)" },
-  secondaryActionText: { color: theme.colors.cream, fontSize: 14, fontWeight: "800" },
-  disabled: { opacity: 0.42 },
-  pressed: { opacity: 0.76, transform: [{ scale: 0.98 }] },
-});
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 16,
+    },
+    headerCopy: { flex: 1, gap: 3 },
+    eyebrow: {
+      color: theme.colors.scannerViolet,
+      fontSize: 10,
+      fontWeight: "900",
+      letterSpacing: 2.1,
+    },
+    headerTitle: { color: theme.colors.cream, fontSize: 23, fontWeight: "800" },
+    closeButton: {
+      width: 42,
+      height: 42,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 21,
+      borderWidth: 1,
+      borderColor: "rgba(247, 242, 232, 0.22)",
+      backgroundColor: "rgba(247, 242, 232, 0.07)",
+    },
+    content: { flex: 1, justifyContent: "center", gap: 22, paddingVertical: 20 },
+    codePill: {
+      alignSelf: "center",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      paddingHorizontal: 13,
+      paddingVertical: 9,
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: "rgba(141, 114, 255, 0.40)",
+      backgroundColor: "rgba(141, 114, 255, 0.12)",
+    },
+    codeText: { color: theme.colors.cream, fontSize: 12, fontWeight: "800", letterSpacing: 0.7 },
+    loadingState: { alignItems: "center", gap: 12, paddingHorizontal: 18 },
+    loadingIcon: {
+      width: 72,
+      height: 72,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 36,
+      borderWidth: 1,
+      borderColor: "rgba(88, 223, 232, 0.42)",
+      backgroundColor: "rgba(88, 223, 232, 0.09)",
+      boxShadow: "0 0 30px rgba(88, 223, 232, 0.18)",
+    },
+    resultState: { alignItems: "center", gap: 16 },
+    productImage: {
+      width: 146,
+      height: 146,
+      borderRadius: theme.radii.large,
+      backgroundColor: "rgba(247, 242, 232, 0.06)",
+    },
+    productImageFallback: {
+      width: 112,
+      height: 112,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: theme.radii.large,
+      borderWidth: 1,
+      borderColor: "rgba(88, 223, 232, 0.34)",
+      backgroundColor: "rgba(88, 223, 232, 0.08)",
+    },
+    productCopy: { width: "100%", alignItems: "center", gap: 8 },
+    title: { color: theme.colors.cream, fontSize: 21, fontWeight: "800", textAlign: "center" },
+    body: { color: theme.colors.textMuted, fontSize: 14, lineHeight: 21, textAlign: "center" },
+    details: {
+      width: "100%",
+      gap: 1,
+      overflow: "hidden",
+      borderRadius: theme.radii.medium,
+      borderWidth: 1,
+      borderColor: "rgba(247, 242, 232, 0.14)",
+      backgroundColor: "rgba(247, 242, 232, 0.05)",
+    },
+    detailRow: {
+      flexDirection: "row",
+      alignItems: "baseline",
+      justifyContent: "space-between",
+      gap: 14,
+      paddingHorizontal: 14,
+      paddingVertical: 11,
+      backgroundColor: "rgba(7, 7, 12, 0.74)",
+    },
+    detailLabel: { color: theme.colors.scannerCyan, fontSize: 11, fontWeight: "800", letterSpacing: 0.8 },
+    detailValue: { flex: 1, color: theme.colors.cream, fontSize: 13, fontWeight: "700", textAlign: "right" },
+    evidenceNote: { color: theme.colors.goldBright, fontSize: 12, fontWeight: "700", lineHeight: 18, textAlign: "center" },
+    actions: { gap: 10 },
+    primaryAction: {
+      minHeight: 54,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 9,
+      borderRadius: theme.radii.medium,
+      backgroundColor: theme.colors.scannerViolet,
+    },
+    primaryActionText: { color: theme.colors.background, fontSize: 15, fontWeight: "900" },
+    secondaryAction: { minHeight: 48, alignItems: "center", justifyContent: "center", borderRadius: theme.radii.medium, borderWidth: 1, borderColor: "rgba(247, 242, 232, 0.20)" },
+    secondaryActionText: { color: theme.colors.cream, fontSize: 14, fontWeight: "800" },
+    disabled: { opacity: 0.42 },
+    pressed: { opacity: 0.76, transform: [{ scale: 0.98 }] },
+  });
   return {
     ...staticStyles,
-  eyebrow: [
-    staticStyles.eyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  headerTitle: [
-    staticStyles.headerTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(23),
-    },
-  ],
-  closeButton: [
-    staticStyles.closeButton,
-    {
-        width: responsiveLayout.responsiveWidth(42),
-        height: responsiveLayout.responsiveHeight(42),
-    },
-  ],
-  codeText: [
-    staticStyles.codeText,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  loadingIcon: [
-    staticStyles.loadingIcon,
-    {
-        width: responsiveLayout.responsiveWidth(72),
-        height: responsiveLayout.responsiveHeight(72),
-    },
-  ],
-  productImage: [
-    staticStyles.productImage,
-    {
-        width: responsiveLayout.responsiveWidth(146),
-        height: responsiveLayout.responsiveHeight(146),
-    },
-  ],
-  productImageFallback: [
-    staticStyles.productImageFallback,
-    {
-        width: responsiveLayout.responsiveWidth(112),
-        height: responsiveLayout.responsiveHeight(112),
-    },
-  ],
-  title: [
-    staticStyles.title,
-    {
-        fontSize: responsiveLayout.responsiveFont(21),
-    },
-  ],
-  body: [
-    staticStyles.body,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
-  detailLabel: [
-    staticStyles.detailLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  detailValue: [
-    staticStyles.detailValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  evidenceNote: [
-    staticStyles.evidenceNote,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  primaryActionText: [
-    staticStyles.primaryActionText,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  secondaryActionText: [
-    staticStyles.secondaryActionText,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
+    eyebrow: [
+      staticStyles.eyebrow,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    headerTitle: [
+      staticStyles.headerTitle,
+      {
+        fontSize: responsiveFont(23),
+      },
+    ],
+    closeButton: [
+      staticStyles.closeButton,
+      {
+        width: responsiveWidth(42),
+        height: responsiveHeight(42),
+      },
+    ],
+    codeText: [
+      staticStyles.codeText,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    loadingIcon: [
+      staticStyles.loadingIcon,
+      {
+        width: responsiveWidth(72),
+        height: responsiveHeight(72),
+      },
+    ],
+    productImage: [
+      staticStyles.productImage,
+      {
+        width: responsiveWidth(146),
+        height: responsiveHeight(146),
+      },
+    ],
+    productImageFallback: [
+      staticStyles.productImageFallback,
+      {
+        width: responsiveWidth(112),
+        height: responsiveHeight(112),
+      },
+    ],
+    title: [
+      staticStyles.title,
+      {
+        fontSize: responsiveFont(21),
+      },
+    ],
+    body: [
+      staticStyles.body,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
+    detailLabel: [
+      staticStyles.detailLabel,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    detailValue: [
+      staticStyles.detailValue,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    evidenceNote: [
+      staticStyles.evidenceNote,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    primaryActionText: [
+      staticStyles.primaryActionText,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    secondaryActionText: [
+      staticStyles.secondaryActionText,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
   };
 }

@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
-import { useRouter, type Href } from 'expo-router';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { checkEbayListingReadiness, type EbayListingReadiness, type EbayListingReview } from '@/services/ebay-listing-readiness-service';
-import type { PublishEbayListingInput } from '@/services/ebayListingService';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import responsiveFont from '@/lib/responsiveFont';
+import { checkEbayListingReadiness, type EbayListingReadiness, type EbayListingReview } from '@/services/ebay-listing-readiness-service';
+import type { PublishEbayListingInput } from '@/services/ebayListingService';
+import { useRouter, type Href } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 const reviews: { key: Exclude<keyof EbayListingReview, 'measurements'>; label: string }[] = [
@@ -76,32 +76,33 @@ export function ListingReadinessPanel({ input, review, onReviewChange, onAspects
   </View>;
 }
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({ panel: { gap: 12, backgroundColor: theme.colors.surfaceSoft, padding: 16, borderRadius: 18 }, title: { color: theme.colors.text, fontSize: 20 }, hint: { color: theme.colors.textMuted, fontSize: 13, lineHeight: 20 }, row: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12 }, button: { padding: 12, borderRadius: 10, minHeight: 44 }, selected: { borderWidth: 1, borderColor: theme.colors.gold }, input: { color: theme.colors.text, borderWidth: 1, borderColor: theme.colors.goldMuted, borderRadius: 10, padding: 10, minHeight: 44 }, error: { color: theme.colors.danger, fontSize: 13, lineHeight: 20 }, link: { color: theme.colors.scannerCyan, fontSize: 14 } });
+  const { responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({ panel: { gap: 12, backgroundColor: theme.colors.surfaceSoft, padding: 16, borderRadius: 18 }, title: { color: theme.colors.text, fontSize: 20 }, hint: { color: theme.colors.textMuted, fontSize: 13, lineHeight: 20 }, row: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12 }, button: { padding: 12, borderRadius: 10, minHeight: 44 }, selected: { borderWidth: 1, borderColor: theme.colors.gold }, input: { color: theme.colors.text, borderWidth: 1, borderColor: theme.colors.goldMuted, borderRadius: 10, padding: 10, minHeight: 44 }, error: { color: theme.colors.danger, fontSize: 13, lineHeight: 20 }, link: { color: theme.colors.scannerCyan, fontSize: 14 } });
   return {
     ...staticStyles,
-  title: [
-    staticStyles.title,
-    {
-        fontSize: responsiveLayout.responsiveFont(20),
-    },
-  ],
-  hint: [
-    staticStyles.hint,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  error: [
-    staticStyles.error,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  link: [
-    staticStyles.link,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
+    title: [
+      staticStyles.title,
+      {
+        fontSize: responsiveFont(20),
+      },
+    ],
+    hint: [
+      staticStyles.hint,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    error: [
+      staticStyles.error,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    link: [
+      staticStyles.link,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
   };
 }

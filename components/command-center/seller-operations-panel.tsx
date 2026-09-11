@@ -1,18 +1,26 @@
-import { type PropsWithChildren, useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter, type Href } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
 import {
   ActivityIndicator,
-  Pressable,
   ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
-import { type Href, useRouter } from 'expo-router';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
+import {
+  KeepFlipControlRow,
+  type KeepFlipControlRowProps,
+} from '@/components/ui/keepflip-control-row';
 import { KeepFlipText as Text, KeepFlipTextInput as TextInput } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { EbaySellerHealthPanel } from '@/components/command-center/ebay-seller-health-panel';
 
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
-import { checkKeepFlipCapabilitiesAccess } from '@/services/keepflip-subscription-service';
+import {
+  useResponsiveLayout,
+  useResponsiveStyles,
+} from '@/hooks/use-responsive-layout';
 import {
   agingRecommendations,
   parseMoneyInput,
@@ -31,6 +39,7 @@ import {
   listInventoryItems,
   type InventoryItem,
 } from '@/services/inventory-service';
+import { checkKeepFlipCapabilitiesAccess } from '@/services/keepflip-subscription-service';
 import {
   isResellerBookkeepingConfigured,
   syncEbayBookkeeping,
@@ -50,10 +59,6 @@ import {
   type EbaySellerOrder,
   type SellerOrder,
 } from '@/services/seller-order-service';
-import {
-  useResponsiveLayout,
-  useResponsiveStyles,
-} from '@/hooks/use-responsive-layout';
 function Section({ title, children }: PropsWithChildren<{ title: string }>) {
   const styles = useResponsiveStyles(createResponsiveStyles);
   const {
@@ -62,10 +67,13 @@ function Section({ title, children }: PropsWithChildren<{ title: string }>) {
 
   return (
     <View style={styles.section}>
-      <Text accessibilityRole="header" style={[styles.heading, { fontSize: responsiveFont(15), lineHeight: 20 }]}>
-        {title}
-      </Text>
-      <View style={styles.sectionBody}>{children}</View>
+      <View style={styles.sectionHeading}>
+        <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>SELLER OPERATIONS</Text>
+        <Text accessibilityRole="header" style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>
+          {title}
+        </Text>
+      </View>
+      <View style={styles.sectionSurface}>{children}</View>
     </View>
   );
 }
@@ -74,30 +82,38 @@ function Button({
   title,
   onPress,
   disabled = false,
+  description = 'Open this seller operation.',
+  icon = 'arrow.right',
+  accent = 'gold',
+  actionLabel,
+  status,
+  busy = false,
+  staticLabel,
 }: {
   title: string;
   onPress: () => void;
   disabled?: boolean;
+  description?: string;
+  icon?: KeepFlipControlRowProps['icon'];
+  accent?: KeepFlipControlRowProps['accent'];
+  actionLabel?: string;
+  status?: KeepFlipControlRowProps['status'];
+  busy?: boolean;
+  staticLabel?: string;
 }) {
-  const styles = useResponsiveStyles(createResponsiveStyles);
-  const {
-    responsiveFont
-  } = useResponsiveLayout();
-
   return (
-    <Pressable
-      accessibilityLabel={title}
-      accessibilityRole="button"
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.button,
-        disabled && styles.disabled,
-        pressed && styles.buttonPressed,
-      ]}>
-      <Text style={[styles.buttonText, { fontSize: responsiveFont(11), lineHeight: 16 }]}>{title}</Text>
-    </Pressable>
+    <KeepFlipControlRow
+      accent={accent}
+      actionBusy={busy}
+      actionLabel={actionLabel}
+      accessibilityHint={description}
+      description={description}
+      icon={icon}
+      label={title}
+      onPress={disabled || busy ? undefined : onPress}
+      staticLabel={staticLabel ?? (disabled && !busy ? 'LOCKED' : undefined)}
+      status={status}
+    />
   );
 }
 
@@ -136,150 +152,159 @@ function Field({
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  page: {
-    flex: 1,
-    backgroundColor: theme.colors.backgroundDeep,
-  },
-  content: {
-    width: '100%',
-    maxWidth: 850,
-    alignSelf: 'center',
-    gap: 12,
-    padding: 16,
-    paddingBottom: 44,
-  },
-  section: {
-    gap: 10,
-    padding: 14,
-    borderRadius: theme.radii.medium,
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.16)',
-    backgroundColor: 'rgba(11, 10, 14, 0.84)',
-  },
-  sectionBody: {
-    gap: 10,
-  },
-  heading: {
-    color: theme.colors.text,
-    fontSize: 15,
-    lineHeight: 20,
-    fontWeight: '800',
-    letterSpacing: -0.1,
-  },
-  text: {
-    color: theme.colors.text,
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  muted: {
-    color: theme.colors.textMuted,
-    fontSize: 10,
-    lineHeight: 15,
-  },
-  label: {
-    color: theme.colors.goldBright,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 1.1,
-  },
-  field: {
-    gap: 5,
-  },
-  input: {
-    minHeight: 42,
-    color: theme.colors.text,
-    backgroundColor: 'rgba(3, 3, 6, 0.72)',
-    borderColor: 'rgba(242, 211, 138, 0.22)',
-    borderWidth: 1,
-    borderRadius: theme.radii.small,
-    paddingHorizontal: 11,
-    paddingVertical: 10,
-    fontSize: 12,
-  },
-  multiline: {
-    minHeight: 84,
-    textAlignVertical: 'top',
-  },
-  button: {
-    minHeight: 42,
-    justifyContent: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: theme.radii.small,
-    borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.28)',
-    backgroundColor: 'rgba(88, 223, 232, 0.045)',
-  },
-  buttonPressed: {
-    backgroundColor: 'rgba(88, 223, 232, 0.10)',
-    borderColor: 'rgba(88, 223, 232, 0.48)',
-  },
-  buttonText: {
-    color: theme.colors.text,
-    fontSize: 11,
-    lineHeight: 16,
-    fontWeight: '700',
-  },
-  disabled: {
-    opacity: 0.42,
-  },
-  row: {
-    gap: 8,
-    paddingTop: 10,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(242, 211, 138, 0.14)',
-  },
-  error: {
-    color: theme.colors.danger,
-    fontSize: 11,
-    lineHeight: 16,
-  },
-});
+  const { responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    page: {
+      flex: 1,
+      backgroundColor: theme.colors.backgroundDeep,
+    },
+    content: {
+      width: '100%',
+      maxWidth: 850,
+      alignSelf: 'center',
+      gap: 12,
+      padding: 16,
+      paddingBottom: 44,
+    },
+    section: {
+      gap: 7,
+    },
+    sectionHeading: {
+      gap: 2,
+    },
+    sectionEyebrow: {
+      color: theme.colors.goldBright,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 1.35,
+    },
+    sectionTitle: {
+      color: theme.colors.text,
+      fontSize: 16,
+      fontWeight: '800',
+      letterSpacing: -0.1,
+    },
+    sectionSurface: {
+      gap: 10,
+      padding: 10,
+      borderRadius: theme.radii.medium,
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.20)',
+      backgroundColor: 'rgba(6, 11, 14, 0.76)',
+    },
+    controlList: {
+      overflow: 'hidden',
+      borderRadius: theme.radii.small,
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.18)',
+      backgroundColor: 'rgba(3, 3, 6, 0.20)',
+    },
+    recordCard: {
+      overflow: 'hidden',
+      borderRadius: theme.radii.small,
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.15)',
+      backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    },
+    recordDetails: {
+      gap: 10,
+      paddingHorizontal: 10,
+      paddingTop: 3,
+      paddingBottom: 10,
+    },
+    formSurface: {
+      gap: 10,
+      padding: 10,
+      borderRadius: theme.radii.small,
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.22)',
+      backgroundColor: 'rgba(88, 223, 232, 0.035)',
+    },
+    heading: {
+      color: theme.colors.text,
+      fontSize: 15,
+      lineHeight: 20,
+      fontWeight: '800',
+      letterSpacing: -0.1,
+    },
+    text: {
+      color: theme.colors.text,
+      fontSize: 12,
+      lineHeight: 18,
+    },
+    muted: {
+      color: theme.colors.textMuted,
+      fontSize: 10,
+      lineHeight: 15,
+    },
+    label: {
+      color: theme.colors.goldBright,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 1.1,
+    },
+    field: {
+      gap: 5,
+    },
+    input: {
+      minHeight: 42,
+      color: theme.colors.text,
+      backgroundColor: 'rgba(3, 3, 6, 0.72)',
+      borderColor: 'rgba(242, 211, 138, 0.22)',
+      borderWidth: 1,
+      borderRadius: theme.radii.small,
+      paddingHorizontal: 11,
+      paddingVertical: 10,
+      fontSize: 12,
+    },
+    multiline: {
+      minHeight: 84,
+      textAlignVertical: 'top',
+    },
+    error: {
+      color: theme.colors.danger,
+      fontSize: 11,
+      lineHeight: 16,
+    },
+  });
   return {
     ...staticStyles,
-  heading: [
-    staticStyles.heading,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  text: [
-    staticStyles.text,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  muted: [
-    staticStyles.muted,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  label: [
-    staticStyles.label,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  input: [
-    staticStyles.input,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  buttonText: [
-    staticStyles.buttonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  error: [
-    staticStyles.error,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
+    heading: [
+      staticStyles.heading,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    text: [
+      staticStyles.text,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    muted: [
+      staticStyles.muted,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    label: [
+      staticStyles.label,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    input: [
+      staticStyles.input,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    error: [
+      staticStyles.error,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
   };
 }
 function message(cause: unknown, fallback = 'That action could not be completed.') {
@@ -432,7 +457,13 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
     if (inventoryResult.status === 'fulfilled') {
       setInventory(inventoryResult.value);
       setSelectedItemId((current) =>
-        current || inventoryResult.value.find((item) => item.quantityOnHand > 0)?.id || '',
+        current &&
+        inventoryResult.value.some(
+          (item) =>
+            item.id === current && (item.quantityOnHand > 0 || item.isListed),
+        )
+          ? current
+          : '',
       );
     } else {
       nextErrors.inventory = message(inventoryResult.reason, 'Inventory could not load.');
@@ -562,6 +593,15 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
     }
   }
 
+  function selectSaleItem(itemId: string) {
+    if (working) return;
+    if (selectedItemId !== itemId) {
+      setDraft({ ...EMPTY_DRAFT, soldAt: new Date().toISOString().slice(0, 10) });
+      setErrors((current) => ({ ...current, create: '' }));
+    }
+    setSelectedItemId(itemId);
+  }
+
   async function syncOrders() {
     if (!automaticOrders || working) return;
     setWorking(true);
@@ -684,6 +724,9 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
   }
 
   const activeListings = inventory.filter((item) => item.isListed).length;
+  const saleItems = inventory
+    .filter((item) => item.quantityOnHand > 0 || item.isListed)
+    .slice(0, 30);
 
   const content = (
     <>
@@ -706,6 +749,11 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
       {notice ? <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: 18 }]}>{notice}</Text> : null}
       <Button
         title={loading ? 'Refreshing…' : 'Refresh seller operations'}
+        description="Reload inventory, orders, fulfillment status and realized margin."
+        icon="arrow.clockwise"
+        accent="cyan"
+        actionLabel="REFRESH"
+        busy={loading || working}
         disabled={loading || working}
         onPress={() => void loadBase()}
       />
@@ -728,23 +776,33 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
             comparableCheckedAt: item.analysisSnapshot ? item.createdAt : null,
             askingPriceCents: listing?.currentPriceCents ?? null,
           });
+          const listingStatus = listing?.listingId || item.ebayListingId ? 'LIVE' : 'LINKED';
           return (
-            <View key={item.id} style={styles.row}>
-              <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: 18 }]}>{item.title}</Text>
-              <Text style={styles.muted}>
-                SKU {listing?.sku || item.ebaySku || item.sku || 'missing'} · storage {item.storageLocation || 'missing'}
-              </Text>
-              <Text style={styles.muted}>
-                eBay listing {listing?.listingId || item.ebayListingId || 'not linked'} · qty {listing?.quantityAvailable ?? item.quantityOnHand} · price {money(listing?.currentPriceCents)}
-              </Text>
-              <Text style={styles.muted}>
-                Listed {dateLabel(item.listedAt)} · last sync {dateLabel(listing?.lastSyncedAt)}
-              </Text>
-              {aging.recommendations.slice(0, 2).map((recommendation) => (
-                <Text key={recommendation} style={styles.muted}>
-                  {aging.checkpoint ? `Day ${aging.checkpoint}: ` : ''}{recommendation}
+            <View key={item.id} style={styles.recordCard}>
+              <KeepFlipControlRow
+                accent="cyan"
+                description={`SKU ${listing?.sku || item.ebaySku || item.sku || 'missing'} · storage ${item.storageLocation || 'missing'} · ${listingStatus.toLowerCase()}`}
+                icon="tag.fill"
+                label={item.title}
+                staticLabel={listingStatus}
+                status={{
+                  label: listingStatus,
+                  tone: listingStatus === 'LIVE' ? 'active' : 'violet',
+                }}
+              />
+              <View style={styles.recordDetails}>
+                <Text style={styles.muted}>
+                  eBay listing {listing?.listingId || item.ebayListingId || 'not linked'} · qty {listing?.quantityAvailable ?? item.quantityOnHand} · price {money(listing?.currentPriceCents)}
                 </Text>
-              ))}
+                <Text style={styles.muted}>
+                  Listed {dateLabel(item.listedAt)} · last sync {dateLabel(listing?.lastSyncedAt)}
+                </Text>
+                {aging.recommendations.slice(0, 2).map((recommendation) => (
+                  <Text key={recommendation} style={styles.muted}>
+                    {aging.checkpoint ? `Day ${aging.checkpoint}: ` : ''}{recommendation}
+                  </Text>
+                ))}
+              </View>
             </View>
           );
         })}
@@ -755,27 +813,35 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
 
       <Section title="Record a sale · every plan">
         <Text style={styles.muted}>
-          Choose the exact inventory item. This preserves SKU/storage context and
-          lets Books calculate realized profit instead of guessing.
+          Select the exact inventory item to expand its sale details. This preserves
+          SKU/storage context and lets Books calculate realized profit instead of guessing.
         </Text>
-        <View style={styles.row}>
-          {inventory
-            .filter((item) => item.quantityOnHand > 0 || item.isListed)
-            .slice(0, 30)
-            .map((item) => (
-              <Button
-                key={item.id}
-                title={`${selectedItemId === item.id ? 'Selected: ' : ''}${item.title} · ${item.sku || 'no SKU'} · ${item.storageLocation || 'no bin'}`}
-                disabled={working}
-                onPress={() => setSelectedItemId(item.id)}
-              />
-            ))}
+        <View style={styles.controlList}>
+          {saleItems.map((item) => (
+            <Button
+              key={item.id}
+              title={item.title}
+              description={`SKU ${item.sku || 'no SKU'} · storage ${item.storageLocation || 'no bin'} · quantity ${item.quantityOnHand}`}
+              icon="shippingbox.fill"
+              accent="cyan"
+              status={selectedItemId === item.id
+                ? { label: 'SELECTED', tone: 'active' }
+                : { label: 'AVAILABLE', tone: 'violet' }}
+              disabled={working}
+              onPress={() => selectSaleItem(item.id)}
+            />
+          ))}
         </View>
         {selectedItem ? (
-          <>
-            <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: 18 }]}>
-              {selectedItem.title} · stored at {selectedItem.storageLocation || 'location not set'}
-            </Text>
+          <Animated.View entering={FadeInDown.duration(220)} style={styles.formSurface}>
+            <KeepFlipControlRow
+              accent="cyan"
+              description={`SKU ${selectedItem.sku || 'no SKU'} · stored at ${selectedItem.storageLocation || 'location not set'}`}
+              icon="shippingbox.fill"
+              label={selectedItem.title}
+              staticLabel="SELECTED"
+              status={{ label: 'SALE DRAFT', tone: 'active' }}
+            />
             <Field label="Sold price" numeric value={draft.soldPrice} onChangeText={(soldPrice) => setDraft((current) => ({ ...current, soldPrice }))} />
             <Field label="Original/list price (optional)" numeric value={draft.listPrice} onChangeText={(listPrice) => setDraft((current) => ({ ...current, listPrice }))} />
             <Field label="Marketplace fees" numeric value={draft.fees} onChangeText={(fees) => setDraft((current) => ({ ...current, fees }))} />
@@ -786,10 +852,23 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
             <Field label="Sold date" value={draft.soldAt} onChangeText={(soldAt) => setDraft((current) => ({ ...current, soldAt }))} />
             <Field label="Ship-by date (optional)" value={draft.shipBy} onChangeText={(shipBy) => setDraft((current) => ({ ...current, shipBy }))} />
             <Field label="Packing notes" multiline value={draft.packingNotes} onChangeText={(packingNotes) => setDraft((current) => ({ ...current, packingNotes }))} />
-            <Button title="Save sale and reconcile Books" disabled={working} onPress={() => void recordManualSale()} />
-          </>
+            <Button
+              title="Save sale and reconcile Books"
+              description="Save this sale and connect it to the selected inventory item in Books."
+              icon="checkmark.circle.fill"
+              accent="gold"
+              actionLabel="SAVE"
+              busy={working}
+              disabled={working}
+              onPress={() => void recordManualSale()}
+            />
+          </Animated.View>
         ) : (
-          <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: 18 }]}>Save an inventory item before recording its sale.</Text>
+          <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: 18 }]}>
+            {saleItems.length
+              ? 'Select an inventory item above to expand sale details.'
+              : 'Save an inventory item before recording its sale.'}
+          </Text>
         )}
       </Section>
 
@@ -800,7 +879,16 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
           or buyer-sensitive payloads to the app.
         </Text>
         {automaticOrders ? (
-          <Button title="Sync eBay orders" disabled={working} onPress={() => void syncOrders()} />
+          <Button
+            title="Sync eBay orders"
+            description="Pull the latest eBay orders and ship-by deadlines through KeepFlip."
+            icon="arrow.clockwise"
+            accent="cyan"
+            actionLabel="SYNC"
+            busy={working}
+            disabled={working}
+            onPress={() => void syncOrders()}
+          />
         ) : (
           <Text style={styles.muted}>
             Serious adds automatic eBay order sync, ship-by status and tracking updates.
@@ -808,47 +896,83 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
         )}
 
         {manualOrders.map((order) => (
-          <View key={order.id} style={styles.row}>
-            <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: 18 }]}>{order.title}</Text>
-            <Text style={styles.muted}>
-              Sold {money(order.soldPriceCents)} · storage {inventory.find((item) => item.id === order.sourceItemId)?.storageLocation || 'not set'} · ship by {dateLabel(order.shipBy)}
-            </Text>
-            <Text style={styles.muted}>
-              Status {order.fulfillmentStatus} · tracking {order.trackingNumber || 'not entered'}
-            </Text>
-            {order.fulfillmentStatus !== 'shipped' ? (
-              <>
-                {trackingFields(order.id)}
-                <Button title="Mark manual order shipped" disabled={working} onPress={() => void shipManual(order)} />
-              </>
-            ) : null}
+          <View key={order.id} style={styles.recordCard}>
+            <KeepFlipControlRow
+              accent={order.fulfillmentStatus === 'shipped' ? 'cyan' : 'gold'}
+              description={`Sold ${money(order.soldPriceCents)} · storage ${inventory.find((item) => item.id === order.sourceItemId)?.storageLocation || 'not set'} · ship by ${dateLabel(order.shipBy)}`}
+              icon="shippingbox.fill"
+              label={order.title}
+              staticLabel={order.trackingNumber ? 'TRACKED' : 'MANUAL'}
+              status={{
+                label: order.fulfillmentStatus.toUpperCase(),
+                tone: order.fulfillmentStatus === 'shipped' ? 'active' : 'warning',
+              }}
+            />
+            <View style={styles.recordDetails}>
+              <Text style={styles.muted}>
+                Tracking {order.trackingNumber || 'not entered'}
+              </Text>
+              {order.fulfillmentStatus !== 'shipped' ? (
+                <>
+                  {trackingFields(order.id)}
+                  <Button
+                    title="Mark manual order shipped"
+                    description="Save the tracking details and mark this manual order shipped."
+                    icon="shippingbox.fill"
+                    accent="gold"
+                    actionLabel="SHIP"
+                    busy={working}
+                    disabled={working}
+                    onPress={() => void shipManual(order)}
+                  />
+                </>
+              ) : null}
+            </View>
           </View>
         ))}
 
         {matchedEbayOrders.map((order) => (
-          <View key={order.externalOrderKey} style={styles.row}>
-            <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: 18 }]}>
-              eBay order {order.orderId} · {order.fulfillmentStatus || 'status unavailable'}
-            </Text>
-            <Text style={styles.muted}>
-              Ship by {dateLabel(order.shipBy)} · payment {order.paymentStatus || 'unknown'}
-            </Text>
-            {order.lineItems.map((line) => {
-              const item = line.itemId ? inventory.find((candidate) => candidate.id === line.itemId) : null;
-              return (
-                <Text key={line.externalLineKey} style={line.matchStatus === 'matched' ? styles.muted : styles.error}>
-                  {line.title || line.sku || line.lineItemId} · {line.matchStatus === 'matched'
-                    ? `stored at ${item?.storageLocation || 'location not set'}`
-                    : 'needs an inventory match before financial reconciliation'}
-                </Text>
-              );
-            })}
-            {!String(order.fulfillmentStatus || '').toUpperCase().includes('FULFILLED') ? (
-              <>
-                {trackingFields(order.externalOrderKey)}
-                <Button title="Mark shipped on eBay" disabled={working} onPress={() => void shipEbay(order)} />
-              </>
-            ) : null}
+          <View key={order.externalOrderKey} style={styles.recordCard}>
+            <KeepFlipControlRow
+              accent="cyan"
+              description={`Ship by ${dateLabel(order.shipBy)} · payment ${order.paymentStatus || 'unknown'}`}
+              icon="shippingbox.fill"
+              label={`eBay order ${order.orderId}`}
+              staticLabel={order.paymentStatus || 'REVIEW'}
+              status={{
+                label: order.fulfillmentStatus || 'STATUS UNAVAILABLE',
+                tone: String(order.fulfillmentStatus || '').toUpperCase().includes('FULFILLED')
+                  ? 'active'
+                  : 'warning',
+              }}
+            />
+            <View style={styles.recordDetails}>
+              {order.lineItems.map((line) => {
+                const item = line.itemId ? inventory.find((candidate) => candidate.id === line.itemId) : null;
+                return (
+                  <Text key={line.externalLineKey} style={line.matchStatus === 'matched' ? styles.muted : styles.error}>
+                    {line.title || line.sku || line.lineItemId} · {line.matchStatus === 'matched'
+                      ? `stored at ${item?.storageLocation || 'location not set'}`
+                      : 'needs an inventory match before financial reconciliation'}
+                  </Text>
+                );
+              })}
+              {!String(order.fulfillmentStatus || '').toUpperCase().includes('FULFILLED') ? (
+                <>
+                  {trackingFields(order.externalOrderKey)}
+                  <Button
+                    title="Mark shipped on eBay"
+                    description="Submit carrier and tracking details to eBay for this order."
+                    icon="shippingbox.fill"
+                    accent="cyan"
+                    actionLabel="SHIP"
+                    busy={working}
+                    disabled={working}
+                    onPress={() => void shipEbay(order)}
+                  />
+                </>
+              ) : null}
+            </View>
           </View>
         ))}
       </Section>
@@ -859,7 +983,16 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
           transactions remain in the existing review queue rather than being guessed.
         </Text>
         {automaticBooks ? (
-          <Button title="Run eBay Money Sync" disabled={working} onPress={() => void syncMoney()} />
+          <Button
+            title="Run eBay Money Sync"
+            description="Reconcile eBay sales, fees, refunds and payouts into Books."
+            icon="dollarsign.circle.fill"
+            accent="gold"
+            actionLabel="SYNC"
+            busy={working}
+            disabled={working}
+            onPress={() => void syncMoney()}
+          />
         ) : (
           <Text style={styles.muted}>
             Serious adds automatic eBay sales, fee, refund and payout reconciliation.
@@ -867,18 +1000,35 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
         )}
         <Button
           title="Open Books review queue"
+          description="Review unresolved item-linked Books records and reconciliation work."
+          icon="chart.bar.fill"
+          accent="violet"
+          actionLabel="OPEN"
+          staticLabel={!basicBooks ? 'LOCKED' : undefined}
           disabled={!basicBooks}
           onPress={() => router.push('/books' as Href)}
         />
         {margins.map((margin) => (
-          <View key={margin.itemId} style={styles.row}>
-            <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: 18 }]}>{margin.title}</Text>
-            <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: 18 }]}>
-              Bought for {money(margin.acquisitionCostCents)} → sold for {money(margin.soldProceedsCents)} → fees {money(margin.marketplaceFeesCents)} → shipping {money(margin.shippingExpenseCents)} → refunds {money(margin.refundCents)} → net profit {money(margin.netProfitCents)}
-            </Text>
-            <Text style={styles.muted}>
-              ROI {percent(margin.roiPercent)} · {margin.reconciliationStatus === 'complete' ? 'reconciled from linked records' : 'item cost still needs review'}
-            </Text>
+          <View key={margin.itemId} style={styles.recordCard}>
+            <KeepFlipControlRow
+              accent={margin.reconciliationStatus === 'complete' ? 'cyan' : 'gold'}
+              description={`Bought for ${money(margin.acquisitionCostCents)} · sold for ${money(margin.soldProceedsCents)} · net profit ${money(margin.netProfitCents)}`}
+              icon="chart.bar.fill"
+              label={margin.title}
+              staticLabel={margin.reconciliationStatus === 'complete' ? 'POSTED' : 'REVIEW'}
+              status={{
+                label: margin.reconciliationStatus === 'complete' ? 'RECONCILED' : 'COST REVIEW',
+                tone: margin.reconciliationStatus === 'complete' ? 'active' : 'warning',
+              }}
+            />
+            <View style={styles.recordDetails}>
+              <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: 18 }]}>
+                Fees {money(margin.marketplaceFeesCents)} · shipping {money(margin.shippingExpenseCents)} · refunds {money(margin.refundCents)}
+              </Text>
+              <Text style={styles.muted}>
+                ROI {percent(margin.roiPercent)} · {margin.reconciliationStatus === 'complete' ? 'reconciled from linked records' : 'item cost still needs review'}
+              </Text>
+            </View>
           </View>
         ))}
         {!margins.length && !loading ? (
@@ -886,7 +1036,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
         ) : null}
       </Section>
 
-      <Section title="Seller performance">
+      <Section title="KeepFlip performance">
         {advancedAnalytics ? (
           <>
             <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: 18 }]}>
@@ -917,6 +1067,8 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
           </Text>
         )}
       </Section>
+
+      <EbaySellerHealthPanel enabled={advancedAnalytics} />
 
       <Section title="Plan boundary">
         <Text style={styles.muted}>

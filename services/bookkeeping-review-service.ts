@@ -26,6 +26,8 @@ export type FocusedBookkeepingReviewItem = {
   rawTransactionType: string | null;
   reviewUpdatedAt: string | null;
   transactionMemo: string | null;
+  /** The durable Books record created from this immutable eBay transaction ID. */
+  bookTransactionId: string | null;
   item: {
     id: string;
     title: string;
@@ -40,6 +42,46 @@ export type ConfirmFocusedBookkeepingReviewInput = {
   currency?: string;
   transactionMemo?: string | null;
   itemCostCents?: number;
+};
+
+export type ReviewPostingEventType =
+  | 'advertising'
+  | 'inventory_purchase'
+  | 'marketplace_credit'
+  | 'marketplace_fee'
+  | 'mileage'
+  | 'other_expense'
+  | 'payout'
+  | 'refund'
+  | 'repair_parts'
+  | 'sale'
+  | 'shipping_label'
+  | 'software'
+  | 'storage'
+  | 'supplies';
+
+export type PostFocusedBookkeepingReviewInput = {
+  reviewId: string;
+  /** This is deliberately absent: the server always uses the imported ID. */
+  eventType: ReviewPostingEventType;
+  amountCents: number;
+  currency: string;
+  occurredAt: string;
+  transactionType: string;
+  bookingEntry?: 'DEBIT' | 'CREDIT' | null;
+  orderId?: string | null;
+  payoutId?: string | null;
+  transactionMemo?: string | null;
+  itemId?: string | null;
+  quantity?: number;
+  feeCents?: number;
+  marketplaceCollectedTaxCents?: number;
+};
+
+export type PostFocusedBookkeepingReviewResult = {
+  status: 'posted' | 'needs_item_cost';
+  alreadyRecorded: boolean;
+  bookTransactionId: string;
 };
 
 export type ConfirmFocusedBookkeepingReviewResult = {
@@ -87,7 +129,7 @@ function bookkeepingFunctionId() {
 }
 
 async function executeReviewFunction(
-  xpath: '/review/detail' | '/review/confirm',
+  xpath: '/review/detail' | '/review/confirm' | '/review/post',
   body: Record<string, unknown>,
 ) {
   return functions.createExecution({
@@ -138,6 +180,7 @@ function parseReviewItem(value: unknown): FocusedBookkeepingReviewItem {
     amountCents: amountKnown ? amountCents : null,
     amountKnown,
     bookingEntry: nullableText(raw.bookingEntry, 32),
+    bookTransactionId: nullableText(raw.bookTransactionId, 64),
     currency: amountKnown ? nullableText(raw.currency, 8)?.toUpperCase() ?? null : null,
     externalKey,
     id,
@@ -206,6 +249,31 @@ export async function confirmFocusedBookkeepingReview(
     amountCents: finiteNullableInteger(payload.amountCents) ?? undefined,
     currency: nullableText(payload.currency, 8)?.toUpperCase() ?? undefined,
     itemCostCents: finiteNullableInteger(payload.itemCostCents) ?? undefined,
+    status: reviewStatus,
+  };
+}
+
+export async function postFocusedBookkeepingReview(
+  input: PostFocusedBookkeepingReviewInput,
+): Promise<PostFocusedBookkeepingReviewResult> {
+  const execution = await executeReviewFunction('/review/post', input);
+  if (execution.responseStatusCode !== 200) {
+    throw functionError(
+      execution.responseBody,
+      'KeepFlip could not create the Books record from that eBay transaction.',
+    );
+  }
+  const payload = parsePayload(execution.responseBody);
+  const reviewStatus = payload.status === 'posted' || payload.status === 'needs_item_cost'
+    ? payload.status
+    : null;
+  const bookTransactionId = text(payload.bookTransactionId, 64);
+  if (payload.ok !== true || !reviewStatus || !bookTransactionId) {
+    throw new Error('The Books service did not create that transaction record.');
+  }
+  return {
+    alreadyRecorded: payload.alreadyRecorded === true,
+    bookTransactionId,
     status: reviewStatus,
   };
 }

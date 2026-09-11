@@ -9,10 +9,10 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
+import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
+import { responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type MultiScanPhotoStackProps = {
@@ -240,214 +240,215 @@ export function MultiScanPhotoReview({
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  stackButton: {
-    width: 48,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stackButtonPressed: { opacity: 0.82, transform: [{ scale: 0.95 }] },
-  stackButtonDisabled: { opacity: 0.48 },
-  stackPhoto: {
-    position: 'absolute',
-    right: 14,
-    bottom: 14,
-    width: 20,
-    height: 20,
-    overflow: 'hidden',
-    borderRadius: 5,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.72)',
-    backgroundColor: theme.colors.surface,
-    boxShadow: '0 3px 8px rgba(0, 0, 0, 0.54), 0 0 8px rgba(88, 223, 232, 0.2)',
-  },
-  stackCount: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0,
-    zIndex: 8,
-    minWidth: 16,
-    height: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 3,
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: theme.colors.scannerCyan,
-    backgroundColor: 'rgba(4, 8, 11, 0.96)',
-    boxShadow: '0 0 12px rgba(88, 223, 232, 0.42)',
-  },
-  stackCountText: {
-    color: theme.colors.scannerCyan,
-    fontSize: 8,
-    fontWeight: '900',
-    fontVariant: ['tabular-nums'],
-  },
-  reviewBackdrop: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 30,
-    backgroundColor: 'rgba(2, 2, 4, 0.97)',
-    experimental_backgroundImage: `
+  const { responsiveWidth, responsiveHeight, responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    stackButton: {
+      width: 48,
+      height: 48,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    stackButtonPressed: { opacity: 0.82, transform: [{ scale: 0.95 }] },
+    stackButtonDisabled: { opacity: 0.48 },
+    stackPhoto: {
+      position: 'absolute',
+      right: 14,
+      bottom: 14,
+      width: 20,
+      height: 20,
+      overflow: 'hidden',
+      borderRadius: 5,
+      borderCurve: 'continuous',
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.72)',
+      backgroundColor: theme.colors.surface,
+      boxShadow: '0 3px 8px rgba(0, 0, 0, 0.54), 0 0 8px rgba(88, 223, 232, 0.2)',
+    },
+    stackCount: {
+      position: 'absolute',
+      right: 0,
+      bottom: 0,
+      zIndex: 8,
+      minWidth: 16,
+      height: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 3,
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: theme.colors.scannerCyan,
+      backgroundColor: 'rgba(4, 8, 11, 0.96)',
+      boxShadow: '0 0 12px rgba(88, 223, 232, 0.42)',
+    },
+    stackCountText: {
+      color: theme.colors.scannerCyan,
+      fontSize: 8,
+      fontWeight: '900',
+      fontVariant: ['tabular-nums'],
+    },
+    reviewBackdrop: {
+      ...StyleSheet.absoluteFill,
+      zIndex: 30,
+      backgroundColor: 'rgba(2, 2, 4, 0.97)',
+      experimental_backgroundImage: `
       radial-gradient(circle at 92% 12%, rgba(88, 223, 232, 0.10) 0%, transparent 34%),
       radial-gradient(circle at 10% 82%, rgba(141, 114, 255, 0.11) 0%, transparent 38%),
       linear-gradient(160deg, rgba(10, 9, 14, 0.99) 0%, rgba(2, 2, 4, 0.99) 72%)
     `,
-  },
-  reviewShell: { flex: 1, paddingHorizontal: 20 },
-  reviewHeader: {
-    minHeight: 72,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 16,
-    paddingRight: 64,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(88, 223, 232, 0.18)',
-  },
-  reviewTitleGroup: { flexShrink: 1, gap: 3 },
-  reviewEyebrow: {
-    color: theme.colors.scannerCyan,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1.8,
-  },
-  reviewTitle: { color: theme.colors.cream, fontSize: 26, fontWeight: '800' },
-  doneButton: {
-    minWidth: 70,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.48)',
-    backgroundColor: 'rgba(88, 223, 232, 0.10)',
-  },
-  doneButtonPressed: { opacity: 0.72, transform: [{ scale: 0.96 }] },
-  doneButtonText: { color: theme.colors.scannerCyan, fontSize: 14, fontWeight: '900' },
-  reviewScroll: { flex: 1, width: '100%' },
-  reviewContent: { width: '100%', paddingTop: 18, paddingBottom: 28 },
-  photoGrid: {
-    width: '100%',
-    maxWidth: 760,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  photoCard: {
-    overflow: 'hidden',
-    borderRadius: theme.radii.medium,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.24)',
-    backgroundColor: theme.colors.surface,
-    boxShadow: '0 10px 26px rgba(0, 0, 0, 0.44)',
-  },
-  photoNumber: {
-    position: 'absolute',
-    left: 10,
-    bottom: 10,
-    minWidth: 26,
-    height: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 6,
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.34)',
-    backgroundColor: 'rgba(3, 3, 5, 0.82)',
-  },
-  photoNumberText: {
-    color: theme.colors.cream,
-    fontSize: 11,
-    fontWeight: '900',
-    fontVariant: ['tabular-nums'],
-  },
-  deleteButton: {
-    position: 'absolute',
-    top: 9,
-    right: 9,
-    width: 42,
-    height: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 244, 214, 0.46)',
-    backgroundColor: 'rgba(148, 54, 46, 0.92)',
-    boxShadow: '0 4px 14px rgba(0, 0, 0, 0.48)',
-  },
-  deleteButtonPressed: { opacity: 0.72, transform: [{ scale: 0.9 }] },
-});
+    },
+    reviewShell: { flex: 1, paddingHorizontal: 20 },
+    reviewHeader: {
+      minHeight: 72,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 16,
+      paddingRight: 64,
+      paddingBottom: 14,
+      borderBottomWidth: 1,
+      borderBottomColor: 'rgba(88, 223, 232, 0.18)',
+    },
+    reviewTitleGroup: { flexShrink: 1, gap: 3 },
+    reviewEyebrow: {
+      color: theme.colors.scannerCyan,
+      fontSize: 10,
+      fontWeight: '900',
+      letterSpacing: 1.8,
+    },
+    reviewTitle: { color: theme.colors.cream, fontSize: 26, fontWeight: '800' },
+    doneButton: {
+      minWidth: 70,
+      minHeight: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 16,
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.48)',
+      backgroundColor: 'rgba(88, 223, 232, 0.10)',
+    },
+    doneButtonPressed: { opacity: 0.72, transform: [{ scale: 0.96 }] },
+    doneButtonText: { color: theme.colors.scannerCyan, fontSize: 14, fontWeight: '900' },
+    reviewScroll: { flex: 1, width: '100%' },
+    reviewContent: { width: '100%', paddingTop: 18, paddingBottom: 28 },
+    photoGrid: {
+      width: '100%',
+      maxWidth: 760,
+      alignSelf: 'center',
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    photoCard: {
+      overflow: 'hidden',
+      borderRadius: theme.radii.medium,
+      borderCurve: 'continuous',
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.24)',
+      backgroundColor: theme.colors.surface,
+      boxShadow: '0 10px 26px rgba(0, 0, 0, 0.44)',
+    },
+    photoNumber: {
+      position: 'absolute',
+      left: 10,
+      bottom: 10,
+      minWidth: 26,
+      height: 26,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 6,
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.34)',
+      backgroundColor: 'rgba(3, 3, 5, 0.82)',
+    },
+    photoNumberText: {
+      color: theme.colors.cream,
+      fontSize: 11,
+      fontWeight: '900',
+      fontVariant: ['tabular-nums'],
+    },
+    deleteButton: {
+      position: 'absolute',
+      top: 9,
+      right: 9,
+      width: 42,
+      height: 42,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: 'rgba(255, 244, 214, 0.46)',
+      backgroundColor: 'rgba(148, 54, 46, 0.92)',
+      boxShadow: '0 4px 14px rgba(0, 0, 0, 0.48)',
+    },
+    deleteButtonPressed: { opacity: 0.72, transform: [{ scale: 0.9 }] },
+  });
   return {
     ...staticStyles,
-  stackButton: [
-    staticStyles.stackButton,
-    {
-        width: responsiveLayout.responsiveWidth(48),
-        height: responsiveLayout.responsiveHeight(48),
-    },
-  ],
-  stackPhoto: [
-    staticStyles.stackPhoto,
-    {
-        width: responsiveLayout.responsiveWidth(20),
-        height: responsiveLayout.responsiveHeight(20),
-    },
-  ],
-  stackCount: [
-    staticStyles.stackCount,
-    {
-        height: responsiveLayout.responsiveHeight(16),
-    },
-  ],
-  stackCountText: [
-    staticStyles.stackCountText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  reviewEyebrow: [
-    staticStyles.reviewEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  reviewTitle: [
-    staticStyles.reviewTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(26),
-    },
-  ],
-  doneButtonText: [
-    staticStyles.doneButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
-  photoNumber: [
-    staticStyles.photoNumber,
-    {
-        height: responsiveLayout.responsiveHeight(26),
-    },
-  ],
-  photoNumberText: [
-    staticStyles.photoNumberText,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  deleteButton: [
-    staticStyles.deleteButton,
-    {
-        width: responsiveLayout.responsiveWidth(42),
-        height: responsiveLayout.responsiveHeight(42),
-    },
-  ],
+    stackButton: [
+      staticStyles.stackButton,
+      {
+        width: responsiveWidth(48),
+        height: responsiveHeight(48),
+      },
+    ],
+    stackPhoto: [
+      staticStyles.stackPhoto,
+      {
+        width: responsiveWidth(20),
+        height: responsiveHeight(20),
+      },
+    ],
+    stackCount: [
+      staticStyles.stackCount,
+      {
+        height: responsiveHeight(16),
+      },
+    ],
+    stackCountText: [
+      staticStyles.stackCountText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    reviewEyebrow: [
+      staticStyles.reviewEyebrow,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    reviewTitle: [
+      staticStyles.reviewTitle,
+      {
+        fontSize: responsiveFont(26),
+      },
+    ],
+    doneButtonText: [
+      staticStyles.doneButtonText,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
+    photoNumber: [
+      staticStyles.photoNumber,
+      {
+        height: responsiveHeight(26),
+      },
+    ],
+    photoNumberText: [
+      staticStyles.photoNumberText,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    deleteButton: [
+      staticStyles.deleteButton,
+      {
+        width: responsiveWidth(42),
+        height: responsiveHeight(42),
+      },
+    ],
   };
 }

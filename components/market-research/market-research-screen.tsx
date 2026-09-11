@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import { responsiveWidth } from '@/lib/responsiveFont';
 import {
   calculateProfitEstimate,
   MARKETPLACE_FEE_PRESETS,
@@ -29,7 +30,6 @@ import {
   type MarketplaceFeePreset,
   type MarketResearchResult,
 } from '@/services/market-research-service';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 const DEFAULT_PLATFORM = MARKETPLACE_FEE_PRESETS[0];
@@ -154,10 +154,6 @@ function PriceTrend({ result }: { result: MarketResearchResult }) {
       </View>
       <View style={styles.chart}>
         {result.trend.map((point) => {
-  const {
-    responsiveFont
-  } = useResponsiveLayout();
-
           const barHeight = point.average == null ? 4 : Math.max(12, (point.average / maximum) * 104);
           return (
             <View key={point.label} style={styles.chartColumn}>
@@ -253,18 +249,18 @@ export function MarketResearchScreen() {
         style={styles.flex}>
         <ScrollView
           contentContainerStyle={[styles.content,
-            {
-              maxWidth: contentMaxWidth,
-              paddingHorizontal: pageGutter,
-              paddingTop: insets.top + 34,
-              paddingBottom: insets.bottom + 44,
-            }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+          {
+            maxWidth: contentMaxWidth,
+            paddingHorizontal: pageGutter,
+            paddingTop: insets.top + 34,
+            paddingBottom: insets.bottom + 44,
+          }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <Animated.View entering={FadeInDown.duration(260)} style={styles.header}>
             <Text style={[styles.eyebrow, { fontSize: responsiveFont(11) }]}>KEEPFLIP / MARKET RESEARCH</Text>
-            <Text style={[styles.title, { fontSize: responsiveFont(38)}]}>Know the market.{`\n`}Price the flip.</Text>
-            <Text style={[styles.subtitle, { fontSize: responsiveFont(15)}]}>
+            <Text style={[styles.title, { fontSize: responsiveFont(38) }]}>Know the market.{`\n`}Price the flip.</Text>
+            <Text style={[styles.subtitle, { fontSize: responsiveFont(15) }]}>
               Research sold comps, spot pricing momentum, and model profit without leaving KeepFlip.
             </Text>
           </Animated.View>
@@ -303,7 +299,7 @@ export function MarketResearchScreen() {
             <Text style={styles.sourceNote}>
               Sold-comp research is shown separately from the official eBay active-listing snapshot.
             </Text>
-            {error ? <Text accessibilityRole="alert" style={[styles.errorText, { fontSize: responsiveFont(12)}]}>{error}</Text> : null}
+            {error ? <Text accessibilityRole="alert" style={[styles.errorText, { fontSize: responsiveFont(12) }]}>{error}</Text> : null}
           </Animated.View>
 
           {result ? (
@@ -354,7 +350,7 @@ export function MarketResearchScreen() {
                       </View>
                     )}
                     <View style={styles.compContent}>
-                      <Text numberOfLines={2} style={[styles.compTitle, { fontSize: responsiveFont(12)}]}>{comp.title}</Text>
+                      <Text numberOfLines={2} style={[styles.compTitle, { fontSize: responsiveFont(12) }]}>{comp.title}</Text>
                       <Text style={styles.compPrice}>{money(comp.totalPrice, comp.currency)}</Text>
                       <Text numberOfLines={1} style={styles.compMeta}>
                         {[comp.condition, comp.soldDate ? new Date(comp.soldDate).toLocaleDateString() : null]
@@ -371,7 +367,7 @@ export function MarketResearchScreen() {
           <Animated.View entering={FadeInDown.duration(280).delay(80)} style={styles.calculatorSection}>
             <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(10) }]}>SMART MARGIN ESTIMATOR</Text>
             <Text style={[styles.sectionTitle, { fontSize: responsiveFont(22) }]}>What will you actually make?</Text>
-            <Text style={[styles.sectionDescription, { fontSize: responsiveFont(13)}]}>
+            <Text style={[styles.sectionDescription, { fontSize: responsiveFont(13) }]}>
               Compare marketplace fees and adjust every cost. The sold-sample median fills automatically after research.
             </Text>
 
@@ -430,311 +426,312 @@ export function MarketResearchScreen() {
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  flex: { flex: 1 },
-  content: { alignSelf: 'center', width: '100%', gap: 24 },
-  header: { gap: 8 },
-  eyebrow: { color: theme.colors.gold, fontSize: 11, fontWeight: '700', letterSpacing: 2.1 },
-  title: { color: theme.colors.text, fontSize: 38, fontWeight: '700', letterSpacing: -1.4, lineHeight: 42 },
-  subtitle: { color: theme.colors.textMuted, fontSize: 15, lineHeight: 22, maxWidth: 520 },
-  searchCard: { backgroundColor: theme.colors.backgroundRaised, borderColor: 'rgba(215,168,74,0.28)', borderRadius: theme.radii.medium, borderWidth: 1, padding: 16, gap: 10 },
-  inputLabel: { color: theme.colors.textMuted, fontSize: 10, fontWeight: '700', letterSpacing: 1.25 },
-  searchRow: { alignItems: 'center', flexDirection: 'row', gap: 10 },
-  searchInput: { backgroundColor: theme.colors.surface, borderColor: theme.colors.surfaceSoft, borderRadius: 14, borderWidth: 1, color: theme.colors.text, flex: 1, fontSize: 15, minHeight: 50, paddingHorizontal: 14 },
-  searchButton: { alignItems: 'center', backgroundColor: theme.colors.goldBright, borderRadius: 14, height: 50, justifyContent: 'center', width: 50 },
-  pressed: { opacity: 0.72, transform: [{ scale: 0.985 }] },
-  disabled: { opacity: 0.55 },
-  sourceNote: { color: theme.colors.textMuted, fontSize: 11 },
-  errorText: { color: theme.colors.danger, fontSize: 12, lineHeight: 18 },
-  resultsSection: { gap: 16 },
-  resultHeader: { alignItems: 'flex-start', flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
-  resultHeaderCopy: { flex: 1, gap: 4 },
-  sectionEyebrow: { color: theme.colors.gold, fontSize: 10, fontWeight: '700', letterSpacing: 1.7 },
-  sectionTitle: { color: theme.colors.text, fontSize: 22, fontWeight: '700', letterSpacing: -0.5 },
-  sectionDescription: { color: theme.colors.textMuted, fontSize: 13, lineHeight: 20 },
-  liveBadge: { alignItems: 'center', backgroundColor: 'rgba(88,223,232,0.1)', borderColor: 'rgba(88,223,232,0.22)', borderRadius: 99, borderWidth: 1, flexDirection: 'row', gap: 6, paddingHorizontal: 10, paddingVertical: 6 },
-  liveDot: { backgroundColor: '#58DFE8', borderRadius: 4, height: 6, width: 6 },
-  liveText: { color: '#58DFE8', fontSize: 9, fontWeight: '700', letterSpacing: 1 },
-  metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  metricCard: { backgroundColor: theme.colors.backgroundRaised, borderColor: theme.colors.surfaceSoft, borderRadius: 16, borderWidth: 1, flexBasis: '47%', flexGrow: 1, minHeight: 104, padding: 14 },
-  metricLabel: { color: theme.colors.textMuted, fontSize: 10, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase' },
-  metricValue: { color: theme.colors.text, fontSize: 20, fontWeight: '700', marginTop: 9 },
-  metricDetail: { color: theme.colors.gold, fontSize: 10, marginTop: 5 },
-  chartCard: { backgroundColor: theme.colors.backgroundRaised, borderColor: theme.colors.surfaceSoft, borderRadius: theme.radii.medium, borderWidth: 1, gap: 16, padding: 16 },
-  sectionHeadingRow: { alignItems: 'flex-end', flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
-  chartCaption: { color: theme.colors.textMuted, fontSize: 10 },
-  chart: { alignItems: 'flex-end', flexDirection: 'row', height: 155, justifyContent: 'space-between', gap: 5 },
-  chartColumn: { alignItems: 'center', flex: 1, gap: 5 },
-  chartValue: { color: theme.colors.textMuted, fontSize: 8 },
-  chartTrack: { alignItems: 'center', height: 108, justifyContent: 'flex-end', width: '100%' },
-  chartBar: { backgroundColor: theme.colors.gold, borderRadius: 5, maxWidth: 34, minWidth: 12, width: '62%' },
-  chartLabel: { color: theme.colors.textMuted, fontSize: 9 },
-  compsScroller: { marginHorizontal: -2 },
-  compCard: { backgroundColor: theme.colors.backgroundRaised, borderColor: theme.colors.surfaceSoft, borderRadius: 16, borderWidth: 1, marginRight: 10, overflow: 'hidden', width: 180 },
-  compImage: { backgroundColor: theme.colors.surface, height: 112, width: '100%' },
-  compImagePlaceholder: { alignItems: 'center', justifyContent: 'center' },
-  compContent: { gap: 6, padding: 12 },
-  compTitle: { color: theme.colors.text, fontSize: 12, fontWeight: '600', lineHeight: 17, minHeight: 34 },
-  compPrice: { color: theme.colors.goldBright, fontSize: 18, fontWeight: '700' },
-  compMeta: { color: theme.colors.textMuted, fontSize: 9 },
-  calculatorSection: { gap: 14, paddingTop: 8 },
-  platformScroller: { marginHorizontal: -2 },
-  platformPill: { backgroundColor: theme.colors.surface, borderColor: theme.colors.surfaceSoft, borderRadius: 99, borderWidth: 1, marginRight: 8, paddingHorizontal: 15, paddingVertical: 10 },
-  platformPillSelected: { backgroundColor: theme.colors.goldBright, borderColor: theme.colors.goldBright },
-  platformText: { color: theme.colors.textMuted, fontSize: 12, fontWeight: '700' },
-  platformTextSelected: { color: theme.colors.backgroundDeep },
-  calculatorCard: { backgroundColor: theme.colors.backgroundRaised, borderColor: 'rgba(215,168,74,0.24)', borderRadius: theme.radii.medium, borderWidth: 1, gap: 18, padding: 16 },
-  inputGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  inputGroup: { flexBasis: '47%', flexGrow: 1, gap: 6 },
-  numberInputShell: { alignItems: 'center', backgroundColor: theme.colors.surface, borderColor: theme.colors.surfaceSoft, borderRadius: 12, borderWidth: 1, flexDirection: 'row', minHeight: 46 },
-  numberInput: { color: theme.colors.text, flex: 1, fontSize: 15, paddingHorizontal: 12, paddingVertical: 10 },
-  inputSuffix: { color: theme.colors.gold, fontSize: 13, fontWeight: '700', paddingRight: 12 },
-  feeNote: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 15 },
-  profitHero: { alignItems: 'center', backgroundColor: 'rgba(215,168,74,0.08)', borderColor: 'rgba(215,168,74,0.2)', borderRadius: 18, borderWidth: 1, padding: 20 },
-  profitLabel: { color: theme.colors.gold, fontSize: 10, fontWeight: '700', letterSpacing: 1.6 },
-  profitValue: { color: theme.colors.goldBright, fontSize: 38, fontWeight: '700', letterSpacing: -1, marginTop: 7 },
-  negative: { color: theme.colors.danger },
-  profitSubline: { color: theme.colors.textMuted, fontSize: 12, marginTop: 5 },
-  breakdown: { gap: 11 },
-  breakdownRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
-  breakdownLabel: { color: theme.colors.textMuted, fontSize: 12 },
-  breakdownValue: { color: theme.colors.text, fontSize: 12, fontWeight: '600' },
-  breakEvenRow: { borderTopColor: theme.colors.surfaceSoft, borderTopWidth: 1, marginTop: 2, paddingTop: 13 },
-  breakEvenLabel: { color: theme.colors.text, fontSize: 13, fontWeight: '700' },
-  breakEvenValue: { color: '#58DFE8', fontSize: 15, fontWeight: '700' },
-  disclaimer: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 14, textAlign: 'center' },
-});
+  const { responsiveFont, responsiveHeight, responsiveWidth } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    flex: { flex: 1 },
+    content: { alignSelf: 'center', width: '100%', gap: 24 },
+    header: { gap: 8 },
+    eyebrow: { color: theme.colors.gold, fontSize: 11, fontWeight: '700', letterSpacing: 2.1 },
+    title: { color: theme.colors.text, fontSize: 38, fontWeight: '700', letterSpacing: -1.4, lineHeight: 42 },
+    subtitle: { color: theme.colors.textMuted, fontSize: 15, lineHeight: 22, maxWidth: 520 },
+    searchCard: { backgroundColor: theme.colors.backgroundRaised, borderColor: 'rgba(215,168,74,0.28)', borderRadius: theme.radii.medium, borderWidth: 1, padding: 16, gap: 10 },
+    inputLabel: { color: theme.colors.textMuted, fontSize: 10, fontWeight: '700', letterSpacing: 1.25 },
+    searchRow: { alignItems: 'center', flexDirection: 'row', gap: 10 },
+    searchInput: { backgroundColor: theme.colors.surface, borderColor: theme.colors.surfaceSoft, borderRadius: 14, borderWidth: 1, color: theme.colors.text, flex: 1, fontSize: 15, minHeight: 50, paddingHorizontal: 14 },
+    searchButton: { alignItems: 'center', backgroundColor: theme.colors.goldBright, borderRadius: 14, height: 50, justifyContent: 'center', width: 50 },
+    pressed: { opacity: 0.72, transform: [{ scale: 0.985 }] },
+    disabled: { opacity: 0.55 },
+    sourceNote: { color: theme.colors.textMuted, fontSize: 11 },
+    errorText: { color: theme.colors.danger, fontSize: 12, lineHeight: 18 },
+    resultsSection: { gap: 16 },
+    resultHeader: { alignItems: 'flex-start', flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
+    resultHeaderCopy: { flex: 1, gap: 4 },
+    sectionEyebrow: { color: theme.colors.gold, fontSize: 10, fontWeight: '700', letterSpacing: 1.7 },
+    sectionTitle: { color: theme.colors.text, fontSize: 22, fontWeight: '700', letterSpacing: -0.5 },
+    sectionDescription: { color: theme.colors.textMuted, fontSize: 13, lineHeight: 20 },
+    liveBadge: { alignItems: 'center', backgroundColor: 'rgba(88,223,232,0.1)', borderColor: 'rgba(88,223,232,0.22)', borderRadius: 99, borderWidth: 1, flexDirection: 'row', gap: 6, paddingHorizontal: 10, paddingVertical: 6 },
+    liveDot: { backgroundColor: '#58DFE8', borderRadius: 4, height: 6, width: 6 },
+    liveText: { color: '#58DFE8', fontSize: 9, fontWeight: '700', letterSpacing: 1 },
+    metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    metricCard: { backgroundColor: theme.colors.backgroundRaised, borderColor: theme.colors.surfaceSoft, borderRadius: 16, borderWidth: 1, flexBasis: '47%', flexGrow: 1, minHeight: 104, padding: 14 },
+    metricLabel: { color: theme.colors.textMuted, fontSize: 10, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase' },
+    metricValue: { color: theme.colors.text, fontSize: 20, fontWeight: '700', marginTop: 9 },
+    metricDetail: { color: theme.colors.gold, fontSize: 10, marginTop: 5 },
+    chartCard: { backgroundColor: theme.colors.backgroundRaised, borderColor: theme.colors.surfaceSoft, borderRadius: theme.radii.medium, borderWidth: 1, gap: 16, padding: 16 },
+    sectionHeadingRow: { alignItems: 'flex-end', flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
+    chartCaption: { color: theme.colors.textMuted, fontSize: 10 },
+    chart: { alignItems: 'flex-end', flexDirection: 'row', height: 155, justifyContent: 'space-between', gap: 5 },
+    chartColumn: { alignItems: 'center', flex: 1, gap: 5 },
+    chartValue: { color: theme.colors.textMuted, fontSize: 8 },
+    chartTrack: { alignItems: 'center', height: 108, justifyContent: 'flex-end', width: '100%' },
+    chartBar: { backgroundColor: theme.colors.gold, borderRadius: 5, maxWidth: 34, minWidth: 12, width: '62%' },
+    chartLabel: { color: theme.colors.textMuted, fontSize: 9 },
+    compsScroller: { marginHorizontal: -2 },
+    compCard: { backgroundColor: theme.colors.backgroundRaised, borderColor: theme.colors.surfaceSoft, borderRadius: 16, borderWidth: 1, marginRight: 10, overflow: 'hidden', width: 180 },
+    compImage: { backgroundColor: theme.colors.surface, height: 112, width: '100%' },
+    compImagePlaceholder: { alignItems: 'center', justifyContent: 'center' },
+    compContent: { gap: 6, padding: 12 },
+    compTitle: { color: theme.colors.text, fontSize: 12, fontWeight: '600', lineHeight: 17, minHeight: 34 },
+    compPrice: { color: theme.colors.goldBright, fontSize: 18, fontWeight: '700' },
+    compMeta: { color: theme.colors.textMuted, fontSize: 9 },
+    calculatorSection: { gap: 14, paddingTop: 8 },
+    platformScroller: { marginHorizontal: -2 },
+    platformPill: { backgroundColor: theme.colors.surface, borderColor: theme.colors.surfaceSoft, borderRadius: 99, borderWidth: 1, marginRight: 8, paddingHorizontal: 15, paddingVertical: 10 },
+    platformPillSelected: { backgroundColor: theme.colors.goldBright, borderColor: theme.colors.goldBright },
+    platformText: { color: theme.colors.textMuted, fontSize: 12, fontWeight: '700' },
+    platformTextSelected: { color: theme.colors.backgroundDeep },
+    calculatorCard: { backgroundColor: theme.colors.backgroundRaised, borderColor: 'rgba(215,168,74,0.24)', borderRadius: theme.radii.medium, borderWidth: 1, gap: 18, padding: 16 },
+    inputGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    inputGroup: { flexBasis: '47%', flexGrow: 1, gap: 6 },
+    numberInputShell: { alignItems: 'center', backgroundColor: theme.colors.surface, borderColor: theme.colors.surfaceSoft, borderRadius: 12, borderWidth: 1, flexDirection: 'row', minHeight: 46 },
+    numberInput: { color: theme.colors.text, flex: 1, fontSize: 15, paddingHorizontal: 12, paddingVertical: 10 },
+    inputSuffix: { color: theme.colors.gold, fontSize: 13, fontWeight: '700', paddingRight: 12 },
+    feeNote: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 15 },
+    profitHero: { alignItems: 'center', backgroundColor: 'rgba(215,168,74,0.08)', borderColor: 'rgba(215,168,74,0.2)', borderRadius: 18, borderWidth: 1, padding: 20 },
+    profitLabel: { color: theme.colors.gold, fontSize: 10, fontWeight: '700', letterSpacing: 1.6 },
+    profitValue: { color: theme.colors.goldBright, fontSize: 38, fontWeight: '700', letterSpacing: -1, marginTop: 7 },
+    negative: { color: theme.colors.danger },
+    profitSubline: { color: theme.colors.textMuted, fontSize: 12, marginTop: 5 },
+    breakdown: { gap: 11 },
+    breakdownRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+    breakdownLabel: { color: theme.colors.textMuted, fontSize: 12 },
+    breakdownValue: { color: theme.colors.text, fontSize: 12, fontWeight: '600' },
+    breakEvenRow: { borderTopColor: theme.colors.surfaceSoft, borderTopWidth: 1, marginTop: 2, paddingTop: 13 },
+    breakEvenLabel: { color: theme.colors.text, fontSize: 13, fontWeight: '700' },
+    breakEvenValue: { color: '#58DFE8', fontSize: 15, fontWeight: '700' },
+    disclaimer: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 14, textAlign: 'center' },
+  });
   return {
     ...staticStyles,
-  eyebrow: [
-    staticStyles.eyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  title: [
-    staticStyles.title,
-    {
-        fontSize: responsiveLayout.responsiveFont(38),
-    },
-  ],
-  subtitle: [
-    staticStyles.subtitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  inputLabel: [
-    staticStyles.inputLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  searchInput: [
-    staticStyles.searchInput,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  searchButton: [
-    staticStyles.searchButton,
-    {
-        height: responsiveLayout.responsiveHeight(50),
-        width: responsiveLayout.responsiveWidth(50),
-    },
-  ],
-  sourceNote: [
-    staticStyles.sourceNote,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  errorText: [
-    staticStyles.errorText,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  sectionEyebrow: [
-    staticStyles.sectionEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  sectionTitle: [
-    staticStyles.sectionTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(22),
-    },
-  ],
-  sectionDescription: [
-    staticStyles.sectionDescription,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  liveDot: [
-    staticStyles.liveDot,
-    {
-        height: responsiveLayout.responsiveHeight(6),
-        width: responsiveLayout.responsiveWidth(6),
-    },
-  ],
-  liveText: [
-    staticStyles.liveText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  metricLabel: [
-    staticStyles.metricLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  metricValue: [
-    staticStyles.metricValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(20),
-    },
-  ],
-  metricDetail: [
-    staticStyles.metricDetail,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  chartCaption: [
-    staticStyles.chartCaption,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  chart: [
-    staticStyles.chart,
-    {
-        height: responsiveLayout.responsiveHeight(155),
-    },
-  ],
-  chartValue: [
-    staticStyles.chartValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  chartTrack: [
-    staticStyles.chartTrack,
-    {
-        height: responsiveLayout.responsiveHeight(108),
-    },
-  ],
-  chartLabel: [
-    staticStyles.chartLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  compCard: [
-    staticStyles.compCard,
-    {
-        width: responsiveLayout.responsiveWidth(180),
-    },
-  ],
-  compImage: [
-    staticStyles.compImage,
-    {
-        height: responsiveLayout.responsiveHeight(112),
-    },
-  ],
-  compTitle: [
-    staticStyles.compTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  compPrice: [
-    staticStyles.compPrice,
-    {
-        fontSize: responsiveLayout.responsiveFont(18),
-    },
-  ],
-  compMeta: [
-    staticStyles.compMeta,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  platformText: [
-    staticStyles.platformText,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  numberInput: [
-    staticStyles.numberInput,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  inputSuffix: [
-    staticStyles.inputSuffix,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  feeNote: [
-    staticStyles.feeNote,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  profitLabel: [
-    staticStyles.profitLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  profitValue: [
-    staticStyles.profitValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(38),
-    },
-  ],
-  profitSubline: [
-    staticStyles.profitSubline,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  breakdownLabel: [
-    staticStyles.breakdownLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  breakdownValue: [
-    staticStyles.breakdownValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  breakEvenLabel: [
-    staticStyles.breakEvenLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  breakEvenValue: [
-    staticStyles.breakEvenValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  disclaimer: [
-    staticStyles.disclaimer,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
+    eyebrow: [
+      staticStyles.eyebrow,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    title: [
+      staticStyles.title,
+      {
+        fontSize: responsiveFont(38),
+      },
+    ],
+    subtitle: [
+      staticStyles.subtitle,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    inputLabel: [
+      staticStyles.inputLabel,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    searchInput: [
+      staticStyles.searchInput,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    searchButton: [
+      staticStyles.searchButton,
+      {
+        height: responsiveHeight(50),
+        width: responsiveWidth(50),
+      },
+    ],
+    sourceNote: [
+      staticStyles.sourceNote,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    errorText: [
+      staticStyles.errorText,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    sectionEyebrow: [
+      staticStyles.sectionEyebrow,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    sectionTitle: [
+      staticStyles.sectionTitle,
+      {
+        fontSize: responsiveFont(22),
+      },
+    ],
+    sectionDescription: [
+      staticStyles.sectionDescription,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    liveDot: [
+      staticStyles.liveDot,
+      {
+        height: responsiveHeight(6),
+        width: responsiveWidth(6),
+      },
+    ],
+    liveText: [
+      staticStyles.liveText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    metricLabel: [
+      staticStyles.metricLabel,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    metricValue: [
+      staticStyles.metricValue,
+      {
+        fontSize: responsiveFont(20),
+      },
+    ],
+    metricDetail: [
+      staticStyles.metricDetail,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    chartCaption: [
+      staticStyles.chartCaption,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    chart: [
+      staticStyles.chart,
+      {
+        height: responsiveHeight(155),
+      },
+    ],
+    chartValue: [
+      staticStyles.chartValue,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    chartTrack: [
+      staticStyles.chartTrack,
+      {
+        height: responsiveHeight(108),
+      },
+    ],
+    chartLabel: [
+      staticStyles.chartLabel,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    compCard: [
+      staticStyles.compCard,
+      {
+        width: responsiveWidth(180),
+      },
+    ],
+    compImage: [
+      staticStyles.compImage,
+      {
+        height: responsiveHeight(112),
+      },
+    ],
+    compTitle: [
+      staticStyles.compTitle,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    compPrice: [
+      staticStyles.compPrice,
+      {
+        fontSize: responsiveFont(18),
+      },
+    ],
+    compMeta: [
+      staticStyles.compMeta,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    platformText: [
+      staticStyles.platformText,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    numberInput: [
+      staticStyles.numberInput,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    inputSuffix: [
+      staticStyles.inputSuffix,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    feeNote: [
+      staticStyles.feeNote,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    profitLabel: [
+      staticStyles.profitLabel,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    profitValue: [
+      staticStyles.profitValue,
+      {
+        fontSize: responsiveFont(38),
+      },
+    ],
+    profitSubline: [
+      staticStyles.profitSubline,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    breakdownLabel: [
+      staticStyles.breakdownLabel,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    breakdownValue: [
+      staticStyles.breakdownValue,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    breakEvenLabel: [
+      staticStyles.breakEvenLabel,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    breakEvenValue: [
+      staticStyles.breakEvenValue,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    disclaimer: [
+      staticStyles.disclaimer,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
   };
 }

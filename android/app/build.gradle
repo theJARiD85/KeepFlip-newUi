@@ -173,11 +173,7 @@ android {
 dependencies {
     implementation(platform('com.google.firebase:firebase-bom:34.18.0'))
     implementation("com.google.firebase:firebase-analytics")
-    // Optional Appodeal AdMob adapter and its Bidon mediation bridge.
-    implementation("com.appodeal.ads.sdk.adapters:admob:25.2.0.0")
-    // Required by Appodeal's AdMob mediation bridge.
-    implementation("com.appodeal.ads.sdk.adapters:bidon:0.14.0.0")
-    // The version of react-native is set by the React Native Gradle Plugin
+    implementation("com.google.firebase:firebase-messaging")
     implementation("com.facebook.react:react-android")
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";

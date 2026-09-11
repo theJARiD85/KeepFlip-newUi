@@ -12,7 +12,7 @@ import {
 } from "@/components/scanner/value-radar-chrome.native.android";
 import { useValueRadar } from "@/components/scanner/value-radar-visual.native";
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
+import { responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export type {
@@ -224,218 +224,219 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  markerPanelHost: {
-    position: "absolute",
-    zIndex: 22,
-    elevation: 22,
-  },
-  markerPanel: {
-    flex: 1,
-    overflow: "hidden",
-    borderRadius: 8,
-    borderCurve: "continuous",
-    borderWidth: 1,
-    borderColor: "rgba(88, 223, 232, 0.46)",
-    backgroundColor: "rgba(2, 5, 10, 0.96)",
-    experimental_backgroundImage: `
+  const { responsiveWidth, responsiveHeight, responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    markerPanelHost: {
+      position: "absolute",
+      zIndex: 22,
+      elevation: 22,
+    },
+    markerPanel: {
+      flex: 1,
+      overflow: "hidden",
+      borderRadius: 8,
+      borderCurve: "continuous",
+      borderWidth: 1,
+      borderColor: "rgba(88, 223, 232, 0.46)",
+      backgroundColor: "rgba(2, 5, 10, 0.96)",
+      experimental_backgroundImage: `
       radial-gradient(circle at 92% 8%, rgba(141, 114, 255, 0.14) 0%, transparent 42%),
       linear-gradient(115deg, rgba(88, 223, 232, 0.08) 0%, rgba(2, 5, 10, 0.02) 52%)
     `,
-    boxShadow:
-      "0 14px 34px rgba(0, 0, 0, 0.58), 0 0 22px rgba(88, 223, 232, 0.14)",
-  },
-  markerAccent: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    left: 0,
-    width: 3,
-    backgroundColor: theme.colors.scannerCyan,
-    boxShadow: "0 0 12px rgba(88, 223, 232, 0.78)",
-  },
-  markerContent: {
-    flex: 1,
-    justifyContent: "center",
-    gap: 7,
-    paddingHorizontal: 13,
-    paddingVertical: 10,
-  },
-  markerHeading: {
-    height: 38,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingLeft: 11,
-    paddingRight: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(255, 255, 255, 0.1)",
-  },
-  markerIcon: {
-    width: 25,
-    height: 25,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 13,
-    borderWidth: 1,
-    borderColor: "rgba(88, 223, 232, 0.38)",
-    backgroundColor: "rgba(88, 223, 232, 0.1)",
-  },
-  markerEyebrow: {
-    flex: 1,
-    minWidth: 0,
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 9,
-    lineHeight: 12,
-    fontWeight: "900",
-    letterSpacing: 1.25,
-  },
-  confidenceText: {
-    color: theme.colors.goldBright,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    lineHeight: 10,
-    fontWeight: "900",
-    fontVariant: ["tabular-nums"],
-    letterSpacing: 0.45,
-  },
-  markerLabel: {
-    color: theme.colors.text,
-    fontSize: 18,
-    lineHeight: 22,
-    fontWeight: "800",
-    letterSpacing: -0.3,
-  },
-  markerFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  proofRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingTop: 5,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(255, 255, 255, 0.1)",
-  },
-  proofSignal: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: theme.colors.goldBright,
-    boxShadow: "0 0 8px rgba(242, 211, 138, 0.78)",
-  },
-  proofLabel: {
-    flex: 1,
-    color: "rgba(247, 242, 232, 0.72)",
-    fontFamily: theme.fonts.radar,
-    fontSize: 6.5,
-    lineHeight: 8,
-    fontWeight: "800",
-    letterSpacing: 0.44,
-  },
-  markerFooterSignal: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: theme.colors.scannerViolet,
-    boxShadow: "0 0 8px rgba(141, 114, 255, 0.82)",
-  },
-  markerAction: {
-    flex: 1,
-    minWidth: 0,
-    color: "rgba(247, 242, 232, 0.64)",
-    fontFamily: theme.fonts.radar,
-    fontSize: 6.5,
-    lineHeight: 8,
-    letterSpacing: 0.5,
-  },
-  markerChevron: {
-    color: theme.colors.scannerViolet,
-    fontSize: 18,
-    lineHeight: 18,
-    fontWeight: "800",
-  },
-  markerPanelPressed: {
-    opacity: 0.84,
-    transform: [{ scale: 0.985 }],
-  },
-  markerPanelDisabled: {
-    opacity: 0.46,
-  },
-});
+      boxShadow:
+        "0 14px 34px rgba(0, 0, 0, 0.58), 0 0 22px rgba(88, 223, 232, 0.14)",
+    },
+    markerAccent: {
+      position: "absolute",
+      top: 0,
+      bottom: 0,
+      left: 0,
+      width: 3,
+      backgroundColor: theme.colors.scannerCyan,
+      boxShadow: "0 0 12px rgba(88, 223, 232, 0.78)",
+    },
+    markerContent: {
+      flex: 1,
+      justifyContent: "center",
+      gap: 7,
+      paddingHorizontal: 13,
+      paddingVertical: 10,
+    },
+    markerHeading: {
+      height: 38,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      paddingLeft: 11,
+      paddingRight: 12,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: "rgba(255, 255, 255, 0.1)",
+    },
+    markerIcon: {
+      width: 25,
+      height: 25,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 13,
+      borderWidth: 1,
+      borderColor: "rgba(88, 223, 232, 0.38)",
+      backgroundColor: "rgba(88, 223, 232, 0.1)",
+    },
+    markerEyebrow: {
+      flex: 1,
+      minWidth: 0,
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 9,
+      lineHeight: 12,
+      fontWeight: "900",
+      letterSpacing: 1.25,
+    },
+    confidenceText: {
+      color: theme.colors.goldBright,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      lineHeight: 10,
+      fontWeight: "900",
+      fontVariant: ["tabular-nums"],
+      letterSpacing: 0.45,
+    },
+    markerLabel: {
+      color: theme.colors.text,
+      fontSize: 18,
+      lineHeight: 22,
+      fontWeight: "800",
+      letterSpacing: -0.3,
+    },
+    markerFooter: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+    proofRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      paddingTop: 5,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: "rgba(255, 255, 255, 0.1)",
+    },
+    proofSignal: {
+      width: 5,
+      height: 5,
+      borderRadius: 3,
+      backgroundColor: theme.colors.goldBright,
+      boxShadow: "0 0 8px rgba(242, 211, 138, 0.78)",
+    },
+    proofLabel: {
+      flex: 1,
+      color: "rgba(247, 242, 232, 0.72)",
+      fontFamily: theme.fonts.radar,
+      fontSize: 6.5,
+      lineHeight: 8,
+      fontWeight: "800",
+      letterSpacing: 0.44,
+    },
+    markerFooterSignal: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: theme.colors.scannerViolet,
+      boxShadow: "0 0 8px rgba(141, 114, 255, 0.82)",
+    },
+    markerAction: {
+      flex: 1,
+      minWidth: 0,
+      color: "rgba(247, 242, 232, 0.64)",
+      fontFamily: theme.fonts.radar,
+      fontSize: 6.5,
+      lineHeight: 8,
+      letterSpacing: 0.5,
+    },
+    markerChevron: {
+      color: theme.colors.scannerViolet,
+      fontSize: 18,
+      lineHeight: 18,
+      fontWeight: "800",
+    },
+    markerPanelPressed: {
+      opacity: 0.84,
+      transform: [{ scale: 0.985 }],
+    },
+    markerPanelDisabled: {
+      opacity: 0.46,
+    },
+  });
   return {
     ...staticStyles,
-  markerAccent: [
-    staticStyles.markerAccent,
-    {
-        width: responsiveLayout.responsiveWidth(3),
-    },
-  ],
-  markerHeading: [
-    staticStyles.markerHeading,
-    {
-        height: responsiveLayout.responsiveHeight(38),
-    },
-  ],
-  markerIcon: [
-    staticStyles.markerIcon,
-    {
-        width: responsiveLayout.responsiveWidth(25),
-        height: responsiveLayout.responsiveHeight(25),
-    },
-  ],
-  markerEyebrow: [
-    staticStyles.markerEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  confidenceText: [
-    staticStyles.confidenceText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  markerLabel: [
-    staticStyles.markerLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(18),
-    },
-  ],
-  proofSignal: [
-    staticStyles.proofSignal,
-    {
-        width: responsiveLayout.responsiveWidth(5),
-        height: responsiveLayout.responsiveHeight(5),
-    },
-  ],
-  proofLabel: [
-    staticStyles.proofLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(6.5),
-    },
-  ],
-  markerFooterSignal: [
-    staticStyles.markerFooterSignal,
-    {
-        width: responsiveLayout.responsiveWidth(6),
-        height: responsiveLayout.responsiveHeight(6),
-    },
-  ],
-  markerAction: [
-    staticStyles.markerAction,
-    {
-        fontSize: responsiveLayout.responsiveFont(6.5),
-    },
-  ],
-  markerChevron: [
-    staticStyles.markerChevron,
-    {
-        fontSize: responsiveLayout.responsiveFont(18),
-    },
-  ],
+    markerAccent: [
+      staticStyles.markerAccent,
+      {
+        width: responsiveWidth(3),
+      },
+    ],
+    markerHeading: [
+      staticStyles.markerHeading,
+      {
+        height: responsiveHeight(38),
+      },
+    ],
+    markerIcon: [
+      staticStyles.markerIcon,
+      {
+        width: responsiveWidth(25),
+        height: responsiveHeight(25),
+      },
+    ],
+    markerEyebrow: [
+      staticStyles.markerEyebrow,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    confidenceText: [
+      staticStyles.confidenceText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    markerLabel: [
+      staticStyles.markerLabel,
+      {
+        fontSize: responsiveFont(18),
+      },
+    ],
+    proofSignal: [
+      staticStyles.proofSignal,
+      {
+        width: responsiveWidth(5),
+        height: responsiveHeight(5),
+      },
+    ],
+    proofLabel: [
+      staticStyles.proofLabel,
+      {
+        fontSize: responsiveFont(6.5),
+      },
+    ],
+    markerFooterSignal: [
+      staticStyles.markerFooterSignal,
+      {
+        width: responsiveWidth(6),
+        height: responsiveHeight(6),
+      },
+    ],
+    markerAction: [
+      staticStyles.markerAction,
+      {
+        fontSize: responsiveFont(6.5),
+      },
+    ],
+    markerChevron: [
+      staticStyles.markerChevron,
+      {
+        fontSize: responsiveFont(18),
+      },
+    ],
   };
 }

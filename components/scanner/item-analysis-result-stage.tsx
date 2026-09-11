@@ -13,7 +13,7 @@ import type { ItemAnalysisState } from "@/components/scanner/item-analysis-overl
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
+import { responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type ResultState = Extract<ItemAnalysisState, { status: "result" }>;
@@ -245,252 +245,253 @@ export function ItemAnalysisResultStage({
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 44,
-  },
-  header: {
-    position: "absolute",
-    right: 16,
-    left: 22,
-    zIndex: 10,
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-  },
-  headerCopy: {
-    flex: 1,
-    alignItems: "center",
-    gap: 5,
-    paddingLeft: 42,
-  },
-  title: {
-    width: "100%",
-    color: theme.colors.cream,
-    fontSize: 27,
-    lineHeight: 32,
-    fontWeight: "900",
-    textAlign: "center",
-  },
-  meta: {
-    color: theme.colors.textMuted,
-    fontSize: 10,
-    lineHeight: 15,
-    letterSpacing: 0.5,
-    textAlign: "center",
-  },
-  closeButton: {
-    width: 42,
-    height: 42,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: "rgba(242, 211, 138, 0.4)",
-    backgroundColor: "rgba(4, 4, 8, 0.78)",
-  },
-  bottomStage: {
-    position: "absolute",
-    right: 0,
-    bottom: 0,
-    left: 0,
-    gap: 10,
-  },
-  rail: {
-    alignItems: "stretch",
-    gap: 14,
-    paddingHorizontal: 18,
-  },
-  card: {
-    width: 270,
-    height: 146,
-    gap: 9,
-    padding: 15,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "rgba(88, 223, 232, 0.28)",
-    backgroundColor: "rgba(5, 5, 10, 0.88)",
-  },
-  valuationCard: {
-    width: 310,
-    borderColor: "rgba(242, 211, 138, 0.34)",
-  },
-  eyebrow: {
-    color: theme.colors.scannerCyan,
-    fontSize: 9,
-    fontWeight: "900",
-    letterSpacing: 1.2,
-  },
-  body: {
-    color: theme.colors.textMuted,
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  valuationRow: {
-    flex: 1,
-    flexDirection: "row",
-    gap: 7,
-  },
-  valuationMetric: {
-    flex: 1,
-    minWidth: 0,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 5,
-    borderRadius: 12,
-    backgroundColor: "rgba(242, 211, 138, 0.05)",
-  },
-  metricLabel: {
-    color: theme.colors.goldMuted,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 0.8,
-  },
-  metricValue: {
-    width: "100%",
-    color: theme.colors.cream,
-    fontSize: 15,
-    fontWeight: "800",
-    textAlign: "center",
-  },
-  metricValueFeatured: {
-    width: "100%",
-    color: theme.colors.goldBright,
-    fontSize: 18,
-    fontWeight: "900",
-    textAlign: "center",
-  },
-  confidenceValue: {
-    color: theme.colors.goldBright,
-    fontSize: 34,
-    lineHeight: 38,
-    fontWeight: "900",
-    fontVariant: ["tabular-nums"],
-  },
-  conditionGrade: {
-    color: theme.colors.scannerViolet,
-    fontSize: 21,
-    lineHeight: 25,
-    fontWeight: "900",
-  },
-  actions: {
-    flexDirection: "row",
-    gap: 10,
-    paddingHorizontal: 18,
-  },
-  action: {
-    flex: 1,
-    minHeight: 48,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 16,
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: theme.colors.goldBright,
-    backgroundColor: theme.colors.goldBright,
-  },
-  actionSecondary: {
-    backgroundColor: "rgba(4, 4, 8, 0.82)",
-  },
-  actionText: {
-    color: theme.colors.backgroundDeep,
-    fontSize: 11,
-    fontWeight: "900",
-    letterSpacing: 0.7,
-  },
-  actionTextSecondary: {
-    color: theme.colors.goldBright,
-  },
-  pressed: {
-    opacity: 0.72,
-    transform: [{ scale: 0.97 }],
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-});
+  const { responsiveFont, responsiveWidth, responsiveHeight } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    overlay: {
+      ...StyleSheet.absoluteFill,
+      zIndex: 44,
+    },
+    header: {
+      position: "absolute",
+      right: 16,
+      left: 22,
+      zIndex: 10,
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 12,
+    },
+    headerCopy: {
+      flex: 1,
+      alignItems: "center",
+      gap: 5,
+      paddingLeft: 42,
+    },
+    title: {
+      width: "100%",
+      color: theme.colors.cream,
+      fontSize: 27,
+      lineHeight: 32,
+      fontWeight: "900",
+      textAlign: "center",
+    },
+    meta: {
+      color: theme.colors.textMuted,
+      fontSize: 10,
+      lineHeight: 15,
+      letterSpacing: 0.5,
+      textAlign: "center",
+    },
+    closeButton: {
+      width: 42,
+      height: 42,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: "rgba(242, 211, 138, 0.4)",
+      backgroundColor: "rgba(4, 4, 8, 0.78)",
+    },
+    bottomStage: {
+      position: "absolute",
+      right: 0,
+      bottom: 0,
+      left: 0,
+      gap: 10,
+    },
+    rail: {
+      alignItems: "stretch",
+      gap: 14,
+      paddingHorizontal: 18,
+    },
+    card: {
+      width: 270,
+      height: 146,
+      gap: 9,
+      padding: 15,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: "rgba(88, 223, 232, 0.28)",
+      backgroundColor: "rgba(5, 5, 10, 0.88)",
+    },
+    valuationCard: {
+      width: 310,
+      borderColor: "rgba(242, 211, 138, 0.34)",
+    },
+    eyebrow: {
+      color: theme.colors.scannerCyan,
+      fontSize: 9,
+      fontWeight: "900",
+      letterSpacing: 1.2,
+    },
+    body: {
+      color: theme.colors.textMuted,
+      fontSize: 12,
+      lineHeight: 18,
+    },
+    valuationRow: {
+      flex: 1,
+      flexDirection: "row",
+      gap: 7,
+    },
+    valuationMetric: {
+      flex: 1,
+      minWidth: 0,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 5,
+      borderRadius: 12,
+      backgroundColor: "rgba(242, 211, 138, 0.05)",
+    },
+    metricLabel: {
+      color: theme.colors.goldMuted,
+      fontSize: 8,
+      fontWeight: "900",
+      letterSpacing: 0.8,
+    },
+    metricValue: {
+      width: "100%",
+      color: theme.colors.cream,
+      fontSize: 15,
+      fontWeight: "800",
+      textAlign: "center",
+    },
+    metricValueFeatured: {
+      width: "100%",
+      color: theme.colors.goldBright,
+      fontSize: 18,
+      fontWeight: "900",
+      textAlign: "center",
+    },
+    confidenceValue: {
+      color: theme.colors.goldBright,
+      fontSize: 34,
+      lineHeight: 38,
+      fontWeight: "900",
+      fontVariant: ["tabular-nums"],
+    },
+    conditionGrade: {
+      color: theme.colors.scannerViolet,
+      fontSize: 21,
+      lineHeight: 25,
+      fontWeight: "900",
+    },
+    actions: {
+      flexDirection: "row",
+      gap: 10,
+      paddingHorizontal: 18,
+    },
+    action: {
+      flex: 1,
+      minHeight: 48,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 16,
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: theme.colors.goldBright,
+      backgroundColor: theme.colors.goldBright,
+    },
+    actionSecondary: {
+      backgroundColor: "rgba(4, 4, 8, 0.82)",
+    },
+    actionText: {
+      color: theme.colors.backgroundDeep,
+      fontSize: 11,
+      fontWeight: "900",
+      letterSpacing: 0.7,
+    },
+    actionTextSecondary: {
+      color: theme.colors.goldBright,
+    },
+    pressed: {
+      opacity: 0.72,
+      transform: [{ scale: 0.97 }],
+    },
+    disabled: {
+      opacity: 0.5,
+    },
+  });
   return {
     ...staticStyles,
-  title: [
-    staticStyles.title,
-    {
-        fontSize: responsiveLayout.responsiveFont(27),
-    },
-  ],
-  meta: [
-    staticStyles.meta,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  closeButton: [
-    staticStyles.closeButton,
-    {
-        width: responsiveLayout.responsiveWidth(42),
-        height: responsiveLayout.responsiveHeight(42),
-    },
-  ],
-  card: [
-    staticStyles.card,
-    {
-        width: responsiveLayout.responsiveWidth(270),
-        height: responsiveLayout.responsiveHeight(146),
-    },
-  ],
-  valuationCard: [
-    staticStyles.valuationCard,
-    {
-        width: responsiveLayout.responsiveWidth(310),
-    },
-  ],
-  eyebrow: [
-    staticStyles.eyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  body: [
-    staticStyles.body,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  metricLabel: [
-    staticStyles.metricLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  metricValue: [
-    staticStyles.metricValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  metricValueFeatured: [
-    staticStyles.metricValueFeatured,
-    {
-        fontSize: responsiveLayout.responsiveFont(18),
-    },
-  ],
-  confidenceValue: [
-    staticStyles.confidenceValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(34),
-    },
-  ],
-  conditionGrade: [
-    staticStyles.conditionGrade,
-    {
-        fontSize: responsiveLayout.responsiveFont(21),
-    },
-  ],
-  actionText: [
-    staticStyles.actionText,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
+    title: [
+      staticStyles.title,
+      {
+        fontSize: responsiveFont(27),
+      },
+    ],
+    meta: [
+      staticStyles.meta,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    closeButton: [
+      staticStyles.closeButton,
+      {
+        width: responsiveWidth(42),
+        height: responsiveHeight(42),
+      },
+    ],
+    card: [
+      staticStyles.card,
+      {
+        width: responsiveWidth(270),
+        height: responsiveHeight(146),
+      },
+    ],
+    valuationCard: [
+      staticStyles.valuationCard,
+      {
+        width: responsiveWidth(310),
+      },
+    ],
+    eyebrow: [
+      staticStyles.eyebrow,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    body: [
+      staticStyles.body,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    metricLabel: [
+      staticStyles.metricLabel,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    metricValue: [
+      staticStyles.metricValue,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    metricValueFeatured: [
+      staticStyles.metricValueFeatured,
+      {
+        fontSize: responsiveFont(18),
+      },
+    ],
+    confidenceValue: [
+      staticStyles.confidenceValue,
+      {
+        fontSize: responsiveFont(34),
+      },
+    ],
+    conditionGrade: [
+      staticStyles.conditionGrade,
+      {
+        fontSize: responsiveFont(21),
+      },
+    ],
+    actionText: [
+      staticStyles.actionText,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
   };
 }

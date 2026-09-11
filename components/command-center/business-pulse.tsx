@@ -4,6 +4,8 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import { responsiveWidth } from '@/lib/responsiveFont';
 import {
   buildMoneyFlowBuckets,
   getDefaultMoneyFlowGranularity,
@@ -12,8 +14,6 @@ import {
   type BusinessMoneyFlowGranularity,
   type ResellerBusinessOverview,
 } from '@/services/reseller-business-overview';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type BusinessPulseProps = {
@@ -449,364 +449,365 @@ function Legend({ color, label }: { color: string; label: string }) {
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  card: {
-    gap: 14,
-    borderColor: 'rgba(88, 223, 232, 0.27)',
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 16,
-    backgroundColor: 'rgba(5, 13, 19, 0.86)',
-  },
-  cardHeader: { alignItems: 'flex-start', flexDirection: 'row', gap: 12, justifyContent: 'space-between' },
-  eyebrow: { color: theme.colors.goldBright, fontSize: 8, fontWeight: '900', letterSpacing: 1.4 },
-  title: { color: theme.colors.cream, fontSize: 19, fontWeight: '900', letterSpacing: -0.25, lineHeight: 24 },
-  description: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 15 },
-  livePill: { alignItems: 'center', backgroundColor: 'rgba(88, 223, 232, 0.10)', borderColor: 'rgba(88, 223, 232, 0.24)', borderRadius: 999, borderWidth: 1, flexDirection: 'row', gap: 5, paddingHorizontal: 8, paddingVertical: 5 },
-  liveDot: { backgroundColor: theme.colors.scannerCyan, borderRadius: 4, height: 6, width: 6 },
-  liveText: { color: theme.colors.scannerCyan, fontSize: 8, fontWeight: '900', letterSpacing: 0.8 },
-  metricGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  metric: { borderRadius: 11, borderWidth: 1, flexGrow: 1, flexBasis: '46%', gap: 4, minWidth: 125, padding: 11 },
-  metricCyan: { backgroundColor: 'rgba(43, 213, 226, 0.09)', borderColor: 'rgba(88, 223, 232, 0.25)' },
-  metricGold: { backgroundColor: 'rgba(215, 168, 74, 0.10)', borderColor: 'rgba(242, 211, 138, 0.24)' },
-  metricViolet: { backgroundColor: 'rgba(160, 111, 255, 0.10)', borderColor: 'rgba(190, 154, 255, 0.24)' },
-  metricMuted: { backgroundColor: 'rgba(255, 255, 255, 0.035)', borderColor: 'rgba(255, 255, 255, 0.10)' },
-  metricLabel: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 0.9 },
-  metricValue: { color: theme.colors.cream, fontSize: 21, fontWeight: '900', letterSpacing: -0.45, lineHeight: 25 },
-  metricNegativeValue: { color: '#FFB8B1' },
-  chartSurface: { backgroundColor: 'rgba(0, 0, 0, 0.20)', borderColor: 'rgba(88, 223, 232, 0.16)', borderRadius: 12, borderWidth: 1, gap: 11, padding: 12 },
-  chartHeading: { alignItems: 'flex-start', flexDirection: 'row', justifyContent: 'space-between' },
-  chartLabel: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 1 },
-  chartTitle: { color: theme.colors.text, fontSize: 13, fontWeight: '800', lineHeight: 17 },
-  legend: { flexDirection: 'row', gap: 8, paddingTop: 2 },
-  legendItem: { alignItems: 'center', flexDirection: 'row', gap: 4 },
-  legendDot: { borderRadius: 3, height: 6, width: 6 },
-  legendText: { color: theme.colors.textMuted, fontSize: 9, fontWeight: '700' },
-  chartControls: { gap: 7 },
-  controlHeading: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
-  controlLabel: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 1 },
-  controlValue: { color: theme.colors.scannerCyan, fontSize: 9, fontWeight: '800' },
-  segmentRow: { backgroundColor: 'rgba(255, 255, 255, 0.035)', borderColor: 'rgba(255, 255, 255, 0.10)', borderRadius: 9, borderWidth: 1, flexDirection: 'row', padding: 3 },
-  segmentButton: { alignItems: 'center', borderRadius: 6, flex: 1, minHeight: 28, justifyContent: 'center', paddingHorizontal: 7 },
-  segmentButtonActive: { backgroundColor: 'rgba(88, 223, 232, 0.18)', borderColor: 'rgba(88, 223, 232, 0.32)', borderWidth: 1 },
-  segmentText: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 0.8 },
-  segmentTextActive: { color: theme.colors.scannerCyan },
-  rangeRow: { alignItems: 'center', gap: 7, paddingVertical: 1 },
-  rangeChip: { alignItems: 'center', borderColor: 'rgba(242, 211, 138, 0.22)', borderRadius: 999, borderWidth: 1, minHeight: 28, justifyContent: 'center', paddingHorizontal: 11 },
-  rangeChipActive: { backgroundColor: 'rgba(215, 168, 74, 0.16)', borderColor: 'rgba(242, 211, 138, 0.58)' },
-  rangeChipText: { color: theme.colors.textMuted, fontSize: 9, fontWeight: '900' },
-  rangeChipTextActive: { color: theme.colors.goldBright },
-  chartPlotRow: { flexDirection: 'row', minHeight: 100 },
-  yAxis: { height: 78, justifyContent: 'space-between', marginTop: 6, paddingRight: 6, width: 42 },
-  yAxisLabel: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '700', lineHeight: 10, textAlign: 'right' },
-  chartScroll: { flex: 1 },
-  chartBarsViewport: { minWidth: '100%' },
-  chartPlotContent: { minHeight: 100, minWidth: '100%', position: 'relative' },
-  gridLayer: { height: 78, left: 2, position: 'absolute', right: 2, top: 6 },
-  gridLine: { backgroundColor: 'rgba(173, 167, 178, 0.18)', height: 1, left: 0, position: 'absolute', right: 0 },
-  gridBaseline: { backgroundColor: 'rgba(242, 211, 138, 0.32)' },
-  chartBars: { alignItems: 'flex-end', flexDirection: 'row', gap: 8, justifyContent: 'space-between', minHeight: 100, minWidth: '100%', paddingHorizontal: 2, position: 'relative' },
-  flowGroup: { alignItems: 'center', gap: 5, width: 30 },
-  bars: { alignItems: 'flex-end', flexDirection: 'row', gap: 3, height: 78 },
-  bar: { borderRadius: 4, width: 7 },
-  inBar: { backgroundColor: theme.colors.scannerCyan },
-  outBar: { backgroundColor: theme.colors.goldBright },
-  flowLabel: { color: theme.colors.textMuted, fontSize: 9, fontWeight: '700' },
-  splitRow: { flexDirection: 'row', gap: 8 },
-  inventorySurface: { backgroundColor: 'rgba(78, 41, 147, 0.16)', borderColor: 'rgba(190, 154, 255, 0.20)', borderRadius: 12, borderWidth: 1, flex: 1, gap: 3, padding: 11 },
-  costSurface: { backgroundColor: 'rgba(21, 16, 5, 0.56)', borderColor: 'rgba(242, 211, 138, 0.17)', borderRadius: 12, borderWidth: 1, flex: 1, gap: 5, padding: 11 },
-  inventoryValue: { color: theme.colors.cream, fontSize: 25, fontWeight: '900', letterSpacing: -0.5, lineHeight: 30 },
-  inventoryCopy: { color: theme.colors.text, fontSize: 10, fontWeight: '700', lineHeight: 14 },
-  estimateCopy: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 13, marginTop: 3 },
-  costRow: { alignItems: 'center', flexDirection: 'row', gap: 4, justifyContent: 'space-between' },
-  costLabel: { color: theme.colors.textMuted, flex: 1, fontSize: 10, lineHeight: 14 },
-  costValue: { color: theme.colors.goldBright, fontSize: 10, fontWeight: '900' },
-  noCostsText: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 15, marginTop: 4 },
-  attentionSurface: { alignItems: 'flex-start', backgroundColor: 'rgba(215, 168, 74, 0.11)', borderColor: 'rgba(242, 211, 138, 0.28)', borderRadius: 11, borderWidth: 1, flexDirection: 'row', gap: 9, padding: 11 },
-  attentionCopy: { flex: 1, gap: 2 },
-  attentionTitle: { color: theme.colors.goldBright, fontSize: 11, fontWeight: '900', lineHeight: 15 },
-  attentionText: { color: theme.colors.text, fontSize: 10, lineHeight: 14 },
-  actions: { flexDirection: 'row', gap: 8 },
-  planAction: { alignItems: 'center', backgroundColor: 'rgba(88, 223, 232, 0.06)', borderColor: 'rgba(88, 223, 232, 0.26)', borderRadius: 11, borderWidth: 1, flexDirection: 'row', gap: 9, minHeight: 58, paddingHorizontal: 10, paddingVertical: 8 },
-  planActionIcon: { alignItems: 'center', backgroundColor: 'rgba(88, 223, 232, 0.12)', borderRadius: 8, height: 32, justifyContent: 'center', width: 32 },
-  planActionCopy: { flex: 1, gap: 1 },
-  planActionTitle: { color: theme.colors.cream, fontSize: 12, fontWeight: '900' },
-  planActionText: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 14 },
-  primaryAction: { alignItems: 'center', backgroundColor: theme.colors.scannerCyan, borderRadius: 10, flex: 1, flexDirection: 'row', gap: 7, justifyContent: 'center', minHeight: 42, paddingHorizontal: 10 },
-  primaryActionText: { color: theme.colors.backgroundDeep, fontSize: 12, fontWeight: '900' },
-  secondaryAction: { alignItems: 'center', borderColor: 'rgba(242, 211, 138, 0.35)', borderRadius: 10, borderWidth: 1, flex: 1, justifyContent: 'center', minHeight: 42, paddingHorizontal: 10 },
-  secondaryActionText: { color: theme.colors.goldBright, fontSize: 12, fontWeight: '900' },
-  errorText: { color: '#FFB8B1', fontSize: 10, lineHeight: 14 },
-  pressed: { opacity: 0.78, transform: [{ scale: 0.985 }] },
-  loadingCard: { alignItems: 'center', backgroundColor: 'rgba(5, 13, 19, 0.86)', borderColor: 'rgba(88, 223, 232, 0.27)', borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 11, padding: 16 },
-  loadingCopy: { flex: 1, gap: 3 },
-  loadingText: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 17 },
-  emptyCard: { alignItems: 'flex-start', backgroundColor: 'rgba(5, 13, 19, 0.86)', borderColor: 'rgba(88, 223, 232, 0.27)', borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 11, padding: 16 },
-  emptyIcon: { alignItems: 'center', backgroundColor: 'rgba(215, 168, 74, 0.12)', borderRadius: 10, height: 39, justifyContent: 'center', width: 39 },
-  emptyCopy: { flex: 1, gap: 3 },
-  emptyTitle: { color: theme.colors.cream, fontSize: 15, fontWeight: '900', lineHeight: 20 },
-  emptyText: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 },
-  emptyPlanAction: { alignItems: 'center', alignSelf: 'flex-start', flexDirection: 'row', gap: 5, marginTop: 5, minHeight: 28 },
-  emptyPlanActionText: { color: theme.colors.scannerCyan, fontSize: 11, fontWeight: '900' },
-});
+  const { responsiveFont, responsiveHeight, responsiveWidth } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    card: {
+      gap: 14,
+      borderColor: 'rgba(88, 223, 232, 0.27)',
+      borderRadius: 16,
+      borderWidth: 1,
+      padding: 16,
+      backgroundColor: 'rgba(5, 13, 19, 0.86)',
+    },
+    cardHeader: { alignItems: 'flex-start', flexDirection: 'row', gap: 12, justifyContent: 'space-between' },
+    eyebrow: { color: theme.colors.goldBright, fontSize: 8, fontWeight: '900', letterSpacing: 1.4 },
+    title: { color: theme.colors.cream, fontSize: 19, fontWeight: '900', letterSpacing: -0.25, lineHeight: 24 },
+    description: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 15 },
+    livePill: { alignItems: 'center', backgroundColor: 'rgba(88, 223, 232, 0.10)', borderColor: 'rgba(88, 223, 232, 0.24)', borderRadius: 999, borderWidth: 1, flexDirection: 'row', gap: 5, paddingHorizontal: 8, paddingVertical: 5 },
+    liveDot: { backgroundColor: theme.colors.scannerCyan, borderRadius: 4, height: 6, width: 6 },
+    liveText: { color: theme.colors.scannerCyan, fontSize: 8, fontWeight: '900', letterSpacing: 0.8 },
+    metricGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    metric: { borderRadius: 11, borderWidth: 1, flexGrow: 1, flexBasis: '46%', gap: 4, minWidth: 125, padding: 11 },
+    metricCyan: { backgroundColor: 'rgba(43, 213, 226, 0.09)', borderColor: 'rgba(88, 223, 232, 0.25)' },
+    metricGold: { backgroundColor: 'rgba(215, 168, 74, 0.10)', borderColor: 'rgba(242, 211, 138, 0.24)' },
+    metricViolet: { backgroundColor: 'rgba(160, 111, 255, 0.10)', borderColor: 'rgba(190, 154, 255, 0.24)' },
+    metricMuted: { backgroundColor: 'rgba(255, 255, 255, 0.035)', borderColor: 'rgba(255, 255, 255, 0.10)' },
+    metricLabel: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 0.9 },
+    metricValue: { color: theme.colors.cream, fontSize: 21, fontWeight: '900', letterSpacing: -0.45, lineHeight: 25 },
+    metricNegativeValue: { color: '#FFB8B1' },
+    chartSurface: { backgroundColor: 'rgba(0, 0, 0, 0.20)', borderColor: 'rgba(88, 223, 232, 0.16)', borderRadius: 12, borderWidth: 1, gap: 11, padding: 12 },
+    chartHeading: { alignItems: 'flex-start', flexDirection: 'row', justifyContent: 'space-between' },
+    chartLabel: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 1 },
+    chartTitle: { color: theme.colors.text, fontSize: 13, fontWeight: '800', lineHeight: 17 },
+    legend: { flexDirection: 'row', gap: 8, paddingTop: 2 },
+    legendItem: { alignItems: 'center', flexDirection: 'row', gap: 4 },
+    legendDot: { borderRadius: 3, height: 6, width: 6 },
+    legendText: { color: theme.colors.textMuted, fontSize: 9, fontWeight: '700' },
+    chartControls: { gap: 7 },
+    controlHeading: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+    controlLabel: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 1 },
+    controlValue: { color: theme.colors.scannerCyan, fontSize: 9, fontWeight: '800' },
+    segmentRow: { backgroundColor: 'rgba(255, 255, 255, 0.035)', borderColor: 'rgba(255, 255, 255, 0.10)', borderRadius: 9, borderWidth: 1, flexDirection: 'row', padding: 3 },
+    segmentButton: { alignItems: 'center', borderRadius: 6, flex: 1, minHeight: 28, justifyContent: 'center', paddingHorizontal: 7 },
+    segmentButtonActive: { backgroundColor: 'rgba(88, 223, 232, 0.18)', borderColor: 'rgba(88, 223, 232, 0.32)', borderWidth: 1 },
+    segmentText: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 0.8 },
+    segmentTextActive: { color: theme.colors.scannerCyan },
+    rangeRow: { alignItems: 'center', gap: 7, paddingVertical: 1 },
+    rangeChip: { alignItems: 'center', borderColor: 'rgba(242, 211, 138, 0.22)', borderRadius: 999, borderWidth: 1, minHeight: 28, justifyContent: 'center', paddingHorizontal: 11 },
+    rangeChipActive: { backgroundColor: 'rgba(215, 168, 74, 0.16)', borderColor: 'rgba(242, 211, 138, 0.58)' },
+    rangeChipText: { color: theme.colors.textMuted, fontSize: 9, fontWeight: '900' },
+    rangeChipTextActive: { color: theme.colors.goldBright },
+    chartPlotRow: { flexDirection: 'row', minHeight: 100 },
+    yAxis: { height: 78, justifyContent: 'space-between', marginTop: 6, paddingRight: 6, width: 42 },
+    yAxisLabel: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '700', lineHeight: 10, textAlign: 'right' },
+    chartScroll: { flex: 1 },
+    chartBarsViewport: { minWidth: '100%' },
+    chartPlotContent: { minHeight: 100, minWidth: '100%', position: 'relative' },
+    gridLayer: { height: 78, left: 2, position: 'absolute', right: 2, top: 6 },
+    gridLine: { backgroundColor: 'rgba(173, 167, 178, 0.18)', height: 1, left: 0, position: 'absolute', right: 0 },
+    gridBaseline: { backgroundColor: 'rgba(242, 211, 138, 0.32)' },
+    chartBars: { alignItems: 'flex-end', flexDirection: 'row', gap: 8, justifyContent: 'space-between', minHeight: 100, minWidth: '100%', paddingHorizontal: 2, position: 'relative' },
+    flowGroup: { alignItems: 'center', gap: 5, width: 30 },
+    bars: { alignItems: 'flex-end', flexDirection: 'row', gap: 3, height: 78 },
+    bar: { borderRadius: 4, width: 7 },
+    inBar: { backgroundColor: theme.colors.scannerCyan },
+    outBar: { backgroundColor: theme.colors.goldBright },
+    flowLabel: { color: theme.colors.textMuted, fontSize: 9, fontWeight: '700' },
+    splitRow: { flexDirection: 'row', gap: 8 },
+    inventorySurface: { backgroundColor: 'rgba(78, 41, 147, 0.16)', borderColor: 'rgba(190, 154, 255, 0.20)', borderRadius: 12, borderWidth: 1, flex: 1, gap: 3, padding: 11 },
+    costSurface: { backgroundColor: 'rgba(21, 16, 5, 0.56)', borderColor: 'rgba(242, 211, 138, 0.17)', borderRadius: 12, borderWidth: 1, flex: 1, gap: 5, padding: 11 },
+    inventoryValue: { color: theme.colors.cream, fontSize: 25, fontWeight: '900', letterSpacing: -0.5, lineHeight: 30 },
+    inventoryCopy: { color: theme.colors.text, fontSize: 10, fontWeight: '700', lineHeight: 14 },
+    estimateCopy: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 13, marginTop: 3 },
+    costRow: { alignItems: 'center', flexDirection: 'row', gap: 4, justifyContent: 'space-between' },
+    costLabel: { color: theme.colors.textMuted, flex: 1, fontSize: 10, lineHeight: 14 },
+    costValue: { color: theme.colors.goldBright, fontSize: 10, fontWeight: '900' },
+    noCostsText: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 15, marginTop: 4 },
+    attentionSurface: { alignItems: 'flex-start', backgroundColor: 'rgba(215, 168, 74, 0.11)', borderColor: 'rgba(242, 211, 138, 0.28)', borderRadius: 11, borderWidth: 1, flexDirection: 'row', gap: 9, padding: 11 },
+    attentionCopy: { flex: 1, gap: 2 },
+    attentionTitle: { color: theme.colors.goldBright, fontSize: 11, fontWeight: '900', lineHeight: 15 },
+    attentionText: { color: theme.colors.text, fontSize: 10, lineHeight: 14 },
+    actions: { flexDirection: 'row', gap: 8 },
+    planAction: { alignItems: 'center', backgroundColor: 'rgba(88, 223, 232, 0.06)', borderColor: 'rgba(88, 223, 232, 0.26)', borderRadius: 11, borderWidth: 1, flexDirection: 'row', gap: 9, minHeight: 58, paddingHorizontal: 10, paddingVertical: 8 },
+    planActionIcon: { alignItems: 'center', backgroundColor: 'rgba(88, 223, 232, 0.12)', borderRadius: 8, height: 32, justifyContent: 'center', width: 32 },
+    planActionCopy: { flex: 1, gap: 1 },
+    planActionTitle: { color: theme.colors.cream, fontSize: 12, fontWeight: '900' },
+    planActionText: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 14 },
+    primaryAction: { alignItems: 'center', backgroundColor: theme.colors.scannerCyan, borderRadius: 10, flex: 1, flexDirection: 'row', gap: 7, justifyContent: 'center', minHeight: 42, paddingHorizontal: 10 },
+    primaryActionText: { color: theme.colors.backgroundDeep, fontSize: 12, fontWeight: '900' },
+    secondaryAction: { alignItems: 'center', borderColor: 'rgba(242, 211, 138, 0.35)', borderRadius: 10, borderWidth: 1, flex: 1, justifyContent: 'center', minHeight: 42, paddingHorizontal: 10 },
+    secondaryActionText: { color: theme.colors.goldBright, fontSize: 12, fontWeight: '900' },
+    errorText: { color: '#FFB8B1', fontSize: 10, lineHeight: 14 },
+    pressed: { opacity: 0.78, transform: [{ scale: 0.985 }] },
+    loadingCard: { alignItems: 'center', backgroundColor: 'rgba(5, 13, 19, 0.86)', borderColor: 'rgba(88, 223, 232, 0.27)', borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 11, padding: 16 },
+    loadingCopy: { flex: 1, gap: 3 },
+    loadingText: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 17 },
+    emptyCard: { alignItems: 'flex-start', backgroundColor: 'rgba(5, 13, 19, 0.86)', borderColor: 'rgba(88, 223, 232, 0.27)', borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 11, padding: 16 },
+    emptyIcon: { alignItems: 'center', backgroundColor: 'rgba(215, 168, 74, 0.12)', borderRadius: 10, height: 39, justifyContent: 'center', width: 39 },
+    emptyCopy: { flex: 1, gap: 3 },
+    emptyTitle: { color: theme.colors.cream, fontSize: 15, fontWeight: '900', lineHeight: 20 },
+    emptyText: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 },
+    emptyPlanAction: { alignItems: 'center', alignSelf: 'flex-start', flexDirection: 'row', gap: 5, marginTop: 5, minHeight: 28 },
+    emptyPlanActionText: { color: theme.colors.scannerCyan, fontSize: 11, fontWeight: '900' },
+  });
   return {
     ...staticStyles,
-  eyebrow: [
-    staticStyles.eyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  title: [
-    staticStyles.title,
-    {
-        fontSize: responsiveLayout.responsiveFont(19),
-    },
-  ],
-  description: [
-    staticStyles.description,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  liveDot: [
-    staticStyles.liveDot,
-    {
-        height: responsiveLayout.responsiveHeight(6),
-        width: responsiveLayout.responsiveWidth(6),
-    },
-  ],
-  liveText: [
-    staticStyles.liveText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  metricLabel: [
-    staticStyles.metricLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  metricValue: [
-    staticStyles.metricValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(21),
-    },
-  ],
-  chartLabel: [
-    staticStyles.chartLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  chartTitle: [
-    staticStyles.chartTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  legendDot: [
-    staticStyles.legendDot,
-    {
-        height: responsiveLayout.responsiveHeight(6),
-        width: responsiveLayout.responsiveWidth(6),
-    },
-  ],
-  legendText: [
-    staticStyles.legendText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  controlLabel: [
-    staticStyles.controlLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  controlValue: [
-    staticStyles.controlValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  segmentText: [
-    staticStyles.segmentText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  rangeChipText: [
-    staticStyles.rangeChipText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  yAxis: [
-    staticStyles.yAxis,
-    {
-        height: responsiveLayout.responsiveHeight(78),
-        width: responsiveLayout.responsiveWidth(42),
-    },
-  ],
-  yAxisLabel: [
-    staticStyles.yAxisLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  gridLayer: [
-    staticStyles.gridLayer,
-    {
-        height: responsiveLayout.responsiveHeight(78),
-    },
-  ],
-  gridLine: [
-    staticStyles.gridLine,
-    {
-        height: responsiveLayout.responsiveHeight(1),
-    },
-  ],
-  flowGroup: [
-    staticStyles.flowGroup,
-    {
-        width: responsiveLayout.responsiveWidth(30),
-    },
-  ],
-  bars: [
-    staticStyles.bars,
-    {
-        height: responsiveLayout.responsiveHeight(78),
-    },
-  ],
-  bar: [
-    staticStyles.bar,
-    {
-        width: responsiveLayout.responsiveWidth(7),
-    },
-  ],
-  flowLabel: [
-    staticStyles.flowLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  inventoryValue: [
-    staticStyles.inventoryValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(25),
-    },
-  ],
-  inventoryCopy: [
-    staticStyles.inventoryCopy,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  estimateCopy: [
-    staticStyles.estimateCopy,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  costLabel: [
-    staticStyles.costLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  costValue: [
-    staticStyles.costValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  noCostsText: [
-    staticStyles.noCostsText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  attentionTitle: [
-    staticStyles.attentionTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  attentionText: [
-    staticStyles.attentionText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  planActionIcon: [
-    staticStyles.planActionIcon,
-    {
-        height: responsiveLayout.responsiveHeight(32),
-        width: responsiveLayout.responsiveWidth(32),
-    },
-  ],
-  planActionTitle: [
-    staticStyles.planActionTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  planActionText: [
-    staticStyles.planActionText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  primaryActionText: [
-    staticStyles.primaryActionText,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  secondaryActionText: [
-    staticStyles.secondaryActionText,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  errorText: [
-    staticStyles.errorText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  loadingText: [
-    staticStyles.loadingText,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  emptyIcon: [
-    staticStyles.emptyIcon,
-    {
-        height: responsiveLayout.responsiveHeight(39),
-        width: responsiveLayout.responsiveWidth(39),
-    },
-  ],
-  emptyTitle: [
-    staticStyles.emptyTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  emptyText: [
-    staticStyles.emptyText,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  emptyPlanActionText: [
-    staticStyles.emptyPlanActionText,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
+    eyebrow: [
+      staticStyles.eyebrow,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    title: [
+      staticStyles.title,
+      {
+        fontSize: responsiveFont(19),
+      },
+    ],
+    description: [
+      staticStyles.description,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    liveDot: [
+      staticStyles.liveDot,
+      {
+        height: responsiveHeight(6),
+        width: responsiveWidth(6),
+      },
+    ],
+    liveText: [
+      staticStyles.liveText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    metricLabel: [
+      staticStyles.metricLabel,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    metricValue: [
+      staticStyles.metricValue,
+      {
+        fontSize: responsiveFont(21),
+      },
+    ],
+    chartLabel: [
+      staticStyles.chartLabel,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    chartTitle: [
+      staticStyles.chartTitle,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    legendDot: [
+      staticStyles.legendDot,
+      {
+        height: responsiveHeight(6),
+        width: responsiveWidth(6),
+      },
+    ],
+    legendText: [
+      staticStyles.legendText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    controlLabel: [
+      staticStyles.controlLabel,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    controlValue: [
+      staticStyles.controlValue,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    segmentText: [
+      staticStyles.segmentText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    rangeChipText: [
+      staticStyles.rangeChipText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    yAxis: [
+      staticStyles.yAxis,
+      {
+        height: responsiveHeight(78),
+        width: responsiveWidth(42),
+      },
+    ],
+    yAxisLabel: [
+      staticStyles.yAxisLabel,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    gridLayer: [
+      staticStyles.gridLayer,
+      {
+        height: responsiveHeight(78),
+      },
+    ],
+    gridLine: [
+      staticStyles.gridLine,
+      {
+        height: responsiveHeight(1),
+      },
+    ],
+    flowGroup: [
+      staticStyles.flowGroup,
+      {
+        width: responsiveWidth(30),
+      },
+    ],
+    bars: [
+      staticStyles.bars,
+      {
+        height: responsiveHeight(78),
+      },
+    ],
+    bar: [
+      staticStyles.bar,
+      {
+        width: responsiveWidth(7),
+      },
+    ],
+    flowLabel: [
+      staticStyles.flowLabel,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    inventoryValue: [
+      staticStyles.inventoryValue,
+      {
+        fontSize: responsiveFont(25),
+      },
+    ],
+    inventoryCopy: [
+      staticStyles.inventoryCopy,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    estimateCopy: [
+      staticStyles.estimateCopy,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    costLabel: [
+      staticStyles.costLabel,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    costValue: [
+      staticStyles.costValue,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    noCostsText: [
+      staticStyles.noCostsText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    attentionTitle: [
+      staticStyles.attentionTitle,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    attentionText: [
+      staticStyles.attentionText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    planActionIcon: [
+      staticStyles.planActionIcon,
+      {
+        height: responsiveHeight(32),
+        width: responsiveWidth(32),
+      },
+    ],
+    planActionTitle: [
+      staticStyles.planActionTitle,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    planActionText: [
+      staticStyles.planActionText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    primaryActionText: [
+      staticStyles.primaryActionText,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    secondaryActionText: [
+      staticStyles.secondaryActionText,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    errorText: [
+      staticStyles.errorText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    loadingText: [
+      staticStyles.loadingText,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    emptyIcon: [
+      staticStyles.emptyIcon,
+      {
+        height: responsiveHeight(39),
+        width: responsiveWidth(39),
+      },
+    ],
+    emptyTitle: [
+      staticStyles.emptyTitle,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    emptyText: [
+      staticStyles.emptyText,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    emptyPlanActionText: [
+      staticStyles.emptyPlanActionText,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
   };
 }

@@ -91,15 +91,68 @@ Recommended columns:
 
 Permissions: server function only. Do not return these rows to the app.
 
-## 4. Existing eBay shipment idempotency table
+## 4. Server-only eBay shipment idempotency table
 
-The current eBay backend already requires:
+Create a TablesDB table with the exact ID `ebay_shipment_operations` and set this server-only Function variable:
 
-`APPWRITE_EBAY_SHIPMENT_OPERATIONS_TABLE_ID`
+`APPWRITE_EBAY_SHIPMENT_OPERATIONS_TABLE_ID=ebay_shipment_operations`
 
-Keep this server-only. It serializes shipping-fulfillment writes so retries cannot create duplicate packages.
+Create these columns:
 
-## 5. Listing quota server bridge
+| Column | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `ownerId` | string(64) | yes | KeepFlip seller user ID |
+| `environment` | string(16) or enum | yes | `sandbox` or `production` |
+| `requestHash` | string(64) | yes | Hash of the carrier, tracking number, and order lines |
+| `createdAt` | datetime | yes | Reservation creation time |
+
+No index is required because the Function uses a deterministic operation ID as the row ID. Rows are created with empty permissions and are readable only through the eBay Function. The Function checks an existing row on retry and deletes it after eBay confirms the fulfillment. A row that remains means the operation needs reconciliation before retrying.
+
+## 5. Server-only seller quota table
+
+Create a TablesDB table with the exact ID `seller_quotas` in the same database as the subscription table. Set this subscription police Function variable:
+
+`APPWRITE_SELLER_QUOTAS_TABLE_ID=seller_quotas`
+
+Create these columns:
+
+| Column | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| `revision` | integer | yes | `0` | Optimistic transaction conflict marker |
+| `payload` | medium text/text | yes | none | JSON state or idempotency receipt |
+
+No index is required. The Function addresses rows by deterministic row ID. Give the table no mobile permissions.
+
+Before enforcement is enabled, initialize one state row per existing `user_subscription` row. The checked-in operator migration is `backend/functions/keepflip-subscription-police/scripts/initialize-quota-state.mjs`. Run it from `backend/functions/keepflip-subscription-police` with an Appwrite server key that can read `user_subscription` and write `seller_quotas`.
+
+Set these operator-only variables in the PowerShell session:
+
+~~~text
+APPWRITE_ENDPOINT=https://sfo.cloud.appwrite.io/v1
+APPWRITE_FUNCTION_PROJECT_ID=<your project ID>
+APPWRITE_API_KEY=<temporary server key>
+APPWRITE_DATABASE_ID=keepflip
+APPWRITE_USER_SUBSCRIPTIONS_TABLE_ID=user_subscription
+APPWRITE_SELLER_QUOTAS_TABLE_ID=seller_quotas
+~~~
+
+Then run:
+
+~~~text
+node scripts/initialize-quota-state.mjs
+~~~
+
+The script is idempotent. It creates missing state rows and skips rows that already exist. The state payload starts with `ready: true`, `activeListings: 0`, `aiValuations: 0`, and the current UTC `month`. If a state row is missing or malformed after deployment, the Function returns `QUOTAS_NOT_INITIALIZED` rather than guessing usage.
+
+The active AI provider is the existing `ebay_sold_comps_v2` Function:
+
+- `SELLER_AI_MARKET_FUNCTION_ID=ebay_sold_comps_v2`
+- `EXPO_PUBLIC_APPWRITE_MARKET_COMPS_FUNCTION_ID=ebay_sold_comps_v2`
+- `EXPO_PUBLIC_APPWRITE_EBAY_SOLD_COMPS_FUNCTION_ID=ebay_sold_comps_v2`
+
+`keepflip_item_ai` is not part of the active identification flow and is not required for this rollout.
+
+## 6. Listing quota server bridge
 
 The current eBay backend already requires:
 
@@ -108,7 +161,7 @@ The current eBay backend already requires:
 
 Publishing reserves `listing.reserve` before any new eBay listing write. Keep concurrent active-listing limits and monthly publish quotas as separate counters. The current plan configuration intentionally leaves `monthlyPublishQuota` null until product policy chooses a monthly number.
 
-## 6. Subscription boundaries
+## 7. Subscription boundaries
 
 Universal:
 - listing readiness for one listing
@@ -131,14 +184,15 @@ Serious:
 
 All marketplace writes, eBay tokens, buyer-sensitive fields, marketplace event ingestion, quota decisions, and automation entitlement decisions stay inside Appwrite Functions.
 
-## 7. Rollout order
+## 8. Rollout order
 
 1. Create/verify the item columns above.
 2. Create `seller_orders`.
-3. Verify the server-only shipment operation table.
-4. Add `marketplace_events` before enabling webhook/order persistence.
-5. Deploy the eBay backend with the required table IDs and quota secret.
-6. Add `EXPO_PUBLIC_APPWRITE_SELLER_ORDERS_TABLE_ID` to the mobile build.
-7. Test Hobbyist manual sale -> manual ship -> Books result.
-8. Test Serious eBay order sync -> ship -> Money Sync -> realized-margin result.
-9. Only after listing state is reliable, enable automatic cross-channel reservation/delisting.
+3. Create `ebay_shipment_operations` with the server-only permissions above.
+4. Create `seller_quotas` and run `initialize-quota-state.mjs`.
+5. Add `marketplace_events` before enabling webhook/order persistence.
+6. Deploy the subscription police and eBay Functions with the required table IDs and quota secret.
+7. Add `EXPO_PUBLIC_APPWRITE_SELLER_ORDERS_TABLE_ID` to the mobile build.
+8. Test Hobbyist manual sale -> manual ship -> Books result.
+9. Test Serious eBay order sync -> ship -> Money Sync -> realized-margin result.
+10. Only after listing state is reliable, enable automatic cross-channel reservation/delisting.

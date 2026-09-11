@@ -7,6 +7,65 @@ import {
   TablesDB,
   Messaging,
 } from 'react-native-appwrite';
+import { Platform } from 'react-native';
+
+type NativeLocalStorageFallback = {
+  readonly length: number;
+  clear: () => void;
+  getItem: (key: string) => null;
+  key: (index: number) => null;
+  removeItem: (key: string) => void;
+  setItem: (key: string, value: string) => void;
+};
+
+/**
+ * react-native-appwrite's Realtime connected-message fallback still probes
+ * window.localStorage before it knows whether a native session cookie is
+ * needed. React Native has no browser localStorage, so that probe otherwise
+ * logs `Cannot read property 'getItem' of undefined` on every connection.
+ *
+ * This deliberately does not persist anything. Native authentication remains
+ * owned by the Appwrite SDK, while this empty adapter lets the SDK skip its
+ * browser-only cookie fallback safely.
+ */
+function installNativeAppwriteStorageFallback() {
+  if (Platform.OS === 'web') return;
+
+  const runtime = globalThis as unknown as {
+    window?: {
+      localStorage?: NativeLocalStorageFallback;
+    };
+  };
+  const runtimeWindow = runtime.window;
+  if (!runtimeWindow || runtimeWindow.localStorage) return;
+
+  const emptyStorage: NativeLocalStorageFallback = {
+    length: 0,
+    clear: () => undefined,
+    getItem: () => null,
+    key: () => null,
+    removeItem: () => undefined,
+    setItem: () => undefined,
+  };
+
+  try {
+    Object.defineProperty(runtimeWindow, 'localStorage', {
+      configurable: true,
+      enumerable: false,
+      value: emptyStorage,
+    });
+  } catch {
+    // Some development runtimes expose a non-extensible window object.
+    try {
+      runtimeWindow.localStorage = emptyStorage;
+    } catch {
+      // The SDK's Realtime subscription remains optional; do not fail app
+      // startup if this runtime refuses the compatibility property.
+    }
+  }
+}
+
+installNativeAppwriteStorageFallback();
 
 export {
   Channel,

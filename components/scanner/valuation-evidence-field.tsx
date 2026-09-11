@@ -6,7 +6,7 @@ import type {
   AnalysisValuationReadiness,
 } from "@/components/scanner/analysis-visual-types";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
-import { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
+import { responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export type ValuationEvidenceFieldProps = {
@@ -47,33 +47,34 @@ export function ValuationEvidenceField({
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  root: {
-    ...StyleSheet.absoluteFill,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: theme.colors.backgroundDeep,
-    experimental_backgroundImage: `
+  const { responsiveWidth, responsiveHeight } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    root: {
+      ...StyleSheet.absoluteFill,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.colors.backgroundDeep,
+      experimental_backgroundImage: `
       radial-gradient(circle at 50% 36%, rgba(88, 223, 232, 0.12) 0%, transparent 42%),
       linear-gradient(160deg, #07050C 0%, ${theme.colors.backgroundDeep} 100%)
     `,
-  },
-  core: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 1,
-    backgroundColor: "rgba(0, 255, 255, 0.06)",
-  },
-});
+    },
+    core: {
+      width: 120,
+      height: 120,
+      borderRadius: 60,
+      borderWidth: 1,
+      backgroundColor: "rgba(0, 255, 255, 0.06)",
+    },
+  });
   return {
     ...staticStyles,
-  core: [
-    staticStyles.core,
-    {
-        width: responsiveLayout.responsiveWidth(120),
-        height: responsiveLayout.responsiveHeight(120),
-    },
-  ],
+    core: [
+      staticStyles.core,
+      {
+        width: responsiveWidth(120),
+        height: responsiveHeight(120),
+      },
+    ],
   };
 }

@@ -177,264 +177,265 @@ export function hasBooksRecordsProjection(result: ItemAnalysisResult) {
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  compactSection: {
-    marginTop: 6,
-    paddingTop: 7,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(255,255,255,0.14)",
-  },
-  compactHeader: {
-    minHeight: 15,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-  },
-  compactEyebrow: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 0.9,
-  },
-  compactTag: {
-    color: theme.colors.goldBright,
-    fontFamily: theme.fonts.radar,
-    fontSize: 7,
-    fontWeight: "900",
-    letterSpacing: 0.65,
-  },
-  compactMetrics: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 7,
-  },
-  compactMetric: {
-    flex: 1,
-    minWidth: 0,
-    gap: 2,
-  },
-  compactLabel: {
-    color: "rgba(255,255,255,0.48)",
-    fontFamily: theme.fonts.radar,
-    fontSize: 7,
-    fontWeight: "900",
-    letterSpacing: 0.38,
-  },
-  compactValue: {
-    color: theme.colors.text,
-    fontFamily: theme.fonts.radar,
-    fontSize: 10,
-    fontWeight: "900",
-    fontVariant: ["tabular-nums"],
-  },
-  compactPendingValue: {
-    color: theme.colors.goldBright,
-    fontSize: 8,
-  },
-  section: {
-    marginTop: 8,
-    paddingTop: 10,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(255,255,255,0.14)",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  headerCopy: { flex: 1, gap: 3 },
-  eyebrow: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 9,
-    fontWeight: "900",
-    letterSpacing: 1.1,
-  },
-  title: {
-    color: theme.colors.text,
-    fontFamily: theme.fonts.radar,
-    fontSize: 12,
-    fontWeight: "900",
-    letterSpacing: 0.9,
-  },
-  estimateTag: {
-    paddingHorizontal: 7,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: "rgba(242,211,138,0.44)",
-  },
-  estimateTagText: {
-    color: theme.colors.goldBright,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 0.7,
-  },
-  description: {
-    marginTop: 6,
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.body,
-    fontSize: 11,
-    lineHeight: 16,
-  },
-  rows: {
-    marginTop: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(255,255,255,0.10)",
-  },
-  row: {
-    minHeight: 30,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(255,255,255,0.10)",
-  },
-  label: {
-    flex: 1,
-    color: "rgba(255,255,255,0.54)",
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 0.55,
-  },
-  value: {
-    maxWidth: "65%",
-    color: theme.colors.text,
-    fontFamily: theme.fonts.radar,
-    fontSize: 11,
-    fontWeight: "900",
-    fontVariant: ["tabular-nums"],
-    textAlign: "right",
-  },
-  pendingValue: { color: theme.colors.goldBright, fontSize: 9 },
-  action: {
-    minHeight: 36,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 7,
-    marginTop: 10,
-    borderWidth: 1,
-    borderColor: "rgba(0,255,255,0.42)",
-    backgroundColor: "rgba(0,255,255,0.06)",
-  },
-  actionText: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 9,
-    fontWeight: "900",
-    letterSpacing: 0.8,
-  },
-  actionArrow: {
-    color: theme.colors.scannerCyan,
-    fontSize: 20,
-    fontWeight: "300",
-    lineHeight: 18,
-  },
-  savedHint: {
-    marginTop: 9,
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.body,
-    fontSize: 11,
-  },
-  pressed: { opacity: 0.72 },
-});
+  const { responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    compactSection: {
+      marginTop: 6,
+      paddingTop: 7,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: "rgba(255,255,255,0.14)",
+    },
+    compactHeader: {
+      minHeight: 15,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 10,
+    },
+    compactEyebrow: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: "900",
+      letterSpacing: 0.9,
+    },
+    compactTag: {
+      color: theme.colors.goldBright,
+      fontFamily: theme.fonts.radar,
+      fontSize: 7,
+      fontWeight: "900",
+      letterSpacing: 0.65,
+    },
+    compactMetrics: {
+      flexDirection: "row",
+      gap: 8,
+      marginTop: 7,
+    },
+    compactMetric: {
+      flex: 1,
+      minWidth: 0,
+      gap: 2,
+    },
+    compactLabel: {
+      color: "rgba(255,255,255,0.48)",
+      fontFamily: theme.fonts.radar,
+      fontSize: 7,
+      fontWeight: "900",
+      letterSpacing: 0.38,
+    },
+    compactValue: {
+      color: theme.colors.text,
+      fontFamily: theme.fonts.radar,
+      fontSize: 10,
+      fontWeight: "900",
+      fontVariant: ["tabular-nums"],
+    },
+    compactPendingValue: {
+      color: theme.colors.goldBright,
+      fontSize: 8,
+    },
+    section: {
+      marginTop: 8,
+      paddingTop: 10,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: "rgba(255,255,255,0.14)",
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 12,
+    },
+    headerCopy: { flex: 1, gap: 3 },
+    eyebrow: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 9,
+      fontWeight: "900",
+      letterSpacing: 1.1,
+    },
+    title: {
+      color: theme.colors.text,
+      fontFamily: theme.fonts.radar,
+      fontSize: 12,
+      fontWeight: "900",
+      letterSpacing: 0.9,
+    },
+    estimateTag: {
+      paddingHorizontal: 7,
+      paddingVertical: 4,
+      borderWidth: 1,
+      borderColor: "rgba(242,211,138,0.44)",
+    },
+    estimateTagText: {
+      color: theme.colors.goldBright,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: "900",
+      letterSpacing: 0.7,
+    },
+    description: {
+      marginTop: 6,
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.body,
+      fontSize: 11,
+      lineHeight: 16,
+    },
+    rows: {
+      marginTop: 8,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: "rgba(255,255,255,0.10)",
+    },
+    row: {
+      minHeight: 30,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 12,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: "rgba(255,255,255,0.10)",
+    },
+    label: {
+      flex: 1,
+      color: "rgba(255,255,255,0.54)",
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: "900",
+      letterSpacing: 0.55,
+    },
+    value: {
+      maxWidth: "65%",
+      color: theme.colors.text,
+      fontFamily: theme.fonts.radar,
+      fontSize: 11,
+      fontWeight: "900",
+      fontVariant: ["tabular-nums"],
+      textAlign: "right",
+    },
+    pendingValue: { color: theme.colors.goldBright, fontSize: 9 },
+    action: {
+      minHeight: 36,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 7,
+      marginTop: 10,
+      borderWidth: 1,
+      borderColor: "rgba(0,255,255,0.42)",
+      backgroundColor: "rgba(0,255,255,0.06)",
+    },
+    actionText: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 9,
+      fontWeight: "900",
+      letterSpacing: 0.8,
+    },
+    actionArrow: {
+      color: theme.colors.scannerCyan,
+      fontSize: 20,
+      fontWeight: "300",
+      lineHeight: 18,
+    },
+    savedHint: {
+      marginTop: 9,
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.body,
+      fontSize: 11,
+    },
+    pressed: { opacity: 0.72 },
+  });
   return {
     ...staticStyles,
-  compactEyebrow: [
-    staticStyles.compactEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  compactTag: [
-    staticStyles.compactTag,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  compactLabel: [
-    staticStyles.compactLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  compactValue: [
-    staticStyles.compactValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  compactPendingValue: [
-    staticStyles.compactPendingValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  eyebrow: [
-    staticStyles.eyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  title: [
-    staticStyles.title,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  estimateTagText: [
-    staticStyles.estimateTagText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  description: [
-    staticStyles.description,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  label: [
-    staticStyles.label,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  value: [
-    staticStyles.value,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  pendingValue: [
-    staticStyles.pendingValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  actionText: [
-    staticStyles.actionText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  actionArrow: [
-    staticStyles.actionArrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(20),
-    },
-  ],
-  savedHint: [
-    staticStyles.savedHint,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
+    compactEyebrow: [
+      staticStyles.compactEyebrow,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    compactTag: [
+      staticStyles.compactTag,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    compactLabel: [
+      staticStyles.compactLabel,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    compactValue: [
+      staticStyles.compactValue,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    compactPendingValue: [
+      staticStyles.compactPendingValue,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    eyebrow: [
+      staticStyles.eyebrow,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    title: [
+      staticStyles.title,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    estimateTagText: [
+      staticStyles.estimateTagText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    description: [
+      staticStyles.description,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    label: [
+      staticStyles.label,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    value: [
+      staticStyles.value,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    pendingValue: [
+      staticStyles.pendingValue,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    actionText: [
+      staticStyles.actionText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    actionArrow: [
+      staticStyles.actionArrow,
+      {
+        fontSize: responsiveFont(20),
+      },
+    ],
+    savedHint: [
+      staticStyles.savedHint,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
   };
 }

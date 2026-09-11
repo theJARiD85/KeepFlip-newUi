@@ -31,7 +31,7 @@ import {
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
+import { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 const MIN_DETECTION_SCORE = 0.48;
@@ -1042,639 +1042,640 @@ export function ValueRadarOverlay({
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  overlayRoot: {
-    ...StyleSheet.absoluteFill,
-    bottom: 40
-  },
-  statusModule: {
-    position: "absolute",
-    minHeight: 48,
-    paddingHorizontal: 11,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(88, 223, 232, 0.34)",
-    backgroundColor: "rgba(3, 7, 12, 0.88)",
-    experimental_backgroundImage: `
+  const { responsiveWidth, responsiveHeight, responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    overlayRoot: {
+      ...StyleSheet.absoluteFill,
+      bottom: 40
+    },
+    statusModule: {
+      position: "absolute",
+      minHeight: 48,
+      paddingHorizontal: 11,
+      paddingVertical: 8,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: "rgba(88, 223, 232, 0.34)",
+      backgroundColor: "rgba(3, 7, 12, 0.88)",
+      experimental_backgroundImage: `
       radial-gradient(circle at 100% 0%, rgba(141, 114, 255, 0.18) 0%, transparent 48%),
       linear-gradient(110deg, rgba(88, 223, 232, 0.09) 0%, rgba(4, 6, 11, 0.02) 48%)
     `,
-    boxShadow:
-      "0 0 24px rgba(88, 223, 232, 0.12), 0 7px 20px rgba(0, 0, 0, 0.36)",
-    gap: 5,
-  },
-  statusModuleError: {
-    borderColor: "rgba(232, 97, 88, 0.48)",
-  },
-  statusAccent: {
-    position: "absolute",
-    top: 7,
-    bottom: 7,
-    left: 0,
-    width: 2,
-    borderRadius: 2,
-    backgroundColor: theme.colors.scannerCyan,
-    boxShadow: "0 0 8px rgba(88, 223, 232, 0.82)",
-  },
-  statusAccentLoading: {
-    backgroundColor: theme.colors.goldBright,
-  },
-  statusAccentError: {
-    backgroundColor: theme.colors.danger,
-    boxShadow: "0 0 8px rgba(232, 97, 88, 0.72)",
-  },
-  statusHeading: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-  statusPulse: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: theme.colors.scannerCyan,
-    boxShadow: "0 0 8px rgba(88, 223, 232, 0.88)",
-  },
-  statusPulseLoading: {
-    backgroundColor: theme.colors.goldBright,
-    boxShadow: "0 0 8px rgba(242, 211, 138, 0.72)",
-  },
-  statusPulseError: {
-    backgroundColor: theme.colors.danger,
-    boxShadow: "none",
-  },
-  statusName: {
-    color: theme.colors.text,
-    fontFamily: theme.fonts.radar,
-    fontSize: 9,
-    lineHeight: 11,
-    letterSpacing: 1.2,
-  },
-  statusSeparator: {
-    color: "rgba(141, 114, 255, 0.78)",
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    lineHeight: 10,
-  },
-  statusState: {
-    marginLeft: "auto",
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    lineHeight: 10,
-    letterSpacing: 0.9,
-  },
-  statusStateLoading: {
-    color: theme.colors.goldBright,
-  },
-  statusStateError: {
-    color: theme.colors.danger,
-  },
-  statusFooter: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 7,
-  },
-  statusMeta: {
-    flex: 1,
-    minWidth: 0,
-    color: "rgba(247, 242, 232, 0.52)",
-    fontFamily: theme.fonts.radar,
-    fontSize: 6.5,
-    lineHeight: 8,
-    letterSpacing: 0.72,
-  },
-  signalBars: {
-    height: 10,
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 2,
-  },
-  signalBar: {
-    width: 2,
-    borderRadius: 1,
-    backgroundColor: theme.colors.scannerCyan,
-  },
-  signalBarLow: {
-    height: 3,
-    opacity: 0.4,
-  },
-  signalBarMid: {
-    height: 6,
-    opacity: 0.66,
-  },
-  signalBarHigh: {
-    height: 9,
-  },
-  signalBarError: {
-    backgroundColor: theme.colors.danger,
-  },
-  acquisitionRail: {
-    position: "absolute",
-    minHeight: 22,
-    paddingHorizontal: 6,
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderColor: "rgba(88, 223, 232, 0.34)",
-    backgroundColor: "rgba(2, 5, 9, 0.58)",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-  },
-  acquisitionRailError: {
-    borderColor: "rgba(232, 97, 88, 0.38)",
-  },
-  acquisitionIndex: {
-    width: 19,
-    height: 14,
-    borderRadius: 3,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(141, 114, 255, 0.16)",
-    borderWidth: 0.5,
-    borderColor: "rgba(141, 114, 255, 0.38)",
-  },
-  acquisitionIndexText: {
-    color: theme.colors.scannerViolet,
-    fontFamily: theme.fonts.radar,
-    fontSize: 7,
-    lineHeight: 9,
-    fontVariant: ["tabular-nums"],
-  },
-  acquisitionTrack: {
-    width: 25,
-    height: 8,
-    justifyContent: "center",
-  },
-  acquisitionTrackLine: {
-    height: 1,
-    backgroundColor: "rgba(88, 223, 232, 0.34)",
-  },
-  acquisitionTrackNode: {
-    position: "absolute",
-    left: 9,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: theme.colors.scannerCyan,
-    boxShadow: "0 0 8px rgba(88, 223, 232, 0.82)",
-  },
-  acquisitionTrackNodeError: {
-    backgroundColor: theme.colors.danger,
-    boxShadow: "none",
-  },
-  acquisitionText: {
-    flex: 1,
-    minWidth: 0,
-    color: "rgba(247, 242, 232, 0.58)",
-    fontFamily: theme.fonts.radar,
-    fontSize: 6.5,
-    lineHeight: 8,
-    letterSpacing: 0.66,
-  },
-  targetHost: {
-    zIndex: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  targetHalo: {
-    ...StyleSheet.absoluteFill,
-    borderRadius: 999,
-    experimental_backgroundImage: `
+      boxShadow:
+        "0 0 24px rgba(88, 223, 232, 0.12), 0 7px 20px rgba(0, 0, 0, 0.36)",
+      gap: 5,
+    },
+    statusModuleError: {
+      borderColor: "rgba(232, 97, 88, 0.48)",
+    },
+    statusAccent: {
+      position: "absolute",
+      top: 7,
+      bottom: 7,
+      left: 0,
+      width: 2,
+      borderRadius: 2,
+      backgroundColor: theme.colors.scannerCyan,
+      boxShadow: "0 0 8px rgba(88, 223, 232, 0.82)",
+    },
+    statusAccentLoading: {
+      backgroundColor: theme.colors.goldBright,
+    },
+    statusAccentError: {
+      backgroundColor: theme.colors.danger,
+      boxShadow: "0 0 8px rgba(232, 97, 88, 0.72)",
+    },
+    statusHeading: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+    },
+    statusPulse: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: theme.colors.scannerCyan,
+      boxShadow: "0 0 8px rgba(88, 223, 232, 0.88)",
+    },
+    statusPulseLoading: {
+      backgroundColor: theme.colors.goldBright,
+      boxShadow: "0 0 8px rgba(242, 211, 138, 0.72)",
+    },
+    statusPulseError: {
+      backgroundColor: theme.colors.danger,
+      boxShadow: "none",
+    },
+    statusName: {
+      color: theme.colors.text,
+      fontFamily: theme.fonts.radar,
+      fontSize: 9,
+      lineHeight: 11,
+      letterSpacing: 1.2,
+    },
+    statusSeparator: {
+      color: "rgba(141, 114, 255, 0.78)",
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      lineHeight: 10,
+    },
+    statusState: {
+      marginLeft: "auto",
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      lineHeight: 10,
+      letterSpacing: 0.9,
+    },
+    statusStateLoading: {
+      color: theme.colors.goldBright,
+    },
+    statusStateError: {
+      color: theme.colors.danger,
+    },
+    statusFooter: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      gap: 7,
+    },
+    statusMeta: {
+      flex: 1,
+      minWidth: 0,
+      color: "rgba(247, 242, 232, 0.52)",
+      fontFamily: theme.fonts.radar,
+      fontSize: 6.5,
+      lineHeight: 8,
+      letterSpacing: 0.72,
+    },
+    signalBars: {
+      height: 10,
+      flexDirection: "row",
+      alignItems: "flex-end",
+      gap: 2,
+    },
+    signalBar: {
+      width: 2,
+      borderRadius: 1,
+      backgroundColor: theme.colors.scannerCyan,
+    },
+    signalBarLow: {
+      height: 3,
+      opacity: 0.4,
+    },
+    signalBarMid: {
+      height: 6,
+      opacity: 0.66,
+    },
+    signalBarHigh: {
+      height: 9,
+    },
+    signalBarError: {
+      backgroundColor: theme.colors.danger,
+    },
+    acquisitionRail: {
+      position: "absolute",
+      minHeight: 22,
+      paddingHorizontal: 6,
+      borderLeftWidth: 1,
+      borderRightWidth: 1,
+      borderColor: "rgba(88, 223, 232, 0.34)",
+      backgroundColor: "rgba(2, 5, 9, 0.58)",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 7,
+    },
+    acquisitionRailError: {
+      borderColor: "rgba(232, 97, 88, 0.38)",
+    },
+    acquisitionIndex: {
+      width: 19,
+      height: 14,
+      borderRadius: 3,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "rgba(141, 114, 255, 0.16)",
+      borderWidth: 0.5,
+      borderColor: "rgba(141, 114, 255, 0.38)",
+    },
+    acquisitionIndexText: {
+      color: theme.colors.scannerViolet,
+      fontFamily: theme.fonts.radar,
+      fontSize: 7,
+      lineHeight: 9,
+      fontVariant: ["tabular-nums"],
+    },
+    acquisitionTrack: {
+      width: 25,
+      height: 8,
+      justifyContent: "center",
+    },
+    acquisitionTrackLine: {
+      height: 1,
+      backgroundColor: "rgba(88, 223, 232, 0.34)",
+    },
+    acquisitionTrackNode: {
+      position: "absolute",
+      left: 9,
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: theme.colors.scannerCyan,
+      boxShadow: "0 0 8px rgba(88, 223, 232, 0.82)",
+    },
+    acquisitionTrackNodeError: {
+      backgroundColor: theme.colors.danger,
+      boxShadow: "none",
+    },
+    acquisitionText: {
+      flex: 1,
+      minWidth: 0,
+      color: "rgba(247, 242, 232, 0.58)",
+      fontFamily: theme.fonts.radar,
+      fontSize: 6.5,
+      lineHeight: 8,
+      letterSpacing: 0.66,
+    },
+    targetHost: {
+      zIndex: 8,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    targetHalo: {
+      ...StyleSheet.absoluteFill,
+      borderRadius: 999,
+      experimental_backgroundImage: `
       radial-gradient(circle at center, rgba(88, 223, 232, 0.19) 0%, rgba(141, 114, 255, 0.08) 38%, transparent 72%)
     `,
-  },
-  targetOrbit: {
-    position: "absolute",
-    borderRadius: 999,
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: "rgba(141, 114, 255, 0.66)",
-    boxShadow: "0 0 12px rgba(141, 114, 255, 0.18)",
-  },
-  targetInnerRing: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(88, 223, 232, 0.42)",
-    backgroundColor: "rgba(3, 8, 13, 0.16)",
-  },
-  targetCorner: {
-    position: "absolute",
-    width: 25,
-    height: 25,
-    borderColor: theme.colors.scannerCyan,
-  },
-  targetCornerTopLeft: {
-    top: 0,
-    left: 0,
-    borderTopWidth: 2,
-    borderLeftWidth: 2,
-    boxShadow: "-2px -2px 10px rgba(88, 223, 232, 0.34)",
-  },
-  targetCornerTopRight: {
-    top: 0,
-    right: 0,
-    borderTopWidth: 2,
-    borderRightWidth: 2,
-    borderColor: theme.colors.scannerViolet,
-    boxShadow: "2px -2px 10px rgba(141, 114, 255, 0.34)",
-  },
-  targetCornerBottomLeft: {
-    bottom: 0,
-    left: 0,
-    borderBottomWidth: 2,
-    borderLeftWidth: 2,
-    borderColor: theme.colors.goldBright,
-    boxShadow: "-2px 2px 10px rgba(242, 211, 138, 0.26)",
-  },
-  targetCornerBottomRight: {
-    right: 0,
-    bottom: 0,
-    borderRightWidth: 2,
-    borderBottomWidth: 2,
-    boxShadow: "2px 2px 10px rgba(88, 223, 232, 0.34)",
-  },
-  crosshairHorizontal: {
-    position: "absolute",
-    left: "31%",
-    right: "31%",
-    height: 1,
-    backgroundColor: "rgba(88, 223, 232, 0.42)",
-  },
-  crosshairVertical: {
-    position: "absolute",
-    top: "31%",
-    bottom: "31%",
-    width: 1,
-    backgroundColor: "rgba(88, 223, 232, 0.42)",
-  },
-  targetCore: {
-    position: "absolute",
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "rgba(242, 211, 138, 0.64)",
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: "0 0 10px rgba(242, 211, 138, 0.34)",
-  },
-  targetCoreDot: {
-    width: 3,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: theme.colors.goldBright,
-  },
-  targetScanBeam: {
-    position: "absolute",
-    top: 0,
-    right: 5,
-    left: 5,
-    height: 1,
-    backgroundColor: theme.colors.scannerCyan,
-    boxShadow: "0 0 8px rgba(88, 223, 232, 0.82)",
-  },
-  targetId: {
-    position: "absolute",
-    top: 5,
-    left: 6,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderRadius: 3,
-    backgroundColor: "rgba(3, 7, 12, 0.76)",
-    borderWidth: 0.5,
-    borderColor: "rgba(88, 223, 232, 0.34)",
-  },
-  targetIdText: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 6,
-    lineHeight: 7,
-    letterSpacing: 0.6,
-  },
-  markerPanelHost: {
-    position: "absolute",
-    zIndex: 12,
-  },
-  markerPanel: {
-    width: "100%",
-    minHeight: 45,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 9,
-    borderWidth: 1,
-    borderColor: "rgba(88, 223, 232, 0.52)",
-    backgroundColor: "rgba(3, 7, 12, 0.94)",
-    experimental_backgroundImage: `
+    },
+    targetOrbit: {
+      position: "absolute",
+      borderRadius: 999,
+      borderWidth: 1,
+      borderStyle: "dashed",
+      borderColor: "rgba(141, 114, 255, 0.66)",
+      boxShadow: "0 0 12px rgba(141, 114, 255, 0.18)",
+    },
+    targetInnerRing: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: "rgba(88, 223, 232, 0.42)",
+      backgroundColor: "rgba(3, 8, 13, 0.16)",
+    },
+    targetCorner: {
+      position: "absolute",
+      width: 25,
+      height: 25,
+      borderColor: theme.colors.scannerCyan,
+    },
+    targetCornerTopLeft: {
+      top: 0,
+      left: 0,
+      borderTopWidth: 2,
+      borderLeftWidth: 2,
+      boxShadow: "-2px -2px 10px rgba(88, 223, 232, 0.34)",
+    },
+    targetCornerTopRight: {
+      top: 0,
+      right: 0,
+      borderTopWidth: 2,
+      borderRightWidth: 2,
+      borderColor: theme.colors.scannerViolet,
+      boxShadow: "2px -2px 10px rgba(141, 114, 255, 0.34)",
+    },
+    targetCornerBottomLeft: {
+      bottom: 0,
+      left: 0,
+      borderBottomWidth: 2,
+      borderLeftWidth: 2,
+      borderColor: theme.colors.goldBright,
+      boxShadow: "-2px 2px 10px rgba(242, 211, 138, 0.26)",
+    },
+    targetCornerBottomRight: {
+      right: 0,
+      bottom: 0,
+      borderRightWidth: 2,
+      borderBottomWidth: 2,
+      boxShadow: "2px 2px 10px rgba(88, 223, 232, 0.34)",
+    },
+    crosshairHorizontal: {
+      position: "absolute",
+      left: "31%",
+      right: "31%",
+      height: 1,
+      backgroundColor: "rgba(88, 223, 232, 0.42)",
+    },
+    crosshairVertical: {
+      position: "absolute",
+      top: "31%",
+      bottom: "31%",
+      width: 1,
+      backgroundColor: "rgba(88, 223, 232, 0.42)",
+    },
+    targetCore: {
+      position: "absolute",
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: "rgba(242, 211, 138, 0.64)",
+      alignItems: "center",
+      justifyContent: "center",
+      boxShadow: "0 0 10px rgba(242, 211, 138, 0.34)",
+    },
+    targetCoreDot: {
+      width: 3,
+      height: 3,
+      borderRadius: 2,
+      backgroundColor: theme.colors.goldBright,
+    },
+    targetScanBeam: {
+      position: "absolute",
+      top: 0,
+      right: 5,
+      left: 5,
+      height: 1,
+      backgroundColor: theme.colors.scannerCyan,
+      boxShadow: "0 0 8px rgba(88, 223, 232, 0.82)",
+    },
+    targetId: {
+      position: "absolute",
+      top: 5,
+      left: 6,
+      paddingHorizontal: 4,
+      paddingVertical: 2,
+      borderRadius: 3,
+      backgroundColor: "rgba(3, 7, 12, 0.76)",
+      borderWidth: 0.5,
+      borderColor: "rgba(88, 223, 232, 0.34)",
+    },
+    targetIdText: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 6,
+      lineHeight: 7,
+      letterSpacing: 0.6,
+    },
+    markerPanelHost: {
+      position: "absolute",
+      zIndex: 12,
+    },
+    markerPanel: {
+      width: "100%",
+      minHeight: 45,
+      paddingHorizontal: 12,
+      paddingVertical: 9,
+      borderRadius: 9,
+      borderWidth: 1,
+      borderColor: "rgba(88, 223, 232, 0.52)",
+      backgroundColor: "rgba(3, 7, 12, 0.94)",
+      experimental_backgroundImage: `
       radial-gradient(circle at 100% 0%, rgba(141, 114, 255, 0.17) 0%, transparent 44%),
       linear-gradient(115deg, rgba(88, 223, 232, 0.10) 0%, rgba(3, 7, 12, 0.02) 54%)
     `,
-    boxShadow:
-      "0 0 28px rgba(88, 223, 232, 0.18), 0 8px 22px rgba(0, 0, 0, 0.52)",
-    gap: 3,
-  },
-  markerPanelAccent: {
-    position: "absolute",
-    top: 9,
-    bottom: 9,
-    left: 0,
-    width: 2,
-    borderRadius: 2,
-    backgroundColor: theme.colors.scannerCyan,
-    boxShadow: "0 0 8px rgba(88, 223, 232, 0.82)",
-  },
-  markerPanelHeading: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  lockGlyph: {
-    width: 10,
-    height: 10,
-    borderWidth: 1,
-    borderColor: theme.colors.scannerCyan,
-    transform: [{ rotate: "45deg" }],
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: "0 0 7px rgba(88, 223, 232, 0.46)",
-  },
-  lockGlyphCore: {
-    width: 3,
-    height: 3,
-    backgroundColor: theme.colors.goldBright,
-  },
-  markerEyebrow: {
-    flex: 1,
-    minWidth: 0,
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 7.5,
-    lineHeight: 9,
-    letterSpacing: 1.1,
-  },
-  confidencePill: {
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: 3,
-    borderWidth: 0.5,
-    borderColor: "rgba(242, 211, 138, 0.38)",
-    backgroundColor: "rgba(242, 211, 138, 0.08)",
-  },
-  confidenceText: {
-    color: theme.colors.goldBright,
-    fontFamily: theme.fonts.radar,
-    fontSize: 6.5,
-    lineHeight: 8,
-    fontVariant: ["tabular-nums"],
-    letterSpacing: 0.35,
-  },
-  markerLabel: {
-    color: theme.colors.text,
-    fontSize: 17,
-    lineHeight: 21,
-    fontWeight: "800",
-    letterSpacing: -0.25,
-  },
-  markerPanelFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  markerAction: {
-    flex: 1,
-    minWidth: 0,
-    color: "rgba(247, 242, 232, 0.5)",
-    fontFamily: theme.fonts.radar,
-    fontSize: 6.5,
-    lineHeight: 8,
-    letterSpacing: 0.48,
-  },
-  markerChevron: {
-    color: theme.colors.scannerViolet,
-    fontSize: 16,
-    lineHeight: 16,
-    fontWeight: "800",
-  },
-  markerPanelPressed: {
-    opacity: 0.86,
-    transform: [{ scale: 0.985 }],
-  },
-  markerPanelDisabled: {
-    opacity: 0.46,
-  },
-});
+      boxShadow:
+        "0 0 28px rgba(88, 223, 232, 0.18), 0 8px 22px rgba(0, 0, 0, 0.52)",
+      gap: 3,
+    },
+    markerPanelAccent: {
+      position: "absolute",
+      top: 9,
+      bottom: 9,
+      left: 0,
+      width: 2,
+      borderRadius: 2,
+      backgroundColor: theme.colors.scannerCyan,
+      boxShadow: "0 0 8px rgba(88, 223, 232, 0.82)",
+    },
+    markerPanelHeading: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+    lockGlyph: {
+      width: 10,
+      height: 10,
+      borderWidth: 1,
+      borderColor: theme.colors.scannerCyan,
+      transform: [{ rotate: "45deg" }],
+      alignItems: "center",
+      justifyContent: "center",
+      boxShadow: "0 0 7px rgba(88, 223, 232, 0.46)",
+    },
+    lockGlyphCore: {
+      width: 3,
+      height: 3,
+      backgroundColor: theme.colors.goldBright,
+    },
+    markerEyebrow: {
+      flex: 1,
+      minWidth: 0,
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 7.5,
+      lineHeight: 9,
+      letterSpacing: 1.1,
+    },
+    confidencePill: {
+      paddingHorizontal: 5,
+      paddingVertical: 2,
+      borderRadius: 3,
+      borderWidth: 0.5,
+      borderColor: "rgba(242, 211, 138, 0.38)",
+      backgroundColor: "rgba(242, 211, 138, 0.08)",
+    },
+    confidenceText: {
+      color: theme.colors.goldBright,
+      fontFamily: theme.fonts.radar,
+      fontSize: 6.5,
+      lineHeight: 8,
+      fontVariant: ["tabular-nums"],
+      letterSpacing: 0.35,
+    },
+    markerLabel: {
+      color: theme.colors.text,
+      fontSize: 17,
+      lineHeight: 21,
+      fontWeight: "800",
+      letterSpacing: -0.25,
+    },
+    markerPanelFooter: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+    },
+    markerAction: {
+      flex: 1,
+      minWidth: 0,
+      color: "rgba(247, 242, 232, 0.5)",
+      fontFamily: theme.fonts.radar,
+      fontSize: 6.5,
+      lineHeight: 8,
+      letterSpacing: 0.48,
+    },
+    markerChevron: {
+      color: theme.colors.scannerViolet,
+      fontSize: 16,
+      lineHeight: 16,
+      fontWeight: "800",
+    },
+    markerPanelPressed: {
+      opacity: 0.86,
+      transform: [{ scale: 0.985 }],
+    },
+    markerPanelDisabled: {
+      opacity: 0.46,
+    },
+  });
   return {
     ...staticStyles,
-  statusAccent: [
-    staticStyles.statusAccent,
-    {
-        width: responsiveLayout.responsiveWidth(2),
-    },
-  ],
-  statusPulse: [
-    staticStyles.statusPulse,
-    {
-        width: responsiveLayout.responsiveWidth(6),
-        height: responsiveLayout.responsiveHeight(6),
-    },
-  ],
-  statusName: [
-    staticStyles.statusName,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  statusSeparator: [
-    staticStyles.statusSeparator,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  statusState: [
-    staticStyles.statusState,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  statusMeta: [
-    staticStyles.statusMeta,
-    {
-        fontSize: responsiveLayout.responsiveFont(6.5),
-    },
-  ],
-  signalBars: [
-    staticStyles.signalBars,
-    {
-        height: responsiveLayout.responsiveHeight(10),
-    },
-  ],
-  signalBar: [
-    staticStyles.signalBar,
-    {
-        width: responsiveLayout.responsiveWidth(2),
-    },
-  ],
-  signalBarLow: [
-    staticStyles.signalBarLow,
-    {
-        height: responsiveLayout.responsiveHeight(3),
-    },
-  ],
-  signalBarMid: [
-    staticStyles.signalBarMid,
-    {
-        height: responsiveLayout.responsiveHeight(6),
-    },
-  ],
-  signalBarHigh: [
-    staticStyles.signalBarHigh,
-    {
-        height: responsiveLayout.responsiveHeight(9),
-    },
-  ],
-  acquisitionIndex: [
-    staticStyles.acquisitionIndex,
-    {
-        width: responsiveLayout.responsiveWidth(19),
-        height: responsiveLayout.responsiveHeight(14),
-    },
-  ],
-  acquisitionIndexText: [
-    staticStyles.acquisitionIndexText,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  acquisitionTrack: [
-    staticStyles.acquisitionTrack,
-    {
-        width: responsiveLayout.responsiveWidth(25),
-        height: responsiveLayout.responsiveHeight(8),
-    },
-  ],
-  acquisitionTrackLine: [
-    staticStyles.acquisitionTrackLine,
-    {
-        height: responsiveLayout.responsiveHeight(1),
-    },
-  ],
-  acquisitionTrackNode: [
-    staticStyles.acquisitionTrackNode,
-    {
-        width: responsiveLayout.responsiveWidth(6),
-        height: responsiveLayout.responsiveHeight(6),
-    },
-  ],
-  acquisitionText: [
-    staticStyles.acquisitionText,
-    {
-        fontSize: responsiveLayout.responsiveFont(6.5),
-    },
-  ],
-  targetInnerRing: [
-    staticStyles.targetInnerRing,
-    {
-        width: responsiveLayout.responsiveWidth(32),
-        height: responsiveLayout.responsiveHeight(32),
-    },
-  ],
-  targetCorner: [
-    staticStyles.targetCorner,
-    {
-        width: responsiveLayout.responsiveWidth(25),
-        height: responsiveLayout.responsiveHeight(25),
-    },
-  ],
-  crosshairHorizontal: [
-    staticStyles.crosshairHorizontal,
-    {
-        height: responsiveLayout.responsiveHeight(1),
-    },
-  ],
-  crosshairVertical: [
-    staticStyles.crosshairVertical,
-    {
-        width: responsiveLayout.responsiveWidth(1),
-    },
-  ],
-  targetCore: [
-    staticStyles.targetCore,
-    {
-        width: responsiveLayout.responsiveWidth(12),
-        height: responsiveLayout.responsiveHeight(12),
-    },
-  ],
-  targetCoreDot: [
-    staticStyles.targetCoreDot,
-    {
-        width: responsiveLayout.responsiveWidth(3),
-        height: responsiveLayout.responsiveHeight(3),
-    },
-  ],
-  targetScanBeam: [
-    staticStyles.targetScanBeam,
-    {
-        height: responsiveLayout.responsiveHeight(1),
-    },
-  ],
-  targetIdText: [
-    staticStyles.targetIdText,
-    {
-        fontSize: responsiveLayout.responsiveFont(6),
-    },
-  ],
-  markerPanelAccent: [
-    staticStyles.markerPanelAccent,
-    {
-        width: responsiveLayout.responsiveWidth(2),
-    },
-  ],
-  lockGlyph: [
-    staticStyles.lockGlyph,
-    {
-        width: responsiveLayout.responsiveWidth(10),
-        height: responsiveLayout.responsiveHeight(10),
-    },
-  ],
-  lockGlyphCore: [
-    staticStyles.lockGlyphCore,
-    {
-        width: responsiveLayout.responsiveWidth(3),
-        height: responsiveLayout.responsiveHeight(3),
-    },
-  ],
-  markerEyebrow: [
-    staticStyles.markerEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(7.5),
-    },
-  ],
-  confidenceText: [
-    staticStyles.confidenceText,
-    {
-        fontSize: responsiveLayout.responsiveFont(6.5),
-    },
-  ],
-  markerLabel: [
-    staticStyles.markerLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(17),
-    },
-  ],
-  markerAction: [
-    staticStyles.markerAction,
-    {
-        fontSize: responsiveLayout.responsiveFont(6.5),
-    },
-  ],
-  markerChevron: [
-    staticStyles.markerChevron,
-    {
-        fontSize: responsiveLayout.responsiveFont(16),
-    },
-  ],
+    statusAccent: [
+      staticStyles.statusAccent,
+      {
+        width: responsiveWidth(2),
+      },
+    ],
+    statusPulse: [
+      staticStyles.statusPulse,
+      {
+        width: responsiveWidth(6),
+        height: responsiveHeight(6),
+      },
+    ],
+    statusName: [
+      staticStyles.statusName,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    statusSeparator: [
+      staticStyles.statusSeparator,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    statusState: [
+      staticStyles.statusState,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    statusMeta: [
+      staticStyles.statusMeta,
+      {
+        fontSize: responsiveFont(6.5),
+      },
+    ],
+    signalBars: [
+      staticStyles.signalBars,
+      {
+        height: responsiveHeight(10),
+      },
+    ],
+    signalBar: [
+      staticStyles.signalBar,
+      {
+        width: responsiveWidth(2),
+      },
+    ],
+    signalBarLow: [
+      staticStyles.signalBarLow,
+      {
+        height: responsiveHeight(3),
+      },
+    ],
+    signalBarMid: [
+      staticStyles.signalBarMid,
+      {
+        height: responsiveHeight(6),
+      },
+    ],
+    signalBarHigh: [
+      staticStyles.signalBarHigh,
+      {
+        height: responsiveHeight(9),
+      },
+    ],
+    acquisitionIndex: [
+      staticStyles.acquisitionIndex,
+      {
+        width: responsiveWidth(19),
+        height: responsiveHeight(14),
+      },
+    ],
+    acquisitionIndexText: [
+      staticStyles.acquisitionIndexText,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    acquisitionTrack: [
+      staticStyles.acquisitionTrack,
+      {
+        width: responsiveWidth(25),
+        height: responsiveHeight(8),
+      },
+    ],
+    acquisitionTrackLine: [
+      staticStyles.acquisitionTrackLine,
+      {
+        height: responsiveHeight(1),
+      },
+    ],
+    acquisitionTrackNode: [
+      staticStyles.acquisitionTrackNode,
+      {
+        width: responsiveWidth(6),
+        height: responsiveHeight(6),
+      },
+    ],
+    acquisitionText: [
+      staticStyles.acquisitionText,
+      {
+        fontSize: responsiveFont(6.5),
+      },
+    ],
+    targetInnerRing: [
+      staticStyles.targetInnerRing,
+      {
+        width: responsiveWidth(32),
+        height: responsiveHeight(32),
+      },
+    ],
+    targetCorner: [
+      staticStyles.targetCorner,
+      {
+        width: responsiveWidth(25),
+        height: responsiveHeight(25),
+      },
+    ],
+    crosshairHorizontal: [
+      staticStyles.crosshairHorizontal,
+      {
+        height: responsiveHeight(1),
+      },
+    ],
+    crosshairVertical: [
+      staticStyles.crosshairVertical,
+      {
+        width: responsiveWidth(1),
+      },
+    ],
+    targetCore: [
+      staticStyles.targetCore,
+      {
+        width: responsiveWidth(12),
+        height: responsiveHeight(12),
+      },
+    ],
+    targetCoreDot: [
+      staticStyles.targetCoreDot,
+      {
+        width: responsiveWidth(3),
+        height: responsiveHeight(3),
+      },
+    ],
+    targetScanBeam: [
+      staticStyles.targetScanBeam,
+      {
+        height: responsiveHeight(1),
+      },
+    ],
+    targetIdText: [
+      staticStyles.targetIdText,
+      {
+        fontSize: responsiveFont(6),
+      },
+    ],
+    markerPanelAccent: [
+      staticStyles.markerPanelAccent,
+      {
+        width: responsiveWidth(2),
+      },
+    ],
+    lockGlyph: [
+      staticStyles.lockGlyph,
+      {
+        width: responsiveWidth(10),
+        height: responsiveHeight(10),
+      },
+    ],
+    lockGlyphCore: [
+      staticStyles.lockGlyphCore,
+      {
+        width: responsiveWidth(3),
+        height: responsiveHeight(3),
+      },
+    ],
+    markerEyebrow: [
+      staticStyles.markerEyebrow,
+      {
+        fontSize: responsiveFont(7.5),
+      },
+    ],
+    confidenceText: [
+      staticStyles.confidenceText,
+      {
+        fontSize: responsiveFont(6.5),
+      },
+    ],
+    markerLabel: [
+      staticStyles.markerLabel,
+      {
+        fontSize: responsiveFont(17),
+      },
+    ],
+    markerAction: [
+      staticStyles.markerAction,
+      {
+        fontSize: responsiveFont(6.5),
+      },
+    ],
+    markerChevron: [
+      staticStyles.markerChevron,
+      {
+        fontSize: responsiveFont(16),
+      },
+    ],
   };
 }

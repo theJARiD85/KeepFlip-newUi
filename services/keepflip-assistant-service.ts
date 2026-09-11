@@ -47,7 +47,6 @@ export type AssistantActionRun = {
 export type AssistantRoute =
   | '/scanner'
   | '/inventory'
-  | '/deal-shelf'
   | '/command-center'
   | '/books'
   | '/flip-plan'
@@ -59,7 +58,6 @@ export type AssistantRoute =
 const ASSISTANT_NAVIGATION_ROUTES: ReadonlySet<AssistantRoute> = new Set([
   '/scanner',
   '/inventory',
-  '/deal-shelf',
   '/command-center',
   '/books',
   '/flip-plan',
@@ -739,9 +737,6 @@ export function parseAssistantCommand(input: string): ParsedAssistantCommand {
   if (lower.includes('open books') || lower.includes('open reports')) {
     return { type: 'navigate', route: '/books' };
   }
-  if (lower.includes('open deal shelf') || lower.includes('open deals')) {
-    return { type: 'navigate', route: '/deal-shelf' };
-  }
   if (
     lower.includes('open flip plan') ||
     lower.includes('open the flip plan') ||
@@ -896,7 +891,6 @@ function localAssistantReply(
     const labels: Record<AssistantRoute, string> = {
       '/scanner': 'Scanner',
       '/inventory': 'inventory',
-      '/deal-shelf': 'Deal Shelf',
       '/command-center': 'Command Center',
       '/books': 'Books',
       '/flip-plan': 'Flip Plan',

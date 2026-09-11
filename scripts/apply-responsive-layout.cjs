@@ -317,9 +317,9 @@ function containingFunction(functions, node) {
 }
 
 function isPageFunction(functionInfo) {
-  // Route files can contain reusable children (for example DealCard inside
-  // deal-shelf.tsx). Restrict the default typography pass to the page-like
-  // function itself; --all-text is the opt-in escape hatch for child views.
+  // Route files can contain reusable children. Restrict the default typography
+  // pass to the page-like function itself; --all-text is the opt-in escape
+  // hatch for child views.
   return PAGE_FUNCTION_PATTERN.test(functionInfo.name);
 }
 

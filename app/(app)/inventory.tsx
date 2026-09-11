@@ -1,3 +1,18 @@
+import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
+import { InventoryCard } from "@/components/inventory/inventory-card";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { KeepFlipBackground } from "@/components/ui/keepflip-background";
+import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
+import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { useResponsiveLayout } from "@/hooks/use-responsive-layout";
+import { responsiveWidth } from '@/lib/responsiveFont';
+import {
+  listInventoryItems,
+  type InventoryFlipDecision,
+  type InventoryItem,
+  type InventoryListSort,
+  type InventoryResaleVelocity,
+} from "@/services/inventory-service";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
@@ -10,24 +25,8 @@ import {
   ScrollView,
   StyleSheet,
   View,
+  useWindowDimensions,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
-import { InventoryCard } from "@/components/inventory/inventory-card";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { KeepFlipBackground } from "@/components/ui/keepflip-background";
-import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
-import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
-import { useResponsiveLayout } from "@/hooks/use-responsive-layout";
-import {
-  listInventoryItems,
-  type InventoryFlipDecision,
-  type InventoryItem,
-  type InventoryListSort,
-  type InventoryResaleVelocity,
-} from "@/services/inventory-service";
-import { InstancedMesh } from "three";
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 const CARDS_BETWEEN_ADS = 0;
@@ -43,7 +42,7 @@ const INVENTORY_FEED_PLACEMENTS = [
   "27824954287146084_27824999867141526",
   "27824954287146084_27825000287141484",
   "27824954287146084_27825000503808129",
-  "27824954287146084_27825000743808105",  
+  "27824954287146084_27825000743808105",
 ] as const;
 
 const NATIVE_ADS_SUPPORTED = Platform.OS === "android";
@@ -55,23 +54,23 @@ const DECISION_FILTERS: Array<{
   label: string;
   value?: InventoryFlipDecision;
 }> = [
-  { label: "ALL" },
-  { label: "FLIP", value: "flip" },
-  { label: "CONDITIONAL", value: "conditional_flip" },
-  { label: "AS IS", value: "sell_as_is" },
-  { label: "PART OUT", value: "part_out" },
-  { label: "SKIP", value: "skip" },
-];
+    { label: "ALL" },
+    { label: "FLIP", value: "flip" },
+    { label: "CONDITIONAL", value: "conditional_flip" },
+    { label: "AS IS", value: "sell_as_is" },
+    { label: "PART OUT", value: "part_out" },
+    { label: "SKIP", value: "skip" },
+  ];
 
 const VELOCITY_FILTERS: Array<{
   label: string;
   value?: InventoryResaleVelocity;
 }> = [
-  { label: "ANY SPEED" },
-  { label: "FAST", value: "fast" },
-  { label: "MODERATE", value: "moderate" },
-  { label: "SLOW", value: "slow" },
-];
+    { label: "ANY SPEED" },
+    { label: "FAST", value: "fast" },
+    { label: "MODERATE", value: "moderate" },
+    { label: "SLOW", value: "slow" },
+  ];
 
 const SORT_OPTIONS: Array<{ label: string; value: InventoryListSort }> = [
   { label: "NEWEST", value: "newest" },
@@ -82,10 +81,10 @@ const SORT_OPTIONS: Array<{ label: string; value: InventoryListSort }> = [
 type InventoryFeedRow =
   | { id: string; item: InventoryItem; kind: "item" }
   | {
-      id: string;
-      kind: "native-ad";
-      placement: InventoryFeedPlacement;
-    };
+    id: string;
+    kind: "native-ad";
+    placement: InventoryFeedPlacement;
+  };
 
 function buildInventoryFeed(
   items: InventoryItem[],
@@ -136,9 +135,9 @@ export default function InventoryScreen() {
   const userId = user?.$id;
   const {
     contentWidth, insets, pageGutter, responsiveFont,
-    contentMaxWidth
   } =
     useResponsiveLayout();
+  const { width, height } = useWindowDimensions();
 
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -242,25 +241,26 @@ export default function InventoryScreen() {
 
   return (
     <KeepFlipBackground>
+
       <FlatList
         contentContainerStyle={[styles.content,
-          {
-            paddingBottom: insets.bottom + 28,
-            paddingHorizontal: pageGutter,
-            paddingTop: insets.top / 2,
-          }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
-        style={[styles.list, {marginBottom: insets.bottom, marginTop: insets.top}]}
+        {
+          paddingBottom: insets.bottom + 30,
+          paddingHorizontal: pageGutter,
+          paddingTop: insets.top + 15,
+        }]}
+        style={[styles.list, { marginBottom: insets.bottom, marginTop: insets.top }]}
         data={feedRows}
         keyExtractor={(row) => row.id}
         ListHeaderComponent={
           <View style={[styles.header, { width: contentWidth }]}>
-            <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>YOUR ITEMS</Text>
+            <Text style={[styles.eyebrow, { fontFamily: theme.fonts.display, fontSize: responsiveFont(10) }]}>YOUR ITEMS</Text>
             <Text
-              style={[styles.title, { fontSize: responsiveFont(26) }]}
+              style={[styles.title, {fontFamily: theme.fonts.bold, fontSize: responsiveFont(26), paddingVertical: 7 }]}
             >
               Inventory
             </Text>
-            <Text style={[styles.subtitle, { fontSize: responsiveFont(12)}]}>
+            <Text style={[styles.subtitle, { maxWidth: '90%', fontSize: responsiveFont(12), fontFamily: theme.fonts.display }]}>
               Every saved scan, observed condition, and current market estimate
               in one place.
             </Text>
@@ -292,7 +292,7 @@ export default function InventoryScreen() {
 
             {error ? (
               <View style={styles.errorCard}>
-                <Text selectable style={[styles.errorText, { fontSize: responsiveFont(13)}]}>
+                <Text selectable style={[styles.errorText, { fontSize: responsiveFont(13) }]}>
                   {error}
                 </Text>
                 <Pressable
@@ -321,7 +321,7 @@ export default function InventoryScreen() {
                 />
               </View>
               <Text style={[styles.emptyTitle, { fontSize: responsiveFont(20) }]}>No saved scans yet</Text>
-              <Text style={[styles.emptyBody, { fontSize: responsiveFont(13)}]}>
+              <Text style={[styles.emptyBody, { fontSize: responsiveFont(13) }]}>
                 Complete an item analysis and choose Save to Inventory.
               </Text>
             </View>
@@ -336,7 +336,7 @@ export default function InventoryScreen() {
         }
         renderItem={({ item: row }) =>
           row.kind === "native-ad" ? (
-          null
+            null
           ) : (
             <View style={[styles.feedItem, { width: contentWidth }]}>
               <InventoryCard
@@ -538,354 +538,355 @@ export default function InventoryScreen() {
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  list: {
-    flex: 1,
-  },
-  content: {
-    flexGrow: 1,
-    alignItems: "flex-start",
-    justifyContent: "flex-start"
-  },
-  header: {
-    marginBottom: HEADER_BOTTOM_SPACING,
-  },
-  feedItem: {
-    marginBottom: 14,
-  },
-  eyebrow: {
-    color: theme.colors.gold,
-    fontFamily: theme.fonts.display,
-    fontWeight: "900",
-    letterSpacing: 2.4,
-  },
-  title: {
-    color: theme.colors.cream,
-    fontWeight: "900",
-    letterSpacing: -0.6,
-  },
-  subtitle: {
-    maxWidth: 560,
-    fontFamily: theme.fonts.body,
-    color: theme.colors.textMuted,
-    fontSize: 12,
-    lineHeight: 15,
-  },
-  filterTrigger: {
-    alignItems: "center",
-    alignSelf: "flex-start",
-    borderColor: "rgba(101, 235, 255, 0.38)",
-    borderRadius: theme.radii.medium,
-    borderWidth: StyleSheet.hairlineWidth,
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: "rgba(7, 5, 10, 0.56)",
-  },
-  filterTriggerPressed: {
-    opacity: 0.72,
-  },
-  filterTriggerTitle: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 7,
-  },
-  filterTriggerLabel: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 9,
-    fontWeight: "900",
-    letterSpacing: 0.8,
-  },
-  filterTriggerSummary: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 0.5,
-    maxWidth: 190,
-  },
-  modalBackdrop: {
-    flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(2, 1, 5, 0.72)",
-  },
-  modalDismiss: {
-    ...StyleSheet.absoluteFill,
-  },
-  filterSheet: {
-    maxHeight: "82%",
-    borderTopLeftRadius: theme.radii.large,
-    borderTopRightRadius: theme.radii.large,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(184, 168, 255, 0.32)",
-    paddingHorizontal: 18,
-    paddingTop: 18,
-    backgroundColor: "rgba(15, 11, 24, 0.98)",
-    boxShadow: "0 -12px 36px rgba(0, 0, 0, 0.36)",
-  },
-  filterSheetHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 16,
-  },
-  filterSheetEyebrow: {
-    color: theme.colors.gold,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 1.2,
-  },
-  filterSheetTitle: {
-    color: theme.colors.cream,
-    fontSize: 24,
-    fontWeight: "900",
-    letterSpacing: -0.4,
-  },
-  filterCloseButton: {
-    alignItems: "center",
-    width: 38,
-    height: 38,
-    justifyContent: "center",
-    borderRadius: theme.radii.pill,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(184, 168, 255, 0.28)",
-    backgroundColor: "rgba(184, 168, 255, 0.08)",
-  },
-  filterSheetContent: {
-    gap: 20,
-    paddingBottom: 12,
-  },
-  filterSection: {
-    gap: 8,
-  },
-  controlLabel: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 1.1,
-  },
-  controlOptions: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 7,
-  },
-  controlChip: {
-    borderColor: "rgba(184, 168, 255, 0.23)",
-    borderRadius: theme.radii.pill,
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    backgroundColor: "rgba(7, 5, 10, 0.52)",
-  },
-  controlChipSelected: {
-    borderColor: "rgba(101, 235, 255, 0.65)",
-    backgroundColor: "rgba(40, 205, 229, 0.14)",
-  },
-  controlChipText: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 0.65,
-  },
-  controlChipTextSelected: {
-    color: theme.colors.scannerCyan,
-  },
-  filterActions: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 4,
-  },
-  clearFiltersButton: {
-    alignItems: "center",
-    flex: 1,
-    justifyContent: "center",
-    minHeight: 46,
-    borderRadius: theme.radii.medium,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(184, 168, 255, 0.3)",
-    backgroundColor: "rgba(184, 168, 255, 0.08)",
-  },
-  clearFiltersText: {
-    color: theme.colors.cream,
-    fontFamily: theme.fonts.radar,
-    fontSize: 10,
-    fontWeight: "900",
-    letterSpacing: 1,
-  },
-  applyFiltersButton: {
-    alignItems: "center",
-    flex: 1.4,
-    justifyContent: "center",
-    minHeight: 46,
-    borderRadius: theme.radii.medium,
-    backgroundColor: theme.colors.scannerCyan,
-  },
-  applyFiltersText: {
-    color: theme.colors.backgroundDeep,
-    fontFamily: theme.fonts.radar,
-    fontSize: 10,
-    fontWeight: "900",
-    letterSpacing: 1,
-  },
-  errorCard: {
-    marginTop: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    padding: 14,
-    borderRadius: theme.radii.medium,
-    borderWidth: 1,
-    borderColor: "rgba(255, 107, 107, 0.34)",
-    backgroundColor: "rgba(90, 18, 26, 0.32)",
-  },
-  errorText: {
-    flex: 1,
-    color: theme.colors.text,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  retryButton: {
-    paddingHorizontal: 13,
-    paddingVertical: 8,
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.gold,
-  },
-  retryText: {
-    color: theme.colors.backgroundDeep,
-    fontSize: 12,
-    fontWeight: "900",
-  },
-  emptyState: {
-    flex: 1,
-    minHeight: 360,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
-    padding: 24,
-  },
-  emptyIcon: {
-    width: 74,
-    height: 74,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: "rgba(242, 211, 138, 0.42)",
-    backgroundColor: "rgba(215, 168, 74, 0.10)",
-    boxShadow: "0 0 28px rgba(215, 168, 74, 0.12)",
-  },
-  emptyTitle: {
-    color: theme.colors.cream,
-    fontSize: 20,
-    fontWeight: "900",
-  },
-  emptyBody: {
-    maxWidth: 330,
-    color: theme.colors.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
-    textAlign: "center",
-  },
-});
+  const { responsiveFont, responsiveWidth, responsiveHeight } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    list: {
+      flex: 1,
+    },
+    content: {
+      flexGrow: 1,
+      alignItems: "center",
+      justifyContent: "flex-start"
+    },
+    header: {
+      marginBottom: HEADER_BOTTOM_SPACING,
+    },
+    feedItem: {
+      marginBottom: 14,
+    },
+    eyebrow: {
+      color: theme.colors.gold,
+      fontFamily: theme.fonts.display,
+      fontWeight: "900",
+      letterSpacing: 2.4,
+    },
+    title: {
+      color: theme.colors.cream,
+      fontWeight: "900",
+      letterSpacing: -0.6,
+    },
+    subtitle: {
+      maxWidth: 560,
+      fontFamily: theme.fonts.body,
+      color: theme.colors.textMuted,
+      fontSize: 12,
+      lineHeight: 15,
+    },
+    filterTrigger: {
+      alignItems: "center",
+      alignSelf: "flex-start",
+      borderColor: "rgba(101, 235, 255, 0.38)",
+      borderRadius: theme.radii.medium,
+      borderWidth: StyleSheet.hairlineWidth,
+      flexDirection: "row",
+      gap: 12,
+      marginTop: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      backgroundColor: "rgba(7, 5, 10, 0.56)",
+    },
+    filterTriggerPressed: {
+      opacity: 0.72,
+    },
+    filterTriggerTitle: {
+      alignItems: "center",
+      flexDirection: "row",
+      gap: 7,
+    },
+    filterTriggerLabel: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 9,
+      fontWeight: "900",
+      letterSpacing: 0.8,
+    },
+    filterTriggerSummary: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: "900",
+      letterSpacing: 0.5,
+      maxWidth: 190,
+    },
+    modalBackdrop: {
+      flex: 1,
+      justifyContent: "flex-end",
+      backgroundColor: "rgba(2, 1, 5, 0.72)",
+    },
+    modalDismiss: {
+      ...StyleSheet.absoluteFill,
+    },
+    filterSheet: {
+      maxHeight: "82%",
+      borderTopLeftRadius: theme.radii.large,
+      borderTopRightRadius: theme.radii.large,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: "rgba(184, 168, 255, 0.32)",
+      paddingHorizontal: 18,
+      paddingTop: 18,
+      backgroundColor: "rgba(15, 11, 24, 0.98)",
+      boxShadow: "0 -12px 36px rgba(0, 0, 0, 0.36)",
+    },
+    filterSheetHeader: {
+      alignItems: "center",
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: 16,
+    },
+    filterSheetEyebrow: {
+      color: theme.colors.gold,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: "900",
+      letterSpacing: 1.2,
+    },
+    filterSheetTitle: {
+      color: theme.colors.cream,
+      fontSize: 24,
+      fontWeight: "900",
+      letterSpacing: -0.4,
+    },
+    filterCloseButton: {
+      alignItems: "center",
+      width: 38,
+      height: 38,
+      justifyContent: "center",
+      borderRadius: theme.radii.pill,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: "rgba(184, 168, 255, 0.28)",
+      backgroundColor: "rgba(184, 168, 255, 0.08)",
+    },
+    filterSheetContent: {
+      gap: 20,
+      paddingBottom: 12,
+    },
+    filterSection: {
+      gap: 8,
+    },
+    controlLabel: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: "900",
+      letterSpacing: 1.1,
+    },
+    controlOptions: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 7,
+    },
+    controlChip: {
+      borderColor: "rgba(184, 168, 255, 0.23)",
+      borderRadius: theme.radii.pill,
+      borderWidth: StyleSheet.hairlineWidth,
+      paddingHorizontal: 9,
+      paddingVertical: 6,
+      backgroundColor: "rgba(7, 5, 10, 0.52)",
+    },
+    controlChipSelected: {
+      borderColor: "rgba(101, 235, 255, 0.65)",
+      backgroundColor: "rgba(40, 205, 229, 0.14)",
+    },
+    controlChipText: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: "900",
+      letterSpacing: 0.65,
+    },
+    controlChipTextSelected: {
+      color: theme.colors.scannerCyan,
+    },
+    filterActions: {
+      flexDirection: "row",
+      gap: 10,
+      marginTop: 4,
+    },
+    clearFiltersButton: {
+      alignItems: "center",
+      flex: 1,
+      justifyContent: "center",
+      minHeight: 46,
+      borderRadius: theme.radii.medium,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: "rgba(184, 168, 255, 0.3)",
+      backgroundColor: "rgba(184, 168, 255, 0.08)",
+    },
+    clearFiltersText: {
+      color: theme.colors.cream,
+      fontFamily: theme.fonts.radar,
+      fontSize: 10,
+      fontWeight: "900",
+      letterSpacing: 1,
+    },
+    applyFiltersButton: {
+      alignItems: "center",
+      flex: 1.4,
+      justifyContent: "center",
+      minHeight: 46,
+      borderRadius: theme.radii.medium,
+      backgroundColor: theme.colors.scannerCyan,
+    },
+    applyFiltersText: {
+      color: theme.colors.backgroundDeep,
+      fontFamily: theme.fonts.radar,
+      fontSize: 10,
+      fontWeight: "900",
+      letterSpacing: 1,
+    },
+    errorCard: {
+      marginTop: 10,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      padding: 14,
+      borderRadius: theme.radii.medium,
+      borderWidth: 1,
+      borderColor: "rgba(255, 107, 107, 0.34)",
+      backgroundColor: "rgba(90, 18, 26, 0.32)",
+    },
+    errorText: {
+      flex: 1,
+      color: theme.colors.text,
+      fontSize: 13,
+      lineHeight: 18,
+    },
+    retryButton: {
+      paddingHorizontal: 13,
+      paddingVertical: 8,
+      borderRadius: theme.radii.pill,
+      backgroundColor: theme.colors.gold,
+    },
+    retryText: {
+      color: theme.colors.backgroundDeep,
+      fontSize: 12,
+      fontWeight: "900",
+    },
+    emptyState: {
+      flex: 1,
+      minHeight: 360,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 12,
+      padding: 24,
+    },
+    emptyIcon: {
+      width: 74,
+      height: 74,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: "rgba(242, 211, 138, 0.42)",
+      backgroundColor: "rgba(215, 168, 74, 0.10)",
+      boxShadow: "0 0 28px rgba(215, 168, 74, 0.12)",
+    },
+    emptyTitle: {
+      color: theme.colors.cream,
+      fontSize: 20,
+      fontWeight: "900",
+    },
+    emptyBody: {
+      maxWidth: 330,
+      color: theme.colors.textMuted,
+      fontSize: 13,
+      lineHeight: 19,
+      textAlign: "center",
+    },
+  });
   return {
     ...staticStyles,
-  subtitle: [
-    staticStyles.subtitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  filterTriggerLabel: [
-    staticStyles.filterTriggerLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  filterTriggerSummary: [
-    staticStyles.filterTriggerSummary,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  filterSheetEyebrow: [
-    staticStyles.filterSheetEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  filterSheetTitle: [
-    staticStyles.filterSheetTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(24),
-    },
-  ],
-  filterCloseButton: [
-    staticStyles.filterCloseButton,
-    {
-        width: responsiveLayout.responsiveWidth(38),
-        height: responsiveLayout.responsiveHeight(38),
-    },
-  ],
-  controlLabel: [
-    staticStyles.controlLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  controlChipText: [
-    staticStyles.controlChipText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  clearFiltersText: [
-    staticStyles.clearFiltersText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  applyFiltersText: [
-    staticStyles.applyFiltersText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  errorText: [
-    staticStyles.errorText,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  retryText: [
-    staticStyles.retryText,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  emptyIcon: [
-    staticStyles.emptyIcon,
-    {
-        width: responsiveLayout.responsiveWidth(74),
-        height: responsiveLayout.responsiveHeight(74),
-    },
-  ],
-  emptyTitle: [
-    staticStyles.emptyTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(20),
-    },
-  ],
-  emptyBody: [
-    staticStyles.emptyBody,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
+    subtitle: [
+      staticStyles.subtitle,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    filterTriggerLabel: [
+      staticStyles.filterTriggerLabel,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    filterTriggerSummary: [
+      staticStyles.filterTriggerSummary,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    filterSheetEyebrow: [
+      staticStyles.filterSheetEyebrow,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    filterSheetTitle: [
+      staticStyles.filterSheetTitle,
+      {
+        fontSize: responsiveFont(24),
+      },
+    ],
+    filterCloseButton: [
+      staticStyles.filterCloseButton,
+      {
+        width: responsiveWidth(38),
+        height: responsiveHeight(38),
+      },
+    ],
+    controlLabel: [
+      staticStyles.controlLabel,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    controlChipText: [
+      staticStyles.controlChipText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    clearFiltersText: [
+      staticStyles.clearFiltersText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    applyFiltersText: [
+      staticStyles.applyFiltersText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    errorText: [
+      staticStyles.errorText,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    retryText: [
+      staticStyles.retryText,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    emptyIcon: [
+      staticStyles.emptyIcon,
+      {
+        width: responsiveWidth(74),
+        height: responsiveHeight(74),
+      },
+    ],
+    emptyTitle: [
+      staticStyles.emptyTitle,
+      {
+        fontSize: responsiveFont(20),
+      },
+    ],
+    emptyBody: [
+      staticStyles.emptyBody,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
   };
 }

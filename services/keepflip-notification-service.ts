@@ -128,7 +128,9 @@ export function notificationRouteFromData(value: unknown) {
     : null;
 }
 
-if (canUseNotifications()) {
+export function configureKeepFlipNotificationHandler() {
+  if (!canUseNotifications()) return;
+
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldPlaySound: true,

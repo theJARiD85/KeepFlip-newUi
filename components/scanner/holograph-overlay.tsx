@@ -1,15 +1,15 @@
-import React, { useEffect } from 'react';
+import { responsiveWidth } from '@/lib/responsiveFont';
+import { Canvas, LinearGradient, Rect, vec } from '@shopify/react-native-skia';
+import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Canvas, Rect, LinearGradient, vec } from '@shopify/react-native-skia';
-import Animated, { 
+import Animated, {
   cancelAnimation,
-  useSharedValue, 
-  useAnimatedStyle, 
-  withRepeat, 
-  withTiming, 
-  Easing 
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming
 } from 'react-native-reanimated';
-import { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export interface HolographOverlayProps {
@@ -80,77 +80,78 @@ export function HolographOverlay({
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    zIndex: 3,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(0, 240, 255, 0.03)', // Subtle cyber tint
-    borderWidth: 1,
-    borderColor: 'rgba(0, 240, 255, 0.2)',
-  },
-  laserBeam: {
-    position: 'absolute',
-    height: 40,
-    backgroundColor: 'rgba(0, 240, 255, 0.15)',
-    shadowColor: '#00f0ff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 15,
-  },
-  laserCore: {
-    height: 2,
-    backgroundColor: '#ffffff',
-    width: '100%',
-    position: 'absolute',
-    bottom: '50%',
-    shadowColor: '#00f0ff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 5,
-  },
-  corner: {
-    position: 'absolute',
-    width: 15,
-    height: 15,
-    borderColor: '#00f0ff',
-    shadowColor: '#00f0ff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 4,
-  },
-  topLeft: { top: 10, left: 10, borderTopWidth: 3, borderLeftWidth: 3 },
-  topRight: { top: 10, right: 10, borderTopWidth: 3, borderRightWidth: 3 },
-  bottomLeft: { bottom: 10, left: 10, borderBottomWidth: 3, borderLeftWidth: 3 },
-  bottomRight: { bottom: 10, right: 10, borderBottomWidth: 3, borderRightWidth: 3 },
-});
+  const { responsiveHeight, responsiveWidth } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    container: {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      zIndex: 3,
+      overflow: 'hidden',
+      backgroundColor: 'rgba(0, 240, 255, 0.03)', // Subtle cyber tint
+      borderWidth: 1,
+      borderColor: 'rgba(0, 240, 255, 0.2)',
+    },
+    laserBeam: {
+      position: 'absolute',
+      height: 40,
+      backgroundColor: 'rgba(0, 240, 255, 0.15)',
+      shadowColor: '#00f0ff',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.8,
+      shadowRadius: 15,
+    },
+    laserCore: {
+      height: 2,
+      backgroundColor: '#ffffff',
+      width: '100%',
+      position: 'absolute',
+      bottom: '50%',
+      shadowColor: '#00f0ff',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 1,
+      shadowRadius: 5,
+    },
+    corner: {
+      position: 'absolute',
+      width: 15,
+      height: 15,
+      borderColor: '#00f0ff',
+      shadowColor: '#00f0ff',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 1,
+      shadowRadius: 4,
+    },
+    topLeft: { top: 10, left: 10, borderTopWidth: 3, borderLeftWidth: 3 },
+    topRight: { top: 10, right: 10, borderTopWidth: 3, borderRightWidth: 3 },
+    bottomLeft: { bottom: 10, left: 10, borderBottomWidth: 3, borderLeftWidth: 3 },
+    bottomRight: { bottom: 10, right: 10, borderBottomWidth: 3, borderRightWidth: 3 },
+  });
   return {
     ...staticStyles,
-  laserBeam: [
-    staticStyles.laserBeam,
-    {
-        height: responsiveLayout.responsiveHeight(40),
-        shadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(0) },
-    },
-  ],
-  laserCore: [
-    staticStyles.laserCore,
-    {
-        height: responsiveLayout.responsiveHeight(2),
-        shadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(0) },
-    },
-  ],
-  corner: [
-    staticStyles.corner,
-    {
-        width: responsiveLayout.responsiveWidth(15),
-        height: responsiveLayout.responsiveHeight(15),
-        shadowOffset: { width: responsiveLayout.responsiveWidth(0), height: responsiveLayout.responsiveHeight(0) },
-    },
-  ],
+    laserBeam: [
+      staticStyles.laserBeam,
+      {
+        height: responsiveHeight(40),
+        shadowOffset: { width: responsiveWidth(0), height: responsiveHeight(0) },
+      },
+    ],
+    laserCore: [
+      staticStyles.laserCore,
+      {
+        height: responsiveHeight(2),
+        shadowOffset: { width: responsiveWidth(0), height: responsiveHeight(0) },
+      },
+    ],
+    corner: [
+      staticStyles.corner,
+      {
+        width: responsiveWidth(15),
+        height: responsiveHeight(15),
+        shadowOffset: { width: responsiveWidth(0), height: responsiveHeight(0) },
+      },
+    ],
   };
 }

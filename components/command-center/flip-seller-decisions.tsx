@@ -10,10 +10,11 @@ import {
   Section,
   useSellerAssistanceStyles,
 } from '@/components/seller-assistance/ui';
-import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
+import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { ID } from '@/lib/appwrite';
+import responsiveFont from '@/lib/responsiveFont';
 import {
   responseReminder,
   summarizeManualHistory,
@@ -36,7 +37,6 @@ import {
   saveSellerPreferences,
   type SellerPreferencesSnapshot,
 } from '@/services/seller-preferences-service';
-import responsiveFont from '@/lib/responsiveFont';
 
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export type FlipSellerDecision =
@@ -51,32 +51,32 @@ const DECISIONS: {
   title: string;
   detail: string;
 }[] = [
-  {
-    id: 'inbox',
-    title: 'Review buyer messages and draft a reply',
-    detail: 'See open conversations, reminders, and a reply draft.',
-  },
-  {
-    id: 'preferences',
-    title: 'Use saved replies or shipping presets',
-    detail: 'Manage reusable responses, package defaults, handling, and returns.',
-  },
-  {
-    id: 'review',
-    title: 'Review an item, listing age, or buyer offer',
-    detail: 'Check item facts, 7/14/30/45-day actions, and offer floor guardrails.',
-  },
-  {
-    id: 'history',
-    title: 'Check seller-assistance history and performance',
-    detail: 'Review the manual decisions Flip has helped record.',
-  },
-  {
-    id: 'seller-operations',
-    title: 'Handle sold items, fulfillment, and realized profit',
-    detail: 'Expand seller operations in Command Center for orders, shipping, Money Sync, and final margin.',
-  },
-];
+    {
+      id: 'inbox',
+      title: 'Review buyer messages and draft a reply',
+      detail: 'See open conversations, reminders, and a reply draft.',
+    },
+    {
+      id: 'preferences',
+      title: 'Use saved replies or shipping presets',
+      detail: 'Manage reusable responses, package defaults, handling, and returns.',
+    },
+    {
+      id: 'review',
+      title: 'Review an item, listing age, or buyer offer',
+      detail: 'Check item facts, 7/14/30/45-day actions, and offer floor guardrails.',
+    },
+    {
+      id: 'history',
+      title: 'Check seller-assistance history and performance',
+      detail: 'Review the manual decisions Flip has helped record.',
+    },
+    {
+      id: 'seller-operations',
+      title: 'Handle sold items, fulfillment, and realized profit',
+      detail: 'Expand seller operations in Command Center for orders, shipping, Money Sync, and final margin.',
+    },
+  ];
 
 function message(cause: unknown) {
   return cause instanceof Error
@@ -552,141 +552,142 @@ export function FlipSellerDecisions({
 }
 
 function createLocalStylesResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  wrap: { gap: 12 },
-  flipDialogue: {
-    gap: 10,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.20)',
-    borderRadius: 12,
-    backgroundColor: 'rgba(88, 223, 232, 0.035)',
-  },
-  speaker: {
-    color: theme.colors.scannerCyan,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 1.5,
-  },
-  greeting: {
-    color: theme.colors.cream,
-    fontSize: 15,
-    fontWeight: '800',
-    lineHeight: 21,
-  },
-  decisionList: { gap: 4 },
-  decisionRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    borderRadius: 9,
-  },
-  decisionRowSelected: {
-    backgroundColor: 'rgba(242, 211, 138, 0.08)',
-  },
-  decisionRowPressed: { opacity: 0.72 },
-  bullet: {
-    color: theme.colors.goldBright,
-    fontSize: 18,
-    lineHeight: 18,
-  },
-  decisionCopy: { flex: 1, gap: 2 },
-  decisionTitle: {
-    color: theme.colors.text,
-    fontSize: 11,
-    fontWeight: '800',
-    lineHeight: 16,
-  },
-  decisionDetail: {
-    color: theme.colors.textMuted,
-    fontSize: 9,
-    lineHeight: 13,
-  },
-  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  statusText: { color: theme.colors.textMuted, fontSize: 10 },
-  notice: { color: theme.colors.scannerCyan, fontSize: 10, lineHeight: 14 },
-  activeDecision: {
-    gap: 12,
-    paddingTop: 4,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(242, 211, 138, 0.18)',
-  },
-  activeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  activeEyebrow: {
-    color: theme.colors.goldBright,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 1.2,
-  },
-  backButton: { paddingVertical: 5, paddingHorizontal: 7 },
-  backText: {
-    color: theme.colors.scannerCyan,
-    fontSize: 9,
-    fontWeight: '800',
-  },
-});
+  const { responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    wrap: { gap: 12 },
+    flipDialogue: {
+      gap: 10,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.20)',
+      borderRadius: 12,
+      backgroundColor: 'rgba(88, 223, 232, 0.035)',
+    },
+    speaker: {
+      color: theme.colors.scannerCyan,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 1.5,
+    },
+    greeting: {
+      color: theme.colors.cream,
+      fontSize: 15,
+      fontWeight: '800',
+      lineHeight: 21,
+    },
+    decisionList: { gap: 4 },
+    decisionRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 8,
+      paddingVertical: 8,
+      paddingHorizontal: 8,
+      borderRadius: 9,
+    },
+    decisionRowSelected: {
+      backgroundColor: 'rgba(242, 211, 138, 0.08)',
+    },
+    decisionRowPressed: { opacity: 0.72 },
+    bullet: {
+      color: theme.colors.goldBright,
+      fontSize: 18,
+      lineHeight: 18,
+    },
+    decisionCopy: { flex: 1, gap: 2 },
+    decisionTitle: {
+      color: theme.colors.text,
+      fontSize: 11,
+      fontWeight: '800',
+      lineHeight: 16,
+    },
+    decisionDetail: {
+      color: theme.colors.textMuted,
+      fontSize: 9,
+      lineHeight: 13,
+    },
+    statusRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    statusText: { color: theme.colors.textMuted, fontSize: 10 },
+    notice: { color: theme.colors.scannerCyan, fontSize: 10, lineHeight: 14 },
+    activeDecision: {
+      gap: 12,
+      paddingTop: 4,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: 'rgba(242, 211, 138, 0.18)',
+    },
+    activeHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    activeEyebrow: {
+      color: theme.colors.goldBright,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 1.2,
+    },
+    backButton: { paddingVertical: 5, paddingHorizontal: 7 },
+    backText: {
+      color: theme.colors.scannerCyan,
+      fontSize: 9,
+      fontWeight: '800',
+    },
+  });
   return {
     ...staticStyles,
-  speaker: [
-    staticStyles.speaker,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  greeting: [
-    staticStyles.greeting,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  bullet: [
-    staticStyles.bullet,
-    {
-        fontSize: responsiveLayout.responsiveFont(18),
-    },
-  ],
-  decisionTitle: [
-    staticStyles.decisionTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  decisionDetail: [
-    staticStyles.decisionDetail,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  statusText: [
-    staticStyles.statusText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  notice: [
-    staticStyles.notice,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  activeEyebrow: [
-    staticStyles.activeEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  backText: [
-    staticStyles.backText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
+    speaker: [
+      staticStyles.speaker,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    greeting: [
+      staticStyles.greeting,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    bullet: [
+      staticStyles.bullet,
+      {
+        fontSize: responsiveFont(18),
+      },
+    ],
+    decisionTitle: [
+      staticStyles.decisionTitle,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    decisionDetail: [
+      staticStyles.decisionDetail,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    statusText: [
+      staticStyles.statusText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    notice: [
+      staticStyles.notice,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    activeEyebrow: [
+      staticStyles.activeEyebrow,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    backText: [
+      staticStyles.backText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
   };
 }

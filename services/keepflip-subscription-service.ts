@@ -437,7 +437,8 @@ function subscriptionAccessFromServerRecord(
   return {
     ...EMPTY_ACCESS,
     active,
-    billingIssue: record.status === 'billing_issue',
+    billingIssue:
+      record.status === 'billing_issue' || record.status === 'grace_period',
     entitlementId: record.entitlement,
     expiresAt: record.currentPeriodEndsAt,
     isTrial: record.isTrial && active,
@@ -507,7 +508,9 @@ function parseServerSubscriptionAccess(
     ...EMPTY_ACCESS,
     active: access.active === true,
     billingIssue:
-      access.billingIssue === true || access.status === 'billing_issue',
+      access.billingIssue === true ||
+      access.status === 'billing_issue' ||
+      access.status === 'grace_period',
     entitlementId: nullableAppwriteText(access.entitlementId, 64),
     expiresAt: nullableAppwriteText(access.currentPeriodEndsAt, 80),
     isTrial: access.isTrial === true,
@@ -797,7 +800,9 @@ function effectiveSubscriptionAccess(
     ...localAccess,
     ...serverAccess,
     billingIssue:
-      serverAccess.billingIssue || serverRecord?.status === 'billing_issue',
+      serverAccess.billingIssue ||
+      serverRecord?.status === 'billing_issue' ||
+      serverRecord?.status === 'grace_period',
     managementUrl: serverAccess.managementUrl || localAccess.managementUrl,
     productId:
       serverAccess.productId ||

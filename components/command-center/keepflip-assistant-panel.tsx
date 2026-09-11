@@ -1,23 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Image } from 'expo-image';
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  TextInput,
-  View,
-} from 'react-native';
-import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
+import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
+import { FlipSellerDecisions } from '@/components/command-center/flip-seller-decisions';
 import {
   FlipCompanion,
   useFlipCompanion,
 } from '@/components/flip';
-import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
-import { FlipSellerDecisions } from '@/components/command-center/flip-seller-decisions';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipControlRow } from '@/components/ui/keepflip-control-row';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import { responsiveWidth } from '@/lib/responsiveFont';
 import {
   completeAssistantTask,
   createAssistantActionRun,
@@ -31,8 +23,16 @@ import {
   cancelKeepFlipTaskReminder,
   scheduleKeepFlipTaskReminder,
 } from '@/services/keepflip-notification-service';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
+import { Image } from 'expo-image';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
+import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
@@ -388,267 +388,268 @@ function dueLabel(value: string) {
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  surface: {
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.48)',    borderRadius: 16,
-    borderCurve: 'continuous',
-    backgroundColor: 'rgba(242, 211, 138, 0.1)',
-  },
-  searchBar: {
-    minHeight: 64,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  searchBarPressed: { backgroundColor: 'rgba(0, 255, 255, 0.06)' },
-  flipAvatar: {
-    width: 190,
-    height: 190,
-    overflow: 'hidden',
-  },
-  flipAvatarImage: { width: '100%', height: '100%' },
-  searchCopy: { flex: 1, minWidth: 0, gap: 3, padding: 5, justifyContent: 'flex-start', alignItems: 'flex-start', height: '90%' },
-  searchMeta: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  searchLabel: {
-    color: theme.colors.gold,
-    fontFamily: theme.fonts.radar,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 1.4,
-  },
-  onlineDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: theme.colors.scannerCyan,
-  },
-  onlineText: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.9,
-  },
-  searchPlaceholder: { color: theme.colors.text, fontSize: 14, fontWeight: '700', fontFamily: theme.fonts.body},
-  searchIcon: {
-    width: 34,
-    height: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 255, 255, 0.28)',
-    borderRadius: 17,
-    borderCurve: 'continuous',
-    backgroundColor: 'rgba(0, 255, 255, 0.08)',
-  },
-  expandedContent: { gap: 12, padding: 14 },
-  heading: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  headingCopy: { flex: 1, gap: 3 },
-  eyebrow: {
-    color: theme.colors.scannerCyan,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 1.5,
-  },
-  title: { color: theme.colors.cream, fontSize: 18, fontWeight: '900' },
-  subtitle: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 15 },
-  closeButton: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(173, 167, 178, 0.25)',
-    borderRadius: 16,
-    borderCurve: 'continuous',
-    backgroundColor: 'rgba(173, 167, 178, 0.08)',
-  },
-  closeButtonPressed: { backgroundColor: 'rgba(173, 167, 178, 0.18)' },
-  inputRow: { flexDirection: 'row', alignItems: 'stretch', gap: 8 },
-  inputShell: {
-    minHeight: 48,
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.22)',
-    borderRadius: 10,
-    borderCurve: 'continuous',
-    backgroundColor: 'rgba(0, 0, 0, 0.24)',
-  },
-  inputAvatar: {
-    width: 25,
-    height: 25,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.38)',
-    borderRadius: 13,
-    borderCurve: 'continuous',
-  },
-  input: {
-    minHeight: 44,
-    flex: 1,
-    paddingHorizontal: 0,
-    paddingVertical: 8,
-    color: theme.colors.text,
-    fontSize: 12,
-  },
-  sendButton: {
-    minWidth: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 10,
-    borderRadius: 10,
-    borderCurve: 'continuous',
-    backgroundColor: theme.colors.goldBright,
-  },
-  sendButtonDisabled: { opacity: 0.42 },
-  sendButtonPressed: { opacity: 0.75 },
-  sendText: { color: theme.colors.background, fontSize: 9, fontWeight: '900', letterSpacing: 0.8 },
-  quickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  quickChip: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.18)',
-    borderRadius: 8,
-    borderCurve: 'continuous',
-    backgroundColor: 'rgba(242, 211, 138, 0.04)',
-  },
-  quickChipPressed: { backgroundColor: 'rgba(242, 211, 138, 0.12)' },
-  quickText: { color: theme.colors.goldMuted, fontSize: 9, fontWeight: '700' },
-  message: { color: theme.colors.scannerCyan, fontSize: 10, lineHeight: 14 },
-  error: { color: '#FFB8B1', fontSize: 10, lineHeight: 14 },
-  taskHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  taskLabel: { color: theme.colors.goldBright, fontSize: 8, fontWeight: '900', letterSpacing: 1.3 },
-  refresh: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 0.7 },
-  taskList: { borderTopWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(242, 211, 138, 0.18)' },
-  empty: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 15 },
-});
+  const { responsiveWidth, responsiveHeight, responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    surface: {
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.48)', borderRadius: 16,
+      borderCurve: 'continuous',
+      backgroundColor: 'rgba(242, 211, 138, 0.1)',
+    },
+    searchBar: {
+      minHeight: 64,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    searchBarPressed: { backgroundColor: 'rgba(0, 255, 255, 0.06)' },
+    flipAvatar: {
+      width: 190,
+      height: 190,
+      overflow: 'hidden',
+    },
+    flipAvatarImage: { width: '100%', height: '100%' },
+    searchCopy: { flex: 1, minWidth: 0, gap: 3, padding: 5, justifyContent: 'flex-start', alignItems: 'flex-start', height: '90%' },
+    searchMeta: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+    searchLabel: {
+      color: theme.colors.gold,
+      fontFamily: theme.fonts.radar,
+      fontSize: 9,
+      fontWeight: '900',
+      letterSpacing: 1.4,
+    },
+    onlineDot: {
+      width: 5,
+      height: 5,
+      borderRadius: 3,
+      backgroundColor: theme.colors.scannerCyan,
+    },
+    onlineText: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 0.9,
+    },
+    searchPlaceholder: { color: theme.colors.text, fontSize: 14, fontWeight: '700', fontFamily: theme.fonts.body },
+    searchIcon: {
+      width: 34,
+      height: 34,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: 'rgba(0, 255, 255, 0.28)',
+      borderRadius: 17,
+      borderCurve: 'continuous',
+      backgroundColor: 'rgba(0, 255, 255, 0.08)',
+    },
+    expandedContent: { gap: 12, padding: 14 },
+    heading: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    headingCopy: { flex: 1, gap: 3 },
+    eyebrow: {
+      color: theme.colors.scannerCyan,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 1.5,
+    },
+    title: { color: theme.colors.cream, fontSize: 18, fontWeight: '900' },
+    subtitle: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 15 },
+    closeButton: {
+      width: 32,
+      height: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: 'rgba(173, 167, 178, 0.25)',
+      borderRadius: 16,
+      borderCurve: 'continuous',
+      backgroundColor: 'rgba(173, 167, 178, 0.08)',
+    },
+    closeButtonPressed: { backgroundColor: 'rgba(173, 167, 178, 0.18)' },
+    inputRow: { flexDirection: 'row', alignItems: 'stretch', gap: 8 },
+    inputShell: {
+      minHeight: 48,
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingHorizontal: 10,
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.22)',
+      borderRadius: 10,
+      borderCurve: 'continuous',
+      backgroundColor: 'rgba(0, 0, 0, 0.24)',
+    },
+    inputAvatar: {
+      width: 25,
+      height: 25,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.38)',
+      borderRadius: 13,
+      borderCurve: 'continuous',
+    },
+    input: {
+      minHeight: 44,
+      flex: 1,
+      paddingHorizontal: 0,
+      paddingVertical: 8,
+      color: theme.colors.text,
+      fontSize: 12,
+    },
+    sendButton: {
+      minWidth: 54,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 10,
+      borderRadius: 10,
+      borderCurve: 'continuous',
+      backgroundColor: theme.colors.goldBright,
+    },
+    sendButtonDisabled: { opacity: 0.42 },
+    sendButtonPressed: { opacity: 0.75 },
+    sendText: { color: theme.colors.background, fontSize: 9, fontWeight: '900', letterSpacing: 0.8 },
+    quickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+    quickChip: {
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.18)',
+      borderRadius: 8,
+      borderCurve: 'continuous',
+      backgroundColor: 'rgba(242, 211, 138, 0.04)',
+    },
+    quickChipPressed: { backgroundColor: 'rgba(242, 211, 138, 0.12)' },
+    quickText: { color: theme.colors.goldMuted, fontSize: 9, fontWeight: '700' },
+    message: { color: theme.colors.scannerCyan, fontSize: 10, lineHeight: 14 },
+    error: { color: '#FFB8B1', fontSize: 10, lineHeight: 14 },
+    taskHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    taskLabel: { color: theme.colors.goldBright, fontSize: 8, fontWeight: '900', letterSpacing: 1.3 },
+    refresh: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 0.7 },
+    taskList: { borderTopWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(242, 211, 138, 0.18)' },
+    empty: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 15 },
+  });
   return {
     ...staticStyles,
-  flipAvatar: [
-    staticStyles.flipAvatar,
-    {
-        width: responsiveLayout.responsiveWidth(190),
-        height: responsiveLayout.responsiveHeight(190),
-    },
-  ],
-  searchLabel: [
-    staticStyles.searchLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  onlineDot: [
-    staticStyles.onlineDot,
-    {
-        width: responsiveLayout.responsiveWidth(5),
-        height: responsiveLayout.responsiveHeight(5),
-    },
-  ],
-  onlineText: [
-    staticStyles.onlineText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  searchPlaceholder: [
-    staticStyles.searchPlaceholder,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
-  searchIcon: [
-    staticStyles.searchIcon,
-    {
-        width: responsiveLayout.responsiveWidth(34),
-        height: responsiveLayout.responsiveHeight(34),
-    },
-  ],
-  eyebrow: [
-    staticStyles.eyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  title: [
-    staticStyles.title,
-    {
-        fontSize: responsiveLayout.responsiveFont(18),
-    },
-  ],
-  subtitle: [
-    staticStyles.subtitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  closeButton: [
-    staticStyles.closeButton,
-    {
-        width: responsiveLayout.responsiveWidth(32),
-        height: responsiveLayout.responsiveHeight(32),
-    },
-  ],
-  inputAvatar: [
-    staticStyles.inputAvatar,
-    {
-        width: responsiveLayout.responsiveWidth(25),
-        height: responsiveLayout.responsiveHeight(25),
-    },
-  ],
-  input: [
-    staticStyles.input,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  sendText: [
-    staticStyles.sendText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  quickText: [
-    staticStyles.quickText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  message: [
-    staticStyles.message,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  error: [
-    staticStyles.error,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  taskLabel: [
-    staticStyles.taskLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  refresh: [
-    staticStyles.refresh,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  empty: [
-    staticStyles.empty,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
+    flipAvatar: [
+      staticStyles.flipAvatar,
+      {
+        width: responsiveWidth(190),
+        height: responsiveHeight(190),
+      },
+    ],
+    searchLabel: [
+      staticStyles.searchLabel,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    onlineDot: [
+      staticStyles.onlineDot,
+      {
+        width: responsiveWidth(5),
+        height: responsiveHeight(5),
+      },
+    ],
+    onlineText: [
+      staticStyles.onlineText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    searchPlaceholder: [
+      staticStyles.searchPlaceholder,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
+    searchIcon: [
+      staticStyles.searchIcon,
+      {
+        width: responsiveWidth(34),
+        height: responsiveHeight(34),
+      },
+    ],
+    eyebrow: [
+      staticStyles.eyebrow,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    title: [
+      staticStyles.title,
+      {
+        fontSize: responsiveFont(18),
+      },
+    ],
+    subtitle: [
+      staticStyles.subtitle,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    closeButton: [
+      staticStyles.closeButton,
+      {
+        width: responsiveWidth(32),
+        height: responsiveHeight(32),
+      },
+    ],
+    inputAvatar: [
+      staticStyles.inputAvatar,
+      {
+        width: responsiveWidth(25),
+        height: responsiveHeight(25),
+      },
+    ],
+    input: [
+      staticStyles.input,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    sendText: [
+      staticStyles.sendText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    quickText: [
+      staticStyles.quickText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    message: [
+      staticStyles.message,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    error: [
+      staticStyles.error,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    taskLabel: [
+      staticStyles.taskLabel,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    refresh: [
+      staticStyles.refresh,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    empty: [
+      staticStyles.empty,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
   };
 }

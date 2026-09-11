@@ -25,7 +25,7 @@ import type { AnalysisProfitPlan } from "@/components/scanner/analysis-visual-ty
 import type { Thought } from '@/components/scanner/scanner-thought-stream';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
+import { responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 const analysisTextStyle = { fontFamily: theme.fonts.radar } as const;
@@ -351,16 +351,13 @@ function RequirementList({ items, accent }: { accent: string; items: string[] })
 
 function SuggestedPhotos({ photos }: { photos: AnalysisSuggestedPhoto[] }) {
   const styles = useResponsiveStyles(createResponsiveStyles);
+  const { responsiveFont } = useResponsiveLayout();
   if (photos.length === 0) return null;
 
   return (
     <Section title="PHOTOS THAT WOULD IMPROVE THIS">
       <View style={styles.suggestionList}>
         {photos.map((photo, index) => {
-  const {
-    responsiveFont
-  } = useResponsiveLayout();
-
           const required = photo.priority === 'required';
           const accent = required ? theme.colors.scannerAmber : theme.colors.scannerCyan;
 
@@ -962,779 +959,780 @@ export function ItemAnalysisOverlay({
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  backdrop: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 44,
-    backgroundColor: 'rgba(2, 2, 4, 0.985)',
-    experimental_backgroundImage: `
+  const { responsiveWidth, responsiveHeight, responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    backdrop: {
+      ...StyleSheet.absoluteFill,
+      zIndex: 44,
+      backgroundColor: 'rgba(2, 2, 4, 0.985)',
+      experimental_backgroundImage: `
       radial-gradient(circle at 90% 5%, rgba(88, 223, 232, 0.11) 0%, transparent 34%),
       radial-gradient(circle at 4% 52%, rgba(141, 114, 255, 0.10) 0%, transparent 38%),
       radial-gradient(circle at 70% 100%, rgba(215, 168, 74, 0.09) 0%, transparent 42%),
       linear-gradient(165deg, rgba(9, 8, 12, 0.99) 0%, rgba(2, 2, 4, 0.99) 72%)
     `,
-  },
-  backdropAnalyzing: {
-    backgroundColor: 'rgba(2, 2, 4, 0.28)',
-    experimental_backgroundImage: `
+    },
+    backdropAnalyzing: {
+      backgroundColor: 'rgba(2, 2, 4, 0.28)',
+      experimental_backgroundImage: `
       radial-gradient(circle at 90% 5%, rgba(88, 223, 232, 0.10) 0%, transparent 34%),
       radial-gradient(circle at 4% 52%, rgba(141, 114, 255, 0.08) 0%, transparent 38%),
       radial-gradient(circle at 70% 100%, rgba(215, 168, 74, 0.075) 0%, transparent 42%),
       linear-gradient(165deg, rgba(9, 8, 12, 0.46) 0%, rgba(2, 2, 4, 0.36) 72%)
     `,
-  },
-  chrome: { flex: 1, paddingHorizontal: 20 },
-  appHeader: {
-    minHeight: 58,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 14,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(242, 211, 138, 0.16)',
-  },
-  brandLockup: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  brandReticle: {
-    width: 24,
-    height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: theme.colors.goldMuted,
-  },
-  brandReticleDot: {
-    width: 5,
-    height: 5,
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.goldBright,
-    boxShadow: '0 0 9px rgba(242, 211, 138, 0.82)',
-  },
-  brandText: {
-    color: theme.colors.goldBright,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1.7,
-  },
-  headerDoneButton: {
-    minWidth: 66,
-    minHeight: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 15,
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.36)',
-    backgroundColor: 'rgba(215, 168, 74, 0.08)',
-  },
-  headerDoneText: { color: theme.colors.goldBright, fontSize: 13, fontWeight: '900' },
-  analysisLiveBadge: {
-    minHeight: 36,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    paddingHorizontal: 11,
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.32)',
-    backgroundColor: 'rgba(88, 223, 232, 0.07)',
-  },
-  analysisLiveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.scannerCyan,
-    boxShadow: '0 0 9px rgba(88, 223, 232, 0.92)',
-  },
-  analysisLiveText: {
-    color: theme.colors.scannerCyan,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.8,
-  },
-  buttonPressed: { opacity: 0.72, transform: [{ scale: 0.96 }] },
-  scrollView: { flex: 1, width: '100%' },
-  content: { width: '100%', alignItems: 'center', paddingTop: 24 },
-  stateContent: { width: '100%', maxWidth: 760, gap: 18 },
-  stateHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 13 },
-  stateMarker: { width: 4, height: 52, borderRadius: theme.radii.pill },
-  stateHeaderCopy: { flex: 1, gap: 5 },
-  eyebrow: { fontSize: 10, fontWeight: '900', letterSpacing: 1.8 },
-  title: { color: theme.colors.cream, fontSize: 29, fontWeight: '800', lineHeight: 34 },
-  leadText: { color: theme.colors.textMuted, fontSize: 15, lineHeight: 23 },
-  supportingText: { color: theme.colors.textMuted, fontSize: 14, lineHeight: 21 },
-  listCard: {
-    gap: 14,
-    padding: 17,
-    borderRadius: theme.radii.medium,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    borderColor: 'rgba(141, 114, 255, 0.27)',
-    backgroundColor: 'rgba(16, 13, 22, 0.88)',
-  },
-  listRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  listBullet: {
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-  },
-  listBulletText: { fontSize: 11, fontWeight: '900', fontVariant: ['tabular-nums'] },
-  listText: { flex: 1, color: theme.colors.text, fontSize: 14, lineHeight: 20 },
-  analysisVisual: { alignItems: 'center', gap: 23, paddingVertical: 12 },
-  orbShell: { width: 148, height: 148, alignItems: 'center', justifyContent: 'center' },
-  outerRing: {
-    position: 'absolute',
-    width: 142,
-    height: 142,
-    borderRadius: theme.radii.pill,
-    borderWidth: 2,
-    borderColor: 'rgba(88, 223, 232, 0.12)',
-    borderTopColor: theme.colors.scannerCyan,
-    borderRightColor: theme.colors.scannerViolet,
-    boxShadow: '0 0 26px rgba(88, 223, 232, 0.14)',
-  },
-  innerRing: {
-    position: 'absolute',
-    width: 105,
-    height: 105,
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(141, 114, 255, 0.15)',
-    borderBottomColor: theme.colors.scannerViolet,
-    borderLeftColor: theme.colors.goldBright,
-  },
-  orbCore: {
-    width: 68,
-    height: 68,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.52)',
-    backgroundColor: 'rgba(9, 18, 22, 0.96)',
-    boxShadow: '0 0 30px rgba(88, 223, 232, 0.30)',
-  },
-  orbText: { color: theme.colors.scannerCyan, fontSize: 17, fontWeight: '900', fontVariant: ['tabular-nums'] },
-  progressTrack: {
-    width: '88%',
-    height: 4,
-    overflow: 'hidden',
-    borderRadius: theme.radii.pill,
-    backgroundColor: 'rgba(88, 223, 232, 0.10)',
-  },
-  progressFill: {
-    width: '100%',
-    height: '100%',
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.scannerCyan,
-    boxShadow: '0 0 12px rgba(88, 223, 232, 0.72)',
-    transformOrigin: 'left',
-  },
-  stepList: { gap: 9 },
-  stepRow: {
-    minHeight: 50,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 11,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: theme.radii.small,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    borderColor: 'rgba(138, 100, 43, 0.15)',
-    backgroundColor: 'rgba(8, 8, 11, 0.72)',
-  },
-  stepRowActive: {
-    borderColor: 'rgba(88, 223, 232, 0.35)',
-    backgroundColor: 'rgba(88, 223, 232, 0.06)',
-  },
-  stepDot: {
-    width: 18,
-    height: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-  },
-  stepDotCore: { width: 8, height: 8, borderRadius: theme.radii.pill },
-  stepText: { flex: 1, fontSize: 13, lineHeight: 18 },
-  stepStatus: { fontSize: 9, fontWeight: '900', letterSpacing: 1.1 },
-  errorCard: {
-    gap: 12,
-    padding: 18,
-    borderRadius: theme.radii.medium,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    borderColor: 'rgba(232, 97, 88, 0.38)',
-    backgroundColor: 'rgba(65, 18, 19, 0.28)',
-  },
-  errorMessage: { color: theme.colors.cream, fontSize: 16, lineHeight: 24 },
-  errorCode: { color: theme.colors.danger, fontSize: 11, fontWeight: '800', letterSpacing: 0.7 },
-  section: { gap: 10 },
-  sectionTitle: { color: theme.colors.goldMuted, fontSize: 10, fontWeight: '900', letterSpacing: 1.65 },
-  verifiedCard: {
-    gap: 11,
-    padding: 16,
-    borderRadius: theme.radii.medium,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    borderColor: 'rgba(224, 172, 75, 0.25)',
-    backgroundColor: 'rgba(224, 172, 75, 0.05)',
-  },
-  verifiedRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  verifiedDot: { width: 6, height: 6, marginTop: 7, borderRadius: theme.radii.pill, backgroundColor: theme.colors.scannerAmber },
-  verifiedText: { flex: 1, color: theme.colors.text, fontSize: 14, lineHeight: 20 },
-  suggestionList: { gap: 10 },
-  suggestionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 13,
-    padding: 14,
-    borderRadius: theme.radii.medium,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.18)',
-    backgroundColor: 'rgba(11, 10, 14, 0.92)',
-  },
-  suggestionIcon: {
-    width: 42,
-    height: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: theme.radii.small,
-    borderWidth: 1,
-  },
-  suggestionFocus: { width: 8, height: 8, borderRadius: theme.radii.pill, boxShadow: '0 0 9px rgba(88, 223, 232, 0.65)' },
-  suggestionCopy: { flex: 1, gap: 4 },
-  suggestionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  suggestionTitle: { flex: 1, color: theme.colors.cream, fontSize: 14, fontWeight: '800' },
-  priorityTag: { fontSize: 8, fontWeight: '900', letterSpacing: 0.8 },
-  suggestionDescription: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 18 },
-  identityCard: {
-    gap: 17,
-    padding: 18,
-    borderRadius: theme.radii.medium,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.30)',
-    backgroundColor: 'rgba(18, 15, 10, 0.68)',
-    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.28)',
-  },
-  identityTitle: { color: theme.colors.cream, fontSize: 22, fontWeight: '800', lineHeight: 28 },
-  identityGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  identityField: {
-    minWidth: '46%',
-    flexGrow: 1,
-    gap: 3,
-    padding: 11,
-    borderRadius: theme.radii.small,
-    backgroundColor: 'rgba(3, 3, 5, 0.52)',
-  },
-  identityFieldLabel: { color: theme.colors.goldMuted, fontSize: 8, fontWeight: '900', letterSpacing: 1.1 },
-  identityFieldValue: { color: theme.colors.text, fontSize: 13, fontWeight: '700' },
-  conditionCard: {
-    gap: 13,
-    padding: 17,
-    borderRadius: theme.radii.medium,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    borderColor: 'rgba(141, 114, 255, 0.27)',
-    backgroundColor: 'rgba(141, 114, 255, 0.06)',
-  },
-  conditionTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  conditionGrade: { flex: 1, color: theme.colors.scannerViolet, fontSize: 20, fontWeight: '900' },
-  conditionScore: { color: theme.colors.scannerViolet, fontSize: 16, fontWeight: '900', fontVariant: ['tabular-nums'] },
-  conditionSummary: { color: theme.colors.text, fontSize: 14, lineHeight: 21 },
-  detailList: { gap: 8 },
-  detailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 9 },
-  detailBullet: { width: 5, height: 5, marginTop: 7, borderRadius: theme.radii.pill, backgroundColor: theme.colors.scannerViolet },
-  detailText: { flex: 1, color: theme.colors.textMuted, fontSize: 13, lineHeight: 19 },
-  evidenceCard: {
-    overflow: 'hidden',
-    borderRadius: theme.radii.medium,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.20)',
-    backgroundColor: 'rgba(8, 8, 11, 0.74)',
-  },
-  evidenceRow: {
-    minHeight: 68,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 11,
-    padding: 13,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(88, 223, 232, 0.12)',
-  },
-  evidenceIndex: {
-    width: 29,
-    height: 29,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(88, 223, 232, 0.36)',
-  },
-  evidenceIndexText: { color: theme.colors.scannerCyan, fontSize: 9, fontWeight: '900', fontVariant: ['tabular-nums'] },
-  evidenceCopy: { flex: 1, gap: 4 },
-  evidenceLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  evidenceLabel: { flexShrink: 1, color: theme.colors.cream, fontSize: 13, fontWeight: '800' },
-  sourceTag: { color: theme.colors.scannerCyan, fontSize: 7, fontWeight: '900', letterSpacing: 0.7 },
-  evidenceValue: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 17 },
-  evidenceConfidence: { color: theme.colors.scannerCyan, fontSize: 11, fontWeight: '900', fontVariant: ['tabular-nums'] },
-  confidenceCard: {
-    gap: 15,
-    padding: 17,
-    borderRadius: theme.radii.medium,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.18)',
-    backgroundColor: 'rgba(11, 10, 14, 0.82)',
-  },
-  confidenceRow: { gap: 7 },
-  confidenceLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  confidenceLabel: { color: theme.colors.textMuted, fontSize: 12, fontWeight: '700' },
-  confidenceValue: { fontSize: 12, fontWeight: '900', fontVariant: ['tabular-nums'] },
-  meterTrack: { height: 5, overflow: 'hidden', borderRadius: theme.radii.pill, backgroundColor: 'rgba(255, 255, 255, 0.07)' },
-  meterFill: { height: '100%', borderRadius: theme.radii.pill },
-  readinessCard: {
-    gap: 10,
-    padding: 17,
-    borderRadius: theme.radii.medium,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    backgroundColor: 'rgba(8, 8, 11, 0.80)',
-  },
-  readinessTopRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  readinessSignal: { width: 9, height: 9, borderRadius: theme.radii.pill },
-  readinessLabel: { flex: 1, fontSize: 15, fontWeight: '900' },
-  readinessScore: { fontSize: 14, fontWeight: '900', fontVariant: ['tabular-nums'] },
-  readinessReason: { color: theme.colors.textMuted, fontSize: 13, lineHeight: 19 },
-  valuationCard: {
-    overflow: 'hidden',
-    borderRadius: theme.radii.medium,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    borderColor: 'rgba(215, 168, 74, 0.38)',
-    backgroundColor: 'rgba(22, 16, 8, 0.78)',
-    boxShadow: '0 0 26px rgba(215, 168, 74, 0.10)',
-  },
-  valuationValues: { minHeight: 112, flexDirection: 'row', alignItems: 'stretch' },
-  valuationColumn: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 6, paddingVertical: 17 },
-  valuationColumnFeatured: {
-    backgroundColor: 'rgba(215, 168, 74, 0.10)',
-    borderLeftWidth: StyleSheet.hairlineWidth,
-    borderRightWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(242, 211, 138, 0.22)',
-  },
-  valuationLabel: { color: theme.colors.goldMuted, fontSize: 8, fontWeight: '900', letterSpacing: 1.0 },
-  valuationLabelFeatured: { color: theme.colors.goldBright },
-  valuationValue: { maxWidth: '100%', color: theme.colors.textMuted, fontSize: 17, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  valuationValueFeatured: { color: theme.colors.goldBright, fontSize: 22, boxShadow: '0 0 12px rgba(242, 211, 138, 0.18)' },
-  valuationBasisRow: { gap: 5, padding: 14, borderTopWidth: 1, borderTopColor: 'rgba(215, 168, 74, 0.18)' },
-  valuationBasisStrong: { color: theme.colors.cream, fontSize: 12, fontWeight: '800' },
-  valuationBasis: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 },
-  actions: { gap: 10, paddingTop: 7 },
-  actionButton: {
-    minHeight: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    boxShadow: '0 8px 22px rgba(0, 0, 0, 0.30)',
-  },
-  actionButtonSecondary: { backgroundColor: 'rgba(7, 7, 10, 0.72)' },
-  actionButtonText: { color: theme.colors.backgroundDeep, fontSize: 14, fontWeight: '900', letterSpacing: 0.3 },
-});
+    },
+    chrome: { flex: 1, paddingHorizontal: 20 },
+    appHeader: {
+      minHeight: 58,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 14,
+      paddingBottom: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: 'rgba(242, 211, 138, 0.16)',
+    },
+    brandLockup: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+    brandReticle: {
+      width: 24,
+      height: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: theme.colors.goldMuted,
+    },
+    brandReticleDot: {
+      width: 5,
+      height: 5,
+      borderRadius: theme.radii.pill,
+      backgroundColor: theme.colors.goldBright,
+      boxShadow: '0 0 9px rgba(242, 211, 138, 0.82)',
+    },
+    brandText: {
+      color: theme.colors.goldBright,
+      fontSize: 10,
+      fontWeight: '900',
+      letterSpacing: 1.7,
+    },
+    headerDoneButton: {
+      minWidth: 66,
+      minHeight: 42,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 15,
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.36)',
+      backgroundColor: 'rgba(215, 168, 74, 0.08)',
+    },
+    headerDoneText: { color: theme.colors.goldBright, fontSize: 13, fontWeight: '900' },
+    analysisLiveBadge: {
+      minHeight: 36,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 7,
+      paddingHorizontal: 11,
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.32)',
+      backgroundColor: 'rgba(88, 223, 232, 0.07)',
+    },
+    analysisLiveDot: {
+      width: 6,
+      height: 6,
+      borderRadius: theme.radii.pill,
+      backgroundColor: theme.colors.scannerCyan,
+      boxShadow: '0 0 9px rgba(88, 223, 232, 0.92)',
+    },
+    analysisLiveText: {
+      color: theme.colors.scannerCyan,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 0.8,
+    },
+    buttonPressed: { opacity: 0.72, transform: [{ scale: 0.96 }] },
+    scrollView: { flex: 1, width: '100%' },
+    content: { width: '100%', alignItems: 'center', paddingTop: 24 },
+    stateContent: { width: '100%', maxWidth: 760, gap: 18 },
+    stateHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 13 },
+    stateMarker: { width: 4, height: 52, borderRadius: theme.radii.pill },
+    stateHeaderCopy: { flex: 1, gap: 5 },
+    eyebrow: { fontSize: 10, fontWeight: '900', letterSpacing: 1.8 },
+    title: { color: theme.colors.cream, fontSize: 29, fontWeight: '800', lineHeight: 34 },
+    leadText: { color: theme.colors.textMuted, fontSize: 15, lineHeight: 23 },
+    supportingText: { color: theme.colors.textMuted, fontSize: 14, lineHeight: 21 },
+    listCard: {
+      gap: 14,
+      padding: 17,
+      borderRadius: theme.radii.medium,
+      borderCurve: 'continuous',
+      borderWidth: 1,
+      borderColor: 'rgba(141, 114, 255, 0.27)',
+      backgroundColor: 'rgba(16, 13, 22, 0.88)',
+    },
+    listRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    listBullet: {
+      width: 28,
+      height: 28,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+    },
+    listBulletText: { fontSize: 11, fontWeight: '900', fontVariant: ['tabular-nums'] },
+    listText: { flex: 1, color: theme.colors.text, fontSize: 14, lineHeight: 20 },
+    analysisVisual: { alignItems: 'center', gap: 23, paddingVertical: 12 },
+    orbShell: { width: 148, height: 148, alignItems: 'center', justifyContent: 'center' },
+    outerRing: {
+      position: 'absolute',
+      width: 142,
+      height: 142,
+      borderRadius: theme.radii.pill,
+      borderWidth: 2,
+      borderColor: 'rgba(88, 223, 232, 0.12)',
+      borderTopColor: theme.colors.scannerCyan,
+      borderRightColor: theme.colors.scannerViolet,
+      boxShadow: '0 0 26px rgba(88, 223, 232, 0.14)',
+    },
+    innerRing: {
+      position: 'absolute',
+      width: 105,
+      height: 105,
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: 'rgba(141, 114, 255, 0.15)',
+      borderBottomColor: theme.colors.scannerViolet,
+      borderLeftColor: theme.colors.goldBright,
+    },
+    orbCore: {
+      width: 68,
+      height: 68,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.52)',
+      backgroundColor: 'rgba(9, 18, 22, 0.96)',
+      boxShadow: '0 0 30px rgba(88, 223, 232, 0.30)',
+    },
+    orbText: { color: theme.colors.scannerCyan, fontSize: 17, fontWeight: '900', fontVariant: ['tabular-nums'] },
+    progressTrack: {
+      width: '88%',
+      height: 4,
+      overflow: 'hidden',
+      borderRadius: theme.radii.pill,
+      backgroundColor: 'rgba(88, 223, 232, 0.10)',
+    },
+    progressFill: {
+      width: '100%',
+      height: '100%',
+      borderRadius: theme.radii.pill,
+      backgroundColor: theme.colors.scannerCyan,
+      boxShadow: '0 0 12px rgba(88, 223, 232, 0.72)',
+      transformOrigin: 'left',
+    },
+    stepList: { gap: 9 },
+    stepRow: {
+      minHeight: 50,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 11,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: theme.radii.small,
+      borderCurve: 'continuous',
+      borderWidth: 1,
+      borderColor: 'rgba(138, 100, 43, 0.15)',
+      backgroundColor: 'rgba(8, 8, 11, 0.72)',
+    },
+    stepRowActive: {
+      borderColor: 'rgba(88, 223, 232, 0.35)',
+      backgroundColor: 'rgba(88, 223, 232, 0.06)',
+    },
+    stepDot: {
+      width: 18,
+      height: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+    },
+    stepDotCore: { width: 8, height: 8, borderRadius: theme.radii.pill },
+    stepText: { flex: 1, fontSize: 13, lineHeight: 18 },
+    stepStatus: { fontSize: 9, fontWeight: '900', letterSpacing: 1.1 },
+    errorCard: {
+      gap: 12,
+      padding: 18,
+      borderRadius: theme.radii.medium,
+      borderCurve: 'continuous',
+      borderWidth: 1,
+      borderColor: 'rgba(232, 97, 88, 0.38)',
+      backgroundColor: 'rgba(65, 18, 19, 0.28)',
+    },
+    errorMessage: { color: theme.colors.cream, fontSize: 16, lineHeight: 24 },
+    errorCode: { color: theme.colors.danger, fontSize: 11, fontWeight: '800', letterSpacing: 0.7 },
+    section: { gap: 10 },
+    sectionTitle: { color: theme.colors.goldMuted, fontSize: 10, fontWeight: '900', letterSpacing: 1.65 },
+    verifiedCard: {
+      gap: 11,
+      padding: 16,
+      borderRadius: theme.radii.medium,
+      borderCurve: 'continuous',
+      borderWidth: 1,
+      borderColor: 'rgba(224, 172, 75, 0.25)',
+      backgroundColor: 'rgba(224, 172, 75, 0.05)',
+    },
+    verifiedRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+    verifiedDot: { width: 6, height: 6, marginTop: 7, borderRadius: theme.radii.pill, backgroundColor: theme.colors.scannerAmber },
+    verifiedText: { flex: 1, color: theme.colors.text, fontSize: 14, lineHeight: 20 },
+    suggestionList: { gap: 10 },
+    suggestionCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 13,
+      padding: 14,
+      borderRadius: theme.radii.medium,
+      borderCurve: 'continuous',
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.18)',
+      backgroundColor: 'rgba(11, 10, 14, 0.92)',
+    },
+    suggestionIcon: {
+      width: 42,
+      height: 42,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.small,
+      borderWidth: 1,
+    },
+    suggestionFocus: { width: 8, height: 8, borderRadius: theme.radii.pill, boxShadow: '0 0 9px rgba(88, 223, 232, 0.65)' },
+    suggestionCopy: { flex: 1, gap: 4 },
+    suggestionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    suggestionTitle: { flex: 1, color: theme.colors.cream, fontSize: 14, fontWeight: '800' },
+    priorityTag: { fontSize: 8, fontWeight: '900', letterSpacing: 0.8 },
+    suggestionDescription: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 18 },
+    identityCard: {
+      gap: 17,
+      padding: 18,
+      borderRadius: theme.radii.medium,
+      borderCurve: 'continuous',
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.30)',
+      backgroundColor: 'rgba(18, 15, 10, 0.68)',
+      boxShadow: '0 10px 30px rgba(0, 0, 0, 0.28)',
+    },
+    identityTitle: { color: theme.colors.cream, fontSize: 22, fontWeight: '800', lineHeight: 28 },
+    identityGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    identityField: {
+      minWidth: '46%',
+      flexGrow: 1,
+      gap: 3,
+      padding: 11,
+      borderRadius: theme.radii.small,
+      backgroundColor: 'rgba(3, 3, 5, 0.52)',
+    },
+    identityFieldLabel: { color: theme.colors.goldMuted, fontSize: 8, fontWeight: '900', letterSpacing: 1.1 },
+    identityFieldValue: { color: theme.colors.text, fontSize: 13, fontWeight: '700' },
+    conditionCard: {
+      gap: 13,
+      padding: 17,
+      borderRadius: theme.radii.medium,
+      borderCurve: 'continuous',
+      borderWidth: 1,
+      borderColor: 'rgba(141, 114, 255, 0.27)',
+      backgroundColor: 'rgba(141, 114, 255, 0.06)',
+    },
+    conditionTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+    conditionGrade: { flex: 1, color: theme.colors.scannerViolet, fontSize: 20, fontWeight: '900' },
+    conditionScore: { color: theme.colors.scannerViolet, fontSize: 16, fontWeight: '900', fontVariant: ['tabular-nums'] },
+    conditionSummary: { color: theme.colors.text, fontSize: 14, lineHeight: 21 },
+    detailList: { gap: 8 },
+    detailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 9 },
+    detailBullet: { width: 5, height: 5, marginTop: 7, borderRadius: theme.radii.pill, backgroundColor: theme.colors.scannerViolet },
+    detailText: { flex: 1, color: theme.colors.textMuted, fontSize: 13, lineHeight: 19 },
+    evidenceCard: {
+      overflow: 'hidden',
+      borderRadius: theme.radii.medium,
+      borderCurve: 'continuous',
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.20)',
+      backgroundColor: 'rgba(8, 8, 11, 0.74)',
+    },
+    evidenceRow: {
+      minHeight: 68,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 11,
+      padding: 13,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: 'rgba(88, 223, 232, 0.12)',
+    },
+    evidenceIndex: {
+      width: 29,
+      height: 29,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.36)',
+    },
+    evidenceIndexText: { color: theme.colors.scannerCyan, fontSize: 9, fontWeight: '900', fontVariant: ['tabular-nums'] },
+    evidenceCopy: { flex: 1, gap: 4 },
+    evidenceLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+    evidenceLabel: { flexShrink: 1, color: theme.colors.cream, fontSize: 13, fontWeight: '800' },
+    sourceTag: { color: theme.colors.scannerCyan, fontSize: 7, fontWeight: '900', letterSpacing: 0.7 },
+    evidenceValue: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 17 },
+    evidenceConfidence: { color: theme.colors.scannerCyan, fontSize: 11, fontWeight: '900', fontVariant: ['tabular-nums'] },
+    confidenceCard: {
+      gap: 15,
+      padding: 17,
+      borderRadius: theme.radii.medium,
+      borderCurve: 'continuous',
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.18)',
+      backgroundColor: 'rgba(11, 10, 14, 0.82)',
+    },
+    confidenceRow: { gap: 7 },
+    confidenceLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+    confidenceLabel: { color: theme.colors.textMuted, fontSize: 12, fontWeight: '700' },
+    confidenceValue: { fontSize: 12, fontWeight: '900', fontVariant: ['tabular-nums'] },
+    meterTrack: { height: 5, overflow: 'hidden', borderRadius: theme.radii.pill, backgroundColor: 'rgba(255, 255, 255, 0.07)' },
+    meterFill: { height: '100%', borderRadius: theme.radii.pill },
+    readinessCard: {
+      gap: 10,
+      padding: 17,
+      borderRadius: theme.radii.medium,
+      borderCurve: 'continuous',
+      borderWidth: 1,
+      backgroundColor: 'rgba(8, 8, 11, 0.80)',
+    },
+    readinessTopRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    readinessSignal: { width: 9, height: 9, borderRadius: theme.radii.pill },
+    readinessLabel: { flex: 1, fontSize: 15, fontWeight: '900' },
+    readinessScore: { fontSize: 14, fontWeight: '900', fontVariant: ['tabular-nums'] },
+    readinessReason: { color: theme.colors.textMuted, fontSize: 13, lineHeight: 19 },
+    valuationCard: {
+      overflow: 'hidden',
+      borderRadius: theme.radii.medium,
+      borderCurve: 'continuous',
+      borderWidth: 1,
+      borderColor: 'rgba(215, 168, 74, 0.38)',
+      backgroundColor: 'rgba(22, 16, 8, 0.78)',
+      boxShadow: '0 0 26px rgba(215, 168, 74, 0.10)',
+    },
+    valuationValues: { minHeight: 112, flexDirection: 'row', alignItems: 'stretch' },
+    valuationColumn: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 6, paddingVertical: 17 },
+    valuationColumnFeatured: {
+      backgroundColor: 'rgba(215, 168, 74, 0.10)',
+      borderLeftWidth: StyleSheet.hairlineWidth,
+      borderRightWidth: StyleSheet.hairlineWidth,
+      borderColor: 'rgba(242, 211, 138, 0.22)',
+    },
+    valuationLabel: { color: theme.colors.goldMuted, fontSize: 8, fontWeight: '900', letterSpacing: 1.0 },
+    valuationLabelFeatured: { color: theme.colors.goldBright },
+    valuationValue: { maxWidth: '100%', color: theme.colors.textMuted, fontSize: 17, fontWeight: '800', fontVariant: ['tabular-nums'] },
+    valuationValueFeatured: { color: theme.colors.goldBright, fontSize: 22, boxShadow: '0 0 12px rgba(242, 211, 138, 0.18)' },
+    valuationBasisRow: { gap: 5, padding: 14, borderTopWidth: 1, borderTopColor: 'rgba(215, 168, 74, 0.18)' },
+    valuationBasisStrong: { color: theme.colors.cream, fontSize: 12, fontWeight: '800' },
+    valuationBasis: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 },
+    actions: { gap: 10, paddingTop: 7 },
+    actionButton: {
+      minHeight: 52,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 20,
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      boxShadow: '0 8px 22px rgba(0, 0, 0, 0.30)',
+    },
+    actionButtonSecondary: { backgroundColor: 'rgba(7, 7, 10, 0.72)' },
+    actionButtonText: { color: theme.colors.backgroundDeep, fontSize: 14, fontWeight: '900', letterSpacing: 0.3 },
+  });
   return {
     ...staticStyles,
-  brandReticle: [
-    staticStyles.brandReticle,
-    {
-        width: responsiveLayout.responsiveWidth(24),
-        height: responsiveLayout.responsiveHeight(24),
-    },
-  ],
-  brandReticleDot: [
-    staticStyles.brandReticleDot,
-    {
-        width: responsiveLayout.responsiveWidth(5),
-        height: responsiveLayout.responsiveHeight(5),
-    },
-  ],
-  brandText: [
-    staticStyles.brandText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  headerDoneText: [
-    staticStyles.headerDoneText,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  analysisLiveDot: [
-    staticStyles.analysisLiveDot,
-    {
-        width: responsiveLayout.responsiveWidth(6),
-        height: responsiveLayout.responsiveHeight(6),
-    },
-  ],
-  analysisLiveText: [
-    staticStyles.analysisLiveText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  stateMarker: [
-    staticStyles.stateMarker,
-    {
-        width: responsiveLayout.responsiveWidth(4),
-        height: responsiveLayout.responsiveHeight(52),
-    },
-  ],
-  eyebrow: [
-    staticStyles.eyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  title: [
-    staticStyles.title,
-    {
-        fontSize: responsiveLayout.responsiveFont(29),
-    },
-  ],
-  leadText: [
-    staticStyles.leadText,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  supportingText: [
-    staticStyles.supportingText,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
-  listBullet: [
-    staticStyles.listBullet,
-    {
-        width: responsiveLayout.responsiveWidth(28),
-        height: responsiveLayout.responsiveHeight(28),
-    },
-  ],
-  listBulletText: [
-    staticStyles.listBulletText,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  listText: [
-    staticStyles.listText,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
-  orbShell: [
-    staticStyles.orbShell,
-    {
-        width: responsiveLayout.responsiveWidth(148),
-        height: responsiveLayout.responsiveHeight(148),
-    },
-  ],
-  outerRing: [
-    staticStyles.outerRing,
-    {
-        width: responsiveLayout.responsiveWidth(142),
-        height: responsiveLayout.responsiveHeight(142),
-    },
-  ],
-  innerRing: [
-    staticStyles.innerRing,
-    {
-        width: responsiveLayout.responsiveWidth(105),
-        height: responsiveLayout.responsiveHeight(105),
-    },
-  ],
-  orbCore: [
-    staticStyles.orbCore,
-    {
-        width: responsiveLayout.responsiveWidth(68),
-        height: responsiveLayout.responsiveHeight(68),
-    },
-  ],
-  orbText: [
-    staticStyles.orbText,
-    {
-        fontSize: responsiveLayout.responsiveFont(17),
-    },
-  ],
-  progressTrack: [
-    staticStyles.progressTrack,
-    {
-        height: responsiveLayout.responsiveHeight(4),
-    },
-  ],
-  stepDot: [
-    staticStyles.stepDot,
-    {
-        width: responsiveLayout.responsiveWidth(18),
-        height: responsiveLayout.responsiveHeight(18),
-    },
-  ],
-  stepDotCore: [
-    staticStyles.stepDotCore,
-    {
-        width: responsiveLayout.responsiveWidth(8),
-        height: responsiveLayout.responsiveHeight(8),
-    },
-  ],
-  stepText: [
-    staticStyles.stepText,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  stepStatus: [
-    staticStyles.stepStatus,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  errorMessage: [
-    staticStyles.errorMessage,
-    {
-        fontSize: responsiveLayout.responsiveFont(16),
-    },
-  ],
-  errorCode: [
-    staticStyles.errorCode,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  sectionTitle: [
-    staticStyles.sectionTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  verifiedDot: [
-    staticStyles.verifiedDot,
-    {
-        width: responsiveLayout.responsiveWidth(6),
-        height: responsiveLayout.responsiveHeight(6),
-    },
-  ],
-  verifiedText: [
-    staticStyles.verifiedText,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
-  suggestionIcon: [
-    staticStyles.suggestionIcon,
-    {
-        width: responsiveLayout.responsiveWidth(42),
-        height: responsiveLayout.responsiveHeight(42),
-    },
-  ],
-  suggestionFocus: [
-    staticStyles.suggestionFocus,
-    {
-        width: responsiveLayout.responsiveWidth(8),
-        height: responsiveLayout.responsiveHeight(8),
-    },
-  ],
-  suggestionTitle: [
-    staticStyles.suggestionTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
-  priorityTag: [
-    staticStyles.priorityTag,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  suggestionDescription: [
-    staticStyles.suggestionDescription,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  identityTitle: [
-    staticStyles.identityTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(22),
-    },
-  ],
-  identityFieldLabel: [
-    staticStyles.identityFieldLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  identityFieldValue: [
-    staticStyles.identityFieldValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  conditionGrade: [
-    staticStyles.conditionGrade,
-    {
-        fontSize: responsiveLayout.responsiveFont(20),
-    },
-  ],
-  conditionScore: [
-    staticStyles.conditionScore,
-    {
-        fontSize: responsiveLayout.responsiveFont(16),
-    },
-  ],
-  conditionSummary: [
-    staticStyles.conditionSummary,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
-  detailBullet: [
-    staticStyles.detailBullet,
-    {
-        width: responsiveLayout.responsiveWidth(5),
-        height: responsiveLayout.responsiveHeight(5),
-    },
-  ],
-  detailText: [
-    staticStyles.detailText,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  evidenceIndex: [
-    staticStyles.evidenceIndex,
-    {
-        width: responsiveLayout.responsiveWidth(29),
-        height: responsiveLayout.responsiveHeight(29),
-    },
-  ],
-  evidenceIndexText: [
-    staticStyles.evidenceIndexText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  evidenceLabel: [
-    staticStyles.evidenceLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  sourceTag: [
-    staticStyles.sourceTag,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  evidenceValue: [
-    staticStyles.evidenceValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  evidenceConfidence: [
-    staticStyles.evidenceConfidence,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  confidenceLabel: [
-    staticStyles.confidenceLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  confidenceValue: [
-    staticStyles.confidenceValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  meterTrack: [
-    staticStyles.meterTrack,
-    {
-        height: responsiveLayout.responsiveHeight(5),
-    },
-  ],
-  readinessSignal: [
-    staticStyles.readinessSignal,
-    {
-        width: responsiveLayout.responsiveWidth(9),
-        height: responsiveLayout.responsiveHeight(9),
-    },
-  ],
-  readinessLabel: [
-    staticStyles.readinessLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  readinessScore: [
-    staticStyles.readinessScore,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
-  readinessReason: [
-    staticStyles.readinessReason,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  valuationLabel: [
-    staticStyles.valuationLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  valuationValue: [
-    staticStyles.valuationValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(17),
-    },
-  ],
-  valuationValueFeatured: [
-    staticStyles.valuationValueFeatured,
-    {
-        fontSize: responsiveLayout.responsiveFont(22),
-    },
-  ],
-  valuationBasisStrong: [
-    staticStyles.valuationBasisStrong,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  valuationBasis: [
-    staticStyles.valuationBasis,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  actionButtonText: [
-    staticStyles.actionButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
+    brandReticle: [
+      staticStyles.brandReticle,
+      {
+        width: responsiveWidth(24),
+        height: responsiveHeight(24),
+      },
+    ],
+    brandReticleDot: [
+      staticStyles.brandReticleDot,
+      {
+        width: responsiveWidth(5),
+        height: responsiveHeight(5),
+      },
+    ],
+    brandText: [
+      staticStyles.brandText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    headerDoneText: [
+      staticStyles.headerDoneText,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    analysisLiveDot: [
+      staticStyles.analysisLiveDot,
+      {
+        width: responsiveWidth(6),
+        height: responsiveHeight(6),
+      },
+    ],
+    analysisLiveText: [
+      staticStyles.analysisLiveText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    stateMarker: [
+      staticStyles.stateMarker,
+      {
+        width: responsiveWidth(4),
+        height: responsiveHeight(52),
+      },
+    ],
+    eyebrow: [
+      staticStyles.eyebrow,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    title: [
+      staticStyles.title,
+      {
+        fontSize: responsiveFont(29),
+      },
+    ],
+    leadText: [
+      staticStyles.leadText,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    supportingText: [
+      staticStyles.supportingText,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
+    listBullet: [
+      staticStyles.listBullet,
+      {
+        width: responsiveWidth(28),
+        height: responsiveHeight(28),
+      },
+    ],
+    listBulletText: [
+      staticStyles.listBulletText,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    listText: [
+      staticStyles.listText,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
+    orbShell: [
+      staticStyles.orbShell,
+      {
+        width: responsiveWidth(148),
+        height: responsiveHeight(148),
+      },
+    ],
+    outerRing: [
+      staticStyles.outerRing,
+      {
+        width: responsiveWidth(142),
+        height: responsiveHeight(142),
+      },
+    ],
+    innerRing: [
+      staticStyles.innerRing,
+      {
+        width: responsiveWidth(105),
+        height: responsiveHeight(105),
+      },
+    ],
+    orbCore: [
+      staticStyles.orbCore,
+      {
+        width: responsiveWidth(68),
+        height: responsiveHeight(68),
+      },
+    ],
+    orbText: [
+      staticStyles.orbText,
+      {
+        fontSize: responsiveFont(17),
+      },
+    ],
+    progressTrack: [
+      staticStyles.progressTrack,
+      {
+        height: responsiveHeight(4),
+      },
+    ],
+    stepDot: [
+      staticStyles.stepDot,
+      {
+        width: responsiveWidth(18),
+        height: responsiveHeight(18),
+      },
+    ],
+    stepDotCore: [
+      staticStyles.stepDotCore,
+      {
+        width: responsiveWidth(8),
+        height: responsiveHeight(8),
+      },
+    ],
+    stepText: [
+      staticStyles.stepText,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    stepStatus: [
+      staticStyles.stepStatus,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    errorMessage: [
+      staticStyles.errorMessage,
+      {
+        fontSize: responsiveFont(16),
+      },
+    ],
+    errorCode: [
+      staticStyles.errorCode,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    sectionTitle: [
+      staticStyles.sectionTitle,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    verifiedDot: [
+      staticStyles.verifiedDot,
+      {
+        width: responsiveWidth(6),
+        height: responsiveHeight(6),
+      },
+    ],
+    verifiedText: [
+      staticStyles.verifiedText,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
+    suggestionIcon: [
+      staticStyles.suggestionIcon,
+      {
+        width: responsiveWidth(42),
+        height: responsiveHeight(42),
+      },
+    ],
+    suggestionFocus: [
+      staticStyles.suggestionFocus,
+      {
+        width: responsiveWidth(8),
+        height: responsiveHeight(8),
+      },
+    ],
+    suggestionTitle: [
+      staticStyles.suggestionTitle,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
+    priorityTag: [
+      staticStyles.priorityTag,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    suggestionDescription: [
+      staticStyles.suggestionDescription,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    identityTitle: [
+      staticStyles.identityTitle,
+      {
+        fontSize: responsiveFont(22),
+      },
+    ],
+    identityFieldLabel: [
+      staticStyles.identityFieldLabel,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    identityFieldValue: [
+      staticStyles.identityFieldValue,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    conditionGrade: [
+      staticStyles.conditionGrade,
+      {
+        fontSize: responsiveFont(20),
+      },
+    ],
+    conditionScore: [
+      staticStyles.conditionScore,
+      {
+        fontSize: responsiveFont(16),
+      },
+    ],
+    conditionSummary: [
+      staticStyles.conditionSummary,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
+    detailBullet: [
+      staticStyles.detailBullet,
+      {
+        width: responsiveWidth(5),
+        height: responsiveHeight(5),
+      },
+    ],
+    detailText: [
+      staticStyles.detailText,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    evidenceIndex: [
+      staticStyles.evidenceIndex,
+      {
+        width: responsiveWidth(29),
+        height: responsiveHeight(29),
+      },
+    ],
+    evidenceIndexText: [
+      staticStyles.evidenceIndexText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    evidenceLabel: [
+      staticStyles.evidenceLabel,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    sourceTag: [
+      staticStyles.sourceTag,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    evidenceValue: [
+      staticStyles.evidenceValue,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    evidenceConfidence: [
+      staticStyles.evidenceConfidence,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    confidenceLabel: [
+      staticStyles.confidenceLabel,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    confidenceValue: [
+      staticStyles.confidenceValue,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    meterTrack: [
+      staticStyles.meterTrack,
+      {
+        height: responsiveHeight(5),
+      },
+    ],
+    readinessSignal: [
+      staticStyles.readinessSignal,
+      {
+        width: responsiveWidth(9),
+        height: responsiveHeight(9),
+      },
+    ],
+    readinessLabel: [
+      staticStyles.readinessLabel,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    readinessScore: [
+      staticStyles.readinessScore,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
+    readinessReason: [
+      staticStyles.readinessReason,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    valuationLabel: [
+      staticStyles.valuationLabel,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    valuationValue: [
+      staticStyles.valuationValue,
+      {
+        fontSize: responsiveFont(17),
+      },
+    ],
+    valuationValueFeatured: [
+      staticStyles.valuationValueFeatured,
+      {
+        fontSize: responsiveFont(22),
+      },
+    ],
+    valuationBasisStrong: [
+      staticStyles.valuationBasisStrong,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    valuationBasis: [
+      staticStyles.valuationBasis,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    actionButtonText: [
+      staticStyles.actionButtonText,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
   };
 }

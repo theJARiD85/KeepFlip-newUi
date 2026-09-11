@@ -1,7 +1,7 @@
 import { File, Paths } from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from 'expo-router';
-import { type ReactNode, useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -25,6 +25,20 @@ import {
   KeepFlipTextInput as TextInput,
 } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import { responsiveWidth } from '@/lib/responsiveFont';
+import {
+  listInventoryItems,
+  type InventoryItem,
+} from '@/services/inventory-service';
+import {
+  createBookkeepingIdempotencyKey,
+  getBookkeepingOverview,
+  isResellerBookkeepingConfigured,
+  recordBookkeepingEvent,
+  type BookkeepingEventType,
+  type BookkeepingMoneyEvent,
+} from '@/services/reseller-bookkeeping-service';
 import {
   buildResellerLedgerCsv,
   centsFromLedgerAmount,
@@ -38,20 +52,6 @@ import {
   type ResellerLedgerEntry,
   type ResellerLedgerEntryType,
 } from '@/services/reseller-ledger-service';
-import {
-  createBookkeepingIdempotencyKey,
-  getBookkeepingOverview,
-  isResellerBookkeepingConfigured,
-  recordBookkeepingEvent,
-  type BookkeepingEventType,
-  type BookkeepingMoneyEvent,
-} from '@/services/reseller-bookkeeping-service';
-import {
-  listInventoryItems,
-  type InventoryItem,
-} from '@/services/inventory-service';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type LedgerDraft = {
@@ -168,7 +168,7 @@ function Metric({ detail, label, tone = 'gold', value }: MetricProps) {
       <Text selectable style={[styles.metricValue, { fontSize: responsiveFont(21) }]}>
         {value}
       </Text>
-      <Text style={[styles.metricDetail, { fontSize: responsiveFont(10)}]}>{detail}</Text>
+      <Text style={[styles.metricDetail, { fontSize: responsiveFont(10) }]}>{detail}</Text>
     </View>
   );
 }
@@ -290,7 +290,7 @@ function TransactionDetailRow({
   return (
     <View style={styles.transactionDetailRow}>
       <Text style={[styles.transactionDetailLabel, { fontSize: responsiveFont(7) }]}>{label}</Text>
-      <Text selectable style={[styles.transactionDetailValue, { fontSize: responsiveFont(12)}]}>
+      <Text selectable style={[styles.transactionDetailValue, { fontSize: responsiveFont(12) }]}>
         {value}
       </Text>
     </View>
@@ -558,8 +558,7 @@ export function BooksScreen() {
       quantity > selectedItem.quantityOnHand
     ) {
       setFormError(
-        `Only ${selectedItem.quantityOnHand.toLocaleString()} unit${
-          selectedItem.quantityOnHand === 1 ? '' : 's'
+        `Only ${selectedItem.quantityOnHand.toLocaleString()} unit${selectedItem.quantityOnHand === 1 ? '' : 's'
         } remain for this item.`,
       );
       return;
@@ -688,8 +687,8 @@ export function BooksScreen() {
     <KeepFlipBackground>
       <ScrollView
         contentContainerStyle={[styles.content,
-          { paddingBottom: insets.bottom, paddingTop: insets.top }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
-        style={{marginBottom: insets.bottom, marginTop: insets.top}}
+        { paddingBottom: insets.bottom + 30, paddingTop: insets.top + 15, width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+        style={{ marginBottom: insets.bottom, marginTop: insets.top }}
         contentInsetAdjustmentBehavior="automatic"
         refreshControl={
           <RefreshControl
@@ -700,9 +699,9 @@ export function BooksScreen() {
         }
         showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={[styles.eyebrow, { fontSize: responsiveFont(9) }]}>KEEPFLIP / BOOKS</Text>
-          <Text style={[styles.title, { fontSize: responsiveFont(28) }]}>Your money & items</Text>
-          <Text style={[styles.subtitle, { fontSize: responsiveFont(14)}]}>
+          <Text style={[styles.eyebrow, { fontFamily: theme.fonts.diplay, fontSize: responsiveFont(10) }]}>KEEPFLIP / BOOKS</Text>
+          <Text style={[styles.title, { fontFamily: theme.fonts.bold, fontSize: responsiveFont(26) }]}>Your money & items</Text>
+          <Text style={[styles.subtitle, { fontFamily: theme.fonts.body, fontSize: responsiveFont(12) }]}>
             Track money in, costs, and what is tied up in your items. Estimates and asking prices stay out of
             your books.
           </Text>
@@ -746,7 +745,7 @@ export function BooksScreen() {
             <IconSymbol color={theme.colors.goldBright} name="lock.fill" size={16} />
             <View style={styles.noticeCopy}>
               <Text style={[styles.noticeTitle, { fontSize: responsiveFont(9) }]}>PRIVATE LEDGER SETUP NEEDED</Text>
-              <Text selectable style={[styles.noticeText, { fontSize: responsiveFont(12)}]}>
+              <Text selectable style={[styles.noticeText, { fontSize: responsiveFont(12) }]}>
                 {setupNotice}
               </Text>
             </View>
@@ -757,7 +756,7 @@ export function BooksScreen() {
           <View style={styles.errorCard}>
             <View style={styles.noticeCopy}>
               <Text style={[styles.errorTitle, { fontSize: responsiveFont(9) }]}>BOOKS COULDN’T LOAD</Text>
-              <Text selectable style={[styles.errorText, { fontSize: responsiveFont(12)}]}>
+              <Text selectable style={[styles.errorText, { fontSize: responsiveFont(12) }]}>
                 {error}
               </Text>
             </View>
@@ -772,7 +771,7 @@ export function BooksScreen() {
         ) : null}
 
         {statusMessage ? (
-          <Text accessibilityLiveRegion="polite" selectable style={[styles.statusMessage, { fontSize: responsiveFont(12)}]}>
+          <Text accessibilityLiveRegion="polite" selectable style={[styles.statusMessage, { fontSize: responsiveFont(12) }]}>
             {statusMessage}
           </Text>
         ) : null}
@@ -831,7 +830,7 @@ export function BooksScreen() {
             />
           </View>
           {summary.unlinkedInventoryPurchaseCents > 0 || summary.unlinkedSalesCount > 0 ? (
-            <Text selectable style={[styles.summaryNote, { fontSize: responsiveFont(11)}]}>
+            <Text selectable style={[styles.summaryNote, { fontSize: responsiveFont(11) }]}>
               {summary.unlinkedInventoryPurchaseCents > 0
                 ? `${formatMoney(summary.unlinkedInventoryPurchaseCents)} of inventory cost is not linked to an item. `
                 : ''}
@@ -888,7 +887,7 @@ export function BooksScreen() {
           ) : (
             <View style={styles.emptyLedger}>
               <Text style={[styles.emptyLedgerTitle, { fontSize: responsiveFont(14) }]}>No money events recorded yet</Text>
-              <Text style={[styles.emptyLedgerText, { fontSize: responsiveFont(12)}]}>
+              <Text style={[styles.emptyLedgerText, { fontSize: responsiveFont(12) }]}>
                 Start with an actual sale, the cost of inventory, marketplace fees,
                 shipping, or supplies.
               </Text>
@@ -897,7 +896,7 @@ export function BooksScreen() {
         </Section>
 
         <View style={styles.disclaimer}>
-          <Text selectable style={[styles.disclaimerText, { fontSize: responsiveFont(10)}]}>
+          <Text selectable style={[styles.disclaimerText, { fontSize: responsiveFont(10) }]}>
             Books is a cash-basis reseller record and CSV export—not tax filing or
             tax advice. Review your records and reporting treatment with a qualified
             professional.
@@ -1033,7 +1032,7 @@ export function BooksScreen() {
                   ) : null}
                 </View>
 
-                <Text style={[styles.transactionDetailHint, { fontSize: responsiveFont(10)}]}>
+                <Text style={[styles.transactionDetailHint, { fontSize: responsiveFont(10) }]}>
                   This is the recorded Books transaction. Estimates, asking prices,
                   and projected profit are not included here.
                 </Text>
@@ -1194,7 +1193,7 @@ export function BooksScreen() {
                     <Text numberOfLines={1} style={[styles.itemPickerTitle, { fontSize: responsiveFont(13) }]}>
                       {selectedItem?.title ?? 'No item linked'}
                     </Text>
-                    <Text style={[styles.itemPickerDetail, { fontSize: responsiveFont(10)}]}>
+                    <Text style={[styles.itemPickerDetail, { fontSize: responsiveFont(10) }]}>
                       Link sales and related costs to calculate item-level profit.
                     </Text>
                   </View>
@@ -1220,10 +1219,6 @@ export function BooksScreen() {
                     </Pressable>
                     {inventory.length ? (
                       inventory.map((item) => {
-  const {
-    responsiveFont
-  } = useResponsiveLayout();
-
                         const selected = draft.itemId === item.id;
                         return (
                           <Pressable
@@ -1305,7 +1300,7 @@ export function BooksScreen() {
               </View>
 
               {formError ? (
-                <Text accessibilityLiveRegion="polite" selectable style={[styles.formError, { fontSize: responsiveFont(12)}]}>
+                <Text accessibilityLiveRegion="polite" selectable style={[styles.formError, { fontSize: responsiveFont(12) }]}>
                   {formError}
                 </Text>
               ) : null}
@@ -1335,883 +1330,884 @@ export function BooksScreen() {
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  content: {
-    alignSelf: 'center',
-    gap: 26,
-    maxWidth: 720,
-    paddingHorizontal: 18,
-    width: '100%',
-  },
-  header: { gap: 7 },
-  eyebrow: {
-    color: theme.colors.gold,
-    fontFamily: theme.fonts.radar,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 1.8,
-  },
-  title: {
-    color: theme.colors.cream,
-    fontSize: 28,
-    fontWeight: '900',
-    letterSpacing: -0.65,
-  },
-  subtitle: {
-    color: theme.colors.textMuted,
-    fontSize: 14,
-    lineHeight: 20,
-    maxWidth: 510,
-  },
-  actions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 9,
-    marginTop: 9,
-  },
-  primaryAction: {
-    alignItems: 'center',
-    backgroundColor: theme.colors.scannerCyan,
-    borderRadius: 10,
-    flexDirection: 'row',
-    gap: 7,
-    justifyContent: 'center',
-    minHeight: 43,
-    paddingHorizontal: 14,
-  },
-  primaryActionPressed: { opacity: 0.82 },
-  primaryActionText: {
-    color: theme.colors.backgroundDeep,
-    fontFamily: theme.fonts.radar,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.95,
-  },
-  secondaryAction: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(215, 168, 74, 0.08)',
-    borderColor: 'rgba(215, 168, 74, 0.42)',
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
-    gap: 7,
-    justifyContent: 'center',
-    minHeight: 43,
-    paddingHorizontal: 14,
-  },
-  secondaryActionPressed: { backgroundColor: 'rgba(215, 168, 74, 0.17)' },
-  secondaryActionText: {
-    color: theme.colors.goldBright,
-    fontFamily: theme.fonts.radar,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.95,
-  },
-  actionDisabled: { opacity: 0.42 },
-  setupNotice: {
-    alignItems: 'flex-start',
-    backgroundColor: 'rgba(215, 168, 74, 0.07)',
-    borderColor: 'rgba(215, 168, 74, 0.28)',
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
-    gap: 10,
-    padding: 13,
-  },
-  noticeCopy: { flex: 1, gap: 3 },
-  noticeTitle: {
-    color: theme.colors.goldBright,
-    fontFamily: theme.fonts.radar,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-  noticeText: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 17 },
-  errorCard: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(112, 28, 33, 0.28)',
-    borderColor: 'rgba(232, 97, 88, 0.42)',
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
-    gap: 12,
-    padding: 13,
-  },
-  errorTitle: {
-    color: theme.colors.danger,
-    fontFamily: theme.fonts.radar,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-  errorText: { color: theme.colors.text, fontSize: 12, lineHeight: 17 },
-  retryButton: {
-    alignItems: 'center',
-    borderColor: 'rgba(232, 97, 88, 0.42)',
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    justifyContent: 'center',
-    minHeight: 34,
-    paddingHorizontal: 10,
-  },
-  retryText: {
-    color: theme.colors.text,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.8,
-  },
-  statusMessage: { color: theme.colors.scannerCyan, fontSize: 12, lineHeight: 17 },
-  section: {
-    borderTopColor: 'rgba(242, 237, 228, 0.12)',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    gap: 13,
-    paddingTop: 17,
-  },
-  sectionHeader: {
-    alignItems: 'flex-end',
-    flexDirection: 'row',
-    gap: 14,
-    justifyContent: 'space-between',
-  },
-  sectionHeading: { gap: 2 },
-  sectionEyebrow: {
-    color: theme.colors.gold,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 1.25,
-  },
-  sectionTitle: {
-    color: theme.colors.cream,
-    fontSize: 17,
-    fontWeight: '800',
-    letterSpacing: -0.2,
-  },
-  loadingLine: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 9,
-    minHeight: 84,
-  },
-  loadingText: { color: theme.colors.textMuted, fontSize: 12 },
-  metricGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
-  metric: {
-    backgroundColor: 'rgba(7, 7, 10, 0.62)',
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    flexGrow: 1,
-    flexShrink: 1,
-    minWidth: 150,
-    padding: 12,
-  },
-  metricGold: { borderColor: 'rgba(215, 168, 74, 0.27)' },
-  metricCyan: { borderColor: 'rgba(0, 255, 255, 0.26)' },
-  metricViolet: { borderColor: 'rgba(141, 114, 255, 0.29)' },
-  metricLabel: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.95,
-  },
-  metricValue: {
-    color: theme.colors.cream,
-    fontSize: 21,
-    fontVariant: ['tabular-nums'],
-    fontWeight: '800',
-    letterSpacing: -0.45,
-    marginTop: 5,
-  },
-  metricDetail: {
-    color: theme.colors.textMuted,
-    fontSize: 10,
-    lineHeight: 14,
-    marginTop: 3,
-  },
-  summaryNote: { color: theme.colors.goldBright, fontSize: 11, lineHeight: 16 },
-  exportButton: {
-    alignItems: 'center',
-    borderColor: 'rgba(0, 255, 255, 0.34)',
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    justifyContent: 'center',
-    minHeight: 32,
-    minWidth: 86,
-    paddingHorizontal: 9,
-  },
-  exportButtonDisabled: { opacity: 0.35 },
-  exportButtonPressed: { backgroundColor: 'rgba(0, 255, 255, 0.1)' },
-  exportButtonText: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.8,
-  },
-  transactionList: {
-    borderTopColor: 'rgba(242, 237, 228, 0.1)',
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  transactionRow: {
-    alignItems: 'center',
-    borderBottomColor: 'rgba(242, 237, 228, 0.1)',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
-    gap: 10,
-    minHeight: 67,
-    paddingHorizontal: 2,
-    paddingVertical: 9,
-  },
-  transactionRowPressed: {
-    backgroundColor: 'rgba(242, 237, 228, 0.045)',
-  },
-  transactionMarker: { borderRadius: 2, height: 25, width: 3 },
-  transactionMarkerIncome: { backgroundColor: theme.colors.scannerCyan },
-  transactionMarkerExpense: { backgroundColor: theme.colors.gold },
-  transactionCopy: { flex: 1, gap: 2, minWidth: 0 },
-  transactionTitle: { color: theme.colors.cream, fontSize: 13, fontWeight: '700' },
-  transactionSecondary: { color: theme.colors.textMuted, fontSize: 11 },
-  transactionTertiary: { color: 'rgba(173, 167, 178, 0.72)', fontSize: 10 },
-  transactionAmountColumn: { alignItems: 'flex-end', gap: 3 },
-  transactionAmount: { fontSize: 13, fontVariant: ['tabular-nums'], fontWeight: '800' },
-  transactionAmountIncome: { color: theme.colors.scannerCyan },
-  transactionAmountExpense: { color: theme.colors.goldBright },
-  transactionSource: {
-    color: 'rgba(173, 167, 178, 0.68)',
-    fontFamily: theme.fonts.radar,
-    fontSize: 7,
-    fontWeight: '900',
-    letterSpacing: 0.7,
-  },
-  emptyLedger: {
-    alignItems: 'flex-start',
-    backgroundColor: 'rgba(7, 7, 10, 0.42)',
-    borderColor: 'rgba(242, 237, 228, 0.12)',
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    gap: 4,
-    minHeight: 108,
-    justifyContent: 'center',
-    padding: 14,
-  },
-  emptyLedgerTitle: { color: theme.colors.cream, fontSize: 14, fontWeight: '700' },
-  emptyLedgerText: {
-    color: theme.colors.textMuted,
-    fontSize: 12,
-    lineHeight: 17,
-    maxWidth: 430,
-  },
-  disclaimer: {
-    borderTopColor: 'rgba(242, 237, 228, 0.1)',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 14,
-  },
-  disclaimerText: {
-    color: 'rgba(173, 167, 178, 0.76)',
-    fontSize: 10,
-    lineHeight: 15,
-    maxWidth: 560,
-  },
-  transactionDetailModalRoot: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  transactionDetailSheet: {
-    alignSelf: 'center',
-    backgroundColor: '#0a090d',
-    borderColor: 'rgba(0, 255, 255, 0.26)',
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-    borderWidth: StyleSheet.hairlineWidth,
-    maxHeight: '84%',
-    maxWidth: 720,
-    paddingHorizontal: 18,
-    paddingTop: 17,
-    width: '100%',
-  },
-  transactionDetailHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 12,
-    justifyContent: 'space-between',
-    marginBottom: 14,
-  },
-  transactionDetailHeaderCopy: { flex: 1, gap: 2 },
-  transactionDetailTitle: {
-    color: theme.colors.cream,
-    fontSize: 22,
-    fontWeight: '900',
-    letterSpacing: -0.4,
-  },
-  transactionDetailContent: {
-    gap: 14,
-    paddingBottom: 4,
-  },
-  transactionDetailAmountCard: {
-    backgroundColor: 'rgba(0, 255, 255, 0.035)',
-    borderColor: 'rgba(0, 255, 255, 0.18)',
-    borderRadius: 11,
-    borderWidth: StyleSheet.hairlineWidth,
-    gap: 3,
-    padding: 14,
-  },
-  transactionDetailAmountLabel: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-  transactionDetailAmount: {
-    fontSize: 27,
-    fontVariant: ['tabular-nums'],
-    fontWeight: '900',
-    letterSpacing: -0.5,
-  },
-  transactionDetailDirection: {
-    color: theme.colors.textMuted,
-    fontSize: 11,
-  },
-  transactionDetailSection: {
-    backgroundColor: 'rgba(242, 237, 228, 0.025)',
-    borderColor: 'rgba(242, 237, 228, 0.11)',
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    overflow: 'hidden',
-  },
-  transactionDetailSectionTitle: {
-    color: theme.colors.goldBright,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 1,
-    paddingBottom: 7,
-    paddingHorizontal: 12,
-    paddingTop: 11,
-  },
-  transactionDetailRow: {
-    borderTopColor: 'rgba(242, 237, 228, 0.08)',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  transactionDetailLabel: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.radar,
-    fontSize: 7,
-    fontWeight: '900',
-    letterSpacing: 0.75,
-    textTransform: 'uppercase',
-  },
-  transactionDetailValue: {
-    color: theme.colors.cream,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  transactionDetailHint: {
-    color: 'rgba(173, 167, 178, 0.72)',
-    fontSize: 10,
-    lineHeight: 15,
-  },
-  modalRoot: { flex: 1, justifyContent: 'flex-end' },
-  modalDismiss: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(1, 1, 2, 0.76)' },
-  sheet: {
-    backgroundColor: '#0a090d',
-    borderColor: 'rgba(141, 114, 255, 0.3)',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    maxHeight: '95%',
-    paddingHorizontal: 18,
-    paddingTop: 17,
-  },
-  sheetHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 15,
-  },
-  sheetTitle: {
-    color: theme.colors.cream,
-    fontSize: 22,
-    fontWeight: '900',
-    letterSpacing: -0.4,
-  },
-  closeButton: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(242, 237, 228, 0.06)',
-    borderColor: 'rgba(242, 237, 228, 0.15)',
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    height: 34,
-    justifyContent: 'center',
-    width: 34,
-  },
-  sheetContent: { gap: 17, paddingBottom: 4 },
-  formSection: { gap: 7 },
-  formLabel: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-  typeOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  typeOption: {
-    backgroundColor: 'rgba(242, 237, 228, 0.035)',
-    borderColor: 'rgba(242, 237, 228, 0.16)',
-    borderRadius: 7,
-    borderWidth: StyleSheet.hairlineWidth,
-    minHeight: 29,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-  },
-  typeOptionSelected: {
-    backgroundColor: 'rgba(0, 255, 255, 0.1)',
-    borderColor: 'rgba(0, 255, 255, 0.62)',
-  },
-  typeOptionText: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.radar,
-    fontSize: 7,
-    fontWeight: '900',
-    letterSpacing: 0.6,
-  },
-  typeOptionTextSelected: { color: theme.colors.scannerCyan },
-  typeHelp: { color: theme.colors.textMuted, fontSize: 11 },
-  formRow: { flexDirection: 'row', gap: 9 },
-  formFieldWide: { flex: 1.2, gap: 7 },
-  formFieldDate: { flex: 1, gap: 7 },
-  amountInputWrap: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(242, 237, 228, 0.045)',
-    borderColor: 'rgba(242, 237, 228, 0.17)',
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
-    height: 45,
-    paddingHorizontal: 11,
-  },
-  currencyPrefix: {
-    color: theme.colors.goldBright,
-    fontSize: 16,
-    fontWeight: '700',
-    marginRight: 3,
-  },
-  amountInput: {
-    color: theme.colors.cream,
-    flex: 1,
-    fontSize: 17,
-    fontVariant: ['tabular-nums'],
-    fontWeight: '700',
-    padding: 0,
-  },
-  dateInput: {
-    backgroundColor: 'rgba(242, 237, 228, 0.045)',
-    borderColor: 'rgba(242, 237, 228, 0.17)',
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    color: theme.colors.cream,
-    fontSize: 13,
-    height: 45,
-    paddingHorizontal: 10,
-  },
-  textInput: {
-    backgroundColor: 'rgba(242, 237, 228, 0.045)',
-    borderColor: 'rgba(242, 237, 228, 0.17)',
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    color: theme.colors.cream,
-    fontSize: 13,
-    minHeight: 45,
-    paddingHorizontal: 11,
-    paddingVertical: 11,
-  },
-  notesInput: { minHeight: 84 },
-  itemPickerButton: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(242, 237, 228, 0.035)',
-    borderColor: 'rgba(242, 237, 228, 0.16)',
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
-    gap: 8,
-    minHeight: 53,
-    paddingHorizontal: 11,
-  },
-  itemPickerButtonPressed: { backgroundColor: 'rgba(242, 237, 228, 0.08)' },
-  itemPickerCopy: { flex: 1, gap: 2, minWidth: 0 },
-  itemPickerTitle: { color: theme.colors.cream, fontSize: 13, fontWeight: '700' },
-  itemPickerDetail: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 14 },
-  itemPickerChevronOpen: { transform: [{ rotate: '90deg' }] },
-  itemOptions: {
-    backgroundColor: 'rgba(5, 5, 7, 0.88)',
-    borderColor: 'rgba(141, 114, 255, 0.28)',
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    maxHeight: 230,
-    overflow: 'hidden',
-  },
-  itemOption: {
-    alignItems: 'center',
-    borderBottomColor: 'rgba(242, 237, 228, 0.09)',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
-    gap: 8,
-    minHeight: 42,
-    paddingHorizontal: 11,
-  },
-  itemOptionSelected: { backgroundColor: 'rgba(0, 255, 255, 0.08)' },
-  itemOptionText: { color: theme.colors.cream, flex: 1, fontSize: 12 },
-  itemOptionCost: {
-    color: theme.colors.goldBright,
-    fontSize: 11,
-    fontVariant: ['tabular-nums'],
-  },
-  noItemText: { color: theme.colors.textMuted, fontSize: 12, padding: 11 },
-  formError: { color: theme.colors.danger, fontSize: 12, lineHeight: 17 },
-  saveButton: {
-    alignItems: 'center',
-    backgroundColor: theme.colors.scannerCyan,
-    borderRadius: 9,
-    justifyContent: 'center',
-    minHeight: 48,
-    marginTop: 2,
-  },
-  saveButtonDisabled: { opacity: 0.55 },
-  saveButtonPressed: { opacity: 0.82 },
-  saveButtonText: {
-    color: theme.colors.backgroundDeep,
-    fontFamily: theme.fonts.radar,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-});
+  const { responsiveFont, responsiveHeight, responsiveWidth } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    content: {
+      alignSelf: 'center',
+      gap: 26,
+      maxWidth: 720,
+      paddingHorizontal: 18,
+      width: '100%',
+    },
+    header: { gap: 7 },
+    eyebrow: {
+      color: theme.colors.gold,
+      fontFamily: theme.fonts.radar,
+      fontSize: 9,
+      fontWeight: '900',
+      letterSpacing: 1.8,
+    },
+    title: {
+      color: theme.colors.cream,
+      fontSize: 28,
+      fontWeight: '900',
+      letterSpacing: -0.65,
+    },
+    subtitle: {
+      color: theme.colors.textMuted,
+      fontSize: 14,
+      lineHeight: 20,
+      maxWidth: 510,
+    },
+    actions: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 9,
+      marginTop: 9,
+    },
+    primaryAction: {
+      alignItems: 'center',
+      backgroundColor: theme.colors.scannerCyan,
+      borderRadius: 10,
+      flexDirection: 'row',
+      gap: 7,
+      justifyContent: 'center',
+      minHeight: 43,
+      paddingHorizontal: 14,
+    },
+    primaryActionPressed: { opacity: 0.82 },
+    primaryActionText: {
+      color: theme.colors.backgroundDeep,
+      fontFamily: theme.fonts.radar,
+      fontSize: 9,
+      fontWeight: '900',
+      letterSpacing: 0.95,
+    },
+    secondaryAction: {
+      alignItems: 'center',
+      backgroundColor: 'rgba(215, 168, 74, 0.08)',
+      borderColor: 'rgba(215, 168, 74, 0.42)',
+      borderRadius: 10,
+      borderWidth: StyleSheet.hairlineWidth,
+      flexDirection: 'row',
+      gap: 7,
+      justifyContent: 'center',
+      minHeight: 43,
+      paddingHorizontal: 14,
+    },
+    secondaryActionPressed: { backgroundColor: 'rgba(215, 168, 74, 0.17)' },
+    secondaryActionText: {
+      color: theme.colors.goldBright,
+      fontFamily: theme.fonts.radar,
+      fontSize: 9,
+      fontWeight: '900',
+      letterSpacing: 0.95,
+    },
+    actionDisabled: { opacity: 0.42 },
+    setupNotice: {
+      alignItems: 'flex-start',
+      backgroundColor: 'rgba(215, 168, 74, 0.07)',
+      borderColor: 'rgba(215, 168, 74, 0.28)',
+      borderRadius: 10,
+      borderWidth: StyleSheet.hairlineWidth,
+      flexDirection: 'row',
+      gap: 10,
+      padding: 13,
+    },
+    noticeCopy: { flex: 1, gap: 3 },
+    noticeTitle: {
+      color: theme.colors.goldBright,
+      fontFamily: theme.fonts.radar,
+      fontSize: 9,
+      fontWeight: '900',
+      letterSpacing: 1,
+    },
+    noticeText: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 17 },
+    errorCard: {
+      alignItems: 'center',
+      backgroundColor: 'rgba(112, 28, 33, 0.28)',
+      borderColor: 'rgba(232, 97, 88, 0.42)',
+      borderRadius: 10,
+      borderWidth: StyleSheet.hairlineWidth,
+      flexDirection: 'row',
+      gap: 12,
+      padding: 13,
+    },
+    errorTitle: {
+      color: theme.colors.danger,
+      fontFamily: theme.fonts.radar,
+      fontSize: 9,
+      fontWeight: '900',
+      letterSpacing: 1,
+    },
+    errorText: { color: theme.colors.text, fontSize: 12, lineHeight: 17 },
+    retryButton: {
+      alignItems: 'center',
+      borderColor: 'rgba(232, 97, 88, 0.42)',
+      borderRadius: 8,
+      borderWidth: StyleSheet.hairlineWidth,
+      justifyContent: 'center',
+      minHeight: 34,
+      paddingHorizontal: 10,
+    },
+    retryText: {
+      color: theme.colors.text,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 0.8,
+    },
+    statusMessage: { color: theme.colors.scannerCyan, fontSize: 12, lineHeight: 17 },
+    section: {
+      borderTopColor: 'rgba(242, 237, 228, 0.12)',
+      borderTopWidth: StyleSheet.hairlineWidth,
+      gap: 13,
+      paddingTop: 17,
+    },
+    sectionHeader: {
+      alignItems: 'flex-end',
+      flexDirection: 'row',
+      gap: 14,
+      justifyContent: 'space-between',
+    },
+    sectionHeading: { gap: 2 },
+    sectionEyebrow: {
+      color: theme.colors.gold,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 1.25,
+    },
+    sectionTitle: {
+      color: theme.colors.cream,
+      fontSize: 17,
+      fontWeight: '800',
+      letterSpacing: -0.2,
+    },
+    loadingLine: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: 9,
+      minHeight: 84,
+    },
+    loadingText: { color: theme.colors.textMuted, fontSize: 12 },
+    metricGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
+    metric: {
+      backgroundColor: 'rgba(7, 7, 10, 0.62)',
+      borderRadius: 10,
+      borderWidth: StyleSheet.hairlineWidth,
+      flexGrow: 1,
+      flexShrink: 1,
+      minWidth: 150,
+      padding: 12,
+    },
+    metricGold: { borderColor: 'rgba(215, 168, 74, 0.27)' },
+    metricCyan: { borderColor: 'rgba(0, 255, 255, 0.26)' },
+    metricViolet: { borderColor: 'rgba(141, 114, 255, 0.29)' },
+    metricLabel: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 0.95,
+    },
+    metricValue: {
+      color: theme.colors.cream,
+      fontSize: 21,
+      fontVariant: ['tabular-nums'],
+      fontWeight: '800',
+      letterSpacing: -0.45,
+      marginTop: 5,
+    },
+    metricDetail: {
+      color: theme.colors.textMuted,
+      fontSize: 10,
+      lineHeight: 14,
+      marginTop: 3,
+    },
+    summaryNote: { color: theme.colors.goldBright, fontSize: 11, lineHeight: 16 },
+    exportButton: {
+      alignItems: 'center',
+      borderColor: 'rgba(0, 255, 255, 0.34)',
+      borderRadius: 8,
+      borderWidth: StyleSheet.hairlineWidth,
+      justifyContent: 'center',
+      minHeight: 32,
+      minWidth: 86,
+      paddingHorizontal: 9,
+    },
+    exportButtonDisabled: { opacity: 0.35 },
+    exportButtonPressed: { backgroundColor: 'rgba(0, 255, 255, 0.1)' },
+    exportButtonText: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 0.8,
+    },
+    transactionList: {
+      borderTopColor: 'rgba(242, 237, 228, 0.1)',
+      borderTopWidth: StyleSheet.hairlineWidth,
+    },
+    transactionRow: {
+      alignItems: 'center',
+      borderBottomColor: 'rgba(242, 237, 228, 0.1)',
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      flexDirection: 'row',
+      gap: 10,
+      minHeight: 67,
+      paddingHorizontal: 2,
+      paddingVertical: 9,
+    },
+    transactionRowPressed: {
+      backgroundColor: 'rgba(242, 237, 228, 0.045)',
+    },
+    transactionMarker: { borderRadius: 2, height: 25, width: 3 },
+    transactionMarkerIncome: { backgroundColor: theme.colors.scannerCyan },
+    transactionMarkerExpense: { backgroundColor: theme.colors.gold },
+    transactionCopy: { flex: 1, gap: 2, minWidth: 0 },
+    transactionTitle: { color: theme.colors.cream, fontSize: 13, fontWeight: '700' },
+    transactionSecondary: { color: theme.colors.textMuted, fontSize: 11 },
+    transactionTertiary: { color: 'rgba(173, 167, 178, 0.72)', fontSize: 10 },
+    transactionAmountColumn: { alignItems: 'flex-end', gap: 3 },
+    transactionAmount: { fontSize: 13, fontVariant: ['tabular-nums'], fontWeight: '800' },
+    transactionAmountIncome: { color: theme.colors.scannerCyan },
+    transactionAmountExpense: { color: theme.colors.goldBright },
+    transactionSource: {
+      color: 'rgba(173, 167, 178, 0.68)',
+      fontFamily: theme.fonts.radar,
+      fontSize: 7,
+      fontWeight: '900',
+      letterSpacing: 0.7,
+    },
+    emptyLedger: {
+      alignItems: 'flex-start',
+      backgroundColor: 'rgba(7, 7, 10, 0.42)',
+      borderColor: 'rgba(242, 237, 228, 0.12)',
+      borderRadius: 10,
+      borderWidth: StyleSheet.hairlineWidth,
+      gap: 4,
+      minHeight: 108,
+      justifyContent: 'center',
+      padding: 14,
+    },
+    emptyLedgerTitle: { color: theme.colors.cream, fontSize: 14, fontWeight: '700' },
+    emptyLedgerText: {
+      color: theme.colors.textMuted,
+      fontSize: 12,
+      lineHeight: 17,
+      maxWidth: 430,
+    },
+    disclaimer: {
+      borderTopColor: 'rgba(242, 237, 228, 0.1)',
+      borderTopWidth: StyleSheet.hairlineWidth,
+      paddingTop: 14,
+    },
+    disclaimerText: {
+      color: 'rgba(173, 167, 178, 0.76)',
+      fontSize: 10,
+      lineHeight: 15,
+      maxWidth: 560,
+    },
+    transactionDetailModalRoot: {
+      flex: 1,
+      justifyContent: 'flex-end',
+    },
+    transactionDetailSheet: {
+      alignSelf: 'center',
+      backgroundColor: '#0a090d',
+      borderColor: 'rgba(0, 255, 255, 0.26)',
+      borderTopLeftRadius: 18,
+      borderTopRightRadius: 18,
+      borderWidth: StyleSheet.hairlineWidth,
+      maxHeight: '84%',
+      maxWidth: 720,
+      paddingHorizontal: 18,
+      paddingTop: 17,
+      width: '100%',
+    },
+    transactionDetailHeader: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: 12,
+      justifyContent: 'space-between',
+      marginBottom: 14,
+    },
+    transactionDetailHeaderCopy: { flex: 1, gap: 2 },
+    transactionDetailTitle: {
+      color: theme.colors.cream,
+      fontSize: 22,
+      fontWeight: '900',
+      letterSpacing: -0.4,
+    },
+    transactionDetailContent: {
+      gap: 14,
+      paddingBottom: 4,
+    },
+    transactionDetailAmountCard: {
+      backgroundColor: 'rgba(0, 255, 255, 0.035)',
+      borderColor: 'rgba(0, 255, 255, 0.18)',
+      borderRadius: 11,
+      borderWidth: StyleSheet.hairlineWidth,
+      gap: 3,
+      padding: 14,
+    },
+    transactionDetailAmountLabel: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 1,
+    },
+    transactionDetailAmount: {
+      fontSize: 27,
+      fontVariant: ['tabular-nums'],
+      fontWeight: '900',
+      letterSpacing: -0.5,
+    },
+    transactionDetailDirection: {
+      color: theme.colors.textMuted,
+      fontSize: 11,
+    },
+    transactionDetailSection: {
+      backgroundColor: 'rgba(242, 237, 228, 0.025)',
+      borderColor: 'rgba(242, 237, 228, 0.11)',
+      borderRadius: 10,
+      borderWidth: StyleSheet.hairlineWidth,
+      overflow: 'hidden',
+    },
+    transactionDetailSectionTitle: {
+      color: theme.colors.goldBright,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 1,
+      paddingBottom: 7,
+      paddingHorizontal: 12,
+      paddingTop: 11,
+    },
+    transactionDetailRow: {
+      borderTopColor: 'rgba(242, 237, 228, 0.08)',
+      borderTopWidth: StyleSheet.hairlineWidth,
+      gap: 4,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+    transactionDetailLabel: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.radar,
+      fontSize: 7,
+      fontWeight: '900',
+      letterSpacing: 0.75,
+      textTransform: 'uppercase',
+    },
+    transactionDetailValue: {
+      color: theme.colors.cream,
+      fontSize: 12,
+      lineHeight: 17,
+    },
+    transactionDetailHint: {
+      color: 'rgba(173, 167, 178, 0.72)',
+      fontSize: 10,
+      lineHeight: 15,
+    },
+    modalRoot: { flex: 1, justifyContent: 'flex-end' },
+    modalDismiss: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(1, 1, 2, 0.76)' },
+    sheet: {
+      backgroundColor: '#0a090d',
+      borderColor: 'rgba(141, 114, 255, 0.3)',
+      borderTopLeftRadius: 16,
+      borderTopRightRadius: 16,
+      borderWidth: StyleSheet.hairlineWidth,
+      maxHeight: '95%',
+      paddingHorizontal: 18,
+      paddingTop: 17,
+    },
+    sheetHeader: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 15,
+    },
+    sheetTitle: {
+      color: theme.colors.cream,
+      fontSize: 22,
+      fontWeight: '900',
+      letterSpacing: -0.4,
+    },
+    closeButton: {
+      alignItems: 'center',
+      backgroundColor: 'rgba(242, 237, 228, 0.06)',
+      borderColor: 'rgba(242, 237, 228, 0.15)',
+      borderRadius: 8,
+      borderWidth: StyleSheet.hairlineWidth,
+      height: 34,
+      justifyContent: 'center',
+      width: 34,
+    },
+    sheetContent: { gap: 17, paddingBottom: 4 },
+    formSection: { gap: 7 },
+    formLabel: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 1,
+    },
+    typeOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+    typeOption: {
+      backgroundColor: 'rgba(242, 237, 228, 0.035)',
+      borderColor: 'rgba(242, 237, 228, 0.16)',
+      borderRadius: 7,
+      borderWidth: StyleSheet.hairlineWidth,
+      minHeight: 29,
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+    },
+    typeOptionSelected: {
+      backgroundColor: 'rgba(0, 255, 255, 0.1)',
+      borderColor: 'rgba(0, 255, 255, 0.62)',
+    },
+    typeOptionText: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.radar,
+      fontSize: 7,
+      fontWeight: '900',
+      letterSpacing: 0.6,
+    },
+    typeOptionTextSelected: { color: theme.colors.scannerCyan },
+    typeHelp: { color: theme.colors.textMuted, fontSize: 11 },
+    formRow: { flexDirection: 'row', gap: 9 },
+    formFieldWide: { flex: 1.2, gap: 7 },
+    formFieldDate: { flex: 1, gap: 7 },
+    amountInputWrap: {
+      alignItems: 'center',
+      backgroundColor: 'rgba(242, 237, 228, 0.045)',
+      borderColor: 'rgba(242, 237, 228, 0.17)',
+      borderRadius: 8,
+      borderWidth: StyleSheet.hairlineWidth,
+      flexDirection: 'row',
+      height: 45,
+      paddingHorizontal: 11,
+    },
+    currencyPrefix: {
+      color: theme.colors.goldBright,
+      fontSize: 16,
+      fontWeight: '700',
+      marginRight: 3,
+    },
+    amountInput: {
+      color: theme.colors.cream,
+      flex: 1,
+      fontSize: 17,
+      fontVariant: ['tabular-nums'],
+      fontWeight: '700',
+      padding: 0,
+    },
+    dateInput: {
+      backgroundColor: 'rgba(242, 237, 228, 0.045)',
+      borderColor: 'rgba(242, 237, 228, 0.17)',
+      borderRadius: 8,
+      borderWidth: StyleSheet.hairlineWidth,
+      color: theme.colors.cream,
+      fontSize: 13,
+      height: 45,
+      paddingHorizontal: 10,
+    },
+    textInput: {
+      backgroundColor: 'rgba(242, 237, 228, 0.045)',
+      borderColor: 'rgba(242, 237, 228, 0.17)',
+      borderRadius: 8,
+      borderWidth: StyleSheet.hairlineWidth,
+      color: theme.colors.cream,
+      fontSize: 13,
+      minHeight: 45,
+      paddingHorizontal: 11,
+      paddingVertical: 11,
+    },
+    notesInput: { minHeight: 84 },
+    itemPickerButton: {
+      alignItems: 'center',
+      backgroundColor: 'rgba(242, 237, 228, 0.035)',
+      borderColor: 'rgba(242, 237, 228, 0.16)',
+      borderRadius: 8,
+      borderWidth: StyleSheet.hairlineWidth,
+      flexDirection: 'row',
+      gap: 8,
+      minHeight: 53,
+      paddingHorizontal: 11,
+    },
+    itemPickerButtonPressed: { backgroundColor: 'rgba(242, 237, 228, 0.08)' },
+    itemPickerCopy: { flex: 1, gap: 2, minWidth: 0 },
+    itemPickerTitle: { color: theme.colors.cream, fontSize: 13, fontWeight: '700' },
+    itemPickerDetail: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 14 },
+    itemPickerChevronOpen: { transform: [{ rotate: '90deg' }] },
+    itemOptions: {
+      backgroundColor: 'rgba(5, 5, 7, 0.88)',
+      borderColor: 'rgba(141, 114, 255, 0.28)',
+      borderRadius: 8,
+      borderWidth: StyleSheet.hairlineWidth,
+      maxHeight: 230,
+      overflow: 'hidden',
+    },
+    itemOption: {
+      alignItems: 'center',
+      borderBottomColor: 'rgba(242, 237, 228, 0.09)',
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      flexDirection: 'row',
+      gap: 8,
+      minHeight: 42,
+      paddingHorizontal: 11,
+    },
+    itemOptionSelected: { backgroundColor: 'rgba(0, 255, 255, 0.08)' },
+    itemOptionText: { color: theme.colors.cream, flex: 1, fontSize: 12 },
+    itemOptionCost: {
+      color: theme.colors.goldBright,
+      fontSize: 11,
+      fontVariant: ['tabular-nums'],
+    },
+    noItemText: { color: theme.colors.textMuted, fontSize: 12, padding: 11 },
+    formError: { color: theme.colors.danger, fontSize: 12, lineHeight: 17 },
+    saveButton: {
+      alignItems: 'center',
+      backgroundColor: theme.colors.scannerCyan,
+      borderRadius: 9,
+      justifyContent: 'center',
+      minHeight: 48,
+      marginTop: 2,
+    },
+    saveButtonDisabled: { opacity: 0.55 },
+    saveButtonPressed: { opacity: 0.82 },
+    saveButtonText: {
+      color: theme.colors.backgroundDeep,
+      fontFamily: theme.fonts.radar,
+      fontSize: 10,
+      fontWeight: '900',
+      letterSpacing: 1,
+    },
+  });
   return {
     ...staticStyles,
-  eyebrow: [
-    staticStyles.eyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  title: [
-    staticStyles.title,
-    {
-        fontSize: responsiveLayout.responsiveFont(28),
-    },
-  ],
-  subtitle: [
-    staticStyles.subtitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
-  primaryActionText: [
-    staticStyles.primaryActionText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  secondaryActionText: [
-    staticStyles.secondaryActionText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  noticeTitle: [
-    staticStyles.noticeTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  noticeText: [
-    staticStyles.noticeText,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  errorTitle: [
-    staticStyles.errorTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
-  errorText: [
-    staticStyles.errorText,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  retryText: [
-    staticStyles.retryText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  statusMessage: [
-    staticStyles.statusMessage,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  sectionEyebrow: [
-    staticStyles.sectionEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  sectionTitle: [
-    staticStyles.sectionTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(17),
-    },
-  ],
-  loadingText: [
-    staticStyles.loadingText,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  metricLabel: [
-    staticStyles.metricLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  metricValue: [
-    staticStyles.metricValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(21),
-    },
-  ],
-  metricDetail: [
-    staticStyles.metricDetail,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  summaryNote: [
-    staticStyles.summaryNote,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  exportButtonText: [
-    staticStyles.exportButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  transactionMarker: [
-    staticStyles.transactionMarker,
-    {
-        height: responsiveLayout.responsiveHeight(25),
-        width: responsiveLayout.responsiveWidth(3),
-    },
-  ],
-  transactionTitle: [
-    staticStyles.transactionTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  transactionSecondary: [
-    staticStyles.transactionSecondary,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  transactionTertiary: [
-    staticStyles.transactionTertiary,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  transactionAmount: [
-    staticStyles.transactionAmount,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  transactionSource: [
-    staticStyles.transactionSource,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  emptyLedgerTitle: [
-    staticStyles.emptyLedgerTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
-  emptyLedgerText: [
-    staticStyles.emptyLedgerText,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  disclaimerText: [
-    staticStyles.disclaimerText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  transactionDetailTitle: [
-    staticStyles.transactionDetailTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(22),
-    },
-  ],
-  transactionDetailAmountLabel: [
-    staticStyles.transactionDetailAmountLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  transactionDetailAmount: [
-    staticStyles.transactionDetailAmount,
-    {
-        fontSize: responsiveLayout.responsiveFont(27),
-    },
-  ],
-  transactionDetailDirection: [
-    staticStyles.transactionDetailDirection,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  transactionDetailSectionTitle: [
-    staticStyles.transactionDetailSectionTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  transactionDetailLabel: [
-    staticStyles.transactionDetailLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  transactionDetailValue: [
-    staticStyles.transactionDetailValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  transactionDetailHint: [
-    staticStyles.transactionDetailHint,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  sheetTitle: [
-    staticStyles.sheetTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(22),
-    },
-  ],
-  closeButton: [
-    staticStyles.closeButton,
-    {
-        height: responsiveLayout.responsiveHeight(34),
-        width: responsiveLayout.responsiveWidth(34),
-    },
-  ],
-  formLabel: [
-    staticStyles.formLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  typeOptionText: [
-    staticStyles.typeOptionText,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  typeHelp: [
-    staticStyles.typeHelp,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  amountInputWrap: [
-    staticStyles.amountInputWrap,
-    {
-        height: responsiveLayout.responsiveHeight(45),
-    },
-  ],
-  currencyPrefix: [
-    staticStyles.currencyPrefix,
-    {
-        fontSize: responsiveLayout.responsiveFont(16),
-    },
-  ],
-  amountInput: [
-    staticStyles.amountInput,
-    {
-        fontSize: responsiveLayout.responsiveFont(17),
-    },
-  ],
-  dateInput: [
-    staticStyles.dateInput,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-        height: responsiveLayout.responsiveHeight(45),
-    },
-  ],
-  textInput: [
-    staticStyles.textInput,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  itemPickerTitle: [
-    staticStyles.itemPickerTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  itemPickerDetail: [
-    staticStyles.itemPickerDetail,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  itemOptionText: [
-    staticStyles.itemOptionText,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  itemOptionCost: [
-    staticStyles.itemOptionCost,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  noItemText: [
-    staticStyles.noItemText,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  formError: [
-    staticStyles.formError,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  saveButtonText: [
-    staticStyles.saveButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
+    eyebrow: [
+      staticStyles.eyebrow,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    title: [
+      staticStyles.title,
+      {
+        fontSize: responsiveFont(28),
+      },
+    ],
+    subtitle: [
+      staticStyles.subtitle,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
+    primaryActionText: [
+      staticStyles.primaryActionText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    secondaryActionText: [
+      staticStyles.secondaryActionText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    noticeTitle: [
+      staticStyles.noticeTitle,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    noticeText: [
+      staticStyles.noticeText,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    errorTitle: [
+      staticStyles.errorTitle,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
+    errorText: [
+      staticStyles.errorText,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    retryText: [
+      staticStyles.retryText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    statusMessage: [
+      staticStyles.statusMessage,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    sectionEyebrow: [
+      staticStyles.sectionEyebrow,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    sectionTitle: [
+      staticStyles.sectionTitle,
+      {
+        fontSize: responsiveFont(17),
+      },
+    ],
+    loadingText: [
+      staticStyles.loadingText,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    metricLabel: [
+      staticStyles.metricLabel,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    metricValue: [
+      staticStyles.metricValue,
+      {
+        fontSize: responsiveFont(21),
+      },
+    ],
+    metricDetail: [
+      staticStyles.metricDetail,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    summaryNote: [
+      staticStyles.summaryNote,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    exportButtonText: [
+      staticStyles.exportButtonText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    transactionMarker: [
+      staticStyles.transactionMarker,
+      {
+        height: responsiveHeight(25),
+        width: responsiveWidth(3),
+      },
+    ],
+    transactionTitle: [
+      staticStyles.transactionTitle,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    transactionSecondary: [
+      staticStyles.transactionSecondary,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    transactionTertiary: [
+      staticStyles.transactionTertiary,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    transactionAmount: [
+      staticStyles.transactionAmount,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    transactionSource: [
+      staticStyles.transactionSource,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    emptyLedgerTitle: [
+      staticStyles.emptyLedgerTitle,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
+    emptyLedgerText: [
+      staticStyles.emptyLedgerText,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    disclaimerText: [
+      staticStyles.disclaimerText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    transactionDetailTitle: [
+      staticStyles.transactionDetailTitle,
+      {
+        fontSize: responsiveFont(22),
+      },
+    ],
+    transactionDetailAmountLabel: [
+      staticStyles.transactionDetailAmountLabel,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    transactionDetailAmount: [
+      staticStyles.transactionDetailAmount,
+      {
+        fontSize: responsiveFont(27),
+      },
+    ],
+    transactionDetailDirection: [
+      staticStyles.transactionDetailDirection,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    transactionDetailSectionTitle: [
+      staticStyles.transactionDetailSectionTitle,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    transactionDetailLabel: [
+      staticStyles.transactionDetailLabel,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    transactionDetailValue: [
+      staticStyles.transactionDetailValue,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    transactionDetailHint: [
+      staticStyles.transactionDetailHint,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    sheetTitle: [
+      staticStyles.sheetTitle,
+      {
+        fontSize: responsiveFont(22),
+      },
+    ],
+    closeButton: [
+      staticStyles.closeButton,
+      {
+        height: responsiveHeight(34),
+        width: responsiveWidth(34),
+      },
+    ],
+    formLabel: [
+      staticStyles.formLabel,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    typeOptionText: [
+      staticStyles.typeOptionText,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    typeHelp: [
+      staticStyles.typeHelp,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    amountInputWrap: [
+      staticStyles.amountInputWrap,
+      {
+        height: responsiveHeight(45),
+      },
+    ],
+    currencyPrefix: [
+      staticStyles.currencyPrefix,
+      {
+        fontSize: responsiveFont(16),
+      },
+    ],
+    amountInput: [
+      staticStyles.amountInput,
+      {
+        fontSize: responsiveFont(17),
+      },
+    ],
+    dateInput: [
+      staticStyles.dateInput,
+      {
+        fontSize: responsiveFont(13),
+        height: responsiveHeight(45),
+      },
+    ],
+    textInput: [
+      staticStyles.textInput,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    itemPickerTitle: [
+      staticStyles.itemPickerTitle,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    itemPickerDetail: [
+      staticStyles.itemPickerDetail,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    itemOptionText: [
+      staticStyles.itemOptionText,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    itemOptionCost: [
+      staticStyles.itemOptionCost,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    noItemText: [
+      staticStyles.noItemText,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    formError: [
+      staticStyles.formError,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    saveButtonText: [
+      staticStyles.saveButtonText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
   };
 }

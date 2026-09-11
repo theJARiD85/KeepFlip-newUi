@@ -1,6 +1,7 @@
+import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { File, Paths } from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
-import { type Href, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -10,18 +11,17 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { useKeepFlipFeedbackNudge } from "@/components/feedback/keepflip-feedback-nudge";
-import { useKeepFlipSubscription } from "@/components/subscription/keepflip-subscription-context";
+import { AddToInventoryForm, type AddToInventoryFormValues } from "@/components/scanner/add-to-inventory-form";
 import { HudImageFrame } from "@/components/scanner/hud-image-frame.native";
 import { inventoryItemToAnalysisState } from "@/components/scanner/inventory-analysis-view-model";
-import { toItemAnalysisState } from "@/components/scanner/item-analysis-view-model";
 import { useItemAnalysisResult } from "@/components/scanner/item-analysis-result-context";
-import { AddToInventoryForm, type AddToInventoryFormValues } from "@/components/scanner/add-to-inventory-form";
-import { useSourcingTrip } from "@/components/sourcing/sourcing-trip-context";
+import { toItemAnalysisState } from "@/components/scanner/item-analysis-view-model";
 import { ValuationResultStage } from "@/components/scanner/valuation-result-stage";
+import { useSourcingTrip } from "@/components/sourcing/sourcing-trip-context";
+import { useKeepFlipSubscription } from "@/components/subscription/keepflip-subscription-context";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { APPWRITE, storage } from "@/lib/appwrite";
@@ -30,7 +30,6 @@ import {
   applyProfitabilityGuidanceToAnalysis,
   type SerpApiProfitabilityGuidance,
 } from "@/services/ebaySoldCompsService";
-import { saveDealShelfItem } from "@/services/deal-shelf-service";
 import {
   centsFromLedgerAmount,
   createManualLedgerEntry,
@@ -40,20 +39,22 @@ import {
   uploadLedgerReceipt,
 } from "@/services/reseller-ledger-service";
 
-import {
-  isResellerBookkeepingConfigured,
-  recordBookkeepingEvent,
-} from "@/services/reseller-bookkeeping-service";
-import { refineItemAnalysis } from "@/services/item-analysis-service";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont from '@/lib/responsiveFont';
 import { createInventoryMediaFollowUp } from "@/services/inventory-follow-up-service";
 import {
   getInventoryItem,
   saveAnalyzedItemToInventory,
-  type InventoryItem,
   updateInventoryAnalysisSnapshot,
+  type InventoryItem,
 } from "@/services/inventory-service";
+import { refineItemAnalysis } from "@/services/item-analysis-service";
 import { getItemPhotos } from "@/services/itemPhotoService";
 import { neutralizeMarketplaceBrand } from "@/services/market-copy";
+import {
+  isResellerBookkeepingConfigured,
+  recordBookkeepingEvent,
+} from "@/services/reseller-bookkeeping-service";
 import { applyResellerBuyRulesToAnalysis } from "@/services/reseller-buy-rules-service";
 import {
   saveScannerRefinementPhoto,
@@ -61,8 +62,6 @@ import {
 } from "@/services/scan-photo-service";
 import { getResellerBuyRules } from "@/services/user-profile-onboarding-service";
 import type { ItemAnalysisSuccess } from "@/types/item-analysis";
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type InventoryResultPayload = {
@@ -364,7 +363,6 @@ export function ItemAnalysisResultScreen() {
     useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [inventoryFormOpen, setInventoryFormOpen] = useState(false);
-  const [savingDeal, setSavingDeal] = useState(false);
   const [refining, setRefining] = useState(false);
   const [scanningMorePhotos, setScanningMorePhotos] = useState(false);
   const [refinementPhoto, setRefinementPhoto] =
@@ -454,7 +452,7 @@ export function ItemAnalysisResultScreen() {
   }, [itemId, router, scannerSession]);
 
   const openAddToInventory = useCallback(() => {
-    if (!scannerSession || saving || savingDeal) return;
+    if (!scannerSession || saving) return;
     if (!userId) {
       Alert.alert(
         "Sign in required",
@@ -483,7 +481,6 @@ export function ItemAnalysisResultScreen() {
     basicBooksAllowed,
     legacyLedgerConfigured,
     saving,
-    savingDeal,
     scannerSession,
     userId,
   ]);
@@ -491,7 +488,7 @@ export function ItemAnalysisResultScreen() {
   const handleAddToInventory = useCallback(async (
     values: AddToInventoryFormValues,
   ) => {
-    if (!scannerSession || saving || savingDeal || !userId) return;
+    if (!scannerSession || saving || !userId) return;
     const sourceTrip = activeSourcingTrip;
 
     const amountCents = centsFromLedgerAmount(values.acquisitionCost);
@@ -604,8 +601,8 @@ export function ItemAnalysisResultScreen() {
         const estimatedMedian = scannerSession.analysis.valuation.median;
         const estimatedResaleCents =
           typeof estimatedMedian === "number" &&
-          Number.isFinite(estimatedMedian) &&
-          estimatedMedian > 0
+            Number.isFinite(estimatedMedian) &&
+            estimatedMedian > 0
             ? Math.round(estimatedMedian * 100)
             : null;
 
@@ -651,9 +648,9 @@ export function ItemAnalysisResultScreen() {
         Alert.alert(
           "Item added; Books needs attention",
           "The item was saved to inventory, but its purchase entry could not be recorded. Open Books to add the actual purchase manually." +
-            (caught instanceof Error
-              ? " " + neutralizeMarketplaceBrand(caught.message)
-              : ""),
+          (caught instanceof Error
+            ? " " + neutralizeMarketplaceBrand(caught.message)
+            : ""),
         );
       } else {
         Alert.alert(
@@ -675,49 +672,6 @@ export function ItemAnalysisResultScreen() {
     recordCompletedAction,
     router,
     saving,
-    savingDeal,
-    scannerSession,
-    userId,
-  ]);
-
-  const handleSaveToDealShelf = useCallback(async () => {
-    if (!scannerSession || saving || savingDeal) return;
-    if (!userId) {
-      Alert.alert(
-        "Sign in required",
-        "Sign in before parking a deal.",
-      );
-      return;
-    }
-
-    setSavingDeal(true);
-    try {
-      await scannerSession.ensurePhotosSaved?.();
-      await saveDealShelfItem({
-        analysis: scannerSession.analysis,
-        modelFile: scannerSession.modelUrl,
-        ownerId: userId,
-        scanId: scannerSession.scanId,
-      });
-      recordCompletedAction();
-      finishScannerSession();
-      router.replace("/deal-shelf" as Href);
-    } catch (caught) {
-      Alert.alert(
-        "Could not park deal",
-        caught instanceof Error
-          ? neutralizeMarketplaceBrand(caught.message)
-          : "KeepFlip could not save this deal.",
-      );
-    } finally {
-      setSavingDeal(false);
-    }
-  }, [
-    finishScannerSession,
-    recordCompletedAction,
-    router,
-    saving,
-    savingDeal,
     scannerSession,
     userId,
   ]);
@@ -994,218 +948,210 @@ export function ItemAnalysisResultScreen() {
 
   return (
     <KeepFlipBackground>
-        <View pointerEvents="none" style={styles.projectionLayer}>
-          <HudImageFrame
-            onError={setProjectionError}
-            photoUri={photoUri}
-            statusText={
-              scannerSession
-                ? "CAPTURED EVIDENCE"
-                : "SAVED ANALYSIS IMAGE"
-            }
-          />
-        </View>
-
-        <View
-          pointerEvents="none"
-          style={[styles.resultScrim, styles.resultScrimWithProjection]}
+      <View pointerEvents="none" style={styles.projectionLayer}>
+        <HudImageFrame
+          onError={setProjectionError}
+          photoUri={photoUri}
+          statusText={
+            scannerSession
+              ? "CAPTURED EVIDENCE"
+              : "SAVED ANALYSIS IMAGE"
+          }
         />
+      </View>
 
-        {!inventoryFormOpen ? (
-          <ValuationResultStage
-            bottomInset={insets.bottom}
-            onManagePhotos={
-              itemId && !scannerSession ? openSavedPhotoManager : undefined
-            }
-            onOpenListing={
-              itemId && !scannerSession ? openSavedListingWorkspace : undefined
-            }
-            key={
-              scannerSession
-                ? `${scannerSession.id}:${
-                  scannerSession.analysis.marketResearch?.searchedAt ??
-                  scannerSession.analysis.version
-                }`
-                : itemId ?? "saved-analysis"
-            }
-            onProfitabilityGuidance={handleProfitabilityGuidance}
-            onReportIncorrectIdentification={handleReportIncorrectIdentification}
-            inventoryItem={scannerSession ? undefined : inventoryResult?.item}
-            onRefine={
-              scannerSession
-                ? (answers) => {
-                  void handleRefine(answers);
-                }
-                : undefined
-            }
-            onScanMorePhotos={
-              scannerSession
-                ? () => {
-                  void handleScanMorePhotos();
-                }
-                : undefined
-            }
-            onSaveToDealShelf={
-              scannerSession
-                ? () => {
-                  void handleSaveToDealShelf();
-                }
-                : undefined
-            }
-            onSave={
-              scannerSession
-                ? () => {
-                  openAddToInventory();
-                }
-                : undefined
-            }
-            projectionLabel={projectionLabel}
-            refining={refining}
-            refinementPhotoReady={Boolean(activeRefinementPhoto)}
-            saveLabel="Add to inventory"
-            savingDeal={savingDeal}
-            saving={saving}
-            scanningMorePhotos={scanningMorePhotos}
-            showMarketDecisionStamp={Boolean(scannerSession)}
-            state={resultState}
-            topInset={insets.top}
-          />
-        ) : null}
+      <View
+        pointerEvents="none"
+        style={[styles.resultScrim, styles.resultScrimWithProjection]}
+      />
 
-        <AddToInventoryForm
-          key={inventoryFormOpen ? "open" : "closed"}
-          itemTitle={resultState.data.identity.title}
-          onCancel={() => setInventoryFormOpen(false)}
-          onSubmit={handleAddToInventory}
-          sourcingTrip={activeSourcingTrip}
-          submitting={saving}
-          visible={inventoryFormOpen}
+      {!inventoryFormOpen ? (
+        <ValuationResultStage
+          bottomInset={insets.bottom}
+          onManagePhotos={
+            itemId && !scannerSession ? openSavedPhotoManager : undefined
+          }
+          onOpenListing={
+            itemId && !scannerSession ? openSavedListingWorkspace : undefined
+          }
+          key={
+            scannerSession
+              ? `${scannerSession.id}:${scannerSession.analysis.marketResearch?.searchedAt ??
+              scannerSession.analysis.version
+              }`
+              : itemId ?? "saved-analysis"
+          }
+          onProfitabilityGuidance={handleProfitabilityGuidance}
+          onReportIncorrectIdentification={handleReportIncorrectIdentification}
+          inventoryItem={scannerSession ? undefined : inventoryResult?.item}
+          onRefine={
+            scannerSession
+              ? (answers) => {
+                void handleRefine(answers);
+              }
+              : undefined
+          }
+          onScanMorePhotos={
+            scannerSession
+              ? () => {
+                void handleScanMorePhotos();
+              }
+              : undefined
+          }
+          onSave={
+            scannerSession
+              ? () => {
+                openAddToInventory();
+              }
+              : undefined
+          }
+          projectionLabel={projectionLabel}
+          refining={refining}
+          refinementPhotoReady={Boolean(activeRefinementPhoto)}
+          saveLabel="Add to inventory"
+          saving={saving}
+          scanningMorePhotos={scanningMorePhotos}
+          showMarketDecisionStamp={Boolean(scannerSession)}
+          state={resultState}
+          topInset={insets.top}
         />
+      ) : null}
+
+      <AddToInventoryForm
+        key={inventoryFormOpen ? "open" : "closed"}
+        itemTitle={resultState.data.identity.title}
+        onCancel={() => setInventoryFormOpen(false)}
+        onSubmit={handleAddToInventory}
+        sourcingTrip={activeSourcingTrip}
+        submitting={saving}
+        visible={inventoryFormOpen}
+      />
     </KeepFlipBackground>
   );
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  root: {
-    flex: 1,
-    overflow: "hidden",
-    backgroundColor: theme.colors.backgroundDeep,
-  },
-  ambientGradient: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    experimental_backgroundImage: `
+  const { responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    root: {
+      flex: 1,
+      overflow: "hidden",
+      backgroundColor: theme.colors.backgroundDeep,
+    },
+    ambientGradient: {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      experimental_backgroundImage: `
       radial-gradient(circle at 84% 8%, rgba(224, 172, 75, 0.10) 0%, transparent 20%),
       radial-gradient(circle at 5% 68%, rgba(88, 223, 232, 0.075) 0%, transparent 15%),
       radial-gradient(circle at 92% 90%, rgba(171, 61, 255, 0.30) 0%, transparent 28%),
       linear-gradient(160deg, #050506 0%, #020204 25%, #06040A 50%)
     `,
-  },
-  projectionLayer: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 0,
-    alignItems: "center",
-    justifyContent: "center",
-    position: "absolute",
-    top: 80,
-    left: 8,
-    right: 8,
-  },
-  resultScrim: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 1,
-    experimental_backgroundImage: `
+    },
+    projectionLayer: {
+      ...StyleSheet.absoluteFill,
+      zIndex: 0,
+      alignItems: "center",
+      justifyContent: "center",
+      position: "absolute",
+      top: 80,
+      left: 8,
+      right: 8,
+    },
+    resultScrim: {
+      ...StyleSheet.absoluteFill,
+      zIndex: 1,
+      experimental_backgroundImage: `
       radial-gradient(circle at 72% 44%, rgba(88, 223, 232, 0.09) 0%, transparent 34%),
       radial-gradient(circle at 24% 62%, rgba(141, 114, 255, 0.10) 0%, transparent 38%),
       linear-gradient(to bottom, rgba(2, 2, 4, 0.94) 0%, rgba(3, 3, 7, 0.12) 44%, rgba(6, 4, 10, 0.90) 100%)
     `,
-  },
-  resultScrimWithProjection: {
-    opacity: 0.22,
-  },
-  centerState: {
-    flex: 1,
-    zIndex: 2,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 13,
-    paddingHorizontal: 30,
-  },
-  centerEyebrow: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.numbers,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 1.8,
-  },
-  centerTitle: {
-    color: theme.colors.cream,
-    fontFamily: theme.fonts.radar,
-    fontSize: 22,
-    lineHeight: 27,
-    fontWeight: "900",
-    textAlign: "center",
-  },
-  centerBody: {
-    maxWidth: 420,
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.radar,
-    fontSize: 12,
-    lineHeight: 18,
-    textAlign: "center",
-  },
-  stateButton: {
-    minWidth: 150,
-    minHeight: 42,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 4,
-    paddingHorizontal: 18,
-    borderWidth: 1,
-    borderColor: "rgba(88, 223, 232, 0.42)",
-    backgroundColor: "rgba(88, 223, 232, 0.08)",
-  },
-  stateButtonText: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.numbers,
-    fontSize: 11,
-    fontWeight: "900",
-    letterSpacing: 1.1,
-  },
-  pressed: {
-    opacity: 0.7,
-    transform: [{ scale: 0.97 }],
-  },
-});
+    },
+    resultScrimWithProjection: {
+      opacity: 0.22,
+    },
+    centerState: {
+      flex: 1,
+      zIndex: 2,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 13,
+      paddingHorizontal: 30,
+    },
+    centerEyebrow: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.numbers,
+      fontSize: 8,
+      fontWeight: "900",
+      letterSpacing: 1.8,
+    },
+    centerTitle: {
+      color: theme.colors.cream,
+      fontFamily: theme.fonts.radar,
+      fontSize: 22,
+      lineHeight: 27,
+      fontWeight: "900",
+      textAlign: "center",
+    },
+    centerBody: {
+      maxWidth: 420,
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.radar,
+      fontSize: 12,
+      lineHeight: 18,
+      textAlign: "center",
+    },
+    stateButton: {
+      minWidth: 150,
+      minHeight: 42,
+      alignItems: "center",
+      justifyContent: "center",
+      marginTop: 4,
+      paddingHorizontal: 18,
+      borderWidth: 1,
+      borderColor: "rgba(88, 223, 232, 0.42)",
+      backgroundColor: "rgba(88, 223, 232, 0.08)",
+    },
+    stateButtonText: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.numbers,
+      fontSize: 11,
+      fontWeight: "900",
+      letterSpacing: 1.1,
+    },
+    pressed: {
+      opacity: 0.7,
+      transform: [{ scale: 0.97 }],
+    },
+  });
   return {
     ...staticStyles,
-  centerEyebrow: [
-    staticStyles.centerEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  centerTitle: [
-    staticStyles.centerTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(22),
-    },
-  ],
-  centerBody: [
-    staticStyles.centerBody,
-    {
-        fontSize: responsiveLayout.responsiveFont(12),
-    },
-  ],
-  stateButtonText: [
-    staticStyles.stateButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
+    centerEyebrow: [
+      staticStyles.centerEyebrow,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    centerTitle: [
+      staticStyles.centerTitle,
+      {
+        fontSize: responsiveFont(22),
+      },
+    ],
+    centerBody: [
+      staticStyles.centerBody,
+      {
+        fontSize: responsiveFont(12),
+      },
+    ],
+    stateButtonText: [
+      staticStyles.stateButtonText,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
   };
 }

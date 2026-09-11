@@ -44,7 +44,7 @@ import type {
 } from "@/components/scanner/analysis-visual-types";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
+import { responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 const MAX_NODES = 36;
@@ -669,182 +669,183 @@ export function ValuationEvidenceField({
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  root: {
-    ...StyleSheet.absoluteFill,
-    overflow: "hidden",
-    backgroundColor: theme.colors.backgroundDeep,
-  },
-  ambientWash: {
-    ...StyleSheet.absoluteFill,
-    experimental_backgroundImage: `
+  const { responsiveWidth, responsiveHeight, responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    root: {
+      ...StyleSheet.absoluteFill,
+      overflow: "hidden",
+      backgroundColor: theme.colors.backgroundDeep,
+    },
+    ambientWash: {
+      ...StyleSheet.absoluteFill,
+      experimental_backgroundImage: `
       radial-gradient(circle at 50% 34%, rgba(88, 223, 232, 0.14) 0%, transparent 42%),
       radial-gradient(circle at 22% 58%, rgba(141, 114, 255, 0.12) 0%, transparent 38%),
       radial-gradient(circle at 78% 48%, rgba(215, 168, 74, 0.10) 0%, transparent 36%),
       linear-gradient(160deg, #07050C 0%, ${theme.colors.backgroundDeep} 55%, #030208 100%)
     `,
-  },
-  thumbFrame: {
-    position: "absolute",
-    zIndex: 2,
-    width: 68,
-    height: 68,
-    overflow: "hidden",
-    borderRadius: 10,
-    borderCurve: "continuous",
-    borderWidth: 1,
-    backgroundColor: "rgba(1, 6, 10, 0.72)",
-    opacity: 0.78,
-  },
-  thumbImage: {
-    ...StyleSheet.absoluteFill,
-    opacity: 0.7,
-  },
-  rangeLabels: {
-    position: "absolute",
-    zIndex: 3,
-    height: 44,
-  },
-  rangeCell: {
-    position: "absolute",
-    width: 84,
-    alignItems: "center",
-    gap: 2,
-  },
-  rangeCellCenter: {
-    width: 96,
-  },
-  rangeEyebrow: {
-    fontFamily: theme.fonts.radar,
-    fontSize: 7,
-    fontWeight: "900",
-    letterSpacing: 0.9,
-  },
-  rangeValue: {
-    color: "#FFFFFF",
-    fontFamily: theme.fonts.radar,
-    fontSize: 11,
-    fontWeight: "900",
-    fontVariant: ["tabular-nums"],
-  },
-  rangeValueHero: {
-    color: theme.colors.goldBright,
-    fontSize: 14,
-  },
-  profitCallout: {
-    position: "absolute",
-    zIndex: 4,
-    width: 156,
-    alignItems: "center",
-    gap: 2,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "rgba(0, 255, 255, 0.28)",
-    backgroundColor: "rgba(0, 8, 18, 0.72)",
-  },
-  profitEyebrow: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 6,
-    fontWeight: "900",
-    letterSpacing: 0.85,
-  },
-  profitValue: {
-    color: theme.colors.goldBright,
-    fontFamily: theme.fonts.radar,
-    fontSize: 15,
-    fontWeight: "900",
-    fontVariant: ["tabular-nums"],
-  },
-  profitHint: {
-    maxWidth: 140,
-    color: "rgba(255, 255, 255, 0.62)",
-    fontFamily: theme.fonts.radar,
-    fontSize: 7,
-    fontWeight: "700",
-  },
-  floorFade: {
-    position: "absolute",
-    right: 0,
-    bottom: 0,
-    left: 0,
-    zIndex: 1,
-    height: "42%",
-    experimental_backgroundImage: `
+    },
+    thumbFrame: {
+      position: "absolute",
+      zIndex: 2,
+      width: 68,
+      height: 68,
+      overflow: "hidden",
+      borderRadius: 10,
+      borderCurve: "continuous",
+      borderWidth: 1,
+      backgroundColor: "rgba(1, 6, 10, 0.72)",
+      opacity: 0.78,
+    },
+    thumbImage: {
+      ...StyleSheet.absoluteFill,
+      opacity: 0.7,
+    },
+    rangeLabels: {
+      position: "absolute",
+      zIndex: 3,
+      height: 44,
+    },
+    rangeCell: {
+      position: "absolute",
+      width: 84,
+      alignItems: "center",
+      gap: 2,
+    },
+    rangeCellCenter: {
+      width: 96,
+    },
+    rangeEyebrow: {
+      fontFamily: theme.fonts.radar,
+      fontSize: 7,
+      fontWeight: "900",
+      letterSpacing: 0.9,
+    },
+    rangeValue: {
+      color: "#FFFFFF",
+      fontFamily: theme.fonts.radar,
+      fontSize: 11,
+      fontWeight: "900",
+      fontVariant: ["tabular-nums"],
+    },
+    rangeValueHero: {
+      color: theme.colors.goldBright,
+      fontSize: 14,
+    },
+    profitCallout: {
+      position: "absolute",
+      zIndex: 4,
+      width: 156,
+      alignItems: "center",
+      gap: 2,
+      paddingVertical: 6,
+      paddingHorizontal: 8,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: "rgba(0, 255, 255, 0.28)",
+      backgroundColor: "rgba(0, 8, 18, 0.72)",
+    },
+    profitEyebrow: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 6,
+      fontWeight: "900",
+      letterSpacing: 0.85,
+    },
+    profitValue: {
+      color: theme.colors.goldBright,
+      fontFamily: theme.fonts.radar,
+      fontSize: 15,
+      fontWeight: "900",
+      fontVariant: ["tabular-nums"],
+    },
+    profitHint: {
+      maxWidth: 140,
+      color: "rgba(255, 255, 255, 0.62)",
+      fontFamily: theme.fonts.radar,
+      fontSize: 7,
+      fontWeight: "700",
+    },
+    floorFade: {
+      position: "absolute",
+      right: 0,
+      bottom: 0,
+      left: 0,
+      zIndex: 1,
+      height: "42%",
+      experimental_backgroundImage: `
       linear-gradient(to bottom, transparent 0%, rgba(1, 1, 3, 0.55) 48%, rgba(1, 1, 3, 0.92) 100%)
     `,
-  },
-});
+    },
+  });
   return {
     ...staticStyles,
-  thumbFrame: [
-    staticStyles.thumbFrame,
-    {
-        width: responsiveLayout.responsiveWidth(68),
-        height: responsiveLayout.responsiveHeight(68),
-    },
-  ],
-  rangeLabels: [
-    staticStyles.rangeLabels,
-    {
-        height: responsiveLayout.responsiveHeight(44),
-    },
-  ],
-  rangeCell: [
-    staticStyles.rangeCell,
-    {
-        width: responsiveLayout.responsiveWidth(84),
-    },
-  ],
-  rangeCellCenter: [
-    staticStyles.rangeCellCenter,
-    {
-        width: responsiveLayout.responsiveWidth(96),
-    },
-  ],
-  rangeEyebrow: [
-    staticStyles.rangeEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  rangeValue: [
-    staticStyles.rangeValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(11),
-    },
-  ],
-  rangeValueHero: [
-    staticStyles.rangeValueHero,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
-  profitCallout: [
-    staticStyles.profitCallout,
-    {
-        width: responsiveLayout.responsiveWidth(156),
-    },
-  ],
-  profitEyebrow: [
-    staticStyles.profitEyebrow,
-    {
-        fontSize: responsiveLayout.responsiveFont(6),
-    },
-  ],
-  profitValue: [
-    staticStyles.profitValue,
-    {
-        fontSize: responsiveLayout.responsiveFont(15),
-    },
-  ],
-  profitHint: [
-    staticStyles.profitHint,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
+    thumbFrame: [
+      staticStyles.thumbFrame,
+      {
+        width: responsiveWidth(68),
+        height: responsiveHeight(68),
+      },
+    ],
+    rangeLabels: [
+      staticStyles.rangeLabels,
+      {
+        height: responsiveHeight(44),
+      },
+    ],
+    rangeCell: [
+      staticStyles.rangeCell,
+      {
+        width: responsiveWidth(84),
+      },
+    ],
+    rangeCellCenter: [
+      staticStyles.rangeCellCenter,
+      {
+        width: responsiveWidth(96),
+      },
+    ],
+    rangeEyebrow: [
+      staticStyles.rangeEyebrow,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    rangeValue: [
+      staticStyles.rangeValue,
+      {
+        fontSize: responsiveFont(11),
+      },
+    ],
+    rangeValueHero: [
+      staticStyles.rangeValueHero,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
+    profitCallout: [
+      staticStyles.profitCallout,
+      {
+        width: responsiveWidth(156),
+      },
+    ],
+    profitEyebrow: [
+      staticStyles.profitEyebrow,
+      {
+        fontSize: responsiveFont(6),
+      },
+    ],
+    profitValue: [
+      staticStyles.profitValue,
+      {
+        fontSize: responsiveFont(15),
+      },
+    ],
+    profitHint: [
+      staticStyles.profitHint,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
   };
 }

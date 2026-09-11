@@ -5,7 +5,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
+import { responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type KeepFlipControlIconName = ComponentProps<typeof IconSymbol>['name'];
@@ -152,180 +152,181 @@ export function KeepFlipControlRow({
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    paddingHorizontal: 8,
-    alignItems: 'center',
-    gap: 7
-  },
-  controlRow: {
-    minHeight: 70,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 9,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(242, 211, 138, 0.14)',
-  },
-  controlRowPressed: {
-    backgroundColor: 'rgba(242, 211, 138, 0.05)',
-  },
-  rowIcon: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
-    borderWidth: 1,
-    backgroundColor: 'rgba(3, 3, 6, 0.54)',
-  },
-  rowIconGold: { borderColor: 'rgba(242, 211, 138, 0.23)' },
-  rowIconCyan: { borderColor: 'rgba(88, 223, 232, 0.24)' },
-  rowIconViolet: { borderColor: 'rgba(141, 114, 255, 0.26)' },
-  rowCopy: {
-    minWidth: 0,
-    flex: 1,
-    gap: 2,
-  },
-  rowTitleLine: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  rowTitle: {
-    minWidth: 0,
-    flexShrink: 1,
-    color: theme.colors.text,
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  rowDescription: {
-    color: theme.colors.textMuted,
-    fontSize: 10,
-    lineHeight: 14,
-  },
-  rowAction: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 7,
-    paddingVertical: 6,
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(242, 211, 138, 0.28)',
-    backgroundColor: 'rgba(215, 168, 74, 0.075)',
-  },
-  rowActionText: {
-    color: theme.colors.goldBright,
-    fontSize: 7,
-    fontWeight: '900',
-    letterSpacing: 0.65,
-  },
-  rowChevron: { marginLeft: 1 },
-  rowSpinner: { marginHorizontal: 4 },
-  rowStaticLabel: {
-    maxWidth: 68,
-    color: theme.colors.goldMuted,
-    fontSize: 7,
-    fontWeight: '900',
-    letterSpacing: 0.6,
-    textAlign: 'right',
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: theme.radii.pill,
-    borderWidth: 1,
-  },
-  statusBadgeActive: {
-    borderColor: 'rgba(88, 223, 232, 0.30)',
-    backgroundColor: 'rgba(88, 223, 232, 0.06)',
-  },
-  statusBadgeMuted: {
-    borderColor: 'rgba(242, 211, 138, 0.20)',
-    backgroundColor: 'rgba(242, 211, 138, 0.04)',
-  },
-  statusBadgeWarning: {
-    borderColor: 'rgba(224, 172, 75, 0.32)',
-    backgroundColor: 'rgba(224, 172, 75, 0.06)',
-  },
-  statusBadgeDanger: {
-    borderColor: 'rgba(232, 97, 88, 0.34)',
-    backgroundColor: 'rgba(232, 97, 88, 0.06)',
-  },
-  statusBadgeViolet: {
-    borderColor: 'rgba(141, 114, 255, 0.30)',
-    backgroundColor: 'rgba(141, 114, 255, 0.07)',
-  },
-  statusBadgeDot: {
-    width: 4,
-    height: 4,
-    borderRadius: theme.radii.pill,
-  },
-  statusBadgeDotActive: { backgroundColor: theme.colors.scannerCyan },
-  statusBadgeDotMuted: { backgroundColor: theme.colors.goldMuted },
-  statusBadgeDotWarning: { backgroundColor: theme.colors.scannerAmber },
-  statusBadgeDotDanger: { backgroundColor: theme.colors.danger },
-  statusBadgeDotViolet: { backgroundColor: theme.colors.scannerViolet },
-  statusBadgeText: {
-    fontSize: 7,
-    fontWeight: '900',
-    letterSpacing: 0.62,
-  },
-  statusBadgeTextActive: { color: theme.colors.scannerCyan },
-  statusBadgeTextMuted: { color: theme.colors.goldMuted },
-  statusBadgeTextWarning: { color: theme.colors.scannerAmber },
-  statusBadgeTextDanger: { color: theme.colors.danger },
-  statusBadgeTextViolet: { color: theme.colors.scannerViolet },
-});
+  const { responsiveWidth, responsiveHeight, responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      paddingHorizontal: 8,
+      alignItems: 'center',
+      gap: 7
+    },
+    controlRow: {
+      minHeight: 70,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingVertical: 9,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: 'rgba(242, 211, 138, 0.14)',
+    },
+    controlRowPressed: {
+      backgroundColor: 'rgba(242, 211, 138, 0.05)',
+    },
+    rowIcon: {
+      width: 32,
+      height: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 8,
+      borderWidth: 1,
+      backgroundColor: 'rgba(3, 3, 6, 0.54)',
+    },
+    rowIconGold: { borderColor: 'rgba(242, 211, 138, 0.23)' },
+    rowIconCyan: { borderColor: 'rgba(88, 223, 232, 0.24)' },
+    rowIconViolet: { borderColor: 'rgba(141, 114, 255, 0.26)' },
+    rowCopy: {
+      minWidth: 0,
+      flex: 1,
+      gap: 2,
+    },
+    rowTitleLine: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    rowTitle: {
+      minWidth: 0,
+      flexShrink: 1,
+      color: theme.colors.text,
+      fontSize: 14,
+      fontWeight: '800',
+    },
+    rowDescription: {
+      color: theme.colors.textMuted,
+      fontSize: 10,
+      lineHeight: 14,
+    },
+    rowAction: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 7,
+      paddingVertical: 6,
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.28)',
+      backgroundColor: 'rgba(215, 168, 74, 0.075)',
+    },
+    rowActionText: {
+      color: theme.colors.goldBright,
+      fontSize: 7,
+      fontWeight: '900',
+      letterSpacing: 0.65,
+    },
+    rowChevron: { marginLeft: 1 },
+    rowSpinner: { marginHorizontal: 4 },
+    rowStaticLabel: {
+      maxWidth: 68,
+      color: theme.colors.goldMuted,
+      fontSize: 7,
+      fontWeight: '900',
+      letterSpacing: 0.6,
+      textAlign: 'right',
+    },
+    statusBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 6,
+      paddingVertical: 3,
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+    },
+    statusBadgeActive: {
+      borderColor: 'rgba(88, 223, 232, 0.30)',
+      backgroundColor: 'rgba(88, 223, 232, 0.06)',
+    },
+    statusBadgeMuted: {
+      borderColor: 'rgba(242, 211, 138, 0.20)',
+      backgroundColor: 'rgba(242, 211, 138, 0.04)',
+    },
+    statusBadgeWarning: {
+      borderColor: 'rgba(224, 172, 75, 0.32)',
+      backgroundColor: 'rgba(224, 172, 75, 0.06)',
+    },
+    statusBadgeDanger: {
+      borderColor: 'rgba(232, 97, 88, 0.34)',
+      backgroundColor: 'rgba(232, 97, 88, 0.06)',
+    },
+    statusBadgeViolet: {
+      borderColor: 'rgba(141, 114, 255, 0.30)',
+      backgroundColor: 'rgba(141, 114, 255, 0.07)',
+    },
+    statusBadgeDot: {
+      width: 4,
+      height: 4,
+      borderRadius: theme.radii.pill,
+    },
+    statusBadgeDotActive: { backgroundColor: theme.colors.scannerCyan },
+    statusBadgeDotMuted: { backgroundColor: theme.colors.goldMuted },
+    statusBadgeDotWarning: { backgroundColor: theme.colors.scannerAmber },
+    statusBadgeDotDanger: { backgroundColor: theme.colors.danger },
+    statusBadgeDotViolet: { backgroundColor: theme.colors.scannerViolet },
+    statusBadgeText: {
+      fontSize: 7,
+      fontWeight: '900',
+      letterSpacing: 0.62,
+    },
+    statusBadgeTextActive: { color: theme.colors.scannerCyan },
+    statusBadgeTextMuted: { color: theme.colors.goldMuted },
+    statusBadgeTextWarning: { color: theme.colors.scannerAmber },
+    statusBadgeTextDanger: { color: theme.colors.danger },
+    statusBadgeTextViolet: { color: theme.colors.scannerViolet },
+  });
   return {
     ...staticStyles,
-  rowIcon: [
-    staticStyles.rowIcon,
-    {
-        width: responsiveLayout.responsiveWidth(32),
-        height: responsiveLayout.responsiveHeight(32),
-    },
-  ],
-  rowTitle: [
-    staticStyles.rowTitle,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
-  rowDescription: [
-    staticStyles.rowDescription,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  rowActionText: [
-    staticStyles.rowActionText,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  rowStaticLabel: [
-    staticStyles.rowStaticLabel,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
-  statusBadgeDot: [
-    staticStyles.statusBadgeDot,
-    {
-        width: responsiveLayout.responsiveWidth(4),
-        height: responsiveLayout.responsiveHeight(4),
-    },
-  ],
-  statusBadgeText: [
-    staticStyles.statusBadgeText,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
+    rowIcon: [
+      staticStyles.rowIcon,
+      {
+        width: responsiveWidth(32),
+        height: responsiveHeight(32),
+      },
+    ],
+    rowTitle: [
+      staticStyles.rowTitle,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
+    rowDescription: [
+      staticStyles.rowDescription,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    rowActionText: [
+      staticStyles.rowActionText,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    rowStaticLabel: [
+      staticStyles.rowStaticLabel,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
+    statusBadgeDot: [
+      staticStyles.statusBadgeDot,
+      {
+        width: responsiveWidth(4),
+        height: responsiveHeight(4),
+      },
+    ],
+    statusBadgeText: [
+      staticStyles.statusBadgeText,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
   };
 }

@@ -16,7 +16,7 @@ import type {
   ValueRadarViewport,
 } from "@/components/scanner/value-radar-visual.native";
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
+import { responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export type ValueRadarBubbleProps = {
@@ -276,177 +276,178 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  readinessCue: {
-    minHeight: 18,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-  readinessLight: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-  },
-  readinessName: {
-    color: theme.colors.text,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8.5,
-    lineHeight: 10,
-    letterSpacing: 1.15,
-  },
-  readinessSeparator: {
-    color: theme.colors.scannerViolet,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    lineHeight: 10,
-  },
-  readinessState: {
-    fontFamily: theme.fonts.radar,
-    fontSize: 7.5,
-    lineHeight: 9,
-    letterSpacing: 0.8,
-  },
-  signalBars: {
-    marginLeft: 2,
-    height: 10,
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 2,
-  },
-  signalBar: {
-    width: 2,
-    borderRadius: 1,
-  },
-  signalBarLow: {
-    height: 3,
-    opacity: 0.45,
-  },
-  signalBarMid: {
-    height: 6,
-    opacity: 0.7,
-  },
-  signalBarHigh: {
-    height: 9,
-  },
-  modelCue: {
-    minHeight: 18,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-  },
-  modelCueIndex: {
-    fontFamily: theme.fonts.radar,
-    fontSize: 7.5,
-    lineHeight: 9,
-    letterSpacing: 0.8,
-  },
-  modelCueLine: {
-    width: 25,
-    height: 1,
-    backgroundColor: "rgba(88, 223, 232, 0.42)",
-  },
-  modelCueLight: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-  },
-  modelCueText: {
-    flexShrink: 1,
-    color: "rgba(247, 242, 232, 0.7)",
-    fontFamily: theme.fonts.radar,
-    fontSize: 7,
-    lineHeight: 9,
-    letterSpacing: 0.72,
-  },
-  flashButtonHost: {
-    position: "absolute",
-    zIndex: 80,
-    elevation: 80,
-  },
-});
+  const { responsiveWidth, responsiveHeight, responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    readinessCue: {
+      minHeight: 18,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+    },
+    readinessLight: {
+      width: 7,
+      height: 7,
+      borderRadius: 4,
+    },
+    readinessName: {
+      color: theme.colors.text,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8.5,
+      lineHeight: 10,
+      letterSpacing: 1.15,
+    },
+    readinessSeparator: {
+      color: theme.colors.scannerViolet,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      lineHeight: 10,
+    },
+    readinessState: {
+      fontFamily: theme.fonts.radar,
+      fontSize: 7.5,
+      lineHeight: 9,
+      letterSpacing: 0.8,
+    },
+    signalBars: {
+      marginLeft: 2,
+      height: 10,
+      flexDirection: "row",
+      alignItems: "flex-end",
+      gap: 2,
+    },
+    signalBar: {
+      width: 2,
+      borderRadius: 1,
+    },
+    signalBarLow: {
+      height: 3,
+      opacity: 0.45,
+    },
+    signalBarMid: {
+      height: 6,
+      opacity: 0.7,
+    },
+    signalBarHigh: {
+      height: 9,
+    },
+    modelCue: {
+      minHeight: 18,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 7,
+    },
+    modelCueIndex: {
+      fontFamily: theme.fonts.radar,
+      fontSize: 7.5,
+      lineHeight: 9,
+      letterSpacing: 0.8,
+    },
+    modelCueLine: {
+      width: 25,
+      height: 1,
+      backgroundColor: "rgba(88, 223, 232, 0.42)",
+    },
+    modelCueLight: {
+      width: 7,
+      height: 7,
+      borderRadius: 4,
+    },
+    modelCueText: {
+      flexShrink: 1,
+      color: "rgba(247, 242, 232, 0.7)",
+      fontFamily: theme.fonts.radar,
+      fontSize: 7,
+      lineHeight: 9,
+      letterSpacing: 0.72,
+    },
+    flashButtonHost: {
+      position: "absolute",
+      zIndex: 80,
+      elevation: 80,
+    },
+  });
   return {
     ...staticStyles,
-  readinessLight: [
-    staticStyles.readinessLight,
-    {
-        width: responsiveLayout.responsiveWidth(7),
-        height: responsiveLayout.responsiveHeight(7),
-    },
-  ],
-  readinessName: [
-    staticStyles.readinessName,
-    {
-        fontSize: responsiveLayout.responsiveFont(8.5),
-    },
-  ],
-  readinessSeparator: [
-    staticStyles.readinessSeparator,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  readinessState: [
-    staticStyles.readinessState,
-    {
-        fontSize: responsiveLayout.responsiveFont(7.5),
-    },
-  ],
-  signalBars: [
-    staticStyles.signalBars,
-    {
-        height: responsiveLayout.responsiveHeight(10),
-    },
-  ],
-  signalBar: [
-    staticStyles.signalBar,
-    {
-        width: responsiveLayout.responsiveWidth(2),
-    },
-  ],
-  signalBarLow: [
-    staticStyles.signalBarLow,
-    {
-        height: responsiveLayout.responsiveHeight(3),
-    },
-  ],
-  signalBarMid: [
-    staticStyles.signalBarMid,
-    {
-        height: responsiveLayout.responsiveHeight(6),
-    },
-  ],
-  signalBarHigh: [
-    staticStyles.signalBarHigh,
-    {
-        height: responsiveLayout.responsiveHeight(9),
-    },
-  ],
-  modelCueIndex: [
-    staticStyles.modelCueIndex,
-    {
-        fontSize: responsiveLayout.responsiveFont(7.5),
-    },
-  ],
-  modelCueLine: [
-    staticStyles.modelCueLine,
-    {
-        width: responsiveLayout.responsiveWidth(25),
-        height: responsiveLayout.responsiveHeight(1),
-    },
-  ],
-  modelCueLight: [
-    staticStyles.modelCueLight,
-    {
-        width: responsiveLayout.responsiveWidth(7),
-        height: responsiveLayout.responsiveHeight(7),
-    },
-  ],
-  modelCueText: [
-    staticStyles.modelCueText,
-    {
-        fontSize: responsiveLayout.responsiveFont(7),
-    },
-  ],
+    readinessLight: [
+      staticStyles.readinessLight,
+      {
+        width: responsiveWidth(7),
+        height: responsiveHeight(7),
+      },
+    ],
+    readinessName: [
+      staticStyles.readinessName,
+      {
+        fontSize: responsiveFont(8.5),
+      },
+    ],
+    readinessSeparator: [
+      staticStyles.readinessSeparator,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    readinessState: [
+      staticStyles.readinessState,
+      {
+        fontSize: responsiveFont(7.5),
+      },
+    ],
+    signalBars: [
+      staticStyles.signalBars,
+      {
+        height: responsiveHeight(10),
+      },
+    ],
+    signalBar: [
+      staticStyles.signalBar,
+      {
+        width: responsiveWidth(2),
+      },
+    ],
+    signalBarLow: [
+      staticStyles.signalBarLow,
+      {
+        height: responsiveHeight(3),
+      },
+    ],
+    signalBarMid: [
+      staticStyles.signalBarMid,
+      {
+        height: responsiveHeight(6),
+      },
+    ],
+    signalBarHigh: [
+      staticStyles.signalBarHigh,
+      {
+        height: responsiveHeight(9),
+      },
+    ],
+    modelCueIndex: [
+      staticStyles.modelCueIndex,
+      {
+        fontSize: responsiveFont(7.5),
+      },
+    ],
+    modelCueLine: [
+      staticStyles.modelCueLine,
+      {
+        width: responsiveWidth(25),
+        height: responsiveHeight(1),
+      },
+    ],
+    modelCueLight: [
+      staticStyles.modelCueLight,
+      {
+        width: responsiveWidth(7),
+        height: responsiveHeight(7),
+      },
+    ],
+    modelCueText: [
+      staticStyles.modelCueText,
+      {
+        fontSize: responsiveFont(7),
+      },
+    ],
   };
 }

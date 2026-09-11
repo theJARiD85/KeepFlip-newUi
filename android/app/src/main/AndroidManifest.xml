@@ -34,6 +34,11 @@
         <data android:scheme="exp+keepflip"/>
       </intent-filter>
     </activity>
+    <service android:name=".KeepFlipPushNotifications" android:exported="false">
+      <intent-filter>
+          <action android:name="com.google.firebase.MESSAGING_EVENT" />
+      </intent-filter>
+    </service>
     <uses-native-library android:name="libOpenCL.so" android:required="false"/>
   </application>
 </manifest>

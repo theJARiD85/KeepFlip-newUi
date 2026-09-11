@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
-import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
+import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { calculateNetProceeds, type NetProceedsInput } from '@/lib/seller-net-proceeds';
-import { loadSellerProceedsPlan, saveSellerProceedsPlan } from '@/services/seller-net-proceeds-service';
-import type { InventoryItem } from '@/services/inventory-service';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import responsiveFont from '@/lib/responsiveFont';
+import { calculateNetProceeds, type NetProceedsInput } from '@/lib/seller-net-proceeds';
+import type { InventoryItem } from '@/services/inventory-service';
+import { loadSellerProceedsPlan, saveSellerProceedsPlan } from '@/services/seller-net-proceeds-service';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type NumericField = Exclude<keyof NetProceedsInput, 'feesIncludeCollectedTax'>;
@@ -109,10 +109,6 @@ export function ListingNetProceedsPanel({ item, ownerId, prices, onTargetPriceCh
     {calculation.error ? <Text style={styles.error}>{calculation.error}</Text> : null}
     {calculation.projection?.missing.length ? <Text style={styles.error}>Missing: {calculation.projection.missing.join(', ')}</Text> : null}
     {scenarioRows.map(({ label, cents }) => {
-  const {
-    responsiveFont
-  } = useResponsiveLayout();
-
       let projection = null;
       try { if (calculation.input && cents !== null) projection = calculateNetProceeds({ ...calculation.input, salePriceCents: cents }); } catch { /* Below-discount scenario cannot produce a result. */ }
       return <View key={label} style={styles.result}><Text style={[styles.title, { fontSize: responsiveFont(18) }]}>{label} · {money(cents)}</Text><Text style={[styles.hint, { fontSize: responsiveFont(13), lineHeight: 20 }]}>Proceeds {money(projection?.proceedsCents ?? null)} · Net profit {money(projection?.profitCents ?? null)}</Text><Text style={[styles.hint, { fontSize: responsiveFont(13), lineHeight: 20 }]}>ROI {projection?.roiPercent == null ? '—' : `${projection.roiPercent.toFixed(1)}%`} on acquisition, shipping and packaging</Text></View>;
@@ -125,34 +121,35 @@ export function ListingNetProceedsPanel({ item, ownerId, prices, onTargetPriceCh
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  panel: { padding: 16, borderRadius: 18, backgroundColor: theme.colors.surfaceSoft, gap: 12 },
-  title: { fontSize: 18, color: theme.colors.text }, hint: { fontSize: 13, color: theme.colors.textMuted, lineHeight: 20 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 }, field: { flexGrow: 1, flexBasis: 140, gap: 5 },
-  input: { minHeight: 44, padding: 10, borderWidth: 1, borderColor: theme.colors.goldMuted, borderRadius: 9, color: theme.colors.text },
-  row: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12 },
-  link: { color: theme.colors.scannerCyan, fontSize: 14 }, error: { color: theme.colors.danger },
-  result: { gap: 5, borderTopWidth: 1, borderTopColor: theme.colors.goldMuted, paddingTop: 10 }, button: { paddingVertical: 12 },
-});
+  const { responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    panel: { padding: 16, borderRadius: 18, backgroundColor: theme.colors.surfaceSoft, gap: 12 },
+    title: { fontSize: 18, color: theme.colors.text }, hint: { fontSize: 13, color: theme.colors.textMuted, lineHeight: 20 },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 }, field: { flexGrow: 1, flexBasis: 140, gap: 5 },
+    input: { minHeight: 44, padding: 10, borderWidth: 1, borderColor: theme.colors.goldMuted, borderRadius: 9, color: theme.colors.text },
+    row: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12 },
+    link: { color: theme.colors.scannerCyan, fontSize: 14 }, error: { color: theme.colors.danger },
+    result: { gap: 5, borderTopWidth: 1, borderTopColor: theme.colors.goldMuted, paddingTop: 10 }, button: { paddingVertical: 12 },
+  });
   return {
     ...staticStyles,
-  title: [
-    staticStyles.title,
-    {
-        fontSize: responsiveLayout.responsiveFont(18),
-    },
-  ],
-  hint: [
-    staticStyles.hint,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  link: [
-    staticStyles.link,
-    {
-        fontSize: responsiveLayout.responsiveFont(14),
-    },
-  ],
+    title: [
+      staticStyles.title,
+      {
+        fontSize: responsiveFont(18),
+      },
+    ],
+    hint: [
+      staticStyles.hint,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    link: [
+      staticStyles.link,
+      {
+        fontSize: responsiveFont(14),
+      },
+    ],
   };
 }

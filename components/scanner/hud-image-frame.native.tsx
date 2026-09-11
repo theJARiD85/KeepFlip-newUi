@@ -1,10 +1,10 @@
 import { AdvancedHoloOverlay } from '@/components/scanner/advanced-holo-overlay';
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import { responsiveWidth } from '@/lib/responsiveFont';
 import { Image } from "expo-image";
 import { useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type HudImageFrameProps = {
@@ -99,137 +99,138 @@ export function HudImageFrame({
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  frame: {
-    position: "absolute",
-    top: 50,
+  const { responsiveFont, responsiveWidth, responsiveHeight } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    frame: {
+      position: "absolute",
+      top: 50,
 
-    overflow: "hidden",
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: "rgba(215, 168, 74, 0.32)",
-    backgroundColor: "rgba(3, 3, 7, 0.84)",
-    boxShadow:
-      "0 16px 34px rgba(0, 0, 0, 0.48), 0 0 24px rgba(88, 223, 232, 0.12)",
-  },
-  image: {
-    width: "100%",
-    height: "100%",
-  },
-  emptyState: {
-    ...StyleSheet.absoluteFill,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyText: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.radar,
-    fontSize: 10,
-    fontWeight: "900",
-    letterSpacing: 1.2,
-  },
-  corner: {
-    position: "absolute",
-    width: 28,
-    height: 28,
-  },
-  topLeft: {
-    top: 10,
-    left: 10,
-    borderTopWidth: 2,
-    borderLeftWidth: 2,
-    borderColor: theme.colors.scannerCyan,
-  },
-  topRight: {
-    top: 10,
-    right: 10,
-    borderTopWidth: 2,
-    borderRightWidth: 2,
-    borderColor: theme.colors.scannerAmber,
-  },
-  bottomLeft: {
-    bottom: 10,
-    left: 10,
-    borderBottomWidth: 2,
-    borderLeftWidth: 2,
-    borderColor: theme.colors.scannerViolet,
-  },
-  bottomRight: {
-    right: 10,
-    bottom: 10,
-    borderRightWidth: 2,
-    borderBottomWidth: 2,
-    borderColor: theme.colors.scannerCyan,
-  },
-  statusBar: {
-    position: "absolute",
-    right: 16,
-    top: 14,
-    left: 16,
-    minHeight: 30,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 11,
-  },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 999,
-    backgroundColor: theme.colors.scannerCyan,
-    boxShadow: "0 0 9px rgba(88, 223, 232, 0.92)",
-  },
-  statusText: {
-    flex: 1,
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 0.9,
-  },
-  confidence: {
-    color: theme.colors.goldBright,
-    fontFamily: theme.fonts.radar,
-    fontSize: 10,
-    fontWeight: "900",
-    fontVariant: ["tabular-nums"],
-  },
-});
+      overflow: "hidden",
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 24,
+      borderWidth: 1,
+      borderColor: "rgba(215, 168, 74, 0.32)",
+      backgroundColor: "rgba(3, 3, 7, 0.84)",
+      boxShadow:
+        "0 16px 34px rgba(0, 0, 0, 0.48), 0 0 24px rgba(88, 223, 232, 0.12)",
+    },
+    image: {
+      width: "100%",
+      height: "100%",
+    },
+    emptyState: {
+      ...StyleSheet.absoluteFill,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    emptyText: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.radar,
+      fontSize: 10,
+      fontWeight: "900",
+      letterSpacing: 1.2,
+    },
+    corner: {
+      position: "absolute",
+      width: 28,
+      height: 28,
+    },
+    topLeft: {
+      top: 10,
+      left: 10,
+      borderTopWidth: 2,
+      borderLeftWidth: 2,
+      borderColor: theme.colors.scannerCyan,
+    },
+    topRight: {
+      top: 10,
+      right: 10,
+      borderTopWidth: 2,
+      borderRightWidth: 2,
+      borderColor: theme.colors.scannerAmber,
+    },
+    bottomLeft: {
+      bottom: 10,
+      left: 10,
+      borderBottomWidth: 2,
+      borderLeftWidth: 2,
+      borderColor: theme.colors.scannerViolet,
+    },
+    bottomRight: {
+      right: 10,
+      bottom: 10,
+      borderRightWidth: 2,
+      borderBottomWidth: 2,
+      borderColor: theme.colors.scannerCyan,
+    },
+    statusBar: {
+      position: "absolute",
+      right: 16,
+      top: 14,
+      left: 16,
+      minHeight: 30,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      paddingHorizontal: 11,
+    },
+    liveDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 999,
+      backgroundColor: theme.colors.scannerCyan,
+      boxShadow: "0 0 9px rgba(88, 223, 232, 0.92)",
+    },
+    statusText: {
+      flex: 1,
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: "900",
+      letterSpacing: 0.9,
+    },
+    confidence: {
+      color: theme.colors.goldBright,
+      fontFamily: theme.fonts.radar,
+      fontSize: 10,
+      fontWeight: "900",
+      fontVariant: ["tabular-nums"],
+    },
+  });
   return {
     ...staticStyles,
-  emptyText: [
-    staticStyles.emptyText,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
-  corner: [
-    staticStyles.corner,
-    {
-        width: responsiveLayout.responsiveWidth(28),
-        height: responsiveLayout.responsiveHeight(28),
-    },
-  ],
-  liveDot: [
-    staticStyles.liveDot,
-    {
-        width: responsiveLayout.responsiveWidth(6),
-        height: responsiveLayout.responsiveHeight(6),
-    },
-  ],
-  statusText: [
-    staticStyles.statusText,
-    {
-        fontSize: responsiveLayout.responsiveFont(8),
-    },
-  ],
-  confidence: [
-    staticStyles.confidence,
-    {
-        fontSize: responsiveLayout.responsiveFont(10),
-    },
-  ],
+    emptyText: [
+      staticStyles.emptyText,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
+    corner: [
+      staticStyles.corner,
+      {
+        width: responsiveWidth(28),
+        height: responsiveHeight(28),
+      },
+    ],
+    liveDot: [
+      staticStyles.liveDot,
+      {
+        width: responsiveWidth(6),
+        height: responsiveHeight(6),
+      },
+    ],
+    statusText: [
+      staticStyles.statusText,
+      {
+        fontSize: responsiveFont(8),
+      },
+    ],
+    confidence: [
+      staticStyles.confidence,
+      {
+        fontSize: responsiveFont(10),
+      },
+    ],
   };
 }

@@ -1,4 +1,4 @@
-import { type Href, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -11,16 +11,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { useKeepFlipFeedbackNudge } from "@/components/feedback/keepflip-feedback-nudge";
-import { useKeepFlipSubscription } from "@/components/subscription/keepflip-subscription-context";
+import { AddToInventoryForm, type AddToInventoryFormValues } from "@/components/scanner/add-to-inventory-form";
 import { inventoryItemToAnalysisState } from "@/components/scanner/inventory-analysis-view-model";
 import { useItemAnalysisResult } from "@/components/scanner/item-analysis-result-context";
-import { AddToInventoryForm, type AddToInventoryFormValues } from "@/components/scanner/add-to-inventory-form";
-import { useSourcingTrip } from "@/components/sourcing/sourcing-trip-context";
 import { ValuationResultStage } from "@/components/scanner/valuation-result-stage";
+import { useSourcingTrip } from "@/components/sourcing/sourcing-trip-context";
+import { useKeepFlipSubscription } from "@/components/subscription/keepflip-subscription-context";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { openKeepFlipIncorrectIdentificationReport } from "@/lib/keepflip-feedback";
-import { saveDealShelfItem } from "@/services/deal-shelf-service";
 import {
   centsFromLedgerAmount,
   createManualLedgerEntry,
@@ -30,20 +29,20 @@ import {
   uploadLedgerReceipt,
 } from "@/services/reseller-ledger-service";
 
-import {
-  isResellerBookkeepingConfigured,
-  recordBookkeepingEvent,
-} from "@/services/reseller-bookkeeping-service";
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont from '@/lib/responsiveFont';
 import { createInventoryMediaFollowUp } from "@/services/inventory-follow-up-service";
 import {
   getInventoryItem,
   saveAnalyzedItemToInventory,
   type InventoryItem,
 } from "@/services/inventory-service";
+import {
+  isResellerBookkeepingConfigured,
+  recordBookkeepingEvent,
+} from "@/services/reseller-bookkeeping-service";
 import { applyResellerBuyRulesToAnalysis } from "@/services/reseller-buy-rules-service";
 import { getResellerBuyRules } from "@/services/user-profile-onboarding-service";
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 function firstParam(value: string | string[] | undefined) {
@@ -92,7 +91,6 @@ export function ItemAnalysisResultScreen() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [inventoryFormOpen, setInventoryFormOpen] = useState(false);
-  const [savingDeal, setSavingDeal] = useState(false);
   const finalizedRef = useRef(false);
   const activeSessionId = scannerSession?.id;
   const activeSessionReset = scannerSession?.onReset;
@@ -180,7 +178,7 @@ export function ItemAnalysisResultScreen() {
   }, [itemId, router, scannerSession]);
 
   const openAddToInventory = useCallback(() => {
-    if (!scannerSession || saving || savingDeal) return;
+    if (!scannerSession || saving) return;
     if (!userId) {
       Alert.alert(
         "Sign in required",
@@ -209,7 +207,6 @@ export function ItemAnalysisResultScreen() {
     basicBooksAllowed,
     legacyLedgerConfigured,
     saving,
-    savingDeal,
     scannerSession,
     userId,
   ]);
@@ -217,7 +214,7 @@ export function ItemAnalysisResultScreen() {
   const handleAddToInventory = useCallback(async (
     values: AddToInventoryFormValues,
   ) => {
-    if (!scannerSession || saving || savingDeal || !userId) return;
+    if (!scannerSession || saving || !userId) return;
     const sourceTrip = activeSourcingTrip;
 
     const amountCents = centsFromLedgerAmount(values.acquisitionCost);
@@ -330,8 +327,8 @@ export function ItemAnalysisResultScreen() {
         const estimatedMedian = scannerSession.analysis.valuation.median;
         const estimatedResaleCents =
           typeof estimatedMedian === "number" &&
-          Number.isFinite(estimatedMedian) &&
-          estimatedMedian > 0
+            Number.isFinite(estimatedMedian) &&
+            estimatedMedian > 0
             ? Math.round(estimatedMedian * 100)
             : null;
 
@@ -377,7 +374,7 @@ export function ItemAnalysisResultScreen() {
         Alert.alert(
           "Item added; Books needs attention",
           "The item was saved to inventory, but its purchase entry could not be recorded. Open Books to add the actual purchase manually." +
-            (caught instanceof Error ? " " + caught.message : ""),
+          (caught instanceof Error ? " " + caught.message : ""),
         );
       } else {
         Alert.alert(
@@ -399,41 +396,6 @@ export function ItemAnalysisResultScreen() {
     recordCompletedAction,
     router,
     saving,
-    savingDeal,
-    scannerSession,
-    userId,
-  ]);
-
-  const handleSaveToDealShelf = useCallback(async () => {
-    if (!scannerSession || saving || savingDeal || !userId) return;
-    setSavingDeal(true);
-    try {
-      await scannerSession.ensurePhotosSaved?.();
-      await saveDealShelfItem({
-        analysis: scannerSession.analysis,
-        modelFile: scannerSession.modelUrl,
-        ownerId: userId,
-        scanId: scannerSession.scanId,
-      });
-      recordCompletedAction();
-      finishScannerSession();
-      router.replace("/deal-shelf" as Href);
-    } catch (caught) {
-      Alert.alert(
-        "Could not park deal",
-        caught instanceof Error
-          ? caught.message
-          : "KeepFlip could not save this deal.",
-      );
-    } finally {
-      setSavingDeal(false);
-    }
-  }, [
-    finishScannerSession,
-    recordCompletedAction,
-    router,
-    saving,
-    savingDeal,
     scannerSession,
     userId,
   ]);
@@ -500,15 +462,7 @@ export function ItemAnalysisResultScreen() {
               }
               : undefined
           }
-          onSaveToDealShelf={
-            scannerSession
-              ? () => {
-                void handleSaveToDealShelf();
-              }
-              : undefined
-          }
           projectionLabel="SAVED ANALYSIS / MODEL AVAILABLE ON DEVICE"
-          savingDeal={savingDeal}
           saving={saving}
           showMarketDecisionStamp={Boolean(scannerSession)}
           saveLabel="Add to inventory"
@@ -531,53 +485,54 @@ export function ItemAnalysisResultScreen() {
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-    const staticStyles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: theme.colors.backgroundDeep,
-  },
-  centerState: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 16,
-    padding: 28,
-    backgroundColor: theme.colors.backgroundDeep,
-  },
-  message: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.radar,
-    fontSize: 13,
-    lineHeight: 19,
-    textAlign: "center",
-  },
-  backButton: {
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: "rgba(88, 223, 232, 0.42)",
-  },
-  backButtonText: {
-    color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
-    fontSize: 9,
-    fontWeight: "900",
-    letterSpacing: 1.1,
-  },
-});
+  const { responsiveFont } = responsiveLayout;
+  const staticStyles = StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: theme.colors.backgroundDeep,
+    },
+    centerState: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 16,
+      padding: 28,
+      backgroundColor: theme.colors.backgroundDeep,
+    },
+    message: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.radar,
+      fontSize: 13,
+      lineHeight: 19,
+      textAlign: "center",
+    },
+    backButton: {
+      paddingHorizontal: 18,
+      paddingVertical: 12,
+      borderWidth: 1,
+      borderColor: "rgba(88, 223, 232, 0.42)",
+    },
+    backButtonText: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 9,
+      fontWeight: "900",
+      letterSpacing: 1.1,
+    },
+  });
   return {
     ...staticStyles,
-  message: [
-    staticStyles.message,
-    {
-        fontSize: responsiveLayout.responsiveFont(13),
-    },
-  ],
-  backButtonText: [
-    staticStyles.backButtonText,
-    {
-        fontSize: responsiveLayout.responsiveFont(9),
-    },
-  ],
+    message: [
+      staticStyles.message,
+      {
+        fontSize: responsiveFont(13),
+      },
+    ],
+    backButtonText: [
+      staticStyles.backButtonText,
+      {
+        fontSize: responsiveFont(9),
+      },
+    ],
   };
 }
