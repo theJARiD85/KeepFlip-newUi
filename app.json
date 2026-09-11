@@ -21,8 +21,10 @@
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.POST_NOTIFICATIONS",
-        "com.google.android.gms.permission.AD_ID",
         "com.android.vending.BILLING"
+      ],
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW"
       ],
       "adaptiveIcon": {
         "backgroundColor": "#030305",
@@ -76,7 +78,14 @@
       "expo-font",
       "expo-image",
       "expo-status-bar",
-      "expo-build-properties",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": false
+          }
+        }
+      ],
       "expo-secure-store",
       "expo-sharing",
       [

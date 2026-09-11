@@ -24,6 +24,7 @@ import {
   centsFromReviewAmount,
   confirmFocusedBookkeepingReview,
   getFocusedBookkeepingReview,
+  isSyntheticInvalidTransactionExternalKey,
   postFocusedBookkeepingReview,
   reviewAmountFromCents,
   type FocusedBookkeepingReviewItem,
@@ -164,6 +165,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
   const [bookingEntry, setBookingEntry] = useState('');
   const [orderId, setOrderId] = useState('');
   const [payoutId, setPayoutId] = useState('');
+  const [replacementExternalKey, setReplacementExternalKey] = useState('');
   const [itemId, setItemId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState('1');
   const [fee, setFee] = useState('');
@@ -192,6 +194,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
       setBookingEntry(result.bookingEntry || defaultBookingEntry(suggestedEventType));
       setOrderId(result.orderId || '');
       setPayoutId(result.payoutId || '');
+      setReplacementExternalKey('');
       setItemId(result.itemId);
       setQuantity('1');
       setFee('');
@@ -317,7 +320,14 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
         const optionalTaxCents = tax.trim() ? centsFromReviewAmount(tax) : 0;
         const parsedQuantity = Number(quantity);
         const needsItem = eventType === 'sale' || eventType === 'inventory_purchase';
+        const isSyntheticImport = isSyntheticInvalidTransactionExternalKey(review.externalKey);
 
+        if (isSyntheticImport && !replacementExternalKey.trim()) {
+          setError(
+            'This import is missing its real eBay transaction ID. Enter the corrected ID, or run Money Sync again so KeepFlip can replace this placeholder automatically.',
+          );
+          return;
+        }
         if (amountCents == null || amountCents <= 0) {
           setError('Enter a transaction amount greater than 0.00 to create a Books record.');
           return;
@@ -375,18 +385,27 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
           payoutId: payoutId.trim() || null,
           quantity: eventType === 'sale' ? parsedQuantity : undefined,
           reviewId: review.id,
+          replacementExternalKey: isSyntheticImport
+            ? replacementExternalKey.trim()
+            : undefined,
           transactionType: normalizedTransactionType,
           transactionMemo: memo.trim() || null,
         });
         setSuccess(
-          result.status === 'needs_item_cost'
+          result.replacedInvalidReview
+            ? `Corrected Books record created under eBay transaction ${replacementExternalKey.trim()}. The invalid review placeholder was removed.`
+            : result.status === 'needs_item_cost'
             ? 'Books record created and linked to this eBay transaction. The item’s original cost still needs review.'
             : `Books record created and linked to eBay transaction ${review.externalKey}.`,
         );
         await Haptics.notificationAsync(
           Haptics.NotificationFeedbackType.Success,
         ).catch(() => undefined);
-        await loadReview();
+        if (result.replacedInvalidReview) {
+          await routeAfterReviewConfirmation();
+        } else {
+          await loadReview();
+        }
         return;
       }
     } catch (caught) {
@@ -436,6 +455,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
     review.status === 'posted' && !hasDurableBookRecord;
   const needsInventoryLink =
     eventType === 'sale' || eventType === 'inventory_purchase';
+  const isSyntheticImport = isSyntheticInvalidTransactionExternalKey(review.externalKey);
 
   return (
     <KeepFlipBackground>
@@ -455,7 +475,9 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
             <Text style={[styles.eyebrow, { fontSize: responsiveFont(9) }]}>BOOKS / TRANSACTION REVIEW</Text>
             <Text style={[styles.title, { fontSize: responsiveFont(26), maxWidth: '85%' }]}>Review the imported eBay record</Text>
             <Text style={[styles.subtitle, { fontSize: responsiveFont(12), fontFamily: theme.fonts.body }]}>
-              The eBay transaction ID is locked. Correct the bookkeeping details below, then create one durable KeepFlip Books record linked to that ID.
+              {isSyntheticImport
+                ? 'This eBay import is missing its real transaction ID. KeepFlip will hold it for correction until a real eBay ID is supplied or Money Sync finds the corrected provider record.'
+                : 'The eBay transaction ID is locked. Correct the bookkeeping details below, then create one durable KeepFlip Books record linked to that ID.'}
             </Text>
           </View>
 
@@ -478,7 +500,10 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
             <DetailRow label="Imported transaction type" value={review.rawTransactionType} />
             <DetailRow label="Imported booking entry" value={review.bookingEntry} />
             <DetailRow label="Imported eBay amount" value={rawSourceAmount} />
-            <DetailRow label="eBay transaction ID — locked" value={review.externalKey} />
+            <DetailRow
+              label={isSyntheticImport ? 'Temporary review ID' : 'eBay transaction ID — locked'}
+              value={review.externalKey}
+            />
             <DetailRow label="Order ID" value={review.orderId} />
             <DetailRow label="Payout ID" value={review.payoutId} />
             <DetailRow label="Transaction date" value={formatDate(review.occurredAt)} />
@@ -535,12 +560,31 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
               <Text style={[styles.cardEyebrow, { fontSize: responsiveFont(8) }]}>CORRECT & CREATE BOOKS RECORD</Text>
               <Text style={[styles.editorTitle, { fontSize: responsiveFont(17) }]}>Record this eBay activity accurately</Text>
               <Text style={[styles.editorBody, { fontSize: responsiveFont(11) }]}>
-                You can correct every bookkeeping detail here. The eBay transaction ID remains locked and becomes the permanent link between the import and the Books record KeepFlip creates.
+                {isSyntheticImport
+                  ? 'This row is only a temporary review placeholder. Enter the corrected eBay transaction ID below so KeepFlip can create the corrected Books record first, then remove this invalid placeholder.'
+                  : 'You can correct every bookkeeping detail here. The eBay transaction ID remains locked and becomes the permanent link between the import and the Books record KeepFlip creates.'}
               </Text>
-              <View style={styles.lockedIdCard}>
-                <Text style={[styles.itemChipLabel, { fontSize: responsiveFont(7) }]}>LOCKED EBAY TRANSACTION ID</Text>
-                <Text selectable style={[styles.lockedIdValue, { fontSize: responsiveFont(10) }]}>{review.externalKey}</Text>
-              </View>
+              {isSyntheticImport ? (
+                <View style={styles.fieldGroup}>
+                  <Text style={[styles.fieldLabel, { fontSize: responsiveFont(8) }]}>CORRECTED EBAY TRANSACTION ID</Text>
+                  <TextInput
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    maxLength={180}
+                    onChangeText={setReplacementExternalKey}
+                    placeholder="Paste the real eBay transaction ID"
+                    placeholderTextColor="rgba(247, 242, 232, 0.30)"
+                    style={styles.textField}
+                    value={replacementExternalKey}
+                  />
+                  <Text style={[styles.fieldHint, { fontSize: responsiveFont(9) }]}>If you do not have the corrected ID, leave this blank and run Money Sync again. A unique corrected eBay record will replace this placeholder automatically.</Text>
+                </View>
+              ) : (
+                <View style={styles.lockedIdCard}>
+                  <Text style={[styles.itemChipLabel, { fontSize: responsiveFont(7) }]}>LOCKED EBAY TRANSACTION ID</Text>
+                  <Text selectable style={[styles.lockedIdValue, { fontSize: responsiveFont(10) }]}>{review.externalKey}</Text>
+                </View>
+              )}
               <View style={styles.fieldGroup}>
                 <Text style={[styles.fieldLabel, { fontSize: responsiveFont(8) }]}>RECORD AS</Text>
                 <ScrollView

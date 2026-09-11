@@ -627,7 +627,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
       const result = await syncEbayBookkeeping();
       setLedger(await listResellerLedgerEntries(ownerId));
       setNotice(
-        `Money Sync posted ${result.posted} event${result.posted === 1 ? '' : 's'}; ${result.needsReview + result.needsItemMatch + result.needsItemCost} remain in review.`,
+        `Money Sync posted ${result.posted} event${result.posted === 1 ? '' : 's'}; ${result.needsReview + result.needsItemMatch + result.needsItemCost} remain in review${result.invalidRepaired ? `; replaced ${result.invalidRepaired} corrected invalid record${result.invalidRepaired === 1 ? '' : 's'}` : ''}.`,
       );
     } catch (cause) {
       setErrors((current) => ({ ...current, money: message(cause) }));

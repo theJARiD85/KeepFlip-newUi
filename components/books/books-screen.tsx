@@ -699,7 +699,7 @@ export function BooksScreen() {
         }
         showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={[styles.eyebrow, { fontFamily: theme.fonts.diplay, fontSize: responsiveFont(10) }]}>KEEPFLIP / BOOKS</Text>
+          <Text style={[styles.eyebrow, { fontFamily: theme.fonts.display, fontSize: responsiveFont(10) }]}>KEEPFLIP / BOOKS</Text>
           <Text style={[styles.title, { fontFamily: theme.fonts.bold, fontSize: responsiveFont(26) }]}>Your money & items</Text>
           <Text style={[styles.subtitle, { fontFamily: theme.fonts.body, fontSize: responsiveFont(12) }]}>
             Track money in, costs, and what is tied up in your items. Estimates and asking prices stay out of

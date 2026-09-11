@@ -618,7 +618,7 @@ export function FlipConversationalAssistantPanel({
                     <Text style={[styles.onlineText, { fontSize: responsiveFont(7) }]}>{presenceLabel}</Text>
                   </View>
                   <Text numberOfLines={1} style={styles.searchPlaceholder}>
-                    Tell Flip what you're working on...
+                    {"Tell Flip what you're working on..."}
                   </Text>
                 </View>
                 <View style={styles.chevronButton}>
@@ -740,7 +740,7 @@ export function FlipConversationalAssistantPanel({
                       pressed && styles.historyLoadButtonPressed,
                     ]}>
                     <Text style={[styles.historyLoadText, { fontSize: responsiveFont(8) }]}>
-                      EARLIER MESSAGES COULDN'T LOAD - TAP TO RETRY
+                      {"EARLIER MESSAGES COULDN'T LOAD - TAP TO RETRY"}
                     </Text>
                   </Pressable>
                 ) : isLoadingOlderMessages ? (

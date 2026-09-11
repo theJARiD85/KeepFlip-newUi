@@ -20,13 +20,20 @@
     },
     "production": {
       "autoIncrement": true,
-      "distribution": "internal",
+      "env": {
+        "NODE_ENV": "production"
+      },
       "android": {
-        "buildType": "apk"
+        "buildType": "app-bundle"
       }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "android": {
+        "releaseStatus": "draft",
+        "track": "internal"
+      }
+    }
   }
 }

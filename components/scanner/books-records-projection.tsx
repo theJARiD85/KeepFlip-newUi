@@ -8,6 +8,7 @@ import responsiveFont from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type BooksRecordsProjectionProps = {
+  actualCost?: number | null;
   compact?: boolean;
   onAddToInventory?: () => void;
   result: ItemAnalysisResult;
@@ -26,6 +27,29 @@ function formatMoney(value: number | null | undefined, currency = "USD") {
   }
 }
 
+function formatActualCost(value: number, currency = "USD") {
+  try {
+    return new Intl.NumberFormat("en-US", {
+      currency,
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 2,
+      style: "currency",
+    }).format(value);
+  } catch {
+    return `$${value.toFixed(2)}`;
+  }
+}
+
+function knownMoney(value: number | null | undefined) {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? value
+    : null;
+}
+
+function matchesActualCost(left: number, right: number) {
+  return Math.round(left * 100) === Math.round(right * 100);
+}
+
 function formatRange(
   low: number | null | undefined,
   high: number | null | undefined,
@@ -36,6 +60,7 @@ function formatRange(
 }
 
 export function BooksRecordsProjection({
+  actualCost,
   compact = false,
   onAddToInventory,
   result,
@@ -60,17 +85,36 @@ export function BooksRecordsProjection({
   const buyCeiling = result.acquisitionGuidance?.maxBuyPrice;
   const low = valuation?.low ?? marketValue?.floor;
   const high = valuation?.high ?? marketValue?.ceiling;
+  const savedCogs = knownMoney(actualCost);
+  const analyzedCogs = knownMoney(projectedMargin?.cogs);
+  const analysisUsesSavedCogs =
+    savedCogs === null ||
+    (analyzedCogs !== null && matchesActualCost(analyzedCogs, savedCogs));
 
   if (!hasBooksRecordsProjection(result)) {
     return null;
   }
 
-  const netProfit = projectedMargin?.netProfit;
+  // A scan-time margin estimate cannot safely stand in for the actual amount
+  // paid once an inventory record exists. Keep the saved COGS visible, and
+  // only show a net figure when the analysis used that same cost basis.
+  const netProfit = analysisUsesSavedCogs ? projectedMargin?.netProfit : null;
   const roi = projectedMargin?.roiPercent;
+  const shippingKnown = knownMoney(projectedMargin?.outboundShipping) !== null;
+  const pendingNetLabel =
+    savedCogs === null
+      ? "Needs actual cost + shipping"
+      : shippingKnown
+        ? "Net pending"
+        : "Needs shipping";
   const netProfitLabel =
     netProfit == null
-      ? "Needs actual cost + shipping"
+      ? pendingNetLabel
       : `${formatMoney(netProfit, currency)}${roi == null ? "" : ` · ${Math.round(roi)}% ROI`}`;
+  const compactNetProfitLabel =
+    netProfit == null && savedCogs !== null
+      ? `COGS ${formatActualCost(savedCogs, currency)} · ${pendingNetLabel}`
+      : netProfitLabel;
 
   if (compact) {
     return (
@@ -95,7 +139,7 @@ export function BooksRecordsProjection({
           <View style={styles.compactMetric}>
             <Text numberOfLines={1} style={[styles.compactLabel, { fontSize: responsiveFont(7) }]}>NET / ROI</Text>
             <Text numberOfLines={1} style={[styles.compactValue, netProfit == null && styles.compactPendingValue]}>
-              {netProfitLabel}
+              {compactNetProfitLabel}
             </Text>
           </View>
         </View>
@@ -127,6 +171,14 @@ export function BooksRecordsProjection({
           <Text style={[styles.label, { fontSize: responsiveFont(8) }]}>OBSERVED SOLD RANGE</Text>
           <Text style={[styles.value, { fontSize: responsiveFont(11) }]}>{formatRange(low, high, currency)}</Text>
         </View>
+        {savedCogs !== null ? (
+          <View style={styles.row}>
+            <Text style={[styles.label, { fontSize: responsiveFont(8) }]}>COGS / ACTUAL PAID</Text>
+            <Text style={[styles.value, { fontSize: responsiveFont(11) }]}>
+              {formatActualCost(savedCogs, currency)}
+            </Text>
+          </View>
+        ) : null}
         <View style={styles.row}>
           <Text style={[styles.label, { fontSize: responsiveFont(8) }]}>PROJECTED NET / ROI</Text>
           <Text numberOfLines={1} style={[styles.value, netProfit == null && styles.pendingValue]}>

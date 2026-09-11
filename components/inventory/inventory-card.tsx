@@ -244,7 +244,7 @@ export function InventoryCard({
             <Text style={[styles.medianLabel, { fontSize: responsiveFont(8) }]}>
               {hasValuation ? "MARKET MEDIAN" : "MARKET VALUE"}
             </Text>
-            <Text selectable style={[styles.medianValue, { fontSize: responsiveFont(27), lineHeight: 31 }]}>
+            <Text selectable style={[styles.medianValue, { fontSize: responsiveFont(40), lineHeight: 46 }]}>
               {formatMoney(item.estimatedValue, item.currency)}
             </Text>
           </View>
@@ -561,8 +561,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     medianValue: {
       color: theme.colors.goldBright,
       fontFamily: theme.fonts.radar,
-      fontSize: responsiveFont(27),
-      lineHeight: 31,
+      fontSize: responsiveFont(40),
+      lineHeight: 46,
       fontWeight: "900",
       fontVariant: ["tabular-nums"],
       textShadowColor: "rgba(242, 211, 138, 0.52)",
@@ -758,7 +758,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     medianValue: [
       staticStyles.medianValue,
       {
-        fontSize: responsiveFont(27),
+        fontSize: responsiveFont(40),
         textShadowOffset: { width: responsiveWidth(0), height: responsiveHeight(0) },
       },
     ],

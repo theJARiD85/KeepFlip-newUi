@@ -1607,7 +1607,7 @@ export default function KeepFlipIntro({
               styles.brandTagline
             }
           >
-            THE PULSE OF YOUR RESALE BUSINESS
+            SOURCING SMARTER. FLIPPING BETTER.
           </Text>
         </View>
 

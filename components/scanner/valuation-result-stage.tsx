@@ -327,9 +327,9 @@ function ValuationGauge({
           <Text
             adjustsFontSizeToFit
             maxFontSizeMultiplier={2}
-            minimumFontScale={11}
+            minimumFontScale={0.72}
             numberOfLines={1}
-            style={[styles.medianValue, { fontSize: responsiveFont(40), lineHeight: 60 }]}
+            style={[styles.medianValue, { fontSize: responsiveFont(52), lineHeight: 58 }]}
           >
             {formatMoney(expectSale, valuation.currency)}
           </Text>
@@ -397,7 +397,13 @@ function ValuationGauge({
   );
 }
 
-function ValuePanel({ result }: { result: ResultData }) {
+function ValuePanel({
+  actualCost,
+  result,
+}: {
+  actualCost?: number;
+  result: ResultData;
+}) {
   const styles = useResponsiveStyles(createResponsiveStyles);
   const {
     responsiveFont
@@ -456,7 +462,7 @@ function ValuePanel({ result }: { result: ResultData }) {
           {ladderLine}
         </Text>
       ) : null}
-      <BooksRecordsProjection compact result={result} />
+      <BooksRecordsProjection actualCost={actualCost} compact result={result} />
     </View>
   );
 }
@@ -927,6 +933,7 @@ function IdentifierPanel({ result }: { result: ResultData }) {
 
 function ExpandedResultDetails({
   activeTab,
+  actualCost,
   answers,
   inventoryItem,
   onAddToInventory,
@@ -943,6 +950,7 @@ function ExpandedResultDetails({
   result,
 }: {
   activeTab: ResultTab;
+  actualCost?: number;
   answers: Record<string, string>;
   inventoryItem?: InventoryItem;
   onAddToInventory?: () => void;
@@ -985,6 +993,7 @@ function ExpandedResultDetails({
     <View style={styles.expandedDetails}>
       {activeTab === "valuation" ? (
         <BooksRecordsProjection
+          actualCost={actualCost}
           onAddToInventory={onAddToInventory}
           result={result}
         />
@@ -1785,7 +1794,7 @@ export function ValuationResultStage({
       ]}
     >
       {activeTab === "valuation" ? (
-        <ValuePanel result={result} />
+        <ValuePanel actualCost={profitInitialCost} result={result} />
       ) : null}
       {activeTab === "profit" ? (
         <ProfitPanel
@@ -1895,6 +1904,7 @@ export function ValuationResultStage({
             {expanded ? (
               <ExpandedResultDetails
                 activeTab={activeTab}
+                actualCost={profitInitialCost}
                 answers={answers}
                 inventoryItem={inventoryItem}
                 onAddToInventory={onSave}
@@ -2722,7 +2732,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       staticStyles.medianValue,
       {
         maxWidth: responsiveWidth(210), 
-        fontSize: responsiveFont(60),
+        fontSize: responsiveFont(52),
         textShadowOffset: { width: responsiveWidth(0), height: responsiveHeight(0) },
       },
     ],

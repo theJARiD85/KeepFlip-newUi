@@ -669,11 +669,10 @@ export async function connectEbayAccount(
     const browserSession = await startEbayLogin({
       environment: activeEnvironment,
       authorizationState,
-      // Leave eBay's optional prompt parameter unset. In Sandbox, forcing
-      // prompt=login can keep the browser on the sign-in/account surface
-      // instead of advancing the already-authenticated session to the Grant
-      // Application Access page. A user who needs a genuinely fresh grant
-      // can revoke the existing eBay app access and reconnect.
+      // Force eBay to show its credential flow when reconnecting. This is
+      // especially important after a seller revokes the previous token; an
+      // existing eBay browser session otherwise can skip the credential step.
+      prompt: 'login',
     });
     pendingState = browserSession.authorizationState || browserSession.clientState;
 

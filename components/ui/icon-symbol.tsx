@@ -51,6 +51,7 @@ const MAPPING = {
   'arrow.right': 'arrow-forward',
   'magnifyingglass': 'search',
   'tag.fill': 'sell',
+  'trash.fill': 'delete',
   'wrench.and.screwdriver.fill': 'build',
   'xmark': 'close',
 } as const satisfies Record<string, MaterialIconName>;

@@ -32,6 +32,31 @@ function requireAnchor(contents, anchor, fileName) {
   }
 }
 
+function groovyBlockBounds(contents, declaration, fileName) {
+  const declarationStart = contents.indexOf(declaration);
+  const openingBrace = contents.indexOf("{", declarationStart);
+  if (declarationStart === -1 || openingBrace === -1) {
+    throw new Error(
+      `Unable to apply KeepFlip Firebase/signing setup: expected ${declaration.trim()} block in ${fileName}.`,
+    );
+  }
+
+  let depth = 0;
+  for (let index = openingBrace; index < contents.length; index += 1) {
+    if (contents[index] === "{") depth += 1;
+    if (contents[index] === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return { end: index + 1, start: declarationStart };
+      }
+    }
+  }
+
+  throw new Error(
+    `Unable to apply KeepFlip Firebase/signing setup: ${declaration.trim()} block is not closed in ${fileName}.`,
+  );
+}
+
 /**
  * Reapplies the Firebase App Distribution, Analytics, and local release-signing
  * setup that Expo prebuild would otherwise replace. The Google Services plugin
@@ -87,20 +112,44 @@ module.exports = function withKeepFlipAndroidFirebaseSigning(config, options = {
       contents = contents.replace(anchor, releaseSigning);
     }
 
-    if (!contents.includes("signingConfig signingConfigs.release")) {
-      const releaseStart = contents.indexOf("        release {");
+    const debugBlock = groovyBlockBounds(
+      contents,
+      "        debug {",
+      "android/app/build.gradle",
+    );
+    const debugContents = contents.slice(debugBlock.start, debugBlock.end);
+    const localReleaseSigningInDebug = `            if (${KEYSTORE_PROPERTIES_FILE}.exists()) {\n                signingConfig signingConfigs.release\n            }`;
+    if (debugContents.includes(localReleaseSigningInDebug)) {
+      contents =
+        contents.slice(0, debugBlock.start) +
+        debugContents.replace(localReleaseSigningInDebug, "") +
+        contents.slice(debugBlock.end);
+    }
+
+    const releaseBlock = groovyBlockBounds(
+      contents,
+      "        release {",
+      "android/app/build.gradle",
+    );
+    const releaseContents = contents.slice(releaseBlock.start, releaseBlock.end);
+    if (!releaseContents.includes("signingConfig signingConfigs.release")) {
       const debugSigning = "            signingConfig signingConfigs.debug";
-      const debugSigningIndex = contents.indexOf(debugSigning, releaseStart);
-      if (releaseStart === -1 || debugSigningIndex === -1) {
+      const localReleaseSigning = `            // Local builds use the private keystore; EAS injects managed credentials.\n            if (${KEYSTORE_PROPERTIES_FILE}.exists()) {\n                signingConfig signingConfigs.release\n            }`;
+      const updatedReleaseContents = releaseContents.includes(debugSigning)
+        ? releaseContents.replace(debugSigning, localReleaseSigning)
+        : releaseContents.replace(
+          "        release {\n",
+          `        release {\n${localReleaseSigning}\n`,
+        );
+      if (updatedReleaseContents === releaseContents) {
         throw new Error(
           "Unable to apply KeepFlip release signing: expected release signing block is missing.",
         );
       }
-      const replacement = `            if (${KEYSTORE_PROPERTIES_FILE}.exists()) {\n                signingConfig signingConfigs.release\n            }`;
       contents =
-        contents.slice(0, debugSigningIndex) +
-        replacement +
-        contents.slice(debugSigningIndex + debugSigning.length);
+        contents.slice(0, releaseBlock.start) +
+        updatedReleaseContents +
+        contents.slice(releaseBlock.end);
     }
 
     if (!contents.includes(FIREBASE_BOM) || !contents.includes(FIREBASE_ANALYTICS)) {
@@ -127,10 +176,25 @@ module.exports = function withKeepFlipAndroidFirebaseSigning(config, options = {
       "android",
       "keystore.properties",
     );
+    const keystoreSourcePath = path.resolve(projectRoot, keystoreFile);
+    const hasProperties = fs.existsSync(propertiesSourcePath);
+    const hasKeystore = fs.existsSync(keystoreSourcePath);
 
-    if (!fs.existsSync(propertiesSourcePath)) {
+    // A clean checkout deliberately has no private signing files. In that
+    // case EAS supplies its managed credentials after prebuild. Treat a
+    // partial local setup as an error so local release builds cannot silently
+    // use the wrong key.
+    if (!hasProperties && !hasKeystore) {
+      return modConfig;
+    }
+    if (!hasProperties) {
       throw new Error(
         `KeepFlip release signing properties are missing at ${propertiesSourcePath}.`,
+      );
+    }
+    if (!hasKeystore) {
+      throw new Error(
+        `KeepFlip release keystore is missing at ${keystoreSourcePath}.`,
       );
     }
 
@@ -148,7 +212,6 @@ module.exports = function withKeepFlipAndroidFirebaseSigning(config, options = {
       );
     }
 
-    const keystoreSourcePath = path.resolve(projectRoot, keystoreFile);
     const appDirectory = path.resolve(projectRoot, "android", "app");
     const keystoreDestinationPath = path.resolve(appDirectory, storeFile);
     const appDirectoryPrefix = `${appDirectory}${path.sep}`;
@@ -157,12 +220,6 @@ module.exports = function withKeepFlipAndroidFirebaseSigning(config, options = {
         "KeepFlip release keystore must stay inside android/app.",
       );
     }
-    if (!fs.existsSync(keystoreSourcePath)) {
-      throw new Error(
-        `KeepFlip release keystore is missing at ${keystoreSourcePath}.`,
-      );
-    }
-
     await fs.promises.mkdir(path.dirname(propertiesDestinationPath), {
       recursive: true,
     });

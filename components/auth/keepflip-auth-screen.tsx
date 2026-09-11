@@ -445,7 +445,7 @@ export function KeepFlipAuthScreen({
                 )}
               </Pressable>
               <View>
-                <Text numberOfLines={1} style={[styles.legalConsentText, { fontSize: responsiveFont(10), maxWidth: '75%' }]}>By creating an account, you agree to KeepFlip's</Text>
+                <Text numberOfLines={1} style={[styles.legalConsentText, { fontSize: responsiveFont(10), maxWidth: '75%' }]}>{"By creating an account, you agree to KeepFlip's"}</Text>
 
               </View>
 

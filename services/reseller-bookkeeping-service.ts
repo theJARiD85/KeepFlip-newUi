@@ -70,6 +70,7 @@ export type BookkeepingOverviewResult = {
 
 export type EbayBookkeepingSyncResult = {
   alreadyRecorded: number;
+  invalidRepaired: number;
   needsItemCost: number;
   needsItemMatch: number;
   needsReview: number;
@@ -424,6 +425,7 @@ export async function syncEbayBookkeeping({
 
   return {
     alreadyRecorded: count(payload.alreadyRecorded),
+    invalidRepaired: count(payload.invalidRepaired),
     needsItemCost: count(payload.needsItemCost),
     needsItemMatch: count(payload.needsItemMatch),
     needsReview: count(payload.needsReview),

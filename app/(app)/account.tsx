@@ -25,6 +25,7 @@ import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import { responsiveWidth } from '@/lib/responsiveFont';
+import { openKeepFlipAccountDeletionRequest } from '@/lib/keepflip-feedback';
 import {
   getEbayConnectionStatus,
   type EbayConnectionStatusResult,
@@ -231,6 +232,21 @@ function AccountDetailsTab() {
     }
   };
 
+  const handleAccountDeletionRequest = async () => {
+    hapticSelection();
+    setFeedbackError(null);
+    try {
+      await openKeepFlipAccountDeletionRequest({
+        email: user?.email,
+        userId: user?.$id,
+      });
+    } catch {
+      setFeedbackError(
+        'Your device could not open email. Contact support@keep-flip.com to request account deletion.',
+      );
+    }
+  };
+
   return (
     <KeepFlipBackground>
       <ScrollView
@@ -305,10 +321,24 @@ function AccountDetailsTab() {
             />
             <KeepFlipControlRow
               accent="violet"
-              description="Account-level data controls will appear here as they become available."
+              accessibilityHint="Opens KeepFlip's privacy policy."
+              actionLabel="POLICY"
+              description="Read how KeepFlip handles your account and data."
               icon="checkmark.shield.fill"
               label="Privacy & data"
-              staticLabel="COMING SOON"
+              onPress={() => {
+                hapticSelection();
+                router.push('/privacy' as Href);
+              }}
+            />
+            <KeepFlipControlRow
+              accent="danger"
+              accessibilityHint="Starts an email request to delete your KeepFlip account and associated data."
+              actionLabel="REQUEST"
+              description="Start a verified request to delete your account and associated data."
+              icon="trash.fill"
+              label="Delete account"
+              onPress={() => void handleAccountDeletionRequest()}
             />
           </View>
         </Animated.View>

@@ -9,6 +9,11 @@ export type IncorrectIdentificationReport = {
   scanId?: string | null;
 };
 
+export type AccountDeletionRequest = {
+  email?: string | null;
+  userId?: string | null;
+};
+
 function mailtoUrl(subject: string, body: string) {
   return `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
@@ -38,6 +43,35 @@ export async function openKeepFlipFeedbackEmail() {
 export async function openKeepFlipSupportEmail() {
   await Linking.openURL(
     `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('KeepFlip support and feedback')}`,
+  );
+}
+
+/**
+ * Starts a documented account-and-data deletion request without making an
+ * irreversible client-side change. The support workflow can verify the
+ * account holder, revoke connected marketplace access, and retain only data
+ * required by law before completing the deletion.
+ */
+export async function openKeepFlipAccountDeletionRequest({
+  email,
+  userId,
+}: AccountDeletionRequest) {
+  const references = [
+    email?.trim() ? `Account email: ${email.trim()}` : null,
+    userId?.trim() ? `KeepFlip account ID: ${userId.trim()}` : null,
+  ].filter((value): value is string => Boolean(value));
+
+  await Linking.openURL(
+    mailtoUrl(
+      'KeepFlip account and data deletion request',
+      [
+        'I am requesting deletion of my KeepFlip account and associated data.',
+        '',
+        ...references,
+        '',
+        'Please contact me if you need to verify this request or explain any data that must be retained by law.',
+      ].join('\n'),
+    ),
   );
 }
 

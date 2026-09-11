@@ -333,7 +333,7 @@ export function KeepFlipPreAuthScreen({ onBack, onComplete }: KeepFlipPreAuthScr
               <View>
                 <Text style={[styles.brandEyebrow, { fontSize: responsiveFont(10) }]}>MEET FLIP</Text>
                 <View>
-                  <Text style={[styles.brandTitle, { fontSize: responsiveFont(25) }]}>Hi, I'm Flip.</Text>
+                  <Text style={[styles.brandTitle, { fontSize: responsiveFont(25) }]}>{"Hi, I'm Flip."}</Text>
                   <Text style={[styles.brandTitle, { fontSize: responsiveFont(25) }]}>Your resale sidekick.</Text>
 
                 </View>
@@ -345,7 +345,7 @@ export function KeepFlipPreAuthScreen({ onBack, onComplete }: KeepFlipPreAuthScr
                 <Text style={[styles.brandEyebrow, { fontSize: responsiveFont(10), textTransform: 'uppercase' }]}>Nice to meet you, {name.trim()}</Text>
                 <View>
                   <Text style={[styles.brandTitle, { fontSize: responsiveFont(25) }]}>From source to sale,</Text>
-                  <Text style={[styles.brandTitle, { fontSize: responsiveFont(25) }]}>I'll be right here to help.</Text>
+                  <Text style={[styles.brandTitle, { fontSize: responsiveFont(25) }]}>{"I'll be right here to help."}</Text>
 
                 </View>
               </View>
@@ -397,7 +397,7 @@ export function KeepFlipPreAuthScreen({ onBack, onComplete }: KeepFlipPreAuthScr
                 </Animated.View>
               ) : screen === TOUR_STEP ? (
                 <Animated.View entering={FadeInDown.duration(280)} style={styles.panel}>
-                  <Text style={[styles.headline, { fontSize: responsiveFont(20) }]}>Here's how KeepFlip helps.</Text>
+                  <Text style={[styles.headline, { fontSize: responsiveFont(20) }]}>{"Here's how KeepFlip helps."}</Text>
                   <Text style={[styles.body, { fontSize: responsiveFont(13) }]}>From the first scan through the sale, Flip keeps your decisions and your money connected.</Text>
                   <View style={styles.featureList}>{FEATURE_TOUR.map((feature) => <FeatureTile {...feature} key={feature.label} />)}</View>
                   <Pressable accessibilityRole="button" onPress={() => { advanceWithFlipSpeaking(FIRST_QUESTION_STEP); }} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={[styles.primaryButtonText, { fontSize: responsiveFont(11) }]}>BUILD MY SELLER SETUP</Text><IconSymbol color={theme.colors.backgroundDeep} name="arrow.right" size={20} /></Pressable>

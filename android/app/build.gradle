@@ -128,9 +128,12 @@ android {
             }
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            // Local release builds use the private keystore copied by the config
+            // plugin. EAS injects its managed signing configuration separately.
+            // Never fall back to the publicly known Android debug certificate.
+            if (keepFlipKeystorePropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            }
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()
             minifyEnabled enableMinifyInReleaseBuilds

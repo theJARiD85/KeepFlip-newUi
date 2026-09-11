@@ -62,7 +62,8 @@ export type ReviewPostingEventType =
 
 export type PostFocusedBookkeepingReviewInput = {
   reviewId: string;
-  /** This is deliberately absent: the server always uses the imported ID. */
+  /** Only used when the imported row has a synthetic invalid transaction key. */
+  replacementExternalKey?: string;
   eventType: ReviewPostingEventType;
   amountCents: number;
   currency: string;
@@ -82,6 +83,7 @@ export type PostFocusedBookkeepingReviewResult = {
   status: 'posted' | 'needs_item_cost';
   alreadyRecorded: boolean;
   bookTransactionId: string;
+  replacedInvalidReview: boolean;
 };
 
 export type ConfirmFocusedBookkeepingReviewResult = {
@@ -274,8 +276,13 @@ export async function postFocusedBookkeepingReview(
   return {
     alreadyRecorded: payload.alreadyRecorded === true,
     bookTransactionId,
+    replacedInvalidReview: payload.replacedInvalidReview === true,
     status: reviewStatus,
   };
+}
+
+export function isSyntheticInvalidTransactionExternalKey(value: string) {
+  return /^invalid-transaction-[a-f0-9]{24}$/i.test(value.trim());
 }
 
 export function centsFromReviewAmount(value: string) {
