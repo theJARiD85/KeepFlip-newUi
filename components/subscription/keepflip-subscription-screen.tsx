@@ -21,8 +21,10 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import { responsiveWidth } from '@/lib/responsiveFont';
+import {
+  useResponsiveLayout,
+  useResponsiveStyles,
+} from '@/hooks/use-responsive-layout';
 import {
   KEEPFLIP_PLAN_DEFINITIONS,
   areKeepFlipSubscriptionsEnforced,
@@ -31,7 +33,6 @@ import {
   type KeepFlipPlanId,
 } from '@/services/keepflip-subscription-service';
 
-import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 function formatDate(value: string | null) {
   if (!value) return null;
   const date = new Date(value);
@@ -240,6 +241,7 @@ export function KeepFlipSubscriptionScreen({
     purchase,
     purchasing,
     refresh,
+    renew,
     restore,
     restoring,
     snapshot,
@@ -249,6 +251,7 @@ export function KeepFlipSubscriptionScreen({
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [cadence, setCadence] =
     useState<KeepFlipBillingCadence>(() => requestedCadence);
+  const [renewing, setRenewing] = useState(false);
 
   const access = snapshot?.access ?? null;
   const catalog = snapshot?.catalog ?? null;
@@ -375,6 +378,30 @@ export function KeepFlipSubscriptionScreen({
     }
   };
 
+  const handleRenew = async () => {
+    if (!access?.billingIssue || renewing || purchasing || !checkoutEnabled) {
+      return;
+    }
+
+    hapticSelection();
+    setActionMessage(null);
+    setRenewing(true);
+
+    try {
+      const activated = await renew();
+      if (activated) {
+        setActionMessage('Your KeepFlip plan was renewed.');
+        void Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Success,
+        ).catch(() => undefined);
+      }
+    } catch {
+      // The subscription context surfaces the purchase error.
+    } finally {
+      setRenewing(false);
+    }
+  };
+
   const selectCadence = (nextCadence: KeepFlipBillingCadence) => {
     if (nextCadence === cadence) return;
     hapticSelection();
@@ -438,6 +465,41 @@ export function KeepFlipSubscriptionScreen({
                         : 'CHOOSE A PAID PLAN'}
             </Text>
             <Text style={[styles.trialBody, { fontSize: responsiveFont(12) }]}>{statusCopy}</Text>
+            {access?.billingIssue ? (
+              <Pressable
+                accessibilityHint="Opens the native Google Play purchase dialog for your previous KeepFlip plan."
+                accessibilityLabel="Renew the same KeepFlip plan"
+                accessibilityRole="button"
+                accessibilityState={{
+                  busy: renewing,
+                  disabled: !checkoutEnabled || renewing || purchasing,
+                }}
+                disabled={!checkoutEnabled || renewing || purchasing}
+                onPress={() => void handleRenew()}
+                style={({ pressed }) => [
+                  styles.renewButton,
+                  (!checkoutEnabled || renewing || purchasing) &&
+                    styles.renewButtonDisabled,
+                  pressed &&
+                    checkoutEnabled &&
+                    !renewing &&
+                    !purchasing &&
+                    styles.renewButtonPressed,
+                ]}>
+                {renewing ? (
+                  <ActivityIndicator color={theme.colors.goldBright} size="small" />
+                ) : (
+                  <IconSymbol
+                    color={theme.colors.goldBright}
+                    name="arrow.clockwise"
+                    size={16}
+                  />
+                )}
+                <Text style={[styles.renewButtonText, { fontSize: responsiveFont(9) }]}>
+                  RENEW SAME PLAN
+                </Text>
+              </Pressable>
+            ) : null}
           </View>
         </View>
 
@@ -723,6 +785,32 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.textMuted,
       fontSize: 12,
       lineHeight: 17,
+    },
+    renewButton: {
+      alignSelf: 'flex-start',
+      alignItems: 'center',
+      backgroundColor: 'rgba(215, 168, 74, 0.16)',
+      borderColor: 'rgba(242, 211, 138, 0.48)',
+      borderRadius: 9,
+      borderWidth: StyleSheet.hairlineWidth,
+      flexDirection: 'row',
+      gap: 7,
+      marginTop: 7,
+      minHeight: 34,
+      paddingHorizontal: 11,
+    },
+    renewButtonDisabled: {
+      opacity: 0.5,
+    },
+    renewButtonPressed: {
+      opacity: 0.76,
+    },
+    renewButtonText: {
+      color: theme.colors.goldBright,
+      fontFamily: theme.fonts.radar,
+      fontSize: 9,
+      fontWeight: '900',
+      letterSpacing: 0.72,
     },
     billingSection: { gap: 7 },
     billingLabel: {
@@ -1174,3 +1262,4 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     ],
   };
 }
+

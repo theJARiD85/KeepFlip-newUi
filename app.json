@@ -2,7 +2,7 @@
   "expo": {
     "name": "KeepFlip",
     "slug": "keepflip",
-    "version": "2.0.7",
+    "version": "2.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "keepflip",
@@ -11,16 +11,18 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.keepflip.app",
       "infoPlist": {
-        "NSCameraUsageDescription": "Allow KeepFlip to photograph items and receipts for identification and resale records."
+        "NSCameraUsageDescription": "Allow KeepFlip to photograph items and receipts for identification and resale records.",
+        "NSUserTrackingUsageDescription": "KeepFlip uses your device advertising identifier to measure app installs and ad campaign performance."
       }
     },
     "android": {
       "package": "com.keepflip.app",
-      "versionCode": 18,
+      "versionCode": 22,
       "googleServicesFile": "./config/android/google-services.json",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.POST_NOTIFICATIONS",
+        "com.google.android.gms.permission.AD_ID",
         "com.android.vending.BILLING"
       ],
       "blockedPermissions": [
@@ -46,6 +48,12 @@
         }
       ],
       "expo-router",
+      [
+        "expo-tracking-transparency",
+        {
+          "userTrackingPermission": "KeepFlip uses your device advertising identifier to measure app installs and ad campaign performance."
+        }
+      ],
       [
         "expo-image-picker",
         {

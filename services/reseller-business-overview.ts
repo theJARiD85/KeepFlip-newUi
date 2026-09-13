@@ -141,6 +141,12 @@ export function moneyFlowRangeOptions(
   return MONEY_FLOW_RANGE_OPTIONS[granularity];
 }
 
+function maximumMoneyFlowBucketCount(
+  granularity: BusinessMoneyFlowGranularity,
+) {
+  return granularity === 'days' ? 30 : granularity === 'weeks' ? 26 : 24;
+}
+
 export function getDefaultMoneyFlowGranularity(
   firstTransactionAt: string | null,
   now = new Date(),
@@ -166,27 +172,36 @@ export function getDefaultMoneyFlowRange(
   firstTransactionAt: string | null,
   now = new Date(),
 ) {
+  const rangeOptions = MONEY_FLOW_RANGE_OPTIONS[granularity];
   const firstTransaction = firstTransactionAt
     ? new Date(firstTransactionAt)
     : null;
-  const ageDays =
-    firstTransaction && Number.isFinite(firstTransaction.getTime())
-      ? Math.max(
-          0,
-          Math.floor(
-            (now.getTime() - firstTransaction.getTime()) / 86_400_000,
-          ),
-        )
-      : 0;
 
-  if (granularity === 'days') {
-    if (ageDays <= 7) return 7;
-    if (ageDays <= 14) return 14;
-    return 30;
+  if (
+    !firstTransaction ||
+    !Number.isFinite(firstTransaction.getTime()) ||
+    !Number.isFinite(now.getTime())
+  ) {
+    return rangeOptions[0].count;
   }
 
-  if (granularity === 'weeks') return ageDays <= 90 ? 12 : 26;
-  return ageDays <= 365 ? 6 : 12;
+  const maximumBuckets = maximumMoneyFlowBucketCount(granularity);
+  const currentPeriodStart = flowPeriodStart(now, granularity);
+  let firstPeriodStart = flowPeriodStart(firstTransaction, granularity);
+  let requiredBucketCount = 1;
+
+  while (
+    firstPeriodStart < currentPeriodStart &&
+    requiredBucketCount < maximumBuckets
+  ) {
+    firstPeriodStart = addFlowPeriods(firstPeriodStart, granularity, 1);
+    requiredBucketCount += 1;
+  }
+
+  return (
+    rangeOptions.find((option) => option.count >= requiredBucketCount) ??
+    rangeOptions[rangeOptions.length - 1]
+  ).count;
 }
 
 function dayKey(date: Date) {
@@ -271,8 +286,7 @@ export function buildMoneyFlowBuckets({
   bucketCount: number;
   now?: Date;
 }): BusinessMoneyFlowBucket[] {
-  const maximumBuckets =
-    granularity === 'days' ? 30 : granularity === 'weeks' ? 26 : 24;
+  const maximumBuckets = maximumMoneyFlowBucketCount(granularity);
   const safeBucketCount = Math.max(
     1,
     Math.min(maximumBuckets, Math.round(bucketCount)),
@@ -308,6 +322,20 @@ export function buildMoneyFlowBuckets({
   });
 
   return buckets;
+}
+
+/**
+ * Removes only the empty periods before the first recorded money event. Empty
+ * periods after that event remain so gaps in a user's activity are visible.
+ */
+export function trimLeadingEmptyMoneyFlowBuckets(
+  buckets: BusinessMoneyFlowBucket[],
+) {
+  const firstDataIndex = buckets.findIndex(
+    (bucket) => bucket.moneyInCents > 0 || bucket.moneyOutCents > 0,
+  );
+
+  return firstDataIndex > 0 ? buckets.slice(firstDataIndex) : buckets;
 }
 
 /**

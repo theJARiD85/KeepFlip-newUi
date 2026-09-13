@@ -22,6 +22,7 @@ import {
   getAppwriteCoreServices,
 } from '@/lib/appwrite';
 import { ensureUserProfile } from '@/services/user-profile-onboarding-service';
+import { trackTenjinEvent } from '@/services/tenjin-attribution-service';
 
 export type KeepFlipAuthStatus =
   | 'checking'
@@ -449,6 +450,7 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
           errorMessage: null,
           missingKeys: [],
         });
+        trackTenjinEvent('registration_completed');
       } catch (error) {
         const safeError = safeAuthError(error, 'sign-in');
         if (safeError.code === 'AUTH_SETUP_REQUIRED') {

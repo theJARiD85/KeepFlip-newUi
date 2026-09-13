@@ -20,6 +20,8 @@ const EDGE_INSET = 12;
 // but do not make it look like it is floating an entire button-height above it.
 const NAVIGATION_BAR_GAP = 4;
 const FLOATING_BUTTON_BASE_SIZE = 48;
+const FLOATING_CONTROL_RIGHT = 20;
+const FLOATING_VERTICAL_LIFT = 10;
 
 type KeyboardFrame = {
   screenY: number;
@@ -59,8 +61,11 @@ export function FlipAssistantOverlay() {
 
   const assistantWidth = Math.min(400, Math.max(floatingButtonWidth, width - EDGE_INSET * 2));
   const useTopDock = SCANNER_FLOW_PATHS.has(pathname);
-  const floatingBottom = Math.max(insets.bottom, NAVIGATION_BAR_GAP) + NAVIGATION_BAR_GAP;
-  const floatingTop = insets.top + 72;
+  const floatingBottom =
+    Math.max(insets.bottom, NAVIGATION_BAR_GAP) +
+    NAVIGATION_BAR_GAP +
+    FLOATING_VERTICAL_LIFT;
+  const floatingTop = insets.top + 72 - FLOATING_VERTICAL_LIFT;
   const expandedTop = insets.top + EDGE_INSET;
   const maximumOverlayHeight = Math.max(160, availableHeight - expandedTop - EDGE_INSET);
   const rootHeight = Math.max(0, rootFrame.bottom - rootFrame.top);
@@ -70,14 +75,14 @@ export function FlipAssistantOverlay() {
       : Math.max(0, rootHeight - keyboardFrame.height)
     : availableHeight;
   const keyboardOverlayHeight = Math.max(160, keyboardTopInRoot - expandedTop);
-  const overlayConversationMaxHeight = Math.max(
-    72,
-    Math.min(240, (keyboardFrame ? keyboardOverlayHeight : maximumOverlayHeight) - 218),
-  );
+  const overlayConversationMaxHeight = keyboardFrame
+    ? Math.max(72, Math.min(240, keyboardOverlayHeight - 218))
+    : undefined;
   const floatingBaseTop = useTopDock
     ? floatingTop
     : height - floatingBottom - floatingButtonHeight;
-  const minimumTranslateX = EDGE_INSET - (width - EDGE_INSET - floatingButtonWidth);
+  const minimumTranslateX =
+    EDGE_INSET - (width - FLOATING_CONTROL_RIGHT - floatingButtonWidth);
   const maximumTranslateX = 0;
   const minimumTranslateY = insets.top + EDGE_INSET - floatingBaseTop;
   const maximumTranslateY =
@@ -197,20 +202,23 @@ export function FlipAssistantOverlay() {
             style={[
               styles.dock,
               isAssistantExpanded
-                ? dockAboveKeyboard
-                  ? {
-                      justifyContent: 'flex-end',
-                      top: expandedTop,
-                      height: keyboardOverlayHeight,
-                      width: assistantWidth,
-                    }
-                  : {
-                      maxHeight: maximumOverlayHeight,
-                      top: expandedTop,
-                      width: assistantWidth,
-                    }
+                ? {
+                    justifyContent: 'flex-end',
+                    top: expandedTop,
+                    height: dockAboveKeyboard
+                      ? keyboardOverlayHeight
+                      : maximumOverlayHeight,
+                    maxHeight: dockAboveKeyboard
+                      ? keyboardOverlayHeight
+                      : maximumOverlayHeight,
+                    width: assistantWidth,
+                  }
                 : [
-                  { width: floatingButtonWidth, height: floatingButtonHeight },
+                  {
+                    width: floatingButtonWidth,
+                    height: floatingButtonHeight,
+                    right: FLOATING_CONTROL_RIGHT,
+                  },
                   useTopDock
                     ? { top: floatingTop }
                     : { bottom: floatingBottom },
@@ -218,6 +226,7 @@ export function FlipAssistantOverlay() {
                 ],
             ]}>
             <FlipConversationalAssistantPanel
+              currentRoute={pathname}
               onNavigate={(route) => router.push(route as Href)}
               onOpenSellerOperations={() => {
                 router.push('/command-center?openSellerOperations=1' as Href);

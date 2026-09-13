@@ -713,6 +713,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   const staticStyles = StyleSheet.create({
     root: {
       position: "relative",
+      alignSelf: "center",
       overflow: "visible",
     },
     rootDisabled: {

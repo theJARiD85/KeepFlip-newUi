@@ -4,6 +4,7 @@ import {
   Permission,
   Query,
   Role,
+  storage,
   tablesDB,
 } from '@/lib/appwrite';
 import {
@@ -14,6 +15,7 @@ import {
   type ItemMarketResaleVelocity,
 } from '@/types/item-analysis';
 import type { EbayListingImportCandidate } from '@/types/ebay-listing-import';
+import { trackTenjinEvent } from '@/services/tenjin-attribution-service';
 
 const ANALYSIS_SNAPSHOT_COLUMN = 'analysisSnapshotJson';
 const INVENTORY_RESELLER_COLUMNS = [
@@ -235,6 +237,12 @@ export type SaveAnalyzedItemInput = {
 export type SaveAnalyzedItemResult = {
   item: InventoryItem;
   photoWarning: string | null;
+};
+
+export type DeleteInventoryItemResult = {
+  itemId: string;
+  deletedPhotoCount: number;
+  photoFileDeleteFailures: number;
 };
 
 export type UpdateInventoryAnalysisSnapshotInput = {
@@ -918,6 +926,8 @@ export async function saveAnalyzedItemToInventory({
     throw error;
   }
 
+  trackTenjinEvent('inventory_item_saved');
+
   let attached;
   try {
     attached = await attachExistingScan({
@@ -1234,4 +1244,99 @@ export async function getInventoryItem(
   }
 
   return rowToInventoryItem(row);
+}
+
+/**
+ * Removes an owner-owned inventory record and its linked item-photo rows.
+ *
+ * The item-photo files are cleaned up after their rows so a failed file delete
+ * cannot leave a row pointing at a file that was already removed. Financial
+ * history and external marketplace records intentionally remain untouched;
+ * deleting a local inventory record must not erase the books or an eBay sale.
+ */
+export async function deleteInventoryItem(
+  ownerId: string,
+  itemId: string,
+): Promise<DeleteInventoryItemResult> {
+  assertInventoryConfigured();
+  const cleanOwnerId = ownerId.trim();
+  const cleanItemId = itemId.trim();
+
+  if (!cleanOwnerId) throw new Error('Sign in before deleting an item.');
+  if (!cleanItemId) throw new Error('The inventory item ID is missing.');
+
+  const row = (await tablesDB.getRow({
+    databaseId: APPWRITE.databaseId,
+    tableId: APPWRITE.itemsTableId,
+    rowId: cleanItemId,
+  })) as unknown as InventoryRow;
+
+  if (row.ownerId !== cleanOwnerId) {
+    throw new Error('This inventory item is not available to the signed-in account.');
+  }
+
+  const photoResponse = await tablesDB.listRows({
+    databaseId: APPWRITE.databaseId,
+    tableId: APPWRITE.itemPhotosTableId,
+    queries: [
+      Query.equal('ownerId', [cleanOwnerId]),
+      Query.equal('itemId', [cleanItemId]),
+      Query.limit(100),
+      Query.select(['$id', 'ownerId', 'fileId']),
+    ],
+  });
+  const photoRows = photoResponse.rows as unknown as ItemPhotoRow[];
+
+  if (photoRows.length > 0 && !APPWRITE.itemImagesBucketId) {
+    throw new Error(
+      'KeepFlip inventory photo storage is not configured, so this item was not deleted.',
+    );
+  }
+
+  const rowDeleteResults = await Promise.allSettled(
+    photoRows.map((photo) =>
+      tablesDB.deleteRow({
+        databaseId: APPWRITE.databaseId,
+        tableId: APPWRITE.itemPhotosTableId,
+        rowId: photo.$id,
+      }),
+    ),
+  );
+  const failedPhotoRows = rowDeleteResults.filter(
+    (result) => result.status === 'rejected',
+  );
+
+  if (failedPhotoRows.length > 0) {
+    throw new Error(
+      `KeepFlip could not remove ${failedPhotoRows.length} linked photo record${
+        failedPhotoRows.length === 1 ? '' : 's'
+      }. The inventory item was kept.`,
+    );
+  }
+
+  await tablesDB.deleteRow({
+    databaseId: APPWRITE.databaseId,
+    tableId: APPWRITE.itemsTableId,
+    rowId: cleanItemId,
+  });
+
+  const fileDeleteResults = await Promise.allSettled(
+    photoRows
+      .map((photo) => photo.fileId?.trim())
+      .filter((fileId): fileId is string => Boolean(fileId))
+      .map((fileId) =>
+        storage.deleteFile({
+          bucketId: APPWRITE.itemImagesBucketId,
+          fileId,
+        }),
+      ),
+  );
+
+  return {
+    itemId: cleanItemId,
+    deletedPhotoCount: photoRows.length,
+    photoFileDeleteFailures: fileDeleteResults.filter(
+      (result) => result.status === 'rejected',
+    ).length,
+  };
 }

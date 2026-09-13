@@ -18,6 +18,7 @@ import {
   openKeepFlipSubscriptionManagement,
   purchaseKeepFlipPlan,
   restoreKeepFlipPurchases,
+  renewKeepFlipPlan,
   subscribeToKeepFlipEntitlementUpdates,
   subscribeToKeepFlipSubscriptionUpdates,
   type KeepFlipBillingCadence,
@@ -43,6 +44,7 @@ type KeepFlipSubscriptionContextValue = {
     plan: KeepFlipPlanId,
     cadence: KeepFlipBillingCadence,
   ) => Promise<boolean>;
+  renew: () => Promise<boolean>;
   restore: () => Promise<boolean>;
   manage: () => Promise<void>;
   canUse: (feature: KeepFlipSubscriptionFeature) => boolean;
@@ -164,7 +166,7 @@ export function KeepFlipSubscriptionProvider({
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (reconcileServerStatus = true) => {
     if (!userId) {
       setSnapshot(null);
       setState('loading');
@@ -174,7 +176,10 @@ export function KeepFlipSubscriptionProvider({
 
     setError(null);
     try {
-      const next = await loadKeepFlipSubscription(userId);
+      const next = await loadKeepFlipSubscription(
+        userId,
+        { reconcileServerStatus },
+      );
       setSnapshot(next);
       // A KeepFlip profile trial is valid access even when this development
       // build has not been configured with a RevenueCat public SDK key yet.
@@ -195,7 +200,7 @@ export function KeepFlipSubscriptionProvider({
       setSnapshot(null);
       setState('loading');
       setError(null);
-      void refresh();
+      void refresh(true);
     }, 0);
 
     return () => clearTimeout(timer);
@@ -207,18 +212,9 @@ export function KeepFlipSubscriptionProvider({
     let cancelled = false;
     let removeListener: (() => void) | null = null;
 
-    void subscribeToKeepFlipSubscriptionUpdates(userId, (access) => {
+    void subscribeToKeepFlipSubscriptionUpdates(userId, () => {
       if (cancelled) return;
-      setSnapshot((current) =>
-        current
-          ? {
-              ...current,
-              access: preserveKnownTrialHistory(access, current),
-              configured: true,
-            }
-          : current,
-      );
-      setState('ready');
+      void refresh(true);
     })
       .then((remove) => {
         if (cancelled) {
@@ -240,7 +236,7 @@ export function KeepFlipSubscriptionProvider({
       cancelled = true;
       removeListener?.();
     };
-  }, [userId]);
+  }, [refresh, userId]);
 
   useEffect(() => {
     if (!userId) return;
@@ -254,7 +250,7 @@ export function KeepFlipSubscriptionProvider({
       // Realtime is the wake-up signal, not the authorization source. Reload
       // the server-verified snapshot so profile trials, grace periods, and
       // terminal subscription states all use the same policy path.
-      void refresh();
+      void refresh(false);
     })
       .then((nextSubscription) => {
         if (cancelled) {
@@ -288,7 +284,7 @@ export function KeepFlipSubscriptionProvider({
         const resumed =
           nextState === 'active' && previousState !== 'active';
         previousState = nextState;
-        if (resumed) void refresh();
+        if (resumed) void refresh(true);
       },
     );
 
@@ -368,6 +364,38 @@ export function KeepFlipSubscriptionProvider({
     }
   }, [refresh, restoring, userId]);
 
+  const renew = useCallback(async () => {
+    if (!userId || purchasing || !snapshot?.access) return false;
+
+    setPurchasing(true);
+    setError(null);
+    try {
+      const access = await renewKeepFlipPlan(userId, snapshot.access);
+      setSnapshot((current) =>
+        current
+          ? {
+              ...current,
+              access: preserveKnownTrialHistory(access, current),
+              configured: true,
+            }
+          : current,
+      );
+      await refresh();
+      return access.active;
+    } catch (caughtError) {
+      if (isUserCancelledPurchase(caughtError)) return false;
+      setError(
+        errorMessage(
+          caughtError,
+          'KeepFlip could not open the renewal purchase dialog.',
+        ),
+      );
+      return false;
+    } finally {
+      setPurchasing(false);
+    }
+  }, [purchasing, refresh, snapshot, userId]);
+
   const manage = useCallback(async () => {
     if (!userId) return;
 
@@ -417,6 +445,7 @@ export function KeepFlipSubscriptionProvider({
         purchase,
         purchasing,
         refresh,
+        renew,
         restore,
         restoring,
         snapshot,
@@ -429,6 +458,7 @@ export function KeepFlipSubscriptionProvider({
       purchase,
       purchasing,
       refresh,
+      renew,
       restore,
       restoring,
       snapshot,

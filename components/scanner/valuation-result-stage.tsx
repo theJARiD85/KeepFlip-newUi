@@ -317,19 +317,17 @@ function ValuationGauge({
   return (
     <View style={styles.gauge}>
       <Animated.View style={[styles.gaugeHeader, medianStyle]}>
-        <View style={{minHeight: 40, height: 60}}>
+        <View style={styles.gaugeHeaderCopy}>
           <Text style={[styles.microLabel, { fontSize: responsiveFont(7) }]}>EXPECTED SALE</Text>
           <Text style={[styles.gaugeStatus, { fontSize: responsiveFont(10) }]}>
             {firmLock ? "MARKET LOCK" : "RANGE PROVISIONAL"}
           </Text>
         </View>
-        <Animated.View style={medianStyle}>
+        <Animated.View style={[styles.medianValueWrap, medianStyle]}>
           <Text
-            adjustsFontSizeToFit
             maxFontSizeMultiplier={2}
-            minimumFontScale={0.72}
             numberOfLines={1}
-            style={[styles.medianValue, { fontSize: responsiveFont(52), lineHeight: 58 }]}
+            style={[styles.medianValue, { fontSize: responsiveFont(30), lineHeight: 34 }]}
           >
             {formatMoney(expectSale, valuation.currency)}
           </Text>
@@ -1825,7 +1823,7 @@ export function ValuationResultStage({
           <View style={styles.titleSignal} />
           <Text style={[styles.titleEyebrow, { fontSize: responsiveFont(8) }]}>KEEPFLIP / VALUATION COMPLETE</Text>
         </View>
-        <Text adjustsFontSizeToFit minimumFontScale={11} numberOfLines={2} style={[styles.itemTitle, { fontSize: responsiveFont(25), lineHeight: 28 }]}>
+        <Text adjustsFontSizeToFit minimumFontScale={0.72} numberOfLines={2} style={[styles.itemTitle, { fontSize: responsiveFont(25), lineHeight: 28 }]}>
           {result.identity.title}
         </Text>
       </Animated.View>
@@ -2116,9 +2114,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     panelBody: { height: 186, paddingHorizontal: 3 },
     gauge: { flex: 1, justifyContent: "center", bottom: 15 },
     gaugeHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+    gaugeHeaderCopy: { flex: 1, minWidth: 0, minHeight: 40, justifyContent: "center" },
     microLabel: { color: "rgba(255, 255, 255, 0.48)", fontFamily: theme.fonts.radar, fontSize: responsiveFont(7), fontWeight: "900", letterSpacing: 0.9 },
     gaugeStatus: { color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontWeight: "900", letterSpacing: 0.8 },
-    medianValue: {color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontWeight: "900", textShadowColor: "rgba(242, 211, 138, 0.52)", textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 7 },
+    medianValueWrap: { flexShrink: 0, minWidth: 100, alignItems: "flex-end", justifyContent: "center" },
+    medianValue: { color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontWeight: "900", fontVariant: ["tabular-nums"], textAlign: "right", textShadowColor: "rgba(242, 211, 138, 0.52)", textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 7 },
     gaugeTrack: { height: 28, justifyContent: "center" },
     gaugeBand: { position: "absolute", right: 0, left: 0, height: 9, overflow: "hidden", borderRadius: 5, transformOrigin: "left", boxShadow: "0 0 14px rgba(0, 255, 255, 0.18)" },
     gaugeTick: { position: "absolute", top: 5, width: StyleSheet.hairlineWidth, height: 18, backgroundColor: "rgba(255, 255, 255, 0.34)" },
@@ -2716,6 +2716,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
         height: responsiveHeight(45),
       },
     ],
+    gaugeHeaderCopy: [
+      staticStyles.gaugeHeaderCopy,
+      {
+        minHeight: responsiveHeight(40),
+      },
+    ],
     microLabel: [
       staticStyles.microLabel,
       {
@@ -2728,11 +2734,17 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
         fontSize: responsiveFont(9),
       },
     ],
+    medianValueWrap: [
+      staticStyles.medianValueWrap,
+      {
+        minWidth: responsiveWidth(100),
+      },
+    ],
     medianValue: [
       staticStyles.medianValue,
       {
-        maxWidth: responsiveWidth(210), 
-        fontSize: responsiveFont(52),
+        maxWidth: responsiveWidth(120),
+        fontSize: responsiveFont(30),
         textShadowOffset: { width: responsiveWidth(0), height: responsiveHeight(0) },
       },
     ],

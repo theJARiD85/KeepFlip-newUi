@@ -37,6 +37,7 @@ import {
   type AssistantProfileContext,
   type AssistantRoute,
   type AssistantTask,
+  type AssistantWorkspaceContext,
 } from '@/services/keepflip-assistant-service';
 import {
   cancelKeepFlipTaskReminder,
@@ -143,12 +144,14 @@ function mergeConversationMessages(
 export type FlipAssistantPresentation = 'inline' | 'overlay';
 
 export function FlipConversationalAssistantPanel({
+  currentRoute,
   onNavigate,
   onOpenSellerOperations,
   onExpandedChange,
   overlayConversationMaxHeight,
   presentation = 'inline',
 }: {
+  currentRoute?: string | null;
   onNavigate: (route: AssistantRoute) => void;
   onOpenSellerOperations: () => void;
   onExpandedChange?: (isExpanded: boolean) => void;
@@ -389,11 +392,8 @@ export function FlipConversationalAssistantPanel({
     userId,
   ]);
 
-  const workspaceContext = (): {
-    displayName: string | null;
-    openTasks: Array<Pick<AssistantTask, 'title' | 'taskType' | 'dueAt'>>;
-    profile: AssistantProfileContext | null;
-  } => ({
+  const workspaceContext = (): AssistantWorkspaceContext => ({
+    currentRoute: currentRoute ?? null,
     displayName,
     openTasks: openTasks.slice(0, 12).map(({ title, taskType, dueAt }) => ({
       title,
@@ -580,6 +580,7 @@ export function FlipConversationalAssistantPanel({
       style={[
         styles.surface,
         isOverlay && styles.overlaySurface,
+        isOverlay && isExpanded && styles.overlaySurfaceExpanded,
         isOverlay && !isExpanded && styles.overlaySurfaceCollapsed,
       ]}>
       {!isExpanded ? (
@@ -632,7 +633,10 @@ export function FlipConversationalAssistantPanel({
         <Animated.View
           entering={FadeInDown.duration(220)}
           exiting={FadeOut.duration(140)}
-          style={styles.expandedContent}>
+          style={[
+            styles.expandedContent,
+            isOverlay && styles.overlayExpandedContent,
+          ]}>
           <View style={styles.heading}>
             <View style={styles.headingAvatar}>
               <FlipCompanion size={46} />
@@ -854,7 +858,7 @@ export function FlipConversationalAssistantPanel({
                     accessibilityLabel="Message Flip"
                     autoCapitalize="sentences"
                     autoFocus
-                    editable={!isInteractionLocked}
+                    editable
                     onChangeText={(value) => {
                       markActivity();
                       setCommand(value);
@@ -978,9 +982,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       boxShadow: '0 16px 36px rgba(0, 0, 0, 0.42), 0 0 18px rgba(88, 223, 232, 0.12)',
       elevation: 8,
     },
+    overlaySurfaceExpanded: {
+      flex: 1,
+      minHeight: 0,
+    },
     overlaySurfaceCollapsed: {
-      width: 46,
-      borderRadius: 23,
+      width: '100%',
+      height: '100%',
+      borderRadius: 999,
       opacity: 0.74,
     },
     collapsedBar: {
@@ -992,8 +1001,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingVertical: 10,
     },
     overlayCollapsedBar: {
-      width: 46,
-      minHeight: 46,
+      width: '100%',
+      height: '100%',
+      minHeight: 0,
       justifyContent: 'center',
       gap: 0,
       paddingHorizontal: 4,
@@ -1059,6 +1069,10 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: 'rgba(0, 255, 255, 0.08)',
     },
     expandedContent: { gap: 12, padding: 14 },
+    overlayExpandedContent: {
+      flex: 1,
+      minHeight: 0,
+    },
     heading: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     headingAvatar: {
       width: 46,
@@ -1120,7 +1134,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 10,
     },
     overlayConversation: {
-      maxHeight: 240,
+      flex: 1,
+      minHeight: 0,
     },
     historyLoadButton: {
       alignSelf: 'center',

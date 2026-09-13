@@ -212,6 +212,7 @@ export default function ScannerScreen() {
     width: screenWidth,
     contentMaxWidth
   } = useResponsiveLayout();
+  const [ isVisible, setIsVisible ] = useState(false);
   const torchButtonSize = moderateScale(35, 0.65);
   const permissionCardWidth = Math.min(contentWidth, 480);
   const analysisButtonWidth = Math.min(controlDockWidth, 360);
@@ -1950,7 +1951,10 @@ export default function ScannerScreen() {
             pointerEvents={isScannerOverlayOpen ? "none" : "auto"}
             style={[
               styles.bottomPanel,
-              { width: width },
+              // The screen has horizontal page gutters. Keep the carousel in
+              // that same content box so its centerline is the screen center,
+              // rather than the padded content box plus a full-screen width.
+              { width: '100%' },
               toolbarAnimatedStyle,
             ]}
           >
@@ -2007,32 +2011,36 @@ export default function ScannerScreen() {
           </Animated.View>
         </Animated.View>
       </View>
-
+    { isVisible ? (
       <Pressable
-        onPress={() => router.push("/ar-measure-test" as Href)}
-        style={{
-          position: "absolute",
-          right: 50,
-          top: 200,
-          paddingHorizontal: 12,
-          paddingVertical: 8,
-          borderRadius: 10,
-          borderWidth: 1,
-          borderColor: theme.colors.goldBright,
-          backgroundColor: "rgba(0,0,0,0.75)",
-          zIndex: 100,
-        }}
-      >
-        <Text
-          style={{
-            color: theme.colors.goldBright,
-            fontSize: responsiveFont(12),
-            fontWeight: "800",
-          }}
+          onPress={() => router.push("/ar-measure-test" as Href)}
+            style={{
+              position: "absolute",
+              right: 50,
+              top: 200,
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              borderRadius: 10,
+              borderWidth: 1,
+              borderColor: theme.colors.goldBright,
+              backgroundColor: "rgba(0,0,0,0.75)",
+              zIndex: 100,
+            }}
         >
-          TEST AR
-        </Text>
-      </Pressable>
+          <Text
+            style={{
+              color: theme.colors.goldBright,
+              fontSize: responsiveFont(12),
+              fontWeight: "800",
+            }}
+          >
+            TEST AR
+          </Text>
+        </Pressable>
+      ) : (
+        null
+      )
+    }
     </View>
   );
 }

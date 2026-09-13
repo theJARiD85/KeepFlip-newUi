@@ -505,7 +505,8 @@ export function KeepFlipLaunchAuthScreen({
         style={styles.flex}>
         <ScrollView
           contentContainerStyle={[styles.content,
-          { paddingBottom: insets.bottom + 28, paddingTop: insets.top + 12 }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+          { paddingBottom: insets.bottom + 30, paddingTop: insets.top + 15 }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+          style={{marginTop: insets.top, marginBottom: insets.bottom}}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <View style={styles.headerRow}>
@@ -689,8 +690,7 @@ export function KeepFlipLaunchAuthScreen({
             {mode === 'create-account' ? (
               <Text style={[styles.legalText, { fontSize: responsiveFont(10) }]}>
                 By creating an account, you agree to KeepFlip&apos;s{' '}
-                <Text onPress={() => router.push('/terms')} style={styles.legalLink}>Terms of Service</Text>{' '}and{' '}
-                <Text onPress={() => router.push('/privacy')} style={styles.legalLink}>Privacy Policy</Text>.
+                <Text onPress={() => router.push('/terms')} style={styles.legalLink}>Terms of Service</Text>{' '}and{' '}<Text onPress={() => router.push('/privacy')} style={styles.legalLink}>Privacy Policy</Text>.
               </Text>
             ) : null}
           </View>
@@ -730,7 +730,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     form: { gap: 14 },
     headerRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', width: '100%' },
     legalLink: { color: theme.colors.goldBright, fontWeight: '800', textDecorationLine: 'underline' },
-    legalText: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 16, textAlign: 'center' },
+    legalText: { color: theme.colors.textMuted, lineHeight: 16, textAlign: 'center' },
     migrationBody: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 18 },
     migrationCopy: { flex: 1, gap: 4 },
     migrationEyebrow: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 1 },

@@ -87,6 +87,16 @@ app-example
 /backend/functions/keepflip-ebay-oauth/**
 /backend/functions/keepflip-ebay-oauth-helper/
 /backend/functions/keepflip-ebay-oauth-helper/**
+
+# Keep the new notification delivery Function source reviewable. Existing
+# backend Functions remain ignored until their migrations are intentionally
+# reviewed and brought under source control.
+!/backend/
+/backend/*
+!/backend/functions/
+/backend/functions/*
+!/backend/functions/keepflip-notification-push/
+!/backend/functions/keepflip-notification-push/**
 /backend/functions/keepflip-books/
 /backend/functions/keepflip-books/**
 /backend/functions/ebay-account-deletion/

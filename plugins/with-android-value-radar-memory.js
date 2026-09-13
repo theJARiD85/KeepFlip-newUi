@@ -12,6 +12,11 @@ const GRADLE_JVMARGS_PROPERTY = "org.gradle.jvmargs";
 const COMPILE_SDK_PROPERTY = "android.compileSdkVersion";
 const BUILT_IN_KOTLIN_PROPERTY = "android.builtInKotlin";
 const NEW_DSL_PROPERTY = "android.newDsl";
+const MINIFY_RELEASE_PROPERTY = "android.enableMinifyInReleaseBuilds";
+const SHRINK_RESOURCES_RELEASE_PROPERTY =
+  "android.enableShrinkResourcesInReleaseBuilds";
+const OPTIMIZED_RESOURCE_SHRINKING_PROPERTY =
+  "android.r8.optimizedResourceShrinking";
 const ANDROID_GRADLE_PLUGIN_VERSION = "8.13.2";
 const GRADLE_JVMARGS_VALUE =
   "-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8";
@@ -31,6 +36,9 @@ module.exports = function withAndroidValueRadarMemory(config) {
       COMPILE_SDK_PROPERTY,
       BUILT_IN_KOTLIN_PROPERTY,
       NEW_DSL_PROPERTY,
+      MINIFY_RELEASE_PROPERTY,
+      SHRINK_RESOURCES_RELEASE_PROPERTY,
+      OPTIMIZED_RESOURCE_SHRINKING_PROPERTY,
     ]);
 
     gradleConfig.modResults = gradleConfig.modResults.filter(
@@ -69,6 +77,21 @@ module.exports = function withAndroidValueRadarMemory(config) {
         key: NEW_DSL_PROPERTY,
         value: "false",
       },
+      {
+        type: "property",
+        key: MINIFY_RELEASE_PROPERTY,
+        value: "true",
+      },
+      {
+        type: "property",
+        key: SHRINK_RESOURCES_RELEASE_PROPERTY,
+        value: "true",
+      },
+      {
+        type: "property",
+        key: OPTIMIZED_RESOURCE_SHRINKING_PROPERTY,
+        value: "true",
+      },
     );
 
     return gradleConfig;
@@ -94,13 +117,18 @@ module.exports = function withAndroidValueRadarMemory(config) {
   });
 
   config = withAppBuildGradle(config, (appBuildGradle) => {
-    const contents = appBuildGradle.modResults.contents;
+    let contents = appBuildGradle.modResults.contents;
     if (!/apply plugin: ["']org\.jetbrains\.kotlin\.android["']/.test(contents)) {
-      appBuildGradle.modResults.contents = contents.replace(
+      contents = contents.replace(
         /apply plugin: ["']com\.android\.application["']\r?\n/,
         'apply plugin: "com.android.application"\napply plugin: "org.jetbrains.kotlin.android"\n',
       );
     }
+    contents = contents.replace(
+      /getDefaultProguardFile\(["']proguard-android\.txt["']\)/g,
+      'getDefaultProguardFile("proguard-android-optimize.txt")',
+    );
+    appBuildGradle.modResults.contents = contents;
     return appBuildGradle;
   });
 

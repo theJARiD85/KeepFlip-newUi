@@ -44,6 +44,7 @@ const destinations: MenuDestination[] = [
   },
   { eyebrow: 'IDENTIFY & VALUE', href: '/scanner' as Href, icon: 'viewfinder', label: 'Scanner' },
   { eyebrow: 'YOUR SAVED FINDS', href: '/inventory', icon: 'shippingbox.fill', label: 'Inventory' },
+  { eyebrow: 'STAY IN THE LOOP', href: '/notifications', icon: 'envelope.fill', label: 'Notifications' },
 
 ];
 
@@ -59,6 +60,10 @@ function isDestinationActive(destinationPath: string, pathname: string) {
       pathname === '/books' ||
       pathname === '/account'
     );
+  }
+
+  if (destinationPath === '/notifications') {
+    return pathname.startsWith('/notifications');
   }
 
   return pathname.startsWith(destinationPath);
@@ -78,7 +83,7 @@ export function KeepFlipSlideDownMenu() {
   const isMenuDisabled = pathname === '/walkthrough';
   const progress = useSharedValue(0);
   const [isMenuMounted, setIsMenuMounted] = useState(isMenuOpen);
-  const panelHeight = Math.min(690, Math.max(543, height - insets.bottom - 30));
+  const panelHeight = Math.min(660, Math.max(543, height - insets.bottom - 30));
 
   useEffect(() => {
     let openFrame: number | undefined;

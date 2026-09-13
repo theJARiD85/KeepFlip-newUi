@@ -4,18 +4,20 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import { responsiveWidth } from '@/lib/responsiveFont';
+import {
+  useResponsiveLayout,
+  useResponsiveStyles,
+} from '@/hooks/use-responsive-layout';
 import {
   buildMoneyFlowBuckets,
   getDefaultMoneyFlowGranularity,
   getDefaultMoneyFlowRange,
   moneyFlowRangeOptions,
+  trimLeadingEmptyMoneyFlowBuckets,
   type BusinessMoneyFlowGranularity,
   type ResellerBusinessOverview,
 } from '@/services/reseller-business-overview';
 
-import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type BusinessPulseProps = {
   errorMessage?: string | null;
   loading: boolean;
@@ -128,12 +130,16 @@ export function BusinessPulse({
     ? selectedRangeCount!
     : defaultRangeCount;
   const selectedRange = rangeOptions.find((option) => option.count === rangeCount)!;
-  const moneyFlow = buildMoneyFlowBuckets({
+  const fullMoneyFlow = buildMoneyFlowBuckets({
     bucketCount: rangeCount,
     entries: overview.moneyFlowEntries,
     granularity,
     now: chartNow,
   });
+  const moneyFlow =
+    selectedRangeCount == null
+      ? trimLeadingEmptyMoneyFlowBuckets(fullMoneyFlow)
+      : fullMoneyFlow;
   const maximumFlow = Math.max(
     ...moneyFlow.flatMap((date) => [date.moneyInCents, date.moneyOutCents]),
     1,

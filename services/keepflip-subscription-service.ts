@@ -6,6 +6,7 @@ import Purchases, {
   type PurchasesEntitlementInfo,
   type PurchasesPackage,
   type StoreProductChangeInfo,
+  type SubscriptionOption,
 } from 'react-native-purchases';
 import {
   Channel,
@@ -932,6 +933,161 @@ function packageForSelection(
   return periodMatchedPackage ?? null;
 }
 
+function normalizedStoreIdentifier(value: string) {
+  return value.trim().toLowerCase().replace(/[-:/.]+/g, '_');
+}
+
+function cadenceFromStoreIdentifier(
+  value: string | null | undefined,
+): KeepFlipBillingCadence | null {
+  if (!value) return null;
+
+  const normalized = normalizedStoreIdentifier(value);
+  if (/(^|_)(annual|year|yearly|12m|p1y)($|_)/.test(normalized)) {
+    return 'annual';
+  }
+  if (/(^|_)(monthly|month|1m|p1m)($|_)/.test(normalized)) {
+    return 'monthly';
+  }
+  return null;
+}
+
+function optionMatchesStoreIdentifier(
+  option: SubscriptionOption,
+  normalizedProductId: string,
+) {
+  return [option.id, option.storeProductId].some(
+    (identifier) =>
+      normalizedStoreIdentifier(identifier) === normalizedProductId,
+  );
+}
+
+function optionForCadence(
+  options: SubscriptionOption[] | null,
+  cadence: KeepFlipBillingCadence | null,
+) {
+  if (!options || !cadence) return null;
+
+  return (
+    options.find((option) => {
+      if (!option.isBasePlan) return false;
+      const unit = option.billingPeriod?.unit?.toUpperCase();
+      const value = option.billingPeriod?.value;
+      if (cadence === 'monthly' && unit === 'MONTH' && value === 1) {
+        return true;
+      }
+      if (
+        cadence === 'annual' &&
+        ((unit === 'YEAR' && value === 1) ||
+          (unit === 'MONTH' && value === 12))
+      ) {
+        return true;
+      }
+      return false;
+    }) ?? null
+  );
+}
+
+type KeepFlipRenewalSelection = {
+  package: PurchasesPackage;
+  option: SubscriptionOption | null;
+};
+
+function previousSubscriptionSelection(
+  packages: PurchasesPackage[],
+  access: Pick<KeepFlipSubscriptionAccess, 'plan' | 'productId'>,
+): KeepFlipRenewalSelection | null {
+  if (!access.plan || !access.productId) return null;
+
+  const normalizedProductId = normalizedStoreIdentifier(access.productId);
+  const exactOptionMatches: KeepFlipRenewalSelection[] = [];
+  const exactPackageMatches: KeepFlipRenewalSelection[] = [];
+
+  for (const candidate of packages) {
+    const candidateIdentifiers = [
+      candidate.identifier,
+      candidate.product.identifier,
+    ].map(normalizedStoreIdentifier);
+    const packageMatches = candidateIdentifiers.includes(normalizedProductId);
+    const specificOption =
+      candidate.product.subscriptionOptions?.find((option) =>
+        optionMatchesStoreIdentifier(option, normalizedProductId),
+      ) ?? null;
+
+    if (specificOption) {
+      exactOptionMatches.push({ package: candidate, option: specificOption });
+    } else if (packageMatches) {
+      exactPackageMatches.push({ package: candidate, option: null });
+    }
+  }
+
+  // A base-plan identifier is more precise than a subscription product ID.
+  // Prefer it whenever RevenueCat exposes the Google subscription options.
+  if (exactOptionMatches.length === 1) return exactOptionMatches[0];
+
+  const cadenceHint = cadenceFromStoreIdentifier(access.productId);
+  if (exactOptionMatches.length > 1 && cadenceHint) {
+    const cadenceMatch = exactOptionMatches.find(
+      (selection) =>
+        optionForCadence(
+          selection.package.product.subscriptionOptions,
+          cadenceHint,
+        )?.id === selection.option?.id,
+    );
+    if (cadenceMatch) return cadenceMatch;
+  }
+
+  if (exactPackageMatches.length === 1) {
+    const selection = exactPackageMatches[0];
+    return {
+      ...selection,
+      option: optionForCadence(
+        selection.package.product.subscriptionOptions,
+        cadenceHint,
+      ),
+    };
+  }
+
+  if (exactPackageMatches.length > 1 && cadenceHint) {
+    const cadencePackage = packageForSelection(
+      exactPackageMatches.map((selection) => selection.package),
+      access.plan,
+      cadenceHint,
+    );
+    if (cadencePackage) {
+      return {
+        package: cadencePackage,
+        option: optionForCadence(
+          cadencePackage.product.subscriptionOptions,
+          cadenceHint,
+        ),
+      };
+    }
+  }
+
+  // Some RevenueCat configurations expose the base-plan cadence in the
+  // product identifier but do not expose an exact package identifier. Keep
+  // the tier and cadence together when recovering through the configured map.
+  if (cadenceHint) {
+    const cadencePackage = packageForSelection(
+      packages,
+      access.plan,
+      cadenceHint,
+    );
+    if (cadencePackage) {
+      return {
+        package: cadencePackage,
+        option: optionForCadence(
+          cadencePackage.product.subscriptionOptions,
+          cadenceHint,
+        ),
+      };
+    }
+  }
+
+  return null;
+}
+
 function catalogFromPackages(
   offeringId: string | null,
   packages: PurchasesPackage[],
@@ -951,13 +1107,20 @@ function catalogFromPackages(
   return { offeringId, prices };
 }
 
+export type KeepFlipSubscriptionLoadOptions = {
+  /** Ask Subscription Police to reconcile the saved row with RevenueCat first. */
+  reconcileServerStatus?: boolean;
+};
+
 export async function loadKeepFlipSubscription(
   userId: string,
+  options: KeepFlipSubscriptionLoadOptions = {},
 ): Promise<KeepFlipSubscriptionSnapshot> {
   const deviceIdHash = await getKeepFlipTrialDeviceIdHash().catch(() => null);
   const serverStatusPromise = loadKeepFlipServerSubscriptionStatus(
     userId,
     deviceIdHash,
+    options.reconcileServerStatus === true,
   ).catch(() => ({
     access: null,
     available: false,
@@ -1119,6 +1282,48 @@ export async function purchaseKeepFlipPlan(
     null,
     productChangeInfo,
   );
+  return subscriptionAccessFromCustomerInfo(result.customerInfo);
+}
+
+/**
+ * Reopen the native store purchase flow for the user's previous plan after a
+ * payment failure. This deliberately does not call the subscription settings
+ * URL and does not create a product-change transaction: the user is repairing
+ * the same subscription, not switching plans.
+ */
+export async function renewKeepFlipPlan(
+  userId: string,
+  access: Pick<KeepFlipSubscriptionAccess, 'plan' | 'productId'>,
+) {
+  if (!(await ensureRevenueCatUser(userId))) {
+    throw new Error(
+      'KeepFlip subscriptions are not configured in this build yet.',
+    );
+  }
+
+  const offerings = await Purchases.getOfferings();
+  const offering = configuredOffering(offerings);
+  if (!offering) {
+    throw new Error(
+      'KeepFlip could not load the subscription offering. Check the RevenueCat offering configuration.',
+    );
+  }
+
+  const selection = previousSubscriptionSelection(
+    offering.availablePackages,
+    access,
+  );
+  if (!selection) {
+    throw new Error(
+      'KeepFlip could not match your previous subscription to a store plan. Use Manage Subscription to update it in Google Play.',
+    );
+  }
+
+  const result =
+    Platform.OS === 'android' && selection.option
+      ? await Purchases.purchaseSubscriptionOption(selection.option, null)
+      : await Purchases.purchasePackage(selection.package, null, null);
+
   return subscriptionAccessFromCustomerInfo(result.customerInfo);
 }
 

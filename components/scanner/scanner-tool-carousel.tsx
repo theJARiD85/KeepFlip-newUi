@@ -451,6 +451,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   const { responsiveFont } = responsiveLayout;
   const staticStyles = StyleSheet.create({
     root: {
+      alignSelf: 'center',
       alignItems: 'center',
     },
     rootDisabled: {

@@ -1,6 +1,7 @@
 import {
   Account,
   Client,
+  Databases,
   Functions,
   Realtime,
   Storage,
@@ -159,6 +160,12 @@ export const APPWRITE = {
   endpoint: publicEnvironmentValue(process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT),
   projectId: publicEnvironmentValue(process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID),
   databaseId: publicEnvironmentValue(process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID),
+  notificationsDatabaseId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_NOTIFICATIONS_DATABASE_ID,
+  ),
+  notificationsCollectionId: publicEnvironmentValue(
+    process.env.EXPO_PUBLIC_APPWRITE_NOTIFICATIONS_COLLECTION_ID,
+  ),
   itemsTableId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_ITEMS_COLLECTION_ID,
   ),
@@ -418,6 +425,7 @@ export function getAppwriteServices(): AppwriteServices {
 
 type LegacyDataServices = {
   client: Client;
+  databases: Databases;
   tablesDB: TablesDB;
   realtime: Realtime;
 };
@@ -432,6 +440,7 @@ function getLegacyDataServices() {
 
   cachedLegacyDataServices = {
     client,
+    databases: new Databases(client),
     tablesDB: new TablesDB(client),
     realtime: new Realtime(client),
   };
@@ -457,6 +466,9 @@ export const messaging = lazyService(
 export const storage = lazyService(() => getAppwriteServices().storage);
 export const tablesDB = lazyService(
   () => getLegacyDataServices().tablesDB,
+);
+export const databases = lazyService(
+  () => getLegacyDataServices().databases,
 );
 export const realtime = lazyService(
   () => getLegacyDataServices().realtime,

@@ -2,18 +2,24 @@ import { AdvancedHoloOverlay } from '@/components/scanner/advanced-holo-overlay'
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont, { responsiveWidth } from '@/lib/responsiveFont';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 import { withAlpha } from '@/lib/withAlpha';
 import { resolveInventoryCoverImageUri } from "@/services/inventory-cover-image";
 import type { InventoryItem } from "@/services/inventory-service";
 import { Image, type ImageSource } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 
-import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type CoverImageSource = ImageSource | number | string;
+const PROVIDED_COVER_IMAGE_KEY = "__provided-cover-image__";
 
 function formatMoney(value: number | null, currency: string) {
   if (value == null) return "—";
@@ -66,75 +72,187 @@ export function InventoryCard({
   onPress,
   onListingGuidePress,
   onAddPhotosPress,
+  onDeletePress,
+  isDeleting = false,
 }: {
   coverImageSource?: CoverImageSource;
   item: InventoryItem;
   onPress: () => void;
   onListingGuidePress?: () => void;
   onAddPhotosPress?: () => void;
+  onDeletePress?: () => void;
+  isDeleting?: boolean;
 }) {
   const styles = useResponsiveStyles(createResponsiveStyles);
-  const {
-    responsiveFont
-  } = useResponsiveLayout();
+  const { responsiveFont } = useResponsiveLayout();
 
   const coverPhotoId = item.coverPhotoId;
-  const coverKey = coverPhotoId ?? "";
-  const [coverState, setCoverState] = useState({
-    key: "",
-    uri: null as string | null,
-    unavailable: false,
+  const hasProvidedCoverImage = Boolean(coverImageSource);
+  const photoPageKeys = useMemo(() => {
+    const seen = new Set<string>();
+    const candidates = [
+      ...(coverPhotoId ? [coverPhotoId] : []),
+      ...item.itemPhotos,
+    ];
+
+    if (hasProvidedCoverImage) {
+      candidates.unshift(PROVIDED_COVER_IMAGE_KEY);
+    }
+
+    return candidates.reduce<string[]>((result, candidate) => {
+      const cleanCandidate = candidate.trim();
+
+      if (cleanCandidate && !seen.has(cleanCandidate)) {
+        seen.add(cleanCandidate);
+        result.push(cleanCandidate);
+      }
+
+      return result;
+    }, []);
+  }, [coverPhotoId, hasProvidedCoverImage, item.itemPhotos]);
+  const photoKeySignature = photoPageKeys.join("|");
+  const [photoState, setPhotoState] = useState<{
+    signature: string;
+    index: number;
+    uris: Record<string, string | null>;
+    failures: Record<string, boolean>;
+  }>({
+    signature: "",
+    index: 0,
+    uris: {},
+    failures: {},
   });
+  const activePhotoState =
+    photoState.signature === photoKeySignature
+      ? photoState
+      : {
+        signature: photoKeySignature,
+        index: 0,
+        uris: {},
+        failures: {},
+      };
+  const { failures: photoFailures, index: photoIndex, uris: photoUris } = activePhotoState;
+  const [heroWidth, setHeroWidth] = useState(0);
+  const requestedPhotoIds = useRef(new Set<string>());
+  const photoGeneration = useRef(0);
   const meta = [item.brand, item.model, item.category]
     .filter(Boolean)
     .join(" / ");
-  const resolvedSource =
-    coverImageSource ??
-    (coverState.key === coverKey && coverState.uri
-      ? { uri: coverState.uri }
-      : null);
-  const imageUnavailable =
-    !coverImageSource &&
-    coverState.key === coverKey &&
-    coverState.unavailable;
   const hasValuation = item.estimatedValue != null;
   const flipDecision = displaySignal(item.flipDecision ?? item.flipVerdict);
   const resaleVelocity = displaySignal(item.resaleVelocity);
   const costBasis = item.acquisitionCost ?? item.inventoryCostOnHand;
 
-  useEffect(() => {
-    let active = true;
-
-    if (coverImageSource) {
-      return () => {
-        active = false;
-      };
+  const requestPhoto = useCallback((photoId: string | undefined) => {
+    if (
+      !photoId ||
+      photoId === PROVIDED_COVER_IMAGE_KEY ||
+      requestedPhotoIds.current.has(photoId)
+    ) {
+      return;
     }
 
-    void (coverPhotoId
-      ? resolveInventoryCoverImageUri(coverPhotoId)
-      : Promise.resolve(null))
+    requestedPhotoIds.current.add(photoId);
+    const generation = photoGeneration.current;
+
+    void resolveInventoryCoverImageUri(photoId)
       .then((uri) => {
-        if (!active) return;
-        setCoverState({
-          key: coverKey,
-          uri,
-          unavailable: !uri,
+        if (generation !== photoGeneration.current) return;
+
+        setPhotoState((current) => {
+          const base =
+            current.signature === photoKeySignature
+              ? current
+              : {
+                signature: photoKeySignature,
+                index: 0,
+                uris: {},
+                failures: {},
+              };
+
+          return {
+            ...base,
+            uris: { ...base.uris, [photoId]: uri },
+            failures: uri
+              ? base.failures
+              : { ...base.failures, [photoId]: true },
+          };
         });
       })
       .catch(() => {
-        if (!active) return;
-        setCoverState({
-          key: coverKey,
-          uri: null,
-          unavailable: true,
+        if (generation !== photoGeneration.current) return;
+
+        setPhotoState((current) => {
+          const base =
+            current.signature === photoKeySignature
+              ? current
+              : {
+                signature: photoKeySignature,
+                index: 0,
+                uris: {},
+                failures: {},
+              };
+
+          return {
+            ...base,
+            failures: { ...base.failures, [photoId]: true },
+          };
         });
       });
+  }, [photoKeySignature]);
 
-    return () => {
-      active = false;
-    };
-  }, [coverImageSource, coverKey, coverPhotoId]);
+  const ensureNearbyPhotos = useCallback(
+    (index: number) => {
+      for (const offset of [-1, 0, 1]) {
+        const nearbyIndex = index + offset;
+
+        if (
+          nearbyIndex < 0 ||
+          nearbyIndex >= photoPageKeys.length ||
+          (nearbyIndex === 0 && hasProvidedCoverImage)
+        ) {
+          continue;
+        }
+
+        requestPhoto(photoPageKeys[nearbyIndex]);
+      }
+    },
+    [hasProvidedCoverImage, photoPageKeys, requestPhoto],
+  );
+
+  useEffect(() => {
+    photoGeneration.current += 1;
+    requestedPhotoIds.current.clear();
+    ensureNearbyPhotos(0);
+  }, [ensureNearbyPhotos, photoKeySignature]);
+
+  const handlePhotoScrollEnd = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (heroWidth <= 0 || photoPageKeys.length <= 1) return;
+
+      const nextIndex = Math.max(
+        0,
+        Math.min(
+          photoPageKeys.length - 1,
+          Math.round(event.nativeEvent.contentOffset.x / heroWidth),
+        ),
+      );
+
+      setPhotoState((current) => ({
+        ...(current.signature === photoKeySignature
+          ? current
+          : {
+            signature: photoKeySignature,
+            index: 0,
+            uris: {},
+            failures: {},
+          }),
+        index: nextIndex,
+      }));
+      ensureNearbyPhotos(nextIndex);
+    },
+    [ensureNearbyPhotos, heroWidth, photoKeySignature, photoPageKeys.length],
+  );
 
   return (
     <View style={styles.card}>
@@ -150,22 +268,87 @@ export function InventoryCard({
       >
         <View style={styles.hero}>
           <AdvancedHoloOverlay width={500} height={240} />
-          {resolvedSource && !imageUnavailable ? (
+          {photoPageKeys.length > 0 ? (
+            <ScrollView
+              bounces={photoPageKeys.length > 1}
+              contentContainerStyle={[
+                styles.photoCarouselContent,
+                heroWidth > 0 && {
+                  width: heroWidth * photoPageKeys.length,
+                },
+              ]}
+              contentInsetAdjustmentBehavior="never"
+              decelerationRate="fast"
+              horizontal
+              nestedScrollEnabled
+              onLayout={(event) => setHeroWidth(event.nativeEvent.layout.width)}
+              onMomentumScrollEnd={handlePhotoScrollEnd}
+              pagingEnabled
+              scrollEnabled={photoPageKeys.length > 1}
+              showsHorizontalScrollIndicator={false}
+              snapToAlignment="start"
+              snapToInterval={heroWidth > 0 ? heroWidth : undefined}
+              style={styles.photoCarousel}
+            >
+              {photoPageKeys.map((photoKey, index) => {
+                const source =
+                  index === 0 && coverImageSource
+                    ? coverImageSource
+                    : photoUris[photoKey]
+                      ? { uri: photoUris[photoKey] }
+                      : null;
+                const unavailable = photoFailures[photoKey] === true;
 
-            <Image
-              accessibilityLabel={`${item.title} cover photo`}
-              contentFit="cover"
-              onError={() =>
-                setCoverState((current) =>
-                  current.key === coverKey
-                    ? { ...current, unavailable: true }
-                    : current,
-                )
-              }
-              source={resolvedSource}
-              style={styles.coverImage}
-              transition={180}
-            />
+                return (
+                  <View
+                    key={photoKey}
+                    style={[
+                      styles.photoPage,
+                      heroWidth > 0 && { width: heroWidth },
+                    ]}
+                  >
+                    {source && !unavailable ? (
+                      <Image
+                        accessibilityLabel={`${item.title} photo ${index + 1} of ${photoPageKeys.length}`}
+                        contentFit="cover"
+                        onError={() =>
+                          setPhotoState((current) => {
+                            const base =
+                              current.signature === photoKeySignature
+                                ? current
+                                : {
+                                  signature: photoKeySignature,
+                                  index: 0,
+                                  uris: {},
+                                  failures: {},
+                                };
+
+                            return {
+                              ...base,
+                              failures: { ...base.failures, [photoKey]: true },
+                            };
+                          })
+                        }
+                        source={source}
+                        style={styles.coverImage}
+                        transition={180}
+                      />
+                    ) : (
+                      <View style={styles.coverFallback}>
+                        <IconSymbol
+                          color={theme.colors.goldBright}
+                          name="photo.on.rectangle.angled"
+                          size={36}
+                        />
+                        <Text style={[styles.fallbackLabel, { fontSize: responsiveFont(8) }]}>
+                          {unavailable ? "PHOTO UNAVAILABLE" : "LOADING PHOTO"}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </ScrollView>
           ) : (
             <View style={styles.coverFallback}>
               <IconSymbol
@@ -174,7 +357,7 @@ export function InventoryCard({
                 size={36}
               />
               <Text style={[styles.fallbackLabel, { fontSize: responsiveFont(8) }]}>
-                {item.coverPhotoId ? "LOADING COVER" : "NO COVER PHOTO"}
+                NO COVER PHOTO
               </Text>
             </View>
           )}
@@ -200,6 +383,18 @@ export function InventoryCard({
                 </Text>
               ) : null}
             </View>
+            {photoPageKeys.length > 0 ? (
+              <View style={styles.photoPill}>
+                <IconSymbol
+                  color={theme.colors.scannerCyan}
+                  name="photo.on.rectangle.angled"
+                  size={14}
+                />
+                <Text style={[styles.photoPillText, { fontSize: responsiveFont(8) }]}>
+                  {photoIndex + 1}/{photoPageKeys.length}
+                </Text>
+              </View>
+            ) : null}
           </View>
 
           <View pointerEvents="none" style={styles.heroCopy}>
@@ -216,6 +411,19 @@ export function InventoryCard({
             <Text style={[styles.savedAtLabel, { fontSize: responsiveFont(7) }]}>SAVED</Text>
             <Text style={[styles.savedAtValue, { fontSize: responsiveFont(8) }]}>{formatDate(item.createdAt)}</Text>
           </View>
+          {photoPageKeys.length > 1 ? (
+            <View pointerEvents="none" style={styles.photoIndicators}>
+              {photoPageKeys.map((photoKey, index) => (
+                <View
+                  key={photoKey}
+                  style={[
+                    styles.photoIndicator,
+                    index === photoIndex && styles.photoIndicatorActive,
+                  ]}
+                />
+              ))}
+            </View>
+          ) : null}
         </View>
 
         <View
@@ -355,6 +563,45 @@ export function InventoryCard({
           />
         </Pressable>
       ) : null}
+
+      {onDeletePress ? (
+        <Pressable
+          accessibilityHint={
+            isDeleting
+              ? "Delete operation in progress"
+              : `Deletes ${item.title} from KeepFlip inventory after confirmation`
+          }
+          accessibilityLabel={
+            isDeleting
+              ? `Deleting ${item.title}`
+              : `Delete ${item.title} from inventory`
+          }
+          accessibilityRole="button"
+          accessibilityState={{ busy: isDeleting, disabled: isDeleting }}
+          disabled={isDeleting}
+          onPress={onDeletePress}
+          style={({ pressed }) => [
+            styles.listingGuideButton,
+            styles.deleteButton,
+            pressed && styles.listingGuideButtonPressed,
+            isDeleting && styles.deleteButtonDisabled,
+          ]}
+        >
+          <View style={[styles.listingGuideButtonIcon, styles.deleteButtonIcon]}>
+            <IconSymbol
+              color="#ff9b9b"
+              name="trash.fill"
+              size={17}
+            />
+          </View>
+          <View style={styles.listingGuideButtonCopy}>
+            <Text style={[styles.listingGuideButtonEyebrow, styles.deleteButtonLabel, { fontSize: responsiveFont(7) }]}>INVENTORY CONTROL</Text>
+            <Text style={[styles.listingGuideButtonLabel, styles.deleteButtonLabel, { fontSize: responsiveFont(15) }]}>
+              {isDeleting ? "Deleting…" : "Delete item"}
+            </Text>
+          </View>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -383,6 +630,24 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       height: 240,
       justifyContent: "space-between",
       backgroundColor: "#08070C",
+    },
+    photoCarousel: {
+      position: "absolute",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+    },
+    photoCarouselContent: {
+      flexDirection: "row",
+      alignItems: "stretch",
+    },
+    photoPage: {
+      alignSelf: "stretch",
+      flexGrow: 0,
+      flexShrink: 0,
+      width: "100%",
+      overflow: "hidden",
     },
     coverImage: {
       position: "absolute",
@@ -647,6 +912,41 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     photoManagerButton: {
       borderTopColor: "rgba(88, 223, 232, 0.22)",
       backgroundColor: "rgba(7, 12, 18, 0.96)",
+    },
+    deleteButton: {
+      borderTopColor: "rgba(255, 107, 107, 0.34)",
+      backgroundColor: "rgba(52, 12, 20, 0.96)",
+    },
+    deleteButtonDisabled: {
+      opacity: 0.58,
+    },
+    deleteButtonIcon: {
+      borderColor: "rgba(255, 107, 107, 0.45)",
+      backgroundColor: "rgba(255, 107, 107, 0.10)",
+      boxShadow: "0 0 16px rgba(255, 107, 107, 0.14)",
+    },
+    deleteButtonLabel: {
+      color: "#ffb4b4",
+    },
+    photoIndicators: {
+      position: "absolute",
+      right: 0,
+      bottom: 14,
+      left: 0,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 5,
+    },
+    photoIndicator: {
+      width: 5,
+      height: 5,
+      borderRadius: 3,
+      backgroundColor: "rgba(255, 255, 255, 0.42)",
+    },
+    photoIndicatorActive: {
+      width: 16,
+      backgroundColor: theme.colors.goldBright,
     },
     listingGuideButtonIcon: {
       width: 34,

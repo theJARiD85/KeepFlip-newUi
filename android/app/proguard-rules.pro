@@ -12,3 +12,8 @@
 -keep class com.facebook.react.turbomodule.** { *; }
 
 # Add any project specific keep options here:
+-keep class com.tenjin.** { *; }
+-keep public class com.google.android.gms.ads.identifier.** { *; }
+-keep public class com.google.android.gms.common.** { *; }
+-keep public class com.android.installreferrer.** { *; }
+-keepattributes *Annotation*

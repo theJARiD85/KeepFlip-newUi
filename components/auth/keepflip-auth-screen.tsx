@@ -245,9 +245,9 @@ export function KeepFlipAuthScreen({
                 />
               </View>
               <Text style={[styles.brandEyebrow, { fontSize: responsiveFont(10) }]}>KEEPFLIP / SECURE ACCESS</Text>
-              <Text style={[styles.title, { fontSize: responsiveFont(34) }]}>Know what it&apos;s worth.</Text>
+              <Text style={[styles.title, { fontSize: responsiveFont(34) }]}>The pulse of your reselling business.</Text>
               <Text style={[styles.subtitle, { fontSize: responsiveFont(14) }]}>
-                Sign in before KeepFlip activates the scanner and analyzes your inventory.
+                Sign in to source smarter, track every move, and flip with confidence.
               </Text>
             </View>
 
@@ -444,32 +444,32 @@ export function KeepFlipAuthScreen({
                   </>
                 )}
               </Pressable>
-              <View>
-                <Text numberOfLines={1} style={[styles.legalConsentText, { fontSize: responsiveFont(10), maxWidth: '75%' }]}>{"By creating an account, you agree to KeepFlip's"}</Text>
+              {mode === 'create-account' ? (
+                <>
+                  <View>
+                    <Text numberOfLines={1} style={[styles.legalConsentText, { fontSize: responsiveFont(10), maxWidth: '75%' }]}>{"By creating an account, you agree to KeepFlip's"}</Text>
+                  </View>
 
-              </View>
-
-              <Text
-                accessibilityHint="Opens KeepFlip's Terms of Service"
-                accessibilityRole="link"
-                onPress={() => router.push("/terms")}
-                style={styles.legalLink}
-              >
-                Terms of Service
-              </Text>
-              <Text>
-                and</Text>
-              <Text
-                accessibilityHint="Opens KeepFlip's Privacy Policy"
-                accessibilityRole="link"
-                onPress={() => router.push("/privacy")}
-                style={styles.legalLink}
-              >
-                Privacy Policy
-              </Text>
-              <Text>
-                .
-              </Text>
+                  <Text
+                    accessibilityHint="Opens KeepFlip's Terms of Service"
+                    accessibilityRole="link"
+                    onPress={() => router.push("/terms")}
+                    style={styles.legalLink}
+                  >
+                    Terms of Service
+                  </Text>
+                  <Text>and</Text>
+                  <Text
+                    accessibilityHint="Opens KeepFlip's Privacy Policy"
+                    accessibilityRole="link"
+                    onPress={() => router.push("/privacy")}
+                    style={styles.legalLink}
+                  >
+                    Privacy Policy
+                  </Text>
+                  <Text>.</Text>
+                </>
+              ) : null}
 
               <View style={styles.securityLine}>
                 <IconSymbol color={theme.colors.scannerCyan} name="lock.fill" size={14} />

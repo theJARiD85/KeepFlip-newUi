@@ -48,10 +48,18 @@ const SECTIONS: LegalSection[] = [
     ],
   },
   {
+    title: "Subscriptions and store billing",
+    body: [
+      "KeepFlip may offer paid features through subscriptions. Google Play or the Apple App Store processes the transaction, and the applicable store terms govern payment, renewal, cancellation, refunds, taxes, and billing instruments. RevenueCat helps KeepFlip present subscription offerings, reconcile purchases, restore access, and maintain subscription status.",
+      "KeepFlip does not ask for or store your full payment-card number in the app. If a payment fails or a subscription expires, KeepFlip may limit paid features until the applicable store and RevenueCat confirm renewed access.",
+    ],
+  },
+  {
     title: "Third-party services",
     body: [
-      "KeepFlip may rely on services such as Appwrite, artificial-intelligence providers, market-research providers, advertising providers, mapping providers, and external marketplaces.",
-      "Those services may have their own terms and availability. KeepFlip is not responsible for a third party's independent services, listings, transactions, or policies.",
+      "The current KeepFlip implementation uses Appwrite for account authentication, database and table records, file storage, realtime updates, push-target registration, and server-side Functions. Android builds may also use Firebase Analytics and Firebase Cloud Messaging for analytics and push delivery, depending on the build and your device settings.",
+      "KeepFlip uses RevenueCat and the applicable app store for subscriptions; Appodeal and its mediation partners for advertising where enabled; eBay for marketplace integrations and content; OpenAI for Flip and requested AI analysis; SerpApi for market research; and Google Maps Platform Places services for nearby repair-provider search when that feature is enabled.",
+      "Provider configuration can vary by release and feature. These providers have their own terms, privacy notices, availability, and security practices, and their processing may occur outside your country. KeepFlip is not responsible for a third party's independent services, listings, transactions, or policies.",
     ],
   },
   {
@@ -78,7 +86,7 @@ const SECTIONS: LegalSection[] = [
 export default function TermsScreen() {
   return (
     <LegalDocumentScreen
-      effectiveDate="August 24, 2026"
+      effectiveDate="September 11, 2026"
       intro="These terms explain the rules that apply when you create an account or use KeepFlip."
       sections={SECTIONS}
       title="Terms of Service"

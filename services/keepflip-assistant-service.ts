@@ -101,6 +101,7 @@ export type AssistantProfileContext = {
 };
 
 export type AssistantWorkspaceContext = {
+  currentRoute?: string | null;
   displayName?: string | null;
   openTasks?: Array<Pick<AssistantTask, 'title' | 'taskType' | 'dueAt'>>;
   profile?: AssistantProfileContext | null;

@@ -18,7 +18,7 @@ import {
   KeepFlipAuthProvider,
   useKeepFlipAuth,
 } from "@/components/auth/keepflip-auth-context";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   FlipCompanionProvider,
 } from '@/components/flip';
@@ -27,6 +27,7 @@ import { KeepFlipPushRegistration } from '@/components/notifications/keepflip-pu
 import KeepFlipLaunchExperience from "@/components/intro/keepflip-launch-experience.native";
 import { keepFlipTheme } from "@/constants/keepflip-theme";
 import { configureKeepFlipNotificationHandler } from '@/services/keepflip-notification-service';
+import { initializeTenjinAtLaunch } from '@/services/tenjin-attribution-service';
 
 void SplashScreen
   .preventAutoHideAsync()
@@ -39,6 +40,7 @@ function ProtectedRootStack() {
   const {
     status,
   } = useKeepFlipAuth();
+  const insets = useSafeAreaInsets();
 
   const isChecking =
     status === "checking";
@@ -60,6 +62,7 @@ function ProtectedRootStack() {
         contentStyle: {
           backgroundColor:
             keepFlipTheme.colors.backgroundDeep,
+
         },
         headerShown: false,
       }}
@@ -96,14 +99,6 @@ export default function RootLayout() {
     launchVisible,
     setLaunchVisible,
   ] = useState(true);
-
-  const appodealKey =
-  process.env.EXPO_PUBLIC_APPODEAL_APP_KEY ?? "";
-
-  const isAdsTesting =
-  __DEV__ ||
-  process.env.EXPO_PUBLIC_APPODEAL_TESTING === "true";
-
 
   const [
     fontsLoaded,
@@ -156,6 +151,12 @@ export default function RootLayout() {
     fontError,
     fontsLoaded,
   ]);
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      void initializeTenjinAtLaunch();
+    }
+  }, [fontError, fontsLoaded]);
 
 
   if (

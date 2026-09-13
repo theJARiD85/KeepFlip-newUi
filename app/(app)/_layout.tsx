@@ -1,4 +1,10 @@
-import { type Href, Stack, useGlobalSearchParams, usePathname, useRouter } from 'expo-router';
+import {
+  type Href,
+  Stack,
+  useGlobalSearchParams,
+  usePathname,
+  useRouter,
+} from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import { useEffect, useRef } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
@@ -59,18 +65,28 @@ function SubscriptionAccessGate() {
   const selectedTab = Array.isArray(tab) ? tab[0] : tab;
   const isSubscriptionTab =
     pathname === '/account' && selectedTab === 'subscription';
+  // Keep the authenticated home visible; other app routes remain gated.
+  const isCommandCenterRoute =
+    pathname === '/' || pathname === '/command-center';
   const { snapshot, state } = useKeepFlipSubscription();
 
   useEffect(() => {
     if (!areKeepFlipSubscriptionsEnforced()) return;
     if (state !== 'ready') return;
     if (snapshot?.access.active) return;
-    if (isSubscriptionTab) return;
+    if (isSubscriptionTab || isCommandCenterRoute) return;
 
     requestAnimationFrame(() => {
       router.replace('/account?tab=subscription' as Href);
     });
-  }, [isSubscriptionTab, pathname, router, snapshot?.access.active, state]);
+  }, [
+    isCommandCenterRoute,
+    isSubscriptionTab,
+    pathname,
+    router,
+    snapshot?.access.active,
+    state,
+  ]);
 
   return null;
 }
@@ -178,6 +194,7 @@ export default function AppShellLayout() {
                   <Stack.Screen name="ebay-account" />
                   <Stack.Screen name="books" />
                   <Stack.Screen name="market-research" />
+                  <Stack.Screen name="notifications" />
                 </Stack>
                 <FlipAssistantOverlay />
               </View>

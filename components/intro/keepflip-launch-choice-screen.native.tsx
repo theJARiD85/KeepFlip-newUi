@@ -44,6 +44,8 @@ function LaunchAction({
         onPress();
       }}
       style={({ pressed }) => [
+        secondary && styles.actionButton,
+        secondary && styles.actionButtonSecondary,
         pressed && styles.pressed,
       ]}>
       <Text
@@ -122,11 +124,9 @@ export function KeepFlipLaunchChoiceScreen({
 
 
         <View style={[styles.actions, { paddingBottom: insets.bottom + 25 }]}>
-          <View style={[styles.actionButton, { borderRadius: 17 }]}>
-            <LaunchAction onPress={onExistingLogin} secondary>
-              LOGIN
-            </LaunchAction>
-          </View>
+          <LaunchAction onPress={onExistingLogin} secondary>
+            LOGIN
+          </LaunchAction>
           <LaunchAction onPress={onNewUser}>SIGN UP</LaunchAction>
 
         </View>
@@ -184,7 +184,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.bold,
       fontSize: 40,
       letterSpacing: 5,
-      textShadowColor: 'rgba(0,255,255,0.48)',
+      textShadowColor: 'rgba(255, 255, 255, 0.44)',
       textShadowOffset: { width: 0, height: 0 },
       textShadowRadius: 15,
     },

@@ -139,7 +139,7 @@ function AccountDetailsTab() {
         ? 'Your saved eBay authorization needs to be renewed.'
         : ebayConnection?.connected
           ? `Authorized for ${ebayConnection.environment === 'sandbox' ? 'eBay Sandbox' : 'eBay'} features.`
-          : 'Connect eBay for authorized sourcing and messaging features.';
+          : 'Connect eBay for authorized seller tools and account updates.';
 
   const newEbayDestination = ebayConnection?.connected ? '/ebay-account' : '/ebay-connect';
 
@@ -318,18 +318,6 @@ function AccountDetailsTab() {
               icon="lock.fill"
               label="Security"
               staticLabel="PROTECTED"
-            />
-            <KeepFlipControlRow
-              accent="violet"
-              accessibilityHint="Opens KeepFlip's privacy policy."
-              actionLabel="POLICY"
-              description="Read how KeepFlip handles your account and data."
-              icon="checkmark.shield.fill"
-              label="Privacy & data"
-              onPress={() => {
-                hapticSelection();
-                router.push('/privacy' as Href);
-              }}
             />
             <KeepFlipControlRow
               accent="danger"

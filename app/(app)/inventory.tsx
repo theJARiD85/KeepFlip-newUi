@@ -4,9 +4,9 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
-import { useResponsiveLayout } from "@/hooks/use-responsive-layout";
-import { responsiveWidth } from '@/lib/responsiveFont';
+import { useResponsiveLayout, useResponsiveStyles } from "@/hooks/use-responsive-layout";
 import {
+  deleteInventoryItem,
   listInventoryItems,
   type InventoryFlipDecision,
   type InventoryItem,
@@ -17,6 +17,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Modal,
   Platform,
@@ -25,10 +26,8 @@ import {
   ScrollView,
   StyleSheet,
   View,
-  useWindowDimensions,
 } from "react-native";
 
-import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 const CARDS_BETWEEN_ADS = 0;
 const HEADER_BOTTOM_SPACING = 22;
 
@@ -137,12 +136,12 @@ export default function InventoryScreen() {
     contentWidth, insets, pageGutter, responsiveFont,
   } =
     useResponsiveLayout();
-  const { width, height } = useWindowDimensions();
 
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
 
   const [flipDecision, setFlipDecision] = useState<
     InventoryFlipDecision | undefined
@@ -238,6 +237,64 @@ export default function InventoryScreen() {
     setSort(draftSort);
     setFiltersOpen(false);
   }, [draftFlipDecision, draftResaleVelocity, draftSort]);
+
+  const performDelete = useCallback(
+    async (item: InventoryItem) => {
+      if (!userId || deletingItemId) return;
+
+      setDeletingItemId(item.id);
+      setError(null);
+
+      try {
+        const result = await deleteInventoryItem(userId, item.id);
+        setItems((currentItems) =>
+          currentItems.filter((currentItem) => currentItem.id !== item.id),
+        );
+
+        if (result.photoFileDeleteFailures > 0) {
+          Alert.alert(
+            "Item deleted",
+            `The inventory record was deleted, but ${result.photoFileDeleteFailures} saved photo file${result.photoFileDeleteFailures === 1 ? "" : "s"} could not be cleaned up.`,
+          );
+        }
+      } catch (caughtError) {
+        setError(
+          caughtError instanceof Error
+            ? caughtError.message
+            : "KeepFlip could not delete this inventory item.",
+        );
+      } finally {
+        setDeletingItemId(null);
+      }
+    },
+    [deletingItemId, userId],
+  );
+
+  const confirmDelete = useCallback(
+    (item: InventoryItem) => {
+      if (!userId || deletingItemId) return;
+
+      const hasExternalListing =
+        item.isListed ||
+        Boolean(item.externalListingId || item.externalOfferId || item.ebayListingId || item.ebayOfferId);
+
+      Alert.alert(
+        "Delete inventory item?",
+        hasExternalListing
+          ? `“${item.title}” will be removed from KeepFlip inventory. Its existing eBay listing will not be changed.`
+          : `“${item.title}” and its saved item photos will be removed from KeepFlip.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            onPress: () => void performDelete(item),
+            style: "destructive",
+          },
+        ],
+      );
+    },
+    [deletingItemId, performDelete, userId],
+  );
 
   return (
     <KeepFlipBackground>
@@ -359,6 +416,8 @@ export default function InventoryScreen() {
                     params: { focus: "photos", itemId: row.item.id },
                   })
                 }
+                onDeletePress={() => confirmDelete(row.item)}
+                isDeleting={deletingItemId === row.item.id}
               />
             </View>
           )
