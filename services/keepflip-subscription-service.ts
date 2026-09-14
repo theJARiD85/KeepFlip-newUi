@@ -249,12 +249,12 @@ const PACKAGE_IDS: Record<
   // These are RevenueCat package identifiers from the live offering. The
   // hyphenated values are Google Play base-plan IDs, not package IDs.
   hobbyist: {
-    monthly: 'hobbyist_monthly',
-    annual: 'hobbyist_annual',
+    monthly: 'hobbyist-monthly',
+    annual: 'hobbyist-annual',
   },
   serious: {
-    monthly: 'serious_monthly',
-    annual: 'serious_annual',
+    monthly: 'serious-monthly',
+    annual: 'serious-annual',
   },
 };
 

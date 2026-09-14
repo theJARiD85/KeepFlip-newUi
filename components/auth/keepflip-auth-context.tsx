@@ -450,7 +450,6 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
           errorMessage: null,
           missingKeys: [],
         });
-        trackTenjinEvent('registration_completed');
       } catch (error) {
         const safeError = safeAuthError(error, 'sign-in');
         if (safeError.code === 'AUTH_SETUP_REQUIRED') {
@@ -540,6 +539,7 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
           errorMessage: null,
           missingKeys: [],
         });
+        trackTenjinEvent('registration_completed');
       } catch (error) {
         const safeError = safeAuthError(error, 'sign-up');
         if (safeError.code === 'AUTH_SETUP_REQUIRED') {
