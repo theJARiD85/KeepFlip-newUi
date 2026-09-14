@@ -1034,6 +1034,55 @@ export async function listInventoryItems(
   }
 }
 
+const INVENTORY_ANALYTICS_PAGE_SIZE = 100;
+const INVENTORY_ANALYTICS_MAX_ITEMS = 1_000;
+
+/**
+ * Loads a bounded, newest-first inventory snapshot for analytics. The normal
+ * inventory screen remains on its existing first-page query; analytics can
+ * page beyond that 100-row list without accidentally charting only the newest
+ * items. The result reports truncation instead of implying it is complete.
+ */
+export async function listInventoryItemsForAnalytics(ownerId: string): Promise<{
+  items: InventoryItem[];
+  total: number;
+  truncated: boolean;
+}> {
+  assertInventoryConfigured();
+  const cleanOwnerId = ownerId.trim();
+  if (!cleanOwnerId) return { items: [], total: 0, truncated: false };
+
+  const items: InventoryItem[] = [];
+  let total = 0;
+  while (items.length < INVENTORY_ANALYTICS_MAX_ITEMS) {
+    const pageSize = Math.min(
+      INVENTORY_ANALYTICS_PAGE_SIZE,
+      INVENTORY_ANALYTICS_MAX_ITEMS - items.length,
+    );
+    const response = await tablesDB.listRows({
+      databaseId: APPWRITE.databaseId,
+      tableId: APPWRITE.itemsTableId,
+      queries: [
+        Query.equal('ownerId', [cleanOwnerId]),
+        Query.orderDesc('createdAt'),
+        Query.limit(pageSize),
+        Query.offset(items.length),
+        Query.select([...INVENTORY_LIST_COLUMNS]),
+      ],
+    });
+    const page = (response.rows as unknown as InventoryRow[]).map(rowToInventoryItem);
+    total = Math.max(total, response.total);
+    items.push(...page);
+    if (page.length < pageSize || items.length >= total) break;
+  }
+
+  return {
+    items,
+    total: Math.max(total, items.length),
+    truncated: total > items.length,
+  };
+}
+
 export async function updateInventoryAnalysisSnapshot({
   analysis,
   itemId,

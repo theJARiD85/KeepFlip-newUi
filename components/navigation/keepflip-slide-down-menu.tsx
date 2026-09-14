@@ -44,6 +44,7 @@ const destinations: MenuDestination[] = [
   },
   { eyebrow: 'IDENTIFY & VALUE', href: '/scanner' as Href, icon: 'viewfinder', label: 'Scanner' },
   { eyebrow: 'YOUR SAVED FINDS', href: '/inventory', icon: 'shippingbox.fill', label: 'Inventory' },
+  { eyebrow: 'SEE WHAT WORKS', href: '/analytics' as Href, icon: 'chart.bar.fill', label: 'Analytics' },
   { eyebrow: 'STAY IN THE LOOP', href: '/notifications', icon: 'envelope.fill', label: 'Notifications' },
 
 ];

@@ -909,6 +909,17 @@ export function CommandCenterScreen() {
                 router.push('/inventory' as Href);
               }}
             />
+            <KeepFlipControlRow
+              accent="violet"
+              accessibilityHint="Opens detailed, selectable charts for your inventory and sales metrics."
+              description="Compare ROI, listing time, net profit, and units sold by category, source, or condition."
+              icon="chart.bar.fill"
+              label="Inventory analytics"
+              onPress={() => {
+                hapticSelection();
+                router.push('/analytics' as Href);
+              }}
+            />
           </View>
         </Animated.View>
 

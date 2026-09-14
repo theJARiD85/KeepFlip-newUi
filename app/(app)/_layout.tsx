@@ -183,6 +183,7 @@ export default function AppShellLayout() {
                   <Stack.Screen name="index" />
                   <Stack.Screen name="scanner" />
                   <Stack.Screen name="inventory" />
+                  <Stack.Screen name="analytics" />
                   <Stack.Screen name="analysis" />
                   <Stack.Screen name="analysis-result" />
                   <Stack.Screen name="listing-guide" />
