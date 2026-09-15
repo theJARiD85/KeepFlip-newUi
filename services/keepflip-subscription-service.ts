@@ -54,9 +54,9 @@ export const KEEPFLIP_PLAN_LIMITS: Record<
   KeepFlipPlanLimits
 > = {
   hobbyist: {
-    concurrentActiveListings: 50,
+    concurrentActiveListings: 25,
     monthlyPublishQuota: null,
-    activeListingsPerMonth: 50,
+    activeListingsPerMonth: 25,
     aiValuationScansPerMonth: 100,
     features: new Set<KeepFlipSubscriptionFeature>(['basic_books']),
   },
@@ -219,7 +219,7 @@ export const KEEPFLIP_PLAN_DEFINITIONS: KeepFlipPlanDefinition[] = [
     annualPriceFallback: '$100',
     description:
       'For part-time resellers who want smarter sourcing, organized inventory, reliable valuations, and a clearer view of costs and profit.',
-    limits: ['Up to 50 live listings at one time', '100 AI valuation scans / month'],
+    limits: ['Up to 25 live listings at one time', '100 AI valuation scans / month'],
     features: ['Basic bookkeeping reports', 'Inventory and item profit tracking'],
   },
   {
