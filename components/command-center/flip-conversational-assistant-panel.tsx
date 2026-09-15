@@ -33,6 +33,7 @@ import {
   runKeepFlipAssistant,
   subscribeToAssistantConversation,
   type AssistantAction,
+  type AssistantAdvisory,
   type AssistantConversationMessage,
   type AssistantProfileContext,
   type AssistantRoute,
@@ -77,6 +78,67 @@ function validDueAt(value: string | null) {
   if (!value) return null;
   const date = new Date(value);
   return Number.isFinite(date.getTime()) ? date.toISOString() : null;
+}
+
+const ADVISORY_MODE_LABELS: Record<AssistantAdvisory['mode'], string> = {
+  general: 'STRATEGIC READ',
+  buy_decision: 'BUY / SKIP READ',
+  inventory: 'INVENTORY READ',
+  cash_flow: 'CASH FLOW READ',
+  growth: 'GROWTH READ',
+  seller_operations: 'OPERATIONS READ',
+  financial_review: 'FINANCIAL READ',
+};
+
+function AdvisoryCard({
+  advisory,
+  responsiveFont,
+  styles,
+}: {
+  advisory: AssistantAdvisory;
+  responsiveFont: (size: number) => number;
+  styles: ReturnType<typeof createResponsiveStyles>;
+}) {
+  return (
+    <View accessibilityLabel="Flip strategic read" style={styles.advisoryCard}>
+      <View style={styles.advisoryHeader}>
+        <Text style={[styles.advisoryLabel, { fontSize: responsiveFont(7) }]}>
+          {ADVISORY_MODE_LABELS[advisory.mode]}
+        </Text>
+        <Text style={[styles.advisoryConfidence, { fontSize: responsiveFont(7) }]}>
+          {advisory.confidence.toUpperCase()} CONFIDENCE
+        </Text>
+      </View>
+      <Text selectable style={[styles.advisoryRecommendation, { fontSize: responsiveFont(10), lineHeight: 14 }]}>
+        {advisory.recommendation}
+      </Text>
+      {advisory.evidence.length ? (
+        <View style={styles.advisoryEvidence}>
+          {advisory.evidence.slice(0, 3).map((evidence, index) => (
+            <View key={`${evidence.label}-${evidence.source}-${index}`} style={styles.advisoryEvidenceRow}>
+              <Text selectable style={[styles.advisoryEvidenceLabel, { fontSize: responsiveFont(8) }]}>
+                {evidence.label}
+              </Text>
+              <Text selectable style={[styles.advisoryEvidenceValue, { fontSize: responsiveFont(8) }]}>
+                {evidence.value}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+      <View style={styles.advisoryNextAction}>
+        <Text style={[styles.advisoryNextLabel, { fontSize: responsiveFont(7) }]}>NEXT MOVE</Text>
+        <Text selectable style={[styles.advisoryNextText, { fontSize: responsiveFont(9), lineHeight: 13 }]}>
+          {advisory.nextAction}
+        </Text>
+      </View>
+      {advisory.unknowns.length ? (
+        <Text selectable style={[styles.advisoryUnknowns, { fontSize: responsiveFont(8), lineHeight: 12 }]}>
+          {`Watch-outs: ${advisory.unknowns.slice(0, 2).join(' · ')}`}
+        </Text>
+      ) : null}
+    </View>
+  );
 }
 
 function profileContextFromRules(
@@ -124,9 +186,15 @@ function mergeConversationMessage(
       })
       : -1;
   const matchedIndex = existingIndex >= 0 ? existingIndex : optimisticIndex;
+  const nextIncludesAdvisory = Object.prototype.hasOwnProperty.call(next, 'advisory');
   const merged =
     matchedIndex >= 0
-      ? withoutWelcome.map((message, index) => (index === matchedIndex ? next : message))
+      ? withoutWelcome.map((message, index) => {
+          if (index !== matchedIndex) return message;
+          return nextIncludesAdvisory || !message.advisory
+            ? next
+            : { ...next, advisory: message.advisory };
+        })
       : [...withoutWelcome, next];
 
   return merged.sort(
@@ -486,6 +554,7 @@ export function FlipConversationalAssistantPanel({
           role: 'assistant',
           content: reply.reply,
           createdAt: new Date().toISOString(),
+          advisory: reply.advisory ?? null,
         };
         setMessages((current) => mergeConversationMessage(current, assistantMessage));
       }
@@ -790,17 +859,28 @@ export function FlipConversationalAssistantPanel({
                         style={styles.messageAvatar}
                       />
                     ) : null}
-                    <View
-                      style={[
-                        styles.messageBubble,
-                        entry.role === 'assistant'
-                          ? styles.assistantBubble
-                          : styles.userBubble,
-                      ]}>
-                      <Text selectable style={[styles.messageText, { fontSize: responsiveFont(11), lineHeight: 16 }]}>
-                        {entry.content}
-                      </Text>
-                    </View>
+                    {entry.role === 'assistant' ? (
+                      <View style={styles.assistantMessageStack}>
+                        <View style={[styles.messageBubble, styles.assistantBubble]}>
+                          <Text selectable style={[styles.messageText, { fontSize: responsiveFont(11), lineHeight: 16 }]}>
+                            {entry.content}
+                          </Text>
+                        </View>
+                        {entry.advisory ? (
+                          <AdvisoryCard
+                            advisory={entry.advisory}
+                            responsiveFont={responsiveFont}
+                            styles={styles}
+                          />
+                        ) : null}
+                      </View>
+                    ) : (
+                      <View style={[styles.messageBubble, styles.userBubble]}>
+                        <Text selectable style={[styles.messageText, { fontSize: responsiveFont(11), lineHeight: 16 }]}>
+                          {entry.content}
+                        </Text>
+                      </View>
+                    )}
                   </Animated.View>
                 ))}
                 {isInteractionLocked ? (
@@ -1190,6 +1270,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderRadius: 13,
       borderCurve: 'continuous',
     },
+    assistantMessageStack: {
+      maxWidth: '86%',
+      minWidth: 0,
+      gap: 6,
+    },
     assistantBubble: {
       borderWidth: 1,
       borderColor: 'rgba(88, 223, 232, 0.19)',
@@ -1204,6 +1289,83 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.text,
       fontSize: 11,
       lineHeight: 16,
+    },
+    advisoryCard: {
+      gap: 7,
+      padding: 10,
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.28)',
+      borderRadius: 12,
+      borderCurve: 'continuous',
+      backgroundColor: 'rgba(242, 211, 138, 0.055)',
+      boxShadow: '0 3px 10px rgba(0, 0, 0, 0.18)',
+    },
+    advisoryHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 8,
+    },
+    advisoryLabel: {
+      color: theme.colors.goldBright,
+      fontSize: 7,
+      fontWeight: '900',
+      letterSpacing: 1.1,
+    },
+    advisoryConfidence: {
+      color: theme.colors.textMuted,
+      fontSize: 7,
+      fontWeight: '800',
+      letterSpacing: 0.7,
+    },
+    advisoryRecommendation: {
+      color: theme.colors.cream,
+      fontSize: 10,
+      fontWeight: '800',
+    },
+    advisoryEvidence: {
+      gap: 4,
+      paddingTop: 2,
+    },
+    advisoryEvidenceRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: 8,
+    },
+    advisoryEvidenceLabel: {
+      flex: 1,
+      color: theme.colors.textMuted,
+      fontSize: 8,
+    },
+    advisoryEvidenceValue: {
+      flexShrink: 1,
+      color: theme.colors.text,
+      fontSize: 8,
+      fontWeight: '800',
+      textAlign: 'right',
+    },
+    advisoryNextAction: {
+      gap: 2,
+      paddingTop: 5,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderColor: 'rgba(242, 211, 138, 0.2)',
+    },
+    advisoryNextLabel: {
+      color: theme.colors.scannerCyan,
+      fontSize: 7,
+      fontWeight: '900',
+      letterSpacing: 1,
+    },
+    advisoryNextText: {
+      color: theme.colors.text,
+      fontSize: 9,
+      fontWeight: '700',
+    },
+    advisoryUnknowns: {
+      color: theme.colors.textMuted,
+      fontSize: 8,
+      fontStyle: 'italic',
     },
     typingRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
     typingBubble: {

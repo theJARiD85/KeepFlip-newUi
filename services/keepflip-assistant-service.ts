@@ -82,6 +82,7 @@ export type AssistantConversationMessage = {
   content: string;
   createdAt: string;
   conversationId?: string;
+  advisory?: AssistantAdvisory | null;
 };
 
 export type AssistantConversationPage = {
@@ -1248,8 +1249,8 @@ export async function runKeepFlipAssistant({
       }
     : reply;
   const correctedAssistantMessage = directNavigation
-    ? { ...assistantMessage, content: fallback.reply }
-    : assistantMessage;
+    ? { ...assistantMessage, advisory: null, content: fallback.reply }
+    : { ...assistantMessage, advisory: reply.advisory ?? null };
 
   return {
     ...correctedReply,
