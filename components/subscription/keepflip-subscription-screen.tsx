@@ -32,6 +32,7 @@ import {
   type KeepFlipPlanDefinition,
   type KeepFlipPlanId,
 } from '@/services/keepflip-subscription-service';
+import { trackTenjinEvent } from '@/services/tenjin-attribution-service';
 
 function formatDate(value: string | null) {
   if (!value) return null;
@@ -252,6 +253,10 @@ export function KeepFlipSubscriptionScreen({
   const [cadence, setCadence] =
     useState<KeepFlipBillingCadence>(() => requestedCadence);
   const [renewing, setRenewing] = useState(false);
+
+  useEffect(() => {
+    trackTenjinEvent('subscription_paywall_viewed');
+  }, []);
 
   const access = snapshot?.access ?? null;
   const catalog = snapshot?.catalog ?? null;
@@ -1262,4 +1267,3 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     ],
   };
 }
-

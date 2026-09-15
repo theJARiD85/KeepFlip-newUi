@@ -6,6 +6,55 @@ apply plugin: 'com.google.gms.google-services'
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
+// The React Native bridge reads EXPO_PUBLIC_TENJIN_API_KEY through Metro, but
+// MainActivity also needs the same public SDK key before JavaScript starts. Read
+// the local Expo env files here so direct local Gradle builds and Expo builds
+// use the same key without copying it into Kotlin source.
+def keepFlipIsReleaseBuild =
+    System.getenv("NODE_ENV") == "production" ||
+    gradle.startParameter.taskNames.any { taskName ->
+        taskName.toLowerCase().contains("release")
+    }
+def readKeepFlipEnvValue = { String key ->
+    def envFileNames = [".env.release", ".env.local"] +
+        (keepFlipIsReleaseBuild
+            ? [".env.production", ".env", ".env.development"]
+            : [".env.development", ".env", ".env.production"])
+    for (String envFileName : envFileNames) {
+        def envFile = new File(projectRoot, envFileName)
+        if (!envFile.isFile()) continue
+
+        def matchingValue = null
+        envFile.eachLine("UTF-8") { line ->
+            if (matchingValue != null) return
+
+            def trimmedLine = line.trim()
+            if (!trimmedLine || trimmedLine.startsWith("#")) return
+
+            def separator = trimmedLine.indexOf("=")
+            if (separator <= 0 || trimmedLine.substring(0, separator).trim() != key) return
+
+            matchingValue = trimmedLine.substring(separator + 1).trim()
+        }
+
+        if (matchingValue != null) {
+            if (matchingValue.length() >= 2 &&
+                ((matchingValue.startsWith("\"") && matchingValue.endsWith("\"")) ||
+                 (matchingValue.startsWith("'") && matchingValue.endsWith("'")))) {
+                return matchingValue.substring(1, matchingValue.length() - 1)
+            }
+            return matchingValue
+        }
+    }
+
+    return System.getenv(key) ?: ""
+}
+
+def keepFlipTenjinApiKey =
+    (findProperty("KEEPFLIP_TENJIN_API_KEY") ?: readKeepFlipEnvValue("EXPO_PUBLIC_TENJIN_API_KEY")).toString().trim()
+def keepFlipTenjinApiKeyForBuildConfig =
+    keepFlipTenjinApiKey.replace("\\", "\\\\").replace("\"", "\\\"")
+
 def keepFlipKeystoreProperties = new Properties()
 def keepFlipKeystorePropertiesFile = rootProject.file("keystore.properties")
 
@@ -105,6 +154,7 @@ android {
         versionName "2.1.3"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
+        buildConfigField "String", "KEEPFLIP_TENJIN_API_KEY", "\"${keepFlipTenjinApiKeyForBuildConfig}\""
     }
     signingConfigs {
         debug {
@@ -181,6 +231,9 @@ dependencies {
     implementation("com.google.firebase:firebase-messaging")
     implementation "com.android.installreferrer:installreferrer:2.2"
     implementation "com.google.android.gms:play-services-ads-identifier:18.0.1"
+    // react-native-tenjin keeps the vendor SDK as an implementation dependency,
+    // so expose the same SDK to MainActivity's native lifecycle integration.
+    implementation "com.tenjin:android-sdk:1.23.0"
     implementation("com.facebook.react:react-android")
     implementation 'com.facebook.android:facebook-android-sdk:latest.release'
 

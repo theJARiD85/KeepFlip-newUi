@@ -8,6 +8,7 @@ import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
 import com.facebook.react.defaults.DefaultReactActivityDelegate
+import com.tenjin.android.TenjinSDK
 
 import expo.modules.ReactActivityDelegateWrapper
 
@@ -21,6 +22,24 @@ class MainActivity : ReactActivity() {
     SplashScreenManager.registerOnActivity(this)
     // @generated end expo-splashscreen
     super.onCreate(null)
+  }
+
+  /**
+   * Tenjin requires connect() on every activity resume so returning users and
+   * resumed attribution sessions are recorded reliably.
+   *
+   * The API key is injected into BuildConfig from the local release/development
+   * environment at build time. It is intentionally not hard-coded here.
+   */
+  override fun onResume() {
+    super.onResume()
+
+    val tenjinApiKey = BuildConfig.KEEPFLIP_TENJIN_API_KEY
+    if (tenjinApiKey.isBlank()) return
+
+    val instance = TenjinSDK.getInstance(this, tenjinApiKey)
+    instance.setAppStore(TenjinSDK.AppStoreType.googleplay)
+    instance.connect()
   }
 
   /**

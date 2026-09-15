@@ -20,6 +20,12 @@ import {
   realtime,
 } from '@/lib/appwrite';
 import { getKeepFlipTrialDeviceIdHash } from '@/services/keepflip-trial-device-service';
+import {
+  getTenjinAnalyticsInstallationId,
+  setKeepFlipTenjinCustomerUserId,
+  trackTenjinEvent,
+  trackTenjinSubscriptionPurchase,
+} from '@/services/tenjin-attribution-service';
 
 export type KeepFlipPlanId = 'hobbyist' | 'serious';
 export type KeepFlipBillingCadence = 'monthly' | 'annual';
@@ -283,6 +289,9 @@ const EMPTY_CATALOG: KeepFlipSubscriptionCatalog = {
 };
 
 let configuredForUserId: string | null = null;
+let revenueCatTenjinUserId: string | null = null;
+let revenueCatTenjinInstallationId: string | null | undefined;
+let revenueCatTenjinSyncPromise: Promise<void> | null = null;
 
 function platformApiKey() {
   if (Platform.OS === 'android') {
@@ -300,6 +309,62 @@ export function areKeepFlipSubscriptionsConfigured() {
 
 export function areKeepFlipSubscriptionsEnforced() {
   return process.env.EXPO_PUBLIC_KEEPFLIP_SUBSCRIPTIONS_ENFORCED === 'true';
+}
+
+async function syncRevenueCatTenjinIdentity(userId: string) {
+  const cleanUserId = userId.trim();
+  if (!cleanUserId) return;
+
+  if (
+    revenueCatTenjinUserId === cleanUserId &&
+    revenueCatTenjinInstallationId !== undefined
+  ) {
+    return;
+  }
+
+  if (revenueCatTenjinSyncPromise) {
+    await revenueCatTenjinSyncPromise;
+    return;
+  }
+
+  const syncPromise = (async () => {
+    try {
+      // Keep RevenueCat's app-user identity and Tenjin's customer identity
+      // aligned so attributed subscription revenue maps back to the account.
+      await setKeepFlipTenjinCustomerUserId(cleanUserId);
+      const installationId = await getTenjinAnalyticsInstallationId();
+
+      // RevenueCat documents this subscriber attribute as the required bridge
+      // for its Tenjin integration. It is not used as a feature authorization
+      // value; the Subscription Police response remains authoritative.
+      if (installationId) {
+        await Purchases.setTenjinAnalyticsInstallationID(installationId);
+      }
+
+      revenueCatTenjinUserId = cleanUserId;
+      revenueCatTenjinInstallationId = installationId;
+    } catch (error) {
+      if (__DEV__) {
+        console.warn(
+          '[KeepFlip][Subscription] Could not sync the RevenueCat/Tenjin identity:',
+          error,
+        );
+      }
+
+      // Avoid making a Tenjin attribution outage block subscription access.
+      revenueCatTenjinUserId = cleanUserId;
+      revenueCatTenjinInstallationId = null;
+    }
+  })();
+
+  revenueCatTenjinSyncPromise = syncPromise;
+  try {
+    await syncPromise;
+  } finally {
+    if (revenueCatTenjinSyncPromise === syncPromise) {
+      revenueCatTenjinSyncPromise = null;
+    }
+  }
 }
 
 export function keepFlipPlanAllows(
@@ -863,6 +928,7 @@ async function ensureRevenueCatUser(userId: string) {
     // Keep native RevenueCat diagnostics quiet in development while
     // preserving warnings and errors for billing/configuration issues.
     await Purchases.setLogLevel(LOG_LEVEL.WARN);
+    await syncRevenueCatTenjinIdentity(cleanUserId);
     return true;
   }
 
@@ -873,6 +939,8 @@ async function ensureRevenueCatUser(userId: string) {
     }
     configuredForUserId = cleanUserId;
   }
+
+  await syncRevenueCatTenjinIdentity(cleanUserId);
 
   return true;
 }
@@ -1257,6 +1325,7 @@ export async function purchaseKeepFlipPlan(
     );
   }
 
+  trackTenjinEvent('subscription_purchase_started');
   let productChangeInfo: StoreProductChangeInfo | null = null;
   if (Platform.OS === 'android') {
     const currentInfo = await Purchases.getCustomerInfo();
@@ -1284,6 +1353,13 @@ export async function purchaseKeepFlipPlan(
     null,
     productChangeInfo,
   );
+  trackTenjinSubscriptionPurchase({
+    currencyCode: selectedPackage.product.currencyCode,
+    productId: result.productIdentifier || selectedPackage.product.identifier,
+    transaction: result.transaction,
+    unitPrice: selectedPackage.product.price,
+  });
+  trackTenjinEvent('subscription_purchase_completed');
   return subscriptionAccessFromCustomerInfo(result.customerInfo);
 }
 
@@ -1321,11 +1397,26 @@ export async function renewKeepFlipPlan(
     );
   }
 
+  trackTenjinEvent('subscription_renewal_started');
   const result =
     Platform.OS === 'android' && selection.option
       ? await Purchases.purchaseSubscriptionOption(selection.option, null)
       : await Purchases.purchasePackage(selection.package, null, null);
 
+  const price = selection.option?.fullPricePhase?.price;
+  trackTenjinSubscriptionPurchase({
+    currencyCode: price?.currencyCode || selection.package.product.currencyCode,
+    productId:
+      result.productIdentifier ||
+      selection.option?.productId ||
+      selection.package.product.identifier,
+    transaction: result.transaction,
+    unitPrice:
+      price == null
+        ? selection.package.product.price
+        : price.amountMicros / 1_000_000,
+  });
+  trackTenjinEvent('subscription_renewal_completed');
   return subscriptionAccessFromCustomerInfo(result.customerInfo);
 }
 
@@ -1337,7 +1428,9 @@ export async function restoreKeepFlipPurchases(userId: string) {
   }
 
   const customerInfo = await Purchases.restorePurchases();
-  return subscriptionAccessFromCustomerInfo(customerInfo);
+  const access = subscriptionAccessFromCustomerInfo(customerInfo);
+  if (access.active) trackTenjinEvent('subscription_restored');
+  return access;
 }
 
 export async function openKeepFlipSubscriptionManagement(
@@ -1367,4 +1460,5 @@ export async function openKeepFlipSubscriptionManagement(
   }
 
   await Linking.openURL(url);
+  trackTenjinEvent('subscription_management_opened');
 }
