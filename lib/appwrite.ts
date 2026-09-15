@@ -13,8 +13,8 @@ import { Platform } from 'react-native';
 type NativeLocalStorageFallback = {
   readonly length: number;
   clear: () => void;
-  getItem: (key: string) => null;
-  key: (index: number) => null;
+  getItem: (key: string) => string | null;
+  key: (index: number) => string | null;
   removeItem: (key: string) => void;
   setItem: (key: string, value: string) => void;
 };
@@ -25,9 +25,10 @@ type NativeLocalStorageFallback = {
  * needed. React Native has no browser localStorage, so that probe otherwise
  * logs `Cannot read property 'getItem' of undefined` on every connection.
  *
- * This deliberately does not persist anything. Native authentication remains
- * owned by the Appwrite SDK, while this empty adapter lets the SDK skip its
- * browser-only cookie fallback safely.
+ * This deliberately keeps values only in memory. Native authentication remains
+ * owned by the Appwrite SDK, while retaining the current runtime's fallback
+ * cookie lets the SDK authenticate Realtime private subscriptions after the
+ * HTTP session has been created. No session data is persisted by this shim.
  */
 function installNativeAppwriteStorageFallback() {
   if (Platform.OS === 'web') return;
@@ -40,25 +41,32 @@ function installNativeAppwriteStorageFallback() {
   const runtimeWindow = runtime.window;
   if (!runtimeWindow || runtimeWindow.localStorage) return;
 
-  const emptyStorage: NativeLocalStorageFallback = {
-    length: 0,
-    clear: () => undefined,
-    getItem: () => null,
-    key: () => null,
-    removeItem: () => undefined,
-    setItem: () => undefined,
+  const values = new Map<string, string>();
+  const memoryStorage: NativeLocalStorageFallback = {
+    get length() {
+      return values.size;
+    },
+    clear: () => values.clear(),
+    getItem: (key) => values.get(key) ?? null,
+    key: (index) => Array.from(values.keys())[index] ?? null,
+    removeItem: (key) => {
+      values.delete(key);
+    },
+    setItem: (key, value) => {
+      values.set(key, value);
+    },
   };
 
   try {
     Object.defineProperty(runtimeWindow, 'localStorage', {
       configurable: true,
       enumerable: false,
-      value: emptyStorage,
+      value: memoryStorage,
     });
   } catch {
     // Some development runtimes expose a non-extensible window object.
     try {
-      runtimeWindow.localStorage = emptyStorage;
+      runtimeWindow.localStorage = memoryStorage;
     } catch {
       // The SDK's Realtime subscription remains optional; do not fail app
       // startup if this runtime refuses the compatibility property.

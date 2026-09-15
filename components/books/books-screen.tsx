@@ -25,8 +25,10 @@ import {
   KeepFlipTextInput as TextInput,
 } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import { responsiveWidth } from '@/lib/responsiveFont';
+import {
+  useResponsiveLayout,
+  useResponsiveStyles,
+} from '@/hooks/use-responsive-layout';
 import {
   listInventoryItems,
   type InventoryItem,
@@ -54,7 +56,6 @@ import {
   type ResellerLedgerEntryType,
 } from '@/services/reseller-ledger-service';
 
-import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type LedgerDraft = {
   amount: string;
   channel: string;
@@ -1219,10 +1220,10 @@ export function BooksScreen() {
                       <Text style={[styles.itemOptionText, { fontSize: responsiveFont(12) }]}>No item linked</Text>
                     </Pressable>
                     {inventory.length ? (
-                        inventory.map((item) => {
-                          const selected = draft.itemId === item.id;
-                          const itemCostCents = resolvedInventoryCostCents(item);
-                          return (
+                      inventory.map((item) => {
+                        const selected = draft.itemId === item.id;
+                        const itemCostCents = resolvedInventoryCostCents(item);
+                        return (
                           <Pressable
                             accessibilityRole="button"
                             accessibilityState={{ selected }}

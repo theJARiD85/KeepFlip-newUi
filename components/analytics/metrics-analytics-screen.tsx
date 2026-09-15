@@ -505,44 +505,20 @@ export function MetricsAnalyticsScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top + 14, paddingBottom: insets.bottom + 28 },
+          { paddingTop: insets.top + 15, paddingBottom: insets.bottom + 30 },
         ]}
+        style={{marginTop: insets.top, marginBottom: insets.bottom}}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Pressable
-            accessibilityLabel="Back to the previous screen"
-            accessibilityRole="button"
-            hitSlop={8}
-            onPress={() => {
-              hapticSelection();
-              if (router.canGoBack()) router.back();
-              else router.replace('/command-center' as Href);
-            }}
-            style={styles.backButton}>
-            <IconSymbol color={theme.colors.goldBright} name="chevron.left" size={20} />
-          </Pressable>
           <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>KEEPFLIP / PERFORMANCE</Text>
-            <Text accessibilityRole="header" style={[styles.title, { fontSize: responsiveFont(25) }]}>
+            <Text style={[styles.eyebrow, { fontSize: responsiveFont(10)}]}>KEEPFLIP / PERFORMANCE</Text>
+            <Text accessibilityRole="header" style={[styles.title, { fontSize: responsiveFont(26) }]}>
               Inventory analytics
             </Text>
+            <Text style={[styles.intro, { fontSize: responsiveFont(12), fontFamily: theme.fonts.body }]}>Compare how your flips perform across categories, sourcing channels, and item condition.</Text>
           </View>
-          <Pressable
-            accessibilityLabel="Refresh analytics"
-            accessibilityRole="button"
-            disabled={loading}
-            onPress={() => void loadAnalytics()}
-            style={({ pressed }) => [styles.refreshButton, pressed && styles.pillPressed]}>
-            {loading ? (
-              <ActivityIndicator color={theme.colors.goldBright} size="small" />
-            ) : (
-              <IconSymbol color={theme.colors.goldBright} name="arrow.clockwise" size={19} />
-            )}
-          </Pressable>
         </View>
-
-        <Text style={[styles.intro, { fontSize: responsiveFont(12) }]}>Compare how your flips perform across categories, sourcing channels, and item condition.</Text>
 
         {loadState === 'checking' || loading ? (
           <View style={styles.loadingCard}>
@@ -721,12 +697,12 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     gap: 14,
-    paddingHorizontal: 18,
+    paddingHorizontal: 12,
   },
   header: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 11,
+    gap: 2,
   },
   headerCopy: { flex: 1, gap: 2 },
   backButton: {

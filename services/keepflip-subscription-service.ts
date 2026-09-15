@@ -860,7 +860,9 @@ async function ensureRevenueCatUser(userId: string) {
       appUserID: cleanUserId,
     });
     configuredForUserId = cleanUserId;
-    await Purchases.setLogLevel(__DEV__ ? LOG_LEVEL.DEBUG : LOG_LEVEL.WARN);
+    // Keep native RevenueCat diagnostics quiet in development while
+    // preserving warnings and errors for billing/configuration issues.
+    await Purchases.setLogLevel(LOG_LEVEL.WARN);
     return true;
   }
 

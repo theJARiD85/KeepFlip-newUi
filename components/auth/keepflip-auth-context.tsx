@@ -20,6 +20,7 @@ import {
   type AppwriteCoreRequiredEnvironmentVariable,
   getAppwriteCoreConfigurationStatus,
   getAppwriteCoreServices,
+  realtime,
 } from '@/lib/appwrite';
 import { ensureUserProfile } from '@/services/user-profile-onboarding-service';
 import { trackTenjinEvent } from '@/services/tenjin-attribution-service';
@@ -320,6 +321,11 @@ async function getVerifiedNonAnonymousUser(): Promise<Models.User | null> {
 async function clearCurrentAppwriteSession() {
   const { account } = getAppwriteCoreServices();
 
+  // Realtime subscriptions are authenticated separately from the HTTP
+  // request that deletes the session. Drop them first so a later sign-in
+  // cannot reuse a socket associated with the previous user.
+  await realtime.disconnect().catch(() => undefined);
+
   try {
     await account.deleteSession({ sessionId: 'current' });
   } catch (error) {
@@ -592,9 +598,8 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
         );
       }
 
-      const { account } = getAppwriteCoreServices();
       try {
-        await account.deleteSession({ sessionId: 'current' });
+        await clearCurrentAppwriteSession();
       } catch (error) {
         if (!isSignedOutResponse(error)) throw error;
       }
