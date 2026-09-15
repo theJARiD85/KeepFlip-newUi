@@ -12,19 +12,17 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
+import { FlipCompanion, useFlipCompanion } from '@/components/flip';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
-import {
-  KeepFlipText as Text,
-} from '@/components/ui/keepflip-text';
+import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import {
+  cacheKeepFlipDailyBriefing,
   getKeepFlipDailyBriefingCache,
   hasCompletedKeepFlipDailyBriefing,
   keepFlipLocalDateKey,
   markKeepFlipDailyBriefingCompleted,
-  cacheKeepFlipDailyBriefing,
   type KeepFlipDailyBriefingCache,
 } from '@/services/keepflip-daily-briefing-state-service';
 import {
@@ -96,6 +94,7 @@ function taskDueLabel(value: string | null) {
 function localFallbackBriefing(
   displayName: string | null | undefined,
   tasks: AssistantTask[],
+  dateKey = keepFlipLocalDateKey(),
 ): BriefingResult {
   const openTasks = tasks.filter((task) => task.status === 'open');
   const firstTask = openTasks[0] ?? null;
@@ -107,10 +106,10 @@ function localFallbackBriefing(
     : 'Open Flip after this briefing and tell me what you are sourcing, listing, or trying to improve.';
 
   return {
-    dateKey: keepFlipLocalDateKey(),
+    dateKey,
     reply: taskCount
       ? `${greeting} You have ${taskCount} open item${taskCount === 1 ? '' : 's'} in your Flip queue. I could not load the live business snapshot, so start with the highest-priority work already waiting for you.`
-      : `${greeting} Your saved Flip queue is clear. I could not load the live business snapshot yet, so use this as a quick starting point and check your inventory before sourcing more.` ,
+      : `${greeting} Your saved Flip queue is clear. I could not load the live business snapshot yet, so use this as a quick starting point and check your inventory before sourcing more.`,
     reaction: 'greeting',
     advisory: {
       mode: 'general',
@@ -322,7 +321,7 @@ export function FlipDailyBriefingLauncher() {
         return;
       }
 
-      const fallback = localFallbackBriefing(displayName, loadedTasks);
+      const fallback = localFallbackBriefing(displayName, loadedTasks, dateKey);
       const rules = rulesResult.status === 'fulfilled'
         ? rulesResult.value
         : null;
@@ -365,7 +364,7 @@ export function FlipDailyBriefingLauncher() {
     void load()
       .catch(() => {
         if (cancelled) return;
-        setBriefing(localFallbackBriefing(displayName, []));
+        setBriefing(localFallbackBriefing(displayName, [], dateKey));
         setLoading(false);
       })
       .finally(() => {
@@ -412,7 +411,7 @@ export function FlipDailyBriefingLauncher() {
       visible={visible}
     >
       <View style={styles.backdrop}>
-        <View style={[styles.modalCard, { maxHeight: modalMaxHeight, width: modalWidth }]}>
+        <View style={[styles.modalCard, { paddingTop: insets.top, paddingBottom: insets.bottom, maxHeight: modalMaxHeight - insets.top - insets.bottom, width: modalWidth }]}>
           <View style={styles.modalHeader}>
             <View style={styles.identityBlock}>
               <Image
@@ -443,6 +442,7 @@ export function FlipDailyBriefingLauncher() {
             contentContainerStyle={styles.scrollContent}
             contentInsetAdjustmentBehavior="automatic"
             showsVerticalScrollIndicator={false}
+            style={styles.scroll}
           >
             {loading ? (
               <View style={styles.loadingState}>
@@ -569,6 +569,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     gap: 12,
     padding: 18,
+  },
+  scroll: {
+    flexShrink: 1,
   },
   readCard: {
     backgroundColor: 'rgba(0, 255, 255, 0.055)',
