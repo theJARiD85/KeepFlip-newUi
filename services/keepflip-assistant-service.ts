@@ -10,6 +10,15 @@ import {
   Role,
   tablesDB,
 } from '@/lib/appwrite';
+import {
+  INVENTORY_NUMBER_FIELDS,
+  type InventoryNumberField,
+} from '@/services/inventory-service';
+import {
+  getFlipGuide,
+  isFlipGuideId,
+  type FlipGuideId,
+} from '@/services/keepflip-guide-service';
 
 export type AssistantTaskStatus = 'open' | 'completed' | 'cancelled';
 export type AssistantTaskSource = 'user' | 'assistant' | 'system';
@@ -106,12 +115,41 @@ export type AssistantWorkspaceContext = {
   displayName?: string | null;
   openTasks?: Array<Pick<AssistantTask, 'title' | 'taskType' | 'dueAt'>>;
   profile?: AssistantProfileContext | null;
+  inventoryItems?: AssistantInventoryContextItem[];
+  inventoryItemsTruncated?: boolean;
+};
+
+export type AssistantInventoryContextItem = {
+  id: string;
+  title: string;
+  brand?: string | null;
+  model?: string | null;
+  category?: string | null;
+  condition?: string | null;
+  estimatedValueCents?: number | null;
+  acquisitionCostCents?: number | null;
+  inventoryCostCentsOnHand?: number | null;
+  quantityPurchased?: number | null;
+  quantityOnHand?: number | null;
+  resaleTypicalDays?: number | null;
+  status?: string | null;
+  resaleStatus?: string | null;
+  isListed?: boolean;
+  sku?: string | null;
+  attentionReasons?: string[];
 };
 
 export type AssistantAction =
   | { type: 'none' }
   | { type: 'navigate'; route: AssistantRoute }
   | { type: 'open_seller_operations' }
+  | { type: 'start_guide'; guideId: FlipGuideId }
+  | {
+      type: 'update_inventory_number';
+      itemId: string;
+      field: InventoryNumberField;
+      value: number;
+    }
   | {
       type: 'create_task';
       title: string;
@@ -705,6 +743,16 @@ export type ParsedAssistantCommand =
   | { type: 'navigate'; route: AssistantRoute }
   | { type: 'help' };
 
+export type ParsedAssistantInventoryUpdate = Extract<
+  AssistantAction,
+  { type: 'update_inventory_number' }
+>;
+
+export type ParsedAssistantGuideRequest = Extract<
+  AssistantAction,
+  { type: 'start_guide' }
+>;
+
 function dueDateFromPhrase(phrase: string | null) {
   if (!phrase) return null;
   const now = new Date();
@@ -822,6 +870,264 @@ export function parseAssistantCommand(input: string): ParsedAssistantCommand {
   return { type: 'help' };
 }
 
+const MAX_INVENTORY_NUMBER_CENTS = 2_147_483_647;
+const MAX_INVENTORY_QUANTITY = 100_000;
+const MAX_RESALE_TYPICAL_DAYS = 3_650;
+
+const INVENTORY_NUMBER_ALIASES: readonly {
+  aliases: readonly string[];
+  field: InventoryNumberField;
+}[] = [
+  {
+    aliases: ['inventory cost on hand', 'on hand cost', 'inventory cost', 'cost basis', 'cogs'],
+    field: 'inventory_cost_cents_on_hand',
+  },
+  {
+    aliases: ['acquisition cost', 'purchase cost', 'purchase price', 'cost paid', 'bought for', 'actual cost', 'item cost', 'cost'],
+    field: 'acquisition_cost_cents',
+  },
+  {
+    aliases: ['estimated value', 'market value', 'resale value', 'estimated worth', 'worth', 'value'],
+    field: 'estimated_value_cents',
+  },
+  {
+    aliases: ['quantity purchased', 'bought quantity', 'units purchased', 'qty purchased'],
+    field: 'quantity_purchased',
+  },
+  {
+    aliases: ['quantity on hand', 'units on hand', 'units left', 'qty on hand', 'quantity', 'qty'],
+    field: 'quantity_on_hand',
+  },
+  {
+    aliases: ['typical resale days', 'resale typical days', 'days to sell', 'resale days', 'time to sale', 'days'],
+    field: 'resale_typical_days',
+  },
+];
+
+function isInventoryNumberField(value: unknown): value is InventoryNumberField {
+  return (
+    typeof value === 'string' &&
+    INVENTORY_NUMBER_FIELDS.includes(value as InventoryNumberField)
+  );
+}
+
+function inventoryFieldLabel(field: InventoryNumberField) {
+  const labels: Record<InventoryNumberField, string> = {
+    acquisition_cost_cents: 'acquisition cost',
+    estimated_value_cents: 'estimated value',
+    inventory_cost_cents_on_hand: 'inventory cost on hand',
+    quantity_on_hand: 'quantity on hand',
+    quantity_purchased: 'quantity purchased',
+    resale_typical_days: 'typical resale days',
+  };
+  return labels[field];
+}
+
+function inventoryValueLabel(field: InventoryNumberField, value: number | null | undefined) {
+  if (value == null || !Number.isFinite(value)) return 'not set';
+  if (
+    field === 'acquisition_cost_cents' ||
+    field === 'inventory_cost_cents_on_hand' ||
+    field === 'estimated_value_cents'
+  ) {
+    return new Intl.NumberFormat(undefined, {
+      currency: 'USD',
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 2,
+      style: 'currency',
+    }).format(value / 100);
+  }
+  return String(value);
+}
+
+function currentInventoryContextValue(
+  item: AssistantInventoryContextItem,
+  field: InventoryNumberField,
+) {
+  switch (field) {
+    case 'acquisition_cost_cents':
+      return item.acquisitionCostCents ?? null;
+    case 'estimated_value_cents':
+      return item.estimatedValueCents ?? null;
+    case 'inventory_cost_cents_on_hand':
+      return item.inventoryCostCentsOnHand ?? null;
+    case 'quantity_on_hand':
+      return item.quantityOnHand ?? null;
+    case 'quantity_purchased':
+      return item.quantityPurchased ?? null;
+    case 'resale_typical_days':
+      return item.resaleTypicalDays ?? null;
+  }
+}
+
+function parsedInventoryNumber(
+  field: InventoryNumberField,
+  rawValue: string,
+  input: string,
+) {
+  const numericValue = Number(rawValue.replace(/[,$]/g, ''));
+  if (!Number.isFinite(numericValue) || numericValue < 0) return null;
+
+  if (
+    field === 'acquisition_cost_cents' ||
+    field === 'inventory_cost_cents_on_hand' ||
+    field === 'estimated_value_cents'
+  ) {
+    const cents = /\bcents?\b/i.test(input)
+      ? Math.round(numericValue)
+      : Math.round(numericValue * 100);
+    return cents <= MAX_INVENTORY_NUMBER_CENTS ? cents : null;
+  }
+
+  if (!Number.isInteger(numericValue)) return null;
+  if (
+    (field === 'quantity_purchased' || field === 'quantity_on_hand') &&
+    (numericValue > MAX_INVENTORY_QUANTITY ||
+      (field === 'quantity_purchased' && numericValue < 1))
+  ) {
+    return null;
+  }
+  if (field === 'resale_typical_days' && numericValue > MAX_RESALE_TYPICAL_DAYS) {
+    return null;
+  }
+  return numericValue;
+}
+
+function inventoryUpdateItemScore(
+  item: AssistantInventoryContextItem,
+  input: string,
+) {
+  const lower = input.toLowerCase();
+  const values = [
+    { score: 1_000, value: item.id },
+    { score: 900, value: item.sku },
+    { score: 300, value: [item.brand, item.model].filter(Boolean).join(' ') },
+    { score: 200, value: item.title },
+  ];
+
+  return values.reduce((best, candidate) => {
+    const value = candidate.value?.trim().toLowerCase();
+    if (!value || value.length < 3 || !lower.includes(value)) return best;
+    return Math.max(best, candidate.score + Math.min(value.length, 120));
+  }, 0);
+}
+
+function inventoryUpdateHasTargetLanguage(input: string) {
+  return /\b(set|change|update|correct|fix|edit|adjust|make)\b/i.test(input);
+}
+
+export function looksLikeAssistantInventoryUpdate(input: string) {
+  const lower = input.toLowerCase();
+  return (
+    inventoryUpdateHasTargetLanguage(input) &&
+    INVENTORY_NUMBER_ALIASES.some(({ aliases }) =>
+      aliases.some((alias) => lower.includes(alias)),
+    )
+  );
+}
+
+export function parseAssistantInventoryUpdate(
+  input: string,
+  inventoryItems: AssistantInventoryContextItem[] = [],
+): ParsedAssistantInventoryUpdate | null {
+  if (!looksLikeAssistantInventoryUpdate(input)) return null;
+
+  const lower = input.toLowerCase();
+  const field = INVENTORY_NUMBER_ALIASES.find(({ aliases }) =>
+    aliases.some((alias) => lower.includes(alias)),
+  )?.field;
+  if (!field) return null;
+
+  const numericMatches = input.match(/\$?\d[\d,]*(?:\.\d{1,2})?/g);
+  const rawValue = numericMatches?.[numericMatches.length - 1];
+  if (!rawValue) return null;
+  const value = parsedInventoryNumber(field, rawValue, input);
+  if (value == null) return null;
+
+  const scoredItems = inventoryItems
+    .map((item) => ({ item, score: inventoryUpdateItemScore(item, input) }))
+    .filter(({ score }) => score > 0)
+    .sort((left, right) => right.score - left.score);
+  const best = scoredItems[0];
+  const second = scoredItems[1];
+  if (!best || (second && second.score === best.score)) return null;
+
+  return {
+    field,
+    itemId: best.item.id,
+    type: 'update_inventory_number',
+    value,
+  };
+}
+
+const GUIDE_REQUEST_SIGNAL = /\b(how|help|walk|step[- ]by[- ]step|show me|guide me|stuck)\b/i;
+
+export function parseAssistantGuideRequest(
+  input: string,
+  currentRoute?: string | null,
+): ParsedAssistantGuideRequest | null {
+  const lower = input.trim().toLowerCase();
+  if (!GUIDE_REQUEST_SIGNAL.test(lower)) return null;
+
+  const route = currentRoute?.split(/[?#]/, 1)[0];
+  let routeGuideId: FlipGuideId | null = null;
+  if (route === '/scanner' || route === '/analysis' || route === '/analysis-result') {
+    routeGuideId = 'scan_item';
+  } else if (route === '/inventory') {
+    routeGuideId = 'update_inventory';
+  } else if (route === '/books') {
+    routeGuideId = 'review_books';
+  } else if (route === '/ebay-connect' || route === '/ebay-account') {
+    routeGuideId = 'connect_ebay';
+  } else if (route === '/market-research') {
+    routeGuideId = 'market_research';
+  } else if (route === '/repair-assist') {
+    routeGuideId = 'repair_item';
+  } else if (route === '/account' || route === '/notifications' || route === '/subscription') {
+    routeGuideId = 'account_settings';
+  } else if (route === '/flip-plan') {
+    routeGuideId = 'flip_plan';
+  } else if (route === '/listing-guide') {
+    routeGuideId = 'create_listing';
+  } else if (route === '/analytics' || route === '/command-center' || route === '/') {
+    routeGuideId = 'command_center';
+  }
+  const isCapabilityQuestion = /what can you do|how can you help|commands|options/.test(lower);
+
+  let guideId: FlipGuideId | null = null;
+  if (/update|change|correct|edit|number|quantity|cost.*record|incomplete|review.?flag/.test(lower)) {
+    guideId = 'update_inventory';
+  } else if (/repair|fix.*item/.test(lower)) {
+    guideId = 'repair_item';
+  } else if (/scanner|scan|camera|photo|photograph|capture/.test(lower)) {
+    guideId = 'scan_item';
+  } else if (/save|add.*inventory|inventory.*add|record.*inventory/.test(lower)) {
+    guideId = 'save_inventory';
+  } else if (/books|bookkeeping|ledger|financial review|review queue/.test(lower)) {
+    guideId = 'review_books';
+  } else if (/money sync|sync.*money|seller operations|orders|fulfillment|payout/.test(lower)) {
+    guideId = 'money_sync';
+  } else if (/listing|list item|publish|sell.*item|cross.?list/.test(lower)) {
+    guideId = 'create_listing';
+  } else if (/ebay|e bay/.test(lower)) {
+    guideId = 'connect_ebay';
+  } else if (/research|comps|comparable|market/.test(lower)) {
+    guideId = 'market_research';
+  } else if (/command center|business pulse|what should i work on|next move/.test(lower)) {
+    guideId = 'command_center';
+  } else if (/flip plan|goal|planning/.test(lower)) {
+    guideId = 'flip_plan';
+  } else if (/account|settings|subscription|profile/.test(lower)) {
+    guideId = 'account_settings';
+  } else if (!isCapabilityQuestion) {
+    guideId = routeGuideId;
+  }
+
+  return guideId && isFlipGuideId(guideId)
+    ? { guideId, type: 'start_guide' }
+    : null;
+}
+
 export type ParsedAssistantIntent =
   | ParsedAssistantCommand
   | { type: 'open_seller_operations' }
@@ -887,6 +1193,46 @@ function localAssistantReply(
   input: string,
   context: AssistantWorkspaceContext,
 ): KeepFlipAssistantReply {
+  const inventoryUpdate = parseAssistantInventoryUpdate(
+    input,
+    context.inventoryItems ?? [],
+  );
+  if (inventoryUpdate) {
+    const item = context.inventoryItems?.find(
+      (candidate) => candidate.id === inventoryUpdate.itemId,
+    );
+    const currentValue = item
+      ? currentInventoryContextValue(item, inventoryUpdate.field)
+      : null;
+    return {
+      reply: `I found “${item?.title ?? 'that inventory item'}”. I’m proposing ${inventoryFieldLabel(inventoryUpdate.field)} = ${inventoryValueLabel(inventoryUpdate.field, inventoryUpdate.value)} (currently ${inventoryValueLabel(inventoryUpdate.field, currentValue)}). Review the change below and confirm before I save it.`,
+      reaction: 'aha',
+      action: inventoryUpdate,
+      source: 'local',
+    };
+  }
+
+  if (looksLikeAssistantInventoryUpdate(input)) {
+    return {
+      reply:
+        'I can update that number, including on an incomplete or review-flagged record. Tell me the exact item title or SKU, the field (acquisition cost, inventory cost on hand, estimated value, quantity purchased, quantity on hand, or typical resale days), and the new number. I will show you the proposed change before saving it.',
+      reaction: 'confused',
+      action: { type: 'none' },
+      source: 'local',
+    };
+  }
+
+  const guideRequest = parseAssistantGuideRequest(input, context.currentRoute);
+  if (guideRequest) {
+    const guide = getFlipGuide(guideRequest.guideId);
+    return {
+      reply: `I’ll walk you through ${guide.title}, one step at a time. You can keep the guide open while you work in the app.`,
+      reaction: 'aha',
+      action: guideRequest,
+      source: 'local',
+    };
+  }
+
   const intent = parseAssistantIntent(input);
   const openTasks = context.openTasks ?? [];
   const profile = context.profile;
@@ -983,7 +1329,7 @@ function localAssistantReply(
   if (intent.type === 'help') {
     return {
       reply:
-        'Talk to me normally - I can help you source, price, list, navigate KeepFlip, and remember work. Try "open Scanner," "connect eBay," or "remind me to photograph the jackets tomorrow."' +
+        'Talk to me normally - I can help you source, price, list, navigate KeepFlip, update an inventory number, walk you through a workflow, and remember work. Try "walk me through updating inventory," "how do I review Books," "open Scanner," or "remind me to photograph the jackets tomorrow."' +
         profileHint,
       reaction: 'acknowledge',
       action: { type: 'none' },
@@ -1015,11 +1361,63 @@ function localAssistantReply(
     source: 'local',
   };
 }
-function normalizeAssistantAction(value: unknown): AssistantAction {
+function normalizeInventoryActionValue(
+  field: InventoryNumberField,
+  value: unknown,
+) {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value)) return null;
+  if (
+    (field === 'acquisition_cost_cents' ||
+      field === 'inventory_cost_cents_on_hand' ||
+      field === 'estimated_value_cents') &&
+    (value < 0 || value > MAX_INVENTORY_NUMBER_CENTS)
+  ) {
+    return null;
+  }
+  if (
+    (field === 'quantity_purchased' || field === 'quantity_on_hand') &&
+    (value < 0 || value > MAX_INVENTORY_QUANTITY)
+  ) {
+    return null;
+  }
+  if (field === 'quantity_purchased' && value < 1) return null;
+  if (field === 'resale_typical_days' && (value < 0 || value > MAX_RESALE_TYPICAL_DAYS)) {
+    return null;
+  }
+  return value;
+}
+
+function normalizeAssistantAction(
+  value: unknown,
+  context?: AssistantWorkspaceContext,
+): AssistantAction {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return { type: 'none' };
   }
   const action = value as Record<string, unknown>;
+  if (action.type === 'start_guide' && isFlipGuideId(action.guideId)) {
+    return { guideId: action.guideId, type: 'start_guide' };
+  }
+  if (action.type === 'update_inventory_number' && isInventoryNumberField(action.field)) {
+    const itemId = cleanText(
+      typeof action.itemId === 'string' ? action.itemId : null,
+      64,
+    );
+    const normalizedValue = normalizeInventoryActionValue(action.field, action.value);
+    const itemIsVisible = Boolean(
+      itemId &&
+        Array.isArray(context?.inventoryItems) &&
+        context.inventoryItems.some((item) => item.id === itemId),
+    );
+    if (itemId && normalizedValue != null && itemIsVisible) {
+      return {
+        field: action.field,
+        itemId,
+        type: 'update_inventory_number',
+        value: normalizedValue,
+      };
+    }
+  }
   if (action.type === 'open_seller_operations') {
     return { type: 'open_seller_operations' };
   }
@@ -1049,6 +1447,7 @@ function normalizeAssistantAction(value: unknown): AssistantAction {
 function normalizeAssistantReply(
   value: unknown,
   fallback: KeepFlipAssistantReply,
+  context?: AssistantWorkspaceContext,
 ): KeepFlipAssistantReply {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return fallback;
   const candidate = value as Record<string, unknown>;
@@ -1140,7 +1539,7 @@ function normalizeAssistantReply(
     advisory,
     reply,
     reaction,
-    action: normalizeAssistantAction(candidate.action),
+    action: normalizeAssistantAction(candidate.action, context),
     source: 'cloud',
   };
 }
@@ -1224,7 +1623,7 @@ export async function runKeepFlipAssistant({
     throw new Error(detail || 'Flip could not respond right now.');
   }
 
-  const reply = normalizeAssistantReply(payload.reply, fallback);
+  const reply = normalizeAssistantReply(payload.reply, fallback, context);
   if (reply.source !== 'cloud') {
     throw new Error('Flip returned an unreadable assistant response.');
   }

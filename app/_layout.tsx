@@ -25,6 +25,7 @@ import {
 import { KeepFlipFeedbackNudgeProvider } from "@/components/feedback/keepflip-feedback-nudge";
 import { KeepFlipPushRegistration } from '@/components/notifications/keepflip-push-registration';
 import KeepFlipLaunchExperience from "@/components/intro/keepflip-launch-experience.native";
+import { KeepFlipMinimumVersionGate } from '@/components/update/keepflip-minimum-version-gate';
 import { keepFlipTheme } from "@/constants/keepflip-theme";
 import { configureKeepFlipNotificationHandler } from '@/services/keepflip-notification-service';
 import { initializeTenjinAtLaunch } from '@/services/tenjin-attribution-service';
@@ -199,24 +200,26 @@ export default function RootLayout() {
             <ThemeProvider
               value={navigationTheme}
             >
-              <KeepFlipAuthProvider>
-                <KeepFlipPushRegistration />
-                <KeepFlipFeedbackNudgeProvider>
-                  <ProtectedRootStack />
-                </KeepFlipFeedbackNudgeProvider>
-                <View
-                  pointerEvents={launchVisible ? "auto" : "none"}
-                  style={{
-                    bottom: 0,
-                    left: 0,
-                    position: "absolute",
-                    right: 0,
-                    top: 0,
-                  }}
-                >
-                  <KeepFlipLaunchExperience onVisibilityChange={setLaunchVisible} />
-                </View>
-              </KeepFlipAuthProvider>
+              <KeepFlipMinimumVersionGate>
+                <KeepFlipAuthProvider>
+                  <KeepFlipPushRegistration />
+                  <KeepFlipFeedbackNudgeProvider>
+                    <ProtectedRootStack />
+                  </KeepFlipFeedbackNudgeProvider>
+                  <View
+                    pointerEvents={launchVisible ? "auto" : "none"}
+                    style={{
+                      bottom: 0,
+                      left: 0,
+                      position: "absolute",
+                      right: 0,
+                      top: 0,
+                    }}
+                  >
+                    <KeepFlipLaunchExperience onVisibilityChange={setLaunchVisible} />
+                  </View>
+                </KeepFlipAuthProvider>
+              </KeepFlipMinimumVersionGate>
 
               <StatusBar
                 animated

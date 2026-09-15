@@ -44,6 +44,7 @@ const INVENTORY_ITEM_DETAILS_COLUMNS = [
 const ANALYSIS_SNAPSHOT_SCHEMA_VERSION = 1 as const;
 const MAX_ANALYSIS_SNAPSHOT_CHARACTERS = 500_000;
 const MAX_ITEM_QUANTITY = 100_000;
+const MAX_INVENTORY_NUMBER_CENTS = 2_147_483_647;
 
 const INVENTORY_LIST_COLUMNS = [
   'title',
@@ -96,6 +97,17 @@ export type InventoryListSort =
   | 'newest'
   | 'resale_speed'
   | 'decision_confidence';
+
+export const INVENTORY_NUMBER_FIELDS = [
+  'acquisition_cost_cents',
+  'inventory_cost_cents_on_hand',
+  'estimated_value_cents',
+  'quantity_purchased',
+  'quantity_on_hand',
+  'resale_typical_days',
+] as const;
+
+export type InventoryNumberField = (typeof INVENTORY_NUMBER_FIELDS)[number];
 
 export type InventoryListOptions = {
   flipDecision?: InventoryFlipDecision;
@@ -249,6 +261,13 @@ export type UpdateInventoryAnalysisSnapshotInput = {
   analysis: ItemAnalysisSuccess;
   itemId: string;
   ownerId: string;
+};
+
+export type UpdateInventoryItemNumberInput = {
+  field: InventoryNumberField;
+  itemId: string;
+  ownerId: string;
+  value: number;
 };
 
 function ownerPermissions(ownerId: string) {
@@ -731,20 +750,26 @@ function rowToInventoryItem(row: InventoryRow): InventoryItem {
   };
 }
 
-function assertInventoryConfigured() {
+function assertInventoryTableConfigured() {
   const missing = [
     !APPWRITE.databaseId ? 'EXPO_PUBLIC_APPWRITE_DATABASE_ID' : null,
     !APPWRITE.itemsTableId
       ? 'EXPO_PUBLIC_APPWRITE_ITEMS_COLLECTION_ID'
-      : null,
-    !APPWRITE.itemPhotosTableId
-      ? 'EXPO_PUBLIC_APPWRITE_ITEM_PHOTOS_COLLECTION_ID'
       : null,
   ].filter((value): value is string => Boolean(value));
 
   if (missing.length) {
     throw new Error(
       `KeepFlip inventory needs Appwrite configuration: ${missing.join(', ')}`,
+    );
+  }
+}
+
+function assertInventoryConfigured() {
+  assertInventoryTableConfigured();
+  if (!APPWRITE.itemPhotosTableId) {
+    throw new Error(
+      'KeepFlip inventory needs Appwrite configuration: EXPO_PUBLIC_APPWRITE_ITEM_PHOTOS_COLLECTION_ID',
     );
   }
 }
@@ -1036,6 +1061,56 @@ export async function listInventoryItems(
 
 const INVENTORY_ANALYTICS_PAGE_SIZE = 100;
 const INVENTORY_ANALYTICS_MAX_ITEMS = 1_000;
+const INVENTORY_ASSISTANT_MAX_ITEMS = 300;
+
+/**
+ * Loads the bounded item directory that lets Flip resolve an explicit item
+ * update to an owner-owned record. This path only needs the items table, so an
+ * imported or incomplete record remains addressable even when photo storage
+ * has not been configured yet.
+ */
+export async function listInventoryItemsForAssistant(ownerId: string): Promise<{
+  items: InventoryItem[];
+  total: number;
+  truncated: boolean;
+}> {
+  assertInventoryTableConfigured();
+  const cleanOwnerId = ownerId.trim();
+  if (!cleanOwnerId) return { items: [], total: 0, truncated: false };
+
+  const items: InventoryItem[] = [];
+  let total: number | null = null;
+  while (items.length < INVENTORY_ASSISTANT_MAX_ITEMS) {
+    const pageSize = Math.min(
+      INVENTORY_ANALYTICS_PAGE_SIZE,
+      INVENTORY_ASSISTANT_MAX_ITEMS - items.length,
+    );
+    const response = await tablesDB.listRows({
+      databaseId: APPWRITE.databaseId,
+      tableId: APPWRITE.itemsTableId,
+      queries: [
+        Query.equal('ownerId', [cleanOwnerId]),
+        Query.orderDesc('createdAt'),
+        Query.limit(pageSize),
+        Query.offset(items.length),
+        Query.select([...INVENTORY_LIST_COLUMNS]),
+      ],
+    });
+    const page = (response.rows as unknown as InventoryRow[]).map(rowToInventoryItem);
+    const reportedTotal = Number(response.total);
+    if (Number.isSafeInteger(reportedTotal) && reportedTotal >= 0) {
+      total = Math.max(total ?? 0, reportedTotal);
+    }
+    items.push(...page);
+    if (page.length < pageSize || (total != null && items.length >= total)) break;
+  }
+
+  return {
+    items,
+    total: Math.max(total ?? 0, items.length),
+    truncated: (total ?? items.length) > items.length,
+  };
+}
 
 /**
  * Loads a bounded, newest-first inventory snapshot for analytics. The normal
@@ -1272,11 +1347,124 @@ export async function createImportedEbayInventoryItem({
   });
 }
 
+function normalizeInventoryNumberValue(
+  field: InventoryNumberField,
+  value: number,
+) {
+  if (!INVENTORY_NUMBER_FIELDS.includes(field)) {
+    throw new Error('Flip requested an unsupported inventory number.');
+  }
+
+  const normalized = Number(value);
+  if (!Number.isSafeInteger(normalized)) {
+    throw new Error('Inventory updates must use whole numbers.');
+  }
+
+  if (
+    (field === 'acquisition_cost_cents' ||
+      field === 'inventory_cost_cents_on_hand' ||
+      field === 'estimated_value_cents') &&
+    (normalized < 0 || normalized > MAX_INVENTORY_NUMBER_CENTS)
+  ) {
+    throw new Error('Inventory money values must be between $0.00 and $21,474,836.47.');
+  }
+
+  if (
+    (field === 'quantity_purchased' || field === 'quantity_on_hand') &&
+    (normalized < 0 || normalized > MAX_ITEM_QUANTITY)
+  ) {
+    throw new Error(
+      `Inventory quantities must be whole numbers from 0 through ${MAX_ITEM_QUANTITY.toLocaleString()}.`,
+    );
+  }
+
+  if (field === 'quantity_purchased' && normalized < 1) {
+    throw new Error('Quantity purchased must be at least 1.');
+  }
+
+  if (field === 'resale_typical_days' && (normalized < 0 || normalized > 3_650)) {
+    throw new Error('Typical resale days must be between 0 and 3,650.');
+  }
+
+  return normalized;
+}
+
+function inventoryNumberData(
+  field: InventoryNumberField,
+  value: number,
+): Record<string, number | string> {
+  switch (field) {
+    case 'acquisition_cost_cents':
+      return { acquisitionCostCents: value };
+    case 'inventory_cost_cents_on_hand':
+      return { inventoryCostCentsOnHand: value };
+    case 'estimated_value_cents':
+      return { estimatedValueCents: value };
+    case 'quantity_purchased':
+      return { quantityPurchased: value };
+    case 'quantity_on_hand':
+      return { quantityOnHand: value };
+    case 'resale_typical_days':
+      return { resaleTypicalDays: value };
+  }
+}
+
+/**
+ * Updates one seller-entered numeric inventory value after confirming the
+ * record belongs to the signed-in owner. It deliberately has no analysis or
+ * status precondition, so imported and incomplete records can be corrected.
+ * Money fields are integer cents; quantity and resale-day fields are integers.
+ */
+export async function updateInventoryItemNumber({
+  field,
+  itemId,
+  ownerId,
+  value,
+}: UpdateInventoryItemNumberInput): Promise<InventoryItem> {
+  assertInventoryTableConfigured();
+  const cleanOwnerId = ownerId.trim();
+  const cleanItemId = itemId.trim();
+  if (!cleanOwnerId) throw new Error('Sign in before updating an inventory item.');
+  if (!cleanItemId) throw new Error('The inventory item ID is missing.');
+
+  const current = await getInventoryItem(cleanOwnerId, cleanItemId);
+  const normalizedValue = normalizeInventoryNumberValue(field, value);
+
+  if (
+    field === 'quantity_purchased' &&
+    normalizedValue < current.quantityOnHand
+  ) {
+    throw new Error(
+      `Quantity purchased cannot be lower than the ${current.quantityOnHand.toLocaleString()} units currently on hand.`,
+    );
+  }
+  if (
+    field === 'quantity_on_hand' &&
+    normalizedValue > current.quantityPurchased
+  ) {
+    throw new Error(
+      `Quantity on hand cannot exceed the ${current.quantityPurchased.toLocaleString()} units purchased. Update quantity purchased first if the record is incomplete.`,
+    );
+  }
+
+  await tablesDB.updateRow({
+    databaseId: APPWRITE.databaseId,
+    tableId: APPWRITE.itemsTableId,
+    rowId: cleanItemId,
+    data: {
+      ...inventoryNumberData(field, normalizedValue),
+      updatedAt: new Date().toISOString(),
+    },
+  });
+
+  return getInventoryItem(cleanOwnerId, cleanItemId);
+}
+
 export async function getInventoryItem(
   ownerId: string,
   itemId: string,
 ): Promise<InventoryItem> {
-  assertInventoryConfigured();
+  assertInventoryTableConfigured();
   const cleanOwnerId = ownerId.trim();
   const cleanItemId = itemId.trim();
   if (!cleanOwnerId) throw new Error('Sign in before opening an inventory item.');

@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Keyboard,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,6 +12,7 @@ import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { FlipCompanion, useFlipCompanion } from '@/components/flip';
+import { useFlipGuidance } from '@/components/command-center/flip-guidance-overlay';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipControlRow } from '@/components/ui/keepflip-control-row';
 import {
@@ -18,8 +20,7 @@ import {
   KeepFlipTextInput as TextInput,
 } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import { responsiveWidth } from '@/lib/responsiveFont';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 import {
   ASSISTANT_CONVERSATION_PAGE_SIZE,
   completeAssistantTask,
@@ -41,12 +42,18 @@ import {
   type AssistantWorkspaceContext,
 } from '@/services/keepflip-assistant-service';
 import {
+  getInventoryItem,
+  listInventoryItemsForAssistant,
+  updateInventoryItemNumber,
+  type InventoryItem,
+  type InventoryNumberField,
+} from '@/services/inventory-service';
+import {
   cancelKeepFlipTaskReminder,
   scheduleKeepFlipTaskReminder,
 } from '@/services/keepflip-notification-service';
 import { getResellerBuyRules } from '@/services/user-profile-onboarding-service';
 
-import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 const FLIP_MASCOT_IMAGE = require('@/assets/images/flip-mascot.png');
 const OPTIMISTIC_USER_MESSAGE_PREFIX = 'local-user-';
 const OPTIMISTIC_MESSAGE_MATCH_WINDOW_MS = 30_000;
@@ -155,6 +162,139 @@ function profileContextFromRules(
   };
 }
 
+type PendingInventoryUpdate = Extract<
+  AssistantAction,
+  { type: 'update_inventory_number' }
+> & {
+  item: InventoryItem;
+};
+
+function inventoryFieldLabel(field: InventoryNumberField) {
+  const labels: Record<InventoryNumberField, string> = {
+    acquisition_cost_cents: 'Acquisition cost',
+    estimated_value_cents: 'Estimated value',
+    inventory_cost_cents_on_hand: 'Inventory cost on hand',
+    quantity_on_hand: 'Quantity on hand',
+    quantity_purchased: 'Quantity purchased',
+    resale_typical_days: 'Typical resale days',
+  };
+  return labels[field];
+}
+
+function inventoryItemNumber(item: InventoryItem, field: InventoryNumberField) {
+  switch (field) {
+    case 'acquisition_cost_cents':
+      return item.acquisitionCost == null ? null : Math.round(item.acquisitionCost * 100);
+    case 'estimated_value_cents':
+      return item.estimatedValue == null ? null : Math.round(item.estimatedValue * 100);
+    case 'inventory_cost_cents_on_hand':
+      return item.inventoryCostOnHand == null
+        ? null
+        : Math.round(item.inventoryCostOnHand * 100);
+    case 'quantity_on_hand':
+      return item.quantityOnHand;
+    case 'quantity_purchased':
+      return item.quantityPurchased;
+    case 'resale_typical_days':
+      return item.resaleTypicalDays;
+  }
+}
+
+function formatInventoryNumber(field: InventoryNumberField, value: number | null | undefined) {
+  if (value == null || !Number.isFinite(value)) return 'Not set';
+  if (
+    field === 'acquisition_cost_cents' ||
+    field === 'estimated_value_cents' ||
+    field === 'inventory_cost_cents_on_hand'
+  ) {
+    return new Intl.NumberFormat(undefined, {
+      currency: 'USD',
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 2,
+      style: 'currency',
+    }).format(value / 100);
+  }
+  return String(value);
+}
+
+function PendingInventoryUpdateCard({
+  busy,
+  onCancel,
+  onConfirm,
+  pending,
+  responsiveFont,
+  styles,
+}: {
+  busy: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+  pending: PendingInventoryUpdate;
+  responsiveFont: (size: number) => number;
+  styles: ReturnType<typeof createResponsiveStyles>;
+}) {
+  const currentValue = inventoryItemNumber(pending.item, pending.field);
+  return (
+    <Animated.View entering={FadeInDown.duration(180)} style={styles.inventoryUpdateCard}>
+      <View style={styles.inventoryUpdateHeader}>
+        <View style={styles.inventoryUpdateCopy}>
+          <Text style={[styles.inventoryUpdateLabel, { fontSize: responsiveFont(7) }]}>REVIEW BEFORE SAVING</Text>
+          <Text numberOfLines={2} style={[styles.inventoryUpdateTitle, { fontSize: responsiveFont(12), lineHeight: 16 }]}>
+            {pending.item.title}
+          </Text>
+        </View>
+        <Text style={[styles.inventoryUpdateBadge, { fontSize: responsiveFont(7) }]}>CONFIRM</Text>
+      </View>
+      <View style={styles.inventoryUpdateValues}>
+        <View style={styles.inventoryUpdateValueBlock}>
+          <Text style={[styles.inventoryUpdateValueLabel, { fontSize: responsiveFont(7) }]}>FIELD</Text>
+          <Text style={[styles.inventoryUpdateValue, { fontSize: responsiveFont(9) }]}>
+            {inventoryFieldLabel(pending.field)}
+          </Text>
+        </View>
+        <View style={styles.inventoryUpdateValueBlock}>
+          <Text style={[styles.inventoryUpdateValueLabel, { fontSize: responsiveFont(7) }]}>BEFORE</Text>
+          <Text style={[styles.inventoryUpdateValue, { fontSize: responsiveFont(9) }]}>
+            {formatInventoryNumber(pending.field, currentValue)}
+          </Text>
+        </View>
+        <View style={styles.inventoryUpdateValueBlock}>
+          <Text style={[styles.inventoryUpdateValueLabel, { fontSize: responsiveFont(7) }]}>PROPOSED</Text>
+          <Text style={[styles.inventoryUpdateProposed, { fontSize: responsiveFont(10) }]}>
+            {formatInventoryNumber(pending.field, pending.value)}
+          </Text>
+        </View>
+      </View>
+      <Text style={[styles.inventoryUpdateNote, { fontSize: responsiveFont(8), lineHeight: 12 }]}>
+        This works for imported, incomplete, and review-flagged records. A Books review, if related, still needs its own confirmation.
+      </Text>
+      <View style={styles.inventoryUpdateActions}>
+        <Pressable
+          accessibilityLabel="Leave the proposed inventory update unchanged"
+          accessibilityRole="button"
+          disabled={busy}
+          onPress={onCancel}
+          style={({ pressed }) => [styles.inventoryUpdateCancel, pressed && styles.inventoryUpdatePressed, busy && styles.inventoryUpdateDisabled]}
+        >
+          <Text style={[styles.inventoryUpdateCancelText, { fontSize: responsiveFont(8) }]}>LEAVE UNCHANGED</Text>
+        </Pressable>
+        <Pressable
+          accessibilityLabel="Save the proposed inventory update"
+          accessibilityRole="button"
+          disabled={busy}
+          onPress={onConfirm}
+          style={({ pressed }) => [styles.inventoryUpdateConfirm, pressed && styles.inventoryUpdatePressed, busy && styles.inventoryUpdateDisabled]}
+        >
+          {busy ? (
+            <ActivityIndicator color={theme.colors.background} size="small" />
+          ) : (
+            <Text style={[styles.inventoryUpdateConfirmText, { fontSize: responsiveFont(8) }]}>SAVE UPDATE</Text>
+          )}
+        </Pressable>
+      </View>
+    </Animated.View>
+  );
+}
+
 function mergeConversationMessage(
   current: AssistantConversationMessage[],
   next: AssistantConversationMessage,
@@ -238,6 +378,9 @@ export function FlipConversationalAssistantPanel({
   const [tasks, setTasks] = useState<AssistantTask[]>([]);
   const [messages, setMessages] = useState<AssistantConversationMessage[]>([]);
   const [profile, setProfile] = useState<AssistantProfileContext | null>(null);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [inventoryItemsTruncated, setInventoryItemsTruncated] = useState(false);
+  const [pendingInventoryUpdate, setPendingInventoryUpdate] = useState<PendingInventoryUpdate | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isWorking, setIsWorking] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
@@ -264,7 +407,9 @@ export function FlipConversationalAssistantPanel({
     setMode,
     state,
   } = useFlipCompanion();
+  const { startGuide } = useFlipGuidance();
   const isInteractionLocked = isWorking || reactionActive || state === 'speaking';
+  const isInputLocked = isInteractionLocked || pendingInventoryUpdate !== null;
 
   const setAssistantExpanded = useCallback((nextValue: boolean) => {
     setIsExpanded(nextValue);
@@ -290,6 +435,9 @@ export function FlipConversationalAssistantPanel({
       setTasks([]);
       setMessages([]);
       setProfile(null);
+      setInventoryItems([]);
+      setInventoryItemsTruncated(false);
+      setPendingInventoryUpdate(null);
       setHasOlderMessages(false);
       setHistoryError(null);
       setIsLoading(false);
@@ -298,7 +446,7 @@ export function FlipConversationalAssistantPanel({
 
     setIsLoading(true);
     setError(null);
-    const [taskResult, conversationResult, profileResult] =
+    const [taskResult, conversationResult, profileResult, inventoryResult] =
       await Promise.allSettled([
         listAssistantTasks(userId),
         listAssistantConversation(
@@ -307,6 +455,7 @@ export function FlipConversationalAssistantPanel({
           conversationId,
         ),
         getResellerBuyRules(userId, displayName),
+        listInventoryItemsForAssistant(userId),
       ]);
 
     if (taskResult.status === 'fulfilled') {
@@ -334,6 +483,16 @@ export function FlipConversationalAssistantPanel({
     }
     if (profileResult.status === 'fulfilled') {
       setProfile(profileContextFromRules(profileResult.value));
+    }
+    if (inventoryResult.status === 'fulfilled') {
+      setInventoryItems(inventoryResult.value.items);
+      setInventoryItemsTruncated(inventoryResult.value.truncated);
+    } else {
+      // Inventory is useful context but should not prevent Flip from loading
+      // tasks and conversation history when the optional item fields are not
+      // configured in Appwrite yet.
+      setInventoryItems([]);
+      setInventoryItemsTruncated(false);
     }
     setIsLoading(false);
   }, [conversationId, displayName, userId]);
@@ -463,6 +622,30 @@ export function FlipConversationalAssistantPanel({
   const workspaceContext = (): AssistantWorkspaceContext => ({
     currentRoute: currentRoute ?? null,
     displayName,
+    inventoryItems: inventoryItems.map((item) => ({
+      acquisitionCostCents:
+        item.acquisitionCost == null ? null : Math.round(item.acquisitionCost * 100),
+      brand: item.brand,
+      category: item.category,
+      condition: item.condition,
+      estimatedValueCents:
+        item.estimatedValue == null ? null : Math.round(item.estimatedValue * 100),
+      id: item.id,
+      inventoryCostCentsOnHand:
+        item.inventoryCostOnHand == null
+          ? null
+          : Math.round(item.inventoryCostOnHand * 100),
+      isListed: item.isListed,
+      model: item.model,
+      quantityOnHand: item.quantityOnHand,
+      quantityPurchased: item.quantityPurchased,
+      resaleStatus: item.resaleStatus,
+      resaleTypicalDays: item.resaleTypicalDays,
+      sku: item.sku,
+      status: item.status,
+      title: item.title,
+    })),
+    inventoryItemsTruncated,
     openTasks: openTasks.slice(0, 12).map(({ title, taskType, dueAt }) => ({
       title,
       taskType,
@@ -483,6 +666,23 @@ export function FlipConversationalAssistantPanel({
       if (isOverlay) collapseAssistant();
       return;
     }
+    if (action.type === 'start_guide') {
+      Keyboard.dismiss();
+      startGuide(action.guideId);
+      if (isOverlay) collapseAssistant();
+      return;
+    }
+    if (action.type === 'update_inventory_number') {
+      const item = await getInventoryItem(userId, action.itemId);
+      setInventoryItems((current) => {
+        const alreadyLoaded = current.some((entry) => entry.id === item.id);
+        return alreadyLoaded
+          ? current.map((entry) => (entry.id === item.id ? item : entry))
+          : [item, ...current];
+      });
+      setPendingInventoryUpdate({ ...action, item });
+      return;
+    }
     if (action.type !== 'create_task') return;
 
     const task = await createAssistantTask({
@@ -500,7 +700,7 @@ export function FlipConversationalAssistantPanel({
 
   const sendMessage = async (value = command) => {
     const input = value.trim();
-    if (!input || !userId || isInteractionLocked) return;
+    if (!input || !userId || isInputLocked) return;
     const directCommand = parseAssistantCommand(input);
     const directNavigation =
       directCommand.type === 'navigate' ? directCommand : null;
@@ -593,8 +793,96 @@ export function FlipConversationalAssistantPanel({
     }
   };
 
+  const confirmInventoryUpdate = async () => {
+    if (!userId || !pendingInventoryUpdate || isWorking) return;
+    const pending = pendingInventoryUpdate;
+    setIsWorking(true);
+    setError(null);
+    setIsReplying(false);
+    markActivity();
+    setMode('speaking');
+    react('aha');
+
+    try {
+      const updated = await updateInventoryItemNumber({
+        field: pending.field,
+        itemId: pending.itemId,
+        ownerId: userId,
+        value: pending.value,
+      });
+      setInventoryItems((current) =>
+        current.map((entry) => (entry.id === updated.id ? updated : entry)),
+      );
+      setPendingInventoryUpdate(null);
+      const booksFollowUp =
+        pending.field === 'acquisition_cost_cents' ||
+        pending.field === 'inventory_cost_cents_on_hand'
+          ? ' If this is tied to a Books cost review, Books still needs its own confirmation.'
+          : '';
+      setMessages((current) => [
+        ...current,
+        {
+          id: `assistant-inventory-update-${Date.now()}`,
+          role: 'assistant',
+          content: `Done - updated “${updated.title}”: ${inventoryFieldLabel(pending.field)} is now ${formatInventoryNumber(pending.field, inventoryItemNumber(updated, pending.field))}.${booksFollowUp}`,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+      await createAssistantActionRun({
+        ownerId: userId,
+        actionType: 'update_inventory_number',
+        input: JSON.stringify({
+          field: pending.field,
+          itemId: pending.itemId,
+          value: pending.value,
+        }),
+        output: JSON.stringify({
+          field: pending.field,
+          itemId: updated.id,
+          value: pending.value,
+        }),
+      }).catch(() => undefined);
+      react('celebrate');
+    } catch (updateError) {
+      const detail =
+        updateError instanceof Error
+          ? updateError.message
+          : 'That inventory number could not be updated.';
+      setError(detail);
+      setMessages((current) => [
+        ...current,
+        {
+          id: `assistant-inventory-error-${Date.now()}`,
+          role: 'assistant',
+          content: `I left the inventory record unchanged because the update did not complete: ${detail}`,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+      react('confused');
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  const cancelInventoryUpdate = () => {
+    if (!pendingInventoryUpdate || isWorking) return;
+    setPendingInventoryUpdate(null);
+    setError(null);
+    markActivity();
+    setMessages((current) => [
+      ...current,
+      {
+        id: `assistant-inventory-cancel-${Date.now()}`,
+        role: 'assistant',
+        content: 'Understood - I left that inventory number unchanged.',
+        createdAt: new Date().toISOString(),
+      },
+    ]);
+    react('acknowledge');
+  };
+
   const finishTask = async (task: AssistantTask) => {
-    if (!userId || isInteractionLocked) return;
+    if (!userId || isInputLocked) return;
     setIsWorking(true);
     setError(null);
     setIsReplying(false);
@@ -901,11 +1189,23 @@ export function FlipConversationalAssistantPanel({
                 ) : null}
               </ScrollView>
 
-              {!hasUserMessage && !isInteractionLocked ? (
+              {pendingInventoryUpdate ? (
+                <PendingInventoryUpdateCard
+                  busy={isWorking}
+                  onCancel={cancelInventoryUpdate}
+                  onConfirm={() => void confirmInventoryUpdate()}
+                  pending={pendingInventoryUpdate}
+                  responsiveFont={responsiveFont}
+                  styles={styles}
+                />
+              ) : null}
+
+              {!hasUserMessage && !isInputLocked ? (
                 <View style={styles.promptRow}>
                   {[
                     'What should I work on next?',
                     'Help me pressure-test a buy',
+                    'Walk me through updating inventory',
                     'Remind me to list something',
                   ].map((prompt) => (
                     <Pressable
@@ -938,7 +1238,7 @@ export function FlipConversationalAssistantPanel({
                     accessibilityLabel="Message Flip"
                     autoCapitalize="sentences"
                     autoFocus
-                    editable
+                    editable={!isInputLocked}
                     onChangeText={(value) => {
                       markActivity();
                       setCommand(value);
@@ -955,11 +1255,11 @@ export function FlipConversationalAssistantPanel({
                 <Pressable
                   accessibilityLabel="Send message to Flip"
                   accessibilityRole="button"
-                  disabled={!command.trim() || isInteractionLocked}
+                  disabled={!command.trim() || isInputLocked}
                   onPress={() => void sendMessage()}
                   style={({ pressed }) => [
                     styles.sendButton,
-                    (!command.trim() || isInteractionLocked) && styles.sendButtonDisabled,
+                    (!command.trim() || isInputLocked) && styles.sendButtonDisabled,
                     pressed && styles.sendButtonPressed,
                   ]}>
                   {isInteractionLocked ? (
@@ -983,7 +1283,7 @@ export function FlipConversationalAssistantPanel({
                   <Pressable
                     accessibilityLabel="Refresh Flip workspace memory"
                     accessibilityRole="button"
-                    disabled={isLoading || isInteractionLocked}
+                    disabled={isLoading || isInputLocked}
                     onPress={() => {
                       markActivity();
                       void loadWorkspace();
@@ -1367,6 +1667,110 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontSize: 8,
       fontStyle: 'italic',
     },
+    inventoryUpdateCard: {
+      gap: 9,
+      padding: 11,
+      borderWidth: 1,
+      borderColor: 'rgba(242, 211, 138, 0.42)',
+      borderRadius: 13,
+      borderCurve: 'continuous',
+      backgroundColor: 'rgba(242, 211, 138, 0.08)',
+      boxShadow: '0 5px 16px rgba(0, 0, 0, 0.22)',
+    },
+    inventoryUpdateHeader: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: 8,
+    },
+    inventoryUpdateCopy: { flex: 1, gap: 3 },
+    inventoryUpdateLabel: {
+      color: theme.colors.goldBright,
+      fontSize: 7,
+      fontWeight: '900',
+      letterSpacing: 1.2,
+    },
+    inventoryUpdateTitle: {
+      color: theme.colors.cream,
+      fontSize: 12,
+      fontWeight: '900',
+    },
+    inventoryUpdateBadge: {
+      color: theme.colors.scannerCyan,
+      fontSize: 7,
+      fontWeight: '900',
+      letterSpacing: 0.9,
+    },
+    inventoryUpdateValues: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    inventoryUpdateValueBlock: {
+      flex: 1,
+      gap: 3,
+      minWidth: 0,
+    },
+    inventoryUpdateValueLabel: {
+      color: theme.colors.textMuted,
+      fontSize: 7,
+      fontWeight: '900',
+      letterSpacing: 0.8,
+    },
+    inventoryUpdateValue: {
+      color: theme.colors.text,
+      fontSize: 9,
+      fontWeight: '700',
+    },
+    inventoryUpdateProposed: {
+      color: theme.colors.goldBright,
+      fontSize: 10,
+      fontWeight: '900',
+    },
+    inventoryUpdateNote: {
+      color: theme.colors.textMuted,
+      fontSize: 8,
+      lineHeight: 12,
+    },
+    inventoryUpdateActions: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      gap: 7,
+    },
+    inventoryUpdateCancel: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 34,
+      paddingHorizontal: 9,
+      borderWidth: 1,
+      borderColor: 'rgba(173, 167, 178, 0.25)',
+      borderRadius: 9,
+      borderCurve: 'continuous',
+      backgroundColor: 'rgba(173, 167, 178, 0.07)',
+    },
+    inventoryUpdateCancelText: {
+      color: theme.colors.textMuted,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 0.7,
+    },
+    inventoryUpdateConfirm: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 34,
+      minWidth: 104,
+      paddingHorizontal: 11,
+      borderRadius: 9,
+      borderCurve: 'continuous',
+      backgroundColor: theme.colors.goldBright,
+    },
+    inventoryUpdateConfirmText: {
+      color: theme.colors.background,
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 0.7,
+    },
+    inventoryUpdatePressed: { opacity: 0.72 },
+    inventoryUpdateDisabled: { opacity: 0.45 },
     typingRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
     typingBubble: {
       minHeight: 34,

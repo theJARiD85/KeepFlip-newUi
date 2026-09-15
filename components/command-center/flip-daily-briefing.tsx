@@ -1,4 +1,3 @@
-import { Image } from 'expo-image';
 import { usePathname } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -38,8 +37,6 @@ import {
   getResellerBuyRules,
 } from '@/services/user-profile-onboarding-service';
 import { hasCompletedKeepFlipLaunchExperience } from '@/services/keepflip-launch-state-service';
-
-const FLIP_MASCOT_IMAGE = require('@/assets/images/flip-mascot.png');
 
 const DAILY_BRIEFING_PROMPT = [
   "Give me today's KeepFlip business briefing.",
@@ -225,6 +222,7 @@ export function FlipDailyBriefingLauncher() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const { height, responsiveFont, width } = useResponsiveLayout();
+  const { react } = useFlipCompanion();
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [briefing, setBriefing] = useState<BriefingResult | null>(null);
@@ -299,6 +297,7 @@ export function FlipDailyBriefingLauncher() {
       setTasks([]);
       setLoading(true);
       setVisible(true);
+      react('greeting');
 
       const [taskResult, rulesResult, cachedResult] = await Promise.allSettled([
         listAssistantTasks(userId),
@@ -380,7 +379,7 @@ export function FlipDailyBriefingLauncher() {
         inFlightDateRef.current = null;
       }
     };
-  }, [displayName, isHome, probe, userId]);
+  }, [displayName, isHome, probe, react, userId]);
 
   const closeBriefing = () => {
     const dateKey = briefingDateRef.current;
@@ -414,12 +413,9 @@ export function FlipDailyBriefingLauncher() {
         <View style={[styles.modalCard, { paddingTop: insets.top, paddingBottom: insets.bottom, maxHeight: modalMaxHeight - insets.top - insets.bottom, width: modalWidth }]}>
           <View style={styles.modalHeader}>
             <View style={styles.identityBlock}>
-              <Image
-                accessibilityLabel="Flip"
-                contentFit="contain"
-                source={FLIP_MASCOT_IMAGE}
-                style={styles.mascot}
-              />
+              <View accessibilityLabel="Flip" style={styles.companion}>
+                <FlipCompanion size={58} />
+              </View>
               <View style={styles.headerCopy}>
                 <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>FLIP / DAILY BRIEFING</Text>
                 <Text style={[styles.greeting, { fontSize: responsiveFont(21), lineHeight: 26 }]}>
@@ -535,7 +531,7 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 12,
   },
-  mascot: {
+  companion: {
     height: 58,
     width: 58,
   },

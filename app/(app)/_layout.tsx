@@ -12,6 +12,10 @@ import { Platform, StyleSheet, View } from 'react-native';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { FlipAssistantOverlay } from '@/components/command-center/flip-assistant-overlay';
 import { FlipDailyBriefingLauncher } from '@/components/command-center/flip-daily-briefing';
+import {
+  FlipGuidanceOverlay,
+  FlipGuidanceProvider,
+} from '@/components/command-center/flip-guidance-overlay';
 import { EbayConnectionProvider } from '@/components/ebay/ebay-connection-context';
 import { KeepFlipMenuProvider } from '@/components/navigation/keepflip-menu-context';
 import { KeepFlipSlideDownMenu } from '@/components/navigation/keepflip-slide-down-menu';
@@ -168,39 +172,42 @@ export default function AppShellLayout() {
         <ItemAnalysisResultProvider>
           <SourcingTripProvider>
             <KeepFlipSubscriptionProvider>
-              <NotificationNavigationObserver />
-              <SubscriptionAccessGate />
-              <WalkthroughAutoLauncher />
-              <KeepFlipSlideDownMenu />
-              <View style={styles.root}>
-                <Stack
-                  screenOptions={{
-                    animation: 'fade',
-                    contentStyle: {
-                      backgroundColor: keepFlipTheme.colors.backgroundDeep,
-                    },
-                    headerShown: false,
-                  }}>
-                  <Stack.Screen name="index" />
-                  <Stack.Screen name="scanner" />
-                  <Stack.Screen name="inventory" />
-                  <Stack.Screen name="analytics" />
-                  <Stack.Screen name="analysis" />
-                  <Stack.Screen name="analysis-result" />
-                  <Stack.Screen name="listing-guide" />
-                  <Stack.Screen name="repair-assist" />
-                  <Stack.Screen name="command-center" />
-                  <Stack.Screen name="flip-plan" />
-                  <Stack.Screen name="account" />
-                  <Stack.Screen name="ebay-connect" />
-                  <Stack.Screen name="ebay-account" />
-                  <Stack.Screen name="books" />
-                  <Stack.Screen name="market-research" />
-                  <Stack.Screen name="notifications" />
-                </Stack>
-                <FlipAssistantOverlay />
-                <FlipDailyBriefingLauncher />
-              </View>
+              <FlipGuidanceProvider>
+                <NotificationNavigationObserver />
+                <SubscriptionAccessGate />
+                <WalkthroughAutoLauncher />
+                <KeepFlipSlideDownMenu />
+                <View style={styles.root}>
+                  <Stack
+                    screenOptions={{
+                      animation: 'fade',
+                      contentStyle: {
+                        backgroundColor: keepFlipTheme.colors.backgroundDeep,
+                      },
+                      headerShown: false,
+                    }}>
+                    <Stack.Screen name="index" />
+                    <Stack.Screen name="scanner" />
+                    <Stack.Screen name="inventory" />
+                    <Stack.Screen name="analytics" />
+                    <Stack.Screen name="analysis" />
+                    <Stack.Screen name="analysis-result" />
+                    <Stack.Screen name="listing-guide" />
+                    <Stack.Screen name="repair-assist" />
+                    <Stack.Screen name="command-center" />
+                    <Stack.Screen name="flip-plan" />
+                    <Stack.Screen name="account" />
+                    <Stack.Screen name="ebay-connect" />
+                    <Stack.Screen name="ebay-account" />
+                    <Stack.Screen name="books" />
+                    <Stack.Screen name="market-research" />
+                    <Stack.Screen name="notifications" />
+                  </Stack>
+                  <FlipAssistantOverlay />
+                  <FlipDailyBriefingLauncher />
+                  <FlipGuidanceOverlay />
+                </View>
+              </FlipGuidanceProvider>
             </KeepFlipSubscriptionProvider>
           </SourcingTripProvider>
         </ItemAnalysisResultProvider>
