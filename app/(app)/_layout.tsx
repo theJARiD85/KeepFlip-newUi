@@ -11,6 +11,7 @@ import { Platform, StyleSheet, View } from 'react-native';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { FlipAssistantOverlay } from '@/components/command-center/flip-assistant-overlay';
+import { FlipDailyBriefingLauncher } from '@/components/command-center/flip-daily-briefing';
 import { EbayConnectionProvider } from '@/components/ebay/ebay-connection-context';
 import { KeepFlipMenuProvider } from '@/components/navigation/keepflip-menu-context';
 import { KeepFlipSlideDownMenu } from '@/components/navigation/keepflip-slide-down-menu';
@@ -198,6 +199,7 @@ export default function AppShellLayout() {
                   <Stack.Screen name="notifications" />
                 </Stack>
                 <FlipAssistantOverlay />
+                <FlipDailyBriefingLauncher />
               </View>
             </KeepFlipSubscriptionProvider>
           </SourcingTripProvider>
