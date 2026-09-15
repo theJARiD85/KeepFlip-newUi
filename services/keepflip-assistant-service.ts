@@ -125,10 +125,34 @@ export type AssistantReaction =
   | 'confused'
   | 'celebrate';
 
+export type AssistantAdvisoryMode =
+  | 'general'
+  | 'buy_decision'
+  | 'inventory'
+  | 'cash_flow'
+  | 'growth'
+  | 'seller_operations'
+  | 'financial_review';
+
+export type AssistantAdvisory = {
+  mode: AssistantAdvisoryMode;
+  recommendation: string;
+  evidence: Array<{
+    label: string;
+    value: string;
+    source: string;
+  }>;
+  assumptions: string[];
+  unknowns: string[];
+  nextAction: string;
+  confidence: 'low' | 'medium' | 'high';
+};
+
 export type KeepFlipAssistantReply = {
   reply: string;
   reaction: AssistantReaction;
   action: AssistantAction;
+  advisory?: AssistantAdvisory | null;
   source: 'cloud' | 'local';
 };
 
@@ -1040,7 +1064,79 @@ function normalizeAssistantReply(
     candidate.reaction === 'celebrate'
       ? candidate.reaction
       : 'acknowledge';
+  const advisoryCandidate = candidate.advisory;
+  const advisoryMode =
+    advisoryCandidate &&
+    typeof advisoryCandidate === 'object' &&
+    !Array.isArray(advisoryCandidate) &&
+    (advisoryCandidate as Record<string, unknown>).mode;
+  const advisory =
+    advisoryCandidate &&
+    typeof advisoryCandidate === 'object' &&
+    !Array.isArray(advisoryCandidate) &&
+    (advisoryMode === 'general' ||
+      advisoryMode === 'buy_decision' ||
+      advisoryMode === 'inventory' ||
+      advisoryMode === 'cash_flow' ||
+      advisoryMode === 'growth' ||
+      advisoryMode === 'seller_operations' ||
+      advisoryMode === 'financial_review')
+      ? (() => {
+          const entry = advisoryCandidate as Record<string, unknown>;
+          const recommendation = cleanText(
+            typeof entry.recommendation === 'string' ? entry.recommendation : null,
+            1_000,
+          );
+          const nextAction = cleanText(
+            typeof entry.nextAction === 'string' ? entry.nextAction : null,
+            500,
+          );
+          if (!recommendation || !nextAction) return null;
+          const list = (value: unknown, maximum: number) =>
+            Array.isArray(value)
+              ? value.slice(0, maximum).flatMap((item) => {
+                  const text = cleanText(typeof item === 'string' ? item : null, 300);
+                  return text ? [text] : [];
+                })
+              : [];
+          const evidence = Array.isArray(entry.evidence)
+            ? entry.evidence.slice(0, 6).flatMap((item) => {
+                if (!item || typeof item !== 'object' || Array.isArray(item)) return [];
+                const evidenceEntry = item as Record<string, unknown>;
+                const label = cleanText(
+                  typeof evidenceEntry.label === 'string' ? evidenceEntry.label : null,
+                  120,
+                );
+                const evidenceValue = cleanText(
+                  typeof evidenceEntry.value === 'string' ? evidenceEntry.value : null,
+                  240,
+                );
+                const source = cleanText(
+                  typeof evidenceEntry.source === 'string' ? evidenceEntry.source : null,
+                  120,
+                );
+                return label && evidenceValue && source
+                  ? [{ label, source, value: evidenceValue }]
+                  : [];
+                })
+              : [];
+          const confidence: AssistantAdvisory['confidence'] =
+            entry.confidence === 'low' || entry.confidence === 'high'
+              ? entry.confidence
+              : 'medium';
+          return {
+            assumptions: list(entry.assumptions, 5),
+            confidence,
+            evidence,
+            mode: advisoryMode as AssistantAdvisoryMode,
+            nextAction,
+            recommendation,
+            unknowns: list(entry.unknowns, 5),
+          };
+        })()
+      : null;
   return {
+    advisory,
     reply,
     reaction,
     action: normalizeAssistantAction(candidate.action),

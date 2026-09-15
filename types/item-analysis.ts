@@ -491,7 +491,7 @@ export type ItemMarketResearch = {
   suggestedDetails?: string[];
   answerMarkdown?: string | null;
   normalization?: {
-    method: 'openai_structured_outputs' | 'deterministic_fallback';
+    method: 'serpapi_json' | 'deterministic_fallback';
     model: string | null;
   } | null;
   quality?: {

@@ -381,7 +381,7 @@ export type SerpApiDisplayReadyResult = {
 };
 
 export type SerpApiNormalization = {
-  method: "openai_structured_outputs" | "deterministic_fallback";
+  method: "serpapi_json" | "deterministic_fallback";
   model: string | null;
 };
 
@@ -2253,10 +2253,7 @@ function normalizeNormalization(value: unknown): SerpApiNormalization | null {
   const source = asRecord(value);
   const method = asString(source?.method);
 
-  if (
-    method !== "openai_structured_outputs" &&
-    method !== "deterministic_fallback"
-  ) {
+  if (method !== "serpapi_json" && method !== "deterministic_fallback") {
     return null;
   }
 
