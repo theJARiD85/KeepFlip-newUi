@@ -47,6 +47,7 @@ import {
   ledgerEntryDetails,
   listResellerLedgerEntries,
   parseLedgerDate,
+  resolvedInventoryCostCents,
   summarizeResellerBooks,
   todayBusinessDate,
   type ResellerLedgerEntry,
@@ -1218,9 +1219,10 @@ export function BooksScreen() {
                       <Text style={[styles.itemOptionText, { fontSize: responsiveFont(12) }]}>No item linked</Text>
                     </Pressable>
                     {inventory.length ? (
-                      inventory.map((item) => {
-                        const selected = draft.itemId === item.id;
-                        return (
+                        inventory.map((item) => {
+                          const selected = draft.itemId === item.id;
+                          const itemCostCents = resolvedInventoryCostCents(item);
+                          return (
                           <Pressable
                             accessibilityRole="button"
                             accessibilityState={{ selected }}
@@ -1236,9 +1238,9 @@ export function BooksScreen() {
                             <Text numberOfLines={1} style={[styles.itemOptionText, { fontSize: responsiveFont(12) }]}>
                               {item.title}
                             </Text>
-                            {item.acquisitionCost != null ? (
+                            {itemCostCents > 0 ? (
                               <Text style={styles.itemOptionCost}>
-                                {formatMoney(Math.round(item.acquisitionCost * 100))}
+                                {formatMoney(itemCostCents)}
                               </Text>
                             ) : null}
                           </Pressable>

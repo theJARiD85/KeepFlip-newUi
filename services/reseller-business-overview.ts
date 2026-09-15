@@ -1,8 +1,9 @@
 import type { InventoryItem } from '@/services/inventory-service';
-import type {
-  ResellerLedgerDirection,
-  ResellerLedgerEntry,
-  ResellerLedgerEntryType,
+import {
+  resolvedInventoryCostCents,
+  type ResellerLedgerDirection,
+  type ResellerLedgerEntry,
+  type ResellerLedgerEntryType,
 } from '@/services/reseller-ledger-service';
 
 const DISPLAY_MONTH_COUNT = 6;
@@ -430,14 +431,8 @@ export function buildResellerBusinessOverview({
   let estimatedOnHandValueCents = 0;
 
   onHandItems.forEach((item) => {
-    const savedOnHandCostCents =
-      item.inventoryCostOnHand == null
-        ? null
-        : amountToCents(item.inventoryCostOnHand);
     const recordedPurchaseCents = purchaseCentsByItem.get(item.id) ?? 0;
-    const savedCostCents = amountToCents(item.acquisitionCost);
-    const costCents =
-      savedOnHandCostCents ?? (recordedPurchaseCents || savedCostCents);
+    const costCents = resolvedInventoryCostCents(item, recordedPurchaseCents);
 
     if (costCents > 0) {
       cashTiedUpCents += costCents;

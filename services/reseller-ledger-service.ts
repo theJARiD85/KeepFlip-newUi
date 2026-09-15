@@ -249,6 +249,32 @@ function entryIsActive(entry: ResellerLedgerEntry) {
   return !entry.voidedAt && entry.currency === 'USD' && entry.amountCents > 0;
 }
 
+function positiveAmountCents(amount: number | null | undefined) {
+  if (amount == null || !Number.isFinite(amount) || amount <= 0) return 0;
+
+  const cents = Math.round(amount * 100);
+  return Number.isSafeInteger(cents) && cents > 0 ? cents : 0;
+}
+
+/**
+ * Resolves the cost basis used for an item that is still on hand. The saved
+ * on-hand lot cost is authoritative for current inventory, followed by a
+ * linked Books purchase and then the legacy acquisition-cost field.
+ */
+export function resolvedInventoryCostCents(
+  item: Pick<InventoryItem, 'acquisitionCost' | 'inventoryCostOnHand'>,
+  linkedPurchaseCents = 0,
+) {
+  const onHandCostCents = positiveAmountCents(item.inventoryCostOnHand);
+  if (onHandCostCents > 0) return onHandCostCents;
+
+  if (Number.isSafeInteger(linkedPurchaseCents) && linkedPurchaseCents > 0) {
+    return linkedPurchaseCents;
+  }
+
+  return positiveAmountCents(item.acquisitionCost);
+}
+
 function inCurrentMonth(value: string, now: Date) {
   const date = new Date(value);
   return (
@@ -539,23 +565,24 @@ export function summarizeResellerBooks({
       );
     });
 
+  const onHandItems = inventory.filter(
+    (item) =>
+      item.quantityOnHand > 0 &&
+      !(saleItemIds.has(item.id) && item.quantityPurchased <= 1),
+  );
   let inventoryBasisCents = 0;
   let missingCostItemCount = 0;
-  inventory.forEach((item) => {
-    if (saleItemIds.has(item.id)) return;
+  onHandItems.forEach((item) => {
+    const costCents = resolvedInventoryCostCents(
+      item,
+      purchasesByItem.get(item.id) ?? 0,
+    );
 
-    const ledgerPurchaseCents = purchasesByItem.get(item.id) ?? 0;
-    if (ledgerPurchaseCents > 0) {
-      inventoryBasisCents += ledgerPurchaseCents;
-      return;
+    if (costCents > 0) {
+      inventoryBasisCents += costCents;
+    } else {
+      missingCostItemCount += 1;
     }
-
-    if (item.acquisitionCost != null && item.acquisitionCost > 0) {
-      inventoryBasisCents += Math.round(item.acquisitionCost * 100);
-      return;
-    }
-
-    missingCostItemCount += 1;
   });
 
   let realizedItemProfitCents = 0;
