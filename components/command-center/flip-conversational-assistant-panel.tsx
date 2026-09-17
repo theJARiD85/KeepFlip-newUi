@@ -162,10 +162,11 @@ function profileContextFromRules(
   };
 }
 
-type PendingInventoryUpdate = Extract<
-  AssistantAction,
-  { type: 'update_inventory_number' }
-> & {
+type PendingInventoryUpdate = {
+  type: 'update_inventory_number';
+  itemId: string;
+  field: InventoryNumberField;
+  value: number;
   item: InventoryItem;
 };
 
@@ -1005,9 +1006,6 @@ export function FlipConversationalAssistantPanel({
                 <Text style={[styles.onlineText, { fontSize: responsiveFont(7) }]}>{presenceLabel}</Text>
               </View>
               <Text style={[styles.title, { fontSize: responsiveFont(17) }]}>Talk it through with Flip</Text>
-              <Text style={[styles.subtitle, { fontSize: responsiveFont(10), lineHeight: 14 }]}>
-                A resale copilot that listens first, remembers your work, and helps with the next move.
-              </Text>
             </View>
             <View style={styles.headingActions}>
               <Pressable

@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import {
   useState,
+  useEffect,
   type ComponentProps,
   type ComponentRef,
   type RefObject,
@@ -29,11 +30,16 @@ import {
   KeepFlipTextInput as TextInput,
 } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import {
+  useResponsiveLayout,
+  useResponsiveStyles,
+} from '@/hooks/use-responsive-layout';
 import { getAppwriteCoreServices } from '@/lib/appwrite';
-import { responsiveWidth } from '@/lib/responsiveFont';
 import {
   KEEPFLIP_PLAN_DEFINITIONS,
+  linkKeepFlipPreAccountPurchase,
+  loadKeepFlipPreAccountSubscriptionAccess,
+  purchaseKeepFlipPlanBeforeAccount,
   purchaseKeepFlipPlan,
   type KeepFlipBillingCadence,
   type KeepFlipPlanId,
@@ -41,7 +47,6 @@ import {
 import type { ResellerBuyRules } from '@/services/reseller-buy-rules-service';
 import { completeScanInventoryWalkthrough } from '@/services/user-profile-onboarding-service';
 
-import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export type AuthSubscriptionSelection = {
   cadence: KeepFlipBillingCadence;
   plan: KeepFlipPlanId;
@@ -123,10 +128,12 @@ function AuthField({
 }
 
 function PlanSelection({
+  beforeAccount = false,
   value,
   onChange,
   migrationMode = false,
 }: {
+  beforeAccount?: boolean;
   value: AuthSubscriptionSelection;
   onChange: (next: AuthSubscriptionSelection) => void;
   migrationMode?: boolean;
@@ -155,8 +162,9 @@ function PlanSelection({
               : '7 DAYS FREE ON EITHER BILLING OPTION'}
           </Text>
           <Text style={[styles.checkoutBannerBody, { fontSize: responsiveFont(12) }]}>
-            Choose a plan now. After your KeepFlip account is created, the
-            selected plan opens its Google Play signup sheet right here.
+            {beforeAccount
+              ? 'Choose a plan first. Google Play must confirm the subscription before KeepFlip creates your account session. Your account details come next.'
+              : 'Choose a plan now. After your KeepFlip account is created, the selected plan opens its Google Play signup sheet right here.'}
           </Text>
         </View>
       </View>
@@ -354,6 +362,7 @@ export function KeepFlipLaunchAuthScreen({
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const {
+    createAccount,
     errorMessage,
     isBusy,
     missingKeys,
@@ -376,13 +385,36 @@ export function KeepFlipLaunchAuthScreen({
   });
   const [localError, setLocalError] = useState<string | null>(null);
   const [createdUserId, setCreatedUserId] = useState<string | null>(null);
+  const [preAccountSubscriptionActive, setPreAccountSubscriptionActive] =
+    useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [profileSavedForAccount, setProfileSavedForAccount] = useState(true);
 
-  const showPlanSelection = migrationMode;
+  const isPreAccountSignup =
+    mode === 'create-account' && !migrationMode && Boolean(initialBuyRules);
+  const showPlanSelection = migrationMode || isPreAccountSignup;
   const accountReady =
     mode === 'create-account' &&
     Boolean(createdUserId || (status === 'signed-in' && user?.$id));
+  const needsPreAccountSubscription =
+    isPreAccountSignup && !preAccountSubscriptionActive && !accountReady;
+
+  useEffect(() => {
+    if (!isPreAccountSignup) return;
+
+    let cancelled = false;
+    void loadKeepFlipPreAccountSubscriptionAccess()
+      .then((access) => {
+        if (!cancelled && access?.active) {
+          setPreAccountSubscriptionActive(true);
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isPreAccountSignup]);
 
   const submit = async () => {
     if (isBusy || isSubmitting || status === 'setup') return;
@@ -391,7 +423,7 @@ export function KeepFlipLaunchAuthScreen({
     const normalizedName = name.trim();
     setLocalError(null);
 
-    if (mode === 'sign-in' || !accountReady) {
+    if (!needsPreAccountSubscription && (mode === 'sign-in' || !accountReady)) {
       if (!EMAIL_PATTERN.test(normalizedEmail)) {
         setLocalError('Enter a valid email address.');
         return;
@@ -402,7 +434,11 @@ export function KeepFlipLaunchAuthScreen({
       }
     }
 
-    if (mode === 'create-account' && !accountReady) {
+    if (
+      !needsPreAccountSubscription &&
+      mode === 'create-account' &&
+      !accountReady
+    ) {
       if (normalizedName.length < 2) {
         setLocalError('Flip still needs the name you want shown on your account.');
         return;
@@ -415,6 +451,22 @@ export function KeepFlipLaunchAuthScreen({
 
     setIsSubmitting(true);
     try {
+      if (needsPreAccountSubscription) {
+        const access = await purchaseKeepFlipPlanBeforeAccount(
+          selection.plan,
+          selection.cadence,
+        );
+        if (!access.active) {
+          throw new Error(
+            'KeepFlip could not confirm an active subscription from Google Play. Try again or restore purchases.',
+          );
+        }
+
+        setPreAccountSubscriptionActive(true);
+        setLocalError(null);
+        return;
+      }
+
       if (mode === 'sign-in') {
         await signIn(normalizedEmail, password);
         void Haptics.notificationAsync(
@@ -428,13 +480,32 @@ export function KeepFlipLaunchAuthScreen({
         createdUserId || (status === 'signed-in' ? user?.$id ?? null : null);
       let profileSaved = profileSavedForAccount;
 
-      if (!accountUserId) {
-        await signUp(normalizedName, normalizedEmail, password);
+      if (isPreAccountSignup) {
+        if (!preAccountSubscriptionActive) {
+          throw new Error(
+            'Complete the Google Play subscription before creating your KeepFlip session.',
+          );
+        }
+
+        if (!accountUserId) {
+          const createdUser = await createAccount(
+            normalizedName,
+            normalizedEmail,
+            password,
+          );
+          accountUserId = createdUser.$id;
+          setCreatedUserId(accountUserId);
+        }
+
+        // Linking occurs before signIn(). If linking or sign-in fails, the
+        // account remains sessionless and the same screen can retry safely.
+        await linkKeepFlipPreAccountPurchase(accountUserId);
+        if (status !== 'signed-in') {
+          await signIn(normalizedEmail, password);
+        }
+
         const { account } = getAppwriteCoreServices();
         const currentUser = await account.get();
-        accountUserId = currentUser.$id;
-        setCreatedUserId(accountUserId);
-
         if (initialBuyRules) {
           try {
             await completeScanInventoryWalkthrough(
@@ -453,17 +524,44 @@ export function KeepFlipLaunchAuthScreen({
             }
           }
         }
-      }
+      } else {
+        if (!accountUserId) {
+          await signUp(normalizedName, normalizedEmail, password);
+          const { account } = getAppwriteCoreServices();
+          const currentUser = await account.get();
+          accountUserId = currentUser.$id;
+          setCreatedUserId(accountUserId);
 
-      const access = await purchaseKeepFlipPlan(
-        accountUserId,
-        selection.plan,
-        selection.cadence,
-      );
-      if (!access.active) {
-        throw new Error(
-          'KeepFlip could not confirm the subscription after the store purchase. Try again or restore purchases.',
+          if (initialBuyRules) {
+            try {
+              await completeScanInventoryWalkthrough(
+                accountUserId,
+                currentUser.name || normalizedName,
+                initialBuyRules,
+              );
+            } catch (error) {
+              profileSaved = false;
+              setProfileSavedForAccount(false);
+              if (__DEV__) {
+                console.warn(
+                  '[KeepFlip][Onboarding] Seller setup could not be saved after account creation:',
+                  error,
+                );
+              }
+            }
+          }
+        }
+
+        const access = await purchaseKeepFlipPlan(
+          accountUserId,
+          selection.plan,
+          selection.cadence,
         );
+        if (!access.active) {
+          throw new Error(
+            'KeepFlip could not confirm the subscription after the store purchase. Try again or restore purchases.',
+          );
+        }
       }
 
       void Haptics.notificationAsync(
@@ -480,7 +578,9 @@ export function KeepFlipLaunchAuthScreen({
         );
       setLocalError(
         wasCancelled
-          ? 'The Google Play signup was canceled. Your KeepFlip account is ready; choose a plan and try again.'
+          ? needsPreAccountSubscription
+            ? 'The Google Play signup was canceled. No KeepFlip account or session was created.'
+            : 'The Google Play signup was canceled. Your KeepFlip account is ready; choose a plan and try again.'
           : error instanceof Error
             ? error.message
             : 'KeepFlip could not complete authentication and subscription signup. Please try again.',
@@ -538,6 +638,8 @@ export function KeepFlipLaunchAuthScreen({
             <Text style={[styles.subtitle, { fontSize: responsiveFont(13) }]}>
               {migrationMode
                 ? 'Sign in to your existing KeepFlip account, then choose the tier you want to try.'
+                : isPreAccountSignup
+                  ? 'Choose and activate your Google Play subscription first. Only then will Flip ask for the login details that create your KeepFlip session.'
                 : mode === 'create-account'
                   ? 'Flip has your seller setup. Add your login details and choose how you want KeepFlip to work for you.'
                   : 'Sign in to continue to your KeepFlip command center.'}
@@ -555,7 +657,12 @@ export function KeepFlipLaunchAuthScreen({
             ) : null}
 
             {showPlanSelection ? (
-              <PlanSelection migrationMode={migrationMode} value={selection} onChange={setSelection} />
+              <PlanSelection
+                beforeAccount={isPreAccountSignup}
+                migrationMode={migrationMode}
+                value={selection}
+                onChange={setSelection}
+              />
             ) : null}
 
             {setupRequired ? (
@@ -598,7 +705,7 @@ export function KeepFlipLaunchAuthScreen({
               </View>
             ) : null}
 
-            {!accountReady ? (
+            {!accountReady && !needsPreAccountSubscription ? (
               <View style={styles.form}>
                 {mode === 'create-account' && !initialName ? (
                   <AuthField
@@ -666,7 +773,9 @@ export function KeepFlipLaunchAuthScreen({
                   size={18}
                 />
                 <Text style={[styles.accountReadyText, { fontSize: responsiveFont(12) }]}>
-                  Your KeepFlip account is ready. Continue to open Google Play for the selected plan.
+                  {isPreAccountSignup
+                    ? 'Your subscription is active. Finish the secure sign-in step to open KeepFlip.'
+                    : 'Your KeepFlip account is ready. Continue to open Google Play for the selected plan.'}
                 </Text>
               </View>
             )}
@@ -681,7 +790,17 @@ export function KeepFlipLaunchAuthScreen({
                 <ActivityIndicator color={theme.colors.backgroundDeep} size="small" />
               ) : (
                 <>
-                  <Text style={[styles.submitText, { fontSize: responsiveFont(11) }]}>{mode === 'sign-in' ? 'ENTER KEEPFLIP' : accountReady ? 'START SELECTED PLAN' : 'CREATE ACCOUNT & START TRIAL'}</Text>
+                  <Text style={[styles.submitText, { fontSize: responsiveFont(11) }]}>
+                    {mode === 'sign-in'
+                      ? 'ENTER KEEPFLIP'
+                      : needsPreAccountSubscription
+                        ? 'CONTINUE TO GOOGLE PLAY'
+                        : isPreAccountSignup
+                          ? 'CREATE ACCOUNT & ENTER KEEPFLIP'
+                          : accountReady
+                            ? 'START SELECTED PLAN'
+                            : 'CREATE ACCOUNT & START TRIAL'}
+                  </Text>
                   <IconSymbol color={theme.colors.backgroundDeep} name="arrow.right" size={19} />
                 </>
               )}

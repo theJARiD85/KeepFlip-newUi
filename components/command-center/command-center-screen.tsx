@@ -17,6 +17,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
+import { AiPreferencesPanel } from '@/components/command-center/ai-preferences-panel';
 import { BusinessPulse } from '@/components/command-center/business-pulse';
 import { SellerOperationsPanel } from '@/components/command-center/seller-operations-panel';
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
@@ -70,7 +71,7 @@ type EbayConnectionViewState =
   | 'disconnected'
   | 'error';
 
-type CommandCenterTab = 'pulse' | 'operations';
+type CommandCenterTab = 'pulse' | 'operations' | 'ai-preferences';
 
 function bookkeepingEventsForBusinessPulse(
   ownerId: string,
@@ -236,9 +237,11 @@ export function CommandCenterScreen() {
   const {
     openReviewQueue: openReviewQueueParam,
     openSellerOperations: openSellerOperationsParam,
+    openAiPreferences: openAiPreferencesParam,
   } = useLocalSearchParams<{
     openReviewQueue?: string | string[];
     openSellerOperations?: string | string[];
+    openAiPreferences?: string | string[];
   }>();
   const insets = useSafeAreaInsets();
   const { user } = useKeepFlipAuth();
@@ -279,6 +282,9 @@ export function CommandCenterScreen() {
   const shouldOpenSellerOperations = Array.isArray(openSellerOperationsParam)
     ? openSellerOperationsParam[0] === '1'
     : openSellerOperationsParam === '1';
+  const shouldOpenAiPreferences = Array.isArray(openAiPreferencesParam)
+    ? openAiPreferencesParam[0] === '1'
+    : openAiPreferencesParam === '1';
   const {
     contentWidth,
     controlDockWidth,
@@ -507,6 +513,12 @@ export function CommandCenterScreen() {
     const timer = setTimeout(() => setCommandCenterTab('operations'), 0);
     return () => clearTimeout(timer);
   }, [shouldOpenSellerOperations, user?.$id]);
+
+  useEffect(() => {
+    if (!shouldOpenAiPreferences || !user?.$id) return;
+    const timer = setTimeout(() => setCommandCenterTab('ai-preferences'), 0);
+    return () => clearTimeout(timer);
+  }, [shouldOpenAiPreferences, user?.$id]);
 
   const chooseReview = (review: BookkeepingReviewItem) => {
     hapticSelection();
@@ -747,12 +759,28 @@ export function CommandCenterScreen() {
             ]}>
             <Text style={[styles.commandTabLabel, commandCenterTab === 'operations' && styles.commandTabLabelActive, { fontSize: responsiveFont(9) }]}>SELLER OPERATIONS</Text>
           </Pressable>
+          <Pressable
+            accessibilityRole="tab"
+            accessibilityState={{ selected: commandCenterTab === 'ai-preferences' }}
+            onPress={() => {
+              hapticSelection();
+              setCommandCenterTab('ai-preferences');
+            }}
+            style={({ pressed }) => [
+              styles.commandTab,
+              commandCenterTab === 'ai-preferences' && styles.commandTabActive,
+              pressed && styles.commandTabPressed,
+            ]}>
+            <Text style={[styles.commandTabLabel, commandCenterTab === 'ai-preferences' && styles.commandTabLabelActive, { fontSize: responsiveFont(9) }]}>AI PREFERENCES</Text>
+          </Pressable>
         </View>
 
         {commandCenterTab === 'operations' ? (
           <Animated.View entering={FadeInDown.duration(260).delay(60)} style={styles.operationsTab}>
             <SellerOperationsPanel key={user.$id} embedded ownerId={user.$id} />
           </Animated.View>
+        ) : commandCenterTab === 'ai-preferences' ? (
+          <AiPreferencesPanel key={user.$id} ownerId={user.$id} />
         ) : (
           <>
         <Animated.View entering={FadeInDown.duration(260).delay(60)} style={styles.section}>
@@ -931,10 +959,14 @@ export function CommandCenterScreen() {
           <View style={styles.settingsList}>
             <KeepFlipControlRow
               accent="violet"
-              description="Analysis defaults and evidence guidance will appear here."
+              accessibilityHint="Opens editable memories and response guidance for Flip."
+              description="Edit what Flip remembers and the specifics it should consider in responses and suggestions."
               icon="bolt.fill"
               label="AI preferences"
-              staticLabel="COMING SOON"
+              onPress={() => {
+                hapticSelection();
+                setCommandCenterTab('ai-preferences');
+              }}
             />
             <KeepFlipControlRow
               accent="cyan"

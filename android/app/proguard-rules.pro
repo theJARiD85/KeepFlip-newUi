@@ -11,6 +11,13 @@
 -keep class com.swmansion.reanimated.** { *; }
 -keep class com.facebook.react.turbomodule.** { *; }
 
+# react-native-screens' ScreenContainer overrides requestLayout(), and Android
+# can dispatch that override from ViewGroup's constructor before the Kotlin
+# layout callback field is initialized. The upstream source intentionally
+# guards that callback, so keep this class from R8 optimizing away the guard
+# in minified release builds.
+-keep class com.swmansion.rnscreens.ScreenContainer { *; }
+
 # Add any project specific keep options here:
 -keep class com.tenjin.** { *; }
 -keep public class com.google.android.gms.ads.identifier.** { *; }

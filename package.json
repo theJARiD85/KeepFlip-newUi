@@ -2,7 +2,7 @@
   "name": "keepflip",
   "slug": "keepflip",
   "main": "expo-router/entry",
-  "version": "2.1.3",
+  "version": "2.1.4",
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",

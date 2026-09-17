@@ -60,6 +60,12 @@ export type KeepFlipAuthContextValue = {
   missingKeys: AppwriteCoreRequiredEnvironmentVariable[];
   isBusy: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  /** Create the Appwrite account without creating an authenticated session. */
+  createAccount: (
+    name: string,
+    email: string,
+    password: string,
+  ) => Promise<Models.User>;
   signUp: (name: string, email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -491,6 +497,71 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
     [beginOperation, commit, finishOperation],
   );
 
+  const createAccount = useCallback(
+    async (name: string, email: string, password: string) => {
+      if (!beginOperation()) {
+        throw new KeepFlipAuthError(
+          'KeepFlip is already processing an authentication request.',
+          'AUTH_REQUEST_FAILED',
+        );
+      }
+
+      try {
+        const configurationStatus = getAppwriteCoreConfigurationStatus();
+        if (!configurationStatus.configured) {
+          commit(setupSnapshot(configurationStatus.missingKeys));
+          throw new KeepFlipAuthError(
+            'KeepFlip sign-in has not been configured yet.',
+            'AUTH_SETUP_REQUIRED',
+          );
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
+        const normalizedName = name.trim();
+        if (!normalizedEmail || password.length < 8) {
+          throw new KeepFlipAuthError(
+            'Use a valid email and a password with at least 8 characters.',
+            'AUTH_INVALID_INPUT',
+          );
+        }
+
+        // Account creation is intentionally sessionless. The subscription-first
+        // onboarding flow links the completed store purchase before it calls
+        // signIn(), so canceling checkout cannot leave a reusable session.
+        commit(signedOutSnapshot());
+        await clearCurrentAppwriteSession();
+        const { account } = getAppwriteCoreServices();
+        const user = await account.create({
+          userId: ID.unique(),
+          email: normalizedEmail,
+          password,
+          name: normalizedName || undefined,
+        });
+
+        commit(signedOutSnapshot());
+        return user;
+      } catch (error) {
+        const safeError = safeAuthError(error, 'sign-up');
+        if (safeError.code === 'AUTH_SETUP_REQUIRED') {
+          const configurationStatus = getAppwriteCoreConfigurationStatus();
+          commit(
+            setupSnapshot(
+              configurationStatus.configured
+                ? []
+                : configurationStatus.missingKeys,
+            ),
+          );
+        } else {
+          commit(signedOutSnapshot(safeError.message));
+        }
+        throw safeError;
+      } finally {
+        finishOperation();
+      }
+    },
+    [beginOperation, commit, finishOperation],
+  );
+
   const signUp = useCallback(
     async (name: string, email: string, password: string) => {
       if (!beginOperation()) {
@@ -651,13 +722,14 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
     () => ({
       ...snapshot,
       isBusy,
+      createAccount,
       signIn,
       signUp,
       signOut,
       refresh,
       retry: refresh,
     }),
-    [isBusy, refresh, signIn, signOut, signUp, snapshot],
+    [createAccount, isBusy, refresh, signIn, signOut, signUp, snapshot],
   );
 
   return <KeepFlipAuthContext value={value}>{children}</KeepFlipAuthContext>;

@@ -308,7 +308,9 @@ export function areKeepFlipSubscriptionsConfigured() {
 }
 
 export function areKeepFlipSubscriptionsEnforced() {
-  return process.env.EXPO_PUBLIC_KEEPFLIP_SUBSCRIPTIONS_ENFORCED === 'true';
+  // Fail closed if a production build forgets to include the public flag.
+  // Server-side Functions remain the real enforcement boundary.
+  return process.env.EXPO_PUBLIC_KEEPFLIP_SUBSCRIPTIONS_ENFORCED !== 'false';
 }
 
 async function syncRevenueCatTenjinIdentity(userId: string) {
@@ -945,6 +947,31 @@ async function ensureRevenueCatUser(userId: string) {
   return true;
 }
 
+async function ensureRevenueCatAnonymousUser() {
+  const apiKey = platformApiKey();
+  if (!apiKey) return false;
+
+  const alreadyConfigured = await Purchases.isConfigured();
+  if (!alreadyConfigured) {
+    // Omitting appUserID makes RevenueCat create and persist an anonymous
+    // customer. That lets Google Play confirm the purchase before KeepFlip
+    // creates an Appwrite account or session.
+    Purchases.configure({ apiKey });
+    configuredForUserId = null;
+    await Purchases.setLogLevel(LOG_LEVEL.WARN);
+    return true;
+  }
+
+  const currentUserId = await Purchases.getAppUserID();
+  if (currentUserId && !currentUserId.startsWith('$RCAnonymousID:')) {
+    // Never put a new signup's purchase on the last signed-in KeepFlip user.
+    await Purchases.logOut();
+    configuredForUserId = null;
+  }
+
+  return true;
+}
+
 function configuredOffering(offerings: Awaited<ReturnType<typeof Purchases.getOfferings>>) {
   return (
     offerings.all[KEEPFLIP_SUBSCRIPTION_OFFERING_ID] ??
@@ -1295,17 +1322,10 @@ export async function subscribeToKeepFlipEntitlementUpdates(
   return realtime.subscribe(channels, () => listener());
 }
 
-export async function purchaseKeepFlipPlan(
-  userId: string,
+async function purchaseConfiguredKeepFlipPlan(
   plan: KeepFlipPlanId,
   cadence: KeepFlipBillingCadence,
 ) {
-  if (!(await ensureRevenueCatUser(userId))) {
-    throw new Error(
-      'KeepFlip subscriptions are not configured in this build yet.',
-    );
-  }
-
   const offerings = await Purchases.getOfferings();
   const offering = configuredOffering(offerings);
   if (!offering) {
@@ -1361,6 +1381,65 @@ export async function purchaseKeepFlipPlan(
   });
   trackTenjinEvent('subscription_purchase_completed');
   return subscriptionAccessFromCustomerInfo(result.customerInfo);
+}
+
+export async function purchaseKeepFlipPlan(
+  userId: string,
+  plan: KeepFlipPlanId,
+  cadence: KeepFlipBillingCadence,
+) {
+  if (!(await ensureRevenueCatUser(userId))) {
+    throw new Error(
+      'KeepFlip subscriptions are not configured in this build yet.',
+    );
+  }
+
+  return purchaseConfiguredKeepFlipPlan(plan, cadence);
+}
+
+/**
+ * Start a new-account purchase while no Appwrite session exists. The native
+ * store purchase is attached to RevenueCat's anonymous customer and is linked
+ * to the newly created KeepFlip user only after the store reports active
+ * access.
+ */
+export async function purchaseKeepFlipPlanBeforeAccount(
+  plan: KeepFlipPlanId,
+  cadence: KeepFlipBillingCadence,
+) {
+  if (!(await ensureRevenueCatAnonymousUser())) {
+    throw new Error(
+      'KeepFlip subscriptions are not configured in this build yet.',
+    );
+  }
+
+  return purchaseConfiguredKeepFlipPlan(plan, cadence);
+}
+
+/**
+ * Attach an anonymous onboarding purchase to its Appwrite user. This call does
+ * not create an Appwrite session; the caller must create that session only
+ * after the purchase has already returned active access.
+ */
+export async function linkKeepFlipPreAccountPurchase(userId: string) {
+  if (!(await ensureRevenueCatUser(userId))) {
+    throw new Error(
+      'KeepFlip subscriptions are not configured in this build yet.',
+    );
+  }
+}
+
+/**
+ * Recover a completed anonymous store purchase after the app was closed before
+ * account details were entered. It is intentionally local store metadata;
+ * server entitlement authority begins after the purchase is linked to the
+ * authenticated KeepFlip user.
+ */
+export async function loadKeepFlipPreAccountSubscriptionAccess() {
+  if (!(await ensureRevenueCatAnonymousUser())) return null;
+
+  const customerInfo = await Purchases.getCustomerInfo();
+  return subscriptionAccessFromCustomerInfo(customerInfo);
 }
 
 /**
