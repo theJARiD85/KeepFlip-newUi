@@ -1,6 +1,7 @@
 import "react-native-url-polyfill/auto";
 import {
   DarkTheme,
+  DefaultTheme,
   ThemeProvider,
 } from "expo-router/react-navigation";
 import { useFonts } from "expo-font";
@@ -18,6 +19,7 @@ import {
   KeepFlipAuthProvider,
   useKeepFlipAuth,
 } from "@/components/auth/keepflip-auth-context";
+import { KeepFlipAppearanceProvider, useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import {
   KeepFlipSubscriptionProvider,
   useKeepFlipSubscription,
@@ -30,7 +32,9 @@ import { KeepFlipFeedbackNudgeProvider } from "@/components/feedback/keepflip-fe
 import { KeepFlipPushRegistration } from '@/components/notifications/keepflip-push-registration';
 import KeepFlipLaunchExperience from "@/components/intro/keepflip-launch-experience.native";
 import { KeepFlipMinimumVersionGate } from '@/components/update/keepflip-minimum-version-gate';
-import { keepFlipTheme } from "@/constants/keepflip-theme";
+import {
+  getKeepFlipThemeColors,
+} from "@/constants/keepflip-theme";
 import { configureKeepFlipNotificationHandler } from '@/services/keepflip-notification-service';
 import { areKeepFlipSubscriptionsEnforced } from '@/services/keepflip-subscription-service';
 import { initializeTenjinAtLaunch } from '@/services/tenjin-attribution-service';
@@ -52,6 +56,8 @@ function ProtectedRootStack() {
 
   const isSignedIn =
     status === "signed-in";
+  const { effectiveColorScheme } = useKeepFlipAppearance();
+  const appearanceColors = getKeepFlipThemeColors(effectiveColorScheme);
 
   const {
     snapshot: subscriptionSnapshot,
@@ -88,8 +94,7 @@ function ProtectedRootStack() {
       screenOptions={{
         animation: "fade",
         contentStyle: {
-          backgroundColor:
-            keepFlipTheme.colors.backgroundDeep,
+          backgroundColor: appearanceColors.backgroundDeep,
 
         },
         headerShown: false,
@@ -130,7 +135,9 @@ function ProtectedRootStack() {
   );
 }
 
-export default function RootLayout() {
+function RootLayoutContent() {
+  const { effectiveColorScheme } = useKeepFlipAppearance();
+  const appearanceColors = getKeepFlipThemeColors(effectiveColorScheme);
   const [
     launchVisible,
     setLaunchVisible,
@@ -203,25 +210,25 @@ export default function RootLayout() {
   }
 
   const navigationTheme = {
-    ...DarkTheme,
+    ...(effectiveColorScheme === 'dark' ? DarkTheme : DefaultTheme),
 
     colors: {
-      ...DarkTheme.colors,
+      ...(effectiveColorScheme === 'dark' ? DarkTheme.colors : DefaultTheme.colors),
 
       background:
-        keepFlipTheme.colors.background,
+        appearanceColors.background,
 
       card:
-        keepFlipTheme.colors.backgroundRaised,
+        appearanceColors.backgroundRaised,
 
       border:
-        keepFlipTheme.colors.surfaceSoft,
+        appearanceColors.surfaceSoft,
 
       primary:
-        keepFlipTheme.colors.gold,
+        appearanceColors.gold,
 
       text:
-        keepFlipTheme.colors.text,
+        appearanceColors.text,
     },
   };
 
@@ -261,7 +268,7 @@ export default function RootLayout() {
               <StatusBar
                 animated
                 hidden={launchVisible}
-                style="light"
+                style={effectiveColorScheme === 'dark' ? 'light' : 'dark'}
               />
             </ThemeProvider>
           </FlipCompanionProvider>
@@ -269,5 +276,13 @@ export default function RootLayout() {
         </GestureHandlerRootView>
       </SafeAreaProvider>
     </View>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <KeepFlipAppearanceProvider>
+      <RootLayoutContent />
+    </KeepFlipAppearanceProvider>
   );
 }

@@ -995,7 +995,7 @@ export function FlipConversationalAssistantPanel({
             styles.expandedContent,
             isOverlay && styles.overlayExpandedContent,
           ]}>
-          <View style={styles.heading}>
+          <View style={[styles.heading, isOverlay && styles.overlayHeading]}>
             <View style={styles.headingAvatar}>
               <FlipCompanion size={46} />
             </View>
@@ -1026,6 +1026,7 @@ export function FlipConversationalAssistantPanel({
               <Pressable
                 accessibilityLabel="Collapse Flip assistant"
                 accessibilityRole="button"
+                hitSlop={8}
                 onPress={collapseAssistant}
                 style={({ pressed }) => [
                   styles.closeButton,
@@ -1226,12 +1227,12 @@ export function FlipConversationalAssistantPanel({
 
               <View style={styles.inputRow}>
                 <View style={styles.inputShell}>
-                  <Image
+                  <View
                     accessibilityLabel="Flip"
-                    contentFit="cover"
-                    source={FLIP_MASCOT_IMAGE}
-                    style={styles.inputAvatar}
-                  />
+                    accessible
+                    style={styles.inputAvatar}>
+                    <FlipCompanion size={25} />
+                  </View>
                   <TextInput
                     accessibilityLabel="Message Flip"
                     autoCapitalize="sentences"
@@ -1254,6 +1255,7 @@ export function FlipConversationalAssistantPanel({
                   accessibilityLabel="Send message to Flip"
                   accessibilityRole="button"
                   disabled={!command.trim() || isInputLocked}
+                  hitSlop={4}
                   onPress={() => void sendMessage()}
                   style={({ pressed }) => [
                     styles.sendButton,
@@ -1452,6 +1454,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       minHeight: 0,
     },
     heading: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    // The always-visible navigation trigger occupies the top-right corner of
+    // the overlay. Keep the assistant actions out of its hit area when open.
+    overlayHeading: { paddingRight: 58 },
     headingAvatar: {
       width: 46,
       height: 46,
@@ -1826,7 +1831,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontSize: 12,
     },
     sendButton: {
-      width: 48,
+      width: 44,
+      height: 44,
+      alignSelf: 'center',
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: 12,
@@ -1949,6 +1956,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
         height: responsiveHeight(46),
       },
     ],
+    overlayHeading: [
+      staticStyles.overlayHeading,
+      {
+        paddingRight: responsiveWidth(58),
+      },
+    ],
     eyebrow: [
       staticStyles.eyebrow,
       {
@@ -2022,7 +2035,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     sendButton: [
       staticStyles.sendButton,
       {
-        width: responsiveWidth(48),
+        width: responsiveWidth(44),
+        height: responsiveHeight(44),
       },
     ],
     memoryLabel: [

@@ -56,7 +56,6 @@ export type AuthSubscriptionSelection = {
 type LaunchAuthMode = 'sign-in' | 'create-account';
 
 type KeepFlipLaunchAuthScreenProps = {
-  accountModeLocked?: boolean;
   initialBuyRules?: ResellerBuyRules | null;
   initialMode: LaunchAuthMode;
   initialName?: string;
@@ -343,7 +342,6 @@ function MigrationNotice() {
 }
 
 export function KeepFlipLaunchAuthScreen({
-  accountModeLocked = false,
   initialBuyRules,
   initialMode,
   initialName,
@@ -372,7 +370,9 @@ export function KeepFlipLaunchAuthScreen({
     status,
     user,
   } = useKeepFlipAuth();
-  const [mode, setMode] = useState<LaunchAuthMode>(initialMode);
+  // The route that opens this screen owns the auth mode. Keeping it immutable
+  // prevents sign-in and account creation from becoming interchangeable tabs.
+  const mode = initialMode;
   const [name, setName] = useState(initialName?.trim() ?? '');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -674,27 +674,6 @@ export function KeepFlipLaunchAuthScreen({
               </View>
             ) : null}
 
-            {!accountModeLocked ? (
-              <View style={styles.modeSwitch}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: mode === 'sign-in' }}
-                  disabled={isBusy}
-                  onPress={() => setMode('sign-in')}
-                  style={[styles.modeButton, mode === 'sign-in' && styles.modeButtonActive]}>
-                  <Text style={[styles.modeText, mode === 'sign-in' && styles.modeTextActive]}>SIGN IN</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: mode === 'create-account' }}
-                  disabled={isBusy}
-                  onPress={() => setMode('create-account')}
-                  style={[styles.modeButton, mode === 'create-account' && styles.modeButtonActive]}>
-                  <Text style={[styles.modeText, mode === 'create-account' && styles.modeTextActive]}>CREATE ACCOUNT</Text>
-                </Pressable>
-              </View>
-            ) : null}
-
             {!accountReady && !needsPreAccountSubscription ? (
               <View style={styles.form}>
                 {mode === 'create-account' && !initialName ? (
@@ -821,8 +800,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     billingOptionTextSelected: { color: theme.colors.goldBright },
     billingToggle: { backgroundColor: 'rgba(1, 1, 2, 0.72)', borderColor: 'rgba(242, 237, 228, 0.14)', borderRadius: 13, borderWidth: 1, flexDirection: 'row', gap: 4, padding: 4 },
     brandEyebrow: { color: theme.colors.gold, fontFamily: theme.fonts.radar, fontSize: 9, letterSpacing: 1.3 },
-    brandLogo: { height: 52, width: 52 },
-    brandMark: { alignItems: 'center', backgroundColor: 'rgba(5, 4, 5, 0.65)', borderColor: 'rgba(224, 172, 75, 0.25)', borderRadius: 28, borderWidth: 1, height: 60, justifyContent: 'center', width: 60 },
+    brandLogo: { height: 160, width: 160 },
+    brandMark: { alignItems: 'center', backgroundColor: 'rgba(5, 4, 5, 0.65)', borderColor: 'rgba(224, 172, 75, 0.25)', borderRadius: 85, borderWidth: 1, height: 170, justifyContent: 'center', width: 170 },
     brandSection: { alignItems: 'center', gap: 8, paddingHorizontal: 10 },
     buttonDisabled: { opacity: 0.42 },
     content: { alignItems: 'center', gap: 20, paddingHorizontal: 16 },
@@ -837,7 +816,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     flipNameRow: { alignItems: 'center', backgroundColor: 'rgba(141, 114, 255, 0.09)', borderColor: 'rgba(141, 114, 255, 0.28)', borderRadius: 14, borderWidth: 1, flexDirection: 'row', gap: 10, padding: 10 },
     flipNameText: { color: theme.colors.cream, flex: 1, fontSize: 13, lineHeight: 19 },
     form: { gap: 14 },
-    headerRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', width: '100%' },
+    headerRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'center', width: '100%' },
     legalLink: { color: theme.colors.goldBright, fontWeight: '800', textDecorationLine: 'underline' },
     legalText: { color: theme.colors.textMuted, lineHeight: 16, textAlign: 'center' },
     migrationBody: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 18 },
@@ -846,11 +825,6 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     migrationIcon: { alignItems: 'center', backgroundColor: 'rgba(0, 255, 255, 0.08)', borderRadius: 11, height: 36, justifyContent: 'center', width: 36 },
     migrationNotice: { backgroundColor: 'rgba(0, 255, 255, 0.055)', borderColor: 'rgba(0, 255, 255, 0.24)', borderRadius: 14, borderWidth: 1, flexDirection: 'row', gap: 10, padding: 12 },
     migrationTitle: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 15, lineHeight: 20 },
-    modeButton: { alignItems: 'center', borderRadius: 999, flex: 1, justifyContent: 'center', minHeight: 42 },
-    modeButtonActive: { backgroundColor: 'rgba(215, 168, 74, 0.16)' },
-    modeSwitch: { backgroundColor: 'rgba(1, 1, 2, 0.68)', borderColor: 'rgba(242, 211, 138, 0.13)', borderRadius: 999, borderWidth: 1, flexDirection: 'row', gap: 4, padding: 4 },
-    modeText: { color: theme.colors.textMuted, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
-    modeTextActive: { color: theme.colors.goldBright },
     panel: { backgroundColor: 'rgba(8, 8, 12, 0.93)', borderColor: 'rgba(224, 172, 75, 0.34)', borderRadius: 24, borderWidth: 1, gap: 16, maxWidth: 620, padding: 17, width: '100%' },
     planList: { gap: 9 },
     planOption: { backgroundColor: 'rgba(255, 255, 255, 0.035)', borderColor: 'rgba(242, 237, 228, 0.14)', borderRadius: 15, borderWidth: 1, gap: 7, padding: 12 },
@@ -1031,12 +1005,6 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       staticStyles.migrationTitle,
       {
         fontSize: responsiveFont(15),
-      },
-    ],
-    modeText: [
-      staticStyles.modeText,
-      {
-        fontSize: responsiveFont(9),
       },
     ],
     planTrial: [

@@ -12,6 +12,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
+import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
@@ -99,6 +100,14 @@ function message(cause: unknown, fallback: string) {
 
 function hapticSelection() {
   if (process.env.EXPO_OS === 'ios') void Haptics.selectionAsync();
+}
+
+function useMetricsStyles() {
+  const { appliedColorScheme } = useKeepFlipAppearance();
+  return useMemo(() => {
+    void appliedColorScheme;
+    return createMetricsStyles();
+  }, [appliedColorScheme]);
 }
 
 function formatMoney(cents: number) {
@@ -201,6 +210,8 @@ function MetricPill({
   color?: string;
   onPress: () => void;
 }) {
+  const styles = useMetricsStyles();
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -227,6 +238,7 @@ function ChartCard({
   groups: SellerAnalyticsGroup[];
   responsiveFont: (size: number) => number;
 }) {
+  const styles = useMetricsStyles();
   const allValues = groups
     .map((group) => ({ group, value: group.metrics[metric.id] }))
     .filter((entry): entry is { group: SellerAnalyticsGroup; value: number } => entry.value !== null);
@@ -322,6 +334,7 @@ function ChartCard({
 }
 
 export function MetricsAnalyticsScreen() {
+  const styles = useMetricsStyles();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { responsiveFont } = useResponsiveLayout();
@@ -693,7 +706,8 @@ export function MetricsAnalyticsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createMetricsStyles() {
+  return StyleSheet.create({
   content: {
     flexGrow: 1,
     gap: 14,
@@ -897,4 +911,5 @@ const styles = StyleSheet.create({
   },
   dataNoteText: { color: theme.colors.textMuted, flex: 1, fontSize: 9, lineHeight: 14 },
   footerText: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 14, textAlign: 'center' },
-});
+  });
+}

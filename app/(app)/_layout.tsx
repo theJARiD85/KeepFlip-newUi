@@ -23,11 +23,12 @@ import { EbayConnectionProvider } from '@/components/ebay/ebay-connection-contex
 import { KeepFlipMenuProvider } from '@/components/navigation/keepflip-menu-context';
 import { KeepFlipSlideDownMenu } from '@/components/navigation/keepflip-slide-down-menu';
 import { ItemAnalysisResultProvider } from '@/components/scanner/item-analysis-result-context';
+import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { SourcingTripProvider } from '@/components/sourcing/sourcing-trip-context';
 import {
   useKeepFlipSubscription,
 } from '@/components/subscription/keepflip-subscription-context';
-import { keepFlipTheme } from '@/constants/keepflip-theme';
+import { getKeepFlipThemeColors } from '@/constants/keepflip-theme';
 import { notificationRouteFromData } from '@/services/keepflip-notification-service';
 import { areKeepFlipSubscriptionsEnforced } from '@/services/keepflip-subscription-service';
 import { hasCompletedScanInventoryWalkthrough } from '@/services/user-profile-onboarding-service';
@@ -132,6 +133,8 @@ function WalkthroughAutoLauncher() {
 
 export default function AppShellLayout() {
   const insets = useSafeAreaInsets();
+  const { effectiveColorScheme } = useKeepFlipAppearance();
+  const appearanceColors = getKeepFlipThemeColors(effectiveColorScheme);
   return (
     <SafeAreaProvider style={{marginTop: insets.top, marginBottom: insets.bottom}}>
     <KeepFlipMenuProvider>
@@ -147,7 +150,7 @@ export default function AppShellLayout() {
                   screenOptions={{
                     animation: 'fade',
                     contentStyle: {
-                      backgroundColor: keepFlipTheme.colors.backgroundDeep,
+                      backgroundColor: appearanceColors.backgroundDeep,
                     },
                     headerShown: false,
                   }}>

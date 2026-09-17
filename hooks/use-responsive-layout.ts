@@ -2,6 +2,8 @@ import { useMemo } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
+
 const BASE_PHONE_WIDTH = 390;
 const BASE_PHONE_HEIGHT = 844;
 
@@ -117,9 +119,10 @@ export function useResponsiveStyles<T>(
   createStyles: (layout: ReturnType<typeof useResponsiveLayout>) => T,
 ) {
   const layout = useResponsiveLayout();
+  const { appliedColorScheme } = useKeepFlipAppearance();
 
   return useMemo(
     () => createStyles(layout),
-    [createStyles, layout.widthScale, layout.heightScale],
+    [createStyles, appliedColorScheme, layout.widthScale, layout.heightScale],
   );
 }

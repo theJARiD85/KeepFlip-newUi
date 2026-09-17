@@ -41,7 +41,6 @@ export default function SubscriptionSetupScreen() {
 
   return (
     <KeepFlipLaunchAuthScreen
-      accountModeLocked
       initialBuyRules={draft.rules}
       initialMode="create-account"
       initialName={draft.name}

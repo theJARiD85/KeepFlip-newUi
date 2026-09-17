@@ -1,18 +1,22 @@
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
+import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
-import { keepFlipTheme } from '@/constants/keepflip-theme';
+import { getKeepFlipThemeColors } from '@/constants/keepflip-theme';
 
 export default function SubscriptionCheckScreen() {
+  const { effectiveColorScheme } = useKeepFlipAppearance();
+  const colors = getKeepFlipThemeColors(effectiveColorScheme);
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.backgroundDeep }]}>
       <ActivityIndicator
         accessibilityLabel="Verifying subscription access"
-        color={keepFlipTheme.colors.scannerCyan}
+        color={colors.scannerCyan}
         size="small"
       />
-      <Text style={styles.label}>VERIFYING PLAN ACCESS</Text>
-      <Text style={styles.description}>
+      <Text style={[styles.label, { color: colors.scannerCyan }]}>VERIFYING PLAN ACCESS</Text>
+      <Text style={[styles.description, { color: colors.textMuted }]}>
         KeepFlip is checking your active subscription.
       </Text>
     </View>
@@ -22,19 +26,16 @@ export default function SubscriptionCheckScreen() {
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    backgroundColor: keepFlipTheme.colors.backgroundDeep,
     flex: 1,
     gap: 10,
     justifyContent: 'center',
     padding: 24,
   },
   description: {
-    color: keepFlipTheme.colors.textMuted,
     fontSize: 13,
     textAlign: 'center',
   },
   label: {
-    color: keepFlipTheme.colors.scannerCyan,
     fontFamily: 'SpaceGroteskSemiBold',
     fontSize: 10,
     letterSpacing: 1.2,

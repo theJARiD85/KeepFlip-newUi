@@ -19,6 +19,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { BusinessPulse } from '@/components/command-center/business-pulse';
 import { SellerOperationsPanel } from '@/components/command-center/seller-operations-panel';
+import { KeepFlipAppearancePicker } from '@/components/settings/keepflip-appearance-picker';
+import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import {
@@ -245,6 +247,12 @@ export function CommandCenterScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useKeepFlipAuth();
   const { canUse } = useKeepFlipSubscription();
+  const {
+    effectiveColorScheme,
+    isLoading: appearanceLoading,
+    isSaving: appearanceSaving,
+    preference: appearancePreference,
+  } = useKeepFlipAppearance();
   const bookkeepingFunctionConfigured = isResellerBookkeepingConfigured();
   const advancedBooksAllowed = canUse('automated_books');
   const advancedBookkeepingConfigured =
@@ -273,6 +281,7 @@ export function CommandCenterScreen() {
   const [reviewQuantity, setReviewQuantity] = useState('1');
   const [reviewResolving, setReviewResolving] = useState(false);
   const [reviewActionMessage, setReviewActionMessage] = useState<string | null>(null);
+  const [appearancePickerOpen, setAppearancePickerOpen] = useState(false);
   const [commandCenterTab, setCommandCenterTab] =
     useState<CommandCenterTab>('pulse');
   const shouldOpenReviewQueue = Array.isArray(openReviewQueueParam)
@@ -713,6 +722,12 @@ export function CommandCenterScreen() {
     }
   };
 
+  const appearanceDescription =
+    appearancePreference === 'system'
+      ? `Follows your device appearance. It is ${effectiveColorScheme} right now.`
+      : `Uses ${appearancePreference} mode even when your device uses a different appearance.`;
+  const appearanceStatusLabel = appearancePreference.toUpperCase();
+
   return (
     <KeepFlipBackground>
       <View style={{marginBottom: insets.bottom, marginTop: insets.top}}>
@@ -959,10 +974,20 @@ export function CommandCenterScreen() {
               staticLabel="COMING SOON"
             />
             <KeepFlipControlRow
-              description="KeepFlip follows your device’s dark appearance."
+              actionBusy={appearanceLoading || appearanceSaving}
+              actionLabel="CHANGE"
               icon="eye.fill"
               label="Appearance"
-              staticLabel="SYSTEM"
+              accessibilityHint="Opens options for using the device setting, light mode, or dark mode."
+              description={appearanceDescription}
+              onPress={() => {
+                hapticSelection();
+                setAppearancePickerOpen(true);
+              }}
+              status={{
+                label: appearanceStatusLabel,
+                tone: appearancePreference === 'light' ? 'active' : 'violet',
+              }}
             />
           </View>
         </Animated.View>
@@ -1269,6 +1294,10 @@ export function CommandCenterScreen() {
               </View>
         </View>
       </Modal>
+      <KeepFlipAppearancePicker
+        onClose={() => setAppearancePickerOpen(false)}
+        visible={appearancePickerOpen}
+      />
       </View>
     </KeepFlipBackground>
   );
