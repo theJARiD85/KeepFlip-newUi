@@ -7,7 +7,12 @@ import {
 } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import { useEffect, useRef } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Platform,
+  StyleSheet,
+  View,
+} from 'react-native';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { FlipAssistantOverlay } from '@/components/command-center/flip-assistant-overlay';
@@ -70,30 +75,42 @@ function SubscriptionAccessGate() {
   const selectedTab = Array.isArray(tab) ? tab[0] : tab;
   const isSubscriptionTab =
     pathname === '/account' && selectedTab === 'subscription';
-  // Keep the authenticated home visible; other app routes remain gated.
-  const isCommandCenterRoute =
-    pathname === '/' || pathname === '/command-center';
   const { snapshot, state } = useKeepFlipSubscription();
+  const subscriptionAccessVerified =
+    state === 'ready' &&
+    snapshot?.serverRecordAvailable === true &&
+    snapshot.access.active === true;
+  const subscriptionsEnforced = areKeepFlipSubscriptionsEnforced();
+  const shouldBlockApp =
+    subscriptionsEnforced &&
+    !isSubscriptionTab &&
+    !subscriptionAccessVerified;
+  const shouldRedirectToSubscription = shouldBlockApp && state !== 'loading';
 
   useEffect(() => {
-    if (!areKeepFlipSubscriptionsEnforced()) return;
-    if (state !== 'ready') return;
-    if (snapshot?.access.active) return;
-    if (isSubscriptionTab || isCommandCenterRoute) return;
+    if (!shouldRedirectToSubscription) return;
 
-    requestAnimationFrame(() => {
+    const frame = requestAnimationFrame(() => {
       router.replace('/account?tab=subscription' as Href);
     });
+    return () => cancelAnimationFrame(frame);
   }, [
-    isCommandCenterRoute,
     isSubscriptionTab,
     pathname,
     router,
-    snapshot?.access.active,
-    state,
+    shouldRedirectToSubscription,
   ]);
 
-  return null;
+  if (!shouldBlockApp) return null;
+
+  return (
+    <View
+      accessibilityLabel="Verifying KeepFlip subscription access"
+      pointerEvents="auto"
+      style={styles.subscriptionGateBlocker}>
+      <ActivityIndicator color={keepFlipTheme.colors.scannerCyan} size="small" />
+    </View>
+  );
 }
 
 function WalkthroughAutoLauncher() {
@@ -220,5 +237,17 @@ export default function AppShellLayout() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+  },
+  subscriptionGateBlocker: {
+    alignItems: 'center',
+    backgroundColor: keepFlipTheme.colors.backgroundDeep,
+    bottom: 0,
+    elevation: 20,
+    justifyContent: 'center',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    zIndex: 20,
   },
 });

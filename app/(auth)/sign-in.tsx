@@ -1,5 +1,5 @@
-import { KeepFlipAuthScreen } from '@/components/auth/keepflip-auth-screen';
+import { KeepFlipLaunchAuthScreen } from '@/components/intro/keepflip-launch-auth-screen.native';
 
 export default function SignInScreen() {
-  return <KeepFlipAuthScreen allowSignUp={false} />;
+  return <KeepFlipLaunchAuthScreen initialMode="sign-in" />;
 }

@@ -851,6 +851,20 @@ function effectiveSubscriptionAccess(
     serverStatus.access ||
     (serverRecord ? subscriptionAccessFromServerRecord(serverRecord) : null);
 
+  // A previously deployed Function may still return the legacy first-party
+  // profile trial while the server rollout is being updated. Enforced builds
+  // must not let that stale response unlock the app shell.
+  if (
+    areKeepFlipSubscriptionsEnforced() &&
+    serverAccess?.trialSource === 'profile'
+  ) {
+    return {
+      ...EMPTY_ACCESS,
+      managementUrl: localAccess.managementUrl,
+      trialUsed: true,
+    };
+  }
+
   // RevenueCat is useful for purchase UI metadata, but it is never an
   // authorization source. If the authenticated Function cannot resolve the
   // durable entitlement, client feature gates fail closed.

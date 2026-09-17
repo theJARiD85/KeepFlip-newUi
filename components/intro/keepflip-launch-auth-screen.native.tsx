@@ -610,16 +610,6 @@ export function KeepFlipLaunchAuthScreen({
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <View style={styles.headerRow}>
-            {onBack ? (
-              <Pressable
-                accessibilityLabel="Go back"
-                accessibilityRole="button"
-                onPress={onBack}
-                style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
-                <IconSymbol color={theme.colors.goldBright} name="chevron.left" size={18} />
-                <Text style={[styles.backButtonText, { fontSize: responsiveFont(9) }]}>BACK</Text>
-              </Pressable>
-            ) : null}
             <View style={styles.brandMark}>
               <Image
                 accessibilityLabel="KeepFlip logo"
