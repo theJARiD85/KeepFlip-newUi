@@ -1,14 +1,12 @@
 import {
   type Href,
   Stack,
-  useGlobalSearchParams,
   usePathname,
   useRouter,
 } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import { useEffect, useRef } from 'react';
 import {
-  ActivityIndicator,
   Platform,
   StyleSheet,
   View,
@@ -27,7 +25,6 @@ import { KeepFlipSlideDownMenu } from '@/components/navigation/keepflip-slide-do
 import { ItemAnalysisResultProvider } from '@/components/scanner/item-analysis-result-context';
 import { SourcingTripProvider } from '@/components/sourcing/sourcing-trip-context';
 import {
-  KeepFlipSubscriptionProvider,
   useKeepFlipSubscription,
 } from '@/components/subscription/keepflip-subscription-context';
 import { keepFlipTheme } from '@/constants/keepflip-theme';
@@ -64,53 +61,6 @@ function NotificationNavigationObserver() {
   }, [router]);
 
   return null;
-}
-
-function SubscriptionAccessGate() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const { tab } = useGlobalSearchParams<{
-    tab?: string | string[];
-  }>();
-  const selectedTab = Array.isArray(tab) ? tab[0] : tab;
-  const isSubscriptionTab =
-    pathname === '/account' && selectedTab === 'subscription';
-  const { snapshot, state } = useKeepFlipSubscription();
-  const subscriptionAccessVerified =
-    state === 'ready' &&
-    snapshot?.serverRecordAvailable === true &&
-    snapshot.access.active === true;
-  const subscriptionsEnforced = areKeepFlipSubscriptionsEnforced();
-  const shouldBlockApp =
-    subscriptionsEnforced &&
-    !isSubscriptionTab &&
-    !subscriptionAccessVerified;
-  const shouldRedirectToSubscription = shouldBlockApp && state !== 'loading';
-
-  useEffect(() => {
-    if (!shouldRedirectToSubscription) return;
-
-    const frame = requestAnimationFrame(() => {
-      router.replace('/account?tab=subscription' as Href);
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [
-    isSubscriptionTab,
-    pathname,
-    router,
-    shouldRedirectToSubscription,
-  ]);
-
-  if (!shouldBlockApp) return null;
-
-  return (
-    <View
-      accessibilityLabel="Verifying KeepFlip subscription access"
-      pointerEvents="auto"
-      style={styles.subscriptionGateBlocker}>
-      <ActivityIndicator color={keepFlipTheme.colors.scannerCyan} size="small" />
-    </View>
-  );
 }
 
 function WalkthroughAutoLauncher() {
@@ -188,44 +138,42 @@ export default function AppShellLayout() {
       <EbayConnectionProvider>
         <ItemAnalysisResultProvider>
           <SourcingTripProvider>
-            <KeepFlipSubscriptionProvider>
-              <FlipGuidanceProvider>
-                <NotificationNavigationObserver />
-                <SubscriptionAccessGate />
-                <WalkthroughAutoLauncher />
-                <KeepFlipSlideDownMenu />
-                <View style={styles.root}>
-                  <Stack
-                    screenOptions={{
-                      animation: 'fade',
-                      contentStyle: {
-                        backgroundColor: keepFlipTheme.colors.backgroundDeep,
-                      },
-                      headerShown: false,
-                    }}>
-                    <Stack.Screen name="index" />
-                    <Stack.Screen name="scanner" />
-                    <Stack.Screen name="inventory" />
-                    <Stack.Screen name="analytics" />
-                    <Stack.Screen name="analysis" />
-                    <Stack.Screen name="analysis-result" />
-                    <Stack.Screen name="listing-guide" />
-                    <Stack.Screen name="repair-assist" />
-                    <Stack.Screen name="command-center" />
-                    <Stack.Screen name="flip-plan" />
-                    <Stack.Screen name="account" />
-                    <Stack.Screen name="ebay-connect" />
-                    <Stack.Screen name="ebay-account" />
-                    <Stack.Screen name="books" />
-                    <Stack.Screen name="market-research" />
-                    <Stack.Screen name="notifications" />
-                  </Stack>
-                  <FlipAssistantOverlay />
-                  <FlipDailyBriefingLauncher />
-                  <FlipGuidanceOverlay />
-                </View>
-              </FlipGuidanceProvider>
-            </KeepFlipSubscriptionProvider>
+            <FlipGuidanceProvider>
+              <NotificationNavigationObserver />
+              <WalkthroughAutoLauncher />
+              <KeepFlipSlideDownMenu />
+              <View style={styles.root}>
+                <Stack
+                  screenOptions={{
+                    animation: 'fade',
+                    contentStyle: {
+                      backgroundColor: keepFlipTheme.colors.backgroundDeep,
+                    },
+                    headerShown: false,
+                  }}>
+                  <Stack.Screen name="index" />
+                  <Stack.Screen name="scanner" />
+                  <Stack.Screen name="inventory" />
+                  <Stack.Screen name="analytics" />
+                  <Stack.Screen name="analysis" />
+                  <Stack.Screen name="analysis-result" />
+                  <Stack.Screen name="listing-guide" />
+                  <Stack.Screen name="repair-assist" />
+                  <Stack.Screen name="command-center" />
+                  <Stack.Screen name="ai-preferences" />
+                  <Stack.Screen name="flip-plan" />
+                  <Stack.Screen name="account" />
+                  <Stack.Screen name="ebay-connect" />
+                  <Stack.Screen name="ebay-account" />
+                  <Stack.Screen name="books" />
+                  <Stack.Screen name="market-research" />
+                  <Stack.Screen name="notifications" />
+                </Stack>
+                <FlipAssistantOverlay />
+                <FlipDailyBriefingLauncher />
+                <FlipGuidanceOverlay />
+              </View>
+            </FlipGuidanceProvider>
           </SourcingTripProvider>
         </ItemAnalysisResultProvider>
       </EbayConnectionProvider>
@@ -237,17 +185,5 @@ export default function AppShellLayout() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-  },
-  subscriptionGateBlocker: {
-    alignItems: 'center',
-    backgroundColor: keepFlipTheme.colors.backgroundDeep,
-    bottom: 0,
-    elevation: 20,
-    justifyContent: 'center',
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    zIndex: 20,
   },
 });

@@ -17,7 +17,6 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
-import { AiPreferencesPanel } from '@/components/command-center/ai-preferences-panel';
 import { BusinessPulse } from '@/components/command-center/business-pulse';
 import { SellerOperationsPanel } from '@/components/command-center/seller-operations-panel';
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
@@ -71,7 +70,7 @@ type EbayConnectionViewState =
   | 'disconnected'
   | 'error';
 
-type CommandCenterTab = 'pulse' | 'operations' | 'ai-preferences';
+type CommandCenterTab = 'pulse' | 'operations';
 
 function bookkeepingEventsForBusinessPulse(
   ownerId: string,
@@ -516,9 +515,9 @@ export function CommandCenterScreen() {
 
   useEffect(() => {
     if (!shouldOpenAiPreferences || !user?.$id) return;
-    const timer = setTimeout(() => setCommandCenterTab('ai-preferences'), 0);
+    const timer = setTimeout(() => router.replace('/ai-preferences' as Href), 0);
     return () => clearTimeout(timer);
-  }, [shouldOpenAiPreferences, user?.$id]);
+  }, [router, shouldOpenAiPreferences, user?.$id]);
 
   const chooseReview = (review: BookkeepingReviewItem) => {
     hapticSelection();
@@ -759,28 +758,12 @@ export function CommandCenterScreen() {
             ]}>
             <Text style={[styles.commandTabLabel, commandCenterTab === 'operations' && styles.commandTabLabelActive, { fontSize: responsiveFont(9) }]}>SELLER OPERATIONS</Text>
           </Pressable>
-          <Pressable
-            accessibilityRole="tab"
-            accessibilityState={{ selected: commandCenterTab === 'ai-preferences' }}
-            onPress={() => {
-              hapticSelection();
-              setCommandCenterTab('ai-preferences');
-            }}
-            style={({ pressed }) => [
-              styles.commandTab,
-              commandCenterTab === 'ai-preferences' && styles.commandTabActive,
-              pressed && styles.commandTabPressed,
-            ]}>
-            <Text style={[styles.commandTabLabel, commandCenterTab === 'ai-preferences' && styles.commandTabLabelActive, { fontSize: responsiveFont(9) }]}>AI PREFERENCES</Text>
-          </Pressable>
         </View>
 
         {commandCenterTab === 'operations' ? (
           <Animated.View entering={FadeInDown.duration(260).delay(60)} style={styles.operationsTab}>
             <SellerOperationsPanel key={user.$id} embedded ownerId={user.$id} />
           </Animated.View>
-        ) : commandCenterTab === 'ai-preferences' ? (
-          <AiPreferencesPanel key={user.$id} ownerId={user.$id} />
         ) : (
           <>
         <Animated.View entering={FadeInDown.duration(260).delay(60)} style={styles.section}>
@@ -965,7 +948,7 @@ export function CommandCenterScreen() {
               label="AI preferences"
               onPress={() => {
                 hapticSelection();
-                setCommandCenterTab('ai-preferences');
+                router.push('/ai-preferences' as Href);
               }}
             />
             <KeepFlipControlRow

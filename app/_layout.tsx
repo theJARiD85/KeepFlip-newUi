@@ -18,7 +18,11 @@ import {
   KeepFlipAuthProvider,
   useKeepFlipAuth,
 } from "@/components/auth/keepflip-auth-context";
-import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  KeepFlipSubscriptionProvider,
+  useKeepFlipSubscription,
+} from '@/components/subscription/keepflip-subscription-context';
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import {
   FlipCompanionProvider,
 } from '@/components/flip';
@@ -28,6 +32,7 @@ import KeepFlipLaunchExperience from "@/components/intro/keepflip-launch-experie
 import { KeepFlipMinimumVersionGate } from '@/components/update/keepflip-minimum-version-gate';
 import { keepFlipTheme } from "@/constants/keepflip-theme";
 import { configureKeepFlipNotificationHandler } from '@/services/keepflip-notification-service';
+import { areKeepFlipSubscriptionsEnforced } from '@/services/keepflip-subscription-service';
 import { initializeTenjinAtLaunch } from '@/services/tenjin-attribution-service';
 
 void SplashScreen
@@ -40,21 +45,43 @@ configureKeepFlipNotificationHandler();
 function ProtectedRootStack() {
   const {
     status,
+    user,
   } = useKeepFlipAuth();
-  const insets = useSafeAreaInsets();
-
   const isChecking =
     status === "checking";
 
   const isSignedIn =
     status === "signed-in";
 
+  const {
+    snapshot: subscriptionSnapshot,
+    state: subscriptionState,
+  } = useKeepFlipSubscription();
+  const subscriptionsEnforced = areKeepFlipSubscriptionsEnforced();
+  const isCheckingSubscription =
+    isSignedIn &&
+    subscriptionsEnforced &&
+    subscriptionState === 'loading';
+  const hasActiveSubscription =
+    !subscriptionsEnforced ||
+    (isSignedIn &&
+      subscriptionState === 'ready' &&
+      subscriptionSnapshot?.serverRecordAvailable === true &&
+      subscriptionSnapshot.serverRecord?.ownerId === user?.$id &&
+      subscriptionSnapshot.access.active === true);
+  const subscriptionRequired =
+    isSignedIn &&
+    subscriptionsEnforced &&
+    !isCheckingSubscription &&
+    !hasActiveSubscription;
+
   const pathname = usePathname();
   const keepSubscriptionSignupOpen =
     pathname === "/subscription-setup";
   const canShowOnboarding =
     !isChecking &&
-    (!isSignedIn || keepSubscriptionSignupOpen);
+    (!isSignedIn || keepSubscriptionSignupOpen) &&
+    (!isSignedIn || hasActiveSubscription);
 
   return (
     <Stack
@@ -72,6 +99,10 @@ function ProtectedRootStack() {
         <Stack.Screen name="auth-check" />
       </Stack.Protected>
 
+      <Stack.Protected guard={isCheckingSubscription}>
+        <Stack.Screen name="subscription-check" />
+      </Stack.Protected>
+
       <Stack.Protected
         guard={
           !isChecking &&
@@ -85,7 +116,11 @@ function ProtectedRootStack() {
         <Stack.Screen name="(onboarding)" />
       </Stack.Protected>
 
-      <Stack.Protected guard={isSignedIn}>
+      <Stack.Protected guard={subscriptionRequired}>
+        <Stack.Screen name="subscription-required" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={isSignedIn && hasActiveSubscription}>
         <Stack.Screen name="(app)" />
       </Stack.Protected>
 
@@ -202,10 +237,12 @@ export default function RootLayout() {
             >
               <KeepFlipMinimumVersionGate>
                 <KeepFlipAuthProvider>
-                  <KeepFlipPushRegistration />
-                  <KeepFlipFeedbackNudgeProvider>
-                    <ProtectedRootStack />
-                  </KeepFlipFeedbackNudgeProvider>
+                  <KeepFlipSubscriptionProvider>
+                    <KeepFlipPushRegistration />
+                    <KeepFlipFeedbackNudgeProvider>
+                      <ProtectedRootStack />
+                    </KeepFlipFeedbackNudgeProvider>
+                  </KeepFlipSubscriptionProvider>
                   <View
                     pointerEvents={launchVisible ? "auto" : "none"}
                     style={{
