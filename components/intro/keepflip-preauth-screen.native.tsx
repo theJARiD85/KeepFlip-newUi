@@ -8,6 +8,7 @@ import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import responsiveFont, { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
+import { KEEPFLIP_ANALYTICS_EVENTS, trackKeepFlipEvent } from '@/services/keepflip-analytics';
 import {
   buyRuleDayLimit,
   DEFAULT_RESELLER_BUY_RULES,
@@ -320,6 +321,9 @@ export function KeepFlipPreAuthScreen({ onBack, onComplete }: KeepFlipPreAuthScr
     if (cleanName.length < 2) { setError('Tell Flip what to call you before we continue.'); setScreen(NAME_STEP); return; }
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
     setMode('speaking');
+    trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.onboardingStepCompleted, {
+      step: 'seller_profile',
+    });
     onComplete(cleanName, rules);
   }, [markActivity, name, onComplete, rules, setMode]);
 

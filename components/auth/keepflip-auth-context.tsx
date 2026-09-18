@@ -24,6 +24,7 @@ import {
   realtime,
 } from '@/lib/appwrite';
 import { ensureUserProfile } from '@/services/user-profile-onboarding-service';
+import { KEEPFLIP_ANALYTICS_EVENTS, trackKeepFlipEvent } from '@/services/keepflip-analytics';
 import { trackTenjinEvent } from '@/services/tenjin-attribution-service';
 
 export type KeepFlipAuthStatus =
@@ -626,7 +627,10 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
           missingKeys: [],
         });
         trackTenjinEvent('registration_completed');
-        analytics.trackEvent('signup_completed');
+        trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.signupCompleted, {
+          method: 'email',
+          flow: 'standard',
+        });
       } catch (error) {
         const safeError = safeAuthError(error, 'sign-up');
         if (safeError.code === 'AUTH_SETUP_REQUIRED') {

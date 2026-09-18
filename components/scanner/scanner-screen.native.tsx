@@ -66,6 +66,7 @@ import { useResponsiveLayout, useResponsiveStyles } from "@/hooks/use-responsive
 import { lookupBarcodeWithEbay } from "@/services/ebaySoldCompsService";
 import { MAX_ANALYSIS_PHOTOS } from "@/services/item-analysis-service";
 import { neutralizeMarketplaceBrand } from "@/services/market-copy";
+import { KEEPFLIP_ANALYTICS_EVENTS, trackKeepFlipEvent } from "@/services/keepflip-analytics";
 import {
   createScanId,
   saveScannerPhoto,
@@ -1312,6 +1313,10 @@ export default function ScannerScreen() {
 
     setActiveAnalysisSessionId(sessionId);
     setCaptureFeedback(null);
+    trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.itemAnalysisStarted, {
+      mode: cognitionSeed.tool,
+      photo_count: photoUris.length,
+    });
 
     pendingAnalysisSessionIdRef.current = sessionId;
     if (!shouldMountCamera || !isCameraReady) {

@@ -62,6 +62,17 @@
         }
       ],
       [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow KeepFlip to use your location during an active sourcing trip to calculate business mileage.",
+          "locationAlwaysAndWhenInUsePermission": "Allow KeepFlip to use your location during an active sourcing trip, including when the app is in the background, to calculate business mileage.",
+          "locationAlwaysPermission": "Allow KeepFlip to use your location during an active sourcing trip, including when the app is in the background, to calculate business mileage.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/images/icon2.png",

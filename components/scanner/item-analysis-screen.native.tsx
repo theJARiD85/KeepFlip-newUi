@@ -37,6 +37,7 @@ import {
   ItemAnalysisError,
 } from "@/services/item-analysis-service";
 import { neutralizeMarketplaceBrand } from "@/services/market-copy";
+import { KEEPFLIP_ANALYTICS_EVENTS, trackKeepFlipEvent } from "@/services/keepflip-analytics";
 import type {
   ItemAnalysisStage,
   ItemAnalysisSuccess,
@@ -230,6 +231,14 @@ export function ItemAnalysisScreen() {
       setCompletedAnalysis({
         analysis: result,
         state: resultState,
+      });
+      trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.itemAnalysisCompleted, {
+        mode: session.modeLabel,
+        photo_count: session.photoUris.length,
+      });
+      trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.activationReached, {
+        activation: 'first_item_analysis_completed',
+        mode: session.modeLabel,
       });
     } catch (error) {
       if (

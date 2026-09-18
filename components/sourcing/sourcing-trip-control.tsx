@@ -27,6 +27,7 @@ import {
   parseLedgerDate,
   todayBusinessDate,
 } from '@/services/reseller-ledger-service';
+import { formatSourcingTripMiles } from '@/services/sourcing-trip-location-service';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type TripFormValues = {
@@ -80,6 +81,7 @@ export function SourcingTripControl() {
     configured,
     finishActiveTrip,
     isLoading,
+    locationSnapshot,
     startTrip,
   } = useSourcingTrip();
   const [dialog, setDialog] = useState<'start' | 'finish' | null>(null);
@@ -97,7 +99,9 @@ export function SourcingTripControl() {
       ? 'Start a sourcing trip'
       : 'Set up sourcing trips';
   const tripButtonDetail = activeTrip
-    ? `${activeTrip.findCount} saved find${activeTrip.findCount === 1 ? '' : 's'} · OPEN OR CLOSE TRIP`
+    ? locationSnapshot
+      ? `${formatSourcingTripMiles(locationSnapshot.distanceMeters)} tracked · ${activeTrip.findCount} find${activeTrip.findCount === 1 ? '' : 's'} · OPEN OR CLOSE`
+      : `${activeTrip.findCount} saved find${activeTrip.findCount === 1 ? '' : 's'} · MILEAGE UNAVAILABLE`
     : configured
       ? 'GROUP THIS OUTING\'S FINDS'
       : 'APPWRITE SETUP NEEDED';
@@ -260,7 +264,7 @@ export function SourcingTripControl() {
       setDialog(null);
       Alert.alert(
         'Sourcing trip closed',
-        `${activeTrip.findCount} saved find${activeTrip.findCount === 1 ? '' : 's'} remain linked to this trip.`,
+        `${activeTrip.findCount} saved find${activeTrip.findCount === 1 ? '' : 's'} remain linked to this trip. ${locationSnapshot ? `${formatSourcingTripMiles(locationSnapshot.distanceMeters)} of mileage was recorded.` : 'Mileage was not available for this trip.'}`,
       );
     } catch (error) {
       Alert.alert(
@@ -337,6 +341,7 @@ export function SourcingTripControl() {
                   <Text style={[styles.modalBody, { fontSize: responsiveFont(13), lineHeight: 18 }]}>
                     Keep each find, its actual cost, and the shared receipt connected without turning the scanner into a spreadsheet.
                   </Text>
+                  <Text style={[styles.locationNotice, { fontSize: responsiveFont(10), lineHeight: 14 }]}>Location access is used only during this active trip to calculate total business miles. KeepFlip saves the mileage total, not your route history.</Text>
                 </View>
                 <Pressable
                   accessibilityLabel="Close start sourcing trip form"
@@ -497,7 +502,22 @@ export function SourcingTripControl() {
                           : '—'}
                       </Text>
                     </View>
+                    <View style={styles.summaryCell}>
+                      <Text style={[styles.summaryLabel, { fontSize: responsiveFont(7) }]}>MILES TRACKED</Text>
+                      <Text style={[styles.summaryValue, { fontSize: responsiveFont(17) }]}>
+                        {formatSourcingTripMiles(
+                          locationSnapshot?.distanceMeters ?? activeTrip.trip.mileageMeters,
+                        )}
+                      </Text>
+                    </View>
                   </View>
+                  <Text style={styles.locationNotice}>
+                    {locationSnapshot?.trackingMode === 'background'
+                      ? 'Background mileage tracking is active. Review the final miles before using them for your tax records.'
+                      : locationSnapshot
+                        ? 'Foreground-only mileage tracking is active. Keep KeepFlip open while you travel so the record stays complete.'
+                        : 'Mileage tracking was not available for this trip. Do not use the displayed amount as a complete tax record.'}
+                  </Text>
                   {activeTrip.estimatedGrossSpreadCents != null ? (
                     <Text style={styles.caution}>
                       Gross spread signal {signedMoney(activeTrip.estimatedGrossSpreadCents)} before fees, shipping, taxes, repairs, and time.
@@ -685,6 +705,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontSize: 13,
       lineHeight: 18,
     },
+    locationNotice: {
+      color: theme.colors.goldMuted,
+      fontFamily: theme.fonts.body,
+      fontSize: 10,
+      lineHeight: 14,
+    },
     closeButton: {
       width: 30,
       height: 30,
@@ -761,7 +787,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontWeight: '900',
       letterSpacing: 0.65,
     },
-    summaryGrid: { flexDirection: 'row', gap: 9 },
+    summaryGrid: { flexDirection: 'row', gap: 7 },
     summaryCell: {
       flex: 1,
       gap: 4,

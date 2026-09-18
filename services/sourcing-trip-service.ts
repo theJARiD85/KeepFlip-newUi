@@ -9,7 +9,15 @@ import {
 
 export const SOURCING_TRIP_STATUSES = ['active', 'closed', 'cancelled'] as const;
 
+export const SOURCING_TRIP_LOCATION_STATUSES = [
+  'tracking',
+  'complete',
+  'unavailable',
+] as const;
+
 export type SourcingTripStatus = (typeof SOURCING_TRIP_STATUSES)[number];
+export type SourcingTripLocationStatus =
+  (typeof SOURCING_TRIP_LOCATION_STATUSES)[number];
 
 export type SourcingTrip = {
   id: string;
@@ -22,6 +30,11 @@ export type SourcingTrip = {
   budgetCents: number | null;
   receiptTotalCents: number | null;
   receiptFileId: string | null;
+  mileageMeters: number | null;
+  locationPointCount: number;
+  locationTrackingStatus: SourcingTripLocationStatus;
+  locationTrackingStartedAt: string | null;
+  locationTrackingEndedAt: string | null;
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -59,6 +72,10 @@ export type CreateSourcingTripInput = {
   startedAt: string;
   budgetCents?: number | null;
   notes?: string | null;
+  mileageMeters?: number | null;
+  locationPointCount?: number | null;
+  locationTrackingStartedAt?: string | null;
+  locationTrackingStatus?: SourcingTripLocationStatus;
 };
 
 export type LinkSourcingTripFindInput = {
@@ -77,6 +94,9 @@ export type CloseSourcingTripInput = {
   sourceTripId: string;
   receiptFileId?: string | null;
   receiptTotalCents?: number | null;
+  mileageMeters?: number | null;
+  locationPointCount?: number | null;
+  locationTrackingStatus?: SourcingTripLocationStatus;
 };
 
 type SourcingTripRow = {
@@ -91,6 +111,11 @@ type SourcingTripRow = {
   budgetCents?: number | null;
   receiptTotalCents?: number | null;
   receiptFileId?: string | null;
+  mileageMeters?: number | null;
+  locationPointCount?: number | null;
+  locationTrackingStatus?: string | null;
+  locationTrackingStartedAt?: string | null;
+  locationTrackingEndedAt?: string | null;
   notes?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
@@ -113,6 +138,8 @@ type SourcingTripFindRow = {
 const PAGE_SIZE = 100;
 const MAX_TRIP_FINDS = 2_000;
 const MAX_CENTS = 1_000_000_000;
+const MAX_MILEAGE_METERS = 10_000_000;
+const MAX_LOCATION_POINTS = 1_000_000;
 
 function ownerPermissions(ownerId: string) {
   return [
@@ -151,6 +178,26 @@ function validQuantity(value: unknown) {
 
 function validStatus(value: string | null | undefined): value is SourcingTripStatus {
   return (SOURCING_TRIP_STATUSES as readonly string[]).includes(value ?? '');
+}
+
+function validLocationTrackingStatus(
+  value: string | null | undefined,
+): value is SourcingTripLocationStatus {
+  return (SOURCING_TRIP_LOCATION_STATUSES as readonly string[]).includes(
+    value ?? '',
+  );
+}
+
+function validNonNegativeMeters(value: unknown) {
+  return Number.isSafeInteger(value) && Number(value) >= 0 && Number(value) <= MAX_MILEAGE_METERS
+    ? Number(value)
+    : null;
+}
+
+function validLocationPointCount(value: unknown) {
+  return Number.isSafeInteger(value) && Number(value) >= 0 && Number(value) <= MAX_LOCATION_POINTS
+    ? Number(value)
+    : null;
 }
 
 function missingConfigurationKeys() {
@@ -197,6 +244,13 @@ function rowToSourcingTrip(row: SourcingTripRow): SourcingTrip {
     budgetCents: validNonNegativeCents(row.budgetCents),
     receiptTotalCents: validNonNegativeCents(row.receiptTotalCents),
     receiptFileId: cleanText(row.receiptFileId, 64),
+    mileageMeters: validNonNegativeMeters(row.mileageMeters),
+    locationPointCount: validLocationPointCount(row.locationPointCount) ?? 0,
+    locationTrackingStatus: validLocationTrackingStatus(row.locationTrackingStatus)
+      ? row.locationTrackingStatus
+      : 'unavailable',
+    locationTrackingStartedAt: validDate(row.locationTrackingStartedAt),
+    locationTrackingEndedAt: validDate(row.locationTrackingEndedAt),
     notes: cleanText(row.notes, 2_000),
     createdAt,
     updatedAt,
@@ -387,6 +441,10 @@ export async function createSourcingTrip({
   startedAt,
   budgetCents,
   notes,
+  mileageMeters,
+  locationPointCount,
+  locationTrackingStartedAt,
+  locationTrackingStatus,
 }: CreateSourcingTripInput) {
   assertSourcingTripsConfigured();
   const cleanOwnerId = normalizeOwnerId(ownerId);
@@ -394,11 +452,37 @@ export async function createSourcingTrip({
   const cleanStartedAt = validDate(startedAt);
   const cleanBudget =
     budgetCents == null ? null : validNonNegativeCents(budgetCents);
+  const cleanMileageMeters =
+    mileageMeters == null ? null : validNonNegativeMeters(mileageMeters);
+  const cleanLocationPointCount =
+    locationPointCount == null ? 0 : validLocationPointCount(locationPointCount);
+  const cleanLocationTrackingStartedAt = validDate(
+    locationTrackingStartedAt,
+  );
+  const cleanLocationTrackingStatus = locationTrackingStatus ?? 'unavailable';
 
   if (!cleanSourceName) throw new Error('Name where you are sourcing first.');
   if (!cleanStartedAt) throw new Error('Enter a valid sourcing date.');
   if (budgetCents != null && cleanBudget == null) {
     throw new Error('Enter a planned spend from $0.00 to $10,000,000.00.');
+  }
+  if (mileageMeters != null && cleanMileageMeters == null) {
+    throw new Error('The sourcing mileage is outside the supported range.');
+  }
+  if (
+    locationPointCount != null &&
+    cleanLocationPointCount === null
+  ) {
+    throw new Error('The sourcing location sample count is invalid.');
+  }
+  if (
+    locationTrackingStartedAt != null &&
+    !cleanLocationTrackingStartedAt
+  ) {
+    throw new Error('The sourcing location start time is invalid.');
+  }
+  if (!validLocationTrackingStatus(cleanLocationTrackingStatus)) {
+    throw new Error('The sourcing location tracking status is invalid.');
   }
 
   const now = new Date().toISOString();
@@ -416,6 +500,11 @@ export async function createSourcingTrip({
       budgetCents: cleanBudget,
       receiptTotalCents: null,
       receiptFileId: null,
+      mileageMeters: cleanMileageMeters,
+      locationPointCount: cleanLocationPointCount,
+      locationTrackingStatus: cleanLocationTrackingStatus,
+      locationTrackingStartedAt: cleanLocationTrackingStartedAt,
+      locationTrackingEndedAt: null,
       notes: cleanText(notes, 2_000),
       createdAt: now,
       updatedAt: now,
@@ -500,6 +589,9 @@ export async function closeSourcingTrip({
   sourceTripId,
   receiptFileId,
   receiptTotalCents,
+  mileageMeters,
+  locationPointCount,
+  locationTrackingStatus,
 }: CloseSourcingTripInput) {
   assertSourcingTripsConfigured();
   const cleanOwnerId = normalizeOwnerId(ownerId);
@@ -508,9 +600,28 @@ export async function closeSourcingTrip({
     receiptTotalCents == null
       ? null
       : validNonNegativeCents(receiptTotalCents);
+  const cleanMileageMeters =
+    mileageMeters == null ? null : validNonNegativeMeters(mileageMeters);
+  const cleanLocationPointCount =
+    locationPointCount == null ? null : validLocationPointCount(locationPointCount);
 
   if (receiptTotalCents != null && cleanReceiptTotal == null) {
     throw new Error('Enter a receipt total from $0.00 to $10,000,000.00.');
+  }
+  if (mileageMeters != null && cleanMileageMeters == null) {
+    throw new Error('The sourcing mileage is outside the supported range.');
+  }
+  if (
+    locationPointCount != null &&
+    cleanLocationPointCount === null
+  ) {
+    throw new Error('The sourcing location sample count is invalid.');
+  }
+  if (
+    locationTrackingStatus != null &&
+    !validLocationTrackingStatus(locationTrackingStatus)
+  ) {
+    throw new Error('The sourcing location tracking status is invalid.');
   }
 
   const trip = await getSourcingTrip(cleanOwnerId, cleanTripId);
@@ -526,6 +637,41 @@ export async function closeSourcingTrip({
       closedAt: now,
       receiptFileId: cleanText(receiptFileId, 64) ?? trip.receiptFileId,
       receiptTotalCents: cleanReceiptTotal,
+      mileageMeters: cleanMileageMeters ?? trip.mileageMeters,
+      locationPointCount: cleanLocationPointCount ?? trip.locationPointCount,
+      locationTrackingStatus:
+        locationTrackingStatus ?? trip.locationTrackingStatus,
+      locationTrackingEndedAt: now,
+      updatedAt: now,
+    },
+  })) as unknown as SourcingTripRow;
+
+  return rowToSourcingTrip(updated);
+}
+
+export async function cancelSourcingTrip({
+  ownerId,
+  sourceTripId,
+}: {
+  ownerId: string;
+  sourceTripId: string;
+}) {
+  assertSourcingTripsConfigured();
+  const cleanOwnerId = normalizeOwnerId(ownerId);
+  const cleanTripId = normalizeTripId(sourceTripId);
+  const trip = await getSourcingTrip(cleanOwnerId, cleanTripId);
+  if (trip.status !== 'active') return trip;
+
+  const now = new Date().toISOString();
+  const updated = (await tablesDB.updateRow({
+    databaseId: APPWRITE.databaseId,
+    tableId: APPWRITE.sourcingTripsTableId,
+    rowId: cleanTripId,
+    data: {
+      status: 'cancelled',
+      closedAt: now,
+      locationTrackingStatus: 'unavailable',
+      locationTrackingEndedAt: now,
       updatedAt: now,
     },
   })) as unknown as SourcingTripRow;

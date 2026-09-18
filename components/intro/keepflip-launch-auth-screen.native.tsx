@@ -1,7 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { analytics } from '@heycatch/sdk';
 import {
   useState,
   useEffect,
@@ -48,6 +47,7 @@ import {
 } from '@/services/keepflip-subscription-service';
 import type { ResellerBuyRules } from '@/services/reseller-buy-rules-service';
 import { completeScanInventoryWalkthrough } from '@/services/user-profile-onboarding-service';
+import { KEEPFLIP_ANALYTICS_EVENTS, trackKeepFlipEvent } from '@/services/keepflip-analytics';
 
 export type AuthSubscriptionSelection = {
   cadence: KeepFlipBillingCadence;
@@ -508,7 +508,10 @@ export function KeepFlipLaunchAuthScreen({
         }
 
         if (!signupAnalyticsTrackedRef.current) {
-          analytics.trackEvent('signup_completed');
+          trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.signupCompleted, {
+            method: 'email',
+            flow: 'subscription_first',
+          });
           signupAnalyticsTrackedRef.current = true;
         }
 

@@ -15,6 +15,7 @@ import {
   uploadLedgerReceipt,
 } from '@/services/reseller-ledger-service';
 import {
+  cancelSourcingTrip,
   closeSourcingTrip,
   createSourcingTrip,
   getActiveSourcingTripSummary,
@@ -26,6 +27,14 @@ import {
   type SourcingTrip,
   type SourcingTripSummary,
 } from '@/services/sourcing-trip-service';
+import {
+  clearSourcingTripLocationState,
+  getSourcingTripLocationSnapshot,
+  prepareSourcingTripLocationTracking,
+  startSourcingTripLocationTracking,
+  stopSourcingTripLocationTracking,
+  type SourcingTripLocationSnapshot,
+} from '@/services/sourcing-trip-location-service';
 
 type StartSourcingTripInput = Omit<CreateSourcingTripInput, 'ownerId'>;
 
@@ -50,6 +59,7 @@ type SourcingTripContextValue = {
   configured: boolean;
   finishActiveTrip: (input: FinishSourcingTripInput) => Promise<SourcingTrip>;
   isLoading: boolean;
+  locationSnapshot: SourcingTripLocationSnapshot | null;
   recordSavedItem: (
     input: RecordSourcingTripFindInput,
   ) => Promise<SourcingTripSummary | null>;
@@ -79,12 +89,17 @@ export function SourcingTripProvider({ children }: PropsWithChildren) {
   const userId = user?.$id ?? '';
   const requestVersionRef = useRef(0);
   const [activeTrip, setActiveTrip] = useState<SourcingTripSummary | null>(null);
+  const [locationSnapshot, setLocationSnapshot] =
+    useState<SourcingTripLocationSnapshot | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const refreshActiveTrip = useCallback(async () => {
     const requestVersion = ++requestVersionRef.current;
     if (!configured || !userId) {
+      await stopSourcingTripLocationTracking().catch(() => null);
+      clearSourcingTripLocationState();
       setActiveTrip(null);
+      setLocationSnapshot(null);
       setIsLoading(false);
       return null;
     }
@@ -94,6 +109,11 @@ export function SourcingTripProvider({ children }: PropsWithChildren) {
       const summary = await getActiveSourcingTripSummary(userId);
       if (requestVersion === requestVersionRef.current) {
         setActiveTrip(summary);
+        setLocationSnapshot(
+          summary
+            ? await getSourcingTripLocationSnapshot(summary.trip.id)
+            : null,
+        );
       }
       return summary;
     } finally {
@@ -106,6 +126,30 @@ export function SourcingTripProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     void refreshActiveTrip().catch(() => undefined);
   }, [refreshActiveTrip]);
+
+  useEffect(() => {
+    const tripId = activeTrip?.trip.id;
+    if (!tripId) {
+      setLocationSnapshot(null);
+      return;
+    }
+
+    let disposed = false;
+    const refreshLocationSnapshot = async () => {
+      const snapshot = await getSourcingTripLocationSnapshot(tripId);
+      if (!disposed) setLocationSnapshot(snapshot);
+    };
+
+    void refreshLocationSnapshot();
+    const interval = setInterval(() => {
+      void refreshLocationSnapshot();
+    }, 15_000);
+
+    return () => {
+      disposed = true;
+      clearInterval(interval);
+    };
+  }, [activeTrip?.trip.id]);
 
   const startTrip = useCallback(
     async (input: StartSourcingTripInput) => {
@@ -122,10 +166,35 @@ export function SourcingTripProvider({ children }: PropsWithChildren) {
         throw new Error('Finish the active sourcing trip before starting another one.');
       }
 
-      const trip = await createSourcingTrip({ ...input, ownerId: userId });
-      const summary = emptySummary(trip);
-      setActiveTrip(summary);
-      return summary;
+      const preparation = await prepareSourcingTripLocationTracking();
+      let trip: SourcingTrip | null = null;
+      try {
+        trip = await createSourcingTrip({
+          ...input,
+          locationPointCount: 1,
+          locationTrackingStartedAt: preparation.startedAt,
+          locationTrackingStatus: 'tracking',
+          mileageMeters: 0,
+          ownerId: userId,
+        });
+        const snapshot = await startSourcingTripLocationTracking(
+          trip.id,
+          preparation,
+        );
+        const summary = emptySummary(trip);
+        setLocationSnapshot(snapshot);
+        setActiveTrip(summary);
+        return summary;
+      } catch (error) {
+        clearSourcingTripLocationState();
+        if (trip) {
+          await cancelSourcingTrip({
+            ownerId: userId,
+            sourceTripId: trip.id,
+          }).catch(() => undefined);
+        }
+        throw error;
+      }
     },
     [activeTrip, configured, userId],
   );
@@ -158,6 +227,11 @@ export function SourcingTripProvider({ children }: PropsWithChildren) {
       if (!userId) throw new Error('Sign in before closing a sourcing trip.');
       if (!activeTrip) throw new Error('There is no active sourcing trip to close.');
 
+      const trackedLocation = await stopSourcingTripLocationTracking();
+      const locationSnapshot =
+        trackedLocation?.sourceTripId === activeTrip.trip.id
+          ? trackedLocation
+          : null;
       let uploadedReceiptFileId: string | null = null;
       try {
         if (receiptReference?.trim()) {
@@ -172,7 +246,14 @@ export function SourcingTripProvider({ children }: PropsWithChildren) {
           sourceTripId: activeTrip.trip.id,
           receiptFileId: uploadedReceiptFileId ?? activeTrip.trip.receiptFileId,
           receiptTotalCents,
+          locationPointCount:
+            locationSnapshot?.locationPointCount ?? activeTrip.trip.locationPointCount,
+          locationTrackingStatus: locationSnapshot ? 'complete' : 'unavailable',
+          mileageMeters:
+            locationSnapshot?.distanceMeters ?? activeTrip.trip.mileageMeters,
         });
+        clearSourcingTripLocationState();
+        setLocationSnapshot(null);
         setActiveTrip(null);
         return trip;
       } catch (error) {
@@ -191,6 +272,7 @@ export function SourcingTripProvider({ children }: PropsWithChildren) {
       configured,
       finishActiveTrip,
       isLoading,
+      locationSnapshot,
       recordSavedItem,
       refreshActiveTrip,
       startTrip,
@@ -200,6 +282,7 @@ export function SourcingTripProvider({ children }: PropsWithChildren) {
       configured,
       finishActiveTrip,
       isLoading,
+      locationSnapshot,
       recordSavedItem,
       refreshActiveTrip,
       startTrip,
