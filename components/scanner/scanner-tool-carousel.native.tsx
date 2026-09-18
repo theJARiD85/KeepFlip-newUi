@@ -26,13 +26,12 @@ import {
   publishScannerHudSnapshot,
   type ScannerHudToolId,
 } from "@/components/scanner/scanner-hud-store";
+import { useKeepFlipAppearance } from "@/components/settings/keepflip-appearance-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
-import { useResponsiveLayout } from "@/hooks/use-responsive-layout";
-import responsiveFont from '@/lib/responsiveFont';
-
-import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
+import { useResponsiveLayout, useResponsiveStyles } from "@/hooks/use-responsive-layout";
+import { withAlpha } from "@/lib/withAlpha";
 export type ScannerToolId = ScannerHudToolId;
 
 type ScannerTool = {
@@ -49,41 +48,62 @@ type ScannerTool = {
   surface: string;
 };
 
-export const scannerTools: ScannerTool[] = [
+type ScannerToolAccentKey = "scannerCyan" | "scannerViolet" | "goldBright" | "cream";
+type ScannerToolSurfaceKey = "iconSurfaceCyan" | "iconSurfaceViolet" | "iconSurfaceGold" | "iconSurface";
+
+const scannerToolDefinitions: {
+  accentKey: ScannerToolAccentKey;
+  glowAlpha: number;
+  icon: ScannerTool["icon"];
+  id: ScannerToolId;
+  label: string;
+  surfaceKey: ScannerToolSurfaceKey;
+}[] = [
   {
     id: "barcode",
     label: "Barcode scanner",
     icon: "barcode.viewfinder",
-    accent: theme.colors.scannerCyan,
-    surface: "rgba(141, 114, 255, 0.16)",
-    glow: "rgba(88, 223, 232, 0.5)",
+    accentKey: "scannerCyan",
+    surfaceKey: "iconSurfaceViolet",
+    glowAlpha: 0.5,
   },
   {
     id: "multi",
     label: "Multi-scan",
     icon: "viewfinder",
-    accent: theme.colors.goldBright,
-    surface: "rgba(88, 223, 232, 0.14)",
-    glow: "rgba(242, 211, 138, 0.5)",
+    accentKey: "goldBright",
+    surfaceKey: "iconSurfaceCyan",
+    glowAlpha: 0.5,
   },
   {
     id: "batch",
     label: "Batch-scan",
     icon: "square.grid.2x2.fill",
-    accent: theme.colors.scannerViolet,
-    surface: "rgba(247, 242, 232, 0.12)",
-    glow: "rgba(141, 114, 255, 0.5)",
+    accentKey: "scannerViolet",
+    surfaceKey: "iconSurface",
+    glowAlpha: 0.5,
   },
   {
     id: "upload",
     label: "Upload photo",
     icon: "photo.on.rectangle.angled",
-    accent: theme.colors.cream,
-    surface: "rgba(141, 114, 255, 0.15)",
-    glow: "rgba(247, 242, 232, 0.5)",
-
+    accentKey: "cream",
+    surfaceKey: "iconSurfaceViolet",
+    glowAlpha: 0.5,
   },
 ];
+
+export function getScannerTools(): ScannerTool[] {
+  return scannerToolDefinitions.map(({ accentKey, glowAlpha, surfaceKey, ...tool }) => {
+    const accent = theme.colors[accentKey];
+    return {
+      ...tool,
+      accent,
+      glow: withAlpha(accent, glowAlpha),
+      surface: theme.colors[surfaceKey],
+    };
+  });
+}
 
 type ScannerToolCarouselProps = {
   badges?: Partial<Record<ScannerToolId, number>>;
@@ -110,8 +130,7 @@ type ToolControlProps = {
   tool: ScannerTool;
 };
 
-const TOOL_COUNT = scannerTools.length;
-const TOOL_ACCENTS = scannerTools.map((tool) => tool.accent);
+const TOOL_COUNT = scannerToolDefinitions.length;
 const MAX_VISIBLE_PROGRESS = 1.35;
 const ARC_STEP_RADIANS = Math.PI / 5;
 const ACTIVE_SCALE = 1.16;
@@ -387,6 +406,12 @@ export function ScannerToolCarousel({
   selectedTool,
 }: ScannerToolCarouselProps) {
   const styles = useResponsiveStyles(createResponsiveStyles);
+  const { appliedColorScheme } = useKeepFlipAppearance();
+  const scannerTools = useMemo(() => {
+    void appliedColorScheme;
+    return getScannerTools();
+  }, [appliedColorScheme]);
+  const toolAccents = scannerTools.map((tool) => tool.accent);
   const {
     controlDockWidth,
     moderateScale,
@@ -556,7 +581,7 @@ export function ScannerToolCarousel({
       selectionHaptic();
       onSelect(nextTool.id);
     },
-    [onSelect, selectedTool],
+    [onSelect, scannerTools, selectedTool],
   );
 
   const activateSelected = useCallback(() => {
@@ -642,6 +667,7 @@ export function ScannerToolCarousel({
       dragStart,
       dragThreshold,
       position,
+      scannerTools,
       velocityThreshold,
     ],
   );
@@ -681,7 +707,7 @@ export function ScannerToolCarousel({
           ]}
         >
           <HUDSkiaPlatterRing
-            accents={TOOL_ACCENTS}
+          accents={toolAccents}
             height={platterHeight}
             position={position}
             radiusX={orbitRadiusX}

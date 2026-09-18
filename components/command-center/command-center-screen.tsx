@@ -1152,7 +1152,7 @@ export function CommandCenterScreen() {
                       autoCapitalize="none"
                       onChangeText={setReviewItemSearch}
                       placeholder="Search inventory by item, brand, model, or SKU"
-                      placeholderTextColor="rgba(247, 242, 232, 0.34)"
+                      placeholderTextColor={theme.colors.textMuted}
                       style={styles.reviewSearchInput}
                       value={reviewItemSearch}
                     />
@@ -1339,9 +1339,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 6,
       padding: 4,
       borderWidth: 1,
-      borderColor: 'rgba(88, 223, 232, 0.20)',
+      borderColor: theme.colors.accentCyanBorder,
       borderRadius: 12,
-      backgroundColor: 'rgba(6, 11, 14, 0.72)',
+      backgroundColor: theme.colors.card,
     },
     commandTab: {
       flex: 1,
@@ -1352,7 +1352,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderRadius: 8,
     },
     commandTabActive: {
-      backgroundColor: 'rgba(88, 223, 232, 0.12)',
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     commandTabPressed: {
       opacity: 0.72,
@@ -1371,9 +1371,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 10,
       padding: 14,
       borderWidth: 1,
-      borderColor: 'rgba(242, 211, 138, 0.18)',
+      borderColor: theme.colors.dividerStrong,
       borderRadius: 14,
-      backgroundColor: 'rgba(11, 10, 14, 0.84)',
+      backgroundColor: theme.colors.card,
     },
     sectionEyebrow: {
       color: theme.colors.goldBright,
@@ -1391,14 +1391,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       overflow: 'hidden',
       borderRadius: 10,
       borderWidth: 1,
-      borderColor: 'rgba(88, 223, 232, 0.23)',
-      backgroundColor: 'rgba(6, 11, 14, 0.76)',
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.card,
     },
     reviewSurface: {
       overflow: 'hidden',
       borderRadius: 10,
       borderWidth: 1,
-      backgroundColor: 'rgba(19, 14, 5, 0.76)',
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     eBayLogo: {
       width: 25,
@@ -1407,10 +1407,10 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     settingsList: {
       borderTopWidth: StyleSheet.hairlineWidth,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderColor: 'rgba(242, 211, 138, 0.20)',
+      borderColor: theme.colors.divider,
     },
     errorText: {
-      color: '#FFB8B1',
+      color: theme.colors.danger,
       fontSize: 11,
       lineHeight: 16,
       textAlign: 'center',
@@ -1418,7 +1418,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     reviewModalBackdrop: {
       flex: 1,
       justifyContent: 'flex-end',
-      backgroundColor: 'rgba(0, 0, 0, 0.72)',
+      backgroundColor: theme.colors.scrim,
     },
     reviewModal: {
       width: '100%',
@@ -1432,8 +1432,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderTopRightRadius: 22,
       borderWidth: 1,
       borderBottomWidth: 0,
-      borderColor: 'rgba(242, 211, 138, 0.28)',
-      backgroundColor: 'rgba(6, 5, 8, 0.99)',
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.surfaceOverlay,
     },
     reviewModalHeader: {
       flexDirection: 'row',
@@ -1459,7 +1459,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: 'center',
       paddingHorizontal: 11,
       borderWidth: StyleSheet.hairlineWidth,
-      borderColor: 'rgba(247, 242, 232, 0.22)',
+      borderColor: theme.colors.dividerStrong,
       borderRadius: 8,
     },
     reviewCloseText: {
@@ -1479,18 +1479,18 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 5,
       padding: 12,
       borderWidth: 1,
-      borderColor: 'rgba(242, 211, 138, 0.18)',
+      borderColor: theme.colors.dividerStrong,
       borderRadius: 10,
-      backgroundColor: 'rgba(242, 211, 138, 0.045)',
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     reviewDetailContent: { gap: 12, paddingBottom: 8 },
     reviewDetailCard: {
       gap: 5,
       padding: 12,
       borderWidth: 1,
-      borderColor: 'rgba(88, 223, 232, 0.18)',
+      borderColor: theme.colors.accentCyanBorder,
       borderRadius: 10,
-      backgroundColor: 'rgba(88, 223, 232, 0.04)',
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     reviewCardTopline: {
       flexDirection: 'row',
@@ -1522,7 +1522,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       lineHeight: 15,
     },
     reviewCardMeta: {
-      color: 'rgba(247, 242, 232, 0.48)',
+      color: theme.colors.textMuted,
       fontSize: 7,
       fontWeight: '800',
       letterSpacing: 0.5,
@@ -1538,9 +1538,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 9,
       padding: 12,
       borderWidth: StyleSheet.hairlineWidth,
-      borderColor: 'rgba(247, 242, 232, 0.15)',
+      borderColor: theme.colors.divider,
       borderRadius: 10,
-      backgroundColor: 'rgba(255, 255, 255, 0.025)',
+      backgroundColor: theme.colors.cardSoft,
     },
     reviewResolutionTitle: {
       color: theme.colors.goldBright,
@@ -1557,10 +1557,10 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       minHeight: 40,
       paddingHorizontal: 11,
       borderWidth: 1,
-      borderColor: 'rgba(88, 223, 232, 0.20)',
+      borderColor: theme.colors.accentCyanBorder,
       borderRadius: 8,
       color: theme.colors.cream,
-      backgroundColor: 'rgba(0, 0, 0, 0.24)',
+      backgroundColor: theme.colors.surfaceInset,
     },
     reviewInventoryList: {
       maxHeight: 240,
@@ -1576,12 +1576,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingHorizontal: 9,
       paddingVertical: 7,
       borderWidth: StyleSheet.hairlineWidth,
-      borderColor: 'rgba(247, 242, 232, 0.12)',
+      borderColor: theme.colors.divider,
       borderRadius: 8,
     },
     reviewInventoryRowSelected: {
-      borderColor: 'rgba(88, 223, 232, 0.62)',
-      backgroundColor: 'rgba(88, 223, 232, 0.08)',
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     reviewInventoryCopy: { flex: 1, minWidth: 0, gap: 2 },
     reviewInventoryTitle: {
@@ -1611,13 +1611,13 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       minHeight: 40,
       textAlign: 'center',
       borderWidth: 1,
-      borderColor: 'rgba(242, 211, 138, 0.28)',
+      borderColor: theme.colors.accentGoldBorder,
       borderRadius: 8,
       color: theme.colors.cream,
       fontSize: 15,
       fontWeight: '900',
       fontVariant: ['tabular-nums'],
-      backgroundColor: 'rgba(0, 0, 0, 0.24)',
+      backgroundColor: theme.colors.surfaceInset,
     },
     reviewPrimaryButton: {
       minHeight: 44,
@@ -1630,7 +1630,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.goldBright,
     },
     reviewPrimaryButtonText: {
-      color: theme.colors.backgroundDeep,
+      color: theme.colors.textOnAccent,
       fontSize: 9,
       fontWeight: '900',
       letterSpacing: 0.85,
@@ -1641,9 +1641,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: 'center',
       paddingHorizontal: 14,
       borderWidth: 1,
-      borderColor: 'rgba(88, 223, 232, 0.34)',
+      borderColor: theme.colors.accentCyanBorder,
       borderRadius: 9,
-      backgroundColor: 'rgba(88, 223, 232, 0.06)',
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     reviewSecondaryButtonText: {
       color: theme.colors.scannerCyan,
@@ -1664,7 +1664,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 10,
     },
     reviewClearTitle: {
-      color: '#46F5A2',
+      color: theme.colors.success,
       fontSize: 11,
       fontWeight: '900',
       letterSpacing: 1.3,

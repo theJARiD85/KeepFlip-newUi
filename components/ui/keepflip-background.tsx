@@ -44,18 +44,22 @@ const styles = StyleSheet.create({
   },
   ambientGradientDark: {
     experimental_backgroundImage: `
-      radial-gradient(circle at 84% 8%, rgba(224, 172, 75, 0.10) 0%, transparent 34%),
-      radial-gradient(circle at 5% 68%, rgba(88, 223, 232, 0.075) 0%, transparent 38%),
-      radial-gradient(circle at 92% 90%, rgba(141, 114, 255, 0.10) 0%, transparent 40%),
-      linear-gradient(160deg, #050506 0%, #020204 48%, #06040A 100%)
+    linear-gradient(160deg, #1e161298 0%, #34200534 33%, #1e161271 66%, #3420052e  100%),
+      radial-gradient(circle at 84% 8%, rgba(224, 172, 75, 0.25) 0%, transparent 34%),
+      radial-gradient(circle at 5% 68%, rgba(88, 222, 232, 0.1) 0%, transparent 38%),
+      radial-gradient(circle at 92% 90%, rgba(140, 114, 255, 0.1) 0%, transparent 40%),
+      linear-gradient(80deg, #1e161298 0%, #34200534 33%, #1e161271 66%, #3420052e  100%)
+
     `,
   },
   ambientGradientLight: {
     experimental_backgroundImage: `
-      radial-gradient(circle at 84% 8%, rgba(215, 168, 74, 0.16) 0%, transparent 34%),
-      radial-gradient(circle at 5% 68%, rgba(0, 177, 187, 0.08) 0%, transparent 38%),
-      radial-gradient(circle at 92% 90%, rgba(141, 114, 255, 0.09) 0%, transparent 40%),
-      linear-gradient(160deg, #FBF8F2 0%, #F6F1E9 48%, #EEE9F2 100%)
+    linear-gradient(160deg, #b28c651e 0%, #8C7D6D34 33%, #7A695871 66%, #8C7D6D2E 100%),
+      radial-gradient(circle at 84% 8%, rgba(215, 168, 74, 0.12) 0%, transparent 34%),
+      radial-gradient(circle at 5% 68%, rgba(0, 177, 187, 0.05) 0%, transparent 38%),
+      radial-gradient(circle at 92% 90%, rgba(108, 75, 255, 0.07) 0%, transparent 40%),
+      linear-gradient(40deg, #cea17369 0%, #8C7D6D34 33%, #9c846c37 66%, #8C7D6D2E 100%)
+
     `,
   },
   content: {

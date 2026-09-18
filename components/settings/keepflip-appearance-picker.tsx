@@ -7,6 +7,7 @@ import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 import type { KeepFlipAppearancePreference } from '@/services/keepflip-appearance-service';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const APPEARANCE_OPTIONS: {
   description: string;
@@ -51,6 +52,7 @@ export function KeepFlipAppearancePicker({
 }: KeepFlipAppearancePickerProps) {
   const styles = useResponsiveStyles(createResponsiveStyles);
   const { responsiveFont } = useResponsiveLayout();
+  const insets = useSafeAreaInsets();
   const {
     effectiveColorScheme,
     errorMessage,
@@ -59,6 +61,7 @@ export function KeepFlipAppearancePicker({
     preference,
     setPreference,
   } = useKeepFlipAppearance();
+
 
   const handleSelect = async (nextPreference: KeepFlipAppearancePreference) => {
     if (isLoading || isSaving || nextPreference === preference) {
@@ -81,7 +84,10 @@ export function KeepFlipAppearancePicker({
       onRequestClose={onClose}
       transparent
       visible={visible}>
-      <View accessibilityViewIsModal style={styles.backdrop}>
+      <View
+        accessibilityViewIsModal
+        style={[styles.backdrop, { paddingBottom: Math.max(insets.bottom, 12) }]}
+      >
         <Pressable
           accessibilityLabel="Close appearance settings"
           accessibilityRole="button"
@@ -169,16 +175,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flex: 1,
       justifyContent: 'flex-end',
       padding: 12,
-      backgroundColor: 'rgba(1, 1, 2, 0.58)',
+      backgroundColor: theme.colors.scrim,
     },
     card: {
       width: '100%',
-      maxWidth: 560,
-      alignSelf: 'center',
       gap: 16,
       padding: 16,
       borderWidth: 1,
-      borderColor: 'rgba(215, 168, 74, 0.30)',
+      borderColor: theme.colors.accentGoldBorder,
       borderRadius: 18,
       backgroundColor: theme.colors.surface,
     },
@@ -211,9 +215,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       width: 32,
       height: 32,
       borderWidth: 1,
-      borderColor: 'rgba(242, 211, 138, 0.22)',
+      borderColor: theme.colors.dividerStrong,
       borderRadius: 10,
-      backgroundColor: 'rgba(242, 211, 138, 0.06)',
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     optionList: { gap: 8 },
     option: {
@@ -223,13 +227,13 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 10,
       padding: 10,
       borderWidth: 1,
-      borderColor: 'rgba(127, 116, 103, 0.20)',
+      borderColor: theme.colors.divider,
       borderRadius: 13,
       backgroundColor: theme.colors.backgroundRaised,
     },
     optionSelected: {
-      borderColor: 'rgba(215, 168, 74, 0.58)',
-      backgroundColor: 'rgba(215, 168, 74, 0.10)',
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     optionIcon: {
       alignItems: 'center',
@@ -237,9 +241,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       width: 34,
       height: 34,
       borderRadius: 10,
-      backgroundColor: 'rgba(127, 116, 103, 0.10)',
+      backgroundColor: theme.colors.iconSurface,
     },
-    optionIconSelected: { backgroundColor: 'rgba(215, 168, 74, 0.14)' },
+    optionIconSelected: { backgroundColor: theme.colors.iconSurfaceGold },
     optionCopy: { flex: 1, gap: 2 },
     optionTitleLine: {
       flexDirection: 'row',

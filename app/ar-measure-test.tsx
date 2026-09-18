@@ -1,5 +1,5 @@
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
-import { responsiveWidth } from '@/lib/responsiveFont';
+import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import * as Haptics from "expo-haptics";
 import { requireNativeViewManager } from "expo-modules-core";
 import { useRef, useState, type Ref } from "react";
@@ -294,7 +294,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   const staticStyles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: "#000",
+      backgroundColor: theme.colors.backgroundDeep,
     },
 
     overlay: {
@@ -304,43 +304,45 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
 
     statusCard: {
-      backgroundColor: "rgba(0, 0, 0, 0.72)",
+      backgroundColor: theme.colors.surfaceOverlay,
+      borderColor: theme.colors.accentGoldBorder,
+      borderWidth: 1,
       borderRadius: 20,
       padding: 18,
       gap: 6,
     },
 
     title: {
-      color: "#fff",
+      color: theme.colors.text,
       fontSize: 20,
       fontWeight: "700",
     },
 
     status: {
-      color: "#fff",
+      color: theme.colors.text,
       fontSize: 14,
     },
 
     instructions: {
-      color: "#ddd",
+      color: theme.colors.textMuted,
       fontSize: 15,
       marginTop: 8,
     },
 
     measurement: {
-      color: "#fff",
+      color: theme.colors.goldBright,
       fontSize: 34,
       fontWeight: "700",
       marginTop: 8,
     },
 
     secondaryMeasurement: {
-      color: "#ddd",
+      color: theme.colors.textMuted,
       fontSize: 18,
     },
 
     error: {
-      color: "#ffb4b4",
+      color: theme.colors.danger,
       fontSize: 13,
       marginTop: 8,
     },
@@ -348,14 +350,15 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     button: {
       marginTop: 12,
       borderWidth: 1,
-      borderColor: "rgba(255,255,255,0.35)",
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
       borderRadius: 14,
       paddingVertical: 12,
       alignItems: "center",
     },
 
     buttonText: {
-      color: "#fff",
+      color: theme.colors.scannerCyan,
       fontWeight: "600",
     },
     reticleContainer: {
@@ -371,7 +374,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       height: 58,
       borderRadius: 29,
       borderWidth: 2,
-      borderColor: "rgba(255,255,255,0.7)",
+      borderColor: theme.colors.scannerCyan,
       alignItems: "center",
       justifyContent: "center",
     },
@@ -388,16 +391,16 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       width: 7,
       height: 7,
       borderRadius: 4,
-      backgroundColor: "#fff",
+      backgroundColor: theme.colors.scannerCyan,
     },
 
     reticleLabel: {
       marginTop: 12,
-      color: "#fff",
+      color: theme.colors.text,
       fontSize: 12,
       fontWeight: "800",
       letterSpacing: 1.4,
-      backgroundColor: "rgba(0,0,0,0.55)",
+      backgroundColor: theme.colors.scrim,
       paddingHorizontal: 10,
       paddingVertical: 6,
       borderRadius: 10,

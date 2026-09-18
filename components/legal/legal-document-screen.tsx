@@ -171,7 +171,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 9,
       paddingBottom: 23,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: "rgba(242, 211, 138, 0.24)",
+      borderBottomColor: theme.colors.dividerStrong,
     },
     eyebrow: {
       color: theme.colors.gold,
@@ -228,7 +228,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingLeft: 34,
     },
     paragraph: {
-      color: "rgba(247, 242, 232, 0.82)",
+      color: theme.colors.text,
       fontSize: 13,
       lineHeight: 21,
       fontWeight: "500",
@@ -238,7 +238,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       marginTop: 3,
       paddingTop: 19,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: "rgba(88, 223, 232, 0.22)",
+      borderTopColor: theme.colors.divider,
     },
     contactLabel: {
       color: theme.colors.scannerCyan,

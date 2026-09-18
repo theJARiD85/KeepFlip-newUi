@@ -68,8 +68,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       minHeight: 42,
     },
     tabActive: {
-      backgroundColor: 'rgba(215, 168, 74, 0.14)',
-      borderColor: 'rgba(242, 211, 138, 0.38)',
+      backgroundColor: theme.colors.iconSurfaceGold,
+      borderColor: theme.colors.accentGoldBorder,
       borderWidth: StyleSheet.hairlineWidth,
     },
     tabText: {
@@ -81,8 +81,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     tabTextActive: { color: theme.colors.goldBright },
     tabs: {
-      backgroundColor: 'rgba(8, 8, 12, 0.78)',
-      borderColor: 'rgba(242, 237, 228, 0.14)',
+      backgroundColor: theme.colors.surfaceOverlay,
+      borderColor: theme.colors.divider,
       borderRadius: 13,
       borderWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',

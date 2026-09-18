@@ -283,7 +283,7 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
                       multiline
                       onChangeText={(value) => updateFact(index, value)}
                       placeholder="Add a durable detail Flip should remember"
-                      placeholderTextColor="rgba(247, 242, 232, 0.34)"
+                      placeholderTextColor={theme.colors.textMuted}
                       style={[styles.memoryInput, { fontSize: responsiveFont(11), lineHeight: 16 }]}
                       textAlignVertical="top"
                       value={fact.value}
@@ -310,7 +310,7 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
                   setError(null);
                 }}
                 placeholder="Example: I usually source vintage cameras under $40."
-                placeholderTextColor="rgba(247, 242, 232, 0.34)"
+                placeholderTextColor={theme.colors.textMuted}
                 style={[styles.memoryInput, { fontSize: responsiveFont(11), lineHeight: 16 }]}
                 textAlignVertical="top"
                 value={newMemory}
@@ -372,7 +372,7 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
                 setError(null);
               }}
               placeholder="Example: Be direct about downside risk. Show the likely net profit after fees and call out unknown costs before recommending a buy."
-              placeholderTextColor="rgba(247, 242, 232, 0.34)"
+              placeholderTextColor={theme.colors.textMuted}
               style={[styles.guidanceInput, { fontSize: responsiveFont(11), lineHeight: 17 }]}
               textAlignVertical="top"
               value={guidance}
@@ -411,9 +411,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 8,
       padding: 14,
       borderWidth: 1,
-      borderColor: 'rgba(141, 114, 255, 0.26)',
+      borderColor: theme.colors.accentVioletBorder,
       borderRadius: 14,
-      backgroundColor: 'rgba(24, 17, 42, 0.58)',
+      backgroundColor: theme.colors.cardSoft,
     },
     heroTopline: {
       flexDirection: 'row',
@@ -437,9 +437,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingHorizontal: 8,
       paddingVertical: 5,
       borderWidth: 1,
-      borderColor: 'rgba(88, 223, 232, 0.27)',
+      borderColor: theme.colors.accentCyanBorder,
       borderRadius: theme.radii.pill,
-      backgroundColor: 'rgba(88, 223, 232, 0.06)',
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     countPillText: {
       color: theme.colors.scannerCyan,
@@ -449,7 +449,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     intro: { color: theme.colors.textMuted },
     privateNote: {
-      color: 'rgba(242, 211, 138, 0.66)',
+      color: theme.colors.goldBright,
       fontWeight: '900',
       letterSpacing: 0.55,
     },
@@ -457,9 +457,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 10,
       padding: 14,
       borderWidth: 1,
-      borderColor: 'rgba(242, 211, 138, 0.18)',
+      borderColor: theme.colors.dividerStrong,
       borderRadius: 14,
-      backgroundColor: 'rgba(11, 10, 14, 0.78)',
+      backgroundColor: theme.colors.card,
     },
     sectionHeader: {
       flexDirection: 'row',
@@ -486,9 +486,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 7,
       padding: 10,
       borderWidth: 1,
-      borderColor: 'rgba(141, 114, 255, 0.22)',
+      borderColor: theme.colors.accentVioletBorder,
       borderRadius: 10,
-      backgroundColor: 'rgba(18, 13, 28, 0.68)',
+      backgroundColor: theme.colors.cardSoft,
     },
     factHeader: {
       flexDirection: 'row',
@@ -503,9 +503,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingHorizontal: 7,
       paddingVertical: 5,
       borderWidth: 1,
-      borderColor: 'rgba(141, 114, 255, 0.32)',
+      borderColor: theme.colors.accentVioletBorder,
       borderRadius: theme.radii.pill,
-      backgroundColor: 'rgba(141, 114, 255, 0.08)',
+      backgroundColor: theme.colors.iconSurfaceViolet,
     },
     categoryBadgeText: {
       color: theme.colors.scannerViolet,
@@ -525,22 +525,22 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingHorizontal: 10,
       paddingVertical: 9,
       borderWidth: 1,
-      borderColor: 'rgba(247, 242, 232, 0.16)',
+      borderColor: theme.colors.divider,
       borderRadius: 9,
       color: theme.colors.cream,
-      backgroundColor: 'rgba(0, 0, 0, 0.24)',
+      backgroundColor: theme.colors.surfaceInset,
     },
     characterCount: {
-      color: 'rgba(247, 242, 232, 0.38)',
+      color: theme.colors.textMuted,
       textAlign: 'right',
     },
     addCard: {
       gap: 8,
       padding: 10,
       borderWidth: 1,
-      borderColor: 'rgba(88, 223, 232, 0.20)',
+      borderColor: theme.colors.accentCyanBorder,
       borderRadius: 10,
-      backgroundColor: 'rgba(5, 17, 20, 0.42)',
+      backgroundColor: theme.colors.cardSoft,
     },
     addEyebrow: {
       color: theme.colors.scannerCyan,
@@ -555,12 +555,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: 'center',
       paddingHorizontal: 8,
       borderWidth: 1,
-      borderColor: 'rgba(247, 242, 232, 0.15)',
+      borderColor: theme.colors.divider,
       borderRadius: theme.radii.pill,
     },
     categoryOptionSelected: {
-      borderColor: 'rgba(88, 223, 232, 0.56)',
-      backgroundColor: 'rgba(88, 223, 232, 0.10)',
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     categoryOptionText: {
       color: theme.colors.textMuted,
@@ -573,18 +573,18 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingHorizontal: 11,
       paddingVertical: 10,
       borderWidth: 1,
-      borderColor: 'rgba(88, 223, 232, 0.22)',
+      borderColor: theme.colors.accentCyanBorder,
       borderRadius: 10,
       color: theme.colors.cream,
-      backgroundColor: 'rgba(0, 0, 0, 0.24)',
+      backgroundColor: theme.colors.surfaceInset,
     },
     emptyState: {
       gap: 4,
       padding: 12,
       borderWidth: 1,
-      borderColor: 'rgba(247, 242, 232, 0.10)',
+      borderColor: theme.colors.divider,
       borderRadius: 9,
-      backgroundColor: 'rgba(255, 255, 255, 0.02)',
+      backgroundColor: theme.colors.cardSoft,
     },
     emptyStateTitle: { color: theme.colors.text, fontWeight: '800' },
     emptyStateBody: { color: theme.colors.textMuted },
@@ -599,7 +599,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.scannerCyan,
     },
     addButtonText: {
-      color: theme.colors.backgroundDeep,
+      color: theme.colors.textOnAccent,
       fontSize: 8,
       fontWeight: '900',
       letterSpacing: 0.7,
@@ -615,7 +615,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.goldBright,
     },
     saveButtonText: {
-      color: theme.colors.backgroundDeep,
+      color: theme.colors.textOnAccent,
       fontSize: 9,
       fontWeight: '900',
       letterSpacing: 0.8,
@@ -626,11 +626,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 10,
       padding: 11,
       borderWidth: 1,
-      borderColor: 'rgba(232, 97, 88, 0.38)',
+      borderColor: theme.colors.danger,
       borderRadius: 10,
-      backgroundColor: 'rgba(70, 20, 20, 0.36)',
+      backgroundColor: theme.colors.dangerSurface,
     },
-    messageTextError: { flex: 1, color: '#FFB8B1', lineHeight: 15 },
+    messageTextError: { flex: 1, color: theme.colors.danger, lineHeight: 15 },
     retryButton: {
       minHeight: 32,
       flexDirection: 'row',
@@ -638,7 +638,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 4,
       paddingHorizontal: 8,
       borderWidth: 1,
-      borderColor: 'rgba(242, 211, 138, 0.30)',
+      borderColor: theme.colors.accentGoldBorder,
       borderRadius: 8,
     },
     retryButtonText: {
@@ -653,9 +653,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: 'center',
       gap: 9,
       borderWidth: 1,
-      borderColor: 'rgba(88, 223, 232, 0.15)',
+      borderColor: theme.colors.accentCyanBorder,
       borderRadius: 12,
-      backgroundColor: 'rgba(6, 11, 14, 0.62)',
+      backgroundColor: theme.colors.card,
     },
     loadingText: { color: theme.colors.textMuted },
     noticeText: {

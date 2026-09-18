@@ -299,8 +299,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 14,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
-      borderColor: 'rgba(88, 223, 232, 0.24)',
-      backgroundColor: 'rgba(5, 14, 20, 0.82)',
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.card,
     },
     headerRow: {
       flexDirection: 'row',
@@ -320,9 +320,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingHorizontal: 7,
       paddingVertical: 5,
       borderRadius: 5,
-      backgroundColor: 'rgba(88, 223, 232, 0.12)',
+      backgroundColor: theme.colors.iconSurfaceCyan,
       borderWidth: 1,
-      borderColor: 'rgba(88, 223, 232, 0.34)',
+      borderColor: theme.colors.accentCyanBorder,
     },
     liveBadgeText: {
       color: theme.colors.scannerCyan,
@@ -362,10 +362,10 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 5,
       padding: 11,
       borderRadius: theme.radii.small,
-      backgroundColor: 'rgba(242, 211, 138, 0.08)',
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     projectedCard: {
-      backgroundColor: 'rgba(88, 223, 232, 0.08)',
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     label: {
       color: theme.colors.goldBright,
@@ -389,8 +389,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 10,
       borderRadius: theme.radii.small,
       borderWidth: 1,
-      borderColor: 'rgba(242, 211, 138, 0.12)',
-      backgroundColor: 'rgba(3, 3, 6, 0.38)',
+      borderColor: theme.colors.divider,
+      backgroundColor: theme.colors.cardSoft,
     },
     metricValue: {
       color: theme.colors.text,
@@ -404,7 +404,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 6,
       padding: 11,
       borderRadius: theme.radii.small,
-      backgroundColor: 'rgba(242, 211, 138, 0.06)',
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     button: {
       minHeight: 40,
@@ -414,12 +414,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingVertical: 9,
       borderRadius: theme.radii.small,
       borderWidth: 1,
-      borderColor: 'rgba(88, 223, 232, 0.30)',
-      backgroundColor: 'rgba(88, 223, 232, 0.07)',
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     buttonPressed: {
-      backgroundColor: 'rgba(88, 223, 232, 0.14)',
-      borderColor: 'rgba(88, 223, 232, 0.54)',
+      backgroundColor: theme.colors.iconSurfaceCyan,
+      borderColor: theme.colors.accentCyanBorder,
     },
     buttonText: {
       color: theme.colors.text,

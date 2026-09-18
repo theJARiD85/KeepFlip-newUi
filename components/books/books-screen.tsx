@@ -267,7 +267,7 @@ function TransactionRow({
         <Text style={styles.transactionSource}>{entry.source.toUpperCase()}</Text>
       </View>
       <IconSymbol
-        color="rgba(173, 167, 178, 0.50)"
+        color={theme.colors.textMuted}
         name="chevron.right"
         size={13}
       />
@@ -720,7 +720,7 @@ export function BooksScreen() {
                 pressed && ledgerConfigured && styles.primaryActionPressed,
               ]}>
               <IconSymbol
-                color={theme.colors.backgroundDeep}
+      color={theme.colors.textOnAccent}
                 name="dollarsign.circle.fill"
                 size={16}
               />
@@ -1132,7 +1132,7 @@ export function BooksScreen() {
                         setDraft((current) => ({ ...current, amount }))
                       }
                       placeholder="0.00"
-                      placeholderTextColor="rgba(173, 167, 178, 0.55)"
+                      placeholderTextColor={theme.colors.textMuted}
                       style={styles.amountInput}
                       value={draft.amount}
                     />
@@ -1149,7 +1149,7 @@ export function BooksScreen() {
                       setDraft((current) => ({ ...current, occurredOn }))
                     }
                     placeholder="YYYY-MM-DD"
-                    placeholderTextColor="rgba(173, 167, 178, 0.55)"
+                    placeholderTextColor={theme.colors.textMuted}
                     style={styles.dateInput}
                     value={draft.occurredOn}
                   />
@@ -1172,7 +1172,7 @@ export function BooksScreen() {
                       ? 'eBay, local sale, Poshmark…'
                       : 'Thrift store, eBay, shipping…'
                   }
-                  placeholderTextColor="rgba(173, 167, 178, 0.55)"
+                  placeholderTextColor={theme.colors.textMuted}
                   style={styles.textInput}
                   value={draft.channel}
                 />
@@ -1267,7 +1267,7 @@ export function BooksScreen() {
                       setDraft((current) => ({ ...current, quantity }))
                     }
                     placeholder="1"
-                    placeholderTextColor="rgba(173, 167, 178, 0.55)"
+                    placeholderTextColor={theme.colors.textMuted}
                     style={styles.textInput}
                     value={draft.quantity}
                   />
@@ -1295,7 +1295,7 @@ export function BooksScreen() {
                     setDraft((current) => ({ ...current, notes }))
                   }
                   placeholder="Order number, lot detail, reason for expense…"
-                  placeholderTextColor="rgba(173, 167, 178, 0.55)"
+                  placeholderTextColor={theme.colors.textMuted}
                   style={[styles.textInput, styles.notesInput]}
                   textAlignVertical="top"
                   value={draft.notes}
@@ -1319,7 +1319,7 @@ export function BooksScreen() {
                   pressed && !saving && styles.saveButtonPressed,
                 ]}>
                 {saving ? (
-                  <ActivityIndicator color={theme.colors.backgroundDeep} size="small" />
+                  <ActivityIndicator color={theme.colors.textOnAccent} size="small" />
                 ) : (
                   <Text style={[styles.saveButtonText, { fontSize: responsiveFont(10) }]}>RECORD TRANSACTION</Text>
                 )}
@@ -1380,7 +1380,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     primaryActionPressed: { opacity: 0.82 },
     primaryActionText: {
-      color: theme.colors.backgroundDeep,
+      color: theme.colors.textOnAccent,
       fontFamily: theme.fonts.radar,
       fontSize: 9,
       fontWeight: '900',
@@ -1388,8 +1388,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     secondaryAction: {
       alignItems: 'center',
-      backgroundColor: 'rgba(215, 168, 74, 0.08)',
-      borderColor: 'rgba(215, 168, 74, 0.42)',
+      backgroundColor: theme.colors.iconSurfaceGold,
+      borderColor: theme.colors.accentGoldBorder,
       borderRadius: 10,
       borderWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
@@ -1398,7 +1398,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       minHeight: 43,
       paddingHorizontal: 14,
     },
-    secondaryActionPressed: { backgroundColor: 'rgba(215, 168, 74, 0.17)' },
+    secondaryActionPressed: { backgroundColor: theme.colors.iconSurfaceGold },
     secondaryActionText: {
       color: theme.colors.goldBright,
       fontFamily: theme.fonts.radar,
@@ -1409,8 +1409,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     actionDisabled: { opacity: 0.42 },
     setupNotice: {
       alignItems: 'flex-start',
-      backgroundColor: 'rgba(215, 168, 74, 0.07)',
-      borderColor: 'rgba(215, 168, 74, 0.28)',
+      backgroundColor: theme.colors.iconSurfaceGold,
+      borderColor: theme.colors.accentGoldBorder,
       borderRadius: 10,
       borderWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
@@ -1428,8 +1428,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     noticeText: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 17 },
     errorCard: {
       alignItems: 'center',
-      backgroundColor: 'rgba(112, 28, 33, 0.28)',
-      borderColor: 'rgba(232, 97, 88, 0.42)',
+      backgroundColor: theme.colors.dangerSurface,
+      borderColor: theme.colors.danger,
       borderRadius: 10,
       borderWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
@@ -1446,7 +1446,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     errorText: { color: theme.colors.text, fontSize: 12, lineHeight: 17 },
     retryButton: {
       alignItems: 'center',
-      borderColor: 'rgba(232, 97, 88, 0.42)',
+      borderColor: theme.colors.danger,
       borderRadius: 8,
       borderWidth: StyleSheet.hairlineWidth,
       justifyContent: 'center',
@@ -1462,7 +1462,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     statusMessage: { color: theme.colors.scannerCyan, fontSize: 12, lineHeight: 17 },
     section: {
-      borderTopColor: 'rgba(242, 237, 228, 0.12)',
+      borderTopColor: theme.colors.divider,
       borderTopWidth: StyleSheet.hairlineWidth,
       gap: 13,
       paddingTop: 17,
@@ -1496,7 +1496,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     loadingText: { color: theme.colors.textMuted, fontSize: 12 },
     metricGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
     metric: {
-      backgroundColor: 'rgba(7, 7, 10, 0.62)',
+      backgroundColor: theme.colors.card,
       borderRadius: 10,
       borderWidth: StyleSheet.hairlineWidth,
       flexGrow: 1,
@@ -1504,9 +1504,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       minWidth: 150,
       padding: 12,
     },
-    metricGold: { borderColor: 'rgba(215, 168, 74, 0.27)' },
-    metricCyan: { borderColor: 'rgba(0, 255, 255, 0.26)' },
-    metricViolet: { borderColor: 'rgba(141, 114, 255, 0.29)' },
+    metricGold: { borderColor: theme.colors.accentGoldBorder },
+    metricCyan: { borderColor: theme.colors.accentCyanBorder },
+    metricViolet: { borderColor: theme.colors.accentVioletBorder },
     metricLabel: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.radar,
@@ -1531,7 +1531,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     summaryNote: { color: theme.colors.goldBright, fontSize: 11, lineHeight: 16 },
     exportButton: {
       alignItems: 'center',
-      borderColor: 'rgba(0, 255, 255, 0.34)',
+      borderColor: theme.colors.accentCyanBorder,
       borderRadius: 8,
       borderWidth: StyleSheet.hairlineWidth,
       justifyContent: 'center',
@@ -1540,7 +1540,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingHorizontal: 9,
     },
     exportButtonDisabled: { opacity: 0.35 },
-    exportButtonPressed: { backgroundColor: 'rgba(0, 255, 255, 0.1)' },
+    exportButtonPressed: { backgroundColor: theme.colors.iconSurfaceCyan },
     exportButtonText: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.radar,
@@ -1549,12 +1549,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       letterSpacing: 0.8,
     },
     transactionList: {
-      borderTopColor: 'rgba(242, 237, 228, 0.1)',
+      borderTopColor: theme.colors.divider,
       borderTopWidth: StyleSheet.hairlineWidth,
     },
     transactionRow: {
       alignItems: 'center',
-      borderBottomColor: 'rgba(242, 237, 228, 0.1)',
+      borderBottomColor: theme.colors.divider,
       borderBottomWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
       gap: 10,
@@ -1563,7 +1563,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingVertical: 9,
     },
     transactionRowPressed: {
-      backgroundColor: 'rgba(242, 237, 228, 0.045)',
+      backgroundColor: theme.colors.cardSoft,
     },
     transactionMarker: { borderRadius: 2, height: 25, width: 3 },
     transactionMarkerIncome: { backgroundColor: theme.colors.scannerCyan },
@@ -1571,13 +1571,13 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     transactionCopy: { flex: 1, gap: 2, minWidth: 0 },
     transactionTitle: { color: theme.colors.cream, fontSize: 13, fontWeight: '700' },
     transactionSecondary: { color: theme.colors.textMuted, fontSize: 11 },
-    transactionTertiary: { color: 'rgba(173, 167, 178, 0.72)', fontSize: 10 },
+    transactionTertiary: { color: theme.colors.textMuted, fontSize: 10 },
     transactionAmountColumn: { alignItems: 'flex-end', gap: 3 },
     transactionAmount: { fontSize: 13, fontVariant: ['tabular-nums'], fontWeight: '800' },
     transactionAmountIncome: { color: theme.colors.scannerCyan },
     transactionAmountExpense: { color: theme.colors.goldBright },
     transactionSource: {
-      color: 'rgba(173, 167, 178, 0.68)',
+      color: theme.colors.textMuted,
       fontFamily: theme.fonts.radar,
       fontSize: 7,
       fontWeight: '900',
@@ -1585,8 +1585,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     emptyLedger: {
       alignItems: 'flex-start',
-      backgroundColor: 'rgba(7, 7, 10, 0.42)',
-      borderColor: 'rgba(242, 237, 228, 0.12)',
+      backgroundColor: theme.colors.card,
+      borderColor: theme.colors.divider,
       borderRadius: 10,
       borderWidth: StyleSheet.hairlineWidth,
       gap: 4,
@@ -1602,12 +1602,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       maxWidth: 430,
     },
     disclaimer: {
-      borderTopColor: 'rgba(242, 237, 228, 0.1)',
+      borderTopColor: theme.colors.divider,
       borderTopWidth: StyleSheet.hairlineWidth,
       paddingTop: 14,
     },
     disclaimerText: {
-      color: 'rgba(173, 167, 178, 0.76)',
+      color: theme.colors.textMuted,
       fontSize: 10,
       lineHeight: 15,
       maxWidth: 560,
@@ -1618,8 +1618,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     transactionDetailSheet: {
       alignSelf: 'center',
-      backgroundColor: '#0a090d',
-      borderColor: 'rgba(0, 255, 255, 0.26)',
+      backgroundColor: theme.colors.surfaceOverlay,
+      borderColor: theme.colors.accentCyanBorder,
       borderTopLeftRadius: 18,
       borderTopRightRadius: 18,
       borderWidth: StyleSheet.hairlineWidth,
@@ -1648,8 +1648,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingBottom: 4,
     },
     transactionDetailAmountCard: {
-      backgroundColor: 'rgba(0, 255, 255, 0.035)',
-      borderColor: 'rgba(0, 255, 255, 0.18)',
+      backgroundColor: theme.colors.iconSurfaceCyan,
+      borderColor: theme.colors.accentCyanBorder,
       borderRadius: 11,
       borderWidth: StyleSheet.hairlineWidth,
       gap: 3,
@@ -1673,8 +1673,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontSize: 11,
     },
     transactionDetailSection: {
-      backgroundColor: 'rgba(242, 237, 228, 0.025)',
-      borderColor: 'rgba(242, 237, 228, 0.11)',
+      backgroundColor: theme.colors.cardSoft,
+      borderColor: theme.colors.divider,
       borderRadius: 10,
       borderWidth: StyleSheet.hairlineWidth,
       overflow: 'hidden',
@@ -1690,7 +1690,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingTop: 11,
     },
     transactionDetailRow: {
-      borderTopColor: 'rgba(242, 237, 228, 0.08)',
+      borderTopColor: theme.colors.divider,
       borderTopWidth: StyleSheet.hairlineWidth,
       gap: 4,
       paddingHorizontal: 12,
@@ -1710,15 +1710,15 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       lineHeight: 17,
     },
     transactionDetailHint: {
-      color: 'rgba(173, 167, 178, 0.72)',
+      color: theme.colors.textMuted,
       fontSize: 10,
       lineHeight: 15,
     },
     modalRoot: { flex: 1, justifyContent: 'flex-end' },
-    modalDismiss: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(1, 1, 2, 0.76)' },
+    modalDismiss: { ...StyleSheet.absoluteFill, backgroundColor: theme.colors.scrim },
     sheet: {
-      backgroundColor: '#0a090d',
-      borderColor: 'rgba(141, 114, 255, 0.3)',
+      backgroundColor: theme.colors.surfaceOverlay,
+      borderColor: theme.colors.accentVioletBorder,
       borderTopLeftRadius: 16,
       borderTopRightRadius: 16,
       borderWidth: StyleSheet.hairlineWidth,
@@ -1740,8 +1740,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     closeButton: {
       alignItems: 'center',
-      backgroundColor: 'rgba(242, 237, 228, 0.06)',
-      borderColor: 'rgba(242, 237, 228, 0.15)',
+      backgroundColor: theme.colors.cardSoft,
+      borderColor: theme.colors.dividerStrong,
       borderRadius: 8,
       borderWidth: StyleSheet.hairlineWidth,
       height: 34,
@@ -1759,8 +1759,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     typeOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
     typeOption: {
-      backgroundColor: 'rgba(242, 237, 228, 0.035)',
-      borderColor: 'rgba(242, 237, 228, 0.16)',
+      backgroundColor: theme.colors.cardSoft,
+      borderColor: theme.colors.divider,
       borderRadius: 7,
       borderWidth: StyleSheet.hairlineWidth,
       minHeight: 29,
@@ -1768,8 +1768,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingVertical: 6,
     },
     typeOptionSelected: {
-      backgroundColor: 'rgba(0, 255, 255, 0.1)',
-      borderColor: 'rgba(0, 255, 255, 0.62)',
+      backgroundColor: theme.colors.iconSurfaceCyan,
+      borderColor: theme.colors.accentCyanBorder,
     },
     typeOptionText: {
       color: theme.colors.textMuted,
@@ -1785,8 +1785,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     formFieldDate: { flex: 1, gap: 7 },
     amountInputWrap: {
       alignItems: 'center',
-      backgroundColor: 'rgba(242, 237, 228, 0.045)',
-      borderColor: 'rgba(242, 237, 228, 0.17)',
+      backgroundColor: theme.colors.cardSoft,
+      borderColor: theme.colors.divider,
       borderRadius: 8,
       borderWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
@@ -1808,8 +1808,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 0,
     },
     dateInput: {
-      backgroundColor: 'rgba(242, 237, 228, 0.045)',
-      borderColor: 'rgba(242, 237, 228, 0.17)',
+      backgroundColor: theme.colors.cardSoft,
+      borderColor: theme.colors.divider,
       borderRadius: 8,
       borderWidth: StyleSheet.hairlineWidth,
       color: theme.colors.cream,
@@ -1818,8 +1818,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingHorizontal: 10,
     },
     textInput: {
-      backgroundColor: 'rgba(242, 237, 228, 0.045)',
-      borderColor: 'rgba(242, 237, 228, 0.17)',
+      backgroundColor: theme.colors.cardSoft,
+      borderColor: theme.colors.divider,
       borderRadius: 8,
       borderWidth: StyleSheet.hairlineWidth,
       color: theme.colors.cream,
@@ -1831,8 +1831,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     notesInput: { minHeight: 84 },
     itemPickerButton: {
       alignItems: 'center',
-      backgroundColor: 'rgba(242, 237, 228, 0.035)',
-      borderColor: 'rgba(242, 237, 228, 0.16)',
+      backgroundColor: theme.colors.cardSoft,
+      borderColor: theme.colors.divider,
       borderRadius: 8,
       borderWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
@@ -1840,14 +1840,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       minHeight: 53,
       paddingHorizontal: 11,
     },
-    itemPickerButtonPressed: { backgroundColor: 'rgba(242, 237, 228, 0.08)' },
+    itemPickerButtonPressed: { backgroundColor: theme.colors.cardSoft },
     itemPickerCopy: { flex: 1, gap: 2, minWidth: 0 },
     itemPickerTitle: { color: theme.colors.cream, fontSize: 13, fontWeight: '700' },
     itemPickerDetail: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 14 },
     itemPickerChevronOpen: { transform: [{ rotate: '90deg' }] },
     itemOptions: {
-      backgroundColor: 'rgba(5, 5, 7, 0.88)',
-      borderColor: 'rgba(141, 114, 255, 0.28)',
+      backgroundColor: theme.colors.surfaceOverlay,
+      borderColor: theme.colors.accentVioletBorder,
       borderRadius: 8,
       borderWidth: StyleSheet.hairlineWidth,
       maxHeight: 230,
@@ -1855,14 +1855,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     itemOption: {
       alignItems: 'center',
-      borderBottomColor: 'rgba(242, 237, 228, 0.09)',
+      borderBottomColor: theme.colors.divider,
       borderBottomWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
       gap: 8,
       minHeight: 42,
       paddingHorizontal: 11,
     },
-    itemOptionSelected: { backgroundColor: 'rgba(0, 255, 255, 0.08)' },
+    itemOptionSelected: { backgroundColor: theme.colors.iconSurfaceCyan },
     itemOptionText: { color: theme.colors.cream, flex: 1, fontSize: 12 },
     itemOptionCost: {
       color: theme.colors.goldBright,
@@ -1882,7 +1882,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     saveButtonDisabled: { opacity: 0.55 },
     saveButtonPressed: { opacity: 0.82 },
     saveButtonText: {
-      color: theme.colors.backgroundDeep,
+      color: theme.colors.textOnAccent,
       fontFamily: theme.fonts.radar,
       fontSize: 10,
       fontWeight: '900',

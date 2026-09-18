@@ -990,7 +990,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 14,
       paddingBottom: 10,
       borderBottomWidth: 1,
-      borderBottomColor: 'rgba(242, 211, 138, 0.16)',
+      borderBottomColor: theme.colors.divider,
     },
     brandLockup: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
     brandReticle: {
@@ -1333,7 +1333,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     valuationLabelFeatured: { color: theme.colors.goldBright },
     valuationValue: { maxWidth: '100%', color: theme.colors.textMuted, fontSize: 17, fontWeight: '800', fontVariant: ['tabular-nums'] },
     valuationValueFeatured: { color: theme.colors.goldBright, fontSize: 22, boxShadow: '0 0 12px rgba(242, 211, 138, 0.18)' },
-    valuationBasisRow: { gap: 5, padding: 14, borderTopWidth: 1, borderTopColor: 'rgba(215, 168, 74, 0.18)' },
+    valuationBasisRow: { gap: 5, padding: 14, borderTopWidth: 1, borderTopColor: theme.colors.divider },
     valuationBasisStrong: { color: theme.colors.cream, fontSize: 12, fontWeight: '800' },
     valuationBasis: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 },
     actions: { gap: 10, paddingTop: 7 },

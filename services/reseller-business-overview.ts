@@ -1,5 +1,9 @@
 import type { InventoryItem } from '@/services/inventory-service';
 import {
+  buildRealizedItemMargins,
+  type RealizedItemMargin,
+} from '@/lib/seller-performance';
+import {
   resolvedInventoryCostCents,
   type ResellerLedgerDirection,
   type ResellerLedgerEntry,
@@ -73,6 +77,32 @@ export type BusinessCostBreakdown = {
   amountCents: number;
 };
 
+export type BusinessExpenseBreakdown = BusinessCostBreakdown & {
+  isWorkingCapital: boolean;
+  sharePercent: number;
+};
+
+export type BusinessProfitAndLossMonth = {
+  key: string;
+  label: string;
+  revenueCents: number;
+  cogsCents: number;
+  grossProfitCents: number;
+  operatingExpensesCents: number;
+  netProfitCents: number;
+  grossMarginPercent: number | null;
+};
+
+export type BusinessGrossMarginBreakdown = {
+  key: string;
+  label: string;
+  revenueCents: number;
+  cogsCents: number;
+  grossProfitCents: number;
+  grossMarginPercent: number | null;
+  itemCount: number;
+};
+
 export type ResellerBusinessOverview = {
   currentMonth: {
     moneyInCents: number;
@@ -96,6 +126,9 @@ export type ResellerBusinessOverview = {
   firstTransactionAt: string | null;
   moneyFlowEntries: BusinessMoneyFlowEntry[];
   moneyFlow: BusinessMoneyFlowMonth[];
+  profitAndLoss: BusinessProfitAndLossMonth[];
+  grossMarginByCategory: BusinessGrossMarginBreakdown[];
+  expenseBreakdownThisMonth: BusinessExpenseBreakdown[];
   topCostsThisMonth: BusinessCostBreakdown[];
   recordedMoneyEventCount: number;
 };
@@ -134,6 +167,10 @@ function buildMonths(now: Date) {
 
 function expenseLabel(entryType: ResellerLedgerEntryType) {
   return EXPENSE_LABELS[entryType] ?? 'Other costs';
+}
+
+function percentage(value: number, denominator: number) {
+  return denominator > 0 ? (value / denominator) * 100 : null;
 }
 
 export function moneyFlowRangeOptions(
@@ -359,6 +396,8 @@ export function buildResellerBusinessOverview({
   );
   const currentMonthKey = monthKey(now);
   const activeEntries = entries.filter(entryHasUsableMoney);
+  const realizedMargins = buildRealizedItemMargins({ inventory, entries });
+  const inventoryById = new Map(inventory.map((item) => [item.id, item]));
   const firstTransactionAt = activeEntries.reduce<string | null>(
     (earliest, entry) =>
       !earliest || new Date(entry.occurredAt) < new Date(earliest)
@@ -369,6 +408,20 @@ export function buildResellerBusinessOverview({
   const purchaseCentsByItem = new Map<string, number>();
   const soldItemIds = new Set<string>();
   const costsByType = new Map<ResellerLedgerEntryType, number>();
+  const profitAndLossByMonth = new Map(
+    months.map((month) => [
+      month.key,
+      {
+        ...month,
+        revenueCents: 0,
+        cogsCents: 0,
+        grossProfitCents: 0,
+        operatingExpensesCents: 0,
+        netProfitCents: 0,
+        grossMarginPercent: null as number | null,
+      },
+    ]),
+  );
   let currentMonthMoneyInCents = 0;
   let currentMonthMoneyOutCents = 0;
   let unlinkedSaleCount = 0;
@@ -384,6 +437,15 @@ export function buildResellerBusinessOverview({
         monthlyFlow.moneyInCents += entry.amountCents;
       } else {
         monthlyFlow.moneyOutCents += entry.amountCents;
+      }
+    }
+
+    const monthlyProfitAndLoss = profitAndLossByMonth.get(occurredMonthKey);
+    if (monthlyProfitAndLoss) {
+      if (entry.direction === 'income') {
+        monthlyProfitAndLoss.revenueCents += entry.amountCents;
+      } else if (entry.entryType !== 'inventory_purchase') {
+        monthlyProfitAndLoss.operatingExpensesCents += entry.amountCents;
       }
     }
 
@@ -419,6 +481,72 @@ export function buildResellerBusinessOverview({
       (costsByType.get(entry.entryType) ?? 0) + entry.amountCents,
     );
   });
+
+  const grossMarginByCategory = new Map<string, BusinessGrossMarginBreakdown>();
+  realizedMargins.forEach((margin: RealizedItemMargin) => {
+    if (!margin.latestSaleAt) return;
+    const item = inventoryById.get(margin.itemId);
+    if (!item) return;
+
+    const acquisitionCostCents = resolvedInventoryCostCents(
+      item,
+      purchaseCentsByItem.get(item.id) ?? 0,
+    );
+    if (acquisitionCostCents <= 0 || margin.soldProceedsCents <= 0) return;
+
+    const category = margin.category.trim() || 'Uncategorized';
+    const current = grossMarginByCategory.get(category) ?? {
+      key: category,
+      label: category,
+      revenueCents: 0,
+      cogsCents: 0,
+      grossProfitCents: 0,
+      grossMarginPercent: null,
+      itemCount: 0,
+    };
+    current.revenueCents += margin.soldProceedsCents;
+    current.cogsCents += acquisitionCostCents;
+    current.grossProfitCents += margin.soldProceedsCents - acquisitionCostCents;
+    current.itemCount += 1;
+    current.grossMarginPercent = percentage(
+      current.grossProfitCents,
+      current.revenueCents,
+    );
+    grossMarginByCategory.set(category, current);
+
+    const saleMonth = monthKey(new Date(margin.latestSaleAt));
+    const monthlyProfitAndLoss = profitAndLossByMonth.get(saleMonth);
+    if (monthlyProfitAndLoss) {
+      monthlyProfitAndLoss.cogsCents += acquisitionCostCents;
+    }
+  });
+
+  const profitAndLoss = months.map((month) => {
+    const current = profitAndLossByMonth.get(month.key)!;
+    current.grossProfitCents = current.revenueCents - current.cogsCents;
+    current.netProfitCents =
+      current.grossProfitCents - current.operatingExpensesCents;
+    current.grossMarginPercent = percentage(
+      current.grossProfitCents,
+      current.revenueCents,
+    );
+    return current;
+  });
+
+  const totalCurrentMonthExpenses = [...costsByType.values()].reduce(
+    (total, amountCents) => total + amountCents,
+    0,
+  );
+  const expenseBreakdownThisMonth = [...costsByType.entries()]
+    .map(([entryType, amountCents]) => ({
+      entryType,
+      label: expenseLabel(entryType),
+      amountCents,
+      isWorkingCapital: entryType === 'inventory_purchase',
+      sharePercent: percentage(amountCents, totalCurrentMonthExpenses) ?? 0,
+    }))
+    .sort((left, right) => right.amountCents - left.amountCents)
+    .slice(0, 8);
 
   const onHandItems = inventory.filter(
     (item) =>
@@ -481,6 +609,11 @@ export function buildResellerBusinessOverview({
       occurredAt: entry.occurredAt,
     })),
     moneyFlow: months.map((month) => flowByMonth.get(month.key)!),
+    profitAndLoss,
+    grossMarginByCategory: [...grossMarginByCategory.values()]
+      .sort((left, right) => right.revenueCents - left.revenueCents)
+      .slice(0, 8),
+    expenseBreakdownThisMonth,
     topCostsThisMonth: [...costsByType.entries()]
       .map(([entryType, amountCents]) => ({
         entryType,

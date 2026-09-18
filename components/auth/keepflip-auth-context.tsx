@@ -14,6 +14,7 @@ import {
   type Models,
 } from 'react-native-appwrite';
 import { AppState } from 'react-native';
+import { analytics } from '@heycatch/sdk';
 
 import {
   AppwriteSetupError,
@@ -321,6 +322,12 @@ async function getVerifiedNonAnonymousUser(): Promise<Models.User | null> {
     );
   }
 
+  analytics.setIdentity(
+    user.$id,
+    { email: user.email, name: user.name },
+    { signup_date: user.$createdAt },
+  );
+
   return user;
 }
 
@@ -337,6 +344,7 @@ async function clearCurrentAppwriteSession() {
   } catch (error) {
     if (!isSignedOutResponse(error)) throw error;
   }
+  analytics.resetIdentity();
 }
 
 export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
@@ -389,6 +397,7 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
       }
 
       const user = await getVerifiedNonAnonymousUser();
+      if (!user) analytics.resetIdentity();
       commit(
         user
           ? {
@@ -617,6 +626,7 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
           missingKeys: [],
         });
         trackTenjinEvent('registration_completed');
+        analytics.trackEvent('signup_completed');
       } catch (error) {
         const safeError = safeAuthError(error, 'sign-up');
         if (safeError.code === 'AUTH_SETUP_REQUIRED') {

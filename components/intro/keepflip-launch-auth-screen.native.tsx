@@ -1,9 +1,11 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
+import { analytics } from '@heycatch/sdk';
 import {
   useState,
   useEffect,
+  useRef,
   type ComponentProps,
   type ComponentRef,
   type RefObject,
@@ -102,7 +104,7 @@ function AuthField({
         <TextInput
           {...inputProps}
           accessibilityLabel={label}
-          placeholderTextColor="rgba(173, 167, 178, 0.62)"
+          placeholderTextColor={theme.colors.textMuted}
           ref={inputRef}
           selectionColor={theme.colors.goldBright}
           style={styles.fieldInput}
@@ -389,6 +391,7 @@ export function KeepFlipLaunchAuthScreen({
     useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [profileSavedForAccount, setProfileSavedForAccount] = useState(true);
+  const signupAnalyticsTrackedRef = useRef(false);
 
   const isPreAccountSignup =
     mode === 'create-account' && !migrationMode && Boolean(initialBuyRules);
@@ -502,6 +505,11 @@ export function KeepFlipLaunchAuthScreen({
         await linkKeepFlipPreAccountPurchase(accountUserId);
         if (status !== 'signed-in') {
           await signIn(normalizedEmail, password);
+        }
+
+        if (!signupAnalyticsTrackedRef.current) {
+          analytics.trackEvent('signup_completed');
+          signupAnalyticsTrackedRef.current = true;
         }
 
         const { account } = getAppwriteCoreServices();
@@ -756,7 +764,7 @@ export function KeepFlipLaunchAuthScreen({
               onPress={() => void submit()}
               style={({ pressed }) => [styles.submitButton, (isBusy || isSubmitting || setupRequired) && styles.buttonDisabled, pressed && styles.pressed]}>
               {isBusy || isSubmitting ? (
-                <ActivityIndicator color={theme.colors.backgroundDeep} size="small" />
+                <ActivityIndicator color={theme.colors.textOnAccent} size="small" />
               ) : (
                 <>
                   <Text style={[styles.submitText, { fontSize: responsiveFont(11) }]}>
@@ -770,7 +778,7 @@ export function KeepFlipLaunchAuthScreen({
                             ? 'START SELECTED PLAN'
                             : 'CREATE ACCOUNT & START TRIAL'}
                   </Text>
-                  <IconSymbol color={theme.colors.backgroundDeep} name="arrow.right" size={19} />
+                  <IconSymbol color={theme.colors.textOnAccent} name="arrow.right" size={19} />
                 </>
               )}
             </Pressable>
@@ -794,26 +802,26 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     backButton: { alignItems: 'center', flexDirection: 'row', gap: 4, minHeight: 40, paddingHorizontal: 4 },
     backButtonText: { color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 9, letterSpacing: 1 },
     billingOption: { alignItems: 'center', borderRadius: 10, flex: 1, gap: 2, justifyContent: 'center', minHeight: 44 },
-    billingOptionSelected: { backgroundColor: 'rgba(215, 168, 74, 0.16)', borderColor: 'rgba(242, 211, 138, 0.4)', borderWidth: StyleSheet.hairlineWidth },
+    billingOptionSelected: { backgroundColor: theme.colors.iconSurfaceGold, borderColor: theme.colors.accentGoldBorder, borderWidth: StyleSheet.hairlineWidth },
     billingOptionSubtext: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 7, letterSpacing: 0.55 },
     billingOptionText: { color: theme.colors.textMuted, fontFamily: theme.fonts.radar, fontSize: 9, letterSpacing: 0.9 },
     billingOptionTextSelected: { color: theme.colors.goldBright },
-    billingToggle: { backgroundColor: 'rgba(1, 1, 2, 0.72)', borderColor: 'rgba(242, 237, 228, 0.14)', borderRadius: 13, borderWidth: 1, flexDirection: 'row', gap: 4, padding: 4 },
+    billingToggle: { backgroundColor: theme.colors.card, borderColor: theme.colors.divider, borderRadius: 13, borderWidth: 1, flexDirection: 'row', gap: 4, padding: 4 },
     brandEyebrow: { color: theme.colors.gold, fontFamily: theme.fonts.radar, fontSize: 9, letterSpacing: 1.3 },
     brandLogo: { height: 160, width: 160 },
-    brandMark: { alignItems: 'center', backgroundColor: 'rgba(5, 4, 5, 0.65)', borderColor: 'rgba(224, 172, 75, 0.25)', borderRadius: 85, borderWidth: 1, height: 170, justifyContent: 'center', width: 170 },
+    brandMark: { alignItems: 'center', backgroundColor: theme.colors.iconSurface, borderColor: theme.colors.accentGoldBorder, borderRadius: 85, borderWidth: 1, height: 170, justifyContent: 'center', width: 170 },
     brandSection: { alignItems: 'center', gap: 8, paddingHorizontal: 10 },
     buttonDisabled: { opacity: 0.42 },
     content: { alignItems: 'center', gap: 20, paddingHorizontal: 16 },
-    errorNotice: { backgroundColor: 'rgba(232, 97, 88, 0.08)', borderColor: 'rgba(232, 97, 88, 0.42)', borderRadius: 12, borderWidth: 1, gap: 10, padding: 12 },
-    errorText: { color: '#FFB8B1', fontSize: 12, lineHeight: 18 },
+    errorNotice: { backgroundColor: theme.colors.dangerSurface, borderColor: theme.colors.danger, borderRadius: 12, borderWidth: 1, gap: 10, padding: 12 },
+    errorText: { color: theme.colors.danger, fontSize: 12, lineHeight: 18 },
     fieldGroup: { gap: 7 },
     fieldInput: { color: theme.colors.text, flex: 1, fontSize: 15, minWidth: 0, paddingVertical: 13 },
     fieldLabel: { color: theme.colors.textMuted, fontSize: 10, fontWeight: '800', letterSpacing: 1.1, textTransform: 'uppercase' },
-    fieldShell: { alignItems: 'center', backgroundColor: 'rgba(2, 2, 4, 0.82)', borderColor: 'rgba(242, 211, 138, 0.16)', borderRadius: 12, borderWidth: 1, flexDirection: 'row', gap: 11, minHeight: 54, paddingHorizontal: 15 },
+    fieldShell: { alignItems: 'center', backgroundColor: theme.colors.surfaceSoft, borderColor: theme.colors.dividerStrong, borderRadius: 12, borderWidth: 1, flexDirection: 'row', gap: 11, minHeight: 54, paddingHorizontal: 15 },
     flex: { flex: 1 },
     flipImage: { height: 43, width: 43 },
-    flipNameRow: { alignItems: 'center', backgroundColor: 'rgba(141, 114, 255, 0.09)', borderColor: 'rgba(141, 114, 255, 0.28)', borderRadius: 14, borderWidth: 1, flexDirection: 'row', gap: 10, padding: 10 },
+    flipNameRow: { alignItems: 'center', backgroundColor: theme.colors.iconSurfaceViolet, borderColor: theme.colors.accentVioletBorder, borderRadius: 14, borderWidth: 1, flexDirection: 'row', gap: 10, padding: 10 },
     flipNameText: { color: theme.colors.cream, flex: 1, fontSize: 13, lineHeight: 19 },
     form: { gap: 14 },
     headerRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'center', width: '100%' },
@@ -822,23 +830,23 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     migrationBody: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 18 },
     migrationCopy: { flex: 1, gap: 4 },
     migrationEyebrow: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 1 },
-    migrationIcon: { alignItems: 'center', backgroundColor: 'rgba(0, 255, 255, 0.08)', borderRadius: 11, height: 36, justifyContent: 'center', width: 36 },
-    migrationNotice: { backgroundColor: 'rgba(0, 255, 255, 0.055)', borderColor: 'rgba(0, 255, 255, 0.24)', borderRadius: 14, borderWidth: 1, flexDirection: 'row', gap: 10, padding: 12 },
+    migrationIcon: { alignItems: 'center', backgroundColor: theme.colors.iconSurfaceCyan, borderRadius: 11, height: 36, justifyContent: 'center', width: 36 },
+    migrationNotice: { backgroundColor: theme.colors.iconSurfaceCyan, borderColor: theme.colors.accentCyanBorder, borderRadius: 14, borderWidth: 1, flexDirection: 'row', gap: 10, padding: 12 },
     migrationTitle: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 15, lineHeight: 20 },
-    panel: { backgroundColor: 'rgba(8, 8, 12, 0.93)', borderColor: 'rgba(224, 172, 75, 0.34)', borderRadius: 24, borderWidth: 1, gap: 16, maxWidth: 620, padding: 17, width: '100%' },
+    panel: { backgroundColor: theme.colors.card, borderColor: theme.colors.accentGoldBorder, borderRadius: 24, borderWidth: 1, gap: 16, maxWidth: 620, padding: 17, width: '100%' },
     planList: { gap: 9 },
-    planOption: { backgroundColor: 'rgba(255, 255, 255, 0.035)', borderColor: 'rgba(242, 237, 228, 0.14)', borderRadius: 15, borderWidth: 1, gap: 7, padding: 12 },
+    planOption: { backgroundColor: theme.colors.cardSoft, borderColor: theme.colors.divider, borderRadius: 15, borderWidth: 1, gap: 7, padding: 12 },
     planTrial: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 0.8 },
     planOptionDescription: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 },
     planOptionEyebrow: { color: theme.colors.gold, fontFamily: theme.fonts.radar, fontSize: 7, letterSpacing: 1.05 },
     planOptionName: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 17 },
-    planOptionSelected: { backgroundColor: 'rgba(0, 255, 255, 0.075)', borderColor: 'rgba(0, 255, 255, 0.62)' },
+    planOptionSelected: { backgroundColor: theme.colors.iconSurfaceCyan, borderColor: theme.colors.accentCyanBorder },
     planOptionTopLine: { alignItems: 'center', flexDirection: 'row', gap: 8, justifyContent: 'space-between' },
     planOptionCopy: { flex: 1, gap: 2 },
     planPeriod: { color: theme.colors.textMuted, fontSize: 10 },
     planPrice: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 24 },
     planPriceRow: { alignItems: 'baseline', flexDirection: 'row', gap: 4 },
-    planRadio: { alignItems: 'center', borderColor: 'rgba(242, 237, 228, 0.35)', borderRadius: 999, borderWidth: 1, height: 19, justifyContent: 'center', width: 19 },
+    planRadio: { alignItems: 'center', borderColor: theme.colors.dividerStrong, borderRadius: 999, borderWidth: 1, height: 19, justifyContent: 'center', width: 19 },
     planRadioCore: { backgroundColor: theme.colors.scannerCyan, borderRadius: 999, height: 9, width: 9 },
     planRadioSelected: { borderColor: theme.colors.scannerCyan },
     planSection: { gap: 10 },
@@ -846,42 +854,42 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     planSectionCopy: { flex: 1, gap: 2 },
     planSectionEyebrow: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 1.05 },
     planSectionHeading: { alignItems: 'center', flexDirection: 'row', gap: 9 },
-    planSectionIcon: { alignItems: 'center', backgroundColor: 'rgba(0, 255, 255, 0.08)', borderRadius: 10, height: 34, justifyContent: 'center', width: 34 },
+    planSectionIcon: { alignItems: 'center', backgroundColor: theme.colors.iconSurfaceCyan, borderRadius: 10, height: 34, justifyContent: 'center', width: 34 },
     planSectionTitle: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 16 },
     pressed: { opacity: 0.74, transform: [{ scale: 0.985 }] },
-    retryButton: { alignSelf: 'flex-start', borderColor: 'rgba(224, 172, 75, 0.34)', borderRadius: 999, borderWidth: 1, minHeight: 38, paddingHorizontal: 11, paddingVertical: 8 },
+    retryButton: { alignSelf: 'flex-start', borderColor: theme.colors.accentGoldBorder, borderRadius: 999, borderWidth: 1, minHeight: 38, paddingHorizontal: 11, paddingVertical: 8 },
     retryText: { color: theme.colors.scannerAmber, fontFamily: theme.fonts.radar, fontSize: 9, letterSpacing: 0.8 },
     setupBody: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 },
     setupKey: { color: theme.colors.goldBright, fontSize: 10, fontWeight: '700' },
-    setupNotice: { backgroundColor: 'rgba(141, 114, 255, 0.075)', borderColor: 'rgba(141, 114, 255, 0.36)', borderRadius: 12, borderWidth: 1, gap: 6, padding: 12 },
+    setupNotice: { backgroundColor: theme.colors.iconSurfaceViolet, borderColor: theme.colors.accentVioletBorder, borderRadius: 12, borderWidth: 1, gap: 6, padding: 12 },
     setupTitle: { color: theme.colors.scannerViolet, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 1.05 },
     subtitle: { color: theme.colors.textMuted, fontSize: 13, lineHeight: 20, maxWidth: 470, textAlign: 'center' },
     submitButton: { alignItems: 'center', backgroundColor: theme.colors.goldBright, borderRadius: 15, flexDirection: 'row', gap: 9, justifyContent: 'center', minHeight: 55 },
-    submitText: { color: theme.colors.backgroundDeep, fontFamily: theme.fonts.bold, fontSize: 11, letterSpacing: 0.85 },
+    submitText: { color: theme.colors.textOnAccent, fontFamily: theme.fonts.bold, fontSize: 11, letterSpacing: 0.85 },
     title: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 31, letterSpacing: -0.6, textAlign: 'center' },
-    accountReadyNotice: { alignItems: 'center', backgroundColor: 'rgba(0, 255, 255, 0.055)', borderColor: 'rgba(0, 255, 255, 0.24)', borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 10, padding: 12 },
+    accountReadyNotice: { alignItems: 'center', backgroundColor: theme.colors.iconSurfaceCyan, borderColor: theme.colors.accentCyanBorder, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 10, padding: 12 },
     accountReadyText: { color: theme.colors.textMuted, flex: 1, fontSize: 12, lineHeight: 18 },
-    checkoutAfterTrialText: { color: 'rgba(173, 167, 178, 0.76)', fontSize: 9, lineHeight: 13, textAlign: 'center' },
-    checkoutBanner: { alignItems: 'center', backgroundColor: 'rgba(0, 255, 255, 0.055)', borderColor: 'rgba(0, 255, 255, 0.24)', borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 11, padding: 13 },
+    checkoutAfterTrialText: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 13, textAlign: 'center' },
+    checkoutBanner: { alignItems: 'center', backgroundColor: theme.colors.iconSurfaceCyan, borderColor: theme.colors.accentCyanBorder, borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 11, padding: 13 },
     checkoutBannerBody: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 17 },
     checkoutBannerCopy: { flex: 1, gap: 3 },
-    checkoutBannerIcon: { alignItems: 'center', backgroundColor: 'rgba(0, 255, 255, 0.08)', borderRadius: 10, height: 40, justifyContent: 'center', width: 40 },
+    checkoutBannerIcon: { alignItems: 'center', backgroundColor: theme.colors.iconSurfaceCyan, borderRadius: 10, height: 40, justifyContent: 'center', width: 40 },
     checkoutBannerTitle: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 8, fontWeight: '900', letterSpacing: 0.95 },
     checkoutBillingLabel: { color: theme.colors.gold, fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: '900', letterSpacing: 1.1, paddingHorizontal: 2 },
     checkoutBillingOption: { alignItems: 'center', borderRadius: 9, flex: 1, gap: 1, justifyContent: 'center', minHeight: 45, paddingHorizontal: 10 },
-    checkoutBillingOptionSelected: { backgroundColor: 'rgba(215, 168, 74, 0.14)', borderColor: 'rgba(242, 211, 138, 0.42)', borderWidth: StyleSheet.hairlineWidth },
-    checkoutBillingOptionSubtext: { color: 'rgba(173, 167, 178, 0.66)', fontSize: 7, fontWeight: '800', letterSpacing: 0.45 },
+    checkoutBillingOptionSelected: { backgroundColor: theme.colors.iconSurfaceGold, borderColor: theme.colors.accentGoldBorder, borderWidth: StyleSheet.hairlineWidth },
+    checkoutBillingOptionSubtext: { color: theme.colors.textMuted, fontSize: 7, fontWeight: '800', letterSpacing: 0.45 },
     checkoutBillingOptionSubtextSelected: { color: theme.colors.scannerCyan },
     checkoutBillingOptionText: { color: theme.colors.textMuted, fontFamily: theme.fonts.radar, fontSize: 8, fontWeight: '900', letterSpacing: 0.85 },
     checkoutBillingOptionTextSelected: { color: theme.colors.goldBright },
     checkoutBillingSection: { gap: 7 },
-    checkoutBillingToggle: { backgroundColor: 'rgba(8, 8, 12, 0.92)', borderColor: 'rgba(242, 237, 228, 0.14)', borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 4, padding: 4 },
+    checkoutBillingToggle: { backgroundColor: theme.colors.card, borderColor: theme.colors.divider, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 4, padding: 4 },
     checkoutFeatureList: { gap: 7 },
     checkoutFeatureRow: { alignItems: 'center', flexDirection: 'row', gap: 8 },
     checkoutFeatureText: { color: theme.colors.text, flex: 1, fontSize: 11, lineHeight: 15 },
-    checkoutPlanCard: { backgroundColor: 'rgba(8, 8, 12, 0.92)', borderColor: 'rgba(242, 237, 228, 0.15)', borderRadius: 15, borderWidth: StyleSheet.hairlineWidth, gap: 11, padding: 15 },
-    checkoutPlanCardRecommended: { borderColor: 'rgba(0, 255, 255, 0.42)', shadowColor: theme.colors.scannerCyan, shadowOpacity: 0.09, shadowRadius: 20 },
-    checkoutPlanCardSelected: { borderColor: 'rgba(141, 114, 255, 0.72)', backgroundColor: 'rgba(141, 114, 255, 0.06)' },
+    checkoutPlanCard: { backgroundColor: theme.colors.card, borderColor: theme.colors.divider, borderRadius: 15, borderWidth: StyleSheet.hairlineWidth, gap: 11, padding: 15 },
+    checkoutPlanCardRecommended: { borderColor: theme.colors.accentCyanBorder, shadowColor: theme.colors.scannerCyan, shadowOpacity: 0.09, shadowRadius: 20 },
+    checkoutPlanCardSelected: { borderColor: theme.colors.accentVioletBorder, backgroundColor: theme.colors.iconSurfaceViolet },
     checkoutPlanDescription: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 17 },
     checkoutPlanEyebrow: { color: theme.colors.gold, fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: '900', letterSpacing: 1.15 },
     checkoutPlanHeading: { flex: 1, gap: 2 },
@@ -892,16 +900,16 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     checkoutPricePeriod: { color: theme.colors.textMuted, fontSize: 11 },
     checkoutPriceRow: { alignItems: 'baseline', flexDirection: 'row', gap: 4 },
     checkoutRecommendedBadge: { backgroundColor: theme.colors.scannerCyan, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 5 },
-    checkoutRecommendedText: { color: theme.colors.backgroundDeep, fontFamily: theme.fonts.radar, fontSize: 6, fontWeight: '900', letterSpacing: 0.7 },
+    checkoutRecommendedText: { color: theme.colors.textOnAccent, fontFamily: theme.fonts.radar, fontSize: 6, fontWeight: '900', letterSpacing: 0.7 },
     checkoutSavingsLine: { color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: '900', letterSpacing: 0.75, marginTop: -6 },
     checkoutSection: { gap: 14 },
-    checkoutSelectAction: { alignItems: 'center', borderColor: 'rgba(0, 255, 255, 0.34)', borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, justifyContent: 'center', minHeight: 46 },
+    checkoutSelectAction: { alignItems: 'center', borderColor: theme.colors.accentCyanBorder, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, justifyContent: 'center', minHeight: 46 },
     checkoutSelectActionRecommended: { borderColor: theme.colors.scannerCyan },
-    checkoutSelectActionSelected: { backgroundColor: 'rgba(141, 114, 255, 0.16)', borderColor: 'rgba(141, 114, 255, 0.62)' },
+    checkoutSelectActionSelected: { backgroundColor: theme.colors.iconSurfaceViolet, borderColor: theme.colors.accentVioletBorder },
     checkoutSelectActionText: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 8, fontWeight: '900', letterSpacing: 0.85 },
     checkoutSelectActionTextRecommended: { color: theme.colors.scannerCyan },
     checkoutSelectActionTextSelected: { color: theme.colors.cream },
-    checkoutTrialIncludedRow: { alignItems: 'center', alignSelf: 'flex-start', backgroundColor: 'rgba(0, 255, 255, 0.055)', borderColor: 'rgba(0, 255, 255, 0.2)', borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 6, paddingHorizontal: 9, paddingVertical: 6 },
+    checkoutTrialIncludedRow: { alignItems: 'center', alignSelf: 'flex-start', backgroundColor: theme.colors.iconSurfaceCyan, borderColor: theme.colors.accentCyanBorder, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 6, paddingHorizontal: 9, paddingVertical: 6 },
     checkoutTrialIncludedText: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 7, fontWeight: '900', letterSpacing: 0.7 },
     visibilityButton: { alignItems: 'center', borderRadius: 999, height: 36, justifyContent: 'center', width: 36 },
   });

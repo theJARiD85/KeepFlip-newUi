@@ -97,7 +97,6 @@ const TABS: { id: ResultTab; label: string }[] = [
 const COLLAPSED_HEIGHT = 284;
 const COLLAPSED_HEIGHT_WITH_SAVE = 335;
 const MAX_EXPANDED_HEIGHT = 675;
-const FLIP_ACCENT = "#46F5A2";
 const MARKET_DECISION_STAMP_HEIGHT = 68;
 const MARKET_DECISION_IMAGE_TOP_GAP = 116;
 const SHEET_SPRING = {
@@ -469,9 +468,9 @@ function decisionTone(card: AnalysisDecisionCard) {
   const kind = card.kind;
   if (kind === "flip") {
     return {
-      accent: FLIP_ACCENT,
-      background: "rgba(70, 245, 162, 0.075)",
-      border: "rgba(70, 245, 162, 0.54)",
+      accent: theme.colors.success,
+      background: theme.colors.successSurface,
+      border: theme.colors.success,
       label:
         card.status === "provisional"
           ? "MARKET FIT · FINANCIAL CHECK REQUIRED"
@@ -481,15 +480,15 @@ function decisionTone(card: AnalysisDecisionCard) {
   if (kind === "skip") {
     return {
       accent: theme.colors.danger,
-      background: "rgba(255, 75, 94, 0.065)",
-      border: "rgba(255, 94, 110, 0.44)",
+      background: theme.colors.dangerSurface,
+      border: theme.colors.danger,
       label: "MARKET RISK OUTWEIGHS UPSIDE",
     };
   }
   return {
     accent: theme.colors.goldBright,
-    background: "rgba(242, 211, 138, 0.065)",
-    border: "rgba(242, 211, 138, 0.42)",
+    background: theme.colors.iconSurfaceGold,
+    border: theme.colors.accentGoldBorder,
     label: "MORE EVIDENCE NEEDED",
   };
 }
@@ -2216,7 +2215,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontWeight: "900",
       letterSpacing: 0.4,
     },
-    readinessRow: { minHeight: 24, flexDirection: "row", alignItems: "center", gap: 7, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(255, 255, 255, 0.10)" },
+    readinessRow: { minHeight: 24, flexDirection: "row", alignItems: "center", gap: 7, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.colors.divider },
     readinessSignal: { width: 6, height: 6, borderRadius: 3 },
     readinessText: { flex: 1, fontFamily: theme.fonts.radar, fontSize: 8, fontWeight: "900" },
     readinessScore: { fontFamily: theme.fonts.radar, fontSize: 9, fontWeight: "900", fontVariant: ["tabular-nums"] },
@@ -2345,7 +2344,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       lineHeight: 13,
     },
     identifierPanel: { flex: 1, justifyContent: "center", gap: 7 },
-    identifierLead: { gap: 2, paddingBottom: 6, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(255, 255, 255, 0.10)" },
+    identifierLead: { gap: 2, paddingBottom: 6, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.divider },
     identifierTitle: { color: "#FFFFFF", fontFamily: theme.fonts.radar, fontSize: 15, lineHeight: 19, fontWeight: "900" },
     identifierConfidence: { color: theme.colors.scannerViolet, fontFamily: theme.fonts.numbers, fontSize: 8, fontWeight: "900", letterSpacing: 0.55 },
     identifierFactRow: { minHeight: 18, flexDirection: "row", alignItems: "center", gap: 7 },
@@ -2372,7 +2371,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 3,
       paddingTop: 7,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: "rgba(255, 255, 255, 0.09)",
+      borderTopColor: theme.colors.divider,
     },
     detailFactLabel: {
       color: "rgba(255, 255, 255, 0.42)",
@@ -2449,7 +2448,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 9,
       paddingTop: 8,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: "rgba(255, 255, 255, 0.09)",
+      borderTopColor: theme.colors.divider,
     },
     decisionEvidenceCode: {
       width: 22,
@@ -2483,7 +2482,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 9,
       paddingTop: 8,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: "rgba(255, 255, 255, 0.09)",
+      borderTopColor: theme.colors.divider,
     },
     expandedProfitCode: {
       width: 24,
@@ -2512,7 +2511,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 9,
       paddingTop: 8,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: "rgba(255, 255, 255, 0.09)",
+      borderTopColor: theme.colors.divider,
     },
     expandedEvidenceCode: {
       width: 22,
@@ -2541,7 +2540,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 9,
       paddingTop: 8,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: "rgba(255, 255, 255, 0.09)",
+      borderTopColor: theme.colors.divider,
     },
     referenceCode: {
       width: 22,
@@ -2568,7 +2567,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 5,
       paddingTop: 8,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: "rgba(255, 255, 255, 0.09)",
+      borderTopColor: theme.colors.divider,
     },
     questionLabel: {
       color: "#FFFFFF",
@@ -2640,7 +2639,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       letterSpacing: 0.8,
     },
     saveActions: { flexDirection: "row", gap: 8 },
-    incorrectIdentificationAction: { minHeight: 28, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(242, 211, 138, 0.16)" },
+    incorrectIdentificationAction: { minHeight: 28, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.colors.divider },
     incorrectIdentificationActionText: { color: theme.colors.textMuted, fontFamily: theme.fonts.radar, fontSize: 8, fontWeight: "900", letterSpacing: 0.72 },
     saveButton: { flex: 1, minHeight: 43, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingHorizontal: 8, borderRadius: 4, backgroundColor: theme.colors.goldBright },
     saveButtonSecondary: { borderWidth: 1, borderColor: "rgba(242, 211, 138, 0.38)", backgroundColor: "rgba(4, 4, 8, 0.72)" },

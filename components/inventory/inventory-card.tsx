@@ -589,7 +589,7 @@ export function InventoryCard({
         >
           <View style={[styles.listingGuideButtonIcon, styles.deleteButtonIcon]}>
             <IconSymbol
-              color="#ff9b9b"
+              color={theme.colors.danger}
               name="trash.fill"
               size={17}
             />
@@ -614,13 +614,13 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderRadius: theme.radii.large,
       borderCurve: "continuous",
       borderWidth: 1,
-      borderColor: "rgba(215, 168, 74, 0.32)",
-      backgroundColor: "rgba(5, 5, 8, 0.98)",
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.card,
       boxShadow:
         "0 18px 42px rgba(0, 0, 0, 0.46), 0 0 28px rgba(215, 168, 74, 0.08)",
     },
     cardPressTarget: {
-      backgroundColor: "rgba(5, 5, 8, 0.98)",
+      backgroundColor: theme.colors.card,
     },
     cardPressed: {
       opacity: 0.86,
@@ -629,7 +629,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     hero: {
       height: 240,
       justifyContent: "space-between",
-      backgroundColor: "#08070C",
+      backgroundColor: theme.colors.surfaceInset,
     },
     photoCarousel: {
       position: "absolute",
@@ -665,12 +665,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       alignItems: "center",
       justifyContent: "center",
       gap: 8,
-      backgroundColor: "#08070C",
+      backgroundColor: theme.colors.surfaceInset,
       experimental_backgroundImage:
         "radial-gradient(circle at 50% 26%, rgba(141, 114, 255, 0.28) 0%, transparent 34%), radial-gradient(circle at 74% 72%, rgba(88, 223, 232, 0.16) 0%, transparent 38%), linear-gradient(145deg, #100B18 0%, #030305 76%)",
     },
     fallbackLabel: {
-      color: "rgba(242, 211, 138, 0.72)",
+      color: theme.colors.goldBright,
       fontFamily: theme.fonts.radar,
       fontSize: responsiveFont(8),
       fontWeight: "900",
@@ -698,8 +698,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingVertical: 6,
       borderRadius: theme.radii.pill,
       borderWidth: StyleSheet.hairlineWidth,
-      borderColor: "rgba(88, 223, 232, 0.42)",
-      backgroundColor: "rgba(0, 8, 13, 0.70)",
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     photoPillText: {
       color: theme.colors.scannerCyan,
@@ -714,8 +714,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingVertical: 6,
       borderRadius: theme.radii.pill,
       borderWidth: StyleSheet.hairlineWidth,
-      borderColor: "rgba(242, 211, 138, 0.36)",
-      backgroundColor: "rgba(7, 5, 10, 0.72)",
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     conditionText: {
       color: theme.colors.goldBright,
@@ -740,7 +740,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingBottom: 16,
     },
     title: {
-      color: "#FFFFFF",
+      color: theme.colors.text,
       fontFamily: theme.fonts.bold,
       fontSize: responsiveFont(21),
       lineHeight: 25,
@@ -751,7 +751,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       textShadowRadius: 7,
     },
     meta: {
-      color: "rgba(235, 241, 244, 0.78)",
+      color: theme.colors.textMuted,
       fontFamily: theme.fonts.radar,
       fontSize: responsiveFont(9),
       lineHeight: 13,
@@ -778,7 +778,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       width: 2,
       height: 13,
       marginLeft: -1,
-      backgroundColor: "#FFFFFF",
+      backgroundColor: theme.colors.text,
       boxShadow: "0 0 8px rgba(255, 255, 255, 0.96)",
     },
     valuationSummary: {
@@ -788,7 +788,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: "center",
       paddingHorizontal: 16,
       paddingVertical: 7,
-      backgroundColor: "rgba(5, 5, 8, 0.98)",
+      backgroundColor: theme.colors.card,
       experimental_backgroundImage:
         "radial-gradient(circle at 50% 0%, rgba(242, 211, 138, 0.13) 0%, transparent 48%), linear-gradient(90deg, rgba(141, 114, 255, 0.08) 0%, rgba(5, 5, 8, 0) 28%, rgba(5, 5, 8, 0) 72%, rgba(88, 223, 232, 0.08) 100%)",
     },
@@ -799,14 +799,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 3,
     },
     savedAtLabel: {
-      color: "rgba(255, 255, 255, 0.38)",
+      color: theme.colors.textMuted,
       fontFamily: theme.fonts.radar,
       fontSize: responsiveFont(7),
       fontWeight: "900",
       letterSpacing: 0.8,
     },
     savedAtValue: {
-      color: "rgba(255, 255, 255, 0.66)",
+      color: theme.colors.text,
       fontFamily: theme.fonts.radar,
       fontSize: responsiveFont(8),
       fontWeight: "900",
@@ -817,7 +817,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 3,
     },
     medianLabel: {
-      color: "rgba(242, 211, 138, 0.70)",
+      color: theme.colors.goldBright,
       fontFamily: theme.fonts.radar,
       fontSize: responsiveFont(8),
       fontWeight: "900",
@@ -852,7 +852,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       textShadowRadius: 7,
     },
     confidenceLabel: {
-      color: "rgba(88, 223, 232, 0.60)",
+      color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.radar,
       fontSize: responsiveFont(7),
       fontWeight: "900",
@@ -865,8 +865,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingHorizontal: 16,
       paddingVertical: 11,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: "rgba(88, 223, 232, 0.20)",
-      backgroundColor: "rgba(0, 255, 255, 0.035)",
+      borderTopColor: theme.colors.divider,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     recordMetric: {
       flex: 0.78,
@@ -879,7 +879,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 3,
     },
     recordLabel: {
-      color: "rgba(88, 223, 232, 0.62)",
+      color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.radar,
       fontSize: 7,
       fontWeight: "900",
@@ -893,7 +893,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontVariant: ["tabular-nums"],
     },
     recordValueMuted: {
-      color: "rgba(255, 255, 255, 0.38)",
+      color: theme.colors.textMuted,
     },
     listingGuideButton: {
       position: "relative",
@@ -903,30 +903,30 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 11,
       paddingHorizontal: 15,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: "rgba(0, 255, 255, 0.28)",
-      backgroundColor: "rgba(4, 8, 12, 0.96)",
+      borderTopColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.surfaceInset,
     },
     listingGuideButtonPressed: {
       opacity: 0.76,
     },
     photoManagerButton: {
-      borderTopColor: "rgba(88, 223, 232, 0.22)",
-      backgroundColor: "rgba(7, 12, 18, 0.96)",
+      borderTopColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.surfaceInset,
     },
     deleteButton: {
-      borderTopColor: "rgba(255, 107, 107, 0.34)",
-      backgroundColor: "rgba(52, 12, 20, 0.96)",
+      borderTopColor: theme.colors.danger,
+      backgroundColor: theme.colors.dangerSurface,
     },
     deleteButtonDisabled: {
       opacity: 0.58,
     },
     deleteButtonIcon: {
-      borderColor: "rgba(255, 107, 107, 0.45)",
-      backgroundColor: "rgba(255, 107, 107, 0.10)",
+      borderColor: theme.colors.danger,
+      backgroundColor: theme.colors.dangerSurface,
       boxShadow: "0 0 16px rgba(255, 107, 107, 0.14)",
     },
     deleteButtonLabel: {
-      color: "#ffb4b4",
+      color: theme.colors.danger,
     },
     photoIndicators: {
       position: "absolute",
@@ -942,7 +942,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       width: 5,
       height: 5,
       borderRadius: 3,
-      backgroundColor: "rgba(255, 255, 255, 0.42)",
+      backgroundColor: theme.colors.cardSoft,
     },
     photoIndicatorActive: {
       width: 16,
@@ -955,8 +955,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: "center",
       borderRadius: theme.radii.small,
       borderWidth: StyleSheet.hairlineWidth,
-      borderColor: "rgba(0, 255, 255, 0.42)",
-      backgroundColor: "rgba(0, 255, 255, 0.08)",
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
       boxShadow: "0 0 16px rgba(0, 255, 255, 0.16)",
     },
     listingGuideButtonCopy: {
@@ -964,7 +964,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 2,
     },
     listingGuideButtonEyebrow: {
-      color: "rgba(0, 255, 255, 0.66)",
+      color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.radar,
       fontSize: responsiveFont(7),
       fontWeight: "900",

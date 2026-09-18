@@ -1677,11 +1677,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderWidth:
         StyleSheet.hairlineWidth,
 
-      borderColor:
-        "rgba(0,255,255,0.26)",
+      borderColor: theme.colors.accentCyanBorder,
 
-      backgroundColor:
-        "rgba(2,5,9,0.56)",
+      backgroundColor: theme.colors.surfaceInset,
 
       boxShadow:
         "0 0 18px rgba(0,255,255,0.10)",
@@ -1701,8 +1699,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
 
     topReadoutText: {
-      color:
-        "rgba(225,255,255,0.84)",
+      color: theme.colors.text,
 
       fontFamily:
         theme.fonts.radar,
@@ -1730,11 +1727,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderWidth:
         StyleSheet.hairlineWidth,
 
-      borderColor:
-        "rgba(242,211,138,0.26)",
+      borderColor: theme.colors.accentGoldBorder,
 
-      backgroundColor:
-        "rgba(1,5,8,0.72)",
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
 
     targetStatusText: {
@@ -1801,8 +1796,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       position: "absolute",
       bottom: 34,
 
-      color:
-        "rgba(173,167,178,0.58)",
+      color: theme.colors.textMuted,
 
       fontFamily:
         theme.fonts.radar,

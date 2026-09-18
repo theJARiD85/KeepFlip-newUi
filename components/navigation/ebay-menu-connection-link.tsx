@@ -6,10 +6,7 @@ import { EbayShoppingBagIcon } from '@/components/ebay/ebay-shopping-bag-icon';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont from '@/lib/responsiveFont';
-
-import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type EbayMenuConnectionLinkProps = {
   active: boolean;
   disabled: boolean;
@@ -115,16 +112,16 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingVertical: 8,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
-      borderColor: 'rgba(242, 211, 138, 0.18)',
-      backgroundColor: 'rgba(6, 6, 9, 0.62)',
+      borderColor: theme.colors.divider,
+      backgroundColor: theme.colors.cardSoft,
     },
     linkActive: {
-      borderColor: 'rgba(242, 211, 138, 0.36)',
-      backgroundColor: 'rgba(215, 168, 74, 0.09)',
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     linkConnected: {
-      borderColor: 'rgba(88, 223, 232, 0.48)',
-      backgroundColor: 'rgba(88, 223, 232, 0.08)',
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     linkDisabled: {
       opacity: 0.56,

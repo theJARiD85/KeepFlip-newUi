@@ -59,35 +59,35 @@ const METRICS: {
   label: string;
   shortLabel: string;
   description: string;
-  accent: string;
+  accent: 'scannerCyan' | 'goldBright' | 'scannerViolet' | 'goldMuted';
 }[] = [
   {
     id: 'roi',
     label: 'Average ROI',
     shortLabel: 'ROI',
     description: 'Average realized return on recorded acquisition cost.',
-    accent: theme.colors.scannerCyan,
+    accent: 'scannerCyan',
   },
   {
     id: 'profit',
     label: 'Net profit',
     shortLabel: 'Profit',
     description: 'Realized profit across cost-confirmed items.',
-    accent: theme.colors.goldBright,
+    accent: 'goldBright',
   },
   {
     id: 'listingDays',
     label: 'Days listed',
     shortLabel: 'Days listed',
     description: 'Time from listing to sale, or current listing age.',
-    accent: theme.colors.scannerViolet,
+    accent: 'scannerViolet',
   },
   {
     id: 'soldUnits',
     label: 'Units sold',
     shortLabel: 'Units',
     description: 'Units in matched manual and eBay orders.',
-    accent: theme.colors.goldMuted,
+    accent: 'goldMuted',
   },
 ];
 
@@ -116,6 +116,10 @@ function formatMoney(cents: number) {
     currency: 'USD',
     maximumFractionDigits: 0,
   }).format(cents / 100);
+}
+
+function getMetricAccent(metric: (typeof METRICS)[number]) {
+  return theme.colors[metric.accent];
 }
 
 function formatMetricValue(metric: SellerAnalyticsMetric, value: number) {
@@ -247,7 +251,7 @@ function ChartCard({
     .slice(0, 8);
   const maxAbs = Math.max(1, ...values.map(({ value }) => Math.abs(value)));
   const hasNegative = values.some(({ value }) => value < 0);
-  const positiveColor = metric.accent;
+  const positiveColor = getMetricAccent(metric);
 
   let summary = 'No data yet';
   if (allValues.length) {
@@ -271,7 +275,7 @@ function ChartCard({
   return (
     <Animated.View entering={FadeInDown.duration(220)} style={styles.chartCard}>
       <View style={styles.chartHeading}>
-        <View style={[styles.metricMark, { backgroundColor: metric.accent }]} />
+        <View style={[styles.metricMark, { backgroundColor: getMetricAccent(metric) }]} />
         <View style={styles.chartTitleBlock}>
           <Text accessibilityRole="header" style={[styles.chartTitle, { fontSize: responsiveFont(15) }]}>
             {metric.label}
@@ -658,7 +662,7 @@ export function MetricsAnalyticsScreen() {
                 {METRICS.map((metric) => (
                   <MetricPill
                     key={metric.id}
-                    color={metric.accent}
+                    color={getMetricAccent(metric)}
                     selected={selectedMetrics.includes(metric.id)}
                     title={metric.shortLabel}
                     onPress={() => toggleMetric(metric.id)}
@@ -721,8 +725,8 @@ function createMetricsStyles() {
   headerCopy: { flex: 1, gap: 2 },
   backButton: {
     alignItems: 'center',
-    backgroundColor: 'rgba(242, 211, 138, 0.08)',
-    borderColor: 'rgba(242, 211, 138, 0.2)',
+    backgroundColor: theme.colors.iconSurfaceGold,
+    borderColor: theme.colors.accentGoldBorder,
     borderCurve: 'continuous',
     borderRadius: 13,
     borderWidth: 1,
@@ -732,7 +736,7 @@ function createMetricsStyles() {
   },
   refreshButton: {
     alignItems: 'center',
-    borderColor: 'rgba(242, 211, 138, 0.24)',
+    borderColor: theme.colors.accentGoldBorder,
     borderCurve: 'continuous',
     borderRadius: 13,
     borderWidth: 1,
@@ -745,8 +749,8 @@ function createMetricsStyles() {
   intro: { color: theme.colors.textMuted, fontFamily: theme.fonts.display, lineHeight: 19, maxWidth: 360 },
   loadingCard: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.035)',
-    borderColor: 'rgba(88, 223, 232, 0.22)',
+    backgroundColor: theme.colors.card,
+    borderColor: theme.colors.accentCyanBorder,
     borderCurve: 'continuous',
     borderRadius: 17,
     borderWidth: 1,
@@ -757,8 +761,8 @@ function createMetricsStyles() {
   loadingText: { color: theme.colors.textMuted, flex: 1, fontSize: 12, lineHeight: 18 },
   messageCard: {
     alignItems: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.035)',
-    borderColor: 'rgba(255,255,255,0.10)',
+    backgroundColor: theme.colors.cardSoft,
+    borderColor: theme.colors.divider,
     borderCurve: 'continuous',
     borderRadius: 17,
     borderWidth: 1,
@@ -768,8 +772,8 @@ function createMetricsStyles() {
   errorText: { color: theme.colors.danger, fontSize: 12, lineHeight: 18 },
   lockedCard: {
     alignItems: 'flex-start',
-    backgroundColor: 'rgba(242, 211, 138, 0.055)',
-    borderColor: 'rgba(242, 211, 138, 0.22)',
+    backgroundColor: theme.colors.iconSurfaceGold,
+    borderColor: theme.colors.dividerStrong,
     borderCurve: 'continuous',
     borderRadius: 18,
     borderWidth: 1,
@@ -778,7 +782,7 @@ function createMetricsStyles() {
   },
   lockIcon: {
     alignItems: 'center',
-    backgroundColor: 'rgba(242, 211, 138, 0.12)',
+    backgroundColor: theme.colors.iconSurfaceGold,
     borderRadius: 11,
     height: 42,
     justifyContent: 'center',
@@ -800,8 +804,8 @@ function createMetricsStyles() {
   actionButtonText: { color: theme.colors.backgroundDeep, fontSize: 12, fontWeight: '900' },
   warningCard: {
     alignItems: 'flex-start',
-    backgroundColor: 'rgba(242, 211, 138, 0.055)',
-    borderColor: 'rgba(242, 211, 138, 0.16)',
+    backgroundColor: theme.colors.iconSurfaceGold,
+    borderColor: theme.colors.divider,
     borderCurve: 'continuous',
     borderRadius: 12,
     borderWidth: 1,
@@ -812,8 +816,8 @@ function createMetricsStyles() {
   warningText: { color: theme.colors.textMuted, flex: 1, fontSize: 10, lineHeight: 15 },
   summaryRow: { flexDirection: 'row', gap: 8 },
   summaryCard: {
-    backgroundColor: 'rgba(255,255,255,0.035)',
-    borderColor: 'rgba(255,255,255,0.10)',
+    backgroundColor: theme.colors.cardSoft,
+    borderColor: theme.colors.divider,
     borderCurve: 'continuous',
     borderRadius: 14,
     borderWidth: 1,
@@ -825,8 +829,8 @@ function createMetricsStyles() {
   summaryLabel: { color: theme.colors.textMuted, fontSize: 7, fontWeight: '900', letterSpacing: 0.7 },
   summaryValue: { color: theme.colors.text, fontVariant: ['tabular-nums'], fontWeight: '900' },
   controlsCard: {
-    backgroundColor: 'rgba(255,255,255,0.035)',
-    borderColor: 'rgba(255,255,255,0.10)',
+    backgroundColor: theme.colors.cardSoft,
+    borderColor: theme.colors.divider,
     borderCurve: 'continuous',
     borderRadius: 17,
     borderWidth: 1,
@@ -839,8 +843,8 @@ function createMetricsStyles() {
   horizontalPills: { gap: 7, paddingRight: 4 },
   pill: {
     alignItems: 'center',
-    backgroundColor: 'rgba(3, 3, 6, 0.62)',
-    borderColor: 'rgba(242, 211, 138, 0.17)',
+    backgroundColor: theme.colors.surfaceInset,
+    borderColor: theme.colors.divider,
     borderCurve: 'continuous',
     borderRadius: 999,
     borderWidth: 1,
@@ -849,18 +853,18 @@ function createMetricsStyles() {
     minHeight: 34,
     paddingHorizontal: 11,
   },
-  pillSelected: { backgroundColor: 'rgba(242, 211, 138, 0.11)', borderColor: theme.colors.goldMuted },
+  pillSelected: { backgroundColor: theme.colors.iconSurfaceGold, borderColor: theme.colors.accentGoldBorder },
   pillPressed: { opacity: 0.78 },
   pillText: { color: theme.colors.textMuted, fontSize: 10, fontWeight: '700' },
   pillTextSelected: { color: theme.colors.text },
   pillDetail: { color: theme.colors.textMuted, fontSize: 9 },
-  divider: { backgroundColor: 'rgba(255,255,255,0.08)', height: StyleSheet.hairlineWidth, marginVertical: 2 },
+  divider: { backgroundColor: theme.colors.divider, height: StyleSheet.hairlineWidth, marginVertical: 2 },
   metricSelectionHeading: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   selectionCount: { color: theme.colors.scannerCyan, fontSize: 10, fontVariant: ['tabular-nums'], fontWeight: '800' },
   selectionHint: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 14 },
   chartCard: {
-    backgroundColor: 'rgba(255,255,255,0.035)',
-    borderColor: 'rgba(255,255,255,0.11)',
+    backgroundColor: theme.colors.cardSoft,
+    borderColor: theme.colors.divider,
     borderCurve: 'continuous',
     borderRadius: 17,
     borderWidth: 1,
@@ -877,13 +881,13 @@ function createMetricsStyles() {
   chartRow: { alignItems: 'center', flexDirection: 'row', gap: 7, minHeight: 25 },
   chartLabel: { color: theme.colors.textMuted, fontSize: 9, width: 78 },
   track: {
-    backgroundColor: 'rgba(255,255,255,0.045)',
+    backgroundColor: theme.colors.cardSoft,
     borderRadius: 4,
     flex: 1,
     height: 13,
     overflow: 'hidden',
   },
-  trackCenter: { backgroundColor: 'rgba(255,255,255,0.35)', height: '100%', left: '50%', position: 'absolute', width: StyleSheet.hairlineWidth },
+  trackCenter: { backgroundColor: theme.colors.dividerStrong, height: '100%', left: '50%', position: 'absolute', width: StyleSheet.hairlineWidth },
   bar: { borderRadius: 4, height: '100%', position: 'absolute' },
   chartValue: { color: theme.colors.text, fontVariant: ['tabular-nums'], fontWeight: '800', textAlign: 'right', width: 72 },
   axisRow: { flexDirection: 'row', justifyContent: 'space-between', paddingLeft: 84, paddingRight: 79 },
@@ -891,7 +895,7 @@ function createMetricsStyles() {
   chartFootnote: { color: theme.colors.textMuted, fontSize: 9, textAlign: 'right' },
   chartEmpty: {
     alignItems: 'center',
-    backgroundColor: 'rgba(3, 3, 6, 0.42)',
+    backgroundColor: theme.colors.card,
     borderRadius: 12,
     flexDirection: 'row',
     gap: 9,
@@ -900,8 +904,8 @@ function createMetricsStyles() {
   chartEmptyText: { color: theme.colors.textMuted, flex: 1, fontSize: 10, lineHeight: 15 },
   dataNote: {
     alignItems: 'flex-start',
-    backgroundColor: 'rgba(88, 223, 232, 0.055)',
-    borderColor: 'rgba(88, 223, 232, 0.15)',
+    backgroundColor: theme.colors.cardSoft,
+    borderColor: theme.colors.accentCyanBorder,
     borderCurve: 'continuous',
     borderRadius: 13,
     borderWidth: 1,

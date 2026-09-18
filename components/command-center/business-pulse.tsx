@@ -55,6 +55,19 @@ function compactMoney(cents: number) {
   return `$${Math.round(amount)}`;
 }
 
+function compactSignedMoney(cents: number) {
+  return `${cents < 0 ? '-' : ''}${compactMoney(cents)}`;
+}
+
+function reportBarHeight(value: number, maximum: number, maximumHeight = 72) {
+  if (value <= 0 || maximum <= 0) return 3;
+  return Math.max(5, Math.round((value / maximum) * maximumHeight));
+}
+
+function reportPercent(value: number | null) {
+  return value == null ? '—' : `${Math.round(value)}%`;
+}
+
 export function BusinessPulse({
   errorMessage,
   loading,
@@ -331,6 +344,8 @@ export function BusinessPulse({
         </View>
       </View>
 
+      <FinancialReporting overview={overview} />
+
       <View style={styles.splitRow}>
         <View style={styles.inventorySurface}>
           <Text style={[styles.chartLabel, { fontSize: responsiveFont(8) }]}>ITEMS ON HAND</Text>
@@ -410,6 +425,190 @@ export function BusinessPulse({
   );
 }
 
+function FinancialReporting({
+  overview,
+}: {
+  overview: ResellerBusinessOverview;
+}) {
+  const styles = useResponsiveStyles(createResponsiveStyles);
+  const { responsiveFont } = useResponsiveLayout();
+  const profitAndLoss = overview.profitAndLoss;
+  const grossMargin = overview.grossMarginByCategory;
+  const expenseBreakdown = overview.expenseBreakdownThisMonth;
+  const maximumProfitAndLoss = Math.max(
+    ...profitAndLoss.flatMap((month) => [
+      month.revenueCents,
+      month.cogsCents + month.operatingExpensesCents,
+      Math.abs(month.netProfitCents),
+    ]),
+    1,
+  );
+  const maximumGrossProfit = Math.max(
+    ...grossMargin.map((category) => Math.abs(category.grossProfitCents)),
+    1,
+  );
+  const maximumExpense = Math.max(
+    ...expenseBreakdown.map((expense) => expense.amountCents),
+    1,
+  );
+  const hasProfitAndLoss = profitAndLoss.some(
+    (month) =>
+      month.revenueCents > 0 ||
+      month.cogsCents > 0 ||
+      month.operatingExpensesCents > 0,
+  );
+
+  return (
+    <View style={styles.reportingSurface}>
+      <View style={styles.reportingHeader}>
+        <View style={styles.reportingHeadingCopy}>
+          <Text style={[styles.chartLabel, { fontSize: responsiveFont(8) }]}>FINANCIAL REPORTING</Text>
+          <Text style={[styles.reportingTitle, { fontSize: responsiveFont(15), lineHeight: 19 }]}>Profit &amp; loss at a glance</Text>
+          <Text style={[styles.reportingDescription, { fontSize: responsiveFont(10), lineHeight: 14 }]}>Recorded Books activity · last 6 months</Text>
+        </View>
+        <View style={styles.reportingLegend}>
+          <Legend color={theme.colors.scannerCyan} label="Revenue" />
+          <Legend color={theme.colors.goldBright} label="Costs" />
+          <Legend color={theme.colors.scannerViolet} label="Net" />
+        </View>
+      </View>
+
+      {hasProfitAndLoss ? (
+        <View style={styles.pnlChart}>
+          {profitAndLoss.map((month) => {
+            const costsCents = month.cogsCents + month.operatingExpensesCents;
+            return (
+              <View
+                accessible
+                accessibilityLabel={`${month.label}: revenue ${money(month.revenueCents)}, costs ${money(costsCents)}, net ${money(month.netProfitCents)}`}
+                key={month.key}
+                style={styles.pnlMonth}
+              >
+                <Text numberOfLines={1} style={[styles.pnlNetLabel, { fontSize: responsiveFont(8) }]}>
+                  {compactSignedMoney(month.netProfitCents)}
+                </Text>
+                <View style={styles.pnlBars}>
+                  <View
+                    style={[
+                      styles.pnlBar,
+                      styles.pnlRevenueBar,
+                      { height: reportBarHeight(month.revenueCents, maximumProfitAndLoss) },
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.pnlBar,
+                      styles.pnlCostBar,
+                      { height: reportBarHeight(costsCents, maximumProfitAndLoss) },
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.pnlBar,
+                      month.netProfitCents < 0
+                        ? styles.pnlNetNegativeBar
+                        : styles.pnlNetBar,
+                      { height: reportBarHeight(Math.abs(month.netProfitCents), maximumProfitAndLoss) },
+                    ]}
+                  />
+                </View>
+                <Text style={[styles.pnlMonthLabel, { fontSize: responsiveFont(8) }]}>{month.label}</Text>
+              </View>
+            );
+          })}
+        </View>
+      ) : (
+        <View style={styles.reportEmpty}>
+          <Text style={[styles.reportEmptyText, { fontSize: responsiveFont(10), lineHeight: 14 }]}>Record income, purchases, and expenses in Books to populate this trend.</Text>
+        </View>
+      )}
+
+      <View style={styles.reportDivider} />
+
+      <View style={styles.reportSection}>
+        <View style={styles.reportSectionHeading}>
+          <Text style={[styles.reportSectionTitle, { fontSize: responsiveFont(11) }]}>Gross margin by category</Text>
+          <Text style={[styles.reportSectionHint, { fontSize: responsiveFont(8) }]}>REALIZED ONLY</Text>
+        </View>
+        <Text style={[styles.reportSectionDescription, { fontSize: responsiveFont(9), lineHeight: 13 }]}>Sales with a known acquisition cost, grouped by item category.</Text>
+        {grossMargin.length ? (
+          grossMargin.map((category) => {
+            const fillWidth = Math.max(
+              4,
+              Math.round(
+                (Math.abs(category.grossProfitCents) / maximumGrossProfit) * 100,
+              ),
+            );
+            return (
+              <View key={category.key} style={styles.reportRow}>
+                <View style={styles.reportRowHeading}>
+                  <Text numberOfLines={1} style={[styles.reportRowLabel, { fontSize: responsiveFont(10) }]}>{category.label}</Text>
+                  <Text style={[styles.reportRowValue, { fontSize: responsiveFont(10) }]}>{money(category.grossProfitCents)} · {reportPercent(category.grossMarginPercent)}</Text>
+                </View>
+                <View style={styles.reportTrack}>
+                  <View
+                    style={[
+                      styles.reportTrackFill,
+                      category.grossProfitCents < 0
+                        ? styles.reportFillDanger
+                        : styles.reportFillViolet,
+                      { width: `${Math.min(100, fillWidth)}%` },
+                    ]}
+                  />
+                </View>
+                <Text style={[styles.reportMeta, { fontSize: responsiveFont(8) }]}>{category.itemCount} realized item{category.itemCount === 1 ? '' : 's'} · {money(category.revenueCents)} revenue · {money(category.cogsCents)} cost</Text>
+              </View>
+            );
+          })
+        ) : (
+          <View style={styles.reportEmpty}>
+            <Text style={[styles.reportEmptyText, { fontSize: responsiveFont(10), lineHeight: 14 }]}>Link a recorded sale to an item and add its acquisition cost to see category margin.</Text>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.reportDivider} />
+
+      <View style={styles.reportSection}>
+        <View style={styles.reportSectionHeading}>
+          <Text style={[styles.reportSectionTitle, { fontSize: responsiveFont(11) }]}>Expense allocation</Text>
+          <Text style={[styles.reportSectionHint, { fontSize: responsiveFont(8) }]}>CURRENT MONTH</Text>
+        </View>
+        <Text style={[styles.reportSectionDescription, { fontSize: responsiveFont(9), lineHeight: 13 }]}>Cash outflows by ledger category, including inventory working capital.</Text>
+        {expenseBreakdown.length ? (
+          expenseBreakdown.map((expense, index) => {
+            const fillStyle = [
+              styles.reportFillCyan,
+              styles.reportFillGold,
+              styles.reportFillViolet,
+              styles.reportFillSuccess,
+              styles.reportFillDanger,
+            ][index % 5];
+            return (
+              <View key={expense.entryType} style={styles.reportRow}>
+                <View style={styles.reportRowHeading}>
+                  <Text numberOfLines={1} style={[styles.reportRowLabel, { fontSize: responsiveFont(10) }]}>{expense.label}</Text>
+                  <Text style={[styles.reportRowValue, { fontSize: responsiveFont(10) }]}>{money(expense.amountCents)}</Text>
+                </View>
+                <View style={styles.reportTrack}>
+                  <View style={[styles.reportTrackFill, fillStyle, { width: `${Math.min(100, Math.max(4, Math.round((expense.amountCents / maximumExpense) * 100)))}%` }]} />
+                </View>
+                <Text style={[styles.reportMeta, { fontSize: responsiveFont(8) }]}>{Math.round(expense.sharePercent)}% of cash out{expense.isWorkingCapital ? ' · working capital' : ''}</Text>
+              </View>
+            );
+          })
+        ) : (
+          <View style={styles.reportEmpty}>
+            <Text style={[styles.reportEmptyText, { fontSize: responsiveFont(10), lineHeight: 14 }]}>No cash outflows have been recorded for this month yet.</Text>
+          </View>
+        )}
+      </View>
+
+      <Text style={[styles.reportingNote, { fontSize: responsiveFont(9), lineHeight: 14 }]}>COGS is recognized when a recorded sale is matched to a known acquisition cost. Inventory purchases stay working-capital cash outflows until they are sold.</Text>
+    </View>
+  );
+}
+
 function Metric({
   label,
   value,
@@ -459,29 +658,66 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   const staticStyles = StyleSheet.create({
     card: {
       gap: 14,
-      borderColor: 'rgba(88, 223, 232, 0.27)',
+      borderColor: theme.colors.accentCyanBorder,
       borderRadius: 16,
       borderWidth: 1,
       padding: 16,
-      backgroundColor: 'rgba(5, 13, 19, 0.86)',
+      backgroundColor: theme.colors.card,
     },
     cardHeader: { alignItems: 'flex-start', flexDirection: 'row', gap: 12, justifyContent: 'space-between' },
     eyebrow: { color: theme.colors.goldBright, fontSize: 8, fontWeight: '900', letterSpacing: 1.4 },
     title: { color: theme.colors.cream, fontSize: 19, fontWeight: '900', letterSpacing: -0.25, lineHeight: 24 },
     description: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 15 },
-    livePill: { alignItems: 'center', backgroundColor: 'rgba(88, 223, 232, 0.10)', borderColor: 'rgba(88, 223, 232, 0.24)', borderRadius: 999, borderWidth: 1, flexDirection: 'row', gap: 5, paddingHorizontal: 8, paddingVertical: 5 },
+    livePill: { alignItems: 'center', backgroundColor: theme.colors.iconSurfaceCyan, borderColor: theme.colors.accentCyanBorder, borderRadius: 999, borderWidth: 1, flexDirection: 'row', gap: 5, paddingHorizontal: 8, paddingVertical: 5 },
     liveDot: { backgroundColor: theme.colors.scannerCyan, borderRadius: 4, height: 6, width: 6 },
     liveText: { color: theme.colors.scannerCyan, fontSize: 8, fontWeight: '900', letterSpacing: 0.8 },
     metricGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     metric: { borderRadius: 11, borderWidth: 1, flexGrow: 1, flexBasis: '46%', gap: 4, minWidth: 125, padding: 11 },
-    metricCyan: { backgroundColor: 'rgba(43, 213, 226, 0.09)', borderColor: 'rgba(88, 223, 232, 0.25)' },
-    metricGold: { backgroundColor: 'rgba(215, 168, 74, 0.10)', borderColor: 'rgba(242, 211, 138, 0.24)' },
-    metricViolet: { backgroundColor: 'rgba(160, 111, 255, 0.10)', borderColor: 'rgba(190, 154, 255, 0.24)' },
-    metricMuted: { backgroundColor: 'rgba(255, 255, 255, 0.035)', borderColor: 'rgba(255, 255, 255, 0.10)' },
+    metricCyan: { backgroundColor: theme.colors.iconSurfaceCyan, borderColor: theme.colors.accentCyanBorder },
+    metricGold: { backgroundColor: theme.colors.iconSurfaceGold, borderColor: theme.colors.accentGoldBorder },
+    metricViolet: { backgroundColor: theme.colors.iconSurfaceViolet, borderColor: theme.colors.accentVioletBorder },
+    metricMuted: { backgroundColor: theme.colors.cardSoft, borderColor: theme.colors.divider },
     metricLabel: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 0.9 },
     metricValue: { color: theme.colors.cream, fontSize: 21, fontWeight: '900', letterSpacing: -0.45, lineHeight: 25 },
-    metricNegativeValue: { color: '#FFB8B1' },
-    chartSurface: { backgroundColor: 'rgba(0, 0, 0, 0.20)', borderColor: 'rgba(88, 223, 232, 0.16)', borderRadius: 12, borderWidth: 1, gap: 11, padding: 12 },
+    metricNegativeValue: { color: theme.colors.danger },
+    chartSurface: { backgroundColor: theme.colors.cardSoft, borderColor: theme.colors.accentCyanBorder, borderRadius: 12, borderWidth: 1, gap: 11, padding: 12 },
+    reportingSurface: { backgroundColor: theme.colors.surfaceOverlay, borderColor: theme.colors.accentVioletBorder, borderRadius: 12, borderWidth: 1, gap: 12, padding: 12 },
+    reportingHeader: { alignItems: 'flex-start', flexDirection: 'row', gap: 10, justifyContent: 'space-between' },
+    reportingHeadingCopy: { flex: 1, gap: 3 },
+    reportingTitle: { color: theme.colors.text, fontSize: 15, fontWeight: '900', lineHeight: 19 },
+    reportingDescription: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 14 },
+    reportingLegend: { alignItems: 'flex-end', gap: 4, paddingTop: 2 },
+    reportingNote: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 14 },
+    pnlChart: { alignItems: 'flex-end', flexDirection: 'row', gap: 7, minHeight: 112, paddingTop: 2 },
+    pnlMonth: { alignItems: 'center', flex: 1, gap: 5, minWidth: 38 },
+    pnlNetLabel: { color: theme.colors.text, fontSize: 8, fontWeight: '900', maxWidth: 52 },
+    pnlBars: { alignItems: 'flex-end', flexDirection: 'row', gap: 3, height: 72 },
+    pnlBar: { borderRadius: 4, minHeight: 3, width: 7 },
+    pnlRevenueBar: { backgroundColor: theme.colors.scannerCyan },
+    pnlCostBar: { backgroundColor: theme.colors.goldBright },
+    pnlNetBar: { backgroundColor: theme.colors.scannerViolet },
+    pnlNetNegativeBar: { backgroundColor: theme.colors.danger },
+    pnlMonthLabel: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '800' },
+    reportDivider: { backgroundColor: theme.colors.dividerStrong, height: 1 },
+    reportSection: { gap: 8 },
+    reportSectionHeading: { alignItems: 'center', flexDirection: 'row', gap: 8, justifyContent: 'space-between' },
+    reportSectionTitle: { color: theme.colors.text, fontSize: 11, fontWeight: '900' },
+    reportSectionHint: { color: theme.colors.goldBright, fontSize: 8, fontWeight: '900', letterSpacing: 0.8 },
+    reportSectionDescription: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 13 },
+    reportRow: { gap: 4 },
+    reportRowHeading: { alignItems: 'center', flexDirection: 'row', gap: 6, justifyContent: 'space-between' },
+    reportRowLabel: { color: theme.colors.textMuted, flex: 1, fontSize: 10 },
+    reportRowValue: { color: theme.colors.text, fontSize: 10, fontWeight: '900' },
+    reportTrack: { backgroundColor: theme.colors.cardSoft, borderColor: theme.colors.divider, borderRadius: 999, borderWidth: 1, height: 7, overflow: 'hidden' },
+    reportTrackFill: { borderRadius: 999, height: '100%' },
+    reportFillCyan: { backgroundColor: theme.colors.scannerCyan },
+    reportFillGold: { backgroundColor: theme.colors.goldBright },
+    reportFillViolet: { backgroundColor: theme.colors.scannerViolet },
+    reportFillSuccess: { backgroundColor: theme.colors.success },
+    reportFillDanger: { backgroundColor: theme.colors.danger },
+    reportMeta: { color: theme.colors.textMuted, fontSize: 8 },
+    reportEmpty: { backgroundColor: theme.colors.cardSoft, borderRadius: 8, padding: 10 },
+    reportEmptyText: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 14 },
     chartHeading: { alignItems: 'flex-start', flexDirection: 'row', justifyContent: 'space-between' },
     chartLabel: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 1 },
     chartTitle: { color: theme.colors.text, fontSize: 13, fontWeight: '800', lineHeight: 17 },
@@ -493,14 +729,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     controlHeading: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
     controlLabel: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 1 },
     controlValue: { color: theme.colors.scannerCyan, fontSize: 9, fontWeight: '800' },
-    segmentRow: { backgroundColor: 'rgba(255, 255, 255, 0.035)', borderColor: 'rgba(255, 255, 255, 0.10)', borderRadius: 9, borderWidth: 1, flexDirection: 'row', padding: 3 },
+    segmentRow: { backgroundColor: theme.colors.cardSoft, borderColor: theme.colors.divider, borderRadius: 9, borderWidth: 1, flexDirection: 'row', padding: 3 },
     segmentButton: { alignItems: 'center', borderRadius: 6, flex: 1, minHeight: 28, justifyContent: 'center', paddingHorizontal: 7 },
-    segmentButtonActive: { backgroundColor: 'rgba(88, 223, 232, 0.18)', borderColor: 'rgba(88, 223, 232, 0.32)', borderWidth: 1 },
+    segmentButtonActive: { backgroundColor: theme.colors.iconSurfaceCyan, borderColor: theme.colors.accentCyanBorder, borderWidth: 1 },
     segmentText: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 0.8 },
     segmentTextActive: { color: theme.colors.scannerCyan },
     rangeRow: { alignItems: 'center', gap: 7, paddingVertical: 1 },
-    rangeChip: { alignItems: 'center', borderColor: 'rgba(242, 211, 138, 0.22)', borderRadius: 999, borderWidth: 1, minHeight: 28, justifyContent: 'center', paddingHorizontal: 11 },
-    rangeChipActive: { backgroundColor: 'rgba(215, 168, 74, 0.16)', borderColor: 'rgba(242, 211, 138, 0.58)' },
+    rangeChip: { alignItems: 'center', borderColor: theme.colors.dividerStrong, borderRadius: 999, borderWidth: 1, minHeight: 28, justifyContent: 'center', paddingHorizontal: 11 },
+    rangeChipActive: { backgroundColor: theme.colors.iconSurfaceGold, borderColor: theme.colors.accentGoldBorder },
     rangeChipText: { color: theme.colors.textMuted, fontSize: 9, fontWeight: '900' },
     rangeChipTextActive: { color: theme.colors.goldBright },
     chartPlotRow: { flexDirection: 'row', minHeight: 100 },
@@ -510,8 +746,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     chartBarsViewport: { minWidth: '100%' },
     chartPlotContent: { minHeight: 100, minWidth: '100%', position: 'relative' },
     gridLayer: { height: 78, left: 2, position: 'absolute', right: 2, top: 6 },
-    gridLine: { backgroundColor: 'rgba(173, 167, 178, 0.18)', height: 1, left: 0, position: 'absolute', right: 0 },
-    gridBaseline: { backgroundColor: 'rgba(242, 211, 138, 0.32)' },
+    gridLine: { backgroundColor: theme.colors.divider, height: 1, left: 0, position: 'absolute', right: 0 },
+    gridBaseline: { backgroundColor: theme.colors.dividerStrong },
     chartBars: { alignItems: 'flex-end', flexDirection: 'row', gap: 8, justifyContent: 'space-between', minHeight: 100, minWidth: '100%', paddingHorizontal: 2, position: 'relative' },
     flowGroup: { alignItems: 'center', gap: 5, width: 30 },
     bars: { alignItems: 'flex-end', flexDirection: 'row', gap: 3, height: 78 },
@@ -520,8 +756,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     outBar: { backgroundColor: theme.colors.goldBright },
     flowLabel: { color: theme.colors.textMuted, fontSize: 9, fontWeight: '700' },
     splitRow: { flexDirection: 'row', gap: 8 },
-    inventorySurface: { backgroundColor: 'rgba(78, 41, 147, 0.16)', borderColor: 'rgba(190, 154, 255, 0.20)', borderRadius: 12, borderWidth: 1, flex: 1, gap: 3, padding: 11 },
-    costSurface: { backgroundColor: 'rgba(21, 16, 5, 0.56)', borderColor: 'rgba(242, 211, 138, 0.17)', borderRadius: 12, borderWidth: 1, flex: 1, gap: 5, padding: 11 },
+    inventorySurface: { backgroundColor: theme.colors.iconSurfaceViolet, borderColor: theme.colors.accentVioletBorder, borderRadius: 12, borderWidth: 1, flex: 1, gap: 3, padding: 11 },
+    costSurface: { backgroundColor: theme.colors.iconSurfaceGold, borderColor: theme.colors.accentGoldBorder, borderRadius: 12, borderWidth: 1, flex: 1, gap: 5, padding: 11 },
     inventoryValue: { color: theme.colors.cream, fontSize: 25, fontWeight: '900', letterSpacing: -0.5, lineHeight: 30 },
     inventoryCopy: { color: theme.colors.text, fontSize: 10, fontWeight: '700', lineHeight: 14 },
     estimateCopy: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 13, marginTop: 3 },
@@ -529,27 +765,27 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     costLabel: { color: theme.colors.textMuted, flex: 1, fontSize: 10, lineHeight: 14 },
     costValue: { color: theme.colors.goldBright, fontSize: 10, fontWeight: '900' },
     noCostsText: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 15, marginTop: 4 },
-    attentionSurface: { alignItems: 'flex-start', backgroundColor: 'rgba(215, 168, 74, 0.11)', borderColor: 'rgba(242, 211, 138, 0.28)', borderRadius: 11, borderWidth: 1, flexDirection: 'row', gap: 9, padding: 11 },
+    attentionSurface: { alignItems: 'flex-start', backgroundColor: theme.colors.iconSurfaceGold, borderColor: theme.colors.accentGoldBorder, borderRadius: 11, borderWidth: 1, flexDirection: 'row', gap: 9, padding: 11 },
     attentionCopy: { flex: 1, gap: 2 },
     attentionTitle: { color: theme.colors.goldBright, fontSize: 11, fontWeight: '900', lineHeight: 15 },
     attentionText: { color: theme.colors.text, fontSize: 10, lineHeight: 14 },
     actions: { flexDirection: 'row', gap: 8 },
-    planAction: { alignItems: 'center', backgroundColor: 'rgba(88, 223, 232, 0.06)', borderColor: 'rgba(88, 223, 232, 0.26)', borderRadius: 11, borderWidth: 1, flexDirection: 'row', gap: 9, minHeight: 58, paddingHorizontal: 10, paddingVertical: 8 },
-    planActionIcon: { alignItems: 'center', backgroundColor: 'rgba(88, 223, 232, 0.12)', borderRadius: 8, height: 32, justifyContent: 'center', width: 32 },
+    planAction: { alignItems: 'center', backgroundColor: theme.colors.cardSoft, borderColor: theme.colors.accentCyanBorder, borderRadius: 11, borderWidth: 1, flexDirection: 'row', gap: 9, minHeight: 58, paddingHorizontal: 10, paddingVertical: 8 },
+    planActionIcon: { alignItems: 'center', backgroundColor: theme.colors.iconSurfaceCyan, borderRadius: 8, height: 32, justifyContent: 'center', width: 32 },
     planActionCopy: { flex: 1, gap: 1 },
     planActionTitle: { color: theme.colors.cream, fontSize: 12, fontWeight: '900' },
     planActionText: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 14 },
     primaryAction: { alignItems: 'center', backgroundColor: theme.colors.scannerCyan, borderRadius: 10, flex: 1, flexDirection: 'row', gap: 7, justifyContent: 'center', minHeight: 42, paddingHorizontal: 10 },
-    primaryActionText: { color: theme.colors.backgroundDeep, fontSize: 12, fontWeight: '900' },
-    secondaryAction: { alignItems: 'center', borderColor: 'rgba(242, 211, 138, 0.35)', borderRadius: 10, borderWidth: 1, flex: 1, justifyContent: 'center', minHeight: 42, paddingHorizontal: 10 },
+    primaryActionText: { color: theme.colors.textOnAccent, fontSize: 12, fontWeight: '900' },
+    secondaryAction: { alignItems: 'center', borderColor: theme.colors.accentGoldBorder, borderRadius: 10, borderWidth: 1, flex: 1, justifyContent: 'center', minHeight: 42, paddingHorizontal: 10 },
     secondaryActionText: { color: theme.colors.goldBright, fontSize: 12, fontWeight: '900' },
-    errorText: { color: '#FFB8B1', fontSize: 10, lineHeight: 14 },
+    errorText: { color: theme.colors.danger, fontSize: 10, lineHeight: 14 },
     pressed: { opacity: 0.78, transform: [{ scale: 0.985 }] },
-    loadingCard: { alignItems: 'center', backgroundColor: 'rgba(5, 13, 19, 0.86)', borderColor: 'rgba(88, 223, 232, 0.27)', borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 11, padding: 16 },
+    loadingCard: { alignItems: 'center', backgroundColor: theme.colors.card, borderColor: theme.colors.accentCyanBorder, borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 11, padding: 16 },
     loadingCopy: { flex: 1, gap: 3 },
     loadingText: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 17 },
-    emptyCard: { alignItems: 'flex-start', backgroundColor: 'rgba(5, 13, 19, 0.86)', borderColor: 'rgba(88, 223, 232, 0.27)', borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 11, padding: 16 },
-    emptyIcon: { alignItems: 'center', backgroundColor: 'rgba(215, 168, 74, 0.12)', borderRadius: 10, height: 39, justifyContent: 'center', width: 39 },
+    emptyCard: { alignItems: 'flex-start', backgroundColor: theme.colors.card, borderColor: theme.colors.accentCyanBorder, borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 11, padding: 16 },
+    emptyIcon: { alignItems: 'center', backgroundColor: theme.colors.iconSurfaceGold, borderRadius: 10, height: 39, justifyContent: 'center', width: 39 },
     emptyCopy: { flex: 1, gap: 3 },
     emptyTitle: { color: theme.colors.cream, fontSize: 15, fontWeight: '900', lineHeight: 20 },
     emptyText: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 },

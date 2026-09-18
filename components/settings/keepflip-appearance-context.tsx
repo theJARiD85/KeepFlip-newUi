@@ -37,7 +37,7 @@ export function KeepFlipAppearanceProvider({ children }: PropsWithChildren) {
   const [preference, setPreferenceState] =
     useState<KeepFlipAppearancePreference>('system');
   const [appliedColorScheme, setAppliedColorScheme] =
-    useState<KeepFlipColorScheme>('dark');
+    useState<KeepFlipColorScheme>(systemColorScheme);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);

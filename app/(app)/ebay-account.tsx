@@ -700,9 +700,9 @@ export default function EbayAccountScreen() {
                     pressed && !isImportingListings && styles.pressed,
                   ]}>
                   {isImportingListings ? (
-                    <ActivityIndicator color={theme.colors.backgroundDeep} size="small" />
+                    <ActivityIndicator color={theme.colors.textOnAccent} size="small" />
                   ) : (
-                    <IconSymbol color={theme.colors.backgroundDeep} name="arrow.right" size={18} />
+                    <IconSymbol color={theme.colors.textOnAccent} name="arrow.right" size={18} />
                   )}
                   <Text style={[styles.importButtonText, { fontSize: responsiveFont(10) }]}>
                     {isImportingListings ? 'READING EBAY' : 'IMPORT ACTIVE LISTINGS'}
@@ -873,7 +873,7 @@ export default function EbayAccountScreen() {
               style={({ pressed }) => [styles.connectButton, pressed && styles.pressed]}>
               <Text style={[styles.connectButtonText, { fontSize: responsiveFont(11) }]}>CONNECT EBAY</Text>
               <IconSymbol
-                color={theme.colors.backgroundDeep}
+                color={theme.colors.textOnAccent}
                 name="arrow.right"
                 size={18}
               />
@@ -917,8 +917,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: 'center',
       borderRadius: theme.radii.pill,
       borderWidth: 1,
-      borderColor: 'rgba(242, 211, 138, 0.28)',
-      backgroundColor: 'rgba(7, 7, 11, 0.78)',
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.surfaceOverlay,
     },
     backIcon: {
       transform: [{ rotate: '180deg' }],
@@ -946,8 +946,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: 'center',
       borderRadius: 30,
       borderWidth: 1,
-      borderColor: 'rgba(88, 223, 232, 0.30)',
-      backgroundColor: 'rgba(7, 12, 15, 0.86)',
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.card,
       boxShadow: '0 12px 30px rgba(0, 0, 0, 0.34), 0 0 24px rgba(88, 223, 232, 0.08)',
     },
     eyebrow: {
@@ -976,8 +976,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 10,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
-      borderColor: 'rgba(88, 223, 232, 0.24)',
-      backgroundColor: 'rgba(88, 223, 232, 0.06)',
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     loadingText: {
       color: theme.colors.scannerCyan,
@@ -990,8 +990,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 17,
       borderRadius: theme.radii.large,
       borderWidth: 1,
-      borderColor: 'rgba(88, 223, 232, 0.34)',
-      backgroundColor: 'rgba(6, 13, 17, 0.82)',
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.surfaceInset,
       boxShadow: '0 16px 34px rgba(0, 0, 0, 0.28)',
     },
     accountHeading: {
@@ -1006,8 +1006,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: 'center',
       borderRadius: theme.radii.medium,
       borderWidth: 1,
-      borderColor: 'rgba(88, 223, 232, 0.26)',
-      backgroundColor: 'rgba(88, 223, 232, 0.09)',
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     accountCopy: {
       minWidth: 0,
@@ -1031,7 +1031,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 12,
       paddingTop: 13,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderColor: 'rgba(88, 223, 232, 0.18)',
+      borderColor: theme.colors.accentCyanBorder,
     },
     metaLabel: {
       color: theme.colors.textMuted,
@@ -1059,8 +1059,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 16,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
-      borderColor: 'rgba(242, 211, 138, 0.20)',
-      backgroundColor: 'rgba(8, 8, 11, 0.74)',
+      borderColor: theme.colors.dividerStrong,
+      backgroundColor: theme.colors.surfaceOverlay,
     },
     settingRow: {
       flexDirection: 'row',
@@ -1093,7 +1093,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     settingDivider: {
       height: StyleSheet.hairlineWidth,
-      backgroundColor: 'rgba(242, 211, 138, 0.18)',
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     sellerSummary: {
       gap: 4,
@@ -1105,7 +1105,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 14,
       paddingTop: 12,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderColor: 'rgba(242, 211, 138, 0.14)',
+      borderColor: theme.colors.divider,
     },
     detailLabel: {
       color: theme.colors.textMuted,
@@ -1137,7 +1137,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 12,
       paddingTop: 12,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderColor: 'rgba(242, 211, 138, 0.14)',
+      borderColor: theme.colors.divider,
     },
     listingCopy: {
       minWidth: 0,
@@ -1170,7 +1170,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.goldBright,
     },
     importButtonText: {
-      color: theme.colors.backgroundDeep,
+      color: theme.colors.textOnAccent,
       fontSize: 10,
       fontWeight: '900',
       letterSpacing: 1,
@@ -1187,12 +1187,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingHorizontal: 9,
       borderRadius: theme.radii.pill,
       borderWidth: 1,
-      borderColor: 'rgba(88, 223, 232, 0.42)',
-      backgroundColor: 'rgba(88, 223, 232, 0.08)',
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     importRowButtonDone: {
-      borderColor: 'rgba(88, 223, 232, 0.18)',
-      backgroundColor: 'rgba(88, 223, 232, 0.04)',
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     importRowButtonText: {
       color: theme.colors.scannerCyan,
@@ -1206,8 +1206,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: 'center',
       borderRadius: theme.radii.medium,
       borderWidth: 1,
-      borderColor: 'rgba(242, 211, 138, 0.24)',
-      backgroundColor: 'rgba(242, 211, 138, 0.05)',
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     loadMoreText: {
       color: theme.colors.goldBright,
@@ -1231,8 +1231,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 10,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
-      borderColor: 'rgba(242, 211, 138, 0.36)',
-      backgroundColor: 'rgba(215, 168, 74, 0.08)',
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     secondaryButtonText: {
       color: theme.colors.goldBright,
@@ -1251,7 +1251,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       boxShadow: '0 12px 28px rgba(215, 168, 74, 0.16)',
     },
     reconnectButtonText: {
-      color: theme.colors.backgroundDeep,
+      color: theme.colors.textOnAccent,
       fontSize: 12,
       fontWeight: '900',
       letterSpacing: 1.1,
@@ -1264,8 +1264,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 10,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
-      borderColor: 'rgba(232, 97, 88, 0.50)',
-      backgroundColor: 'rgba(232, 97, 88, 0.07)',
+      borderColor: theme.colors.danger,
+      backgroundColor: theme.colors.dangerSurface,
     },
     revokeButtonText: {
       color: theme.colors.danger,
@@ -1279,8 +1279,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 17,
       borderRadius: theme.radii.large,
       borderWidth: 1,
-      borderColor: 'rgba(242, 211, 138, 0.24)',
-      backgroundColor: 'rgba(8, 8, 11, 0.78)',
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.surfaceOverlay,
     },
     emptyCopy: {
       gap: 4,
@@ -1305,7 +1305,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.goldBright,
     },
     connectButtonText: {
-      color: theme.colors.backgroundDeep,
+      color: theme.colors.textOnAccent,
       fontSize: 11,
       fontWeight: '900',
       letterSpacing: 1.05,
@@ -1316,12 +1316,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderWidth: 1,
     },
     messageSuccess: {
-      borderColor: 'rgba(88, 223, 232, 0.28)',
-      backgroundColor: 'rgba(88, 223, 232, 0.07)',
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     messageError: {
-      borderColor: 'rgba(232, 97, 88, 0.34)',
-      backgroundColor: 'rgba(232, 97, 88, 0.07)',
+      borderColor: theme.colors.danger,
+      backgroundColor: theme.colors.dangerSurface,
     },
     messageText: {
       color: theme.colors.textMuted,

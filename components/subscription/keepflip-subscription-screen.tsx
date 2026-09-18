@@ -173,7 +173,7 @@ function PlanCard({
           <ActivityIndicator
             color={
               definition.recommended
-                ? theme.colors.backgroundDeep
+                ? theme.colors.textOnAccent
                 : theme.colors.scannerCyan
             }
             size="small"
@@ -737,8 +737,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     planRequiredIcon: {
       alignItems: 'center',
-      backgroundColor: 'rgba(215, 168, 74, 0.07)',
-      borderColor: 'rgba(215, 168, 74, 0.24)',
+      backgroundColor: theme.colors.iconSurfaceGold,
+      borderColor: theme.colors.accentGoldBorder,
       borderRadius: 10,
       borderWidth: StyleSheet.hairlineWidth,
       height: 40,
@@ -762,8 +762,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     trialBanner: {
       alignItems: 'center',
-      backgroundColor: 'rgba(0, 255, 255, 0.055)',
-      borderColor: 'rgba(0, 255, 255, 0.24)',
+      backgroundColor: theme.colors.iconSurfaceCyan,
+      borderColor: theme.colors.accentCyanBorder,
       borderRadius: 14,
       borderWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
@@ -772,7 +772,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     trialIcon: {
       alignItems: 'center',
-      backgroundColor: 'rgba(0, 255, 255, 0.08)',
+      backgroundColor: theme.colors.iconSurfaceCyan,
       borderRadius: 10,
       height: 40,
       justifyContent: 'center',
@@ -794,8 +794,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     renewButton: {
       alignSelf: 'flex-start',
       alignItems: 'center',
-      backgroundColor: 'rgba(215, 168, 74, 0.16)',
-      borderColor: 'rgba(242, 211, 138, 0.48)',
+      backgroundColor: theme.colors.iconSurfaceGold,
+      borderColor: theme.colors.accentGoldBorder,
       borderRadius: 9,
       borderWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
@@ -827,8 +827,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingHorizontal: 2,
     },
     billingToggle: {
-      backgroundColor: 'rgba(8, 8, 12, 0.92)',
-      borderColor: 'rgba(242, 237, 228, 0.14)',
+      backgroundColor: theme.colors.card,
+      borderColor: theme.colors.divider,
       borderRadius: 12,
       borderWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
@@ -845,8 +845,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingHorizontal: 10,
     },
     billingOptionSelected: {
-      backgroundColor: 'rgba(215, 168, 74, 0.14)',
-      borderColor: 'rgba(242, 211, 138, 0.42)',
+      backgroundColor: theme.colors.iconSurfaceGold,
+      borderColor: theme.colors.accentGoldBorder,
       borderWidth: StyleSheet.hairlineWidth,
     },
     billingOptionText: {
@@ -860,7 +860,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.goldBright,
     },
     billingOptionSubtext: {
-      color: 'rgba(173, 167, 178, 0.66)',
+      color: theme.colors.textMuted,
       fontSize: 7,
       fontWeight: '800',
       letterSpacing: 0.45,
@@ -870,8 +870,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     loadingCard: {
       alignItems: 'center',
-      backgroundColor: 'rgba(7, 7, 10, 0.52)',
-      borderColor: 'rgba(242, 237, 228, 0.12)',
+      backgroundColor: theme.colors.cardSoft,
+      borderColor: theme.colors.divider,
       borderRadius: 12,
       borderWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
@@ -882,24 +882,24 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     loadingText: { color: theme.colors.textMuted, fontSize: 12 },
     planStack: { gap: 12 },
     planCard: {
-      backgroundColor: 'rgba(8, 8, 12, 0.92)',
-      borderColor: 'rgba(242, 237, 228, 0.15)',
+      backgroundColor: theme.colors.card,
+      borderColor: theme.colors.divider,
       borderRadius: 15,
       borderWidth: StyleSheet.hairlineWidth,
       gap: 11,
       padding: 15,
     },
     planCardRecommended: {
-      borderColor: 'rgba(0, 255, 255, 0.42)',
+      borderColor: theme.colors.accentCyanBorder,
       shadowColor: theme.colors.scannerCyan,
       shadowOpacity: 0.09,
       shadowRadius: 20,
     },
     planCardRequested: {
-      borderColor: 'rgba(141, 114, 255, 0.62)',
+      borderColor: theme.colors.accentVioletBorder,
     },
     planCardCurrent: {
-      borderColor: 'rgba(215, 168, 74, 0.44)',
+      borderColor: theme.colors.accentGoldBorder,
     },
     planTopLine: {
       alignItems: 'flex-start',
@@ -927,15 +927,15 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingVertical: 5,
     },
     recommendedText: {
-      color: theme.colors.backgroundDeep,
+      color: theme.colors.textOnAccent,
       fontFamily: theme.fonts.radar,
       fontSize: 6,
       fontWeight: '900',
       letterSpacing: 0.7,
     },
     currentBadge: {
-      backgroundColor: 'rgba(215, 168, 74, 0.12)',
-      borderColor: 'rgba(215, 168, 74, 0.34)',
+      backgroundColor: theme.colors.iconSurfaceGold,
+      borderColor: theme.colors.accentGoldBorder,
       borderRadius: 999,
       borderWidth: StyleSheet.hairlineWidth,
       paddingHorizontal: 8,
@@ -990,7 +990,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     subscribeButton: {
       alignItems: 'center',
-      borderColor: 'rgba(0, 255, 255, 0.34)',
+      borderColor: theme.colors.accentCyanBorder,
       borderRadius: 10,
       borderWidth: StyleSheet.hairlineWidth,
       justifyContent: 'center',
@@ -1008,10 +1008,10 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       letterSpacing: 0.85,
     },
     subscribeButtonTextRecommended: {
-      color: theme.colors.backgroundDeep,
+      color: theme.colors.textOnAccent,
     },
     afterTrialText: {
-      color: 'rgba(173, 167, 178, 0.76)',
+      color: theme.colors.textMuted,
       fontSize: 9,
       lineHeight: 13,
       textAlign: 'center',
@@ -1020,8 +1020,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     buttonPressed: { opacity: 0.78 },
     checkoutNotice: {
       alignItems: 'flex-start',
-      backgroundColor: 'rgba(215, 168, 74, 0.055)',
-      borderColor: 'rgba(215, 168, 74, 0.26)',
+      backgroundColor: theme.colors.iconSurfaceGold,
+      borderColor: theme.colors.accentGoldBorder,
       borderRadius: 10,
       borderWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
@@ -1056,7 +1056,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     continueButtonPressed: { opacity: 0.82 },
     continueButtonText: {
-      color: theme.colors.backgroundDeep,
+      color: theme.colors.textOnAccent,
       fontFamily: theme.fonts.radar,
       fontSize: 10,
       fontWeight: '900',
@@ -1064,14 +1064,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     utilityButton: {
       alignItems: 'center',
-      borderColor: 'rgba(215, 168, 74, 0.28)',
+      borderColor: theme.colors.accentGoldBorder,
       borderRadius: 10,
       borderWidth: StyleSheet.hairlineWidth,
       justifyContent: 'center',
       minHeight: 44,
     },
     utilityButtonPressed: {
-      backgroundColor: 'rgba(242, 237, 228, 0.055)',
+      backgroundColor: theme.colors.cardSoft,
     },
     utilityButtonText: {
       color: theme.colors.goldBright,
@@ -1092,7 +1092,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       letterSpacing: 0.7,
     },
     finePrint: {
-      color: 'rgba(173, 167, 178, 0.68)',
+      color: theme.colors.textMuted,
       fontSize: 9,
       lineHeight: 14,
       paddingHorizontal: 4,

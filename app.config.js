@@ -1,3 +1,5 @@
+/* global __dirname */
+
 const fs = require('node:fs');
 const path = require('node:path');
 const { loadEnvFiles } = require('@expo/env');
@@ -16,9 +18,17 @@ module.exports = ({ config }) => {
   const hasExpoVideoPlugin = plugins.some((plugin) =>
     Array.isArray(plugin) ? plugin[0] === 'expo-video' : plugin === 'expo-video',
   );
+  const nextPlugins = hasExpoVideoPlugin ? plugins : [...plugins, 'expo-video'];
+  const hasExpoLocalizationPlugin = nextPlugins.some((plugin) =>
+    Array.isArray(plugin)
+      ? plugin[0] === 'expo-localization'
+      : plugin === 'expo-localization',
+  );
 
   return {
     ...config,
-    plugins: hasExpoVideoPlugin ? plugins : [...plugins, 'expo-video'],
+    plugins: hasExpoLocalizationPlugin
+      ? nextPlugins
+      : [...nextPlugins, 'expo-localization'],
   };
 };

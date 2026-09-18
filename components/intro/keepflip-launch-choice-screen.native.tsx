@@ -160,8 +160,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingHorizontal: 8,
     },
     actionButtonSecondary: {
-      backgroundColor: 'rgba(8, 8, 12, 0.9)',
-      borderColor: 'rgba(242, 211, 138, 0.34)',
+      backgroundColor: theme.colors.surfaceOverlay,
+      borderColor: theme.colors.accentGoldBorder,
       borderWidth: 1,
     },
     actionButtonText: {
@@ -184,7 +184,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.bold,
       fontSize: 40,
       letterSpacing: 5,
-      textShadowColor: 'rgba(255, 255, 255, 0.44)',
+      textShadowColor: theme.colors.dividerStrong,
       textShadowOffset: { width: 0, height: 0 },
       textShadowRadius: 15,
     },
@@ -216,8 +216,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     flipWelcome: {
       alignSelf: 'center',
       alignItems: 'center',
-      backgroundColor: 'rgba(141, 114, 255, 0.08)',
-      borderColor: 'rgba(141, 114, 255, 0.28)',
+      backgroundColor: theme.colors.iconSurfaceViolet,
+      borderColor: theme.colors.accentVioletBorder,
       borderRadius: 18,
       borderWidth: 1,
       flexDirection: 'row',
@@ -229,8 +229,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     flipWelcomeAvatar: {
       alignItems: 'center',
-      backgroundColor: 'rgba(8, 8, 12, 0.75)',
-      borderColor: 'rgba(242, 211, 138, 0.38)',
+      backgroundColor: theme.colors.iconSurface,
+      borderColor: theme.colors.accentGoldBorder,
       borderRadius: 50,
       borderWidth: 1,
       height: 100,
@@ -249,8 +249,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     logo: { height: 175, width: 175 },
     logoHalo: {
       alignItems: 'center',
-      backgroundColor: 'rgba(5, 4, 5, 0.44)',
-      borderColor: 'rgba(224, 172, 75, 0.22)',
+      backgroundColor: theme.colors.iconSurface,
+      borderColor: theme.colors.accentGoldBorder,
       borderRadius: theme.radii.pill,
       borderWidth: 1.5,
       boxShadow: '0 0 44px rgba(224, 172, 75, 0.15)',

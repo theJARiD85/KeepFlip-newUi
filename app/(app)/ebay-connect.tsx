@@ -246,7 +246,7 @@ export default function EbayConnectScreen() {
               pressed && !isConnecting && styles.connectButtonPressed,
             ]}>
             {isConnecting ? (
-              <ActivityIndicator color={theme.colors.backgroundDeep} size="small" />
+              <ActivityIndicator color={theme.colors.textOnAccent} size="small" />
             ) : (
               <EbayShoppingBagIcon size={28} />
             )}
@@ -292,8 +292,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: 'center',
       borderRadius: theme.radii.pill,
       borderWidth: 1,
-      borderColor: 'rgba(242, 211, 138, 0.28)',
-      backgroundColor: 'rgba(7, 7, 11, 0.78)',
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.surfaceOverlay,
     },
     backIcon: {
       transform: [{ rotate: '180deg' }],
@@ -323,8 +323,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       marginBottom: 6,
       borderRadius: 30,
       borderWidth: 1,
-      borderColor: 'rgba(242, 211, 138, 0.28)',
-      backgroundColor: 'rgba(9, 8, 12, 0.88)',
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.card,
       boxShadow: '0 18px 46px rgba(0, 0, 0, 0.36), 0 0 24px rgba(215, 168, 74, 0.07)',
     },
     eyebrow: {
@@ -365,8 +365,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 15,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
-      borderColor: 'rgba(138, 100, 43, 0.20)',
-      backgroundColor: 'rgba(8, 8, 11, 0.72)',
+      borderColor: theme.colors.divider,
+      backgroundColor: theme.colors.surfaceInset,
     },
     benefitIcon: {
       width: 42,
@@ -375,8 +375,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: 'center',
       borderRadius: theme.radii.medium,
       borderWidth: 1,
-      borderColor: 'rgba(88, 223, 232, 0.20)',
-      backgroundColor: 'rgba(88, 223, 232, 0.06)',
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     benefitCopy: {
       minWidth: 0,
@@ -400,8 +400,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 14,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
-      borderColor: 'rgba(242, 211, 138, 0.22)',
-      backgroundColor: 'rgba(215, 168, 74, 0.07)',
+      borderColor: theme.colors.dividerStrong,
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     permissionText: {
       minWidth: 0,
@@ -416,16 +416,16 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 14,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
-      borderColor: 'rgba(138, 100, 43, 0.28)',
-      backgroundColor: 'rgba(8, 8, 11, 0.82)',
+      borderColor: theme.colors.dividerStrong,
+      backgroundColor: theme.colors.surfaceOverlay,
     },
     resultSuccess: {
-      borderColor: 'rgba(88, 223, 232, 0.28)',
-      backgroundColor: 'rgba(88, 223, 232, 0.07)',
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     resultError: {
-      borderColor: 'rgba(255, 96, 96, 0.30)',
-      backgroundColor: 'rgba(255, 96, 96, 0.07)',
+      borderColor: theme.colors.danger,
+      backgroundColor: theme.colors.dangerSurface,
     },
     resultTitle: {
       color: theme.colors.cream,
@@ -469,7 +469,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       transform: [{ scale: 0.992 }],
     },
     connectButtonText: {
-      color: theme.colors.backgroundDeep,
+      color: theme.colors.textOnAccent,
       fontSize: 12,
       fontWeight: '900',
       letterSpacing: 1.15,

@@ -757,7 +757,7 @@ export default function ListingCreationGuideScreen() {
                     ]}
                   >
                     {addingPhotos ? (
-                      <ActivityIndicator color={theme.colors.backgroundDeep} />
+                      <ActivityIndicator color={theme.colors.textOnAccent} />
                     ) : (
                       <Text style={[styles.addPhotosButtonText, { fontSize: responsiveFont(8) }]}>
                         {item.photoCount >= MAX_LISTING_PHOTOS
@@ -831,7 +831,7 @@ export default function ListingCreationGuideScreen() {
                   ]}
                 >
                   {generatingListing ? (
-                    <ActivityIndicator color={theme.colors.backgroundDeep} />
+                    <ActivityIndicator color={theme.colors.textOnAccent} />
                   ) : (
                     <Text style={[styles.generateButtonText, { fontSize: responsiveFont(10) }]}>
                       {generatedListing ? "REGENERATE DRAFT" : "GENERATE LISTING DRAFT"}
@@ -1119,7 +1119,7 @@ export default function ListingCreationGuideScreen() {
                                 }))
                               }
                               placeholder="Example: 9355"
-                              placeholderTextColor="rgba(247, 242, 232, 0.38)"
+                              placeholderTextColor={theme.colors.textMuted}
                               style={styles.ebayFieldInput}
                               value={ebayForm.categoryId}
                             />
@@ -1147,7 +1147,7 @@ export default function ListingCreationGuideScreen() {
                                 }))
                               }
                               placeholder="1"
-                              placeholderTextColor="rgba(247, 242, 232, 0.38)"
+                              placeholderTextColor={theme.colors.textMuted}
                               style={styles.ebayFieldInput}
                               value={ebayForm.quantity}
                             />
@@ -1165,7 +1165,7 @@ export default function ListingCreationGuideScreen() {
                                 }))
                               }
                               placeholder="EBAY_US"
-                              placeholderTextColor="rgba(247, 242, 232, 0.38)"
+                              placeholderTextColor={theme.colors.textMuted}
                               style={styles.ebayFieldInput}
                               value={ebayForm.marketplaceId}
                             />
@@ -1207,7 +1207,7 @@ export default function ListingCreationGuideScreen() {
                             >
                               {ebayPublishing ? (
                                 <ActivityIndicator
-                                  color={theme.colors.backgroundDeep}
+                                  color={theme.colors.textOnAccent}
                                   size="small"
                                 />
                               ) : (
@@ -1307,7 +1307,7 @@ export default function ListingCreationGuideScreen() {
                         >
                           {complete ? (
                             <IconSymbol
-                              color={theme.colors.backgroundDeep}
+                              color={theme.colors.textOnAccent}
                               name="checkmark.shield.fill"
                               size={15}
                             />
@@ -1399,8 +1399,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: "center",
       borderRadius: theme.radii.pill,
       borderWidth: 1,
-      borderColor: "rgba(242, 211, 138, 0.34)",
-      backgroundColor: "rgba(7, 7, 12, 0.78)",
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.surfaceOverlay,
     },
     loadingCard: {
       minHeight: 180,
@@ -1409,8 +1409,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 12,
       borderRadius: theme.radii.large,
       borderWidth: 1,
-      borderColor: "rgba(0, 255, 255, 0.22)",
-      backgroundColor: "rgba(7, 10, 15, 0.88)",
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.card,
     },
     loadingText: {
       color: theme.colors.cream,
@@ -1424,8 +1424,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 24,
       borderRadius: theme.radii.large,
       borderWidth: 1,
-      borderColor: "rgba(232, 97, 88, 0.42)",
-      backgroundColor: "rgba(41, 9, 12, 0.58)",
+      borderColor: theme.colors.danger,
+      backgroundColor: theme.colors.dangerSurface,
     },
     errorIcon: {
       width: 56,
@@ -1433,7 +1433,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       alignItems: "center",
       justifyContent: "center",
       borderRadius: theme.radii.pill,
-      backgroundColor: "rgba(242, 211, 138, 0.11)",
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     errorTitle: {
       color: theme.colors.cream,
@@ -1457,7 +1457,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.scannerViolet,
     },
     retryText: {
-      color: theme.colors.backgroundDeep,
+      color: theme.colors.textOnAccent,
       fontFamily: theme.fonts.body,
       fontSize: 13,
       fontWeight: "900",
@@ -1468,8 +1468,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 20,
       borderRadius: theme.radii.large,
       borderWidth: 1,
-      borderColor: "rgba(0, 255, 255, 0.28)",
-      backgroundColor: "rgba(5, 10, 14, 0.90)",
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.surfaceInset,
       boxShadow: "0 0 26px rgba(0, 255, 255, 0.07)",
     },
     itemCardRail: {
@@ -1514,8 +1514,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingVertical: 7,
       borderRadius: theme.radii.pill,
       borderWidth: 1,
-      borderColor: "rgba(247, 242, 232, 0.16)",
-      backgroundColor: "rgba(247, 242, 232, 0.05)",
+      borderColor: theme.colors.divider,
+      backgroundColor: theme.colors.cardSoft,
     },
     signalPillLabel: {
       color: theme.colors.goldMuted,
@@ -1536,8 +1536,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 20,
       borderRadius: theme.radii.large,
       borderWidth: 1,
-      borderColor: "rgba(141, 114, 255, 0.30)",
-      backgroundColor: "rgba(13, 9, 20, 0.84)",
+      borderColor: theme.colors.accentVioletBorder,
+      backgroundColor: theme.colors.surfaceInset,
     },
     sectionHeader: {
       flexDirection: "row",
@@ -1557,8 +1557,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingVertical: 6,
       borderRadius: theme.radii.pill,
       borderWidth: 1,
-      borderColor: "rgba(141, 114, 255, 0.40)",
-      backgroundColor: "rgba(141, 114, 255, 0.12)",
+      borderColor: theme.colors.accentVioletBorder,
+      backgroundColor: theme.colors.iconSurfaceViolet,
     },
     localPillText: {
       color: theme.colors.scannerViolet,
@@ -1571,7 +1571,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 5,
       paddingTop: 12,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: "rgba(247, 242, 232, 0.13)",
+      borderTopColor: theme.colors.divider,
     },
     fieldLabel: {
       color: theme.colors.scannerCyan,
@@ -1592,8 +1592,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 20,
       borderRadius: theme.radii.large,
       borderWidth: 1,
-      borderColor: "rgba(0, 255, 255, 0.28)",
-      backgroundColor: "rgba(5, 14, 18, 0.88)",
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.surfaceInset,
     },
     generatorHeading: {
       flex: 1,
@@ -1604,8 +1604,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingVertical: 6,
       borderRadius: theme.radii.pill,
       borderWidth: 1,
-      borderColor: "rgba(0, 255, 255, 0.35)",
-      backgroundColor: "rgba(0, 255, 255, 0.08)",
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     generatorBadgeText: {
       color: theme.colors.scannerCyan,
@@ -1631,7 +1631,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       opacity: 0.68,
     },
     generateButtonText: {
-      color: theme.colors.backgroundDeep,
+      color: theme.colors.textOnAccent,
       fontFamily: theme.fonts.radar,
       fontSize: 10,
       fontWeight: "900",
@@ -1647,7 +1647,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 10,
       paddingTop: 14,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: "rgba(0, 255, 255, 0.20)",
+      borderTopColor: theme.colors.divider,
     },
     generatedTitleRow: {
       gap: 6,
@@ -1661,9 +1661,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     generatedEditorInput: {
       borderWidth: 1,
-      borderColor: "rgba(0, 255, 255, 0.24)",
+      borderColor: theme.colors.accentCyanBorder,
       borderRadius: 6,
-      backgroundColor: "rgba(247, 242, 232, 0.04)",
+      backgroundColor: theme.colors.cardSoft,
       color: theme.colors.cream,
       paddingHorizontal: 10,
       paddingVertical: 9,
@@ -1707,7 +1707,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingHorizontal: 7,
       paddingVertical: 5,
       borderWidth: 1,
-      borderColor: "rgba(242, 211, 138, 0.20)",
+      borderColor: theme.colors.dividerStrong,
       color: theme.colors.goldBright,
       fontFamily: theme.fonts.radar,
       fontSize: 8,
@@ -1722,12 +1722,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingHorizontal: 8,
       paddingVertical: 6,
       borderWidth: 1,
-      borderColor: "rgba(247, 242, 232, 0.16)",
-      backgroundColor: "rgba(247, 242, 232, 0.04)",
+      borderColor: theme.colors.divider,
+      backgroundColor: theme.colors.cardSoft,
     },
     platformTabActive: {
-      borderColor: "rgba(0, 255, 255, 0.44)",
-      backgroundColor: "rgba(0, 255, 255, 0.10)",
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     platformTabText: {
       color: theme.colors.textMuted,
@@ -1756,7 +1756,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 12,
       paddingTop: 14,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: "rgba(247, 242, 232, 0.13)",
+      borderTopColor: theme.colors.divider,
     },
     photoPrepCopy: {
       flex: 1,
@@ -1774,8 +1774,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: "center",
       paddingHorizontal: 10,
       borderWidth: 1,
-      borderColor: "rgba(0, 255, 255, 0.42)",
-      backgroundColor: "rgba(0, 255, 255, 0.11)",
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     addPhotosButtonDisabled: {
       opacity: 0.48,
@@ -1798,15 +1798,15 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 20,
       borderRadius: theme.radii.large,
       borderWidth: 1,
-      borderColor: "rgba(0, 255, 255, 0.28)",
-      backgroundColor: "rgba(7, 12, 18, 0.88)",
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.surfaceInset,
     },
     crosslistBadge: {
       paddingHorizontal: 9,
       paddingVertical: 6,
       borderWidth: 1,
-      borderColor: "rgba(0, 255, 255, 0.34)",
-      backgroundColor: "rgba(0, 255, 255, 0.08)",
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     crosslistBadgeText: {
       color: theme.colors.scannerCyan,
@@ -1824,7 +1824,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     destinationList: {
       gap: 0,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: "rgba(247, 242, 232, 0.13)",
+      borderTopColor: theme.colors.divider,
     },
     destinationRow: {
       flexDirection: "row",
@@ -1832,7 +1832,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 10,
       paddingVertical: 13,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: "rgba(247, 242, 232, 0.13)",
+      borderBottomColor: theme.colors.divider,
     },
     destinationIcon: {
       width: 32,
@@ -1840,8 +1840,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 1,
-      borderColor: "rgba(0, 255, 255, 0.24)",
-      backgroundColor: "rgba(0, 255, 255, 0.06)",
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     destinationCopy: {
       flex: 1,
@@ -1879,12 +1879,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: "center",
       paddingHorizontal: 8,
       borderWidth: 1,
-      borderColor: "rgba(242, 211, 138, 0.42)",
-      backgroundColor: "rgba(242, 211, 138, 0.10)",
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     shareDraftButtonDone: {
-      borderColor: "rgba(0, 255, 255, 0.42)",
-      backgroundColor: "rgba(0, 255, 255, 0.10)",
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     shareDraftText: {
       color: theme.colors.goldBright,
@@ -1901,7 +1901,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       marginTop: 14,
       paddingTop: 14,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: "rgba(247, 242, 232, 0.14)",
+      borderTopColor: theme.colors.divider,
     },
     ebayPublishHeader: {
       flexDirection: "row",
@@ -1939,8 +1939,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 12,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
-      borderColor: "rgba(88, 223, 232, 0.22)",
-      backgroundColor: "rgba(88, 223, 232, 0.06)",
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     ebaySetupNoticeText: {
       flex: 1,
@@ -1969,8 +1969,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     ebayFieldInput: {
       minHeight: 42,
       borderWidth: 1,
-      borderColor: "rgba(247, 242, 232, 0.18)",
-      backgroundColor: "rgba(247, 242, 232, 0.06)",
+      borderColor: theme.colors.divider,
+      backgroundColor: theme.colors.cardSoft,
       color: theme.colors.cream,
       paddingHorizontal: 12,
       paddingVertical: 9,
@@ -1988,7 +1988,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: "center",
       paddingHorizontal: 14,
       borderWidth: 1,
-      borderColor: "rgba(247, 242, 232, 0.18)",
+      borderColor: theme.colors.divider,
       borderRadius: 4,
     },
     ebayCancelButtonText: {
@@ -2014,7 +2014,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       opacity: 0.72,
     },
     ebayPublishButtonText: {
-      color: theme.colors.backgroundDeep,
+      color: theme.colors.textOnAccent,
       fontFamily: theme.fonts.radar,
       fontSize: 9,
       fontWeight: "900",
@@ -2031,8 +2031,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 10,
       padding: 12,
       borderWidth: 1,
-      borderColor: "rgba(0, 255, 255, 0.28)",
-      backgroundColor: "rgba(0, 255, 255, 0.06)",
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
       borderRadius: 4,
     },
     ebayPublishSuccessCopy: {
@@ -2054,8 +2054,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 1,
-      borderColor: "rgba(0, 255, 255, 0.34)",
-      backgroundColor: "rgba(0, 255, 255, 0.08)",
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
       borderRadius: 4,
     },
     ebayOpenButtonText: {
@@ -2080,8 +2080,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 20,
       borderRadius: theme.radii.large,
       borderWidth: 1,
-      borderColor: "rgba(242, 211, 138, 0.28)",
-      backgroundColor: "rgba(13, 11, 8, 0.86)",
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.surfaceInset,
     },
     progressHeader: {
       flexDirection: "row",
@@ -2096,8 +2096,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: "center",
       borderRadius: theme.radii.pill,
       borderWidth: 1,
-      borderColor: "rgba(242, 211, 138, 0.38)",
-      backgroundColor: "rgba(242, 211, 138, 0.12)",
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     progressCountText: {
       color: theme.colors.goldBright,
@@ -2109,7 +2109,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       height: 6,
       overflow: "hidden",
       borderRadius: theme.radii.pill,
-      backgroundColor: "rgba(247, 242, 232, 0.10)",
+      backgroundColor: theme.colors.divider,
     },
     progressFill: {
       height: "100%",
@@ -2126,12 +2126,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 13,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
-      borderColor: "rgba(247, 242, 232, 0.13)",
-      backgroundColor: "rgba(4, 4, 8, 0.64)",
+      borderColor: theme.colors.divider,
+      backgroundColor: theme.colors.surfaceInset,
     },
     checklistStepComplete: {
-      borderColor: "rgba(0, 255, 255, 0.30)",
-      backgroundColor: "rgba(0, 255, 255, 0.07)",
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     checkmark: {
       width: 31,
@@ -2140,11 +2140,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: "center",
       borderRadius: theme.radii.pill,
       borderWidth: 1,
-      borderColor: "rgba(242, 211, 138, 0.30)",
-      backgroundColor: "rgba(242, 211, 138, 0.08)",
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     checkmarkComplete: {
-      borderColor: "rgba(0, 255, 255, 0.62)",
+      borderColor: theme.colors.accentCyanBorder,
       backgroundColor: theme.colors.scannerCyan,
     },
     checkmarkNumber: {
@@ -2175,8 +2175,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 16,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
-      borderColor: "rgba(242, 211, 138, 0.28)",
-      backgroundColor: "rgba(215, 168, 74, 0.10)",
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     publishNoticeText: {
       flex: 1,

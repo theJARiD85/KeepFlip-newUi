@@ -19,6 +19,7 @@ import {
 } from "react-native-reanimated";
 
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { useKeepFlipAppearance } from "@/components/settings/keepflip-appearance-context";
 
 interface ScanAiOverlayProps {
   active?: boolean;
@@ -34,6 +35,8 @@ export function ScanAiOverlay({
   width,
 }: ScanAiOverlayProps) {
   const window = useWindowDimensions();
+  const { appliedColorScheme } = useKeepFlipAppearance();
+  void appliedColorScheme;
   const reduceMotion = useReducedMotion();
   const scanProgress = useSharedValue(0);
   const resolvedWidth = width ?? window.width;

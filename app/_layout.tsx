@@ -1,4 +1,5 @@
 import "react-native-url-polyfill/auto";
+import { analytics, HeyCatchProvider } from '@heycatch/sdk';
 import {
   DarkTheme,
   DefaultTheme,
@@ -38,6 +39,15 @@ import {
 import { configureKeepFlipNotificationHandler } from '@/services/keepflip-notification-service';
 import { areKeepFlipSubscriptionsEnforced } from '@/services/keepflip-subscription-service';
 import { initializeTenjinAtLaunch } from '@/services/tenjin-attribution-service';
+
+analytics.init({
+  projectKey: 'hck_pk_P-RAsy4RamxF7X6OTR5r5M0gSJ3pGQ9e',
+  install: {
+    framework: 'react-native',
+    frameworkVersion: '0',
+    agent: 'codex',
+  },
+});
 
 void SplashScreen
   .preventAutoHideAsync()
@@ -281,8 +291,10 @@ function RootLayoutContent() {
 
 export default function RootLayout() {
   return (
-    <KeepFlipAppearanceProvider>
-      <RootLayoutContent />
-    </KeepFlipAppearanceProvider>
+    <HeyCatchProvider>
+      <KeepFlipAppearanceProvider>
+        <RootLayoutContent />
+      </KeepFlipAppearanceProvider>
+    </HeyCatchProvider>
   );
 }

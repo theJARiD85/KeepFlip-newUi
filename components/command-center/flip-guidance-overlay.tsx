@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { FlipCompanion, useFlipCompanion } from '@/components/flip';
+import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
@@ -108,6 +109,11 @@ export function FlipGuidanceOverlay() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { responsiveFont } = useResponsiveLayout();
+  const { appliedColorScheme } = useKeepFlipAppearance();
+  const styles = useMemo(() => {
+    void appliedColorScheme;
+    return createStyles();
+  }, [appliedColorScheme]);
   const { react } = useFlipCompanion();
   const {
     activeGuide,
@@ -233,7 +239,8 @@ export function FlipGuidanceOverlay() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles() {
+  return StyleSheet.create({
   root: {
     bottom: 0,
     elevation: 9100,
@@ -250,8 +257,8 @@ const styles = StyleSheet.create({
     right: 12,
   },
   card: {
-    backgroundColor: 'rgba(11, 10, 16, 0.97)',
-    borderColor: 'rgba(0, 255, 255, 0.34)',
+    backgroundColor: theme.colors.surfaceOverlay,
+    borderColor: theme.colors.accentCyanBorder,
     borderCurve: 'continuous',
     borderRadius: 20,
     borderWidth: 1,
@@ -268,8 +275,8 @@ const styles = StyleSheet.create({
   },
   avatar: {
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 255, 255, 0.07)',
-    borderColor: 'rgba(0, 255, 255, 0.28)',
+    backgroundColor: theme.colors.iconSurfaceCyan,
+    borderColor: theme.colors.accentCyanBorder,
     borderRadius: 13,
     borderWidth: 1,
     height: 48,
@@ -295,7 +302,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     alignItems: 'center',
-    borderColor: 'rgba(247, 242, 232, 0.22)',
+    borderColor: theme.colors.dividerStrong,
     borderRadius: 999,
     borderWidth: 1,
     height: 30,
@@ -325,7 +332,7 @@ const styles = StyleSheet.create({
     maxWidth: '56%',
   },
   progressTrack: {
-    backgroundColor: 'rgba(247, 242, 232, 0.12)',
+    backgroundColor: theme.colors.cardSoft,
     borderRadius: 999,
     height: 4,
     overflow: 'hidden',
@@ -353,7 +360,7 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     alignItems: 'center',
-    borderColor: 'rgba(247, 242, 232, 0.20)',
+    borderColor: theme.colors.dividerStrong,
     borderRadius: 9,
     borderWidth: 1,
     justifyContent: 'center',
@@ -368,8 +375,8 @@ const styles = StyleSheet.create({
   },
   screenButton: {
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 255, 255, 0.10)',
-    borderColor: 'rgba(0, 255, 255, 0.34)',
+    backgroundColor: theme.colors.iconSurfaceCyan,
+    borderColor: theme.colors.accentCyanBorder,
     borderRadius: 9,
     borderWidth: 1,
     justifyContent: 'center',
@@ -399,4 +406,5 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.72,
   },
-});
+  });
+}

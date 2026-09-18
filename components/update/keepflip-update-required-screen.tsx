@@ -12,7 +12,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import {
+  useResponsiveLayout,
+  useResponsiveStyles,
+} from '@/hooks/use-responsive-layout';
 
 type KeepFlipUpdateRequiredScreenProps = {
   currentVersion: string;
@@ -36,6 +39,7 @@ export function KeepFlipUpdateRequiredScreen({
     responsiveHeight,
     responsiveWidth,
   } = useResponsiveLayout();
+  const styles = useResponsiveStyles(createResponsiveStyles);
   const [isOpeningStore, setIsOpeningStore] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
 
@@ -208,7 +212,8 @@ export function KeepFlipUpdateRequiredScreen({
   );
 }
 
-const styles = StyleSheet.create({
+function createResponsiveStyles() {
+  return StyleSheet.create({
   backgroundContent: {
     alignItems: 'center',
   },
@@ -219,8 +224,8 @@ const styles = StyleSheet.create({
   },
   card: {
     alignItems: 'center',
-    backgroundColor: 'rgba(8, 8, 11, 0.76)',
-    borderColor: 'rgba(242, 211, 138, 0.22)',
+    backgroundColor: theme.colors.surfaceOverlay,
+    borderColor: theme.colors.accentGoldBorder,
     borderCurve: 'continuous',
     borderRadius: theme.radii.large,
     borderWidth: 1,
@@ -230,8 +235,8 @@ const styles = StyleSheet.create({
   },
   logoHalo: {
     alignItems: 'center',
-    backgroundColor: 'rgba(6, 5, 7, 0.7)',
-    borderColor: 'rgba(242, 211, 138, 0.3)',
+    backgroundColor: theme.colors.iconSurface,
+    borderColor: theme.colors.accentGoldBorder,
     borderCurve: 'continuous',
     borderRadius: theme.radii.pill,
     borderWidth: 1,
@@ -263,8 +268,8 @@ const styles = StyleSheet.create({
   versionCard: {
     alignItems: 'center',
     alignSelf: 'stretch',
-    backgroundColor: 'rgba(1, 1, 2, 0.66)',
-    borderColor: 'rgba(88, 223, 232, 0.18)',
+    backgroundColor: theme.colors.surfaceInset,
+    borderColor: theme.colors.accentCyanBorder,
     borderCurve: 'continuous',
     borderRadius: theme.radii.medium,
     borderWidth: 1,
@@ -280,7 +285,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   versionDivider: {
-    backgroundColor: 'rgba(247, 242, 232, 0.16)',
+    backgroundColor: theme.colors.dividerStrong,
     height: 34,
     width: 1,
   },
@@ -307,7 +312,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   updateButtonText: {
-    color: theme.colors.backgroundDeep,
+    color: theme.colors.textOnAccent,
     fontWeight: '900',
     letterSpacing: 1.1,
   },
@@ -341,4 +346,5 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     textAlign: 'center',
   },
-});
+  });
+}

@@ -1,5 +1,5 @@
 import { usePathname } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   AppState,
@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FlipCompanion, useFlipCompanion } from '@/components/flip';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
+import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
@@ -139,6 +140,7 @@ function BriefingAdvisory({
   advisory: AssistantAdvisory;
   responsiveFont: (size: number) => number;
 }) {
+  const styles = useBriefingStyles();
   return (
     <View style={styles.advisoryCard}>
       <View style={styles.advisoryHeader}>
@@ -192,6 +194,7 @@ function OpenWork({
   tasks: AssistantTask[];
   responsiveFont: (size: number) => number;
 }) {
+  const styles = useBriefingStyles();
   const openTasks = tasks.filter((task) => task.status === 'open').slice(0, 4);
   if (!openTasks.length) return null;
 
@@ -222,6 +225,7 @@ export function FlipDailyBriefingLauncher() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const { height, responsiveFont, width } = useResponsiveLayout();
+  const styles = useBriefingStyles();
   const { react } = useFlipCompanion();
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -408,9 +412,10 @@ export function FlipDailyBriefingLauncher() {
       statusBarTranslucent={Platform.OS === 'android'}
       transparent
       visible={visible}
+      style={{ marginTop: insets.top, marginBottom: insets.bottom }}
     >
       <View style={styles.backdrop}>
-        <View style={[styles.modalCard, { paddingTop: insets.top, paddingBottom: insets.bottom, maxHeight: modalMaxHeight - insets.top - insets.bottom, width: modalWidth }]}>
+        <View style={[styles.modalCard, { position: 'absolute', top: insets.top, bottom: insets.bottom, left: 0, right: 0, paddingTop: insets.top, paddingBottom: insets.bottom, maxHeight: height - insets.top - insets.bottom, width: width, marginBottom: insets.bottom, marginTop: insets.top }]}>
           <View style={styles.modalHeader}>
             <View style={styles.identityBlock}>
               <View accessibilityLabel="Flip" style={styles.companion}>
@@ -499,17 +504,23 @@ export function FlipDailyBriefingLauncher() {
   );
 }
 
-const styles = StyleSheet.create({
+function useBriefingStyles() {
+  const { appliedColorScheme } = useKeepFlipAppearance();
+  return useMemo(() => createBriefingStyles(), [appliedColorScheme]);
+}
+
+function createBriefingStyles() {
+  return StyleSheet.create({
   backdrop: {
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.78)',
+    backgroundColor: theme.colors.scrim,
     flex: 1,
     justifyContent: 'center',
     padding: 14,
   },
   modalCard: {
-    backgroundColor: '#0B0A10',
-    borderColor: 'rgba(242, 211, 138, 0.28)',
+    backgroundColor: theme.colors.surfaceOverlay,
+    borderColor: theme.colors.accentGoldBorder,
     borderCurve: 'continuous',
     borderRadius: 26,
     borderWidth: 1,
@@ -519,7 +530,7 @@ const styles = StyleSheet.create({
   },
   modalHeader: {
     alignItems: 'center',
-    borderBottomColor: 'rgba(242, 211, 138, 0.14)',
+    borderBottomColor: theme.colors.divider,
     borderBottomWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -550,7 +561,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     alignItems: 'center',
-    borderColor: 'rgba(247, 242, 232, 0.18)',
+    borderColor: theme.colors.divider,
     borderRadius: 999,
     borderWidth: 1,
     height: 32,
@@ -570,8 +581,8 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   readCard: {
-    backgroundColor: 'rgba(0, 255, 255, 0.055)',
-    borderColor: 'rgba(0, 255, 255, 0.2)',
+    backgroundColor: theme.colors.iconSurfaceCyan,
+    borderColor: theme.colors.accentCyanBorder,
     borderCurve: 'continuous',
     borderRadius: 18,
     borderWidth: 1,
@@ -599,8 +610,8 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.body,
   },
   advisoryCard: {
-    backgroundColor: 'rgba(141, 114, 255, 0.08)',
-    borderColor: 'rgba(141, 114, 255, 0.25)',
+    backgroundColor: theme.colors.iconSurfaceViolet,
+    borderColor: theme.colors.accentVioletBorder,
     borderCurve: 'continuous',
     borderRadius: 18,
     borderWidth: 1,
@@ -623,7 +634,7 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.semibold,
   },
   evidenceList: {
-    borderTopColor: 'rgba(247, 242, 232, 0.12)',
+    borderTopColor: theme.colors.divider,
     borderTopWidth: 1,
     gap: 8,
     paddingTop: 10,
@@ -642,8 +653,8 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.body,
   },
   nextMove: {
-    backgroundColor: 'rgba(242, 211, 138, 0.09)',
-    borderColor: 'rgba(242, 211, 138, 0.18)',
+    backgroundColor: theme.colors.iconSurfaceGold,
+    borderColor: theme.colors.dividerStrong,
     borderCurve: 'continuous',
     borderRadius: 13,
     borderWidth: 1,
@@ -664,8 +675,8 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.body,
   },
   openWorkCard: {
-    backgroundColor: 'rgba(247, 242, 232, 0.045)',
-    borderColor: 'rgba(247, 242, 232, 0.12)',
+    backgroundColor: theme.colors.cardSoft,
+    borderColor: theme.colors.divider,
     borderCurve: 'continuous',
     borderRadius: 18,
     borderWidth: 1,
@@ -715,7 +726,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   footer: {
-    borderTopColor: 'rgba(242, 211, 138, 0.14)',
+    borderTopColor: theme.colors.divider,
     borderTopWidth: 1,
     gap: 10,
     padding: 18,
@@ -735,11 +746,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   closeActionText: {
-    color: theme.colors.backgroundDeep,
+    color: theme.colors.textOnAccent,
     fontFamily: theme.fonts.bold,
     letterSpacing: 0.4,
   },
   pressed: {
     opacity: 0.78,
   },
-});
+  });
+}

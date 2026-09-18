@@ -197,9 +197,9 @@ function FeedbackPrompt({
                 pressed && busyAction === null && styles.actionPressed,
               ]}>
               {busyAction === 'feedback' ? (
-                <ActivityIndicator color={theme.colors.backgroundDeep} size="small" />
+                <ActivityIndicator color={theme.colors.textOnAccent} size="small" />
               ) : (
-                <IconSymbol color={theme.colors.backgroundDeep} name="paperplane.fill" size={16} />
+                <IconSymbol color={theme.colors.textOnAccent} name="paperplane.fill" size={16} />
               )}
               <Text style={[styles.primaryActionText, { fontSize: responsiveFont(10) }]}>SHARE FEEDBACK</Text>
             </Pressable>
@@ -461,7 +461,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       alignItems: 'center',
       justifyContent: 'center',
       padding: 22,
-      backgroundColor: 'rgba(0, 0, 0, 0.74)',
+      backgroundColor: theme.colors.scrim,
     },
     promptSurface: {
       width: '100%',
@@ -471,8 +471,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderRadius: 16,
       borderCurve: 'continuous',
       borderWidth: 1,
-      borderColor: 'rgba(242, 211, 138, 0.34)',
-      backgroundColor: 'rgba(10, 10, 14, 0.98)',
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.surfaceOverlay,
       boxShadow: '0 18px 48px rgba(0, 0, 0, 0.48)',
     },
     promptSignalRow: {
@@ -505,8 +505,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderRadius: 12,
       borderCurve: 'continuous',
       borderWidth: 1,
-      borderColor: 'rgba(242, 211, 138, 0.28)',
-      backgroundColor: 'rgba(215, 168, 74, 0.10)',
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     promptCopy: { flex: 1, gap: 5 },
     promptTitle: {
@@ -522,7 +522,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       lineHeight: 19,
     },
     promptError: {
-      color: '#FFB8B1',
+      color: theme.colors.danger,
       fontSize: 11,
       lineHeight: 16,
     },
@@ -538,7 +538,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.goldBright,
     },
     primaryActionText: {
-      color: theme.colors.backgroundDeep,
+      color: theme.colors.textOnAccent,
       fontSize: 10,
       fontWeight: '900',
       letterSpacing: 0.9,
@@ -552,8 +552,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderRadius: 11,
       borderCurve: 'continuous',
       borderWidth: 1,
-      borderColor: 'rgba(242, 211, 138, 0.38)',
-      backgroundColor: 'rgba(215, 168, 74, 0.06)',
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     secondaryActionText: {
       color: theme.colors.goldBright,

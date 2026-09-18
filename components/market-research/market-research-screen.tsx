@@ -290,9 +290,9 @@ export function MarketResearchScreen() {
                   isSearching && styles.disabled,
                 ]}>
                 {isSearching ? (
-                  <ActivityIndicator color={theme.colors.backgroundDeep} size="small" />
+                  <ActivityIndicator color={theme.colors.textOnAccent} size="small" />
                 ) : (
-                  <IconSymbol color={theme.colors.backgroundDeep} name="magnifyingglass" size={22} />
+                  <IconSymbol color={theme.colors.textOnAccent} name="magnifyingglass" size={22} />
                 )}
               </Pressable>
             </View>
@@ -434,7 +434,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     eyebrow: { color: theme.colors.gold, fontSize: 11, fontWeight: '700', letterSpacing: 2.1 },
     title: { color: theme.colors.text, fontSize: 38, fontWeight: '700', letterSpacing: -1.4, lineHeight: 42 },
     subtitle: { color: theme.colors.textMuted, fontSize: 15, lineHeight: 22, maxWidth: 520 },
-    searchCard: { backgroundColor: theme.colors.backgroundRaised, borderColor: 'rgba(215,168,74,0.28)', borderRadius: theme.radii.medium, borderWidth: 1, padding: 16, gap: 10 },
+    searchCard: { backgroundColor: theme.colors.backgroundRaised, borderColor: theme.colors.accentGoldBorder, borderRadius: theme.radii.medium, borderWidth: 1, padding: 16, gap: 10 },
     inputLabel: { color: theme.colors.textMuted, fontSize: 10, fontWeight: '700', letterSpacing: 1.25 },
     searchRow: { alignItems: 'center', flexDirection: 'row', gap: 10 },
     searchInput: { backgroundColor: theme.colors.surface, borderColor: theme.colors.surfaceSoft, borderRadius: 14, borderWidth: 1, color: theme.colors.text, flex: 1, fontSize: 15, minHeight: 50, paddingHorizontal: 14 },
@@ -449,9 +449,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     sectionEyebrow: { color: theme.colors.gold, fontSize: 10, fontWeight: '700', letterSpacing: 1.7 },
     sectionTitle: { color: theme.colors.text, fontSize: 22, fontWeight: '700', letterSpacing: -0.5 },
     sectionDescription: { color: theme.colors.textMuted, fontSize: 13, lineHeight: 20 },
-    liveBadge: { alignItems: 'center', backgroundColor: 'rgba(88,223,232,0.1)', borderColor: 'rgba(88,223,232,0.22)', borderRadius: 99, borderWidth: 1, flexDirection: 'row', gap: 6, paddingHorizontal: 10, paddingVertical: 6 },
-    liveDot: { backgroundColor: '#58DFE8', borderRadius: 4, height: 6, width: 6 },
-    liveText: { color: '#58DFE8', fontSize: 9, fontWeight: '700', letterSpacing: 1 },
+    liveBadge: { alignItems: 'center', backgroundColor: theme.colors.iconSurfaceCyan, borderColor: theme.colors.accentCyanBorder, borderRadius: 99, borderWidth: 1, flexDirection: 'row', gap: 6, paddingHorizontal: 10, paddingVertical: 6 },
+    liveDot: { backgroundColor: theme.colors.scannerCyan, borderRadius: 4, height: 6, width: 6 },
+    liveText: { color: theme.colors.scannerCyan, fontSize: 9, fontWeight: '700', letterSpacing: 1 },
     metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     metricCard: { backgroundColor: theme.colors.backgroundRaised, borderColor: theme.colors.surfaceSoft, borderRadius: 16, borderWidth: 1, flexBasis: '47%', flexGrow: 1, minHeight: 104, padding: 14 },
     metricLabel: { color: theme.colors.textMuted, fontSize: 10, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase' },
@@ -479,15 +479,15 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     platformPill: { backgroundColor: theme.colors.surface, borderColor: theme.colors.surfaceSoft, borderRadius: 99, borderWidth: 1, marginRight: 8, paddingHorizontal: 15, paddingVertical: 10 },
     platformPillSelected: { backgroundColor: theme.colors.goldBright, borderColor: theme.colors.goldBright },
     platformText: { color: theme.colors.textMuted, fontSize: 12, fontWeight: '700' },
-    platformTextSelected: { color: theme.colors.backgroundDeep },
-    calculatorCard: { backgroundColor: theme.colors.backgroundRaised, borderColor: 'rgba(215,168,74,0.24)', borderRadius: theme.radii.medium, borderWidth: 1, gap: 18, padding: 16 },
+    platformTextSelected: { color: theme.colors.textOnAccent },
+    calculatorCard: { backgroundColor: theme.colors.backgroundRaised, borderColor: theme.colors.accentGoldBorder, borderRadius: theme.radii.medium, borderWidth: 1, gap: 18, padding: 16 },
     inputGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     inputGroup: { flexBasis: '47%', flexGrow: 1, gap: 6 },
     numberInputShell: { alignItems: 'center', backgroundColor: theme.colors.surface, borderColor: theme.colors.surfaceSoft, borderRadius: 12, borderWidth: 1, flexDirection: 'row', minHeight: 46 },
     numberInput: { color: theme.colors.text, flex: 1, fontSize: 15, paddingHorizontal: 12, paddingVertical: 10 },
     inputSuffix: { color: theme.colors.gold, fontSize: 13, fontWeight: '700', paddingRight: 12 },
     feeNote: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 15 },
-    profitHero: { alignItems: 'center', backgroundColor: 'rgba(215,168,74,0.08)', borderColor: 'rgba(215,168,74,0.2)', borderRadius: 18, borderWidth: 1, padding: 20 },
+    profitHero: { alignItems: 'center', backgroundColor: theme.colors.iconSurfaceGold, borderColor: theme.colors.accentGoldBorder, borderRadius: 18, borderWidth: 1, padding: 20 },
     profitLabel: { color: theme.colors.gold, fontSize: 10, fontWeight: '700', letterSpacing: 1.6 },
     profitValue: { color: theme.colors.goldBright, fontSize: 38, fontWeight: '700', letterSpacing: -1, marginTop: 7 },
     negative: { color: theme.colors.danger },
@@ -498,7 +498,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     breakdownValue: { color: theme.colors.text, fontSize: 12, fontWeight: '600' },
     breakEvenRow: { borderTopColor: theme.colors.surfaceSoft, borderTopWidth: 1, marginTop: 2, paddingTop: 13 },
     breakEvenLabel: { color: theme.colors.text, fontSize: 13, fontWeight: '700' },
-    breakEvenValue: { color: '#58DFE8', fontSize: 15, fontWeight: '700' },
+    breakEvenValue: { color: theme.colors.scannerCyan, fontSize: 15, fontWeight: '700' },
     disclaimer: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 14, textAlign: 'center' },
   });
   return {

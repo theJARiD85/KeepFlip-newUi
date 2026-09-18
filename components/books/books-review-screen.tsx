@@ -531,7 +531,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
                     keyboardType="decimal-pad"
                     onChangeText={setItemCost}
                     placeholder="0.00"
-                    placeholderTextColor="rgba(247, 242, 232, 0.30)"
+                    placeholderTextColor={theme.colors.textMuted}
                     selectTextOnFocus
                     style={styles.moneyInput}
                     value={itemCost}
@@ -573,7 +573,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
                     maxLength={180}
                     onChangeText={setReplacementExternalKey}
                     placeholder="Paste the real eBay transaction ID"
-                    placeholderTextColor="rgba(247, 242, 232, 0.30)"
+                    placeholderTextColor={theme.colors.textMuted}
                     style={styles.textField}
                     value={replacementExternalKey}
                   />
@@ -618,7 +618,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
                   keyboardType="decimal-pad"
                   onChangeText={setAmount}
                   placeholder="0.00"
-                  placeholderTextColor="rgba(247, 242, 232, 0.30)"
+                  placeholderTextColor={theme.colors.textMuted}
                   selectTextOnFocus
                   style={styles.textField}
                   value={amount}
@@ -632,7 +632,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
                   maxLength={3}
                   onChangeText={setCurrency}
                   placeholder="USD"
-                  placeholderTextColor="rgba(247, 242, 232, 0.30)"
+                  placeholderTextColor={theme.colors.textMuted}
                   style={styles.textField}
                   value={currency}
                 />
@@ -645,7 +645,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
                   maxLength={80}
                   onChangeText={setTransactionType}
                   placeholder="SALE, CREDIT, NON_SALE_CHARGE…"
-                  placeholderTextColor="rgba(247, 242, 232, 0.30)"
+                  placeholderTextColor={theme.colors.textMuted}
                   style={styles.textField}
                   value={transactionType}
                 />
@@ -658,7 +658,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
                   maxLength={6}
                   onChangeText={setBookingEntry}
                   placeholder="DEBIT or CREDIT"
-                  placeholderTextColor="rgba(247, 242, 232, 0.30)"
+                  placeholderTextColor={theme.colors.textMuted}
                   style={styles.textField}
                   value={bookingEntry}
                 />
@@ -670,7 +670,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
                   autoCorrect={false}
                   onChangeText={setOccurredAt}
                   placeholder="2026-09-10T18:30:00.000Z"
-                  placeholderTextColor="rgba(247, 242, 232, 0.30)"
+                  placeholderTextColor={theme.colors.textMuted}
                   style={styles.textField}
                   value={occurredAt}
                 />
@@ -684,7 +684,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
                   maxLength={180}
                   onChangeText={setOrderId}
                   placeholder="Optional marketplace order reference"
-                  placeholderTextColor="rgba(247, 242, 232, 0.30)"
+                  placeholderTextColor={theme.colors.textMuted}
                   style={styles.textField}
                   value={orderId}
                 />
@@ -697,7 +697,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
                   maxLength={180}
                   onChangeText={setPayoutId}
                   placeholder="Optional eBay payout reference"
-                  placeholderTextColor="rgba(247, 242, 232, 0.30)"
+                  placeholderTextColor={theme.colors.textMuted}
                   style={styles.textField}
                   value={payoutId}
                 />
@@ -711,7 +711,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
                       maxLength={6}
                       onChangeText={setQuantity}
                       placeholder="1"
-                      placeholderTextColor="rgba(247, 242, 232, 0.30)"
+                      placeholderTextColor={theme.colors.textMuted}
                       style={styles.textField}
                       value={quantity}
                     />
@@ -723,7 +723,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
                         keyboardType="decimal-pad"
                         onChangeText={setFee}
                         placeholder="0.00"
-                        placeholderTextColor="rgba(247, 242, 232, 0.30)"
+                        placeholderTextColor={theme.colors.textMuted}
                         style={styles.textField}
                         value={fee}
                       />
@@ -734,7 +734,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
                         keyboardType="decimal-pad"
                         onChangeText={setTax}
                         placeholder="0.00"
-                        placeholderTextColor="rgba(247, 242, 232, 0.30)"
+                        placeholderTextColor={theme.colors.textMuted}
                         style={styles.textField}
                         value={tax}
                       />
@@ -759,7 +759,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
                     autoCorrect={false}
                     onChangeText={setInventoryQuery}
                     placeholder="Search saved inventory"
-                    placeholderTextColor="rgba(247, 242, 232, 0.30)"
+                    placeholderTextColor={theme.colors.textMuted}
                     style={styles.textField}
                     value={inventoryQuery}
                   />
@@ -798,7 +798,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
                   multiline
                   onChangeText={setMemo}
                   placeholder="Optional note about this corrected Books record"
-                  placeholderTextColor="rgba(247, 242, 232, 0.30)"
+                  placeholderTextColor={theme.colors.textMuted}
                   style={[styles.textField, styles.memoField]}
                   value={memo}
                 />
@@ -831,7 +831,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
                   saving && styles.disabled,
                 ]}>
                 {saving ? (
-                  <ActivityIndicator color={theme.colors.backgroundDeep} size="small" />
+                  <ActivityIndicator color={theme.colors.textOnAccent} size="small" />
                 ) : null}
                 <Text style={[styles.primaryButtonText, { fontSize: responsiveFont(10) }]}>
                   {saving
@@ -891,8 +891,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 14,
       borderRadius: 12,
       borderWidth: 1,
-      borderColor: 'rgba(242, 211, 138, 0.35)',
-      backgroundColor: 'rgba(242, 211, 138, 0.07)',
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     attentionEyebrow: {
       color: theme.colors.goldBright,
@@ -916,8 +916,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 14,
       borderRadius: 12,
       borderWidth: 1,
-      borderColor: 'rgba(88, 223, 232, 0.25)',
-      backgroundColor: 'rgba(88, 223, 232, 0.035)',
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     sourceTopline: {
       flexDirection: 'row',
@@ -948,10 +948,10 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 2,
       paddingTop: 7,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: 'rgba(247, 242, 232, 0.10)',
+      borderTopColor: theme.colors.divider,
     },
     detailLabel: {
-      color: 'rgba(247, 242, 232, 0.42)',
+      color: theme.colors.textMuted,
       fontSize: 7,
       fontWeight: '900',
       letterSpacing: 0.8,
@@ -967,8 +967,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 14,
       borderRadius: 12,
       borderWidth: 1,
-      borderColor: 'rgba(247, 242, 232, 0.16)',
-      backgroundColor: 'rgba(255, 255, 255, 0.025)',
+      borderColor: theme.colors.divider,
+      backgroundColor: theme.colors.cardSoft,
     },
     editorTitle: {
       color: theme.colors.cream,
@@ -985,8 +985,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 10,
       borderRadius: 9,
       borderWidth: 1,
-      borderColor: 'rgba(88, 223, 232, 0.22)',
-      backgroundColor: 'rgba(88, 223, 232, 0.055)',
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     lockedIdValue: {
       color: theme.colors.text,
@@ -1016,12 +1016,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingHorizontal: 11,
       borderRadius: 17,
       borderWidth: 1,
-      borderColor: 'rgba(247, 242, 232, 0.17)',
-      backgroundColor: 'rgba(255, 255, 255, 0.025)',
+      borderColor: theme.colors.divider,
+      backgroundColor: theme.colors.cardSoft,
     },
     postingTypeChipActive: {
-      borderColor: 'rgba(242, 211, 138, 0.66)',
-      backgroundColor: 'rgba(242, 211, 138, 0.13)',
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     postingTypeChipText: {
       color: theme.colors.textMuted,
@@ -1036,9 +1036,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingHorizontal: 12,
       borderRadius: 9,
       borderWidth: 1,
-      borderColor: 'rgba(88, 223, 232, 0.22)',
+      borderColor: theme.colors.accentCyanBorder,
       color: theme.colors.cream,
-      backgroundColor: 'rgba(0, 0, 0, 0.25)',
+      backgroundColor: theme.colors.surfaceInset,
       fontSize: 14,
     },
     memoField: {
@@ -1053,8 +1053,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       overflow: 'hidden',
       borderRadius: 9,
       borderWidth: 1,
-      borderColor: 'rgba(242, 211, 138, 0.30)',
-      backgroundColor: 'rgba(0, 0, 0, 0.25)',
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.surfaceInset,
     },
     currencyPrefix: {
       paddingLeft: 12,
@@ -1075,7 +1075,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 2,
       padding: 10,
       borderRadius: 9,
-      backgroundColor: 'rgba(88, 223, 232, 0.07)',
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     itemChipLabel: {
       color: theme.colors.scannerCyan,
@@ -1108,12 +1108,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 10,
       borderRadius: 9,
       borderWidth: 1,
-      borderColor: 'rgba(247, 242, 232, 0.12)',
-      backgroundColor: 'rgba(255, 255, 255, 0.02)',
+      borderColor: theme.colors.divider,
+      backgroundColor: theme.colors.cardSoft,
     },
     inventoryOptionActive: {
-      borderColor: 'rgba(88, 223, 232, 0.65)',
-      backgroundColor: 'rgba(88, 223, 232, 0.09)',
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     inventoryOptionTitle: {
       color: theme.colors.text,
@@ -1129,11 +1129,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 14,
       borderRadius: 12,
       borderWidth: 1,
-      borderColor: 'rgba(70, 245, 162, 0.28)',
-      backgroundColor: 'rgba(70, 245, 162, 0.05)',
+      borderColor: theme.colors.success,
+      backgroundColor: theme.colors.successSurface,
     },
     confirmedTitle: {
-      color: '#46F5A2',
+      color: theme.colors.success,
       fontSize: 9,
       fontWeight: '900',
       letterSpacing: 1.1,
@@ -1147,16 +1147,16 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 11,
       borderRadius: 9,
       borderWidth: 1,
-      borderColor: 'rgba(255, 120, 110, 0.28)',
-      backgroundColor: 'rgba(255, 120, 110, 0.055)',
+      borderColor: theme.colors.danger,
+      backgroundColor: theme.colors.dangerSurface,
     },
     errorText: {
-      color: '#FFB8B1',
+      color: theme.colors.danger,
       fontSize: 10,
       lineHeight: 15,
     },
     errorTitle: {
-      color: '#FFB8B1',
+      color: theme.colors.danger,
       fontSize: 11,
       fontWeight: '900',
       letterSpacing: 1.1,
@@ -1172,7 +1172,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.goldBright,
     },
     primaryButtonText: {
-      color: theme.colors.backgroundDeep,
+      color: theme.colors.textOnAccent,
       fontSize: 10,
       fontWeight: '900',
       letterSpacing: 1,
@@ -1184,8 +1184,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingHorizontal: 12,
       borderRadius: 9,
       borderWidth: 1,
-      borderColor: 'rgba(88, 223, 232, 0.30)',
-      backgroundColor: 'rgba(88, 223, 232, 0.045)',
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     secondaryButtonText: {
       color: theme.colors.scannerCyan,

@@ -49,9 +49,10 @@ import {
 } from "@/components/scanner/multi-scan-photo-review";
 import {
   ScannerToolCarousel,
-  scannerTools,
+  getScannerTools,
   type ScannerToolId,
 } from "@/components/scanner/scanner-tool-carousel";
+import { useKeepFlipAppearance } from "@/components/settings/keepflip-appearance-context";
 import {
   ValueRadarOverlay,
   useValueRadar,
@@ -61,8 +62,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
-import { useResponsiveLayout } from "@/hooks/use-responsive-layout";
-import { responsiveWidth } from '@/lib/responsiveFont';
+import { useResponsiveLayout, useResponsiveStyles } from "@/hooks/use-responsive-layout";
 import { lookupBarcodeWithEbay } from "@/services/ebaySoldCompsService";
 import { MAX_ANALYSIS_PHOTOS } from "@/services/item-analysis-service";
 import { neutralizeMarketplaceBrand } from "@/services/market-copy";
@@ -83,7 +83,6 @@ import {
   getSmartEvidenceCapturePlan,
 } from "@/services/smart-evidence-capture";
 
-import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type AnalysisCognitionSeed = {
   localDetection?: {
     label: string;
@@ -192,6 +191,11 @@ function formatZoomLabel(value: number) {
 
 export default function ScannerScreen() {
   const styles = useResponsiveStyles(createResponsiveStyles);
+  const { appliedColorScheme } = useKeepFlipAppearance();
+  const scannerTools = useMemo(() => {
+    void appliedColorScheme;
+    return getScannerTools();
+  }, [appliedColorScheme]);
   const router = useRouter();
   const { user } = useKeepFlipAuth();
   const { width } = useWindowDimensions();

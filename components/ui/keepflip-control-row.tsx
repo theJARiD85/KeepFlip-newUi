@@ -4,10 +4,7 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import { responsiveWidth } from '@/lib/responsiveFont';
-
-import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type KeepFlipControlIconName = ComponentProps<typeof IconSymbol>['name'];
 export type KeepFlipStatusTone =
   | 'active'
@@ -167,10 +164,10 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 10,
       paddingVertical: 9,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: 'rgba(242, 211, 138, 0.14)',
+      borderBottomColor: theme.colors.divider,
     },
     controlRowPressed: {
-      backgroundColor: 'rgba(242, 211, 138, 0.05)',
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     rowIcon: {
       width: 32,
@@ -179,11 +176,20 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: 'center',
       borderRadius: 8,
       borderWidth: 1,
-      backgroundColor: 'rgba(3, 3, 6, 0.54)',
+      backgroundColor: theme.colors.iconSurface,
     },
-    rowIconGold: { borderColor: 'rgba(242, 211, 138, 0.23)' },
-    rowIconCyan: { borderColor: 'rgba(88, 223, 232, 0.24)' },
-    rowIconViolet: { borderColor: 'rgba(141, 114, 255, 0.26)' },
+    rowIconGold: {
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.iconSurfaceGold,
+    },
+    rowIconCyan: {
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
+    },
+    rowIconViolet: {
+      borderColor: theme.colors.accentVioletBorder,
+      backgroundColor: theme.colors.iconSurfaceViolet,
+    },
     rowCopy: {
       minWidth: 0,
       flex: 1,
@@ -213,8 +219,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingVertical: 6,
       borderRadius: theme.radii.pill,
       borderWidth: 1,
-      borderColor: 'rgba(242, 211, 138, 0.28)',
-      backgroundColor: 'rgba(215, 168, 74, 0.075)',
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     rowActionText: {
       color: theme.colors.goldBright,
@@ -242,24 +248,24 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderWidth: 1,
     },
     statusBadgeActive: {
-      borderColor: 'rgba(88, 223, 232, 0.30)',
-      backgroundColor: 'rgba(88, 223, 232, 0.06)',
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     statusBadgeMuted: {
-      borderColor: 'rgba(242, 211, 138, 0.20)',
-      backgroundColor: 'rgba(242, 211, 138, 0.04)',
+      borderColor: theme.colors.divider,
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     statusBadgeWarning: {
-      borderColor: 'rgba(224, 172, 75, 0.32)',
-      backgroundColor: 'rgba(224, 172, 75, 0.06)',
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     statusBadgeDanger: {
-      borderColor: 'rgba(232, 97, 88, 0.34)',
-      backgroundColor: 'rgba(232, 97, 88, 0.06)',
+      borderColor: theme.colors.danger,
+      backgroundColor: theme.colors.dangerSurface,
     },
     statusBadgeViolet: {
-      borderColor: 'rgba(141, 114, 255, 0.30)',
-      backgroundColor: 'rgba(141, 114, 255, 0.07)',
+      borderColor: theme.colors.accentVioletBorder,
+      backgroundColor: theme.colors.iconSurfaceViolet,
     },
     statusBadgeDot: {
       width: 4,

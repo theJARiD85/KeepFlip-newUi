@@ -7,13 +7,13 @@ import {
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
 import {
   AppState,
   StyleSheet,
-  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -30,6 +30,7 @@ import {
 import { useItemAnalysisResult } from "@/components/scanner/item-analysis-result-context";
 import { toItemAnalysisState } from "@/components/scanner/item-analysis-view-model";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { useKeepFlipAppearance } from "@/components/settings/keepflip-appearance-context";
 import {
   analyzeItemPhotos,
   AppwriteSetupError,
@@ -81,7 +82,11 @@ function firstParam(value: string | string[] | undefined) {
 export function ItemAnalysisScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { height, width } = useWindowDimensions();
+  const { appliedColorScheme } = useKeepFlipAppearance();
+  const styles = useMemo(() => {
+    void appliedColorScheme;
+    return createStyles();
+  }, [appliedColorScheme]);
   const isFocused = useIsFocused();
   const params = useLocalSearchParams<{
     sessionId?: string | string[];
@@ -410,10 +415,12 @@ export function ItemAnalysisScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    overflow: "hidden",
-    backgroundColor: theme.colors.backgroundDeep,
-  },
-});
+function createStyles() {
+  return StyleSheet.create({
+    root: {
+      flex: 1,
+      overflow: "hidden",
+      backgroundColor: theme.colors.backgroundDeep,
+    },
+  });
+}

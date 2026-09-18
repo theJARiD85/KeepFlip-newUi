@@ -1,9 +1,8 @@
 import { StyleSheet, type TextProps } from 'react-native';
 
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
+import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import responsiveFont from '@/lib/responsiveFont';
-
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export type ThemedTextProps = TextProps & {
   lightColor?: string;
@@ -61,7 +60,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     link: {
       lineHeight: 30,
       fontSize: 16,
-      color: '#0a7ea4',
+      color: theme.colors.scannerCyan,
     },
   });
   return {

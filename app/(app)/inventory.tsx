@@ -634,7 +634,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     filterTrigger: {
       alignItems: "center",
       alignSelf: "flex-start",
-      borderColor: "rgba(101, 235, 255, 0.38)",
+      borderColor: theme.colors.accentCyanBorder,
       borderRadius: theme.radii.medium,
       borderWidth: StyleSheet.hairlineWidth,
       flexDirection: "row",
@@ -642,7 +642,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       marginTop: 12,
       paddingHorizontal: 12,
       paddingVertical: 10,
-      backgroundColor: "rgba(7, 5, 10, 0.56)",
+      backgroundColor: theme.colors.surfaceInset,
     },
     filterTriggerPressed: {
       opacity: 0.72,
@@ -670,7 +670,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     modalBackdrop: {
       flex: 1,
       justifyContent: "flex-end",
-      backgroundColor: "rgba(2, 1, 5, 0.72)",
+      backgroundColor: theme.colors.scrim,
     },
     modalDismiss: {
       ...StyleSheet.absoluteFill,
@@ -680,10 +680,10 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderTopLeftRadius: theme.radii.large,
       borderTopRightRadius: theme.radii.large,
       borderWidth: StyleSheet.hairlineWidth,
-      borderColor: "rgba(184, 168, 255, 0.32)",
+      borderColor: theme.colors.accentVioletBorder,
       paddingHorizontal: 18,
       paddingTop: 18,
-      backgroundColor: "rgba(15, 11, 24, 0.98)",
+      backgroundColor: theme.colors.surfaceOverlay,
       boxShadow: "0 -12px 36px rgba(0, 0, 0, 0.36)",
     },
     filterSheetHeader: {
@@ -712,8 +712,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: "center",
       borderRadius: theme.radii.pill,
       borderWidth: StyleSheet.hairlineWidth,
-      borderColor: "rgba(184, 168, 255, 0.28)",
-      backgroundColor: "rgba(184, 168, 255, 0.08)",
+      borderColor: theme.colors.accentVioletBorder,
+      backgroundColor: theme.colors.iconSurfaceViolet,
     },
     filterSheetContent: {
       gap: 20,
@@ -735,16 +735,16 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 7,
     },
     controlChip: {
-      borderColor: "rgba(184, 168, 255, 0.23)",
+      borderColor: theme.colors.accentVioletBorder,
       borderRadius: theme.radii.pill,
       borderWidth: StyleSheet.hairlineWidth,
       paddingHorizontal: 9,
       paddingVertical: 6,
-      backgroundColor: "rgba(7, 5, 10, 0.52)",
+      backgroundColor: theme.colors.surfaceInset,
     },
     controlChipSelected: {
-      borderColor: "rgba(101, 235, 255, 0.65)",
-      backgroundColor: "rgba(40, 205, 229, 0.14)",
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     controlChipText: {
       color: theme.colors.textMuted,
@@ -768,8 +768,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       minHeight: 46,
       borderRadius: theme.radii.medium,
       borderWidth: StyleSheet.hairlineWidth,
-      borderColor: "rgba(184, 168, 255, 0.3)",
-      backgroundColor: "rgba(184, 168, 255, 0.08)",
+      borderColor: theme.colors.accentVioletBorder,
+      backgroundColor: theme.colors.iconSurfaceViolet,
     },
     clearFiltersText: {
       color: theme.colors.cream,
@@ -787,7 +787,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.scannerCyan,
     },
     applyFiltersText: {
-      color: theme.colors.backgroundDeep,
+      color: theme.colors.textOnAccent,
       fontFamily: theme.fonts.radar,
       fontSize: 10,
       fontWeight: "900",
@@ -801,8 +801,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 14,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
-      borderColor: "rgba(255, 107, 107, 0.34)",
-      backgroundColor: "rgba(90, 18, 26, 0.32)",
+      borderColor: theme.colors.danger,
+      backgroundColor: theme.colors.dangerSurface,
     },
     errorText: {
       flex: 1,
@@ -817,7 +817,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.gold,
     },
     retryText: {
-      color: theme.colors.backgroundDeep,
+      color: theme.colors.textOnAccent,
       fontSize: 12,
       fontWeight: "900",
     },
@@ -836,8 +836,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: "center",
       borderRadius: theme.radii.pill,
       borderWidth: 1,
-      borderColor: "rgba(242, 211, 138, 0.42)",
-      backgroundColor: "rgba(215, 168, 74, 0.10)",
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.iconSurfaceGold,
       boxShadow: "0 0 28px rgba(215, 168, 74, 0.12)",
     },
     emptyTitle: {

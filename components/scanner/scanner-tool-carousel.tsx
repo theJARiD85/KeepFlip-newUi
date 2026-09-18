@@ -14,11 +14,10 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont from '@/lib/responsiveFont';
-
-import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
+import { withAlpha } from '@/lib/withAlpha';
 export type ScannerToolId = 'single' | 'barcode' | 'multi' | 'batch' | 'upload';
 
 type ScannerTool = {
@@ -35,40 +34,62 @@ type ScannerTool = {
   surface: string;
 };
 
-export const scannerTools: ScannerTool[] = [
+type ScannerToolAccentKey = 'scannerCyan' | 'scannerViolet' | 'goldBright' | 'cream';
+type ScannerToolSurfaceKey = 'iconSurfaceCyan' | 'iconSurfaceViolet' | 'iconSurfaceGold' | 'iconSurface';
+
+const scannerToolDefinitions: {
+  accentKey: ScannerToolAccentKey;
+  glowAlpha: number;
+  icon: ScannerTool['icon'];
+  id: ScannerToolId;
+  label: string;
+  surfaceKey: ScannerToolSurfaceKey;
+}[] = [
   {
     id: 'barcode',
     label: 'Barcode scanner',
     icon: 'barcode.viewfinder',
-    accent: theme.colors.scannerViolet,
-    surface: 'rgba(141, 114, 255, 0.16)',
-    glow: 'rgba(141, 114, 255, 0.46)',
+    accentKey: 'scannerViolet',
+    surfaceKey: 'iconSurfaceViolet',
+    glowAlpha: 0.46,
   },
   {
     id: 'multi',
     label: 'Smart scan',
     icon: 'rectangle.stack.fill',
-    accent: theme.colors.scannerCyan,
-    surface: 'rgba(88, 223, 232, 0.14)',
-    glow: '#00fff260',
+    accentKey: 'scannerCyan',
+    surfaceKey: 'iconSurfaceCyan',
+    glowAlpha: 0.46,
   },
   {
     id: 'batch',
     label: 'Batch-scan',
     icon: 'square.grid.2x2.fill',
-    accent: theme.colors.scannerViolet,
-    surface: 'rgba(141, 114, 255, 0.15)',
-    glow: 'rgba(141, 114, 255, 0.38)',
+    accentKey: 'scannerViolet',
+    surfaceKey: 'iconSurfaceViolet',
+    glowAlpha: 0.38,
   },
   {
     id: 'upload',
     label: 'Upload photo',
     icon: 'photo.on.rectangle.angled',
-    accent: theme.colors.cream,
-    surface: 'rgba(250, 239, 207, 0.15)',
-    glow: 'rgba(250, 239, 207, 0.38)',
+    accentKey: 'cream',
+    surfaceKey: 'iconSurface',
+    glowAlpha: 0.38,
   },
 ];
+
+export function getScannerTools(): ScannerTool[] {
+  return scannerToolDefinitions.map(({ accentKey, glowAlpha, surfaceKey, ...tool }) => {
+    const accent = theme.colors[accentKey];
+    return {
+      ...tool,
+      accent,
+      glow: withAlpha(accent, glowAlpha),
+      surface: theme.colors[surfaceKey],
+    };
+  });
+}
 
 type ScannerToolCarouselProps = {
   badges?: Partial<Record<ScannerToolId, number>>;
@@ -101,7 +122,7 @@ const REAR_LAYER = 10;
 const FOREGROUND_LAYER = 20;
 const HOUSING_TOP_LAYER = 30;
 const REAR_CROSSOVER_DEPTH = 0.56;
-const TOOL_COUNT = scannerTools.length;
+const TOOL_COUNT = scannerToolDefinitions.length;
 const SPRING = {
   damping: 20,
   stiffness: 240,
@@ -279,6 +300,11 @@ export function ScannerToolCarousel({
   selectedTool,
 }: ScannerToolCarouselProps) {
   const styles = useResponsiveStyles(createResponsiveStyles);
+  const { appliedColorScheme } = useKeepFlipAppearance();
+  const scannerTools = useMemo(() => {
+    void appliedColorScheme;
+    return getScannerTools();
+  }, [appliedColorScheme]);
   const {
     controlDockWidth,
     moderateScale,
@@ -321,7 +347,7 @@ export function ScannerToolCarousel({
       selectionHaptic();
       onSelect(nextTool.id);
     },
-    [onSelect, selectedTool],
+    [onSelect, scannerTools, selectedTool],
   );
 
   const pan = useMemo(
@@ -366,6 +392,7 @@ export function ScannerToolCarousel({
       dragStart,
       dragThreshold,
       position,
+      scannerTools,
       velocityThreshold,
     ],
   );

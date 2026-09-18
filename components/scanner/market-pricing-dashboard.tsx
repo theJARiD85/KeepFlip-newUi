@@ -8,14 +8,12 @@ import {
 } from "react-native";
 
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import { responsiveHeight } from '@/lib/responsiveFont';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 import type {
   EbaySoldComp,
   EbaySoldCompsResult,
 } from "@/services/ebaySoldCompsService";
 
-import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type MarketPricingDashboardProps = {
   /**
    * The exact item query to pass to the live-comp loader. The component never
@@ -96,11 +94,6 @@ type MarketDashboardData = {
   trend: TrendPoint[];
   average: number | null;
 };
-
-const POSITIVE = "#46F5A2";
-const TREND = theme.colors.scannerCyan;
-const MUTED = "rgba(247, 242, 232, 0.52)";
-const HAIRLINE = "rgba(255, 255, 255, 0.12)";
 
 function asRecord(value: unknown): UnknownRecord | null {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -510,7 +503,7 @@ function ConditionVariance({
                     {
                       color:
                         band.deltaVsBaseline >= 0
-                          ? POSITIVE
+                          ? theme.colors.success
                           : theme.colors.danger,
                     },
                   ]}
@@ -865,7 +858,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 13,
       paddingTop: 16,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: HAIRLINE,
+      borderTopColor: theme.colors.divider,
     },
     header: {
       flexDirection: "row",
@@ -893,7 +886,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       lineHeight: 19,
     },
     query: {
-      color: MUTED,
+      color: theme.colors.textMuted,
       fontFamily: theme.fonts.numbers,
       fontSize: 7,
       fontWeight: "900",
@@ -944,7 +937,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingVertical: 10,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderColor: HAIRLINE,
+      borderColor: theme.colors.divider,
     },
     emptyTitle: {
       color: "rgba(255, 255, 255, 0.72)",
@@ -954,7 +947,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       letterSpacing: 0.78,
     },
     emptyCopy: {
-      color: MUTED,
+      color: theme.colors.textMuted,
       fontFamily: theme.fonts.radar,
       fontSize: 9,
       lineHeight: 13,
@@ -967,7 +960,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingVertical: 8,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderColor: HAIRLINE,
+      borderColor: theme.colors.divider,
     },
     snapshotCopy: {
       marginTop: 3,
@@ -997,7 +990,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 3,
       paddingVertical: 7,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: "rgba(255, 255, 255, 0.09)",
+      borderBottomColor: theme.colors.divider,
     },
     metricLabel: {
       color: "rgba(247, 242, 232, 0.49)",
@@ -1035,7 +1028,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 9,
       paddingTop: 11,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: HAIRLINE,
+      borderTopColor: theme.colors.divider,
     },
     sectionHeader: {
       flexDirection: "row",
@@ -1075,7 +1068,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingTop: 2,
       paddingBottom: 3,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: "rgba(255, 255, 255, 0.18)",
+      borderBottomColor: theme.colors.dividerStrong,
     },
     trendPoint: {
       flex: 1,
@@ -1104,7 +1097,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       width: "100%",
       minHeight: 4,
       borderRadius: 2,
-      backgroundColor: TREND,
+      backgroundColor: theme.colors.scannerCyan,
     },
     trendDate: {
       minHeight: 18,
@@ -1137,7 +1130,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 8,
       paddingBottom: 7,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: "rgba(255, 255, 255, 0.08)",
+      borderBottomColor: theme.colors.divider,
     },
     conditionLead: {
       flex: 1,

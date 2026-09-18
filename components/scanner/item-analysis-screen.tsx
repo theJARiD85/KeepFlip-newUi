@@ -7,6 +7,7 @@ import {
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -28,6 +29,7 @@ import {
 import { useItemAnalysisResult } from "@/components/scanner/item-analysis-result-context";
 import { toItemAnalysisState } from "@/components/scanner/item-analysis-view-model";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { useKeepFlipAppearance } from "@/components/settings/keepflip-appearance-context";
 import {
   analyzeItemPhotos,
   AppwriteSetupError,
@@ -70,6 +72,11 @@ export function ItemAnalysisScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { height, width } = useWindowDimensions();
+  const { appliedColorScheme } = useKeepFlipAppearance();
+  const styles = useMemo(() => {
+    void appliedColorScheme;
+    return createStyles();
+  }, [appliedColorScheme]);
   const isFocused = useIsFocused();
   const params = useLocalSearchParams<{
     sessionId?: string | string[];
@@ -387,18 +394,20 @@ export function ItemAnalysisScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    overflow: "hidden",
-    backgroundColor: theme.colors.backgroundDeep,
-  },
-  photoScrim: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(1, 2, 6, 0.18)",
-    experimental_backgroundImage: `
-      radial-gradient(circle at 50% 42%, rgba(88, 223, 232, 0.06) 0%, transparent 40%),
-      linear-gradient(to bottom, rgba(1, 1, 4, 0.64) 0%, rgba(3, 2, 9, 0.18) 46%, rgba(1, 1, 4, 0.66) 100%)
-    `,
-  },
-});
+function createStyles() {
+  return StyleSheet.create({
+    root: {
+      flex: 1,
+      overflow: "hidden",
+      backgroundColor: theme.colors.backgroundDeep,
+    },
+    photoScrim: {
+      ...StyleSheet.absoluteFill,
+      backgroundColor: theme.colors.scrim,
+      experimental_backgroundImage: `
+        radial-gradient(circle at 50% 42%, rgba(88, 223, 232, 0.06) 0%, transparent 40%),
+        linear-gradient(to bottom, rgba(1, 1, 4, 0.64) 0%, rgba(3, 2, 9, 0.18) 46%, rgba(1, 1, 4, 0.66) 100%)
+      `,
+    },
+  });
+}

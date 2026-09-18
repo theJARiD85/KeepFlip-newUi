@@ -11,7 +11,7 @@ const projectDirectory = (name) => {
     .map(escapeRegExp)
     .join('[\\\\/]');
 
-  return new RegExp(`^${pathPattern}(?:[\\\\/]|$)`, 'i');
+  return new RegExp(`^${pathPattern}(?:[\\\\/]|$)`);
 };
 
 // 1. Safely append 3D models and ML files without wiping out defaults

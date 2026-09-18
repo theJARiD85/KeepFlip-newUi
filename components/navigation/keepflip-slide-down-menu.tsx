@@ -23,6 +23,7 @@ import {
   MENU_CLOSE_DURATION_MS,
   useKeepFlipMenu,
 } from '@/components/navigation/keepflip-menu-context';
+import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { SourcingTripControl } from '@/components/sourcing/sourcing-trip-control';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
@@ -48,6 +49,24 @@ const destinations: MenuDestination[] = [
   { eyebrow: 'STAY IN THE LOOP', href: '/notifications', icon: 'envelope.fill', label: 'Notifications' },
 
 ];
+
+const MENU_BACKGROUND_DARK = `
+      radial-gradient(circle at 86% 0%, rgba(224, 172, 75, 0.17) 0%, transparent 34%),
+      radial-gradient(circle at 2% 100%, rgba(141, 114, 255, 0.09) 0%, transparent 38%),
+      linear-gradient(155deg, rgba(18, 15, 22, 0.99) 0%, rgba(3, 3, 6, 0.99) 74%)
+    `;
+
+function getLightMenuBackground() {
+  return `
+      radial-gradient(circle at 86% 0%, rgba(215, 168, 74, 0.18) 0%, transparent 34%),
+      radial-gradient(circle at 2% 100%, rgba(140, 120, 203, 0.14) 0%, transparent 38%),
+      radial-gradient(circle at 18% 56%, rgba(0, 177, 187, 0.12) 0%, transparent 36%),
+      linear-gradient(155deg, ${theme.colors.card} 0%, ${theme.colors.card} 74%)
+    `;
+}
+
+const MENU_SHADOW_DARK = '0 22px 60px rgba(0, 0, 0, 0.72), 0 0 30px rgba(215, 168, 74, 0.10)';
+const MENU_SHADOW_LIGHT = `{offsetX: 0, offsetY: 18, blurRadius: 48, spreadDistance: 2, color: 'rgba(76, 60, 47, 0', inset: true}`;
 
 function hapticSelection() {
   if (process.env.EXPO_OS === 'ios') void Haptics.selectionAsync();
@@ -80,6 +99,7 @@ export function KeepFlipSlideDownMenu() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
+  const { effectiveColorScheme } = useKeepFlipAppearance();
   const { closeMenu, isMenuOpen, toggleMenu } = useKeepFlipMenu();
   const isMenuDisabled = pathname === '/walkthrough';
   const progress = useSharedValue(0);
@@ -140,6 +160,13 @@ export function KeepFlipSlideDownMenu() {
     transform: [{ translateY: -(panelHeight + 24) * (1 - progress.value) }],
   }));
 
+  const menuBackground = effectiveColorScheme === 'light'
+    ? getLightMenuBackground()
+    : MENU_BACKGROUND_DARK;
+  const menuShadow = effectiveColorScheme === 'light'
+    ? MENU_SHADOW_LIGHT
+    : MENU_SHADOW_DARK;
+
   const handleToggle = () => {
     if (isMenuDisabled) return;
     hapticSelection();
@@ -196,7 +223,12 @@ export function KeepFlipSlideDownMenu() {
             pointerEvents={isMenuOpen ? 'auto' : 'none'}
             style={[
               styles.panel,
-              { height: panelHeight, paddingTop: insets.top },
+              {
+                height: panelHeight,
+                paddingTop: insets.top,
+                experimental_backgroundImage: menuBackground,
+                boxShadow: menuShadow,
+              },
               panelStyle,
             ]}>
             <ScrollView
@@ -206,11 +238,13 @@ export function KeepFlipSlideDownMenu() {
               showsVerticalScrollIndicator={false}>
               <View style={styles.brandRow}>
                 <View style={styles.brandLockup}>
-                  <Image
-                    source={require('@/assets/images/icon3.png')}
-                    accessibilityLabel="KeepFlip"
-                    style={styles.brandMark}
-                  />
+                  <View style={styles.brandBackdrop}>
+                    <Image
+                      source={require('@/assets/images/icon.png')}
+                      accessibilityLabel="KeepFlip"
+                      style={styles.brandMark}
+                    />
+                  </View>
                   <View style={styles.brandCopy}>
                     <Text style={[styles.brandName, { fontSize: responsiveFont(22) }]}>KEEPFLIP</Text>
                     <View style={styles.brandDescriptorContainer}>
@@ -370,7 +404,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       ...StyleSheet.absoluteFill,
       zIndex: 10000,
       elevation: 10000,
-      backgroundColor: 'rgba(1, 1, 2, 0.68)',
+      backgroundColor: theme.colors.scrim,
     },
     panel: {
       position: 'absolute',
@@ -383,16 +417,10 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderRightWidth: 1,
       borderBottomWidth: 1,
       borderLeftWidth: 1,
-      borderColor: 'rgba(215, 168, 74, 0.30)',
+      borderColor: theme.colors.dividerStrong,
       borderBottomRightRadius: theme.radii.large,
       borderBottomLeftRadius: theme.radii.large,
-      backgroundColor: 'rgba(7, 7, 11, 0.98)',
-      experimental_backgroundImage: `
-      radial-gradient(circle at 86% 0%, rgba(224, 172, 75, 0.17) 0%, transparent 34%),
-      radial-gradient(circle at 2% 100%, rgba(141, 114, 255, 0.09) 0%, transparent 38%),
-      linear-gradient(155deg, rgba(18, 15, 22, 0.99) 0%, rgba(3, 3, 6, 0.99) 74%)
-    `,
-      boxShadow: '0 22px 60px rgba(0, 0, 0, 0.72), 0 0 30px rgba(215, 168, 74, 0.10)',
+      backgroundColor: theme.colors.card,
     },
     panelContent: {
       flexGrow: 1,
@@ -414,6 +442,16 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: 'row',
       alignItems: 'center',
       gap: 8,
+    },
+    brandBackdrop: {
+      width: 70,
+      height: 70,
+      borderRadius: 35,
+      backgroundColor: theme.colors.backgroundRaised,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: theme.colors.gold,
     },
     brandMark: {
       width: 65,
@@ -447,7 +485,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderRadius: theme.radii.pill,
       borderWidth: 1,
       borderColor: 'rgba(242, 211, 138, 0.38)',
-      backgroundColor: 'rgba(5, 5, 8, 0.72)',
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     controlPressed: {
       opacity: 0.72,
@@ -485,11 +523,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderRadius: theme.radii.medium,
       borderWidth: 1,
       borderColor: 'rgba(138, 100, 43, 0.18)',
-      backgroundColor: 'rgba(8, 8, 11, 0.68)',
+      backgroundColor: theme.colors.cardSoft,
     },
     destinationActive: {
       borderColor: 'rgba(242, 211, 138, 0.42)',
-      backgroundColor: 'rgba(215, 168, 74, 0.13)',
+      backgroundColor: theme.colors.iconSurfaceGold,
       boxShadow: 'inset 0 0 22px rgba(215, 168, 74, 0.06), 0 0 20px rgba(215, 168, 74, 0.07)',
     },
     destinationPressed: {
@@ -504,11 +542,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderRadius: theme.radii.medium,
       borderWidth: 1,
       borderColor: 'rgba(138, 100, 43, 0.24)',
-      backgroundColor: 'rgba(3, 3, 5, 0.60)',
+      backgroundColor: theme.colors.iconSurface,
     },
     destinationIconActive: {
       borderColor: 'rgba(242, 211, 138, 0.48)',
-      backgroundColor: 'rgba(215, 168, 74, 0.12)',
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     destinationCopy: {
       minWidth: 0,
@@ -555,11 +593,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderRadius: theme.radii.medium,
       borderWidth: 1,
       borderColor: 'rgba(242, 211, 138, 0.18)',
-      backgroundColor: 'rgba(6, 6, 9, 0.62)',
+      backgroundColor: theme.colors.cardSoft,
     },
     ebayLinkActive: {
       borderColor: 'rgba(242, 211, 138, 0.36)',
-      backgroundColor: 'rgba(215, 168, 74, 0.09)',
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     ebayLinkPressed: {
       opacity: 0.76,
@@ -590,7 +628,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderRadius: theme.radii.medium,
       borderWidth: 1,
       borderColor: 'rgba(88, 223, 232, 0.18)',
-      backgroundColor: 'rgba(3, 3, 6, 0.62)',
+      backgroundColor: theme.colors.cardSoft,
     },
     systemStatusDot: {
       width: 6,
@@ -635,7 +673,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderRadius: theme.radii.pill,
       borderWidth: 1,
       borderColor: 'rgba(242, 211, 138, 0.48)',
-      backgroundColor: 'rgba(7, 7, 11, 0.88)',
+      backgroundColor: theme.colors.card,
       boxShadow: '0 8px 24px rgba(0, 0, 0, 0.48), 0 0 18px rgba(215, 168, 74, 0.12)',
     },
     triggerStatusDot: {

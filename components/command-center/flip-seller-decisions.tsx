@@ -559,9 +559,9 @@ function createLocalStylesResponsiveStyles(responsiveLayout: ReturnType<typeof u
       gap: 10,
       padding: 12,
       borderWidth: 1,
-      borderColor: 'rgba(88, 223, 232, 0.20)',
+      borderColor: theme.colors.accentCyanBorder,
       borderRadius: 12,
-      backgroundColor: 'rgba(88, 223, 232, 0.035)',
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     speaker: {
       color: theme.colors.scannerCyan,
@@ -585,7 +585,7 @@ function createLocalStylesResponsiveStyles(responsiveLayout: ReturnType<typeof u
       borderRadius: 9,
     },
     decisionRowSelected: {
-      backgroundColor: 'rgba(242, 211, 138, 0.08)',
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     decisionRowPressed: { opacity: 0.72 },
     bullet: {
@@ -612,7 +612,7 @@ function createLocalStylesResponsiveStyles(responsiveLayout: ReturnType<typeof u
       gap: 12,
       paddingTop: 4,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: 'rgba(242, 211, 138, 0.18)',
+      borderTopColor: theme.colors.divider,
     },
     activeHeader: {
       flexDirection: 'row',

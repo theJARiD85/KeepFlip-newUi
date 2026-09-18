@@ -93,8 +93,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: 'center',
       borderRadius: 10,
       borderWidth: 1,
-      borderColor: 'rgba(242, 211, 138, 0.22)',
-      backgroundColor: 'rgba(242, 211, 138, 0.06)',
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.iconSurfaceGold,
     },
     backIcon: { transform: [{ rotate: '180deg' }] },
     topLabel: {

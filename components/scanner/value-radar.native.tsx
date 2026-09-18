@@ -270,7 +270,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingLeft: 11,
       paddingRight: 12,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: "rgba(255, 255, 255, 0.1)",
+      borderBottomColor: theme.colors.divider,
     },
     markerIcon: {
       width: 25,
@@ -319,7 +319,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 6,
       paddingTop: 5,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: "rgba(255, 255, 255, 0.1)",
+      borderTopColor: theme.colors.divider,
     },
     proofSignal: {
       width: 5,

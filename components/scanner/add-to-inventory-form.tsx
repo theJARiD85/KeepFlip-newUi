@@ -83,7 +83,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingHorizontal: 20,
       paddingBottom: 14,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: "rgba(255,255,255,0.12)",
+      borderBottomColor: theme.colors.divider,
     },
     headerCopy: { flex: 1, gap: 5 },
     sourceTripNotice: {

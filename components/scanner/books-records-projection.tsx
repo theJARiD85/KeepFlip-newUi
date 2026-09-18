@@ -235,7 +235,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       marginTop: 6,
       paddingTop: 7,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: "rgba(255,255,255,0.14)",
+      borderTopColor: theme.colors.divider,
     },
     compactHeader: {
       minHeight: 15,
@@ -290,7 +290,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       marginTop: 8,
       paddingTop: 10,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: "rgba(255,255,255,0.14)",
+      borderTopColor: theme.colors.divider,
     },
     header: {
       flexDirection: "row",
@@ -336,7 +336,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     rows: {
       marginTop: 8,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: "rgba(255,255,255,0.10)",
+      borderTopColor: theme.colors.divider,
     },
     row: {
       minHeight: 30,
@@ -345,7 +345,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: "space-between",
       gap: 12,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: "rgba(255,255,255,0.10)",
+      borderBottomColor: theme.colors.divider,
     },
     label: {
       flex: 1,

@@ -357,7 +357,7 @@ export function SourcingTripControl() {
                     editable={!submitting}
                     onChangeText={(value) => updateTripField('sourceName', value)}
                     placeholder="Goodwill, estate sale, flea market..."
-                    placeholderTextColor="rgba(255,255,255,0.34)"
+                    placeholderTextColor={theme.colors.textMuted}
                     style={styles.input}
                     value={tripForm.sourceName}
                   />
@@ -369,7 +369,7 @@ export function SourcingTripControl() {
                       editable={!submitting}
                       onChangeText={(value) => updateTripField('label', value)}
                       placeholder="Saturday route"
-                      placeholderTextColor="rgba(255,255,255,0.34)"
+                      placeholderTextColor={theme.colors.textMuted}
                       style={styles.input}
                       value={tripForm.label}
                     />
@@ -381,7 +381,7 @@ export function SourcingTripControl() {
                       keyboardType="numbers-and-punctuation"
                       onChangeText={(value) => updateTripField('startedAt', value)}
                       placeholder="YYYY-MM-DD"
-                      placeholderTextColor="rgba(255,255,255,0.34)"
+                      placeholderTextColor={theme.colors.textMuted}
                       style={styles.input}
                       value={tripForm.startedAt}
                     />
@@ -394,7 +394,7 @@ export function SourcingTripControl() {
                     keyboardType="decimal-pad"
                     onChangeText={(value) => updateTripField('budget', value)}
                     placeholder="$0.00"
-                    placeholderTextColor="rgba(255,255,255,0.34)"
+                    placeholderTextColor={theme.colors.textMuted}
                     style={styles.input}
                     value={tripForm.budget}
                   />
@@ -409,7 +409,7 @@ export function SourcingTripControl() {
                     multiline
                     onChangeText={(value) => updateTripField('notes', value)}
                     placeholder="Store-wide sale, bins to revisit, sourcing conditions..."
-                    placeholderTextColor="rgba(255,255,255,0.34)"
+                    placeholderTextColor={theme.colors.textMuted}
                     style={[styles.input, styles.notesInput]}
                     value={tripForm.notes}
                   />
@@ -510,7 +510,7 @@ export function SourcingTripControl() {
                       keyboardType="decimal-pad"
                       onChangeText={setReceiptTotal}
                       placeholder="Optional checkout total"
-                      placeholderTextColor="rgba(255,255,255,0.34)"
+                      placeholderTextColor={theme.colors.textMuted}
                       style={styles.input}
                       value={receiptTotal}
                     />
@@ -615,12 +615,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingVertical: 8,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
-      borderColor: 'rgba(242, 211, 138, 0.18)',
-      backgroundColor: 'rgba(6, 6, 9, 0.62)',
+      borderColor: theme.colors.dividerStrong,
+      backgroundColor: theme.colors.cardSoft,
     },
     tripButtonActive: {
-      borderColor: 'rgba(88, 223, 232, 0.48)',
-      backgroundColor: 'rgba(88, 223, 232, 0.08)',
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     tripButtonPressed: { opacity: 0.76 },
     tripButtonCopy: {
@@ -642,7 +642,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     tripButtonDetailActive: { color: theme.colors.scannerCyan },
     modalBackdrop: {
       flex: 1,
-      backgroundColor: 'rgba(2, 2, 5, 0.78)',
+      backgroundColor: theme.colors.surfaceInset,
     },
     modalScroll: {
       flexGrow: 1,
@@ -652,7 +652,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     modalSurface: {
       overflow: 'hidden',
       borderWidth: 1,
-      borderColor: 'rgba(88, 223, 232, 0.36)',
+      borderColor: theme.colors.accentCyanBorder,
       backgroundColor: theme.colors.surfaceSoft,
       boxShadow: '0 20px 50px rgba(0, 0, 0, 0.52)',
     },
@@ -662,7 +662,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 14,
       padding: 19,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: 'rgba(255,255,255,0.12)',
+      borderBottomColor: theme.colors.divider,
     },
     modalHeaderCopy: { flex: 1, gap: 5 },
     modalEyebrow: {
@@ -691,7 +691,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.22)',
+      borderColor: theme.colors.dividerStrong,
     },
     closeText: {
       color: theme.colors.text,
@@ -713,8 +713,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingHorizontal: 12,
       paddingVertical: 6,
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.16)',
-      backgroundColor: 'rgba(255,255,255,0.045)',
+      borderColor: theme.colors.divider,
+      backgroundColor: theme.colors.cardSoft,
       color: theme.colors.text,
       fontFamily: theme.fonts.body,
       fontSize: 15,
@@ -737,7 +737,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: 'center',
       paddingHorizontal: 13,
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.2)',
+      borderColor: theme.colors.dividerStrong,
     },
     primaryButton: {
       flex: 1,
@@ -755,7 +755,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       letterSpacing: 0.65,
     },
     primaryButtonText: {
-      color: theme.colors.backgroundDeep,
+      color: theme.colors.textOnAccent,
       fontFamily: theme.fonts.radar,
       fontSize: 10,
       fontWeight: '900',
@@ -767,8 +767,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 4,
       padding: 11,
       borderWidth: 1,
-      borderColor: 'rgba(88, 223, 232, 0.21)',
-      backgroundColor: 'rgba(88, 223, 232, 0.045)',
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     summaryLabel: {
       color: theme.colors.textMuted,
@@ -797,14 +797,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingHorizontal: 12,
       paddingVertical: 8,
       borderWidth: 1,
-      borderColor: 'rgba(0,255,255,0.32)',
-      backgroundColor: 'rgba(0,255,255,0.045)',
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     receiptPreview: {
       width: 43,
       height: 43,
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.18)',
+      borderColor: theme.colors.divider,
     },
     receiptCopy: { flex: 1, minWidth: 0, gap: 3 },
     receiptTitle: {
