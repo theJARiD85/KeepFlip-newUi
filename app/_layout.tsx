@@ -244,7 +244,6 @@ function RootLayoutContent() {
   };
 
   return (
-<HeyCatchProvider>
     <View style={{ flex: 1 }}>
       <SafeAreaProvider>
         <GestureHandlerRootView
@@ -288,13 +287,12 @@ function RootLayoutContent() {
         </GestureHandlerRootView>
       </SafeAreaProvider>
     </View>
-</HeyCatchProvider>
   );
 }
 
 export default function RootLayout() {
   return (
-    <KeepFlipHeyCatchProvider>
+    <HeyCatchProvider>
       <KeepFlipAppearanceProvider>
         <RootLayoutContent />
       </KeepFlipAppearanceProvider>
