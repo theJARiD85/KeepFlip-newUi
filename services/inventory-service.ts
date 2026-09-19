@@ -16,6 +16,10 @@ import {
 } from '@/types/item-analysis';
 import type { EbayListingImportCandidate } from '@/types/ebay-listing-import';
 import { trackTenjinEvent } from '@/services/tenjin-attribution-service';
+import {
+  KEEPFLIP_ANALYTICS_EVENTS,
+  trackKeepFlipEvent,
+} from '@/services/keepflip-analytics';
 
 const ANALYSIS_SNAPSHOT_COLUMN = 'analysisSnapshotJson';
 const INVENTORY_RESELLER_COLUMNS = [
@@ -971,6 +975,12 @@ export async function saveAnalyzedItemToInventory({
           : 'The item was saved, but its scanner photos could not be linked.',
     };
   }
+
+  trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.inventoryItemAdded, {
+    item_id: created.$id,
+    photo_count: attached.photoCount,
+    source: 'scanner',
+  });
 
   return {
     item: rowToInventoryItem({

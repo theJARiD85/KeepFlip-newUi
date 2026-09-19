@@ -53,6 +53,10 @@ import {
   scheduleKeepFlipTaskReminder,
 } from '@/services/keepflip-notification-service';
 import { getResellerBuyRules } from '@/services/user-profile-onboarding-service';
+import {
+  KEEPFLIP_ANALYTICS_EVENTS,
+  trackKeepFlipEvent,
+} from '@/services/keepflip-analytics';
 
 const FLIP_MASCOT_IMAGE = require('@/assets/images/flip-mascot.png');
 const OPTIMISTIC_USER_MESSAGE_PREFIX = 'local-user-';
@@ -770,6 +774,10 @@ export function FlipConversationalAssistantPanel({
           source: reply.source,
         }),
       }).catch(() => undefined);
+      trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.assistantRequestCompleted, {
+        action_type: reply.action.type,
+        source: reply.source,
+      });
       if (reply.reaction !== initialReaction) {
         react(reply.reaction);
       }
@@ -843,6 +851,9 @@ export function FlipConversationalAssistantPanel({
           value: pending.value,
         }),
       }).catch(() => undefined);
+      trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.inventoryUpdated, {
+        field: pending.field,
+      });
       react('celebrate');
     } catch (updateError) {
       const detail =
@@ -906,6 +917,7 @@ export function FlipConversationalAssistantPanel({
         },
       ]);
       setIsReplying(true);
+      trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.taskCompleted);
       react('celebrate');
     } catch (finishError) {
       const detail =

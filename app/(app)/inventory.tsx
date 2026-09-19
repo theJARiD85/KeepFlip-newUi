@@ -13,6 +13,7 @@ import {
   type InventoryListSort,
   type InventoryResaleVelocity,
 } from "@/services/inventory-service";
+import { KEEPFLIP_ANALYTICS_EVENTS, trackKeepFlipEvent } from "@/services/keepflip-analytics";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
@@ -250,6 +251,9 @@ export default function InventoryScreen() {
         setItems((currentItems) =>
           currentItems.filter((currentItem) => currentItem.id !== item.id),
         );
+        trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.inventoryItemDeleted, {
+          deleted_photo_count: result.deletedPhotoCount,
+        });
 
         if (result.photoFileDeleteFailures > 0) {
           Alert.alert(

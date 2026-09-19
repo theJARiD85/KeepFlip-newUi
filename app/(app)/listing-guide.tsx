@@ -7,6 +7,10 @@ import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout } from "@/hooks/use-responsive-layout";
+import {
+  KEEPFLIP_ANALYTICS_EVENTS,
+  trackKeepFlipEvent,
+} from "@/services/keepflip-analytics";
 import { EMPTY_EBAY_LISTING_REVIEW, type EbayListingReview } from "@/services/ebay-listing-readiness-service";
 import { getEbayOAuthEnvironment } from "@/services/ebayConnectionService";
 import {
@@ -319,6 +323,9 @@ export default function ListingCreationGuideScreen() {
       setGeneratedListing(result.listing);
       setListingConfidence(result.confidence);
       setSelectedPlatform("ebay");
+      trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.listingGenerated, {
+        item_id: item.id,
+      });
       recordCompletedAction();
     } catch (caughtError) {
       setListingGenerationError(
@@ -545,6 +552,9 @@ export default function ListingCreationGuideScreen() {
             (platformInfo?.label ?? "Marketplace") + " listing draft",
         });
         setSharedPlatform(platform);
+        trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.listingShared, {
+          platform,
+        });
         recordCompletedAction();
       } catch (caughtError) {
         setShareError(
@@ -617,6 +627,10 @@ export default function ListingCreationGuideScreen() {
         }
       }
       setEbayPublishResult(result);
+      trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.ebayListingPublished, {
+        item_id: item.id,
+        marketplace_id: ebayForm.marketplaceId || "EBAY_US",
+      });
       recordCompletedAction();
     } catch (caughtError) {
       setEbayPublishError(

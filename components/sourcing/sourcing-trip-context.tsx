@@ -11,6 +11,10 @@ import {
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import {
+  KEEPFLIP_ANALYTICS_EVENTS,
+  trackKeepFlipEvent,
+} from '@/services/keepflip-analytics';
+import {
   deleteLedgerReceipt,
   uploadLedgerReceipt,
 } from '@/services/reseller-ledger-service';
@@ -184,6 +188,9 @@ export function SourcingTripProvider({ children }: PropsWithChildren) {
         const summary = emptySummary(trip);
         setLocationSnapshot(snapshot);
         setActiveTrip(summary);
+        trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.sourcingTripStarted, {
+          trip_id: trip.id,
+        });
         return summary;
       } catch (error) {
         clearSourcingTripLocationState();
@@ -212,6 +219,10 @@ export function SourcingTripProvider({ children }: PropsWithChildren) {
       setActiveTrip((current) =>
         current?.trip.id === summary.trip.id ? summary : current,
       );
+      trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.sourcingTripFindLinked, {
+        item_id: input.itemId,
+        trip_id: summary.trip.id,
+      });
       return summary;
     },
     [activeTrip, configured, userId],
@@ -255,6 +266,10 @@ export function SourcingTripProvider({ children }: PropsWithChildren) {
         clearSourcingTripLocationState();
         setLocationSnapshot(null);
         setActiveTrip(null);
+        trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.sourcingTripCompleted, {
+          find_count: activeTrip.findCount,
+          trip_id: trip.id,
+        });
         return trip;
       } catch (error) {
         if (uploadedReceiptFileId) {

@@ -22,6 +22,10 @@ import {
 } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import {
+  KEEPFLIP_ANALYTICS_EVENTS,
+  trackKeepFlipEvent,
+} from '@/services/keepflip-analytics';
 import { responsiveWidth } from '@/lib/responsiveFont';
 import {
   calculateProfitEstimate,
@@ -227,6 +231,9 @@ export function MarketResearchScreen() {
     try {
       const nextResult = await researchEbayMarket(cleanQuery);
       setResult(nextResult);
+      trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.marketResearchCompleted, {
+        comp_count: nextResult.summary.count,
+      });
       setField('salePrice', nextResult.summary.median.toFixed(2));
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
     } catch (searchError) {

@@ -26,6 +26,10 @@ import {
   trackTenjinEvent,
   trackTenjinSubscriptionPurchase,
 } from '@/services/tenjin-attribution-service';
+import {
+  KEEPFLIP_ANALYTICS_EVENTS,
+  trackKeepFlipEvent,
+} from '@/services/keepflip-analytics';
 
 export type KeepFlipPlanId = 'hobbyist' | 'serious';
 export type KeepFlipBillingCadence = 'monthly' | 'annual';
@@ -1394,7 +1398,15 @@ async function purchaseConfiguredKeepFlipPlan(
     unitPrice: selectedPackage.product.price,
   });
   trackTenjinEvent('subscription_purchase_completed');
-  return subscriptionAccessFromCustomerInfo(result.customerInfo);
+  const access = subscriptionAccessFromCustomerInfo(result.customerInfo);
+  if (access.active) {
+    trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.subscriptionStarted, {
+      cadence,
+      is_trial: access.isTrial,
+      plan,
+    });
+  }
+  return access;
 }
 
 export async function purchaseKeepFlipPlan(
@@ -1510,7 +1522,14 @@ export async function renewKeepFlipPlan(
         : price.amountMicros / 1_000_000,
   });
   trackTenjinEvent('subscription_renewal_completed');
-  return subscriptionAccessFromCustomerInfo(result.customerInfo);
+  const access = subscriptionAccessFromCustomerInfo(result.customerInfo);
+  if (access.active) {
+    trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.subscriptionRenewed, {
+      is_trial: access.isTrial,
+      plan: access.plan,
+    });
+  }
+  return access;
 }
 
 export async function restoreKeepFlipPurchases(userId: string) {
@@ -1522,7 +1541,13 @@ export async function restoreKeepFlipPurchases(userId: string) {
 
   const customerInfo = await Purchases.restorePurchases();
   const access = subscriptionAccessFromCustomerInfo(customerInfo);
-  if (access.active) trackTenjinEvent('subscription_restored');
+  if (access.active) {
+    trackTenjinEvent('subscription_restored');
+    trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.subscriptionRestored, {
+      is_trial: access.isTrial,
+      plan: access.plan,
+    });
+  }
   return access;
 }
 
