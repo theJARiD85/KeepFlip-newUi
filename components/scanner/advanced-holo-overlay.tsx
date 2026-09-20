@@ -35,16 +35,24 @@ const styles = StyleSheet.create({
     mixBlendMode: 'screen',
   },
   vignette: {
-    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(18, 224, 238, 0.055)',
+    bottom: 0,
     experimental_backgroundImage:
       'radial-gradient(circle at 50% 44%, rgba(106, 236, 247, 0.24) 0%, rgba(0, 178, 196, 0.09) 42%, rgba(0, 0, 0, 0) 78%)',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
   },
   scanlines: {
-    ...StyleSheet.absoluteFillObject,
+    bottom: 0,
+    left: 0,
     opacity: 0.4,
     experimental_backgroundImage:
       'repeating-linear-gradient(0deg, rgba(100, 240, 250, 0.24) 0px, rgba(100, 240, 250, 0.24) 1px, transparent 1px, transparent 5px)',
+    position: 'absolute',
+    right: 0,
+    top: 0,
   },
   glow: {
     position: 'absolute',

@@ -31,7 +31,7 @@ import {
 } from '@/components/flip';
 import { KeepFlipFeedbackNudgeProvider } from "@/components/feedback/keepflip-feedback-nudge";
 import { KeepFlipPushRegistration } from '@/components/notifications/keepflip-push-registration';
-import KeepFlipLaunchExperience from "@/components/intro/keepflip-launch-experience.native";
+import KeepFlipLaunchExperience from "@/components/intro/keepflip-launch-experience";
 import { KeepFlipMinimumVersionGate } from '@/components/update/keepflip-minimum-version-gate';
 import {
   getKeepFlipThemeColors,

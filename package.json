@@ -12,7 +12,9 @@
     "postinstall": "patch-package",
     "responsive:ui": "node scripts/make-ui-values-responsive.cjs",
     "responsive:ui:apply": "node scripts/make-ui-values-responsive.cjs --write",
-    "test:responsive:ui": "node scripts/test-make-ui-values-responsive.cjs"
+    "test:responsive:ui": "node scripts/test-make-ui-values-responsive.cjs",
+    "predeploy": "npx expo export --platform web",
+    "deploy": "gh-pages -d dist --nojekyll"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -60,6 +62,7 @@
     "react-native-gesture-handler": "~2.32.0",
     "react-native-nitro-image": "0.15.0",
     "react-native-nitro-modules": "^0.35.9",
+    "react-native-plaid-link-sdk": "13.2.0",
     "react-native-purchases": "^10.9.0",
     "react-native-reanimated": "4.5.1",
     "react-native-safe-area-context": "~5.7.0",
@@ -81,6 +84,7 @@
     "@types/three": "^0.185.3",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~57.0.1",
+    "gh-pages": "^6.3.0",
     "patch-package": "^8.0.1",
     "typescript": "~6.0.3"
   },

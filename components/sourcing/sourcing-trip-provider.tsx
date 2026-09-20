@@ -9,10 +9,10 @@ import { Platform } from 'react-native';
 export function SourcingTripProvider({ children }: PropsWithChildren) {
   if (Platform.OS === 'web') return children;
 
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- keep the native location module out of the browser graph
   const { SourcingTripProvider: NativeSourcingTripProvider } = require(
     '@/components/sourcing/sourcing-trip-context',
   ) as typeof import('@/components/sourcing/sourcing-trip-context');
 
   return <NativeSourcingTripProvider>{children}</NativeSourcingTripProvider>;
 }
-

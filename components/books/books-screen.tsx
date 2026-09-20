@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { useKeepFlipFeedbackNudge } from '@/components/feedback/keepflip-feedback-nudge';
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
+import { PlaidBankConnectionCard } from '@/components/books/plaid-bank-connection-card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import {
@@ -790,6 +791,11 @@ export function BooksScreen() {
             {statusMessage}
           </Text>
         ) : null}
+
+        <PlaidBankConnectionCard
+          automationAllowed={advancedBookkeepingConfigured}
+          onBooksChanged={() => void loadBooks(true)}
+        />
 
         <Section eyebrow="THIS MONTH" title="Money movement">
           {loading ? (

@@ -214,7 +214,11 @@ export function CommandCenterScreen() {
   }, [ownerId]);
 
   useEffect(() => {
-    void loadWorkspace();
+    const frame = requestAnimationFrame(() => {
+      void loadWorkspace();
+    });
+
+    return () => cancelAnimationFrame(frame);
   }, [loadWorkspace]);
 
   const chartData = useMemo(() => overview?.moneyFlow.slice(-6) ?? [], [overview]);
