@@ -14,7 +14,6 @@ import {
   type Models,
 } from 'react-native-appwrite';
 import { AppState } from 'react-native';
-import { analytics } from '@heycatch/sdk';
 
 import {
   AppwriteSetupError,
@@ -24,7 +23,12 @@ import {
   realtime,
 } from '@/lib/appwrite';
 import { ensureUserProfile } from '@/services/user-profile-onboarding-service';
-import { KEEPFLIP_ANALYTICS_EVENTS, trackKeepFlipEvent } from '@/services/keepflip-analytics';
+import {
+  identifyKeepFlipUser,
+  KEEPFLIP_ANALYTICS_EVENTS,
+  resetKeepFlipAnalyticsIdentity,
+  trackKeepFlipEvent,
+} from '@/services/keepflip-analytics';
 import { trackTenjinEvent } from '@/services/tenjin-attribution-service';
 
 export type KeepFlipAuthStatus =
@@ -323,7 +327,7 @@ async function getVerifiedNonAnonymousUser(): Promise<Models.User | null> {
     );
   }
 
-  analytics.setIdentity(
+  identifyKeepFlipUser(
     user.$id,
     { email: user.email, name: user.name },
     { signup_date: user.$createdAt },
@@ -347,7 +351,7 @@ async function clearCurrentAppwriteSession({
   } catch (error) {
     if (!isSignedOutResponse(error)) throw error;
   }
-  if (resetIdentity) analytics.resetIdentity();
+  if (resetIdentity) resetKeepFlipAnalyticsIdentity();
 }
 
 export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
@@ -400,7 +404,7 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
       }
 
       const user = await getVerifiedNonAnonymousUser();
-      if (!user) analytics.resetIdentity();
+      if (!user) resetKeepFlipAnalyticsIdentity();
       commit(
         user
           ? {
@@ -692,7 +696,7 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
       }
       commit(signedOutSnapshot());
       trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.logoutCompleted);
-      analytics.resetIdentity();
+      resetKeepFlipAnalyticsIdentity();
     } catch (error) {
       const safeError = safeAuthError(error, 'sign-out');
       if (isSignedOutResponse(error)) {

@@ -38,7 +38,9 @@ function LaunchAction({
   const styles = useResponsiveStyles(createResponsiveStyles);
   return (
     <Pressable
+      accessibilityLabel={secondary ? 'Log in to KeepFlip' : 'Sign up for KeepFlip'}
       accessibilityRole="button"
+      testID={secondary ? 'keepflip-landing-login' : 'keepflip-landing-signup'}
       onPress={() => {
         selectionHaptic();
         onPress();

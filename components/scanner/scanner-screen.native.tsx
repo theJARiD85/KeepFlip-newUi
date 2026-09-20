@@ -1313,6 +1313,11 @@ export default function ScannerScreen() {
 
     setActiveAnalysisSessionId(sessionId);
     setCaptureFeedback(null);
+    trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.firstActionStarted, {
+      action: 'item_analysis',
+      mode: cognitionSeed.tool,
+      photo_count: photoUris.length,
+    });
     trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.itemAnalysisStarted, {
       mode: cognitionSeed.tool,
       photo_count: photoUris.length,
@@ -1494,7 +1499,10 @@ export default function ScannerScreen() {
                 : "Camera access is disabled. Open system settings to allow KeepFlip to scan items."}
             </Text>
             <Pressable
+              accessibilityLabel="Open camera permissions"
+              accessibilityRole="button"
               onPress={handlePermissionAction}
+              testID="keepflip-camera-permission"
               style={styles.permissionButton}
             >
               <Text style={[styles.permissionButtonText, { fontSize: responsiveFont(16) }]}>
@@ -2022,7 +2030,10 @@ export default function ScannerScreen() {
       </View>
     { isVisible ? (
       <Pressable
+          accessibilityLabel="Open AR measuring tool"
+          accessibilityRole="button"
           onPress={() => router.push("/ar-measure-test" as Href)}
+          testID="keepflip-open-ar-measure"
             style={{
               position: "absolute",
               right: 50,

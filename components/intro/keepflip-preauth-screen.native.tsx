@@ -220,9 +220,11 @@ function ChoiceCard({ choice, onPress, selected }: { choice: PreAuthChoice; onPr
 
   return (
     <Pressable
+      accessibilityLabel={`${choice.label}${selected ? ', selected' : ''}`}
       accessibilityHint={choice.detail}
       accessibilityRole="button"
       accessibilityState={{ selected }}
+      testID={`keepflip-seller-choice-${choice.id}`}
       onPress={onPress}
       style={({ pressed }) => [styles.choiceCard, selected && styles.choiceCardSelected, pressed && styles.pressed]}>
       <View style={[styles.choiceIcon, selected && styles.choiceIconSelected]}><IconSymbol color={selected ? theme.colors.scannerCyan : theme.colors.goldBright} name={choice.icon} size={21} /></View>
@@ -397,14 +399,14 @@ export function KeepFlipPreAuthScreen({ onBack, onComplete }: KeepFlipPreAuthScr
                   <Text style={[styles.body, { fontSize: responsiveFont(13), lineHeight: 21 }]}>A quick intro lets me tailor your seller setup to the way you actually flip.</Text>
                   <View style={styles.nameBlock}><Text style={[styles.nameLabel, { fontSize: responsiveFont(11) }]}>YOUR NAME</Text><TextInput autoCapitalize="words" autoComplete="name" onChangeText={(value) => { setName(value); setError(null); }} style={styles.nameInput} value={name} /></View>
                   {error ? <Text style={[styles.errorText, { fontSize: responsiveFont(12), lineHeight: 18 }]}>{error}</Text> : null}
-                  <Pressable accessibilityRole="button" onPress={() => { if (name.trim().length < 2) { setError('Tell Flip what to call you before we continue.'); return; } advanceWithFlipSpeaking(TOUR_STEP); }} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={[styles.primaryButtonText, { fontSize: responsiveFont(11) }]}>CONTINUE</Text></Pressable>
+                  <Pressable accessibilityLabel="Continue after entering your name" accessibilityRole="button" testID="keepflip-onboarding-name-continue" onPress={() => { if (name.trim().length < 2) { setError('Tell Flip what to call you before we continue.'); return; } advanceWithFlipSpeaking(TOUR_STEP); }} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={[styles.primaryButtonText, { fontSize: responsiveFont(11) }]}>CONTINUE</Text></Pressable>
                 </Animated.View>
               ) : screen === TOUR_STEP ? (
                 <Animated.View entering={FadeInDown.duration(280)} style={styles.panel}>
                   <Text style={[styles.headline, { fontSize: responsiveFont(20) }]}>{"Here's how KeepFlip helps."}</Text>
                   <Text style={[styles.body, { fontSize: responsiveFont(13) }]}>From the first scan through the sale, Flip keeps your decisions and your money connected.</Text>
                   <View style={styles.featureList}>{FEATURE_TOUR.map((feature) => <FeatureTile {...feature} key={feature.label} />)}</View>
-                  <Pressable accessibilityRole="button" onPress={() => { advanceWithFlipSpeaking(FIRST_QUESTION_STEP); }} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={[styles.primaryButtonText, { fontSize: responsiveFont(11) }]}>BUILD MY SELLER SETUP</Text><IconSymbol color={theme.colors.backgroundDeep} name="arrow.right" size={20} /></Pressable>
+                  <Pressable accessibilityLabel="Build my seller setup" accessibilityRole="button" testID="keepflip-onboarding-build-setup" onPress={() => { advanceWithFlipSpeaking(FIRST_QUESTION_STEP); }} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={[styles.primaryButtonText, { fontSize: responsiveFont(11) }]}>BUILD MY SELLER SETUP</Text><IconSymbol color={theme.colors.backgroundDeep} name="arrow.right" size={20} /></Pressable>
                 </Animated.View>
               ) : question ? (
                 <Animated.View entering={FadeInDown.duration(260)} key={question.id} style={styles.panel}>
@@ -431,7 +433,7 @@ export function KeepFlipPreAuthScreen({ onBack, onComplete }: KeepFlipPreAuthScr
                         </View>
                       </View>
                       {error ? <Text style={[styles.errorText, { fontSize: responsiveFont(12), lineHeight: 18 }]}>{error}</Text> : null}
-                      <Pressable accessibilityRole="button" onPress={continueFromProfit} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}>
+                      <Pressable accessibilityLabel="Continue with minimum take-home profit" accessibilityRole="button" testID="keepflip-onboarding-profit-continue" onPress={continueFromProfit} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}>
                         <Text style={[styles.primaryButtonText, { fontSize: responsiveFont(11) }]}>CONTINUE</Text>
                         <IconSymbol color={theme.colors.backgroundDeep} name="arrow.right" size={20} />
                       </Pressable>
@@ -449,7 +451,7 @@ export function KeepFlipPreAuthScreen({ onBack, onComplete }: KeepFlipPreAuthScr
                   <View style={styles.summaryCard}><Text style={[styles.summaryPrimary, { fontSize: responsiveFont(15) }]}>{summary.line}</Text><Text style={[styles.summarySecondary, { fontSize: responsiveFont(12), lineHeight: 18 }]}>{summary.details}</Text></View>
                   <Text style={[styles.body, { fontSize: responsiveFont(13), }]}>Next, choose a plan and create the account that will keep your seller setup connected.</Text>
                   {error ? <Text style={[styles.errorText, { fontSize: responsiveFont(12), }]}>{error}</Text> : null}
-                  <Pressable accessibilityRole="button" onPress={finish} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={[styles.primaryButtonText, { fontSize: responsiveFont(11) }]}>CONTINUE TO PLAN & ACCOUNT SETUP</Text></Pressable>
+                  <Pressable accessibilityLabel="Continue to plan and account setup" accessibilityRole="button" testID="keepflip-onboarding-plan-setup" onPress={finish} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={[styles.primaryButtonText, { fontSize: responsiveFont(11) }]}>CONTINUE TO PLAN & ACCOUNT SETUP</Text></Pressable>
                 </Animated.View>
               )}
             </ScrollView>

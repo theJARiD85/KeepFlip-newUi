@@ -16,19 +16,16 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import {
-  KEEPFLIP_ANALYTICS_EVENTS,
-  trackKeepFlipEvent,
-} from '@/services/keepflip-analytics';
-import { responsiveWidth } from '@/lib/responsiveFont';
+  useResponsiveLayout,
+  useResponsiveStyles,
+} from '@/hooks/use-responsive-layout';
 import {
   connectEbayAccount,
   getEbayOAuthEnvironment,
   type EbayConnectionResult,
 } from '@/services/ebayConnectionService';
 
-import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 const BENEFITS = [
   {
     icon: 'magnifyingglass' as const,
@@ -126,9 +123,6 @@ export default function EbayConnectScreen() {
         }
 
         setConnected(confirmedConnection);
-        trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.ebayAccountConnected, {
-          environment: confirmedConnection.environment,
-        });
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
           () => undefined,
         );

@@ -348,9 +348,6 @@ export default function EbayAccountScreen() {
       setConnection(result);
       setSellerAccount(null);
       setDisconnected(result);
-      trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.ebayAccountDisconnected, {
-        environment: result.environment,
-      });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
         () => undefined,
       );

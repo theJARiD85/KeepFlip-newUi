@@ -20,10 +20,6 @@ import {
   trackKeepFlipEvent,
 } from '@/services/keepflip-analytics';
 import { trackTenjinEvent } from '@/services/tenjin-attribution-service';
-import {
-  KEEPFLIP_ANALYTICS_EVENTS,
-  trackKeepFlipEvent,
-} from '@/services/keepflip-analytics';
 
 const ANALYSIS_SNAPSHOT_COLUMN = 'analysisSnapshotJson';
 const INVENTORY_RESELLER_COLUMNS = [

@@ -232,6 +232,11 @@ export function ItemAnalysisScreen() {
         analysis: result,
         state: resultState,
       });
+      trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.firstActionCompleted, {
+        action: 'item_analysis',
+        mode: session.modeLabel,
+        photo_count: session.photoUris.length,
+      });
       trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.itemAnalysisCompleted, {
         mode: session.modeLabel,
         photo_count: session.photoUris.length,

@@ -44,26 +44,6 @@ export function AiPreferencesScreen() {
         style={{ marginBottom: insets.bottom, marginTop: insets.top }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
-        <Animated.View entering={FadeInDown.duration(220)} style={styles.topBar}>
-          <Pressable
-            accessibilityLabel="Back to Command Center"
-            accessibilityRole="button"
-            hitSlop={10}
-            onPress={() => {
-              hapticSelection();
-              router.back();
-            }}
-            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
-            <IconSymbol
-              color={theme.colors.goldBright}
-              name="chevron.right"
-              size={22}
-              style={styles.backIcon}
-            />
-          </Pressable>
-          <Text style={[styles.topLabel, { fontSize: responsiveFont(9) }]}>COMMAND CENTER</Text>
-          <View style={styles.topSpacer} />
-        </Animated.View>
 
         <AiPreferencesPanel key={user.$id} ownerId={user.$id} />
       </ScrollView>

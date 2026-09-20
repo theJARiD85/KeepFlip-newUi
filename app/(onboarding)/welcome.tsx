@@ -12,6 +12,9 @@ export default function WelcomeScreen() {
     <KeepFlipLaunchChoiceScreen
       onExistingLogin={() => router.push('/sign-in' as Href)}
       onNewUser={() => {
+        trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.signUpStarted, {
+          entry_point: 'launch_choice',
+        });
         trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.onboardingStarted, {
           entry_point: 'launch_choice',
         });

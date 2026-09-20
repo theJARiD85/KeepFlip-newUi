@@ -39,13 +39,12 @@ import {
 import { configureKeepFlipNotificationHandler } from '@/services/keepflip-notification-service';
 import { areKeepFlipSubscriptionsEnforced } from '@/services/keepflip-subscription-service';
 import { initializeTenjinAtLaunch } from '@/services/tenjin-attribution-service';
-import { KeepFlipHeyCatchProvider } from '@/services/keepflip-heycatch-provider';
 
 analytics.init({
   projectKey: 'hck_pk_P-RAsy4RamxF7X6OTR5r5M0gSJ3pGQ9e',
   install: {
     framework: 'react-native',
-    frameworkVersion: '16',
+    frameworkVersion: '57',
     agent: 'codex',
   },
 });

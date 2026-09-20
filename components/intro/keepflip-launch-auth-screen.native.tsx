@@ -177,8 +177,12 @@ function PlanSelection({
           style={styles.checkoutBillingToggle}>
           {(['monthly', 'annual'] as KeepFlipBillingCadence[]).map((option) => (
             <Pressable
+              accessibilityLabel={
+                `${option === 'monthly' ? 'Monthly' : 'Annual'} billing frequency`
+              }
               accessibilityRole="button"
               accessibilityState={{ selected: cadence === option }}
+              testID={`keepflip-billing-${option}`}
               key={option}
               onPress={() => {
                 if (cadence === option) return;
@@ -228,9 +232,11 @@ function PlanSelection({
 
           return (
             <Pressable
+              accessibilityLabel={`${definition.name} plan${selected ? ', selected' : ''}`}
               accessibilityHint={definition.description}
               accessibilityRole="button"
               accessibilityState={{ selected }}
+              testID={`keepflip-plan-${definition.id}`}
               key={definition.id}
               onPress={() => {
                 if (selected) return;
@@ -683,7 +689,7 @@ export function KeepFlipLaunchAuthScreen({
               <View accessibilityLiveRegion="polite" style={styles.errorNotice}>
                 <Text selectable style={[styles.errorText, { fontSize: responsiveFont(12) }]}>{displayedError}</Text>
                 {status === 'error' ? (
-                  <Pressable accessibilityRole="button" disabled={isBusy} onPress={() => void retry()} style={styles.retryButton}>
+                  <Pressable accessibilityLabel="Retry KeepFlip connection" accessibilityRole="button" disabled={isBusy} onPress={() => void retry()} style={styles.retryButton}>
                     <Text style={[styles.retryText, { fontSize: responsiveFont(9) }]}>RETRY CONNECTION</Text>
                   </Pressable>
                 ) : null}
@@ -766,9 +772,19 @@ export function KeepFlipLaunchAuthScreen({
             )}
 
             <Pressable
+              accessibilityLabel={
+                mode === 'sign-in'
+                  ? 'Enter KeepFlip'
+                  : needsPreAccountSubscription
+                    ? 'Continue to Google Play subscription'
+                    : accountReady
+                      ? 'Start selected KeepFlip plan'
+                      : 'Create KeepFlip account and start trial'
+              }
               accessibilityRole="button"
               accessibilityState={{ busy: isBusy || isSubmitting, disabled: isBusy || isSubmitting || setupRequired }}
               disabled={isBusy || isSubmitting || setupRequired}
+              testID={mode === 'sign-in' ? 'keepflip-auth-submit-sign-in' : 'keepflip-auth-submit-create-account'}
               onPress={() => void submit()}
               style={({ pressed }) => [styles.submitButton, (isBusy || isSubmitting || setupRequired) && styles.buttonDisabled, pressed && styles.pressed]}>
               {isBusy || isSubmitting ? (
@@ -794,7 +810,7 @@ export function KeepFlipLaunchAuthScreen({
             {mode === 'create-account' ? (
               <Text style={[styles.legalText, { fontSize: responsiveFont(10) }]}>
                 By creating an account, you agree to KeepFlip&apos;s{' '}
-                <Text onPress={() => router.push('/terms')} style={styles.legalLink}>Terms of Service</Text>{' '}and{' '}<Text onPress={() => router.push('/privacy')} style={styles.legalLink}>Privacy Policy</Text>.
+                <Text accessibilityRole="link" accessibilityLabel="KeepFlip Terms of Service" onPress={() => router.push('/terms')} style={styles.legalLink}>Terms of Service</Text>{' '}and{' '}<Text accessibilityRole="link" accessibilityLabel="KeepFlip Privacy Policy" onPress={() => router.push('/privacy')} style={styles.legalLink}>Privacy Policy</Text>.
               </Text>
             ) : null}
           </View>

@@ -1363,6 +1363,10 @@ async function purchaseConfiguredKeepFlipPlan(
     );
   }
 
+  trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.subscriptionPurchaseStarted, {
+    cadence,
+    plan,
+  });
   trackTenjinEvent('subscription_purchase_started');
   let productChangeInfo: StoreProductChangeInfo | null = null;
   if (Platform.OS === 'android') {
@@ -1399,6 +1403,12 @@ async function purchaseConfiguredKeepFlipPlan(
   });
   trackTenjinEvent('subscription_purchase_completed');
   const access = subscriptionAccessFromCustomerInfo(result.customerInfo);
+  trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.subscriptionPurchaseCompleted, {
+    active_access: access.active,
+    cadence,
+    is_trial: access.isTrial,
+    plan,
+  });
   if (access.active) {
     trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.subscriptionStarted, {
       cadence,
@@ -1476,7 +1486,7 @@ export async function loadKeepFlipPreAccountSubscriptionAccess() {
  */
 export async function renewKeepFlipPlan(
   userId: string,
-  access: Pick<KeepFlipSubscriptionAccess, 'plan' | 'productId'>,
+  previousAccess: Pick<KeepFlipSubscriptionAccess, 'plan' | 'productId'>,
 ) {
   if (!(await ensureRevenueCatUser(userId))) {
     throw new Error(
@@ -1494,7 +1504,7 @@ export async function renewKeepFlipPlan(
 
   const selection = previousSubscriptionSelection(
     offering.availablePackages,
-    access,
+    previousAccess,
   );
   if (!selection) {
     throw new Error(
@@ -1522,14 +1532,14 @@ export async function renewKeepFlipPlan(
         : price.amountMicros / 1_000_000,
   });
   trackTenjinEvent('subscription_renewal_completed');
-  const access = subscriptionAccessFromCustomerInfo(result.customerInfo);
-  if (access.active) {
+  const renewedAccess = subscriptionAccessFromCustomerInfo(result.customerInfo);
+  if (renewedAccess.active) {
     trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.subscriptionRenewed, {
-      is_trial: access.isTrial,
-      plan: access.plan,
+      is_trial: renewedAccess.isTrial,
+      plan: renewedAccess.plan,
     });
   }
-  return access;
+  return renewedAccess;
 }
 
 export async function restoreKeepFlipPurchases(userId: string) {

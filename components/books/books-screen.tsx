@@ -59,10 +59,6 @@ import {
   type ResellerLedgerEntry,
   type ResellerLedgerEntryType,
 } from '@/services/reseller-ledger-service';
-import {
-  KEEPFLIP_ANALYTICS_EVENTS,
-  trackKeepFlipEvent,
-} from '@/services/keepflip-analytics';
 
 type LedgerDraft = {
   amount: string;

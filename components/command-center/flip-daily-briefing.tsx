@@ -398,9 +398,11 @@ export function FlipDailyBriefingLauncher() {
   if (!userId) return null;
 
   const modalWidth = Math.min(width - 24, 430);
+  const modalTopMargin = insets.top * 2;
+  const modalBottomMargin = insets.bottom * 2;
   const modalMaxHeight = Math.max(
     280,
-    height - insets.top - insets.bottom - 28,
+    height - modalTopMargin - modalBottomMargin - 28,
   );
 
   return (
@@ -412,10 +414,19 @@ export function FlipDailyBriefingLauncher() {
       statusBarTranslucent={Platform.OS === 'android'}
       transparent
       visible={visible}
-      style={{ marginTop: insets.top, marginBottom: insets.bottom }}
     >
       <View style={styles.backdrop}>
-        <View style={[styles.modalCard, { position: 'absolute', top: insets.top, bottom: insets.bottom, left: 0, right: 0, paddingTop: insets.top, paddingBottom: insets.bottom, maxHeight: height - insets.top - insets.bottom, width: width, marginBottom: insets.bottom, marginTop: insets.top }]}>
+        <View
+          style={[
+            styles.modalCard,
+            {
+              marginBottom: modalBottomMargin,
+              marginTop: modalTopMargin,
+              maxHeight: modalMaxHeight,
+              width: modalWidth,
+            },
+          ]}
+        >
           <View style={styles.modalHeader}>
             <View style={styles.identityBlock}>
               <View accessibilityLabel="Flip" style={styles.companion}>
