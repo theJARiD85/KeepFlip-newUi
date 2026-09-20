@@ -92,6 +92,17 @@ class SessionVerificationError extends Error {
   }
 }
 
+class SessionVerificationTimeoutError extends Error {
+  constructor() {
+    super('The Appwrite session check timed out.');
+    this.name = 'SessionVerificationTimeoutError';
+  }
+}
+
+// A healthy no-session request returns immediately. Never let a stalled browser
+// request prevent a first-time visitor from reaching the sign-in screen.
+const SESSION_VERIFICATION_TIMEOUT_MS = 5_000;
+
 const INITIAL_AUTH_SNAPSHOT: AuthSnapshot = {
   status: 'checking',
   user: null,
@@ -272,6 +283,23 @@ function errorSnapshot(errorMessage: string): AuthSnapshot {
   };
 }
 
+async function withSessionVerificationTimeout<T>(request: Promise<T>): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      request,
+      new Promise<never>((_resolve, reject) => {
+        timeout = setTimeout(() => {
+          reject(new SessionVerificationTimeoutError());
+        }, SESSION_VERIFICATION_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timeout !== undefined) clearTimeout(timeout);
+  }
+}
+
 async function getVerifiedNonAnonymousUser(): Promise<Models.User | null> {
   const { account } = getAppwriteCoreServices();
 
@@ -403,7 +431,9 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
         return;
       }
 
-      const user = await getVerifiedNonAnonymousUser();
+      const user = await withSessionVerificationTimeout(
+        getVerifiedNonAnonymousUser(),
+      );
       if (!user) resetKeepFlipAnalyticsIdentity();
       commit(
         user
@@ -418,6 +448,13 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
     } catch (error) {
       if (isSignedOutResponse(error)) {
         commit(signedOutSnapshot());
+      } else if (
+        error instanceof SessionVerificationTimeoutError &&
+        showCheckingState
+      ) {
+        // Do not grant access without verification, but do let a new visitor
+        // reach the credentials screen instead of spinning indefinitely.
+        commit(signedOutSnapshot(safeAuthError(error, 'refresh').message));
       } else if (error instanceof AppwriteSetupError) {
         commit(setupSnapshot(coreMissingKeys(error.missingKeys)));
       } else {
