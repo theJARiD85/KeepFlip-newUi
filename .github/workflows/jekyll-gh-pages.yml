@@ -39,6 +39,10 @@ jobs:
         uses: actions/configure-pages@v5
       - name: Export Expo web app
         run: npx expo export --platform web
+        env:
+          EXPO_PUBLIC_APPWRITE_ENDPOINT: ${{ vars.EXPO_PUBLIC_APPWRITE_ENDPOINT }}
+          EXPO_PUBLIC_APPWRITE_PROJECT_ID: ${{ vars.EXPO_PUBLIC_APPWRITE_PROJECT_ID }}
+          EXPO_PUBLIC_APPWRITE_PLATFORM: ${{ vars.EXPO_PUBLIC_APPWRITE_PLATFORM }}
       - name: Disable Jekyll processing
         run: touch dist/.nojekyll
       - name: Upload artifact
