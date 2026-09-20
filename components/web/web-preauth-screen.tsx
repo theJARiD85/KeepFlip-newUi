@@ -1,4 +1,3 @@
-import { Image } from 'expo-image';
 import { type ComponentProps, useMemo, useState } from 'react';
 import {
   Pressable,
@@ -8,6 +7,7 @@ import {
   View,
 } from 'react-native';
 
+import { FlipCompanion, useFlipCompanion } from '@/components/flip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
@@ -37,7 +37,6 @@ type OnboardingQuestion = {
   choices?: QuestionChoice[];
 };
 
-const FLIP_MASCOT_IMAGE = require('@/assets/images/flip-mascot.png');
 const NAME_STEP = 0;
 const TOUR_STEP = 1;
 const FIRST_QUESTION_STEP = 2;
@@ -263,6 +262,7 @@ export function WebPreAuthScreen({
   onBack?: () => void;
   onComplete: (name: string, rules: ResellerBuyRules) => void;
 }) {
+  const { markActivity, setMode } = useFlipCompanion();
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const colors = getKeepFlipThemeColors(effectiveColorScheme);
   const [step, setStep] = useState(NAME_STEP);
@@ -304,6 +304,8 @@ export function WebPreAuthScreen({
       return;
     }
     setError(null);
+    markActivity();
+    setMode('speaking');
     setStep(TOUR_STEP);
   };
 
@@ -326,13 +328,29 @@ export function WebPreAuthScreen({
       minimumNetProfitCents: Math.round(amount * 100),
     }));
     setError(null);
+    markActivity();
+    setMode('speaking');
     setStep((current) => Math.min(summaryStep, current + 1));
+  };
+
+  const continueFromTour = () => {
+    markActivity();
+    setMode('speaking');
+    setStep(FIRST_QUESTION_STEP);
   };
 
   const choose = (choice: QuestionChoice) => {
     setRules((current) => choice.update(current));
     setError(null);
+    markActivity();
+    setMode('speaking');
     setStep((current) => Math.min(summaryStep, current + 1));
+  };
+
+  const finish = () => {
+    markActivity();
+    setMode('speaking');
+    onComplete(name.trim(), rules);
   };
 
   return (
@@ -363,7 +381,7 @@ export function WebPreAuthScreen({
           <View style={[styles.card, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
             <View style={styles.flipHeader}>
               <View style={[styles.flipAvatar, { backgroundColor: colors.iconSurfaceViolet, borderColor: colors.accentVioletBorder }]}>
-                <Image contentFit="contain" source={FLIP_MASCOT_IMAGE} style={styles.flipImage} />
+                <FlipCompanion cropToSquare={false} size={70} />
               </View>
               <View style={styles.flipHeaderCopy}>
                 <Text style={[styles.flipLabel, { color: colors.scannerCyan }]}>FLIP · RESALE SIDEKICK</Text>
@@ -411,7 +429,7 @@ export function WebPreAuthScreen({
                     </View>
                   ))}
                 </View>
-                <PrimaryAction colors={colors} label="SET MY BUY RULES" onPress={() => setStep(FIRST_QUESTION_STEP)} />
+                <PrimaryAction colors={colors} label="SET MY BUY RULES" onPress={continueFromTour} />
               </View>
             ) : null}
 
@@ -484,7 +502,7 @@ export function WebPreAuthScreen({
                   <Text style={[styles.summaryLine, { color: colors.goldBright }]}>{summary.line}</Text>
                   <Text style={[styles.summaryDetail, { color: colors.textMuted }]}>{summary.detail}</Text>
                 </View>
-                <PrimaryAction colors={colors} label="CREATE MY KEEPFLIP ACCOUNT" onPress={() => onComplete(name.trim(), rules)} />
+                <PrimaryAction colors={colors} label="CREATE MY KEEPFLIP ACCOUNT" onPress={finish} />
               </View>
             ) : null}
           </View>
@@ -520,32 +538,31 @@ const styles = StyleSheet.create({
   content: { maxWidth: 680, width: '100%' },
   topRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
   backButton: { minHeight: 36, justifyContent: 'center', paddingHorizontal: 4 },
-  backText: { fontFamily: theme.fonts.bold, fontSize: 9, letterSpacing: 1 },
+  backText: { fontFamily: theme.fonts.bold, fontSize: 12, letterSpacing: 1 },
   progressCopy: { alignItems: 'flex-end', gap: 6, width: 180 },
-  progressLabel: { fontFamily: theme.fonts.bold, fontSize: 8, letterSpacing: 1 },
+  progressLabel: { fontFamily: theme.fonts.bold, fontSize: 12, letterSpacing: 1 },
   progressTrack: { borderRadius: 99, height: 5, overflow: 'hidden', width: '100%' },
   progressFill: { borderRadius: 99, height: '100%' },
   card: { borderRadius: 22, borderWidth: 1, overflow: 'hidden' },
   flipHeader: { alignItems: 'center', flexDirection: 'row', gap: 12, padding: 20 },
   flipAvatar: { borderRadius: 18, borderWidth: 1, height: 70, overflow: 'hidden', width: 70 },
-  flipImage: { height: '100%', width: '100%' },
   flipHeaderCopy: { flex: 1, gap: 5, minWidth: 0 },
-  flipLabel: { fontFamily: theme.fonts.bold, fontSize: 9, letterSpacing: 1.15 },
-  flipStatus: { fontFamily: theme.fonts.semibold, fontSize: 10, letterSpacing: 0.35 },
+  flipLabel: { fontFamily: theme.fonts.bold, fontSize: 12, letterSpacing: 1.15 },
+  flipStatus: { fontFamily: theme.fonts.semibold, fontSize: 13, letterSpacing: 0.35 },
   stage: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.colors.divider, gap: 14, padding: 24 },
-  eyebrow: { fontFamily: theme.fonts.bold, fontSize: 9, letterSpacing: 1.45 },
+  eyebrow: { fontFamily: theme.fonts.bold, fontSize: 12, letterSpacing: 1.45 },
   title: { fontFamily: theme.fonts.bold, fontSize: 29, letterSpacing: -0.5, lineHeight: 35 },
   body: { fontFamily: theme.fonts.body, fontSize: 15, lineHeight: 23, maxWidth: 590 },
-  fieldLabel: { fontFamily: theme.fonts.bold, fontSize: 9, letterSpacing: 1, marginTop: 4 },
+  fieldLabel: { fontFamily: theme.fonts.bold, fontSize: 12, letterSpacing: 1, marginTop: 4 },
   input: { borderRadius: 14, borderWidth: 1, fontFamily: theme.fonts.body, fontSize: 16, minHeight: 54, paddingHorizontal: 16 },
   error: { fontFamily: theme.fonts.body, fontSize: 13, lineHeight: 19 },
   primaryAction: { alignItems: 'center', alignSelf: 'flex-start', borderRadius: 14, justifyContent: 'center', marginTop: 6, minHeight: 52, paddingHorizontal: 20 },
-  primaryActionText: { fontFamily: theme.fonts.bold, fontSize: 11, letterSpacing: 1 },
+  primaryActionText: { fontFamily: theme.fonts.bold, fontSize: 14, letterSpacing: 1 },
   featureList: { gap: 9 },
   feature: { alignItems: 'center', borderRadius: 14, borderWidth: 1, flexDirection: 'row', gap: 11, padding: 12 },
   featureIcon: { alignItems: 'center', borderRadius: 10, height: 38, justifyContent: 'center', width: 38 },
   featureCopy: { flex: 1, gap: 3, minWidth: 0 },
-  featureLabel: { fontFamily: theme.fonts.bold, fontSize: 10, letterSpacing: 0.65 },
+  featureLabel: { fontFamily: theme.fonts.bold, fontSize: 13, letterSpacing: 0.65 },
   featureDetail: { fontFamily: theme.fonts.body, fontSize: 12, lineHeight: 17 },
   choiceList: { gap: 9 },
   choice: { alignItems: 'center', borderRadius: 14, borderWidth: 1, flexDirection: 'row', gap: 11, minHeight: 72, padding: 12 },

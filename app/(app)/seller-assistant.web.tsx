@@ -6,7 +6,6 @@ import {
   FlipGuidanceOverlay,
   FlipGuidanceProvider,
 } from '@/components/command-center/flip-guidance-overlay';
-import { FlipCompanionProvider } from '@/components/flip';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
@@ -38,9 +37,9 @@ function WebFlipAssistantScreen() {
           },
         ]}>
         <View style={styles.intro}>
-          <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>FLIP ASSISTANT</Text>
+          <Text style={[styles.eyebrow, { fontSize: responsiveFont(12) }]}>FLIP ASSISTANT</Text>
           <Text style={[styles.title, { fontSize: responsiveFont(24) }]}>A second set of eyes for every move.</Text>
-          <Text style={[styles.body, { fontSize: responsiveFont(11), lineHeight: responsiveFont(16) }]}>Ask Flip about your inventory, priorities, cash flow, or the next action worth taking. The conversation stays tied to your KeepFlip workspace.</Text>
+          <Text style={[styles.body, { fontSize: responsiveFont(14), lineHeight: responsiveFont(20) }]}>Ask Flip about your inventory, priorities, cash flow, or the next action worth taking. The conversation stays tied to your KeepFlip workspace.</Text>
         </View>
         <FlipConversationalAssistantPanel
           currentRoute={pathname}
@@ -57,12 +56,10 @@ function WebFlipAssistantScreen() {
 
 export default function WebSellerAssistantRoute() {
   return (
-    <FlipCompanionProvider>
-      <FlipGuidanceProvider>
-        <WebFlipAssistantScreen />
-        <FlipGuidanceOverlay />
-      </FlipGuidanceProvider>
-    </FlipCompanionProvider>
+    <FlipGuidanceProvider>
+      <WebFlipAssistantScreen />
+      <FlipGuidanceOverlay />
+    </FlipGuidanceProvider>
   );
 }
 

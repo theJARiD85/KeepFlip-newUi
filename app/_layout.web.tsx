@@ -8,6 +8,7 @@ import {
   KeepFlipAuthProvider,
   useKeepFlipAuth,
 } from '@/components/auth/keepflip-auth-context';
+import { FlipCompanionProvider } from '@/components/flip';
 import { KeepFlipAppearanceProvider, useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import {
   KeepFlipSubscriptionProvider,
@@ -112,11 +113,13 @@ function WebRootContent() {
   return (
     <ThemeProvider value={navigationTheme}>
       <KeepFlipAuthProvider>
-        <KeepFlipSubscriptionProvider>
-          <KeepFlipFeedbackNudgeProvider>
-            <ProtectedRootStack />
-          </KeepFlipFeedbackNudgeProvider>
-        </KeepFlipSubscriptionProvider>
+        <FlipCompanionProvider>
+          <KeepFlipSubscriptionProvider>
+            <KeepFlipFeedbackNudgeProvider>
+              <ProtectedRootStack />
+            </KeepFlipFeedbackNudgeProvider>
+          </KeepFlipSubscriptionProvider>
+        </FlipCompanionProvider>
       </KeepFlipAuthProvider>
     </ThemeProvider>
   );

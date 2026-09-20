@@ -1,12 +1,10 @@
 import { useRouter } from 'expo-router';
-import { Image } from 'expo-image';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { FlipCompanion } from '@/components/flip';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
-
-const FLIP_MASCOT_IMAGE = require('@/assets/images/flip-mascot.png');
 
 export function WebOnboardingScreen({
   onExistingLogin,
@@ -33,7 +31,7 @@ export function WebOnboardingScreen({
           Meet Flip, your resale sidekick. A few quick questions will set the buying rules that guide the evidence and advice you see everywhere in KeepFlip.
         </Text>
         <View style={[styles.flipCard, { backgroundColor: colors.iconSurfaceViolet, borderColor: colors.accentVioletBorder }]}>
-          <Image contentFit="contain" source={FLIP_MASCOT_IMAGE} style={styles.flipImage} />
+          <FlipCompanion cropToSquare={false} size={82} />
           <View style={styles.flipCopy}>
             <Text style={[styles.flipEyebrow, { color: colors.scannerCyan }]}>FLIP IS READY</Text>
             <Text style={[styles.flipText, { color: colors.textMuted }]}>He will learn the kind of deals, pace, profit, and risk that fit your business.</Text>
@@ -90,16 +88,15 @@ const styles = StyleSheet.create({
   content: { alignItems: 'center', maxWidth: 620, width: '100%' },
   brandMark: { alignItems: 'center', borderRadius: 16, height: 52, justifyContent: 'center', width: 52 },
   brandMarkText: { fontFamily: theme.fonts.bold, fontSize: 28 },
-  eyebrow: { fontFamily: theme.fonts.bold, fontSize: 10, letterSpacing: 1.8, marginTop: 22 },
+  eyebrow: { fontFamily: theme.fonts.bold, fontSize: 13, letterSpacing: 1.8, marginTop: 22 },
   title: { fontFamily: theme.fonts.bold, fontSize: 42, lineHeight: 49, marginTop: 12, maxWidth: 580, textAlign: 'center' },
   body: { fontFamily: theme.fonts.body, fontSize: 16, lineHeight: 25, marginTop: 14, maxWidth: 520, textAlign: 'center' },
   actions: { gap: 12, marginTop: 30, maxWidth: 440, width: '100%' },
   action: { alignItems: 'center', borderRadius: 14, borderWidth: 1, minHeight: 54, justifyContent: 'center', paddingHorizontal: 18 },
   actionText: { fontFamily: theme.fonts.semibold, fontSize: 14 },
   flipCard: { alignItems: 'center', borderRadius: 18, borderWidth: 1, flexDirection: 'row', gap: 14, marginTop: 28, maxWidth: 440, padding: 14, width: '100%' },
-  flipImage: { height: 82, width: 82 },
   flipCopy: { flex: 1, gap: 5, minWidth: 0 },
-  flipEyebrow: { fontFamily: theme.fonts.bold, fontSize: 9, letterSpacing: 1.2 },
+  flipEyebrow: { fontFamily: theme.fonts.bold, fontSize: 12, letterSpacing: 1.2 },
   flipText: { fontFamily: theme.fonts.body, fontSize: 13, lineHeight: 19 },
   pressed: { opacity: 0.78 },
 });

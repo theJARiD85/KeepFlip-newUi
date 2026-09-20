@@ -11,7 +11,10 @@ import {
   View,
 } from 'react-native';
 
-import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
+import {
+  KeepFlipAuthError,
+  useKeepFlipAuth,
+} from '@/components/auth/keepflip-auth-context';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
@@ -63,7 +66,24 @@ export function WebAuthScreen({
     setLocalError(null);
     try {
       if (isCreateAccount) {
-        await signUp(name, email, password);
+        try {
+          await signUp(name, email, password);
+        } catch (signUpError) {
+          /*
+           * Appwrite persists the user before it creates the email/password
+           * session. If that later session request fails, retrying "create"
+           * must not strand a real account behind an already-exists error.
+           * Recover by signing in with the credentials the seller just chose.
+           */
+          if (
+            signUpError instanceof KeepFlipAuthError &&
+            signUpError.code === 'AUTH_ACCOUNT_EXISTS'
+          ) {
+            await signIn(email, password);
+          } else {
+            throw signUpError;
+          }
+        }
       } else {
         await signIn(email, password);
       }
@@ -279,7 +299,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   statusDot: { borderRadius: 4, height: 7, width: 7 },
-  webPillText: { fontFamily: theme.fonts.bold, fontSize: 9, letterSpacing: 1 },
+  webPillText: { fontFamily: theme.fonts.bold, fontSize: 12, letterSpacing: 1 },
   card: {
     borderRadius: theme.radii.large,
     borderWidth: 1,
@@ -287,13 +307,13 @@ const styles = StyleSheet.create({
     padding: 30,
     width: '100%',
   },
-  eyebrow: { fontFamily: theme.fonts.bold, fontSize: 10, letterSpacing: 1.7 },
+  eyebrow: { fontFamily: theme.fonts.bold, fontSize: 13, letterSpacing: 1.7 },
   title: { fontFamily: theme.fonts.bold, fontSize: 38, lineHeight: 44, marginTop: 10 },
   subtitle: { fontFamily: theme.fonts.body, fontSize: 15, lineHeight: 23, marginTop: 12, maxWidth: 560 },
   backButton: { alignSelf: 'flex-start', marginTop: 18, paddingVertical: 4 },
-  backButtonText: { fontFamily: theme.fonts.bold, fontSize: 9, letterSpacing: 0.9 },
+  backButtonText: { fontFamily: theme.fonts.bold, fontSize: 12, letterSpacing: 0.9 },
   fieldGroup: { gap: 7, marginTop: 20 },
-  fieldLabel: { fontFamily: theme.fonts.semibold, fontSize: 11, letterSpacing: 0.6 },
+  fieldLabel: { fontFamily: theme.fonts.semibold, fontSize: 14, letterSpacing: 0.6 },
   input: { borderRadius: 14, borderWidth: 1, fontFamily: theme.fonts.body, fontSize: 15, minHeight: 50, paddingHorizontal: 15 },
   errorBox: { borderRadius: 12, borderWidth: 1, marginTop: 18, padding: 12 },
   errorText: { fontFamily: theme.fonts.body, fontSize: 13, lineHeight: 19 },
@@ -308,6 +328,6 @@ const styles = StyleSheet.create({
   switchText: { fontFamily: theme.fonts.body, fontSize: 13 },
   switchAction: { fontFamily: theme.fonts.semibold, fontSize: 13 },
   footerNote: { borderTopWidth: 1, marginTop: 24, maxWidth: 620, paddingTop: 18, width: '100%' },
-  footerLabel: { fontFamily: theme.fonts.bold, fontSize: 9, letterSpacing: 1.4 },
+  footerLabel: { fontFamily: theme.fonts.bold, fontSize: 12, letterSpacing: 1.4 },
   footerText: { fontFamily: theme.fonts.body, fontSize: 12, lineHeight: 18, marginTop: 7 },
 });
