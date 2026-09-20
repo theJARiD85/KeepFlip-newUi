@@ -24,7 +24,7 @@ import { KeepFlipMenuProvider } from '@/components/navigation/keepflip-menu-cont
 import { KeepFlipSlideDownMenu } from '@/components/navigation/keepflip-slide-down-menu';
 import { ItemAnalysisResultProvider } from '@/components/scanner/item-analysis-result-context';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
-import { SourcingTripProvider } from '@/components/sourcing/sourcing-trip-context';
+import { SourcingTripProvider } from '@/components/sourcing/sourcing-trip-provider';
 import {
   useKeepFlipSubscription,
 } from '@/components/subscription/keepflip-subscription-context';

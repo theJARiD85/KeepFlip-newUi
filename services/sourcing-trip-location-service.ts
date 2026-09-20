@@ -45,9 +45,14 @@ type LocationTaskData = {
   locations?: LocationObject[];
 };
 
-const stateFile = new File(Paths.document, TRACKING_STATE_FILE);
 let foregroundSubscription: LocationSubscription | null = null;
 let locationUpdateQueue = Promise.resolve();
+
+function getStateFile() {
+  // Keep native File/Directory construction lazy so importing the shared
+  // route graph in a browser does not call the unsupported web shim.
+  return new File(Paths.document, TRACKING_STATE_FILE);
+}
 
 function finiteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
@@ -68,6 +73,7 @@ function validTrackingMode(value: unknown): value is SourcingTripLocationTrackin
 }
 
 function readStoredState() {
+  const stateFile = getStateFile();
   if (!stateFile.exists) return null;
 
   try {
@@ -122,6 +128,7 @@ function readStoredState() {
 }
 
 function writeStoredState(state: StoredLocationState) {
+  const stateFile = getStateFile();
   if (!stateFile.exists) {
     stateFile.create({ intermediates: true });
   }
@@ -129,6 +136,7 @@ function writeStoredState(state: StoredLocationState) {
 }
 
 function clearStoredState() {
+  const stateFile = getStateFile();
   if (stateFile.exists) stateFile.delete();
 }
 
