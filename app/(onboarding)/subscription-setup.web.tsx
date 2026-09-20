@@ -1,5 +1,5 @@
-import { type Href, useEffect } from 'react';
-import { useRouter } from 'expo-router';
+import { type Href, useRouter } from 'expo-router';
+import { useEffect } from 'react';
 
 import { useKeepFlipOnboardingDraft } from '@/components/onboarding/keepflip-onboarding-draft-context';
 import { WebAuthScreen } from '@/components/web/web-auth-screen';
