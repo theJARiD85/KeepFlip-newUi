@@ -332,7 +332,9 @@ async function getVerifiedNonAnonymousUser(): Promise<Models.User | null> {
   return user;
 }
 
-async function clearCurrentAppwriteSession() {
+async function clearCurrentAppwriteSession({
+  resetIdentity = true,
+}: { resetIdentity?: boolean } = {}) {
   const { account } = getAppwriteCoreServices();
 
   // Realtime subscriptions are authenticated separately from the HTTP
@@ -345,7 +347,7 @@ async function clearCurrentAppwriteSession() {
   } catch (error) {
     if (!isSignedOutResponse(error)) throw error;
   }
-  analytics.resetIdentity();
+  if (resetIdentity) analytics.resetIdentity();
 }
 
 export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
@@ -684,11 +686,13 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
       }
 
       try {
-        await clearCurrentAppwriteSession();
+        await clearCurrentAppwriteSession({ resetIdentity: false });
       } catch (error) {
         if (!isSignedOutResponse(error)) throw error;
       }
       commit(signedOutSnapshot());
+      trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.logoutCompleted);
+      analytics.resetIdentity();
     } catch (error) {
       const safeError = safeAuthError(error, 'sign-out');
       if (isSignedOutResponse(error)) {

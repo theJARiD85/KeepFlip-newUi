@@ -21,15 +21,15 @@ import {
 } from '@/lib/appwrite';
 import { getKeepFlipTrialDeviceIdHash } from '@/services/keepflip-trial-device-service';
 import {
-  KEEPFLIP_ANALYTICS_EVENTS,
-  trackKeepFlipEvent,
-} from '@/services/keepflip-analytics';
-import {
   getTenjinAnalyticsInstallationId,
   setKeepFlipTenjinCustomerUserId,
   trackTenjinEvent,
   trackTenjinSubscriptionPurchase,
 } from '@/services/tenjin-attribution-service';
+import {
+  KEEPFLIP_ANALYTICS_EVENTS,
+  trackKeepFlipEvent,
+} from '@/services/keepflip-analytics';
 
 export type KeepFlipPlanId = 'hobbyist' | 'serious';
 export type KeepFlipBillingCadence = 'monthly' | 'annual';
@@ -1363,10 +1363,6 @@ async function purchaseConfiguredKeepFlipPlan(
     );
   }
 
-  trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.subscriptionPurchaseStarted, {
-    cadence,
-    plan,
-  });
   trackTenjinEvent('subscription_purchase_started');
   let productChangeInfo: StoreProductChangeInfo | null = null;
   if (Platform.OS === 'android') {
@@ -1403,11 +1399,13 @@ async function purchaseConfiguredKeepFlipPlan(
   });
   trackTenjinEvent('subscription_purchase_completed');
   const access = subscriptionAccessFromCustomerInfo(result.customerInfo);
-  trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.subscriptionPurchaseCompleted, {
-    active: access.active,
-    cadence,
-    plan,
-  });
+  if (access.active) {
+    trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.subscriptionStarted, {
+      cadence,
+      is_trial: access.isTrial,
+      plan,
+    });
+  }
   return access;
 }
 
@@ -1524,12 +1522,14 @@ export async function renewKeepFlipPlan(
         : price.amountMicros / 1_000_000,
   });
   trackTenjinEvent('subscription_renewal_completed');
-  const renewedAccess = subscriptionAccessFromCustomerInfo(result.customerInfo);
-  trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.subscriptionRenewed, {
-    active: renewedAccess.active,
-    plan: renewedAccess.plan ?? access.plan ?? null,
-  });
-  return renewedAccess;
+  const access = subscriptionAccessFromCustomerInfo(result.customerInfo);
+  if (access.active) {
+    trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.subscriptionRenewed, {
+      is_trial: access.isTrial,
+      plan: access.plan,
+    });
+  }
+  return access;
 }
 
 export async function restoreKeepFlipPurchases(userId: string) {
@@ -1545,7 +1545,7 @@ export async function restoreKeepFlipPurchases(userId: string) {
     trackTenjinEvent('subscription_restored');
     trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.subscriptionRestored, {
       is_trial: access.isTrial,
-      plan: access.plan ?? null,
+      plan: access.plan,
     });
   }
   return access;

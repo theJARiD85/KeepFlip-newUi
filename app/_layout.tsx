@@ -1,5 +1,5 @@
 import "react-native-url-polyfill/auto";
-import { analytics } from '@heycatch/sdk';
+import { analytics, HeyCatchProvider } from '@heycatch/sdk';
 import {
   DarkTheme,
   DefaultTheme,
@@ -45,7 +45,7 @@ analytics.init({
   projectKey: 'hck_pk_P-RAsy4RamxF7X6OTR5r5M0gSJ3pGQ9e',
   install: {
     framework: 'react-native',
-    frameworkVersion: '0',
+    frameworkVersion: '16',
     agent: 'codex',
   },
 });
@@ -292,10 +292,10 @@ function RootLayoutContent() {
 
 export default function RootLayout() {
   return (
-    <KeepFlipHeyCatchProvider>
+    <HeyCatchProvider>
       <KeepFlipAppearanceProvider>
         <RootLayoutContent />
       </KeepFlipAppearanceProvider>
-    </KeepFlipHeyCatchProvider>
+    </HeyCatchProvider>
   );
 }

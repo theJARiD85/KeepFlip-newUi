@@ -26,6 +26,10 @@ import {
 } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import {
+  KEEPFLIP_ANALYTICS_EVENTS,
+  trackKeepFlipEvent,
+} from '@/services/keepflip-analytics';
+import {
   useResponsiveLayout,
   useResponsiveStyles,
 } from '@/hooks/use-responsive-layout';
@@ -627,6 +631,10 @@ export function BooksScreen() {
       setStatusMessage(`${draftDetails.label} recorded in Books.`);
       hapticSuccess();
       recordCompletedAction();
+      trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.bookkeepingEntryCreated, {
+        amount_cents: amountCents,
+        entry_type: draft.entryType,
+      });
       await loadBooks(true);
     } catch (caughtError) {
       setFormError(

@@ -22,6 +22,10 @@ import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 import {
+  KEEPFLIP_ANALYTICS_EVENTS,
+  trackKeepFlipEvent,
+} from '@/services/keepflip-analytics';
+import {
   fetchEbayListingImportCandidates,
   linkImportedEbayListing,
 } from '@/services/ebay-listing-import-service';
@@ -253,6 +257,10 @@ export default function EbayAccountScreen() {
           offset === 0 ? result.candidates : [...current, ...result.candidates],
         );
         setImportNextOffset(result.nextOffset);
+        trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.ebayListingsDiscovered, {
+          count: result.candidates.length,
+          offset,
+        });
         setImportMessage(
           result.candidates.length
             ? `Found ${result.candidates.length} active Inventory API listing${result.candidates.length === 1 ? '' : 's'} on this page.`
@@ -313,6 +321,10 @@ export default function EbayAccountScreen() {
             : `Imported ${candidate.title} into KeepFlip inventory. Review its cost, photos, and analysis before relying on it for decisions.`,
         );
         await refreshConnection();
+        trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.ebayListingImported, {
+          environment,
+          existing_item: Boolean(existing),
+        });
       } catch (error) {
         setImportMessage(
           error instanceof Error
@@ -336,6 +348,9 @@ export default function EbayAccountScreen() {
       setConnection(result);
       setSellerAccount(null);
       setDisconnected(result);
+      trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.ebayAccountDisconnected, {
+        environment: result.environment,
+      });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
         () => undefined,
       );
@@ -405,6 +420,9 @@ export default function EbayAccountScreen() {
       setListingDefaultsMessage(
         'Saved. KeepFlip will use these verified eBay codes for new listings.',
       );
+      trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.ebayListingDefaultsSaved, {
+        marketplace_id: listingSetup.marketplaceId,
+      });
     } catch (error) {
       setListingDefaultsMessage(
         error instanceof Error

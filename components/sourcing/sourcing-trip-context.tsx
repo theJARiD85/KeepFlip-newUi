@@ -11,6 +11,10 @@ import {
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import {
+  KEEPFLIP_ANALYTICS_EVENTS,
+  trackKeepFlipEvent,
+} from '@/services/keepflip-analytics';
+import {
   deleteLedgerReceipt,
   uploadLedgerReceipt,
 } from '@/services/reseller-ledger-service';
@@ -35,10 +39,6 @@ import {
   stopSourcingTripLocationTracking,
   type SourcingTripLocationSnapshot,
 } from '@/services/sourcing-trip-location-service';
-import {
-  KEEPFLIP_ANALYTICS_EVENTS,
-  trackKeepFlipEvent,
-} from '@/services/keepflip-analytics';
 
 type StartSourcingTripInput = Omit<CreateSourcingTripInput, 'ownerId'>;
 
@@ -189,8 +189,7 @@ export function SourcingTripProvider({ children }: PropsWithChildren) {
         setLocationSnapshot(snapshot);
         setActiveTrip(summary);
         trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.sourcingTripStarted, {
-          has_budget: trip.budgetCents != null,
-          location_tracking: trip.locationTrackingStatus,
+          trip_id: trip.id,
         });
         return summary;
       } catch (error) {
@@ -220,6 +219,10 @@ export function SourcingTripProvider({ children }: PropsWithChildren) {
       setActiveTrip((current) =>
         current?.trip.id === summary.trip.id ? summary : current,
       );
+      trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.sourcingTripFindLinked, {
+        item_id: input.itemId,
+        trip_id: summary.trip.id,
+      });
       return summary;
     },
     [activeTrip, configured, userId],
@@ -263,11 +266,9 @@ export function SourcingTripProvider({ children }: PropsWithChildren) {
         clearSourcingTripLocationState();
         setLocationSnapshot(null);
         setActiveTrip(null);
-        trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.sourcingTripEnded, {
+        trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.sourcingTripCompleted, {
           find_count: activeTrip.findCount,
-          has_mileage: trip.mileageMeters != null,
-          has_receipt: Boolean(trip.receiptFileId),
-          location_tracking: trip.locationTrackingStatus,
+          trip_id: trip.id,
         });
         return trip;
       } catch (error) {

@@ -17,6 +17,10 @@ import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import {
+  KEEPFLIP_ANALYTICS_EVENTS,
+  trackKeepFlipEvent,
+} from '@/services/keepflip-analytics';
 import { responsiveWidth } from '@/lib/responsiveFont';
 import {
   connectEbayAccount,
@@ -122,6 +126,9 @@ export default function EbayConnectScreen() {
         }
 
         setConnected(confirmedConnection);
+        trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.ebayAccountConnected, {
+          environment: confirmedConnection.environment,
+        });
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
           () => undefined,
         );

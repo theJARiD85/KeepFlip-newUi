@@ -472,6 +472,9 @@ export function KeepFlipLaunchAuthScreen({
 
       if (mode === 'sign-in') {
         await signIn(normalizedEmail, password);
+        trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.loginCompleted, {
+          method: 'email',
+        });
         void Haptics.notificationAsync(
           Haptics.NotificationFeedbackType.Success,
         ).catch(() => undefined);

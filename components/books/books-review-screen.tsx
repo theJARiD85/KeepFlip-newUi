@@ -35,6 +35,10 @@ import {
   type InventoryItem,
 } from '@/services/inventory-service';
 import { getBookkeepingReviewQueue } from '@/services/reseller-bookkeeping-service';
+import {
+  KEEPFLIP_ANALYTICS_EVENTS,
+  trackKeepFlipEvent,
+} from '@/services/keepflip-analytics';
 
 type ReviewPostingOption = {
   value: ReviewPostingEventType;
@@ -306,6 +310,9 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
           itemCostCents,
           reviewId: review.id,
         });
+        trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.bookkeepingReviewResolved, {
+          review_type: 'needs_item_cost',
+        });
         await Haptics.notificationAsync(
           Haptics.NotificationFeedbackType.Success,
         ).catch(() => undefined);
@@ -398,6 +405,9 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
             ? 'Books record created and linked to this eBay transaction. The item’s original cost still needs review.'
             : `Books record created and linked to eBay transaction ${review.externalKey}.`,
         );
+        trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.bookkeepingReviewResolved, {
+          review_type: result.replacedInvalidReview ? 'invalid_import' : 'transaction',
+        });
         await Haptics.notificationAsync(
           Haptics.NotificationFeedbackType.Success,
         ).catch(() => undefined);
