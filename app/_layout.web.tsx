@@ -13,6 +13,7 @@ import {
   KeepFlipSubscriptionProvider,
   useKeepFlipSubscription,
 } from '@/components/subscription/keepflip-subscription-context';
+import { KeepFlipFeedbackNudgeProvider } from '@/components/feedback/keepflip-feedback-nudge';
 import { getKeepFlipThemeColors } from '@/constants/keepflip-theme';
 import { areKeepFlipSubscriptionsEnforced } from '@/services/keepflip-subscription-service';
 
@@ -58,11 +59,11 @@ function ProtectedRootStack() {
       <Stack.Protected guard={isCheckingSubscription}>
         <Stack.Screen name="subscription-check" />
       </Stack.Protected>
-      <Stack.Protected guard={!isChecking && !isSignedIn}>
-        <Stack.Screen name="(auth)" />
-      </Stack.Protected>
       <Stack.Protected guard={canShowOnboarding}>
         <Stack.Screen name="(onboarding)" />
+      </Stack.Protected>
+      <Stack.Protected guard={!isChecking && !isSignedIn}>
+        <Stack.Screen name="(auth)" />
       </Stack.Protected>
       <Stack.Protected guard={subscriptionRequired}>
         <Stack.Screen name="subscription-required" />
@@ -112,7 +113,9 @@ function WebRootContent() {
     <ThemeProvider value={navigationTheme}>
       <KeepFlipAuthProvider>
         <KeepFlipSubscriptionProvider>
-          <ProtectedRootStack />
+          <KeepFlipFeedbackNudgeProvider>
+            <ProtectedRootStack />
+          </KeepFlipFeedbackNudgeProvider>
         </KeepFlipSubscriptionProvider>
       </KeepFlipAuthProvider>
     </ThemeProvider>
@@ -126,4 +129,3 @@ export default function WebRootLayout() {
     </KeepFlipAppearanceProvider>
   );
 }
-

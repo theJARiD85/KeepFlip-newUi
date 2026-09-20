@@ -358,6 +358,7 @@ export type FlipAssistantPresentation = 'inline' | 'overlay';
 
 export function FlipConversationalAssistantPanel({
   currentRoute,
+  startsExpanded = false,
   onNavigate,
   onOpenSellerOperations,
   onExpandedChange,
@@ -365,6 +366,7 @@ export function FlipConversationalAssistantPanel({
   presentation = 'inline',
 }: {
   currentRoute?: string | null;
+  startsExpanded?: boolean;
   onNavigate: (route: AssistantRoute) => void;
   onOpenSellerOperations: () => void;
   onExpandedChange?: (isExpanded: boolean) => void;
@@ -378,7 +380,7 @@ export function FlipConversationalAssistantPanel({
 
   const { user } = useKeepFlipAuth();
   const [command, setCommand] = useState('');
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(startsExpanded);
   const [isMemoryOpen, setIsMemoryOpen] = useState(false);
   const [tasks, setTasks] = useState<AssistantTask[]>([]);
   const [messages, setMessages] = useState<AssistantConversationMessage[]>([]);

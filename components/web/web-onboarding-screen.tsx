@@ -1,17 +1,23 @@
 import { useRouter } from 'expo-router';
+import { Image } from 'expo-image';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
 
-type WebOnboardingStage = 'welcome' | 'meet-flip';
+const FLIP_MASCOT_IMAGE = require('@/assets/images/flip-mascot.png');
 
-export function WebOnboardingScreen({ stage }: { stage: WebOnboardingStage }) {
+export function WebOnboardingScreen({
+  onExistingLogin,
+  onNewUser,
+}: {
+  onExistingLogin?: () => void;
+  onNewUser?: () => void;
+}) {
   const router = useRouter();
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const colors = getKeepFlipThemeColors(effectiveColorScheme);
-  const isWelcome = stage === 'welcome';
 
   return (
     <View style={[styles.root, { backgroundColor: colors.backgroundDeep }]}>
@@ -19,49 +25,33 @@ export function WebOnboardingScreen({ stage }: { stage: WebOnboardingStage }) {
         <View style={[styles.brandMark, { backgroundColor: colors.gold }]}>
           <Text style={[styles.brandMarkText, { color: colors.textOnAccent }]}>K</Text>
         </View>
-        <Text style={[styles.eyebrow, { color: colors.goldBright }]}>KEEPFLIP WEB WORKSPACE</Text>
+        <Text style={[styles.eyebrow, { color: colors.goldBright }]}>KEEPFLIP / MEET FLIP</Text>
         <Text style={[styles.title, { color: colors.text }]}>
-          {isWelcome ? 'A calmer way to decide what to flip.' : 'Set up your reseller workspace.'}
+          Source smarter. Flip with a plan.
         </Text>
         <Text style={[styles.body, { color: colors.textMuted }]}>
-          {isWelcome
-            ? 'KeepFlip turns item evidence, realized costs, and resale operations into one clear next move.'
-            : 'Tell us where you are starting. You can refine sourcing rules and business details after you create your account.'}
+          Meet Flip, your resale sidekick. A few quick questions will set the buying rules that guide the evidence and advice you see everywhere in KeepFlip.
         </Text>
-
-        {isWelcome ? (
-          <View style={styles.actions}>
-            <ActionButton
-              colors={colors}
-              label="Create an account"
-              onPress={() => router.push('/meet-flip')}
-              primary
-            />
-            <ActionButton
-              colors={colors}
-              label="I already use KeepFlip"
-              onPress={() => router.push('/sign-in')}
-            />
+        <View style={[styles.flipCard, { backgroundColor: colors.iconSurfaceViolet, borderColor: colors.accentVioletBorder }]}>
+          <Image contentFit="contain" source={FLIP_MASCOT_IMAGE} style={styles.flipImage} />
+          <View style={styles.flipCopy}>
+            <Text style={[styles.flipEyebrow, { color: colors.scannerCyan }]}>FLIP IS READY</Text>
+            <Text style={[styles.flipText, { color: colors.textMuted }]}>He will learn the kind of deals, pace, profit, and risk that fit your business.</Text>
           </View>
-        ) : (
-          <View style={styles.actions}>
-            <View style={[styles.note, { backgroundColor: colors.iconSurfaceCyan, borderColor: colors.accentCyanBorder }]}>
-              <Text style={[styles.noteTitle, { color: colors.scannerCyan }]}>WEB-FIRST SETUP</Text>
-              <Text style={[styles.noteBody, { color: colors.textMuted }]}>The Android app will handle camera capture. Your account, inventory, Books, and research are ready here.</Text>
-            </View>
-            <ActionButton
-              colors={colors}
-              label="Continue to account creation"
-              onPress={() => router.push('/subscription-setup')}
-              primary
-            />
-            <ActionButton
-              colors={colors}
-              label="Back"
-              onPress={() => router.back()}
-            />
-          </View>
-        )}
+        </View>
+        <View style={styles.actions}>
+          <ActionButton
+            colors={colors}
+            label="Meet Flip & set my rules"
+            onPress={onNewUser ?? (() => router.push('/meet-flip'))}
+            primary
+          />
+          <ActionButton
+            colors={colors}
+            label="I already use KeepFlip"
+            onPress={onExistingLogin ?? (() => router.push('/sign-in'))}
+          />
+        </View>
       </View>
     </View>
   );
@@ -106,8 +96,10 @@ const styles = StyleSheet.create({
   actions: { gap: 12, marginTop: 30, maxWidth: 440, width: '100%' },
   action: { alignItems: 'center', borderRadius: 14, borderWidth: 1, minHeight: 54, justifyContent: 'center', paddingHorizontal: 18 },
   actionText: { fontFamily: theme.fonts.semibold, fontSize: 14 },
-  note: { borderRadius: 14, borderWidth: 1, padding: 15 },
-  noteTitle: { fontFamily: theme.fonts.bold, fontSize: 10, letterSpacing: 1.2 },
-  noteBody: { fontFamily: theme.fonts.body, fontSize: 13, lineHeight: 19, marginTop: 5 },
+  flipCard: { alignItems: 'center', borderRadius: 18, borderWidth: 1, flexDirection: 'row', gap: 14, marginTop: 28, maxWidth: 440, padding: 14, width: '100%' },
+  flipImage: { height: 82, width: 82 },
+  flipCopy: { flex: 1, gap: 5, minWidth: 0 },
+  flipEyebrow: { fontFamily: theme.fonts.bold, fontSize: 9, letterSpacing: 1.2 },
+  flipText: { fontFamily: theme.fonts.body, fontSize: 13, lineHeight: 19 },
   pressed: { opacity: 0.78 },
 });

@@ -1,0 +1,3 @@
+[submodule "backend/functions/ebay-account-deletion"]
+	path = backend/functions/ebay-account-deletion
+	url = https://github.com/theJARiD85/ebay-account-deletion.git

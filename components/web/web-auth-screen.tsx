@@ -15,10 +15,31 @@ import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { getAppwriteCoreServices } from '@/lib/appwrite';
+import type { ResellerBuyRules } from '@/services/reseller-buy-rules-service';
+import { completeScanInventoryWalkthrough } from '@/services/user-profile-onboarding-service';
 
 type WebAuthMode = 'sign-in' | 'create-account';
 
-export function WebAuthScreen({ initialMode }: { initialMode: WebAuthMode }) {
+type WebAuthCompletion = {
+  profileSaved: boolean;
+};
+
+type WebAuthScreenProps = {
+  initialBuyRules?: ResellerBuyRules | null;
+  initialMode: WebAuthMode;
+  initialName?: string;
+  onAuthenticated?: (result: WebAuthCompletion) => void | Promise<void>;
+  onBack?: () => void;
+};
+
+export function WebAuthScreen({
+  initialBuyRules,
+  initialMode,
+  initialName,
+  onAuthenticated,
+  onBack,
+}: WebAuthScreenProps) {
   const router = useRouter();
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const colors = getKeepFlipThemeColors(effectiveColorScheme);
@@ -30,13 +51,12 @@ export function WebAuthScreen({ initialMode }: { initialMode: WebAuthMode }) {
     signUp,
     status,
   } = useKeepFlipAuth();
-  const [mode, setMode] = useState<WebAuthMode>(initialMode);
-  const [name, setName] = useState('');
+  const [name, setName] = useState(initialName?.trim() ?? '');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
 
-  const isCreateAccount = mode === 'create-account';
+  const isCreateAccount = initialMode === 'create-account';
   const submitLabel = isCreateAccount ? 'Create my workspace' : 'Sign in to KeepFlip';
 
   async function submit() {
@@ -47,7 +67,33 @@ export function WebAuthScreen({ initialMode }: { initialMode: WebAuthMode }) {
       } else {
         await signIn(email, password);
       }
-      router.replace('/');
+
+      let profileSaved = true;
+      if (isCreateAccount && initialBuyRules) {
+        try {
+          const { account } = getAppwriteCoreServices();
+          const currentUser = await account.get();
+          await completeScanInventoryWalkthrough(
+            currentUser.$id,
+            currentUser.name || name.trim(),
+            initialBuyRules,
+          );
+        } catch (profileError) {
+          profileSaved = false;
+          if (__DEV__) {
+            console.warn(
+              '[KeepFlip][Web onboarding] Seller setup could not be saved after account creation:',
+              profileError,
+            );
+          }
+        }
+      }
+
+      if (onAuthenticated) {
+        await onAuthenticated({ profileSaved });
+      } else {
+        router.replace(profileSaved ? '/' : '/walkthrough');
+      }
     } catch (error) {
       setLocalError(error instanceof Error ? error.message : 'KeepFlip could not complete that request.');
     }
@@ -77,6 +123,16 @@ export function WebAuthScreen({ initialMode }: { initialMode: WebAuthMode }) {
           <Text style={[styles.eyebrow, { color: colors.goldBright }]}>RESELLER OPERATIONS, EVERYWHERE</Text>
           <Text style={[styles.title, { color: colors.text }]}>Make every flip easier to trust.</Text>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>Use the web workspace for inventory, Books, market research, and assistant planning. Open the Android app when it is time to capture an item.</Text>
+
+          {onBack ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={onBack}
+              style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+            >
+              <Text style={[styles.backButtonText, { color: colors.scannerCyan }]}>← BACK TO FLIP'S SETUP</Text>
+            </Pressable>
+          ) : null}
 
           {isCreateAccount ? (
             <Field
@@ -145,11 +201,15 @@ export function WebAuthScreen({ initialMode }: { initialMode: WebAuthMode }) {
               accessibilityRole="button"
               onPress={() => {
                 setLocalError(null);
-                setMode(isCreateAccount ? 'sign-in' : 'create-account');
+                if (isCreateAccount) {
+                  router.replace('/sign-in');
+                  return;
+                }
+                router.push('/welcome');
               }}
             >
               <Text style={[styles.switchAction, { color: colors.scannerCyan }]}>
-                {isCreateAccount ? 'Sign in' : 'Create an account'}
+                {isCreateAccount ? 'Sign in' : 'Meet Flip & start setup'}
               </Text>
             </Pressable>
           </View>
@@ -230,6 +290,8 @@ const styles = StyleSheet.create({
   eyebrow: { fontFamily: theme.fonts.bold, fontSize: 10, letterSpacing: 1.7 },
   title: { fontFamily: theme.fonts.bold, fontSize: 38, lineHeight: 44, marginTop: 10 },
   subtitle: { fontFamily: theme.fonts.body, fontSize: 15, lineHeight: 23, marginTop: 12, maxWidth: 560 },
+  backButton: { alignSelf: 'flex-start', marginTop: 18, paddingVertical: 4 },
+  backButtonText: { fontFamily: theme.fonts.bold, fontSize: 9, letterSpacing: 0.9 },
   fieldGroup: { gap: 7, marginTop: 20 },
   fieldLabel: { fontFamily: theme.fonts.semibold, fontSize: 11, letterSpacing: 0.6 },
   input: { borderRadius: 14, borderWidth: 1, fontFamily: theme.fonts.body, fontSize: 15, minHeight: 50, paddingHorizontal: 15 },
