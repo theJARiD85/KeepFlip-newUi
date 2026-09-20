@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { useCallback, useEffect, useRef } from 'react';
 import {
+  Platform,
   StyleSheet,
   View,
   type StyleProp,
@@ -358,13 +359,15 @@ export function FlipCompanion({
         },
         style,
       ]}>
-      <Image
-        cachePolicy="memory-disk"
-        contentFit={cropToSquare ? 'cover' : 'contain'}
-        pointerEvents="none"
-        source={FLIP_BACKGROUND_SOURCE}
-        style={StyleSheet.absoluteFill}
-      />
+      {Platform.OS !== 'web' ? (
+        <Image
+          cachePolicy="memory-disk"
+          contentFit={cropToSquare ? 'cover' : 'contain'}
+          pointerEvents="none"
+          source={FLIP_BACKGROUND_SOURCE}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : null}
       <Animated.View
         pointerEvents="none"
         style={[StyleSheet.absoluteFill, firstVideoStyle]}>
@@ -373,6 +376,7 @@ export function FlipCompanion({
           style={StyleSheet.absoluteFill}
           nativeControls={false}
           contentFit={cropToSquare ? 'cover' : 'contain'}
+          playsInline
           surfaceType="textureView"
           allowsVideoFrameAnalysis={false}
         />
@@ -385,6 +389,7 @@ export function FlipCompanion({
           style={StyleSheet.absoluteFill}
           nativeControls={false}
           contentFit={cropToSquare ? 'cover' : 'contain'}
+          playsInline
           surfaceType="textureView"
           allowsVideoFrameAnalysis={false}
         />

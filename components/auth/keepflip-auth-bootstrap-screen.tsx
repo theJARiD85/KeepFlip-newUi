@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 
+import { FlipCompanion } from '@/components/flip';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
@@ -13,19 +14,28 @@ export function KeepFlipAuthBootstrapScreen() {
     contentMaxWidth,
     contentWidth,
     pageGutter,
-    responsiveFont
+    responsiveFont,
+    responsiveWidth,
   } = useResponsiveLayout();
 
   return (
     <KeepFlipBackground contentStyle={[styles.content, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
       <View style={styles.lockup}>
         <View style={styles.logoHalo}>
-          <Image
-            accessibilityLabel="KeepFlip"
-            contentFit="contain"
-            source={require('@/assets/images/icon3.png')}
-            style={styles.logo}
-          />
+          {Platform.OS === 'web' ? (
+            <FlipCompanion
+              cropToSquare
+              size={responsiveWidth(134)}
+              style={styles.logo}
+            />
+          ) : (
+            <Image
+              accessibilityLabel="KeepFlip"
+              contentFit="contain"
+              source={require('@/assets/images/icon3.png')}
+              style={styles.logo}
+            />
+          )}
         </View>
         <View accessibilityLiveRegion="polite" style={styles.statusRow}>
           <ActivityIndicator color={theme.colors.scannerCyan} size="small" />
