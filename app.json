@@ -116,8 +116,7 @@
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": true,
-      "baseUrl": "/KeepFlip-newUi"
+      "reactCompiler": true
     },
     "extra": {
       "router": {},

@@ -24,7 +24,7 @@ export function KeepFlipAuthBootstrapScreen() {
         <View style={styles.logoHalo}>
           {Platform.OS === 'web' ? (
             <FlipCompanion
-              cropToSquare
+              cropToSquare={false}
               size={responsiveWidth(134)}
               style={styles.logo}
             />
