@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useContext, useMemo, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -6,7 +6,12 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { LineChart } from 'react-native-wagmi-charts';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import {
+  LineChart,
+  LineChartDimensionsContext,
+  useLineChart,
+} from 'react-native-wagmi-charts';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
@@ -387,6 +392,69 @@ export function BusinessPulse({
   );
 }
 
+const MONEY_FLOW_TRACKER_OUTER_SIZE = 18;
+const MONEY_FLOW_TRACKER_CORE_SIZE = 6;
+
+const moneyFlowTrackerStyles = StyleSheet.create({
+  host: {
+    alignItems: 'center',
+    height: MONEY_FLOW_TRACKER_OUTER_SIZE,
+    justifyContent: 'center',
+    left: 0,
+    position: 'absolute',
+    top: 0,
+    width: MONEY_FLOW_TRACKER_OUTER_SIZE,
+  },
+  outer: {
+    borderRadius: MONEY_FLOW_TRACKER_OUTER_SIZE / 2,
+    height: MONEY_FLOW_TRACKER_OUTER_SIZE,
+    opacity: 0.24,
+    position: 'absolute',
+    width: MONEY_FLOW_TRACKER_OUTER_SIZE,
+  },
+  core: {
+    borderRadius: MONEY_FLOW_TRACKER_CORE_SIZE / 2,
+    height: MONEY_FLOW_TRACKER_CORE_SIZE,
+    width: MONEY_FLOW_TRACKER_CORE_SIZE,
+  },
+});
+
+function MoneyFlowTrackerDot({ color, index }: { color: string; index: number }) {
+  const { currentX, currentY, data, isActive, yDomain } = useLineChart();
+  const { chartDrawingHeight, gutter, width } = useContext(LineChartDimensionsContext);
+  const dataLength = data?.length ?? 0;
+  const staticX = dataLength > 1 ? (width * index) / (dataLength - 1) : 0;
+  const yRange = Math.max(yDomain.max - yDomain.min, Number.EPSILON);
+  const selectedValue = data?.[index]?.value ?? yDomain.min;
+  const staticY =
+    chartDrawingHeight -
+    gutter -
+    ((selectedValue - yDomain.min) / yRange) * (chartDrawingHeight - gutter * 2);
+
+  const animatedStyle = useAnimatedStyle(
+    () => ({
+      transform: [
+        {
+          translateX:
+            (isActive.value ? currentX.value : staticX) - MONEY_FLOW_TRACKER_OUTER_SIZE / 2,
+        },
+        {
+          translateY:
+            (isActive.value ? currentY.value : staticY) - MONEY_FLOW_TRACKER_OUTER_SIZE / 2,
+        },
+      ],
+    }),
+    [currentX, currentY, isActive, staticX, staticY],
+  );
+
+  return (
+    <Animated.View pointerEvents="none" style={[moneyFlowTrackerStyles.host, animatedStyle]}>
+      <View style={[moneyFlowTrackerStyles.outer, { backgroundColor: color }]} />
+      <View style={[moneyFlowTrackerStyles.core, { backgroundColor: color }]} />
+    </Animated.View>
+  );
+}
+
 function MoneyMovementChart({
   moneyFlow,
   maximumFlow,
@@ -398,6 +466,7 @@ function MoneyMovementChart({
   const { responsiveFont, responsiveHeight, responsiveWidth } = useResponsiveLayout();
   const { width: windowWidth } = useWindowDimensions();
   const [activePointIndex, setActivePointIndex] = useState(0);
+  const [plotWidth, setPlotWidth] = useState(0);
   const chartGrid = [1, 0.75, 0.5, 0.25, 0];
   const chartData = useMemo(
     () => ({
@@ -418,24 +487,30 @@ function MoneyMovementChart({
     Math.max(moneyFlow.length - 1, 0),
   );
   const activePoint = moneyFlow[safePointIndex];
-  const chartViewportWidth = Math.max(windowWidth - 84, 240);
-  const chartWidth = Math.max(
-    Math.min(chartViewportWidth, 720),
-    moneyFlow.length * 42,
-  );
+  const yAxisWidth = responsiveWidth(34);
+  const fallbackChartWidth = Math.max(windowWidth - 84, 180);
+  const chartWidth = plotWidth > 0
+    ? Math.max(plotWidth - yAxisWidth, 1)
+    : fallbackChartWidth;
   const netCents = activePoint
     ? activePoint.moneyInCents - activePoint.moneyOutCents
     : 0;
 
   return (
     <>
-      <View style={styles.chartPlotRow}>
+      <View
+        onLayout={(event) => {
+          const nextWidth = Math.round(event.nativeEvent.layout.width);
+          setPlotWidth((currentWidth) => (currentWidth === nextWidth ? currentWidth : nextWidth));
+        }}
+        style={styles.chartPlotRow}
+      >
         <View
           style={[
             styles.moneyFlowYAxis,
             {
               height: responsiveHeight(178),
-              width: responsiveWidth(42),
+              width: yAxisWidth,
             },
           ]}
         >
@@ -444,101 +519,81 @@ function MoneyMovementChart({
               key={fraction}
               style={[
                 styles.yAxisLabel,
-                { fontSize: responsiveFont(8), lineHeight: 10 },
+                { fontSize: responsiveFont(7), lineHeight: 9 },
               ]}
             >
               {compactMoney(Math.round(maximumFlow * fraction))}
             </Text>
           ))}
         </View>
-        <ScrollView
-          contentContainerStyle={styles.chartScrollContent}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.chartScroll}
-        >
-          <View style={[styles.moneyFlowChartContent, { width: chartWidth }]}>
-            <View style={[styles.wagmiChart, { width: chartWidth }]}>
-              <LineChart.Provider
-                data={chartData}
-                onCurrentIndexChange={setActivePointIndex}
-                yRange={{ min: 0, max: chartValueMax }}
-              >
-                <LineChart.Group>
-                  <LineChart id="moneyIn" width={chartWidth} height={218}>
-                    <LineChart.Path color={theme.colors.scannerCyan} width={3}>
-                      <LineChart.Dot
-                        at={safePointIndex}
-                        color={theme.colors.scannerCyan}
-                        hasOuterDot
-                        outerSize={10}
-                        size={4}
-                      />
-                    </LineChart.Path>
-                  </LineChart>
-                  <LineChart id="moneyOut" width={chartWidth} height={218}>
-                    <LineChart.Path color={theme.colors.goldBright} width={3}>
-                      {chartGrid.map((fraction) => (
-                        <LineChart.HorizontalLine
-                          at={{ value: chartValueMax * fraction }}
-                          color={
-                            fraction === 0
-                              ? theme.colors.dividerStrong
-                              : theme.colors.divider
-                          }
-                          key={fraction}
-                          lineProps={{
-                            strokeDasharray: fraction === 0 ? undefined : '4 5',
-                            strokeWidth: fraction === 0 ? 2 : 1,
-                          }}
-                        />
-                      ))}
-                      <LineChart.Dot
-                        at={safePointIndex}
-                        color={theme.colors.goldBright}
-                        hasOuterDot
-                        outerSize={10}
-                        size={4}
-                      />
-                    </LineChart.Path>
-                    <LineChart.CursorLine
-                      color={theme.colors.goldBright}
-                      persistOnEnd
-                      showLabel={false}
-                      snapToPoint
-                    >
-                      <LineChart.Tooltip
-                        position="top"
-                        textProps={{ precision: 0 }}
-                        textStyle={{
-                          backgroundColor: theme.colors.surface,
-                          borderRadius: 8,
-                          color: theme.colors.text,
-                          fontSize: 10,
-                          padding: 6,
+        <View style={[styles.moneyFlowChartContent, { width: chartWidth }]}>
+          <View style={[styles.wagmiChart, { width: chartWidth }]}>
+            <LineChart.Provider
+              data={chartData}
+              onCurrentIndexChange={setActivePointIndex}
+              yRange={{ min: 0, max: chartValueMax }}
+            >
+              <LineChart.Group>
+                <LineChart id="moneyIn" width={chartWidth} height={218}>
+                  <LineChart.Path color={theme.colors.scannerCyan} width={3} />
+                  <MoneyFlowTrackerDot color={theme.colors.scannerCyan} index={safePointIndex} />
+                </LineChart>
+                <LineChart id="moneyOut" width={chartWidth} height={218}>
+                  <LineChart.Path color={theme.colors.goldBright} width={3}>
+                    {chartGrid.map((fraction) => (
+                      <LineChart.HorizontalLine
+                        at={{ value: chartValueMax * fraction }}
+                        color={
+                          fraction === 0
+                            ? theme.colors.dividerStrong
+                            : theme.colors.divider
+                        }
+                        key={fraction}
+                        lineProps={{
+                          strokeDasharray: fraction === 0 ? undefined : '4 5',
+                          strokeWidth: fraction === 0 ? 2 : 1,
                         }}
                       />
-                    </LineChart.CursorLine>
-                  </LineChart>
-                </LineChart.Group>
-              </LineChart.Provider>
-            </View>
-            <View style={[styles.chartAxisLabels, { width: chartWidth }]}>
-              {moneyFlow.map((bucket) => (
-                <Text
-                  key={bucket.key}
-                  numberOfLines={1}
-                  style={[
-                    styles.chartAxisLabel,
-                    { fontSize: responsiveFont(8) },
-                  ]}
-                >
-                  {bucket.label}
-                </Text>
-              ))}
-            </View>
+                    ))}
+                  </LineChart.Path>
+                  <LineChart.CursorLine
+                    color={theme.colors.goldBright}
+                    persistOnEnd
+                    showLabel={false}
+                    snapToPoint
+                  >
+                    <LineChart.Tooltip
+                      position="top"
+                      textProps={{ precision: 0 }}
+                      textStyle={{
+                        backgroundColor: theme.colors.surface,
+                        borderRadius: 8,
+                        color: theme.colors.text,
+                        fontSize: 10,
+                        padding: 6,
+                      }}
+                    />
+                  </LineChart.CursorLine>
+                  <MoneyFlowTrackerDot color={theme.colors.goldBright} index={safePointIndex} />
+                </LineChart>
+              </LineChart.Group>
+            </LineChart.Provider>
           </View>
-        </ScrollView>
+          <View style={[styles.chartAxisLabels, { width: chartWidth }]}>
+            {moneyFlow.map((bucket) => (
+              <Text
+                key={bucket.key}
+                numberOfLines={1}
+                style={[
+                  styles.chartAxisLabel,
+                  { fontSize: responsiveFont(8) },
+                ]}
+              >
+                {bucket.label}
+              </Text>
+            ))}
+          </View>
+        </View>
       </View>
       {activePoint ? (
         <View style={styles.selectedPointCard}>
@@ -990,12 +1045,10 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     rangeChipActive: { backgroundColor: theme.colors.iconSurfaceGold, borderColor: theme.colors.accentGoldBorder },
     rangeChipText: { color: theme.colors.textMuted, fontSize: 9, fontWeight: '900' },
     rangeChipTextActive: { color: theme.colors.goldBright },
-    chartPlotRow: { flexDirection: 'row', minHeight: 100 },
-    moneyFlowYAxis: { justifyContent: 'space-between', marginTop: 6, paddingRight: 6 },
-    moneyFlowChartContent: { minWidth: '100%' },
-    yAxisLabel: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '700', lineHeight: 10, textAlign: 'right' },
-    chartScroll: { flex: 1 },
-    chartScrollContent: { minWidth: '100%' },
+    chartPlotRow: { flexDirection: 'row', marginHorizontal: -10, minHeight: 100 },
+    moneyFlowYAxis: { justifyContent: 'space-between', marginTop: 6, paddingRight: 4 },
+    moneyFlowChartContent: { flexShrink: 0 },
+    yAxisLabel: { color: theme.colors.textMuted, fontSize: 7, fontWeight: '700', lineHeight: 9, textAlign: 'right' },
     splitRow: { flexDirection: 'row', gap: 8 },
     inventorySurface: { backgroundColor: theme.colors.iconSurfaceViolet, borderColor: theme.colors.accentVioletBorder, borderRadius: 12, borderWidth: 1, flex: 1, gap: 3, padding: 11 },
     costSurface: { backgroundColor: theme.colors.iconSurfaceGold, borderColor: theme.colors.accentGoldBorder, borderRadius: 12, borderWidth: 1, flex: 1, gap: 5, padding: 11 },
