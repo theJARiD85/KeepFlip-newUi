@@ -42,7 +42,7 @@ const NAME_STEP = 0;
 const TOUR_STEP = 1;
 const FIRST_QUESTION_STEP = 2;
 
-const FEATURE_TOUR: Array<{ detail: string; icon: IconName; label: string }> = [
+const FEATURE_TOUR: { detail: string; icon: IconName; label: string }[] = [
   {
     detail: 'Use item evidence to understand what you are looking at.',
     icon: 'barcode.viewfinder',
@@ -373,7 +373,7 @@ export function WebPreAuthScreen({
 
             {step === NAME_STEP ? (
               <View style={styles.stage}>
-                <Text style={[styles.eyebrow, { color: colors.goldBright }]}>LET'S MAKE THIS PERSONAL</Text>
+                <Text style={[styles.eyebrow, { color: colors.goldBright }]}>LET’S MAKE THIS PERSONAL</Text>
                 <Text style={[styles.title, { color: colors.text }]}>What should Flip call you?</Text>
                 <Text style={[styles.body, { color: colors.textMuted }]}>Your answer stays in your KeepFlip profile and helps make the advice feel like it is built for your business.</Text>
                 <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>YOUR NAME</Text>
@@ -480,7 +480,7 @@ export function WebPreAuthScreen({
                 <Text style={[styles.title, { color: colors.text }]}>This is your buying baseline.</Text>
                 <Text style={[styles.body, { color: colors.textMuted }]}>You can change these rules anytime. KeepFlip will use them to make its recommendations more useful from the first item onward.</Text>
                 <View style={[styles.summaryCard, { backgroundColor: colors.iconSurfaceViolet, borderColor: colors.accentVioletBorder }]}>
-                  <Text style={[styles.summaryName, { color: colors.text }]}>{name.trim()}'s flip rules</Text>
+                  <Text style={[styles.summaryName, { color: colors.text }]}>{`${name.trim()}'s flip rules`}</Text>
                   <Text style={[styles.summaryLine, { color: colors.goldBright }]}>{summary.line}</Text>
                   <Text style={[styles.summaryDetail, { color: colors.textMuted }]}>{summary.detail}</Text>
                 </View>

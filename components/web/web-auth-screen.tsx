@@ -130,7 +130,7 @@ export function WebAuthScreen({
               onPress={onBack}
               style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
             >
-              <Text style={[styles.backButtonText, { color: colors.scannerCyan }]}>← BACK TO FLIP'S SETUP</Text>
+              <Text style={[styles.backButtonText, { color: colors.scannerCyan }]}>← BACK TO FLIP SETUP</Text>
             </Pressable>
           ) : null}
 
