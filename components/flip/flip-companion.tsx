@@ -373,7 +373,7 @@ export function FlipCompanion({
         style={[StyleSheet.absoluteFill, firstVideoStyle]}>
         <VideoView
           player={playerA}
-          style={StyleSheet.absoluteFill}
+          style={[StyleSheet.absoluteFill, Platform.OS === 'web' && styles.webVideo]}
           nativeControls={false}
           contentFit={cropToSquare ? 'cover' : 'contain'}
           playsInline
@@ -386,7 +386,7 @@ export function FlipCompanion({
         style={[StyleSheet.absoluteFill, secondVideoStyle]}>
         <VideoView
           player={playerB}
-          style={StyleSheet.absoluteFill}
+          style={[StyleSheet.absoluteFill, Platform.OS === 'web' && styles.webVideo]}
           nativeControls={false}
           contentFit={cropToSquare ? 'cover' : 'contain'}
           playsInline
@@ -402,5 +402,9 @@ const styles = StyleSheet.create({
   container: {
     overflow: 'hidden',
     backgroundColor: '#08080c',
+  },
+  webVideo: {
+    width: '100%',
+    height: '100%',
   },
 });
