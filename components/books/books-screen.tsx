@@ -1,6 +1,6 @@
 import { File, Paths } from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
@@ -55,6 +55,10 @@ import {
   type ResellerLedgerEntry,
   type ResellerLedgerEntryType,
 } from '@/services/reseller-ledger-service';
+import {
+  KEEPFLIP_ANALYTICS_EVENTS,
+  trackKeepFlipEvent,
+} from '@/services/keepflip-analytics';
 
 type LedgerDraft = {
   amount: string;
@@ -349,6 +353,7 @@ function advancedEventTypeForLedgerEntry(
 
 export function BooksScreen() {
   const styles = useResponsiveStyles(createResponsiveStyles);
+  const router = useRouter();
   const {
     contentMaxWidth,
     contentWidth,
@@ -668,6 +673,10 @@ export function BooksScreen() {
         dialogTitle: 'Export KeepFlip Books',
         mimeType: 'text/csv',
       });
+      trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.exportedScheduleC, {
+        entry_count: entries.length,
+        inventory_count: inventory.length,
+      });
       setStatusMessage('Your Books CSV is ready to save or send.');
       hapticSuccess();
     } catch (caughtError) {
@@ -845,28 +854,45 @@ export function BooksScreen() {
 
         <Section
           action={
-            <Pressable
-              accessibilityHint={
-                scheduleCExportAllowed
-                  ? 'Creates a CSV of every recorded Books entry.'
-                  : 'Requires the Serious Reseller plan.'
-              }
-              accessibilityRole="button"
-              disabled={!entries.length || exporting}
-              onPress={() => void exportLedger()}
-              style={({ pressed }) => [
-                styles.exportButton,
-                (!entries.length || exporting) && styles.exportButtonDisabled,
-                pressed && entries.length > 0 && !exporting && styles.exportButtonPressed,
-              ]}>
-              {exporting ? (
-                <ActivityIndicator color={theme.colors.scannerCyan} size="small" />
-              ) : (
-                <Text style={[styles.exportButtonText, { fontSize: responsiveFont(8) }]}>
-                  {scheduleCExportAllowed ? 'EXPORT CSV' : 'SERIOUS CSV'}
-                </Text>
-              )}
-            </Pressable>
+            <View style={styles.ledgerActions}>
+              <Pressable
+                accessibilityHint="Opens every recorded Books transaction with search and filters."
+                accessibilityRole="button"
+                onPress={() => router.push('/books-records' as Href)}
+                style={({ pressed }) => [
+                  styles.recordsButton,
+                  pressed && styles.recordsButtonPressed,
+                ]}>
+                <IconSymbol
+                  color={theme.colors.scannerCyan}
+                  name="rectangle.stack.fill"
+                  size={14}
+                />
+                <Text style={[styles.exportButtonText, { fontSize: responsiveFont(8) }]}>ALL RECORDS</Text>
+              </Pressable>
+              <Pressable
+                accessibilityHint={
+                  scheduleCExportAllowed
+                    ? 'Creates a CSV of every recorded Books entry.'
+                    : 'Requires the Serious Reseller plan.'
+                }
+                accessibilityRole="button"
+                disabled={!entries.length || exporting}
+                onPress={() => void exportLedger()}
+                style={({ pressed }) => [
+                  styles.exportButton,
+                  (!entries.length || exporting) && styles.exportButtonDisabled,
+                  pressed && entries.length > 0 && !exporting && styles.exportButtonPressed,
+                ]}>
+                {exporting ? (
+                  <ActivityIndicator color={theme.colors.scannerCyan} size="small" />
+                ) : (
+                  <Text style={[styles.exportButtonText, { fontSize: responsiveFont(8) }]}>
+                    {scheduleCExportAllowed ? 'EXPORT CSV' : 'SERIOUS CSV'}
+                  </Text>
+                )}
+              </Pressable>
+            </View>
           }
           eyebrow="LEDGER"
           title="Recent activity">
@@ -1368,6 +1394,13 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 9,
       marginTop: 9,
     },
+    ledgerActions: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 7,
+      justifyContent: 'flex-end',
+    },
     primaryAction: {
       alignItems: 'center',
       backgroundColor: theme.colors.scannerCyan,
@@ -1541,6 +1574,18 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     exportButtonDisabled: { opacity: 0.35 },
     exportButtonPressed: { backgroundColor: theme.colors.iconSurfaceCyan },
+    recordsButton: {
+      alignItems: 'center',
+      borderColor: theme.colors.accentCyanBorder,
+      borderRadius: 8,
+      borderWidth: StyleSheet.hairlineWidth,
+      flexDirection: 'row',
+      gap: 5,
+      justifyContent: 'center',
+      minHeight: 32,
+      paddingHorizontal: 9,
+    },
+    recordsButtonPressed: { backgroundColor: theme.colors.iconSurfaceCyan },
     exportButtonText: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.radar,

@@ -16,6 +16,8 @@ import { KeepFlipAccountTabs } from '@/components/account/keepflip-account-tabs'
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { EbayShoppingBagIcon } from '@/components/ebay/ebay-shopping-bag-icon';
 import { useKeepFlipFeedbackNudge } from '@/components/feedback/keepflip-feedback-nudge';
+import { KeepFlipAppearancePicker } from '@/components/settings/keepflip-appearance-picker';
+import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
 import { KeepFlipSubscriptionScreen } from '@/components/subscription/keepflip-subscription-screen';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -75,6 +77,12 @@ function AccountDetailsTab() {
   const { isBusy, signOut, user } = useKeepFlipAuth();
   const { openFeedbackEmail, openStoreReview } = useKeepFlipFeedbackNudge();
   const {
+    effectiveColorScheme,
+    isLoading: appearanceLoading,
+    isSaving: appearanceSaving,
+    preference: appearancePreference,
+  } = useKeepFlipAppearance();
+  const {
     errorMessage: subscriptionError,
     snapshot: subscriptionSnapshot,
     state: subscriptionState,
@@ -85,6 +93,7 @@ function AccountDetailsTab() {
     useState<EbayConnectionStatusResult | null>(null);
   const [ebayConnectionLoading, setEbayConnectionLoading] = useState(false);
   const [ebayConnectionError, setEbayConnectionError] = useState<string | null>(null);
+  const [appearancePickerOpen, setAppearancePickerOpen] = useState(false);
 
   const userId = user?.$id;
 
@@ -179,6 +188,12 @@ function AccountDetailsTab() {
             : subscriptionState === 'unconfigured'
               ? { label: 'SETUP', tone: 'muted' as const }
               : { label: 'NO PLAN', tone: 'muted' as const };
+
+  const appearanceDescription =
+    appearancePreference === 'system'
+      ? `Follows your device appearance. It is ${effectiveColorScheme} right now.`
+      : `Uses ${appearancePreference} mode even when your device uses a different appearance.`;
+  const appearanceStatusLabel = appearancePreference.toUpperCase();
 
   const ebayStatus = ebayConnectionError
     ? { label: 'CHECK', tone: 'danger' as const }
@@ -379,6 +394,61 @@ function AccountDetailsTab() {
 
         <Animated.View entering={FadeInDown.duration(260).delay(170)} style={styles.section}>
           <View style={styles.sectionHeading}>
+            <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>KEEPFLIP ACCESS</Text>
+            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>Tools & preferences</Text>
+          </View>
+          <View style={styles.settingsList}>
+            <KeepFlipControlRow
+              accent="violet"
+              accessibilityHint="Opens editable memories and response guidance for Flip."
+              description="Edit what Flip remembers and the specifics it should consider in responses and suggestions."
+              icon="bolt.fill"
+              label="AI preferences"
+              onPress={() => {
+                hapticSelection();
+                router.push('/ai-preferences' as Href);
+              }}
+            />
+            <KeepFlipControlRow
+              actionBusy={appearanceLoading || appearanceSaving}
+              actionLabel="CHANGE"
+              accessibilityHint="Opens options for using the device setting, light mode, or dark mode."
+              description={appearanceDescription}
+              icon="eye.fill"
+              label="Appearance"
+              onPress={() => {
+                hapticSelection();
+                setAppearancePickerOpen(true);
+              }}
+              status={{
+                label: appearanceStatusLabel,
+                tone: appearancePreference === 'light' ? 'active' : 'violet',
+              }}
+            />
+            <KeepFlipControlRow
+              accent="cyan"
+              accessibilityHint="Replays the scan, analysis, and inventory walkthrough."
+              description="Revisit the first-item walkthrough with the real scanner."
+              icon="viewfinder"
+              label="Scanner walkthrough"
+              onPress={() => {
+                hapticSelection();
+                router.push('/walkthrough' as Href);
+              }}
+            />
+            <KeepFlipControlRow
+              accent="cyan"
+              accessibilityHint="Opens an email to KeepFlip support."
+              description="Contact KeepFlip support for your account or the app."
+              icon="envelope.fill"
+              label="Get help"
+              onPress={() => void handleOpenFeedback()}
+            />
+          </View>
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.duration(260).delay(195)} style={styles.section}>
+          <View style={styles.sectionHeading}>
             <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>LEGAL & POLICY</Text>
             <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>Your data and terms</Text>
           </View>
@@ -407,7 +477,7 @@ function AccountDetailsTab() {
           </View>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.duration(260).delay(195)} style={styles.section}>
+        <Animated.View entering={FadeInDown.duration(260).delay(220)} style={styles.section}>
           <View style={styles.sectionHeading}>
             <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>SUPPORT</Text>
             <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>Feedback & reviews</Text>
@@ -476,6 +546,11 @@ function AccountDetailsTab() {
           </Text>
         </View>
       </ScrollView>
+
+      <KeepFlipAppearancePicker
+        onClose={() => setAppearancePickerOpen(false)}
+        visible={appearancePickerOpen}
+      />
     </KeepFlipBackground>
   );
 }

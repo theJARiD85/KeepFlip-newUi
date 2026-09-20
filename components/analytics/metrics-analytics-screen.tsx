@@ -6,9 +6,11 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { LineChart } from 'react-native-wagmi-charts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
@@ -45,7 +47,6 @@ import {
   type SellerOrder,
 } from '@/services/seller-order-service';
 
-const MAX_SELECTED_METRICS = 3;
 const MAX_EBAY_ORDER_PAGES = 5;
 
 const DIMENSIONS: { id: SellerAnalyticsDimension; label: string }[] = [
@@ -57,35 +58,30 @@ const DIMENSIONS: { id: SellerAnalyticsDimension; label: string }[] = [
 const METRICS: {
   id: SellerAnalyticsMetric;
   label: string;
-  shortLabel: string;
   description: string;
   accent: 'scannerCyan' | 'goldBright' | 'scannerViolet' | 'goldMuted';
 }[] = [
   {
     id: 'roi',
     label: 'Average ROI',
-    shortLabel: 'ROI',
     description: 'Average realized return on recorded acquisition cost.',
     accent: 'scannerCyan',
   },
   {
     id: 'profit',
     label: 'Net profit',
-    shortLabel: 'Profit',
     description: 'Realized profit across cost-confirmed items.',
     accent: 'goldBright',
   },
   {
     id: 'listingDays',
     label: 'Days listed',
-    shortLabel: 'Days listed',
     description: 'Time from listing to sale, or current listing age.',
     accent: 'scannerViolet',
   },
   {
     id: 'soldUnits',
     label: 'Units sold',
-    shortLabel: 'Units',
     description: 'Units in matched manual and eBay orders.',
     accent: 'goldMuted',
   },
@@ -127,13 +123,6 @@ function formatMetricValue(metric: SellerAnalyticsMetric, value: number) {
   if (metric === 'profit') return formatMoney(value);
   if (metric === 'listingDays') return `${value.toFixed(1)} days`;
   return `${Math.round(value)} ${Math.round(value) === 1 ? 'unit' : 'units'}`;
-}
-
-function formatAxisValue(metric: SellerAnalyticsMetric, value: number) {
-  if (metric === 'roi') return `${Math.round(value)}%`;
-  if (metric === 'profit') return formatMoney(value);
-  if (metric === 'listingDays') return `${Math.round(value)}d`;
-  return `${Math.round(value)}`;
 }
 
 function performanceInputs(
@@ -243,15 +232,32 @@ function ChartCard({
   responsiveFont: (size: number) => number;
 }) {
   const styles = useMetricsStyles();
+  const { width: windowWidth } = useWindowDimensions();
   const allValues = groups
     .map((group) => ({ group, value: group.metrics[metric.id] }))
     .filter((entry): entry is { group: SellerAnalyticsGroup; value: number } => entry.value !== null);
   const values = [...allValues]
     .sort((left, right) => Math.abs(right.value) - Math.abs(left.value))
     .slice(0, 8);
-  const maxAbs = Math.max(1, ...values.map(({ value }) => Math.abs(value)));
-  const hasNegative = values.some(({ value }) => value < 0);
-  const positiveColor = getMetricAccent(metric);
+  const chartData = values.map(({ group, value }, index) => ({
+    timestamp: Date.UTC(2024, 0, index + 1),
+    value: metric.id === 'profit' ? value / 100 : value,
+    group,
+  }));
+  const chartValues = chartData.map(({ value }) => value);
+  const chartMin = Math.min(0, ...chartValues);
+  const chartMax = Math.max(0, ...chartValues);
+  const chartRange = Math.max(chartMax - chartMin, 1);
+  const chartPadding = chartRange * 0.14;
+  const chartWidth = Math.min(Math.max(windowWidth - 64, 230), 720);
+  const [activeIndex, setActiveIndex] = useState(Math.max(0, values.length - 1));
+
+  useEffect(() => {
+    setActiveIndex(Math.max(0, values.length - 1));
+  }, [metric.id, values.length]);
+
+  const selectedIndex = Math.min(Math.max(activeIndex, 0), Math.max(values.length - 1, 0));
+  const selectedEntry = values[selectedIndex];
 
   let summary = 'No data yet';
   if (allValues.length) {
@@ -287,36 +293,59 @@ function ChartCard({
 
       {values.length ? (
         <View style={styles.chartRows}>
-          {values.map(({ group, value }) => {
-            const width = Math.max(1, (Math.abs(value) / maxAbs) * 50);
-            const negative = value < 0;
-            return (
-              <View key={group.key} style={styles.chartRow}>
-                <Text numberOfLines={1} style={styles.chartLabel}>{group.label}</Text>
-                <View style={styles.track}>
-                  <View style={styles.trackCenter} />
-                  <View
-                    style={[
-                      styles.bar,
-                      {
-                        backgroundColor: negative ? theme.colors.danger : positiveColor,
-                        left: negative ? `${50 - width}%` : '50%',
-                        width: `${width}%`,
-                      },
-                    ]}
-                  />
-                </View>
-                <Text selectable style={[styles.chartValue, { fontSize: responsiveFont(10) }]}>
-                  {formatMetricValue(metric.id, value)}
-                </Text>
-              </View>
-            );
-          })}
-          <View style={styles.axisRow}>
-            <Text style={styles.axisText}>{hasNegative ? formatAxisValue(metric.id, -maxAbs) : ''}</Text>
-            <Text style={styles.axisText}>0</Text>
-            <Text style={styles.axisText}>{formatAxisValue(metric.id, maxAbs)}</Text>
+          <LineChart.Provider
+            data={chartData}
+            onCurrentIndexChange={setActiveIndex}
+            yRange={{ min: chartMin - chartPadding, max: chartMax + chartPadding }}
+          >
+            <LineChart width={chartWidth} height={220}>
+              <LineChart.Path color={getMetricAccent(metric)} width={3}>
+                <LineChart.Gradient color={getMetricAccent(metric)} />
+                <LineChart.HorizontalLine at={{ value: 0 }} color={theme.colors.dividerStrong} />
+                <LineChart.Dot
+                  at={selectedIndex}
+                  color={getMetricAccent(metric)}
+                  hasOuterDot
+                  outerSize={9}
+                  size={4}
+                />
+              </LineChart.Path>
+              <LineChart.CursorLine color={theme.colors.textMuted} persistOnEnd>
+                <LineChart.Tooltip
+                  position="top"
+                  textProps={{ precision: metric.id === 'profit' ? 0 : 1 }}
+                  textStyle={{ color: theme.colors.text, fontSize: 11, fontWeight: '800' }}
+                />
+              </LineChart.CursorLine>
+            </LineChart>
+          </LineChart.Provider>
+
+          <View style={styles.chartAxisLabels}>
+            <Text numberOfLines={1} style={styles.chartAxisLabel}>{values[0]?.group.label}</Text>
+            {values.length > 2 ? (
+              <Text numberOfLines={1} style={[styles.chartAxisLabel, styles.chartAxisLabelCenter]}>
+                {values[Math.floor((values.length - 1) / 2)]?.group.label}
+              </Text>
+            ) : null}
+            {values.length > 1 ? (
+              <Text numberOfLines={1} style={[styles.chartAxisLabel, styles.chartAxisLabelRight]}>
+                {values[values.length - 1]?.group.label}
+              </Text>
+            ) : null}
           </View>
+
+          {selectedEntry ? (
+            <View style={styles.selectedPointCard}>
+              <Text style={styles.selectedPointLabel}>{selectedEntry.group.label}</Text>
+              <Text selectable style={[styles.selectedPointValue, { fontSize: responsiveFont(18) }]}>
+                {formatMetricValue(metric.id, selectedEntry.value)}
+              </Text>
+              <Text style={styles.selectedPointDetail}>
+                {selectedEntry.group.itemCount} {selectedEntry.group.itemCount === 1 ? 'item' : 'items'} in this group
+              </Text>
+            </View>
+          ) : null}
+
           {groups.length > values.length ? (
             <Text style={styles.chartFootnote}>Showing the 8 largest groups by magnitude.</Text>
           ) : null}
@@ -337,7 +366,7 @@ function ChartCard({
   );
 }
 
-export function MetricsAnalyticsScreen() {
+export function MetricsAnalyticsScreen({ embedded = false }: { embedded?: boolean } = {}) {
   const styles = useMetricsStyles();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -359,7 +388,8 @@ export function MetricsAnalyticsScreen() {
   const [financialDataState, setFinancialDataState] = useState<FinancialDataState>('unavailable');
   const [dimension, setDimension] = useState<SellerAnalyticsDimension>('category');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
-  const [selectedMetrics, setSelectedMetrics] = useState<SellerAnalyticsMetric[]>(['roi', 'listingDays']);
+  const [activeMetric, setActiveMetric] = useState<SellerAnalyticsMetric>('roi');
+  const [metricPickerOpen, setMetricPickerOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const loadAnalytics = useCallback(async () => {
@@ -499,16 +529,7 @@ export function MetricsAnalyticsScreen() {
     [inventory],
   );
 
-  function toggleMetric(metric: SellerAnalyticsMetric) {
-    hapticSelection();
-    setSelectedMetrics((current) => {
-      if (current.includes(metric)) return current.filter((candidate) => candidate !== metric);
-      if (current.length >= MAX_SELECTED_METRICS) return current;
-      return [...current, metric];
-    });
-  }
-
-  const chartMetrics = METRICS.filter((metric) => selectedMetrics.includes(metric.id));
+  const activeMetricDefinition = METRICS.find((metric) => metric.id === activeMetric) ?? METRICS[0];
   const inventoryIds = useMemo(() => new Set(inventory.map((item) => item.id)), [inventory]);
   const totalSoldUnits = orders.reduce(
     (total, order) =>
@@ -517,26 +538,18 @@ export function MetricsAnalyticsScreen() {
   );
   const activeListings = inventory.filter((item) => item.isListed).length;
 
-  return (
-    <KeepFlipBackground>
+  const analyticsContent = (
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top + 15, paddingBottom: insets.bottom + 30 },
+          {
+            paddingBottom: insets.bottom + 30,
+            paddingTop: embedded ? 15 : insets.top + 15,
+          },
         ]}
-        style={{marginTop: insets.top, marginBottom: insets.bottom}}
-        contentInsetAdjustmentBehavior="automatic"
+        contentInsetAdjustmentBehavior={embedded ? 'never' : 'automatic'}
+        style={embedded ? undefined : { marginBottom: insets.bottom, marginTop: insets.top }}
         showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <View style={styles.headerCopy}>
-            <Text style={[styles.eyebrow, { fontSize: responsiveFont(10)}]}>KEEPFLIP / PERFORMANCE</Text>
-            <Text accessibilityRole="header" style={[styles.title, { fontSize: responsiveFont(26) }]}>
-              Inventory analytics
-            </Text>
-            <Text style={[styles.intro, { fontSize: responsiveFont(12), fontFamily: theme.fonts.body }]}>Compare how your flips perform across categories, sourcing channels, and item condition.</Text>
-          </View>
-        </View>
-
         {loadState === 'checking' || loading ? (
           <View style={styles.loadingCard}>
             <ActivityIndicator color={theme.colors.scannerCyan} />
@@ -646,45 +659,71 @@ export function MetricsAnalyticsScreen() {
               </ScrollView>
 
               <View style={styles.divider} />
-              <View style={styles.metricSelectionHeading}>
-                <View>
-                  <Text style={styles.sectionEyebrow}>METRICS</Text>
-                  <Text accessibilityRole="header" style={styles.sectionTitle}>Show up to 3</Text>
+              <Text style={styles.sectionEyebrow}>CHART</Text>
+              <Text accessibilityRole="header" style={styles.sectionTitle}>Choose a metric</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ expanded: metricPickerOpen }}
+                onPress={() => setMetricPickerOpen((open) => !open)}
+                style={({ pressed }) => [
+                  styles.metricPickerTrigger,
+                  pressed && styles.pillPressed,
+                ]}
+              >
+                <View style={styles.metricPickerCopy}>
+                  <View style={[styles.metricPickerDot, { backgroundColor: getMetricAccent(activeMetricDefinition) }]} />
+                  <View style={styles.metricPickerTextBlock}>
+                    <Text style={styles.metricPickerLabel}>{activeMetricDefinition.label}</Text>
+                    <Text style={styles.metricPickerDescription}>{activeMetricDefinition.description}</Text>
+                  </View>
                 </View>
-                <Text style={styles.selectionCount}>{selectedMetrics.length}/{MAX_SELECTED_METRICS}</Text>
-              </View>
-              <Text style={styles.selectionHint}>
-                {selectedMetrics.length === MAX_SELECTED_METRICS
-                  ? 'Three selected. Turn one off to choose a different metric.'
-                  : 'Pick up to 3 so you can compare the charts together.'}
-              </Text>
-              <View style={styles.pillWrap}>
-                {METRICS.map((metric) => (
-                  <MetricPill
-                    key={metric.id}
-                    color={getMetricAccent(metric)}
-                    selected={selectedMetrics.includes(metric.id)}
-                    title={metric.shortLabel}
-                    onPress={() => toggleMetric(metric.id)}
-                  />
-                ))}
-              </View>
+                <IconSymbol
+                  color={theme.colors.textMuted}
+                  name="chevron.right"
+                  size={16}
+                  style={metricPickerOpen ? { transform: [{ rotate: '90deg' }] } : undefined}
+                />
+              </Pressable>
+              {metricPickerOpen ? (
+                <View style={styles.metricPickerMenu}>
+                  {METRICS.map((metric) => {
+                    const selected = activeMetric === metric.id;
+                    return (
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                        key={metric.id}
+                        onPress={() => {
+                          hapticSelection();
+                          setActiveMetric(metric.id);
+                          setMetricPickerOpen(false);
+                        }}
+                        style={({ pressed }) => [
+                          styles.metricPickerOption,
+                          selected && styles.metricPickerOptionSelected,
+                          pressed && styles.pillPressed,
+                        ]}
+                      >
+                        <View style={[styles.metricPickerDot, { backgroundColor: getMetricAccent(metric) }]} />
+                        <View style={styles.metricPickerTextBlock}>
+                          <Text style={styles.metricPickerOptionTitle}>{metric.label}</Text>
+                          <Text style={styles.metricPickerDescription}>{metric.description}</Text>
+                        </View>
+                        {selected ? (
+                          <IconSymbol color={theme.colors.scannerCyan} name="checkmark" size={16} />
+                        ) : null}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ) : null}
             </View>
 
-            {selectedMetrics.length === 0 ? (
-              <View style={styles.messageCard}>
-                <Text style={styles.chartEmptyText}>Choose at least one metric above to build your chart.</Text>
-              </View>
-            ) : (
-              chartMetrics.map((metric) => (
-                <ChartCard
-                  key={metric.id}
-                  metric={metric}
-                  groups={groups}
-                  responsiveFont={responsiveFont}
-                />
-              ))
-            )}
+            <ChartCard
+              metric={activeMetricDefinition}
+              groups={groups}
+              responsiveFont={responsiveFont}
+            />
 
             <View style={styles.dataNote}>
               <IconSymbol color={theme.colors.scannerCyan} name="checkmark.shield.fill" size={16} />
@@ -706,8 +745,9 @@ export function MetricsAnalyticsScreen() {
           </>
         ) : null}
       </ScrollView>
-    </KeepFlipBackground>
   );
+
+  return embedded ? analyticsContent : <KeepFlipBackground>{analyticsContent}</KeepFlipBackground>;
 }
 
 function createMetricsStyles() {
@@ -859,6 +899,44 @@ function createMetricsStyles() {
   pillTextSelected: { color: theme.colors.text },
   pillDetail: { color: theme.colors.textMuted, fontSize: 9 },
   divider: { backgroundColor: theme.colors.divider, height: StyleSheet.hairlineWidth, marginVertical: 2 },
+  metricPickerTrigger: {
+    alignItems: 'center',
+    backgroundColor: theme.colors.surfaceInset,
+    borderColor: theme.colors.dividerStrong,
+    borderCurve: 'continuous',
+    borderRadius: 13,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 9,
+    justifyContent: 'space-between',
+    minHeight: 56,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+  metricPickerCopy: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 9 },
+  metricPickerTextBlock: { flex: 1, gap: 2 },
+  metricPickerDot: { borderRadius: 5, height: 10, width: 10 },
+  metricPickerLabel: { color: theme.colors.text, fontSize: 11, fontWeight: '900' },
+  metricPickerDescription: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 13 },
+  metricPickerMenu: {
+    backgroundColor: theme.colors.surfaceOverlay,
+    borderColor: theme.colors.dividerStrong,
+    borderRadius: 13,
+    borderWidth: 1,
+    gap: 4,
+    padding: 5,
+  },
+  metricPickerOption: {
+    alignItems: 'center',
+    borderRadius: 9,
+    flexDirection: 'row',
+    gap: 9,
+    minHeight: 48,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
+  },
+  metricPickerOptionSelected: { backgroundColor: theme.colors.iconSurfaceCyan },
+  metricPickerOptionTitle: { color: theme.colors.text, fontSize: 10, fontWeight: '800' },
   metricSelectionHeading: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   selectionCount: { color: theme.colors.scannerCyan, fontSize: 10, fontVariant: ['tabular-nums'], fontWeight: '800' },
   selectionHint: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 14 },
@@ -878,6 +956,27 @@ function createMetricsStyles() {
   chartSummary: { color: theme.colors.text, fontSize: 10, fontVariant: ['tabular-nums'], fontWeight: '800' },
   chartDescription: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 14 },
   chartRows: { gap: 10, paddingTop: 4 },
+  wagmiChart: {
+    backgroundColor: theme.colors.card,
+    borderRadius: 13,
+    overflow: 'hidden',
+  },
+  chartAxisLabels: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, paddingHorizontal: 4 },
+  chartAxisLabel: { color: theme.colors.textMuted, flex: 1, fontSize: 8 },
+  chartAxisLabelCenter: { textAlign: 'center' },
+  chartAxisLabelRight: { textAlign: 'right' },
+  selectedPointCard: {
+    backgroundColor: theme.colors.surfaceInset,
+    borderColor: theme.colors.dividerStrong,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 2,
+    paddingHorizontal: 11,
+    paddingVertical: 9,
+  },
+  selectedPointLabel: { color: theme.colors.goldMuted, fontSize: 8, fontWeight: '900', letterSpacing: 0.6 },
+  selectedPointValue: { color: theme.colors.text, fontVariant: ['tabular-nums'], fontWeight: '900' },
+  selectedPointDetail: { color: theme.colors.textMuted, fontSize: 9 },
   chartRow: { alignItems: 'center', flexDirection: 'row', gap: 7, minHeight: 25 },
   chartLabel: { color: theme.colors.textMuted, fontSize: 9, width: 78 },
   track: {

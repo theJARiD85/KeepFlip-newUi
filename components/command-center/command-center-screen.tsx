@@ -19,8 +19,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { BusinessPulse } from '@/components/command-center/business-pulse';
 import { SellerOperationsPanel } from '@/components/command-center/seller-operations-panel';
-import { KeepFlipAppearancePicker } from '@/components/settings/keepflip-appearance-picker';
-import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import {
@@ -32,7 +30,6 @@ import {
   KeepFlipTextInput as TextInput,
 } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { openKeepFlipSupportEmail } from '@/lib/keepflip-feedback';
 import { responsiveWidth } from '@/lib/responsiveFont';
 import { withAlpha } from '@/lib/withAlpha';
 import {
@@ -247,17 +244,10 @@ export function CommandCenterScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useKeepFlipAuth();
   const { canUse } = useKeepFlipSubscription();
-  const {
-    effectiveColorScheme,
-    isLoading: appearanceLoading,
-    isSaving: appearanceSaving,
-    preference: appearancePreference,
-  } = useKeepFlipAppearance();
   const bookkeepingFunctionConfigured = isResellerBookkeepingConfigured();
   const advancedBooksAllowed = canUse('automated_books');
   const advancedBookkeepingConfigured =
     bookkeepingFunctionConfigured && advancedBooksAllowed;
-  const [supportError, setSupportError] = useState<string | null>(null);
   const [eBayState, setEbayState] =
     useState<EbayConnectionViewState>('checking');
   const [eBayErrorMessage, setEbayErrorMessage] = useState<string | null>(null);
@@ -281,7 +271,6 @@ export function CommandCenterScreen() {
   const [reviewQuantity, setReviewQuantity] = useState('1');
   const [reviewResolving, setReviewResolving] = useState(false);
   const [reviewActionMessage, setReviewActionMessage] = useState<string | null>(null);
-  const [appearancePickerOpen, setAppearancePickerOpen] = useState(false);
   const [commandCenterTab, setCommandCenterTab] =
     useState<CommandCenterTab>('pulse');
   const shouldOpenReviewQueue = Array.isArray(openReviewQueueParam)
@@ -597,14 +586,12 @@ export function CommandCenterScreen() {
   }, [activeReview?.itemId, inventoryItems, reviewItemSearch]);
 
   useEffect(() => {
-    const message =
-      supportError ??
-      (eBayState === 'error' ? eBayErrorMessage : null);
+    const message = eBayState === 'error' ? eBayErrorMessage : null;
 
     if (message && Platform.OS === 'ios') {
       AccessibilityInfo.announceForAccessibility(message);
     }
-  }, [eBayErrorMessage, eBayState, supportError]);
+  }, [eBayErrorMessage, eBayState]);
 
   useEffect(() => {
     if (!user?.$id) return;
@@ -709,25 +696,6 @@ export function CommandCenterScreen() {
     }
   };
 
-  const handleOpenSupport = async () => {
-    hapticSelection();
-    setSupportError(null);
-
-    try {
-      await openKeepFlipSupportEmail();
-    } catch {
-      setSupportError(
-        'Your device could not open email. Contact support@keep-flip.com for help.',
-      );
-    }
-  };
-
-  const appearanceDescription =
-    appearancePreference === 'system'
-      ? `Follows your device appearance. It is ${effectiveColorScheme} right now.`
-      : `Uses ${appearancePreference} mode even when your device uses a different appearance.`;
-  const appearanceStatusLabel = appearancePreference.toUpperCase();
-
   return (
     <KeepFlipBackground>
       <View style={{marginBottom: insets.bottom, marginTop: insets.top}}>
@@ -792,10 +760,6 @@ export function CommandCenterScreen() {
             onOpenFlipPlan={() => {
               hapticSelection();
               router.push('/flip-plan' as Href);
-            }}
-            onOpenInventory={() => {
-              hapticSelection();
-              router.push('/inventory' as Href);
             }}
             overview={businessOverview}
           />
@@ -924,118 +888,8 @@ export function CommandCenterScreen() {
                 router.push('/books' as Href);
               }}
             />
-            <KeepFlipControlRow
-              accent="cyan"
-              accessibilityHint="Opens your saved inventory."
-              description="Review saved finds, market analysis, and item records."
-              icon="shippingbox.fill"
-              label="Inventory & data"
-              onPress={() => {
-                hapticSelection();
-                router.push('/inventory' as Href);
-              }}
-            />
-            <KeepFlipControlRow
-              accent="violet"
-              accessibilityHint="Opens detailed, selectable charts for your inventory and sales metrics."
-              description="Compare ROI, listing time, net profit, and units sold by category, source, or condition."
-              icon="chart.bar.fill"
-              label="Inventory analytics"
-              onPress={() => {
-                hapticSelection();
-                router.push('/analytics' as Href);
-              }}
-            />
           </View>
         </Animated.View>
-
-        <Animated.View entering={FadeInDown.duration(260).delay(135)} style={styles.section}>
-          <View style={styles.sectionHeading}>
-            <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>WORKSPACE</Text>
-            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>KeepFlip controls</Text>
-          </View>
-          <View style={styles.settingsList}>
-            <KeepFlipControlRow
-              accent="violet"
-              accessibilityHint="Opens editable memories and response guidance for Flip."
-              description="Edit what Flip remembers and the specifics it should consider in responses and suggestions."
-              icon="bolt.fill"
-              label="AI preferences"
-              onPress={() => {
-                hapticSelection();
-                router.push('/ai-preferences' as Href);
-              }}
-            />
-            <KeepFlipControlRow
-              accent="cyan"
-              description="Seller alerts and scan updates are being prepared."
-              icon="envelope.fill"
-              label="Notifications"
-              staticLabel="COMING SOON"
-            />
-            <KeepFlipControlRow
-              actionBusy={appearanceLoading || appearanceSaving}
-              actionLabel="CHANGE"
-              icon="eye.fill"
-              label="Appearance"
-              accessibilityHint="Opens options for using the device setting, light mode, or dark mode."
-              description={appearanceDescription}
-              onPress={() => {
-                hapticSelection();
-                setAppearancePickerOpen(true);
-              }}
-              status={{
-                label: appearanceStatusLabel,
-                tone: appearancePreference === 'light' ? 'active' : 'violet',
-              }}
-            />
-          </View>
-        </Animated.View>
-
-        <Animated.View entering={FadeInDown.duration(260).delay(180)} style={styles.section}>
-          <View style={styles.sectionHeading}>
-            <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>ACCOUNT & HELP</Text>
-            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>Your KeepFlip access</Text>
-          </View>
-          <View style={styles.settingsList}>
-            <KeepFlipControlRow
-              accent="violet"
-              accessibilityHint="Opens your identity, security, privacy, and session controls."
-              description="Profile, security, legal controls, and this device session."
-              icon="person.crop.circle.fill"
-              label="Account & access"
-              onPress={() => {
-                hapticSelection();
-                router.push('/account' as Href);
-              }}
-            />
-            <KeepFlipControlRow
-              accent="cyan"
-              accessibilityHint="Replays the scan, analysis, and inventory walkthrough."
-              description="Revisit the first-item walkthrough with the real scanner."
-              icon="viewfinder"
-              label="Scanner walkthrough"
-              onPress={() => {
-                hapticSelection();
-                router.push('/walkthrough' as Href);
-              }}
-            />
-            <KeepFlipControlRow
-              accent="cyan"
-              accessibilityHint="Opens an email to KeepFlip support."
-              description="Contact KeepFlip support for your account or the app."
-              icon="envelope.fill"
-              label="Get help"
-              onPress={() => void handleOpenSupport()}
-            />
-          </View>
-        </Animated.View>
-
-        {supportError ? (
-          <Text accessibilityLiveRegion="polite" selectable style={[styles.errorText, { fontSize: responsiveFont(11) }]}>
-            {supportError}
-          </Text>
-        ) : null}
           </>
         )}
       </ScrollView>
@@ -1294,10 +1148,6 @@ export function CommandCenterScreen() {
               </View>
         </View>
       </Modal>
-      <KeepFlipAppearancePicker
-        onClose={() => setAppearancePickerOpen(false)}
-        visible={appearancePickerOpen}
-      />
       </View>
     </KeepFlipBackground>
   );

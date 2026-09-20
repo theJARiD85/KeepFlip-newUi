@@ -15,6 +15,10 @@ import {
   type ItemMarketResaleVelocity,
 } from '@/types/item-analysis';
 import type { EbayListingImportCandidate } from '@/types/ebay-listing-import';
+import {
+  KEEPFLIP_ANALYTICS_EVENTS,
+  trackKeepFlipEvent,
+} from '@/services/keepflip-analytics';
 import { trackTenjinEvent } from '@/services/tenjin-attribution-service';
 
 const ANALYSIS_SNAPSHOT_COLUMN = 'analysisSnapshotJson';
@@ -952,6 +956,11 @@ export async function saveAnalyzedItemToInventory({
   }
 
   trackTenjinEvent('inventory_item_saved');
+  trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.addedInventoryItem, {
+    has_acquisition_cost: acquisitionCostCents != null,
+    quantity: normalizedQuantity,
+    source: 'scanner',
+  });
 
   let attached;
   try {
@@ -1329,6 +1338,11 @@ export async function createImportedEbayInventoryItem({
     throw error;
   }
 
+  trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.addedInventoryItem, {
+    has_acquisition_cost: false,
+    quantity: quantityOnHand,
+    source: 'ebay_import',
+  });
   return rowToInventoryItem({
     ...created,
     quantityPurchased: 1,
@@ -1568,12 +1582,18 @@ export async function deleteInventoryItem(
         }),
       ),
   );
+  const photoFileDeleteFailures = fileDeleteResults.filter(
+    (result) => result.status === 'rejected',
+  ).length;
+
+  trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.deletedInventoryItem, {
+    deleted_photo_count: photoRows.length,
+    photo_file_delete_failures: photoFileDeleteFailures,
+  });
 
   return {
     itemId: cleanItemId,
     deletedPhotoCount: photoRows.length,
-    photoFileDeleteFailures: fileDeleteResults.filter(
-      (result) => result.status === 'rejected',
-    ).length,
+    photoFileDeleteFailures,
   };
 }

@@ -45,9 +45,6 @@ const destinations: MenuDestination[] = [
   },
   { eyebrow: 'IDENTIFY & VALUE', href: '/scanner' as Href, icon: 'viewfinder', label: 'Scanner' },
   { eyebrow: 'YOUR SAVED FINDS', href: '/inventory', icon: 'shippingbox.fill', label: 'Inventory' },
-  { eyebrow: 'SEE WHAT WORKS', href: '/analytics' as Href, icon: 'chart.bar.fill', label: 'Analytics' },
-  { eyebrow: 'STAY IN THE LOOP', href: '/notifications', icon: 'envelope.fill', label: 'Notifications' },
-
 ];
 
 const MENU_BACKGROUND_DARK = `
@@ -77,13 +74,8 @@ function isDestinationActive(destinationPath: string, pathname: string) {
     return (
       pathname === '/' ||
       pathname === '/command-center' ||
-      pathname === '/books' ||
-      pathname === '/account'
+      pathname === '/books'
     );
-  }
-
-  if (destinationPath === '/notifications') {
-    return pathname.startsWith('/notifications');
   }
 
   return pathname.startsWith(destinationPath);
@@ -189,6 +181,15 @@ export function KeepFlipSlideDownMenu() {
     }
   };
 
+  const handleQuickNavigate = (destination: '/account' | '/notifications') => {
+    if (isMenuDisabled) return;
+    hapticSelection();
+    closeMenu();
+    if (!pathname.startsWith(destination)) {
+      requestAnimationFrame(() => router.replace(destination as Href));
+    }
+  };
+
   const handleEbayNavigate = (isConnected: boolean) => {
     if (isMenuDisabled) return;
     hapticSelection();
@@ -254,21 +255,49 @@ export function KeepFlipSlideDownMenu() {
                   </View>
                 </View>
 
-                <Pressable
-                  accessibilityLabel="Close navigation menu"
-                  accessibilityRole="button"
-                  hitSlop={10}
-                  onPress={closeMenu}
-                  style={({ pressed }) => [
-                    styles.closeButton,
-                    pressed && styles.controlPressed,
-                  ]}>
-                  <IconSymbol name="xmark" size={22} color={theme.colors.goldBright} />
-                </Pressable>
+                <View style={styles.brandActions}>
+                  <Pressable
+                    accessibilityLabel="Close navigation menu"
+                    accessibilityRole="button"
+                    hitSlop={10}
+                    onPress={closeMenu}
+                    style={({ pressed }) => [
+                      styles.closeButton,
+                      pressed && styles.controlPressed,
+                    ]}>
+                    <IconSymbol name="xmark" size={22} color={theme.colors.goldBright} />
+                  </Pressable>
+                </View>
               </View>
 
               <View pointerEvents="none" style={styles.goldRail} />
-
+              <View style={{flexDirection: 'row', justifyContent: 'center', gap: 16, backgroundColor: 'transparent'}}>
+                <Pressable
+                    onPress={() => handleQuickNavigate('/account')}
+                    style={[styles.quickAction, {flexDirection: 'row', justifyContent: 'center', gap: 16, backgroundColor: 'transparent'}]}>
+                  <View>
+                      <IconSymbol
+                        name="person.crop.circle.fill"
+                        size={19}
+                        color={pathname.startsWith('/account') ? theme.colors.scannerCyan : theme.colors.goldBright}
+                      />
+                    </View>
+                </Pressable>
+                <Pressable
+                  onPress={() => handleQuickNavigate('/notifications')}
+                  accessibilityLabel="Open Notifications"
+                  accessibilityRole="button"
+                  hitSlop={8}
+                  style={[styles.quickAction, {flexDirection: 'row', justifyContent: 'center', gap: 16, backgroundColor: 'transparent'}]}>
+                  <View>
+                        <IconSymbol
+                          name="envelope.fill"
+                          size={19}
+                          color={pathname.startsWith('/notifications') ? theme.colors.scannerCyan : theme.colors.goldBright}
+                        />
+                      </View>
+                </Pressable>
+              </View>
               <View style={styles.navigationBlock}>
                 <Text style={[styles.sectionLabel, { fontSize: responsiveFont(9) }]}>NAVIGATION</Text>
 
@@ -424,10 +453,10 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     panelContent: {
       flexGrow: 1,
-      gap: 20,
+      gap: 15,
       top: 14,
       paddingHorizontal: 20,
-      paddingBottom: 24,
+      paddingBottom: 30,
     },
     brandRow: {
       minHeight: 58,
@@ -435,6 +464,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: 10,
+    },
+    brandActions: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: 6,
     },
     brandLockup: {
       minWidth: 0,
@@ -486,6 +520,20 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderWidth: 1,
       borderColor: 'rgba(242, 211, 138, 0.38)',
       backgroundColor: theme.colors.iconSurfaceGold,
+    },
+    quickAction: {
+      width: 40,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: theme.colors.dividerStrong,
+      backgroundColor: theme.colors.cardSoft,
+    },
+    quickActionActive: {
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     controlPressed: {
       opacity: 0.72,

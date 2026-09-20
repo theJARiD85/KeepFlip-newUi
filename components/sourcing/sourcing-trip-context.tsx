@@ -35,6 +35,10 @@ import {
   stopSourcingTripLocationTracking,
   type SourcingTripLocationSnapshot,
 } from '@/services/sourcing-trip-location-service';
+import {
+  KEEPFLIP_ANALYTICS_EVENTS,
+  trackKeepFlipEvent,
+} from '@/services/keepflip-analytics';
 
 type StartSourcingTripInput = Omit<CreateSourcingTripInput, 'ownerId'>;
 
@@ -184,6 +188,10 @@ export function SourcingTripProvider({ children }: PropsWithChildren) {
         const summary = emptySummary(trip);
         setLocationSnapshot(snapshot);
         setActiveTrip(summary);
+        trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.sourcingTripStarted, {
+          has_budget: trip.budgetCents != null,
+          location_tracking: trip.locationTrackingStatus,
+        });
         return summary;
       } catch (error) {
         clearSourcingTripLocationState();
@@ -255,6 +263,12 @@ export function SourcingTripProvider({ children }: PropsWithChildren) {
         clearSourcingTripLocationState();
         setLocationSnapshot(null);
         setActiveTrip(null);
+        trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.sourcingTripEnded, {
+          find_count: activeTrip.findCount,
+          has_mileage: trip.mileageMeters != null,
+          has_receipt: Boolean(trip.receiptFileId),
+          location_tracking: trip.locationTrackingStatus,
+        });
         return trip;
       } catch (error) {
         if (uploadedReceiptFileId) {

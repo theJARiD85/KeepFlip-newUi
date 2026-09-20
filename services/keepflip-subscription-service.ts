@@ -21,6 +21,10 @@ import {
 } from '@/lib/appwrite';
 import { getKeepFlipTrialDeviceIdHash } from '@/services/keepflip-trial-device-service';
 import {
+  KEEPFLIP_ANALYTICS_EVENTS,
+  trackKeepFlipEvent,
+} from '@/services/keepflip-analytics';
+import {
   getTenjinAnalyticsInstallationId,
   setKeepFlipTenjinCustomerUserId,
   trackTenjinEvent,
@@ -1359,6 +1363,10 @@ async function purchaseConfiguredKeepFlipPlan(
     );
   }
 
+  trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.subscriptionPurchaseStarted, {
+    cadence,
+    plan,
+  });
   trackTenjinEvent('subscription_purchase_started');
   let productChangeInfo: StoreProductChangeInfo | null = null;
   if (Platform.OS === 'android') {
@@ -1394,7 +1402,13 @@ async function purchaseConfiguredKeepFlipPlan(
     unitPrice: selectedPackage.product.price,
   });
   trackTenjinEvent('subscription_purchase_completed');
-  return subscriptionAccessFromCustomerInfo(result.customerInfo);
+  const access = subscriptionAccessFromCustomerInfo(result.customerInfo);
+  trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.subscriptionPurchaseCompleted, {
+    active: access.active,
+    cadence,
+    plan,
+  });
+  return access;
 }
 
 export async function purchaseKeepFlipPlan(
@@ -1510,7 +1524,12 @@ export async function renewKeepFlipPlan(
         : price.amountMicros / 1_000_000,
   });
   trackTenjinEvent('subscription_renewal_completed');
-  return subscriptionAccessFromCustomerInfo(result.customerInfo);
+  const renewedAccess = subscriptionAccessFromCustomerInfo(result.customerInfo);
+  trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.subscriptionRenewed, {
+    active: renewedAccess.active,
+    plan: renewedAccess.plan ?? access.plan ?? null,
+  });
+  return renewedAccess;
 }
 
 export async function restoreKeepFlipPurchases(userId: string) {
@@ -1522,7 +1541,13 @@ export async function restoreKeepFlipPurchases(userId: string) {
 
   const customerInfo = await Purchases.restorePurchases();
   const access = subscriptionAccessFromCustomerInfo(customerInfo);
-  if (access.active) trackTenjinEvent('subscription_restored');
+  if (access.active) {
+    trackTenjinEvent('subscription_restored');
+    trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.subscriptionRestored, {
+      is_trial: access.isTrial,
+      plan: access.plan ?? null,
+    });
+  }
   return access;
 }
 

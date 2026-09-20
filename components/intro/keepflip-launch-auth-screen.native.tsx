@@ -608,6 +608,8 @@ export function KeepFlipLaunchAuthScreen({
 
   const displayedError = localError ?? (status === 'error' ? errorMessage : null);
   const setupRequired = status === 'setup';
+  const KEEPFLIP_LOGO = require('@/assets/images/icon3.png');
+
 
   return (
     <KeepFlipBackground>
@@ -621,14 +623,14 @@ export function KeepFlipLaunchAuthScreen({
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <View style={styles.headerRow}>
-            <View style={styles.brandMark}>
-              <Image
-                accessibilityLabel="KeepFlip logo"
-                contentFit="contain"
-                source={require('@/assets/images/icon3.png')}
-                style={styles.brandLogo}
-              />
-            </View>
+          <View style={styles.logoHalo}>
+          <Image
+            accessibilityLabel="KeepFlip logo"
+            contentFit="contain"
+            source={KEEPFLIP_LOGO}
+            style={styles.logo}
+          />
+        </View>
           </View>
 
           <View style={styles.brandSection}>
@@ -802,6 +804,18 @@ export function KeepFlipLaunchAuthScreen({
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
   const { responsiveFont, responsiveHeight, responsiveWidth } = responsiveLayout;
   const staticStyles = StyleSheet.create({
+    logo: { height: 175, width: 175 },
+    logoHalo: {
+      alignItems: 'center',
+      backgroundColor: theme.colors.iconSurface,
+      borderColor: theme.colors.accentGoldBorder,
+      borderRadius: theme.radii.pill,
+      borderWidth: 1.5,
+      boxShadow: '0 0 44px rgba(224, 172, 75, 0.15)',
+      height: 175,
+      justifyContent: 'center',
+      width: 175,
+    },
     backButton: { alignItems: 'center', flexDirection: 'row', gap: 4, minHeight: 40, paddingHorizontal: 4 },
     backButtonText: { color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 9, letterSpacing: 1 },
     billingOption: { alignItems: 'center', borderRadius: 10, flex: 1, gap: 2, justifyContent: 'center', minHeight: 44 },
@@ -811,8 +825,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     billingOptionTextSelected: { color: theme.colors.goldBright },
     billingToggle: { backgroundColor: theme.colors.card, borderColor: theme.colors.divider, borderRadius: 13, borderWidth: 1, flexDirection: 'row', gap: 4, padding: 4 },
     brandEyebrow: { color: theme.colors.gold, fontFamily: theme.fonts.radar, fontSize: 9, letterSpacing: 1.3 },
-    brandLogo: { height: 160, width: 160 },
-    brandMark: { alignItems: 'center', backgroundColor: theme.colors.iconSurface, borderColor: theme.colors.accentGoldBorder, borderRadius: 85, borderWidth: 1, height: 170, justifyContent: 'center', width: 170 },
+    brandLogo: { height: 200, width: 200 },
+    brandMark: { alignItems: 'center', backgroundColor: theme.colors.iconSurface, borderColor: theme.colors.accentGoldBorder, borderRadius: 150, borderWidth: 1, height: 300, justifyContent: 'center', width: 300 },
     brandSection: { alignItems: 'center', gap: 8, paddingHorizontal: 10 },
     buttonDisabled: { opacity: 0.42 },
     content: { alignItems: 'center', gap: 20, paddingHorizontal: 16 },

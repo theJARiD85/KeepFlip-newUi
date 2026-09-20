@@ -6,6 +6,10 @@ import {
   clearEbayOAuthState,
   startEbayLogin,
 } from '../lib/start-ebay-login';
+import {
+  KEEPFLIP_ANALYTICS_EVENTS,
+  trackKeepFlipEvent,
+} from '@/services/keepflip-analytics';
 
 export type EbayOAuthEnvironment = 'sandbox' | 'production';
 
@@ -697,13 +701,18 @@ export async function connectEbayAccount(
       // the signed-in KeepFlip user before the app reports success.
       const status = await getEbayConnectionStatus(callbackResult.environment);
       await clearEbayOAuthState(pendingState).catch(() => undefined);
-      return status.connected
-        ? {
-            status: 'connected',
-            environment: status.environment,
-            connection: status,
-          }
-        : { status: 'error', environment: callbackResult.environment };
+      if (!status.connected) {
+        return { status: 'error', environment: callbackResult.environment };
+      }
+
+      trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.ebayAccountConnected, {
+        environment: status.environment,
+      });
+      return {
+        status: 'connected',
+        environment: status.environment,
+        connection: status,
+      };
     } catch {
       await clearEbayOAuthState(pendingState).catch(() => undefined);
       return { status: 'error', environment: callbackResult.environment };
@@ -951,11 +960,16 @@ export async function revokeEbayConnection(
     throw new Error('The eBay OAuth Function did not confirm eBay access was revoked.');
   }
 
-  return {
+  const result = {
     connected: false,
     environment: normalizeEnvironment(payload.environment) ?? environment,
     ...(typeof payload.remoteRevocation === 'boolean'
       ? { remoteRevocation: payload.remoteRevocation }
       : {}),
   };
+  trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.ebayAccountDisconnected, {
+    environment: result.environment,
+    remote_revocation: result.remoteRevocation ?? null,
+  });
+  return result;
 }

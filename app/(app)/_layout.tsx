@@ -157,7 +157,6 @@ export default function AppShellLayout() {
                   <Stack.Screen name="index" />
                   <Stack.Screen name="scanner" />
                   <Stack.Screen name="inventory" />
-                  <Stack.Screen name="analytics" />
                   <Stack.Screen name="analysis" />
                   <Stack.Screen name="analysis-result" />
                   <Stack.Screen name="listing-guide" />
@@ -169,6 +168,7 @@ export default function AppShellLayout() {
                   <Stack.Screen name="ebay-connect" />
                   <Stack.Screen name="ebay-account" />
                   <Stack.Screen name="books" />
+                  <Stack.Screen name="books-records" />
                   <Stack.Screen name="market-research" />
                   <Stack.Screen name="notifications" />
                 </Stack>

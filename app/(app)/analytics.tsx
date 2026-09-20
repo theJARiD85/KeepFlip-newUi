@@ -1,5 +1,5 @@
-import { MetricsAnalyticsScreen } from '@/components/analytics/metrics-analytics-screen';
+import { Redirect } from 'expo-router';
 
 export default function AnalyticsRoute() {
-  return <MetricsAnalyticsScreen />;
+  return <Redirect href="/inventory?tab=analytics" />;
 }

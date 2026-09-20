@@ -377,6 +377,25 @@ export function trimLeadingEmptyMoneyFlowBuckets(
 }
 
 /**
+ * Removes only the empty P&L periods before the first recorded financial
+ * activity. Empty periods after that activity remain so real gaps in a user's
+ * history stay visible on the chart.
+ */
+export function trimLeadingEmptyProfitAndLossMonths(
+  months: BusinessProfitAndLossMonth[],
+) {
+  const firstDataIndex = months.findIndex(
+    (month) =>
+      month.revenueCents !== 0 ||
+      month.cogsCents !== 0 ||
+      month.operatingExpensesCents !== 0,
+  );
+
+  if (firstDataIndex < 0) return [];
+  return firstDataIndex > 0 ? months.slice(firstDataIndex) : months;
+}
+
+/**
  * Produces a presentation-ready business snapshot from the records KeepFlip
  * already owns. It deliberately treats estimates as a separate inventory
  * signal, never as money earned.

@@ -163,7 +163,7 @@ export function SourcingTripControl() {
       });
       setDialog(null);
     } catch (error) {
-      Alert.alert(
+      console.log(
         'Could not start trip',
         error instanceof Error ? error.message : 'KeepFlip could not start that sourcing trip.',
       );
@@ -223,7 +223,7 @@ export function SourcingTripControl() {
         text: 'Take photo',
         onPress: () => {
           void captureReceipt().catch((error) => {
-            Alert.alert(
+            console.log(
               'Could not add receipt',
               error instanceof Error ? error.message : 'KeepFlip could not attach that receipt photo.',
             );
@@ -234,7 +234,7 @@ export function SourcingTripControl() {
         text: 'Choose photo',
         onPress: () => {
           void chooseReceipt().catch((error) => {
-            Alert.alert(
+            console.log(
               'Could not add receipt',
               error instanceof Error ? error.message : 'KeepFlip could not attach that receipt photo.',
             );
@@ -267,7 +267,7 @@ export function SourcingTripControl() {
         `${activeTrip.findCount} saved find${activeTrip.findCount === 1 ? '' : 's'} remain linked to this trip. ${locationSnapshot ? `${formatSourcingTripMiles(locationSnapshot.distanceMeters)} of mileage was recorded.` : 'Mileage was not available for this trip.'}`,
       );
     } catch (error) {
-      Alert.alert(
+      console.log(
         'Could not close trip',
         error instanceof Error ? error.message : 'KeepFlip could not close that sourcing trip.',
       );

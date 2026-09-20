@@ -1,4 +1,5 @@
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
+import { MetricsAnalyticsScreen } from "@/components/analytics/metrics-analytics-screen";
 import { InventoryCard } from "@/components/inventory/inventory-card";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
@@ -13,8 +14,8 @@ import {
   type InventoryListSort,
   type InventoryResaleVelocity,
 } from "@/services/inventory-service";
-import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -85,6 +86,8 @@ type InventoryFeedRow =
     placement: InventoryFeedPlacement;
   };
 
+type InventoryView = "items" | "analytics";
+
 function buildInventoryFeed(
   items: InventoryItem[],
   includeNativeAds: boolean,
@@ -130,6 +133,11 @@ function buildInventoryFeed(
 export default function InventoryScreen() {
   const styles = useResponsiveStyles(createResponsiveStyles);
   const router = useRouter();
+  const { tab } = useLocalSearchParams<{ tab?: string | string[] }>();
+  const requestedTab = Array.isArray(tab) ? tab[0] : tab;
+  const [activeView, setActiveView] = useState<InventoryView>(
+    requestedTab === "analytics" ? "analytics" : "items",
+  );
   const { user } = useKeepFlipAuth();
   const userId = user?.$id;
   const {
@@ -159,6 +167,19 @@ export default function InventoryScreen() {
     InventoryResaleVelocity | undefined
   >();
   const [draftSort, setDraftSort] = useState<InventoryListSort>("newest");
+
+  useEffect(() => {
+    setActiveView(requestedTab === "analytics" ? "analytics" : "items");
+  }, [requestedTab]);
+
+  const switchView = useCallback(
+    (nextView: InventoryView) => {
+      setActiveView(nextView);
+      setFiltersOpen(false);
+      router.replace(nextView === "analytics" ? "/inventory?tab=analytics" : "/inventory");
+    },
+    [router],
+  );
 
   const feedRows = useMemo(
     () => buildInventoryFeed(items, NATIVE_ADS_SUPPORTED),
@@ -220,8 +241,10 @@ export default function InventoryScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      if (activeView !== "items") return undefined;
       void loadItems();
-    }, [loadItems]),
+      return undefined;
+    }, [activeView, loadItems]),
   );
 
   const openFilters = useCallback(() => {
@@ -298,31 +321,73 @@ export default function InventoryScreen() {
 
   return (
     <KeepFlipBackground>
+      <View style={styles.screen}>
+      <View style={[styles.header, { paddingTop: insets.top + 15, paddingLeft: 15, width: contentWidth }]}>
+                <Text style={[styles.eyebrow, { fontFamily: theme.fonts.display, fontSize: responsiveFont(10) }]}>YOUR ITEMS</Text>
+                <Text
+                  style={[styles.title, {fontFamily: theme.fonts.bold, fontSize: responsiveFont(26), paddingVertical: 7 }]}
+                >
+                  Inventory
+                </Text>
+                <Text style={[styles.subtitle, { maxWidth: '90%', fontSize: responsiveFont(12), fontFamily: theme.fonts.display }]}>
+                  Every saved scan, observed condition, and current market estimate
+                  in one place.
+                </Text>
+              </View>
+        <View
+          style={[
+            styles.viewTabs,
+            { marginHorizontal: pageGutter, marginTop: insets.top + 10 },
+          ]}
+        >
+          {([
+            ["items", "INVENTORY"],
+            ["analytics", "ANALYTICS"],
+          ] as const).map(([view, label]) => {
+            const selected = activeView === view;
+            return (
+              <Pressable
+                accessibilityRole="tab"
+                accessibilityState={{ selected }}
+                key={view}
+                onPress={() => switchView(view)}
+                style={({ pressed }) => [
+                  styles.viewTab,
+                  selected && styles.viewTabActive,
+                  pressed && styles.viewTabPressed,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.viewTabText,
+                    { fontSize: responsiveFont(9) },
+                    selected && styles.viewTabTextActive,
+                  ]}
+                >
+                  {label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
 
-      <FlatList
-        contentContainerStyle={[styles.content,
-        {
-          paddingBottom: insets.bottom + 30,
-          paddingHorizontal: pageGutter,
-          paddingTop: insets.top + 15,
-        }]}
-        style={[styles.list, { marginBottom: insets.bottom, marginTop: insets.top }]}
-        data={feedRows}
-        keyExtractor={(row) => row.id}
-        ListHeaderComponent={
-          <View style={[styles.header, { width: contentWidth }]}>
-            <Text style={[styles.eyebrow, { fontFamily: theme.fonts.display, fontSize: responsiveFont(10) }]}>YOUR ITEMS</Text>
-            <Text
-              style={[styles.title, {fontFamily: theme.fonts.bold, fontSize: responsiveFont(26), paddingVertical: 7 }]}
-            >
-              Inventory
-            </Text>
-            <Text style={[styles.subtitle, { maxWidth: '90%', fontSize: responsiveFont(12), fontFamily: theme.fonts.display }]}>
-              Every saved scan, observed condition, and current market estimate
-              in one place.
-            </Text>
-
-            <Pressable
+        {activeView === "analytics" ? (
+          <MetricsAnalyticsScreen embedded />
+        ) : (
+          <FlatList
+            contentContainerStyle={[
+              styles.content,
+              {
+                paddingBottom: insets.bottom + 30,
+                paddingHorizontal: pageGutter,
+                paddingTop: 15,
+              },
+            ]}
+            style={[styles.list, { marginBottom: insets.bottom }]}
+            data={feedRows}
+            keyExtractor={(row) => row.id}
+            ListHeaderComponent={
+              <Pressable
               accessibilityHint="Opens inventory filters and sorting options"
               accessibilityRole="button"
               onPress={openFilters}
@@ -346,84 +411,70 @@ export default function InventoryScreen() {
                 {appliedSelectionSummary}
               </Text>
             </Pressable>
-
-            {error ? (
-              <View style={styles.errorCard}>
-                <Text selectable style={[styles.errorText, { fontSize: responsiveFont(13) }]}>
-                  {error}
-                </Text>
-                <Pressable
-                  onPress={() => void loadItems()}
-                  style={styles.retryButton}
-                >
-                  <Text style={[styles.retryText, { fontSize: responsiveFont(12) }]}>Retry</Text>
-                </Pressable>
-              </View>
-            ) : null}
-          </View>
-        }
-        ListEmptyComponent={
-          loading ? (
-            <View style={[styles.emptyState, { width: contentWidth }]}>
-              <ActivityIndicator color={theme.colors.scannerCyan} />
-              <Text style={[styles.emptyTitle, { fontSize: responsiveFont(20) }]}>Loading inventory</Text>
-            </View>
-          ) : !error ? (
-            <View style={[styles.emptyState, { width: contentWidth }]}>
-              <View style={styles.emptyIcon}>
-                <IconSymbol
-                  color={theme.colors.goldBright}
-                  name="viewfinder"
-                  size={34}
-                />
-              </View>
-              <Text style={[styles.emptyTitle, { fontSize: responsiveFont(20) }]}>No saved scans yet</Text>
-              <Text style={[styles.emptyBody, { fontSize: responsiveFont(13) }]}>
-                Complete an item analysis and choose Save to Inventory.
-              </Text>
-            </View>
-          ) : null
-        }
-        refreshControl={
-          <RefreshControl
-            onRefresh={() => void loadItems(true)}
-            refreshing={refreshing}
-            tintColor={theme.colors.goldBright}
-          />
-        }
-        renderItem={({ item: row }) =>
-          row.kind === "native-ad" ? (
-            null
-          ) : (
-            <View style={[styles.feedItem, { width: contentWidth }]}>
-              <InventoryCard
-                item={row.item}
-                onPress={() =>
-                  router.push({
-                    pathname: "/analysis-result",
-                    params: { itemId: row.item.id },
-                  })
-                }
-                onListingGuidePress={() =>
-                  router.push({
-                    pathname: "/listing-guide",
-                    params: { itemId: row.item.id },
-                  })
-                }
-                onAddPhotosPress={() =>
-                  router.push({
-                    pathname: "/listing-guide",
-                    params: { focus: "photos", itemId: row.item.id },
-                  })
-                }
-                onDeletePress={() => confirmDelete(row.item)}
-                isDeleting={deletingItemId === row.item.id}
+            }
+            ListEmptyComponent={
+              loading ? (
+                <View style={[styles.emptyState, { width: contentWidth }]}>
+                  <ActivityIndicator color={theme.colors.scannerCyan} />
+                  <Text style={[styles.emptyTitle, { fontSize: responsiveFont(20) }]}>Loading inventory</Text>
+                </View>
+              ) : !error ? (
+                <View style={[styles.emptyState, { width: contentWidth }]}>
+                  <View style={styles.emptyIcon}>
+                    <IconSymbol
+                      color={theme.colors.goldBright}
+                      name="viewfinder"
+                      size={34}
+                    />
+                  </View>
+                  <Text style={[styles.emptyTitle, { fontSize: responsiveFont(20) }]}>No saved scans yet</Text>
+                  <Text style={[styles.emptyBody, { fontSize: responsiveFont(13) }]}>
+                    Complete an item analysis and choose Save to Inventory.
+                  </Text>
+                </View>
+              ) : null
+            }
+            refreshControl={
+              <RefreshControl
+                onRefresh={() => void loadItems(true)}
+                refreshing={refreshing}
+                tintColor={theme.colors.goldBright}
               />
-            </View>
-          )
-        }
-        showsVerticalScrollIndicator={false}
-      />
+            }
+            renderItem={({ item: row }) =>
+              row.kind === "native-ad" ? (
+                null
+              ) : (
+                <View style={[styles.feedItem, { width: contentWidth }]}>
+                  <InventoryCard
+                    item={row.item}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/analysis-result",
+                        params: { itemId: row.item.id },
+                      })
+                    }
+                    onListingGuidePress={() =>
+                      router.push({
+                        pathname: "/listing-guide",
+                        params: { itemId: row.item.id },
+                      })
+                    }
+                    onAddPhotosPress={() =>
+                      router.push({
+                        pathname: "/listing-guide",
+                        params: { focus: "photos", itemId: row.item.id },
+                      })
+                    }
+                    onDeletePress={() => confirmDelete(row.item)}
+                    isDeleting={deletingItemId === row.item.id}
+                  />
+                </View>
+              )
+            }
+            showsVerticalScrollIndicator={false}
+          />
+        )}
 
       <Modal
         animationType="fade"
@@ -592,6 +643,7 @@ export default function InventoryScreen() {
           </View>
         </View>
       </Modal>
+      </View>
     </KeepFlipBackground>
   );
 }
@@ -599,16 +651,48 @@ export default function InventoryScreen() {
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
   const { responsiveFont, responsiveWidth, responsiveHeight } = responsiveLayout;
   const staticStyles = StyleSheet.create({
+    screen: {
+      flex: 1,
+    },
     list: {
       flex: 1,
     },
     content: {
       flexGrow: 1,
-      alignItems: "center",
+      alignItems: "flex-start",
       justifyContent: "flex-start"
     },
+    viewTabs: {
+      backgroundColor: theme.colors.surfaceOverlay,
+      borderColor: theme.colors.dividerStrong,
+      borderRadius: 13,
+      borderWidth: 1,
+      flexDirection: "row",
+      gap: 4,
+      padding: 4,
+    },
+    viewTab: {
+      alignItems: "center",
+      borderRadius: 9,
+      flex: 1,
+      justifyContent: "center",
+      minHeight: 40,
+    },
+    viewTabActive: {
+      backgroundColor: theme.colors.iconSurfaceCyan,
+    },
+    viewTabPressed: {
+      opacity: 0.78,
+    },
+    viewTabText: {
+      color: theme.colors.textMuted,
+      fontWeight: "900",
+      letterSpacing: 0.8,
+    },
+    viewTabTextActive: {
+      color: theme.colors.scannerCyan,
+    },
     header: {
-      marginBottom: HEADER_BOTTOM_SPACING,
     },
     feedItem: {
       marginBottom: 14,
@@ -637,11 +721,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderColor: theme.colors.accentCyanBorder,
       borderRadius: theme.radii.medium,
       borderWidth: StyleSheet.hairlineWidth,
+      width: '100%',
       flexDirection: "row",
       gap: 12,
-      marginTop: 12,
       paddingHorizontal: 12,
       paddingVertical: 10,
+      marginBottom: 10,
       backgroundColor: theme.colors.surfaceInset,
     },
     filterTriggerPressed: {
