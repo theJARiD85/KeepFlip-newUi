@@ -35,7 +35,7 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "output": "server",
+      "output": "static",
       "favicon": "./assets/images/icon.png"
     },
     "plugins": [
