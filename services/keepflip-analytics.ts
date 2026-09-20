@@ -1,5 +1,11 @@
 import { analytics } from '@heycatch/sdk';
 
+/**
+ * HeyCatchProvider captures every native touch inside the root layout,
+ * including Pressable and Touchable controls with their text, labels, and
+ * test IDs. Keep explicit events for semantic outcomes so a button tap is
+ * not counted twice as both an autocapture event and a custom event.
+ */
 export type KeepFlipAnalyticsProperties = Record<
   string,
   string | number | boolean | null
@@ -23,7 +29,6 @@ export const KEEPFLIP_ANALYTICS_EVENTS = {
   itemAnalysisStarted: 'item_analysis_started',
   firstActionCompleted: 'first_action_completed',
   firstActionStarted: 'first_action_started',
-  landingViewed: 'landing_viewed',
   listingGenerated: 'listing_generated',
   listingShared: 'listing_shared',
   loginCompleted: 'login_completed',
@@ -47,15 +52,6 @@ export const KEEPFLIP_ANALYTICS_EVENTS = {
   exportedScheduleC: 'exported_schedule_c',
 } as const;
 
-type KeepFlipAnalyticsApi = typeof analytics & {
-  trackScreen?: (
-    name: string,
-    properties?: KeepFlipAnalyticsProperties,
-  ) => void;
-};
-
-const keepFlipAnalytics = analytics as KeepFlipAnalyticsApi;
-
 export function trackKeepFlipEvent(
   event: string,
   properties?: KeepFlipAnalyticsProperties,
@@ -66,23 +62,6 @@ export function trackKeepFlipEvent(
     );
   } catch {
     // Analytics must never block or change the outcome of a feature action.
-  }
-}
-
-/**
- * Explicit native route tracking. HeyCatch's native provider still captures
- * touches, but its Expo Router screen hook is not reliable with the current
- * React Navigation v7 stack, so the router calls this when its pathname
- * changes. The optional method keeps the shared service safe for web builds.
- */
-export function trackKeepFlipScreen(
-  screenName: string,
-  properties?: KeepFlipAnalyticsProperties,
-) {
-  try {
-    keepFlipAnalytics.trackScreen?.(screenName, properties);
-  } catch {
-    // Analytics must never block or change the outcome of navigation.
   }
 }
 

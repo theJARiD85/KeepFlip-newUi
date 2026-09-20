@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { type Href, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -9,8 +9,12 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
-import { LineChart } from 'react-native-wagmi-charts';
+import Animated, { FadeInDown, useAnimatedStyle } from 'react-native-reanimated';
+import {
+  LineChart,
+  LineChartDimensionsContext,
+  useLineChart,
+} from 'react-native-wagmi-charts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
@@ -222,6 +226,70 @@ function MetricPill({
   );
 }
 
+const CHART_TRACKER_OUTER_SIZE = 18;
+const CHART_TRACKER_CORE_SIZE = 6;
+
+const chartTrackerStyles = StyleSheet.create({
+  host: {
+    alignItems: 'center',
+    height: CHART_TRACKER_OUTER_SIZE,
+    justifyContent: 'center',
+    left: 0,
+    position: 'absolute',
+    top: 0,
+    width: CHART_TRACKER_OUTER_SIZE,
+  },
+  outer: {
+    borderRadius: CHART_TRACKER_OUTER_SIZE / 2,
+    height: CHART_TRACKER_OUTER_SIZE,
+    opacity: 0.24,
+    position: 'absolute',
+    width: CHART_TRACKER_OUTER_SIZE,
+  },
+  core: {
+    borderRadius: CHART_TRACKER_CORE_SIZE / 2,
+    height: CHART_TRACKER_CORE_SIZE,
+    width: CHART_TRACKER_CORE_SIZE,
+  },
+});
+
+function ChartTrackerDot({ color, index }: { color: string; index: number }) {
+  const { currentX, currentY, data, isActive, yDomain } = useLineChart();
+  const { chartDrawingHeight, gutter, width } = useContext(LineChartDimensionsContext);
+  const dataLength = data?.length ?? 0;
+  const staticX = dataLength > 1 ? (width * index) / (dataLength - 1) : 0;
+  const yRange = Math.max(yDomain.max - yDomain.min, Number.EPSILON);
+  const selectedValue = data?.[index]?.value ?? yDomain.min;
+  const staticY =
+    chartDrawingHeight -
+    gutter -
+    ((selectedValue - yDomain.min) / yRange) * (chartDrawingHeight - gutter * 2);
+
+  const animatedStyle = useAnimatedStyle(
+    () => ({
+      opacity: 1,
+      transform: [
+        {
+          translateX:
+            (isActive.value ? currentX.value : staticX) - CHART_TRACKER_OUTER_SIZE / 2,
+        },
+        {
+          translateY:
+            (isActive.value ? currentY.value : staticY) - CHART_TRACKER_OUTER_SIZE / 2,
+        },
+      ],
+    }),
+    [currentX, currentY, isActive, staticX, staticY],
+  );
+
+  return (
+    <Animated.View pointerEvents="none" style={[chartTrackerStyles.host, animatedStyle]}>
+      <View style={[chartTrackerStyles.outer, { backgroundColor: color }]} />
+      <View style={[chartTrackerStyles.core, { backgroundColor: color }]} />
+    </Animated.View>
+  );
+}
+
 function ChartCard({
   metric,
   groups,
@@ -302,13 +370,6 @@ function ChartCard({
               <LineChart.Path color={getMetricAccent(metric)} width={3}>
                 <LineChart.Gradient color={getMetricAccent(metric)} />
                 <LineChart.HorizontalLine at={{ value: 0 }} color={theme.colors.dividerStrong} />
-                <LineChart.Dot
-                  at={selectedIndex}
-                  color={getMetricAccent(metric)}
-                  hasOuterDot
-                  outerSize={9}
-                  size={4}
-                />
               </LineChart.Path>
               <LineChart.CursorLine color={theme.colors.textMuted} persistOnEnd>
                 <LineChart.Tooltip
@@ -317,6 +378,7 @@ function ChartCard({
                   textStyle={{ color: theme.colors.text, fontSize: 11, fontWeight: '800' }}
                 />
               </LineChart.CursorLine>
+              <ChartTrackerDot color={getMetricAccent(metric)} index={selectedIndex} />
             </LineChart>
           </LineChart.Provider>
 
