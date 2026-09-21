@@ -116,7 +116,8 @@
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": true
+      "reactCompiler": true,
+      "baseUrl": "/keepflip-newUi"
     },
     "extra": {
       "router": {},
