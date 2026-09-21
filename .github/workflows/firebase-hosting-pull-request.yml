@@ -26,6 +26,9 @@ jobs:
 
       # Generates the production static web bundle inside the "dist" directory
       - name: Build Expo Web App
+        env:
+          EXPO_PUBLIC_APPWRITE_ENDPOINT: ${{ secrets.APPWRITE_ENDPOINT }}
+          EXPO_PUBLIC_APPWRITE_PROJECT_ID: ${{ secrets.APPWRITE_PROJECT_ID }}
         run: npx expo export -p web
 
       # Deploys a temporary preview channel to Firebase and comments the link on your PR
