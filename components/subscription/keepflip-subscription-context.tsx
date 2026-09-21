@@ -39,7 +39,9 @@ type KeepFlipSubscriptionContextValue = {
   errorMessage: string | null;
   purchasing: boolean;
   restoring: boolean;
-  refresh: () => Promise<void>;
+  refresh: (
+    reconcileServerStatus?: boolean,
+  ) => Promise<KeepFlipSubscriptionSnapshot | null>;
   purchase: (
     plan: KeepFlipPlanId,
     cadence: KeepFlipBillingCadence,
@@ -154,6 +156,30 @@ function isUserCancelledPurchase(error: unknown) {
   );
 }
 
+const SERVER_ACCESS_CONFIRMATION_DELAYS_MS = [
+  0,
+  750,
+  1_500,
+  2_500,
+  4_000,
+  6_000,
+] as const;
+
+function isServerVerifiedActiveSubscription(
+  snapshot: KeepFlipSubscriptionSnapshot | null,
+  userId: string,
+) {
+  return (
+    snapshot?.serverRecordAvailable === true &&
+    snapshot.serverRecord?.ownerId === userId &&
+    snapshot.access.active === true
+  );
+}
+
+function wait(milliseconds: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
+}
+
 export function KeepFlipSubscriptionProvider({
   children,
 }: PropsWithChildren) {
@@ -171,7 +197,7 @@ export function KeepFlipSubscriptionProvider({
       setSnapshot(null);
       setState('loading');
       setError(null);
-      return;
+      return null;
     }
 
     setError(null);
@@ -184,6 +210,7 @@ export function KeepFlipSubscriptionProvider({
       // A KeepFlip profile trial is valid access even when this development
       // build has not been configured with a RevenueCat public SDK key yet.
       setState(next.configured || next.access.active ? 'ready' : 'unconfigured');
+      return next;
     } catch (caughtError) {
       setState('error');
       setError(
@@ -192,8 +219,30 @@ export function KeepFlipSubscriptionProvider({
           'KeepFlip could not load your subscription right now.',
         ),
       );
+      return null;
     }
   }, [userId]);
+
+  const waitForServerVerifiedAccess = useCallback(
+    async (localAccessActive: boolean) => {
+      if (!localAccessActive) {
+        const next = await refresh(true);
+        return isServerVerifiedActiveSubscription(next, userId);
+      }
+
+      for (const delay of SERVER_ACCESS_CONFIRMATION_DELAYS_MS) {
+        if (delay) await wait(delay);
+        const next = await refresh(true);
+        if (isServerVerifiedActiveSubscription(next, userId)) return true;
+      }
+
+      setError(
+        'Google Play completed the payment, but KeepFlip is still waiting for server confirmation. Tap Refresh Plan Status in a moment; your purchase was not lost.',
+      );
+      return false;
+    },
+    [refresh, userId],
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -315,8 +364,7 @@ export function KeepFlipSubscriptionProvider({
               }
             : current,
         );
-        await refresh();
-        return access.active;
+        return await waitForServerVerifiedAccess(access.active);
       } catch (caughtError) {
         if (isUserCancelledPurchase(caughtError)) return false;
         setError(
@@ -330,7 +378,7 @@ export function KeepFlipSubscriptionProvider({
         setPurchasing(false);
       }
     },
-    [purchasing, refresh, userId],
+    [purchasing, userId, waitForServerVerifiedAccess],
   );
 
   const restore = useCallback(async () => {
@@ -349,8 +397,7 @@ export function KeepFlipSubscriptionProvider({
             }
           : current,
       );
-      await refresh();
-      return access.active;
+      return await waitForServerVerifiedAccess(access.active);
     } catch (caughtError) {
       setError(
         errorMessage(
@@ -362,7 +409,7 @@ export function KeepFlipSubscriptionProvider({
     } finally {
       setRestoring(false);
     }
-  }, [refresh, restoring, userId]);
+  }, [restoring, userId, waitForServerVerifiedAccess]);
 
   const renew = useCallback(async () => {
     if (!userId || purchasing || !snapshot?.access) return false;
@@ -380,8 +427,7 @@ export function KeepFlipSubscriptionProvider({
             }
           : current,
       );
-      await refresh();
-      return access.active;
+      return await waitForServerVerifiedAccess(access.active);
     } catch (caughtError) {
       if (isUserCancelledPurchase(caughtError)) return false;
       setError(
@@ -394,7 +440,7 @@ export function KeepFlipSubscriptionProvider({
     } finally {
       setPurchasing(false);
     }
-  }, [purchasing, refresh, snapshot, userId]);
+  }, [purchasing, snapshot, userId, waitForServerVerifiedAccess]);
 
   const manage = useCallback(async () => {
     if (!userId) return;

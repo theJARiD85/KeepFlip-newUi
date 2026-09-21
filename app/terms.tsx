@@ -57,7 +57,7 @@ const SECTIONS: LegalSection[] = [
   {
     title: "Third-party services",
     body: [
-      "The current KeepFlip implementation uses Appwrite for account authentication, database and table records, file storage, realtime updates, push-target registration, and server-side Functions. Android builds may also use Firebase Analytics and Firebase Cloud Messaging for analytics and push delivery, depending on the build and your device settings.",
+      "The current KeepFlip implementation uses Appwrite for account authentication, database and table records, file storage, realtime updates, push-target registration, and server-side Functions. Android builds may use Firebase Analytics and Firebase Cloud Messaging for analytics and push delivery, while the web app may use Firebase Analytics for aggregated web and feature-usage measurement, depending on the enabled services and your device or browser settings.",
       "KeepFlip uses RevenueCat and the applicable app store, or Stripe as RevenueCat's web payment gateway when web billing is enabled, for subscriptions; Appodeal and its mediation partners for advertising where enabled; eBay for marketplace integrations and content; OpenAI for Flip and requested AI analysis; SerpApi for market research; and Google Maps Platform Places services for nearby repair-provider search when that feature is enabled.",
       "Provider configuration can vary by release and feature. These providers have their own terms, privacy notices, availability, and security practices, and their processing may occur outside your country. KeepFlip is not responsible for a third party's independent services, listings, transactions, or policies.",
     ],

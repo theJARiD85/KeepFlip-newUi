@@ -37,6 +37,10 @@ import {
   getKeepFlipThemeColors,
 } from "@/constants/keepflip-theme";
 import { configureKeepFlipNotificationHandler } from '@/services/keepflip-notification-service';
+import {
+  initializeKeepFlipFirebaseAnalytics,
+  trackKeepFlipFirebaseWebScreen,
+} from '@/services/keepflip-firebase-analytics';
 import { areKeepFlipSubscriptionsEnforced } from '@/services/keepflip-subscription-service';
 import { initializeTenjinAtLaunch } from '@/services/tenjin-attribution-service';
 
@@ -148,6 +152,7 @@ function ProtectedRootStack() {
 function RootLayoutContent() {
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const appearanceColors = getKeepFlipThemeColors(effectiveColorScheme);
+  const pathname = usePathname();
   const [
     launchVisible,
     setLaunchVisible,
@@ -210,6 +215,16 @@ function RootLayoutContent() {
       void initializeTenjinAtLaunch();
     }
   }, [fontError, fontsLoaded]);
+
+  useEffect(() => {
+    void initializeKeepFlipFirebaseAnalytics();
+  }, []);
+
+  useEffect(() => {
+    if (pathname) {
+      void trackKeepFlipFirebaseWebScreen(pathname);
+    }
+  }, [pathname]);
 
 
   if (
