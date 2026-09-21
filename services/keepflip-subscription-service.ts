@@ -304,6 +304,12 @@ function platformApiKey() {
   if (Platform.OS === 'ios') {
     return process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY?.trim() || '';
   }
+  if (Platform.OS === 'web') {
+    // This is RevenueCat's public Web Billing SDK key, not a Stripe key. The
+    // browser uses @revenuecat/purchases-js in the web-only checkout surface;
+    // react-native-purchases remains native-only below.
+    return process.env.EXPO_PUBLIC_REVENUECAT_WEB_API_KEY?.trim() || '';
+  }
   return '';
 }
 
@@ -935,6 +941,12 @@ async function ensureRevenueCatUser(userId: string) {
   const cleanUserId = userId.trim();
   if (!cleanUserId) throw new Error('Sign in before loading a KeepFlip plan.');
 
+  // Web Billing is deliberately initialized by the browser-only RevenueCat
+  // SDK. Do not give its web key to react-native-purchases or let a browser
+  // CustomerInfo response become the authorization decision; this service
+  // still loads the Subscription Police status below.
+  if (Platform.OS === 'web') return false;
+
   const apiKey = platformApiKey();
   if (!apiKey) return false;
 
@@ -966,6 +978,8 @@ async function ensureRevenueCatUser(userId: string) {
 }
 
 async function ensureRevenueCatAnonymousUser() {
+  if (Platform.OS === 'web') return false;
+
   const apiKey = platformApiKey();
   if (!apiKey) return false;
 
@@ -1253,7 +1267,11 @@ export async function loadKeepFlipSubscription(
         serverStatus.profileTrial,
       ),
       catalog: EMPTY_CATALOG,
-      configured: false,
+      // The dedicated web SDK owns the browser checkout. Mark the snapshot
+      // configured when its public Web Billing key exists so the shared
+      // subscription context can distinguish missing setup from a verified
+      // inactive account, while server status remains the access authority.
+      configured: areKeepFlipSubscriptionsConfigured(),
       profileTrial: serverStatus.profileTrial,
       serverRecord,
       serverRecordAvailable:

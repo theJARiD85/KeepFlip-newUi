@@ -50,15 +50,15 @@ const SECTIONS: LegalSection[] = [
   {
     title: "Subscriptions and store billing",
     body: [
-      "KeepFlip may offer paid features through subscriptions. Google Play or the Apple App Store processes the transaction, and the applicable store terms govern payment, renewal, cancellation, refunds, taxes, and billing instruments. RevenueCat helps KeepFlip present subscription offerings, reconcile purchases, restore access, and maintain subscription status.",
-      "KeepFlip does not ask for or store your full payment-card number in the app. If a payment fails or a subscription expires, KeepFlip may limit paid features until the applicable store and RevenueCat confirm renewed access.",
+      "KeepFlip may offer paid features through subscriptions. Depending on where you subscribe, Google Play, the Apple App Store, or Stripe through RevenueCat Web Billing processes the transaction. The applicable payment processor's terms govern payment, renewal, cancellation, refunds, taxes, and billing instruments. RevenueCat helps KeepFlip present subscription offerings, reconcile purchases, restore access, and maintain subscription status.",
+      "KeepFlip does not ask for or store your full payment-card number. If a payment fails or a subscription expires, KeepFlip may limit paid features until the applicable payment processor and RevenueCat confirm renewed access.",
     ],
   },
   {
     title: "Third-party services",
     body: [
       "The current KeepFlip implementation uses Appwrite for account authentication, database and table records, file storage, realtime updates, push-target registration, and server-side Functions. Android builds may also use Firebase Analytics and Firebase Cloud Messaging for analytics and push delivery, depending on the build and your device settings.",
-      "KeepFlip uses RevenueCat and the applicable app store for subscriptions; Appodeal and its mediation partners for advertising where enabled; eBay for marketplace integrations and content; OpenAI for Flip and requested AI analysis; SerpApi for market research; and Google Maps Platform Places services for nearby repair-provider search when that feature is enabled.",
+      "KeepFlip uses RevenueCat and the applicable app store, or Stripe as RevenueCat's web payment gateway when web billing is enabled, for subscriptions; Appodeal and its mediation partners for advertising where enabled; eBay for marketplace integrations and content; OpenAI for Flip and requested AI analysis; SerpApi for market research; and Google Maps Platform Places services for nearby repair-provider search when that feature is enabled.",
       "Provider configuration can vary by release and feature. These providers have their own terms, privacy notices, availability, and security practices, and their processing may occur outside your country. KeepFlip is not responsible for a third party's independent services, listings, transactions, or policies.",
     ],
   },
