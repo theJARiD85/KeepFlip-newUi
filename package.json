@@ -55,6 +55,7 @@
     "expo-tracking-transparency": "~57.0.2",
     "expo-video": "~57.0.3",
     "expo-web-browser": "~57.0.2",
+    "firebase": "^12.19.0",
     "node-appwrite": "^29.0.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
