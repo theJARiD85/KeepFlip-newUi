@@ -1,8 +1,12 @@
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
-import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import responsiveFont from '@/lib/responsiveFont';
+import {
+  getKeepFlipThemeColors,
+} from "@/constants/keepflip-theme";
+import {
+  useResponsiveLayout,
+  useResponsiveStyles,
+} from '@/hooks/use-responsive-layout';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from "expo-router";
 import {
@@ -13,7 +17,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export type LegalSection = {
   body: string[];
   title: string;
@@ -41,9 +44,10 @@ export function LegalDocumentScreen({
 
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const colors = getKeepFlipThemeColors('dark');
 
   return (
-    <KeepFlipBackground>
+    <KeepFlipBackground colorScheme="dark">
       <View pointerEvents="none" style={styles.glow} />
 
       <ScrollView
@@ -66,7 +70,7 @@ export function LegalDocumentScreen({
           ]}
         >
           <View style={styles.backButtonContent}>
-            <Ionicons name="caret-back-sharp" size={20} color={theme.colors.goldBright} />
+            <Ionicons name="caret-back-sharp" size={20} color={colors.goldBright} />
             <Text style={[styles.backButtonText, { fontSize: responsiveFont(11) }]}>BACK</Text>
           </View>
         </Pressable>
@@ -127,6 +131,7 @@ export function LegalDocumentScreen({
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
   const { responsiveFont } = responsiveLayout;
+  const colors = getKeepFlipThemeColors('dark');
   const staticStyles = StyleSheet.create({
     glow: {
       ...StyleSheet.absoluteFill,
@@ -153,7 +158,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       transform: [{ translateX: -2 }],
     },
     backButtonText: {
-      color: theme.colors.goldBright,
+      color: colors.goldBright,
       fontSize: 11,
       fontWeight: "800",
       letterSpacing: 1.1,
@@ -170,30 +175,30 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 9,
       paddingBottom: 23,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: theme.colors.dividerStrong,
+      borderBottomColor: colors.dividerStrong,
     },
     eyebrow: {
-      color: theme.colors.gold,
+      color: colors.gold,
       fontSize: 10,
       fontWeight: "900",
       letterSpacing: 2,
     },
     title: {
-      color: theme.colors.cream,
+      color: colors.cream,
       fontSize: 34,
       lineHeight: 40,
       fontWeight: "900",
       letterSpacing: -0.65,
     },
     effectiveDate: {
-      color: theme.colors.scannerCyan,
+      color: colors.scannerCyan,
       fontSize: 10,
       fontWeight: "800",
       letterSpacing: 0.85,
     },
     intro: {
       maxWidth: 650,
-      color: theme.colors.text,
+      color: colors.text,
       fontSize: 14,
       lineHeight: 22,
       fontWeight: "500",
@@ -210,14 +215,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 12,
     },
     sectionNumber: {
-      color: theme.colors.gold,
+      color: colors.gold,
       fontSize: 10,
       fontWeight: "900",
       letterSpacing: 1,
     },
     sectionTitle: {
       flex: 1,
-      color: theme.colors.cream,
+      color: colors.cream,
       fontSize: 19,
       lineHeight: 24,
       fontWeight: "800",
@@ -227,7 +232,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingLeft: 34,
     },
     paragraph: {
-      color: theme.colors.text,
+      color: colors.text,
       fontSize: 13,
       lineHeight: 21,
       fontWeight: "500",
@@ -237,16 +242,16 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       marginTop: 3,
       paddingTop: 19,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: theme.colors.divider,
+      borderTopColor: colors.divider,
     },
     contactLabel: {
-      color: theme.colors.scannerCyan,
+      color: colors.scannerCyan,
       fontSize: 9,
       fontWeight: "900",
       letterSpacing: 1.4,
     },
     contactText: {
-      color: theme.colors.text,
+      color: colors.text,
       fontSize: 13,
       lineHeight: 20,
       fontWeight: "600",

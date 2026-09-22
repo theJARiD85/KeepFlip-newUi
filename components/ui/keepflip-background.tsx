@@ -2,18 +2,24 @@ import type { PropsWithChildren } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
-import { getKeepFlipThemeColors } from '@/constants/keepflip-theme';
+import {
+  getKeepFlipThemeColors,
+  type KeepFlipColorScheme,
+} from '@/constants/keepflip-theme';
 
 type KeepFlipBackgroundProps = PropsWithChildren<{
   contentStyle?: StyleProp<ViewStyle>;
+  colorScheme?: KeepFlipColorScheme;
 }>;
 
 export function KeepFlipBackground({
   children,
   contentStyle,
+  colorScheme,
 }: KeepFlipBackgroundProps) {
   const { effectiveColorScheme } = useKeepFlipAppearance();
-  const colors = getKeepFlipThemeColors(effectiveColorScheme);
+  const resolvedColorScheme = colorScheme ?? effectiveColorScheme;
+  const colors = getKeepFlipThemeColors(resolvedColorScheme);
 
   return (
     <View style={[styles.root, { backgroundColor: colors.backgroundDeep }]}>
@@ -21,7 +27,7 @@ export function KeepFlipBackground({
         pointerEvents="none"
         style={[
           styles.ambientGradient,
-          effectiveColorScheme === 'dark'
+          resolvedColorScheme === 'dark'
             ? styles.ambientGradientDark
             : styles.ambientGradientLight,
         ]}
