@@ -47,6 +47,7 @@ export type KeepFlipAuthErrorCode =
   | 'AUTH_RATE_LIMITED'
   | 'AUTH_REQUEST_FAILED'
   | 'AUTH_SESSION_UNVERIFIED'
+  | 'AUTH_SUBSCRIPTION_REQUIRED'
   | 'AUTH_SETUP_REQUIRED';
 
 export class KeepFlipAuthError extends Error {
@@ -140,6 +141,12 @@ function errorTextForClassification(error: unknown) {
 function isSignedOutResponse(error: unknown) {
   const code = appwriteErrorCode(error);
   return code === 401 || code === 403;
+}
+
+function areKeepFlipSubscriptionsEnforced() {
+  // Keep the auth boundary fail-closed even when a production build omitted
+  // the public flag. The Subscription Police Function uses the same default.
+  return process.env.EXPO_PUBLIC_KEEPFLIP_SUBSCRIPTIONS_ENFORCED !== 'false';
 }
 
 function isNetworkFailure(error: unknown) {
@@ -300,6 +307,26 @@ async function withSessionVerificationTimeout<T>(request: Promise<T>): Promise<T
   }
 }
 
+function initializeUserProfileInBackground(user: Models.User) {
+  /*
+   * A profile is KeepFlip application data, not proof of an authenticated
+   * Appwrite session. Starting this independently means a temporarily
+   * unavailable table, schema migration, or row-permission problem cannot
+   * strand a real account on the credentials screen after sign-up.
+   */
+  void ensureUserProfile({
+    displayName: user.name,
+    userId: user.$id,
+  }).catch((error: unknown) => {
+    if (__DEV__) {
+      console.warn(
+        '[KeepFlip][Auth] User profile setup failed after a valid session. It will retry when the profile is needed:',
+        error,
+      );
+    }
+  });
+}
+
 async function getVerifiedNonAnonymousUser(): Promise<Models.User | null> {
   const { account } = getAppwriteCoreServices();
 
@@ -337,29 +364,12 @@ async function getVerifiedNonAnonymousUser(): Promise<Models.User | null> {
     throw new SessionVerificationError();
   }
 
-  try {
-    await ensureUserProfile({
-      displayName: user.name,
-      userId: user.$id,
-    });
-  } catch (error) {
-    if (__DEV__) {
-      console.warn(
-        '[KeepFlip][Auth] Could not initialize the user profile:',
-        error,
-      );
-    }
-    throw new KeepFlipAuthError(
-      'KeepFlip could not initialize the profile for this account. Please try again.',
-      'AUTH_REQUEST_FAILED',
-    );
-  }
-
   identifyKeepFlipUser(
     user.$id,
     { email: user.email, name: user.name },
     { signup_date: user.$createdAt },
   );
+  initializeUserProfileInBackground(user);
 
   return user;
 }
@@ -626,6 +636,13 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
 
       let sessionRequestStarted = false;
       try {
+        if (areKeepFlipSubscriptionsEnforced()) {
+          throw new KeepFlipAuthError(
+            'Start a KeepFlip subscription before creating an account.',
+            'AUTH_SUBSCRIPTION_REQUIRED',
+          );
+        }
+
         const configurationStatus = getAppwriteCoreConfigurationStatus();
         if (!configurationStatus.configured) {
           commit(setupSnapshot(configurationStatus.missingKeys));

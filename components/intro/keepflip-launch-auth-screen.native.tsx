@@ -374,7 +374,6 @@ export function KeepFlipLaunchAuthScreen({
     missingKeys,
     retry,
     signIn,
-    signUp,
     status,
     user,
   } = useKeepFlipAuth();
@@ -545,43 +544,12 @@ export function KeepFlipLaunchAuthScreen({
           }
         }
       } else {
-        if (!accountUserId) {
-          await signUp(normalizedName, normalizedEmail, password);
-          const { account } = getAppwriteCoreServices();
-          const currentUser = await account.get();
-          accountUserId = currentUser.$id;
-          setCreatedUserId(accountUserId);
-
-          if (initialBuyRules) {
-            try {
-              await completeScanInventoryWalkthrough(
-                accountUserId,
-                currentUser.name || normalizedName,
-                initialBuyRules,
-              );
-            } catch (error) {
-              profileSaved = false;
-              setProfileSavedForAccount(false);
-              if (__DEV__) {
-                console.warn(
-                  '[KeepFlip][Onboarding] Seller setup could not be saved after account creation:',
-                  error,
-                );
-              }
-            }
-          }
-        }
-
-        const access = await purchaseKeepFlipPlan(
-          accountUserId,
-          selection.plan,
-          selection.cadence,
+        // Every create-account route must use the subscription-first branch.
+        // Keeping a second sign-up-then-purchase path here would recreate the
+        // exact loophole this screen is intended to prevent.
+        throw new Error(
+          'KeepFlip requires an active subscription before creating an account.',
         );
-        if (!access.active) {
-          throw new Error(
-            'KeepFlip could not confirm the subscription after the store purchase. Try again or restore purchases.',
-          );
-        }
       }
 
       void Haptics.notificationAsync(

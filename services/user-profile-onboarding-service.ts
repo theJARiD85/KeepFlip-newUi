@@ -209,6 +209,9 @@ export async function ensureUserProfile({
     if (isConflictError(error)) {
       return findUserProfileRow(cleanUserId);
     }
+    if (isProfileSchemaError(error)) {
+      throw userProfileSchemaMigrationError(error);
+    }
     throw error;
   }
 }

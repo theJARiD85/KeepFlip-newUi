@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { FlipCompanion } from '@/components/flip';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
@@ -16,6 +16,8 @@ export function WebOnboardingScreen({
   const router = useRouter();
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const colors = getKeepFlipThemeColors(effectiveColorScheme);
+  const { width } = useWindowDimensions();
+  const flipSize = width <= 390 ? 108 : 132;
 
   return (
     <View style={[styles.root, { backgroundColor: colors.backgroundDeep }]}>
@@ -31,7 +33,7 @@ export function WebOnboardingScreen({
           Meet Flip, your resale sidekick. A few quick questions will set the buying rules that guide the evidence and advice you see everywhere in KeepFlip.
         </Text>
         <View style={[styles.flipCard, { backgroundColor: colors.iconSurfaceViolet, borderColor: colors.accentVioletBorder }]}>
-          <FlipCompanion cropToSquare={false} size={82} />
+          <FlipCompanion cropToSquare={false} size={flipSize} />
           <View style={styles.flipCopy}>
             <Text style={[styles.flipEyebrow, { color: colors.scannerCyan }]}>FLIP IS READY</Text>
             <Text style={[styles.flipText, { color: colors.textMuted }]}>He will learn the kind of deals, pace, profit, and risk that fit your business.</Text>
