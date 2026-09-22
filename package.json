@@ -23,6 +23,7 @@
     "@shopify/react-native-skia": "2.6.2",
     "@stripe/react-stripe-js": "^6.10.0",
     "@stripe/stripe-js": "^9.16.0",
+    "appwrite": "^27.0.0",
     "expo": "~57.0.24",
     "expo-application": "~57.0.3",
     "expo-asset": "~57.0.11",

@@ -16,6 +16,7 @@ import {
 } from '@/components/subscription/keepflip-subscription-context';
 import { KeepFlipFeedbackNudgeProvider } from '@/components/feedback/keepflip-feedback-nudge';
 import { getKeepFlipThemeColors } from '@/constants/keepflip-theme';
+import { pingAppwriteWebClientOnce } from '@/lib/appwrite-web-client';
 import { areKeepFlipSubscriptionsEnforced } from '@/services/keepflip-subscription-service';
 
 function ProtectedRootStack() {
@@ -93,6 +94,10 @@ function WebRootContent() {
       console.warn('[KeepFlip][Web] Custom fonts could not be loaded.', fontError);
     }
   }, [fontError]);
+
+  useEffect(() => {
+    pingAppwriteWebClientOnce();
+  }, []);
 
   if (!fontsLoaded && !fontError) {
     return <View style={{ flex: 1, backgroundColor: colors.backgroundDeep }} />;
