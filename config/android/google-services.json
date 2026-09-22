@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "924739770457",
+    "project_id": "keepflip-bea17",
+    "storage_bucket": "keepflip-bea17.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:924739770457:android:b28856fbcd50e56e36f948",
+        "android_client_info": {
+          "package_name": "com.keepflip.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDgj0IXv94Bn9EXQ62t6sgfYHoXKd_Bi3U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
