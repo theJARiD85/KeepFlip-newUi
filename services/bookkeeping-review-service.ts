@@ -26,7 +26,9 @@ export type FocusedBookkeepingReviewItem = {
   rawTransactionType: string | null;
   reviewUpdatedAt: string | null;
   transactionMemo: string | null;
-  /** The durable Books record created from this immutable eBay transaction ID. */
+  mileageMeters: number | null;
+  mileageRateCents: number | null;
+  /** The durable Books record created from this immutable source event. */
   bookTransactionId: string | null;
   item: {
     id: string;
@@ -77,6 +79,16 @@ export type PostFocusedBookkeepingReviewInput = {
   quantity?: number;
   feeCents?: number;
   marketplaceCollectedTaxCents?: number;
+  /** Whole cents per mile; the server recomputes the mileage expense from the saved trip distance. */
+  mileageRateCents?: number;
+};
+
+export type QueueSourcingTripMileageReviewResult = {
+  reviewId: string;
+  sourceTripId: string;
+  status: FocusedBookkeepingReviewStatus;
+  mileageMeters: number;
+  alreadyQueued: boolean;
 };
 
 export type PostFocusedBookkeepingReviewResult = {
@@ -131,7 +143,11 @@ function bookkeepingFunctionId() {
 }
 
 async function executeReviewFunction(
-  xpath: '/review/detail' | '/review/confirm' | '/review/post',
+  xpath:
+    | '/review/detail'
+    | '/review/confirm'
+    | '/review/post'
+    | '/review/sourcing-trip',
   body: Record<string, unknown>,
 ) {
   return functions.createExecution({
@@ -205,6 +221,16 @@ function parseReviewItem(value: unknown): FocusedBookkeepingReviewItem {
       text(raw.reason, 1_000) ||
       'This source transaction needs a final review before KeepFlip can clear it.',
     reviewUpdatedAt: nullableText(raw.reviewUpdatedAt, 80),
+    mileageMeters:
+      finiteNullableInteger(raw.mileageMeters) != null &&
+      Number(raw.mileageMeters) >= 0
+        ? Number(raw.mileageMeters)
+        : null,
+    mileageRateCents:
+      finiteNullableInteger(raw.mileageRateCents) != null &&
+      Number(raw.mileageRateCents) > 0
+        ? Number(raw.mileageRateCents)
+        : null,
     sourceType: text(raw.sourceType, 80).toLowerCase() || 'unclassified',
     status: reviewStatus,
     transactionMemo: nullableText(raw.transactionMemo, 1_000),
@@ -262,7 +288,7 @@ export async function postFocusedBookkeepingReview(
   if (execution.responseStatusCode !== 200) {
     throw functionError(
       execution.responseBody,
-      'KeepFlip could not create the Books record from that eBay transaction.',
+      'KeepFlip could not create the Books record from that review.',
     );
   }
   const payload = parsePayload(execution.responseBody);
@@ -277,6 +303,44 @@ export async function postFocusedBookkeepingReview(
     alreadyRecorded: payload.alreadyRecorded === true,
     bookTransactionId,
     replacedInvalidReview: payload.replacedInvalidReview === true,
+    status: reviewStatus,
+  };
+}
+
+export async function queueSourcingTripMileageReview(
+  sourceTripId: string,
+): Promise<QueueSourcingTripMileageReviewResult> {
+  const execution = await executeReviewFunction('/review/sourcing-trip', {
+    sourceTripId,
+  });
+  if (execution.responseStatusCode !== 200) {
+    throw functionError(
+      execution.responseBody,
+      'KeepFlip could not add the sourcing-trip mileage to Books review.',
+    );
+  }
+
+  const payload = parsePayload(execution.responseBody);
+  const reviewId = text(payload.reviewId, 64);
+  const returnedSourceTripId = text(payload.sourceTripId, 64);
+  const reviewStatus = status(payload.status);
+  const mileageMeters = finiteNullableInteger(payload.mileageMeters);
+  if (
+    payload.ok !== true ||
+    !reviewId ||
+    returnedSourceTripId !== sourceTripId ||
+    !reviewStatus ||
+    mileageMeters == null ||
+    mileageMeters <= 0
+  ) {
+    throw new Error('The Books service did not confirm the sourcing-trip mileage review.');
+  }
+
+  return {
+    alreadyQueued: payload.alreadyQueued === true,
+    mileageMeters,
+    reviewId,
+    sourceTripId: returnedSourceTripId,
     status: reviewStatus,
   };
 }

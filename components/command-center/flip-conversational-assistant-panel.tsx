@@ -359,6 +359,7 @@ export type FlipAssistantPresentation = 'inline' | 'overlay';
 export function FlipConversationalAssistantPanel({
   currentRoute,
   startsExpanded = false,
+  fillAvailableHeight = false,
   onNavigate,
   onOpenSellerOperations,
   onExpandedChange,
@@ -367,6 +368,7 @@ export function FlipConversationalAssistantPanel({
 }: {
   currentRoute?: string | null;
   startsExpanded?: boolean;
+  fillAvailableHeight?: boolean;
   onNavigate: (route: AssistantRoute) => void;
   onOpenSellerOperations: () => void;
   onExpandedChange?: (isExpanded: boolean) => void;
@@ -374,9 +376,9 @@ export function FlipConversationalAssistantPanel({
   presentation?: FlipAssistantPresentation;
 }) {
   const styles = useResponsiveStyles(createResponsiveStyles);
-  const {
-    responsiveFont
-  } = useResponsiveLayout();
+  const responsiveLayout = useResponsiveLayout();
+  const responsiveFont = (size: number, factor?: number) =>
+    responsiveLayout.responsiveFont(Math.max(size, 11), factor);
 
   const { user } = useKeepFlipAuth();
   const [command, setCommand] = useState('');
@@ -951,6 +953,7 @@ export function FlipConversationalAssistantPanel({
     <View
       style={[
         styles.surface,
+        fillAvailableHeight && isExpanded && styles.fillAvailableHeight,
         isOverlay && styles.overlaySurface,
         isOverlay && isExpanded && styles.overlaySurfaceExpanded,
         isOverlay && !isExpanded && styles.overlaySurfaceCollapsed,
@@ -1007,6 +1010,7 @@ export function FlipConversationalAssistantPanel({
           exiting={FadeOut.duration(140)}
           style={[
             styles.expandedContent,
+            fillAvailableHeight && styles.fillAvailableHeightExpandedContent,
             isOverlay && styles.overlayExpandedContent,
           ]}>
           <View style={[styles.heading, isOverlay && styles.overlayHeading]}>
@@ -1099,6 +1103,7 @@ export function FlipConversationalAssistantPanel({
                 showsVerticalScrollIndicator={isOverlay}
                 style={[
                   styles.conversation,
+                  fillAvailableHeight && styles.fillAvailableHeightConversation,
                   isOverlay && styles.overlayConversation,
                   isOverlay && overlayConversationMaxHeight != null
                     ? { maxHeight: overlayConversationMaxHeight }
@@ -1163,7 +1168,7 @@ export function FlipConversationalAssistantPanel({
                     {entry.role === 'assistant' ? (
                       <View style={styles.assistantMessageStack}>
                         <View style={[styles.messageBubble, styles.assistantBubble]}>
-                          <Text selectable style={[styles.messageText, { fontSize: responsiveFont(11), lineHeight: 16 }]}>
+                          <Text selectable style={[styles.messageText, { fontSize: responsiveFont(14), lineHeight: 21 }]}>
                             {entry.content}
                           </Text>
                         </View>
@@ -1177,7 +1182,7 @@ export function FlipConversationalAssistantPanel({
                       </View>
                     ) : (
                       <View style={[styles.messageBubble, styles.userBubble]}>
-                        <Text selectable style={[styles.messageText, { fontSize: responsiveFont(11), lineHeight: 16 }]}>
+                        <Text selectable style={[styles.messageText, { fontSize: responsiveFont(14), lineHeight: 21 }]}>
                           {entry.content}
                         </Text>
                       </View>
@@ -1239,51 +1244,6 @@ export function FlipConversationalAssistantPanel({
                 </View>
               ) : null}
 
-              <View style={styles.inputRow}>
-                <View style={styles.inputShell}>
-                  <View
-                    accessibilityLabel="Flip"
-                    accessible
-                    style={styles.inputAvatar}>
-                    <FlipCompanion size={25} />
-                  </View>
-                  <TextInput
-                    accessibilityLabel="Message Flip"
-                    autoCapitalize="sentences"
-                    autoFocus
-                    editable={!isInputLocked}
-                    onChangeText={(value) => {
-                      markActivity();
-                      setCommand(value);
-                    }}
-                    onSubmitEditing={() => void sendMessage()}
-                    onFocus={markActivity}
-                    placeholder="Tell Flip what you need..."
-                    placeholderTextColor={theme.colors.textMuted}
-                    returnKeyType="send"
-                    style={styles.input}
-                    value={command}
-                  />
-                </View>
-                <Pressable
-                  accessibilityLabel="Send message to Flip"
-                  accessibilityRole="button"
-                  disabled={!command.trim() || isInputLocked}
-                  hitSlop={4}
-                  onPress={() => void sendMessage()}
-                  style={({ pressed }) => [
-                    styles.sendButton,
-                    (!command.trim() || isInputLocked) && styles.sendButtonDisabled,
-                    pressed && styles.sendButtonPressed,
-                  ]}>
-                  {isInteractionLocked ? (
-                    <ActivityIndicator color={theme.colors.background} size="small" />
-                  ) : (
-                    <IconSymbol color={theme.colors.background} name="paperplane.fill" size={16} />
-                  )}
-                </Pressable>
-              </View>
-
               {isMemoryOpen ? (
                 <Animated.View entering={FadeInDown.duration(160)} style={styles.memoryStrip}>
                   <View style={styles.memoryCopy}>
@@ -1340,6 +1300,53 @@ export function FlipConversationalAssistantPanel({
           )}
 
           {error ? <Text style={[styles.error, { fontSize: responsiveFont(10), lineHeight: 14 }]}>{error}</Text> : null}
+
+          {userId ? (
+            <View style={styles.inputRow}>
+              <View style={styles.inputShell}>
+                <View
+                  accessibilityLabel="Flip"
+                  accessible
+                  style={styles.inputAvatar}>
+                  <FlipCompanion size={25} />
+                </View>
+                <TextInput
+                  accessibilityLabel="Message Flip"
+                  autoCapitalize="sentences"
+                  autoFocus
+                  editable={!isInputLocked}
+                  onChangeText={(value) => {
+                    markActivity();
+                    setCommand(value);
+                  }}
+                  onSubmitEditing={() => void sendMessage()}
+                  onFocus={markActivity}
+                  placeholder="Tell Flip what you need..."
+                  placeholderTextColor={theme.colors.textMuted}
+                  returnKeyType="send"
+                  style={styles.input}
+                  value={command}
+                />
+              </View>
+              <Pressable
+                accessibilityLabel="Send message to Flip"
+                accessibilityRole="button"
+                disabled={!command.trim() || isInputLocked}
+                hitSlop={4}
+                onPress={() => void sendMessage()}
+                style={({ pressed }) => [
+                  styles.sendButton,
+                  (!command.trim() || isInputLocked) && styles.sendButtonDisabled,
+                  pressed && styles.sendButtonPressed,
+                ]}>
+                {isInteractionLocked ? (
+                  <ActivityIndicator color={theme.colors.background} size="small" />
+                ) : (
+                  <IconSymbol color={theme.colors.background} name="paperplane.fill" size={16} />
+                )}
+              </Pressable>
+            </View>
+          ) : null}
         </Animated.View>
       )}
     </View>
@@ -1358,7 +1365,9 @@ function dueLabel(value: string) {
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-  const { responsiveWidth, responsiveHeight, responsiveFont } = responsiveLayout;
+  const { responsiveWidth, responsiveHeight } = responsiveLayout;
+  const responsiveFont = (size: number, factor?: number) =>
+    responsiveLayout.responsiveFont(Math.max(size, 11), factor);
   const staticStyles = StyleSheet.create({
     surface: {
       overflow: 'hidden',
@@ -1367,6 +1376,18 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderRadius: 16,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.card,
+    },
+    fillAvailableHeight: {
+      flex: 1,
+      minHeight: 0,
+    },
+    fillAvailableHeightExpandedContent: {
+      flex: 1,
+      minHeight: 0,
+    },
+    fillAvailableHeightConversation: {
+      flex: 1,
+      minHeight: 0,
     },
     overlaySurface: {
       width: '100%',
@@ -1842,7 +1863,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingHorizontal: 0,
       paddingVertical: 8,
       color: theme.colors.text,
-      fontSize: 12,
+      fontSize: 14,
     },
     sendButton: {
       width: 44,

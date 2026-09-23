@@ -19,6 +19,10 @@ import {
   uploadLedgerReceipt,
 } from '@/services/reseller-ledger-service';
 import {
+  queueSourcingTripMileageReview,
+} from '@/services/bookkeeping-review-service';
+import { isResellerBookkeepingConfigured } from '@/services/reseller-bookkeeping-service';
+import {
   cancelSourcingTrip,
   closeSourcingTrip,
   createSourcingTrip,
@@ -58,10 +62,18 @@ type RecordSourcingTripFindInput = {
   occurredAt: string;
 };
 
+export type SourcingTripCompletionResult = {
+  trip: SourcingTrip;
+  mileageReviewId: string | null;
+  mileageReviewError: string | null;
+};
+
 type SourcingTripContextValue = {
   activeTrip: SourcingTripSummary | null;
   configured: boolean;
-  finishActiveTrip: (input: FinishSourcingTripInput) => Promise<SourcingTrip>;
+  finishActiveTrip: (
+    input: FinishSourcingTripInput,
+  ) => Promise<SourcingTripCompletionResult>;
   isLoading: boolean;
   locationSnapshot: SourcingTripLocationSnapshot | null;
   recordSavedItem: (
@@ -263,6 +275,23 @@ export function SourcingTripProvider({ children }: PropsWithChildren) {
           mileageMeters:
             locationSnapshot?.distanceMeters ?? activeTrip.trip.mileageMeters,
         });
+        let mileageReviewId: string | null = null;
+        let mileageReviewError: string | null = null;
+        if (
+          isResellerBookkeepingConfigured() &&
+          Number.isSafeInteger(trip.mileageMeters) &&
+          (trip.mileageMeters ?? 0) > 0
+        ) {
+          try {
+            const review = await queueSourcingTripMileageReview(trip.id);
+            mileageReviewId = review.status === 'posted' ? null : review.reviewId;
+          } catch (queueError) {
+            mileageReviewError =
+              queueError instanceof Error
+                ? queueError.message
+                : 'KeepFlip could not queue the mileage for Books review.';
+          }
+        }
         clearSourcingTripLocationState();
         setLocationSnapshot(null);
         setActiveTrip(null);
@@ -270,7 +299,11 @@ export function SourcingTripProvider({ children }: PropsWithChildren) {
           find_count: activeTrip.findCount,
           trip_id: trip.id,
         });
-        return trip;
+        return {
+          mileageReviewError,
+          mileageReviewId,
+          trip,
+        };
       } catch (error) {
         if (uploadedReceiptFileId) {
           await deleteLedgerReceipt(uploadedReceiptFileId);

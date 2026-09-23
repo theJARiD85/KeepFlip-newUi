@@ -65,6 +65,7 @@ const REVIEW_POSTING_OPTIONS: readonly ReviewPostingOption[] = [
 function postingTypeForReview(review: FocusedBookkeepingReviewItem): ReviewPostingEventType {
   const sourceType = review.sourceType.toLowerCase();
   const transactionType = (review.rawTransactionType || '').toLowerCase();
+  if (sourceType === 'sourcing_trip_mileage') return 'mileage';
   if (sourceType.startsWith('sale') || transactionType === 'sale') return 'sale';
   if (sourceType.startsWith('shipping_label') || transactionType === 'shipping_label') {
     return 'shipping_label';
@@ -120,7 +121,30 @@ function sourceTypeLabel(value: string) {
 function reviewLabel(review: FocusedBookkeepingReviewItem) {
   if (review.status === 'needs_item_cost') return 'COST OF GOODS SOLD';
   if (review.status === 'needs_item_match') return 'INVENTORY MATCH';
+  if (review.sourceType === 'sourcing_trip_mileage') return 'MILEAGE REVIEW';
   return 'SOURCE TRANSACTION';
+}
+
+function formatSourcingTripMiles(meters: number | null) {
+  if (meters == null || !Number.isFinite(meters) || meters <= 0) {
+    return 'Mileage unavailable';
+  }
+  return `${(meters / 1_609.344).toFixed(1)} miles`;
+}
+
+function mileageExpenseCents(meters: number | null, rateCents: number | null) {
+  if (
+    meters == null ||
+    rateCents == null ||
+    !Number.isSafeInteger(meters) ||
+    meters <= 0 ||
+    !Number.isSafeInteger(rateCents) ||
+    rateCents <= 0
+  ) {
+    return null;
+  }
+  const amountCents = Math.round((meters * rateCents * 1_000) / 1_609_344);
+  return Number.isSafeInteger(amountCents) && amountCents > 0 ? amountCents : null;
 }
 
 function DetailRow({ label, value }: { label: string; value: string | null }) {
@@ -160,6 +184,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
+  const [mileageRate, setMileageRate] = useState('');
   const [currency, setCurrency] = useState('USD');
   const [memo, setMemo] = useState('');
   const [itemCost, setItemCost] = useState('');
@@ -188,6 +213,7 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
           ? result.rawAmountValue
           : ''),
       );
+      setMileageRate(reviewAmountFromCents(result.mileageRateCents));
       setCurrency(result.currency || result.rawCurrency || 'USD');
       setMemo(result.transactionMemo || '');
       setItemCost(reviewAmountFromCents(result.item?.acquisitionCostCents ?? null));
@@ -298,6 +324,49 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
     setSuccess(null);
     setSaving(true);
     try {
+      const isSourcingMileageReview = review.sourceType === 'sourcing_trip_mileage';
+      if (isSourcingMileageReview) {
+        const mileageRateCents = centsFromReviewAmount(mileageRate);
+        const amountCents = mileageExpenseCents(review.mileageMeters, mileageRateCents);
+        if (mileageRateCents == null || mileageRateCents <= 0) {
+          setError('Enter the mileage rate you want to use, such as 0.70 per mile.');
+          return;
+        }
+        if (amountCents == null) {
+          setError('The saved mileage and rate must produce a positive Books amount.');
+          return;
+        }
+        if (!Number.isFinite(Date.parse(occurredAt))) {
+          setError('Enter a real trip date and time.');
+          return;
+        }
+
+        const result = await postFocusedBookkeepingReview({
+          amountCents,
+          bookingEntry: 'DEBIT',
+          currency: 'USD',
+          eventType: 'mileage',
+          mileageRateCents,
+          occurredAt,
+          reviewId: review.id,
+          transactionType: 'SOURCING_TRIP_MILEAGE',
+          transactionMemo: memo.trim() || null,
+        });
+        setSuccess(
+          result.alreadyRecorded
+            ? 'This sourcing-trip mileage was already posted to Books.'
+            : 'Sourcing-trip mileage was posted to Books as a mileage expense.',
+        );
+        trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.bookkeepingReviewResolved, {
+          review_type: 'sourcing_trip_mileage',
+        });
+        await Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Success,
+        ).catch(() => undefined);
+        await loadReview();
+        return;
+      }
+
       if (review.status === 'needs_item_cost') {
         const itemCostCents = centsFromReviewAmount(itemCost);
         if (itemCostCents == null) {
@@ -466,6 +535,10 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
   const needsInventoryLink =
     eventType === 'sale' || eventType === 'inventory_purchase';
   const isSyntheticImport = isSyntheticInvalidTransactionExternalKey(review.externalKey);
+  const isSourcingMileageReview = review.sourceType === 'sourcing_trip_mileage';
+  const mileagePreviewCents = isSourcingMileageReview
+    ? mileageExpenseCents(review.mileageMeters, centsFromReviewAmount(mileageRate))
+    : null;
 
   return (
     <KeepFlipBackground>
@@ -483,9 +556,13 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
           showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <Text style={[styles.eyebrow, { fontSize: responsiveFont(9) }]}>BOOKS / TRANSACTION REVIEW</Text>
-            <Text style={[styles.title, { fontSize: responsiveFont(26), maxWidth: '85%' }]}>Review the imported eBay record</Text>
+            <Text style={[styles.title, { fontSize: responsiveFont(26), maxWidth: '85%' }]}>
+              {isSourcingMileageReview ? 'Review sourcing-trip mileage' : 'Review the imported eBay record'}
+            </Text>
             <Text style={[styles.subtitle, { fontSize: responsiveFont(12), fontFamily: theme.fonts.body }]}>
-              {isSyntheticImport
+              {isSourcingMileageReview
+                ? `KeepFlip recorded ${formatSourcingTripMiles(review.mileageMeters)} on this closed trip. Choose the rate you want to use, then post the resulting expense to Books.`
+                : isSyntheticImport
                 ? 'This eBay import is missing its real transaction ID. KeepFlip will hold it for correction until a real eBay ID is supplied or Money Sync finds the corrected provider record.'
                 : 'The eBay transaction ID is locked. Correct the bookkeeping details below, then create one durable KeepFlip Books record linked to that ID.'}
             </Text>
@@ -500,24 +577,37 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
           <View style={styles.sourceCard}>
             <View style={styles.sourceTopline}>
               <View style={styles.sourceHeading}>
-                <Text style={[styles.cardEyebrow, { fontSize: responsiveFont(8) }]}>IMPORTED EBAY SOURCE</Text>
+                <Text style={[styles.cardEyebrow, { fontSize: responsiveFont(8) }]}>
+                  {isSourcingMileageReview ? 'SOURCING TRIP RECORD' : 'IMPORTED EBAY SOURCE'}
+                </Text>
                 <Text style={[styles.cardTitle, { fontSize: responsiveFont(16) }]}>{sourceTypeLabel(review.sourceType)}</Text>
               </View>
               <Text selectable style={styles.sourceAmount}>
-                {formatMoney(review.amountCents, review.currency)}
+                {isSourcingMileageReview ? 'RATE NEEDED' : formatMoney(review.amountCents, review.currency)}
               </Text>
             </View>
-            <DetailRow label="Imported transaction type" value={review.rawTransactionType} />
-            <DetailRow label="Imported booking entry" value={review.bookingEntry} />
-            <DetailRow label="Imported eBay amount" value={rawSourceAmount} />
-            <DetailRow
-              label={isSyntheticImport ? 'Temporary review ID' : 'eBay transaction ID — locked'}
-              value={review.externalKey}
-            />
-            <DetailRow label="Order ID" value={review.orderId} />
-            <DetailRow label="Payout ID" value={review.payoutId} />
-            <DetailRow label="Transaction date" value={formatDate(review.occurredAt)} />
-            <DetailRow label="eBay memo" value={review.transactionMemo} />
+            {isSourcingMileageReview ? (
+              <>
+                <DetailRow label="Tracked mileage" value={formatSourcingTripMiles(review.mileageMeters)} />
+                <DetailRow label="Sourcing trip ID" value={review.externalKey} />
+                <DetailRow label="Trip closed" value={formatDate(review.occurredAt)} />
+                <DetailRow label="Trip memo" value={review.transactionMemo} />
+              </>
+            ) : (
+              <>
+                <DetailRow label="Imported transaction type" value={review.rawTransactionType} />
+                <DetailRow label="Imported booking entry" value={review.bookingEntry} />
+                <DetailRow label="Imported eBay amount" value={rawSourceAmount} />
+                <DetailRow
+                  label={isSyntheticImport ? 'Temporary review ID' : 'eBay transaction ID — locked'}
+                  value={review.externalKey}
+                />
+                <DetailRow label="Order ID" value={review.orderId} />
+                <DetailRow label="Payout ID" value={review.payoutId} />
+                <DetailRow label="Transaction date" value={formatDate(review.occurredAt)} />
+                <DetailRow label="eBay memo" value={review.transactionMemo} />
+              </>
+            )}
           </View>
 
           {needsCostReview ? (
@@ -554,7 +644,9 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
             <View style={styles.confirmedCard}>
               <Text style={[styles.confirmedTitle, { fontSize: responsiveFont(9) }]}>BOOKS RECORD CREATED</Text>
               <Text style={[styles.confirmedBody, { fontSize: responsiveFont(11) }]}>
-                This durable Books record is tied to the locked eBay transaction ID above. Posted accounting lines are preserved; future corrections should create a reversing record rather than silently rewrite it.
+                {isSourcingMileageReview
+                  ? 'This durable Books record is tied to the closed sourcing trip above. The posted mileage expense is preserved; future corrections should create a reversing record rather than silently rewrite it.'
+                  : 'This durable Books record is tied to the locked eBay transaction ID above. Posted accounting lines are preserved; future corrections should create a reversing record rather than silently rewrite it.'}
               </Text>
               <DetailRow label="KeepFlip Books record ID" value={review.bookTransactionId} />
             </View>
@@ -564,6 +656,53 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
               <Text selectable style={[styles.errorText, { fontSize: responsiveFont(10) }]}>
                 This source import is marked posted, but KeepFlip could not find its durable Books record. Leave the source unchanged and contact support with the locked transaction ID above.
               </Text>
+            </View>
+          ) : isSourcingMileageReview ? (
+            <View style={styles.editorCard}>
+              <Text style={[styles.cardEyebrow, { fontSize: responsiveFont(8) }]}>REVIEW & POST MILEAGE</Text>
+              <Text style={[styles.editorTitle, { fontSize: responsiveFont(17) }]}>Choose the rate for this trip</Text>
+              <Text style={[styles.editorBody, { fontSize: responsiveFont(11) }]}>
+                The trip distance is saved, but KeepFlip will not guess the rate or decide whether it is deductible. Enter the rate you want this expense to use; you can leave this screen and return from Money review whenever you have it.
+              </Text>
+              <View style={styles.itemChip}>
+                <Text style={[styles.itemChipLabel, { fontSize: responsiveFont(7) }]}>RECORDED DISTANCE</Text>
+                <Text style={[styles.itemChipTitle, { fontSize: responsiveFont(13) }]}>{formatSourcingTripMiles(review.mileageMeters)}</Text>
+              </View>
+              <View style={styles.fieldGroup}>
+                <Text style={[styles.fieldLabel, { fontSize: responsiveFont(8) }]}>RATE PER MILE</Text>
+                <View style={styles.moneyInputRow}>
+                  <Text style={styles.currencyPrefix}>$</Text>
+                  <TextInput
+                    keyboardType="decimal-pad"
+                    onChangeText={setMileageRate}
+                    placeholder="0.00"
+                    placeholderTextColor={theme.colors.textMuted}
+                    selectTextOnFocus
+                    style={styles.moneyInput}
+                    value={mileageRate}
+                  />
+                  <Text style={styles.rateSuffix}>/ mile</Text>
+                </View>
+                <Text style={[styles.fieldHint, { fontSize: responsiveFont(9) }]}>Use the rate appropriate for your records. KeepFlip stores the rate with the posted Books entry.</Text>
+              </View>
+              <View style={styles.mileagePreviewCard}>
+                <Text style={[styles.fieldLabel, { fontSize: responsiveFont(8) }]}>BOOKS EXPENSE PREVIEW</Text>
+                <Text style={[styles.mileagePreviewAmount, { fontSize: responsiveFont(20) }]}>
+                  {mileagePreviewCents == null ? 'Enter a rate' : formatMoney(mileagePreviewCents, 'USD')}
+                </Text>
+                <Text style={[styles.fieldHint, { fontSize: responsiveFont(9) }]}>Debit mileage expense · credit cash on hand</Text>
+              </View>
+              <View style={styles.fieldGroup}>
+                <Text style={[styles.fieldLabel, { fontSize: responsiveFont(8) }]}>MEMO</Text>
+                <TextInput
+                  multiline
+                  onChangeText={setMemo}
+                  placeholder="Optional note about this mileage expense"
+                  placeholderTextColor={theme.colors.textMuted}
+                  style={[styles.textField, styles.memoField]}
+                  value={memo}
+                />
+              </View>
             </View>
           ) : (
             <View style={styles.editorCard}>
@@ -848,6 +987,8 @@ export function BooksReviewScreen({ reviewId }: { reviewId: string }) {
                     ? 'SAVING…'
                     : review.status === 'needs_item_cost'
                       ? 'CONFIRM ITEM COST'
+                      : isSourcingMileageReview
+                        ? 'POST MILEAGE TO BOOKS'
                       : 'CREATE LINKED BOOKS RECORD'}
                 </Text>
               </Pressable>
@@ -1078,6 +1219,26 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingHorizontal: 8,
       color: theme.colors.cream,
       fontSize: 17,
+      fontWeight: '900',
+      fontVariant: ['tabular-nums'],
+    },
+    rateSuffix: {
+      paddingRight: 12,
+      color: theme.colors.textMuted,
+      fontSize: 12,
+      fontWeight: '800',
+    },
+    mileagePreviewCard: {
+      gap: 3,
+      padding: 11,
+      borderRadius: 9,
+      borderWidth: 1,
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.iconSurfaceGold,
+    },
+    mileagePreviewAmount: {
+      color: theme.colors.goldBright,
+      fontSize: 20,
       fontWeight: '900',
       fontVariant: ['tabular-nums'],
     },

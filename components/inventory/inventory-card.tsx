@@ -4,7 +4,10 @@ import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 import { withAlpha } from '@/lib/withAlpha';
-import { resolveInventoryCoverImageUri } from "@/services/inventory-cover-image";
+import {
+  releaseInventoryCoverImageUri,
+  resolveInventoryCoverImageUri,
+} from "@/services/inventory-cover-image";
 import type { InventoryItem } from "@/services/inventory-service";
 import { Image, type ImageSource } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -84,7 +87,9 @@ export function InventoryCard({
   isDeleting?: boolean;
 }) {
   const styles = useResponsiveStyles(createResponsiveStyles);
-  const { responsiveFont } = useResponsiveLayout();
+  const { responsiveFont: scaleResponsiveFont } = useResponsiveLayout();
+  const responsiveFont = (size: number, factor?: number) =>
+    scaleResponsiveFont(Math.max(size, 11), factor);
 
   const coverPhotoId = item.coverPhotoId;
   const hasProvidedCoverImage = Boolean(coverImageSource);
@@ -135,6 +140,7 @@ export function InventoryCard({
   const [heroWidth, setHeroWidth] = useState(0);
   const requestedPhotoIds = useRef(new Set<string>());
   const photoGeneration = useRef(0);
+  const resolvedPhotoUris = useRef(new Set<string>());
   const meta = [item.brand, item.model, item.category]
     .filter(Boolean)
     .join(" / ");
@@ -157,7 +163,12 @@ export function InventoryCard({
 
     void resolveInventoryCoverImageUri(photoId)
       .then((uri) => {
-        if (generation !== photoGeneration.current) return;
+        if (generation !== photoGeneration.current) {
+          if (uri) releaseInventoryCoverImageUri(uri);
+          return;
+        }
+
+        if (uri) resolvedPhotoUris.current.add(uri);
 
         setPhotoState((current) => {
           const base =
@@ -224,6 +235,12 @@ export function InventoryCard({
     photoGeneration.current += 1;
     requestedPhotoIds.current.clear();
     ensureNearbyPhotos(0);
+
+    return () => {
+      photoGeneration.current += 1;
+      resolvedPhotoUris.current.forEach(releaseInventoryCoverImageUri);
+      resolvedPhotoUris.current.clear();
+    };
   }, [ensureNearbyPhotos, photoKeySignature]);
 
   const handlePhotoScrollEnd = useCallback(
@@ -607,7 +624,9 @@ export function InventoryCard({
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-  const { responsiveFont, responsiveHeight, responsiveWidth } = responsiveLayout;
+  const { responsiveHeight, responsiveWidth } = responsiveLayout;
+  const responsiveFont = (size: number, factor?: number) =>
+    responsiveLayout.responsiveFont(Math.max(size, 11), factor);
   const staticStyles = StyleSheet.create({
     card: {
       overflow: "hidden",
@@ -671,7 +690,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     fallbackLabel: {
       color: theme.colors.goldBright,
-      fontFamily: theme.fonts.radar,
+      fontFamily: theme.fonts.body,
       fontSize: responsiveFont(8),
       fontWeight: "900",
       letterSpacing: 1.1,
@@ -703,7 +722,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     photoPillText: {
       color: theme.colors.scannerCyan,
-      fontFamily: theme.fonts.radar,
+      fontFamily: theme.fonts.body,
       fontSize: responsiveFont(8),
       fontWeight: "900",
       letterSpacing: 0.75,
@@ -719,7 +738,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     conditionText: {
       color: theme.colors.goldBright,
-      fontFamily: theme.fonts.radar,
+      fontFamily: theme.fonts.body,
       fontSize: responsiveFont(8),
       fontWeight: "900",
       letterSpacing: 0.8,
@@ -727,7 +746,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     flipDecisionText: {
       color: theme.colors.scannerCyan,
-      fontFamily: theme.fonts.radar,
+      fontFamily: theme.fonts.body,
       fontSize: responsiveFont(7),
       fontWeight: "900",
       letterSpacing: 0.7,
@@ -752,7 +771,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     meta: {
       color: theme.colors.textMuted,
-      fontFamily: theme.fonts.radar,
+      fontFamily: theme.fonts.body,
       fontSize: responsiveFont(9),
       lineHeight: 13,
       fontWeight: "800",
@@ -800,14 +819,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     savedAtLabel: {
       color: theme.colors.textMuted,
-      fontFamily: theme.fonts.radar,
+      fontFamily: theme.fonts.body,
       fontSize: responsiveFont(7),
       fontWeight: "900",
       letterSpacing: 0.8,
     },
     savedAtValue: {
       color: theme.colors.text,
-      fontFamily: theme.fonts.radar,
+      fontFamily: theme.fonts.body,
       fontSize: responsiveFont(8),
       fontWeight: "900",
       letterSpacing: 0.5,
@@ -818,14 +837,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     medianLabel: {
       color: theme.colors.goldBright,
-      fontFamily: theme.fonts.radar,
+      fontFamily: theme.fonts.body,
       fontSize: responsiveFont(8),
       fontWeight: "900",
       letterSpacing: 1.1,
     },
     medianValue: {
       color: theme.colors.goldBright,
-      fontFamily: theme.fonts.radar,
+      fontFamily: theme.fonts.numbers,
       fontSize: responsiveFont(40),
       lineHeight: 46,
       fontWeight: "900",
@@ -843,7 +862,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     confidenceValue: {
       color: theme.colors.scannerCyan,
-      fontFamily: theme.fonts.radar,
+      fontFamily: theme.fonts.numbers,
       fontSize: responsiveFont(16),
       fontWeight: "900",
       fontVariant: ["tabular-nums"],
@@ -853,7 +872,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     confidenceLabel: {
       color: theme.colors.scannerCyan,
-      fontFamily: theme.fonts.radar,
+      fontFamily: theme.fonts.body,
       fontSize: responsiveFont(7),
       fontWeight: "900",
       letterSpacing: 0.65,
@@ -880,14 +899,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     recordLabel: {
       color: theme.colors.scannerCyan,
-      fontFamily: theme.fonts.radar,
+      fontFamily: theme.fonts.numbers,
       fontSize: 7,
       fontWeight: "900",
       letterSpacing: 0.65,
     },
     recordValue: {
       color: theme.colors.cream,
-      fontFamily: theme.fonts.radar,
+      fontFamily: theme.fonts.body,
       fontSize: responsiveFont(11),
       fontWeight: "900",
       fontVariant: ["tabular-nums"],
@@ -965,7 +984,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     listingGuideButtonEyebrow: {
       color: theme.colors.scannerCyan,
-      fontFamily: theme.fonts.radar,
+      fontFamily: theme.fonts.body,
       fontSize: responsiveFont(7),
       fontWeight: "900",
       letterSpacing: 0.75,

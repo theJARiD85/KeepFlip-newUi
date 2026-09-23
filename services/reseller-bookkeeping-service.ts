@@ -100,6 +100,8 @@ export type BookkeepingReviewItem = {
   payoutId: string | null;
   externalKey: string;
   reason: string;
+  mileageMeters: number | null;
+  mileageRateCents: number | null;
 };
 
 export type BookkeepingReviewQueueResult = {
@@ -201,6 +203,8 @@ function reviewItem(value: unknown): BookkeepingReviewItem | null {
       : raw.amountKnown === false
         ? false
         : amountShapeValid && !legacyFallback;
+  const rawMileageMeters = Number(raw.mileageMeters);
+  const rawMileageRateCents = Number(raw.mileageRateCents);
 
   return {
     amountCents: amountKnown ? rawAmountCents : null,
@@ -210,6 +214,14 @@ function reviewItem(value: unknown): BookkeepingReviewItem | null {
     id,
     itemId: text(raw.itemId, 64) || null,
     legacyFallback,
+    mileageMeters:
+      Number.isSafeInteger(rawMileageMeters) && rawMileageMeters >= 0
+        ? rawMileageMeters
+        : null,
+    mileageRateCents:
+      Number.isSafeInteger(rawMileageRateCents) && rawMileageRateCents > 0
+        ? rawMileageRateCents
+        : null,
     occurredAt,
     orderId: text(raw.orderId, 180) || null,
     payoutId: text(raw.payoutId, 180) || null,

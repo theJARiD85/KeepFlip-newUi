@@ -141,9 +141,11 @@ export default function InventoryScreen() {
   const { user } = useKeepFlipAuth();
   const userId = user?.$id;
   const {
-    contentWidth, insets, pageGutter, responsiveFont,
+    contentWidth, insets, pageGutter, responsiveFont: scaleResponsiveFont,
   } =
     useResponsiveLayout();
+  const responsiveFont = (size: number, factor?: number) =>
+    scaleResponsiveFont(Math.max(size, 11), factor);
 
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -649,7 +651,9 @@ export default function InventoryScreen() {
 }
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
-  const { responsiveFont, responsiveWidth, responsiveHeight } = responsiveLayout;
+  const { responsiveWidth, responsiveHeight } = responsiveLayout;
+  const responsiveFont = (size: number, factor?: number) =>
+    responsiveLayout.responsiveFont(Math.max(size, 11), factor);
   const staticStyles = StyleSheet.create({
     screen: {
       flex: 1,
@@ -739,15 +743,15 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     filterTriggerLabel: {
       color: theme.colors.scannerCyan,
-      fontFamily: theme.fonts.radar,
-      fontSize: 9,
+      fontFamily: theme.fonts.body,
+      fontSize: 11,
       fontWeight: "900",
       letterSpacing: 0.8,
     },
     filterTriggerSummary: {
       color: theme.colors.textMuted,
-      fontFamily: theme.fonts.radar,
-      fontSize: 8,
+      fontFamily: theme.fonts.body,
+      fontSize: 11,
       fontWeight: "900",
       letterSpacing: 0.5,
       maxWidth: 190,
@@ -779,8 +783,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     filterSheetEyebrow: {
       color: theme.colors.gold,
-      fontFamily: theme.fonts.radar,
-      fontSize: 8,
+      fontFamily: theme.fonts.body,
+      fontSize: 11,
       fontWeight: "900",
       letterSpacing: 1.2,
     },
@@ -809,8 +813,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     controlLabel: {
       color: theme.colors.textMuted,
-      fontFamily: theme.fonts.radar,
-      fontSize: 8,
+      fontFamily: theme.fonts.body,
+      fontSize: 11,
       fontWeight: "900",
       letterSpacing: 1.1,
     },
@@ -833,8 +837,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     controlChipText: {
       color: theme.colors.textMuted,
-      fontFamily: theme.fonts.radar,
-      fontSize: 8,
+      fontFamily: theme.fonts.body,
+      fontSize: 11,
       fontWeight: "900",
       letterSpacing: 0.65,
     },
@@ -858,7 +862,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     clearFiltersText: {
       color: theme.colors.cream,
-      fontFamily: theme.fonts.radar,
+      fontFamily: theme.fonts.body,
       fontSize: 10,
       fontWeight: "900",
       letterSpacing: 1,
@@ -873,7 +877,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     applyFiltersText: {
       color: theme.colors.textOnAccent,
-      fontFamily: theme.fonts.radar,
+      fontFamily: theme.fonts.body,
       fontSize: 10,
       fontWeight: "900",
       letterSpacing: 1,

@@ -1,5 +1,5 @@
 import { type Href, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { ComponentProps } from 'react';
 import {
   ActivityIndicator,
@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
+import { BusinessPulse } from '@/components/command-center/business-pulse';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
@@ -221,11 +222,6 @@ export function CommandCenterScreen() {
     return () => cancelAnimationFrame(frame);
   }, [loadWorkspace]);
 
-  const chartData = useMemo(() => overview?.moneyFlow.slice(-6) ?? [], [overview]);
-  const chartMax = Math.max(
-    ...chartData.flatMap((bucket) => [bucket.moneyInCents, bucket.moneyOutCents]),
-    1,
-  );
   const attentionCount =
     (overview?.inventory.missingCostCount ?? 0) +
     (overview?.attention.unlinkedSaleCount ?? 0);
@@ -327,49 +323,17 @@ export function CommandCenterScreen() {
           />
         </View>
 
-        <View style={[styles.dashboardGrid, isWide ? styles.dashboardGridWide : styles.dashboardGridStacked]}>
-          <View style={[styles.panel, { backgroundColor: colors.card, borderColor: colors.divider }, isWide && styles.flowPanelWide]}>
-            <PanelHeader action="OPEN BOOKS" colors={colors} eyebrow="MONEY MOVEMENT" onAction={() => navigate('/books')} title="Realized cash flow" />
-            <Text style={[styles.panelDescription, { color: colors.textMuted }]}>Income and costs from reconciled Books records. Estimated item value stays out of this chart.</Text>
-            {loading ? (
-              <View style={styles.loadingState}>
-                <ActivityIndicator color={colors.scannerCyan} />
-                <Text style={[styles.loadingText, { color: colors.textMuted }]}>Loading your saved numbers…</Text>
-              </View>
-            ) : chartData.length ? (
-              <View style={styles.chartWrap}>
-                <View style={styles.chartLegend}>
-                  <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: colors.scannerCyan }]} /><Text style={[styles.legendText, { color: colors.textMuted }]}>Money in</Text></View>
-                  <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: colors.goldBright }]} /><Text style={[styles.legendText, { color: colors.textMuted }]}>Costs</Text></View>
-                </View>
-                <View style={styles.chartBars}>
-                  {chartData.map((bucket) => {
-                    const inHeight = Math.max(3, (bucket.moneyInCents / chartMax) * 132);
-                    const outHeight = Math.max(3, (bucket.moneyOutCents / chartMax) * 132);
-                    return (
-                      <View key={bucket.key} style={styles.chartColumn}>
-                        <View style={styles.chartBarPair}>
-                          <View style={[styles.chartBar, { height: inHeight, backgroundColor: colors.scannerCyan }]} />
-                          <View style={[styles.chartBar, { height: outHeight, backgroundColor: colors.goldBright }]} />
-                        </View>
-                        <Text style={[styles.chartLabel, { color: colors.textMuted }]}>{bucket.label}</Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
-            ) : (
-              <View style={[styles.emptyState, { borderColor: colors.divider }]}>
-                <IconSymbol color={colors.goldBright} name="chart.bar.fill" size={20} />
-                <Text style={[styles.emptyTitle, { color: colors.text }]}>Your realized numbers will land here</Text>
-                <Text style={[styles.emptyBody, { color: colors.textMuted }]}>Record an actual sale, purchase, fee, or expense in Books to make this view useful.</Text>
-                <Pressable accessibilityRole="button" onPress={() => navigate('/books')} style={[styles.inlineAction, { borderColor: colors.accentGoldBorder, backgroundColor: colors.iconSurfaceGold }]}>
-                  <Text style={[styles.inlineActionText, { color: colors.goldBright }]}>ADD A BOOKS RECORD</Text>
-                </Pressable>
-              </View>
-            )}
-          </View>
+        <View style={styles.pulseSection}>
+          <BusinessPulse
+            errorMessage={errorMessage}
+            loading={loading}
+            onOpenBooks={() => navigate('/books')}
+            onOpenFlipPlan={() => navigate('/flip-plan')}
+            overview={overview}
+          />
+        </View>
 
+        <View style={[styles.dashboardGrid, styles.dashboardGridStacked]}>
           <View style={[styles.panel, { backgroundColor: colors.card, borderColor: colors.divider }]}>
             <PanelHeader action="VIEW INVENTORY" colors={colors} eyebrow="WORK QUEUE" onAction={() => navigate('/inventory')} title="What needs your attention" />
             <Text style={[styles.panelDescription, { color: colors.textMuted }]}>Small cleanup tasks keep your margin and buying decisions honest.</Text>
@@ -494,7 +458,7 @@ const styles = StyleSheet.create({
   dashboardGrid: { gap: 16 },
   dashboardGridWide: { flexDirection: 'row', alignItems: 'stretch' },
   dashboardGridStacked: { flexDirection: 'column' },
-  flowPanelWide: { flex: 1.35 },
+  pulseSection: { minWidth: 0, width: '100%' },
   panel: { borderWidth: 1, borderRadius: 18, padding: 19, gap: 13, flex: 1, minWidth: 0 },
   panelHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 },
   panelHeadingCopy: { gap: 4, flex: 1, minWidth: 0 },
@@ -503,16 +467,6 @@ const styles = StyleSheet.create({
   panelDescription: { fontFamily: theme.fonts.body, fontSize: 11, lineHeight: 16, maxWidth: 650 },
   panelAction: { minHeight: 29, flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderRadius: 999, paddingHorizontal: 9 },
   panelActionText: { fontFamily: theme.fonts.bold, fontSize: 7, letterSpacing: 1 },
-  chartWrap: { gap: 13, paddingTop: 6 },
-  chartLegend: { flexDirection: 'row', gap: 14 },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  legendDot: { width: 7, height: 7, borderRadius: 4 },
-  legendText: { fontFamily: theme.fonts.body, fontSize: 10 },
-  chartBars: { minHeight: 176, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-around', gap: 8, paddingTop: 8, borderBottomWidth: 1, borderBottomColor: 'rgba(242, 211, 138, 0.15)' },
-  chartColumn: { flex: 1, alignItems: 'center', gap: 8, minWidth: 28 },
-  chartBarPair: { height: 140, flexDirection: 'row', alignItems: 'flex-end', gap: 3 },
-  chartBar: { width: 9, minHeight: 3, borderRadius: 5 },
-  chartLabel: { fontFamily: theme.fonts.medium, fontSize: 9 },
   loadingState: { minHeight: 118, alignItems: 'center', justifyContent: 'center', gap: 9 },
   loadingText: { fontFamily: theme.fonts.body, fontSize: 11 },
   emptyState: { minHeight: 145, alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderRadius: 14, borderStyle: 'dashed', padding: 20 },

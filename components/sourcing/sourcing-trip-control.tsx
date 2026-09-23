@@ -1,5 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
+import { useRouter, type Href } from 'expo-router';
 import {
   Alert,
   Image,
@@ -77,6 +78,7 @@ export function SourcingTripControl() {
   } = useResponsiveLayout();
 
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const {
     activeTrip,
     configured,
@@ -281,15 +283,39 @@ export function SourcingTripControl() {
 
     setSubmitting(true);
     try {
-      await finishActiveTrip({
+      const completion = await finishActiveTrip({
         receiptReference,
         receiptTotalCents,
       });
       setDialog(null);
-      Alert.alert(
-        'Sourcing trip closed',
-        `${activeTrip.findCount} saved find${activeTrip.findCount === 1 ? '' : 's'} remain linked to this trip. ${locationSnapshot ? `${formatSourcingTripMiles(locationSnapshot.distanceMeters)} of mileage was recorded.` : 'Mileage was not available for this trip.'}`,
-      );
+      const mileageMessage = completion.trip.mileageMeters
+        ? `${formatSourcingTripMiles(completion.trip.mileageMeters)} of mileage was recorded.`
+        : 'Mileage was not available for this trip.';
+      const baseMessage = `${activeTrip.findCount} saved find${activeTrip.findCount === 1 ? '' : 's'} remain linked to this trip. ${mileageMessage}`;
+      if (completion.mileageReviewId) {
+        Alert.alert(
+          'Sourcing trip closed',
+          `${baseMessage}\n\nMileage is waiting for a rate before it can be posted to Books. You can review it now or come back to it from Money review later.`,
+          [
+            { text: 'Later', style: 'cancel' },
+            {
+              text: 'Review and post mileage',
+              onPress: () => {
+                router.push(
+                  `/books?reviewId=${encodeURIComponent(completion.mileageReviewId ?? '')}` as Href,
+                );
+              },
+            },
+          ],
+        );
+      } else {
+        Alert.alert(
+          'Sourcing trip closed',
+          completion.mileageReviewError
+            ? `${baseMessage}\n\nMileage was saved on the trip, but Books could not queue the review yet. Open Books later and retry the review queue.`
+            : baseMessage,
+        );
+      }
     } catch (error) {
       console.log(
         'Could not close trip',

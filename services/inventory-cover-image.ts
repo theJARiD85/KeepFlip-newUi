@@ -95,3 +95,6 @@ export async function resolveInventoryCoverImageUri(
 
   return cacheFile.uri;
 }
+
+/** Native image bytes are stored in the device cache and need no URL cleanup. */
+export function releaseInventoryCoverImageUri(_uri: string) {}

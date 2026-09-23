@@ -31,6 +31,8 @@ function WebFlipAssistantScreen() {
         style={[
           styles.content,
           {
+            flex: 1,
+            minHeight: 0,
             maxWidth: contentMaxWidth,
             paddingHorizontal: pageGutter,
             width: contentWidth,
@@ -43,6 +45,7 @@ function WebFlipAssistantScreen() {
         </View>
         <FlipConversationalAssistantPanel
           currentRoute={pathname}
+          fillAvailableHeight
           onNavigate={navigate}
           onOpenSellerOperations={() =>
             router.push('/command-center?openSellerOperations=1' as Href)
@@ -72,14 +75,16 @@ const styles = StyleSheet.create({
   },
   content: {
     alignSelf: 'center',
+    flex: 1,
     gap: 20,
+    minHeight: 0,
   },
   intro: {
     gap: 7,
   },
   eyebrow: {
     color: theme.colors.scannerCyan,
-    fontFamily: theme.fonts.radar,
+    fontFamily: theme.fonts.display,
     fontWeight: '900',
     letterSpacing: 1.2,
   },

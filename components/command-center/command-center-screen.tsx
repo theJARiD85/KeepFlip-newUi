@@ -109,6 +109,7 @@ function hapticSuccess() {
 }
 
 function formatReviewMoney(item: BookkeepingReviewItem) {
+  if (item.sourceType === 'sourcing_trip_mileage') return 'RATE NEEDED';
   if (!item.amountKnown || item.amountCents == null || !item.currency) {
     return 'AMOUNT UNAVAILABLE';
   }
@@ -165,6 +166,7 @@ function reviewTypeLabel(sourceType: string) {
     shipping_label: 'Shipping label',
     shipping_label_booking_unknown: 'Shipping label',
     shipping_label_credit: 'Shipping label credit',
+    sourcing_trip_mileage: 'Sourcing trip mileage',
     transfer: 'eBay transfer',
     unclassified: 'Unclassified eBay record',
     unknown: 'Legacy review record',
@@ -180,6 +182,12 @@ function reviewTypeLabel(sourceType: string) {
 }
 
 function reviewAmountNote(item: BookkeepingReviewItem) {
+  if (item.sourceType === 'sourcing_trip_mileage') {
+    const miles = item.mileageMeters != null
+      ? (item.mileageMeters / 1_609.344).toFixed(1)
+      : null;
+    return miles ? `${miles} MILES TRACKED · RATE NEEDED` : 'MILEAGE RATE NEEDED';
+  }
   if (!item.amountKnown || item.amountCents == null || !item.currency) {
     return item.legacyFallback
       ? 'LEGACY REVIEW · SYNC MONEY AGAIN TO REFRESH SOURCE DETAILS'
@@ -855,7 +863,7 @@ export function CommandCenterScreen() {
                     accessibilityHint="Opens the synced money records that still need attention."
                     description={
                       reviewError ??
-                      `${reviewItems.length} synced eBay record${reviewItems.length === 1 ? '' : 's'} still need${reviewItems.length === 1 ? 's' : ''} attention. Open the queue to see the exact records and finish supported sale reviews here.`
+                      `${reviewItems.length} money record${reviewItems.length === 1 ? '' : 's'} still need${reviewItems.length === 1 ? 's' : ''} attention. Open the queue to see the exact records and finish supported reviews here.`
                     }
                     icon="exclamationmark.triangle.fill"
                     label="Money review"
@@ -968,10 +976,14 @@ export function CommandCenterScreen() {
                     </Text>
                   ) : null}
                   <Text selectable style={styles.reviewCardMeta}>
-                    EBAY TYPE {activeReview.sourceType.toUpperCase()}
+                    {activeReview.sourceType === 'sourcing_trip_mileage'
+                      ? 'SOURCE SOURCING TRIP'
+                      : `EBAY TYPE ${activeReview.sourceType.toUpperCase()}`}
                   </Text>
                   <Text selectable style={styles.reviewCardMeta}>
-                    TRANSACTION {activeReview.externalKey}
+                    {activeReview.sourceType === 'sourcing_trip_mileage'
+                      ? `SOURCE TRIP ${activeReview.externalKey}`
+                      : `TRANSACTION ${activeReview.externalKey}`}
                   </Text>
                   {activeReview.orderId ? (
                     <Text selectable style={styles.reviewCardMeta}>ORDER {activeReview.orderId}</Text>
@@ -1082,9 +1094,13 @@ export function CommandCenterScreen() {
                   </View>
                 ) : (
                   <View style={styles.reviewResolutionSection}>
-                    <Text style={[styles.reviewResolutionTitle, { fontSize: responsiveFont(8) }]}>MANUAL BOOKS CHECK</Text>
+                    <Text style={[styles.reviewResolutionTitle, { fontSize: responsiveFont(8) }]}>
+                      {activeReview.sourceType === 'sourcing_trip_mileage' ? 'MILEAGE RATE NEEDED' : 'MANUAL BOOKS CHECK'}
+                    </Text>
                     <Text style={[styles.reviewResolutionBody, { fontSize: responsiveFont(10) }]}>
-                      KeepFlip preserved the eBay transaction type, transaction ID, and the original amount and currency when eBay supplied them. There is not yet a safe automatic accounting rule for this record, so it stays held instead of being guessed.
+                      {activeReview.sourceType === 'sourcing_trip_mileage'
+                        ? 'KeepFlip saved the trip distance but will not guess the rate. Open Books when you know the rate, or close this queue and return later.'
+                        : 'KeepFlip preserved the eBay transaction type, transaction ID, and the original amount and currency when eBay supplied them. There is not yet a safe automatic accounting rule for this record, so it stays held instead of being guessed.'}
                     </Text>
                     <Pressable
                       accessibilityRole="button"
@@ -1113,7 +1129,7 @@ export function CommandCenterScreen() {
                 contentContainerStyle={styles.reviewQueueContent}
                 showsVerticalScrollIndicator={false}>
                 <Text style={styles.reviewQueueIntro}>
-                  These records were held instead of guessed. Amounts and currencies shown are the values eBay reported. Older fallback rows show AMOUNT UNAVAILABLE until the next money sync refreshes them.
+                  These records were held instead of guessed. Marketplace amounts stay tied to the source data, while sourcing-trip mileage stays here until you provide a rate.
                 </Text>
                 {reviewItems.map((item) => (
                   <Pressable
@@ -1138,7 +1154,9 @@ export function CommandCenterScreen() {
                       </Text>
                     ) : null}
                     <Text numberOfLines={1} style={styles.reviewCardMeta}>
-                      TXN {item.externalKey}
+                      {item.sourceType === 'sourcing_trip_mileage'
+                        ? `TRIP ${item.externalKey}`
+                        : `TXN ${item.externalKey}`}
                     </Text>
                     <Text style={styles.reviewCardAction}>REVIEW →</Text>
                   </Pressable>

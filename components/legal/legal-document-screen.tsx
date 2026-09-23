@@ -56,7 +56,7 @@ export function LegalDocumentScreen({
       <ScrollView
         contentContainerStyle={[styles.content,
         {
-          paddingTop: insets.top / 2,
+          paddingTop: insets.top + 15,
           paddingBottom: insets.bottom + 30,
         }, {alignSelf: 'center', paddingHorizontal: pageGutter }]}
         style={{marginTop: insets.top, marginBottom: insets.bottom}}
