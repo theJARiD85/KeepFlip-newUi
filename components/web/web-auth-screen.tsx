@@ -234,7 +234,29 @@ export function WebAuthScreen({
         }
 
         await linkKeepFlipWebBillingAccount(accountUserId);
-        if (!sessionEstablished) await signIn(email, password);
+        if (!sessionEstablished) {
+          let accessConfirmed = false;
+          for (let attempt = 0; attempt < 6; attempt += 1) {
+            if (attempt) await new Promise((resolve) => setTimeout(resolve, 1_500));
+            try {
+              await signIn(email, password);
+              accessConfirmed = true;
+              break;
+            } catch (error) {
+              if (
+                !(error instanceof KeepFlipAuthError) ||
+                error.code !== 'AUTH_SUBSCRIPTION_REQUIRED'
+              ) {
+                throw error;
+              }
+            }
+          }
+          if (!accessConfirmed) {
+            throw new Error(
+              'Your account was created, but KeepFlip has not confirmed the subscription yet. Try signing in again in a moment.',
+            );
+          }
+        }
       } else {
         await signIn(email, password);
       }
