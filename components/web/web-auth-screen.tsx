@@ -15,6 +15,7 @@ import {
   KeepFlipAuthError,
   useKeepFlipAuth,
 } from '@/components/auth/keepflip-auth-context';
+import { KeepFlipMfaChallenge } from '@/components/auth/keepflip-mfa-challenge';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
@@ -61,6 +62,7 @@ export function WebAuthScreen({
     errorMessage,
     isBusy,
     missingKeys,
+    pendingMfaSignIn,
     signIn,
     status,
   } = useKeepFlipAuth();
@@ -140,37 +142,59 @@ export function WebAuthScreen({
         await signIn(email, password);
       }
 
-      let profileSaved = true;
-      if (isCreateAccount && initialBuyRules) {
-        try {
-          const { account } = getAppwriteCoreServices();
-          const currentUser = await account.get();
-          await completeScanInventoryWalkthrough(
-            currentUser.$id,
-            currentUser.name || name.trim(),
-            initialBuyRules,
-          );
-        } catch (profileError) {
-          profileSaved = false;
-          if (__DEV__) {
-            console.warn(
-              '[KeepFlip][Web onboarding] Seller setup could not be saved after account creation:',
-              profileError,
-            );
-          }
-        }
-      }
-
-      if (onAuthenticated) {
-        await onAuthenticated({ profileSaved });
-      } else {
-        router.replace(profileSaved ? '/' : '/walkthrough');
-      }
+      await finishAuthenticatedFlow();
     } catch (error) {
-      setLocalError(error instanceof Error ? error.message : 'KeepFlip could not complete that request.');
+      const mfaIsPending =
+        error instanceof KeepFlipAuthError &&
+        error.code === 'AUTH_MFA_REQUIRED';
+      setLocalError(
+        mfaIsPending
+          ? null
+          : error instanceof Error
+            ? error.message
+            : 'KeepFlip could not complete that request.',
+      );
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  async function finishAuthenticatedFlow() {
+    let profileSaved = true;
+    if (isCreateAccount && initialBuyRules) {
+      try {
+        const { account } = getAppwriteCoreServices();
+        const currentUser = await account.get();
+        await completeScanInventoryWalkthrough(
+          currentUser.$id,
+          currentUser.name || name.trim(),
+          initialBuyRules,
+        );
+      } catch (profileError) {
+        profileSaved = false;
+        if (__DEV__) {
+          console.warn(
+            '[KeepFlip][Web onboarding] Seller setup could not be saved after account creation:',
+            profileError,
+          );
+        }
+      }
+    }
+
+    if (onAuthenticated) {
+      await onAuthenticated({ profileSaved });
+    } else {
+      router.replace(profileSaved ? '/' : '/walkthrough');
+    }
+  }
+
+  async function finishAfterMfa() {
+    if (isCreateAccount) {
+      const { account } = getAppwriteCoreServices();
+      const currentUser = await account.get();
+      await linkKeepFlipWebBillingAccount(currentUser.$id);
+    }
+    await finishAuthenticatedFlow();
   }
 
   return (
@@ -198,7 +222,7 @@ export function WebAuthScreen({
           <Text style={[styles.title, { color: colors.text }]}>Make every flip easier to trust.</Text>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>Use the web workspace for inventory, Books, market research, and assistant planning. Open the Android app when it is time to capture an item.</Text>
 
-          {onBack ? (
+          {onBack && !pendingMfaSignIn ? (
             <Pressable
               accessibilityRole="button"
               onPress={onBack}
@@ -208,7 +232,12 @@ export function WebAuthScreen({
             </Pressable>
           ) : null}
 
-          {isCreateAccount ? (
+          {pendingMfaSignIn ? (
+            <KeepFlipMfaChallenge
+              onAuthenticated={finishAfterMfa}
+              pending={pendingMfaSignIn}
+            />
+          ) : isCreateAccount ? (
             <Field
               autoCapitalize="words"
               colors={colors}
@@ -218,7 +247,7 @@ export function WebAuthScreen({
               value={name}
             />
           ) : null}
-          <Field
+          {!pendingMfaSignIn ? <Field
             autoCapitalize="none"
             autoComplete="email"
             colors={colors}
@@ -227,8 +256,8 @@ export function WebAuthScreen({
             onChangeText={setEmail}
             placeholder="you@example.com"
             value={email}
-          />
-          <Field
+          /> : null}
+          {!pendingMfaSignIn ? <Field
             autoCapitalize="none"
             autoComplete={isCreateAccount ? 'new-password' : 'password'}
             colors={colors}
@@ -237,9 +266,9 @@ export function WebAuthScreen({
             placeholder={isCreateAccount ? 'At least 8 characters' : 'Your password'}
             secureTextEntry
             value={password}
-          />
+          /> : null}
 
-          {isCreateAccount ? (
+          {isCreateAccount && !pendingMfaSignIn ? (
             <WebBillingChoice
               active={preAccountSubscriptionActive}
               cadence={billingCadence}
@@ -263,7 +292,7 @@ export function WebAuthScreen({
             </View>
           ) : null}
 
-          <Pressable
+          {!pendingMfaSignIn ? <Pressable
             accessibilityRole="button"
             disabled={isBusy || isSubmitting}
             onPress={() => void submit()}
@@ -276,9 +305,9 @@ export function WebAuthScreen({
           >
             {isBusy || isSubmitting ? <ActivityIndicator color={colors.textOnAccent} /> : null}
             <Text style={[styles.submitText, { color: colors.textOnAccent }]}>{submitLabel}</Text>
-          </Pressable>
+          </Pressable> : null}
 
-          <View style={styles.switchRow}>
+          {!pendingMfaSignIn ? <View style={styles.switchRow}>
             <Text style={[styles.switchText, { color: colors.textMuted }]}>
               {isCreateAccount ? 'Already have a KeepFlip account?' : 'New to KeepFlip?'}
             </Text>
@@ -297,7 +326,7 @@ export function WebAuthScreen({
                 {isCreateAccount ? 'Sign in' : 'Meet Flip & start setup'}
               </Text>
             </Pressable>
-          </View>
+          </View> : null}
         </View>
 
         <View style={[styles.footerNote, { borderColor: colors.divider }]}>

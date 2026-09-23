@@ -10,6 +10,7 @@ import {
 } from 'react';
 import {
   AppwriteException,
+  AuthenticationFactor,
   ID,
   type Models,
 } from 'react-native-appwrite';
@@ -43,6 +44,8 @@ export type KeepFlipAuthErrorCode =
   | 'AUTH_FORBIDDEN'
   | 'AUTH_INVALID_CREDENTIALS'
   | 'AUTH_INVALID_INPUT'
+  | 'AUTH_MFA_REQUIRED'
+  | 'AUTH_MFA_VERIFICATION'
   | 'AUTH_NETWORK'
   | 'AUTH_RATE_LIMITED'
   | 'AUTH_REQUEST_FAILED'
@@ -60,13 +63,28 @@ export class KeepFlipAuthError extends Error {
   }
 }
 
+type PendingMfaSignIn = {
+  availableFactors: Models.MfaFactors;
+  challengeId: string;
+  factor: AuthenticationFactor;
+};
+
+export type KeepFlipMfaSignInState = Pick<
+  PendingMfaSignIn,
+  'availableFactors' | 'factor'
+>;
+
 export type KeepFlipAuthContextValue = {
   status: KeepFlipAuthStatus;
   user: Models.User | null;
   errorMessage: string | null;
   missingKeys: AppwriteCoreRequiredEnvironmentVariable[];
   isBusy: boolean;
+  pendingMfaSignIn: KeepFlipMfaSignInState | null;
   signIn: (email: string, password: string) => Promise<void>;
+  changeMfaSignInFactor: (factor: AuthenticationFactor) => Promise<void>;
+  completeMfaSignIn: (otp: string) => Promise<void>;
+  cancelMfaSignIn: () => Promise<void>;
   /**
    * Create the Appwrite account without creating an authenticated session.
    * Callers must complete the subscription-first checkout before invoking it.
@@ -103,6 +121,13 @@ class SessionVerificationTimeoutError extends Error {
   }
 }
 
+class MfaRequiredError extends Error {
+  constructor() {
+    super('Additional authentication is required.');
+    this.name = 'MfaRequiredError';
+  }
+}
+
 // A healthy no-session request returns immediately. Never let a stalled browser
 // request prevent a first-time visitor from reaching the sign-in screen.
 const SESSION_VERIFICATION_TIMEOUT_MS = 5_000;
@@ -134,6 +159,18 @@ function appwriteErrorType(error: unknown) {
 
   const type = (error as { type?: unknown }).type;
   return typeof type === 'string' ? type.toLowerCase() : '';
+}
+
+function isMfaRequiredResponse(error: unknown) {
+  return appwriteErrorType(error) === 'user_more_factors_required';
+}
+
+function defaultMfaFactor(factors: Models.MfaFactors) {
+  if (factors.totp) return AuthenticationFactor.Totp;
+  if (factors.email) return AuthenticationFactor.Email;
+  if (factors.phone) return AuthenticationFactor.Phone;
+  if (factors.recoveryCode) return AuthenticationFactor.Recoverycode;
+  return null;
 }
 
 function errorTextForClassification(error: unknown) {
@@ -254,6 +291,33 @@ function safeAuthError(
   );
 }
 
+function safeMfaError(error: unknown) {
+  if (error instanceof KeepFlipAuthError) return error;
+  const code = appwriteErrorCode(error);
+  if (code === 401 || code === 400) {
+    return new KeepFlipAuthError(
+      'That verification code is incorrect or expired. Try again.',
+      'AUTH_MFA_VERIFICATION',
+    );
+  }
+  if (code === 429) {
+    return new KeepFlipAuthError(
+      'Too many verification attempts. Wait a moment and try again.',
+      'AUTH_RATE_LIMITED',
+    );
+  }
+  if (isNetworkFailure(error)) {
+    return new KeepFlipAuthError(
+      "KeepFlip can't reach Appwrite right now. Check your connection and try again.",
+      'AUTH_NETWORK',
+    );
+  }
+  return new KeepFlipAuthError(
+    'KeepFlip could not verify that code. Request a new code and try again.',
+    'AUTH_MFA_VERIFICATION',
+  );
+}
+
 function signedOutSnapshot(errorMessage: string | null = null): AuthSnapshot {
   return {
     status: 'signed-out',
@@ -337,6 +401,7 @@ async function getVerifiedNonAnonymousUser(): Promise<Models.User | null> {
   try {
     session = await account.getSession({ sessionId: 'current' });
   } catch (error) {
+    if (isMfaRequiredResponse(error)) throw new MfaRequiredError();
     if (isSignedOutResponse(error)) return null;
     throw error;
   }
@@ -359,6 +424,7 @@ async function getVerifiedNonAnonymousUser(): Promise<Models.User | null> {
   try {
     user = await account.get();
   } catch (error) {
+    if (isMfaRequiredResponse(error)) throw new MfaRequiredError();
     if (isSignedOutResponse(error)) return null;
     throw error;
   }
@@ -398,6 +464,7 @@ async function clearCurrentAppwriteSession({
 export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
   const [snapshot, setSnapshot] = useState<AuthSnapshot>(INITIAL_AUTH_SNAPSHOT);
   const [isBusy, setIsBusy] = useState(true);
+  const [pendingMfa, setPendingMfa] = useState<PendingMfaSignIn | null>(null);
   const mountedRef = useRef(true);
   const operationInFlightRef = useRef(false);
   const lastAppStateRef = useRef(AppState.currentState);
@@ -422,6 +489,10 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
     showCheckingState: boolean,
     rejectIfBusy = false,
   ) => {
+    // Returning from an authenticator app is common during MFA. Keep the
+    // incomplete sign-in session alive until the code is submitted or canceled.
+    if (pendingMfa) return;
+
     if (!beginOperation()) {
       if (rejectIfBusy) {
         throw new KeepFlipAuthError(
@@ -459,7 +530,11 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
           : signedOutSnapshot(),
       );
     } catch (error) {
-      if (isSignedOutResponse(error)) {
+      if (error instanceof MfaRequiredError) {
+        setPendingMfa(null);
+        await clearCurrentAppwriteSession().catch(() => undefined);
+        commit(signedOutSnapshot());
+      } else if (isSignedOutResponse(error)) {
         commit(signedOutSnapshot());
       } else if (
         error instanceof SessionVerificationTimeoutError &&
@@ -476,7 +551,7 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
     } finally {
       finishOperation();
     }
-  }, [beginOperation, commit, finishOperation]);
+  }, [beginOperation, commit, finishOperation, pendingMfa]);
 
   const refresh = useCallback(async () => {
     await verifySession(true, true);
@@ -511,6 +586,7 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
         }
 
         commit(signedOutSnapshot());
+        setPendingMfa(null);
         await clearCurrentAppwriteSession();
         const { account } = getAppwriteCoreServices();
         sessionRequestStarted = true;
@@ -519,9 +595,30 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
           password,
         });
 
-        const user = await getVerifiedNonAnonymousUser();
+        let user: Models.User | null;
+        try {
+          user = await getVerifiedNonAnonymousUser();
+        } catch (error) {
+          if (!(error instanceof MfaRequiredError)) throw error;
+
+          const availableFactors = await account.listMFAFactors();
+          const factor = defaultMfaFactor(availableFactors);
+          if (!factor) throw new SessionVerificationError();
+          const challenge = await account.createMFAChallenge({ factor });
+          setPendingMfa({
+            availableFactors,
+            challengeId: challenge.$id,
+            factor,
+          });
+          commit(signedOutSnapshot());
+          throw new KeepFlipAuthError(
+            'Enter your verification code to finish signing in.',
+            'AUTH_MFA_REQUIRED',
+          );
+        }
         if (!user) throw new SessionVerificationError();
 
+        setPendingMfa(null);
         commit({
           status: 'signed-in',
           user,
@@ -539,6 +636,8 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
                 : configurationStatus.missingKeys,
             ),
           );
+        } else if (safeError.code === 'AUTH_MFA_REQUIRED') {
+          commit(signedOutSnapshot());
         } else if (
           isSignedOutResponse(error) ||
           safeError.code === 'AUTH_INVALID_CREDENTIALS' ||
@@ -562,6 +661,114 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
     },
     [beginOperation, commit, finishOperation],
   );
+
+  const changeMfaSignInFactor = useCallback(
+    async (factor: AuthenticationFactor) => {
+      if (!beginOperation()) {
+        throw new KeepFlipAuthError(
+          'KeepFlip is already processing an authentication request.',
+          'AUTH_REQUEST_FAILED',
+        );
+      }
+      try {
+        const current = pendingMfa;
+        if (!current) {
+          throw new KeepFlipAuthError(
+            'Sign in again to request a new verification code.',
+            'AUTH_MFA_VERIFICATION',
+          );
+        }
+        const isAvailable =
+          (factor === AuthenticationFactor.Totp && current.availableFactors.totp) ||
+          (factor === AuthenticationFactor.Email && current.availableFactors.email) ||
+          (factor === AuthenticationFactor.Phone && current.availableFactors.phone) ||
+          (factor === AuthenticationFactor.Recoverycode && current.availableFactors.recoveryCode);
+        if (!isAvailable) {
+          throw new KeepFlipAuthError(
+            'That verification method is not available for this account.',
+            'AUTH_MFA_VERIFICATION',
+          );
+        }
+        const { account } = getAppwriteCoreServices();
+        const challenge = await account.createMFAChallenge({ factor });
+        setPendingMfa({ ...current, challengeId: challenge.$id, factor });
+      } catch (error) {
+        if (error instanceof KeepFlipAuthError) throw error;
+        throw safeMfaError(error);
+      } finally {
+        finishOperation();
+      }
+    },
+    [beginOperation, finishOperation, pendingMfa],
+  );
+
+  const completeMfaSignIn = useCallback(
+    async (otp: string) => {
+      if (!beginOperation()) {
+        throw new KeepFlipAuthError(
+          'KeepFlip is already processing an authentication request.',
+          'AUTH_REQUEST_FAILED',
+        );
+      }
+      try {
+        const current = pendingMfa;
+        const cleanOtp = otp.trim();
+        if (!current) {
+          throw new KeepFlipAuthError(
+            'Sign in again to request a new verification code.',
+            'AUTH_MFA_VERIFICATION',
+          );
+        }
+        if (!cleanOtp) {
+          throw new KeepFlipAuthError(
+            'Enter your verification code.',
+            'AUTH_MFA_VERIFICATION',
+          );
+        }
+
+        const { account } = getAppwriteCoreServices();
+        await account.updateMFAChallenge({
+          challengeId: current.challengeId,
+          otp: cleanOtp,
+        });
+        const user = await getVerifiedNonAnonymousUser();
+        if (!user) throw new SessionVerificationError();
+
+        setPendingMfa(null);
+        commit({
+          status: 'signed-in',
+          user,
+          errorMessage: null,
+          missingKeys: [],
+        });
+      } catch (error) {
+        const safeError = safeMfaError(error);
+        commit(signedOutSnapshot());
+        throw safeError;
+      } finally {
+        finishOperation();
+      }
+    },
+    [beginOperation, commit, finishOperation, pendingMfa],
+  );
+
+  const cancelMfaSignIn = useCallback(async () => {
+    if (!beginOperation()) {
+      throw new KeepFlipAuthError(
+        'KeepFlip is already processing an authentication request.',
+        'AUTH_REQUEST_FAILED',
+      );
+    }
+    try {
+      setPendingMfa(null);
+      await clearCurrentAppwriteSession();
+      commit(signedOutSnapshot());
+    } catch (error) {
+      throw safeAuthError(error, 'sign-out');
+    } finally {
+      finishOperation();
+    }
+  }, [beginOperation, commit, finishOperation]);
 
   const createAccount = useCallback(
     async (name: string, email: string, password: string) => {
@@ -736,6 +943,7 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
     }
 
     commit(INITIAL_AUTH_SNAPSHOT);
+    setPendingMfa(null);
     try {
       const configurationStatus = getAppwriteCoreConfigurationStatus();
       if (!configurationStatus.configured) {
@@ -801,14 +1009,35 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
     () => ({
       ...snapshot,
       isBusy,
+      pendingMfaSignIn: pendingMfa
+        ? {
+            availableFactors: pendingMfa.availableFactors,
+            factor: pendingMfa.factor,
+          }
+        : null,
       createAccount,
       signIn,
+      changeMfaSignInFactor,
+      completeMfaSignIn,
+      cancelMfaSignIn,
       signUp,
       signOut,
       refresh,
       retry: refresh,
     }),
-    [createAccount, isBusy, refresh, signIn, signOut, signUp, snapshot],
+    [
+      cancelMfaSignIn,
+      changeMfaSignInFactor,
+      completeMfaSignIn,
+      createAccount,
+      isBusy,
+      pendingMfa,
+      refresh,
+      signIn,
+      signOut,
+      signUp,
+      snapshot,
+    ],
   );
 
   return <KeepFlipAuthContext value={value}>{children}</KeepFlipAuthContext>;

@@ -20,7 +20,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
+import {
+  KeepFlipAuthError,
+  useKeepFlipAuth,
+} from '@/components/auth/keepflip-auth-context';
+import { KeepFlipMfaChallenge } from '@/components/auth/keepflip-mfa-challenge';
 import { FlipCompanion } from '@/components/flip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import {
@@ -371,6 +375,7 @@ export function KeepFlipLaunchAuthScreen({
     errorMessage,
     isBusy,
     missingKeys,
+    pendingMfaSignIn,
     retry,
     signIn,
     status,
@@ -563,8 +568,13 @@ export function KeepFlipLaunchAuthScreen({
           'userCancelled' in error &&
           (error as { userCancelled?: unknown }).userCancelled === true,
         );
+      const mfaIsPending =
+        error instanceof KeepFlipAuthError &&
+        error.code === 'AUTH_MFA_REQUIRED';
       setLocalError(
-        wasCancelled
+        mfaIsPending
+          ? null
+          : wasCancelled
           ? needsPreAccountSubscription
             ? 'The Google Play signup was canceled. No KeepFlip account or session was created.'
             : 'The Google Play signup was canceled. Your KeepFlip account is ready; choose a plan and try again.'
@@ -572,7 +582,7 @@ export function KeepFlipLaunchAuthScreen({
             ? error.message
             : 'KeepFlip could not complete authentication and subscription signup. Please try again.',
       );
-      if (!wasCancelled) {
+      if (!wasCancelled && !mfaIsPending) {
         void Haptics.notificationAsync(
           Haptics.NotificationFeedbackType.Error,
         ).catch(() => undefined);
@@ -585,6 +595,15 @@ export function KeepFlipLaunchAuthScreen({
   const displayedError = localError ?? (status === 'error' ? errorMessage : null);
   const setupRequired = status === 'setup';
   const KEEPFLIP_LOGO = require('@/assets/images/icon3.png');
+  const handleMfaAuthenticated = () => {
+    trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.loginCompleted, {
+      method: 'email',
+    });
+    void Haptics.notificationAsync(
+      Haptics.NotificationFeedbackType.Success,
+    ).catch(() => undefined);
+    onAuthenticated?.(selection);
+  };
 
 
   return (
@@ -663,7 +682,12 @@ export function KeepFlipLaunchAuthScreen({
               </View>
             ) : null}
 
-            {!accountReady && !needsPreAccountSubscription ? (
+            {mode === 'sign-in' && pendingMfaSignIn ? (
+              <KeepFlipMfaChallenge
+                onAuthenticated={handleMfaAuthenticated}
+                pending={pendingMfaSignIn}
+              />
+            ) : !accountReady && !needsPreAccountSubscription ? (
               <View style={styles.form}>
                 {mode === 'create-account' && !initialName ? (
                   <AuthField
@@ -738,7 +762,7 @@ export function KeepFlipLaunchAuthScreen({
               </View>
             )}
 
-            <Pressable
+            {!pendingMfaSignIn ? <Pressable
               accessibilityLabel={
                 mode === 'sign-in'
                   ? 'Enter KeepFlip'
@@ -772,7 +796,7 @@ export function KeepFlipLaunchAuthScreen({
                   <IconSymbol color={theme.colors.textOnAccent} name="arrow.right" size={19} />
                 </>
               )}
-            </Pressable>
+            </Pressable> : null}
 
             {mode === 'create-account' ? (
               <Text style={[styles.legalText, { fontSize: responsiveFont(10) }]}>

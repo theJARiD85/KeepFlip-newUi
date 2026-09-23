@@ -329,10 +329,21 @@ function AccountDetailsTab() {
             />
             <KeepFlipControlRow
               accent="cyan"
-              description="This device has an authenticated KeepFlip session."
+              accessibilityHint="Opens two-step verification and authenticator app settings."
+              actionLabel="MANAGE"
+              description={user?.mfa
+                ? 'Authenticator-based sign-in verification is enabled.'
+                : 'Set up an authenticator app and recovery codes for sign-in.'}
               icon="lock.fill"
               label="Security"
-              staticLabel="PROTECTED"
+              onPress={() => {
+                hapticSelection();
+                router.push('/security' as Href);
+              }}
+              status={{
+                label: user?.mfa ? 'MFA ON' : 'MFA OFF',
+                tone: user?.mfa ? 'active' : 'violet',
+              }}
             />
             <KeepFlipControlRow
               accent="danger"

@@ -165,6 +165,7 @@ export default function AppShellLayout() {
                   <Stack.Screen name="ai-preferences" />
                   <Stack.Screen name="flip-plan" />
                   <Stack.Screen name="account" />
+                  <Stack.Screen name="security" />
                   <Stack.Screen name="ebay-connect" />
                   <Stack.Screen name="ebay-account" />
                   <Stack.Screen name="books" />
