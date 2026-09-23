@@ -355,6 +355,24 @@ export async function purchaseKeepFlipWebBillingPlan({
   return purchasePackage(purchases, { cadence, email, plan });
 }
 
+/** Present the RevenueCat-configured web paywall for an identified user. */
+export async function presentKeepFlipWebBillingPaywall(
+  userId: string,
+  htmlTarget: HTMLElement,
+) {
+  const purchases = await purchasesForUser(userId);
+  const offerings = await purchases.getOfferings();
+  const offering =
+    offerings.all[KEEPFLIP_SUBSCRIPTION_OFFERING_ID] ?? offerings.current;
+  if (!offering) {
+    throw new Error(
+      'RevenueCat could not find the KeepFlip paywall offering. Check the offering configuration and try again.',
+    );
+  }
+
+  return purchases.presentPaywall({ htmlTarget, offering });
+}
+
 /**
  * Start web checkout before an Appwrite account exists. RevenueCat supports
  * anonymous Web Billing customers; the purchase is kept under that customer
@@ -377,6 +395,32 @@ export async function purchaseKeepFlipWebBillingPlanBeforeAccount({
     );
   }
   return result;
+}
+
+/** Present RevenueCat's hosted paywall while preserving the anonymous signup customer. */
+export async function presentKeepFlipWebBillingPaywallBeforeAccount(
+  htmlTarget: HTMLElement,
+) {
+  const purchases = await purchasesForPreAccount();
+  const offerings = await purchases.getOfferings();
+  const offering =
+    offerings.all[KEEPFLIP_SUBSCRIPTION_OFFERING_ID] ?? offerings.current;
+  if (!offering) {
+    throw new Error(
+      'RevenueCat could not find the KeepFlip paywall offering. Check the offering configuration and try again.',
+    );
+  }
+
+  return purchases.presentPaywall({ htmlTarget, offering });
+}
+
+export function keepFlipWebBillingCustomerHasActiveEntitlement(
+  customerInfo: Awaited<ReturnType<typeof presentKeepFlipWebBillingPaywallBeforeAccount>>['customerInfo'],
+) {
+  return Object.values(KEEPFLIP_ENTITLEMENTS).some(
+    (entitlementId) =>
+      customerInfo.entitlements.active[entitlementId]?.isActive === true,
+  );
 }
 
 export function keepFlipWebBillingPurchaseIsActive(

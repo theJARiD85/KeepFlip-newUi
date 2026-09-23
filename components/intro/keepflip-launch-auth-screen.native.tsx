@@ -1,6 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
+import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 import {
   useState,
   useEffect,
@@ -44,7 +45,6 @@ import {
   KEEPFLIP_PLAN_DEFINITIONS,
   linkKeepFlipPreAccountPurchase,
   loadKeepFlipPreAccountSubscriptionAccess,
-  purchaseKeepFlipPlanBeforeAccount,
   type KeepFlipBillingCadence,
   type KeepFlipPlanId,
 } from '@/services/keepflip-subscription-service';
@@ -404,7 +404,7 @@ export function KeepFlipLaunchAuthScreen({
 
   const isPreAccountSignup =
     mode === 'create-account' && !migrationMode && Boolean(initialBuyRules);
-  const showPlanSelection = migrationMode || isPreAccountSignup;
+  const showPlanSelection = migrationMode;
   const accountReady =
     mode === 'create-account' &&
     Boolean(createdUserId || (status === 'signed-in' && user?.$id));
@@ -435,7 +435,7 @@ export function KeepFlipLaunchAuthScreen({
     const normalizedName = name.trim();
     setLocalError(null);
 
-    if (!needsPreAccountSubscription && (mode === 'sign-in' || !accountReady)) {
+    if (mode === 'sign-in' || !accountReady) {
       if (!EMAIL_PATTERN.test(normalizedEmail)) {
         setLocalError('Enter a valid email address.');
         return;
@@ -447,7 +447,6 @@ export function KeepFlipLaunchAuthScreen({
     }
 
     if (
-      !needsPreAccountSubscription &&
       mode === 'create-account' &&
       !accountReady
     ) {
@@ -464,13 +463,17 @@ export function KeepFlipLaunchAuthScreen({
     setIsSubmitting(true);
     try {
       if (needsPreAccountSubscription) {
-        const access = await purchaseKeepFlipPlanBeforeAccount(
-          selection.plan,
-          selection.cadence,
-        );
+        const result = await RevenueCatUI.presentPaywall();
+        if (
+          result !== PAYWALL_RESULT.PURCHASED &&
+          result !== PAYWALL_RESULT.RESTORED
+        ) {
+          return;
+        }
+        const access = await loadKeepFlipPreAccountSubscriptionAccess();
         if (!access.active) {
           throw new Error(
-            'KeepFlip could not confirm an active subscription from Google Play. Try again or restore purchases.',
+            'KeepFlip could not confirm an active Google Play subscription. Try again or restore purchases.',
           );
         }
 
@@ -480,7 +483,50 @@ export function KeepFlipLaunchAuthScreen({
       }
 
       if (mode === 'sign-in') {
-        await signIn(normalizedEmail, password);
+        try {
+          await signIn(normalizedEmail, password);
+        } catch (error) {
+          if (
+            !(error instanceof KeepFlipAuthError) ||
+            error.code !== 'AUTH_SUBSCRIPTION_REQUIRED' ||
+            !error.userId
+          ) {
+            throw error;
+          }
+
+          const paywallResult = await RevenueCatUI.presentPaywall();
+          if (
+            paywallResult !== PAYWALL_RESULT.PURCHASED &&
+            paywallResult !== PAYWALL_RESULT.RESTORED
+          ) {
+            return;
+          }
+
+          // Appwrite access is restored only after Subscription Police sees
+          // the entitlement. RevenueCat's immediate purchase result is not
+          // sufficient to open the authenticated part of the app.
+          let accessConfirmed = false;
+          for (let attempt = 0; attempt < 6; attempt += 1) {
+            if (attempt) await new Promise((resolve) => setTimeout(resolve, 1_500));
+            try {
+              await signIn(normalizedEmail, password);
+              accessConfirmed = true;
+              break;
+            } catch (retryError) {
+              if (
+                !(retryError instanceof KeepFlipAuthError) ||
+                retryError.code !== 'AUTH_SUBSCRIPTION_REQUIRED'
+              ) {
+                throw retryError;
+              }
+            }
+          }
+          if (!accessConfirmed) {
+            throw new Error(
+              'KeepFlip has not confirmed your subscription yet. Wait a moment, then try signing in again.',
+            );
+          }
+        }
         trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.loginCompleted, {
           method: 'email',
         });
@@ -516,7 +562,27 @@ export function KeepFlipLaunchAuthScreen({
         // account remains sessionless and the same screen can retry safely.
         await linkKeepFlipPreAccountPurchase(accountUserId);
         if (status !== 'signed-in') {
-          await signIn(normalizedEmail, password);
+          let accessConfirmed = false;
+          for (let attempt = 0; attempt < 6; attempt += 1) {
+            if (attempt) await new Promise((resolve) => setTimeout(resolve, 1_500));
+            try {
+              await signIn(normalizedEmail, password);
+              accessConfirmed = true;
+              break;
+            } catch (error) {
+              if (
+                !(error instanceof KeepFlipAuthError) ||
+                error.code !== 'AUTH_SUBSCRIPTION_REQUIRED'
+              ) {
+                throw error;
+              }
+            }
+          }
+          if (!accessConfirmed) {
+            throw new Error(
+              'Your account was created, but KeepFlip has not confirmed the subscription yet. Try signing in again in a moment.',
+            );
+          }
         }
 
         if (!signupAnalyticsTrackedRef.current) {
@@ -637,7 +703,7 @@ export function KeepFlipLaunchAuthScreen({
               {migrationMode
                 ? 'Sign in to your existing KeepFlip account, then choose the tier you want to try.'
                 : isPreAccountSignup
-                  ? 'Choose and activate your Google Play subscription first. Only then will Flip ask for the login details that create your KeepFlip session.'
+                ? 'Enter your details first. KeepFlip will open its secure subscription paywall before creating your account.'
                 : mode === 'create-account'
                   ? 'Flip has your seller setup. Add your login details and choose how you want KeepFlip to work for you.'
                   : 'Sign in to continue to your KeepFlip command center.'}
@@ -685,9 +751,12 @@ export function KeepFlipLaunchAuthScreen({
             {mode === 'sign-in' && pendingMfaSignIn ? (
               <KeepFlipMfaChallenge
                 onAuthenticated={handleMfaAuthenticated}
+                onSubscriptionRequired={() =>
+                  setLocalError('An active subscription is required. Enter your password again to open the subscription paywall.')
+                }
                 pending={pendingMfaSignIn}
               />
-            ) : !accountReady && !needsPreAccountSubscription ? (
+            ) : !accountReady ? (
               <View style={styles.form}>
                 {mode === 'create-account' && !initialName ? (
                   <AuthField
@@ -767,7 +836,7 @@ export function KeepFlipLaunchAuthScreen({
                 mode === 'sign-in'
                   ? 'Enter KeepFlip'
                   : needsPreAccountSubscription
-                    ? 'Continue to Google Play subscription'
+                    ? 'Continue to KeepFlip subscription paywall'
                     : accountReady
                       ? 'Start selected KeepFlip plan'
                       : 'Create KeepFlip account and start trial'
@@ -786,7 +855,7 @@ export function KeepFlipLaunchAuthScreen({
                     {mode === 'sign-in'
                       ? 'ENTER KEEPFLIP'
                       : needsPreAccountSubscription
-                        ? 'CONTINUE TO GOOGLE PLAY'
+                        ? 'CONTINUE TO SUBSCRIPTION'
                         : isPreAccountSignup
                           ? 'CREATE ACCOUNT & ENTER KEEPFLIP'
                           : accountReady

@@ -8,6 +8,7 @@ import {
 import { AuthenticationFactor } from 'react-native-appwrite';
 
 import {
+  KeepFlipAuthError,
   useKeepFlipAuth,
   type KeepFlipMfaSignInState,
 } from '@/components/auth/keepflip-auth-context';
@@ -19,11 +20,13 @@ import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 type KeepFlipMfaChallengeProps = {
   pending: KeepFlipMfaSignInState;
   onAuthenticated?: () => void | Promise<void>;
+  onSubscriptionRequired?: (userId: string) => void;
 };
 
 export function KeepFlipMfaChallenge({
   pending,
   onAuthenticated,
+  onSubscriptionRequired,
 }: KeepFlipMfaChallengeProps) {
   const {
     cancelMfaSignIn,
@@ -84,6 +87,14 @@ export function KeepFlipMfaChallenge({
       await completeMfaSignIn(code);
       await onAuthenticated?.();
     } catch (verificationError) {
+      if (
+        verificationError instanceof KeepFlipAuthError &&
+        verificationError.code === 'AUTH_SUBSCRIPTION_REQUIRED' &&
+        verificationError.userId
+      ) {
+        onSubscriptionRequired?.(verificationError.userId);
+        return;
+      }
       setError(
         verificationError instanceof Error
           ? verificationError.message

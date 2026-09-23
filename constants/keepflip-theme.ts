@@ -80,14 +80,14 @@ const lightColors: KeepFlipThemeColors = {
 
 export const keepFlipTheme = {
   fonts: {
-    analysis: 'FlexiIBMVGAFalse437',
+    analysis: 'LucidaConsole',
     body: 'Inter',
     medium: 'PlusJakartaSansMedium',
     semibold: 'PlusJakartaSansSemiBold',
     bold: 'PlusJakartaSansBold',
     display: 'Inter',
     numbers: 'PlusJakartaSansBold',
-    radar: 'FlexiIBMVGAFalse437',
+    radar: 'LucidaConsole',
 
   },
   colors: { ...darkColors },

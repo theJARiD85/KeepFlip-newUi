@@ -30,6 +30,10 @@ import {
   resetKeepFlipAnalyticsIdentity,
   trackKeepFlipEvent,
 } from '@/services/keepflip-analytics';
+import {
+  areKeepFlipSubscriptionsEnforced,
+  loadKeepFlipSubscription,
+} from '@/services/keepflip-subscription-service';
 import { trackTenjinEvent } from '@/services/tenjin-attribution-service';
 
 export type KeepFlipAuthStatus =
@@ -51,12 +55,14 @@ export type KeepFlipAuthErrorCode =
   | 'AUTH_REQUEST_FAILED'
   | 'AUTH_SESSION_UNVERIFIED'
   | 'AUTH_SUBSCRIPTION_REQUIRED'
+  | 'AUTH_SUBSCRIPTION_UNVERIFIED'
   | 'AUTH_SETUP_REQUIRED';
 
 export class KeepFlipAuthError extends Error {
   constructor(
     message: string,
     public readonly code: KeepFlipAuthErrorCode,
+    public readonly userId?: string,
   ) {
     super(message);
     this.name = 'KeepFlipAuthError';
@@ -125,6 +131,28 @@ class MfaRequiredError extends Error {
   constructor() {
     super('Additional authentication is required.');
     this.name = 'MfaRequiredError';
+  }
+}
+
+async function requireActiveSubscription(user: Models.User) {
+  if (!areKeepFlipSubscriptionsEnforced()) return;
+
+  const subscription = await loadKeepFlipSubscription(user.$id, {
+    reconcileServerStatus: true,
+  });
+  if (!subscription.serverRecordAvailable) {
+    throw new KeepFlipAuthError(
+      'KeepFlip could not verify your subscription right now. Check your connection and try again.',
+      'AUTH_SUBSCRIPTION_UNVERIFIED',
+      user.$id,
+    );
+  }
+  if (!subscription.access.active) {
+    throw new KeepFlipAuthError(
+      'An active KeepFlip subscription is required to sign in.',
+      'AUTH_SUBSCRIPTION_REQUIRED',
+      user.$id,
+    );
   }
 }
 
@@ -618,6 +646,8 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
         }
         if (!user) throw new SessionVerificationError();
 
+        await requireActiveSubscription(user);
+
         setPendingMfa(null);
         commit({
           status: 'signed-in',
@@ -638,6 +668,25 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
           );
         } else if (safeError.code === 'AUTH_MFA_REQUIRED') {
           commit(signedOutSnapshot());
+        } else if (
+          safeError.code === 'AUTH_SUBSCRIPTION_REQUIRED' ||
+          safeError.code === 'AUTH_SUBSCRIPTION_UNVERIFIED'
+        ) {
+          try {
+            // Appwrite creates a temporary session to validate a password.
+            // Revoke it before the caller can display a paywall or return an
+            // inactive-subscription result to the signed-out UI.
+            await clearCurrentAppwriteSession();
+            commit(
+              signedOutSnapshot(
+                safeError.code === 'AUTH_SUBSCRIPTION_UNVERIFIED'
+                  ? safeError.message
+                  : null,
+              ),
+            );
+          } catch {
+            commit(errorSnapshot(safeError.message));
+          }
         } else if (
           isSignedOutResponse(error) ||
           safeError.code === 'AUTH_INVALID_CREDENTIALS' ||
@@ -734,6 +783,8 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
         const user = await getVerifiedNonAnonymousUser();
         if (!user) throw new SessionVerificationError();
 
+        await requireActiveSubscription(user);
+
         setPendingMfa(null);
         commit({
           status: 'signed-in',
@@ -743,7 +794,27 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
         });
       } catch (error) {
         const safeError = safeMfaError(error);
-        commit(signedOutSnapshot());
+        if (
+          safeError instanceof KeepFlipAuthError &&
+          (safeError.code === 'AUTH_SUBSCRIPTION_REQUIRED' ||
+            safeError.code === 'AUTH_SUBSCRIPTION_UNVERIFIED')
+        ) {
+          setPendingMfa(null);
+          try {
+            await clearCurrentAppwriteSession();
+            commit(
+              signedOutSnapshot(
+                safeError.code === 'AUTH_SUBSCRIPTION_UNVERIFIED'
+                  ? safeError.message
+                  : null,
+              ),
+            );
+          } catch {
+            commit(errorSnapshot(safeError.message));
+          }
+        } else {
+          commit(signedOutSnapshot());
+        }
         throw safeError;
       } finally {
         finishOperation();
