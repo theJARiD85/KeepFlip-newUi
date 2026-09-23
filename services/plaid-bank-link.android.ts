@@ -8,14 +8,8 @@ import {
   createPlaidLinkToken,
   exchangePlaidPublicToken,
   syncPlaidBankTransactions,
-  type PlaidBankConnection,
-  type PlaidBankSyncResult,
+  type PlaidBankLinkResult,
 } from '@/services/plaid-bank-service';
-
-export type PlaidBankLinkResult = {
-  connection: PlaidBankConnection;
-  sync: PlaidBankSyncResult;
-};
 
 function safeAccounts(success: LinkSuccess) {
   return success.metadata.accounts.slice(0, 50).map((account) => ({
@@ -37,7 +31,7 @@ function exitMessage(exit: LinkExit) {
 }
 
 export async function linkPlaidBankAccount(): Promise<PlaidBankLinkResult> {
-  const { linkToken } = await createPlaidLinkToken();
+  const { linkToken } = await createPlaidLinkToken('android');
 
   return new Promise<PlaidBankLinkResult>((resolve, reject) => {
     let settled = false;

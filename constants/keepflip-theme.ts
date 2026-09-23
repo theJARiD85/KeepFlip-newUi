@@ -34,7 +34,7 @@ const darkColors = {
   cream: '#F2EDE4cc',
   textOnAccent: '#010102',
   text: '#F7F2E8',
-  textMuted: '#ADA7B2',
+  textMuted: '#9d9b9fff',
   danger: '#E86158',
 } as const;
 

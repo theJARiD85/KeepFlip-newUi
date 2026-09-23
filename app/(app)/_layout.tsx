@@ -77,6 +77,8 @@ function WalkthroughAutoLauncher() {
       return;
     }
 
+    if (user.mfa !== true) return;
+
     if (areKeepFlipSubscriptionsEnforced()) {
       if (subscriptionState !== 'ready') return;
       if (!snapshot?.access.active) return;

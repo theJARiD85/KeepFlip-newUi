@@ -82,6 +82,7 @@
     "react-native-webview": "13.16.1",
     "react-native-worklets": "0.10.1",
     "react-native-worklets-core": "^1.6.3",
+    "react-plaid-link": "5.0.0",
     "three": "0.172.0"
   },
   "devDependencies": {

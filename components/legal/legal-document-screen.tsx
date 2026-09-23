@@ -3,10 +3,13 @@ import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import {
   getKeepFlipThemeColors,
 } from "@/constants/keepflip-theme";
+import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+
 import {
   useResponsiveLayout,
   useResponsiveStyles,
 } from '@/hooks/use-responsive-layout';
+import { useWindowDimensions } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from "expo-router";
 import {
@@ -41,6 +44,7 @@ export function LegalDocumentScreen({
     pageGutter,
     responsiveFont
   } = useResponsiveLayout();
+  const { width } = useWindowDimensions();
 
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -48,46 +52,50 @@ export function LegalDocumentScreen({
 
   return (
     <KeepFlipBackground colorScheme="dark">
-      <View pointerEvents="none" style={styles.glow} />
 
       <ScrollView
         contentContainerStyle={[styles.content,
         {
-          paddingTop: insets.top + 18,
-          paddingBottom: insets.bottom + 36,
-        }, { width: '100%', maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+          paddingTop: insets.top / 2,
+          paddingBottom: insets.bottom + 30,
+        }, {alignSelf: 'center', paddingHorizontal: pageGutter }]}
+        style={{marginTop: insets.top, marginBottom: insets.bottom}}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
       >
-        <Pressable
-          accessibilityLabel="Return to account creation"
-          accessibilityRole="button"
-          hitSlop={10}
-          onPress={() => router.back()}
-          style={({ pressed }) => [
-            styles.backButton,
-            pressed && styles.backButtonPressed,
-          ]}
-        >
-          <View style={styles.backButtonContent}>
-            <Ionicons name="caret-back-sharp" size={20} color={colors.goldBright} />
-            <Text style={[styles.backButtonText, { fontSize: responsiveFont(11) }]}>BACK</Text>
+        <View style={styles.headerColumn}>
+          <View style={[styles.headerRow]}>
+          <View style={styles.headerColumn2}>
+            <Text style={[styles.eyebrow, { fontSize: responsiveFont(10), fontFamily: theme.fonts.display }]}>KEEPFLIP / LEGAL</Text>
+            <Text selectable style={[styles.title, { fontSize: responsiveFont(26), fontFamily: theme.fonts.bold, marginBottom: 2 }]}>
+              {title}
+            </Text>
+            <Text style={[styles.effectiveDate, { fontSize: responsiveFont(10), fontFamily: theme.fonts.body }]}>
+              Effective {effectiveDate}
+            </Text>
+
           </View>
-        </Pressable>
-
-        <View style={styles.header}>
-          <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>KEEPFLIP / LEGAL</Text>
-          <Text selectable style={[styles.title, { fontSize: responsiveFont(34) }]}>
-            {title}
-          </Text>
-          <Text style={[styles.effectiveDate, { fontSize: responsiveFont(10) }]}>
-            Effective {effectiveDate}
-          </Text>
-          <Text selectable style={styles.intro}>
-            {intro}
-          </Text>
+          <Pressable
+            accessibilityLabel="Return to account creation"
+            accessibilityRole="button"
+            hitSlop={10}
+            onPress={() => router.back()}
+            style={({ pressed }) => [
+              styles.backButton,
+              pressed && styles.backButtonPressed,
+            ]}
+          >
+            <View style={styles.backButtonContent}>
+              <Ionicons name="close-sharp" size={30} color={colors.goldBright} />
+            </View>
+          </Pressable>
+          </View>
+          <View style={{ alignItems: 'center', justifyContent: 'flex-start'}}>
+            <Text selectable style={[styles.intro, {fontSize: responsiveFont(12), fontFamily: theme.fonts.body}]}>
+                {intro}
+              </Text>
+          </View>
         </View>
-
         <View style={[styles.document, { width: '100%', maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
           {sections.map((section, sectionIndex) => (
             <View
@@ -98,7 +106,7 @@ export function LegalDocumentScreen({
                 <Text style={styles.sectionNumber}>
                   {String(sectionIndex + 1).padStart(2, "0")}
                 </Text>
-                <Text selectable style={[styles.sectionTitle, { fontSize: responsiveFont(19) }]}>
+                <Text selectable style={[styles.sectionTitle, { fontSize: responsiveFont(19), fontFamily: theme.fonts.bold }]}>
                   {section.title}
                 </Text>
               </View>
@@ -108,7 +116,7 @@ export function LegalDocumentScreen({
                   <Text
                     key={`${section.title}-${paragraphIndex}`}
                     selectable
-                    style={styles.paragraph}
+                    style={[styles.paragraph, {fontSize: responsiveFont(12), fontFamily: theme.fonts.body}]}
                   >
                     {paragraph}
                   </Text>
@@ -119,8 +127,8 @@ export function LegalDocumentScreen({
         </View>
 
         <View style={styles.contactBlock}>
-          <Text style={[styles.contactLabel, { fontSize: responsiveFont(9) }]}>QUESTIONS</Text>
-          <Text selectable style={[styles.contactText, { fontSize: responsiveFont(13) }]}>
+          <Text style={[styles.contactLabel, { fontSize: responsiveFont(9), fontFamily: theme.fonts.display }]}>QUESTIONS</Text>
+          <Text selectable style={[styles.contactText, { fontSize: responsiveFont(13), fontFamily: theme.fonts.body }]}>
             Contact KeepFlip at support@keep-flip.com.
           </Text>
         </View>
@@ -144,14 +152,13 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       width: "100%",
       maxWidth: 760,
       alignSelf: "center",
-      gap: 24,
-      paddingHorizontal: 20,
+      gap: 15,
+
     },
     backButton: {
       alignSelf: "flex-start",
       minHeight: 40,
       justifyContent: "center",
-      paddingHorizontal: 4,
     },
     backButtonPressed: {
       opacity: 0.62,
@@ -167,15 +174,28 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     backButtonContent: {
       flexDirection: "row",
-      justifyContent: 'center',
-      alignItems: 'center',
-      columnGap: 5,
+      justifyContent: 'flex-start',
+      alignItems: 'flex-start',
+      bottom: 20,
+      right: 10
     },
-    header: {
-      gap: 9,
+    headerRow: {
+      width: '100%',
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+    },
+    headerColumn: {
+      justifyContent: 'flex-start',
+      alignItems: 'flex-start',
       paddingBottom: 23,
+      paddingHorizontal: 8,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: colors.dividerStrong,
+    },
+    headerColumn2: {
+      justifyContent: 'flex-start',
+      alignItems: 'flex-start',
     },
     eyebrow: {
       color: colors.gold,
@@ -192,9 +212,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     effectiveDate: {
       color: colors.scannerCyan,
-      fontSize: 10,
+      fontSize: 8,
+      fontFamily: theme.fonts.body,
       fontWeight: "800",
       letterSpacing: 0.85,
+      marginBottom: 10,
     },
     intro: {
       maxWidth: 650,
@@ -222,7 +244,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     sectionTitle: {
       flex: 1,
-      color: colors.cream,
+      color: colors.textMuted,
       fontSize: 19,
       lineHeight: 24,
       fontWeight: "800",

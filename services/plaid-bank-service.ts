@@ -37,11 +37,18 @@ export type PlaidBankSyncResult = {
   updated: number;
 };
 
+export type PlaidBankLinkResult = {
+  connection: PlaidBankConnection;
+  sync: PlaidBankSyncResult;
+};
+
 export type PlaidExchangeInput = {
   accounts: PlaidBankAccount[];
   institution: { id?: string; name?: string } | null;
   publicToken: string;
 };
+
+export type PlaidLinkPlatform = 'android' | 'web';
 
 type FunctionPayload = Record<string, unknown>;
 
@@ -140,8 +147,8 @@ export function isPlaidBankingConfigured() {
   return Boolean(APPWRITE.bookkeepingFunctionId);
 }
 
-export async function createPlaidLinkToken() {
-  const execution = await executeBankFunction('/plaid/link-token');
+export async function createPlaidLinkToken(platform: PlaidLinkPlatform) {
+  const execution = await executeBankFunction('/plaid/link-token', { platform });
   if (execution.responseStatusCode !== 200) {
     throw functionError(
       execution.responseBody,

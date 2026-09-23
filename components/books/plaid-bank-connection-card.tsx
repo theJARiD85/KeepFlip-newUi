@@ -18,8 +18,9 @@ import {
   isPlaidBankingConfigured,
   syncPlaidBankTransactions,
   type PlaidBankConnection,
+  type PlaidBankLinkResult,
 } from '@/services/plaid-bank-service';
-import { linkPlaidBankAccount } from '@/services/plaid-bank-link';
+import { PlaidBankLinkButton } from '@/components/books/plaid-bank-link-button';
 
 type PlaidBankConnectionCardProps = {
   automationAllowed: boolean;
@@ -82,33 +83,18 @@ export function PlaidBankConnectionCard({
     }, [loadStatus]),
   );
 
-  const connect = async () => {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-    setMessage(null);
-    try {
-      const result = await linkPlaidBankAccount();
-      setConnections((current) => [
-        result.connection,
-        ...current.filter((item) => item.connectionId !== result.connection.connectionId),
-      ]);
-      setMessage(
-        result.sync.imported > 0
-          ? `Connected ${result.connection.institutionName}; ${result.sync.imported} expense${result.sync.imported === 1 ? '' : 's'} added to Books.`
-          : `Connected ${result.connection.institutionName}. No new eligible expenses were found.`,
-      );
-      await loadStatus();
-      onBooksChanged?.();
-    } catch (caughtError) {
-      setError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : 'KeepFlip could not connect that bank account.',
-      );
-    } finally {
-      setBusy(false);
-    }
+  const connected = async (result: PlaidBankLinkResult) => {
+    setConnections((current) => [
+      result.connection,
+      ...current.filter((item) => item.connectionId !== result.connection.connectionId),
+    ]);
+    setMessage(
+      result.sync.imported > 0
+        ? `Connected ${result.connection.institutionName}; ${result.sync.imported} expense${result.sync.imported === 1 ? '' : 's'} added to Books.`
+        : `Connected ${result.connection.institutionName}. No new eligible expenses were found.`,
+    );
+    await loadStatus();
+    onBooksChanged?.();
   };
 
   const sync = async (connectionId?: string) => {
@@ -268,19 +254,18 @@ export function PlaidBankConnectionCard({
         </Text>
       ) : null}
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ busy, disabled: busy }}
-        disabled={busy}
-        onPress={() => void connect()}
-        style={({ pressed }) => [styles.connectButton, pressed && styles.pressed, busy && styles.disabled]}>
-        {busy ? (
-          <ActivityIndicator color={theme.colors.textOnAccent} size="small" />
-        ) : (
-          <IconSymbol color={theme.colors.textOnAccent} name="arrow.right" size={15} />
-        )}
-        <Text style={[styles.connectButtonText, { fontSize: responsiveFont(9) }]}>CONNECT BUSINESS BANK</Text>
-      </Pressable>
+      <PlaidBankLinkButton
+        busy={busy}
+        disabled={loading}
+        fontSize={responsiveFont(9)}
+        onBusyChange={setBusy}
+        onError={setError}
+        onLinked={(result) => void connected(result)}
+        onStart={() => {
+          setError(null);
+          setMessage(null);
+        }}
+      />
     </View>
   );
 }
@@ -342,22 +327,6 @@ const styles = StyleSheet.create({
     height: 34,
     justifyContent: 'center',
     width: 34,
-  },
-  connectButton: {
-    alignItems: 'center',
-    backgroundColor: theme.colors.scannerCyan,
-    borderRadius: 9,
-    flexDirection: 'row',
-    gap: 7,
-    justifyContent: 'center',
-    minHeight: 41,
-    paddingHorizontal: 12,
-  },
-  connectButtonText: {
-    color: theme.colors.textOnAccent,
-    fontFamily: theme.fonts.radar,
-    fontWeight: '900',
-    letterSpacing: 0.8,
   },
   automationText: { color: theme.colors.textMuted, lineHeight: 15 },
   warningText: { color: theme.colors.goldBright, lineHeight: 15 },

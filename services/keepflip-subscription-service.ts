@@ -323,7 +323,10 @@ export function areKeepFlipSubscriptionsEnforced() {
   return process.env.EXPO_PUBLIC_KEEPFLIP_SUBSCRIPTIONS_ENFORCED !== 'false';
 }
 
-async function syncRevenueCatTenjinIdentity(userId: string) {
+async function syncRevenueCatTenjinIdentity(
+  userId: string,
+  { includeTenjinInstallationId = false }: { includeTenjinInstallationId?: boolean } = {},
+) {
   const cleanUserId = userId.trim();
   if (!cleanUserId) return;
 
@@ -346,10 +349,15 @@ async function syncRevenueCatTenjinIdentity(userId: string) {
       await setKeepFlipTenjinCustomerUserId(cleanUserId);
       const installationId = await getTenjinAnalyticsInstallationId();
 
-      // RevenueCat documents this subscriber attribute as the required bridge
-      // for its Tenjin integration. It is not used as a feature authorization
-      // value; the Subscription Police response remains authoritative.
-      if (installationId) {
+      // RevenueCat recommends this subscriber attribute for its Tenjin
+      // integration. It is attribution metadata only; the Subscription Police
+      // response remains authoritative for subscription access.
+      // RevenueCat treats attribution identifiers as write-once. Only attach
+      // the Tenjin installation ID while converting the anonymous customer
+      // created for a first-time purchase into its KeepFlip account. Existing
+      // subscribers already have their original install attribution, and
+      // resending a new value on every app launch is rejected by RevenueCat.
+      if (includeTenjinInstallationId && installationId) {
         await Purchases.setTenjinAnalyticsInstallationID(installationId);
       }
 
@@ -966,10 +974,18 @@ async function ensureRevenueCatUser(userId: string) {
 
   if (configuredForUserId !== cleanUserId) {
     const currentUserId = await Purchases.getAppUserID();
+    let linkedAnonymousCustomer = false;
     if (currentUserId !== cleanUserId) {
+      linkedAnonymousCustomer = Boolean(
+        currentUserId?.startsWith('$RCAnonymousID:'),
+      );
       await Purchases.logIn(cleanUserId);
     }
     configuredForUserId = cleanUserId;
+    await syncRevenueCatTenjinIdentity(cleanUserId, {
+      includeTenjinInstallationId: linkedAnonymousCustomer,
+    });
+    return true;
   }
 
   await syncRevenueCatTenjinIdentity(cleanUserId);
