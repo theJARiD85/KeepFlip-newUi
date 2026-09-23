@@ -67,7 +67,10 @@ export type KeepFlipAuthContextValue = {
   missingKeys: AppwriteCoreRequiredEnvironmentVariable[];
   isBusy: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  /** Create the Appwrite account without creating an authenticated session. */
+  /**
+   * Create the Appwrite account without creating an authenticated session.
+   * Callers must complete the subscription-first checkout before invoking it.
+   */
   createAccount: (
     name: string,
     email: string,

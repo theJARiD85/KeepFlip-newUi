@@ -4,6 +4,7 @@ import {
 } from '@revenuecat/purchases-js';
 
 import {
+  KEEPFLIP_ENTITLEMENTS,
   KEEPFLIP_SUBSCRIPTION_OFFERING_ID,
   type KeepFlipBillingCadence,
   type KeepFlipPlanId,
@@ -22,6 +23,9 @@ const WEB_PACKAGE_IDS: Record<
     annual: 'serious-annual',
   },
 };
+
+const PRE_ACCOUNT_REVENUECAT_USER_ID_STORAGE_KEY =
+  'keepflip.revenuecat.pre-account-user-id';
 
 export type KeepFlipWebBillingConfiguration = {
   configured: boolean;
@@ -59,6 +63,38 @@ function normalizedId(value: string) {
 
 function revenueCatWebApiKey() {
   return clean(process.env.EXPO_PUBLIC_REVENUECAT_WEB_API_KEY);
+}
+
+function storedPreAccountRevenueCatUserId() {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const value = window.localStorage.getItem(
+      PRE_ACCOUNT_REVENUECAT_USER_ID_STORAGE_KEY,
+    );
+    return value?.startsWith('$RCAnonymousID:') ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function preAccountRevenueCatUserId() {
+  const existing = storedPreAccountRevenueCatUserId();
+  if (existing) return existing;
+
+  const generated = Purchases.generateRevenueCatAnonymousAppUserId();
+  if (typeof window !== 'undefined') {
+    try {
+      window.localStorage.setItem(
+        PRE_ACCOUNT_REVENUECAT_USER_ID_STORAGE_KEY,
+        generated,
+      );
+    } catch {
+      // The module-scoped RevenueCat instance still carries the purchase for
+      // this tab when browser storage is unavailable.
+    }
+  }
+  return generated;
 }
 
 /**
@@ -132,6 +168,45 @@ async function purchasesForUser(userId: string) {
     configuredUserId = cleanUserId;
   }
 
+  configuredApiKey ??= apiKey;
+  return purchases;
+}
+
+async function purchasesForPreAccount() {
+  const configuration = getKeepFlipWebBillingConfiguration();
+  if (!configuration.configured) {
+    throw new Error(
+      configuration.message || 'KeepFlip web billing is not configured yet.',
+    );
+  }
+
+  const apiKey = revenueCatWebApiKey();
+  const anonymousUserId = preAccountRevenueCatUserId();
+
+  if (!Purchases.isConfigured()) {
+    configuredApiKey = apiKey;
+    configuredUserId = anonymousUserId;
+    return Purchases.configure({
+      apiKey,
+      appUserId: anonymousUserId,
+    });
+  }
+
+  if (configuredApiKey && configuredApiKey !== apiKey) {
+    throw new Error(
+      'KeepFlip web billing changed configuration while this tab was open. Refresh the page before continuing.',
+    );
+  }
+
+  const purchases = Purchases.getSharedInstance();
+  if (purchases.getAppUserId() !== anonymousUserId) {
+    // A previous signed-in customer may still be the SDK identity in this
+    // tab. Move to the persisted anonymous onboarding customer before a new
+    // purchase so one seller can never inherit another seller's entitlement.
+    await purchases.changeUser(anonymousUserId);
+  }
+
+  configuredUserId = anonymousUserId;
   configuredApiKey ??= apiKey;
   return purchases;
 }
@@ -230,18 +305,18 @@ export async function loadKeepFlipWebBillingCatalog(
   };
 }
 
-export async function purchaseKeepFlipWebBillingPlan({
-  cadence,
-  email,
-  plan,
-  userId,
-}: {
-  cadence: KeepFlipBillingCadence;
-  email?: string | null;
-  plan: KeepFlipPlanId;
-  userId: string;
-}) {
-  const purchases = await purchasesForUser(userId);
+async function purchasePackage(
+  purchases: Awaited<ReturnType<typeof purchasesForUser>>,
+  {
+    cadence,
+    email,
+    plan,
+  }: {
+    cadence: KeepFlipBillingCadence;
+    email?: string | null;
+    plan: KeepFlipPlanId;
+  },
+) {
   const offerings = await purchases.getOfferings();
   const offering =
     offerings.all[KEEPFLIP_SUBSCRIPTION_OFFERING_ID] ?? offerings.current ?? null;
@@ -263,4 +338,78 @@ export async function purchaseKeepFlipWebBillingPlan({
     rcPackage: revenueCatPackage,
     termsAndConditionsUrl: termsUrl(),
   });
+}
+
+export async function purchaseKeepFlipWebBillingPlan({
+  cadence,
+  email,
+  plan,
+  userId,
+}: {
+  cadence: KeepFlipBillingCadence;
+  email?: string | null;
+  plan: KeepFlipPlanId;
+  userId: string;
+}) {
+  const purchases = await purchasesForUser(userId);
+  return purchasePackage(purchases, { cadence, email, plan });
+}
+
+/**
+ * Start web checkout before an Appwrite account exists. RevenueCat supports
+ * anonymous Web Billing customers; the purchase is kept under that customer
+ * until linkKeepFlipWebBillingAccount identifies it after account creation.
+ */
+export async function purchaseKeepFlipWebBillingPlanBeforeAccount({
+  cadence,
+  email,
+  plan,
+}: {
+  cadence: KeepFlipBillingCadence;
+  email?: string | null;
+  plan: KeepFlipPlanId;
+}) {
+  const purchases = await purchasesForPreAccount();
+  const result = await purchasePackage(purchases, { cadence, email, plan });
+  if (!keepFlipWebBillingPurchaseIsActive(result, plan)) {
+    throw new Error(
+      'KeepFlip could not confirm an active subscription from Web Billing. The account was not created.',
+    );
+  }
+  return result;
+}
+
+export function keepFlipWebBillingPurchaseIsActive(
+  result: Awaited<ReturnType<typeof purchasePackage>>,
+  plan: KeepFlipPlanId,
+) {
+  const entitlementId = KEEPFLIP_ENTITLEMENTS[plan];
+  return result.customerInfo.entitlements.active[entitlementId]?.isActive === true;
+}
+
+/**
+ * Attach a successful anonymous web purchase to the newly created Appwrite
+ * user. The RevenueCat identify operation aliases the anonymous customer; a
+ * plain changeUser would risk leaving the purchase on an untracked customer.
+ */
+export async function linkKeepFlipWebBillingAccount(userId: string) {
+  const cleanUserId = userId.trim();
+  if (!cleanUserId) throw new Error('A KeepFlip account ID is required.');
+
+  const purchases = await purchasesForPreAccount();
+  const result = await purchases.identifyUser(cleanUserId);
+  configuredUserId = cleanUserId;
+
+  if (typeof window !== 'undefined') {
+    try {
+      window.localStorage.removeItem(
+        PRE_ACCOUNT_REVENUECAT_USER_ID_STORAGE_KEY,
+      );
+    } catch {
+      // Losing browser storage cleanup does not affect the already-linked
+      // RevenueCat customer; the next onboarding flow will rotate its ID.
+    }
+  }
+
+  return result;
 }

@@ -17,7 +17,7 @@ const SECTIONS: LegalSection[] = [
     title: "Location and sourcing trips",
     body: [
       "KeepFlip requests foreground location when you choose a location-dependent feature. When you manually start a sourcing trip, KeepFlip requests foreground location and, on supported native builds, background location so it can continue measuring mileage while the app is not visible.",
-      "Location tracking starts only after you grant the relevant permission and start an active sourcing trip. It stops when you close the trip. While the trip is active, KeepFlip processes location points to calculate distance and may temporarily keep the current tracking state on your device. The service record stores the mileage total, point count, and related trip metadata rather than a user-facing route history. Other location-aware features, such as nearby repair-provider research or approximate placement of a local marketplace listing, use location only when you request them.",
+      "Location tracking starts only after you grant the relevant permission and start an active sourcing trip. It stops when you close the trip. While the trip is active, KeepFlip processes location points to calculate distance and may temporarily keep the current tracking state on your device. The service record stores the mileage total, point count, and related trip metadata rather than a user-facing route history.",
       "You may deny, disable, or revoke location permission in your device settings. The related location-dependent feature, including sourcing-trip mileage, may not work without that permission.",
     ],
   },

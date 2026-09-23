@@ -19,6 +19,16 @@ import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { getAppwriteCoreServices } from '@/lib/appwrite';
+import {
+  KEEPFLIP_PLAN_DEFINITIONS,
+  type KeepFlipBillingCadence,
+  type KeepFlipPlanId,
+} from '@/services/keepflip-subscription-service';
+import {
+  keepFlipWebBillingPurchaseIsActive,
+  linkKeepFlipWebBillingAccount,
+  purchaseKeepFlipWebBillingPlanBeforeAccount,
+} from '@/services/keepflip-web-billing';
 import type { ResellerBuyRules } from '@/services/reseller-buy-rules-service';
 import { completeScanInventoryWalkthrough } from '@/services/user-profile-onboarding-service';
 
@@ -47,43 +57,85 @@ export function WebAuthScreen({
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const colors = getKeepFlipThemeColors(effectiveColorScheme);
   const {
+    createAccount,
     errorMessage,
     isBusy,
     missingKeys,
     signIn,
-    signUp,
     status,
   } = useKeepFlipAuth();
   const [name, setName] = useState(initialName?.trim() ?? '');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
+  const [billingCadence, setBillingCadence] =
+    useState<KeepFlipBillingCadence>('monthly');
+  const [billingPlan, setBillingPlan] =
+    useState<KeepFlipPlanId>('serious');
+  const [preAccountSubscriptionActive, setPreAccountSubscriptionActive] =
+    useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isCreateAccount = initialMode === 'create-account';
-  const submitLabel = isCreateAccount ? 'Create my workspace' : 'Sign in to KeepFlip';
+  const submitLabel = isCreateAccount
+    ? preAccountSubscriptionActive
+      ? 'Create my workspace'
+      : 'Start subscription & continue'
+    : 'Sign in to KeepFlip';
 
   async function submit() {
+    if (isBusy || isSubmitting) return;
+
     setLocalError(null);
+    setIsSubmitting(true);
     try {
       if (isCreateAccount) {
+        if (!preAccountSubscriptionActive) {
+          const purchase = await purchaseKeepFlipWebBillingPlanBeforeAccount({
+            cadence: billingCadence,
+            email,
+            plan: billingPlan,
+          });
+          if (!keepFlipWebBillingPurchaseIsActive(purchase, billingPlan)) {
+            throw new Error(
+              'KeepFlip could not confirm an active subscription. The account was not created.',
+            );
+          }
+          setPreAccountSubscriptionActive(true);
+          return;
+        }
+
+        let accountUserId: string;
+        let sessionEstablished = false;
         try {
-          await signUp(name, email, password);
-        } catch (signUpError) {
+          const createdUser = await createAccount(
+            name,
+            email,
+            password,
+          );
+          accountUserId = createdUser.$id;
+        } catch (accountError) {
           /*
-           * Appwrite persists the user before it creates the email/password
-           * session. If that later session request fails, retrying "create"
-           * must not strand a real account behind an already-exists error.
-           * Recover by signing in with the credentials the seller just chose.
+           * A browser refresh or a failed post-create link can leave the
+           * Appwrite user behind while the successful anonymous RevenueCat
+           * purchase remains in this tab. Recover that exact account and link
+           * the pending purchase instead of starting another subscription.
            */
           if (
-            signUpError instanceof KeepFlipAuthError &&
-            signUpError.code === 'AUTH_ACCOUNT_EXISTS'
+            accountError instanceof KeepFlipAuthError &&
+            accountError.code === 'AUTH_ACCOUNT_EXISTS'
           ) {
             await signIn(email, password);
+            const { account } = getAppwriteCoreServices();
+            accountUserId = (await account.get()).$id;
+            sessionEstablished = true;
           } else {
-            throw signUpError;
+            throw accountError;
           }
         }
+
+        await linkKeepFlipWebBillingAccount(accountUserId);
+        if (!sessionEstablished) await signIn(email, password);
       } else {
         await signIn(email, password);
       }
@@ -116,6 +168,8 @@ export function WebAuthScreen({
       }
     } catch (error) {
       setLocalError(error instanceof Error ? error.message : 'KeepFlip could not complete that request.');
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -185,6 +239,17 @@ export function WebAuthScreen({
             value={password}
           />
 
+          {isCreateAccount ? (
+            <WebBillingChoice
+              active={preAccountSubscriptionActive}
+              cadence={billingCadence}
+              colors={colors}
+              onCadenceChange={setBillingCadence}
+              onPlanChange={setBillingPlan}
+              plan={billingPlan}
+            />
+          ) : null}
+
           {localError || errorMessage ? (
             <View style={[styles.errorBox, { backgroundColor: colors.dangerSurface, borderColor: colors.danger }]}>
               <Text style={[styles.errorText, { color: colors.danger }]}>{localError ?? errorMessage}</Text>
@@ -200,16 +265,16 @@ export function WebAuthScreen({
 
           <Pressable
             accessibilityRole="button"
-            disabled={isBusy}
+            disabled={isBusy || isSubmitting}
             onPress={() => void submit()}
             style={({ pressed }) => [
               styles.submitButton,
               { backgroundColor: colors.gold },
               pressed && styles.pressed,
-              isBusy && styles.disabled,
+              (isBusy || isSubmitting) && styles.disabled,
             ]}
           >
-            {isBusy ? <ActivityIndicator color={colors.textOnAccent} /> : null}
+            {isBusy || isSubmitting ? <ActivityIndicator color={colors.textOnAccent} /> : null}
             <Text style={[styles.submitText, { color: colors.textOnAccent }]}>{submitLabel}</Text>
           </Pressable>
 
@@ -260,6 +325,100 @@ function Field({
         placeholderTextColor={colors.textMuted}
         style={[styles.input, { backgroundColor: colors.surfaceInset, borderColor: colors.divider, color: colors.text }]}
       />
+    </View>
+  );
+}
+
+function WebBillingChoice({
+  active,
+  cadence,
+  colors,
+  onCadenceChange,
+  onPlanChange,
+  plan,
+}: {
+  active: boolean;
+  cadence: KeepFlipBillingCadence;
+  colors: ReturnType<typeof getKeepFlipThemeColors>;
+  onCadenceChange: (cadence: KeepFlipBillingCadence) => void;
+  onPlanChange: (plan: KeepFlipPlanId) => void;
+  plan: KeepFlipPlanId;
+}) {
+  return (
+    <View
+      style={[
+        styles.billingSection,
+        { backgroundColor: colors.surfaceInset, borderColor: colors.divider },
+      ]}
+    >
+      <Text style={[styles.billingEyebrow, { color: colors.goldBright }]}>SUBSCRIPTION REQUIRED BEFORE ACCOUNT</Text>
+      <Text style={[styles.billingCopy, { color: colors.textMuted }]}>Choose a plan and complete secure checkout first. KeepFlip will not create the Appwrite account until RevenueCat confirms an active subscription or eligible trial.</Text>
+
+      {!active ? (
+        <>
+          <View style={styles.billingToggle}>
+            {(['monthly', 'annual'] as const).map((option) => (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ selected: cadence === option }}
+                key={option}
+                onPress={() => onCadenceChange(option)}
+                style={[
+                  styles.billingToggleOption,
+                  { borderColor: colors.divider },
+                  cadence === option && {
+                    backgroundColor: colors.iconSurfaceCyan,
+                    borderColor: colors.accentCyanBorder,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.billingToggleText,
+                    { color: cadence === option ? colors.scannerCyan : colors.textMuted },
+                  ]}
+                >
+                  {option === 'monthly' ? 'MONTHLY' : 'ANNUAL'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <View style={styles.billingPlanList}>
+            {KEEPFLIP_PLAN_DEFINITIONS.map((definition) => {
+              const selected = plan === definition.id;
+              const price =
+                cadence === 'annual'
+                  ? definition.annualPriceFallback
+                  : definition.monthlyPriceFallback;
+              return (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  key={definition.id}
+                  onPress={() => onPlanChange(definition.id)}
+                  style={[
+                    styles.billingPlan,
+                    { borderColor: colors.divider },
+                    selected && {
+                      backgroundColor: colors.iconSurfaceCyan,
+                      borderColor: colors.accentCyanBorder,
+                    },
+                  ]}
+                >
+                  <View style={styles.billingPlanHeading}>
+                    <Text style={[styles.billingPlanName, { color: selected ? colors.scannerCyan : colors.text }]}>{definition.name}</Text>
+                    <Text style={[styles.billingPlanPrice, { color: colors.text }]}>{price}{cadence === 'annual' ? '/yr' : '/mo'}</Text>
+                  </View>
+                  <Text style={[styles.billingPlanDescription, { color: colors.textMuted }]}>{definition.description}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </>
+      ) : (
+        <Text style={[styles.billingConfirmed, { color: colors.scannerCyan }]}>SUBSCRIPTION CONFIRMED — CREATE YOUR KEEPFLIP ACCOUNT BELOW.</Text>
+      )}
     </View>
   );
 }
@@ -320,6 +479,19 @@ const styles = StyleSheet.create({
   setupBox: { borderRadius: 12, borderWidth: 1, marginTop: 18, padding: 13 },
   setupTitle: { fontFamily: theme.fonts.semibold, fontSize: 13 },
   setupText: { fontFamily: theme.fonts.body, fontSize: 12, lineHeight: 18, marginTop: 4 },
+  billingSection: { borderRadius: 14, borderWidth: 1, gap: 10, marginTop: 22, padding: 15 },
+  billingEyebrow: { fontFamily: theme.fonts.bold, fontSize: 11, letterSpacing: 1.1 },
+  billingCopy: { fontFamily: theme.fonts.body, fontSize: 12, lineHeight: 18 },
+  billingToggle: { flexDirection: 'row', gap: 8 },
+  billingToggleOption: { borderRadius: 999, borderWidth: 1, flex: 1, minHeight: 38, alignItems: 'center', justifyContent: 'center' },
+  billingToggleText: { fontFamily: theme.fonts.bold, fontSize: 11, letterSpacing: 0.8 },
+  billingPlanList: { gap: 8 },
+  billingPlan: { borderRadius: 12, borderWidth: 1, gap: 5, padding: 12 },
+  billingPlanHeading: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
+  billingPlanName: { flex: 1, fontFamily: theme.fonts.semibold, fontSize: 13 },
+  billingPlanPrice: { fontFamily: theme.fonts.bold, fontSize: 13 },
+  billingPlanDescription: { fontFamily: theme.fonts.body, fontSize: 11, lineHeight: 16 },
+  billingConfirmed: { fontFamily: theme.fonts.bold, fontSize: 11, letterSpacing: 0.5, lineHeight: 17 },
   submitButton: { alignItems: 'center', borderRadius: 14, flexDirection: 'row', gap: 9, justifyContent: 'center', marginTop: 24, minHeight: 52, paddingHorizontal: 18 },
   submitText: { fontFamily: theme.fonts.bold, fontSize: 14 },
   pressed: { opacity: 0.82 },
