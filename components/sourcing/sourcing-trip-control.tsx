@@ -20,8 +20,10 @@ import {
   KeepFlipTextInput as TextInput,
 } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import { responsiveWidth } from '@/lib/responsiveFont';
+import {
+  useResponsiveLayout,
+  useResponsiveStyles,
+} from '@/hooks/use-responsive-layout';
 import {
   centsFromLedgerAmount,
   parseLedgerDate,
@@ -29,7 +31,6 @@ import {
 } from '@/services/reseller-ledger-service';
 import { formatSourcingTripMiles } from '@/services/sourcing-trip-location-service';
 
-import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type TripFormValues = {
   sourceName: string;
   label: string;
@@ -84,7 +85,7 @@ export function SourcingTripControl() {
     locationSnapshot,
     startTrip,
   } = useSourcingTrip();
-  const [dialog, setDialog] = useState<'start' | 'finish' | null>(null);
+  const [dialog, setDialog] = useState<'start' | 'location-disclosure' | 'finish' | null>(null);
   const [tripForm, setTripForm] = useState<TripFormValues>(emptyTripForm);
   const [receiptTotal, setReceiptTotal] = useState('');
   const [receiptReference, setReceiptReference] = useState('');
@@ -100,7 +101,7 @@ export function SourcingTripControl() {
       : 'Set up sourcing trips';
   const tripButtonDetail = activeTrip
     ? locationSnapshot
-      ? `${formatSourcingTripMiles(locationSnapshot.distanceMeters)} tracked · ${activeTrip.findCount} find${activeTrip.findCount === 1 ? '' : 's'} · OPEN OR CLOSE`
+      ? `${formatSourcingTripMiles(locationSnapshot.distanceMeters)} tracked · ${locationSnapshot.trackingMode === 'background' ? 'BACKGROUND LOCATION ON' : 'FOREGROUND LOCATION ON'} · ${activeTrip.findCount} find${activeTrip.findCount === 1 ? '' : 's'}`
       : `${activeTrip.findCount} saved find${activeTrip.findCount === 1 ? '' : 's'} · MILEAGE UNAVAILABLE`
     : configured
       ? 'GROUP THIS OUTING\'S FINDS'
@@ -133,7 +134,7 @@ export function SourcingTripControl() {
     setTripForm((current) => ({ ...current, [key]: value }));
   };
 
-  const handleStart = async () => {
+  const handleStart = () => {
     const startedAt = parseLedgerDate(tripForm.startedAt);
     const budgetCents = tripForm.budget.trim()
       ? centsFromLedgerAmount(tripForm.budget)
@@ -152,6 +153,25 @@ export function SourcingTripControl() {
       return;
     }
 
+    setDialog('location-disclosure');
+  };
+
+  const confirmLocationDisclosure = async () => {
+    if (submitting) return;
+
+    const startedAt = parseLedgerDate(tripForm.startedAt);
+    const budgetCents = tripForm.budget.trim()
+      ? centsFromLedgerAmount(tripForm.budget)
+      : null;
+    if (!startedAt || (tripForm.budget.trim() && !budgetCents)) {
+      setDialog('start');
+      Alert.alert(
+        'Check the trip details',
+        'Review the date and planned spend before starting the sourcing trip.',
+      );
+      return;
+    }
+
     setSubmitting(true);
     try {
       await startTrip({
@@ -163,9 +183,13 @@ export function SourcingTripControl() {
       });
       setDialog(null);
     } catch (error) {
-      console.log(
-        'Could not start trip',
-        error instanceof Error ? error.message : 'KeepFlip could not start that sourcing trip.',
+      const message =
+        error instanceof Error ? error.message : 'KeepFlip could not start that sourcing trip.';
+      console.log('Could not start trip', message);
+      setDialog('start');
+      Alert.alert(
+        'Location access needed',
+        `${message} You can try again or choose Cancel to leave the trip unopened.`,
       );
     } finally {
       setSubmitting(false);
@@ -341,7 +365,6 @@ export function SourcingTripControl() {
                   <Text style={[styles.modalBody, { fontSize: responsiveFont(13), lineHeight: 18 }]}>
                     Keep each find, its actual cost, and the shared receipt connected without turning the scanner into a spreadsheet.
                   </Text>
-                  <Text style={[styles.locationNotice, { fontSize: responsiveFont(10), lineHeight: 14 }]}>Location access is used only during this active trip to calculate total business miles. KeepFlip saves the mileage total, not your route history.</Text>
                 </View>
                 <Pressable
                   accessibilityLabel="Close start sourcing trip form"
@@ -407,6 +430,13 @@ export function SourcingTripControl() {
                     Optional. It becomes a guardrail, not a claim about profit.
                   </Text>
                 </View>
+                <View style={styles.locationNoticeCard}>
+                  <IconSymbol color={theme.colors.scannerCyan} name="location.fill" size={20} />
+                  <View style={styles.locationNoticeCopy}>
+                    <Text style={[styles.locationNoticeTitle, { fontSize: responsiveFont(9) }]}>LOCATION · ACTIVE TRIP ONLY</Text>
+                    <Text style={[styles.locationNoticeBody, { fontSize: responsiveFont(11), lineHeight: 16 }]}>KeepFlip asks for location permission only when you start this trip. Background location may continue while you travel so the app can calculate business mileage until you close the trip.</Text>
+                  </View>
+                </View>
                 <View>
                   <FieldLabel>Trip notes</FieldLabel>
                   <TextInput
@@ -440,6 +470,82 @@ export function SourcingTripControl() {
                   >
                     <Text style={[styles.primaryButtonText, { fontSize: responsiveFont(10) }]}>
                       {submitting ? 'STARTING...' : 'START & SCAN'}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      <Modal
+        animationType="fade"
+        onRequestClose={submitting ? undefined : () => setDialog('start')}
+        statusBarTranslucent
+        transparent
+        visible={dialog === 'location-disclosure'}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalBackdrop}
+        >
+          <ScrollView
+            contentContainerStyle={[
+              styles.modalScroll,
+              { paddingTop: insets.top + 26, paddingBottom: insets.bottom + 26 },
+            ]}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.modalSurface}>
+              <View style={styles.modalHeader}>
+                <View style={styles.modalHeaderCopy}>
+                  <Text style={[styles.modalEyebrow, { fontSize: responsiveFont(9) }]}>LOCATION PERMISSION · ACTIVE TRIP ONLY</Text>
+                  <Text style={[styles.modalTitle, { fontSize: responsiveFont(24), lineHeight: 29 }]}>KeepFlip needs location for trip mileage</Text>
+                  <Text style={[styles.modalBody, { fontSize: responsiveFont(13), lineHeight: 18 }]}>When you start this sourcing trip, KeepFlip uses your location while you travel to calculate total business mileage for this outing.</Text>
+                </View>
+                <Pressable
+                  accessibilityLabel="Close location disclosure"
+                  accessibilityRole="button"
+                  disabled={submitting}
+                  onPress={() => setDialog('start')}
+                  style={styles.closeButton}
+                >
+                  <Text style={[styles.closeText, { fontSize: responsiveFont(24), lineHeight: 26 }]}>×</Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.formContent}>
+                <View style={styles.locationDisclosureCard}>
+                  <IconSymbol color={theme.colors.scannerCyan} name="location.fill" size={23} />
+                  <View style={styles.locationDisclosureCopy}>
+                    <Text style={[styles.locationDisclosureTitle, { fontSize: responsiveFont(10) }]}>WHAT KEEPFLIP WILL DO</Text>
+                    <Text style={[styles.locationDisclosureBody, { fontSize: responsiveFont(12), lineHeight: 17 }]}>On supported native builds, location may continue while KeepFlip is in the background so mileage can be measured while you drive. Tracking begins after you grant permission and ends when you close this active trip.</Text>
+                  </View>
+                </View>
+                <Text style={[styles.modalBody, { fontSize: responsiveFont(13), lineHeight: 18 }]}>KeepFlip stores the mileage total and trip metadata, not a user-facing route history. The next step will show the device permission prompts. If you choose Not now, no location permission is requested and the trip stays unopened.</Text>
+                <View style={styles.actions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={submitting}
+                    onPress={() => setDialog('start')}
+                    style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}
+                  >
+                    <Text style={[styles.cancelText, { fontSize: responsiveFont(9) }]}>NOT NOW</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ busy: submitting }}
+                    disabled={submitting}
+                    onPress={() => void confirmLocationDisclosure()}
+                    style={({ pressed }) => [
+                      styles.primaryButton,
+                      pressed && styles.pressed,
+                      submitting && styles.disabled,
+                    ]}
+                  >
+                    <Text style={[styles.primaryButtonText, { fontSize: responsiveFont(10) }]}>
+                      {submitting ? 'ASKING PERMISSION...' : 'ALLOW & START TRIP'}
                     </Text>
                   </Pressable>
                 </View>
@@ -710,6 +816,52 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.body,
       fontSize: 10,
       lineHeight: 14,
+    },
+    locationNoticeCard: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 10,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
+    },
+    locationNoticeCopy: { flex: 1, gap: 3 },
+    locationNoticeTitle: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 9,
+      fontWeight: '900',
+      letterSpacing: 0.75,
+    },
+    locationNoticeBody: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.body,
+      fontSize: 11,
+      lineHeight: 16,
+    },
+    locationDisclosureCard: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 12,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: theme.colors.scannerCyan,
+      backgroundColor: theme.colors.iconSurfaceCyan,
+    },
+    locationDisclosureCopy: { flex: 1, gap: 4 },
+    locationDisclosureTitle: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 10,
+      fontWeight: '900',
+      letterSpacing: 0.8,
+    },
+    locationDisclosureBody: {
+      color: theme.colors.cream,
+      fontFamily: theme.fonts.body,
+      fontSize: 12,
+      lineHeight: 17,
     },
     closeButton: {
       width: 30,
