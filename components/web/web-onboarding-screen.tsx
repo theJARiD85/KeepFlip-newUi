@@ -1,7 +1,9 @@
+import { createElement } from 'react';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { FlipCompanion } from '@/components/flip';
+import { PublicSiteFooter } from '@/components/web/public-site-footer';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
@@ -26,17 +28,19 @@ export function WebOnboardingScreen({
           <Text style={[styles.brandMarkText, { color: colors.textOnAccent }]}>K</Text>
         </View>
         <Text style={[styles.eyebrow, { color: colors.goldBright }]}>KEEPFLIP / MEET FLIP</Text>
-        <Text style={[styles.title, { color: colors.text }]}>
-          Source smarter. Flip with a plan.
-        </Text>
+        {createElement(
+          'h1',
+          { style: StyleSheet.flatten([styles.title, { color: colors.text }]) },
+          'KeepFlip is a resale planning app for independent sellers and small shops.',
+        )}
         <Text style={[styles.body, { color: colors.textMuted }]}>
-          Meet Flip, your resale sidekick. A few quick questions will set the buying rules that guide the evidence and advice you see everywhere in KeepFlip.
+          Research an item, check a buy against your rules, track inventory, and prepare marketplace listings.
         </Text>
         <View style={[styles.flipCard, { backgroundColor: colors.iconSurfaceViolet, borderColor: colors.accentVioletBorder }]}>
           <FlipCompanion cropToSquare={false} size={flipSize} />
           <View style={styles.flipCopy}>
             <Text style={[styles.flipEyebrow, { color: colors.scannerCyan }]}>FLIP IS READY</Text>
-            <Text style={[styles.flipText, { color: colors.textMuted }]}>He will learn the kind of deals, pace, profit, and risk that fit your business.</Text>
+            <Text style={[styles.flipText, { color: colors.textMuted }]}>Set rules for deals, pace, profit, and risk that fit your resale business.</Text>
           </View>
         </View>
         <View style={styles.actions}>
@@ -52,6 +56,7 @@ export function WebOnboardingScreen({
             onPress={onExistingLogin ?? (() => router.push('/sign-in'))}
           />
         </View>
+        <PublicSiteFooter />
       </View>
     </View>
   );

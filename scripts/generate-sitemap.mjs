@@ -67,7 +67,7 @@ mkdirSync(distDirectory, { recursive: true });
 writeFileSync(resolve(distDirectory, 'sitemap.xml'), sitemap, 'utf8');
 writeFileSync(
   resolve(distDirectory, 'robots.txt'),
-  `Sitemap: ${SITE_ORIGIN}/sitemap.xml\n`,
+  `User-agent: *\nAllow: /\nSitemap: ${SITE_ORIGIN}/sitemap.xml\n`,
   'utf8',
 );
 

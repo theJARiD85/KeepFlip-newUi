@@ -46,7 +46,6 @@ function ProtectedRootStack() {
     !hasActiveSubscription;
   const subscriptionSetupOpen = pathname === '/subscription-setup';
   const canShowOnboarding =
-    !isChecking &&
     (!isSignedIn || subscriptionSetupOpen) &&
     (!isSignedIn || hasActiveSubscription);
 
@@ -64,6 +63,7 @@ function ProtectedRootStack() {
         contentStyle: { backgroundColor: colors.backgroundDeep },
         headerShown: false,
       }}>
+      <Stack.Screen name="index" />
       <Stack.Protected guard={isChecking}>
         <Stack.Screen name="auth-check" />
       </Stack.Protected>
@@ -87,6 +87,8 @@ function ProtectedRootStack() {
       </Stack.Protected>
       <Stack.Screen name="terms" />
       <Stack.Screen name="privacy" />
+      <Stack.Screen name="about" />
+      <Stack.Screen name="contact" />
     </Stack>
     </>
   );

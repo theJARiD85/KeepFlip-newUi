@@ -18,7 +18,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { EbayMenuConnectionLink } from '@/components/navigation/ebay-menu-connection-link';
+import { ConnectionsMenuLink } from '@/components/navigation/connections-menu-link';
 import {
   MENU_CLOSE_DURATION_MS,
   useKeepFlipMenu,
@@ -212,22 +212,22 @@ export function KeepFlipSlideDownMenu({
       requestAnimationFrame(() => router.replace(freeDestination as Href));
       return;
     }
-    if (!pathname.startsWith(destination)) {
+    if (!pathname.startsWith(destination.toString())) {
       requestAnimationFrame(() => router.replace(destination as Href));
     }
   };
 
-  const handleEbayNavigate = (isConnected: boolean) => {
+  const handleConnectionsNavigate = () => {
     if (isMenuDisabled) return;
     hapticSelection();
     closeMenu();
 
-    const destination = (isConnected ? '/ebay-account' : '/ebay-connect') as Href;
+    const destination = '/connections' as Href;
     if (freeTier) {
       void onPaidNavigationAttempt?.(destination);
       return;
     }
-    if (!pathname.startsWith(destination.toString())) {
+    if (!pathname.startsWith(destination)) {
       requestAnimationFrame(() => router.push(destination));
     }
   };
@@ -408,13 +408,14 @@ export function KeepFlipSlideDownMenu({
                 />
               </View>
 
-              <EbayMenuConnectionLink
+              <ConnectionsMenuLink
                 active={
-                  pathname.startsWith('/ebay-connect') || pathname.startsWith('/ebay-account')
+                  pathname.startsWith('/connections') ||
+                  pathname.startsWith('/ebay-connect') ||
+                  pathname.startsWith('/ebay-account')
                 }
                 disabled={isMenuDisabled}
-                open={isMenuOpen}
-                onPress={handleEbayNavigate}
+                onPress={handleConnectionsNavigate}
               />
 
               <View style={styles.systemStatus}>

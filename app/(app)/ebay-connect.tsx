@@ -90,7 +90,10 @@ export default function EbayConnectScreen() {
   } = useResponsiveLayout();
 
   const router = useRouter();
-  const params = useLocalSearchParams<{ reconnect?: string | string[] }>();
+  const params = useLocalSearchParams<{
+    reconnect?: string | string[];
+    returnTo?: string | string[];
+  }>();
   const {
     connected,
     isChecking: isCheckingConnection,
@@ -98,6 +101,7 @@ export default function EbayConnectScreen() {
     setConnected,
   } = useEbayConnection();
   const reconnectRequested = firstParam(params.reconnect) === '1';
+  const returnToConnections = firstParam(params.returnTo) === 'connections';
   const insets = useSafeAreaInsets();
   const environment = getEbayOAuthEnvironment();
   const [isConnecting, setIsConnecting] = useState(false);
@@ -126,7 +130,7 @@ export default function EbayConnectScreen() {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
           () => undefined,
         );
-        router.replace('/ebay-account');
+        router.replace(returnToConnections ? '/connections' : '/ebay-account');
         return;
       }
 
