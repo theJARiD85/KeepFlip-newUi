@@ -53,6 +53,7 @@ import {
   type ScannerToolId,
 } from "@/components/scanner/scanner-tool-carousel";
 import { useKeepFlipAppearance } from "@/components/settings/keepflip-appearance-context";
+import { useKeepFlipSubscription } from "@/components/subscription/keepflip-subscription-context";
 import {
   ValueRadarOverlay,
   useValueRadar,
@@ -66,6 +67,7 @@ import { useResponsiveLayout, useResponsiveStyles } from "@/hooks/use-responsive
 import { lookupBarcodeWithEbay } from "@/services/ebaySoldCompsService";
 import { MAX_ANALYSIS_PHOTOS } from "@/services/item-analysis-service";
 import { neutralizeMarketplaceBrand } from "@/services/market-copy";
+import { checkKeepFlipAiValuationAccess } from "@/services/keepflip-subscription-service";
 import { KEEPFLIP_ANALYTICS_EVENTS, trackKeepFlipEvent } from "@/services/keepflip-analytics";
 import {
   createScanId,
@@ -193,12 +195,25 @@ function formatZoomLabel(value: number) {
 export default function ScannerScreen() {
   const styles = useResponsiveStyles(createResponsiveStyles);
   const { appliedColorScheme } = useKeepFlipAppearance();
-  const scannerTools = useMemo(() => {
-    void appliedColorScheme;
-    return getScannerTools();
-  }, [appliedColorScheme]);
   const router = useRouter();
   const { user } = useKeepFlipAuth();
+  const { snapshot: subscriptionSnapshot } = useKeepFlipSubscription();
+  const isFreeScanner =
+    Platform.OS === 'android' &&
+    subscriptionSnapshot?.serverRecordAvailable === true &&
+    subscriptionSnapshot.access.active !== true;
+  const scannerTools = useMemo(() => {
+    void appliedColorScheme;
+    const tools = getScannerTools();
+    return isFreeScanner
+      ? tools.filter((tool) => tool.id !== 'barcode')
+      : tools;
+  }, [appliedColorScheme, isFreeScanner]);
+  const [freeScanQuota, setFreeScanQuota] = useState<{
+    allowed: boolean;
+    limit: number | null;
+    usage: number | null;
+  } | null>(null);
   const { width } = useWindowDimensions();
   const { openScannerAnalysis } =
     useItemAnalysisResult() as unknown as ScannerAnalysisActions;
@@ -222,6 +237,26 @@ export default function ScannerScreen() {
   const permissionCardWidth = Math.min(contentWidth, 480);
   const analysisButtonWidth = Math.min(controlDockWidth, 360);
   const isFocused = useIsFocused();
+  useEffect(() => {
+    if (!isFreeScanner || !isFocused || !user?.$id) {
+      return;
+    }
+    let cancelled = false;
+    void checkKeepFlipAiValuationAccess()
+      .then((access) => {
+        if (!cancelled) {
+          setFreeScanQuota({
+            allowed: access.allowed,
+            limit: access.limit,
+            usage: access.usage,
+          });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setFreeScanQuota(null);
+      });
+    return () => { cancelled = true; };
+  }, [isFreeScanner, isFocused, user?.$id]);
   const { isMenuOpen } = useKeepFlipMenu();
   const cameraRef = useRef<CameraRef>(null);
   const scanFrameRef = useRef<View>(null);
@@ -985,6 +1020,14 @@ export default function ScannerScreen() {
   }, [dismissBarcodeLookup]);
 
   const handleBarcodeToolActivate = useCallback(async () => {
+    if (isFreeScanner) {
+      setBarcodeLookup({
+        phase: "error",
+        barcode: null,
+        message: "Barcode product lookup is available with a KeepFlip subscription.",
+      });
+      return;
+    }
     const captured = await capturePhoto({
       scanId: scanIdRef.current,
       sortOrder: 0,
@@ -1036,7 +1079,7 @@ export default function ScannerScreen() {
         () => undefined,
       );
     }
-  }, [capturePhoto, inspectCapturedBarcode]);
+  }, [capturePhoto, inspectCapturedBarcode, isFreeScanner]);
 
   const openMultiReview = useCallback(() => {
     if (
@@ -1819,6 +1862,13 @@ export default function ScannerScreen() {
                     {scannerHeaderHint}
                   </Text>
                 </View>
+                {isFreeScanner ? (
+                  <Text style={{ color: theme.colors.goldMuted, fontSize: responsiveFont(9), marginTop: 6 }}>
+                    {freeScanQuota?.limit != null && freeScanQuota.usage != null
+                      ? `FREE SCANNER · ${Math.max(0, freeScanQuota.limit - freeScanQuota.usage)} of ${freeScanQuota.limit} scans left this month · no inventory saving`
+                      : 'FREE SCANNER · 10 scans/month · no inventory saving'}
+                  </Text>
+                ) : null}
               </Animated.View>
             </View>
           </View>

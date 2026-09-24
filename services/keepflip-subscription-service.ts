@@ -222,17 +222,6 @@ export const KEEPFLIP_ENTITLEMENTS: Record<KeepFlipPlanId, string> = {
 
 export const KEEPFLIP_PLAN_DEFINITIONS: KeepFlipPlanDefinition[] = [
   {
-    id: 'hobbyist',
-    name: 'Part-Time Hobbyist',
-    eyebrow: 'PART-TIME / ESSENTIALS',
-    monthlyPriceFallback: '$10',
-    annualPriceFallback: '$100',
-    description:
-      'For part-time resellers who want smarter sourcing, organized inventory, reliable valuations, and a clearer view of costs and profit.',
-    limits: ['Up to 25 live listings at one time', '100 AI valuation scans / month'],
-    features: ['Basic bookkeeping reports', 'Inventory and item profit tracking'],
-  },
-  {
     id: 'serious',
     name: 'Serious Reseller',
     eyebrow: 'SERIOUS / BEST FOR BUSINESS',

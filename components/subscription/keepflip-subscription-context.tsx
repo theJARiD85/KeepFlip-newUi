@@ -209,7 +209,11 @@ export function KeepFlipSubscriptionProvider({
       setSnapshot(next);
       // A KeepFlip profile trial is valid access even when this development
       // build has not been configured with a RevenueCat public SDK key yet.
-      setState(next.configured || next.access.active ? 'ready' : 'unconfigured');
+      setState(
+        next.configured || next.access.active || next.serverRecordAvailable
+          ? 'ready'
+          : 'unconfigured',
+      );
       return next;
     } catch (caughtError) {
       setState('error');

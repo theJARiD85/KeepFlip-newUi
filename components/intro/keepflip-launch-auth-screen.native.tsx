@@ -13,6 +13,7 @@ import {
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -428,7 +429,7 @@ export function KeepFlipLaunchAuthScreen({
     };
   }, [isPreAccountSignup]);
 
-  const submit = async () => {
+  const submit = async (freeScanner = false) => {
     if (isBusy || isSubmitting || status === 'setup') return;
 
     const normalizedEmail = email.trim().toLowerCase();
@@ -462,7 +463,7 @@ export function KeepFlipLaunchAuthScreen({
 
     setIsSubmitting(true);
     try {
-      if (needsPreAccountSubscription) {
+      if (needsPreAccountSubscription && !freeScanner) {
         const result = await RevenueCatUI.presentPaywall();
         if (
           result !== PAYWALL_RESULT.PURCHASED &&
@@ -540,6 +541,65 @@ export function KeepFlipLaunchAuthScreen({
       let accountUserId =
         createdUserId || (status === 'signed-in' ? user?.$id ?? null : null);
       let profileSaved = profileSavedForAccount;
+
+      if (freeScanner && Platform.OS === 'android' && isPreAccountSignup) {
+        let accountUserId: string;
+        let sessionEstablished = false;
+        try {
+          const createdUser = await createAccount(
+            normalizedName,
+            normalizedEmail,
+            password,
+          );
+          accountUserId = createdUser.$id;
+        } catch (accountError) {
+          if (
+            !(accountError instanceof KeepFlipAuthError) ||
+            accountError.code !== 'AUTH_ACCOUNT_EXISTS'
+          ) {
+            throw accountError;
+          }
+          await signIn(normalizedEmail, password);
+          sessionEstablished = true;
+          const { account } = getAppwriteCoreServices();
+          accountUserId = (await account.get()).$id;
+        }
+        if (!sessionEstablished) await signIn(normalizedEmail, password);
+
+        if (!signupAnalyticsTrackedRef.current) {
+          trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.signupCompleted, {
+            method: 'email',
+            flow: 'free_scanner',
+          });
+          signupAnalyticsTrackedRef.current = true;
+        }
+
+        const { account } = getAppwriteCoreServices();
+        const currentUser = await account.get();
+        if (initialBuyRules) {
+          try {
+            await completeScanInventoryWalkthrough(
+              accountUserId,
+              currentUser.name || normalizedName,
+              initialBuyRules,
+            );
+          } catch (error) {
+            profileSaved = false;
+            setProfileSavedForAccount(false);
+            if (__DEV__) {
+              console.warn(
+                '[KeepFlip][Onboarding] Free scanner profile setup could not be saved:',
+                error,
+              );
+            }
+          }
+        }
+        void Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Success,
+        ).catch(() => undefined);
+        onAuthenticated?.({ ...selection, profileSaved });
+        return;
+      }
 
       if (isPreAccountSignup) {
         if (!preAccountSubscriptionActive) {
@@ -866,6 +926,32 @@ export function KeepFlipLaunchAuthScreen({
                 </>
               )}
             </Pressable> : null}
+
+            {Platform.OS === 'android' && mode === 'create-account' && isPreAccountSignup && !accountReady ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ busy: isBusy || isSubmitting, disabled: isBusy || isSubmitting || setupRequired }}
+                disabled={isBusy || isSubmitting || setupRequired}
+                onPress={() => void submit(true)}
+                style={({ pressed }) => ({
+                  alignItems: 'center',
+                  borderColor: theme.colors.divider,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  marginTop: 10,
+                  minHeight: 48,
+                  justifyContent: 'center',
+                  opacity: pressed ? 0.75 : 1,
+                  paddingHorizontal: 14,
+                })}>
+                <Text style={{ color: theme.colors.text, fontSize: responsiveFont(10), fontWeight: '700' }}>
+                  Use the free scanner · 10 scans/month
+                </Text>
+                <Text style={{ color: theme.colors.textMuted, fontSize: responsiveFont(8), marginTop: 3 }}>
+                  Android only · no saved inventory
+                </Text>
+              </Pressable>
+            ) : null}
 
             {mode === 'create-account' ? (
               <Text style={[styles.legalText, { fontSize: responsiveFont(10) }]}>

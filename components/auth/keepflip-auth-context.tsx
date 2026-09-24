@@ -14,7 +14,7 @@ import {
   ID,
   type Models,
 } from 'react-native-appwrite';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 
 import {
   AppwriteSetupError,
@@ -92,7 +92,8 @@ export type KeepFlipAuthContextValue = {
   cancelMfaSignIn: () => Promise<void>;
   /**
    * Create the Appwrite account without creating an authenticated session.
-   * Callers must complete the subscription-first checkout before invoking it.
+   * Callers must complete the paid checkout first, or explicitly use the
+   * Android scanner-free signup path, before creating an account.
    */
   createAccount: (
     name: string,
@@ -154,6 +155,12 @@ async function requireActiveSubscription(user: Models.User) {
       'AUTH_SUBSCRIPTION_UNVERIFIED',
       user.$id,
     );
+  }
+  if (!subscription.access.active && Platform.OS === 'android') {
+    // Android accounts without a paid entitlement may enter the scanner-only
+    // shell. Web remains subscription-only, and the server still enforces the
+    // free scan quota before any AI provider is called.
+    return;
   }
   if (!subscription.access.active) {
     throw new KeepFlipAuthError(

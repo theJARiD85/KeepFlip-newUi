@@ -25,12 +25,12 @@ import { KeepFlipSlideDownMenu } from '@/components/navigation/keepflip-slide-do
 import { ItemAnalysisResultProvider } from '@/components/scanner/item-analysis-result-context';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { SourcingTripProvider } from '@/components/sourcing/sourcing-trip-provider';
-import {
-  useKeepFlipSubscription,
-} from '@/components/subscription/keepflip-subscription-context';
+import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
 import { getKeepFlipThemeColors } from '@/constants/keepflip-theme';
 import { notificationRouteFromData } from '@/services/keepflip-notification-service';
-import { areKeepFlipSubscriptionsEnforced } from '@/services/keepflip-subscription-service';
+import {
+  areKeepFlipSubscriptionsEnforced,
+} from '@/services/keepflip-subscription-service';
 import { hasCompletedScanInventoryWalkthrough } from '@/services/user-profile-onboarding-service';
 import { hasCompletedKeepFlipLaunchExperience } from '@/services/keepflip-launch-state-service';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -134,6 +134,27 @@ function WalkthroughAutoLauncher() {
 }
 
 export default function AppShellLayout() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { user } = useKeepFlipAuth();
+  const { snapshot, state: subscriptionState } = useKeepFlipSubscription();
+  const isAndroidFreeScanner =
+    areKeepFlipSubscriptionsEnforced() &&
+    Platform.OS === 'android' &&
+    Boolean(user) &&
+    subscriptionState === 'ready' &&
+    snapshot?.serverRecordAvailable === true &&
+    snapshot.serverRecord?.ownerId === user?.$id &&
+    snapshot.access.active !== true;
+  useEffect(() => {
+    const allowedFreePaths = ['/scanner', '/analysis', '/analysis-result', '/account'];
+    if (
+      isAndroidFreeScanner &&
+      !allowedFreePaths.some((path) => pathname === path || pathname.startsWith(`${path}/`))
+    ) {
+      router.replace('/scanner' as Href);
+    }
+  }, [isAndroidFreeScanner, pathname, router]);
   const insets = useSafeAreaInsets();
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const appearanceColors = getKeepFlipThemeColors(effectiveColorScheme);
@@ -146,7 +167,7 @@ export default function AppShellLayout() {
             <FlipGuidanceProvider>
               <NotificationNavigationObserver />
               <WalkthroughAutoLauncher />
-              <KeepFlipSlideDownMenu />
+              {!isAndroidFreeScanner ? <KeepFlipSlideDownMenu /> : null}
               <View style={styles.root}>
                 <Stack
                   screenOptions={{
@@ -154,19 +175,16 @@ export default function AppShellLayout() {
                     contentStyle: {
                       backgroundColor: appearanceColors.backgroundDeep,
                     },
-                    headerShown: false,
-                  }}>
+                  headerShown: false,
+                }}>
+                  <Stack.Protected guard={!isAndroidFreeScanner}>
                   <Stack.Screen name="index" />
-                  <Stack.Screen name="scanner" />
                   <Stack.Screen name="inventory" />
-                  <Stack.Screen name="analysis" />
-                  <Stack.Screen name="analysis-result" />
                   <Stack.Screen name="listing-guide" />
                   <Stack.Screen name="repair-assist" />
                   <Stack.Screen name="command-center" />
                   <Stack.Screen name="ai-preferences" />
                   <Stack.Screen name="flip-plan" />
-                  <Stack.Screen name="account" />
                   <Stack.Screen name="security" />
                   <Stack.Screen name="ebay-connect" />
                   <Stack.Screen name="ebay-account" />
@@ -174,10 +192,17 @@ export default function AppShellLayout() {
                   <Stack.Screen name="books-records" />
                   <Stack.Screen name="market-research" />
                   <Stack.Screen name="notifications" />
+                  </Stack.Protected>
+                  <Stack.Protected guard={isAndroidFreeScanner}>
+                  <Stack.Screen name="scanner" />
+                  <Stack.Screen name="analysis" />
+                  <Stack.Screen name="analysis-result" />
+                  </Stack.Protected>
+                  <Stack.Screen name="account" />
                 </Stack>
-                <FlipAssistantOverlay />
-                <FlipDailyBriefingLauncher />
-                <FlipGuidanceOverlay />
+                {!isAndroidFreeScanner ? <FlipAssistantOverlay /> : null}
+                {!isAndroidFreeScanner ? <FlipDailyBriefingLauncher /> : null}
+                {!isAndroidFreeScanner ? <FlipGuidanceOverlay /> : null}
               </View>
             </FlipGuidanceProvider>
           </SourcingTripProvider>

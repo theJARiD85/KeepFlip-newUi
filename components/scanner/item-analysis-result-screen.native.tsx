@@ -338,6 +338,7 @@ export function ItemAnalysisResultScreen() {
   const userId = user?.$id;
   const basicBooksAllowed = canUse("basic_books");
   const advancedBooksAllowed = canUse("automated_books");
+  const canSaveInventory = basicBooksAllowed || advancedBooksAllowed;
   const legacyLedgerConfigured =
     isResellerBooksConfigured() && basicBooksAllowed;
   const advancedBookkeepingConfigured =
@@ -999,7 +1000,7 @@ export function ItemAnalysisResultScreen() {
               : undefined
           }
           onSave={
-            scannerSession
+            scannerSession && canSaveInventory
               ? () => {
                 openAddToInventory();
               }

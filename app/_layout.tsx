@@ -13,7 +13,7 @@ import {
   useEffect,
   useState,
 } from "react";
-import { View } from "react-native";
+import { Platform, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 import {
@@ -91,11 +91,21 @@ function ProtectedRootStack() {
       subscriptionSnapshot?.serverRecordAvailable === true &&
       subscriptionSnapshot.serverRecord?.ownerId === user?.$id &&
       subscriptionSnapshot.access.active === true);
+  const hasVerifiedAndroidFreeScannerAccess =
+    Platform.OS === 'android' &&
+    isSignedIn &&
+    subscriptionsEnforced &&
+    subscriptionState === 'ready' &&
+    subscriptionSnapshot?.serverRecordAvailable === true &&
+    subscriptionSnapshot.serverRecord?.ownerId === user?.$id &&
+    subscriptionSnapshot.access.active !== true;
+  const hasAppAccess =
+    hasActiveSubscription || hasVerifiedAndroidFreeScannerAccess;
   const subscriptionRequired =
     isSignedIn &&
     subscriptionsEnforced &&
     !isCheckingSubscription &&
-    !hasActiveSubscription;
+    !hasAppAccess;
 
   const pathname = usePathname();
   const keepSubscriptionSignupOpen =
@@ -103,7 +113,7 @@ function ProtectedRootStack() {
   const canShowOnboarding =
     !isChecking &&
     (!isSignedIn || keepSubscriptionSignupOpen) &&
-    (!isSignedIn || hasActiveSubscription);
+    (!isSignedIn || hasAppAccess);
 
   return (
     <Stack
@@ -142,13 +152,13 @@ function ProtectedRootStack() {
       </Stack.Protected>
 
       <Stack.Protected
-        guard={mfaEnrollmentRequired && hasActiveSubscription}
+        guard={mfaEnrollmentRequired && hasAppAccess}
       >
         <Stack.Screen name="mfa-setup" />
       </Stack.Protected>
 
       <Stack.Protected
-        guard={isSignedIn && hasActiveSubscription && !mfaEnrollmentRequired}
+        guard={isSignedIn && hasAppAccess && !mfaEnrollmentRequired}
       >
         <Stack.Screen name="(app)" />
       </Stack.Protected>
