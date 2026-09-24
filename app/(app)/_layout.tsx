@@ -144,7 +144,7 @@ export default function AppShellLayout() {
     Boolean(user) &&
     subscriptionState === 'ready' &&
     snapshot?.serverRecordAvailable === true &&
-    snapshot.serverRecord?.ownerId === user?.$id &&
+    (!snapshot.serverRecord || snapshot.serverRecord.ownerId === user?.$id) &&
     snapshot.access.active !== true;
   useEffect(() => {
     const allowedFreePaths = ['/scanner', '/analysis', '/analysis-result', '/account'];

@@ -97,7 +97,8 @@ function ProtectedRootStack() {
     subscriptionsEnforced &&
     subscriptionState === 'ready' &&
     subscriptionSnapshot?.serverRecordAvailable === true &&
-    subscriptionSnapshot.serverRecord?.ownerId === user?.$id &&
+    (!subscriptionSnapshot.serverRecord ||
+      subscriptionSnapshot.serverRecord.ownerId === user?.$id) &&
     subscriptionSnapshot.access.active !== true;
   const hasAppAccess =
     hasActiveSubscription || hasVerifiedAndroidFreeScannerAccess;
