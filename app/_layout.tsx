@@ -11,9 +11,11 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import {
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { Platform, View } from "react-native";
+import { type Href, useRouter } from 'expo-router';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 import {
@@ -42,6 +44,7 @@ import {
   trackKeepFlipFirebaseWebScreen,
 } from '@/services/keepflip-firebase-analytics';
 import { areKeepFlipSubscriptionsEnforced } from '@/services/keepflip-subscription-service';
+import { useFreeTierPaywall } from '@/components/subscription/use-free-tier-paywall';
 import { initializeTenjinAtLaunch } from '@/services/tenjin-attribution-service';
 
 analytics.init({
@@ -61,6 +64,7 @@ configureKeepFlipNotificationHandler();
   
 
 function ProtectedRootStack() {
+  const router = useRouter();
   const {
     status,
     user,
@@ -108,6 +112,57 @@ function ProtectedRootStack() {
     !hasAppAccess;
 
   const pathname = usePathname();
+  const presentPaywallForDestination = useFreeTierPaywall();
+  const handledRestrictedPathRef = useRef<string | null>(null);
+  const isFreeRoute = pathname === '/free' || pathname.startsWith('/free/');
+
+  useEffect(() => {
+    if (
+      Platform.OS !== 'android' ||
+      !subscriptionsEnforced ||
+      !isSignedIn ||
+      subscriptionState !== 'ready'
+    ) {
+      handledRestrictedPathRef.current = null;
+      return;
+    }
+
+    if (hasAndroidFreeScannerAccess) {
+      if (isFreeRoute) {
+        handledRestrictedPathRef.current = null;
+        return;
+      }
+
+      const attemptedPath = pathname || '/';
+      if (attemptedPath === '/') {
+        router.replace('/free' as Href);
+        return;
+      }
+      if (handledRestrictedPathRef.current === attemptedPath) return;
+
+      handledRestrictedPathRef.current = attemptedPath;
+      router.replace('/free' as Href);
+      requestAnimationFrame(() => {
+        void presentPaywallForDestination(attemptedPath as Href);
+      });
+      return;
+    }
+
+    if (hasActiveSubscription && isFreeRoute) {
+      router.replace('/' as Href);
+    }
+  }, [
+    hasActiveSubscription,
+    hasAndroidFreeScannerAccess,
+    isFreeRoute,
+    isSignedIn,
+    pathname,
+    presentPaywallForDestination,
+    router,
+    subscriptionState,
+    subscriptionsEnforced,
+  ]);
+
   const keepSubscriptionSignupOpen =
     pathname === "/subscription-setup";
   const canShowOnboarding =
@@ -148,9 +203,12 @@ function ProtectedRootStack() {
       </Stack.Protected>
 
       <Stack.Protected
-        guard={subscriptionRequired || hasAndroidFreeScannerAccess}
-      >
+        guard={subscriptionRequired}>
         <Stack.Screen name="subscription-required" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={hasAndroidFreeScannerAccess}>
+        <Stack.Screen name="free" />
       </Stack.Protected>
 
       <Stack.Protected
@@ -160,8 +218,7 @@ function ProtectedRootStack() {
       </Stack.Protected>
 
       <Stack.Protected
-        guard={isSignedIn && hasAppAccess && !mfaEnrollmentRequired}
-      >
+        guard={isSignedIn && hasActiveSubscription && !mfaEnrollmentRequired}>
         <Stack.Screen name="(app)" />
       </Stack.Protected>
 

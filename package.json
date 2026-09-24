@@ -13,7 +13,7 @@
     "responsive:ui": "node scripts/make-ui-values-responsive.cjs",
     "responsive:ui:apply": "node scripts/make-ui-values-responsive.cjs --write",
     "test:responsive:ui": "node scripts/test-make-ui-values-responsive.cjs",
-    "predeploy": "npx expo export --platform web",
+    "predeploy": "expo export --platform web"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

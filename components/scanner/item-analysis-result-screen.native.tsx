@@ -1,7 +1,7 @@
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { File, Paths } from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -49,6 +49,7 @@ import {
   type InventoryItem,
 } from "@/services/inventory-service";
 import { refineItemAnalysis } from "@/services/item-analysis-service";
+import { checkKeepFlipAiValuationAccess } from "@/services/keepflip-subscription-service";
 import { getItemPhotos } from "@/services/itemPhotoService";
 import { neutralizeMarketplaceBrand } from "@/services/market-copy";
 import {
@@ -325,12 +326,14 @@ export function ItemAnalysisResultScreen() {
   } = useResponsiveLayout();
 
   const router = useRouter();
+  const pathname = usePathname();
+  const isFreeTierRoute = pathname.startsWith('/free');
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     itemId?: string | string[];
     sessionId?: string | string[];
   }>();
-  const itemId = firstParam(params.itemId);
+  const itemId = isFreeTierRoute ? undefined : firstParam(params.itemId);
   const sessionId = firstParam(params.sessionId);
   const { user } = useKeepFlipAuth();
   const { recordCompletedAction } = useKeepFlipFeedbackNudge();
@@ -338,7 +341,8 @@ export function ItemAnalysisResultScreen() {
   const userId = user?.$id;
   const basicBooksAllowed = canUse("basic_books");
   const advancedBooksAllowed = canUse("automated_books");
-  const canSaveInventory = basicBooksAllowed || advancedBooksAllowed;
+  const canSaveInventory =
+    !isFreeTierRoute && (basicBooksAllowed || advancedBooksAllowed);
   const legacyLedgerConfigured =
     isResellerBooksConfigured() && basicBooksAllowed;
   const advancedBookkeepingConfigured =
@@ -369,6 +373,8 @@ export function ItemAnalysisResultScreen() {
   const [refinementPhoto, setRefinementPhoto] =
     useState<{ photo: SavedScanPhoto; sessionId: string } | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const [freeScanNotice, setFreeScanNotice] = useState<string | null>(null);
+  const notifiedFreeScanSessionRef = useRef<string | null>(null);
   const finalizedRef = useRef(false);
   const activeSessionId = scannerSession?.id;
   const activeSessionReset = scannerSession?.onReset;
@@ -376,6 +382,38 @@ export function ItemAnalysisResultScreen() {
     refinementPhoto && refinementPhoto.sessionId === activeSessionId
       ? refinementPhoto.photo
       : null;
+
+  useEffect(() => {
+    if (
+      !isFreeTierRoute ||
+      !scannerSession ||
+      scannerSession.state.status !== 'result' ||
+      notifiedFreeScanSessionRef.current === scannerSession.id
+    ) {
+      return;
+    }
+
+    notifiedFreeScanSessionRef.current = scannerSession.id;
+    let cancelled = false;
+    let dismissTimer: ReturnType<typeof setTimeout> | undefined;
+    void checkKeepFlipAiValuationAccess()
+      .then(({ limit, usage }) => {
+        if (cancelled || limit == null || usage == null) return;
+        const scansLeft = Math.max(0, limit - usage);
+        setFreeScanNotice(
+          scansLeft === 0
+            ? 'Valuation complete. You’ve used your free scans for this month.'
+            : `Valuation complete. ${scansLeft} free scan${scansLeft === 1 ? '' : 's'} left this month.`,
+        );
+        dismissTimer = setTimeout(() => setFreeScanNotice(null), 5_000);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+      if (dismissTimer) clearTimeout(dismissTimer);
+    };
+  }, [isFreeTierRoute, scannerSession]);
 
   useEffect(() => {
     if (!itemId) return;
@@ -966,6 +1004,15 @@ export function ItemAnalysisResultScreen() {
         style={[styles.resultScrim, styles.resultScrimWithProjection]}
       />
 
+      {freeScanNotice ? (
+        <View
+          accessibilityLiveRegion="polite"
+          pointerEvents="none"
+          style={[styles.freeScanNotice, { top: insets.top + 12 }]}>
+          <Text style={styles.freeScanNoticeText}>{freeScanNotice}</Text>
+        </View>
+      ) : null}
+
       {!inventoryFormOpen ? (
         <ValuationResultStage
           bottomInset={insets.bottom}
@@ -1025,7 +1072,7 @@ export function ItemAnalysisResultScreen() {
         onSubmit={handleAddToInventory}
         sourcingTrip={activeSourcingTrip}
         submitting={saving}
-        visible={inventoryFormOpen}
+        visible={inventoryFormOpen && !isFreeTierRoute}
       />
     </KeepFlipBackground>
   );
@@ -1073,6 +1120,25 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     resultScrimWithProjection: {
       opacity: 0.22,
+    },
+    freeScanNotice: {
+      position: 'absolute',
+      alignSelf: 'center',
+      zIndex: 5,
+      maxWidth: '90%',
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderWidth: 1,
+      borderColor: 'rgba(88, 223, 232, 0.42)',
+      borderRadius: 16,
+      backgroundColor: 'rgba(7, 17, 20, 0.92)',
+    },
+    freeScanNoticeText: {
+      color: theme.colors.cream,
+      fontFamily: theme.fonts.body,
+      fontSize: 13,
+      lineHeight: 18,
+      textAlign: 'center',
     },
     centerState: {
       flex: 1,

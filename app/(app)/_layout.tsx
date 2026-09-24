@@ -134,33 +134,6 @@ function WalkthroughAutoLauncher() {
 }
 
 export default function AppShellLayout() {
-  const pathname = usePathname();
-  const router = useRouter();
-  const { user } = useKeepFlipAuth();
-  const { snapshot, state: subscriptionState } = useKeepFlipSubscription();
-  const isAndroidFreeScanner =
-    areKeepFlipSubscriptionsEnforced() &&
-    Platform.OS === 'android' &&
-    Boolean(user) &&
-    subscriptionState === 'ready' &&
-    snapshot?.revenueCatAccess.active !== true;
-  const allowedFreePaths = ['/scanner', '/analysis', '/analysis-result', '/account'];
-  const isAllowedFreePath = allowedFreePaths.some(
-    (path) => pathname === path || pathname.startsWith(`${path}/`),
-  );
-  const isBlockedFreePath = isAndroidFreeScanner && !isAllowedFreePath;
-  useEffect(() => {
-    if (isBlockedFreePath) {
-      if (pathname === '/') {
-        router.replace('/scanner' as Href);
-        return;
-      }
-      router.replace({
-        pathname: '/subscription-required',
-        params: { returnTo: pathname },
-      } as Href);
-    }
-  }, [isBlockedFreePath, pathname, router]);
   const insets = useSafeAreaInsets();
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const appearanceColors = getKeepFlipThemeColors(effectiveColorScheme);
@@ -175,9 +148,7 @@ export default function AppShellLayout() {
               <WalkthroughAutoLauncher />
               <KeepFlipSlideDownMenu />
               <View style={styles.root}>
-                {isBlockedFreePath ? (
-                  <View style={styles.routeGate} />
-                ) : <Stack
+                <Stack
                   screenOptions={{
                     animation: 'fade',
                     contentStyle: {
@@ -203,10 +174,10 @@ export default function AppShellLayout() {
                   <Stack.Screen name="analysis" />
                   <Stack.Screen name="analysis-result" />
                   <Stack.Screen name="account" />
-                </Stack>}
-                {!isAndroidFreeScanner ? <FlipAssistantOverlay /> : null}
-                {!isAndroidFreeScanner ? <FlipDailyBriefingLauncher /> : null}
-                {!isAndroidFreeScanner ? <FlipGuidanceOverlay /> : null}
+                </Stack>
+              <FlipAssistantOverlay />
+              <FlipDailyBriefingLauncher />
+              <FlipGuidanceOverlay />
               </View>
             </FlipGuidanceProvider>
           </SourcingTripProvider>
@@ -219,9 +190,6 @@ export default function AppShellLayout() {
 
 const styles = StyleSheet.create({
   root: {
-    flex: 1,
-  },
-  routeGate: {
     flex: 1,
   },
 });

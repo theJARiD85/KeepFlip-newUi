@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -56,12 +56,14 @@ export function ItemAnalysisResultScreen() {
   } = useResponsiveLayout();
 
   const router = useRouter();
+  const pathname = usePathname();
+  const isFreeTierRoute = pathname.startsWith('/free');
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     itemId?: string | string[];
     sessionId?: string | string[];
   }>();
-  const itemId = firstParam(params.itemId);
+  const itemId = isFreeTierRoute ? undefined : firstParam(params.itemId);
   const sessionId = firstParam(params.sessionId);
   const { user } = useKeepFlipAuth();
   const { recordCompletedAction } = useKeepFlipFeedbackNudge();
@@ -69,7 +71,8 @@ export function ItemAnalysisResultScreen() {
   const userId = user?.$id;
   const basicBooksAllowed = canUse("basic_books");
   const advancedBooksAllowed = canUse("automated_books");
-  const canSaveInventory = basicBooksAllowed || advancedBooksAllowed;
+  const canSaveInventory =
+    !isFreeTierRoute && (basicBooksAllowed || advancedBooksAllowed);
   const legacyLedgerConfigured =
     isResellerBooksConfigured() && basicBooksAllowed;
   const advancedBookkeepingConfigured =
@@ -479,7 +482,7 @@ export function ItemAnalysisResultScreen() {
         onSubmit={handleAddToInventory}
         sourcingTrip={activeSourcingTrip}
         submitting={saving}
-        visible={inventoryFormOpen}
+        visible={inventoryFormOpen && !isFreeTierRoute}
       />
     </View>
   );

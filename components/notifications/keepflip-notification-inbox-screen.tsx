@@ -36,7 +36,11 @@ function notificationColor(notification: KeepFlipNotification) {
   return theme.colors.textMuted;
 }
 
-export function KeepFlipNotificationInboxScreen() {
+export function KeepFlipNotificationInboxScreen({
+  freeTier = false,
+}: {
+  freeTier?: boolean;
+} = {}) {
   const styles = useResponsiveStyles(createResponsiveStyles);
   const insets = useSafeAreaInsets();
   const { responsiveFont } = useResponsiveLayout();
@@ -130,10 +134,16 @@ export function KeepFlipNotificationInboxScreen() {
         >
         <View style={styles.header}>
           <View style={styles.headerCopy}>
-            <Text style={[styles.eyebrow, { fontFamily: theme.fonts.display, fontSize: responsiveFont(10)}]}>KEEPFLIP INBOX</Text>
-            <Text style={[styles.title, { fontFamily: theme.fonts.bold, fontSize: responsiveFont(26) }]}>Important updates</Text>
+            <Text style={[styles.eyebrow, { fontFamily: theme.fonts.display, fontSize: responsiveFont(10)}]}>
+              {freeTier ? 'FREE SCANNER INBOX' : 'KEEPFLIP INBOX'}
+            </Text>
+            <Text style={[styles.title, { fontFamily: theme.fonts.bold, fontSize: responsiveFont(26) }]}>
+              {freeTier ? 'Your updates' : 'Important updates'}
+            </Text>
             <Text style={[styles.subtitle, { fontFamily: theme.fonts.body, fontSize: responsiveFont(12) }]}>
-              eBay activity, seller alerts, and messages that need your attention.
+              {freeTier
+                ? 'KeepFlip messages and account updates in one place.'
+                : 'eBay activity, seller alerts, and messages that need your attention.'}
             </Text>
           </View>
 

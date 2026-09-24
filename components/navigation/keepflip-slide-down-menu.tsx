@@ -70,6 +70,10 @@ function hapticSelection() {
 }
 
 function isDestinationActive(destinationPath: string, pathname: string) {
+  if (destinationPath === '/scanner' && pathname.startsWith('/free')) {
+    return true;
+  }
+
   if (destinationPath === '/command-center') {
     return (
       pathname === '/' ||
@@ -81,7 +85,15 @@ function isDestinationActive(destinationPath: string, pathname: string) {
   return pathname.startsWith(destinationPath);
 }
 
-export function KeepFlipSlideDownMenu() {
+type KeepFlipSlideDownMenuProps = {
+  freeTier?: boolean;
+  onPaidNavigationAttempt?: (destination: Href) => void | Promise<void>;
+};
+
+export function KeepFlipSlideDownMenu({
+  freeTier = false,
+  onPaidNavigationAttempt,
+}: KeepFlipSlideDownMenuProps) {
   const styles = useResponsiveStyles(createResponsiveStyles);
   const {
     responsiveFont
@@ -170,14 +182,22 @@ export function KeepFlipSlideDownMenu() {
     hapticSelection();
     closeMenu();
 
-    const destinationPath = destination.href.toString();
+    const destinationPath =
+      freeTier && destination.label === 'Scanner'
+        ? '/free'
+        : destination.href.toString();
+    if (freeTier && destination.label !== 'Scanner') {
+      void onPaidNavigationAttempt?.(destination.href);
+      return;
+    }
     const isAlreadyOnDestination =
       destinationPath === '/command-center'
         ? pathname === '/' || pathname === '/command-center'
-        : pathname === destinationPath;
+        : pathname === destinationPath ||
+          (destinationPath === '/free' && pathname.startsWith('/free'));
 
     if (!isAlreadyOnDestination) {
-      requestAnimationFrame(() => router.replace(destination.href));
+      requestAnimationFrame(() => router.replace(destinationPath as Href));
     }
   };
 
@@ -185,6 +205,13 @@ export function KeepFlipSlideDownMenu() {
     if (isMenuDisabled) return;
     hapticSelection();
     closeMenu();
+    if (freeTier) {
+      const freeDestination = destination === '/account'
+        ? '/free/account'
+        : '/free/notifications';
+      requestAnimationFrame(() => router.replace(freeDestination as Href));
+      return;
+    }
     if (!pathname.startsWith(destination)) {
       requestAnimationFrame(() => router.replace(destination as Href));
     }
@@ -196,6 +223,10 @@ export function KeepFlipSlideDownMenu() {
     closeMenu();
 
     const destination = (isConnected ? '/ebay-account' : '/ebay-connect') as Href;
+    if (freeTier) {
+      void onPaidNavigationAttempt?.(destination);
+      return;
+    }
     if (!pathname.startsWith(destination.toString())) {
       requestAnimationFrame(() => router.push(destination));
     }
@@ -369,7 +400,12 @@ export function KeepFlipSlideDownMenu() {
 
               <View style={styles.workflowBlock}>
                 <Text style={[styles.sectionLabel, { fontSize: responsiveFont(9) }]}>WORKFLOW</Text>
-                <SourcingTripControl />
+                <SourcingTripControl
+                  locked={freeTier}
+                  onLockedPress={() =>
+                    void onPaidNavigationAttempt?.('/command-center' as Href)
+                  }
+                />
               </View>
 
               <EbayMenuConnectionLink

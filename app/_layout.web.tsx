@@ -70,6 +70,9 @@ function ProtectedRootStack() {
       <Stack.Protected guard={subscriptionRequired}>
         <Stack.Screen name="subscription-required" />
       </Stack.Protected>
+      <Stack.Protected guard={false}>
+        <Stack.Screen name="free" />
+      </Stack.Protected>
       <Stack.Protected guard={isSignedIn && hasActiveSubscription}>
         <Stack.Screen name="(app)" />
       </Stack.Protected>
