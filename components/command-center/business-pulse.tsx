@@ -1,5 +1,6 @@
-import { useContext, useMemo, useState } from 'react';
+import { type PropsWithChildren, useContext, useMemo, useState } from 'react';
 import {
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -20,6 +21,7 @@ import {
   useResponsiveLayout,
   useResponsiveStyles,
 } from '@/hooks/use-responsive-layout';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   buildMoneyFlowBuckets,
   getDefaultMoneyFlowGranularity,
@@ -114,6 +116,7 @@ export function BusinessPulse({
   const [selectedRangeCount, setSelectedRangeCount] = useState<number | null>(
     null,
   );
+  const [moneyFlowZoomOpen, setMoneyFlowZoomOpen] = useState(false);
 
   if (loading && !overview) {
     return (
@@ -232,9 +235,15 @@ export function BusinessPulse({
             <Text style={[styles.chartLabel, { fontSize: responsiveFont(8) }]}>MONEY MOVEMENT</Text>
             <Text style={[styles.chartTitle, { fontSize: responsiveFont(13), lineHeight: 17 }]}>{selectedRange.label}</Text>
           </View>
-          <View style={styles.legend}>
-            <Legend color={theme.colors.scannerCyan} label="In" />
-            <Legend color={theme.colors.goldBright} label="Out" />
+          <View style={styles.chartHeadingActions}>
+            <View style={styles.legend}>
+              <Legend color={theme.colors.scannerCyan} label="In" />
+              <Legend color={theme.colors.goldBright} label="Out" />
+            </View>
+            <ChartZoomButton
+              label="Money Movement"
+              onPress={() => setMoneyFlowZoomOpen(true)}
+            />
           </View>
         </View>
         <View style={styles.chartControls}>
@@ -316,7 +325,13 @@ export function BusinessPulse({
             })}
           </ScrollView>
         </View>
-        <MoneyMovementChart moneyFlow={moneyFlow} maximumFlow={maximumFlow} />
+        <MoneyMovementChart
+          maximumFlow={maximumFlow}
+          moneyFlow={moneyFlow}
+          rangeLabel={selectedRange.label}
+          onCloseZoom={() => setMoneyFlowZoomOpen(false)}
+          zoomOpen={moneyFlowZoomOpen}
+        />
       </View>
 
       <FinancialReporting overview={overview} />
