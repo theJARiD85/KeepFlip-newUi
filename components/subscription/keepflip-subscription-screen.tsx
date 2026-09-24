@@ -5,7 +5,7 @@ import {
   useRouter,
   type Href,
 } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -13,6 +13,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { KeepFlipAccountTabs } from '@/components/account/keepflip-account-tabs';
@@ -253,6 +254,9 @@ export function KeepFlipSubscriptionScreen({
   const [cadence, setCadence] =
     useState<KeepFlipBillingCadence>(() => requestedCadence);
   const [renewing, setRenewing] = useState(false);
+  const [presentingRevenueCatPaywall, setPresentingRevenueCatPaywall] =
+    useState(false);
+  const autoPresentedPaywallRef = useRef(false);
 
   useEffect(() => {
     trackTenjinEvent('subscription_paywall_viewed');
@@ -274,6 +278,56 @@ export function KeepFlipSubscriptionScreen({
   const isPaywallLocked =
     access?.active !== true &&
     (isOnboarding || isMigration || areKeepFlipSubscriptionsEnforced());
+
+  const presentRevenueCatPaywall = useCallback(async () => {
+    if (!checkoutEnabled || presentingRevenueCatPaywall || purchasing) return;
+
+    setActionMessage(null);
+    setPresentingRevenueCatPaywall(true);
+    try {
+      const result = await RevenueCatUI.presentPaywall();
+      if (
+        result === PAYWALL_RESULT.PURCHASED ||
+        result === PAYWALL_RESULT.RESTORED
+      ) {
+        setActionMessage('Purchase received. KeepFlip is confirming your subscription with the server…');
+        let serverConfirmed = false;
+        for (const delay of [0, 800, 1_500, 2_500, 4_000, 6_000]) {
+          if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
+          const next = await refresh();
+          if (next?.serverRecordAvailable && next.access.active) {
+            serverConfirmed = true;
+            break;
+          }
+        }
+        setActionMessage(
+          serverConfirmed
+            ? 'Your KeepFlip subscription is active.'
+            : 'The store completed the purchase, but KeepFlip is still waiting for server confirmation. Tap Refresh Plan Status in a moment.',
+        );
+      } else if (result === PAYWALL_RESULT.CANCELLED) {
+        setActionMessage('Checkout was closed before a subscription was activated.');
+      } else if (result === PAYWALL_RESULT.ERROR) {
+        setActionMessage('RevenueCat could not complete the paywall. Check the store configuration and try again.');
+      }
+    } catch (error) {
+      setActionMessage(
+        error instanceof Error
+          ? error.message
+          : 'RevenueCat could not open the subscription paywall.',
+      );
+    } finally {
+      setPresentingRevenueCatPaywall(false);
+    }
+  }, [checkoutEnabled, presentingRevenueCatPaywall, purchasing, refresh]);
+
+  useEffect(() => {
+    if (!isPaywallLocked || !checkoutEnabled || autoPresentedPaywallRef.current) {
+      return;
+    }
+    autoPresentedPaywallRef.current = true;
+    void presentRevenueCatPaywall();
+  }, [checkoutEnabled, isPaywallLocked, presentRevenueCatPaywall]);
 
   useEffect(() => {
     if (!isPaywallLocked) return;
@@ -508,7 +562,7 @@ export function KeepFlipSubscriptionScreen({
           </View>
         </View>
 
-        <View style={styles.billingSection}>
+        {!isPaywallLocked ? <View style={styles.billingSection}>
           <Text style={[styles.billingLabel, { fontSize: responsiveFont(7) }]}>BILLING</Text>
           <View
             accessibilityLabel="Billing frequency"
@@ -558,7 +612,7 @@ export function KeepFlipSubscriptionScreen({
               </Text>
             </Pressable>
           </View>
-        </View>
+        </View> : null}
 
         {state === 'loading' ? (
           <View style={styles.loadingCard}>
@@ -569,6 +623,27 @@ export function KeepFlipSubscriptionScreen({
             <Text style={[styles.loadingText, { fontSize: responsiveFont(12) }]}>
               Loading store plans and current access
             </Text>
+          </View>
+        ) : isPaywallLocked ? (
+          <View style={styles.planStack}>
+            <Pressable
+              accessibilityRole="button"
+              disabled={!checkoutEnabled || presentingRevenueCatPaywall}
+              onPress={() => void presentRevenueCatPaywall()}
+              style={({ pressed }) => [
+                styles.continueButton,
+                (!checkoutEnabled || presentingRevenueCatPaywall) && styles.buttonDisabled,
+                pressed && checkoutEnabled && styles.continueButtonPressed,
+              ]}>
+              {presentingRevenueCatPaywall ? (
+                <ActivityIndicator color={theme.colors.scannerCyan} size="small" />
+              ) : null}
+              <Text style={[styles.continueButtonText, { fontSize: responsiveFont(10) }]}>
+                {presentingRevenueCatPaywall
+                  ? 'OPENING REVENUECAT PAYWALL…'
+                  : 'OPEN SUBSCRIPTION PAYWALL'}
+              </Text>
+            </Pressable>
           </View>
         ) : (
           <View style={styles.planStack}>

@@ -21,11 +21,6 @@ import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { getAppwriteCoreServices } from '@/lib/appwrite';
 import {
-  KEEPFLIP_PLAN_DEFINITIONS,
-  type KeepFlipBillingCadence,
-  type KeepFlipPlanId,
-} from '@/services/keepflip-subscription-service';
-import {
   keepFlipWebBillingCustomerHasActiveEntitlement,
   linkKeepFlipWebBillingAccount,
   presentKeepFlipWebBillingPaywall,
@@ -76,8 +71,10 @@ export function WebAuthScreen({
   const [openSignupPaywall, setOpenSignupPaywall] = useState(false);
   const [paywallAccountUserId, setPaywallAccountUserId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const paywallHostRef = useRef<View>(null);
-  const signupPaywallHostRef = useRef<View>(null);
+  // purchases-js requires an actual DOM element. A React Native Web View ref is
+  // a component wrapper, not a stable HTMLDivElement across RNW versions.
+  const paywallHostRef = useRef<HTMLDivElement>(null);
+  const signupPaywallHostRef = useRef<HTMLDivElement>(null);
   const openingPaywallRef = useRef(false);
   const openingSignupPaywallRef = useRef(false);
 
@@ -89,7 +86,8 @@ export function WebAuthScreen({
     : 'Sign in to KeepFlip';
 
   useEffect(() => {
-    if (!paywallAccountUserId || !paywallHostRef.current || openingPaywallRef.current) return;
+    const htmlTarget = paywallHostRef.current;
+    if (!paywallAccountUserId || !htmlTarget || openingPaywallRef.current) return;
     openingPaywallRef.current = true;
     let cancelled = false;
 
@@ -97,7 +95,7 @@ export function WebAuthScreen({
       try {
         await presentKeepFlipWebBillingPaywall(
           paywallAccountUserId,
-          paywallHostRef.current as unknown as HTMLElement,
+          htmlTarget,
         );
 
         // The paywall purchase response is not the access authority. Retry
@@ -153,14 +151,15 @@ export function WebAuthScreen({
   }, [email, password, paywallAccountUserId, signIn]);
 
   useEffect(() => {
-    if (!openSignupPaywall || !signupPaywallHostRef.current || openingSignupPaywallRef.current) return;
+    const htmlTarget = signupPaywallHostRef.current;
+    if (!openSignupPaywall || !htmlTarget || openingSignupPaywallRef.current) return;
     openingSignupPaywallRef.current = true;
     let cancelled = false;
 
     void (async () => {
       try {
         const result = await presentKeepFlipWebBillingPaywallBeforeAccount(
-          signupPaywallHostRef.current as unknown as HTMLElement,
+          htmlTarget,
         );
         if (
           keepFlipWebBillingCustomerHasActiveEntitlement(result.customerInfo)
@@ -400,10 +399,10 @@ export function WebAuthScreen({
           /> : null}
 
           {isCreateAccount && openSignupPaywall ? (
-            <View ref={signupPaywallHostRef} style={{ minHeight: 520, width: '100%' }} />
+            <div ref={signupPaywallHostRef} style={{ minHeight: 520, width: '100%' }} />
           ) : null}
           {!isCreateAccount && paywallAccountUserId ? (
-            <View ref={paywallHostRef} style={{ minHeight: 520, width: '100%' }} />
+            <div ref={paywallHostRef} style={{ minHeight: 520, width: '100%' }} />
           ) : null}
 
           {localError || errorMessage ? (
@@ -481,100 +480,6 @@ function Field({
         placeholderTextColor={colors.textMuted}
         style={[styles.input, { backgroundColor: colors.surfaceInset, borderColor: colors.divider, color: colors.text }]}
       />
-    </View>
-  );
-}
-
-function WebBillingChoice({
-  active,
-  cadence,
-  colors,
-  onCadenceChange,
-  onPlanChange,
-  plan,
-}: {
-  active: boolean;
-  cadence: KeepFlipBillingCadence;
-  colors: ReturnType<typeof getKeepFlipThemeColors>;
-  onCadenceChange: (cadence: KeepFlipBillingCadence) => void;
-  onPlanChange: (plan: KeepFlipPlanId) => void;
-  plan: KeepFlipPlanId;
-}) {
-  return (
-    <View
-      style={[
-        styles.billingSection,
-        { backgroundColor: colors.surfaceInset, borderColor: colors.divider },
-      ]}
-    >
-      <Text style={[styles.billingEyebrow, { color: colors.goldBright }]}>SUBSCRIPTION REQUIRED BEFORE ACCOUNT</Text>
-      <Text style={[styles.billingCopy, { color: colors.textMuted }]}>Choose a plan and complete secure checkout first. KeepFlip will not create the Appwrite account until RevenueCat confirms an active subscription or eligible trial.</Text>
-
-      {!active ? (
-        <>
-          <View style={styles.billingToggle}>
-            {(['monthly', 'annual'] as const).map((option) => (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityState={{ selected: cadence === option }}
-                key={option}
-                onPress={() => onCadenceChange(option)}
-                style={[
-                  styles.billingToggleOption,
-                  { borderColor: colors.divider },
-                  cadence === option && {
-                    backgroundColor: colors.iconSurfaceCyan,
-                    borderColor: colors.accentCyanBorder,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.billingToggleText,
-                    { color: cadence === option ? colors.scannerCyan : colors.textMuted },
-                  ]}
-                >
-                  {option === 'monthly' ? 'MONTHLY' : 'ANNUAL'}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-
-          <View style={styles.billingPlanList}>
-            {KEEPFLIP_PLAN_DEFINITIONS.map((definition) => {
-              const selected = plan === definition.id;
-              const price =
-                cadence === 'annual'
-                  ? definition.annualPriceFallback
-                  : definition.monthlyPriceFallback;
-              return (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                  key={definition.id}
-                  onPress={() => onPlanChange(definition.id)}
-                  style={[
-                    styles.billingPlan,
-                    { borderColor: colors.divider },
-                    selected && {
-                      backgroundColor: colors.iconSurfaceCyan,
-                      borderColor: colors.accentCyanBorder,
-                    },
-                  ]}
-                >
-                  <View style={styles.billingPlanHeading}>
-                    <Text style={[styles.billingPlanName, { color: selected ? colors.scannerCyan : colors.text }]}>{definition.name}</Text>
-                    <Text style={[styles.billingPlanPrice, { color: colors.text }]}>{price}{cadence === 'annual' ? '/yr' : '/mo'}</Text>
-                  </View>
-                  <Text style={[styles.billingPlanDescription, { color: colors.textMuted }]}>{definition.description}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </>
-      ) : (
-        <Text style={[styles.billingConfirmed, { color: colors.scannerCyan }]}>SUBSCRIPTION CONFIRMED — CREATE YOUR KEEPFLIP ACCOUNT BELOW.</Text>
-      )}
     </View>
   );
 }

@@ -527,8 +527,8 @@ export function SourcingTripControl() {
               <View style={styles.modalHeader}>
                 <View style={styles.modalHeaderCopy}>
                   <Text style={[styles.modalEyebrow, { fontSize: responsiveFont(9) }]}>LOCATION PERMISSION · ACTIVE TRIP ONLY</Text>
-                  <Text style={[styles.modalTitle, { fontSize: responsiveFont(24), lineHeight: 29 }]}>KeepFlip needs location for trip mileage</Text>
-                  <Text style={[styles.modalBody, { fontSize: responsiveFont(13), lineHeight: 18 }]}>When you start this sourcing trip, KeepFlip uses your location while you travel to calculate total business mileage for this outing.</Text>
+                  <Text style={[styles.modalTitle, { fontSize: responsiveFont(24), lineHeight: 29 }]}>Location for your sourcing trip</Text>
+                  <Text style={[styles.modalBody, { fontSize: responsiveFont(13), lineHeight: 18 }]}>KeepFlip collects location data to measure distance and calculate business mileage for this active sourcing trip, even when the app is in the background or not in use.</Text>
                 </View>
                 <Pressable
                   accessibilityLabel="Close location disclosure"
@@ -545,11 +545,11 @@ export function SourcingTripControl() {
                 <View style={styles.locationDisclosureCard}>
                   <IconSymbol color={theme.colors.scannerCyan} name="location.fill" size={23} />
                   <View style={styles.locationDisclosureCopy}>
-                    <Text style={[styles.locationDisclosureTitle, { fontSize: responsiveFont(10) }]}>WHAT KEEPFLIP WILL DO</Text>
-                    <Text style={[styles.locationDisclosureBody, { fontSize: responsiveFont(12), lineHeight: 17 }]}>On supported native builds, location may continue while KeepFlip is in the background so mileage can be measured while you drive. Tracking begins after you grant permission and ends when you close this active trip.</Text>
+                    <Text style={[styles.locationDisclosureTitle, { fontSize: responsiveFont(10) }]}>HOW LOCATION IS USED</Text>
+                    <Text style={[styles.locationDisclosureBody, { fontSize: responsiveFont(12), lineHeight: 17 }]}>Location points are processed and temporarily stored on this device while the trip is active. KeepFlip saves the trip mileage total, point count, and trip details to your account; it does not upload GPS coordinates or a route history. Tracking stops when you end the trip.</Text>
                   </View>
                 </View>
-                <Text style={[styles.modalBody, { fontSize: responsiveFont(13), lineHeight: 18 }]}>KeepFlip stores the mileage total and trip metadata, not a user-facing route history. The next step will show the device permission prompts. If you choose Not now, no location permission is requested and the trip stays unopened.</Text>
+                <Text style={[styles.modalBody, { fontSize: responsiveFont(13), lineHeight: 18 }]}>Choose Allow &amp; Start Trip to continue to Android&apos;s location permission prompts. Choose Not Now to leave the trip unopened without requesting location permission.</Text>
                 <View style={styles.actions}>
                   <Pressable
                     accessibilityRole="button"
