@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ASSISTANT_MEMORY_CATEGORIES,
   getAssistantMemory,
@@ -65,6 +66,7 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const requestId = useRef(0);
+  const insets = useSafeAreaInsets();
 
   const load = useCallback(async () => {
     const request = ++requestId.current;
@@ -207,7 +209,7 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
   }
 
   return (
-    <Animated.View entering={FadeInDown.duration(260).delay(60)} style={styles.wrap}>
+    <Animated.View entering={FadeInDown.duration(260).delay(60)} style={[styles.wrap, { paddingTop: insets.top + 15}]}>
       <View style={styles.heroCard}>
         <View style={styles.heroTopline}>
           <View style={styles.heroCopy}>
