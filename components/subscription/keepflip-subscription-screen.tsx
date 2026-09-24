@@ -219,10 +219,12 @@ export function KeepFlipSubscriptionScreen({
     source,
     plan,
     cadence: cadenceParam,
+    returnTo,
   } = useLocalSearchParams<{
     source?: string | string[];
     plan?: string | string[];
     cadence?: string | string[];
+    returnTo?: string | string[];
   }>();
   const sourceValue = paramValue(source);
   const isOnboarding = sourceValue === 'onboarding';
@@ -257,6 +259,7 @@ export function KeepFlipSubscriptionScreen({
   const [presentingRevenueCatPaywall, setPresentingRevenueCatPaywall] =
     useState(false);
   const autoPresentedPaywallRef = useRef(false);
+  const allowFreeTierReturnRef = useRef(false);
 
   useEffect(() => {
     trackTenjinEvent('subscription_paywall_viewed');
@@ -276,7 +279,7 @@ export function KeepFlipSubscriptionScreen({
     Boolean(snapshot?.serverRecord?.trialEndsAt);
   const checkoutEnabled = state === 'ready' && snapshot?.configured === true;
   const isPaywallLocked =
-    access?.active !== true &&
+    snapshot?.revenueCatAccess.active !== true &&
     (isOnboarding || isMigration || areKeepFlipSubscriptionsEnforced());
 
   const presentRevenueCatPaywall = useCallback(async () => {
@@ -291,22 +294,28 @@ export function KeepFlipSubscriptionScreen({
         result === PAYWALL_RESULT.RESTORED
       ) {
         setActionMessage('Purchase received. KeepFlip is confirming your subscription with the server…');
-        let serverConfirmed = false;
+        let entitlementConfirmed = false;
         for (const delay of [0, 800, 1_500, 2_500, 4_000, 6_000]) {
           if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
           const next = await refresh();
-          if (next?.serverRecordAvailable && next.access.active) {
-            serverConfirmed = true;
+          if (next?.revenueCatAccess.active) {
+            entitlementConfirmed = true;
             break;
           }
         }
         setActionMessage(
-          serverConfirmed
+          entitlementConfirmed
             ? 'Your KeepFlip subscription is active.'
-            : 'The store completed the purchase, but KeepFlip is still waiting for server confirmation. Tap Refresh Plan Status in a moment.',
+            : 'The store completed the purchase, but KeepFlip has not yet confirmed the entitlement. Tap Refresh Plan Status in a moment.',
         );
       } else if (result === PAYWALL_RESULT.CANCELLED) {
         setActionMessage('Checkout was closed before a subscription was activated.');
+        const requestedReturnPath = paramValue(returnTo);
+        const freeReturnPaths = ['/scanner', '/analysis', '/analysis-result'];
+        if (freeReturnPaths.includes(requestedReturnPath ?? '')) {
+          allowFreeTierReturnRef.current = true;
+          router.replace(requestedReturnPath as Href);
+        }
       } else if (result === PAYWALL_RESULT.ERROR) {
         setActionMessage('RevenueCat could not complete the paywall. Check the store configuration and try again.');
       }
@@ -319,7 +328,7 @@ export function KeepFlipSubscriptionScreen({
     } finally {
       setPresentingRevenueCatPaywall(false);
     }
-  }, [checkoutEnabled, presentingRevenueCatPaywall, purchasing, refresh]);
+  }, [checkoutEnabled, presentingRevenueCatPaywall, purchasing, refresh, returnTo, router]);
 
   useEffect(() => {
     if (!isPaywallLocked || !checkoutEnabled || autoPresentedPaywallRef.current) {
@@ -333,6 +342,7 @@ export function KeepFlipSubscriptionScreen({
     if (!isPaywallLocked) return;
 
     const unsubscribe = navigation.addListener('beforeRemove', (event) => {
+      if (allowFreeTierReturnRef.current) return;
       event.preventDefault();
     });
 

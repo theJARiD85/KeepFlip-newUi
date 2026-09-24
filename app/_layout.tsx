@@ -88,20 +88,19 @@ function ProtectedRootStack() {
     !subscriptionsEnforced ||
     (isSignedIn &&
       subscriptionState === 'ready' &&
-      subscriptionSnapshot?.serverRecordAvailable === true &&
-      subscriptionSnapshot.serverRecord?.ownerId === user?.$id &&
-      subscriptionSnapshot.access.active === true);
-  const hasVerifiedAndroidFreeScannerAccess =
+      (Platform.OS === 'android'
+        ? subscriptionSnapshot?.revenueCatAccess.active === true
+        : subscriptionSnapshot?.serverRecordAvailable === true &&
+          subscriptionSnapshot.serverRecord?.ownerId === user?.$id &&
+          subscriptionSnapshot.access.active === true));
+  const hasAndroidFreeScannerAccess =
     Platform.OS === 'android' &&
     isSignedIn &&
     subscriptionsEnforced &&
     subscriptionState === 'ready' &&
-    subscriptionSnapshot?.serverRecordAvailable === true &&
-    (!subscriptionSnapshot.serverRecord ||
-      subscriptionSnapshot.serverRecord.ownerId === user?.$id) &&
-    subscriptionSnapshot.access.active !== true;
+    subscriptionSnapshot?.revenueCatAccess.active !== true;
   const hasAppAccess =
-    hasActiveSubscription || hasVerifiedAndroidFreeScannerAccess;
+    hasActiveSubscription || hasAndroidFreeScannerAccess;
   const subscriptionRequired =
     isSignedIn &&
     subscriptionsEnforced &&
@@ -148,7 +147,9 @@ function ProtectedRootStack() {
         <Stack.Screen name="(onboarding)" />
       </Stack.Protected>
 
-      <Stack.Protected guard={subscriptionRequired}>
+      <Stack.Protected
+        guard={subscriptionRequired || hasAndroidFreeScannerAccess}
+      >
         <Stack.Screen name="subscription-required" />
       </Stack.Protected>
 

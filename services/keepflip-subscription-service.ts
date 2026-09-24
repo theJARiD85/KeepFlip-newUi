@@ -208,6 +208,7 @@ export type KeepFlipSubscriptionSnapshot = {
   catalog: KeepFlipSubscriptionCatalog;
   configured: boolean;
   profileTrial: KeepFlipProfileTrial | null;
+  revenueCatAccess: KeepFlipSubscriptionAccess;
   serverRecord: KeepFlipServerSubscriptionRecord | null;
   serverRecordAvailable: boolean;
 };
@@ -1278,6 +1279,7 @@ export async function loadKeepFlipSubscription(
       // inactive account, while server status remains the access authority.
       configured: areKeepFlipSubscriptionsConfigured(),
       profileTrial: serverStatus.profileTrial,
+      revenueCatAccess: EMPTY_ACCESS,
       serverRecord,
       serverRecordAvailable:
         serverStatus.available,
@@ -1305,6 +1307,7 @@ export async function loadKeepFlipSubscription(
       : EMPTY_CATALOG,
     configured: true,
     profileTrial: serverStatus.profileTrial,
+    revenueCatAccess: localAccess,
     serverRecord,
     serverRecordAvailable:
       serverStatus.available,

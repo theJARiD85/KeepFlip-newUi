@@ -143,18 +143,24 @@ export default function AppShellLayout() {
     Platform.OS === 'android' &&
     Boolean(user) &&
     subscriptionState === 'ready' &&
-    snapshot?.serverRecordAvailable === true &&
-    (!snapshot.serverRecord || snapshot.serverRecord.ownerId === user?.$id) &&
-    snapshot.access.active !== true;
+    snapshot?.revenueCatAccess.active !== true;
+  const allowedFreePaths = ['/scanner', '/analysis', '/analysis-result', '/account'];
+  const isAllowedFreePath = allowedFreePaths.some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
+  );
+  const isBlockedFreePath = isAndroidFreeScanner && !isAllowedFreePath;
   useEffect(() => {
-    const allowedFreePaths = ['/scanner', '/analysis', '/analysis-result', '/account'];
-    if (
-      isAndroidFreeScanner &&
-      !allowedFreePaths.some((path) => pathname === path || pathname.startsWith(`${path}/`))
-    ) {
-      router.replace('/scanner' as Href);
+    if (isBlockedFreePath) {
+      if (pathname === '/') {
+        router.replace('/scanner' as Href);
+        return;
+      }
+      router.replace({
+        pathname: '/subscription-required',
+        params: { returnTo: pathname },
+      } as Href);
     }
-  }, [isAndroidFreeScanner, pathname, router]);
+  }, [isBlockedFreePath, pathname, router]);
   const insets = useSafeAreaInsets();
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const appearanceColors = getKeepFlipThemeColors(effectiveColorScheme);
@@ -167,9 +173,11 @@ export default function AppShellLayout() {
             <FlipGuidanceProvider>
               <NotificationNavigationObserver />
               <WalkthroughAutoLauncher />
-              {!isAndroidFreeScanner ? <KeepFlipSlideDownMenu /> : null}
+              <KeepFlipSlideDownMenu />
               <View style={styles.root}>
-                <Stack
+                {isBlockedFreePath ? (
+                  <View style={styles.routeGate} />
+                ) : <Stack
                   screenOptions={{
                     animation: 'fade',
                     contentStyle: {
@@ -177,7 +185,6 @@ export default function AppShellLayout() {
                     },
                   headerShown: false,
                 }}>
-                  <Stack.Protected guard={!isAndroidFreeScanner}>
                   <Stack.Screen name="index" />
                   <Stack.Screen name="inventory" />
                   <Stack.Screen name="listing-guide" />
@@ -192,14 +199,11 @@ export default function AppShellLayout() {
                   <Stack.Screen name="books-records" />
                   <Stack.Screen name="market-research" />
                   <Stack.Screen name="notifications" />
-                  </Stack.Protected>
-                  <Stack.Protected guard={isAndroidFreeScanner}>
                   <Stack.Screen name="scanner" />
                   <Stack.Screen name="analysis" />
                   <Stack.Screen name="analysis-result" />
-                  </Stack.Protected>
                   <Stack.Screen name="account" />
-                </Stack>
+                </Stack>}
                 {!isAndroidFreeScanner ? <FlipAssistantOverlay /> : null}
                 {!isAndroidFreeScanner ? <FlipDailyBriefingLauncher /> : null}
                 {!isAndroidFreeScanner ? <FlipGuidanceOverlay /> : null}
@@ -215,6 +219,9 @@ export default function AppShellLayout() {
 
 const styles = StyleSheet.create({
   root: {
+    flex: 1,
+  },
+  routeGate: {
     flex: 1,
   },
 });
