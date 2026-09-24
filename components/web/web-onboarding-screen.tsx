@@ -34,7 +34,7 @@ export function WebOnboardingScreen({
           'KeepFlip is a resale planning app for independent sellers and small shops.',
         )}
         <Text style={[styles.body, { color: colors.textMuted }]}>
-          Research an item, check a buy against your rules, track inventory, and prepare marketplace listings.
+          KeepFlip is a resale planning app for independent sellers and small shops. Research an item, check a buy against your rules, track inventory, and prepare marketplace listings.
         </Text>
         <View style={[styles.flipCard, { backgroundColor: colors.iconSurfaceViolet, borderColor: colors.accentVioletBorder }]}>
           <FlipCompanion cropToSquare={false} size={flipSize} />

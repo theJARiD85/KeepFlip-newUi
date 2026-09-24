@@ -53,6 +53,7 @@ const MAPPING = {
   'person.fill': 'person',
   'rectangle.portrait.and.arrow.right': 'logout',
   'arrow.clockwise': 'refresh',
+  'arrow.up.left.and.arrow.down.right': 'fullscreen',
   'arrow.right': 'arrow-forward',
   'magnifyingglass': 'search',
   'tag.fill': 'sell',

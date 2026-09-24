@@ -5,7 +5,7 @@ export function AboutPageContent() {
     <PublicInfoPage
       eyebrow="ABOUT KEEPFLIP"
       paragraphs={[
-        'KeepFlip is a mobile and web app for independent resellers and small shops.',
+        'KeepFlip is a resale planning app for independent resellers and small shops.',
         'Use KeepFlip to research items, check a buy against your own rules, track inventory, and prepare marketplace listings.',
         'Item research and resale values are estimates. Review the item and available evidence before you decide to buy or list it.',
       ]}

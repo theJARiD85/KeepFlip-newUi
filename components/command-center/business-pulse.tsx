@@ -473,15 +473,22 @@ function MoneyFlowTrackerDot({ color, index }: { color: string; index: number })
 function MoneyMovementChart({
   moneyFlow,
   maximumFlow,
+  rangeLabel,
+  onCloseZoom,
+  zoomOpen,
 }: {
   moneyFlow: ResellerBusinessOverview['moneyFlow'];
   maximumFlow: number;
+  rangeLabel: string;
+  onCloseZoom: () => void;
+  zoomOpen: boolean;
 }) {
   const styles = useResponsiveStyles(createResponsiveStyles);
-  const { responsiveFont, responsiveHeight, responsiveWidth } = useResponsiveLayout();
-  const { width: windowWidth } = useWindowDimensions();
+  const { responsiveFont, responsiveWidth } = useResponsiveLayout();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const [activePointIndex, setActivePointIndex] = useState(0);
   const [plotWidth, setPlotWidth] = useState(0);
+  const [expandedPlotWidth, setExpandedPlotWidth] = useState(0);
   const chartGrid = [1, 0.75, 0.5, 0.25, 0];
   const chartData = useMemo(
     () => ({
@@ -502,160 +509,195 @@ function MoneyMovementChart({
     Math.max(moneyFlow.length - 1, 0),
   );
   const activePoint = moneyFlow[safePointIndex];
-  const yAxisWidth = responsiveWidth(34);
-  const fallbackChartWidth = Math.max(windowWidth - 84, 180);
-  const chartWidth = plotWidth > 0
-    ? Math.max(plotWidth - yAxisWidth, 1)
-    : fallbackChartWidth;
   const netCents = activePoint
     ? activePoint.moneyInCents - activePoint.moneyOutCents
     : 0;
 
-  return (
-    <>
-      <View
-        onLayout={(event) => {
-          const nextWidth = Math.round(event.nativeEvent.layout.width);
-          setPlotWidth((currentWidth) => (currentWidth === nextWidth ? currentWidth : nextWidth));
-        }}
-        style={styles.chartPlotRow}
-      >
+  const renderChart = (expanded: boolean) => {
+    const yAxisWidth = responsiveWidth(expanded ? 42 : 34);
+    const measuredPlotWidth = expanded ? expandedPlotWidth : plotWidth;
+    const fallbackChartWidth = Math.max(
+      windowWidth - (expanded ? 58 : 84),
+      180,
+    );
+    const chartWidth = measuredPlotWidth > 0
+      ? Math.max(measuredPlotWidth - yAxisWidth, 1)
+      : fallbackChartWidth;
+    const chartHeight = expanded
+      ? Math.max(Math.min(windowHeight * 0.56, 560), 300)
+      : 218;
+
+    return (
+      <>
         <View
-          style={[
-            styles.moneyFlowYAxis,
-            {
-              height: responsiveHeight(178),
-              width: yAxisWidth,
-            },
-          ]}
+          onLayout={(event) => {
+            const nextWidth = Math.round(event.nativeEvent.layout.width);
+            const updatePlotWidth = expanded ? setExpandedPlotWidth : setPlotWidth;
+            updatePlotWidth((currentWidth) =>
+              currentWidth === nextWidth ? currentWidth : nextWidth,
+            );
+          }}
+          style={styles.chartPlotRow}
         >
-          {chartGrid.map((fraction) => (
-            <Text
-              key={fraction}
-              style={[
-                styles.yAxisLabel,
-                { fontSize: responsiveFont(7), lineHeight: 9 },
-              ]}
-            >
-              {compactMoney(Math.round(maximumFlow * fraction))}
-            </Text>
-          ))}
-        </View>
-        <View style={[styles.moneyFlowChartContent, { width: chartWidth }]}>
-          <View style={[styles.wagmiChart, { width: chartWidth }]}>
-            <LineChart.Provider
-              data={chartData}
-              onCurrentIndexChange={setActivePointIndex}
-              yRange={{ min: 0, max: chartValueMax }}
-            >
-              <LineChart.Group>
-                <LineChart id="moneyIn" width={chartWidth} height={218}>
-                  <LineChart.Path color={theme.colors.scannerCyan} width={3} />
-                  <MoneyFlowTrackerDot color={theme.colors.scannerCyan} index={safePointIndex} />
-                </LineChart>
-                <LineChart id="moneyOut" width={chartWidth} height={218}>
-                  <LineChart.Path color={theme.colors.goldBright} width={3}>
-                    {chartGrid.map((fraction) => (
-                      <LineChart.HorizontalLine
-                        at={{ value: chartValueMax * fraction }}
-                        color={
-                          fraction === 0
-                            ? theme.colors.dividerStrong
-                            : theme.colors.divider
-                        }
-                        key={fraction}
-                        lineProps={{
-                          strokeDasharray: fraction === 0 ? undefined : '4 5',
-                          strokeWidth: fraction === 0 ? 2 : 1,
-                        }}
-                      />
-                    ))}
-                  </LineChart.Path>
-                  <LineChart.CursorLine
-                    color={theme.colors.goldBright}
-                    persistOnEnd
-                    showLabel={false}
-                    snapToPoint
-                  >
-                    <LineChart.Tooltip
-                      position="top"
-                      textProps={{ precision: 0 }}
-                      textStyle={{
-                        backgroundColor: theme.colors.surface,
-                        borderRadius: 8,
-                        color: theme.colors.text,
-                        fontSize: 10,
-                        padding: 6,
-                      }}
-                    />
-                  </LineChart.CursorLine>
-                  <MoneyFlowTrackerDot color={theme.colors.goldBright} index={safePointIndex} />
-                </LineChart>
-              </LineChart.Group>
-            </LineChart.Provider>
-          </View>
-          <View style={[styles.chartAxisLabels, { width: chartWidth }]}>
-            {moneyFlow.map((bucket) => (
+          <View
+            style={[
+              styles.moneyFlowYAxis,
+              {
+                height: chartHeight - 40,
+                width: yAxisWidth,
+              },
+            ]}
+          >
+            {chartGrid.map((fraction) => (
               <Text
-                key={bucket.key}
-                numberOfLines={1}
+                key={fraction}
                 style={[
-                  styles.chartAxisLabel,
-                  { fontSize: responsiveFont(8) },
+                  styles.yAxisLabel,
+                  { fontSize: responsiveFont(expanded ? 9 : 7), lineHeight: expanded ? 12 : 9 },
                 ]}
               >
-                {bucket.label}
+                {compactMoney(Math.round(maximumFlow * fraction))}
               </Text>
             ))}
           </View>
-        </View>
-      </View>
-      {activePoint ? (
-        <View style={styles.selectedPointCard}>
-          <View style={styles.selectedPointHeading}>
-            <Text
-              style={[
-                styles.selectedPointLabel,
-                { fontSize: responsiveFont(9) },
-              ]}
-            >
-              {activePoint.label}
-            </Text>
-            <Text
-              style={[
-                styles.selectedPointValue,
-                {
-                  color:
-                    netCents < 0
-                      ? theme.colors.danger
-                      : theme.colors.scannerViolet,
-                  fontSize: responsiveFont(13),
-                },
-              ]}
-            >
-              {money(netCents)} net
-            </Text>
+          <View style={[styles.moneyFlowChartContent, { width: chartWidth }]}>
+            <View style={[styles.wagmiChart, { width: chartWidth }]}>
+              <LineChart.Provider
+                data={chartData}
+                onCurrentIndexChange={setActivePointIndex}
+                yRange={{ min: 0, max: chartValueMax }}
+              >
+                <LineChart.Group>
+                  <LineChart id="moneyIn" width={chartWidth} height={chartHeight}>
+                    <LineChart.Path color={theme.colors.scannerCyan} width={3} />
+                    <MoneyFlowTrackerDot color={theme.colors.scannerCyan} index={safePointIndex} />
+                  </LineChart>
+                  <LineChart id="moneyOut" width={chartWidth} height={chartHeight}>
+                    <LineChart.Path color={theme.colors.goldBright} width={3}>
+                      {chartGrid.map((fraction) => (
+                        <LineChart.HorizontalLine
+                          at={{ value: chartValueMax * fraction }}
+                          color={
+                            fraction === 0
+                              ? theme.colors.dividerStrong
+                              : theme.colors.divider
+                          }
+                          key={fraction}
+                          lineProps={{
+                            strokeDasharray: fraction === 0 ? undefined : '4 5',
+                            strokeWidth: fraction === 0 ? 2 : 1,
+                          }}
+                        />
+                      ))}
+                    </LineChart.Path>
+                    <LineChart.CursorLine
+                      color={theme.colors.goldBright}
+                      persistOnEnd
+                      showLabel={false}
+                      snapToPoint
+                    >
+                      <LineChart.Tooltip
+                        position="top"
+                        textProps={{ precision: 0 }}
+                        textStyle={{
+                          backgroundColor: theme.colors.surface,
+                          borderRadius: 8,
+                          color: theme.colors.text,
+                          fontSize: expanded ? 14 : 10,
+                          padding: 6,
+                        }}
+                      />
+                    </LineChart.CursorLine>
+                    <MoneyFlowTrackerDot color={theme.colors.goldBright} index={safePointIndex} />
+                  </LineChart>
+                </LineChart.Group>
+              </LineChart.Provider>
+            </View>
+            <View style={[styles.chartAxisLabels, { width: chartWidth }]}>
+              {moneyFlow.map((bucket) => (
+                <Text
+                  key={bucket.key}
+                  numberOfLines={1}
+                  style={[
+                    styles.chartAxisLabel,
+                    { fontSize: responsiveFont(expanded ? 10 : 8) },
+                  ]}
+                >
+                  {bucket.label}
+                </Text>
+              ))}
+            </View>
           </View>
-          <View style={styles.flowSelectedValues}>
-            <Text
-              style={[
-                styles.flowSelectedValue,
-                { color: theme.colors.scannerCyan, fontSize: responsiveFont(9) },
-              ]}
-            >
-              IN {money(activePoint.moneyInCents)}
-            </Text>
-            <Text
-              style={[
-                styles.flowSelectedValue,
-                { color: theme.colors.goldBright, fontSize: responsiveFont(9) },
-              ]}
-            >
-              OUT {money(activePoint.moneyOutCents)}
-            </Text>
-          </View>
         </View>
-      ) : null}
+        {activePoint ? (
+          <View style={styles.selectedPointCard}>
+            <View style={styles.selectedPointHeading}>
+              <Text
+                style={[
+                  styles.selectedPointLabel,
+                  { fontSize: responsiveFont(expanded ? 11 : 9) },
+                ]}
+              >
+                {activePoint.label}
+              </Text>
+              <Text
+                style={[
+                  styles.selectedPointValue,
+                  {
+                    color:
+                      netCents < 0
+                        ? theme.colors.danger
+                        : theme.colors.scannerViolet,
+                    fontSize: responsiveFont(expanded ? 17 : 13),
+                  },
+                ]}
+              >
+                {money(netCents)} net
+              </Text>
+            </View>
+            <View style={styles.flowSelectedValues}>
+              <Text
+                style={[
+                  styles.flowSelectedValue,
+                  { color: theme.colors.scannerCyan, fontSize: responsiveFont(expanded ? 12 : 9) },
+                ]}
+              >
+                IN {money(activePoint.moneyInCents)}
+              </Text>
+              <Text
+                style={[
+                  styles.flowSelectedValue,
+                  { color: theme.colors.goldBright, fontSize: responsiveFont(expanded ? 12 : 9) },
+                ]}
+              >
+                OUT {money(activePoint.moneyOutCents)}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+      </>
+    );
+  };
+
+  return (
+    <>
+      {renderChart(false)}
+      <ChartZoomModal
+        eyebrow="MONEY MOVEMENT"
+        onClose={onCloseZoom}
+        title={rangeLabel}
+        visible={zoomOpen}
+      >
+        {zoomOpen ? (
+          <>
+            <View style={styles.zoomLegend}>
+              <Legend color={theme.colors.scannerCyan} label="In" />
+              <Legend color={theme.colors.goldBright} label="Out" />
+            </View>
+            {renderChart(true)}
+          </>
+        ) : null}
+      </ChartZoomModal>
     </>
   );
 }
@@ -667,10 +709,11 @@ function FinancialReporting({
 }) {
   const styles = useResponsiveStyles(createResponsiveStyles);
   const { responsiveFont } = useResponsiveLayout();
-  const { width: windowWidth } = useWindowDimensions();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const [activeChart, setActiveChart] = useState<FinancialChartId>('pnl');
   const [activePointIndex, setActivePointIndex] = useState(0);
   const [chartPickerOpen, setChartPickerOpen] = useState(false);
+  const [zoomOpen, setZoomOpen] = useState(false);
   const chartOption =
     FINANCIAL_CHART_OPTIONS.find((option) => option.id === activeChart) ??
     FINANCIAL_CHART_OPTIONS[0];
@@ -715,6 +758,8 @@ function FinancialReporting({
     [chartPoints],
   );
   const chartWidth = Math.min(Math.max(windowWidth - 60, 240), 720);
+  const expandedChartWidth = Math.min(Math.max(windowWidth - 48, 180), 1_200);
+  const expandedChartHeight = Math.max(Math.min(windowHeight * 0.56, 560), 300);
   const safePointIndex = Math.min(
     Math.max(activePointIndex, 0),
     Math.max(chartPoints.length - 1, 0),
@@ -726,6 +771,77 @@ function FinancialReporting({
   const chartPadding = Math.max(1, (chartMax - chartMin) * 0.12);
   const hasChartData = chartPoints.length > 0;
 
+  const renderChart = (expanded: boolean) => {
+    const width = expanded ? expandedChartWidth : chartWidth;
+    const height = expanded ? expandedChartHeight : 218;
+    return (
+      <View style={styles.wagmiChart}>
+        <LineChart.Provider
+          data={chartData}
+          onCurrentIndexChange={setActivePointIndex}
+          yRange={{
+            min: chartMin - chartPadding,
+            max: chartMax + chartPadding,
+          }}>
+          <LineChart width={width} height={height}>
+            <LineChart.Path color={chartOption.color} width={3}>
+              <LineChart.Gradient color={chartOption.color} />
+              <LineChart.HorizontalLine
+                at={{ value: 0 }}
+                color={theme.colors.dividerStrong}
+              />
+              <LineChart.Dot
+                at={safePointIndex}
+                color={chartOption.color}
+                hasOuterDot
+                size={expanded ? 6 : 4}
+              />
+            </LineChart.Path>
+            <LineChart.CursorLine
+              color={chartOption.color}
+              persistOnEnd
+              snapToPoint>
+              <LineChart.Tooltip
+                position="top"
+                textProps={{ precision: 0 }}
+                textStyle={{
+                  backgroundColor: theme.colors.surface,
+                  borderRadius: 8,
+                  color: theme.colors.text,
+                  fontSize: expanded ? 14 : 10,
+                  padding: 6,
+                }}
+              />
+            </LineChart.CursorLine>
+          </LineChart>
+        </LineChart.Provider>
+        <View style={styles.chartAxisLabels}>
+          {chartPoints.map((point) => (
+            <Text key={point.key} numberOfLines={1} style={[styles.chartAxisLabel, { fontSize: responsiveFont(expanded ? 11 : 8) }]}>
+              {point.label}
+            </Text>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
+  const renderActivePoint = (expanded: boolean) => activePoint ? (
+    <View style={styles.selectedPointCard}>
+      <View style={styles.selectedPointHeading}>
+        <Text style={[styles.selectedPointLabel, { fontSize: responsiveFont(expanded ? 11 : 9) }]}>
+          {activePoint.label}
+        </Text>
+        <Text selectable style={[styles.selectedPointValue, { color: chartOption.color, fontSize: responsiveFont(expanded ? 17 : 13) }]}>
+          {money(activePoint.valueCents)}
+        </Text>
+      </View>
+      <Text style={[styles.selectedPointDetail, { fontSize: responsiveFont(expanded ? 10 : 8) }]}>
+        {activePoint.detail}
+      </Text>
+    </View>
+  ) : null;
+
   return (
     <View style={styles.reportingSurface}>
       <View style={styles.reportingHeader}>
@@ -734,6 +850,10 @@ function FinancialReporting({
           <Text style={[styles.reportingTitle, { fontSize: responsiveFont(15), lineHeight: 19 }]}>{chartOption.label}</Text>
           <Text style={[styles.reportingDescription, { fontSize: responsiveFont(10), lineHeight: 14 }]}>{chartOption.description}</Text>
         </View>
+        <ChartZoomButton
+          label={chartOption.label}
+          onPress={() => setZoomOpen(true)}
+        />
       </View>
 
       <Pressable
@@ -786,63 +906,8 @@ function FinancialReporting({
 
       {hasChartData ? (
         <>
-          <View style={styles.wagmiChart}>
-            <LineChart.Provider
-              data={chartData}
-              onCurrentIndexChange={setActivePointIndex}
-              yRange={{
-                min: chartMin - chartPadding,
-                max: chartMax + chartPadding,
-              }}>
-              <LineChart width={chartWidth} height={218}>
-                <LineChart.Path color={chartOption.color} width={3}>
-                  <LineChart.Gradient color={chartOption.color} />
-                  <LineChart.HorizontalLine
-                    at={{ value: 0 }}
-                    color={theme.colors.dividerStrong}
-                  />
-                  <LineChart.Dot
-                    at={safePointIndex}
-                    color={chartOption.color}
-                    hasOuterDot
-                    size={4}
-                  />
-                </LineChart.Path>
-                <LineChart.CursorLine
-                  color={chartOption.color}
-                  persistOnEnd
-                  snapToPoint>
-                  <LineChart.Tooltip
-                    position="top"
-                    textProps={{ precision: 0 }}
-                    textStyle={{
-                      backgroundColor: theme.colors.surface,
-                      borderRadius: 8,
-                      color: theme.colors.text,
-                      fontSize: 10,
-                      padding: 6,
-                    }}
-                  />
-                </LineChart.CursorLine>
-              </LineChart>
-            </LineChart.Provider>
-            <View style={styles.chartAxisLabels}>
-              {chartPoints.map((point) => (
-                <Text key={point.key} numberOfLines={1} style={[styles.chartAxisLabel, { fontSize: responsiveFont(8) }]}>
-                  {point.label}
-                </Text>
-              ))}
-            </View>
-          </View>
-          {activePoint ? (
-            <View style={styles.selectedPointCard}>
-              <View style={styles.selectedPointHeading}>
-                <Text style={[styles.selectedPointLabel, { fontSize: responsiveFont(9) }]}>{activePoint.label}</Text>
-                <Text selectable style={[styles.selectedPointValue, { color: chartOption.color, fontSize: responsiveFont(13) }]}>{money(activePoint.valueCents)}</Text>
-              </View>
-              <Text style={[styles.selectedPointDetail, { fontSize: responsiveFont(8) }]}>{activePoint.detail}</Text>
-            </View>
-          ) : null}
+          {renderChart(false)}
+          {renderActivePoint(false)}
         </>
       ) : (
         <View style={styles.reportEmpty}>
@@ -856,6 +921,35 @@ function FinancialReporting({
         </View>
       )}
       <Text style={[styles.reportingNote, { fontSize: responsiveFont(9), lineHeight: 14 }]}>COGS is recognized when a recorded sale is matched to a known acquisition cost. Inventory purchases stay working-capital cash outflows until they are sold.</Text>
+
+      <ChartZoomModal
+        eyebrow="FINANCIAL REPORTING"
+        onClose={() => setZoomOpen(false)}
+        title={chartOption.label}
+        visible={zoomOpen}
+      >
+        {zoomOpen ? (
+          hasChartData ? (
+            <>
+              {renderChart(true)}
+              {renderActivePoint(true)}
+              <Text style={[styles.reportingNote, { fontSize: responsiveFont(10), lineHeight: 15 }]}>
+                {chartOption.description}
+              </Text>
+            </>
+          ) : (
+            <View style={styles.reportEmpty}>
+              <Text style={[styles.reportEmptyText, { fontSize: responsiveFont(12), lineHeight: 17 }]}>
+                {activeChart === 'pnl'
+                  ? 'Record income, purchases, and expenses in Books to populate this trend.'
+                  : activeChart === 'gross-margin'
+                    ? 'Link a recorded sale to an item and add its acquisition cost to see category margin.'
+                    : 'No cash outflows have been recorded for this month yet.'}
+              </Text>
+            </View>
+          )
+        ) : null}
+      </ChartZoomModal>
     </View>
   );
 }
@@ -903,6 +997,153 @@ function Legend({ color, label }: { color: string; label: string }) {
     </View>
   );
 }
+
+function ChartZoomButton({
+  label,
+  onPress,
+}: {
+  label: string;
+  onPress: () => void;
+}) {
+  const { responsiveWidth } = useResponsiveLayout();
+
+  return (
+    <Pressable
+      accessibilityLabel={`Enlarge ${label} chart`}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [zoomUiStyles.zoomButton, pressed && zoomUiStyles.pressed]}
+    >
+      <IconSymbol
+        color={theme.colors.scannerCyan}
+        name="arrow.up.left.and.arrow.down.right"
+        size={responsiveWidth(17)}
+      />
+    </Pressable>
+  );
+}
+
+function ChartZoomModal({
+  children,
+  eyebrow,
+  onClose,
+  title,
+  visible,
+}: PropsWithChildren<{
+  eyebrow: string;
+  onClose: () => void;
+  title: string;
+  visible: boolean;
+}>) {
+  const insets = useSafeAreaInsets();
+  const { responsiveFont } = useResponsiveLayout();
+
+  return (
+    <Modal
+      animationType="fade"
+      onRequestClose={onClose}
+      statusBarTranslucent
+      transparent
+      visible={visible}
+    >
+      <View
+        accessibilityViewIsModal
+        style={[
+          zoomUiStyles.backdrop,
+          {
+            paddingBottom: Math.max(insets.bottom, 8),
+            paddingTop: Math.max(insets.top, 8),
+          },
+        ]}
+      >
+        <View style={zoomUiStyles.panel}>
+          <View style={zoomUiStyles.header}>
+            <View style={zoomUiStyles.headingCopy}>
+              <Text style={[zoomUiStyles.eyebrow, { fontSize: responsiveFont(8) }]}>
+                {eyebrow}
+              </Text>
+              <Text
+                numberOfLines={2}
+                style={[zoomUiStyles.title, { fontSize: responsiveFont(18), lineHeight: 23 }]}
+              >
+                {title}
+              </Text>
+            </View>
+            <Pressable
+              accessibilityLabel="Close enlarged chart"
+              accessibilityRole="button"
+              onPress={onClose}
+              style={({ pressed }) => [zoomUiStyles.closeButton, pressed && zoomUiStyles.pressed]}
+            >
+              <IconSymbol color={theme.colors.text} name="xmark" size={19} />
+            </Pressable>
+          </View>
+          <ScrollView
+            contentContainerStyle={zoomUiStyles.content}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {children}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const zoomUiStyles = StyleSheet.create({
+  backdrop: {
+    backgroundColor: 'rgba(3, 8, 17, 0.88)',
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  panel: {
+    backgroundColor: theme.colors.card,
+    borderColor: theme.colors.accentCyanBorder,
+    borderRadius: 18,
+    borderWidth: 1,
+    flex: 1,
+    gap: 14,
+    maxHeight: 900,
+    padding: 14,
+  },
+  header: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'space-between',
+  },
+  headingCopy: { flex: 1, gap: 3 },
+  eyebrow: {
+    color: theme.colors.goldBright,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+  },
+  title: { color: theme.colors.cream, fontWeight: '900' },
+  closeButton: {
+    alignItems: 'center',
+    backgroundColor: theme.colors.cardSoft,
+    borderColor: theme.colors.dividerStrong,
+    borderRadius: 10,
+    borderWidth: 1,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+  },
+  content: { flexGrow: 1, gap: 12, paddingBottom: 4 },
+  zoomButton: {
+    alignItems: 'center',
+    backgroundColor: theme.colors.iconSurfaceCyan,
+    borderColor: theme.colors.accentCyanBorder,
+    borderRadius: 9,
+    borderWidth: 1,
+    height: 34,
+    justifyContent: 'center',
+    width: 34,
+  },
+  pressed: { opacity: 0.78, transform: [{ scale: 0.96 }] },
+});
 
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
   const { responsiveFont, responsiveHeight, responsiveWidth } = responsiveLayout;
@@ -1040,6 +1281,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     reportEmpty: { backgroundColor: theme.colors.cardSoft, borderRadius: 8, padding: 10 },
     reportEmptyText: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 14 },
     chartHeading: { alignItems: 'flex-start', flexDirection: 'row', justifyContent: 'space-between' },
+    chartHeadingActions: { alignItems: 'center', flexDirection: 'row', gap: 8 },
+    zoomLegend: { alignItems: 'center', flexDirection: 'row', gap: 12, justifyContent: 'flex-end' },
     chartLabel: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 1 },
     chartTitle: { color: theme.colors.text, fontSize: 13, fontWeight: '800', lineHeight: 17 },
     legend: { flexDirection: 'row', gap: 8, paddingTop: 2 },

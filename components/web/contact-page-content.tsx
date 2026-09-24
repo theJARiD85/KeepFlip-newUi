@@ -10,7 +10,7 @@ export function ContactPageContent() {
     <PublicInfoPage
       eyebrow="CONTACT"
       paragraphs={[
-        'For account or product help, email KeepFlip support. Include the email address on your account and a short description of the issue.',
+        'KeepFlip support is the email contact for account and product questions. Include the email address on your account and a short description of the issue.',
       ]}
       title="Contact KeepFlip"
     >
