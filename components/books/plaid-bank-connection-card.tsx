@@ -214,14 +214,6 @@ export function PlaidBankConnectionCard({
           </View>
           <View style={styles.connectionActions}>
             <Pressable
-              accessibilityLabel={`Sync ${connection.institutionName}`}
-              accessibilityRole="button"
-              disabled={busy}
-              onPress={() => void sync(connection.connectionId)}
-              style={({ pressed }) => [styles.iconButton, pressed && styles.pressed, busy && styles.disabled]}>
-              <IconSymbol color={theme.colors.scannerCyan} name="arrow.clockwise" size={15} />
-            </Pressable>
-            <Pressable
               accessibilityLabel={`Disconnect ${connection.institutionName}`}
               accessibilityRole="button"
               disabled={busy}
@@ -254,18 +246,35 @@ export function PlaidBankConnectionCard({
         </Text>
       ) : null}
 
-      <PlaidBankLinkButton
-        busy={busy}
-        disabled={loading}
-        fontSize={responsiveFont(9)}
-        onBusyChange={setBusy}
-        onError={setError}
-        onLinked={(result) => void connected(result)}
-        onStart={() => {
-          setError(null);
-          setMessage(null);
-        }}
-      />
+      {loading ? null : connections.length > 0 ? (
+        <Pressable
+          accessibilityLabel="Refresh bank connection"
+          accessibilityRole="button"
+          accessibilityState={{ busy, disabled: busy }}
+          disabled={busy}
+          onPress={() => void sync()}
+          style={({ pressed }) => [
+            styles.refreshAction,
+            pressed && styles.pressed,
+            busy && styles.disabled,
+          ]}>
+          <IconSymbol color={theme.colors.scannerCyan} name="arrow.clockwise" size={14} />
+          <Text style={[styles.refreshActionText, { fontSize: responsiveFont(10) }]}>Refresh connection</Text>
+        </Pressable>
+      ) : (
+        <PlaidBankLinkButton
+          busy={busy}
+          disabled={loading}
+          fontSize={responsiveFont(9)}
+          onBusyChange={setBusy}
+          onError={setError}
+          onLinked={(result) => void connected(result)}
+          onStart={() => {
+            setError(null);
+            setMessage(null);
+          }}
+        />
+      )}
     </View>
   );
 }
@@ -329,6 +338,18 @@ const styles = StyleSheet.create({
     width: 34,
   },
   automationText: { color: theme.colors.textMuted, lineHeight: 15 },
+  refreshAction: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    gap: 6,
+    minHeight: 30,
+    paddingHorizontal: 2,
+  },
+  refreshActionText: {
+    color: theme.colors.scannerCyan,
+    fontWeight: '800',
+  },
   warningText: { color: theme.colors.goldBright, lineHeight: 15 },
   errorText: { color: theme.colors.danger, lineHeight: 15 },
   messageText: { color: theme.colors.scannerCyan, lineHeight: 15 },

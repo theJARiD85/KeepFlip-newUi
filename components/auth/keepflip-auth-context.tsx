@@ -31,7 +31,6 @@ import {
   trackKeepFlipEvent,
 } from '@/services/keepflip-analytics';
 import {
-  areKeepFlipSubscriptionsEnforced,
   loadKeepFlipSubscription,
 } from '@/services/keepflip-subscription-service';
 import { trackTenjinEvent } from '@/services/tenjin-attribution-service';
@@ -137,9 +136,18 @@ class MfaRequiredError extends Error {
 async function requireActiveSubscription(user: Models.User) {
   if (!areKeepFlipSubscriptionsEnforced()) return;
 
-  const subscription = await loadKeepFlipSubscription(user.$id, {
-    reconcileServerStatus: true,
-  });
+  let subscription: Awaited<ReturnType<typeof loadKeepFlipSubscription>>;
+  try {
+    subscription = await loadKeepFlipSubscription(user.$id, {
+      reconcileServerStatus: true,
+    });
+  } catch {
+    throw new KeepFlipAuthError(
+      'KeepFlip could not verify your subscription right now. Check your connection and try again.',
+      'AUTH_SUBSCRIPTION_UNVERIFIED',
+      user.$id,
+    );
+  }
   if (!subscription.serverRecordAvailable) {
     throw new KeepFlipAuthError(
       'KeepFlip could not verify your subscription right now. Check your connection and try again.',
@@ -657,6 +665,22 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
         });
       } catch (error) {
         const safeError = safeAuthError(error, 'sign-in');
+        if (
+          sessionRequestStarted &&
+          safeError.code !== 'AUTH_MFA_REQUIRED' &&
+          safeError.code !== 'AUTH_SUBSCRIPTION_REQUIRED' &&
+          safeError.code !== 'AUTH_SUBSCRIPTION_UNVERIFIED'
+        ) {
+          // Never leave an Appwrite cookie behind when verification fails
+          // after the password request began. If revocation itself fails, the
+          // auth snapshot remains fail-closed as an error rather than signed in.
+          try {
+            await clearCurrentAppwriteSession();
+          } catch {
+            commit(errorSnapshot(safeError.message));
+            throw safeError;
+          }
+        }
         if (safeError.code === 'AUTH_SETUP_REQUIRED') {
           const configurationStatus = getAppwriteCoreConfigurationStatus();
           commit(

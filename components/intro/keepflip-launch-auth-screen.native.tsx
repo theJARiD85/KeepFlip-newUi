@@ -471,7 +471,7 @@ export function KeepFlipLaunchAuthScreen({
           return;
         }
         const access = await loadKeepFlipPreAccountSubscriptionAccess();
-        if (!access.active) {
+        if (!access?.active) {
           throw new Error(
             'KeepFlip could not confirm an active Google Play subscription. Try again or restore purchases.',
           );
