@@ -118,6 +118,9 @@ scripts/*
 !/scripts/apply-responsive-layout.cjs
 !/scripts/make-ui-values-responsive.cjs
 !/scripts/test-make-ui-values-responsive.cjs
+!/scripts/sitemap-pages.mjs
+!/scripts/generate-sitemap.mjs
+!/scripts/ping-indexnow.mjs
 /runs
 /output
 /modules/keepflip-ar-measure/android/build
