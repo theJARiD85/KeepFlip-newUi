@@ -73,7 +73,8 @@ function ProtectedRootStack() {
       <Stack.Protected guard={canShowOnboarding}>
         <Stack.Screen name="(onboarding)" />
       </Stack.Protected>
-      <Stack.Protected guard={!isChecking && !isSignedIn}>
+      {/* Keep auth URLs renderable while the browser restores its session. */}
+      <Stack.Protected guard={!isSignedIn}>
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
       <Stack.Protected guard={subscriptionRequired}>
