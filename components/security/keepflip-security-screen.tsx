@@ -24,7 +24,7 @@ import { getKeepFlipThemeColors } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import { getAppwriteCoreServices } from '@/lib/appwrite';
 
-export function KeepFlipSecurityScreen({ required = false }: { required?: boolean } = {}) {
+export function KeepFlipSecurityScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user, refresh } = useKeepFlipAuth();
@@ -217,6 +217,24 @@ export function KeepFlipSecurityScreen({ required = false }: { required?: boolea
     }
   }
 
+  async function disableMfa() {
+    if (isBusy) return;
+    setIsBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const { account } = getAppwriteCoreServices();
+      const currentUser = await account.updateMFA({ mfa: false });
+      setMfaEnabled(currentUser.mfa);
+      setNotice('Two-step verification is now off for this account.');
+      await refresh();
+    } catch {
+      setError('KeepFlip could not turn off MFA. Try again.');
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
   const sectionStyle = [styles.section, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }];
 
   return (
@@ -234,26 +252,22 @@ export function KeepFlipSecurityScreen({ required = false }: { required?: boolea
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
       >
-        {!required ? (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.back()}
-            style={({ pressed }) => ({ alignItems: 'center', alignSelf: 'flex-start', flexDirection: 'row', gap: 8, opacity: pressed ? 0.7 : 1, paddingVertical: 8 })}
-          >
-            <IconSymbol color={colors.scannerCyan} name="chevron.left" size={17} />
-            <Text style={{ color: colors.scannerCyan, fontSize: responsiveFont(10), fontWeight: '700' }}>ACCOUNT</Text>
-          </Pressable>
-        ) : null}
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.back()}
+          style={({ pressed }) => ({ alignItems: 'center', alignSelf: 'flex-start', flexDirection: 'row', gap: 8, opacity: pressed ? 0.7 : 1, paddingVertical: 8 })}
+        >
+          <IconSymbol color={colors.scannerCyan} name="chevron.left" size={17} />
+          <Text style={{ color: colors.scannerCyan, fontSize: responsiveFont(10), fontWeight: '700' }}>ACCOUNT</Text>
+        </Pressable>
 
         <View style={{ gap: 6 }}>
           <Text style={{ color: colors.goldBright, fontSize: responsiveFont(9), fontWeight: '700', letterSpacing: 1.3 }}>KEEPFLIP / SECURITY</Text>
           <Text style={{ color: colors.text, fontSize: responsiveFont(27), fontWeight: '800' }}>
-            {required ? 'Set up two-step verification' : 'Two-step verification'}
+            Two-step verification
           </Text>
           <Text style={{ color: colors.textMuted, fontSize: responsiveFont(12), lineHeight: 18 }}>
-            {required
-              ? 'KeepFlip requires an authenticator code after your password. Finish setup to continue.'
-              : 'Use an authenticator app to add a one-time code after your password when you sign in.'}
+            Use an authenticator app to add a one-time code after your password when you sign in. This is optional.
           </Text>
         </View>
 
@@ -274,14 +288,25 @@ export function KeepFlipSecurityScreen({ required = false }: { required?: boolea
                 {mfaEnabled ? 'MFA is on' : 'MFA is off'}
               </Text>
               <Text style={{ color: mfaEnabled ? colors.scannerCyan : colors.textMuted, fontSize: responsiveFont(9), fontWeight: '800' }}>
-                {mfaEnabled ? 'ACTIVE' : 'REQUIRED'}
+                {mfaEnabled ? 'ACTIVE' : 'OPTIONAL'}
               </Text>
             </View>
 
             {mfaEnabled ? (
-              <Text style={{ color: colors.textMuted, fontSize: responsiveFont(11), lineHeight: 17 }}>
-                Sign-in requires your password and a second-factor code. Recovery codes can be used if you lose access to your authenticator.
-              </Text>
+              <>
+                <Text style={{ color: colors.textMuted, fontSize: responsiveFont(11), lineHeight: 17 }}>
+                  Sign-in currently requires your password and a second-factor code. You can turn this off while MFA is optional.
+                </Text>
+                <ActionButton
+                  busy={isBusy}
+                  colors={colors}
+                  disabled={isBusy}
+                  label="Turn off two-step verification"
+                  onPress={() => void disableMfa()}
+                  responsiveFont={responsiveFont}
+                  secondary
+                />
+              </>
             ) : authenticatorSecret ? (
               <>
                 <Text style={{ color: colors.textMuted, fontSize: responsiveFont(11), lineHeight: 17 }}>
@@ -389,7 +414,7 @@ export function KeepFlipSecurityScreen({ required = false }: { required?: boolea
             ) : (
               <>
                 <Text style={{ color: colors.textMuted, fontSize: responsiveFont(11), lineHeight: 17 }}>
-                  Add a time-based authenticator and save recovery codes. Sign-in stays locked until setup is verified.
+                  Add a time-based authenticator and save recovery codes to optionally require a second code when you sign in.
                 </Text>
                 <ActionButton
                   busy={isBusy}
@@ -405,7 +430,7 @@ export function KeepFlipSecurityScreen({ required = false }: { required?: boolea
         )}
 
         <Text style={{ color: colors.textMuted, fontSize: responsiveFont(10), lineHeight: 16 }}>
-          Two-step verification is required for KeepFlip accounts on web and mobile. Appwrite verifies authenticator or recovery codes during sign-in.
+          Two-step verification is optional. If you enable it, Appwrite verifies authenticator or recovery codes during sign-in.
         </Text>
       </ScrollView>
     </KeepFlipBackground>

@@ -74,8 +74,6 @@ function ProtectedRootStack() {
 
   const isSignedIn =
     status === "signed-in";
-  const mfaEnrollmentRequired =
-    isSignedIn && user?.mfa !== true;
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const appearanceColors = getKeepFlipThemeColors(effectiveColorScheme);
 
@@ -212,14 +210,9 @@ function ProtectedRootStack() {
       </Stack.Protected>
 
       <Stack.Protected
-        guard={mfaEnrollmentRequired && hasAppAccess}
-      >
-        <Stack.Screen name="mfa-setup" />
-      </Stack.Protected>
-
-      <Stack.Protected
-        guard={isSignedIn && hasActiveSubscription && !mfaEnrollmentRequired}>
+        guard={isSignedIn && hasActiveSubscription}>
         <Stack.Screen name="(app)" />
+        <Stack.Screen name="mfa-setup" />
       </Stack.Protected>
 
       <Stack.Screen name="terms" />
