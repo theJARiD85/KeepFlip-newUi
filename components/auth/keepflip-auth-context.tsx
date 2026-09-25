@@ -149,9 +149,15 @@ async function requireActiveSubscription(user: Models.User) {
       user.$id,
     );
   }
-  if (!subscription.serverRecordAvailable) {
+  if (
+    !subscription.serverRecordAvailable ||
+    !subscription.revenueCatVerified
+  ) {
+    const verificationError = subscription.serverVerificationError;
     throw new KeepFlipAuthError(
-      'KeepFlip could not verify your subscription right now. Check your connection and try again.',
+      verificationError
+        ? `KeepFlip could not verify your subscription right now. ${verificationError}`
+        : 'KeepFlip could not verify your subscription right now. Check your connection and try again.',
       'AUTH_SUBSCRIPTION_UNVERIFIED',
       user.$id,
     );

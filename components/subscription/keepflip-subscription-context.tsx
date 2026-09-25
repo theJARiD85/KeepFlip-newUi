@@ -171,6 +171,7 @@ function isServerVerifiedActiveSubscription(
 ) {
   return (
     snapshot?.serverRecordAvailable === true &&
+    snapshot.revenueCatVerified === true &&
     snapshot.serverRecord?.ownerId === userId &&
     snapshot.access.active === true
   );
@@ -300,10 +301,10 @@ export function KeepFlipSubscriptionProvider({
     void subscribeToKeepFlipEntitlementUpdates(userId, () => {
       if (cancelled) return;
 
-      // Realtime is the wake-up signal, not the authorization source. Reload
-      // the server-verified snapshot so profile trials, grace periods, and
-      // terminal subscription states all use the same policy path.
-      void refresh(false);
+      // Realtime is the wake-up signal, not the authorization source. Refresh
+      // directly from RevenueCat so a stale subscription mirror cannot keep
+      // the app on the wrong access state.
+      void refresh(true);
     })
       .then((nextSubscription) => {
         if (cancelled) {
@@ -475,12 +476,15 @@ export function KeepFlipSubscriptionProvider({
       if (snapshot?.access.active === true && !profileTrialActive) {
         activePlan = snapshot.access.plan;
       }
-      const serverAccessVerified = snapshot?.serverRecordAvailable === true;
+      const serverAccessVerified =
+        snapshot?.serverRecordAvailable === true &&
+        snapshot.revenueCatVerified === true;
 
       return {
-        // UI availability is always derived from an authenticated Function
-        // check of the durable subscription state. RevenueCat may update
-        // purchase UI optimistically, but it cannot unlock app features.
+        // UI availability is derived from the authenticated Function's live
+        // RevenueCat verification. The local SDK can update purchase UI, but
+        // a database mirror or optimistic SDK event alone cannot unlock paid
+        // features.
         canUse: (feature) =>
           serverAccessVerified &&
           (profileTrialActive || keepFlipPlanAllows(activePlan, feature)),

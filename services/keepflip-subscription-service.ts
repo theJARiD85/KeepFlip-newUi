@@ -209,6 +209,8 @@ export type KeepFlipSubscriptionSnapshot = {
   configured: boolean;
   profileTrial: KeepFlipProfileTrial | null;
   revenueCatAccess: KeepFlipSubscriptionAccess;
+  revenueCatVerified: boolean;
+  serverVerificationError: string | null;
   serverRecord: KeepFlipServerSubscriptionRecord | null;
   serverRecordAvailable: boolean;
 };
@@ -533,7 +535,9 @@ type SubscriptionFunctionPayload = Record<string, unknown>;
 type KeepFlipServerStatusResponse = {
   access: KeepFlipSubscriptionAccess | null;
   available: boolean;
+  error: string | null;
   profileTrial: KeepFlipProfileTrial | null;
+  revenueCatVerified: boolean;
   record: KeepFlipServerSubscriptionRecord | null;
 };
 
@@ -610,7 +614,9 @@ async function loadKeepFlipServerSubscriptionViaFunction(
     return {
       access: null,
       available: false,
+      error: 'KeepFlip Subscription Police is not configured in this build.',
       profileTrial: null,
+      revenueCatVerified: false,
       record: null,
     };
   }
@@ -638,7 +644,9 @@ async function loadKeepFlipServerSubscriptionViaFunction(
   return {
     access: parseServerSubscriptionAccess(payload.access),
     available: true,
+    error: null,
     profileTrial: parseServerProfileTrial(payload.profileTrial),
+    revenueCatVerified: payload.revenueCatVerified === true,
     record: parseServerSubscriptionRecord(payload.subscription),
   };
 }
@@ -755,7 +763,9 @@ async function loadKeepFlipServerSubscriptionStatus(
     return {
       access: null,
       available: false,
+      error: null,
       profileTrial: null,
+      revenueCatVerified: false,
       record: null,
     };
   }
@@ -766,14 +776,26 @@ async function loadKeepFlipServerSubscriptionStatus(
         deviceIdHash,
         refresh,
       );
-      if (result.available) return result;
+      return result;
     } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'KeepFlip could not verify server subscription access.';
       if (__DEV__) {
         console.warn(
           '[KeepFlip][Subscription] Server subscription status check failed; protected features are unavailable until it recovers.',
           error,
         );
       }
+      return {
+        access: null,
+        available: false,
+        error: message,
+        profileTrial: null,
+        revenueCatVerified: false,
+        record: null,
+      };
     }
   }
 
@@ -784,7 +806,9 @@ async function loadKeepFlipServerSubscriptionStatus(
     // making a premium feature available from a readable database row.
     access: null,
     available: false,
+    error: 'KeepFlip Subscription Police is not configured in this build.',
     profileTrial: null,
+    revenueCatVerified: false,
     record: null,
   };
 }
@@ -873,9 +897,9 @@ function effectiveSubscriptionAccess(
     };
   }
 
-  // RevenueCat is useful for purchase UI metadata, but it is never an
-  // authorization source. If the authenticated Function cannot resolve the
-  // durable entitlement, client feature gates fail closed.
+  // The authenticated Function owns access decisions. On explicit refreshes,
+  // it verifies the current entitlement with RevenueCat and returns that
+  // result; cached mirror responses do not count as a fresh verification.
   if (!serverStatus.available || !serverAccess) {
     return {
       ...EMPTY_ACCESS,
@@ -884,8 +908,8 @@ function effectiveSubscriptionAccess(
     };
   }
 
-  // RevenueCat supplies useful local metadata such as the management URL,
-  // while the authenticated server check supplies authoritative access.
+  // The Function response supplies access; the native SDK adds UI metadata
+  // such as the management URL and any details not returned by the Function.
   const mergedServerAccess: KeepFlipSubscriptionAccess = {
     ...localAccess,
     ...serverAccess,
@@ -1243,7 +1267,7 @@ function catalogFromPackages(
 }
 
 export type KeepFlipSubscriptionLoadOptions = {
-  /** Ask Subscription Police to reconcile the saved row with RevenueCat first. */
+  /** Verify current access directly with RevenueCat through Subscription Police. */
   reconcileServerStatus?: boolean;
 };
 
@@ -1259,11 +1283,25 @@ export async function loadKeepFlipSubscription(
   ).catch(() => ({
     access: null,
     available: false,
+    error: 'KeepFlip could not verify server subscription access.',
     profileTrial: null,
+    revenueCatVerified: false,
     record: null,
   }));
 
-  if (!(await ensureRevenueCatUser(userId))) {
+  let revenueCatConfigured = false;
+  try {
+    revenueCatConfigured = await ensureRevenueCatUser(userId);
+  } catch (error) {
+    if (__DEV__) {
+      console.warn(
+        '[KeepFlip][Subscription] Native RevenueCat initialization failed; continuing with the authenticated server verification result.',
+        error,
+      );
+    }
+  }
+
+  if (!revenueCatConfigured) {
     const serverStatus = await serverStatusPromise;
     const serverRecord = serverStatus.record;
     return {
@@ -1280,6 +1318,8 @@ export async function loadKeepFlipSubscription(
       configured: areKeepFlipSubscriptionsConfigured(),
       profileTrial: serverStatus.profileTrial,
       revenueCatAccess: EMPTY_ACCESS,
+      revenueCatVerified: serverStatus.revenueCatVerified,
+      serverVerificationError: serverStatus.error,
       serverRecord,
       serverRecordAvailable:
         serverStatus.available,
@@ -1287,12 +1327,30 @@ export async function loadKeepFlipSubscription(
   }
 
   const [customerInfo, offerings, serverStatus] = await Promise.all([
-    Purchases.getCustomerInfo(),
-    Purchases.getOfferings(),
+    Purchases.getCustomerInfo().catch((error) => {
+      if (__DEV__) {
+        console.warn(
+          '[KeepFlip][Subscription] RevenueCat customer info failed; using the authenticated server verification result.',
+          error,
+        );
+      }
+      return null;
+    }),
+    Purchases.getOfferings().catch((error) => {
+      if (__DEV__) {
+        console.warn(
+          '[KeepFlip][Subscription] RevenueCat offerings failed; subscription access can still be checked by the server.',
+          error,
+        );
+      }
+      return null;
+    }),
     serverStatusPromise,
   ]);
-  const offering = configuredOffering(offerings);
-  const localAccess = subscriptionAccessFromCustomerInfo(customerInfo);
+  const offering = offerings ? configuredOffering(offerings) : null;
+  const localAccess = customerInfo
+    ? subscriptionAccessFromCustomerInfo(customerInfo)
+    : EMPTY_ACCESS;
   const serverRecord = serverStatus.record;
   const access = accessWithServerTrialHistory(
     effectiveSubscriptionAccess(localAccess, serverStatus),
@@ -1308,6 +1366,8 @@ export async function loadKeepFlipSubscription(
     configured: true,
     profileTrial: serverStatus.profileTrial,
     revenueCatAccess: localAccess,
+    revenueCatVerified: serverStatus.revenueCatVerified,
+    serverVerificationError: serverStatus.error,
     serverRecord,
     serverRecordAvailable:
       serverStatus.available,
