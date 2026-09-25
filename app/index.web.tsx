@@ -37,7 +37,7 @@ export default function WebHomeScreen() {
         path="/"
         title="KeepFlip | Resale research and inventory app"
       />
-      <WebOnboardingScreen />
+      <WebOnboardingScreen publicLanding />
     </>
   );
 }

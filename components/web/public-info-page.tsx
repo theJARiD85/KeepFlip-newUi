@@ -30,7 +30,7 @@ export function PublicInfoPage({
   const titleStyle = StyleSheet.flatten([styles.title, { color: colors.cream }]);
 
   return (
-    <KeepFlipBackground colorScheme="dark">
+    <KeepFlipBackground colorScheme="dark" variant="public-site">
       <ScrollView
         contentContainerStyle={[
           styles.content,

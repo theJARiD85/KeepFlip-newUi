@@ -3,17 +3,24 @@ import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { FlipCompanion } from '@/components/flip';
+import { getKeepFlipAmbientBackgroundStyle } from '@/components/ui/keepflip-background';
 import { PublicSiteFooter } from '@/components/web/public-site-footer';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
-import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import {
+  getKeepFlipThemeColors,
+  keepFlipDarkBackground,
+  keepFlipTheme as theme,
+} from '@/constants/keepflip-theme';
 
 export function WebOnboardingScreen({
   onExistingLogin,
   onNewUser,
+  publicLanding = false,
 }: {
   onExistingLogin?: () => void;
   onNewUser?: () => void;
+  publicLanding?: boolean;
 }) {
   const router = useRouter();
   const { effectiveColorScheme } = useKeepFlipAppearance();
@@ -22,7 +29,26 @@ export function WebOnboardingScreen({
   const flipSize = width <= 390 ? 108 : 132;
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.backgroundDeep }]}>
+    <View
+      style={[
+        styles.root,
+        {
+          backgroundColor:
+            publicLanding && effectiveColorScheme === 'dark'
+              ? keepFlipDarkBackground.color
+              : colors.backgroundDeep,
+        },
+      ]}
+    >
+      {publicLanding ? (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.ambientBackground,
+            getKeepFlipAmbientBackgroundStyle(effectiveColorScheme),
+          ]}
+        />
+      ) : null}
       <View style={styles.content}>
         <View style={[styles.brandMark, { backgroundColor: colors.gold }]}>
           <Text style={[styles.brandMarkText, { color: colors.textOnAccent }]}>K</Text>
@@ -92,6 +118,13 @@ function ActionButton({
 
 const styles = StyleSheet.create({
   root: { alignItems: 'center', flex: 1, justifyContent: 'center', padding: 24 },
+  ambientBackground: {
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+  },
   content: { alignItems: 'center', maxWidth: 620, width: '100%' },
   brandMark: { alignItems: 'center', borderRadius: 16, height: 52, justifyContent: 'center', width: 52 },
   brandMarkText: { fontFamily: theme.fonts.bold, fontSize: 28 },

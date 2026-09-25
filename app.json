@@ -17,7 +17,7 @@
     },
     "android": {
       "package": "com.keepflip.app",
-      "versionCode": 31,
+      "versionCode": 32,
       "googleServicesFile": "./config/android/google-services.json",
       "permissions": [
         "android.permission.CAMERA",

@@ -1,25 +1,43 @@
 import type { PropsWithChildren } from 'react';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import {
   getKeepFlipThemeColors,
+  keepFlipDarkBackground,
+  keepFlipLightBackground,
   type KeepFlipColorScheme,
 } from '@/constants/keepflip-theme';
 
 type KeepFlipBackgroundProps = PropsWithChildren<{
   contentStyle?: StyleProp<ViewStyle>;
   colorScheme?: KeepFlipColorScheme;
+  variant?: 'standard' | 'public-site';
 }>;
+
+export function getKeepFlipAmbientBackgroundStyle(
+  colorScheme: KeepFlipColorScheme,
+): ViewStyle {
+  const image =
+    colorScheme === 'dark'
+      ? keepFlipDarkBackground.image
+      : keepFlipLightBackground.image;
+
+  return Platform.OS === 'web'
+    ? ({ backgroundImage: image } as ViewStyle & { backgroundImage: string })
+    : { experimental_backgroundImage: image };
+}
 
 export function KeepFlipBackground({
   children,
   contentStyle,
   colorScheme,
+  variant = 'standard',
 }: KeepFlipBackgroundProps) {
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const resolvedColorScheme = colorScheme ?? effectiveColorScheme;
   const colors = getKeepFlipThemeColors(resolvedColorScheme);
+  const usePublicSiteBackground = variant === 'public-site' && Platform.OS === 'web';
 
   return (
     <View style={[styles.root, { backgroundColor: colors.backgroundDeep }]}>
@@ -27,9 +45,11 @@ export function KeepFlipBackground({
         pointerEvents="none"
         style={[
           styles.ambientGradient,
-          resolvedColorScheme === 'dark'
-            ? styles.ambientGradientDark
-            : styles.ambientGradientLight,
+          usePublicSiteBackground
+            ? getKeepFlipAmbientBackgroundStyle(resolvedColorScheme)
+            : resolvedColorScheme === 'dark'
+              ? styles.ambientGradientDark
+              : styles.ambientGradientLight,
         ]}
       />
       <View style={[styles.content, contentStyle]}>{children}</View>
