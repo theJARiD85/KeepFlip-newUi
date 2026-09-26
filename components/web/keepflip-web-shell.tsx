@@ -13,6 +13,7 @@ import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
+import { WebSiteFooter } from '@/components/web/web-site-chrome';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
 
 type IconName = ComponentProps<typeof IconSymbol>['name'];
@@ -118,7 +119,7 @@ function Brand({ compact = false }: { compact?: boolean }) {
       {!compact ? (
         <View style={styles.brandCopy}>
           <Text style={styles.brandName}>KEEPFLIP</Text>
-          <Text style={styles.brandTagline}>SOURCE WITH SIGNAL</Text>
+          <Text style={styles.brandTagline}>SOURCING SMARTER. FLIPPING BETTER.</Text>
         </View>
       ) : null}
     </View>
@@ -268,6 +269,10 @@ export function KeepFlipWebShell({ children }: PropsWithChildren) {
               </Pressable>
             </View>
           </View>
+          <View style={styles.mobileSectionRow}>
+            <Text style={[styles.mobileSectionLabel, { color: colors.goldBright }]}>{displaySection(pathname)}</Text>
+            <Text style={[styles.mobileSectionMeta, { color: colors.textMuted }]}>PRIVATE WORKSPACE</Text>
+          </View>
           <ScrollView
             contentContainerStyle={styles.mobileNavigation}
             horizontal
@@ -297,6 +302,7 @@ export function KeepFlipWebShell({ children }: PropsWithChildren) {
           </View>
         </View>
         <View style={styles.routeContent}>{children}</View>
+        <WebSiteFooter />
       </View>
     </View>
   );
@@ -526,6 +532,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+  },
+  mobileSectionRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 7,
+  },
+  mobileSectionLabel: {
+    fontFamily: theme.fonts.bold,
+    fontSize: 8,
+    letterSpacing: 1.2,
+  },
+  mobileSectionMeta: {
+    fontFamily: theme.fonts.bold,
+    fontSize: 7,
+    letterSpacing: 0.8,
   },
   mobileAction: {
     minHeight: 30,
