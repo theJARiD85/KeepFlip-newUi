@@ -1,5 +1,6 @@
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
+import { WebSiteFooter, WebSiteHeader } from '@/components/web/web-site-chrome';
 import {
   getKeepFlipThemeColors,
 } from "@/constants/keepflip-theme";
@@ -63,6 +64,8 @@ export function LegalDocumentScreen({
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
       >
+        <WebSiteHeader label="LEGAL DOCUMENTS" />
+
         <View style={styles.headerColumn}>
           <View style={[styles.headerRow]}>
           <View style={styles.headerColumn2}>
@@ -132,6 +135,7 @@ export function LegalDocumentScreen({
             Contact KeepFlip at support@keep-flip.com.
           </Text>
         </View>
+        <WebSiteFooter />
       </ScrollView>
     </KeepFlipBackground>
   );
