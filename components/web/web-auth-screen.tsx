@@ -18,6 +18,7 @@ import {
 import { KeepFlipMfaChallenge } from '@/components/auth/keepflip-mfa-challenge';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
+import { WebSiteFooter, WebSiteHeader } from '@/components/web/web-site-chrome';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { getAppwriteCoreServices } from '@/lib/appwrite';
 import {
@@ -332,17 +333,10 @@ export function WebAuthScreen({
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.brandRow}>
-          <View style={[styles.brandMark, { backgroundColor: colors.gold }]}>
-            <Text style={[styles.brandMarkText, { color: colors.textOnAccent }]}>K</Text>
-          </View>
-          <Text style={[styles.brandName, { color: colors.text }]}>KEEPFLIP</Text>
-          <View style={[styles.webPill, { borderColor: colors.accentCyanBorder, backgroundColor: colors.iconSurfaceCyan }]}>
-            <View style={[styles.statusDot, { backgroundColor: colors.scannerCyan }]} />
-            <Text style={[styles.webPillText, { color: colors.scannerCyan }]}>WEB WORKSPACE</Text>
-          </View>
-        </View>
-
+        <WebSiteHeader
+          label={isCreateAccount ? 'CREATE RESELLER WORKSPACE' : 'SIGN IN TO KEEPFLIP'}
+          showActions
+        />
         <View style={[styles.card, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
           <Text style={[styles.eyebrow, { color: colors.goldBright }]}>RESELLER OPERATIONS, EVERYWHERE</Text>
           <Text style={[styles.title, { color: colors.text }]}>Make every flip easier to trust.</Text>
@@ -459,6 +453,7 @@ export function WebAuthScreen({
           <Text style={[styles.footerLabel, { color: colors.goldBright }]}>CAPTURE WHERE IT WORKS BEST</Text>
           <Text style={[styles.footerText, { color: colors.textMuted }]}>KeepFlip’s live scanner, camera permissions, and native vision pipeline stay in the Android app. Your decisions, records, and realized financial picture stay available here.</Text>
         </View>
+        <WebSiteFooter />
       </ScrollView>
     </KeyboardAvoidingView>
   );
