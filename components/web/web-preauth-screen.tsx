@@ -10,6 +10,7 @@ import {
 import { FlipCompanion, useFlipCompanion } from '@/components/flip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
+import { WebSiteFooter, WebSiteHeader } from '@/components/web/web-site-chrome';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import {
@@ -360,6 +361,8 @@ export function WebPreAuthScreen({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        <WebSiteHeader label="SET UP YOUR RESELLER PROFILE" showActions={false} />
+
         <View style={styles.content}>
           <View style={styles.topRow}>
             <Pressable
@@ -507,6 +510,7 @@ export function WebPreAuthScreen({
             ) : null}
           </View>
         </View>
+        <WebSiteFooter />
       </ScrollView>
     </View>
   );
