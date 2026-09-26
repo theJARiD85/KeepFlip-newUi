@@ -90,15 +90,8 @@ export const APPWRITE_CORE_REQUIRED_ENVIRONMENT_VARIABLES = [
   'EXPO_PUBLIC_APPWRITE_PROJECT_ID',
 ] as const;
 
-export const APPWRITE_ANALYSIS_REQUIRED_ENVIRONMENT_VARIABLES = [
-  'EXPO_PUBLIC_APPWRITE_SCAN_BUCKET_ID',
-  'EXPO_PUBLIC_APPWRITE_ANALYZE_FUNCTION_ID',
-] as const;
-
-export const APPWRITE_REQUIRED_ENVIRONMENT_VARIABLES = [
-  ...APPWRITE_CORE_REQUIRED_ENVIRONMENT_VARIABLES,
-  ...APPWRITE_ANALYSIS_REQUIRED_ENVIRONMENT_VARIABLES,
-] as const;
+export const APPWRITE_REQUIRED_ENVIRONMENT_VARIABLES =
+  APPWRITE_CORE_REQUIRED_ENVIRONMENT_VARIABLES;
 
 export type AppwriteCoreRequiredEnvironmentVariable =
   (typeof APPWRITE_CORE_REQUIRED_ENVIRONMENT_VARIABLES)[number];
@@ -113,8 +106,6 @@ export type AppwriteCoreConfiguration = {
 };
 
 export type AppwriteConfiguration = AppwriteCoreConfiguration & {
-  scanBucketId: string;
-  analyzeFunctionId: string;
   marketResearchFunctionId?: string;
   ebaySoldCompsFunctionId?: string;
 };
@@ -311,12 +302,6 @@ export function getAppwriteCoreConfigurationStatus(): AppwriteCoreConfigurationS
 
 export function getAppwriteConfigurationStatus(): AppwriteConfigurationStatus {
   const coreStatus = getAppwriteCoreConfigurationStatus();
-  const scanBucketId = cleanEnvironmentValue(
-    process.env.EXPO_PUBLIC_APPWRITE_SCAN_BUCKET_ID,
-  );
-  const analyzeFunctionId = cleanEnvironmentValue(
-    process.env.EXPO_PUBLIC_APPWRITE_ANALYZE_FUNCTION_ID,
-  );
   const configuredMarketResearchFunctionId =
     cleanEnvironmentValue(
       process.env.EXPO_PUBLIC_APPWRITE_MARKET_COMPS_FUNCTION_ID,
@@ -330,24 +315,18 @@ export function getAppwriteConfigurationStatus(): AppwriteConfigurationStatus {
   const marketResearchFunctionId =
     configuredMarketResearchFunctionId ?? ebaySoldCompsFunctionId;
 
-  const missingKeys: AppwriteRequiredEnvironmentVariable[] = [
-    ...coreStatus.missingKeys,
-  ];
-  if (!scanBucketId) missingKeys.push('EXPO_PUBLIC_APPWRITE_SCAN_BUCKET_ID');
-  if (!analyzeFunctionId) {
-    missingKeys.push('EXPO_PUBLIC_APPWRITE_ANALYZE_FUNCTION_ID');
-  }
-
-  if (!coreStatus.configured || !scanBucketId || !analyzeFunctionId) {
-    return { configured: false, configuration: null, missingKeys };
+  if (!coreStatus.configured) {
+    return {
+      configured: false,
+      configuration: null,
+      missingKeys: coreStatus.missingKeys,
+    };
   }
 
   return {
     configured: true,
     configuration: {
       ...coreStatus.configuration,
-      scanBucketId,
-      analyzeFunctionId,
       ...(marketResearchFunctionId ? { marketResearchFunctionId } : {}),
       ...(ebaySoldCompsFunctionId ? { ebaySoldCompsFunctionId } : {}),
     },

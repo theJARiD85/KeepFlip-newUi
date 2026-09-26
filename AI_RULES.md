@@ -1,4 +1,6 @@
 # AI Rules
+# Codex Agent Instructions - KeepFlip Expo
+This file defines code architecture constraints and best practices for this repository.
 
 ## Tech Stack
 
@@ -10,6 +12,8 @@
 - `react-native-vision-camera`, Vision Camera worklets, and Expo image APIs power scanning and photo workflows.
 - React Native Reanimated and Gesture Handler provide animations and gesture interactions; Expo Haptics handles tactile feedback.
 - Shopify React Native Skia, Three.js/Filament, and fast TFLite support advanced scanner graphics, 3D rendering, and on-device inference.
+- Break down monolithic components into atomic structural components to prevent rendering lags on web browsers.
+- Always use performance-optimized virtualized lists for handling large datasets.
 
 ## Library and Architecture Rules
 
@@ -26,3 +30,4 @@
 - **Imports and types:** Use the configured `@/` alias for project imports, keep TypeScript strict, avoid `any`, and define explicit boundary types for service inputs and outputs.
 - **Dependencies:** Reuse installed Expo and React Native packages before adding a new dependency. Any new native library must be compatible with Expo SDK 57 and the project’s development-client/EAS workflow.
 - **Quality:** Keep services focused, validate user input and external responses at boundaries, avoid logging sensitive user data, and run TypeScript and Expo lint checks for affected code before considering a change complete.
+- **Firebase:** The target production directory for Firebase Hosting must be pointed to the compiled static output folder (typically `dist/`). Every deployment pipeline must explicitly run the step `npx expo export:web` or `npx expo export` before triggering the Firebase deployment action. Secure deployment access using the `FirebaseExtended/action-hosting-deploy` block mapped to repository secrets.
