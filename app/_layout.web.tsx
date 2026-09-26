@@ -1,6 +1,5 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router/react-navigation';
 import { Stack, usePathname } from 'expo-router';
-import Head from 'expo-router/head';
 import { useFonts } from 'expo-font';
 import { useEffect } from 'react';
 import { View } from 'react-native';
@@ -26,7 +25,6 @@ function ProtectedRootStack() {
   const colors = getKeepFlipThemeColors(effectiveColorScheme);
   const { snapshot, state: subscriptionState } = useKeepFlipSubscription();
   const pathname = usePathname();
-  const canonicalPath = pathname === '/' ? '/' : pathname.replace(/\/+$/, '');
   const subscriptionsEnforced = areKeepFlipSubscriptionsEnforced();
   const isChecking = status === 'checking';
   const isSignedIn = status === 'signed-in';
@@ -46,17 +44,11 @@ function ProtectedRootStack() {
     !hasActiveSubscription;
   const subscriptionSetupOpen = pathname === '/subscription-setup';
   const canShowOnboarding =
+    !isChecking &&
     (!isSignedIn || subscriptionSetupOpen) &&
     (!isSignedIn || hasActiveSubscription);
 
   return (
-    <>
-      <Head>
-        <link
-          rel="canonical"
-          href={`https://keepflip-bea17.web.app${canonicalPath || '/'}`}
-        />
-      </Head>
     <Stack
       screenOptions={{
         animation: 'fade',
@@ -88,10 +80,7 @@ function ProtectedRootStack() {
       </Stack.Protected>
       <Stack.Screen name="terms" />
       <Stack.Screen name="privacy" />
-      <Stack.Screen name="about" />
-      <Stack.Screen name="contact" />
     </Stack>
-    </>
   );
 }
 

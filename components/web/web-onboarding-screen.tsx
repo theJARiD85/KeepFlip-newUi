@@ -1,26 +1,17 @@
-import { createElement } from 'react';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { FlipCompanion } from '@/components/flip';
-import { getKeepFlipAmbientBackgroundStyle } from '@/components/ui/keepflip-background';
-import { PublicSiteFooter } from '@/components/web/public-site-footer';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
-import {
-  getKeepFlipThemeColors,
-  keepFlipDarkBackground,
-  keepFlipTheme as theme,
-} from '@/constants/keepflip-theme';
+import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
 
 export function WebOnboardingScreen({
   onExistingLogin,
   onNewUser,
-  publicLanding = false,
 }: {
   onExistingLogin?: () => void;
   onNewUser?: () => void;
-  publicLanding?: boolean;
 }) {
   const router = useRouter();
   const { effectiveColorScheme } = useKeepFlipAppearance();
@@ -29,44 +20,23 @@ export function WebOnboardingScreen({
   const flipSize = width <= 390 ? 108 : 132;
 
   return (
-    <View
-      style={[
-        styles.root,
-        {
-          backgroundColor:
-            publicLanding && effectiveColorScheme === 'dark'
-              ? keepFlipDarkBackground.color
-              : colors.backgroundDeep,
-        },
-      ]}
-    >
-      {publicLanding ? (
-        <View
-          pointerEvents="none"
-          style={[
-            styles.ambientBackground,
-            getKeepFlipAmbientBackgroundStyle(effectiveColorScheme),
-          ]}
-        />
-      ) : null}
+    <View style={[styles.root, { backgroundColor: colors.backgroundDeep }]}>
       <View style={styles.content}>
         <View style={[styles.brandMark, { backgroundColor: colors.gold }]}>
           <Text style={[styles.brandMarkText, { color: colors.textOnAccent }]}>K</Text>
         </View>
         <Text style={[styles.eyebrow, { color: colors.goldBright }]}>KEEPFLIP / MEET FLIP</Text>
-        {createElement(
-          'h1',
-          { style: StyleSheet.flatten([styles.title, { color: colors.text }]) },
-          'KeepFlip is a resale planning app for independent sellers and small shops.',
-        )}
+        <Text style={[styles.title, { color: colors.text }]}>
+          Source smarter. Flip with a plan.
+        </Text>
         <Text style={[styles.body, { color: colors.textMuted }]}>
-          KeepFlip is a resale planning app for independent sellers and small shops. Research an item, check a buy against your rules, track inventory, and prepare marketplace listings.
+          Meet Flip, your resale sidekick. A few quick questions will set the buying rules that guide the evidence and advice you see everywhere in KeepFlip.
         </Text>
         <View style={[styles.flipCard, { backgroundColor: colors.iconSurfaceViolet, borderColor: colors.accentVioletBorder }]}>
           <FlipCompanion cropToSquare={false} size={flipSize} />
           <View style={styles.flipCopy}>
             <Text style={[styles.flipEyebrow, { color: colors.scannerCyan }]}>FLIP IS READY</Text>
-            <Text style={[styles.flipText, { color: colors.textMuted }]}>Set rules for deals, pace, profit, and risk that fit your resale business.</Text>
+            <Text style={[styles.flipText, { color: colors.textMuted }]}>He will learn the kind of deals, pace, profit, and risk that fit your business.</Text>
           </View>
         </View>
         <View style={styles.actions}>
@@ -82,7 +52,6 @@ export function WebOnboardingScreen({
             onPress={onExistingLogin ?? (() => router.push('/sign-in'))}
           />
         </View>
-        <PublicSiteFooter />
       </View>
     </View>
   );
@@ -118,13 +87,6 @@ function ActionButton({
 
 const styles = StyleSheet.create({
   root: { alignItems: 'center', flex: 1, justifyContent: 'center', padding: 24 },
-  ambientBackground: {
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    top: 0,
-  },
   content: { alignItems: 'center', maxWidth: 620, width: '100%' },
   brandMark: { alignItems: 'center', borderRadius: 16, height: 52, justifyContent: 'center', width: 52 },
   brandMarkText: { fontFamily: theme.fonts.bold, fontSize: 28 },

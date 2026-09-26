@@ -1,6 +1,4 @@
-import { createElement } from 'react';
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
-import { PublicSiteFooter } from '@/components/web/public-site-footer';
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import {
   getKeepFlipThemeColors,
@@ -16,7 +14,6 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from "expo-router";
 import {
   Pressable,
-  Platform,
   ScrollView,
   StyleSheet,
   View,
@@ -70,30 +67,9 @@ export function LegalDocumentScreen({
           <View style={[styles.headerRow]}>
           <View style={styles.headerColumn2}>
             <Text style={[styles.eyebrow, { fontSize: responsiveFont(10), fontFamily: theme.fonts.display }]}>KEEPFLIP / LEGAL</Text>
-            {Platform.OS === 'web' ? (
-              createElement(
-                'h1',
-                {
-                  style: {
-                    color: colors.cream,
-                    fontFamily: theme.fonts.bold,
-                    fontSize: responsiveFont(26),
-                    fontWeight: '900',
-                    letterSpacing: -0.65,
-                    lineHeight: responsiveFont(31),
-                    marginBottom: 2,
-                  },
-                },
-                title,
-              )
-            ) : (
-              <Text
-                selectable
-                style={[styles.title, { fontSize: responsiveFont(26), fontFamily: theme.fonts.bold, marginBottom: 2 }]}
-              >
-                {title}
-              </Text>
-            )}
+            <Text selectable style={[styles.title, { fontSize: responsiveFont(26), fontFamily: theme.fonts.bold, marginBottom: 2 }]}>
+              {title}
+            </Text>
             <Text style={[styles.effectiveDate, { fontSize: responsiveFont(10), fontFamily: theme.fonts.body }]}>
               Effective {effectiveDate}
             </Text>
@@ -156,7 +132,6 @@ export function LegalDocumentScreen({
             Contact KeepFlip at support@keep-flip.com.
           </Text>
         </View>
-        <PublicSiteFooter />
       </ScrollView>
     </KeepFlipBackground>
   );

@@ -1,26 +1,5 @@
 export type KeepFlipColorScheme = 'light' | 'dark';
 
-export const keepFlipDarkBackground = {
-  color: '#160f0c',
-  image: `
-    radial-gradient(ellipse 92% 72% at 26% 14%, rgba(61, 79, 58, 0.24) 0%, rgba(53, 69, 52, 0.12) 34%, transparent 68%),
-    radial-gradient(ellipse 90% 76% at 38% 78%, rgba(100, 37, 47, 0.26) 0%, rgba(77, 28, 38, 0.12) 38%, transparent 70%),
-    radial-gradient(ellipse 78% 68% at 88% 82%, rgba(29, 95, 100, 0.17) 0%, rgba(27, 70, 76, 0.07) 36%, transparent 70%),
-    radial-gradient(ellipse 76% 62% at 84% 10%, rgba(125, 83, 48, 0.14) 0%, transparent 68%),
-    linear-gradient(145deg, #21160f 0%, #1a1110 48%, #160d0d 100%)
-  `,
-} as const;
-
-export const keepFlipLightBackground = {
-  image: `
-    radial-gradient(ellipse 92% 72% at 26% 14%, rgba(61, 79, 58, 0.10) 0%, rgba(53, 69, 52, 0.05) 34%, transparent 68%),
-    radial-gradient(ellipse 90% 76% at 38% 78%, rgba(100, 37, 47, 0.10) 0%, rgba(77, 28, 38, 0.05) 38%, transparent 70%),
-    radial-gradient(ellipse 78% 68% at 88% 82%, rgba(29, 95, 100, 0.08) 0%, rgba(27, 70, 76, 0.03) 36%, transparent 70%),
-    radial-gradient(ellipse 76% 62% at 84% 10%, rgba(125, 83, 48, 0.08) 0%, transparent 68%),
-    linear-gradient(145deg, #e5d8c9 0%, #d8c9bb 48%, #dfd0c5 100%)
-  `,
-} as const;
-
 const darkColors = {
   background: '#1e1612',
   backgroundRaised: 'rgba(11, 10, 14, 0.75)',
