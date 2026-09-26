@@ -14,6 +14,7 @@ import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
+import { WebSiteFooter, WebSiteHeader } from '@/components/web/web-site-chrome';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import {
   KEEPFLIP_PLAN_DEFINITIONS,
@@ -192,6 +193,8 @@ export function KeepFlipSubscriptionScreen({
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}>
+        <WebSiteHeader label="SUBSCRIPTION" />
+
         <View style={styles.header}>
           <View style={styles.headerIcon}>
             <IconSymbol color={colors.goldBright} name="creditcard.fill" size={24} />
@@ -300,6 +303,7 @@ export function KeepFlipSubscriptionScreen({
         <Text style={[styles.disclaimer, { color: colors.textMuted }]}>
           RevenueCat processes web subscriptions. KeepFlip’s server remains the authority for your plan and app access.
         </Text>
+        <WebSiteFooter />
       </ScrollView>
     </KeepFlipBackground>
   );
