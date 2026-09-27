@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ComponentProps } from 'react';
 import {
   ActivityIndicator,
@@ -21,6 +21,10 @@ import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { WebSiteFooter, WebSiteHeader } from '@/components/web/web-site-chrome';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { getAppwriteCoreServices } from '@/lib/appwrite';
+import {
+  KEEPFLIP_ANALYTICS_EVENTS,
+  trackKeepFlipEvent,
+} from '@/services/keepflip-analytics';
 import {
   keepFlipWebBillingCustomerHasActiveEntitlement,
   linkKeepFlipWebBillingAccount,
@@ -78,13 +82,40 @@ export function WebAuthScreen({
   const signupPaywallHostRef = useRef<HTMLDivElement>(null);
   const openingPaywallRef = useRef(false);
   const openingSignupPaywallRef = useRef(false);
+  const signupAccountPendingRef = useRef(false);
+  const signupCompletionTrackedRef = useRef(false);
+  const loginCompletionTrackedRef = useRef(false);
 
   const isCreateAccount = initialMode === 'create-account';
   const submitLabel = isCreateAccount
     ? preAccountSubscriptionActive
       ? 'Create my workspace'
       : 'Start subscription & continue'
-    : 'Sign in to KeepFlip';
+      : 'Sign in to KeepFlip';
+
+  const trackAuthenticatedOutcome = useCallback(() => {
+    if (isCreateAccount) {
+      if (
+        !signupAccountPendingRef.current ||
+        signupCompletionTrackedRef.current
+      ) {
+        return;
+      }
+      signupCompletionTrackedRef.current = true;
+      signupAccountPendingRef.current = false;
+      trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.signupCompleted, {
+        method: 'email',
+        flow: 'web_subscription_first',
+      });
+      return;
+    }
+
+    if (loginCompletionTrackedRef.current) return;
+    loginCompletionTrackedRef.current = true;
+    trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.loginCompleted, {
+      method: 'email',
+    });
+  }, [isCreateAccount]);
 
   useEffect(() => {
     const htmlTarget = paywallHostRef.current;
@@ -110,6 +141,7 @@ export function WebAuthScreen({
             await signIn(email, password);
             if (!cancelled) {
               setPaywallAccountUserId(null);
+              trackAuthenticatedOutcome();
               await finishAuthenticatedFlow();
             }
             return;
@@ -149,7 +181,7 @@ export function WebAuthScreen({
       cancelled = true;
       openingPaywallRef.current = false;
     };
-  }, [email, password, paywallAccountUserId, signIn]);
+  }, [email, finishAuthenticatedFlow, password, paywallAccountUserId, signIn, trackAuthenticatedOutcome]);
 
   useEffect(() => {
     const htmlTarget = signupPaywallHostRef.current;
@@ -212,6 +244,7 @@ export function WebAuthScreen({
             email,
             password,
           );
+          signupAccountPendingRef.current = true;
           accountUserId = createdUser.$id;
         } catch (accountError) {
           /*
@@ -259,8 +292,10 @@ export function WebAuthScreen({
         }
       } else {
         await signIn(email, password);
+        trackAuthenticatedOutcome();
       }
 
+      if (isCreateAccount) trackAuthenticatedOutcome();
       await finishAuthenticatedFlow();
     } catch (error) {
       const mfaIsPending =
@@ -321,6 +356,7 @@ export function WebAuthScreen({
       const currentUser = await account.get();
       await linkKeepFlipWebBillingAccount(currentUser.$id);
     }
+    trackAuthenticatedOutcome();
     await finishAuthenticatedFlow();
   }
 
