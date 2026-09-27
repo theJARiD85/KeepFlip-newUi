@@ -53,8 +53,9 @@ export function WebOnboardingScreen({
     <View style={[styles.root, { backgroundColor: colors.backgroundDeep }]}>
       <ScrollView
         ref={landingScrollRef}
-        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: pageGutter }]}
+        contentContainerStyle={[styles.scrollContent, { backgroundColor: colors.backgroundDeep, paddingHorizontal: pageGutter }]}
         showsVerticalScrollIndicator={false}
+        style={{ backgroundColor: colors.backgroundDeep }}
       >
         <View style={[styles.page, isPhone && styles.pagePhone]}>
           <WebSiteHeader
@@ -570,6 +571,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   scrollContent: {
     alignItems: 'center',
+    flexGrow: 1,
     paddingTop: 24,
     paddingBottom: 24,
   },
@@ -730,7 +732,7 @@ const styles = StyleSheet.create({
   compareItem: { alignItems: 'center', flexDirection: 'row', gap: 8 },
   compareItemText: { flex: 1, fontFamily: theme.fonts.body, fontSize: 11, lineHeight: 16 },
   cta: { alignItems: 'center', borderRadius: 21, borderWidth: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 20, justifyContent: 'space-between', padding: 23 },
-  ctaPhone: { alignItems: 'flex-start', padding: 16 },
+  ctaPhone: { alignItems: 'stretch', flexDirection: 'column', gap: 14, padding: 16 },
   ctaCopy: { flex: 1, gap: 8, minWidth: 0 },
   ctaTitle: { fontFamily: theme.fonts.bold, fontSize: 29, lineHeight: 35 },
   ctaTitlePhone: { fontSize: 25, lineHeight: 31 },

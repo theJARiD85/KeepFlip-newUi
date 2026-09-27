@@ -106,7 +106,7 @@ export function WebSiteFooter() {
   };
 
   return (
-    <View style={[styles.footer, isPhone && styles.footerPhone, { borderTopColor: colors.divider }]}>
+    <View style={[styles.footer, isPhone && styles.footerPhone, { backgroundColor: colors.backgroundDeep, borderTopColor: colors.divider }]}>
       <View style={[styles.footerMain, isPhone && styles.footerMainPhone]}>
         <View style={[styles.footerBrand, isPhone && styles.footerBrandPhone]}>
           <Text style={[styles.footerName, { color: colors.text }]}>KEEPFLIP</Text>
@@ -271,7 +271,8 @@ const styles = StyleSheet.create({
   headerActionsPhone: {
     alignSelf: 'stretch',
     gap: 6,
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
+    width: '100%',
   },
   headerLink: {
     minHeight: 38,
@@ -298,6 +299,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignSelf: 'center',
+    borderTopWidth: 1,
     gap: 17,
     maxWidth: 1120,
     minWidth: 0,
@@ -329,6 +331,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   footerBrandPhone: {
+    flex: 0,
     width: '100%',
   },
   footerName: {
@@ -354,7 +357,7 @@ const styles = StyleSheet.create({
   footerLinksPhone: {
     alignItems: 'flex-start',
     flex: 0,
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
     width: '100%',
   },
   footerLink: {

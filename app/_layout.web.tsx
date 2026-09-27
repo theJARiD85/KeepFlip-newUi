@@ -1,6 +1,7 @@
 import { analytics } from '@heycatch/sdk';
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router/react-navigation';
 import { Stack, usePathname } from 'expo-router';
+import Head from 'expo-router/head';
 import { useFonts } from 'expo-font';
 import { useEffect } from 'react';
 import { View } from 'react-native';
@@ -144,17 +145,24 @@ function WebRootContent() {
   };
 
   return (
-    <ThemeProvider value={navigationTheme}>
-      <KeepFlipAuthProvider>
-        <FlipCompanionProvider>
-          <KeepFlipSubscriptionProvider>
-            <KeepFlipFeedbackNudgeProvider>
-              <ProtectedRootStack />
-            </KeepFlipFeedbackNudgeProvider>
-          </KeepFlipSubscriptionProvider>
-        </FlipCompanionProvider>
-      </KeepFlipAuthProvider>
-    </ThemeProvider>
+    <>
+      <Head>
+        <meta name="theme-color" content={colors.backgroundDeep} />
+        <meta name="color-scheme" content={effectiveColorScheme} />
+        <style>{`html, body, #root { background-color: ${colors.backgroundDeep}; }`}</style>
+      </Head>
+      <ThemeProvider value={navigationTheme}>
+        <KeepFlipAuthProvider>
+          <FlipCompanionProvider>
+            <KeepFlipSubscriptionProvider>
+              <KeepFlipFeedbackNudgeProvider>
+                <ProtectedRootStack />
+              </KeepFlipFeedbackNudgeProvider>
+            </KeepFlipSubscriptionProvider>
+          </FlipCompanionProvider>
+        </KeepFlipAuthProvider>
+      </ThemeProvider>
+    </>
   );
 }
 
