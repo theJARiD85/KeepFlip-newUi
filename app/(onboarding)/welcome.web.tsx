@@ -12,10 +12,10 @@ export default function WebWelcomeScreen() {
     <WebOnboardingScreen
       onExistingLogin={() => router.push('/sign-in' as Href)}
       onNewUser={() => {
-        trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.signUpStarted, {
+        trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.onboardingStarted, {
           entry_point: 'web_launch_choice',
         });
-        trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.onboardingStarted, {
+        trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.signUpStarted, {
           entry_point: 'web_launch_choice',
         });
         clearDraft();
