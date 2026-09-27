@@ -493,7 +493,11 @@ async function getVerifiedNonAnonymousUser(): Promise<Models.User | null> {
 }
 
 async function clearCurrentAppwriteSession({
-  resetIdentity = true,
+  // Authentication cleanup is also used immediately before sign-in and
+  // sign-up. Keep the anonymous analytics identity through those transitions
+  // so onboarding events can be linked to the account that is created next.
+  // Explicit sign-out resets identity below, after the logout outcome is sent.
+  resetIdentity = false,
 }: { resetIdentity?: boolean } = {}) {
   const { account } = getAppwriteCoreServices();
 
@@ -567,7 +571,10 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
       const user = await withSessionVerificationTimeout(
         getVerifiedNonAnonymousUser(),
       );
-      if (!user) resetKeepFlipAnalyticsIdentity();
+      // Do not reset a pre-auth anonymous identity just because there is no
+      // current Appwrite session. A visitor may already be partway through
+      // onboarding while this verification finishes; reset only on explicit
+      // sign-out so the eventual setIdentity() can alias that visitor.
       commit(
         user
           ? {

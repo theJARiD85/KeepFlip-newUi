@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
+import { KeepFlipHomeStructuredData } from '@/components/web/keepflip-home-structured-data';
 import { WebOnboardingScreen } from '@/components/web/web-onboarding-screen';
 import { areKeepFlipSubscriptionsEnforced } from '@/services/keepflip-subscription-service';
 
@@ -32,5 +33,10 @@ export default function WebHomeScreen() {
     router.replace((hasActiveSubscription ? '/(app)' : '/subscription-required') as Href);
   }, [hasActiveSubscription, isCheckingSubscription, router, status]);
 
-  return <WebOnboardingScreen />;
+  return (
+    <>
+      <KeepFlipHomeStructuredData />
+      <WebOnboardingScreen />
+    </>
+  );
 }

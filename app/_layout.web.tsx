@@ -1,5 +1,7 @@
+import { analytics } from '@heycatch/sdk';
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router/react-navigation';
 import { Stack, usePathname } from 'expo-router';
+import Head from 'expo-router/head';
 import { useFonts } from 'expo-font';
 import { useEffect } from 'react';
 import { View } from 'react-native';
@@ -17,7 +19,20 @@ import {
 import { KeepFlipFeedbackNudgeProvider } from '@/components/feedback/keepflip-feedback-nudge';
 import { getKeepFlipThemeColors } from '@/constants/keepflip-theme';
 import { pingAppwriteWebClientOnce } from '@/lib/appwrite-web-client';
+import {
+  initializeKeepFlipFirebaseAnalytics,
+  trackKeepFlipFirebaseWebScreen,
+} from '@/services/keepflip-firebase-analytics';
 import { areKeepFlipSubscriptionsEnforced } from '@/services/keepflip-subscription-service';
+
+analytics.init({
+  projectKey: 'hck_pk_P-RAsy4RamxF7X6OTR5r5M0gSJ3pGQ9e',
+  install: {
+    framework: 'react-native',
+    frameworkVersion: '57',
+    agent: 'codex',
+  },
+});
 
 function ProtectedRootStack() {
   const { status, user } = useKeepFlipAuth();
@@ -44,9 +59,18 @@ function ProtectedRootStack() {
     !hasActiveSubscription;
   const subscriptionSetupOpen = pathname === '/subscription-setup';
   const canShowOnboarding =
-    !isChecking &&
     (!isSignedIn || subscriptionSetupOpen) &&
     (!isSignedIn || hasActiveSubscription);
+
+  useEffect(() => {
+    void initializeKeepFlipFirebaseAnalytics();
+  }, []);
+
+  useEffect(() => {
+    if (pathname) {
+      void trackKeepFlipFirebaseWebScreen(pathname);
+    }
+  }, [pathname]);
 
   return (
     <Stack
@@ -121,17 +145,24 @@ function WebRootContent() {
   };
 
   return (
-    <ThemeProvider value={navigationTheme}>
-      <KeepFlipAuthProvider>
-        <FlipCompanionProvider>
-          <KeepFlipSubscriptionProvider>
-            <KeepFlipFeedbackNudgeProvider>
-              <ProtectedRootStack />
-            </KeepFlipFeedbackNudgeProvider>
-          </KeepFlipSubscriptionProvider>
-        </FlipCompanionProvider>
-      </KeepFlipAuthProvider>
-    </ThemeProvider>
+    <>
+      <Head>
+        <meta name="theme-color" content={colors.backgroundDeep} />
+        <meta name="color-scheme" content={effectiveColorScheme} />
+        <style>{`html, body, #root { background-color: ${colors.backgroundDeep}; }`}</style>
+      </Head>
+      <ThemeProvider value={navigationTheme}>
+        <KeepFlipAuthProvider>
+          <FlipCompanionProvider>
+            <KeepFlipSubscriptionProvider>
+              <KeepFlipFeedbackNudgeProvider>
+                <ProtectedRootStack />
+              </KeepFlipFeedbackNudgeProvider>
+            </KeepFlipSubscriptionProvider>
+          </FlipCompanionProvider>
+        </KeepFlipAuthProvider>
+      </ThemeProvider>
+    </>
   );
 }
 
