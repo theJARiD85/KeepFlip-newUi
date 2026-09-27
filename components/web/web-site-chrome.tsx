@@ -26,13 +26,14 @@ export function WebSiteHeader({
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const colors = getKeepFlipThemeColors(effectiveColorScheme);
   const isCompact = width < 720;
+  const isPhone = width < 480;
 
   const goHome = () => router.push('/welcome' as Href);
   const goToSignIn = onSignIn ?? (() => router.push('/sign-in' as Href));
   const goToGetStarted = onGetStarted ?? (() => router.push('/welcome' as Href));
 
   return (
-    <View style={[styles.header, { borderBottomColor: colors.divider }]}>
+    <View style={[styles.header, isPhone && styles.headerPhone, { borderBottomColor: colors.divider }]}>
       <Pressable
         accessibilityLabel="KeepFlip home"
         accessibilityRole="button"
@@ -53,10 +54,10 @@ export function WebSiteHeader({
         </View>
       </Pressable>
 
-      <View style={[styles.headerRight, isCompact && styles.headerRightCompact]}>
-        <Text style={[styles.headerLabel, { color: colors.textMuted }]}>{label}</Text>
+      <View style={[styles.headerRight, isCompact && styles.headerRightCompact, isPhone && styles.headerRightPhone]}>
+        <Text style={[styles.headerLabel, isPhone && styles.headerLabelPhone, { color: colors.textMuted }]}>{label}</Text>
         {showActions ? (
-          <View style={styles.headerActions}>
+          <View style={[styles.headerActions, isPhone && styles.headerActionsPhone]}>
             {onHowItWorks ? (
               <Pressable
                 accessibilityRole="button"
@@ -93,8 +94,10 @@ export function WebSiteHeader({
 
 export function WebSiteFooter() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const colors = getKeepFlipThemeColors(effectiveColorScheme);
+  const isPhone = width < 480;
 
   const openSupport = (subject: string) => {
     void Linking.openURL(
@@ -103,16 +106,16 @@ export function WebSiteFooter() {
   };
 
   return (
-    <View style={[styles.footer, { borderTopColor: colors.divider }]}>
-      <View style={styles.footerMain}>
-        <View style={styles.footerBrand}>
+    <View style={[styles.footer, isPhone && styles.footerPhone, { borderTopColor: colors.divider }]}>
+      <View style={[styles.footerMain, isPhone && styles.footerMainPhone]}>
+        <View style={[styles.footerBrand, isPhone && styles.footerBrandPhone]}>
           <Text style={[styles.footerName, { color: colors.text }]}>KEEPFLIP</Text>
           <Text style={[styles.footerDescription, { color: colors.textMuted }]}>
             The reseller command center for sourcing, inventory, listings, and real profit.
           </Text>
         </View>
 
-        <View style={styles.footerLinks}>
+        <View style={[styles.footerLinks, isPhone && styles.footerLinksPhone]}>
           <FooterLink
             colors={colors}
             label="Help"
@@ -147,7 +150,7 @@ export function WebSiteFooter() {
         </View>
       </View>
 
-      <View style={[styles.footerMeta, { borderTopColor: colors.divider }]}>
+      <View style={[styles.footerMeta, isPhone && styles.footerMetaPhone, { borderTopColor: colors.divider }]}>
         <Text style={[styles.footerMetaText, { color: colors.textMuted }]}>
           © 2026 KeepFlip. Built for resellers.
         </Text>
@@ -199,8 +202,15 @@ const styles = StyleSheet.create({
     gap: 18,
     justifyContent: 'space-between',
     maxWidth: 1120,
+    minWidth: 0,
     paddingBottom: 16,
     width: '100%',
+  },
+  headerPhone: {
+    alignItems: 'stretch',
+    flexDirection: 'column',
+    gap: 12,
+    paddingBottom: 14,
   },
   brand: {
     alignItems: 'center',
@@ -213,6 +223,7 @@ const styles = StyleSheet.create({
     width: 38,
   },
   brandCopy: {
+    minWidth: 0,
     flexShrink: 1,
     gap: 2,
   },
@@ -230,15 +241,25 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     flexShrink: 1,
     gap: 9,
+    minWidth: 0,
   },
   headerRightCompact: {
     gap: 7,
+  },
+  headerRightPhone: {
+    alignItems: 'flex-start',
+    alignSelf: 'stretch',
+    gap: 8,
+    width: '100%',
   },
   headerLabel: {
     fontFamily: theme.fonts.bold,
     fontSize: 8,
     letterSpacing: 1.3,
     textAlign: 'right',
+  },
+  headerLabelPhone: {
+    textAlign: 'left',
   },
   headerActions: {
     alignItems: 'center',
@@ -247,8 +268,13 @@ const styles = StyleSheet.create({
     gap: 7,
     justifyContent: 'flex-end',
   },
+  headerActionsPhone: {
+    alignSelf: 'stretch',
+    gap: 6,
+    justifyContent: 'flex-start',
+  },
   headerLink: {
-    minHeight: 30,
+    minHeight: 38,
     justifyContent: 'center',
     paddingHorizontal: 6,
   },
@@ -262,7 +288,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radii.pill,
     borderWidth: 1,
     justifyContent: 'center',
-    minHeight: 31,
+    minHeight: 38,
     paddingHorizontal: 12,
   },
   headerCtaText: {
@@ -274,9 +300,15 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     gap: 17,
     maxWidth: 1120,
+    minWidth: 0,
     paddingHorizontal: 24,
     paddingVertical: 23,
     width: '100%',
+  },
+  footerPhone: {
+    gap: 20,
+    paddingHorizontal: 0,
+    paddingVertical: 20,
   },
   footerMain: {
     alignItems: 'flex-start',
@@ -284,11 +316,20 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 18,
     justifyContent: 'space-between',
+    minWidth: 0,
+  },
+  footerMainPhone: {
+    flexDirection: 'column',
+    gap: 16,
+    width: '100%',
   },
   footerBrand: {
     flex: 1,
     gap: 5,
-    minWidth: 210,
+    minWidth: 0,
+  },
+  footerBrandPhone: {
+    width: '100%',
   },
   footerName: {
     fontFamily: theme.fonts.bold,
@@ -308,7 +349,13 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 6,
     justifyContent: 'flex-end',
-    minWidth: 260,
+    minWidth: 0,
+  },
+  footerLinksPhone: {
+    alignItems: 'flex-start',
+    flex: 0,
+    justifyContent: 'flex-start',
+    width: '100%',
   },
   footerLink: {
     alignItems: 'center',
@@ -330,6 +377,11 @@ const styles = StyleSheet.create({
     gap: 10,
     justifyContent: 'space-between',
     paddingTop: 15,
+  },
+  footerMetaPhone: {
+    alignItems: 'flex-start',
+    flexDirection: 'column',
+    gap: 7,
   },
   footerMetaText: {
     fontFamily: theme.fonts.bold,

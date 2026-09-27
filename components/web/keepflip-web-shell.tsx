@@ -174,6 +174,7 @@ function NavButton({
 export function KeepFlipWebShell({ children }: PropsWithChildren) {
   const { width } = useWindowDimensions();
   const isWide = width >= 980;
+  const isPhone = width < 480;
   const pathname = usePathname();
   const router = useRouter();
   const { user, signOut } = useKeepFlipAuth();
@@ -248,7 +249,7 @@ export function KeepFlipWebShell({ children }: PropsWithChildren) {
           </View>
         </View>
       ) : (
-        <View style={[styles.mobileChrome, { backgroundColor: colors.background, borderBottomColor: colors.divider }]}>
+        <View style={[styles.mobileChrome, isPhone && styles.mobileChromePhone, { backgroundColor: colors.background, borderBottomColor: colors.divider }]}>
           <View style={styles.mobileTopRow}>
             <Brand compact />
             <View style={styles.mobileTopActions}>
@@ -258,7 +259,7 @@ export function KeepFlipWebShell({ children }: PropsWithChildren) {
                 onPress={() => navigate('/scanner')}
                 style={({ pressed }) => [styles.mobileAction, { borderColor: colors.accentCyanBorder, backgroundColor: colors.iconSurfaceCyan }, pressed && styles.navButtonPressed]}>
                 <IconSymbol color={colors.scannerCyan} name="viewfinder" size={17} />
-                <Text style={[styles.mobileActionLabel, { color: colors.scannerCyan }]}>SCAN ON ANDROID</Text>
+                <Text style={[styles.mobileActionLabel, isPhone && styles.mobileActionLabelPhone, { color: colors.scannerCyan }]}>{isPhone ? 'ANDROID SCAN' : 'SCAN ON ANDROID'}</Text>
               </Pressable>
               <Pressable
                 accessibilityLabel="Open account settings"
@@ -269,12 +270,12 @@ export function KeepFlipWebShell({ children }: PropsWithChildren) {
               </Pressable>
             </View>
           </View>
-          <View style={styles.mobileSectionRow}>
-            <Text style={[styles.mobileSectionLabel, { color: colors.goldBright }]}>{displaySection(pathname)}</Text>
-            <Text style={[styles.mobileSectionMeta, { color: colors.textMuted }]}>PRIVATE WORKSPACE</Text>
+          <View style={[styles.mobileSectionRow, isPhone && styles.mobileSectionRowPhone]}>
+            <Text numberOfLines={1} style={[styles.mobileSectionLabel, { color: colors.goldBright }]}>{displaySection(pathname)}</Text>
+            <Text numberOfLines={1} style={[styles.mobileSectionMeta, { color: colors.textMuted }]}>PRIVATE WORKSPACE</Text>
           </View>
           <ScrollView
-            contentContainerStyle={styles.mobileNavigation}
+            contentContainerStyle={[styles.mobileNavigation, isPhone && styles.mobileNavigationPhone]}
             horizontal
             showsHorizontalScrollIndicator={false}>
             {primaryNavigation.concat(utilityNavigation.slice(0, 2)).map((item) => (
@@ -290,7 +291,7 @@ export function KeepFlipWebShell({ children }: PropsWithChildren) {
         </View>
       )}
 
-      <View style={[styles.main, !isWide && styles.mainMobile]}>
+      <View style={[styles.main, !isWide && styles.mainMobile, isPhone && styles.mainMobilePhone]}>
         <View style={[styles.topbar, !isWide && styles.topbarMobile, { borderBottomColor: colors.divider }]}>
           <View>
             <Text style={[styles.topbarEyebrow, { color: colors.textMuted }]}>{displaySection(pathname)}</Text>
@@ -470,6 +471,9 @@ const styles = StyleSheet.create({
   mainMobile: {
     paddingTop: 104,
   },
+  mainMobilePhone: {
+    paddingTop: 110,
+  },
   topbar: {
     minHeight: 78,
     flexDirection: 'row',
@@ -522,6 +526,10 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 8,
   },
+  mobileChromePhone: {
+    paddingHorizontal: 12,
+    paddingTop: 10,
+  },
   mobileTopRow: {
     minHeight: 38,
     flexDirection: 'row',
@@ -532,22 +540,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    minWidth: 0,
   },
   mobileSectionRow: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
+    minWidth: 0,
     paddingTop: 7,
   },
+  mobileSectionRowPhone: {
+    gap: 10,
+  },
   mobileSectionLabel: {
+    flexShrink: 1,
     fontFamily: theme.fonts.bold,
     fontSize: 8,
     letterSpacing: 1.2,
   },
   mobileSectionMeta: {
+    flexShrink: 1,
     fontFamily: theme.fonts.bold,
     fontSize: 7,
     letterSpacing: 0.8,
+    textAlign: 'right',
   },
   mobileAction: {
     minHeight: 30,
@@ -563,8 +579,17 @@ const styles = StyleSheet.create({
     fontSize: 7,
     letterSpacing: 0.8,
   },
+  mobileActionLabelPhone: {
+    fontSize: 6.5,
+    letterSpacing: 0.6,
+  },
   mobileNavigation: {
+    flexDirection: 'row',
     gap: 5,
     paddingTop: 8,
+  },
+  mobileNavigationPhone: {
+    gap: 4,
+    paddingTop: 7,
   },
 });
