@@ -22,7 +22,7 @@ export function KeepFlipBackground({
   const colors = getKeepFlipThemeColors(resolvedColorScheme);
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.backgroundDeep }]}>
+    <View style={[styles.root, StyleSheet.absoluteFill, { backgroundColor: colors.backgroundDeep }]}>
       <View
         pointerEvents="none"
         style={[

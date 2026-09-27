@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { type Href, useRouter } from 'expo-router';
 import { Linking, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 
+import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
@@ -91,10 +92,17 @@ export function WebSiteHeader({
   );
 }
 
-export function WebSiteFooter() {
+export function WebSiteFooter({ suppressAuthLinks = false }: { suppressAuthLinks?: boolean }) {
   const router = useRouter();
+  const { isBusy, pendingMfaSignIn, status } = useKeepFlipAuth();
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const colors = getKeepFlipThemeColors(effectiveColorScheme);
+  const shouldHideAuthLinks =
+    suppressAuthLinks ||
+    status === 'signed-in' ||
+    status === 'checking' ||
+    isBusy ||
+    pendingMfaSignIn !== null;
 
   const openSupport = (subject: string) => {
     void Linking.openURL(
@@ -133,17 +141,21 @@ export function WebSiteFooter() {
             label="Privacy"
             onPress={() => router.push('/privacy' as Href)}
           />
-          <FooterLink
-            colors={colors}
-            label="Sign in"
-            onPress={() => router.push('/sign-in' as Href)}
-          />
-          <FooterLink
-            colors={colors}
-            label="Get started"
-            onPress={() => router.push('/welcome' as Href)}
-            accent
-          />
+          {!shouldHideAuthLinks ? (
+            <>
+              <FooterLink
+                colors={colors}
+                label="Sign in"
+                onPress={() => router.push('/sign-in' as Href)}
+              />
+              <FooterLink
+                colors={colors}
+                label="Get started"
+                onPress={() => router.push('/welcome' as Href)}
+                accent
+              />
+            </>
+          ) : null}
         </View>
       </View>
 
@@ -209,8 +221,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   brandMark: {
-    height: 38,
-    width: 38,
+    height: 75,
+    width: 65,
   },
   brandCopy: {
     flexShrink: 1,
@@ -218,12 +230,12 @@ const styles = StyleSheet.create({
   },
   brandName: {
     fontFamily: theme.fonts.bold,
-    fontSize: 16,
-    letterSpacing: 2.5,
+    fontSize: 35,
+    letterSpacing: 1.8,
   },
   brandTagline: {
     fontFamily: theme.fonts.bold,
-    fontSize: 7,
+    fontSize: 10,
     letterSpacing: 0.75,
   },
   headerRight: {
@@ -236,7 +248,7 @@ const styles = StyleSheet.create({
   },
   headerLabel: {
     fontFamily: theme.fonts.bold,
-    fontSize: 8,
+    fontSize: 7,
     letterSpacing: 1.3,
     textAlign: 'right',
   },
@@ -254,7 +266,7 @@ const styles = StyleSheet.create({
   },
   headerLinkText: {
     fontFamily: theme.fonts.bold,
-    fontSize: 8,
+    fontSize: 12,
     letterSpacing: 0.9,
   },
   headerCta: {
@@ -267,7 +279,7 @@ const styles = StyleSheet.create({
   },
   headerCtaText: {
     fontFamily: theme.fonts.bold,
-    fontSize: 8,
+    fontSize: 11,
     letterSpacing: 0.85,
   },
   footer: {
@@ -321,7 +333,7 @@ const styles = StyleSheet.create({
   },
   footerLinkText: {
     fontFamily: theme.fonts.semibold,
-    fontSize: 10,
+    fontSize: 12,
   },
   footerMeta: {
     alignItems: 'center',

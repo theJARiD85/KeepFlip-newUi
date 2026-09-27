@@ -9,7 +9,8 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-
+import { LinearGradient } from 'expo-linear-gradient';
+import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { FlipCompanion } from '@/components/flip';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -43,257 +44,264 @@ export function WebOnboardingScreen({
     landingScrollRef.current?.scrollTo({ animated: true, y: 760 });
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.backgroundDeep }]}>
-      <ScrollView
-        ref={landingScrollRef}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.page}>
-          <WebSiteHeader
-            label="RESELLER COMMAND CENTER"
-            onGetStarted={getStarted}
-            onHowItWorks={scrollToWorkflow}
-            onSignIn={goToSignIn}
-          />
+    <KeepFlipBackground>
+      <LinearGradient
+        // Background Linear Gradient
+        colors={['#1e161298', '#34200534', '#1e161271', '#3420052e']}
+        style={styles.background}
+      />
+      <View style={styles.root}>
+        <ScrollView
+          ref={landingScrollRef}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.page}>
+            <WebSiteHeader
+              label="RESELLER COMMAND CENTER"
+              onGetStarted={getStarted}
+              onHowItWorks={scrollToWorkflow}
+              onSignIn={goToSignIn}
+            />
 
-          <View style={[styles.hero, isWide && styles.heroWide]}>
-            <View style={styles.heroCopy}>
-              <View style={styles.eyebrowRow}>
-                <Text style={[styles.eyebrow, { color: colors.goldBright }]}>
-                  KEEPFLIP / RESELLER OPERATIONS
+            <View style={[styles.hero, isWide && styles.heroWide]}>
+              <View style={styles.heroCopy}>
+                <View style={styles.eyebrowRow}>
+                  <Text style={[styles.eyebrow, { color: colors.goldBright }]}>
+                    KEEPFLIP / RESELLER OPERATIONS
+                  </Text>
+                  <View style={[styles.livePill, { backgroundColor: colors.iconSurfaceCyan, borderColor: colors.accentCyanBorder }]}>
+                    <View style={[styles.liveDot, { backgroundColor: colors.scannerCyan }]} />
+                    <Text style={[styles.livePillText, { color: colors.scannerCyan }]}>BUILT FOR RESELLERS</Text>
+                  </View>
+                </View>
+                <Text style={[styles.heroTitle, { color: colors.text }]}>
+                  KeepFlip is the reseller command center for sourcing smarter, managing inventory, and knowing your real profit.
                 </Text>
-                <View style={[styles.livePill, { backgroundColor: colors.iconSurfaceCyan, borderColor: colors.accentCyanBorder }]}>
-                  <View style={[styles.liveDot, { backgroundColor: colors.scannerCyan }]} />
-                  <Text style={[styles.livePillText, { color: colors.scannerCyan }]}>BUILT FOR RESELLERS</Text>
+                <Text style={[styles.heroBody, { color: colors.textMuted }]}>
+                  Keep every flip moving from scan to the final sale. KeepFlip brings item research, buying decisions, inventory, listings, expenses, and realized profit into one clear workflow.
+                </Text>
+                <View style={styles.heroActions}>
+                  <ActionButton
+                    colors={colors}
+                    label="Start my reseller workflow"
+                    onPress={getStarted}
+                    primary
+                  />
+                  <ActionButton
+                    colors={colors}
+                    label="See how the workflow works"
+                    onPress={scrollToWorkflow}
+                  />
+                </View>
+                <View style={styles.heroProof}>
+                  <ProofItem colors={colors} label="SOURCE" detail="Scan with the Android app" />
+                  <ProofItem colors={colors} label="DECIDE" detail="Know the numbers before you buy" />
+                  <ProofItem colors={colors} label="RUN" detail="Track what you kept after the sale" />
                 </View>
               </View>
-              <Text style={[styles.heroTitle, { color: colors.text }]}>
-                KeepFlip is the reseller command center for sourcing smarter, managing inventory, and knowing your real profit.
-              </Text>
-              <Text style={[styles.heroBody, { color: colors.textMuted }]}>
-                Keep every flip moving from the first Android scan to the final sale. KeepFlip brings item research, buying decisions, inventory, listings, expenses, and realized profit into one clear workflow.
-              </Text>
-              <View style={styles.heroActions}>
-                <ActionButton
-                  colors={colors}
-                  label="Start my reseller workflow"
-                  onPress={getStarted}
-                  primary
-                />
-                <ActionButton
-                  colors={colors}
-                  label="See how the workflow works"
-                  onPress={scrollToWorkflow}
-                />
-              </View>
-              <View style={styles.heroProof}>
-                <ProofItem colors={colors} label="SOURCE" detail="Scan with the Android app" />
-                <ProofItem colors={colors} label="DECIDE" detail="Know the numbers before you buy" />
-                <ProofItem colors={colors} label="RUN" detail="Track what you kept after the sale" />
-              </View>
-            </View>
 
-            <View style={[styles.heroVisual, !isWide && styles.heroVisualStacked, { backgroundColor: colors.card, borderColor: colors.divider }]}>
-              <View style={styles.heroVisualHeader}>
-                <View>
-                  <Text style={[styles.visualEyebrow, { color: colors.goldBright }]}>A FLIP, WITHOUT THE TAB CHAOS</Text>
-                  <Text style={[styles.visualTitle, { color: colors.text }]}>From find to finished.</Text>
+              <View style={[styles.heroVisual, !isWide && styles.heroVisualStacked, { backgroundColor: colors.card, borderColor: colors.divider }]}>
+                <View style={styles.heroVisualHeader}>
+                  <View>
+                    <Text style={[styles.visualEyebrow, { color: colors.goldBright }]}>A FLIP, WITHOUT THE TAB CHAOS</Text>
+                    <Text style={[styles.visualTitle, { color: colors.text }]}>From find to finished.</Text>
+                  </View>
+                  <View style={[styles.visualStatus, { backgroundColor: colors.successSurface, borderColor: colors.success }]}>
+                    <View style={[styles.liveDot, { backgroundColor: colors.success }]} />
+                    <Text style={[styles.visualStatusText, { color: colors.success }]}>ANDROID CAPTURE</Text>
+                  </View>
                 </View>
-                <View style={[styles.visualStatus, { backgroundColor: colors.successSurface, borderColor: colors.success }]}>
-                  <View style={[styles.liveDot, { backgroundColor: colors.success }]} />
-                  <Text style={[styles.visualStatusText, { color: colors.success }]}>ANDROID CAPTURE</Text>
+                <View style={[styles.heroScreenshotFrame, { backgroundColor: colors.surfaceInset, borderColor: colors.divider }]}>
+                  <Image
+                    accessibilityLabel="Placeholder KeepFlip Android scanner image"
+                    contentFit="cover"
+                    source={FLOW_SCANNER_IMAGE}
+                    style={styles.heroScreenshot}
+                  />
+                  <View style={[styles.screenshotOverlay, { backgroundColor: colors.surfaceOverlay, borderColor: colors.accentCyanBorder }]}>
+                    <Text style={[styles.overlayEyebrow, { color: colors.scannerCyan }]}>KEEPFLIP SIGNAL</Text>
+                    <Text style={[styles.overlayTitle, { color: colors.text }]}>Research this find</Text>
+                    <Text style={[styles.overlayBody, { color: colors.textMuted }]}>Evidence, value, costs, and next move in one place.</Text>
+                  </View>
                 </View>
-              </View>
-              <View style={[styles.heroScreenshotFrame, { backgroundColor: colors.surfaceInset, borderColor: colors.divider }]}>
-                <Image
-                  accessibilityLabel="Placeholder KeepFlip Android scanner image"
-                  contentFit="cover"
-                  source={FLOW_SCANNER_IMAGE}
-                  style={styles.heroScreenshot}
-                />
-                <View style={[styles.screenshotOverlay, { backgroundColor: colors.surfaceOverlay, borderColor: colors.accentCyanBorder }]}>
-                  <Text style={[styles.overlayEyebrow, { color: colors.scannerCyan }]}>KEEPFLIP SIGNAL</Text>
-                  <Text style={[styles.overlayTitle, { color: colors.text }]}>Research this find</Text>
-                  <Text style={[styles.overlayBody, { color: colors.textMuted }]}>Evidence, value, costs, and next move in one place.</Text>
+                <View style={styles.heroMetricRow}>
+                  <MiniMetric colors={colors} label="EST. RESALE" value="$128" />
+                  <MiniMetric colors={colors} label="NET AFTER COSTS" value="$74" accent={colors.scannerCyan} />
+                  <MiniMetric colors={colors} label="BUY SIGNAL" value="STRONG" accent={colors.success} />
                 </View>
-              </View>
-              <View style={styles.heroMetricRow}>
-                <MiniMetric colors={colors} label="EST. RESALE" value="$128" />
-                <MiniMetric colors={colors} label="NET AFTER COSTS" value="$74" accent={colors.scannerCyan} />
-                <MiniMetric colors={colors} label="BUY SIGNAL" value="STRONG" accent={colors.success} />
-              </View>
-              <View style={[styles.flipStrip, { backgroundColor: colors.iconSurfaceViolet, borderColor: colors.accentVioletBorder }]}>
-                <FlipCompanion cropToSquare={false} size={isWide ? 78 : 64} />
-                <View style={styles.flipStripCopy}>
-                  <Text style={[styles.flipStripEyebrow, { color: colors.scannerViolet }]}>FLIP KEEPS THE NEXT MOVE CLEAR</Text>
-                  <Text style={[styles.flipStripText, { color: colors.textMuted }]}>Less guesswork. Less cash stuck in the wrong inventory.</Text>
+                <View style={[styles.flipStrip, { backgroundColor: colors.iconSurfaceViolet, borderColor: colors.accentVioletBorder }]}>
+                  <FlipCompanion cropToSquare={false} size={isWide ? 78 : 64} />
+                  <View style={styles.flipStripCopy}>
+                    <Text style={[styles.flipStripEyebrow, { color: colors.scannerViolet }]}>FLIP KEEPS THE NEXT MOVE CLEAR</Text>
+                    <Text style={[styles.flipStripText, { color: colors.textMuted }]}>Less guesswork. Less cash stuck in the wrong inventory.</Text>
+                  </View>
                 </View>
               </View>
             </View>
-          </View>
 
-          <View style={[styles.promiseBand, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
-            <View style={styles.promiseCopy}>
-              <Text style={[styles.promiseEyebrow, { color: colors.goldBright }]}>THE WHOLE FLIP STORY</Text>
-              <Text style={[styles.promiseTitle, { color: colors.text }]}>One place to make better seller decisions.</Text>
+            <View style={[styles.promiseBand, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
+              <View style={styles.promiseCopy}>
+                <Text style={[styles.promiseEyebrow, { color: colors.goldBright }]}>THE WHOLE FLIP STORY</Text>
+                <Text style={[styles.promiseTitle, { color: colors.text }]}>One place to make better seller decisions.</Text>
+              </View>
+              <View style={styles.promiseStats}>
+                <PromiseStat colors={colors} value="01" label="SOURCE" />
+                <PromiseStat colors={colors} value="02" label="DECIDE" />
+                <PromiseStat colors={colors} value="03" label="RUN" />
+                <PromiseStat colors={colors} value="04" label="LEARN" />
+              </View>
             </View>
-            <View style={styles.promiseStats}>
-              <PromiseStat colors={colors} value="01" label="SOURCE" />
-              <PromiseStat colors={colors} value="02" label="DECIDE" />
-              <PromiseStat colors={colors} value="03" label="RUN" />
-              <PromiseStat colors={colors} value="04" label="LEARN" />
-            </View>
-          </View>
 
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionEyebrow, { color: colors.goldBright }]}>HOW KEEPFLIP WORKS FOR RESELLERS</Text>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>A clearer path through every flip.</Text>
-            <Text style={[styles.sectionBody, { color: colors.textMuted }]}>
-              KeepFlip turns a scattered reseller routine into a repeatable workflow: capture the opportunity in the Android app, make the call, then keep the business record honest.
-            </Text>
-          </View>
-
-          <View style={[styles.flowGrid, isWide && styles.flowGridWide]}>
-            <FlowStep
-              accent={colors.scannerCyan}
-              body="Use the Android app to scan or photograph a possible buy and get item identity, condition signals, valuation context, and market research without opening five different tools."
-              colors={colors}
-              label="SOURCE WITH SIGNAL"
-              number="01"
-              title="Find something worth investigating."
-              visual="source"
-            />
-            <FlowStep
-              accent={colors.goldBright}
-              body="Use acquisition cost, fees, shipping, discounts, and your reseller buying rules to see the likely net profit before your cash is tied up."
-              colors={colors}
-              label="DECIDE WITH CONTEXT"
-              number="02"
-              title="Know whether the deal makes sense."
-              visual="decide"
-            />
-            <FlowStep
-              accent={colors.scannerViolet}
-              body="Save the item, track its location and listing status, connect the sale, and see what you actually kept after the flip was complete."
-              colors={colors}
-              label="RUN THE BUSINESS"
-              number="03"
-              title="Keep the item moving until it is done."
-              visual="run"
-            />
-          </View>
-
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionEyebrow, { color: colors.goldBright }]}>THE KEEPFLIP TOOLKIT</Text>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>The parts of the reseller business that usually get scattered.</Text>
-            <Text style={[styles.sectionBody, { color: colors.textMuted }]}>
-              KeepFlip connects the decisions that determine whether a flip is actually worth your time and cash.
-            </Text>
-          </View>
-
-          <View style={[styles.featureGrid, isWide && styles.featureGridWide]}>
-            <FeatureCard
-              accent={colors.scannerCyan}
-              colors={colors}
-              icon="barcode.viewfinder"
-              title="AI item scan and valuation"
-              body="Use the Android app's scanner to identify what you are looking at, assess the evidence, and get a realistic resale range with confidence levels instead of a made-up single number."
-            />
-            <FeatureCard
-              accent={colors.goldBright}
-              colors={colors}
-              icon="checkmark.circle.fill"
-              title="Personalized buy decisions"
-              body="KeepFlip considers the reseller rules you gave Flip—your pace, categories, labor tolerance, and risk preference—when it helps you decide."
-            />
-            <FeatureCard
-              accent={colors.scannerViolet}
-              colors={colors}
-              icon="dollarsign.circle.fill"
-              title="True net-profit pricing"
-              body="Price around acquisition cost, marketplace fees, shipping, promotions, discounts, refunds, and ROI—not just the listing price."
-            />
-            <FeatureCard
-              accent={colors.scannerCyan}
-              colors={colors}
-              icon="shippingbox.fill"
-              title="Inventory and lifecycle control"
-              body="Keep SKU, storage location, quantity, channel, external listing ID, price, and last-sync details with the item so nothing gets lost or oversold."
-            />
-            <FeatureCard
-              accent={colors.goldBright}
-              colors={colors}
-              icon="checkmark.shield.fill"
-              title="Listing readiness"
-              body="See exactly what is missing before publishing: identity, title, category, item specifics, disclosures, photos, measurements, price, shipping, and returns."
-            />
-            <FeatureCard
-              accent={colors.scannerViolet}
-              colors={colors}
-              icon="chart.bar.fill"
-              title="Books and realized profit"
-              body="Connect sales, expenses, fees, and inventory costs so you can tell money earned from money still tied up in stock."
-            />
-            <FeatureCard
-              accent={colors.scannerCyan}
-              colors={colors}
-              icon="creditcard.fill"
-              title="eBay and seller connections"
-              body="Bring marketplace context and seller workflows closer to the rest of the flip instead of making every tool live in its own silo."
-            />
-            <FeatureCard
-              accent={colors.goldBright}
-              colors={colors}
-              icon="bubble.left.and.bubble.right.fill"
-              title="Flip assistant and market research"
-              body="Ask Flip what to do next, research a market, plan a buy, or make a seller decision while keeping your own operating rules in view."
-            />
-          </View>
-
-          <View style={[styles.compareSection, isWide && styles.compareSectionWide]}>
-            <View style={styles.compareCopy}>
-              <Text style={[styles.sectionEyebrow, { color: colors.scannerCyan }]}>LESS FRICTION, MORE CONTROL</Text>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Run your resale business with the work in the right order.</Text>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionEyebrow, { color: colors.goldBright }]}>HOW KEEPFLIP WORKS FOR RESELLERS</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>A clearer path through every flip.</Text>
               <Text style={[styles.sectionBody, { color: colors.textMuted }]}>
-                The goal is not more dashboards. It is fewer decisions made from memory, guesswork, or a pile of open tabs.
+                KeepFlip turns a scattered reseller routine into a repeatable workflow: capture the opportunity in the Android app, make the call, then keep the business record honest.
               </Text>
             </View>
-            <View style={[styles.compareGrid, isWide && styles.compareGridWide]}>
-              <CompareCard
+
+            <View style={[styles.flowGrid, isWide && styles.flowGridWide]}>
+              <FlowStep
+                accent={colors.scannerCyan}
+                body="Use the Android app to scan or photograph a possible buy and get item identity, condition signals, valuation context, and market research without opening five different tools."
                 colors={colors}
-                items={['Search across separate apps', 'Guess at fees and real margin', 'Lose track of where items live', 'Find out what worked too late']}
-                label="WITHOUT A CONNECTED WORKFLOW"
+                label="SOURCE WITH SIGNAL"
+                number="01"
+                title="Find something worth investigating."
+                visual="source"
               />
-              <CompareCard
+              <FlowStep
+                accent={colors.goldBright}
+                body="Use acquisition cost, fees, shipping, discounts, and your reseller buying rules to see the likely net profit before your cash is tied up."
                 colors={colors}
-                highlighted
-                items={['Scan and research the find', 'See expected net profit before buying', 'Track the item through its lifecycle', 'Learn from the flips you actually finished']}
-                label="WITH KEEPFLIP"
+                label="DECIDE WITH CONTEXT"
+                number="02"
+                title="Know whether the deal makes sense."
+                visual="decide"
+              />
+              <FlowStep
+                accent={colors.scannerViolet}
+                body="Save the item, track its location and listing status, connect the sale, and see what you actually kept after the flip was complete."
+                colors={colors}
+                label="RUN THE BUSINESS"
+                number="03"
+                title="Keep the item moving until it is done."
+                visual="run"
               />
             </View>
-          </View>
 
-          <View style={[styles.cta, { backgroundColor: colors.iconSurfaceGold, borderColor: colors.accentGoldBorder }]}>
-            <View style={styles.ctaCopy}>
-              <Text style={[styles.sectionEyebrow, { color: colors.goldBright }]}>BUILT FOR THE NEXT RESELLER DECISION</Text>
-              <Text style={[styles.ctaTitle, { color: colors.text }]}>Make the next flip easier to trust.</Text>
-              <Text style={[styles.ctaBody, { color: colors.textMuted }]}>
-                Set up your reseller rules, meet Flip, and start building a business record that gets more useful with every item.
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionEyebrow, { color: colors.goldBright }]}>THE KEEPFLIP TOOLKIT</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>The parts of the reseller business that usually get scattered.</Text>
+              <Text style={[styles.sectionBody, { color: colors.textMuted }]}>
+                KeepFlip connects the decisions that determine whether a flip is actually worth your time and cash.
               </Text>
             </View>
-            <ActionButton
-              colors={colors}
-              label="Meet Flip and get started"
-              onPress={getStarted}
-              primary
-            />
-          </View>
 
-          <WebSiteFooter />
-        </View>
-      </ScrollView>
-    </View>
+            <View style={[styles.featureGrid, isWide && styles.featureGridWide]}>
+              <FeatureCard
+                accent={colors.scannerCyan}
+                colors={colors}
+                icon="barcode.viewfinder"
+                title="AI item scan and valuation"
+                body="Use the Android app's scanner to identify what you are looking at, assess the evidence, and get a realistic resale range with confidence levels instead of a made-up single number."
+              />
+              <FeatureCard
+                accent={colors.goldBright}
+                colors={colors}
+                icon="checkmark.circle.fill"
+                title="Personalized buy decisions"
+                body="KeepFlip considers the reseller rules you gave Flip—your pace, categories, labor tolerance, and risk preference—when it helps you decide."
+              />
+              <FeatureCard
+                accent={colors.scannerViolet}
+                colors={colors}
+                icon="dollarsign.circle.fill"
+                title="True net-profit pricing"
+                body="Price around acquisition cost, marketplace fees, shipping, promotions, discounts, refunds, and ROI—not just the listing price."
+              />
+              <FeatureCard
+                accent={colors.scannerCyan}
+                colors={colors}
+                icon="shippingbox.fill"
+                title="Inventory and lifecycle control"
+                body="Keep SKU, storage location, quantity, channel, external listing ID, price, and last-sync details with the item so nothing gets lost or oversold."
+              />
+              <FeatureCard
+                accent={colors.goldBright}
+                colors={colors}
+                icon="checkmark.shield.fill"
+                title="Listing readiness"
+                body="See exactly what is missing before publishing: identity, title, category, item specifics, disclosures, photos, measurements, price, shipping, and returns."
+              />
+              <FeatureCard
+                accent={colors.scannerViolet}
+                colors={colors}
+                icon="chart.bar.fill"
+                title="Books and realized profit"
+                body="Connect sales, expenses, fees, and inventory costs so you can tell money earned from money still tied up in stock."
+              />
+              <FeatureCard
+                accent={colors.scannerCyan}
+                colors={colors}
+                icon="creditcard.fill"
+                title="eBay and seller connections"
+                body="Bring marketplace context and seller workflows closer to the rest of the flip instead of making every tool live in its own silo."
+              />
+              <FeatureCard
+                accent={colors.goldBright}
+                colors={colors}
+                icon="bubble.left.and.bubble.right.fill"
+                title="Flip assistant and market research"
+                body="Ask Flip what to do next, research a market, plan a buy, or make a seller decision while keeping your own operating rules in view."
+              />
+            </View>
+
+            <View style={[styles.compareSection, isWide && styles.compareSectionWide]}>
+              <View style={styles.compareCopy}>
+                <Text style={[styles.sectionEyebrow, { color: colors.scannerCyan }]}>LESS FRICTION, MORE CONTROL</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Run your resale business with the work in the right order.</Text>
+                <Text style={[styles.sectionBody, { color: colors.textMuted }]}>
+                  The goal is not more dashboards. It is fewer decisions made from memory, guesswork, or a pile of open tabs.
+                </Text>
+              </View>
+              <View style={[styles.compareGrid, isWide && styles.compareGridWide]}>
+                <CompareCard
+                  colors={colors}
+                  items={['Search across separate apps', 'Guess at fees and real margin', 'Lose track of where items live', 'Find out what worked too late']}
+                  label="WITHOUT A CONNECTED WORKFLOW"
+                />
+                <CompareCard
+                  colors={colors}
+                  highlighted
+                  items={['Scan and research the find', 'See expected net profit before buying', 'Track the item through its lifecycle', 'Learn from the flips you actually finished']}
+                  label="W I T H   K E E P F L I P"
+                />
+              </View>
+            </View>
+
+            <View style={[styles.cta, { backgroundColor: colors.iconSurfaceGold, borderColor: colors.accentGoldBorder }]}>
+              <View style={styles.ctaCopy}>
+                <Text style={[styles.sectionEyebrow, { color: colors.goldBright }]}>BUILT FOR THE NEXT RESELLER DECISION</Text>
+                <Text style={[styles.ctaTitle, { color: colors.text }]}>Make the next flip easier to trust.</Text>
+                <Text style={[styles.ctaBody, { color: colors.textMuted }]}>
+                  Set up your reseller rules, meet Flip, and start building a business record that gets more useful with every item.
+                </Text>
+              </View>
+              <ActionButton
+                colors={colors}
+                label="Meet Flip and get started"
+                onPress={getStarted}
+                primary
+              />
+            </View>
+
+            <WebSiteFooter />
+          </View>
+        </ScrollView>
+      </View>
+    </KeepFlipBackground>
   );
 }
 
@@ -533,6 +541,13 @@ function ActionButton({
 }
 
 const styles = StyleSheet.create({
+  background: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+  },
   root: { flex: 1 },
   scrollContent: {
     alignItems: 'center',
@@ -559,7 +574,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 10,
   },
-  eyebrow: { fontFamily: theme.fonts.bold, fontSize: 10, letterSpacing: 1.5 },
+  eyebrow: { fontFamily: theme.fonts.display, fontSize: 8, letterSpacing: 2 },
   livePill: {
     alignItems: 'center',
     borderRadius: 999,
@@ -570,15 +585,15 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   liveDot: { borderRadius: 4, height: 7, width: 7 },
-  livePillText: { fontFamily: theme.fonts.bold, fontSize: 7, letterSpacing: 0.9 },
+  livePillText: { fontFamily: theme.fonts.semibold, fontSize: 8, letterSpacing: 0.9 },
   heroTitle: {
     fontFamily: theme.fonts.bold,
-    fontSize: 45,
+    fontSize: 38,
     letterSpacing: -1.1,
     lineHeight: 53,
     maxWidth: 720,
   },
-  heroBody: { fontFamily: theme.fonts.body, fontSize: 16, lineHeight: 25, maxWidth: 650 },
+  heroBody: { fontFamily: theme.fonts.body, fontSize: 14, lineHeight: 25, maxWidth: 650 },
   heroActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 6 },
   action: {
     alignItems: 'center',
@@ -668,7 +683,8 @@ const styles = StyleSheet.create({
   compareGrid: { gap: 12 },
   compareGridWide: { flex: 1.15, flexDirection: 'row' },
   compareCard: { borderRadius: 18, borderWidth: 1, flex: 1, gap: 14, minWidth: 0, padding: 17 },
-  compareLabel: { fontFamily: theme.fonts.bold, fontSize: 8, letterSpacing: 1.1 },
+  compareLabel: { fontFamily: theme.fonts.bold, fontSize: 10, letterSpacing: 0.2 },
+  compareLabel: { fontFamily: theme.fonts.bold, fontSize: 10, letterSpacing: 0.2 },
   compareList: { gap: 11 },
   compareItem: { alignItems: 'center', flexDirection: 'row', gap: 8 },
   compareItemText: { flex: 1, fontFamily: theme.fonts.body, fontSize: 11, lineHeight: 16 },

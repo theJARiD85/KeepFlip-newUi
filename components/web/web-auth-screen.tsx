@@ -453,7 +453,9 @@ export function WebAuthScreen({
           <Text style={[styles.footerLabel, { color: colors.goldBright }]}>CAPTURE WHERE IT WORKS BEST</Text>
           <Text style={[styles.footerText, { color: colors.textMuted }]}>KeepFlip’s live scanner, camera permissions, and native vision pipeline stay in the Android app. Your decisions, records, and realized financial picture stay available here.</Text>
         </View>
-        <WebSiteFooter />
+        <WebSiteFooter
+          suppressAuthLinks={isSubmitting || openSignupPaywall || Boolean(paywallAccountUserId)}
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   );

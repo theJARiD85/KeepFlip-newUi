@@ -31,7 +31,7 @@ const primaryNavigation: NavItem[] = [
     eyebrow: 'OVERVIEW',
     href: '/',
     icon: 'gauge.with.dots.needle.67percent',
-    label: 'Command center',
+    label: 'Command Center',
   },
   {
     eyebrow: 'WORKSPACE',
@@ -43,19 +43,19 @@ const primaryNavigation: NavItem[] = [
     eyebrow: 'WORKSPACE',
     href: '/books',
     icon: 'chart.bar.fill',
-    label: 'Books & reports',
+    label: 'Books & Reports',
   },
   {
     eyebrow: 'INTELLIGENCE',
     href: '/market-research',
     icon: 'magnifyingglass',
-    label: 'Market research',
+    label: 'Market Research',
   },
   {
     eyebrow: 'INTELLIGENCE',
     href: '/seller-assistant',
     icon: 'bubble.left.and.bubble.right.fill',
-    label: 'Flip assistant',
+    label: 'Flip Assistant',
   },
 ];
 
@@ -334,12 +334,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   brandMark: {
-    width: 38,
-    height: 38,
+    width: 55,
+    height: 55,
   },
   brandMarkCompact: {
-    width: 32,
-    height: 32,
+    width: 50,
+    height: 50,
   },
   brandCopy: {
     gap: 2,
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
   brandTagline: {
     color: theme.colors.goldBright,
     fontFamily: theme.fonts.medium,
-    fontSize: 7,
+    fontSize: 10,
     letterSpacing: 1.5,
   },
   sidebarNavigation: {
@@ -362,8 +362,8 @@ const styles = StyleSheet.create({
   },
   navGroupLabel: {
     fontFamily: theme.fonts.bold,
-    fontSize: 8,
-    letterSpacing: 1.5,
+    fontSize: 12,
+    letterSpacing: 3,
     paddingHorizontal: 12,
     paddingBottom: 7,
     paddingTop: 6,
@@ -375,7 +375,6 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'transparent',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
@@ -385,8 +384,8 @@ const styles = StyleSheet.create({
     opacity: 0.72,
   },
   navIcon: {
-    width: 32,
-    height: 32,
+    width: 35,
+    height: 35,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',

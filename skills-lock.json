@@ -1,6 +1,18 @@
 {
   "version": 1,
   "skills": {
+    "appwrite-cli": {
+      "source": "appwrite/skills",
+      "sourceType": "github",
+      "skillPath": "skills/appwrite-cli/SKILL.md",
+      "computedHash": "1c6ba8029433edffcb9b5e1d8660a0a60eeed7493bb514e76d9f4805b0138f97"
+    },
+    "appwrite-typescript": {
+      "source": "appwrite/skills",
+      "sourceType": "github",
+      "skillPath": "skills/appwrite-typescript/SKILL.md",
+      "computedHash": "3efb5d412ca6602cf13058c2671f06d2710a0280c2310b2d32638769e7db3f38"
+    },
     "extension-to-functions-codebase": {
       "source": "firebase/agent-skills",
       "sourceType": "github",
@@ -72,6 +84,12 @@
       "sourceType": "github",
       "skillPath": "skills/firestore-rules-creation/SKILL.md",
       "computedHash": "a7f0d27cc1b7bb52c5978db8bfa2c28d07b440c99e89277577fcc31fc7995971"
+    },
+    "github-actions": {
+      "source": "callstackincubator/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/github-actions/SKILL.md",
+      "computedHash": "0407e0b1d5aa45f4d4acd4f0dc6742453b3ec964097cb3a5f0383e3bb74615ed"
     },
     "xcode-project-setup": {
       "source": "firebase/agent-skills",

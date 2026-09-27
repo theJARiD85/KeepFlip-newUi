@@ -1,0 +1,29 @@
+[debug] [2026-09-26T13:25:35.673Z] ----------------------------------------------------------------------
+[debug] [2026-09-26T13:25:35.681Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\theja\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js hosting:disable
+[debug] [2026-09-26T13:25:35.681Z] CLI Version:   15.30.2
+[debug] [2026-09-26T13:25:35.681Z] Platform:      win32
+[debug] [2026-09-26T13:25:35.681Z] Node Version:  v22.18.0
+[debug] [2026-09-26T13:25:35.681Z] Detected Agent: unknown
+[debug] [2026-09-26T13:25:35.681Z] Time:          Sat Sep 26 2026 06:25:35 GMT-0700 (Pacific Daylight Time)
+[debug] [2026-09-26T13:25:35.682Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-09-26T13:25:36.075Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-09-26T13:25:36.076Z] > authorizing via signed-in user (thejarid85@gmail.com)
+[debug] [2026-09-26T13:25:36.076Z] [iam] checking project keepflip-bea17 for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2026-09-26T13:25:36.101Z] Checked if tokens are valid: false, expires at: 1790425314147
+[debug] [2026-09-26T13:25:36.101Z] Checked if tokens are valid: false, expires at: 1790425314147
+[debug] [2026-09-26T13:25:36.102Z] > refreshing access token with scopes: []
+[debug] [2026-09-26T13:25:36.105Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-09-26T13:25:36.105Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-09-26T13:25:36.457Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-09-26T13:25:36.458Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-09-26T13:25:36.476Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/keepflip-bea17:testIamPermissions [none]
+[debug] [2026-09-26T13:25:36.476Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/keepflip-bea17:testIamPermissions  x-goog-user-project=keepflip-bea17
+[debug] [2026-09-26T13:25:36.477Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/keepflip-bea17:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-09-26T13:25:36.755Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/keepflip-bea17:testIamPermissions 200
+[debug] [2026-09-26T13:25:36.756Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/keepflip-bea17:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-09-26T13:25:36.757Z] Checked if tokens are valid: true, expires at: 1790432735458
+[debug] [2026-09-26T13:25:36.757Z] Checked if tokens are valid: true, expires at: 1790432735458
+[debug] [2026-09-26T13:25:36.757Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/keepflip-bea17 [none]
+[debug] [2026-09-26T13:25:37.136Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/keepflip-bea17 200
+[debug] [2026-09-26T13:25:37.136Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/keepflip-bea17 {"projectId":"keepflip-bea17","projectNumber":"924739770457","displayName":"KeepFlip","name":"projects/keepflip-bea17","resources":{"hostingSite":"keepflip-bea17"},"state":"ACTIVE","labels":{"firebase":"enabled","firebaseworkflows/environment":"production"},"etag":"1_e87e487a-d5a4-4ed3-a526-3382d9b81f62"}

@@ -57,7 +57,7 @@ export function trackKeepFlipEvent(
   properties?: KeepFlipAnalyticsProperties,
 ) {
   try {
-    void Promise.resolve(analytics.trackEvent(event, properties)).catch(
+    void Promise.resolve(analytics.trackEvent(event)).catch(
       () => undefined,
     );
   } catch {
