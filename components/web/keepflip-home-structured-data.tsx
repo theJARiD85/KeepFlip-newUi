@@ -1,12 +1,12 @@
 import Head from 'expo-router/head';
 
 const KEEPFLIP_SITE_URL = 'https://app.keep-flip.com';
-const KEEPFLIP_HOME_TITLE = 'KeepFlip';
+const KEEPFLIP_HOME_TITLE = 'KeepFlip: Reseller Assistant';
 const KEEPFLIP_ORGANIZATION_ID = `${KEEPFLIP_SITE_URL}/#organization`;
 
 // Keep this list limited to verified company profiles. Add the URLs when they
 // are confirmed instead of publishing personal or unrelated accounts.
-const KEEPFLIP_ORGANIZATION_SAME_AS: readonly string[] = [];
+const KEEPFLIP_ORGANIZATION_SAME_AS: readonly string[] = ['https://www.facebook.com/KeepFlip.Reseller.Assistant', 'https://www.facebook.com/theJARiD'];
 
 type StructuredDataNode = Record<string, unknown>;
 
