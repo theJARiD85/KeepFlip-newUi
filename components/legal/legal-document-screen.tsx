@@ -10,10 +10,10 @@ import {
   useResponsiveLayout,
   useResponsiveStyles,
 } from '@/hooks/use-responsive-layout';
-import { useWindowDimensions } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from "expo-router";
 import {
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -44,10 +44,9 @@ export function LegalDocumentScreen({
     contentMaxWidth,
     pageGutter,
     responsiveFont,
-    contentWidth
+    webContentMaxWidth,
+    webPageGutter,
   } = useResponsiveLayout();
-  const { width } = useWindowDimensions();
-
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const colors = getKeepFlipThemeColors('dark');
@@ -60,7 +59,7 @@ export function LegalDocumentScreen({
         {
           paddingTop: insets.top + 15,
           paddingBottom: insets.bottom + 30,
-        }, {alignSelf: 'center', paddingHorizontal: pageGutter }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+        }, {alignSelf: 'center', paddingHorizontal: pageGutter }, Platform.OS === 'web' ? { width: '100%', maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter } : undefined]}
         style={{marginTop: insets.top, marginBottom: insets.bottom}}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
@@ -100,7 +99,7 @@ export function LegalDocumentScreen({
               </Text>
           </View>
         </View>
-        <View style={[styles.document, { width: '100%', maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
+        <View style={[styles.document, { width: '100%', maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }, Platform.OS === 'web' ? { width: '100%', maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter } : undefined]}>
           {sections.map((section, sectionIndex) => (
             <View
               key={`${section.title}-${sectionIndex}`}

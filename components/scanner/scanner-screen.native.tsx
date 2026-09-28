@@ -1642,7 +1642,7 @@ export default function ScannerScreen() {
   }
 
   return (
-    <View style={[styles.screen, { width: width, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
+    <View style={[styles.screen, { width: width, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
       <View pointerEvents="none" style={styles.cameraLayer}>
         {shouldMountCamera ? (
           <Camera
@@ -1764,7 +1764,7 @@ export default function ScannerScreen() {
             paddingBottom:
               insets.bottom + 30,
           },
-            scannerChromeAnimatedStyle, { width: contentMaxWidth, maxWidth: width, alignSelf: 'center', paddingHorizontal: pageGutter }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+            scannerChromeAnimatedStyle, { width: contentMaxWidth, maxWidth: width, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         >
           <View
             style={[

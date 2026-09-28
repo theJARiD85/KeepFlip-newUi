@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import type { ComponentProps } from 'react';
 import {
   Pressable,
+  Platform,
   ScrollView,
   StyleSheet,
   View,
@@ -33,8 +34,9 @@ export function WebOnboardingScreen({
   onNewUser?: () => void;
 }) {
   const {
-    contentMaxWidth,
-    contentWidth,
+    webContentMaxWidth,
+    webContentWidth,
+    webPageGutter,
   } = useResponsiveLayout();
 
   const router = useRouter();
@@ -43,10 +45,16 @@ export function WebOnboardingScreen({
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const colors = getKeepFlipThemeColors(effectiveColorScheme);
   const { width } = useWindowDimensions();
-  const isPhone = width < 480;
-  const isTablet = width >= 680 && width < 1040;
   const isWide = width >= 1040;
-  const pageGutter = width < 360 ? 12 : isPhone ? 16 : width < 900 ? 22 : 28;
+  const webContentSizing =
+    Platform.OS === 'web'
+      ? {
+          width: webContentWidth,
+          maxWidth: webContentMaxWidth,
+          alignSelf: 'center' as const,
+          paddingHorizontal: webPageGutter,
+        }
+      : undefined;
 
   const goToSignIn = onExistingLogin ?? (() => router.push('/sign-in'));
   const getStarted = onNewUser ?? (() => router.push('/meet-flip'));
@@ -65,10 +73,10 @@ export function WebOnboardingScreen({
       <View style={styles.root}>
       <ScrollView
         ref={landingScrollRef}
-        contentContainerStyle={[styles.scrollContent, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+        contentContainerStyle={[styles.scrollContent, webContentSizing]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.page, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
+        <View style={[styles.page, webContentSizing]}>
           <WebSiteHeader
             label="RESELLER COMMAND CENTER"
             onGetStarted={getStarted}

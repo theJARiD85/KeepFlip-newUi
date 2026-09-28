@@ -3,6 +3,7 @@ import { type Href, useRouter } from 'expo-router';
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -434,10 +435,22 @@ export function MetricsAnalyticsScreen({ embedded = false }: { embedded?: boolea
   const insets = useSafeAreaInsets();
   const {
     responsiveFont,
-    contentMaxWidth,
-    contentWidth,
-    pageGutter
+    webResponsiveFont,
+    webContentMaxWidth,
+    webContentWidth,
+    webPageGutter,
   } = useResponsiveLayout();
+  const webFontStyle = (size: number) =>
+    Platform.OS === 'web' ? { fontSize: webResponsiveFont(size) } : undefined;
+  const webContentSizing =
+    Platform.OS === 'web'
+      ? {
+          width: webContentWidth,
+          maxWidth: webContentMaxWidth,
+          alignSelf: 'center' as const,
+          paddingHorizontal: webPageGutter,
+        }
+      : undefined;
   const { user } = useKeepFlipAuth();
   const ownerId = user?.$id;
   const requestId = useRef(0);
@@ -611,22 +624,22 @@ export function MetricsAnalyticsScreen({ embedded = false }: { embedded?: boolea
           {
             paddingBottom: insets.bottom + 30,
             paddingTop: embedded ? 15 : insets.top + 15,
-          }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+          }, webContentSizing]}
         contentInsetAdjustmentBehavior={embedded ? 'never' : 'automatic'}
         style={embedded ? undefined : { marginBottom: insets.bottom, marginTop: insets.top }}
         showsVerticalScrollIndicator={false}>
         {loadState === 'checking' || loading ? (
           <View style={styles.loadingCard}>
             <ActivityIndicator color={theme.colors.scannerCyan} />
-            <Text style={[styles.loadingText, { fontSize: responsiveFont(12) }]}>Loading your saved inventory and sales history…</Text>
+            <Text style={[styles.loadingText, webFontStyle(12)]}>Loading your saved inventory and sales history…</Text>
           </View>
         ) : null}
 
         {loadState === 'error' ? (
           <View style={styles.messageCard}>
-            <Text style={[styles.errorText, { fontSize: responsiveFont(12) }]}>{loadError || accessError || 'Analytics could not be loaded.'}</Text>
+            <Text style={[styles.errorText, webFontStyle(12)]}>{loadError || accessError || 'Analytics could not be loaded.'}</Text>
             <Pressable accessibilityRole="button" onPress={() => void loadAnalytics()} style={styles.actionButton}>
-              <Text style={[styles.actionButtonText, { fontSize: responsiveFont(12) }]}>Try again</Text>
+              <Text style={[styles.actionButtonText, webFontStyle(12)]}>Try again</Text>
             </Pressable>
           </View>
         ) : null}
@@ -636,13 +649,13 @@ export function MetricsAnalyticsScreen({ embedded = false }: { embedded?: boolea
             <View style={styles.lockIcon}>
               <IconSymbol color={theme.colors.goldBright} name="lock.fill" size={20} />
             </View>
-            <Text accessibilityRole="header" style={[styles.lockedTitle, { fontSize: responsiveFont(18) }]}>A clearer view of your flips</Text>
-            <Text style={[styles.lockedCopy, { fontSize: responsiveFont(12) }]}>Detailed performance charts are included with Serious Reseller. Your access is checked securely each time this screen opens.</Text>
+            <Text accessibilityRole="header" style={[styles.lockedTitle, webFontStyle(18)]}>A clearer view of your flips</Text>
+            <Text style={[styles.lockedCopy, webFontStyle(12)]}>Detailed performance charts are included with Serious Reseller. Your access is checked securely each time this screen opens.</Text>
             <Pressable
               accessibilityRole="button"
               onPress={() => router.push('/account?tab=subscription' as Href)}
               style={styles.actionButton}>
-              <Text style={[styles.actionButtonText, { fontSize: responsiveFont(12) }]}>View plans</Text>
+              <Text style={[styles.actionButtonText, webFontStyle(12)]}>View plans</Text>
               <IconSymbol color={theme.colors.backgroundDeep} name="chevron.right" size={16} />
             </Pressable>
           </View>
@@ -653,38 +666,38 @@ export function MetricsAnalyticsScreen({ embedded = false }: { embedded?: boolea
             {warnings.map((warning) => (
               <View key={warning} style={styles.warningCard}>
                 <IconSymbol color={theme.colors.goldBright} name="exclamationmark.triangle.fill" size={16} />
-                <Text style={[styles.warningText, { fontSize: responsiveFont(10) }]}>{warning}</Text>
+                <Text style={[styles.warningText, webFontStyle(10)]}>{warning}</Text>
               </View>
             ))}
 
             <View style={styles.summaryRow}>
               <View style={styles.summaryCard}>
-                <Text style={[styles.summaryLabel, { fontSize: responsiveFont(7) }]}>ITEMS LOADED</Text>
+                <Text style={[styles.summaryLabel, webFontStyle(7)]}>ITEMS LOADED</Text>
                 <Text selectable style={[styles.summaryValue, { fontSize: responsiveFont(20) }]}>{inventory.length}</Text>
               </View>
               <View style={styles.summaryCard}>
-                <Text style={[styles.summaryLabel, { fontSize: responsiveFont(7) }]}>ACTIVE LISTINGS</Text>
+                <Text style={[styles.summaryLabel, webFontStyle(7)]}>ACTIVE LISTINGS</Text>
                 <Text selectable style={[styles.summaryValue, { fontSize: responsiveFont(20) }]}>{activeListings}</Text>
               </View>
               <View style={styles.summaryCard}>
-                <Text style={[styles.summaryLabel, { fontSize: responsiveFont(7) }]}>LINKED UNITS SOLD</Text>
+                <Text style={[styles.summaryLabel, webFontStyle(7)]}>LINKED UNITS SOLD</Text>
                 <Text selectable style={[styles.summaryValue, { fontSize: responsiveFont(20) }]}>{totalSoldUnits}</Text>
               </View>
             </View>
 
             {inventory.length === 0 ? (
               <View style={styles.messageCard}>
-                <Text style={[styles.chartEmptyText, { fontSize: responsiveFont(10) }]}>Save your first item to start comparing performance across your inventory.</Text>
+                <Text style={[styles.chartEmptyText, webFontStyle(10)]}>Save your first item to start comparing performance across your inventory.</Text>
                 <Pressable accessibilityRole="button" onPress={() => router.push('/scanner' as Href)} style={styles.actionButton}>
-                  <Text style={[styles.actionButtonText, { fontSize: responsiveFont(12) }]}>Open scanner</Text>
+                  <Text style={[styles.actionButtonText, webFontStyle(12)]}>Open scanner</Text>
                   <IconSymbol color={theme.colors.backgroundDeep} name="chevron.right" size={16} />
                 </Pressable>
               </View>
             ) : null}
 
             <View style={styles.controlsCard}>
-              <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>CHOOSE YOUR VIEW</Text>
-              <Text accessibilityRole="header" style={[styles.sectionTitle, { fontSize: responsiveFont(14) }]}>Break down by</Text>
+              <Text style={[styles.sectionEyebrow, webFontStyle(8)]}>CHOOSE YOUR VIEW</Text>
+              <Text accessibilityRole="header" style={[styles.sectionTitle, webFontStyle(14)]}>Break down by</Text>
               <View style={styles.pillWrap}>
                 {DIMENSIONS.map((option) => (
                   <MetricPill
@@ -700,7 +713,7 @@ export function MetricsAnalyticsScreen({ embedded = false }: { embedded?: boolea
               </View>
 
               <View style={styles.divider} />
-              <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>FILTER CATEGORY</Text>
+              <Text style={[styles.sectionEyebrow, webFontStyle(8)]}>FILTER CATEGORY</Text>
               <ScrollView horizontal contentContainerStyle={styles.horizontalPills} showsHorizontalScrollIndicator={false}>
                 <MetricPill
                   selected={categoryFilter === null}
@@ -724,8 +737,8 @@ export function MetricsAnalyticsScreen({ embedded = false }: { embedded?: boolea
               </ScrollView>
 
               <View style={styles.divider} />
-              <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>CHART</Text>
-              <Text accessibilityRole="header" style={[styles.sectionTitle, { fontSize: responsiveFont(14) }]}>Choose a metric</Text>
+              <Text style={[styles.sectionEyebrow, webFontStyle(8)]}>CHART</Text>
+              <Text accessibilityRole="header" style={[styles.sectionTitle, webFontStyle(14)]}>Choose a metric</Text>
               <Pressable
                 accessibilityRole="button"
                 accessibilityState={{ expanded: metricPickerOpen }}
@@ -738,8 +751,8 @@ export function MetricsAnalyticsScreen({ embedded = false }: { embedded?: boolea
                 <View style={styles.metricPickerCopy}>
                   <View style={[styles.metricPickerDot, { backgroundColor: getMetricAccent(activeMetricDefinition) }]} />
                   <View style={styles.metricPickerTextBlock}>
-                    <Text style={[styles.metricPickerLabel, { fontSize: responsiveFont(11) }]}>{activeMetricDefinition.label}</Text>
-                    <Text style={[styles.metricPickerDescription, { fontSize: responsiveFont(9) }]}>{activeMetricDefinition.description}</Text>
+                    <Text style={[styles.metricPickerLabel, webFontStyle(11)]}>{activeMetricDefinition.label}</Text>
+                    <Text style={[styles.metricPickerDescription, webFontStyle(9)]}>{activeMetricDefinition.description}</Text>
                   </View>
                 </View>
                 <IconSymbol
@@ -792,11 +805,11 @@ export function MetricsAnalyticsScreen({ embedded = false }: { embedded?: boolea
 
             <View style={styles.dataNote}>
               <IconSymbol color={theme.colors.scannerCyan} name="checkmark.shield.fill" size={16} />
-              <Text style={[styles.dataNoteText, { fontSize: responsiveFont(9) }]}>
+              <Text style={[styles.dataNoteText, webFontStyle(9)]}>
                 ROI and net profit use reconciled Books records and known acquisition costs only. Days listed uses the saved listing date through sale, or through today for an active listing. Estimated resale values are not counted as earned revenue.
               </Text>
             </View>
-            <Text style={[styles.footerText, { fontSize: responsiveFont(9) }]}>
+            <Text style={[styles.footerText, webFontStyle(9)]}>
               {inventoryTruncated
                 ? `Charts use the ${inventory.length.toLocaleString()} most recent of ${inventoryTotal.toLocaleString()} items; older inventory is not included.`
                 : ebayOrdersTruncated

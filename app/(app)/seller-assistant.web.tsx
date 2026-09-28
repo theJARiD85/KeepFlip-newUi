@@ -15,10 +15,10 @@ function WebFlipAssistantScreen() {
   const pathname = usePathname();
   const router = useRouter();
   const {
-    contentMaxWidth,
-    contentWidth,
-    pageGutter,
-    responsiveFont,
+    webContentMaxWidth,
+    webContentWidth,
+    webPageGutter,
+    webResponsiveFont,
   } = useResponsiveLayout();
 
   const navigate = (route: AssistantRoute) => {
@@ -26,22 +26,22 @@ function WebFlipAssistantScreen() {
   };
 
   return (
-    <View style={[styles.page, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
+    <View style={[styles.page, { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter }]}>
       <View
         style={[
           styles.content,
           {
             flex: 1,
             minHeight: 0,
-            maxWidth: contentMaxWidth,
-            paddingHorizontal: pageGutter,
-            width: contentWidth,
+            maxWidth: webContentMaxWidth,
+            paddingHorizontal: webPageGutter,
+            width: webContentWidth,
           },
         ]}>
         <View style={styles.intro}>
-          <Text style={[styles.eyebrow, { fontSize: responsiveFont(12) }]}>FLIP ASSISTANT</Text>
-          <Text style={[styles.title, { fontSize: responsiveFont(24) }]}>A second set of eyes for every move.</Text>
-          <Text style={[styles.body, { fontSize: responsiveFont(14), lineHeight: responsiveFont(20) }]}>Ask Flip about your inventory, priorities, cash flow, or the next action worth taking. The conversation stays tied to your KeepFlip workspace.</Text>
+          <Text style={[styles.eyebrow, { fontSize: webResponsiveFont(12) }]}>FLIP ASSISTANT</Text>
+          <Text style={[styles.title, { fontSize: webResponsiveFont(24) }]}>A second set of eyes for every move.</Text>
+          <Text style={[styles.body, { fontSize: webResponsiveFont(14), lineHeight: webResponsiveFont(20) }]}>Ask Flip about your inventory, priorities, cash flow, or the next action worth taking. The conversation stays tied to your KeepFlip workspace.</Text>
         </View>
         <FlipConversationalAssistantPanel
           currentRoute={pathname}

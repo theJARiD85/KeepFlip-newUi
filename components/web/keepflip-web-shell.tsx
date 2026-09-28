@@ -326,13 +326,13 @@ const styles = StyleSheet.create({
   brand: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 10,
+    justifyContent: 'flex-start',
     paddingBottom: 28,
   },
   brandCompact: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-start',
   },
   brandMark: {
     width: 55,
@@ -343,18 +343,19 @@ const styles = StyleSheet.create({
     height: 50,
   },
   brandCopy: {
-    gap: 2,
+    gap: 3,
+    justifyContent: 'center',
   },
   brandName: {
     color: theme.colors.text,
     fontFamily: theme.fonts.bold,
-    fontSize: 16,
+    fontSize: 19,
     letterSpacing: 2.4,
   },
   brandTagline: {
     color: theme.colors.goldBright,
     fontFamily: theme.fonts.medium,
-    fontSize: 10,
+    fontSize: 7,
     letterSpacing: 1.5,
   },
   sidebarNavigation: {
@@ -364,10 +365,10 @@ const styles = StyleSheet.create({
   navGroupLabel: {
     fontFamily: theme.fonts.bold,
     fontSize: 12,
-    letterSpacing: 3,
+    letterSpacing: 2,
     paddingHorizontal: 12,
     paddingBottom: 7,
-    paddingTop: 6,
+    paddingTop: 0,
   },
   navGroupLabelSpaced: {
     paddingTop: 22,
@@ -379,7 +380,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingHorizontal: 9,
+    paddingHorizontal: 15,
   },
   navButtonPressed: {
     opacity: 0.72,

@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { useState } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -35,6 +36,9 @@ export function KeepFlipUpdateRequiredScreen({
     contentMaxWidth,
     contentWidth,
     pageGutter,
+    webContentMaxWidth,
+    webContentWidth,
+    webPageGutter,
     responsiveFont,
     responsiveHeight,
     responsiveWidth,
@@ -72,7 +76,7 @@ export function KeepFlipUpdateRequiredScreen({
             paddingBottom: insets.bottom + 24,
             paddingHorizontal: pageGutter,
             paddingTop: insets.top + 24,
-          }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+          }, Platform.OS === 'web' ? { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter } : undefined]}
         showsVerticalScrollIndicator={false}
       >
         <View

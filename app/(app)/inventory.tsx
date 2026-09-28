@@ -142,21 +142,30 @@ export default function InventoryScreen() {
   const userId = user?.$id;
   const {
     contentWidth, insets, pageGutter, responsiveFont: scaleResponsiveFont,
-    contentMaxWidth
+    contentMaxWidth,
+    webContentWidth,
+    webContentMaxWidth,
+    webPageGutter,
+    webGridColumns,
   } =
     useResponsiveLayout();
   const inventoryColumns =
     Platform.OS === "web"
-      ? contentWidth >= 900
-        ? 3
-        : contentWidth >= 600
-          ? 2
-          : 1
+      ? webGridColumns
       : 1;
-  const inventoryColumnGap = 16;
+  const inventoryColumnGap = 50;
   const inventoryCardWidth =
-    (contentWidth - inventoryColumnGap * (inventoryColumns - 1)) /
+    (contentWidth - inventoryColumnGap * (inventoryColumns)) /
     inventoryColumns;
+  const webContentSizing =
+    Platform.OS === "web"
+      ? {
+          width: webContentWidth,
+          maxWidth: webContentMaxWidth,
+          alignSelf: "center" as const,
+          paddingHorizontal: webPageGutter,
+        }
+      : undefined;
   const responsiveFont = (size: number, factor?: number) =>
     scaleResponsiveFont(Math.max(size, 11), factor);
 
@@ -336,7 +345,7 @@ export default function InventoryScreen() {
 
   return (
     <KeepFlipBackground>
-      <View style={[styles.screen, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
+      <View style={[styles.screen, webContentSizing]}>
       <View style={[styles.header, { paddingTop: insets.top + 15, paddingLeft: 15, width: contentWidth }]}>
                 <Text style={[styles.eyebrow, { fontFamily: theme.fonts.display, fontSize: responsiveFont(10) }]}>YOUR ITEMS</Text>
                 <Text
@@ -391,17 +400,22 @@ export default function InventoryScreen() {
         ) : (
           <FlatList
             key={`inventory-${inventoryColumns}`}
-            contentContainerStyle={[styles.content,
+            contentContainerStyle={[
+              styles.content,
               {
                 paddingBottom: insets.bottom + 30,
                 paddingHorizontal: Platform.OS === "web" ? 0 : pageGutter,
                 paddingTop: 15,
-              }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+              },
+              webContentSizing,
+            ]}
             style={[
               styles.list,
               Platform.OS === "web" && {
                 alignSelf: "center",
                 width: contentWidth,
+                maxWidth: contentMaxWidth,
+                paddingHorizontal: 30,
               },
               { marginBottom: insets.bottom },
             ]}

@@ -1,6 +1,7 @@
 import { type ComponentProps, useMemo, useState } from 'react';
 import {
   Pressable,
+  Platform,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -265,10 +266,19 @@ export function WebPreAuthScreen({
   onComplete: (name: string, rules: ResellerBuyRules) => void;
 }) {
   const {
-    contentMaxWidth,
-    contentWidth,
-    pageGutter
+    webContentMaxWidth,
+    webContentWidth,
+    webPageGutter,
   } = useResponsiveLayout();
+  const webContentSizing =
+    Platform.OS === 'web'
+      ? {
+          width: webContentWidth,
+          maxWidth: webContentMaxWidth,
+          alignSelf: 'center' as const,
+          paddingHorizontal: webPageGutter,
+        }
+      : undefined;
 
   const { markActivity, setMode } = useFlipCompanion();
   const { effectiveColorScheme } = useKeepFlipAppearance();
@@ -364,13 +374,13 @@ export function WebPreAuthScreen({
   return (
     <View style={[styles.root, { backgroundColor: colors.backgroundDeep }]}>
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+        contentContainerStyle={[styles.scrollContent, webContentSizing]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         <WebSiteHeader label="SET UP YOUR RESELLER PROFILE" showActions={false} />
 
-        <View style={[styles.content, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
+        <View style={[styles.content, webContentSizing]}>
           <View style={styles.topRow}>
             <Pressable
               accessibilityLabel="Go back"

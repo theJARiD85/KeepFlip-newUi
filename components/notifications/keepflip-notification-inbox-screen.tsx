@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -45,9 +46,9 @@ export function KeepFlipNotificationInboxScreen({
   const insets = useSafeAreaInsets();
   const {
     responsiveFont,
-    contentMaxWidth,
-    contentWidth,
-    pageGutter
+    webContentMaxWidth,
+    webContentWidth,
+    webPageGutter,
   } = useResponsiveLayout();
   const { status, user } = useKeepFlipAuth();
   const userId = user?.$id ?? null;
@@ -126,8 +127,8 @@ export function KeepFlipNotificationInboxScreen({
   return (
     <KeepFlipBackground>
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + 15, paddingBottom: insets.bottom + 30}, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
-        style={[styles.page, {marginTop: insets.top, marginBottom: insets.bottom}, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+          contentContainerStyle={[styles.content, { paddingTop: insets.top + 15, paddingBottom: insets.bottom + 30}, Platform.OS === 'web' ? { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter } : undefined]}
+          style={[styles.page, {marginTop: insets.top, marginBottom: insets.bottom}, Platform.OS === 'web' ? { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter } : undefined]}
         refreshControl={
           <RefreshControl
             colors={[theme.colors.scannerCyan]}

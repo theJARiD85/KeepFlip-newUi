@@ -169,9 +169,9 @@ function PanelHeader({
 
 export function CommandCenterScreen() {
   const {
-    contentMaxWidth,
-    contentWidth,
-    pageGutter
+    webContentMaxWidth,
+    webContentWidth,
+    webPageGutter,
   } = useResponsiveLayout();
 
   const { width } = useWindowDimensions();
@@ -243,7 +243,7 @@ export function CommandCenterScreen() {
             paddingHorizontal: isWide ? 42 : isMedium ? 28 : 18,
             paddingTop: isWide ? 38 : 26,
             paddingBottom: 48,
-          }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+        }, { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter }]}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}>
         <View style={[styles.hero, isWide && styles.heroWide]}>

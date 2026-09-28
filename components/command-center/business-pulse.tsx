@@ -30,6 +30,7 @@ import {
   trimLeadingEmptyProfitAndLossMonths,
   trimLeadingEmptyMoneyFlowBuckets,
   type BusinessMoneyFlowGranularity,
+  type BusinessMoneyFlowEntry,
   type ResellerBusinessOverview,
 } from '@/services/reseller-business-overview';
 
@@ -62,6 +63,54 @@ function compactMoney(cents: number) {
     return `$${(amount / 1_000).toFixed(amount >= 10_000 ? 0 : 1)}K`;
   }
   return `$${Math.round(amount)}`;
+}
+
+function shiftMoneyFlowAnchor(
+  date: Date,
+  granularity: BusinessMoneyFlowGranularity,
+  periods: number,
+) {
+  const shifted = new Date(date);
+  if (granularity === 'days') shifted.setDate(shifted.getDate() - periods);
+  else if (granularity === 'weeks') shifted.setDate(shifted.getDate() - periods * 7);
+  else {
+    shifted.setDate(1);
+    shifted.setMonth(shifted.getMonth() - periods);
+  }
+  return shifted;
+}
+
+function moneyFlowPeriodOrdinal(
+  date: Date,
+  granularity: BusinessMoneyFlowGranularity,
+) {
+  if (granularity === 'months') return date.getFullYear() * 12 + date.getMonth();
+
+  const periodStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  if (granularity === 'weeks') {
+    periodStart.setDate(periodStart.getDate() - periodStart.getDay());
+  }
+  const daysFromEpoch = Date.UTC(
+    periodStart.getFullYear(),
+    periodStart.getMonth(),
+    periodStart.getDate(),
+  ) / 86_400_000;
+  return granularity === 'weeks' ? Math.floor(daysFromEpoch / 7) : daysFromEpoch;
+}
+
+function availableMoneyFlowHistory(
+  firstTransactionAt: string | null,
+  now: Date,
+  granularity: BusinessMoneyFlowGranularity,
+) {
+  if (!firstTransactionAt) return 0;
+  const firstTransaction = new Date(firstTransactionAt);
+  if (!Number.isFinite(firstTransaction.getTime())) return 0;
+  return Math.max(
+    0,
+    moneyFlowPeriodOrdinal(now, granularity) -
+      moneyFlowPeriodOrdinal(firstTransaction, granularity),
+  );
 }
 
 type FinancialChartId = 'pnl' | 'gross-margin' | 'expenses';
@@ -326,8 +375,14 @@ export function BusinessPulse({
           </ScrollView>
         </View>
         <MoneyMovementChart
+          key={`${granularity}:${rangeCount}:${overview.firstTransactionAt ?? 'none'}`}
+          entries={overview.moneyFlowEntries}
+          firstTransactionAt={overview.firstTransactionAt}
+          granularity={granularity}
+          now={chartNow}
           maximumFlow={maximumFlow}
           moneyFlow={moneyFlow}
+          rangeCount={rangeCount}
           rangeLabel={selectedRange.label}
           onCloseZoom={() => setMoneyFlowZoomOpen(false)}
           zoomOpen={moneyFlowZoomOpen}
@@ -471,14 +526,24 @@ function MoneyFlowTrackerDot({ color, index }: { color: string; index: number })
 }
 
 function MoneyMovementChart({
+  entries,
+  firstTransactionAt,
+  granularity,
+  now,
   moneyFlow,
   maximumFlow,
+  rangeCount,
   rangeLabel,
   onCloseZoom,
   zoomOpen,
 }: {
+  entries: BusinessMoneyFlowEntry[];
+  firstTransactionAt: string | null;
+  granularity: BusinessMoneyFlowGranularity;
+  now: Date;
   moneyFlow: ResellerBusinessOverview['moneyFlow'];
   maximumFlow: number;
+  rangeCount: number;
   rangeLabel: string;
   onCloseZoom: () => void;
   zoomOpen: boolean;
@@ -487,9 +552,20 @@ function MoneyMovementChart({
   const { responsiveFont, responsiveWidth } = useResponsiveLayout();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const [activePointIndex, setActivePointIndex] = useState(0);
+  const [expandedPeriodOffset, setExpandedPeriodOffset] = useState(0);
   const [plotWidth, setPlotWidth] = useState(0);
   const [expandedPlotWidth, setExpandedPlotWidth] = useState(0);
   const chartGrid = [1, 0.75, 0.5, 0.25, 0];
+  const expandedMoneyFlow = useMemo(
+    () =>
+      buildMoneyFlowBuckets({
+        bucketCount: rangeCount,
+        entries,
+        granularity,
+        now: shiftMoneyFlowAnchor(now, granularity, expandedPeriodOffset),
+      }),
+    [entries, expandedPeriodOffset, granularity, now, rangeCount],
+  );
   const chartData = useMemo(
     () => ({
       moneyIn: moneyFlow.map((bucket, index) => ({
@@ -503,17 +579,41 @@ function MoneyMovementChart({
     }),
     [moneyFlow],
   );
-  const chartValueMax = Math.max(maximumFlow / 100, 1);
-  const safePointIndex = Math.min(
-    Math.max(activePointIndex, 0),
-    Math.max(moneyFlow.length - 1, 0),
+  const expandedChartData = useMemo(
+    () => ({
+      moneyIn: expandedMoneyFlow.map((bucket, index) => ({
+        timestamp: Date.UTC(2024, 0, index + 1),
+        value: bucket.moneyInCents / 100,
+      })),
+      moneyOut: expandedMoneyFlow.map((bucket, index) => ({
+        timestamp: Date.UTC(2024, 0, index + 1),
+        value: bucket.moneyOutCents / 100,
+      })),
+    }),
+    [expandedMoneyFlow],
   );
-  const activePoint = moneyFlow[safePointIndex];
-  const netCents = activePoint
-    ? activePoint.moneyInCents - activePoint.moneyOutCents
-    : 0;
+  const expandedMaximumFlow = Math.max(
+    ...expandedMoneyFlow.flatMap((bucket) => [bucket.moneyInCents, bucket.moneyOutCents]),
+    1,
+  );
+  const maximumPeriodOffset = availableMoneyFlowHistory(
+    firstTransactionAt,
+    now,
+    granularity,
+  );
 
   const renderChart = (expanded: boolean) => {
+    const plottedMoneyFlow = expanded ? expandedMoneyFlow : moneyFlow;
+    const plottedChartData = expanded ? expandedChartData : chartData;
+    const chartValueMax = Math.max((expanded ? expandedMaximumFlow : maximumFlow) / 100, 1);
+    const safePointIndex = Math.min(
+      Math.max(activePointIndex, 0),
+      Math.max(plottedMoneyFlow.length - 1, 0),
+    );
+    const activePoint = plottedMoneyFlow[safePointIndex];
+    const netCents = activePoint
+      ? activePoint.moneyInCents - activePoint.moneyOutCents
+      : 0;
     const yAxisWidth = responsiveWidth(expanded ? 42 : 34);
     const measuredPlotWidth = expanded ? expandedPlotWidth : plotWidth;
     const fallbackChartWidth = Math.max(
@@ -563,7 +663,8 @@ function MoneyMovementChart({
           <View style={[styles.moneyFlowChartContent, { width: chartWidth }]}>
             <View style={[styles.wagmiChart, { width: chartWidth }]}>
               <LineChart.Provider
-                data={chartData}
+                key={expanded ? `${granularity}:${rangeCount}:${expandedPeriodOffset}` : 'compact'}
+                data={plottedChartData}
                 onCurrentIndexChange={setActivePointIndex}
                 yRange={{ min: 0, max: chartValueMax }}
               >
@@ -573,23 +674,7 @@ function MoneyMovementChart({
                     <MoneyFlowTrackerDot color={theme.colors.scannerCyan} index={safePointIndex} />
                   </LineChart>
                   <LineChart id="moneyOut" width={chartWidth} height={chartHeight}>
-                    <LineChart.Path color={theme.colors.goldBright} width={3}>
-                      {chartGrid.map((fraction) => (
-                        <LineChart.HorizontalLine
-                          at={{ value: chartValueMax * fraction }}
-                          color={
-                            fraction === 0
-                              ? theme.colors.dividerStrong
-                              : theme.colors.divider
-                          }
-                          key={fraction}
-                          lineProps={{
-                            strokeDasharray: fraction === 0 ? undefined : '4 5',
-                            strokeWidth: fraction === 0 ? 2 : 1,
-                          }}
-                        />
-                      ))}
-                    </LineChart.Path>
+                    <LineChart.Path color={theme.colors.goldBright} width={3} />
                     <LineChart.CursorLine
                       color={theme.colors.goldBright}
                       persistOnEnd
@@ -612,9 +697,28 @@ function MoneyMovementChart({
                   </LineChart>
                 </LineChart.Group>
               </LineChart.Provider>
+              <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+                {chartGrid.map((fraction) => (
+                  <View
+                    key={fraction}
+                    style={[
+                      styles.moneyFlowGridLine,
+                      {
+                        borderTopColor:
+                          fraction === 0
+                            ? theme.colors.dividerStrong
+                            : theme.colors.divider,
+                        borderStyle: fraction === 0 ? 'solid' : 'dashed',
+                        borderTopWidth: fraction === 0 ? 2 : 1,
+                        top: 5 + 16 + (1 - fraction) * (chartHeight - 72),
+                      },
+                    ]}
+                  />
+                ))}
+              </View>
             </View>
             <View style={[styles.chartAxisLabels, { width: chartWidth }]}>
-              {moneyFlow.map((bucket) => (
+              {plottedMoneyFlow.map((bucket) => (
                 <Text
                   key={bucket.key}
                   numberOfLines={1}
@@ -693,6 +797,55 @@ function MoneyMovementChart({
             <View style={styles.zoomLegend}>
               <Legend color={theme.colors.scannerCyan} label="In" />
               <Legend color={theme.colors.goldBright} label="Out" />
+            </View>
+            <View style={zoomUiStyles.dateNavigation}>
+              <Pressable
+                accessibilityHint="Moves the chart one date period earlier"
+                accessibilityLabel="Show earlier dates"
+                accessibilityRole="button"
+                disabled={expandedPeriodOffset >= maximumPeriodOffset}
+                onPress={() => {
+                  setExpandedPeriodOffset((current) =>
+                    Math.min(current + 1, maximumPeriodOffset),
+                  );
+                  setActivePointIndex(0);
+                }}
+                style={({ pressed }) => [
+                  zoomUiStyles.dateButton,
+                  expandedPeriodOffset >= maximumPeriodOffset &&
+                    zoomUiStyles.dateButtonDisabled,
+                  pressed && zoomUiStyles.pressed,
+                ]}
+              >
+                <IconSymbol color={theme.colors.text} name="chevron.left" size={17} />
+              </Pressable>
+              <View style={zoomUiStyles.dateRangeCopy}>
+                <Text style={[zoomUiStyles.dateRange, { fontSize: responsiveFont(11) }]}>
+                  {expandedMoneyFlow[0]?.label ?? rangeLabel}
+                  {'  –  '}
+                  {expandedMoneyFlow[expandedMoneyFlow.length - 1]?.label ?? rangeLabel}
+                </Text>
+                <Text style={[zoomUiStyles.dateHint, { fontSize: responsiveFont(8) }]}>
+                  Drag across the chart to inspect each date
+                </Text>
+              </View>
+              <Pressable
+                accessibilityHint="Moves the chart one date period later"
+                accessibilityLabel="Show later dates"
+                accessibilityRole="button"
+                disabled={expandedPeriodOffset === 0}
+                onPress={() => {
+                  setExpandedPeriodOffset((current) => Math.max(current - 1, 0));
+                  setActivePointIndex(0);
+                }}
+                style={({ pressed }) => [
+                  zoomUiStyles.dateButton,
+                  expandedPeriodOffset === 0 && zoomUiStyles.dateButtonDisabled,
+                  pressed && zoomUiStyles.pressed,
+                ]}
+              >
+                <IconSymbol color={theme.colors.text} name="chevron.right" size={17} />
+              </Pressable>
             </View>
             {renderChart(true)}
           </>
@@ -1132,6 +1285,21 @@ const zoomUiStyles = StyleSheet.create({
     width: 40,
   },
   content: { flexGrow: 1, gap: 12, paddingBottom: 4 },
+  dateNavigation: { alignItems: 'center', flexDirection: 'row', gap: 10 },
+  dateButton: {
+    alignItems: 'center',
+    backgroundColor: theme.colors.cardSoft,
+    borderColor: theme.colors.dividerStrong,
+    borderRadius: 9,
+    borderWidth: 1,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
+  },
+  dateButtonDisabled: { opacity: 0.4 },
+  dateRangeCopy: { alignItems: 'center', flex: 1, gap: 2 },
+  dateRange: { color: theme.colors.text, fontWeight: '900' },
+  dateHint: { color: theme.colors.textMuted, fontWeight: '700', textAlign: 'center' },
   zoomButton: {
     alignItems: 'center',
     backgroundColor: theme.colors.iconSurfaceCyan,
@@ -1233,6 +1401,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingBottom: 9,
     },
     chartAxisLabel: { color: theme.colors.textMuted, flex: 1, fontSize: 8, textAlign: 'center' },
+    moneyFlowGridLine: {
+      left: 0,
+      position: 'absolute',
+      right: 0,
+    },
     selectedPointCard: {
       backgroundColor: theme.colors.surfaceInset,
       borderColor: theme.colors.divider,

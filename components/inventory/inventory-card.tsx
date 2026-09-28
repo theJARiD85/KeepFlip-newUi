@@ -138,6 +138,7 @@ export function InventoryCard({
       };
   const { failures: photoFailures, index: photoIndex, uris: photoUris } = activePhotoState;
   const [heroWidth, setHeroWidth] = useState(0);
+  const [actionsExpanded, setActionsExpanded] = useState(false);
   const requestedPhotoIds = useRef(new Set<string>());
   const photoGeneration = useRef(0);
   const resolvedPhotoUris = useRef(new Set<string>());
@@ -509,115 +510,142 @@ export function InventoryCard({
         </View>
       </Pressable>
 
-      {onListingGuidePress ? (
-        <Pressable
-          accessibilityHint={`Opens a guided checklist for creating a marketplace listing for ${item.title}`}
-          accessibilityLabel={`Listing creation guide for ${item.title}`}
-          accessibilityRole="button"
-          onPress={onListingGuidePress}
-          style={({ pressed }) => [
-            styles.listingGuideButton,
-            pressed && styles.listingGuideButtonPressed,
-          ]}
-        >
-          <LinearGradient
-            colors={[
-              "rgba(141, 114, 255, 0.22)",
-              "rgba(0, 255, 255, 0.16)",
-              "rgba(242, 211, 138, 0.18)",
+      {onListingGuidePress || onAddPhotosPress || onDeletePress ? (
+        <View style={styles.itemActions}>
+          <Pressable
+            accessibilityHint={`${actionsExpanded ? "Hides" : "Shows"} the listing, photo, and delete actions for ${item.title}`}
+            accessibilityLabel={`${actionsExpanded ? "Hide" : "Show"} item actions for ${item.title}`}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: actionsExpanded }}
+            onPress={() => setActionsExpanded((expanded) => !expanded)}
+            style={({ pressed }) => [
+              styles.itemActionsToggle,
+              actionsExpanded && styles.itemActionsToggleExpanded,
+              pressed && styles.listingGuideButtonPressed,
             ]}
-            end={{ x: 1, y: 0.5 }}
-            pointerEvents="none"
-            start={{ x: 0, y: 0.5 }}
-            style={StyleSheet.absoluteFill}
-          />
-          <View style={styles.listingGuideButtonIcon}>
+          >
             <IconSymbol
               color={theme.colors.scannerCyan}
-              name="tag.fill"
-              size={17}
+              name="ellipsis"
+              size={21}
             />
-          </View>
-          <View style={styles.listingGuideButtonCopy}>
-            <Text style={[styles.listingGuideButtonEyebrow, { fontSize: responsiveFont(7) }]}>SELLER WORKFLOW</Text>
-            <Text style={[styles.listingGuideButtonLabel, { fontSize: responsiveFont(15) }]}>List item</Text>
-          </View>
-          <IconSymbol
-            color={theme.colors.goldBright}
-            name="arrow.right"
-            size={18}
-          />
-        </Pressable>
-      ) : null}
+          </Pressable>
 
-      {onAddPhotosPress ? (
-        <Pressable
-          accessibilityHint={"Opens the photo manager for " + item.title}
-          accessibilityLabel={"Add photos to " + item.title}
-          accessibilityRole="button"
-          onPress={onAddPhotosPress}
-          style={({ pressed }) => [
-            styles.listingGuideButton,
-            styles.photoManagerButton,
-            pressed && styles.listingGuideButtonPressed,
-          ]}
-        >
-          <View style={styles.listingGuideButtonIcon}>
-            <IconSymbol
-              color={theme.colors.scannerCyan}
-              name="photo.on.rectangle.angled"
-              size={17}
-            />
-          </View>
-          <View style={styles.listingGuideButtonCopy}>
-            <Text style={[styles.listingGuideButtonEyebrow, { fontSize: responsiveFont(7) }]}>PHOTO SET</Text>
-            <Text style={[styles.listingGuideButtonLabel, { fontSize: responsiveFont(15) }]}> Add photos</Text>
-          </View>
-          <IconSymbol
-            color={theme.colors.scannerCyan}
-            name="arrow.right"
-            size={18}
-          />
-        </Pressable>
-      ) : null}
+          {actionsExpanded ? (
+            <View>
+              {onListingGuidePress ? (
+                <Pressable
+                  accessibilityHint={`Opens a guided checklist for creating a marketplace listing for ${item.title}`}
+                  accessibilityLabel={`Listing creation guide for ${item.title}`}
+                  accessibilityRole="button"
+                  onPress={onListingGuidePress}
+                  style={({ pressed }) => [
+                    styles.listingGuideButton,
+                    pressed && styles.listingGuideButtonPressed,
+                  ]}
+                >
+                  <LinearGradient
+                    colors={[
+                      "rgba(141, 114, 255, 0.22)",
+                      "rgba(0, 255, 255, 0.16)",
+                      "rgba(242, 211, 138, 0.18)",
+                    ]}
+                    end={{ x: 1, y: 0.5 }}
+                    pointerEvents="none"
+                    start={{ x: 0, y: 0.5 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <View style={styles.listingGuideButtonIcon}>
+                    <IconSymbol
+                      color={theme.colors.scannerCyan}
+                      name="tag.fill"
+                      size={17}
+                    />
+                  </View>
+                  <View style={styles.listingGuideButtonCopy}>
+                    <Text style={[styles.listingGuideButtonEyebrow, { fontSize: responsiveFont(7) }]}>SELLER WORKFLOW</Text>
+                    <Text style={[styles.listingGuideButtonLabel, { fontSize: responsiveFont(15) }]}>List item</Text>
+                  </View>
+                  <IconSymbol
+                    color={theme.colors.goldBright}
+                    name="arrow.right"
+                    size={18}
+                  />
+                </Pressable>
+              ) : null}
 
-      {onDeletePress ? (
-        <Pressable
-          accessibilityHint={
-            isDeleting
-              ? "Delete operation in progress"
-              : `Deletes ${item.title} from KeepFlip inventory after confirmation`
-          }
-          accessibilityLabel={
-            isDeleting
-              ? `Deleting ${item.title}`
-              : `Delete ${item.title} from inventory`
-          }
-          accessibilityRole="button"
-          accessibilityState={{ busy: isDeleting, disabled: isDeleting }}
-          disabled={isDeleting}
-          onPress={onDeletePress}
-          style={({ pressed }) => [
-            styles.listingGuideButton,
-            styles.deleteButton,
-            pressed && styles.listingGuideButtonPressed,
-            isDeleting && styles.deleteButtonDisabled,
-          ]}
-        >
-          <View style={[styles.listingGuideButtonIcon, styles.deleteButtonIcon]}>
-            <IconSymbol
-              color={theme.colors.danger}
-              name="trash.fill"
-              size={17}
-            />
-          </View>
-          <View style={styles.listingGuideButtonCopy}>
-            <Text style={[styles.listingGuideButtonEyebrow, styles.deleteButtonLabel, { fontSize: responsiveFont(7) }]}>INVENTORY CONTROL</Text>
-            <Text style={[styles.listingGuideButtonLabel, styles.deleteButtonLabel, { fontSize: responsiveFont(15) }]}>
-              {isDeleting ? "Deleting…" : "Delete item"}
-            </Text>
-          </View>
-        </Pressable>
+              {onAddPhotosPress ? (
+                <Pressable
+                  accessibilityHint={"Opens the photo manager for " + item.title}
+                  accessibilityLabel={"Add photos to " + item.title}
+                  accessibilityRole="button"
+                  onPress={onAddPhotosPress}
+                  style={({ pressed }) => [
+                    styles.listingGuideButton,
+                    styles.photoManagerButton,
+                    pressed && styles.listingGuideButtonPressed,
+                  ]}
+                >
+                  <View style={styles.listingGuideButtonIcon}>
+                    <IconSymbol
+                      color={theme.colors.scannerCyan}
+                      name="photo.on.rectangle.angled"
+                      size={17}
+                    />
+                  </View>
+                  <View style={styles.listingGuideButtonCopy}>
+                    <Text style={[styles.listingGuideButtonEyebrow, { fontSize: responsiveFont(7) }]}>PHOTO SET</Text>
+                    <Text style={[styles.listingGuideButtonLabel, { fontSize: responsiveFont(15) }]}> Add photos</Text>
+                  </View>
+                  <IconSymbol
+                    color={theme.colors.scannerCyan}
+                    name="arrow.right"
+                    size={18}
+                  />
+                </Pressable>
+              ) : null}
+
+              {onDeletePress ? (
+                <Pressable
+                  accessibilityHint={
+                    isDeleting
+                      ? "Delete operation in progress"
+                      : `Deletes ${item.title} from KeepFlip inventory after confirmation`
+                  }
+                  accessibilityLabel={
+                    isDeleting
+                      ? `Deleting ${item.title}`
+                      : `Delete ${item.title} from inventory`
+                  }
+                  accessibilityRole="button"
+                  accessibilityState={{ busy: isDeleting, disabled: isDeleting }}
+                  disabled={isDeleting}
+                  onPress={onDeletePress}
+                  style={({ pressed }) => [
+                    styles.listingGuideButton,
+                    styles.deleteButton,
+                    pressed && styles.listingGuideButtonPressed,
+                    isDeleting && styles.deleteButtonDisabled,
+                  ]}
+                >
+                  <View style={[styles.listingGuideButtonIcon, styles.deleteButtonIcon]}>
+                    <IconSymbol
+                      color={theme.colors.danger}
+                      name="trash.fill"
+                      size={17}
+                    />
+                  </View>
+                  <View style={styles.listingGuideButtonCopy}>
+                    <Text style={[styles.listingGuideButtonEyebrow, styles.deleteButtonLabel, { fontSize: responsiveFont(7) }]}>INVENTORY CONTROL</Text>
+                    <Text style={[styles.listingGuideButtonLabel, styles.deleteButtonLabel, { fontSize: responsiveFont(15) }]}>
+                      {isDeleting ? "Deleting…" : "Delete item"}
+                    </Text>
+                  </View>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
+        </View>
       ) : null}
     </View>
   );
@@ -658,13 +686,16 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       left: 0,
     },
     photoCarouselContent: {
+      height: "100%",
       flexDirection: "row",
       alignItems: "stretch",
+      flexGrow: 1,
     },
     photoPage: {
       alignSelf: "stretch",
       flexGrow: 0,
       flexShrink: 0,
+      height: "100%",
       width: "100%",
       overflow: "hidden",
     },
@@ -913,6 +944,26 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     recordValueMuted: {
       color: theme.colors.textMuted,
+    },
+    itemActions: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.colors.divider,
+      backgroundColor: theme.colors.surfaceInset,
+    },
+    itemActionsToggle: {
+      width: 44,
+      height: 44,
+      alignItems: "center",
+      justifyContent: "center",
+      alignSelf: "flex-end",
+      marginRight: 7,
+      borderRadius: theme.radii.pill,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
+    },
+    itemActionsToggleExpanded: {
+      backgroundColor: theme.colors.cardSoft,
     },
     listingGuideButton: {
       position: "relative",

@@ -1,11 +1,23 @@
-import { useMemo } from 'react';
-import { useWindowDimensions } from 'react-native';
+import { createContext, createElement, useContext, useMemo, type PropsWithChildren } from 'react';
+import { Platform, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 
 const BASE_PHONE_WIDTH = 390;
 const BASE_PHONE_HEIGHT = 844;
+const WEB_PUBLIC_CONTENT_MAX_WIDTH = 1_170;
+const WEB_SIDEBAR_WIDTH = 264;
+
+const WebAppShellLayoutContext = createContext(false);
+
+export function WebAppShellLayoutProvider({ children }: PropsWithChildren) {
+  return createElement(
+    WebAppShellLayoutContext.Provider,
+    { value: true },
+    children,
+  );
+}
 
 export function clamp(value: number, minimum: number, maximum: number) {
   return Math.min(Math.max(value, minimum), maximum);
@@ -14,41 +26,85 @@ export function clamp(value: number, minimum: number, maximum: number) {
 export function useResponsiveLayout() {
   const { width, height, fontScale, scale: pixelRatio } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const isInsideWebAppShell = useContext(WebAppShellLayoutContext);
 
-  const shortestSide = Math.min(width, height);
-  const longestSide = Math.max(width, height);
-  const isLandscape = width > height;
+  const isWeb = Platform.OS === 'web';
+  // Expo static rendering can report zero dimensions before the browser mounts.
+  // Use the phone baseline until a real web viewport size is available.
+  const layoutWidth = isWeb && width <= 0 ? BASE_PHONE_WIDTH : width;
+  const layoutHeight = isWeb && height <= 0 ? BASE_PHONE_HEIGHT : height;
+
+  const shortestSide = Math.min(layoutWidth, layoutHeight);
+  const longestSide = Math.max(layoutWidth, layoutHeight);
+  const isLandscape = layoutWidth > layoutHeight;
   const isTablet = shortestSide >= 600;
-  const isWideTablet = isTablet && width >= 900;
-  const isCompactWidth = width < 360;
-  const isCompactHeight = height < 700;
-  const isTallPhone = !isTablet && height / Math.max(width, 1) >= 2;
+  const isWideTablet = isTablet && layoutWidth >= 900;
+  const isCompactWidth = layoutWidth < 360;
+  const isCompactHeight = layoutHeight < 700;
+  const isTallPhone = !isTablet && layoutHeight / Math.max(layoutWidth, 1) >= 2;
 
-  const pageGutter = isWideTablet ? 32 : isTablet ? 24 : isCompactWidth ? 8 : 12;
-  const contentMaxWidth = isWideTablet ? 1040 : isTablet ? 720 : 560;
-  const availableWidth = Math.max(0, width - pageGutter * 2);
-  const contentWidth = Math.min(availableWidth, contentMaxWidth);
+  const nativePageGutter = isWideTablet ? 32 : isTablet ? 24 : isCompactWidth ? 8 : 12;
+  const nativeContentMaxWidth = isWideTablet ? 1040 : isTablet ? 720 : 560;
+  const nativeAvailableWidth = Math.max(0, layoutWidth - nativePageGutter * 2);
+  const nativeContentWidth = Math.min(nativeAvailableWidth, nativeContentMaxWidth);
 
-  const widthScale = clamp(
-    contentWidth / (BASE_PHONE_WIDTH - 40),
+  const webPageGutter =
+    layoutWidth >= 1440 ? 32 : layoutWidth >= 980 ? 24 : layoutWidth >= 600 ? 20 : isCompactWidth ? 8 : 12;
+  const webSidebarReserve =
+    isWeb && isInsideWebAppShell && layoutWidth >= 980 ? WEB_SIDEBAR_WIDTH : 0;
+  const webAvailableWidth = Math.max(0, layoutWidth - webSidebarReserve);
+  const webContentMaxWidth = isInsideWebAppShell
+    ? webAvailableWidth
+    : Math.min(webAvailableWidth, WEB_PUBLIC_CONTENT_MAX_WIDTH);
+  const webContentWidth = Math.max(
+    0,
+    Math.min(webAvailableWidth, webContentMaxWidth - webPageGutter * 2),
+  );
+  const webGridColumns = webContentWidth >= 800 ? 3 : webContentWidth >= 500 ? 2 : 1;
+  const webWidthScale = clamp(
+    webContentWidth / (BASE_PHONE_WIDTH - 40),
     0.9,
     isTablet ? 1.24 : 1.12,
   );
-  const heightScale = clamp(height / BASE_PHONE_HEIGHT, 0.88, isTablet ? 1.18 : 1.12);
+  const nativeWidthScale = clamp(
+    nativeContentWidth / (BASE_PHONE_WIDTH - 40),
+    0.9,
+    isTablet ? 1.24 : 1.12,
+  );
+  const nativeHeightScale = clamp(layoutHeight / BASE_PHONE_HEIGHT, 0.88, isTablet ? 1.18 : 1.12);
+  const webHeightScale = clamp(layoutHeight / BASE_PHONE_HEIGHT, 0.88, isTablet ? 1.18 : 1.12);
+  const pageGutter = isWeb ? webPageGutter : nativePageGutter;
+  const contentMaxWidth = isWeb ? webContentMaxWidth : nativeContentMaxWidth;
+  const contentWidth = isWeb ? webContentWidth : nativeContentWidth;
+  const widthScale = isWeb ? webWidthScale : nativeWidthScale;
+  const heightScale = isWeb ? webHeightScale : nativeHeightScale;
 
-  const moderateScale = (value: number, factor = 0.5) => {
-    const scaled = value * widthScale;
+  const scaleWithWidth = (value: number, factor: number, scale: number) => {
+    const scaled = value * scale;
     return value + (scaled - value) * factor;
   };
+  const moderateScale = (value: number, factor = 0.5) =>
+    scaleWithWidth(value, factor, widthScale);
+  const webModerateScale = (value: number, factor = 0.5) =>
+    scaleWithWidth(value, factor, webWidthScale);
 
   const verticalScale = (value: number, factor = 1) => {
     const scaled = value * heightScale;
     return value + (scaled - value) * factor;
   };
 
-  const responsiveFont = (value: number, factor = 0.35) => moderateScale(value, factor);
-  const responsiveWidth = (value: number, factor = 0.5) => moderateScale(value, factor);
-  const responsiveHeight = (value: number, factor = 1) => verticalScale(value, factor);
+  const webResponsiveFont = (value: number, factor = 0.35) => webModerateScale(value, factor);
+  const nativeResponsiveFont = (value: number, factor = 0.35) => moderateScale(value, factor);
+  const nativeResponsiveWidth = (value: number, factor = 0.5) => moderateScale(value, factor);
+  const nativeResponsiveHeight = (value: number, factor = 1) => verticalScale(value, factor);
+  const webResponsiveWidth = (value: number, factor = 0.5) => webModerateScale(value, factor);
+  const webResponsiveHeight = (value: number, factor = 1) => {
+    const scaled = value * webHeightScale;
+    return value + (scaled - value) * factor;
+  };
+  const responsiveFont = isWeb ? webResponsiveFont : nativeResponsiveFont;
+  const responsiveWidth = isWeb ? webResponsiveWidth : nativeResponsiveWidth;
+  const responsiveHeight = isWeb ? webResponsiveHeight : nativeResponsiveHeight;
 
   const scannerWidth = clamp(
     contentWidth * (isTablet ? 0.72 : 0.88),
@@ -78,8 +134,8 @@ export function useResponsiveLayout() {
   );
 
   return {
-    width,
-    height,
+    width: layoutWidth,
+    height: layoutHeight,
     shortestSide,
     longestSide,
     fontScale,
@@ -91,6 +147,7 @@ export function useResponsiveLayout() {
     isCompactWidth,
     isCompactHeight,
     isTallPhone,
+    isWeb,
     pageGutter,
     contentMaxWidth,
     contentWidth,
@@ -101,6 +158,15 @@ export function useResponsiveLayout() {
     responsiveFont,
     responsiveWidth,
     responsiveHeight,
+    webPageGutter,
+    webContentMaxWidth,
+    webContentWidth,
+    webWidthScale,
+    webHeightScale,
+    webResponsiveFont,
+    webResponsiveWidth,
+    webResponsiveHeight,
+    webGridColumns,
     scannerWidth,
     scannerHeight,
     captureButtonSize,
@@ -111,7 +177,7 @@ export function useResponsiveLayout() {
     scannerRailHeight,
     scannerRailWidth,
     scannerWheelRadius,
-    gridColumns: isWideTablet ? 3 : 2,
+    gridColumns: isWeb ? webGridColumns : isWideTablet ? 3 : 2,
   };
 }
 

@@ -50,9 +50,9 @@ export function KeepFlipSubscriptionScreen({
   accountTab = false,
 }: KeepFlipSubscriptionScreenProps) {
   const {
-    contentMaxWidth,
-    contentWidth,
-    pageGutter
+    webContentMaxWidth,
+    webContentWidth,
+    webPageGutter,
   } = useResponsiveLayout();
 
   const { user } = useKeepFlipAuth();
@@ -198,7 +198,7 @@ export function KeepFlipSubscriptionScreen({
   return (
     <KeepFlipBackground>
       <ScrollView
-        contentContainerStyle={[styles.content, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+        contentContainerStyle={[styles.content, { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter }]}
         showsVerticalScrollIndicator={false}>
         <WebSiteHeader label="SUBSCRIPTION" />
 

@@ -36,6 +36,7 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   Share,
@@ -202,7 +203,10 @@ export default function ListingCreationGuideScreen() {
     contentWidth, insets, pageGutter, responsiveFont,
     responsiveWidth,
     responsiveHeight,
-    contentMaxWidth
+    contentMaxWidth,
+    webContentWidth,
+    webContentMaxWidth,
+    webPageGutter,
   } =
     useResponsiveLayout();
     const { width } = useWindowDimensions();
@@ -678,11 +682,11 @@ export default function ListingCreationGuideScreen() {
           paddingTop: insets.top + 15,
           paddingBottom: insets.bottom + 30,
           paddingHorizontal: pageGutter,
-        }, { width: width, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+        }, { width: width, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }, Platform.OS === "web" ? { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter } : undefined]}
         style={{ marginTop: insets.top, marginBottom: insets.bottom }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.page, { width: width }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
+      <View style={[styles.page, { width: width }, Platform.OS === "web" ? { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter } : undefined]}>
           <View style={styles.topRow}>
             <View style={styles.topCopy}>
               <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>SELLER WORKFLOW</Text>
