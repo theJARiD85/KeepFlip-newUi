@@ -144,6 +144,18 @@ export default function InventoryScreen() {
     contentWidth, insets, pageGutter, responsiveFont: scaleResponsiveFont,
   } =
     useResponsiveLayout();
+  const inventoryColumns =
+    Platform.OS === "web"
+      ? contentWidth >= 900
+        ? 3
+        : contentWidth >= 600
+          ? 2
+          : 1
+      : 1;
+  const inventoryColumnGap = 16;
+  const inventoryCardWidth =
+    (contentWidth - inventoryColumnGap * (inventoryColumns - 1)) /
+    inventoryColumns;
   const responsiveFont = (size: number, factor?: number) =>
     scaleResponsiveFont(Math.max(size, 11), factor);
 
@@ -377,16 +389,28 @@ export default function InventoryScreen() {
           <MetricsAnalyticsScreen embedded />
         ) : (
           <FlatList
+            key={`inventory-${inventoryColumns}`}
             contentContainerStyle={[
               styles.content,
               {
                 paddingBottom: insets.bottom + 30,
-                paddingHorizontal: pageGutter,
+                paddingHorizontal: Platform.OS === "web" ? 0 : pageGutter,
                 paddingTop: 15,
               },
             ]}
-            style={[styles.list, { marginBottom: insets.bottom }]}
+            style={[
+              styles.list,
+              Platform.OS === "web" && {
+                alignSelf: "center",
+                width: contentWidth,
+              },
+              { marginBottom: insets.bottom },
+            ]}
             data={feedRows}
+            numColumns={inventoryColumns}
+            columnWrapperStyle={
+              inventoryColumns > 1 ? styles.gridRow : undefined
+            }
             keyExtractor={(row) => row.id}
             ListHeaderComponent={
               <Pressable
@@ -447,7 +471,7 @@ export default function InventoryScreen() {
               row.kind === "native-ad" ? (
                 null
               ) : (
-                <View style={[styles.feedItem, { width: contentWidth }]}>
+                <View style={[styles.feedItem, { width: inventoryCardWidth }]}>
                   <InventoryCard
                     item={row.item}
                     onPress={() =>
@@ -663,8 +687,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     content: {
       flexGrow: 1,
-      alignItems: "flex-start",
+      alignItems: "stretch",
       justifyContent: "flex-start"
+    },
+    gridRow: {
+      justifyContent: "space-between",
     },
     viewTabs: {
       backgroundColor: theme.colors.surfaceOverlay,

@@ -205,7 +205,7 @@ export function WebOnboardingScreen({
             </Text>
           </View>
 
-          <View style={[styles.featureGrid, isWide && styles.featureGridWide]}>
+          <View style={[styles.featureGrid, isWide && styles.featureGridColumns]}>
             <FeatureCard
               accent={colors.scannerCyan}
               colors={colors}

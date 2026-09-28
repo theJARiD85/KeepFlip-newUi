@@ -80,6 +80,7 @@ export {
   Channel,
   ExecutionMethod,
   ID,
+  ImageFormat,
   Permission,
   Query,
   Role,
