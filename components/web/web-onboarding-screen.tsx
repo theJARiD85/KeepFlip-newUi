@@ -51,7 +51,12 @@ export function WebOnboardingScreen({
     });
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.backgroundDeep }]}>
+    <KeepFlipBackground>
+      <LinearGradient
+        colors={['#1e161298', '#34200534', '#1e161271', '#3420052e']}
+        style={styles.background}
+      >
+      <View style={styles.root}>
       <ScrollView
         ref={landingScrollRef}
         contentContainerStyle={styles.scrollContent}
@@ -302,6 +307,7 @@ export function WebOnboardingScreen({
           </View>
         </ScrollView>
       </View>
+      </LinearGradient>
     </KeepFlipBackground>
   );
 }
@@ -705,7 +711,6 @@ const styles = StyleSheet.create({
   compareGrid: { gap: 12 },
   compareGridWide: { flex: 1.15, flexDirection: 'row' },
   compareCard: { borderRadius: 18, borderWidth: 1, flex: 1, gap: 14, minWidth: 0, padding: 17 },
-  compareLabel: { fontFamily: theme.fonts.bold, fontSize: 10, letterSpacing: 0.2 },
   compareLabel: { fontFamily: theme.fonts.bold, fontSize: 10, letterSpacing: 0.2 },
   compareList: { gap: 11 },
   compareItem: { alignItems: 'center', flexDirection: 'row', gap: 8 },

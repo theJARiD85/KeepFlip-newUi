@@ -105,8 +105,6 @@ export function WebSiteFooter({ suppressAuthLinks = false }: { suppressAuthLinks
     isBusy ||
     pendingMfaSignIn !== null;
   const { width } = useWindowDimensions();
-  const { effectiveColorScheme } = useKeepFlipAppearance();
-  const colors = getKeepFlipThemeColors(effectiveColorScheme);
   const isPhone = width < 480;
 
   const openSupport = (subject: string) => {
