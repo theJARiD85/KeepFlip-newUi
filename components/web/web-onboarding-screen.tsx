@@ -35,7 +35,6 @@ export function WebOnboardingScreen({
   const {
     contentMaxWidth,
     contentWidth,
-    pageGutter
   } = useResponsiveLayout();
 
   const router = useRouter();
