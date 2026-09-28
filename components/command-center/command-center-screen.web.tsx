@@ -26,6 +26,7 @@ import {
 } from '@/services/inventory-service';
 import { listResellerLedgerEntries } from '@/services/reseller-ledger-service';
 
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 function money(cents: number) {
   const sign = cents < 0 ? '-' : '';
   return `${sign}$${(Math.abs(cents) / 100).toLocaleString(undefined, {
@@ -167,6 +168,12 @@ function PanelHeader({
 }
 
 export function CommandCenterScreen() {
+  const {
+    contentMaxWidth,
+    contentWidth,
+    pageGutter
+  } = useResponsiveLayout();
+
   const { width } = useWindowDimensions();
   const isWide = width >= 1180;
   const isMedium = width >= 720;
@@ -231,14 +238,12 @@ export function CommandCenterScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.backgroundDeep }]}>
       <ScrollView
-        contentContainerStyle={[
-          styles.content,
+        contentContainerStyle={[styles.content,
           {
             paddingHorizontal: isWide ? 42 : isMedium ? 28 : 18,
             paddingTop: isWide ? 38 : 26,
             paddingBottom: 48,
-          },
-        ]}
+          }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}>
         <View style={[styles.hero, isWide && styles.heroWide]}>

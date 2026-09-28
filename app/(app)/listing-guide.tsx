@@ -678,7 +678,7 @@ export default function ListingCreationGuideScreen() {
           paddingTop: insets.top + 15,
           paddingBottom: insets.bottom + 30,
           paddingHorizontal: pageGutter,
-        }, { width: width, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+        }, { width: width, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         style={{ marginTop: insets.top, marginBottom: insets.bottom }}
         showsVerticalScrollIndicator={false}
       >

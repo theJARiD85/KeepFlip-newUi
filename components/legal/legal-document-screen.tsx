@@ -43,7 +43,8 @@ export function LegalDocumentScreen({
   const {
     contentMaxWidth,
     pageGutter,
-    responsiveFont
+    responsiveFont,
+    contentWidth
   } = useResponsiveLayout();
   const { width } = useWindowDimensions();
 
@@ -59,7 +60,7 @@ export function LegalDocumentScreen({
         {
           paddingTop: insets.top + 15,
           paddingBottom: insets.bottom + 30,
-        }, {alignSelf: 'center', paddingHorizontal: pageGutter }]}
+        }, {alignSelf: 'center', paddingHorizontal: pageGutter }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         style={{marginTop: insets.top, marginBottom: insets.bottom}}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
@@ -99,7 +100,7 @@ export function LegalDocumentScreen({
               </Text>
           </View>
         </View>
-        <View style={[styles.document, { width: '100%', maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
+        <View style={[styles.document, { width: '100%', maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
           {sections.map((section, sectionIndex) => (
             <View
               key={`${section.title}-${sectionIndex}`}

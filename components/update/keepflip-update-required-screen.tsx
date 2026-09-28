@@ -67,14 +67,12 @@ export function KeepFlipUpdateRequiredScreen({
   return (
     <KeepFlipBackground contentStyle={styles.backgroundContent}>
       <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
+        contentContainerStyle={[styles.scrollContent,
           {
             paddingBottom: insets.bottom + 24,
             paddingHorizontal: pageGutter,
             paddingTop: insets.top + 24,
-          },
-        ]}
+          }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         showsVerticalScrollIndicator={false}
       >
         <View

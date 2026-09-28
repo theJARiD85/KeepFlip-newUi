@@ -34,6 +34,7 @@ import {
 import type { ResellerBuyRules } from '@/services/reseller-buy-rules-service';
 import { completeScanInventoryWalkthrough } from '@/services/user-profile-onboarding-service';
 
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 type WebAuthMode = 'sign-in' | 'create-account';
 
 type WebAuthCompletion = {
@@ -55,6 +56,12 @@ export function WebAuthScreen({
   onAuthenticated,
   onBack,
 }: WebAuthScreenProps) {
+  const {
+    contentMaxWidth,
+    contentWidth,
+    pageGutter
+  } = useResponsiveLayout();
+
   const router = useRouter();
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const colors = getKeepFlipThemeColors(effectiveColorScheme);
@@ -366,7 +373,7 @@ export function WebAuthScreen({
       style={[styles.root, { backgroundColor: colors.backgroundDeep }]}
     >
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         keyboardShouldPersistTaps="handled"
       >
         <WebSiteHeader

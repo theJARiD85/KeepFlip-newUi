@@ -26,6 +26,7 @@ import {
   presentKeepFlipWebBillingPaywall,
 } from '@/services/keepflip-web-billing';
 
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 type KeepFlipSubscriptionScreenProps = {
   accountTab?: boolean;
 };
@@ -48,6 +49,12 @@ function pause(milliseconds: number) {
 export function KeepFlipSubscriptionScreen({
   accountTab = false,
 }: KeepFlipSubscriptionScreenProps) {
+  const {
+    contentMaxWidth,
+    contentWidth,
+    pageGutter
+  } = useResponsiveLayout();
+
   const { user } = useKeepFlipAuth();
   const {
     refresh: refreshServerSubscription,
@@ -191,7 +198,7 @@ export function KeepFlipSubscriptionScreen({
   return (
     <KeepFlipBackground>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         showsVerticalScrollIndicator={false}>
         <WebSiteHeader label="SUBSCRIPTION" />
 

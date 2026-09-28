@@ -18,6 +18,7 @@ import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { WebSiteFooter, WebSiteHeader } from '@/components/web/web-site-chrome';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
 
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 type IconName = ComponentProps<typeof IconSymbol>['name'];
 type FlowVisualKind = 'source' | 'decide' | 'run';
 
@@ -31,6 +32,12 @@ export function WebOnboardingScreen({
   onExistingLogin?: () => void;
   onNewUser?: () => void;
 }) {
+  const {
+    contentMaxWidth,
+    contentWidth,
+    pageGutter
+  } = useResponsiveLayout();
+
   const router = useRouter();
   const landingScrollRef = useRef<ScrollView>(null);
   const workflowOffsetRef = useRef(0);
@@ -59,10 +66,10 @@ export function WebOnboardingScreen({
       <View style={styles.root}>
       <ScrollView
         ref={landingScrollRef}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.page}>
+        <View style={[styles.page, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
           <WebSiteHeader
             label="RESELLER COMMAND CENTER"
             onGetStarted={getStarted}

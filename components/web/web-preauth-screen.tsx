@@ -19,6 +19,7 @@ import {
   type ResellerBuyRules,
 } from '@/services/reseller-buy-rules-service';
 
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 type IconName = ComponentProps<typeof IconSymbol>['name'];
 
 type QuestionChoice = {
@@ -263,6 +264,12 @@ export function WebPreAuthScreen({
   onBack?: () => void;
   onComplete: (name: string, rules: ResellerBuyRules) => void;
 }) {
+  const {
+    contentMaxWidth,
+    contentWidth,
+    pageGutter
+  } = useResponsiveLayout();
+
   const { markActivity, setMode } = useFlipCompanion();
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const colors = getKeepFlipThemeColors(effectiveColorScheme);
@@ -357,13 +364,13 @@ export function WebPreAuthScreen({
   return (
     <View style={[styles.root, { backgroundColor: colors.backgroundDeep }]}>
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         <WebSiteHeader label="SET UP YOUR RESELLER PROFILE" showActions={false} />
 
-        <View style={styles.content}>
+        <View style={[styles.content, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
           <View style={styles.topRow}>
             <Pressable
               accessibilityLabel="Go back"

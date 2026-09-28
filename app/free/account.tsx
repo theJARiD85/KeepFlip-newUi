@@ -12,7 +12,12 @@ import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive
 
 export default function FreeAccountRoute() {
   const styles = useResponsiveStyles(createStyles);
-  const { responsiveFont } = useResponsiveLayout();
+  const {
+    responsiveFont,
+    contentMaxWidth,
+    contentWidth,
+    pageGutter
+  } = useResponsiveLayout();
   const { isBusy, signOut, user } = useKeepFlipAuth();
   const presentPaywall = useFreeTierPaywall();
   const [appearancePickerOpen, setAppearancePickerOpen] = useState(false);
@@ -30,7 +35,7 @@ export default function FreeAccountRoute() {
 
   return (
     <KeepFlipBackground>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
         <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>KEEPFLIP / FREE SCANNER</Text>
         <Text style={[styles.title, { fontSize: responsiveFont(27) }]}>Your account</Text>
         <Text style={[styles.subtitle, { fontSize: responsiveFont(13) }]}>Your scanner and valuation workspace.</Text>

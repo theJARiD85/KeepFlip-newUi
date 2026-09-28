@@ -26,7 +26,7 @@ function WebFlipAssistantScreen() {
   };
 
   return (
-    <View style={styles.page}>
+    <View style={[styles.page, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
       <View
         style={[
           styles.content,

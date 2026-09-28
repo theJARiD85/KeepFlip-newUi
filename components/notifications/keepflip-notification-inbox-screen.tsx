@@ -43,7 +43,12 @@ export function KeepFlipNotificationInboxScreen({
 } = {}) {
   const styles = useResponsiveStyles(createResponsiveStyles);
   const insets = useSafeAreaInsets();
-  const { responsiveFont } = useResponsiveLayout();
+  const {
+    responsiveFont,
+    contentMaxWidth,
+    contentWidth,
+    pageGutter
+  } = useResponsiveLayout();
   const { status, user } = useKeepFlipAuth();
   const userId = user?.$id ?? null;
   const router = useRouter();
@@ -121,8 +126,8 @@ export function KeepFlipNotificationInboxScreen({
   return (
     <KeepFlipBackground>
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + 15, paddingBottom: insets.bottom + 30}]}
-        style={[styles.page, {marginTop: insets.top, marginBottom: insets.bottom}]}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + 15, paddingBottom: insets.bottom + 30}, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+        style={[styles.page, {marginTop: insets.top, marginBottom: insets.bottom}, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         refreshControl={
           <RefreshControl
             colors={[theme.colors.scannerCyan]}
