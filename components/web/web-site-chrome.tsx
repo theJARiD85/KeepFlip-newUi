@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
-import { type Href, useRouter } from 'expo-router';
-import { Linking, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Link, type Href, useRouter } from 'expo-router';
+import { createElement, type CSSProperties } from 'react';
+import { Linking, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
@@ -13,6 +14,7 @@ type WebSiteHeaderProps = {
   onHowItWorks?: () => void;
   onSignIn?: () => void;
   showActions?: boolean;
+  showMarketingLinks?: boolean;
 };
 
 export function WebSiteHeader({
@@ -20,6 +22,7 @@ export function WebSiteHeader({
   onGetStarted,
   onHowItWorks,
   onSignIn,
+  showMarketingLinks = false,
   showActions = true,
 }: WebSiteHeaderProps) {
   const router = useRouter();
@@ -29,37 +32,43 @@ export function WebSiteHeader({
   const isCompact = width < 720;
   const isPhone = width < 480;
 
-  const goHome = () => router.push('/welcome' as Href);
   const goToSignIn = onSignIn ?? (() => router.push('/sign-in' as Href));
   const goToGetStarted = onGetStarted ?? (() => router.push('/welcome' as Href));
 
   return (
     <View style={[styles.header, isPhone && styles.headerPhone, { borderBottomColor: colors.divider }]}>
-      <Pressable
-        accessibilityLabel="KeepFlip home"
-        accessibilityRole="button"
-        onPress={goHome}
-        style={({ pressed }) => [styles.brand, pressed && styles.pressed]}
-      >
-        <Image
-          accessibilityLabel="KeepFlip"
-          contentFit="contain"
-          source={require('@/assets/images/icon3.png')}
-          style={styles.brandMark}
-        />
-        <View style={styles.brandCopy}>
-          <Text style={[styles.brandName, { color: colors.text }]}>KEEPFLIP</Text>
-          <Text style={[styles.brandTagline, { color: colors.goldBright }]}>
-            SOURCING SMARTER. FLIPPING BETTER.
-          </Text>
-        </View>
-      </Pressable>
+      <Link href="/welcome" asChild>
+        <Pressable
+          accessibilityLabel="KeepFlip home"
+          accessibilityRole="link"
+          style={({ pressed }) => [styles.brand, pressed && styles.pressed]}
+        >
+          <Image
+            accessibilityLabel="KeepFlip"
+            contentFit="contain"
+            source={require('@/assets/images/icon3.png')}
+            style={styles.brandMark}
+          />
+          <View style={styles.brandCopy}>
+            <Text style={[styles.brandName, { color: colors.text }]}>KEEPFLIP</Text>
+            <Text style={[styles.brandTagline, { color: colors.goldBright }]}>
+              SOURCING SMARTER. FLIPPING BETTER.
+            </Text>
+          </View>
+        </Pressable>
+      </Link>
 
       <View style={[styles.headerRight, isCompact && styles.headerRightCompact, isPhone && styles.headerRightPhone]}>
         <Text style={[styles.headerLabel, isPhone && styles.headerLabelPhone, { color: colors.textMuted }]}>{label}</Text>
         {showActions ? (
           <View style={[styles.headerActions, isPhone && styles.headerActionsPhone]}>
-            {onHowItWorks ? (
+            {showMarketingLinks ? (
+              <>
+                <HeaderRouteLink colors={colors} href="/features" label="HOW IT WORKS" />
+                <HeaderRouteLink colors={colors} href="/pricing" label="PRICING" />
+                <HeaderRouteLink colors={colors} href="/about" label="ABOUT" />
+              </>
+            ) : onHowItWorks ? (
               <Pressable
                 accessibilityRole="button"
                 onPress={onHowItWorks}
@@ -68,24 +77,38 @@ export function WebSiteHeader({
                 <Text style={[styles.headerLinkText, { color: colors.textMuted }]}>HOW IT WORKS</Text>
               </Pressable>
             ) : null}
-            <Pressable
-              accessibilityRole="button"
-              onPress={goToSignIn}
-              style={({ pressed }) => [styles.headerLink, pressed && styles.pressed]}
-            >
-              <Text style={[styles.headerLinkText, { color: colors.textMuted }]}>SIGN IN</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              onPress={goToGetStarted}
-              style={({ pressed }) => [
-                styles.headerCta,
-                { backgroundColor: colors.gold, borderColor: colors.gold },
-                pressed && styles.pressed,
-              ]}
-            >
-              <Text style={[styles.headerCtaText, { color: colors.textOnAccent }]}>GET STARTED</Text>
-            </Pressable>
+            {showMarketingLinks ? (
+              <>
+                <HeaderRouteLink colors={colors} href="/sign-in" label="SIGN IN" />
+                <HeaderRouteLink
+                  colors={colors}
+                  href="https://play.google.com/store/apps/details?id=com.keepflip.app"
+                  label="TRY FREE SCANNER"
+                  primary
+                />
+              </>
+            ) : (
+              <>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={goToSignIn}
+                  style={({ pressed }) => [styles.headerLink, pressed && styles.pressed]}
+                >
+                  <Text style={[styles.headerLinkText, { color: colors.textMuted }]}>SIGN IN</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={goToGetStarted}
+                  style={({ pressed }) => [
+                    styles.headerCta,
+                    { backgroundColor: colors.gold, borderColor: colors.gold },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={[styles.headerCtaText, { color: colors.textOnAccent }]}>GET STARTED</Text>
+                </Pressable>
+              </>
+            )}
           </View>
         ) : null}
       </View>
@@ -93,8 +116,13 @@ export function WebSiteHeader({
   );
 }
 
-export function WebSiteFooter({ suppressAuthLinks = false }: { suppressAuthLinks?: boolean }) {
-  const router = useRouter();
+export function WebSiteFooter({
+  showMarketingLinks = false,
+  suppressAuthLinks = false,
+}: {
+  showMarketingLinks?: boolean;
+  suppressAuthLinks?: boolean;
+}) {
   const { isBusy, pendingMfaSignIn, status } = useKeepFlipAuth();
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const colors = getKeepFlipThemeColors(effectiveColorScheme);
@@ -119,11 +147,27 @@ export function WebSiteFooter({ suppressAuthLinks = false }: { suppressAuthLinks
         <View style={[styles.footerBrand, isPhone && styles.footerBrandPhone]}>
           <Text style={[styles.footerName, { color: colors.text }]}>KEEPFLIP</Text>
           <Text style={[styles.footerDescription, { color: colors.textMuted }]}>
-            The reseller command center for sourcing, inventory, listings, and real profit.
+            Research a find, check the numbers before you buy, and track what you keep after the sale.
           </Text>
         </View>
 
         <View style={[styles.footerLinks, isPhone && styles.footerLinksPhone]}>
+          {showMarketingLinks ? (
+            <>
+              <FooterRouteLink colors={colors} href="/pricing" label="Pricing" />
+              <FooterRouteLink colors={colors} href="/features" label="How it works" />
+              <FooterRouteLink colors={colors} href="/about" label="About" />
+              <FooterRouteLink colors={colors} href="/changelog" label="Changelog" />
+              <FooterRouteLink colors={colors} href="/vs/flipai" label="Compare FlipAI" />
+              <FooterRouteLink colors={colors} href="/vs/vendoo" label="Compare Vendoo" />
+              <FooterRouteLink colors={colors} href="/vs/spreadsheets" label="Compare spreadsheets" />
+              <FooterExternalLink
+                colors={colors}
+                href="https://play.google.com/store/apps/details?id=com.keepflip.app"
+                label="Try free on Android"
+              />
+            </>
+          ) : null}
           <FooterLink
             colors={colors}
             label="Help"
@@ -134,28 +178,16 @@ export function WebSiteFooter({ suppressAuthLinks = false }: { suppressAuthLinks
             label="Contact us"
             onPress={() => openSupport('KeepFlip contact')}
           />
-          <FooterLink
-            colors={colors}
-            label="Terms"
-            onPress={() => router.push('/terms' as Href)}
-          />
-          <FooterLink
-            colors={colors}
-            label="Privacy"
-            onPress={() => router.push('/privacy' as Href)}
-          />
+          <FooterRouteLink colors={colors} href="/terms" label="Terms" />
+          <FooterRouteLink colors={colors} href="/privacy" label="Privacy" />
           {!shouldHideAuthLinks ? (
             <>
-              <FooterLink
-                colors={colors}
-                label="Sign in"
-                onPress={() => router.push('/sign-in' as Href)}
-              />
-              <FooterLink
-                colors={colors}
-                label="Get started"
-                onPress={() => router.push('/welcome' as Href)}
+              <FooterRouteLink colors={colors} href="/sign-in" label="Sign in" />
+              <FooterRouteLink
                 accent
+                colors={colors}
+                label={showMarketingLinks ? 'View pricing' : 'Get started'}
+                href={showMarketingLinks ? '/pricing' : '/welcome'}
               />
             </>
           ) : null}
@@ -171,6 +203,155 @@ export function WebSiteFooter({ suppressAuthLinks = false }: { suppressAuthLinks
         </Text>
       </View>
     </View>
+  );
+}
+
+function HeaderRouteLink({
+  colors,
+  href,
+  label,
+  primary = false,
+}: {
+  colors: ReturnType<typeof getKeepFlipThemeColors>;
+  href: string;
+  label: string;
+  primary?: boolean;
+}) {
+  if (Platform.OS === 'web') {
+    const anchorStyle: CSSProperties = {
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      backgroundColor: primary ? colors.gold : 'transparent',
+      border: primary ? `1px solid ${colors.gold}` : '1px solid transparent',
+      borderRadius: primary ? theme.radii.pill : 0,
+      color: primary ? colors.textOnAccent : colors.textMuted,
+      display: 'inline-flex',
+      fontFamily: theme.fonts.bold,
+      fontSize: primary ? 11 : 12,
+      justifyContent: 'center',
+      letterSpacing: primary ? 0.85 : 0.9,
+      minHeight: 38,
+      padding: primary ? '0 12px' : '0 6px',
+      textDecoration: 'none',
+    };
+    return createElement('a', { href, style: anchorStyle }, label);
+  }
+
+  return (
+    <Link href={href as Href} asChild>
+      <Pressable
+        accessibilityRole="link"
+        style={({ pressed }) => [
+          primary ? styles.headerCta : styles.headerLink,
+          primary
+            ? { backgroundColor: colors.gold, borderColor: colors.gold }
+            : null,
+          pressed && styles.pressed,
+        ]}
+      >
+        <Text
+          style={[
+            primary ? styles.headerCtaText : styles.headerLinkText,
+            { color: primary ? colors.textOnAccent : colors.textMuted },
+          ]}
+        >
+          {label}
+        </Text>
+      </Pressable>
+    </Link>
+  );
+}
+
+function FooterRouteLink({
+  accent = false,
+  colors,
+  href,
+  label,
+}: {
+  accent?: boolean;
+  colors: ReturnType<typeof getKeepFlipThemeColors>;
+  href: string;
+  label: string;
+}) {
+  if (Platform.OS === 'web') {
+    return createElement(
+      'a',
+      {
+        href,
+        style: {
+          alignItems: 'center',
+          backgroundColor: accent ? colors.gold : 'transparent',
+          border: `1px solid ${accent ? colors.gold : 'transparent'}`,
+          borderRadius: theme.radii.pill,
+          color: accent ? colors.textOnAccent : colors.textMuted,
+          display: 'inline-flex',
+          fontFamily: theme.fonts.semibold,
+          fontSize: 12,
+          justifyContent: 'center',
+          minHeight: 31,
+          padding: '0 10px',
+          textDecoration: 'none',
+        },
+      },
+      label,
+    );
+  }
+
+  return (
+    <Link href={href as Href} asChild>
+      <Pressable
+        accessibilityRole="link"
+        style={({ pressed }) => [
+          styles.footerLink,
+          accent && { backgroundColor: colors.gold, borderColor: colors.gold },
+          pressed && styles.pressed,
+        ]}
+      >
+        <Text style={[styles.footerLinkText, { color: accent ? colors.textOnAccent : colors.textMuted }]}>{label}</Text>
+      </Pressable>
+    </Link>
+  );
+}
+
+function FooterExternalLink({
+  colors,
+  href,
+  label,
+}: {
+  colors: ReturnType<typeof getKeepFlipThemeColors>;
+  href: string;
+  label: string;
+}) {
+  if (Platform.OS === 'web') {
+    return createElement(
+      'a',
+      {
+        href,
+        rel: 'noopener noreferrer',
+        style: {
+          alignItems: 'center',
+          border: '1px solid transparent',
+          borderRadius: theme.radii.pill,
+          color: colors.textMuted,
+          display: 'inline-flex',
+          fontFamily: theme.fonts.semibold,
+          fontSize: 12,
+          justifyContent: 'center',
+          minHeight: 31,
+          padding: '0 10px',
+          textDecoration: 'none',
+        },
+      },
+      label,
+    );
+  }
+
+  return (
+    <Link href={href as Href} asChild>
+      <Pressable accessibilityRole="link" style={({ pressed }) => [styles.footerLink, pressed && styles.pressed]}>
+        <Text style={[styles.footerLinkText, { color: colors.textMuted }]}>{label}</Text>
+      </Pressable>
+    </Link>
   );
 }
 

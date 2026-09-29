@@ -1,0 +1,32 @@
+# KeepFlip
+
+> KeepFlip helps solo flippers who source in person and sell on eBay research a find, count costs before buying, and track inventory and profit through the sale.
+
+## Product
+
+- KeepFlip has an Android app and a browser workspace.
+- The Android free scanner path allows up to 20 scans per month, does not require a credit card, and does not save inventory.
+- Scan and resale values are estimates. Resellers review the evidence and make their own buy decisions.
+- KeepFlip connects to eBay through eBay sign-in and authorized eBay APIs for selected seller and listing details.
+- KeepFlip is not a five-marketplace crosslisting tool.
+
+## Pricing
+
+- The US web Serious Reseller plan is $18 per month or $180 per year. Annual billing saves $36 compared with 12 monthly payments.
+- One paid plan includes every KeepFlip feature and up to 250 active listings total.
+- The web checkout does not currently include a free trial.
+- Google Play shows its purchase price in the store before confirmation. The public listing currently reports in-app purchases from $18 to $180.
+
+## Public pages
+
+- Home: https://keep-flip.com/
+- Pricing: https://keep-flip.com/pricing
+- How it works: https://keep-flip.com/features
+- About: https://keep-flip.com/about
+- KeepFlip vs FlipAI: https://keep-flip.com/vs/flipai
+- KeepFlip vs Vendoo: https://keep-flip.com/vs/vendoo
+- KeepFlip vs spreadsheets: https://keep-flip.com/vs/spreadsheets
+- Changelog: https://keep-flip.com/changelog
+- Privacy: https://keep-flip.com/privacy
+- Terms: https://keep-flip.com/terms
+- Google Play: https://play.google.com/store/apps/details?id=com.keepflip.app

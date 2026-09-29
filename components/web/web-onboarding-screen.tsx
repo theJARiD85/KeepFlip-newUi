@@ -1,9 +1,6 @@
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
-import { useRef } from 'react';
 import type { ComponentProps } from 'react';
 import {
-  Pressable,
   Platform,
   ScrollView,
   StyleSheet,
@@ -17,6 +14,22 @@ import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { WebSiteFooter, WebSiteHeader } from '@/components/web/web-site-chrome';
+import {
+  SemanticHeading,
+  WebActionLink,
+  WebContentSection,
+  WebCopy,
+  WebPageHead,
+  WebTextLink,
+} from '@/components/web/web-public-page';
+import {
+  KEEPFLIP_EBAY_CONNECTION_COPY,
+  KEEPFLIP_FREE_ANDROID_SCANS_PER_MONTH,
+  KEEPFLIP_GOOGLE_PLAY_URL,
+  KEEPFLIP_HOME_FAQS,
+  KEEPFLIP_HOME_DESCRIPTION,
+  KEEPFLIP_HOME_TITLE,
+} from '@/constants/keepflip-public-site';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
 
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
@@ -26,26 +39,19 @@ type FlowVisualKind = 'source' | 'decide' | 'run';
 const FLOW_SCANNER_IMAGE = require('@/assets/google-play/keepflip-play-scanner.png');
 const FLOW_ITEM_IMAGE = require('@/assets/images/walkthrough-coach-bag.jpeg');
 
-export function WebOnboardingScreen({
-  onExistingLogin,
-  onNewUser,
-}: {
-  onExistingLogin?: () => void;
-  onNewUser?: () => void;
-}) {
+export function WebOnboardingScreen() {
   const {
     webContentMaxWidth,
     webContentWidth,
     webPageGutter,
   } = useResponsiveLayout();
 
-  const router = useRouter();
-  const landingScrollRef = useRef<ScrollView>(null);
-  const workflowOffsetRef = useRef(0);
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const colors = getKeepFlipThemeColors(effectiveColorScheme);
   const { width } = useWindowDimensions();
   const isWide = width >= 1040;
+  const isTablet = width >= 720 && !isWide;
+  const isPhone = width < 480;
   const webContentSizing =
     Platform.OS === 'web'
       ? {
@@ -56,33 +62,25 @@ export function WebOnboardingScreen({
         }
       : undefined;
 
-  const goToSignIn = onExistingLogin ?? (() => router.push('/sign-in'));
-  const getStarted = onNewUser ?? (() => router.push('/meet-flip'));
-  const scrollToWorkflow = () =>
-    landingScrollRef.current?.scrollTo({
-      animated: true,
-      y: Math.max(0, workflowOffsetRef.current - 20),
-    });
-
   return (
-    <KeepFlipBackground>
+    <>
+      <WebPageHead
+        canonicalPath="/"
+        description={KEEPFLIP_HOME_DESCRIPTION}
+        title={KEEPFLIP_HOME_TITLE}
+      />
+      <KeepFlipBackground>
       <LinearGradient
         colors={['#1e161298', '#34200534', '#1e161271', '#3420052e']}
         style={styles.background}
       >
       <View style={styles.root}>
       <ScrollView
-        ref={landingScrollRef}
         contentContainerStyle={[styles.scrollContent, webContentSizing]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.page, webContentSizing]}>
-          <WebSiteHeader
-            label="RESELLER COMMAND CENTER"
-            onGetStarted={getStarted}
-            onHowItWorks={scrollToWorkflow}
-            onSignIn={goToSignIn}
-          />
+        <View style={[styles.page, isPhone && styles.pagePhone, webContentSizing]}>
+          <WebSiteHeader label="TOOLS FOR SOLO RESELLERS" showMarketingLinks />
 
           <View style={[styles.hero, isWide && styles.heroWide]}>
             <View style={styles.heroCopy}>
@@ -92,37 +90,52 @@ export function WebOnboardingScreen({
                 </Text>
                 <View style={[styles.livePill, { backgroundColor: colors.iconSurfaceCyan, borderColor: colors.accentCyanBorder }]}>
                   <View style={[styles.liveDot, { backgroundColor: colors.scannerCyan }]} />
-                  <Text style={[styles.livePillText, { color: colors.scannerCyan }]}>BUILT FOR RESELLERS</Text>
+                  <Text style={[styles.livePillText, { color: colors.scannerCyan }]}>BUILT FOR SOLO FLIPPERS</Text>
                 </View>
               </View>
-              <Text style={[styles.heroTitle, { color: colors.text }]}>
-                KeepFlip is the reseller command center for sourcing smarter, managing inventory, and knowing your real profit.
-              </Text>
+              <SemanticHeading
+                level={1}
+                style={[styles.heroTitle, isPhone && styles.heroTitlePhone, { color: colors.text }]}
+              >
+                KeepFlip takes you from the find to the sale: research, buy decisions, inventory, and the profit you kept after fees.
+              </SemanticHeading>
               <Text style={[styles.heroBody, { color: colors.textMuted }]}>
-                Keep every flip moving from the first Android scan to the final sale. KeepFlip brings item research, buying decisions, inventory, listings, expenses, and realized profit into one clear workflow.
+                Scan a find on Android, check the likely net after fees before you buy, then track what you bought and what you kept.
               </Text>
               <View style={styles.heroActions}>
-                <ActionButton
-                  colors={colors}
-                  label="Start my reseller workflow"
-                  onPress={getStarted}
-                  primary
+                <WebActionLink
+                  href={KEEPFLIP_GOOGLE_PLAY_URL}
+                  label="Try 20 free scans on Android"
                 />
-                <ActionButton
-                  colors={colors}
-                  label="See how the workflow works"
-                  onPress={scrollToWorkflow}
+                <WebActionLink
+                  href="/pricing"
+                  label="See plan prices"
+                  secondary
                 />
+                <WebActionLink
+                  href="/features"
+                  label="How it works"
+                  secondary
+                />
+              </View>
+              <Text style={[styles.freeEntryNote, { color: colors.textMuted }]}>
+                Free scanner on Android: up to {KEEPFLIP_FREE_ANDROID_SCANS_PER_MONTH} scans a month, no card needed, and no saved inventory.
+              </Text>
+              <Text style={[styles.scopeCopy, { color: colors.textMuted }]}>
+                Built for solo flippers who source in person and sell on eBay. If you crosslist to five marketplaces, KeepFlip is not that tool yet.
+              </Text>
+              <View style={styles.downloadProof}>
+                <WebTextLink href={KEEPFLIP_GOOGLE_PLAY_URL} label="100+ downloads on Google Play" />
               </View>
               <View style={styles.heroProof}>
                 <ProofItem colors={colors} label="SOURCE" detail="Scan with the Android app" />
                 <ProofItem colors={colors} label="DECIDE" detail="Know the numbers before you buy" />
-                <ProofItem colors={colors} label="RUN" detail="Track what you kept after the sale" />
+                <ProofItem colors={colors} label="TRACK" detail="See what you kept after the sale" />
               </View>
             </View>
 
-            <View style={[styles.heroVisual, !isWide && styles.heroVisualStacked, { backgroundColor: colors.card, borderColor: colors.divider }]}>
-              <View style={styles.heroVisualHeader}>
+            <View style={[styles.heroVisual, !isWide && styles.heroVisualStacked, isPhone && styles.heroVisualPhone, { backgroundColor: colors.card, borderColor: colors.divider }]}>
+              <View style={[styles.heroVisualHeader, isPhone && styles.heroVisualHeaderPhone]}>
                 <View>
                   <Text style={[styles.visualEyebrow, { color: colors.goldBright }]}>A FLIP, WITHOUT THE TAB CHAOS</Text>
                   <Text style={[styles.visualTitle, { color: colors.text }]}>From find to finished.</Text>
@@ -134,7 +147,8 @@ export function WebOnboardingScreen({
               </View>
               <View style={[styles.heroScreenshotFrame, { backgroundColor: colors.surfaceInset, borderColor: colors.divider }]}>
                 <Image
-                  accessibilityLabel="Placeholder KeepFlip Android scanner image"
+                  accessibilityLabel="Android screenshot of KeepFlip identifying a refrigerator and showing scan confidence"
+                  alt="KeepFlip Android scan screen identifying a refrigerator and showing its confidence level."
                   contentFit="cover"
                   source={FLOW_SCANNER_IMAGE}
                   style={styles.heroScreenshot}
@@ -150,6 +164,9 @@ export function WebOnboardingScreen({
                 <MiniMetric colors={colors} label="NET AFTER COSTS" value="$74" accent={colors.scannerCyan} />
                 <MiniMetric colors={colors} label="BUY SIGNAL" value="STRONG" accent={colors.success} />
               </View>
+              <Text style={[styles.exampleNote, { color: colors.textMuted }]}>
+                Illustrative example. Actual estimates depend on the item, condition, market evidence, and your costs.
+              </Text>
               <View style={[styles.flipStrip, { backgroundColor: colors.iconSurfaceViolet, borderColor: colors.accentVioletBorder }]}>
                 <FlipCompanion cropToSquare={false} size={isWide ? 78 : 64} />
                 <View style={styles.flipStripCopy}>
@@ -160,52 +177,58 @@ export function WebOnboardingScreen({
             </View>
           </View>
 
-          <View style={[styles.promiseBand, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
+          <View style={[styles.promiseBand, isPhone && styles.promiseBandPhone, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
             <View style={styles.promiseCopy}>
               <Text style={[styles.promiseEyebrow, { color: colors.goldBright }]}>THE WHOLE FLIP STORY</Text>
-              <Text style={[styles.promiseTitle, { color: colors.text }]}>One place to make better seller decisions.</Text>
+              <SemanticHeading level={2} style={[styles.promiseTitle, { color: colors.text }]}>One place to make better seller decisions.</SemanticHeading>
             </View>
-            <View style={styles.promiseStats}>
+            <View style={[styles.promiseStats, isPhone && styles.promiseStatsPhone]}>
               <PromiseStat colors={colors} value="01" label="SOURCE" />
               <PromiseStat colors={colors} value="02" label="DECIDE" />
-              <PromiseStat colors={colors} value="03" label="RUN" />
+              <PromiseStat colors={colors} value="03" label="TRACK" />
               <PromiseStat colors={colors} value="04" label="LEARN" />
             </View>
           </View>
 
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionEyebrow, { color: colors.goldBright }]}>HOW KEEPFLIP WORKS FOR RESELLERS</Text>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>A clearer path through every flip.</Text>
+            <SemanticHeading level={2} style={[styles.sectionTitle, isPhone && styles.sectionTitlePhone, { color: colors.text }]}>A clearer path through every flip.</SemanticHeading>
             <Text style={[styles.sectionBody, { color: colors.textMuted }]}>
-              KeepFlip turns a scattered reseller routine into a repeatable workflow: capture the opportunity in the Android app, make the call, then keep the business record honest.
+              Search the find on Android. Count the costs before you buy. Track the item until it sells and see what was left after fees.
             </Text>
           </View>
 
-          <View style={[styles.flowGrid, isWide && styles.flowGridWide]}>
+          <View style={[styles.flowGrid, isTablet && styles.flowGridTablet, isWide && styles.flowGridWide]}>
             <FlowStep
               accent={colors.scannerCyan}
               body="Use the Android app to scan or photograph a possible buy and get item identity, condition signals, valuation context, and market research without opening five different tools."
+              compact={isPhone}
               colors={colors}
               label="SOURCE WITH SIGNAL"
               number="01"
+              tablet={isTablet}
               title="Find something worth investigating."
               visual="source"
             />
             <FlowStep
               accent={colors.goldBright}
-              body="Use acquisition cost, fees, shipping, discounts, and your reseller buying rules to see the likely net profit before your cash is tied up."
+              body="Count what you pay, fees, shipping, discounts, and your target return before cash is tied up. Keep the market evidence with the find so you can explain why it made sense to buy."
+              compact={isPhone}
               colors={colors}
               label="DECIDE WITH CONTEXT"
               number="02"
+              tablet={isTablet}
               title="Know whether the deal makes sense."
               visual="decide"
             />
             <FlowStep
               accent={colors.scannerViolet}
               body="Save the item, track its location and listing status, connect the sale, and see what you actually kept after the flip was complete."
+              compact={isPhone}
               colors={colors}
-              label="RUN THE BUSINESS"
+              label="TRACK THE ITEM"
               number="03"
+              tablet={isTablet}
               title="Keep the item moving until it is done."
               visual="run"
             />
@@ -213,7 +236,7 @@ export function WebOnboardingScreen({
 
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionEyebrow, { color: colors.goldBright }]}>THE KEEPFLIP TOOLKIT</Text>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>The parts of the reseller business that usually get scattered.</Text>
+            <SemanticHeading level={2} style={[styles.sectionTitle, isPhone && styles.sectionTitlePhone, { color: colors.text }]}>The parts of reselling that usually get scattered.</SemanticHeading>
             <Text style={[styles.sectionBody, { color: colors.textMuted }]}>
               KeepFlip connects the decisions that determine whether a flip is actually worth your time and cash.
             </Text>
@@ -224,105 +247,124 @@ export function WebOnboardingScreen({
               accent={colors.scannerCyan}
               colors={colors}
               icon="barcode.viewfinder"
-              title="AI item scan and valuation"
-              body="Use the Android app's scanner to identify what you are looking at, assess the evidence, and get a realistic resale range with confidence levels instead of a made-up single number."
+              title="Scan a find and check its resale range"
+              body="Use the Android app to identify an item, review the market evidence, and see an estimated resale range with confidence signals. It is a starting point for your research, not a guaranteed sale price."
             />
             <FeatureCard
               accent={colors.goldBright}
               colors={colors}
               icon="checkmark.circle.fill"
-              title="Personalized buy decisions"
-              body="KeepFlip considers the reseller rules you gave Flip—your pace, categories, labor tolerance, and risk preference—when it helps you decide."
+              title="Buy rules that fit how you sell"
+              body="Set your own categories, target return, and buying rules. Flip uses them as context while you decide whether a find is worth your cash."
             />
             <FeatureCard
               accent={colors.scannerViolet}
               colors={colors}
               icon="dollarsign.circle.fill"
-              title="True net-profit pricing"
-              body="Price around acquisition cost, marketplace fees, shipping, promotions, discounts, refunds, and ROI—not just the listing price."
+              title="Know what you may keep after fees"
+              body="Count what you paid, marketplace fees, shipping, discounts, and other costs so the listing price is not mistaken for your profit."
             />
             <FeatureCard
               accent={colors.scannerCyan}
               colors={colors}
               icon="shippingbox.fill"
-              title="Inventory and lifecycle control"
-              body="Keep SKU, storage location, quantity, channel, external listing ID, price, and last-sync details with the item so nothing gets lost or oversold."
+              title="Know what is where and what it cost"
+              body="Keep an item’s cost, storage location, quantity, eBay listing, and status together so you can find it and see what is still tied up in stock."
             />
             <FeatureCard
               accent={colors.goldBright}
               colors={colors}
               icon="checkmark.shield.fill"
-              title="Listing readiness"
-              body="See exactly what is missing before publishing: identity, title, category, item specifics, disclosures, photos, measurements, price, shipping, and returns."
+              title="Get an eBay listing ready"
+              body="See what still needs work before you list: item details, photos, measurements, price, shipping, and return settings."
             />
             <FeatureCard
               accent={colors.scannerViolet}
               colors={colors}
               icon="chart.bar.fill"
-              title="Books and realized profit"
-              body="Connect sales, expenses, fees, and inventory costs so you can tell money earned from money still tied up in stock."
+              title="Keep up with sales, costs, and tax records"
+              body="Bring sales, expenses, fees, and inventory costs together. Export Schedule C information from Books and separate earnings from cash still tied up in stock."
             />
             <FeatureCard
               accent={colors.scannerCyan}
               colors={colors}
               icon="creditcard.fill"
-              title="eBay and seller connections"
-              body="Bring marketplace context and seller workflows closer to the rest of the flip instead of making every tool live in its own silo."
+              title="Connect your eBay account"
+              body={KEEPFLIP_EBAY_CONNECTION_COPY}
             />
             <FeatureCard
               accent={colors.goldBright}
               colors={colors}
               icon="bubble.left.and.bubble.right.fill"
-              title="Flip assistant and market research"
-              body="Ask Flip what to do next, research a market, plan a buy, or make a seller decision while keeping your own operating rules in view."
+              title="Ask Flip what to check next"
+              body="Use Flip to think through a find, review market evidence, and apply your own buying rules before you spend."
             />
           </View>
+
+          <WebContentSection
+            eyebrow="REAL RESELLER EXPERIENCES"
+            id="reseller-stories"
+            title="Stories from people who flip."
+          >
+            <View style={[styles.storyPlaceholder, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
+              <WebCopy>
+                We are collecting 3–5 named reseller stories and will publish them only after each person approves their words and name. No customer quotes are published here yet.
+              </WebCopy>
+            </View>
+          </WebContentSection>
 
             <View style={[styles.compareSection, isWide && styles.compareSectionWide]}>
               <View style={styles.compareCopy}>
                 <Text style={[styles.sectionEyebrow, { color: colors.scannerCyan }]}>LESS FRICTION, MORE CONTROL</Text>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>Run your resale business with the work in the right order.</Text>
+                <SemanticHeading level={2} style={[styles.sectionTitle, isPhone && styles.sectionTitlePhone, { color: colors.text }]}>Keep the work of a flip in the right order.</SemanticHeading>
                 <Text style={[styles.sectionBody, { color: colors.textMuted }]}>
-                  The goal is not more dashboards. It is fewer decisions made from memory, guesswork, or a pile of open tabs.
+                  Use one place to research a find, count the costs before you buy, and keep track of the item through the sale.
                 </Text>
               </View>
               <View style={[styles.compareGrid, isWide && styles.compareGridWide]}>
                 <CompareCard
                   colors={colors}
                   items={['Search across separate apps', 'Guess at fees and real margin', 'Lose track of where items live', 'Find out what worked too late']}
-                  label="WITHOUT A CONNECTED WORKFLOW"
+                  label="WHEN DETAILS ARE SCATTERED"
                 />
                 <CompareCard
                   colors={colors}
                   highlighted
-                  items={['Scan and research the find', 'See expected net profit before buying', 'Track the item through its lifecycle', 'Learn from the flips you actually finished']}
-                  label="W I T H   K E E P F L I P"
+                  items={['Research the find', 'Count costs before buying', 'Know what is where and what it cost', 'See what you kept after the sale']}
+                  label="WITH KEEPFLIP"
                 />
               </View>
             </View>
 
-          <View style={[styles.cta, { backgroundColor: colors.iconSurfaceGold, borderColor: colors.accentGoldBorder }]}>
+          <WebContentSection eyebrow="STRAIGHT ANSWERS" id="questions" title="Questions resellers ask before they try it.">
+            <View style={styles.faqGrid}>
+              {KEEPFLIP_HOME_FAQS.map((faq) => (
+                <View key={faq.question} style={[styles.faqCard, { backgroundColor: colors.card, borderColor: colors.divider }]}>
+                  <SemanticHeading level={3} style={[styles.faqQuestion, { color: colors.text }]}>{faq.question}</SemanticHeading>
+                  <WebCopy>{faq.answer}</WebCopy>
+                </View>
+              ))}
+            </View>
+          </WebContentSection>
+
+          <View style={[styles.cta, isPhone && styles.ctaPhone, { backgroundColor: colors.iconSurfaceGold, borderColor: colors.accentGoldBorder }]}>
             <View style={styles.ctaCopy}>
               <Text style={[styles.sectionEyebrow, { color: colors.goldBright }]}>BUILT FOR THE NEXT RESELLER DECISION</Text>
-              <Text style={[styles.ctaTitle, { color: colors.text }]}>Make the next flip easier to trust.</Text>
+              <SemanticHeading level={2} style={[styles.ctaTitle, isPhone && styles.ctaTitlePhone, { color: colors.text }]}>Check the numbers before your next buy.</SemanticHeading>
               <Text style={[styles.ctaBody, { color: colors.textMuted }]}>
-                Set up your reseller rules, meet Flip, and start building a business record that gets more useful with every item.
+                See the current plan price, then choose whether KeepFlip fits the way you source and sell.
               </Text>
             </View>
-            <ActionButton
-              colors={colors}
-              label="Meet Flip and get started"
-              onPress={getStarted}
-              primary
-            />
+            <WebActionLink href="/pricing" label="See plan prices" />
           </View>
 
-            <WebSiteFooter />
+            <WebSiteFooter showMarketingLinks />
           </View>
         </ScrollView>
       </View>
       </LinearGradient>
-    </KeepFlipBackground>
+      </KeepFlipBackground>
+    </>
   );
 }
 
@@ -392,7 +434,7 @@ function FlowStep({
           <Text style={[styles.flowNumber, { color: accent }]}>{number}</Text>
           <Text style={[styles.flowLabel, { color: accent }]}>{label}</Text>
         </View>
-        <Text style={[styles.flowTitle, { color: colors.text }]}>{title}</Text>
+        <SemanticHeading level={3} style={[styles.flowTitle, { color: colors.text }]}>{title}</SemanticHeading>
         <Text style={[styles.flowBody, { color: colors.textMuted }]}>{body}</Text>
       </View>
     </View>
@@ -411,8 +453,9 @@ function FlowVisual({
   if (kind === 'source') {
     return (
       <View style={[styles.flowVisual, compact && styles.flowVisualPhone, { backgroundColor: colors.surfaceInset, borderColor: colors.divider }]}>
-        <Image
-          accessibilityLabel="Placeholder Android source scan image"
+              <Image
+          accessibilityLabel="KeepFlip Android scan screen for researching an item"
+          alt="KeepFlip Android scan screen used to research an item before buying."
           contentFit="cover"
           source={FLOW_SCANNER_IMAGE}
           style={styles.flowImage}
@@ -428,15 +471,16 @@ function FlowVisual({
   if (kind === 'decide') {
     return (
       <View style={[styles.flowVisual, compact && styles.flowVisualPhone, { backgroundColor: colors.surfaceInset, borderColor: colors.divider }]}>
-        <Image
-          accessibilityLabel="Placeholder item image"
+          <Image
+          accessibilityLabel="Secondhand coach bag used as an item research example"
+          alt="Secondhand coach bag photographed as an example item for resale research."
           contentFit="cover"
           source={FLOW_ITEM_IMAGE}
           style={styles.flowImage}
         />
         <View style={[styles.decisionPanel, { backgroundColor: colors.surfaceOverlay, borderColor: colors.accentGoldBorder }]}>
-          <Text style={[styles.overlayEyebrow, { color: colors.goldBright }]}>BUY DECISION</Text>
-          <Text style={[styles.overlayTitle, { color: colors.text }]}>Net profit $74</Text>
+          <Text style={[styles.overlayEyebrow, { color: colors.goldBright }]}>EXAMPLE BUY DECISION</Text>
+          <Text style={[styles.overlayTitle, { color: colors.text }]}>Example net $74</Text>
           <Text style={[styles.overlayBody, { color: colors.textMuted }]}>ROI 58% · target ask $128</Text>
         </View>
       </View>
@@ -448,7 +492,7 @@ function FlowVisual({
       <View style={styles.businessVisual}>
         <View style={styles.businessVisualTop}>
           <Text style={[styles.overlayEyebrow, { color: colors.scannerViolet }]}>KEEPFLIP BOOKS</Text>
-          <Text style={[styles.overlayBody, { color: colors.textMuted }]}>THIS MONTH</Text>
+          <Text style={[styles.overlayBody, { color: colors.textMuted }]}>EXAMPLE</Text>
         </View>
         <Text style={[styles.businessTotal, { color: colors.text }]}>$1,284</Text>
         <Text style={[styles.overlayBody, { color: colors.textMuted }]}>left after recorded costs</Text>
@@ -461,7 +505,7 @@ function FlowVisual({
         </View>
         <View style={[styles.inventoryStatus, { borderColor: colors.divider }]}>
           <View style={[styles.statusDot, { backgroundColor: colors.success }]} />
-          <Text style={[styles.overlayBody, { color: colors.textMuted }]}>12 items tracked · 4 listed</Text>
+        <Text style={[styles.overlayBody, { color: colors.textMuted }]}>12 example items · 4 listed</Text>
         </View>
       </View>
     </View>
@@ -488,7 +532,7 @@ function FeatureCard({
       <View style={[styles.featureIcon, { backgroundColor: colors.surfaceInset, borderColor: colors.divider }]}>
         <IconSymbol color={accent} name={icon} size={18} />
       </View>
-      <Text style={[styles.featureTitle, { color: colors.text }]}>{title}</Text>
+      <SemanticHeading level={3} style={[styles.featureTitle, { color: colors.text }]}>{title}</SemanticHeading>
       <Text style={[styles.featureBody, { color: colors.textMuted }]}>{body}</Text>
     </View>
   );
@@ -507,7 +551,7 @@ function CompareCard({
 }) {
   return (
     <View style={[styles.compareCard, { backgroundColor: highlighted ? colors.iconSurfaceGold : colors.card, borderColor: highlighted ? colors.accentGoldBorder : colors.divider }]}>
-      <Text style={[styles.compareLabel, { color: highlighted ? colors.goldBright : colors.textMuted }]}>{label}</Text>
+      <SemanticHeading level={3} style={[styles.compareLabel, { color: highlighted ? colors.goldBright : colors.textMuted }]}>{label}</SemanticHeading>
       <View style={styles.compareList}>
         {items.map((item) => (
           <View key={item} style={styles.compareItem}>
@@ -536,36 +580,6 @@ function MiniMetric({
       <Text style={[styles.miniMetricLabel, { color: colors.textMuted }]}>{label}</Text>
       <Text style={[styles.miniMetricValue, { color: accent ?? colors.text }]}>{value}</Text>
     </View>
-  );
-}
-
-function ActionButton({
-  colors,
-  label,
-  onPress,
-  primary = false,
-}: {
-  colors: ReturnType<typeof getKeepFlipThemeColors>;
-  label: string;
-  onPress: () => void;
-  primary?: boolean;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.action,
-        primary
-          ? { backgroundColor: colors.gold, borderColor: colors.gold }
-          : { backgroundColor: colors.backgroundRaised, borderColor: colors.divider },
-        pressed && styles.pressed,
-      ]}
-    >
-      <Text style={[styles.actionText, { color: primary ? colors.textOnAccent : colors.text }]}>
-        {label}
-      </Text>
-    </Pressable>
   );
 }
 
@@ -626,17 +640,13 @@ const styles = StyleSheet.create({
     lineHeight: 53,
     maxWidth: 720,
   },
+  heroTitlePhone: { fontSize: 31, lineHeight: 39, letterSpacing: -0.7 },
   heroBody: { fontFamily: theme.fonts.body, fontSize: 16, lineHeight: 25, maxWidth: 650 },
   heroActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 6 },
-  action: {
-    alignItems: 'center',
-    borderRadius: 14,
-    borderWidth: 1,
-    justifyContent: 'center',
-    minHeight: 52,
-    paddingHorizontal: 18,
-  },
-  actionText: { fontFamily: theme.fonts.semibold, fontSize: 13 },
+  freeEntryNote: { fontFamily: theme.fonts.body, fontSize: 12, lineHeight: 18, maxWidth: 600 },
+  scopeCopy: { fontFamily: theme.fonts.body, fontSize: 12, lineHeight: 18, maxWidth: 600 },
+  downloadProof: { alignSelf: 'flex-start' },
+  exampleNote: { fontFamily: theme.fonts.body, fontSize: 9, lineHeight: 14 },
   heroProof: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 4 },
   proofItem: { alignItems: 'flex-start', flexDirection: 'row', gap: 7, maxWidth: 180 },
   proofDot: { borderRadius: 3, height: 6, marginTop: 5, width: 6 },
@@ -719,6 +729,10 @@ const styles = StyleSheet.create({
   featureIcon: { alignItems: 'center', borderRadius: 10, borderWidth: 1, height: 34, justifyContent: 'center', width: 34 },
   featureTitle: { fontFamily: theme.fonts.semibold, fontSize: 14, lineHeight: 19 },
   featureBody: { fontFamily: theme.fonts.body, fontSize: 11, lineHeight: 17 },
+  storyPlaceholder: { borderRadius: 16, borderWidth: 1, padding: 16 },
+  faqGrid: { gap: 12 },
+  faqCard: { borderRadius: 16, borderWidth: 1, gap: 8, padding: 16 },
+  faqQuestion: { fontFamily: theme.fonts.semibold, fontSize: 16, lineHeight: 22 },
   compareSection: { gap: 22 },
   compareSectionWide: { alignItems: 'center', flexDirection: 'row' },
   compareCopy: { flex: 0.85, gap: 8, minWidth: 0 },
@@ -735,5 +749,4 @@ const styles = StyleSheet.create({
   ctaTitle: { fontFamily: theme.fonts.bold, fontSize: 29, lineHeight: 35 },
   ctaTitlePhone: { fontSize: 25, lineHeight: 31 },
   ctaBody: { fontFamily: theme.fonts.body, fontSize: 13, lineHeight: 20, maxWidth: 650 },
-  pressed: { opacity: 0.78 },
 });

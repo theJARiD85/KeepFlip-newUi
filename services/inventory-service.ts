@@ -1,9 +1,9 @@
 import {
   APPWRITE,
+  ExecutionMethod,
   ID,
-  Permission,
   Query,
-  Role,
+  functions,
   storage,
   tablesDB,
 } from '@/lib/appwrite';
@@ -274,12 +274,63 @@ export type UpdateInventoryItemNumberInput = {
   value: number;
 };
 
-function ownerPermissions(ownerId: string) {
-  return [
-    Permission.read(Role.user(ownerId)),
-    Permission.update(Role.user(ownerId)),
-    Permission.delete(Role.user(ownerId)),
-  ];
+async function executeInventorySubscriptionRequest<T>(
+  xpath: string,
+  body: Record<string, unknown>,
+): Promise<T> {
+  if (!APPWRITE.subscriptionFunctionId) {
+    throw new Error('KeepFlip inventory limits are not configured in this build.');
+  }
+
+  const execution = await functions.createExecution({
+    functionId: APPWRITE.subscriptionFunctionId,
+    async: false,
+    method: ExecutionMethod.POST,
+    xpath,
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  let payload: Record<string, unknown>;
+  try {
+    const parsed: unknown = JSON.parse(execution.responseBody || '{}');
+    payload =
+      parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+        ? (parsed as Record<string, unknown>)
+        : {};
+  } catch {
+    throw new Error('KeepFlip received an unreadable inventory response.');
+  }
+
+  if (
+    execution.responseStatusCode < 200 ||
+    execution.responseStatusCode >= 300 ||
+    payload.ok !== true
+  ) {
+    throw new Error(
+      typeof payload.error === 'string'
+        ? payload.error
+        : 'KeepFlip could not update this inventory item.',
+    );
+  }
+
+  return payload as T;
+}
+
+async function createInventoryItemRow(
+  data: Record<string, unknown>,
+): Promise<InventoryRow> {
+  const response = await executeInventorySubscriptionRequest<{
+    inventoryItem?: InventoryRow;
+  }>('/inventory/items/create', { rowId: ID.unique(), data });
+  if (!response.inventoryItem) {
+    throw new Error('KeepFlip did not return the saved inventory item.');
+  }
+  return response.inventoryItem;
+}
+
+async function deleteInventoryItemRow(itemId: string) {
+  await executeInventorySubscriptionRequest('/inventory/items/delete', { itemId });
 }
 
 function cleanText(value: string | null | undefined) {
@@ -908,11 +959,7 @@ export async function saveAnalyzedItemToInventory({
 
   let created: InventoryRow;
   try {
-    created = (await tablesDB.createRow({
-      databaseId: APPWRITE.databaseId,
-      tableId: APPWRITE.itemsTableId,
-      rowId: ID.unique(),
-      data: {
+    created = await createInventoryItemRow({
         ownerId: cleanOwnerId,
         title: titleFromAnalysis(analysis),
         category:
@@ -945,9 +992,7 @@ export async function saveAnalyzedItemToInventory({
         acquiredAt: normalizedAcquiredAt,
         createdAt: now,
         updatedAt: now,
-      },
-      permissions: ownerPermissions(cleanOwnerId),
-    })) as unknown as InventoryRow;
+    });
   } catch (error) {
     if (isInventorySchemaError(error)) {
       throw inventorySchemaMigrationError(error);
@@ -1289,11 +1334,7 @@ export async function createImportedEbayInventoryItem({
 
   let created: InventoryRow;
   try {
-    created = (await tablesDB.createRow({
-      databaseId: APPWRITE.databaseId,
-      tableId: APPWRITE.itemsTableId,
-      rowId: ID.unique(),
-      data: {
+    created = await createInventoryItemRow({
         ownerId: cleanOwnerId,
         title,
         category: 'Other',
@@ -1334,9 +1375,7 @@ export async function createImportedEbayInventoryItem({
         acquiredAt: null,
         createdAt: now,
         updatedAt: now,
-      },
-      permissions: ownerPermissions(cleanOwnerId),
-    })) as unknown as InventoryRow;
+    });
   } catch (error) {
     if (isInventorySchemaError(error)) {
       throw inventorySchemaMigrationError(error);
@@ -1571,11 +1610,7 @@ export async function deleteInventoryItem(
     );
   }
 
-  await tablesDB.deleteRow({
-    databaseId: APPWRITE.databaseId,
-    tableId: APPWRITE.itemsTableId,
-    rowId: cleanItemId,
-  });
+  await deleteInventoryItemRow(cleanItemId);
 
   const fileDeleteResults = await Promise.allSettled(
     photoRows

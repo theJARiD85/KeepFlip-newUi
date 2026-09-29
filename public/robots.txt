@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://keep-flip.com/sitemap.xml

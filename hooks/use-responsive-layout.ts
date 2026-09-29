@@ -6,7 +6,7 @@ import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance
 
 const BASE_PHONE_WIDTH = 390;
 const BASE_PHONE_HEIGHT = 844;
-const WEB_PUBLIC_CONTENT_MAX_WIDTH = 1_170;
+const WEB_PUBLIC_CONTENT_MAX_WIDTH = 1_366;
 const WEB_SIDEBAR_WIDTH = 264;
 
 const WebAppShellLayoutContext = createContext(false);

@@ -52,6 +52,7 @@ type KeepFlipSubscriptionContextValue = {
   canUse: (feature: KeepFlipSubscriptionFeature) => boolean;
   limitFor: (
     limit:
+      | 'inventoryItems'
       | 'concurrentActiveListings'
       | 'monthlyPublishQuota'
       | 'activeListingsPerMonth'
@@ -479,22 +480,36 @@ export function KeepFlipSubscriptionProvider({
       const serverAccessVerified =
         snapshot?.serverRecordAvailable === true &&
         snapshot.revenueCatVerified === true;
+      const serverAccessAvailable = snapshot?.serverRecordAvailable === true;
+      const freeFeatures = snapshot?.access.features ?? [];
 
       return {
-        // UI availability is derived from the authenticated Function's live
-        // RevenueCat verification. The local SDK can update purchase UI, but
-        // a database mirror or optimistic SDK event alone cannot unlock paid
-        // features.
+        // Free capabilities come from the authenticated Function's access
+        // policy. Paid capabilities still require live RevenueCat verification;
+        // local SDK state alone cannot unlock them.
         canUse: (feature) =>
-          serverAccessVerified &&
-          (profileTrialActive || keepFlipPlanAllows(activePlan, feature)),
+          serverAccessAvailable &&
+          ((!snapshot?.access.active && freeFeatures.includes(feature)) ||
+            (serverAccessVerified &&
+              (freeFeatures.includes(feature) ||
+                profileTrialActive ||
+                keepFlipPlanAllows(activePlan, feature)))),
         errorMessage: error,
-        limitFor: (limit) =>
-          !serverAccessVerified
-            ? 0
-            : profileTrialActive
-              ? (limit === 'aiValuationScansPerMonth' ? 25 : null)
-              : keepFlipPlanLimit(activePlan, limit),
+        limitFor: (limit) => {
+          if (!serverAccessAvailable) return 0;
+          if (!snapshot?.access.active) {
+            return snapshot?.access.limits[limit] ?? 0;
+          }
+          if (!serverAccessVerified) return 0;
+          if (profileTrialActive) {
+            return limit === 'aiValuationScansPerMonth'
+              ? 20
+              : limit === 'inventoryItems'
+                ? 10
+                : null;
+          }
+          return keepFlipPlanLimit(activePlan, limit);
+        },
         manage,
         purchase,
         purchasing,

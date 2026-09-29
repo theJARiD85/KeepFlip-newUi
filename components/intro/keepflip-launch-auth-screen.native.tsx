@@ -945,7 +945,7 @@ export function KeepFlipLaunchAuthScreen({
                   paddingHorizontal: 14,
                 })}>
                 <Text style={{ color: theme.colors.text, fontSize: responsiveFont(10), fontWeight: '700' }}>
-                  Use the free scanner · 10 scans/month
+                  Use the free scanner · 20 scans/month
                 </Text>
                 <Text style={{ color: theme.colors.textMuted, fontSize: responsiveFont(8), marginTop: 3 }}>
                   Android only · no saved inventory

@@ -51,6 +51,7 @@ export type KeepFlipSubscriptionFeature =
   | 'multi_user';
 
 export type KeepFlipPlanLimits = {
+  inventoryItems: number | null;
   concurrentActiveListings: number | null;
   monthlyPublishQuota: number | null;
   /** @deprecated Compatibility alias for concurrentActiveListings. */
@@ -64,13 +65,18 @@ export const KEEPFLIP_PLAN_LIMITS: Record<
   KeepFlipPlanLimits
 > = {
   hobbyist: {
-    concurrentActiveListings: 25,
+    inventoryItems: 10,
+    concurrentActiveListings: 10,
     monthlyPublishQuota: null,
-    activeListingsPerMonth: 25,
-    aiValuationScansPerMonth: 100,
-    features: new Set<KeepFlipSubscriptionFeature>(['basic_books']),
+    activeListingsPerMonth: 10,
+    aiValuationScansPerMonth: 20,
+    features: new Set<KeepFlipSubscriptionFeature>([
+      'basic_books',
+      'automated_books',
+    ]),
   },
   serious: {
+    inventoryItems: null,
     concurrentActiveListings: 250,
     monthlyPublishQuota: null,
     activeListingsPerMonth: 250,
@@ -111,7 +117,9 @@ export type KeepFlipSubscriptionAccess = {
   billingIssue: boolean;
   entitlementId: string | null;
   expiresAt: string | null;
+  features: KeepFlipSubscriptionFeature[];
   isTrial: boolean;
+  limits: Omit<KeepFlipPlanLimits, 'features'>;
   trialUsed: boolean;
   managementUrl: string | null;
   periodType: string | null;
@@ -156,7 +164,8 @@ export type KeepFlipCapabilityAccess = {
 export type KeepFlipSubscriptionCapability =
   | KeepFlipSubscriptionFeature
   | 'ai_valuation'
-  | 'active_listing';
+  | 'active_listing'
+  | 'inventory_item';
 
 export type KeepFlipCapabilitiesAccess = Partial<
   Record<KeepFlipSubscriptionCapability, KeepFlipCapabilityAccess>
@@ -236,10 +245,10 @@ export const KEEPFLIP_PLAN_DEFINITIONS: KeepFlipPlanDefinition[] = [
     limits: ['Up to 250 active listings total'],
     features: [
       'Every KeepFlip feature unlocked',
+      'Unlimited saved inventory items',
       'Unlimited AI valuation scans',
-      'Full automated bookkeeping',
+      'Advanced bookkeeping analytics',
       'Schedule C export',
-      'eBay money reconciliation',
     ],
   },
 ];
@@ -265,7 +274,15 @@ const EMPTY_ACCESS: KeepFlipSubscriptionAccess = {
   billingIssue: false,
   entitlementId: null,
   expiresAt: null,
+  features: [],
   isTrial: false,
+  limits: {
+    inventoryItems: 0,
+    concurrentActiveListings: 0,
+    monthlyPublishQuota: null,
+    activeListingsPerMonth: 0,
+    aiValuationScansPerMonth: 0,
+  },
   trialUsed: false,
   managementUrl: null,
   periodType: null,
@@ -396,6 +413,7 @@ export function keepFlipPlanAllows(
 export function keepFlipPlanLimit(
   plan: KeepFlipPlanId | null,
   limit:
+    | 'inventoryItems'
     | 'concurrentActiveListings'
     | 'monthlyPublishQuota'
     | 'activeListingsPerMonth'
@@ -583,6 +601,34 @@ function parseServerSubscriptionAccess(
     access.trialSource === 'profile' || access.trialSource === 'store'
       ? access.trialSource
       : null;
+  const accessLimits =
+    access.limits && typeof access.limits === 'object' && !Array.isArray(access.limits)
+      ? (access.limits as Record<string, unknown>)
+      : {};
+  const parseLimit = (
+    key: keyof Omit<KeepFlipPlanLimits, 'features'>,
+  ) => {
+    const raw = accessLimits[key];
+    return raw === null
+      ? null
+      : nonNegativeSafeInteger(raw) ?? EMPTY_ACCESS.limits[key];
+  };
+  const knownFeatures = new Set<KeepFlipSubscriptionFeature>([
+    'basic_books',
+    'automated_books',
+    'schedule_c_export',
+    'advanced_bookkeeping_analytics',
+    'net_proceeds_scenarios',
+    'automatic_order_sync',
+    'bulk_listings',
+    'offer_guardrails',
+    'automated_offers',
+    'automated_repricing',
+    'cross_marketplace_sync',
+    'automatic_delisting',
+    'seller_analytics',
+    'multi_user',
+  ]);
 
   return {
     ...EMPTY_ACCESS,
@@ -593,7 +639,20 @@ function parseServerSubscriptionAccess(
       access.status === 'grace_period',
     entitlementId: nullableAppwriteText(access.entitlementId, 64),
     expiresAt: nullableAppwriteText(access.currentPeriodEndsAt, 80),
+    features: Array.isArray(access.features)
+      ? access.features.filter(
+          (feature): feature is KeepFlipSubscriptionFeature =>
+            typeof feature === 'string' && knownFeatures.has(feature as KeepFlipSubscriptionFeature),
+        )
+      : [],
     isTrial: access.isTrial === true,
+    limits: {
+      inventoryItems: parseLimit('inventoryItems'),
+      concurrentActiveListings: parseLimit('concurrentActiveListings'),
+      monthlyPublishQuota: parseLimit('monthlyPublishQuota'),
+      activeListingsPerMonth: parseLimit('activeListingsPerMonth'),
+      aiValuationScansPerMonth: parseLimit('aiValuationScansPerMonth'),
+    },
     managementUrl: nullableAppwriteText(access.managementUrl, 2_000),
     periodType: nullableAppwriteText(access.status, 32),
     plan: serverSubscriptionPlan(access.plan),
@@ -943,6 +1002,7 @@ export function subscriptionAccessFromCustomerInfo(
 
   const { info, plan } = matched;
   return {
+    ...EMPTY_ACCESS,
     active: info.isActive,
     billingIssue: Boolean(info.billingIssueDetectedAt),
     entitlementId: info.identifier,
