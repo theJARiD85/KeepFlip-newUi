@@ -1,4 +1,4 @@
-import { type PropsWithChildren, useContext, useMemo, useState } from 'react';
+import { type PropsWithChildren, useContext, useEffect, useMemo, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -7,6 +7,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import {
   LineChart,
@@ -250,32 +251,34 @@ export function BusinessPulse({
   ].filter((value): value is string => Boolean(value));
 
   return (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <View>
-          <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>BUSINESS PULSE</Text>
-          <Text style={[styles.title, { fontSize: responsiveFont(19), lineHeight: 24 }]}>The numbers that matter</Text>
+    <View style={styles.cardStack}>
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <View>
+            <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>BUSINESS PULSE</Text>
+            <Text style={[styles.title, { fontSize: responsiveFont(19), lineHeight: 24 }]}>The numbers that matter</Text>
+          </View>
         </View>
-      </View>
 
-      <Text style={[styles.description, { fontSize: responsiveFont(11), lineHeight: 15 }]}>
-        Real money stays separate from item estimates, so you can see what happened without the sometimes confusing accounting-speak.
-      </Text>
+        <Text style={[styles.description, { fontSize: responsiveFont(11), lineHeight: 15 }]}>
+          Real money stays separate from item estimates, so you can see what happened without the sometimes confusing accounting-speak.
+        </Text>
 
-      <View style={styles.metricGrid}>
-        <Metric label="MONEY IN" value={money(overview.currentMonth.moneyInCents)} tone="cyan" />
-        <Metric label="COSTS" value={money(overview.currentMonth.moneyOutCents)} tone="gold" />
-        <Metric
-          label="LEFT AFTER COSTS"
-          value={money(overview.currentMonth.leftAfterCostsCents)}
-          valueStyle={
-            metricTone(overview.currentMonth.leftAfterCostsCents) === 'negative'
-              ? styles.metricNegativeValue
-              : undefined
-          }
-          tone="violet"
-        />
-        <Metric label="CASH TIED UP" value={money(overview.inventory.cashTiedUpCents)} tone="muted" />
+        <View style={styles.metricGrid}>
+          <Metric label="MONEY IN" value={money(overview.currentMonth.moneyInCents)} tone="cyan" />
+          <Metric label="COSTS" value={money(overview.currentMonth.moneyOutCents)} tone="gold" />
+          <Metric
+            label="LEFT AFTER COSTS"
+            value={money(overview.currentMonth.leftAfterCostsCents)}
+            valueStyle={
+              metricTone(overview.currentMonth.leftAfterCostsCents) === 'negative'
+                ? styles.metricNegativeValue
+                : undefined
+            }
+            tone="violet"
+          />
+          <Metric label="CASH TIED UP" value={money(overview.inventory.cashTiedUpCents)} tone="muted" />
+        </View>
       </View>
 
       <View style={styles.chartSurface}>
@@ -624,7 +627,7 @@ function MoneyMovementChart({
       ? Math.max(measuredPlotWidth - yAxisWidth, 1)
       : fallbackChartWidth;
     const chartHeight = expanded
-      ? Math.max(Math.min(windowHeight * 0.56, 560), 300)
+      ? Math.max(Math.min(windowHeight * 0.56, 560), windowWidth > windowHeight ? 180 : 300)
       : 218;
 
     return (
@@ -865,6 +868,8 @@ function FinancialReporting({
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const [activeChart, setActiveChart] = useState<FinancialChartId>('pnl');
   const [activePointIndex, setActivePointIndex] = useState(0);
+  const [plotWidth, setPlotWidth] = useState(0);
+  const [expandedPlotWidth, setExpandedPlotWidth] = useState(0);
   const [chartPickerOpen, setChartPickerOpen] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
   const chartOption =
@@ -910,9 +915,12 @@ function FinancialReporting({
       })),
     [chartPoints],
   );
-  const chartWidth = Math.min(Math.max(windowWidth - 60, 240), 720);
-  const expandedChartWidth = Math.min(Math.max(windowWidth - 48, 180), 1_200);
-  const expandedChartHeight = Math.max(Math.min(windowHeight * 0.56, 560), 300);
+  const fallbackChartWidth = Math.min(Math.max(windowWidth - 60, 240), 720);
+  const fallbackExpandedChartWidth = Math.min(Math.max(windowWidth - 48, 180), 1_200);
+  const expandedChartHeight = Math.max(
+    Math.min(windowHeight * 0.56, 560),
+    windowWidth > windowHeight ? 180 : 300,
+  );
   const safePointIndex = Math.min(
     Math.max(activePointIndex, 0),
     Math.max(chartPoints.length - 1, 0),
@@ -925,10 +933,22 @@ function FinancialReporting({
   const hasChartData = chartPoints.length > 0;
 
   const renderChart = (expanded: boolean) => {
-    const width = expanded ? expandedChartWidth : chartWidth;
+    const availableWidth = expanded
+      ? expandedPlotWidth || fallbackExpandedChartWidth
+      : plotWidth || fallbackChartWidth;
+    const width = Math.max(availableWidth - 2, 1);
     const height = expanded ? expandedChartHeight : 218;
     return (
-      <View style={styles.wagmiChart}>
+      <View
+        onLayout={(event) => {
+          const nextWidth = Math.round(event.nativeEvent.layout.width);
+          const updatePlotWidth = expanded ? setExpandedPlotWidth : setPlotWidth;
+          updatePlotWidth((currentWidth) =>
+            currentWidth === nextWidth ? currentWidth : nextWidth,
+          );
+        }}
+        style={[styles.wagmiChart, { width: '100%' }]}
+      >
         <LineChart.Provider
           data={chartData}
           onCurrentIndexChange={setActivePointIndex}
@@ -1191,6 +1211,30 @@ function ChartZoomModal({
   const insets = useSafeAreaInsets();
   const { responsiveFont } = useResponsiveLayout();
 
+  useEffect(() => {
+    if (!visible || process.env.EXPO_OS === 'web') return;
+
+    let cancelled = false;
+    let previousOrientationLock: ScreenOrientation.OrientationLock | null = null;
+    const lockLandscape = async () => {
+      try {
+        previousOrientationLock = await ScreenOrientation.getOrientationLockAsync();
+        if (cancelled) return;
+        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+      } catch {
+        // Keep the enlarged chart usable when a platform cannot change orientation.
+      }
+    };
+
+    void lockLandscape();
+    return () => {
+      cancelled = true;
+      if (previousOrientationLock != null) {
+        void ScreenOrientation.lockAsync(previousOrientationLock).catch(() => undefined);
+      }
+    };
+  }, [visible]);
+
   return (
     <Modal
       animationType="fade"
@@ -1324,6 +1368,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 16,
       backgroundColor: theme.colors.card,
     },
+    cardStack: { gap: 14 },
     cardHeader: { alignItems: 'flex-start', flexDirection: 'row', gap: 12, justifyContent: 'space-between' },
     eyebrow: { color: theme.colors.goldBright, fontSize: 8, fontWeight: '900', letterSpacing: 1.4 },
     title: { color: theme.colors.cream, fontSize: 19, fontWeight: '900', letterSpacing: -0.25, lineHeight: 24 },

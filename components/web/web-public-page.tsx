@@ -8,7 +8,6 @@ import {
   ScrollView,
   StyleSheet,
   View,
-  useWindowDimensions,
   type StyleProp,
   type TextStyle,
 } from 'react-native';
@@ -111,15 +110,15 @@ export function WebMarketingPage({
 }) {
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const colors = getKeepFlipThemeColors(effectiveColorScheme);
-  const { width } = useWindowDimensions();
-  const { webContentMaxWidth, webContentWidth, webPageGutter } = useResponsiveLayout();
+  const { width, webContentMaxWidth, webPageGutter } = useResponsiveLayout();
   const contentSizing =
     Platform.OS === 'web'
       ? {
           alignSelf: 'center' as const,
           maxWidth: webContentMaxWidth,
+          minWidth: 0,
           paddingHorizontal: webPageGutter,
-          width: webContentWidth,
+          width: '100%' as const,
         }
       : undefined;
 
@@ -228,7 +227,7 @@ export function WebActionLink({
   secondary?: boolean;
 }) {
   const { effectiveColorScheme } = useKeepFlipAppearance();
-  const { width } = useWindowDimensions();
+  const { width } = useResponsiveLayout();
   const colors = getKeepFlipThemeColors(effectiveColorScheme);
   if (Platform.OS === 'web') {
     const external = href.startsWith('http') || href.startsWith('mailto:');
@@ -244,6 +243,7 @@ export function WebActionLink({
           backgroundColor: secondary ? colors.backgroundRaised : colors.gold,
           border: `1px solid ${secondary ? colors.divider : colors.gold}`,
           borderRadius: 14,
+          boxSizing: 'border-box',
           color: secondary ? colors.text : colors.textOnAccent,
           display: 'inline-flex',
           fontFamily: theme.fonts.semibold,

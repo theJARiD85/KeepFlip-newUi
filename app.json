@@ -3,7 +3,7 @@
     "name": "KeepFlip",
     "slug": "keepflip",
     "version": "2.1.7",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "keepflip",
     "userInterfaceStyle": "dark",
@@ -48,6 +48,12 @@
         }
       ],
       "expo-router",
+      [
+        "expo-screen-orientation",
+        {
+          "initialOrientation": "PORTRAIT_UP"
+        }
+      ],
       [
         "expo-tracking-transparency",
         {

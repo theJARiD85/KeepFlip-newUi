@@ -6,7 +6,6 @@ import {
   ScrollView,
   StyleSheet,
   View,
-  useWindowDimensions,
 } from 'react-native';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
@@ -15,6 +14,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { WebSiteFooter } from '@/components/web/web-site-chrome';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 
 type IconName = ComponentProps<typeof IconSymbol>['name'];
 
@@ -172,7 +172,7 @@ function NavButton({
 }
 
 export function KeepFlipWebShell({ children }: PropsWithChildren) {
-  const { width } = useWindowDimensions();
+  const { width } = useResponsiveLayout();
   const isWide = width >= 980;
   const isPhone = width < 480;
   const pathname = usePathname();

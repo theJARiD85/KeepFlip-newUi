@@ -59,14 +59,14 @@ export function WebAuthScreen({
 }: WebAuthScreenProps) {
   const {
     webContentMaxWidth,
-    webContentWidth,
     webPageGutter,
   } = useResponsiveLayout();
   const webContentSizing =
     Platform.OS === 'web'
       ? {
-          width: webContentWidth,
+          width: '100%' as const,
           maxWidth: webContentMaxWidth,
+          minWidth: 0,
           alignSelf: 'center' as const,
           paddingHorizontal: webPageGutter,
         }

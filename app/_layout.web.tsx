@@ -4,7 +4,7 @@ import { Stack, usePathname } from 'expo-router';
 import Head from 'expo-router/head';
 import { useFonts } from 'expo-font';
 import { useEffect } from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import {
   KeepFlipAuthProvider,
@@ -145,7 +145,9 @@ function WebRootContent() {
           <FlipCompanionProvider>
             <KeepFlipSubscriptionProvider>
               <KeepFlipFeedbackNudgeProvider>
-                <ProtectedRootStack />
+                <View style={styles.webRoot}>
+                  <ProtectedRootStack />
+                </View>
               </KeepFlipFeedbackNudgeProvider>
             </KeepFlipSubscriptionProvider>
           </FlipCompanionProvider>
@@ -162,3 +164,12 @@ export default function WebRootLayout() {
     </KeepFlipAppearanceProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  webRoot: {
+    alignSelf: 'stretch',
+    flex: 1,
+    minWidth: 0,
+    width: '100%',
+  },
+});

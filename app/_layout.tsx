@@ -14,6 +14,7 @@ import {
   useState,
 } from "react";
 import { Platform, View } from "react-native";
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 import {
@@ -192,6 +193,12 @@ function RootLayoutContent() {
   });
 
   
+
+  useEffect(() => {
+    if (process.env.EXPO_OS === 'web') return;
+    void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP)
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     if (

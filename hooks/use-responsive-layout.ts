@@ -29,9 +29,13 @@ export function useResponsiveLayout() {
   const isInsideWebAppShell = useContext(WebAppShellLayoutContext);
 
   const isWeb = Platform.OS === 'web';
+  const webViewportWidth =
+    isWeb && typeof window !== 'undefined' && Number.isFinite(window.innerWidth)
+      ? window.innerWidth
+      : width;
   // Expo static rendering can report zero dimensions before the browser mounts.
   // Use the phone baseline until a real web viewport size is available.
-  const layoutWidth = isWeb && width <= 0 ? BASE_PHONE_WIDTH : width;
+  const layoutWidth = isWeb && webViewportWidth <= 0 ? BASE_PHONE_WIDTH : webViewportWidth;
   const layoutHeight = isWeb && height <= 0 ? BASE_PHONE_HEIGHT : height;
 
   const shortestSide = Math.min(layoutWidth, layoutHeight);
