@@ -37,7 +37,7 @@ export const KEEPFLIP_HOME_FAQS = [
   {
     question: 'Can I try KeepFlip before paying?',
     answer:
-      'The Android app has a free scanner path with up to 20 scans per month, no credit card, and no saved inventory. The web checkout itself does not currently offer a free trial.',
+      'Create a free account in the Android app, then use the KeepFlip workspace on Android and web with up to 10 inventory items, 10 active listings, and 20 AI valuations per month. No card is required. The web checkout itself does not currently offer a free trial.',
   },
   {
     question: 'Do I need an iPhone?',

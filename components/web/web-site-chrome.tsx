@@ -83,7 +83,7 @@ export function WebSiteHeader({
                 <HeaderRouteLink
                   colors={colors}
                   href="https://play.google.com/store/apps/details?id=com.keepflip.app"
-                  label="TRY FREE SCANNER"
+                  label="START FREE ON ANDROID"
                   primary
                 />
               </>

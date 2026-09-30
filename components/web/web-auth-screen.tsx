@@ -408,9 +408,6 @@ export function WebAuthScreen({
           {pendingMfaSignIn ? (
             <KeepFlipMfaChallenge
               onAuthenticated={finishAfterMfa}
-              onSubscriptionRequired={() =>
-                setLocalError('An active subscription is required. Enter your password again to open the subscription paywall.')
-              }
               pending={pendingMfaSignIn}
             />
           ) : isCreateAccount ? (

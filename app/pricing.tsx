@@ -136,11 +136,11 @@ export default function PricingPage() {
           />
         </WebContentSection>
 
-        <WebContentSection eyebrow="FREE ANDROID ENTRY" title="Try the scanner before you pay.">
+        <WebContentSection eyebrow="FREE ACCESS" title="Start with the full KeepFlip workspace.">
           <WebCopy>
-            Android has a free scanner path with up to {KEEPFLIP_FREE_ANDROID_SCANS_PER_MONTH} scans per month, no credit card, and no saved inventory. The web checkout is a separate paid plan with no free trial.
+            Create a free account in the Android app, then use the KeepFlip workspace on Android and web with up to 10 inventory items, 10 active listings, and {KEEPFLIP_FREE_ANDROID_SCANS_PER_MONTH} AI valuations per month. No card is required. Web checkout is for paid plans and does not include a free trial.
           </WebCopy>
-          <WebActionLink href={KEEPFLIP_GOOGLE_PLAY_URL} label="Try the free Android scanner" />
+          <WebActionLink href={KEEPFLIP_GOOGLE_PLAY_URL} label="Start free on Android" />
         </WebContentSection>
 
         <WebContentSection eyebrow="GOOGLE PLAY" title="The store shows its own checkout price.">

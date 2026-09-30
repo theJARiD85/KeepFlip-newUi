@@ -71,13 +71,7 @@ function FieldLabel({ children, required = false }: { children: string; required
   );
 }
 
-export function SourcingTripControl({
-  locked = false,
-  onLockedPress,
-}: {
-  locked?: boolean;
-  onLockedPress?: () => void;
-} = {}) {
+export function SourcingTripControl() {
   const styles = useResponsiveStyles(createResponsiveStyles);
   const {
     responsiveFont
@@ -116,10 +110,6 @@ export function SourcingTripControl({
       : 'APPWRITE SETUP NEEDED';
 
   const openControl = () => {
-    if (locked) {
-      onLockedPress?.();
-      return;
-    }
     if (!configured) {
       Alert.alert(
         'Sourcing Trips setup needed',

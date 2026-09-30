@@ -5,7 +5,7 @@
 ## Product
 
 - KeepFlip has an Android app and a browser workspace.
-- The Android free scanner path allows up to 20 scans per month, does not require a credit card, and does not save inventory.
+- Free accounts can use the KeepFlip workspace on Android and web, with up to 10 inventory items, 10 active listings, and 20 AI valuations per month. Free account setup starts in the Android app and does not require a credit card.
 - Scan and resale values are estimates. Resellers review the evidence and make their own buy decisions.
 - KeepFlip connects to eBay through eBay sign-in and authorized eBay APIs for selected seller and listing details.
 - KeepFlip is not a five-marketplace crosslisting tool.

@@ -9,7 +9,7 @@ import {
   WebMarketingPage,
   WebTextLink,
 } from '@/components/web/web-public-page';
-import { KEEPFLIP_EBAY_CONNECTION_COPY, KEEPFLIP_FREE_ANDROID_SCANS_PER_MONTH, KEEPFLIP_GOOGLE_PLAY_URL, KEEPFLIP_SITE_URL } from '@/constants/keepflip-public-site';
+import { KEEPFLIP_EBAY_CONNECTION_COPY, KEEPFLIP_GOOGLE_PLAY_URL, KEEPFLIP_SITE_URL } from '@/constants/keepflip-public-site';
 
 const metadata = {
   canonicalPath: '/features',
@@ -77,7 +77,7 @@ export default function FeaturesPage() {
       </WebContentSection>
 
       <View style={styles.actions}>
-        <WebActionLink href={KEEPFLIP_GOOGLE_PLAY_URL} label={`Try ${KEEPFLIP_FREE_ANDROID_SCANS_PER_MONTH} free scans on Android`} />
+        <WebActionLink href={KEEPFLIP_GOOGLE_PLAY_URL} label="Start free on Android" />
         <WebActionLink href="/pricing" label="See plan prices" secondary />
         <WebTextLink href="/about" label="Who KeepFlip is for" />
       </View>

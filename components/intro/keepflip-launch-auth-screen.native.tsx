@@ -429,7 +429,7 @@ export function KeepFlipLaunchAuthScreen({
     };
   }, [isPreAccountSignup]);
 
-  const submit = async (freeScanner = false) => {
+  const submit = async (freeTierSignup = false) => {
     if (isBusy || isSubmitting || status === 'setup') return;
 
     const normalizedEmail = email.trim().toLowerCase();
@@ -463,7 +463,7 @@ export function KeepFlipLaunchAuthScreen({
 
     setIsSubmitting(true);
     try {
-      if (needsPreAccountSubscription && !freeScanner) {
+      if (needsPreAccountSubscription && !freeTierSignup) {
         const result = await RevenueCatUI.presentPaywall();
         if (
           result !== PAYWALL_RESULT.PURCHASED &&
@@ -542,7 +542,7 @@ export function KeepFlipLaunchAuthScreen({
         createdUserId || (status === 'signed-in' ? user?.$id ?? null : null);
       let profileSaved = profileSavedForAccount;
 
-      if (freeScanner && Platform.OS === 'android' && isPreAccountSignup) {
+      if (freeTierSignup && Platform.OS === 'android' && isPreAccountSignup) {
         let accountUserId: string;
         let sessionEstablished = false;
         try {
@@ -569,7 +569,7 @@ export function KeepFlipLaunchAuthScreen({
         if (!signupAnalyticsTrackedRef.current) {
           trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.signupCompleted, {
             method: 'email',
-            flow: 'free_scanner',
+            flow: 'free_tier',
           });
           signupAnalyticsTrackedRef.current = true;
         }
@@ -588,7 +588,7 @@ export function KeepFlipLaunchAuthScreen({
             setProfileSavedForAccount(false);
             if (__DEV__) {
               console.warn(
-                '[KeepFlip][Onboarding] Free scanner profile setup could not be saved:',
+                '[KeepFlip][Onboarding] Free-tier profile setup could not be saved:',
                 error,
               );
             }
@@ -811,9 +811,6 @@ export function KeepFlipLaunchAuthScreen({
             {mode === 'sign-in' && pendingMfaSignIn ? (
               <KeepFlipMfaChallenge
                 onAuthenticated={handleMfaAuthenticated}
-                onSubscriptionRequired={() =>
-                  setLocalError('An active subscription is required. Enter your password again to open the subscription paywall.')
-                }
                 pending={pendingMfaSignIn}
               />
             ) : !accountReady ? (
@@ -945,10 +942,10 @@ export function KeepFlipLaunchAuthScreen({
                   paddingHorizontal: 14,
                 })}>
                 <Text style={{ color: theme.colors.text, fontSize: responsiveFont(10), fontWeight: '700' }}>
-                  Use the free scanner · 20 scans/month
+                  Continue with free access · 20 AI valuations/month
                 </Text>
                 <Text style={{ color: theme.colors.textMuted, fontSize: responsiveFont(8), marginTop: 3 }}>
-                  Android only · no saved inventory
+                  Full workspace on Android and web · usage limits apply
                 </Text>
               </Pressable>
             ) : null}

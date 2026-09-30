@@ -32,7 +32,7 @@ export default function SubscriptionSetupScreen() {
       clearDraft();
       void markKeepFlipLaunchExperienceCompleted();
 
-      router.replace('/' as Href);
+      router.replace('/(app)' as Href);
     },
     [clearDraft, router],
   );

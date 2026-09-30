@@ -2,7 +2,6 @@ import * as Haptics from "expo-haptics";
 import {
   useIsFocused,
   useLocalSearchParams,
-  usePathname,
   useRouter,
 } from "expo-router";
 import {
@@ -71,7 +70,6 @@ function firstParam(value: string | string[] | undefined) {
 
 export function ItemAnalysisScreen() {
   const router = useRouter();
-  const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const { height, width } = useWindowDimensions();
   const { appliedColorScheme } = useKeepFlipAppearance();
@@ -287,16 +285,13 @@ export function ItemAnalysisScreen() {
       Haptics.NotificationFeedbackType.Success,
     ).catch(() => undefined);
     router.replace({
-      pathname: pathname.startsWith('/free')
-        ? '/free/analysis-result'
-        : '/analysis-result',
+      pathname: '/analysis-result',
       params: { sessionId: resultSessionId },
     });
   }, [
     activeSessionId,
     completedAnalysis,
     promoteScannerAnalysisToResult,
-    pathname,
     router,
     state.status,
   ]);

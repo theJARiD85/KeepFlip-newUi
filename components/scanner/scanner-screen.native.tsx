@@ -3,7 +3,6 @@ import * as ImagePicker from "expo-image-picker";
 import type { Href } from "expo-router";
 import {
   useIsFocused,
-  usePathname,
   useRouter,
 } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -37,6 +36,7 @@ import {
 
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { useKeepFlipMenu } from "@/components/navigation/keepflip-menu-context";
+import { useKeepFlipSubscription } from "@/components/subscription/keepflip-subscription-context";
 import {
   BarcodeLookupOverlay,
   type BarcodeLookupOverlayState,
@@ -64,6 +64,7 @@ import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout, useResponsiveStyles } from "@/hooks/use-responsive-layout";
+import { areKeepFlipSubscriptionsEnforced } from "@/services/keepflip-subscription-service";
 import { lookupBarcodeWithEbay } from "@/services/ebaySoldCompsService";
 import { MAX_ANALYSIS_PHOTOS } from "@/services/item-analysis-service";
 import { neutralizeMarketplaceBrand } from "@/services/market-copy";
@@ -192,19 +193,23 @@ function formatZoomLabel(value: number) {
 }
 
 export default function ScannerScreen() {
-  const pathname = usePathname();
   const styles = useResponsiveStyles(createResponsiveStyles);
   const { appliedColorScheme } = useKeepFlipAppearance();
   const router = useRouter();
   const { user } = useKeepFlipAuth();
-  const isFreeScanner = Platform.OS === 'android' && pathname.startsWith('/free');
+  const { snapshot: subscriptionSnapshot, state: subscriptionState } =
+    useKeepFlipSubscription();
+  const isFreeTierAccount =
+    areKeepFlipSubscriptionsEnforced() &&
+    (subscriptionState !== 'ready' ||
+      subscriptionSnapshot?.revenueCatAccess.active !== true);
   const scannerTools = useMemo(() => {
     void appliedColorScheme;
     const tools = getScannerTools();
-    return isFreeScanner
+    return isFreeTierAccount
       ? tools.filter((tool) => tool.id !== 'barcode')
       : tools;
-  }, [appliedColorScheme, isFreeScanner]);
+  }, [appliedColorScheme, isFreeTierAccount]);
   const { width } = useWindowDimensions();
   const { openScannerAnalysis } =
     useItemAnalysisResult() as unknown as ScannerAnalysisActions;
@@ -489,11 +494,11 @@ export default function ScannerScreen() {
 
     requestAnimationFrame(() => {
       router.push({
-        pathname: pathname.startsWith('/free') ? '/free/analysis' : '/analysis',
+        pathname: '/analysis',
         params: { sessionId },
       });
     });
-  }, [pathname, router]);
+  }, [router]);
 
   const handleToggleTorch = useCallback(async () => {
     if (
@@ -991,7 +996,7 @@ export default function ScannerScreen() {
   }, [dismissBarcodeLookup]);
 
   const handleBarcodeToolActivate = useCallback(async () => {
-    if (isFreeScanner) {
+    if (isFreeTierAccount) {
       setBarcodeLookup({
         phase: "error",
         barcode: null,
@@ -1050,7 +1055,7 @@ export default function ScannerScreen() {
         () => undefined,
       );
     }
-  }, [capturePhoto, inspectCapturedBarcode, isFreeScanner]);
+  }, [capturePhoto, inspectCapturedBarcode, isFreeTierAccount]);
 
   const openMultiReview = useCallback(() => {
     if (

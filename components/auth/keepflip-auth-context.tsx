@@ -14,7 +14,7 @@ import {
   ID,
   type Models,
 } from 'react-native-appwrite';
-import { AppState, Platform } from 'react-native';
+import { AppState } from 'react-native';
 
 import {
   AppwriteSetupError,
@@ -92,8 +92,8 @@ export type KeepFlipAuthContextValue = {
   cancelMfaSignIn: () => Promise<void>;
   /**
    * Create the Appwrite account without creating an authenticated session.
-   * Callers must complete the paid checkout first, or explicitly use the
-   * Android scanner-free signup path, before creating an account.
+   * Callers must complete paid checkout first, unless they use the existing
+   * Android free-tier onboarding path, before creating an account.
    */
   createAccount: (
     name: string,
@@ -134,7 +134,7 @@ class MfaRequiredError extends Error {
   }
 }
 
-async function requireActiveSubscription(user: Models.User) {
+async function verifySubscriptionStatus(user: Models.User) {
   if (!areKeepFlipSubscriptionsEnforced()) return;
 
   let subscription: Awaited<ReturnType<typeof loadKeepFlipSubscription>>;
@@ -162,19 +162,9 @@ async function requireActiveSubscription(user: Models.User) {
       user.$id,
     );
   }
-  if (!subscription.access.active && Platform.OS === 'android') {
-    // Android accounts without a paid entitlement may enter the scanner-only
-    // shell. Web remains subscription-only, and the server still enforces the
-    // free scan quota before any AI provider is called.
-    return;
-  }
-  if (!subscription.access.active) {
-    throw new KeepFlipAuthError(
-      'An active KeepFlip subscription is required to sign in.',
-      'AUTH_SUBSCRIPTION_REQUIRED',
-      user.$id,
-    );
-  }
+  // A verified free-tier account may sign in on every platform. Individual
+  // paid capabilities and free usage limits are still checked by the
+  // subscription context and the authenticated server functions.
 }
 
 // A healthy no-session request returns immediately. Never let a stalled browser
@@ -674,7 +664,7 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
         }
         if (!user) throw new SessionVerificationError();
 
-        await requireActiveSubscription(user);
+        await verifySubscriptionStatus(user);
 
         setPendingMfa(null);
         commit({
@@ -827,7 +817,7 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
         const user = await getVerifiedNonAnonymousUser();
         if (!user) throw new SessionVerificationError();
 
-        await requireActiveSubscription(user);
+        await verifySubscriptionStatus(user);
 
         setPendingMfa(null);
         commit({

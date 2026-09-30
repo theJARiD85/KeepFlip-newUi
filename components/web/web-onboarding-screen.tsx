@@ -105,7 +105,7 @@ export function WebOnboardingScreen() {
               <View style={styles.heroActions}>
                 <WebActionLink
                   href={KEEPFLIP_GOOGLE_PLAY_URL}
-                  label="Try 20 free scans on Android"
+                  label="Start free on Android"
                 />
                 <WebActionLink
                   href="/pricing"
@@ -119,7 +119,7 @@ export function WebOnboardingScreen() {
                 />
               </View>
               <Text style={[styles.freeEntryNote, { color: colors.textMuted }]}>
-                Free scanner on Android: up to {KEEPFLIP_FREE_ANDROID_SCANS_PER_MONTH} scans a month, no card needed, and no saved inventory.
+                Free accounts can use the KeepFlip workspace on Android and web, with up to 10 inventory items, 10 active listings, and {KEEPFLIP_FREE_ANDROID_SCANS_PER_MONTH} AI valuations per month. Create the account in the Android app; no card is required.
               </Text>
               <Text style={[styles.scopeCopy, { color: colors.textMuted }]}>
                 Built for solo flippers who source in person and sell on eBay. If you crosslist to five marketplaces, KeepFlip is not that tool yet.

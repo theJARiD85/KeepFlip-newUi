@@ -9,19 +9,11 @@ import { areKeepFlipSubscriptionsEnforced } from '@/services/keepflip-subscripti
 
 export default function WebHomeScreen() {
   const router = useRouter();
-  const { status, user } = useKeepFlipAuth();
-  const { snapshot, state } = useKeepFlipSubscription();
+  const { status } = useKeepFlipAuth();
+  const { state } = useKeepFlipSubscription();
   const subscriptionsEnforced = areKeepFlipSubscriptionsEnforced();
   const isCheckingSubscription =
     status === 'signed-in' && subscriptionsEnforced && state === 'loading';
-  const hasActiveSubscription =
-    !subscriptionsEnforced ||
-    (status === 'signed-in' &&
-      state === 'ready' &&
-      snapshot?.serverRecordAvailable === true &&
-      snapshot.serverRecord?.ownerId === user?.$id &&
-      snapshot.access.active === true);
-
   useEffect(() => {
     if (status === 'checking') return;
     if (status !== 'signed-in') {
@@ -30,8 +22,8 @@ export default function WebHomeScreen() {
     }
     if (isCheckingSubscription) return;
 
-    router.replace((hasActiveSubscription ? '/(app)' : '/subscription-required') as Href);
-  }, [hasActiveSubscription, isCheckingSubscription, router, status]);
+    router.replace('/(app)' as Href);
+  }, [isCheckingSubscription, router, status]);
 
   return (
     <>

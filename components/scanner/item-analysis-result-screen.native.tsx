@@ -1,7 +1,7 @@
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { File, Paths } from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
-import { useLocalSearchParams, usePathname, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -326,23 +326,28 @@ export function ItemAnalysisResultScreen() {
   } = useResponsiveLayout();
 
   const router = useRouter();
-  const pathname = usePathname();
-  const isFreeTierRoute = pathname.startsWith('/free');
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     itemId?: string | string[];
     sessionId?: string | string[];
   }>();
-  const itemId = isFreeTierRoute ? undefined : firstParam(params.itemId);
+  const itemId = firstParam(params.itemId);
   const sessionId = firstParam(params.sessionId);
   const { user } = useKeepFlipAuth();
   const { recordCompletedAction } = useKeepFlipFeedbackNudge();
-  const { canUse } = useKeepFlipSubscription();
+  const {
+    canUse,
+    snapshot: subscriptionSnapshot,
+    state: subscriptionState,
+  } = useKeepFlipSubscription();
   const userId = user?.$id;
   const basicBooksAllowed = canUse("basic_books");
   const advancedBooksAllowed = canUse("automated_books");
-  const canSaveInventory =
-    !isFreeTierRoute && (basicBooksAllowed || advancedBooksAllowed);
+  const canSaveInventory = basicBooksAllowed || advancedBooksAllowed;
+  const isFreeTierAccount =
+    subscriptionState === 'ready' &&
+    subscriptionSnapshot?.serverRecordAvailable === true &&
+    subscriptionSnapshot.access.active !== true;
   const legacyLedgerConfigured =
     isResellerBooksConfigured() && basicBooksAllowed;
   const advancedBookkeepingConfigured =
@@ -385,7 +390,7 @@ export function ItemAnalysisResultScreen() {
 
   useEffect(() => {
     if (
-      !isFreeTierRoute ||
+      !isFreeTierAccount ||
       !scannerSession ||
       scannerSession.state.status !== 'result' ||
       notifiedFreeScanSessionRef.current === scannerSession.id
@@ -413,7 +418,7 @@ export function ItemAnalysisResultScreen() {
       cancelled = true;
       if (dismissTimer) clearTimeout(dismissTimer);
     };
-  }, [isFreeTierRoute, scannerSession]);
+  }, [isFreeTierAccount, scannerSession]);
 
   useEffect(() => {
     if (!itemId) return;
@@ -1072,7 +1077,7 @@ export function ItemAnalysisResultScreen() {
         onSubmit={handleAddToInventory}
         sourcingTrip={activeSourcingTrip}
         submitting={saving}
-        visible={inventoryFormOpen && !isFreeTierRoute}
+        visible={inventoryFormOpen}
       />
     </KeepFlipBackground>
   );

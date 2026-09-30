@@ -45,7 +45,7 @@ export default function SubscriptionCheckScreen() {
           <ActivityIndicator color={colors.scannerCyan} size="small" />
           <View style={styles.statusCopy}>
             <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>KEEPFLIP / SECURE ACCESS</Text>
-            <Text style={[styles.status, { fontSize: responsiveFont(14) }]}>Verifying plan access by checking for an active subscription.</Text>
+            <Text style={[styles.status, { fontSize: responsiveFont(14) }]}>Loading your KeepFlip account access.</Text>
               </View>
           </View>
         </View>

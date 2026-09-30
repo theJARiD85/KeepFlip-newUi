@@ -70,7 +70,12 @@ function hapticSelection() {
 }
 
 function isDestinationActive(destinationPath: string, pathname: string) {
-  if (destinationPath === '/scanner' && pathname.startsWith('/free')) {
+  if (
+    destinationPath === '/scanner' &&
+    (pathname.startsWith('/scanner') ||
+      pathname === '/analysis' ||
+      pathname === '/analysis-result')
+  ) {
     return true;
   }
 
@@ -85,15 +90,7 @@ function isDestinationActive(destinationPath: string, pathname: string) {
   return pathname.startsWith(destinationPath);
 }
 
-type KeepFlipSlideDownMenuProps = {
-  freeTier?: boolean;
-  onPaidNavigationAttempt?: (destination: Href) => void | Promise<void>;
-};
-
-export function KeepFlipSlideDownMenu({
-  freeTier = false,
-  onPaidNavigationAttempt,
-}: KeepFlipSlideDownMenuProps) {
+export function KeepFlipSlideDownMenu() {
   const styles = useResponsiveStyles(createResponsiveStyles);
   const {
     responsiveFont
@@ -182,19 +179,8 @@ export function KeepFlipSlideDownMenu({
     hapticSelection();
     closeMenu();
 
-    const destinationPath =
-      freeTier && destination.label === 'Scanner'
-        ? '/free'
-        : destination.href.toString();
-    if (freeTier && destination.label !== 'Scanner') {
-      void onPaidNavigationAttempt?.(destination.href);
-      return;
-    }
-    const isAlreadyOnDestination =
-      destinationPath === '/command-center'
-        ? pathname === '/' || pathname === '/command-center'
-        : pathname === destinationPath ||
-          (destinationPath === '/free' && pathname.startsWith('/free'));
+    const destinationPath = destination.href.toString();
+    const isAlreadyOnDestination = isDestinationActive(destinationPath, pathname);
 
     if (!isAlreadyOnDestination) {
       requestAnimationFrame(() => router.replace(destinationPath as Href));
@@ -205,13 +191,6 @@ export function KeepFlipSlideDownMenu({
     if (isMenuDisabled) return;
     hapticSelection();
     closeMenu();
-    if (freeTier) {
-      const freeDestination = destination === '/account'
-        ? '/free/account'
-        : '/free/notifications';
-      requestAnimationFrame(() => router.replace(freeDestination as Href));
-      return;
-    }
     if (!pathname.startsWith(destination.toString())) {
       requestAnimationFrame(() => router.replace(destination as Href));
     }
@@ -222,13 +201,9 @@ export function KeepFlipSlideDownMenu({
     hapticSelection();
     closeMenu();
 
-    const destination = '/connections' as Href;
-    if (freeTier) {
-      void onPaidNavigationAttempt?.(destination);
-      return;
-    }
-    if (!pathname.startsWith(destination)) {
-      requestAnimationFrame(() => router.push(destination));
+    const destinationPath = '/connections';
+    if (!pathname.startsWith(destinationPath)) {
+      requestAnimationFrame(() => router.push(destinationPath as Href));
     }
   };
 
@@ -400,12 +375,7 @@ export function KeepFlipSlideDownMenu({
 
               <View style={styles.workflowBlock}>
                 <Text style={[styles.sectionLabel, { fontSize: responsiveFont(9) }]}>WORKFLOW</Text>
-                <SourcingTripControl
-                  locked={freeTier}
-                  onLockedPress={() =>
-                    void onPaidNavigationAttempt?.('/command-center' as Href)
-                  }
-                />
+                <SourcingTripControl />
               </View>
 
               <ConnectionsMenuLink
