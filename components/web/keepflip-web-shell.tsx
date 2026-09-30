@@ -311,9 +311,12 @@ export function KeepFlipWebShell({ children }: PropsWithChildren) {
 
 const styles = StyleSheet.create({
   root: {
+    alignSelf: 'stretch',
     flex: 1,
     flexDirection: 'row',
+    minWidth: 0,
     minHeight: '100%',
+    width: '100%',
   },
   sidebar: {
     width: 264,
@@ -470,6 +473,8 @@ const styles = StyleSheet.create({
   },
   mainMobile: {
     paddingTop: 104,
+    alignSelf: 'stretch',
+    width: '100%',
   },
   mainMobilePhone: {
     paddingTop: 110,
@@ -514,6 +519,8 @@ const styles = StyleSheet.create({
   routeContent: {
     flex: 1,
     minHeight: 0,
+    minWidth: 0,
+    width: '100%',
   },
   mobileChrome: {
     position: 'absolute',

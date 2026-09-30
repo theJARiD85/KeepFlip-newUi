@@ -1,15 +1,16 @@
 import React, { useRef, useState } from 'react';
-import { StyleSheet, View, SafeAreaView, Button, Modal, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Button, Modal, ActivityIndicator } from 'react-native';
 import { WebView } from 'react-native-webview';
 import CookieManager from '@react-native-cookies/cookies';
 import { ID, Permission, Role } from 'react-native-appwrite';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { tablesDB } from '@/lib/appwrite';
 
 interface Props {
   visible: boolean;
   onClose: () => void;
   userId: string; // The active Appwrite user account ID
-  platform: 'depop' | 'poshmark' | 'mercari';
+  platform: 'poshmark' | 'mercari' | 'fbMarketplace' | 'offerUp';
 }
 
 export const MarketplaceAuthModal: React.FC<Props> = ({ visible, onClose, userId, platform }) => {
@@ -18,9 +19,10 @@ export const MarketplaceAuthModal: React.FC<Props> = ({ visible, onClose, userId
 
   // Target login endpoints per platform
   const targetUrls = {
-    depop: 'https://depop.com',
-    poshmark: 'https://poshmark.com',
-    mercari: 'https://mercari.com',
+    poshmark: 'https://poshmark.com/login',
+    mercari: 'https://mercari.com/login',
+    fbMarketplace: 'https://www.facebook.com/marketplace',
+    offerUp: 'https://offerup.com/login',
   };
 
   const handleNavigationStateChange = async (navState: any) => {
@@ -28,9 +30,10 @@ export const MarketplaceAuthModal: React.FC<Props> = ({ visible, onClose, userId
 
     // Detect successful authentication landing zones
     const isSuccessPage = 
-      (platform === 'depop' && (url.includes('/dashboard') || url.match(/depop\.com\/[a-zA-Z0-9_-]+\/?\$/))) ||
       (platform === 'poshmark' && (url.includes('/feed') || url.includes('/mapp/'))) ||
-      (platform === 'mercari' && url.includes('/mypage/'));
+      (platform === 'mercari' && url.includes('/mypage/')) ||
+      (platform === 'fbMarketplace' && url.includes('/marketplace/')) ||
+      (platform === 'offerUp' && url.includes('/listings'));
 
     if (isSuccessPage) {
       try {
@@ -43,7 +46,7 @@ export const MarketplaceAuthModal: React.FC<Props> = ({ visible, onClose, userId
         // Upload directly to your new marketplace_sessions collection
         await tablesDB.createRow(
           'keepflip',
-          'marketplace_sessionsy',
+          'marketplace_sessions',
           ID.unique(),
           {
             userId: userId,
@@ -71,7 +74,7 @@ export const MarketplaceAuthModal: React.FC<Props> = ({ visible, onClose, userId
     <Modal visible={visible} animationType="slide">
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Button title="Cancel Setup" onPress={onClose} color="#ff3b30" />
+          <Button title="Cancel" onPress={onClose} color="#ff3b30" />
         </View>
         <WebView
           ref={webViewRef}
