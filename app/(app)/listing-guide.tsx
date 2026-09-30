@@ -26,6 +26,7 @@ import {
 import { appendPhotoToItem } from "@/services/itemPhotoService";
 import {
   runListingGenerator,
+  type ListingPlatform,
   type ListingGeneratorResult,
 } from "@/services/listingService";
 import { uploadItemImage } from "@/services/uploadItemImage";
@@ -54,9 +55,6 @@ type ChecklistStep = {
   label: string;
 };
 
-type ListingPlatform =
-  keyof ListingGeneratorResult["listing"]["platformCopy"];
-
 type EbayListingForm = {
   categoryId: string;
   quantity: string;
@@ -83,6 +81,7 @@ const CROSSLIST_PLATFORMS: {
   label: string;
   mode: string;
   description: string;
+  url: string;
 }[] = [
     {
       id: "ebay",
@@ -90,6 +89,7 @@ const CROSSLIST_PLATFORMS: {
       mode: "LIVE LISTING",
       description:
         "Publish the reviewed draft through your connected eBay account. Choose the category, then KeepFlip uses your saved Seller Account setup.",
+      url: "https://www.ebay.com/",
     },
     {
       id: "facebookMarketplace",
@@ -97,6 +97,7 @@ const CROSSLIST_PLATFORMS: {
       mode: "ASSISTED HANDOFF",
       description:
         "Send the prepared copy to Facebook, then confirm category, pickup, and listing details.",
+      url: "https://www.facebook.com/marketplace/",
     },
     {
       id: "offerUp",
@@ -104,8 +105,42 @@ const CROSSLIST_PLATFORMS: {
       mode: "ASSISTED HANDOFF",
       description:
         "Send the prepared copy to OfferUp, then confirm category, shipping, and listing details.",
+      url: "https://offerup.com/",
+    },
+    {
+      id: "depop",
+      label: "Depop",
+      mode: "ASSISTED HANDOFF",
+      description:
+        "Copy a Depop-ready draft, then add photos and confirm the listing details on Depop.",
+      url: "https://www.depop.com/",
+    },
+    {
+      id: "poshmark",
+      label: "Poshmark",
+      mode: "ASSISTED HANDOFF",
+      description:
+        "Copy a Poshmark-ready draft, then add photos, size, and category details on Poshmark.",
+      url: "https://poshmark.com/sell",
+    },
+    {
+      id: "mercari",
+      label: "Mercari",
+      mode: "ASSISTED HANDOFF",
+      description:
+        "Copy a Mercari-ready draft, then add photos and confirm shipping and listing details on Mercari.",
+      url: "https://www.mercari.com/",
     },
   ];
+
+const PLATFORM_COPY_LABELS: Record<ListingPlatform, string> = {
+  facebookMarketplace: "FACEBOOK",
+  ebay: "EBAY",
+  offerUp: "OFFERUP",
+  depop: "DEPOP",
+  poshmark: "POSHMARK",
+  mercari: "MERCARI",
+};
 
 
 function formatMoney(value: number | null, currency: string) {
@@ -223,11 +258,12 @@ export default function ListingCreationGuideScreen() {
   const [listingGenerationError, setListingGenerationError] = useState<string | null>(null);
   const [generatingListing, setGeneratingListing] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<
-    keyof ListingGeneratorResult["listing"]["platformCopy"]
+    ListingPlatform
   >("ebay");
   const [sharedPlatform, setSharedPlatform] =
     useState<ListingPlatform | null>(null);
   const [shareError, setShareError] = useState<string | null>(null);
+  const [shareNotice, setShareNotice] = useState<string | null>(null);
   const [ebayPublishOpen, setEbayPublishOpen] = useState(false);
   const [ebayPublishing, setEbayPublishing] = useState(false);
   const [ebayReady, setEbayReady] = useState(false);
@@ -531,17 +567,17 @@ export default function ListingCreationGuideScreen() {
       if (!generatedListing) return;
 
       setShareError(null);
+      setShareNotice(null);
       const platformInfo = CROSSLIST_PLATFORMS.find(
         (candidate) => candidate.id === platform,
       );
+      if (!platformInfo) return;
       const price = formatMoney(
         generatedListing.priceRange.targetPrice,
         item?.currency ?? "USD",
       );
       const message = [
         generatedListing.title,
-        generatedListing.subtitle,
-        generatedListing.description,
         generatedListing.platformCopy[platform],
         "Condition: " + generatedListing.conditionDisclosure,
         price ? "Target price: " + price : null,
@@ -550,22 +586,34 @@ export default function ListingCreationGuideScreen() {
         .join("\n\n");
 
       try {
-        await Share.share({
-          message,
-          title:
-            (platformInfo?.label ?? "Marketplace") + " listing draft",
-        });
+        if (Platform.OS === "web") {
+          if (typeof window === "undefined" || !navigator.clipboard?.writeText) {
+            throw new Error("This browser cannot copy listing drafts. Select and copy the draft from the editor instead.");
+          }
+
+          // Open synchronously from the user's click so popup blockers do not
+          // prevent the marketplace tab while the clipboard write is pending.
+          window.open(platformInfo.url, "_blank", "noopener,noreferrer");
+          await navigator.clipboard.writeText(message);
+          setShareNotice(
+            `${platformInfo.label} draft copied. Paste it into the marketplace form, add your photos, and review the listing before posting.`,
+          );
+        } else {
+          await Share.share({
+            message,
+            title: platformInfo.label + " listing draft",
+          });
+          setShareNotice(
+            `${platformInfo.label} draft is ready in the share sheet. Add photos and review the listing before posting.`,
+          );
+        }
         setSharedPlatform(platform);
         trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.listingShared, {
           platform,
         });
         recordCompletedAction();
       } catch (caughtError) {
-        setShareError(
-          caughtError instanceof Error
-            ? caughtError.message
-            : "KeepFlip could not open the sharing handoff.",
-        );
+        setShareError(caughtError instanceof Error ? caughtError.message : "KeepFlip could not open the sharing handoff.");
       }
     },
     [generatedListing, item?.currency, recordCompletedAction],
@@ -929,11 +977,7 @@ export default function ListingCreationGuideScreen() {
                               selectedPlatform === platform && styles.platformTabTextActive,
                             ]}
                           >
-                            {platform === "facebookMarketplace"
-                              ? "FACEBOOK"
-                              : platform === "offerUp"
-                                ? "OFFERUP"
-                                : "EBAY"}
+                            {PLATFORM_COPY_LABELS[platform]}
                           </Text>
                         </Pressable>
                       ))}
@@ -1003,7 +1047,7 @@ export default function ListingCreationGuideScreen() {
                     </View>
                   </View>
                   <Text style={[styles.crosslistDescription, { fontSize: responsiveFont(12) }]}>
-                    KeepFlip keeps the item facts consistent across channels. eBay can publish the reviewed draft; the other destinations open Android&apos;s standard share sheet for an assisted handoff.
+                    KeepFlip keeps the item facts consistent across channels. eBay can publish the reviewed draft. On mobile, other destinations use the share sheet; on web, KeepFlip copies the draft and opens the marketplace.
                   </Text>
                   <View style={styles.destinationList}>
                     {CROSSLIST_PLATFORMS.map((platform) => {
@@ -1037,7 +1081,9 @@ export default function ListingCreationGuideScreen() {
                                 ? ebayPublishResult
                                   ? "Open published eBay listing"
                                   : "Publish listing on eBay"
-                                : (shared ? "Share again" : "Share") +
+                                : (Platform.OS === "web"
+                                    ? shared ? "Copy and open again" : "Copy and open"
+                                    : shared ? "Share again" : "Share") +
                                 " " +
                                 platform.label +
                                 " listing draft"
@@ -1067,9 +1113,9 @@ export default function ListingCreationGuideScreen() {
                                   : ebayPublishOpen
                                     ? "EDIT"
                                     : "PUBLISH"
-                                : shared
-                                  ? "SHARED"
-                                  : "SHARE"}
+                                : Platform.OS === "web"
+                                  ? shared ? "COPIED" : "COPY + OPEN"
+                                  : shared ? "SHARED" : "SHARE"}
                             </Text>
                           </Pressable>
                         </View>
@@ -1260,6 +1306,11 @@ export default function ListingCreationGuideScreen() {
                   {shareError ? (
                     <Text selectable style={[styles.crosslistError, { fontSize: responsiveFont(12) }]}>
                       {shareError}
+                    </Text>
+                  ) : null}
+                  {shareNotice ? (
+                    <Text selectable style={styles.crosslistFootnote}>
+                      {shareNotice}
                     </Text>
                   ) : null}
                   <Text style={styles.crosslistFootnote}>
@@ -1734,6 +1785,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     platformTabs: {
       flexDirection: "row",
+      flexWrap: "wrap",
       gap: 6,
     },
     platformTab: {

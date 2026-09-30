@@ -1,6 +1,16 @@
 import { APPWRITE, ExecutionMethod, functions } from "../lib/appwrite";
 import type { PartsResearch, RepairDiagnosis } from "./repairService";
 
+export type ListingPlatform =
+  | "facebookMarketplace"
+  | "ebay"
+  | "offerUp"
+  | "depop"
+  | "poshmark"
+  | "mercari";
+
+export type ListingPlatformCopy = Record<ListingPlatform, string>;
+
 export type ListingGeneratorResult = {
   ok: true;
   listing: {
@@ -15,7 +25,7 @@ export type ListingGeneratorResult = {
     conditionDisclosure: string;
     photoChecklist: string[];
     suggestedTags: string[];
-    platformCopy: { facebookMarketplace: string; ebay: string; offerUp: string };
+    platformCopy: ListingPlatformCopy;
     warnings: string[];
   };
   confidence: number;
@@ -48,5 +58,29 @@ export async function runListingGenerator({ itemId, flipDecision, diagnosis = nu
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ itemId, flipDecision, diagnosis, partsResearch }),
   });
-  return readExecutionPayload<ListingGeneratorResult>(execution, "KeepFlip could not generate this listing.");
+  const result = readExecutionPayload<ListingGeneratorResult>(execution, "KeepFlip could not generate this listing.");
+  const serverCopy = result.listing.platformCopy as unknown as Partial<Record<ListingPlatform, string>>;
+  const generalCopy = [serverCopy.facebookMarketplace, serverCopy.offerUp, serverCopy.ebay, result.listing.description]
+    .find((value) => typeof value === "string" && value.trim()) || "";
+  const resolveCopy = (platform: ListingPlatform, fallback = generalCopy) => {
+    const value = serverCopy[platform];
+    return typeof value === "string" && value.trim() ? value : fallback;
+  };
+
+  // Older deployed Function versions only return eBay, Facebook, and OfferUp
+  // copy. Keep them usable while the expanded generator schema is deployed.
+  return {
+    ...result,
+    listing: {
+      ...result.listing,
+      platformCopy: {
+        facebookMarketplace: resolveCopy("facebookMarketplace"),
+        ebay: resolveCopy("ebay"),
+        offerUp: resolveCopy("offerUp"),
+        depop: resolveCopy("depop", resolveCopy("facebookMarketplace")),
+        poshmark: resolveCopy("poshmark", resolveCopy("offerUp")),
+        mercari: resolveCopy("mercari", resolveCopy("offerUp")),
+      },
+    },
+  };
 }
