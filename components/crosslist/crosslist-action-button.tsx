@@ -1,86 +1,138 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Platform } from 'react-native';
+import { Platform, Pressable, Share, StyleSheet, View } from 'react-native';
 
-// Import our platform-specific handlers
-import { MarketplaceAuthModal } from '@/components/connections/marketplace-auth-modal.native'; // The mobile WebView code we built earlier
+import { MarketplaceAuthModal } from '@/components/connections/marketplace-auth-modal';
+import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
+import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import {
+  createCrosslistingPayload,
+  CROSSLISTING_DESTINATIONS,
+  type CrosslistingMarketplace,
+  type CrosslistingPayload,
+} from '@/services/crosslisting-service';
 
-interface ListingData {
+type ListingData = {
   title: string;
   description: string;
   price: string;
-}
+  category?: string;
+  condition?: string;
+  brand?: string;
+  size?: string;
+  color?: string;
+  photoCount?: number;
+};
 
 interface CrosslistActionProps {
   userId: string;
   listing: ListingData;
-  platform: 'poshmark' | 'mercari' | 'fbMarketplace' | 'offerUp';
+  platform: CrosslistingMarketplace;
 }
 
-export const CrosslistActionButton: React.FC<CrosslistActionProps> = ({ userId, listing, platform }) => {
-  const [mobileModalVisible, setMobileModalVisible] = useState(false);
+export const CrosslistActionButton: React.FC<CrosslistActionProps> = ({
+  userId,
+  listing,
+  platform,
+}) => {
+  const [sessionPayload, setSessionPayload] = useState<CrosslistingPayload | null>(null);
+  const [notice, setNotice] = useState('');
 
-  const handleCrosslistExecution = () => {
-    // ---- BRANCH A: WEB APPLICATION ROUTE ----
+  const handleCrosslistExecution = async () => {
+    const payload = createCrosslistingPayload({
+      marketplace: platform,
+      title: listing.title,
+      description: listing.description,
+      price: listing.price,
+      category: listing.category ?? '',
+      condition: listing.condition ?? '',
+      brand: listing.brand ?? '',
+      size: listing.size ?? '',
+      color: listing.color ?? '',
+      photoCount: listing.photoCount ?? 0,
+    });
+
     if (Platform.OS === 'web') {
-      const targetUrls = {
-        poshmark: 'https://poshmark.com/login',
-        mercari: 'https://mercari.com/login',
-        fbMarketplace: 'https://www.facebook.com/marketplace',
-        offerUp: 'https://offerup.com/login',
-      };
-
-      // 1. Copy the text payload to clipboard automatically so the bookmarklet can read it
-      if (navigator.clipboard) {
-        const payload = JSON.stringify({ ...listing, platform });
-        navigator.clipboard.writeText(payload);
+      if (typeof window === 'undefined' || !navigator.clipboard?.writeText) {
+        setNotice('This browser cannot copy the listing data.');
+        return;
       }
 
-      // 2. Open marketplace listing view in a new browser tab
-      window.open(targetUrls[platform], '_blank');
+      const clipboardWrite = navigator.clipboard.writeText(JSON.stringify(payload));
+      window.open(
+        CROSSLISTING_DESTINATIONS[platform].createUrl,
+        '_blank',
+        'noopener,noreferrer',
+      );
+      try {
+        await clipboardWrite;
+        setNotice(`${CROSSLISTING_DESTINATIONS[platform].label} listing data copied.`);
+      } catch {
+        setNotice('KeepFlip could not copy listing data. Allow clipboard access and try again.');
+      }
       return;
     }
 
-    // ---- BRANCH B: ANDROID MOBILE APPLICATION ROUTE ----
-    if (Platform.OS === 'android' || Platform.OS === 'ios') {
-      setMobileModalVisible(true);
+    if (Platform.OS === 'android') {
+      if (!userId.trim()) {
+        setNotice('Sign in to KeepFlip before preparing a marketplace listing.');
+        return;
+      }
+      setNotice('Log in if needed, then choose Save & prepare.');
+      setSessionPayload(payload);
+      return;
     }
+
+    await Share.share({
+      message: `${listing.title}\n\n${listing.description}\n\nPrice: ${listing.price}`,
+    });
   };
 
   return (
-    <View>
-      <TouchableOpacity style={styles.button} onPress={handleCrosslistExecution}>
-        <Text style={styles.buttonText}>List to {platform.toUpperCase()}</Text>
-      </TouchableOpacity>
-
-      {/* Render the mobile WebView modal only on mobile engines */}
-      {Platform.OS !== 'web' && (
+    <View style={styles.container}>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => void handleCrosslistExecution()}
+        style={styles.button}
+      >
+        <Text style={styles.buttonText}>
+          List to {CROSSLISTING_DESTINATIONS[platform].label}
+        </Text>
+      </Pressable>
+      {notice ? <Text selectable style={styles.notice}>{notice}</Text> : null}
+      {sessionPayload ? (
         <MarketplaceAuthModal
-          visible={mobileModalVisible}
-          onClose={() => setMobileModalVisible(false)}
-          userId={userId}
+          onClose={() => setSessionPayload(null)}
+          payload={sessionPayload}
           platform={platform}
+          userId={userId}
+          visible
         />
-      )}
+      ) : null}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: { gap: 8 },
   button: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 10,
+    minHeight: 44,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: theme.colors.accentCyanBorder,
+    backgroundColor: theme.colors.iconSurfaceCyan,
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
+    color: theme.colors.scannerCyan,
+    fontFamily: theme.fonts.radar,
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  notice: {
+    color: theme.colors.textMuted,
+    fontFamily: theme.fonts.body,
+    fontSize: 12,
+    lineHeight: 17,
   },
 });

@@ -2,6 +2,7 @@ import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { useKeepFlipFeedbackNudge } from "@/components/feedback/keepflip-feedback-nudge";
 import { ListingNetProceedsPanel } from "@/components/seller/listing-net-proceeds-panel";
 import { ListingReadinessPanel } from "@/components/seller/listing-readiness-panel";
+import { MarketplaceAuthModal } from "@/components/connections/marketplace-auth-modal";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
@@ -29,6 +30,14 @@ import {
   type ListingPlatform,
   type ListingGeneratorResult,
 } from "@/services/listingService";
+import {
+  createCrosslistingPayload,
+  CROSSLISTING_BOOKMARKLET,
+  CROSSLISTING_DESTINATIONS,
+  getCrosslistingMarketplace,
+  type CrosslistingMarketplace,
+  type CrosslistingPayload,
+} from "@/services/crosslisting-service";
 import { uploadItemImage } from "@/services/uploadItemImage";
 import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
@@ -96,8 +105,8 @@ const CROSSLIST_PLATFORMS: {
       label: "Facebook Marketplace",
       mode: "ASSISTED HANDOFF",
       description:
-        "Send the prepared copy to Facebook, then confirm category, pickup, and listing details.",
-      url: "https://www.facebook.com/marketplace/",
+        "Copy a Facebook Marketplace draft, then add photos and confirm category, location, and listing details.",
+      url: CROSSLISTING_DESTINATIONS.facebookMarketplace.createUrl,
     },
     {
       id: "offerUp",
@@ -113,7 +122,7 @@ const CROSSLIST_PLATFORMS: {
       mode: "ASSISTED HANDOFF",
       description:
         "Copy a Depop-ready draft, then add photos and confirm the listing details on Depop.",
-      url: "https://www.depop.com/",
+      url: CROSSLISTING_DESTINATIONS.depop.createUrl,
     },
     {
       id: "poshmark",
@@ -121,15 +130,15 @@ const CROSSLIST_PLATFORMS: {
       mode: "ASSISTED HANDOFF",
       description:
         "Copy a Poshmark-ready draft, then add photos, size, and category details on Poshmark.",
-      url: "https://poshmark.com/sell",
+      url: CROSSLISTING_DESTINATIONS.poshmark.createUrl,
     },
     {
       id: "mercari",
       label: "Mercari",
       mode: "ASSISTED HANDOFF",
       description:
-        "Copy a Mercari-ready draft, then add photos and confirm shipping and listing details on Mercari.",
-      url: "https://www.mercari.com/",
+        "Copy a Mercari-ready draft, then add photos and confirm category, condition, shipping, and listing details.",
+      url: CROSSLISTING_DESTINATIONS.mercari.createUrl,
     },
   ];
 
@@ -264,6 +273,11 @@ export default function ListingCreationGuideScreen() {
     useState<ListingPlatform | null>(null);
   const [shareError, setShareError] = useState<string | null>(null);
   const [shareNotice, setShareNotice] = useState<string | null>(null);
+  const [bookmarkletNotice, setBookmarkletNotice] = useState<string | null>(null);
+  const [crosslistingModal, setCrosslistingModal] = useState<{
+    platform: CrosslistingMarketplace;
+    payload: CrosslistingPayload;
+  } | null>(null);
   const [ebayPublishOpen, setEbayPublishOpen] = useState(false);
   const [ebayPublishing, setEbayPublishing] = useState(false);
   const [ebayReady, setEbayReady] = useState(false);
@@ -584,6 +598,32 @@ export default function ListingCreationGuideScreen() {
       ]
         .filter(Boolean)
         .join("\n\n");
+      const crosslistingMarketplace = getCrosslistingMarketplace(platform);
+      const crosslistingPayload = crosslistingMarketplace
+        ? createCrosslistingPayload({
+            marketplace: crosslistingMarketplace,
+            title: generatedListing.title,
+            description: [
+              generatedListing.platformCopy[platform],
+              generatedListing.conditionDisclosure
+                ? `Condition: ${generatedListing.conditionDisclosure}`
+                : "",
+            ]
+              .filter(Boolean)
+              .join("\n\n"),
+            price: Number.isFinite(generatedListing.priceRange.targetPrice)
+              ? generatedListing.priceRange.targetPrice.toFixed(2)
+              : "",
+            category: item?.category ?? "",
+            condition:
+              item?.condition ??
+              generatedListing.conditionLabel.replace(/_/g, " "),
+            brand: item?.brand ?? "",
+            size: item?.itemSpecifics?.size ?? item?.variant ?? "",
+            color: item?.color ?? "",
+            photoCount: item?.photoCount ?? 0,
+          })
+        : null;
 
       try {
         if (Platform.OS === "web") {
@@ -593,10 +633,30 @@ export default function ListingCreationGuideScreen() {
 
           // Open synchronously from the user's click so popup blockers do not
           // prevent the marketplace tab while the clipboard write is pending.
+          const clipboardWrite = navigator.clipboard.writeText(
+            crosslistingPayload ? JSON.stringify(crosslistingPayload) : message,
+          );
           window.open(platformInfo.url, "_blank", "noopener,noreferrer");
-          await navigator.clipboard.writeText(message);
+          await clipboardWrite;
+          if (crosslistingPayload) {
+            setShareNotice(
+              `${platformInfo.label} listing data copied. Open the listing form and click KeepFlip Autofill to fill supported fields; add photos and review the listing.`,
+            );
+          } else {
+            setShareNotice(
+              `${platformInfo.label} draft copied. Paste it into the marketplace form, add your photos, and review the listing before posting.`,
+            );
+          }
+        } else if (Platform.OS === "android" && crosslistingMarketplace && crosslistingPayload) {
+          if (!userId) {
+            throw new Error("Sign in to KeepFlip before preparing a marketplace listing.");
+          }
+          setCrosslistingModal({
+            platform: crosslistingMarketplace,
+            payload: crosslistingPayload,
+          });
           setShareNotice(
-            `${platformInfo.label} draft copied. Paste it into the marketplace form, add your photos, and review the listing before posting.`,
+            `KeepFlip opened ${platformInfo.label}. Log in if needed, then choose Save & prepare to fill supported listing fields.`,
           );
         } else {
           await Share.share({
@@ -616,8 +676,26 @@ export default function ListingCreationGuideScreen() {
         setShareError(caughtError instanceof Error ? caughtError.message : "KeepFlip could not open the sharing handoff.");
       }
     },
-    [generatedListing, item?.currency, recordCompletedAction],
+    [generatedListing, item, recordCompletedAction, userId],
   );
+
+  const copyAutofillBookmarklet = useCallback(async () => {
+    if (Platform.OS !== "web") return;
+    setBookmarkletNotice(null);
+    try {
+      if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) {
+        throw new Error("This browser cannot copy the bookmarklet.");
+      }
+      await navigator.clipboard.writeText(CROSSLISTING_BOOKMARKLET);
+      setBookmarkletNotice(
+        "Copied. Add a bookmark named KeepFlip Autofill and paste the code into its URL field.",
+      );
+    } catch {
+      setBookmarkletNotice(
+        "KeepFlip could not copy the bookmarklet. Use a secure browser page and allow clipboard access, then try again.",
+      );
+    }
+  }, []);
 
 
   const openEbayPublishForm = useCallback(() => {
@@ -1047,8 +1125,33 @@ export default function ListingCreationGuideScreen() {
                     </View>
                   </View>
                   <Text style={[styles.crosslistDescription, { fontSize: responsiveFont(12) }]}>
-                    KeepFlip keeps the item facts consistent across channels. eBay can publish the reviewed draft. On mobile, other destinations use the share sheet; on web, KeepFlip copies the draft and opens the marketplace.
+                    KeepFlip keeps item facts consistent across channels. eBay can publish the reviewed draft. Facebook Marketplace, Depop, Mercari, and Poshmark can fill supported fields with the browser bookmarklet or Android app; add photos and review marketplace-specific selections before posting.
                   </Text>
+                  {Platform.OS === "web" ? (
+                    <View style={styles.bookmarkletSetup}>
+                      <View style={styles.bookmarkletCopy}>
+                        <Text style={styles.bookmarkletTitle}>MARKETPLACE AUTOFILL</Text>
+                        <Text style={styles.crosslistDescription}>
+                          Copy the bookmarklet once, then save it as a browser bookmark URL.
+                        </Text>
+                      </View>
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() => void copyAutofillBookmarklet()}
+                        style={({ pressed }) => [
+                          styles.copyBookmarkletButton,
+                          pressed && styles.pressed,
+                        ]}
+                      >
+                        <Text style={styles.copyBookmarkletText}>COPY BOOKMARKLET</Text>
+                      </Pressable>
+                      {bookmarkletNotice ? (
+                        <Text selectable style={styles.crosslistFootnote}>
+                          {bookmarkletNotice}
+                        </Text>
+                      ) : null}
+                    </View>
+                  ) : null}
                   <View style={styles.destinationList}>
                     {CROSSLIST_PLATFORMS.map((platform) => {
                       const shared = sharedPlatform === platform.id;
@@ -1081,9 +1184,11 @@ export default function ListingCreationGuideScreen() {
                                 ? ebayPublishResult
                                   ? "Open published eBay listing"
                                   : "Publish listing on eBay"
-                                : (Platform.OS === "web"
+                              : (Platform.OS === "web"
                                     ? shared ? "Copy and open again" : "Copy and open"
-                                    : shared ? "Share again" : "Share") +
+                                    : Platform.OS === "android" && getCrosslistingMarketplace(platform.id)
+                                      ? shared ? "Prepare again" : "Open and prepare"
+                                      : shared ? "Share again" : "Share") +
                                 " " +
                                 platform.label +
                                 " listing draft"
@@ -1115,7 +1220,9 @@ export default function ListingCreationGuideScreen() {
                                     : "PUBLISH"
                                 : Platform.OS === "web"
                                   ? shared ? "COPIED" : "COPY + OPEN"
-                                  : shared ? "SHARED" : "SHARE"}
+                                  : Platform.OS === "android" && getCrosslistingMarketplace(platform.id)
+                                    ? shared ? "PREPARED" : "OPEN + FILL"
+                                    : shared ? "SHARED" : "SHARE"}
                             </Text>
                           </Pressable>
                         </View>
@@ -1419,6 +1526,22 @@ export default function ListingCreationGuideScreen() {
           )}
         </View>
       </ScrollView>
+      {crosslistingModal ? (
+        <MarketplaceAuthModal
+          onClose={() => setCrosslistingModal(null)}
+          onSaved={() => {
+            if (crosslistingModal) {
+              setShareNotice(
+                `${CROSSLISTING_DESTINATIONS[crosslistingModal.platform].label} session saved. KeepFlip is preparing the listing form.`,
+              );
+            }
+          }}
+          payload={crosslistingModal.payload}
+          platform={crosslistingModal.platform}
+          userId={userId ?? ""}
+          visible
+        />
+      ) : null}
     </KeepFlipBackground>
   );
 }
@@ -1890,6 +2013,39 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.body,
       fontSize: 12,
       lineHeight: 18,
+    },
+    bookmarkletSetup: {
+      gap: 8,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.iconSurfaceCyan,
+    },
+    bookmarkletCopy: {
+      gap: 4,
+    },
+    bookmarkletTitle: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 9,
+      fontWeight: "900",
+      letterSpacing: 0.7,
+    },
+    copyBookmarkletButton: {
+      alignSelf: "flex-start",
+      minHeight: 36,
+      justifyContent: "center",
+      paddingHorizontal: 12,
+      borderWidth: 1,
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.surfaceInset,
+    },
+    copyBookmarkletText: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.radar,
+      fontSize: 8,
+      fontWeight: "900",
+      letterSpacing: 0.6,
     },
     destinationList: {
       gap: 0,

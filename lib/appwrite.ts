@@ -181,6 +181,10 @@ export const APPWRITE = {
   marketplaceListingsTableId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_MARKETPLACE_LISTINGS_TABLE_ID,
   ),
+  marketplaceSessionsTableId:
+    publicEnvironmentValue(
+      process.env.EXPO_PUBLIC_APPWRITE_MARKETPLACE_SESSIONS_TABLE_ID,
+    ) || 'marketplace_sessions',
   marketplaceInquiriesTableId: publicEnvironmentValue(
     process.env.EXPO_PUBLIC_APPWRITE_MARKETPLACE_INQUIRIES_TABLE_ID,
   ),
