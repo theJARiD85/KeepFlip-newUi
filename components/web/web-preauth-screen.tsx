@@ -527,7 +527,7 @@ export function WebPreAuthScreen({
             ) : null}
           </View>
         </View>
-        <WebSiteFooter />
+        <WebSiteFooter hideGetStarted />
       </ScrollView>
     </View>
   );

@@ -33,7 +33,7 @@ export function WebSiteHeader({
   const isPhone = width < 480;
 
   const goToSignIn = onSignIn ?? (() => router.push('/sign-in' as Href));
-  const goToGetStarted = onGetStarted ?? (() => router.push('/welcome' as Href));
+  const goToGetStarted = onGetStarted ?? (() => router.push('/meet-flip' as Href));
 
   return (
     <View style={[styles.header, isPhone && styles.headerPhone, { borderBottomColor: colors.divider }]}>
@@ -119,9 +119,11 @@ export function WebSiteHeader({
 export function WebSiteFooter({
   showMarketingLinks = false,
   suppressAuthLinks = false,
+  hideGetStarted = false,
 }: {
   showMarketingLinks?: boolean;
   suppressAuthLinks?: boolean;
+  hideGetStarted?: boolean;
 }) {
   const { isBusy, pendingMfaSignIn, status } = useKeepFlipAuth();
   const { effectiveColorScheme } = useKeepFlipAppearance();
@@ -183,12 +185,14 @@ export function WebSiteFooter({
           {!shouldHideAuthLinks ? (
             <>
               <FooterRouteLink colors={colors} href="/sign-in" label="Sign in" />
-              <FooterRouteLink
-                accent
-                colors={colors}
-                label={showMarketingLinks ? 'View pricing' : 'Get started'}
-                href={showMarketingLinks ? '/pricing' : '/welcome'}
-              />
+              {!hideGetStarted ? (
+                <FooterRouteLink
+                  accent
+                  colors={colors}
+                  label={showMarketingLinks ? 'View pricing' : 'Get started'}
+                  href={showMarketingLinks ? '/pricing' : '/meet-flip'}
+                />
+              ) : null}
             </>
           ) : null}
         </View>

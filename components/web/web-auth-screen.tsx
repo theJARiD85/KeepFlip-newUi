@@ -496,7 +496,7 @@ export function WebAuthScreen({
                   router.replace('/sign-in');
                   return;
                 }
-                router.push('/welcome');
+                router.push('/meet-flip');
               }}
             >
               <Text style={[styles.switchAction, { color: colors.scannerCyan }]}>
