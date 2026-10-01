@@ -26,6 +26,7 @@ import {
   KeepFlipAuthError,
   useKeepFlipAuth,
 } from '@/components/auth/keepflip-auth-context';
+import { FacebookSignInButton } from '@/components/auth/facebook-sign-in-button';
 import { KeepFlipMfaChallenge } from '@/components/auth/keepflip-mfa-challenge';
 import { FlipCompanion } from '@/components/flip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -923,6 +924,12 @@ export function KeepFlipLaunchAuthScreen({
                 </>
               )}
             </Pressable> : null}
+
+            {mode === 'sign-in' && !pendingMfaSignIn ? (
+              <FacebookSignInButton
+                disabled={isBusy || isSubmitting || setupRequired}
+              />
+            ) : null}
 
             {Platform.OS === 'android' && mode === 'create-account' && isPreAccountSignup && !accountReady ? (
               <Pressable

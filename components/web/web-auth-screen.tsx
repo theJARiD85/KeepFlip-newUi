@@ -16,6 +16,7 @@ import {
   KeepFlipAuthError,
   useKeepFlipAuth,
 } from '@/components/auth/keepflip-auth-context';
+import { FacebookSignInButton } from '@/components/auth/facebook-sign-in-button';
 import { KeepFlipMfaChallenge } from '@/components/auth/keepflip-mfa-challenge';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
@@ -476,6 +477,12 @@ export function WebAuthScreen({
             {isBusy || isSubmitting ? <ActivityIndicator color={colors.textOnAccent} /> : null}
             <Text style={[styles.submitText, { color: colors.textOnAccent }]}>{submitLabel}</Text>
           </Pressable> : null}
+
+          {!isCreateAccount && !pendingMfaSignIn ? (
+            <FacebookSignInButton
+              disabled={isBusy || isSubmitting || status === 'setup'}
+            />
+          ) : null}
 
           {!pendingMfaSignIn ? <View style={styles.switchRow}>
             <Text style={[styles.switchText, { color: colors.textMuted }]}>

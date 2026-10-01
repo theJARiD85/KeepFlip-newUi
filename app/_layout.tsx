@@ -6,11 +6,12 @@ import {
   ThemeProvider,
 } from "expo-router/react-navigation";
 import { useFonts } from "expo-font";
-import { Stack, usePathname } from "expo-router";
+import { Stack, usePathname, useRouter, type Href } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import {
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { Platform, View } from "react-native";
@@ -62,6 +63,8 @@ configureKeepFlipNotificationHandler();
   
 
 function ProtectedRootStack() {
+  const router = useRouter();
+  const pathname = usePathname();
   const {
     status,
     user,
@@ -92,7 +95,21 @@ function ProtectedRootStack() {
         : subscriptionSnapshot?.serverRecordAvailable === true &&
           subscriptionSnapshot.serverRecord?.ownerId === user?.$id &&
           subscriptionSnapshot.access.active === true));
-  const pathname = usePathname();
+  const shouldRedirectAuthToDashboardRef = useRef(pathname.endsWith('/sign-in'));
+
+  useEffect(() => {
+    if (isChecking) {
+      if (pathname.endsWith('/sign-in')) {
+        shouldRedirectAuthToDashboardRef.current = true;
+      }
+      return;
+    }
+
+    if (isSignedIn && shouldRedirectAuthToDashboardRef.current) {
+      router.replace('/facebook-dashboard' as Href);
+    }
+    shouldRedirectAuthToDashboardRef.current = false;
+  }, [isChecking, isSignedIn, pathname, router]);
 
   const keepSubscriptionSignupOpen =
     pathname === "/subscription-setup";
@@ -141,6 +158,7 @@ function ProtectedRootStack() {
 
       <Stack.Screen name="terms" />
       <Stack.Screen name="privacy" />
+      <Stack.Screen name="facebook-oauth-callback" />
     </Stack>
   );
 }

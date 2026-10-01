@@ -87,6 +87,7 @@ export type KeepFlipAuthContextValue = {
   isBusy: boolean;
   pendingMfaSignIn: KeepFlipMfaSignInState | null;
   signIn: (email: string, password: string) => Promise<void>;
+  completeFacebookOAuthSignIn: (userId: string, secret: string) => Promise<void>;
   changeMfaSignInFactor: (factor: AuthenticationFactor) => Promise<void>;
   completeMfaSignIn: (otp: string) => Promise<void>;
   cancelMfaSignIn: () => Promise<void>;
@@ -745,6 +746,118 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
     [beginOperation, commit, finishOperation],
   );
 
+  const completeFacebookOAuthSignIn = useCallback(
+    async (userId: string, secret: string) => {
+      if (!beginOperation()) {
+        throw new KeepFlipAuthError(
+          'KeepFlip is already processing an authentication request.',
+          'AUTH_REQUEST_FAILED',
+        );
+      }
+
+      let sessionRequestStarted = false;
+      try {
+        const configurationStatus = getAppwriteCoreConfigurationStatus();
+        if (!configurationStatus.configured) {
+          commit(setupSnapshot(configurationStatus.missingKeys));
+          throw new KeepFlipAuthError(
+            'KeepFlip sign-in has not been configured yet.',
+            'AUTH_SETUP_REQUIRED',
+          );
+        }
+        if (!userId.trim() || !secret) {
+          throw new KeepFlipAuthError(
+            'Facebook did not return the information needed to finish sign-in. Try again.',
+            'AUTH_INVALID_INPUT',
+          );
+        }
+
+        commit(INITIAL_AUTH_SNAPSHOT);
+        setPendingMfa(null);
+        const { account } = getAppwriteCoreServices();
+        sessionRequestStarted = true;
+        await account.createSession({ userId, secret });
+
+        let user: Models.User | null;
+        try {
+          user = await getVerifiedNonAnonymousUser();
+        } catch (error) {
+          if (!(error instanceof MfaRequiredError)) throw error;
+
+          const availableFactors = await account.listMFAFactors();
+          const factor = defaultMfaFactor(availableFactors);
+          if (!factor) throw new SessionVerificationError();
+          const challenge = await account.createMFAChallenge({ factor });
+          setPendingMfa({
+            availableFactors,
+            challengeId: challenge.$id,
+            factor,
+          });
+          commit(signedOutSnapshot());
+          throw new KeepFlipAuthError(
+            'Enter your verification code to finish signing in.',
+            'AUTH_MFA_REQUIRED',
+          );
+        }
+        if (!user) throw new SessionVerificationError();
+
+        await verifySubscriptionStatus(user);
+        commit({
+          status: 'signed-in',
+          user,
+          errorMessage: null,
+          missingKeys: [],
+        });
+        trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.loginCompleted, {
+          method: 'facebook',
+        });
+      } catch (error) {
+        const safeError = safeAuthError(error, 'sign-in');
+        if (
+          sessionRequestStarted &&
+          safeError.code !== 'AUTH_MFA_REQUIRED'
+        ) {
+          try {
+            await clearCurrentAppwriteSession();
+          } catch {
+            commit(errorSnapshot(safeError.message));
+            throw safeError;
+          }
+        }
+
+        if (safeError.code === 'AUTH_SETUP_REQUIRED') {
+          const configurationStatus = getAppwriteCoreConfigurationStatus();
+          commit(
+            setupSnapshot(
+              configurationStatus.configured
+                ? []
+                : configurationStatus.missingKeys,
+            ),
+          );
+        } else if (safeError.code === 'AUTH_MFA_REQUIRED') {
+          commit(signedOutSnapshot());
+        } else if (
+          safeError.code === 'AUTH_SUBSCRIPTION_REQUIRED' ||
+          safeError.code === 'AUTH_SUBSCRIPTION_UNVERIFIED'
+        ) {
+          commit(
+            signedOutSnapshot(
+              safeError.code === 'AUTH_SUBSCRIPTION_UNVERIFIED'
+                ? safeError.message
+                : null,
+            ),
+          );
+        } else {
+          commit(signedOutSnapshot(safeError.message));
+        }
+        throw safeError;
+      } finally {
+        finishOperation();
+      }
+    },
+    [beginOperation, commit, finishOperation],
+  );
+
   const changeMfaSignInFactor = useCallback(
     async (factor: AuthenticationFactor) => {
       if (!beginOperation()) {
@@ -1122,6 +1235,7 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
         : null,
       createAccount,
       signIn,
+      completeFacebookOAuthSignIn,
       changeMfaSignInFactor,
       completeMfaSignIn,
       cancelMfaSignIn,
@@ -1135,6 +1249,7 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
       changeMfaSignInFactor,
       completeMfaSignIn,
       createAccount,
+      completeFacebookOAuthSignIn,
       isBusy,
       pendingMfa,
       refresh,

@@ -5,7 +5,10 @@
     "version": "2.1.7",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
-    "scheme": "keepflip",
+    "scheme": [
+      "keepflip",
+      "appwrite-callback-6a35bcae000cf7c40b0a"
+    ],
     "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": true,

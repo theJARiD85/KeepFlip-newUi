@@ -173,6 +173,7 @@ export default function AppShellLayout() {
                   <Stack.Screen name="analysis" />
                   <Stack.Screen name="analysis-result" />
                   <Stack.Screen name="account" />
+                  <Stack.Screen name="facebook-dashboard" />
                 </Stack>
               <FlipAssistantOverlay />
               <FlipDailyBriefingLauncher />

@@ -1,9 +1,9 @@
 import { analytics } from '@heycatch/sdk';
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router/react-navigation';
-import { Stack, usePathname } from 'expo-router';
+import { Stack, usePathname, useRouter, type Href } from 'expo-router';
 import Head from 'expo-router/head';
 import { useFonts } from 'expo-font';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import {
@@ -35,6 +35,7 @@ analytics.init({
 });
 
 function ProtectedRootStack() {
+  const router = useRouter();
   const { status, user } = useKeepFlipAuth();
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const colors = getKeepFlipThemeColors(effectiveColorScheme);
@@ -56,6 +57,21 @@ function ProtectedRootStack() {
   const canShowOnboarding =
     (!isSignedIn || subscriptionSetupOpen) &&
     (!isSignedIn || hasActiveSubscription);
+  const shouldRedirectAuthToDashboardRef = useRef(pathname.endsWith('/sign-in'));
+
+  useEffect(() => {
+    if (isChecking) {
+      if (pathname.endsWith('/sign-in')) {
+        shouldRedirectAuthToDashboardRef.current = true;
+      }
+      return;
+    }
+
+    if (isSignedIn && shouldRedirectAuthToDashboardRef.current) {
+      router.replace('/facebook-dashboard' as Href);
+    }
+    shouldRedirectAuthToDashboardRef.current = false;
+  }, [isChecking, isSignedIn, pathname, router]);
 
   useEffect(() => {
     void initializeKeepFlipFirebaseAnalytics();
@@ -93,6 +109,7 @@ function ProtectedRootStack() {
       </Stack.Protected>
       <Stack.Screen name="terms" />
       <Stack.Screen name="privacy" />
+      <Stack.Screen name="facebook-oauth-callback" />
     </Stack>
   );
 }
