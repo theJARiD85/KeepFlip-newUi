@@ -48,7 +48,7 @@ export function useResponsiveLayout() {
   const isTallPhone = !isTablet && layoutHeight / Math.max(layoutWidth, 1) >= 2;
 
   const nativePageGutter = isWideTablet ? 32 : isTablet ? 24 : isCompactWidth ? 8 : 12;
-  const nativeContentMaxWidth = isWideTablet ? 1040 : isTablet ? 720 : 560;
+  const nativeContentMaxWidth = width - (nativePageGutter * 2);
   const nativeAvailableWidth = Math.max(0, layoutWidth - nativePageGutter * 2);
   const nativeContentWidth = Math.min(nativeAvailableWidth, nativeContentMaxWidth);
 

@@ -1,5 +1,4 @@
 import { APPWRITE, ExecutionMethod, functions } from "../lib/appwrite";
-import type { PartsResearch, RepairDiagnosis } from "./repairService";
 
 export type ListingPlatform =
   | "facebookMarketplace"
@@ -11,8 +10,39 @@ export type ListingPlatform =
 
 export type ListingPlatformCopy = Record<ListingPlatform, string>;
 
-export type ListingGeneratorResult = {
+export type ListingReadinessQuestion = {
+  id: string;
+  field: string;
+  question: string;
+  whyItMatters: string | null;
+  requestedPhoto: string | null;
+  required: boolean;
+};
+
+export type ListingReadiness = {
+  facts: {
+    field: string;
+    label: string;
+    value: string | null;
+    source: "photo" | "inventory" | "uncertain" | "unknown";
+    confidence: number | null;
+    evidence: string | null;
+  }[];
+  conditionByArea: { area: string; status: string; details: string[] }[];
+  completeness: { includedItems: string[]; uncertainItems: string[] };
+  authenticity: {
+    status: string;
+    evidence: string[];
+    limitations: string[];
+  };
+  blockingQuestions: ListingReadinessQuestion[];
+  recommendedQuestions: ListingReadinessQuestion[];
+};
+
+type ListingGeneratorReadyResult = {
   ok: true;
+  status: "ready";
+  readiness: ListingReadiness;
   listing: {
     title: string;
     subtitle: string;
@@ -32,13 +62,27 @@ export type ListingGeneratorResult = {
   generatedAt: string;
 };
 
+type ListingGeneratorPendingResult = {
+  ok: true;
+  status: "needs_seller_input";
+  readiness: ListingReadiness;
+  preflightToken: string;
+  answers: Record<string, string>;
+  round: number;
+  generatedAt: string;
+};
+
+export type ListingGeneratorResult = ListingGeneratorReadyResult;
+export type ListingGeneratorResponse =
+  | ListingGeneratorReadyResult
+  | ListingGeneratorPendingResult;
+
 type FailurePayload = { ok: false; error?: string };
 
 export type GenerateListingArgs = {
   itemId: string;
-  flipDecision?: { asIsValue?: number; repairedValue?: number; repairCost?: number; profitDelta?: number; recommendation?: string };
-  diagnosis?: RepairDiagnosis | null;
-  partsResearch?: PartsResearch | null;
+  preflightToken?: string;
+  answers?: Record<string, string>;
 };
 
 function readExecutionPayload<T extends { ok: true }>(execution: { responseBody?: string; responseStatusCode?: number }, fallbackMessage: string): T {
@@ -50,15 +94,21 @@ function readExecutionPayload<T extends { ok: true }>(execution: { responseBody?
   return payload;
 }
 
-export async function runListingGenerator({ itemId, flipDecision, diagnosis = null, partsResearch = null }: GenerateListingArgs): Promise<ListingGeneratorResult> {
+export async function runListingGenerator({
+  itemId,
+  preflightToken,
+  answers = {},
+}: GenerateListingArgs): Promise<ListingGeneratorResponse> {
+  const action = preflightToken ? "continue" : "generate";
   const execution = await functions.createExecution({
     functionId: APPWRITE.listingGeneratorFunctionId,
     async: false,
     method: ExecutionMethod.POST,
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ itemId, flipDecision, diagnosis, partsResearch }),
+    body: JSON.stringify({ action, itemId, preflightToken, answers }),
   });
-  const result = readExecutionPayload<ListingGeneratorResult>(execution, "KeepFlip could not generate this listing.");
+  const result = readExecutionPayload<ListingGeneratorResponse>(execution, "KeepFlip could not generate this listing.");
+  if (result.status === "needs_seller_input") return result;
   const serverCopy = result.listing.platformCopy as unknown as Partial<Record<ListingPlatform, string>>;
   const generalCopy = [serverCopy.facebookMarketplace, serverCopy.offerUp, serverCopy.ebay, result.listing.description]
     .find((value) => typeof value === "string" && value.trim()) || "";

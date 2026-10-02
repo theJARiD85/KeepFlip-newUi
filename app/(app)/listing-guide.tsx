@@ -28,7 +28,9 @@ import { appendPhotoToItem } from "@/services/itemPhotoService";
 import {
   runListingGenerator,
   type ListingPlatform,
+  type ListingGeneratorResponse,
   type ListingGeneratorResult,
+  type ListingReadiness,
 } from "@/services/listingService";
 import {
   createCrosslistingPayload,
@@ -69,6 +71,11 @@ type EbayListingForm = {
   quantity: string;
   marketplaceId: string;
 };
+
+type PendingListingReview = Extract<
+  ListingGeneratorResponse,
+  { status: "needs_seller_input" }
+>;
 
 function ebayPublishInput(item: InventoryItem, listing: ListingGeneratorResult["listing"], form: EbayListingForm,
   review: EbayListingReview, aspects: Record<string, string[]>, measurements: Record<string, string[]>): PublishEbayListingInput {
@@ -244,7 +251,10 @@ export default function ListingCreationGuideScreen() {
   const { recordCompletedAction } = useKeepFlipFeedbackNudge();
   const userId = user?.$id;
   const {
-    contentWidth, insets, pageGutter, responsiveFont,
+    contentWidth,
+    insets,
+    pageGutter,
+    responsiveFont,
     responsiveWidth,
     responsiveHeight,
     contentMaxWidth,
@@ -263,6 +273,11 @@ export default function ListingCreationGuideScreen() {
   const [generatedListing, setGeneratedListing] = useState<
     ListingGeneratorResult["listing"] | null
   >(null);
+  const [listingReadiness, setListingReadiness] =
+    useState<ListingReadiness | null>(null);
+  const [pendingListingReview, setPendingListingReview] =
+    useState<PendingListingReview | null>(null);
+  const [listingAnswers, setListingAnswers] = useState<Record<string, string>>({});
   const [listingConfidence, setListingConfidence] = useState<number | null>(null);
   const [listingGenerationError, setListingGenerationError] = useState<string | null>(null);
   const [generatingListing, setGeneratingListing] = useState(false);
@@ -353,6 +368,10 @@ export default function ListingCreationGuideScreen() {
   const priceReference = item
     ? formatMoney(item.estimatedValue, item.currency)
     : null;
+  const listingRequiredQuestionsAnswered =
+    pendingListingReview?.readiness.blockingQuestions.every(
+      (question) => Boolean(listingAnswers[question.id]?.trim()),
+    ) ?? false;
 
   const toggleStep = useCallback((targetItemId: string, step: ChecklistStep) => {
     if (step.completeByDefault) return;
@@ -367,30 +386,74 @@ export default function ListingCreationGuideScreen() {
     });
   }, []);
 
+  const acceptListingResponse = useCallback(
+    (result: ListingGeneratorResponse) => {
+      setListingReadiness(result.readiness);
+      if (result.status === "needs_seller_input") {
+        setPendingListingReview(result);
+        setListingAnswers(result.answers);
+        setGeneratedListing(null);
+        setListingConfidence(null);
+        return;
+      }
+
+      setPendingListingReview(null);
+      setListingAnswers({});
+      setGeneratedListing(result.listing);
+      setListingConfidence(result.confidence);
+      setSelectedPlatform("ebay");
+      if (item) {
+        trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.listingGenerated, {
+          item_id: item.id,
+        });
+      }
+      recordCompletedAction();
+    },
+    [item, recordCompletedAction],
+  );
+
   const generateListing = useCallback(async () => {
     if (!item) return;
 
     setGeneratingListing(true);
     setListingGenerationError(null);
+    setPendingListingReview(null);
+    setListingAnswers({});
     try {
       const result = await runListingGenerator({ itemId: item.id });
-      setGeneratedListing(result.listing);
-      setListingConfidence(result.confidence);
-      setSelectedPlatform("ebay");
-      trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.listingGenerated, {
-        item_id: item.id,
-      });
-      recordCompletedAction();
+      acceptListingResponse(result);
     } catch (caughtError) {
       setListingGenerationError(
         caughtError instanceof Error
           ? caughtError.message
-          : "KeepFlip could not generate this listing.",
+          : "KeepFlip could not review this listing.",
       );
     } finally {
       setGeneratingListing(false);
     }
-  }, [item, recordCompletedAction]);
+  }, [acceptListingResponse, item]);
+
+  const submitListingDetails = useCallback(async () => {
+    if (!item || !pendingListingReview) return;
+    setGeneratingListing(true);
+    setListingGenerationError(null);
+    try {
+      const result = await runListingGenerator({
+        itemId: item.id,
+        preflightToken: pendingListingReview.preflightToken,
+        answers: listingAnswers,
+      });
+      acceptListingResponse(result);
+    } catch (caughtError) {
+      setListingGenerationError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "KeepFlip could not create the listing from those details.",
+      );
+    } finally {
+      setGeneratingListing(false);
+    }
+  }, [acceptListingResponse, item, listingAnswers, pendingListingReview]);
 
   const updateGeneratedText = useCallback(
     (
@@ -804,15 +867,10 @@ export default function ListingCreationGuideScreen() {
     <KeepFlipBackground>
       <ScrollView
         contentContainerStyle={[styles.content,
-        {
-          paddingTop: insets.top + 15,
-          paddingBottom: insets.bottom + 30,
-          paddingHorizontal: pageGutter,
-        }, { width: width, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }, Platform.OS === "web" ? { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter } : undefined]}
-        style={{ marginTop: insets.top, marginBottom: insets.bottom }}
+          { paddingTop: insets.top + 15, paddingBottom: insets.bottom + 30, gap: 10 }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }, Platform.OS === "web" ? { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter } : undefined]}
+        style={{ marginTop: insets.top, marginBottom: insets.bottom, gap: 15 }}
         showsVerticalScrollIndicator={false}
       >
-      <View style={[styles.page, { width: width }, Platform.OS === "web" ? { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter } : undefined]}>
           <View style={styles.topRow}>
             <View style={styles.topCopy}>
               <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>SELLER WORKFLOW</Text>
@@ -964,7 +1022,7 @@ export default function ListingCreationGuideScreen() {
                   Use the saved item facts, photos, condition notes, and market reference to create platform-ready copy. Review every claim before publishing.
                 </Text>
                 <Pressable
-                  accessibilityLabel={generatedListing ? "Regenerate listing draft" : "Generate listing draft"}
+                  accessibilityLabel={generatedListing ? "Recheck details and regenerate listing draft" : "Check item details and generate listing draft"}
                   accessibilityRole="button"
                   disabled={generatingListing}
                   onPress={() => void generateListing()}
@@ -978,7 +1036,7 @@ export default function ListingCreationGuideScreen() {
                     <ActivityIndicator color={theme.colors.textOnAccent} />
                   ) : (
                     <Text style={[styles.generateButtonText, { fontSize: responsiveFont(10) }]}>
-                      {generatedListing ? "REGENERATE DRAFT" : "GENERATE LISTING DRAFT"}
+                      {generatedListing ? "RECHECK DETAILS & REGENERATE" : "CHECK DETAILS & GENERATE DRAFT"}
                     </Text>
                   )}
                 </Pressable>
@@ -988,11 +1046,131 @@ export default function ListingCreationGuideScreen() {
                   </Text>
                 ) : null}
 
+                {pendingListingReview ? (
+                  <View style={styles.listingQuestionsCard}>
+                    <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9) }]}>SELLER DETAILS NEEDED</Text>
+                    <Text style={[styles.sectionTitle, { fontSize: responsiveFont(17) }]}>Answer these before drafting</Text>
+                    <Text style={[styles.generatorDescription, { fontSize: responsiveFont(12) }]}>
+                      KeepFlip found details that affect the item identity, condition, completeness, or claims in the listing. Add a confirmed answer for each required question. If a requested photo would help, add it to the photo set above before you continue.
+                    </Text>
+                    {pendingListingReview.readiness.blockingQuestions.map((question, index) => (
+                      <View key={question.id} style={styles.listingQuestionBlock}>
+                        <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>
+                          REQUIRED DETAIL {index + 1} · {question.field.toUpperCase()}
+                        </Text>
+                        <Text style={[styles.fieldValue, { fontSize: responsiveFont(13) }]}>
+                          {question.question}
+                        </Text>
+                        {question.whyItMatters ? (
+                          <Text style={[styles.generatorDescription, { fontSize: responsiveFont(11) }]}>
+                            {question.whyItMatters}
+                          </Text>
+                        ) : null}
+                        {question.requestedPhoto ? (
+                          <Text style={[styles.listingPhotoRequest, { fontSize: responsiveFont(11) }]}>
+                            Photo to add: {question.requestedPhoto}
+                          </Text>
+                        ) : null}
+                        <TextInput
+                          accessibilityLabel={`Answer required listing detail: ${question.question}`}
+                          autoCapitalize="sentences"
+                          multiline
+                          onChangeText={(value) => setListingAnswers((current) => ({
+                            ...current,
+                            [question.id]: value,
+                          }))}
+                          placeholder="Enter what you confirmed. You can say unknown or not verified."
+                          placeholderTextColor={theme.colors.textMuted}
+                          style={[styles.generatedEditorInput, styles.listingAnswerInput, { fontSize: responsiveFont(12) }]}
+                          value={listingAnswers[question.id] ?? ""}
+                        />
+                      </View>
+                    ))}
+                    {pendingListingReview.readiness.recommendedQuestions.length ? (
+                      <View style={styles.listingOptionalQuestions}>
+                        <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>OPTIONAL DETAILS</Text>
+                        {pendingListingReview.readiness.recommendedQuestions.map((question) => (
+                          <View key={question.id} style={styles.listingQuestionBlock}>
+                            <Text style={[styles.fieldValue, { fontSize: responsiveFont(12) }]}>
+                              {question.question}
+                            </Text>
+                            {question.requestedPhoto ? (
+                              <Text style={[styles.listingPhotoRequest, { fontSize: responsiveFont(11) }]}>
+                                Photo to add: {question.requestedPhoto}
+                              </Text>
+                            ) : null}
+                            <TextInput
+                              accessibilityLabel={`Optional listing detail: ${question.question}`}
+                              autoCapitalize="sentences"
+                              multiline
+                              onChangeText={(value) => setListingAnswers((current) => ({
+                                ...current,
+                                [question.id]: value,
+                              }))}
+                              placeholder="Optional"
+                              placeholderTextColor={theme.colors.textMuted}
+                              style={[styles.generatedEditorInput, styles.listingAnswerInput, { fontSize: responsiveFont(12) }]}
+                              value={listingAnswers[question.id] ?? ""}
+                            />
+                          </View>
+                        ))}
+                      </View>
+                    ) : null}
+                    <Pressable
+                      accessibilityLabel="Submit item details and generate listing"
+                      accessibilityRole="button"
+                      disabled={generatingListing || !listingRequiredQuestionsAnswered}
+                      onPress={() => void submitListingDetails()}
+                      style={({ pressed }) => [
+                        styles.generateButton,
+                        pressed && styles.pressed,
+                        (generatingListing || !listingRequiredQuestionsAnswered) && styles.generateButtonBusy,
+                      ]}
+                    >
+                      {generatingListing ? (
+                        <ActivityIndicator color={theme.colors.textOnAccent} />
+                      ) : (
+                        <Text style={[styles.generateButtonText, { fontSize: responsiveFont(10) }]}>
+                          SUBMIT DETAILS & CREATE DRAFT
+                        </Text>
+                      )}
+                    </Pressable>
+                  </View>
+                ) : null}
+
+                {listingReadiness && !pendingListingReview ? (
+                  <View style={styles.listingEvidenceCard}>
+                    <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9) }]}>SERPAPI ITEM REVIEW</Text>
+                    <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>Facts used in this draft</Text>
+                    {listingReadiness.facts
+                      .filter((fact) => fact.value)
+                      .map((fact) => (
+                        <Text key={fact.field} style={[styles.listingEvidenceText, { fontSize: responsiveFont(11) }]}>
+                          {fact.label}: {fact.value} ({fact.source})
+                        </Text>
+                      ))}
+                    {listingReadiness.conditionByArea.map((area) => (
+                      <Text key={area.area} style={[styles.listingEvidenceText, { fontSize: responsiveFont(11) }]}>
+                        {area.area.replace(/_/g, " ")}: {area.details.length ? area.details.join("; ") : area.status.replace(/_/g, " ")}
+                      </Text>
+                    ))}
+                    <Text style={[styles.listingEvidenceText, { fontSize: responsiveFont(11) }]}>
+                      Authenticity: {listingReadiness.authenticity.status.replace(/_/g, " ")}
+                    </Text>
+                    {listingReadiness.completeness.includedItems.length ? (
+                      <Text style={[styles.listingEvidenceText, { fontSize: responsiveFont(11) }]}>
+                        Included: {listingReadiness.completeness.includedItems.join(", ")}
+                      </Text>
+                    ) : null}
+                  </View>
+                ) : null}
+
                 {generatedListing ? (
                   <View style={styles.generatedCopy}>
                     <View style={styles.generatedTitleRow}>
                       <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>TITLE</Text>
                       <TextInput
+                        multiline
                         accessibilityLabel="Edit generated listing title"
                         autoCapitalize="sentences"
                         onChangeText={(value) => updateGeneratedText("title", value)}
@@ -1524,7 +1702,6 @@ export default function ListingCreationGuideScreen() {
               </View>
             </>
           )}
-        </View>
       </ScrollView>
       {crosslistingModal ? (
         <MarketplaceAuthModal
@@ -1834,6 +2011,47 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.body,
       fontSize: 12,
       lineHeight: 17,
+    },
+    listingQuestionsCard: {
+      gap: 10,
+      padding: 16,
+      borderRadius: theme.radii.medium,
+      borderWidth: 1,
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.card,
+    },
+    listingQuestionBlock: {
+      gap: 7,
+      paddingTop: 10,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.colors.divider,
+    },
+    listingAnswerInput: {
+      minHeight: 72,
+    },
+    listingPhotoRequest: {
+      color: theme.colors.goldBright,
+      fontFamily: theme.fonts.body,
+      lineHeight: 16,
+    },
+    listingOptionalQuestions: {
+      gap: 8,
+      paddingTop: 10,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.colors.divider,
+    },
+    listingEvidenceCard: {
+      gap: 6,
+      padding: 15,
+      borderRadius: theme.radii.medium,
+      borderWidth: 1,
+      borderColor: theme.colors.accentCyanBorder,
+      backgroundColor: theme.colors.card,
+    },
+    listingEvidenceText: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.body,
+      lineHeight: 16,
     },
     generatedCopy: {
       gap: 10,
