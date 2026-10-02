@@ -25,6 +25,8 @@ import {
   saveMarketplaceSession,
 } from '@/services/marketplace-session-service';
 
+const WEBVIEW_LOAD_STALL_TIMEOUT_MS = 45_000;
+
 function isMarketplaceHost(url: string, platform: CrosslistingMarketplace) {
   try {
     const hostname = new URL(url).hostname.toLowerCase();
@@ -146,6 +148,15 @@ export function MarketplaceAuthModal({
       cancelled = true;
     };
   }, [destination, platform, userId, visible]);
+
+  useEffect(() => {
+    if (!sourceUrl || restoringSession || !webViewLoading) return;
+    const timeout = setTimeout(() => {
+      setWebViewLoading(false);
+      setError(`${destination.label} is taking longer than expected. If the page is blank, close and reopen this screen.`);
+    }, WEBVIEW_LOAD_STALL_TIMEOUT_MS);
+    return () => clearTimeout(timeout);
+  }, [destination.label, restoringSession, sourceUrl, webViewLoading]);
 
   const handleSaveSession = useCallback(async () => {
     if (savingSession) return;
@@ -290,11 +301,20 @@ export function MarketplaceAuthModal({
               domStorageEnabled
               javaScriptEnabled
               onLoadEnd={handleLoadEnd}
-              onLoadStart={() => setWebViewLoading(true)}
+              onLoadStart={() => {
+                setWebViewLoading(true);
+                setError(null);
+              }}
               onMessage={(event) => handleMessage(event.nativeEvent.data)}
               onNavigationStateChange={(state) => setCurrentUrl(state.url)}
               onError={() => {
+                setWebViewLoading(false);
                 setError(`KeepFlip could not load ${destination.label}. Check your connection and try again.`);
+              }}
+              onHttpError={() => setWebViewLoading(false)}
+              onRenderProcessGone={() => {
+                setWebViewLoading(false);
+                setError(`${destination.label} stopped responding. Close and reopen this screen to reload it.`);
               }}
               sharedCookiesEnabled
               source={{ uri: sourceUrl }}

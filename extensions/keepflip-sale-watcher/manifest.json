@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "KeepFlip Sale Watcher",
+  "version": "0.1.0",
+  "description": "Detect marketplace sale confirmations in an open Gmail message and review an exact KeepFlip inventory match.",
+  "permissions": ["storage"],
+  "host_permissions": ["https://sfo.cloud.appwrite.io/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "KeepFlip Sale Watcher",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://mail.google.com/*"],
+      "js": ["parser.js", "gmail-content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

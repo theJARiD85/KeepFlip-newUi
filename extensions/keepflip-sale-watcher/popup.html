@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>KeepFlip Sale Watcher</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>KeepFlip Sale Watcher</h1>
+        <p id="status" role="status">Checking connection…</p>
+      </header>
+
+      <section class="settings">
+        <details>
+          <summary>Appwrite function settings</summary>
+          <label>Seller operations Function ID
+            <input id="sellerFunctionId" autocomplete="off" spellcheck="false">
+          </label>
+          <label>eBay OAuth Function ID
+            <input id="ebayFunctionId" autocomplete="off" spellcheck="false">
+          </label>
+          <label>eBay connection
+            <select id="ebayEnvironment">
+              <option value="production">Production</option>
+              <option value="sandbox">Sandbox</option>
+            </select>
+          </label>
+          <button id="saveSettings" class="secondary" type="button">Save settings</button>
+        </details>
+      </section>
+
+      <section id="loginPanel" class="login" hidden>
+        <p>Sign in with the KeepFlip account that owns your inventory.</p>
+        <label>Email
+          <input id="email" type="email" autocomplete="username">
+        </label>
+        <label>Password
+          <input id="password" type="password" autocomplete="current-password">
+        </label>
+        <button id="signIn" type="button">Connect KeepFlip</button>
+      </section>
+
+      <section id="queuePanel" hidden>
+        <div class="queue-heading">
+          <h2>Sale emails</h2>
+          <button id="signOut" class="text-button" type="button">Sign out</button>
+        </div>
+        <p class="privacy-note">Only a currently open Gmail message is scanned. The message body stays in this tab.</p>
+        <div id="queue" aria-live="polite"></div>
+      </section>
+    </main>
+    <script src="config.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>
