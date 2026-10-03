@@ -41,6 +41,12 @@
         <data android:scheme="keepflip"/>
         <data android:scheme="exp+keepflip"/>
       </intent-filter>
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+        <category android:name="android.intent.category.BROWSABLE"/>
+        <data android:scheme="appwrite-callback-6a35bcae000cf7c40b0a"/>
+      </intent-filter>
     </activity>
     <uses-native-library android:name="libOpenCL.so" android:required="false"/>
       <provider android:authorities="com.facebook.app.FacebookContentProvider1629291688771059" android:name="com.facebook.FacebookContentProvider" android:exported="true" />
