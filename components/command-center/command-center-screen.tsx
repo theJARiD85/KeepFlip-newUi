@@ -6,13 +6,14 @@ import {
   AccessibilityInfo,
   ActivityIndicator,
   Image,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   View,
+  useWindowDimensions,
 } from 'react-native';
+import Modal from 'react-native-modal';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -251,6 +252,7 @@ export function CommandCenterScreen() {
   }>();
   const insets = useSafeAreaInsets();
   const { user } = useKeepFlipAuth();
+  const { width } = useWindowDimensions();
   const { canUse } = useKeepFlipSubscription();
   const bookkeepingFunctionConfigured = isResellerBookkeepingConfigured();
   const advancedBooksAllowed = canUse('automated_books');
@@ -903,25 +905,22 @@ export function CommandCenterScreen() {
       </ScrollView>
 
       <Modal
-        animationType="fade"
+        animationIn="fadeIn"
+        animationOut="fadeOut"
         onRequestClose={() => {
           if (reviewResolving) return;
           setReviewOpen(false);
           setActiveReview(null);
         }}
+        onBackdropPress={() => {
+          setReviewOpen(false);
+          setActiveReview(null);
+        }}
         transparent
-        visible={reviewOpen}>
-        <View style={[styles.reviewModalBackdrop, { paddingBottom: reviewModalBottomReserve }]}>
-              <Pressable
-                accessibilityLabel="Close money review"
-                disabled={reviewResolving}
-                onPress={() => {
-                  setReviewOpen(false);
-                  setActiveReview(null);
-                }}
-                style={StyleSheet.absoluteFill}
-              />
-              <View style={styles.reviewModal}>
+        isVisible={reviewOpen}
+        style={{position: 'absolute', bottom: 0, left: 0, right: 0, top: '15%'}}
+        >
+          <View style={[styles.reviewModal, { width: width, marginBottom: insets.bottom}]}>
             <View style={styles.reviewModalHeader}>
               <View style={styles.reviewModalHeading}>
                 <Text style={[styles.reviewModalEyebrow, { fontSize: responsiveFont(8) }]}>BOOKS / MONEY REVIEW</Text>
@@ -1164,7 +1163,6 @@ export function CommandCenterScreen() {
               </ScrollView>
             )}
               </View>
-        </View>
       </Modal>
       </View>
     </KeepFlipBackground>
@@ -1289,7 +1287,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.scrim,
     },
     reviewModal: {
-      width: '100%',
+      bottom: 0,
       maxWidth: 760,
       maxHeight: '88%',
       alignSelf: 'center',
@@ -1298,8 +1296,6 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingTop: 20,
       borderTopLeftRadius: 22,
       borderTopRightRadius: 22,
-      borderWidth: 1,
-      borderBottomWidth: 0,
       borderColor: theme.colors.accentGoldBorder,
       backgroundColor: theme.colors.surfaceOverlay,
     },

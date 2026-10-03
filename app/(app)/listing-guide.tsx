@@ -368,10 +368,15 @@ export default function ListingCreationGuideScreen() {
   const priceReference = item
     ? formatMoney(item.estimatedValue, item.currency)
     : null;
-  const listingRequiredQuestionsAnswered =
-    pendingListingReview?.readiness.blockingQuestions.every(
-      (question) => Boolean(listingAnswers[question.id]?.trim()),
-    ) ?? false;
+  const listingQuestions = pendingListingReview
+    ? [
+        ...pendingListingReview.readiness.blockingQuestions,
+        ...pendingListingReview.readiness.recommendedQuestions,
+      ]
+    : [];
+  const listingHasAnswer = listingQuestions.some((question) =>
+    Boolean(listingAnswers[question.id]?.trim()),
+  );
 
   const toggleStep = useCallback((targetItemId: string, step: ChecklistStep) => {
     if (step.completeByDefault) return;
@@ -391,7 +396,7 @@ export default function ListingCreationGuideScreen() {
       setListingReadiness(result.readiness);
       if (result.status === "needs_seller_input") {
         setPendingListingReview(result);
-        setListingAnswers(result.answers);
+        setListingAnswers({});
         setGeneratedListing(null);
         setListingConfidence(null);
         return;
@@ -443,6 +448,10 @@ export default function ListingCreationGuideScreen() {
         preflightToken: pendingListingReview.preflightToken,
         answers: listingAnswers,
       });
+      if (userId) {
+        const refreshedItem = await getInventoryItem(userId, item.id).catch(() => null);
+        if (refreshedItem) setItem(refreshedItem);
+      }
       acceptListingResponse(result);
     } catch (caughtError) {
       setListingGenerationError(
@@ -453,7 +462,7 @@ export default function ListingCreationGuideScreen() {
     } finally {
       setGeneratingListing(false);
     }
-  }, [acceptListingResponse, item, listingAnswers, pendingListingReview]);
+  }, [acceptListingResponse, item, listingAnswers, pendingListingReview, userId]);
 
   const updateGeneratedText = useCallback(
     (
@@ -1049,14 +1058,14 @@ export default function ListingCreationGuideScreen() {
                 {pendingListingReview ? (
                   <View style={styles.listingQuestionsCard}>
                     <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9) }]}>SELLER DETAILS NEEDED</Text>
-                    <Text style={[styles.sectionTitle, { fontSize: responsiveFont(17) }]}>Answer these before drafting</Text>
+                    <Text style={[styles.sectionTitle, { fontSize: responsiveFont(17) }]}>Add the missing item details</Text>
                     <Text style={[styles.generatorDescription, { fontSize: responsiveFont(12) }]}>
-                      KeepFlip found details that affect the item identity, condition, completeness, or claims in the listing. Add a confirmed answer for each required question. If a requested photo would help, add it to the photo set above before you continue.
+                      Save any details you know. KeepFlip adds them to this item and checks again. If more information is still needed, the remaining questions will appear here.
                     </Text>
-                    {pendingListingReview.readiness.blockingQuestions.map((question, index) => (
+                    {listingQuestions.map((question, index) => (
                       <View key={question.id} style={styles.listingQuestionBlock}>
                         <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>
-                          REQUIRED DETAIL {index + 1} · {question.field.toUpperCase()}
+                          {question.required ? "REQUIRED" : "OPTIONAL"} DETAIL {index + 1} · {question.field.toUpperCase()}
                         </Text>
                         <Text style={[styles.fieldValue, { fontSize: responsiveFont(13) }]}>
                           {question.question}
@@ -1086,52 +1095,22 @@ export default function ListingCreationGuideScreen() {
                         />
                       </View>
                     ))}
-                    {pendingListingReview.readiness.recommendedQuestions.length ? (
-                      <View style={styles.listingOptionalQuestions}>
-                        <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>OPTIONAL DETAILS</Text>
-                        {pendingListingReview.readiness.recommendedQuestions.map((question) => (
-                          <View key={question.id} style={styles.listingQuestionBlock}>
-                            <Text style={[styles.fieldValue, { fontSize: responsiveFont(12) }]}>
-                              {question.question}
-                            </Text>
-                            {question.requestedPhoto ? (
-                              <Text style={[styles.listingPhotoRequest, { fontSize: responsiveFont(11) }]}>
-                                Photo to add: {question.requestedPhoto}
-                              </Text>
-                            ) : null}
-                            <TextInput
-                              accessibilityLabel={`Optional listing detail: ${question.question}`}
-                              autoCapitalize="sentences"
-                              multiline
-                              onChangeText={(value) => setListingAnswers((current) => ({
-                                ...current,
-                                [question.id]: value,
-                              }))}
-                              placeholder="Optional"
-                              placeholderTextColor={theme.colors.textMuted}
-                              style={[styles.generatedEditorInput, styles.listingAnswerInput, { fontSize: responsiveFont(12) }]}
-                              value={listingAnswers[question.id] ?? ""}
-                            />
-                          </View>
-                        ))}
-                      </View>
-                    ) : null}
                     <Pressable
-                      accessibilityLabel="Submit item details and generate listing"
+                      accessibilityLabel="Save item details and regenerate listing"
                       accessibilityRole="button"
-                      disabled={generatingListing || !listingRequiredQuestionsAnswered}
+                      disabled={generatingListing || !listingHasAnswer}
                       onPress={() => void submitListingDetails()}
                       style={({ pressed }) => [
                         styles.generateButton,
                         pressed && styles.pressed,
-                        (generatingListing || !listingRequiredQuestionsAnswered) && styles.generateButtonBusy,
+                        (generatingListing || !listingHasAnswer) && styles.generateButtonBusy,
                       ]}
                     >
                       {generatingListing ? (
                         <ActivityIndicator color={theme.colors.textOnAccent} />
                       ) : (
                         <Text style={[styles.generateButtonText, { fontSize: responsiveFont(10) }]}>
-                          SUBMIT DETAILS & CREATE DRAFT
+                          SAVE DETAILS & REGENERATE LISTING
                         </Text>
                       )}
                     </Pressable>

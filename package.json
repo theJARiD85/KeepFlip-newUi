@@ -65,6 +65,7 @@
     "react-native-fast-tflite": "^3.0.1",
     "react-native-filament": "^1.11.0",
     "react-native-gesture-handler": "~2.32.0",
+    "react-native-modal": "^14.0.0-rc.1",
     "react-native-nitro-cookies": "^1.2.1",
     "react-native-nitro-image": "0.15.0",
     "react-native-nitro-modules": "^0.35.9",

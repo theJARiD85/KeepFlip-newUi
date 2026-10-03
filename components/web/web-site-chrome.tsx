@@ -147,6 +147,12 @@ export function WebSiteFooter({
     <View style={[styles.footer, isPhone && styles.footerPhone, { backgroundColor: colors.backgroundDeep, borderTopColor: colors.divider }]}>
       <View style={[styles.footerMain, isPhone && styles.footerMainPhone]}>
         <View style={[styles.footerBrand, isPhone && styles.footerBrandPhone]}>
+        <Image
+            accessibilityLabel="KeepFlip"
+            contentFit="contain"
+            source={require('@/assets/images/icon3.png')}
+            style={styles.brandMark}
+          />
           <Text style={[styles.footerName, { color: colors.text }]}>KEEPFLIP</Text>
           <Text style={[styles.footerDescription, { color: colors.textMuted }]}>
             Research a find, check the numbers before you buy, and track what you keep after the sale.
@@ -411,6 +417,7 @@ const styles = StyleSheet.create({
   },
   brand: {
     alignItems: 'center',
+    justifyContent: 'center',
     flexDirection: 'row',
     flexShrink: 1,
     gap: 10,
@@ -420,6 +427,8 @@ const styles = StyleSheet.create({
     width: 65,
   },
   brandCopy: {
+    alignItems: 'center',
+    justifyContent: 'flex-start',
     minWidth: 0,
     flexShrink: 1,
     gap: 2,
@@ -506,7 +515,7 @@ const styles = StyleSheet.create({
   },
   footerPhone: {
     gap: 20,
-    paddingHorizontal: 0,
+    paddingHorizontal: 10,
     paddingVertical: 20,
   },
   footerMain: {

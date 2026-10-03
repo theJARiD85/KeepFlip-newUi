@@ -3,13 +3,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   AppState,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
+import Modal from 'react-native-modal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FlipCompanion, useFlipCompanion } from '@/components/flip';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
@@ -411,22 +411,28 @@ export function FlipDailyBriefingLauncher() {
   return (
     <Modal
       accessibilityViewIsModal
-      animationType="fade"
-      onRequestClose={closeBriefing}
-      presentationStyle="overFullScreen"
-      statusBarTranslucent={Platform.OS === 'android'}
-      transparent
-      visible={visible}
+      animationIn="fadeIn"
+      animationOut="fadeOut"
+      avoidKeyboard
+      isVisible={visible}
+      onBackdropPress={closeBriefing}
+      style={{ margin: 0, justifyContent: 'flex-end' }}
+      useNativeDriver
     >
       <View style={styles.backdrop}>
         <View
           style={[
             styles.modalCard,
             {
+              position: 'absolute',
+              bottom: insets.bottom * 3,
+              left: 0,
+              right: 0,
+              top: 50,
               marginBottom: modalBottomMargin,
               marginTop: modalTopMargin,
               maxHeight: modalMaxHeight,
-              width: modalWidth,
+              width: width,
             },
           ]}
         >
@@ -501,7 +507,7 @@ export function FlipDailyBriefingLauncher() {
 
           <View style={styles.footer}>
             <Text style={[styles.footerHint, { fontSize: responsiveFont(9), lineHeight: 13 }]}>
-              This briefing appears once per day. Close it when you’re ready to move.
+              This briefing appears once per day. Close it when you’re ready to move on.
             </Text>
             <Pressable
               accessibilityLabel="Close and complete today's Flip briefing"
@@ -509,7 +515,7 @@ export function FlipDailyBriefingLauncher() {
               onPress={closeBriefing}
               style={({ pressed }) => [styles.closeAction, pressed && styles.pressed]}
             >
-              <Text style={[styles.closeActionText, { fontSize: responsiveFont(11) }]}>Close briefing</Text>
+              <Text style={[styles.closeActionText, { fontSize: responsiveFont(11) }]}>CLOSE BRIEFING</Text>
             </Pressable>
           </View>
         </View>
@@ -533,6 +539,7 @@ function createBriefingStyles() {
     padding: 14,
   },
   modalCard: {
+    position: 'absolute',
     backgroundColor: theme.colors.surfaceOverlay,
     borderColor: theme.colors.accentGoldBorder,
     borderCurve: 'continuous',
@@ -741,9 +748,10 @@ function createBriefingStyles() {
   },
   footer: {
     borderTopColor: theme.colors.divider,
+    height: 145,
     borderTopWidth: 1,
     gap: 10,
-    padding: 18,
+    padding: 12,
   },
   footerHint: {
     color: theme.colors.textMuted,
