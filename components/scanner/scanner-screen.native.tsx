@@ -36,7 +36,6 @@ import {
 
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { useKeepFlipMenu } from "@/components/navigation/keepflip-menu-context";
-import { useKeepFlipSubscription } from "@/components/subscription/keepflip-subscription-context";
 import {
   BarcodeLookupOverlay,
   type BarcodeLookupOverlayState,
@@ -64,10 +63,7 @@ import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout, useResponsiveStyles } from "@/hooks/use-responsive-layout";
-import {
-  areKeepFlipSubscriptionsEnforced,
-  checkKeepFlipAiValuationAccess,
-} from "@/services/keepflip-subscription-service";
+import { checkKeepFlipAiValuationAccess } from "@/services/keepflip-subscription-service";
 import { reportKeepFlipLimitReached } from "@/services/keepflip-limit-alert-service";
 import { lookupBarcodeWithEbay } from "@/services/ebaySoldCompsService";
 import { MAX_ANALYSIS_PHOTOS } from "@/services/item-analysis-service";
@@ -201,19 +197,10 @@ export default function ScannerScreen() {
   const { appliedColorScheme } = useKeepFlipAppearance();
   const router = useRouter();
   const { user } = useKeepFlipAuth();
-  const { snapshot: subscriptionSnapshot, state: subscriptionState } =
-    useKeepFlipSubscription();
-  const isFreeTierAccount =
-    areKeepFlipSubscriptionsEnforced() &&
-    (subscriptionState !== 'ready' ||
-      subscriptionSnapshot?.revenueCatAccess.active !== true);
   const scannerTools = useMemo(() => {
     void appliedColorScheme;
-    const tools = getScannerTools();
-    return isFreeTierAccount
-      ? tools.filter((tool) => tool.id !== 'barcode')
-      : tools;
-  }, [appliedColorScheme, isFreeTierAccount]);
+    return getScannerTools();
+  }, [appliedColorScheme]);
   const { width } = useWindowDimensions();
   const { openScannerAnalysis } =
     useItemAnalysisResult() as unknown as ScannerAnalysisActions;
@@ -1000,14 +987,6 @@ export default function ScannerScreen() {
   }, [dismissBarcodeLookup]);
 
   const handleBarcodeToolActivate = useCallback(async () => {
-    if (isFreeTierAccount) {
-      setBarcodeLookup({
-        phase: "error",
-        barcode: null,
-        message: "Barcode product lookup is available with a KeepFlip subscription.",
-      });
-      return;
-    }
     const captured = await capturePhoto({
       scanId: scanIdRef.current,
       sortOrder: 0,
@@ -1059,7 +1038,7 @@ export default function ScannerScreen() {
         () => undefined,
       );
     }
-  }, [capturePhoto, inspectCapturedBarcode, isFreeTierAccount]);
+  }, [capturePhoto, inspectCapturedBarcode]);
 
   const openMultiReview = useCallback(() => {
     if (
@@ -1667,7 +1646,7 @@ export default function ScannerScreen() {
   }
 
   return (
-    <View style={[styles.screen, { width: width, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
+    <View style={[styles.screen, { width: width, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
       <View pointerEvents="none" style={styles.cameraLayer}>
         {shouldMountCamera ? (
           <Camera
@@ -1789,7 +1768,7 @@ export default function ScannerScreen() {
             paddingBottom:
               insets.bottom + 30,
           },
-            scannerChromeAnimatedStyle, { width: contentMaxWidth, maxWidth: width, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+            scannerChromeAnimatedStyle, { width: contentMaxWidth, maxWidth: width, alignSelf: 'center', paddingHorizontal: pageGutter }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         >
           <View
             style={[

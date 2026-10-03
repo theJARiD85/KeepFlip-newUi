@@ -1287,8 +1287,8 @@ export default function ListingCreationGuideScreen() {
                   {Platform.OS === "web" ? (
                     <View style={styles.bookmarkletSetup}>
                       <View style={styles.bookmarkletCopy}>
-                        <Text style={styles.bookmarkletTitle}>MARKETPLACE AUTOFILL</Text>
-                        <Text style={styles.crosslistDescription}>
+                        <Text style={[styles.bookmarkletTitle, { fontSize: responsiveFont(9) }]}>MARKETPLACE AUTOFILL</Text>
+                        <Text style={[styles.crosslistDescription, { fontSize: responsiveFont(12) }]}>
                           Copy the bookmarklet once, then save it as a browser bookmark URL.
                         </Text>
                       </View>
@@ -1300,7 +1300,7 @@ export default function ListingCreationGuideScreen() {
                           pressed && styles.pressed,
                         ]}
                       >
-                        <Text style={styles.copyBookmarkletText}>COPY BOOKMARKLET</Text>
+                        <Text style={[styles.copyBookmarkletText, { fontSize: responsiveFont(8) }]}>COPY BOOKMARKLET</Text>
                       </Pressable>
                       {bookmarkletNotice ? (
                         <Text selectable style={styles.crosslistFootnote}>

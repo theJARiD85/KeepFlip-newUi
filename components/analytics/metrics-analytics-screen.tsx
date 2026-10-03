@@ -52,6 +52,7 @@ import {
   type SellerOrder,
 } from '@/services/seller-order-service';
 
+import responsiveFont from '@/lib/responsiveFont';
 const MAX_EBAY_ORDER_PAGES = 5;
 
 const DIMENSIONS: { id: SellerAnalyticsDimension; label: string }[] = [
@@ -376,7 +377,7 @@ function ChartCard({
                 <LineChart.Tooltip
                   position="top"
                   textProps={{ precision: metric.id === 'profit' ? 0 : 1 }}
-                  textStyle={{ color: theme.colors.text, fontSize: 11, fontWeight: '800' }}
+                  textStyle={{ color: theme.colors.text, fontSize: responsiveFont(11), fontWeight: '800' }}
                 />
               </LineChart.CursorLine>
               <ChartTrackerDot color={getMetricAccent(metric)} index={selectedIndex} />
@@ -439,6 +440,9 @@ export function MetricsAnalyticsScreen({ embedded = false }: { embedded?: boolea
     webContentMaxWidth,
     webContentWidth,
     webPageGutter,
+    contentMaxWidth,
+    contentWidth,
+    pageGutter
   } = useResponsiveLayout();
   const webFontStyle = (size: number) =>
     Platform.OS === 'web' ? { fontSize: webResponsiveFont(size) } : undefined;
@@ -624,7 +628,7 @@ export function MetricsAnalyticsScreen({ embedded = false }: { embedded?: boolea
           {
             paddingBottom: insets.bottom + 30,
             paddingTop: embedded ? 15 : insets.top + 15,
-          }, webContentSizing]}
+          }, webContentSizing, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         contentInsetAdjustmentBehavior={embedded ? 'never' : 'automatic'}
         style={embedded ? undefined : { marginBottom: insets.bottom, marginTop: insets.top }}
         showsVerticalScrollIndicator={false}>
@@ -650,13 +654,13 @@ export function MetricsAnalyticsScreen({ embedded = false }: { embedded?: boolea
               <IconSymbol color={theme.colors.goldBright} name="lock.fill" size={20} />
             </View>
             <Text accessibilityRole="header" style={[styles.lockedTitle, webFontStyle(18)]}>A clearer view of your flips</Text>
-            <Text style={[styles.lockedCopy, webFontStyle(12)]}>Detailed performance charts are included with Serious Reseller. Your access is checked securely each time this screen opens.</Text>
+            <Text style={[styles.lockedCopy, webFontStyle(12)]}>KeepFlip could not verify access to performance charts. Refresh and try again.</Text>
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.push('/account?tab=subscription' as Href)}
+              onPress={() => void loadAnalytics()}
               style={styles.actionButton}>
-              <Text style={[styles.actionButtonText, webFontStyle(12)]}>View plans</Text>
-              <IconSymbol color={theme.colors.backgroundDeep} name="chevron.right" size={16} />
+              <Text style={[styles.actionButtonText, webFontStyle(12)]}>Try again</Text>
+              <IconSymbol color={theme.colors.backgroundDeep} name="arrow.clockwise" size={16} />
             </Pressable>
           </View>
         ) : null}

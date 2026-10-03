@@ -345,7 +345,7 @@ export default function InventoryScreen() {
 
   return (
     <KeepFlipBackground>
-      <View style={[styles.screen, webContentSizing]}>
+      <View style={[styles.screen, webContentSizing, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
       <View style={[styles.header, { paddingTop: insets.top + 15, paddingLeft: 15, width: contentWidth }]}>
                 <Text style={[styles.eyebrow, { fontFamily: theme.fonts.display, fontSize: responsiveFont(10) }]}>YOUR ITEMS</Text>
                 <Text
@@ -400,15 +400,13 @@ export default function InventoryScreen() {
         ) : (
           <FlatList
             key={`inventory-${inventoryColumns}`}
-            contentContainerStyle={[
-              styles.content,
+            contentContainerStyle={[styles.content,
               {
                 paddingBottom: insets.bottom + 30,
                 paddingHorizontal: Platform.OS === "web" ? 0 : pageGutter,
                 paddingTop: 15,
               },
-              webContentSizing,
-            ]}
+              webContentSizing, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
             style={[
               styles.list,
               Platform.OS === "web" && {

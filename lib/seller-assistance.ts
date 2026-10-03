@@ -53,8 +53,8 @@ export function agingRecommendations(evidence: AgingEvidence, now = Date.now()) 
   return { ageDays, checkpoint, recommendations };
 }
 
-export function assessOffer(input: NetProceedsInput, minimumProfitCents: number, serious: boolean) {
-  if (!serious) throw new Error('Offer floor guardrails require Serious access.');
+export function assessOffer(input: NetProceedsInput, minimumProfitCents: number, offerGuardrailsAllowed: boolean) {
+  if (!offerGuardrailsAllowed) throw new Error('KeepFlip could not verify access to offer floor calculations.');
   // Combined rates above 100% make price-to-profit non-monotonic for floor search.
   if (input.marketplaceFeeBps !== null && input.marketplaceFeeBps + input.promotedFeeBps > 10_000) throw new Error('Combined percentage fees cannot exceed 100% for floor planning.');
   const estimate = calculateNetProceeds(input);

@@ -174,7 +174,7 @@ function AccountDetailsTab() {
                 : 'Your payment grace period has ended. Update your payment method to restore access.'
             : subscriptionAccess?.active
               ? `${subscriptionPlan?.name ?? 'KeepFlip plan'} is active on this account.`
-              : 'Free includes the full workflow with monthly limits. Serious adds unlimited active items, 100 scans per month, unlimited listing generations, and Flip.';
+              : 'Free includes every KeepFlip feature except Flip Assistant, with limits of 10 saved inventory items, 10 scans, and 10 listing generations per month. Serious adds unlimited saved inventory, 200 scans per month, unlimited listing generations, and Flip.';
 
   const subscriptionStatus =
     subscriptionState === 'error'

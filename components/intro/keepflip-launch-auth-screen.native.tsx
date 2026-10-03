@@ -18,7 +18,7 @@ import {
   type TextInputProps,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import {
   KeepFlipAuthError,
   useKeepFlipAuth,
@@ -546,32 +546,24 @@ export function KeepFlipLaunchAuthScreen({
           style={{marginTop: insets.top, marginBottom: insets.bottom}}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
-          <View style={styles.headerRow}>
-          <View style={styles.logoHalo}>
-          <Image
-            accessibilityLabel="KeepFlip logo"
-            contentFit="contain"
-            source={KEEPFLIP_LOGO}
-            style={styles.logo}
-          />
-        </View>
-          </View>
-
-          <View style={styles.brandSection}>
-            <Text style={[styles.brandEyebrow, { fontSize: responsiveFont(9) }]}>KEEPFLIP / SECURE ACCESS</Text>
-            <Text style={[styles.title, { fontSize: responsiveFont(31) }]}>
-              {migrationMode ? 'Welcome back.' : mode === 'create-account' ? 'Make your edge official.' : 'Welcome back.'}
-            </Text>
-            <Text style={[styles.subtitle, { fontSize: responsiveFont(13) }]}>
-              {migrationMode
+          <Animated.View entering={FadeIn.duration(260)} style={styles.brandLockup}>
+                      <View style={styles.logoHalo}>
+                        <Image
+                          accessibilityLabel="KeepFlip logo"
+                          contentFit="contain"
+                          source={KEEPFLIP_LOGO}
+                          style={styles.logo}
+                        />
+                      </View>
+                      <Text style={[styles.brandName, { fontSize: responsiveFont(40) }]}>{migrationMode ? 'Welcome back.' : mode === 'create-account' ? 'Make your edge official.' : 'Welcome back.'}</Text>
+                      <Text style={styles.brandTagline}>{migrationMode
                 ? 'Sign in to your existing KeepFlip account, then choose the tier you want to try.'
                 : isPreAccountSignup
-                ? 'Start with the full KeepFlip workflow: 10 active items, 10 scans, and 10 listing generations each month. Serious is $13/month or $130/year and includes Flip.'
-                : mode === 'create-account'
-                  ? 'Flip has your seller setup. Add your login details and choose how you want KeepFlip to work for you.'
-                  : 'Sign in to continue to your KeepFlip command center.'}
-            </Text>
-          </View>
+                  ? 'Start with every KeepFlip feature except Flip Assistant: 10 saved inventory items, 10 scans, and 10 listing generations each month. Serious is $13/month or $130/year and includes Flip.'
+                  : mode === 'create-account'
+                    ? 'Flip has your seller setup. Add your login details and choose how you want KeepFlip to work for you.'
+                    : 'Sign in to continue to your KeepFlip command center.'}</Text>
+          </Animated.View>
 
           <View style={styles.panel}>
             {migrationMode ? <MigrationNotice /> : null}
@@ -755,6 +747,23 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: 'center',
       width: 175,
     },
+        brandLockup: { alignItems: 'center', gap: 8 },
+        brandName: {
+          color: theme.colors.cream,
+          fontFamily: theme.fonts.bold,
+          fontSize: 40,
+          letterSpacing: 5,
+          textShadowColor: theme.colors.dividerStrong,
+          textShadowOffset: { width: 0, height: 0 },
+          textShadowRadius: 15,
+        },
+        brandTagline: {
+          color: theme.colors.textMuted,
+          fontFamily: theme.fonts.display,
+          fontSize: 12,
+          letterSpacing: 2.05,
+          textAlign: 'center',
+        },
     backButton: { alignItems: 'center', flexDirection: 'row', gap: 4, minHeight: 40, paddingHorizontal: 4 },
     backButtonText: { color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 9, letterSpacing: 1 },
     billingOption: { alignItems: 'center', borderRadius: 10, flex: 1, gap: 2, justifyContent: 'center', minHeight: 44 },
@@ -789,7 +798,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     migrationIcon: { alignItems: 'center', backgroundColor: theme.colors.iconSurfaceCyan, borderRadius: 11, height: 36, justifyContent: 'center', width: 36 },
     migrationNotice: { backgroundColor: theme.colors.iconSurfaceCyan, borderColor: theme.colors.accentCyanBorder, borderRadius: 14, borderWidth: 1, flexDirection: 'row', gap: 10, padding: 12 },
     migrationTitle: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 15, lineHeight: 20 },
-    panel: { backgroundColor: theme.colors.card, borderColor: theme.colors.accentGoldBorder, borderRadius: 24, borderWidth: 1, gap: 16, maxWidth: 620, padding: 17, width: '100%' },
+    panel: {gap: 16, maxWidth: 620, width: '100%' },
     planList: { gap: 9 },
     planOption: { backgroundColor: theme.colors.cardSoft, borderColor: theme.colors.divider, borderRadius: 15, borderWidth: 1, gap: 7, padding: 12 },
     planTrial: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 0.8 },

@@ -487,7 +487,7 @@ export function FlipSellerDecisions({
               ) : null}
               <OfferReview
                 key={`offer-${selectedItem?.id ?? 'manual'}`}
-                serious={canUse('offer_guardrails')}
+                offerGuardrailsAllowed={canUse('offer_guardrails')}
                 presets={snapshot?.preferences.shippingPresets ?? []}
                 onRecord={(notes) => record('offer_review', notes)}
               />
@@ -530,11 +530,11 @@ export function FlipSellerDecisions({
                   onPress={onOpenSellerOperations}
                 />
               </Section>
-              <Section title="Advanced seller performance · Serious">
+              <Section title="Advanced seller performance">
                 <Text style={sellerStyles.muted}>
                   {canUse('seller_analytics')
                     ? 'Seller operations can show aggregate seller performance from recorded orders.'
-                    : 'Serious adds aggregate seller analytics. Your basic manual history stays available here.'}
+                    : 'KeepFlip could not verify access to seller analytics. Refresh and try again.'}
                 </Text>
                 {canUse('seller_analytics') ? (
                   <Button

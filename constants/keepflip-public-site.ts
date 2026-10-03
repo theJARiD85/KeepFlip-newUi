@@ -28,7 +28,7 @@ export const KEEPFLIP_HOME_FAQS = [
   {
     question: 'How much does KeepFlip cost?',
     answer:
-      'Serious Reseller is $13 per month or $130 per year. Serious includes unlimited active inventory items, 100 scans each month, unlimited listing generations, and Flip. Free accounts get 10 active items, 10 scans, and 10 listing generations each month. There is no timed KeepFlip trial.',
+      'Serious Reseller is $13 per month or $130 per year. Serious includes unlimited saved inventory, 200 scans each month, unlimited listing generations, and Flip. Free accounts get 10 saved inventory items, 10 scans, and 10 listing generations each month. There is no timed KeepFlip trial.',
   },
   {
     question: 'What happens when the scan gets it wrong?',
@@ -38,7 +38,7 @@ export const KEEPFLIP_HOME_FAQS = [
   {
     question: 'Can I try KeepFlip before paying?',
     answer:
-      'Create a free account and use the full KeepFlip workflow, including AI valuation, inventory, Books, and insights. Free includes up to 10 active items, 10 AI scans per month, and 10 listing generations per month. Flip is included with Serious. No card or timed trial is required.',
+      'Create a free account and use every KeepFlip feature except Flip Assistant, including AI valuation, inventory, Books, and insights. Free includes up to 10 saved inventory items, 10 AI scans per month, and 10 listing generations per month. Flip is included with Serious. No card or timed trial is required.',
   },
   {
     question: 'Do I need an iPhone?',

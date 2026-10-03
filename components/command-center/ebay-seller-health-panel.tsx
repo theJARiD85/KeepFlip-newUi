@@ -161,7 +161,7 @@ export function EbaySellerHealthPanel({ enabled }: { enabled: boolean }) {
 
       {!enabled ? (
         <Text style={[styles.muted, { fontSize: responsiveFont(10) }]}>
-          Seller Health is included with the Serious seller analytics capability.
+          KeepFlip could not verify access to Seller Health. Refresh and try again.
         </Text>
       ) : null}
 

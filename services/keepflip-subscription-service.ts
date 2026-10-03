@@ -67,16 +67,26 @@ export const KEEPFLIP_PLAN_LIMITS: Record<
 > = {
   hobbyist: {
     inventoryItems: 10,
-    concurrentActiveListings: 10,
+    concurrentActiveListings: null,
     monthlyPublishQuota: null,
     listingGenerationsPerMonth: 10,
-    activeListingsPerMonth: 10,
+    activeListingsPerMonth: null,
     aiValuationScansPerMonth: 10,
     features: new Set<KeepFlipSubscriptionFeature>([
       'basic_books',
       'automated_books',
+      'schedule_c_export',
       'advanced_bookkeeping_analytics',
+      'net_proceeds_scenarios',
+      'automatic_order_sync',
+      'bulk_listings',
+      'offer_guardrails',
+      'automated_offers',
+      'automated_repricing',
+      'cross_marketplace_sync',
+      'automatic_delisting',
       'seller_analytics',
+      'multi_user',
     ]),
   },
   serious: {
@@ -85,7 +95,7 @@ export const KEEPFLIP_PLAN_LIMITS: Record<
     monthlyPublishQuota: null,
     listingGenerationsPerMonth: null,
     activeListingsPerMonth: 250,
-    aiValuationScansPerMonth: 100,
+    aiValuationScansPerMonth: 200,
     features: new Set<KeepFlipSubscriptionFeature>([
       'basic_books',
       'automated_books',
@@ -249,16 +259,14 @@ export const KEEPFLIP_PLAN_DEFINITIONS: KeepFlipPlanDefinition[] = [
     annualPriceFallback: '$130',
     recommended: true,
     description:
-      'The full KeepFlip workspace, with unlimited active items, 100 AI scans each month, and Flip included.',
-    limits: ['Unlimited active items', '100 AI scans per month'],
+      'The full KeepFlip workspace, with unlimited saved inventory, 200 AI scans each month, unlimited listing generations, and Flip included.',
+    limits: ['Unlimited saved inventory', '200 AI scans per month', 'Up to 250 active marketplace listings'],
     features: [
-      'Every KeepFlip feature unlocked',
+      'Flip Assistant',
       'Unlimited saved inventory items',
-      '100 AI valuation scans per month',
+      '200 AI valuation scans per month',
       'Unlimited listing generations',
-      'Flip assistant',
-      'Advanced bookkeeping analytics',
-      'Schedule C export',
+      'Up to 250 active marketplace listings',
     ],
   },
 ];
@@ -413,7 +421,7 @@ export function keepFlipPlanAllows(
 ) {
   if (!plan) return false;
 
-  // Serious unlocks every current and future paid feature. Its active listing
+  // Serious adds Flip Assistant and higher usage limits. Its active listing
   // cap remains separate from the unlimited saved inventory item count.
   if (plan === 'serious') return true;
 

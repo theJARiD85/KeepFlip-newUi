@@ -269,6 +269,9 @@ export function WebPreAuthScreen({
     webContentMaxWidth,
     webContentWidth,
     webPageGutter,
+    contentMaxWidth,
+    contentWidth,
+    pageGutter
   } = useResponsiveLayout();
   const webContentSizing =
     Platform.OS === 'web'
@@ -374,13 +377,13 @@ export function WebPreAuthScreen({
   return (
     <View style={[styles.root, { backgroundColor: colors.backgroundDeep }]}>
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, webContentSizing]}
+        contentContainerStyle={[styles.scrollContent, webContentSizing, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         <WebSiteHeader label="SET UP YOUR RESELLER PROFILE" showActions={false} />
 
-        <View style={[styles.content, webContentSizing]}>
+        <View style={[styles.content, webContentSizing, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
           <View style={styles.topRow}>
             <Pressable
               accessibilityLabel="Go back"

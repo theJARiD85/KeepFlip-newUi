@@ -373,7 +373,7 @@ export function KeepFlipSubscriptionScreen({
         ? `${access.willRenew ? 'Renews' : 'Access continues'} through ${renewalDate}.`
         : 'Your subscription is active.';
     }
-    return 'Choose monthly or annual billing for Serious. Free accounts keep the full workflow, with limits on active items, scans, and listing generations.';
+    return 'Choose monthly or annual billing for Serious. Free includes every KeepFlip feature except Flip Assistant, with limits on saved inventory items, scans, and listing generations.';
   }, [
     access?.active,
     access?.billingIssue,
@@ -764,8 +764,9 @@ export function KeepFlipSubscriptionScreen({
         </View>
 
         <Text selectable style={styles.finePrint}>
-          Serious is $13 per month or $130 per year. Free accounts can use the
-          core workflow within the monthly scan and listing limits. Store
+          Serious is $13 per month or $130 per year. Free accounts can use
+          every KeepFlip feature except Flip Assistant within the inventory,
+          monthly scan and listing-generation limits. Store
           billing, renewals, and cancellations are managed by Google Play or
           the App Store.
         </Text>

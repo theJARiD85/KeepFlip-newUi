@@ -26,7 +26,7 @@ import { getKeepFlipThemeColors } from '@/constants/keepflip-theme';
 const pricingMetadata = {
   canonicalPath: '/pricing',
   description:
-    'See KeepFlip Serious Reseller pricing: $13 per month or $130 per year, with unlimited active inventory items, 100 monthly AI scans, unlimited listing generations, and Flip.',
+    'See KeepFlip Serious Reseller pricing: $13 per month or $130 per year, with unlimited saved inventory, 200 monthly AI scans, unlimited listing generations, and Flip.',
   title: 'KeepFlip pricing | One plan for resellers',
   structuredData: {
     '@context': 'https://schema.org',
@@ -67,7 +67,7 @@ export default function PricingPage() {
         metadata={pricingMetadata}
         eyebrow="ONE PAID PLAN"
         title="One plan for the work of a flip."
-        intro="Serious Reseller includes every KeepFlip feature. US web checkout is $13 per month or $130 per year."
+        intro="Free includes every KeepFlip feature except Flip Assistant, within its monthly and inventory limits. Serious adds Flip, unlimited saved inventory, 200 AI scans per month and unlimited listing generations. US web checkout is $13 per month or $130 per year."
       >
         <WebContentSection title="Serious Reseller">
           <WebCopy>
@@ -112,8 +112,8 @@ export default function PricingPage() {
             ) : null}
             <WebBulletList
             items={[
-              'Unlimited active inventory items.',
-              '100 AI scans and unlimited listing generations each month.',
+              'Unlimited saved inventory items.',
+              '200 AI scans and unlimited listing generations each month.',
               'Flip and the full KeepFlip workflow are included.',
               'Up to 250 active marketplace listings.',
               'US web checkout in US dollars.',
@@ -135,14 +135,14 @@ export default function PricingPage() {
               'Track inventory, storage location, quantity, and eBay listing status.',
               'Review sales, expenses, fees, and inventory costs in Books.',
               'Use the full workflow for AI valuation, inventory, Books, and insights.',
-              'Serious includes Flip, 100 AI scans each month, and unlimited listing generations.',
+              'Serious includes Flip, 200 AI scans each month, and unlimited listing generations.',
             ]}
           />
         </WebContentSection>
 
         <WebContentSection eyebrow="FREE ACCESS" title="Start with the full KeepFlip workspace.">
           <WebCopy>
-            Create a free account and use the full KeepFlip workflow, including AI valuation, inventory, Books, and insights. Free includes up to 10 active items, {KEEPFLIP_FREE_SCANS_PER_MONTH} AI scans per month, and {KEEPFLIP_FREE_LISTING_GENERATIONS_PER_MONTH} listing generations per month. Flip is included with Serious. No card or timed trial is required.
+            Create a free account and use every KeepFlip feature except Flip Assistant, including AI valuation, inventory, Books, and insights. Free includes up to 10 saved inventory items, {KEEPFLIP_FREE_SCANS_PER_MONTH} AI scans per month, and {KEEPFLIP_FREE_LISTING_GENERATIONS_PER_MONTH} listing generations per month. Flip is included with Serious. No card or timed trial is required.
           </WebCopy>
           <WebActionLink href={KEEPFLIP_GOOGLE_PLAY_URL} label="Start free on Android" />
         </WebContentSection>

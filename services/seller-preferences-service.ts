@@ -13,10 +13,10 @@ async function execute(xpath: string, body: Record<string, unknown>) {
   return payload;
 }
 
-export type SellerPreferencesSnapshot = { preferences: SellerPreferences; revision: number; serious: boolean };
+export type SellerPreferencesSnapshot = { preferences: SellerPreferences; revision: number };
 function snapshot(payload: Record<string, unknown>): SellerPreferencesSnapshot {
   if (typeof payload.revision !== 'number' || !Number.isSafeInteger(payload.revision) || payload.revision < 0) throw new Error('Seller service returned an invalid revision.');
-  return { preferences: validateSellerPreferences(payload.preferences), revision: payload.revision, serious: payload.serious === true };
+  return { preferences: validateSellerPreferences(payload.preferences), revision: payload.revision };
 }
 export async function getSellerPreferences(): Promise<SellerPreferencesSnapshot> {
   return snapshot(await execute('/preferences/get', { namespace: 'seller-assistance' }));

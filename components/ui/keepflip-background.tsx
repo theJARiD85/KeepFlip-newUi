@@ -50,11 +50,11 @@ const styles = StyleSheet.create({
   },
   ambientGradientDark: {
     experimental_backgroundImage: `
-    linear-gradient(160deg, #1e161298 0%, #34200534 33%, #1e161271 66%, #3420052e  100%),
-      radial-gradient(circle at 84% 8%, rgba(224, 172, 75, 0.25) 0%, transparent 34%),
-      radial-gradient(circle at 5% 68%, rgba(88, 222, 232, 0.1) 0%, transparent 38%),
+    linear-gradient(160deg, #1e161222 0%, #34200527 33%, #1e161222 66%, #24160416  100%),
+      radial-gradient(circle at 84% 8%, rgba(224, 172, 75, 0.05) 0%, transparent 34%),
+      radial-gradient(circle at 5% 68%, rgba(88, 222, 232, 0.01) 0%, transparent 38%),
       radial-gradient(circle at 92% 90%, rgba(140, 114, 255, 0.1) 0%, transparent 40%),
-      linear-gradient(80deg, #1e161298 0%, #34200534 33%, #1e161271 66%, #3420052e  100%)
+      linear-gradient(80deg, #00ffff12 0%, #050d3415 33%, #0d393912 66%, #2f5a4910 100%)
 
     `,
   },

@@ -452,9 +452,8 @@ export function CommandCenterScreen() {
     if (eBayBooksSyncing) return;
     if (!advancedBooksAllowed) {
       setEbayBooksSyncMessage(
-        'eBay money sync is included with the Serious Reseller plan.',
+        'KeepFlip could not verify access to Books. Refresh and try again.',
       );
-      router.push('/account?tab=subscription' as Href);
       return;
     }
     if (!bookkeepingFunctionConfigured) {
@@ -810,20 +809,20 @@ export function CommandCenterScreen() {
               actionBusy={eBayBooksSyncing}
               actionLabel={
                 !advancedBooksAllowed
-                  ? 'SERIOUS'
+                  ? 'CHECK'
                   : eBayState === 'connected'
                     ? 'SYNC'
                     : undefined
               }
               accessibilityHint={
                 !advancedBooksAllowed
-                  ? 'Opens Plan and Billing so you can choose the Serious Reseller plan.'
+                  ? 'KeepFlip could not verify access. Refresh and try again.'
                   : 'Brings in eBay sales, fees, labels, refunds, and payouts using the connected seller account.'
               }
               description={
                 eBayBooksSyncMessage ??
                 (!advancedBooksAllowed
-                  ? 'Included with the Serious Reseller plan. Choose Serious to unlock eBay sales, fees, labels, refunds, and payout reconciliation.'
+                  ? 'KeepFlip could not verify access to Books. Refresh and try again.'
                   : !bookkeepingFunctionConfigured
                     ? 'Money sync is waiting for the Books Function to be configured in this build.'
                     : 'Bring in eBay sales, fees, shipping labels, refunds, and payouts. Payouts are matched without counting them as a second sale.')
@@ -833,7 +832,7 @@ export function CommandCenterScreen() {
               onPress={eBayBooksSyncing ? undefined : () => void handleEbayBooksSync()}
               status={{
                 label: !advancedBooksAllowed
-                  ? 'LOCKED'
+                  ? 'CHECK'
                   : !bookkeepingFunctionConfigured
                     ? 'SETUP'
                     : eBayBooksSyncing

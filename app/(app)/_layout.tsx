@@ -25,12 +25,8 @@ import { KeepFlipSlideDownMenu } from '@/components/navigation/keepflip-slide-do
 import { ItemAnalysisResultProvider } from '@/components/scanner/item-analysis-result-context';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { SourcingTripProvider } from '@/components/sourcing/sourcing-trip-provider';
-import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
 import { getKeepFlipThemeColors } from '@/constants/keepflip-theme';
 import { notificationRouteFromData } from '@/services/keepflip-notification-service';
-import {
-  areKeepFlipSubscriptionsEnforced,
-} from '@/services/keepflip-subscription-service';
 import { hasCompletedScanInventoryWalkthrough } from '@/services/user-profile-onboarding-service';
 import { hasCompletedKeepFlipLaunchExperience } from '@/services/keepflip-launch-state-service';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -68,18 +64,12 @@ function WalkthroughAutoLauncher() {
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useKeepFlipAuth();
-  const { snapshot, state: subscriptionState } = useKeepFlipSubscription();
   const checkedUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!user) {
       checkedUserIdRef.current = null;
       return;
-    }
-
-    if (areKeepFlipSubscriptionsEnforced()) {
-      if (subscriptionState !== 'ready') return;
-      if (!snapshot?.access.active) return;
     }
 
     if (
@@ -123,8 +113,6 @@ function WalkthroughAutoLauncher() {
   }, [
     pathname,
     router,
-    snapshot?.access.active,
-    subscriptionState,
     user,
   ]);
 

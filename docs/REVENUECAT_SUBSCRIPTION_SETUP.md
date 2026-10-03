@@ -106,7 +106,7 @@ Test with Google Play licensed/internal testers (and StoreKit/App Store sandbox 
 9. Cancelling in the store updates RevenueCat access.
 10. Webhook mirrors the resulting state to `user_subscription`.
 
-## 9. Turn on the paywall
+## 9. Turn on subscription enforcement
 
 Only after the tests above are clean:
 
@@ -114,13 +114,13 @@ Only after the tests above are clean:
 EXPO_PUBLIC_KEEPFLIP_SUBSCRIPTIONS_ENFORCED=true
 ```
 
-With enforcement enabled, an authenticated account without an active entitlement is routed to the KeepFlip plan screen before normal onboarding/app access.
+With enforcement enabled, authenticated accounts without an active entitlement receive the Free tier and can continue onboarding and use the app. Only Flip Assistant requires Serious. Subscription Police enforces the Free usage limits before scans, listing generations, and inventory writes.
 
 ## App policy identifiers
 
 KeepFlip currently uses these tier rules:
 
-- Hobbyist: up to 50 active listings, 100 AI valuations/month, and the Hobbyist feature set.
-- Serious: KeepFlip's top tier. Every feature is unlocked, AI valuations are unlimited, and the only plan limit is up to 250 active listings total.
+- Free: every feature except Flip Assistant, with 10 saved inventory items total, 10 AI scans per month, and 10 listing generations per month.
+- Serious: unlimited saved inventory and listing generations, 200 AI scans per month, up to 250 active marketplace listings, and Flip Assistant.
 
-The app exposes these rules through `KEEPFLIP_PLAN_LIMITS`, `keepFlipPlanAllows()`, and `keepFlipPlanLimit()`. Server functions must enforce paid features and metered usage before enforcement is considered complete.
+The app exposes the client-side rules through `KEEPFLIP_PLAN_LIMITS`, `keepFlipPlanAllows()`, and `keepFlipPlanLimit()`. Subscription Police and the market-research Functions enforce the same limits on the server.

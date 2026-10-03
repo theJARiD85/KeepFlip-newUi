@@ -189,8 +189,8 @@ export function ItemAnalysisResultScreen() {
     }
     if (!basicBooksAllowed && !advancedBooksAllowed) {
       Alert.alert(
-        "Books plan needed",
-        "Choose a KeepFlip plan before saving a purchase to Books.",
+        "Books access unavailable",
+        "KeepFlip could not verify access to Books. Refresh and try again.",
       );
       return;
     }
@@ -319,7 +319,7 @@ export function ItemAnalysisResultScreen() {
         });
       } else {
         throw new Error(
-          "Choose a KeepFlip plan before recording this purchase in Books.",
+          "KeepFlip could not verify access to Books. Refresh and try again.",
         );
       }
 

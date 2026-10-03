@@ -16,7 +16,7 @@ The extension does not request the Gmail API or a Gmail OAuth scope. It cannot s
 
 - Deploy the updated `backend/functions/keepflip-seller-operations` Function and allow authenticated users to execute it. The new routes are `/email-sale/match` and `/email-sale/record`.
 - Configure the eBay OAuth Function ID in the popup and deploy the updated `backend/functions/ebay-oauth-backend` Function with its existing eBay and Appwrite credentials. It adds `/listing/withdraw` and uses the user's existing eBay connection; no eBay secret is put in the extension.
-- Email sale recording follows the existing Serious subscription gate for automation. Matching is owner-scoped and prefers a unique exact SKU; without an SKU it uses an exact normalized title. Ambiguous matches require an explicit inventory choice. Repeated delivery uses an idempotency key.
+- Email sale recording is available to free and Serious accounts. Matching is owner-scoped and prefers a unique exact SKU; without an SKU it uses an exact normalized title. Ambiguous matches require an explicit inventory choice. Repeated delivery uses an idempotency key.
 
 ## Delisting boundary
 

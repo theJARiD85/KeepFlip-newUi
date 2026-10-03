@@ -55,6 +55,9 @@ export function WebAuthScreen({
   const {
     webContentMaxWidth,
     webPageGutter,
+    contentMaxWidth,
+    contentWidth,
+    pageGutter
   } = useResponsiveLayout();
   const webContentSizing =
     Platform.OS === 'web'
@@ -211,7 +214,7 @@ export function WebAuthScreen({
       style={[styles.root, { backgroundColor: colors.backgroundDeep }]}
     >
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, webContentSizing]}
+        contentContainerStyle={[styles.scrollContent, webContentSizing, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         keyboardShouldPersistTaps="handled"
       >
         <WebSiteHeader
@@ -223,7 +226,7 @@ export function WebAuthScreen({
           <Text style={[styles.title, { color: colors.text }]}>Make every flip easier to trust.</Text>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>
             {isCreateAccount
-              ? 'Start with 10 active items, 10 AI scans, and 10 listing generations each month. Books and insights are included. Serious is $13/month or $130/year and includes Flip.'
+              ? 'Start with every KeepFlip feature except Flip Assistant: 10 saved inventory items, 10 AI scans, and 10 listing generations each month. Books and insights are included. Serious is $13/month or $130/year and includes Flip.'
               : 'Use the web workspace for inventory, Books, market research, and assistant planning. Open the Android app when it is time to capture an item.'}
           </Text>
 

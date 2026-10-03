@@ -193,6 +193,6 @@ All marketplace writes, eBay tokens, buyer-sensitive fields, marketplace event i
 5. Add `marketplace_events` before enabling webhook/order persistence.
 6. Deploy the subscription police and eBay Functions with the required table IDs and quota secret.
 7. Add `EXPO_PUBLIC_APPWRITE_SELLER_ORDERS_TABLE_ID` to the mobile build.
-8. Test Hobbyist manual sale -> manual ship -> Books result.
-9. Test Serious eBay order sync -> ship -> Money Sync -> realized-margin result.
+8. Test Free manual sale -> manual ship -> Books result.
+9. Test Free eBay order sync -> ship -> Money Sync -> realized-margin result.
 10. Only after listing state is reliable, enable automatic cross-channel reservation/delisting.

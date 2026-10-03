@@ -467,36 +467,36 @@ export function InventoryCard({
         <View style={styles.valuationSummary}>
 
           <View style={styles.medianBlock}>
-            <Text style={[styles.medianLabel, { fontSize: responsiveFont(8) }]}>
+            <Text style={[styles.medianLabel, { fontSize: responsiveFont(5) }]}>
               {hasValuation ? "MARKET MEDIAN" : "MARKET VALUE"}
             </Text>
-            <Text selectable style={[styles.medianValue, { fontSize: responsiveFont(40), lineHeight: 46 }]}>
+            <Text selectable style={[styles.medianValue, { fontSize: responsiveFont(30), lineHeight: 46 }]}>
               {formatMoney(item.estimatedValue, item.currency)}
             </Text>
           </View>
 
           <View style={styles.confidenceBlock}>
-            <Text style={[styles.confidenceValue, { fontSize: responsiveFont(16) }]}>
+            <Text style={[styles.confidenceValue, { fontSize: responsiveFont(12) }]}>
               {item.aiConfidence == null ? "—" : `${item.aiConfidence}%`}
             </Text>
-            <Text style={[styles.confidenceLabel, { fontSize: responsiveFont(7) }]}>CONFIDENCE</Text>
+            <Text style={[styles.confidenceLabel, { fontSize: responsiveFont(5) }]}>CONF.</Text>
           </View>
         </View>
         <View style={styles.recordStrip}>
           <View style={styles.recordMetric}>
-            <Text style={[styles.recordLabel, { fontSize: responsiveFont(7) }]}>COGS / ACTUAL PAID</Text>
-            <Text numberOfLines={1} style={[styles.recordValue, { fontSize: responsiveFont(11) }]}>
+            <Text style={[styles.recordLabel]}>COGS</Text>
+            <Text numberOfLines={1} style={[styles.recordValue]}>
               {formatCost(costBasis, item.currency)}
             </Text>
           </View>
           <View style={styles.recordMetric}>
-            <Text style={[styles.recordLabel, { fontSize: responsiveFont(7) }]}>ON HAND</Text>
-            <Text numberOfLines={1} style={[styles.recordValue, { fontSize: responsiveFont(11) }]}>
+            <Text style={[styles.recordLabel]}>ON HAND</Text>
+            <Text numberOfLines={1} style={[styles.recordValue]}>
               {item.quantityOnHand.toLocaleString()}
             </Text>
           </View>
           <View style={styles.recordMetricStorage}>
-            <Text style={[styles.recordLabel, { fontSize: responsiveFont(7) }]}>STORAGE</Text>
+            <Text style={[styles.recordLabel]}>STORAGE</Text>
             <Text
               numberOfLines={1}
               style={[
@@ -658,9 +658,10 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   const staticStyles = StyleSheet.create({
     card: {
       overflow: "hidden",
+      width: '100%',
       borderRadius: theme.radii.large,
       borderCurve: "continuous",
-      borderWidth: 1,
+      borderWidth: 0.5,
       borderColor: theme.colors.accentGoldBorder,
       backgroundColor: theme.colors.card,
       boxShadow:
@@ -931,7 +932,6 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     recordLabel: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.numbers,
-      fontSize: 7,
       fontWeight: "900",
       letterSpacing: 0.65,
     },
@@ -1135,7 +1135,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     confidenceValue: [
       staticStyles.confidenceValue,
       {
-        fontSize: responsiveFont(16),
+        fontSize: responsiveFont(12),
         textShadowOffset: { width: responsiveWidth(0), height: responsiveHeight(0) },
       },
     ],
@@ -1148,13 +1148,13 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     recordLabel: [
       staticStyles.recordLabel,
       {
-        fontSize: responsiveFont(7),
+        fontSize: responsiveFont(1),
       },
     ],
     recordValue: [
       staticStyles.recordValue,
       {
-        fontSize: responsiveFont(11),
+        fontSize: responsiveFont(10),
       },
     ],
     listingGuideButtonIcon: [

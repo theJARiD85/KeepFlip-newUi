@@ -21,11 +21,14 @@ function WebFlipAssistantScreen() {
     webContentWidth,
     webPageGutter,
     webResponsiveFont,
+    contentMaxWidth,
+    contentWidth,
+    pageGutter
   } = useResponsiveLayout();
 
   if (!canUse('flip_assistant')) {
     return (
-      <View style={[styles.page, { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter }]}>
+      <View style={[styles.page, { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
         <View style={styles.gateCard}>
           <Text style={[styles.eyebrow, { fontSize: webResponsiveFont(12) }]}>SERIOUS FEATURE</Text>
           <Text style={[styles.title, { fontSize: webResponsiveFont(24) }]}>Flip is part of Serious Reseller.</Text>
@@ -47,18 +50,16 @@ function WebFlipAssistantScreen() {
   };
 
   return (
-    <View style={[styles.page, { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter }]}>
+    <View style={[styles.page, { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
       <View
-        style={[
-          styles.content,
+        style={[styles.content,
           {
             flex: 1,
             minHeight: 0,
             maxWidth: webContentMaxWidth,
             paddingHorizontal: webPageGutter,
             width: webContentWidth,
-          },
-        ]}>
+          }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
         <View style={styles.intro}>
           <Text style={[styles.eyebrow, { fontSize: webResponsiveFont(12) }]}>FLIP ASSISTANT</Text>
           <Text style={[styles.title, { fontSize: webResponsiveFont(24) }]}>A second set of eyes for every move.</Text>

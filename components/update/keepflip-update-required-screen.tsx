@@ -76,7 +76,7 @@ export function KeepFlipUpdateRequiredScreen({
             paddingBottom: insets.bottom + 24,
             paddingHorizontal: pageGutter,
             paddingTop: insets.top + 24,
-          }, Platform.OS === 'web' ? { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter } : undefined]}
+          }, Platform.OS === 'web' ? { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter } : undefined, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         showsVerticalScrollIndicator={false}
       >
         <View

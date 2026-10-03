@@ -481,7 +481,8 @@ export function KeepFlipSubscriptionProvider({
         limitFor: (limit) => {
           if (!serverAccessAvailable) return 0;
           if (!snapshot?.access.active) {
-            return snapshot?.access.limits[limit] ?? 0;
+            const freeLimit = snapshot?.access.limits[limit];
+            return freeLimit === undefined ? 0 : freeLimit;
           }
           if (!serverAccessVerified) return 0;
           return keepFlipPlanLimit(activePlan, limit);

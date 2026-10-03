@@ -36,7 +36,7 @@ analytics.init({
 
 function ProtectedRootStack() {
   const router = useRouter();
-  const { status, user } = useKeepFlipAuth();
+  const { status } = useKeepFlipAuth();
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const colors = getKeepFlipThemeColors(effectiveColorScheme);
   const { snapshot, state: subscriptionState } = useKeepFlipSubscription();
@@ -46,17 +46,15 @@ function ProtectedRootStack() {
   const isSignedIn = status === 'signed-in';
   const isCheckingSubscription =
     isSignedIn && subscriptionsEnforced && subscriptionState === 'loading';
-  const hasActiveSubscription =
+  const hasVerifiedWorkspaceAccess =
     !subscriptionsEnforced ||
     (isSignedIn &&
       subscriptionState === 'ready' &&
-      snapshot?.serverRecordAvailable === true &&
-      snapshot.serverRecord?.ownerId === user?.$id &&
-      snapshot.access.active === true);
+      snapshot?.serverRecordAvailable === true);
   const subscriptionSetupOpen = pathname === '/subscription-setup';
   const canShowOnboarding =
     (!isSignedIn || subscriptionSetupOpen) &&
-    (!isSignedIn || hasActiveSubscription);
+    (!isSignedIn || hasVerifiedWorkspaceAccess);
   const shouldRedirectAuthToDashboardRef = useRef(pathname.endsWith('/sign-in'));
 
   useEffect(() => {

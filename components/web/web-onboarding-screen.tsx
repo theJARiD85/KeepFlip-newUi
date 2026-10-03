@@ -45,6 +45,9 @@ export function WebOnboardingScreen() {
     webContentMaxWidth,
     webContentWidth,
     webPageGutter,
+    contentMaxWidth,
+    contentWidth,
+    pageGutter
   } = useResponsiveLayout();
 
   const { effectiveColorScheme } = useKeepFlipAppearance();
@@ -77,10 +80,10 @@ export function WebOnboardingScreen() {
       >
       <View style={styles.root}>
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, webContentSizing]}
+        contentContainerStyle={[styles.scrollContent, webContentSizing, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.page, isPhone && styles.pagePhone, webContentSizing]}>
+        <View style={[styles.page, isPhone && styles.pagePhone, webContentSizing, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
           <WebSiteHeader label="TOOLS FOR SOLO RESELLERS" showMarketingLinks />
 
           <View style={[styles.hero, isWide && styles.heroWide]}>
@@ -120,7 +123,7 @@ export function WebOnboardingScreen() {
                 />
               </View>
               <Text style={[styles.freeEntryNote, { color: colors.textMuted }]}>
-                Free includes the full workflow on Android and web, with up to 10 active items, {KEEPFLIP_FREE_SCANS_PER_MONTH} AI scans, and {KEEPFLIP_FREE_LISTING_GENERATIONS_PER_MONTH} listing generations each month. Books and insights are included. Serious adds unlimited active items, 100 scans per month, unlimited listing generations, and Flip for $13/month or $130/year. No card or timed trial is required.
+                Free includes every KeepFlip feature except Flip Assistant on Android and web, with up to 10 saved inventory items, {KEEPFLIP_FREE_SCANS_PER_MONTH} AI scans, and {KEEPFLIP_FREE_LISTING_GENERATIONS_PER_MONTH} listing generations each month. Books and insights are included. Serious adds unlimited saved inventory, 200 scans per month, unlimited listing generations, and Flip for $13/month or $130/year. No card or timed trial is required.
               </Text>
               <Text style={[styles.scopeCopy, { color: colors.textMuted }]}>
                 Built for solo flippers who source in person and sell on eBay. If you crosslist to five marketplaces, KeepFlip is not that tool yet.

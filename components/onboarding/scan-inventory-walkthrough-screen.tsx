@@ -22,10 +22,6 @@ import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import { responsiveWidth } from '@/lib/responsiveFont';
 import {
-  areKeepFlipSubscriptionsConfigured,
-  areKeepFlipSubscriptionsEnforced,
-} from "@/services/keepflip-subscription-service";
-import {
   buyRuleDayLimit,
   DEFAULT_RESELLER_BUY_RULES,
   type ResellerBuyRules,
@@ -446,15 +442,7 @@ export function ScanInventoryWalkthroughScreen() {
       await completeScanInventoryWalkthrough(user.$id, user.name, rules);
       completionHaptic();
 
-      const subscriptionOnboardingEnabled =
-        areKeepFlipSubscriptionsConfigured() ||
-        areKeepFlipSubscriptionsEnforced();
-
-      router.replace(
-        (subscriptionOnboardingEnabled
-          ? "/account?tab=subscription"
-          : "/") as Href,
-      );
+      router.replace("/" as Href);
     } catch (caught) {
       setError(
         caught instanceof Error

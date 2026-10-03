@@ -584,7 +584,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
       } else if (basicBooks) {
         setNotice('Sale saved. Configure Books to create the linked financial records.');
       } else {
-        setNotice('Sale saved. Books posting requires an active KeepFlip subscription.');
+        setNotice('Sale saved. KeepFlip could not verify access to Books; refresh and try again.');
       }
     } catch (cause) {
       setErrors((current) => ({ ...current, create: message(cause) }));
@@ -734,8 +734,8 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
         Orders, fulfillment and realized profit
       </Text>
       <Text style={styles.muted}>
-        Manual selling stays available on every plan. Serious adds secured eBay
-        order, tracking and Money Sync automation.
+        Free accounts include seller operations, profit tracking and available
+        automation tools. Connect each marketplace to use its seller data.
       </Text>
 
       {loading ? <ActivityIndicator accessibilityLabel="Loading seller operations" color={theme.colors.scannerCyan} /> : null}
@@ -891,7 +891,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
           />
         ) : (
           <Text style={styles.muted}>
-            Serious adds automatic eBay order sync, ship-by status and tracking updates.
+            KeepFlip could not verify access to order sync. Refresh and try again.
           </Text>
         )}
 
@@ -995,7 +995,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
           />
         ) : (
           <Text style={styles.muted}>
-            Serious adds automatic eBay sales, fee, refund and payout reconciliation.
+            KeepFlip could not verify access to Money Sync. Refresh and try again.
           </Text>
         )}
         <Button
@@ -1004,7 +1004,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
           icon="chart.bar.fill"
           accent="violet"
           actionLabel="OPEN"
-          staticLabel={!basicBooks ? 'LOCKED' : undefined}
+          staticLabel={!basicBooks ? 'CHECK' : undefined}
           disabled={!basicBooks}
           onPress={() => router.push('/books' as Href)}
         />
@@ -1061,9 +1061,8 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
           </>
         ) : (
           <Text style={styles.muted}>
-            Basic item profit history is included. Serious adds aggregate
-            sell-through, days-to-sale, ROI, discounts, returns and
-            source/category performance.
+            KeepFlip could not verify access to seller analytics. Refresh and
+            try again.
           </Text>
         )}
       </Section>
@@ -1072,9 +1071,9 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
 
       <Section title="Plan boundary">
         <Text style={styles.muted}>
-          Current plan: {snapshot?.access.plan || 'no active paid plan resolved'}.
-          Individual listing guidance, manual sales, manual shipping and basic
-          profit remain available without eBay automation.
+          Current plan: {snapshot?.access.plan === 'serious' ? 'Serious Reseller' : 'Free'}.
+          Free includes the KeepFlip workflow and seller tools, with monthly
+          scan and listing-generation limits and up to 10 saved inventory items.
         </Text>
       </Section>
     </>

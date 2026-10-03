@@ -14,7 +14,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { Platform, View } from "react-native";
+import { View } from "react-native";
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
@@ -65,10 +65,7 @@ configureKeepFlipNotificationHandler();
 function ProtectedRootStack() {
   const router = useRouter();
   const pathname = usePathname();
-  const {
-    status,
-    user,
-  } = useKeepFlipAuth();
+  const { status } = useKeepFlipAuth();
   const isChecking =
     status === "checking";
 
@@ -86,15 +83,11 @@ function ProtectedRootStack() {
     isSignedIn &&
     subscriptionsEnforced &&
     subscriptionState === 'loading';
-  const hasActiveSubscription =
+  const hasVerifiedWorkspaceAccess =
     !subscriptionsEnforced ||
     (isSignedIn &&
       subscriptionState === 'ready' &&
-      (Platform.OS === 'android'
-        ? subscriptionSnapshot?.revenueCatAccess.active === true
-        : subscriptionSnapshot?.serverRecordAvailable === true &&
-          subscriptionSnapshot.serverRecord?.ownerId === user?.$id &&
-          subscriptionSnapshot.access.active === true));
+      subscriptionSnapshot?.serverRecordAvailable === true);
   const shouldRedirectAuthToDashboardRef = useRef(pathname.endsWith('/sign-in'));
 
   useEffect(() => {
@@ -116,7 +109,7 @@ function ProtectedRootStack() {
   const canShowOnboarding =
     !isChecking &&
     (!isSignedIn || keepSubscriptionSignupOpen) &&
-    (!isSignedIn || hasActiveSubscription);
+    (!isSignedIn || hasVerifiedWorkspaceAccess);
 
   return (
     <Stack

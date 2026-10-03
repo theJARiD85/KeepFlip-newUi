@@ -449,9 +449,9 @@ export function KeepFlipPreAuthScreen({ onBack, onComplete }: KeepFlipPreAuthScr
 
                   </View>
                   <View style={styles.summaryCard}><Text style={[styles.summaryPrimary, { fontSize: responsiveFont(15) }]}>{summary.line}</Text><Text style={[styles.summarySecondary, { fontSize: responsiveFont(12), lineHeight: 18 }]}>{summary.details}</Text></View>
-                  <Text style={[styles.body, { fontSize: responsiveFont(13), }]}>Next, choose a plan and create the account that will keep your seller setup connected.</Text>
+                  <Text style={[styles.body, { fontSize: responsiveFont(13), }]}>Next, create your free account to save your seller setup and start using KeepFlip.</Text>
                   {error ? <Text style={[styles.errorText, { fontSize: responsiveFont(12), }]}>{error}</Text> : null}
-                  <Pressable accessibilityLabel="Continue to plan and account setup" accessibilityRole="button" testID="keepflip-onboarding-plan-setup" onPress={finish} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={[styles.primaryButtonText, { fontSize: responsiveFont(11) }]}>CONTINUE TO PLAN & ACCOUNT SETUP</Text></Pressable>
+                  <Pressable accessibilityLabel="Create your free KeepFlip account" accessibilityRole="button" testID="keepflip-onboarding-plan-setup" onPress={finish} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={[styles.primaryButtonText, { fontSize: responsiveFont(11) }]}>CREATE MY FREE ACCOUNT</Text></Pressable>
                 </Animated.View>
               )}
             </ScrollView>

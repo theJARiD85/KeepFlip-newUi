@@ -515,7 +515,7 @@ export function BooksScreen() {
   const openEntrySheet = (entryType: ResellerLedgerEntryType) => {
     if (!basicBooksAllowed && !advancedBooksAllowed) {
       setStatusMessage(
-        'Books is included with a KeepFlip plan. Open Plan & Billing to continue.',
+        'KeepFlip could not verify access to Books. Refresh and try again.',
       );
       return;
     }
@@ -647,7 +647,7 @@ export function BooksScreen() {
   const exportLedger = async () => {
     if (!scheduleCExportAllowed) {
       setStatusMessage(
-        'CSV export is included with the Serious Reseller plan. Choose Serious in Plan & Billing to unlock it.',
+        'KeepFlip could not verify access to CSV export. Refresh and try again.',
       );
       return;
     }
@@ -884,7 +884,7 @@ export function BooksScreen() {
                 accessibilityHint={
                   scheduleCExportAllowed
                     ? 'Creates a CSV of every recorded Books entry.'
-                    : 'Requires the Serious Reseller plan.'
+                    : 'KeepFlip could not verify access. Refresh and try again.'
                 }
                 accessibilityRole="button"
                 disabled={!entries.length || exporting}
@@ -898,7 +898,7 @@ export function BooksScreen() {
                   <ActivityIndicator color={theme.colors.scannerCyan} size="small" />
                 ) : (
                   <Text style={[styles.exportButtonText, { fontSize: responsiveFont(8) }]}>
-                    {scheduleCExportAllowed ? 'EXPORT CSV' : 'SERIOUS CSV'}
+                    {scheduleCExportAllowed ? 'EXPORT CSV' : 'CHECK ACCESS'}
                   </Text>
                 )}
               </Pressable>

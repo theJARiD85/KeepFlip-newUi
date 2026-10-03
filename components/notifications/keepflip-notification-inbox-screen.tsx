@@ -45,6 +45,9 @@ export function KeepFlipNotificationInboxScreen() {
     webContentMaxWidth,
     webContentWidth,
     webPageGutter,
+    contentMaxWidth,
+    contentWidth,
+    pageGutter
   } = useResponsiveLayout();
   const { status, user } = useKeepFlipAuth();
   const userId = user?.$id ?? null;
@@ -123,8 +126,8 @@ export function KeepFlipNotificationInboxScreen() {
   return (
     <KeepFlipBackground>
       <ScrollView
-          contentContainerStyle={[styles.content, { paddingTop: insets.top + 15, paddingBottom: insets.bottom + 30}, Platform.OS === 'web' ? { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter } : undefined]}
-          style={[styles.page, {marginTop: insets.top, marginBottom: insets.bottom}, Platform.OS === 'web' ? { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter } : undefined]}
+          contentContainerStyle={[styles.content, { paddingTop: insets.top + 15, paddingBottom: insets.bottom + 30}, Platform.OS === 'web' ? { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter } : undefined, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+          style={[styles.page, {marginTop: insets.top, marginBottom: insets.bottom}, Platform.OS === 'web' ? { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter } : undefined, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         refreshControl={
           <RefreshControl
             colors={[theme.colors.scannerCyan]}

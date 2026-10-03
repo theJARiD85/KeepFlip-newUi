@@ -13,7 +13,7 @@ const MONEY_FIELDS = [
 ] as const;
 type MoneyKey = (typeof MONEY_FIELDS)[number][0];
 const money = (cents: number | null) => cents === null ? 'Unknown' : `$${(cents / 100).toFixed(2)}`;
-export function OfferReview({ serious, presets, onRecord }: { serious: boolean; presets: ShippingPreset[]; onRecord: (notes: string) => Promise<boolean> }) {
+export function OfferReview({ offerGuardrailsAllowed, presets, onRecord }: { offerGuardrailsAllowed: boolean; presets: ShippingPreset[]; onRecord: (notes: string) => Promise<boolean> }) {
   const styles = useSellerAssistanceStyles();
   const [values, setValues] = useState<Record<MoneyKey, string>>({ salePriceCents: '', acquisitionCostCents: '', buyerShippingCents: '0', shippingExpenseCents: '', packagingCents: '0', fixedFeeCents: '0', discountCents: '0', refundAllowanceCents: '0', marketplaceCollectedTaxCents: '0', sellerTaxReserveCents: '0' });
   const [fee, setFee] = useState('');
@@ -40,9 +40,9 @@ export function OfferReview({ serious, presets, onRecord }: { serious: boolean; 
     finally { setBusy(false); }
   }
   const summary = result ? `Planning review: ${result.status.replaceAll('_', ' ')}; estimated net profit ${money(result.estimate.profitCents)}; seller-selected profit floor price ${money(result.floorCents)}. No offer submitted.` : '';
-  return <Section title="Offer floor guardrails · Serious">
+  return <Section title="Offer floor guardrails">
     <Text style={styles.muted}>Compare a buyer offer or a counteroffer you choose with your minimum net profit. All amounts below are USD planning assumptions. Confirm every visible zero; taxes, fee rates and shipping depend on the actual transaction.</Text>
-    {!serious ? <Text style={styles.text}>Serious access is required for offer floor calculations. Manual replies, reminders, aging reviews and history remain available to everyone.</Text> : <>
+    {!offerGuardrailsAllowed ? <Text style={styles.text}>KeepFlip could not verify access to offer floor calculations. Refresh and try again.</Text> : <>
       {presets.map(preset => <Button key={preset.id} title={`Apply shipping estimate: ${preset.name}`} onPress={() => { setValues(previous => ({ ...previous, shippingExpenseCents: preset.shippingExpenseCents === null ? '' : String(preset.shippingExpenseCents / 100), packagingCents: preset.packagingCents === null ? '' : String(preset.packagingCents / 100) })); setResult(null); }} />)}
       {MONEY_FIELDS.map(([key, label]) => <Field key={key} label={`${label} (USD)`} value={values[key]} onChangeText={value => change(key, value)} numeric />)}
       <Field label="Marketplace percentage fee (blank = unknown)" value={fee} onChangeText={value => { setFee(value); setResult(null); }} numeric />
