@@ -32,7 +32,7 @@ export default function VendooComparisonPage() {
           },
           {
             area: 'Published price',
-            keepFlip: 'US web checkout: $18/month or $180/year. No free trial in the current web checkout.',
+            keepFlip: 'US web checkout: $13/month or $130/year. KeepFlip has no timed trial; the Free tier does not expire.',
             competitor: 'The annual pricing page lists Starter/Growth/Pro at $14.99/$29.99/$59.99 monthly, or $12.49/$24.99/$49.99 per month with annual billing. It advertises a 14-day trial.',
           },
         ],

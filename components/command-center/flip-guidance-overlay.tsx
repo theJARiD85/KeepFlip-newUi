@@ -12,6 +12,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
+import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
 import { FlipCompanion, useFlipCompanion } from '@/components/flip';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
@@ -105,6 +106,7 @@ function routeWithoutQuery(route: string) {
 
 export function FlipGuidanceOverlay() {
   const { user } = useKeepFlipAuth();
+  const { canUse } = useKeepFlipSubscription();
   const pathname = usePathname();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -124,10 +126,10 @@ export function FlipGuidanceOverlay() {
   } = useFlipGuidance();
 
   useEffect(() => {
-    if (!user && activeGuide) closeGuide();
-  }, [activeGuide, closeGuide, user]);
+    if ((!user || !canUse('flip_assistant')) && activeGuide) closeGuide();
+  }, [activeGuide, canUse, closeGuide, user]);
 
-  if (!user || !activeGuide) return null;
+  if (!user || !canUse('flip_assistant') || !activeGuide) return null;
 
   const step = activeGuide.steps[stepIndex] ?? activeGuide.steps[0];
   if (!step) return null;

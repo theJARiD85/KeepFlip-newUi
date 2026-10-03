@@ -27,12 +27,18 @@ The web checkout loads the existing `keepflip_default` RevenueCat offering and
 chooses a plan from these **custom package identifiers**. Package IDs and Web
 Billing product IDs are separate fields in RevenueCat.
 
-| Plan | Billing | RevenueCat package ID | Current KeepFlip price |
+| Plan | Billing | RevenueCat package ID | Requested KeepFlip price |
 | --- | --- | --- | --- |
-| Part-Time Hobbyist | Monthly | `hobbyist-monthly` | $10/month |
-| Part-Time Hobbyist | Annual | `hobbyist-annual` | $100/year |
-| Serious Reseller | Monthly | `serious-monthly` | $25/month |
-| Serious Reseller | Annual | `serious-annual` | $250/year |
+| Serious Reseller | Monthly | `serious-monthly` | $13/month |
+| Serious Reseller | Annual | `serious-annual` | $130/year |
+
+The $13 monthly and $130 annual Serious prices are the requested plan prices
+for the RevenueCat products. Source changes do not change the product prices
+stored in the RevenueCat dashboard or app stores; update those product records
+before relying on checkout to charge these amounts.
+
+Do not configure introductory trial offers for Serious packages or store
+products. The Free tier is KeepFlip's on-ramp.
 
 The client normalizes punctuation when it selects a package, so either a dash
 or underscore package ID works for the same plan and cadence. For example,
@@ -51,7 +57,6 @@ Map the Web Billing products to the existing entitlements:
 
 | Plan | RevenueCat entitlement |
 | --- | --- |
-| Part-Time Hobbyist | `keepflip_hobbyist` |
 | Serious Reseller | `keepflip_serious` |
 
 Do not create a second entitlement just for web. A seller who signs in with the
@@ -69,14 +74,15 @@ web.
    only in that authenticated dashboard. Do not put either Stripe key in the
    KeepFlip repository, an Expo public environment variable, or chat.
 
-3. Create the four Web Billing subscription products at the prices above. Use
-   the actual product IDs you created (for example, `serious_monthly` and
-   `serious_annual`), then assign each one to the matching custom package in
-   `keepflip_default`, alongside the existing native package mappings. Set that
-   offering as the current Web Billing offering if the dashboard requires it.
+3. Create the two Serious Web Billing subscription products at the prices
+   above. Use the actual product IDs you created (for example,
+   `serious_monthly` and `serious_annual`), then assign each one to the
+   matching custom package in `keepflip_default`, alongside the existing
+   native package mappings. Set that offering as the current Web Billing
+   offering if the dashboard requires it.
 
-4. Attach `keepflip_hobbyist` to both Hobbyist web products and
-   `keepflip_serious` to both Serious web products.
+4. Attach `keepflip_serious` to both Serious web products. Keep any legacy
+   `keepflip_hobbyist` products out of new checkout options.
 
 5. Copy the **public Web Billing SDK key** from the Web Billing app in
    RevenueCat. It is a RevenueCat public key, not a Stripe publishable key.

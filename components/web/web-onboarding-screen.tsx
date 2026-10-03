@@ -24,7 +24,8 @@ import {
 } from '@/components/web/web-public-page';
 import {
   KEEPFLIP_EBAY_CONNECTION_COPY,
-  KEEPFLIP_FREE_ANDROID_SCANS_PER_MONTH,
+  KEEPFLIP_FREE_LISTING_GENERATIONS_PER_MONTH,
+  KEEPFLIP_FREE_SCANS_PER_MONTH,
   KEEPFLIP_GOOGLE_PLAY_URL,
   KEEPFLIP_HOME_FAQS,
   KEEPFLIP_HOME_DESCRIPTION,
@@ -119,7 +120,7 @@ export function WebOnboardingScreen() {
                 />
               </View>
               <Text style={[styles.freeEntryNote, { color: colors.textMuted }]}>
-                Free accounts can use the KeepFlip workspace on Android and web, with up to 10 inventory items, 10 active listings, and {KEEPFLIP_FREE_ANDROID_SCANS_PER_MONTH} AI valuations per month. Create the account in the Android app; no card is required.
+                Free includes the full workflow on Android and web, with up to 10 active items, {KEEPFLIP_FREE_SCANS_PER_MONTH} AI scans, and {KEEPFLIP_FREE_LISTING_GENERATIONS_PER_MONTH} listing generations each month. Books and insights are included. Serious adds unlimited active items, 100 scans per month, unlimited listing generations, and Flip for $13/month or $130/year. No card or timed trial is required.
               </Text>
               <Text style={[styles.scopeCopy, { color: colors.textMuted }]}>
                 Built for solo flippers who source in person and sell on eBay. If you crosslist to five marketplaces, KeepFlip is not that tool yet.

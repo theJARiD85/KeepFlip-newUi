@@ -2,6 +2,7 @@ import {
   createGatedAiExecution,
   nextAiOperationId,
 } from "@/services/subscription-ai-gateway-service";
+import { reportKeepFlipLimitReached } from "@/services/keepflip-limit-alert-service";
 import type { ItemValuationSignals } from "./itemAiService";
 import { neutralizeMarketplaceBrand } from "./market-copy";
 import {
@@ -1275,6 +1276,23 @@ async function callMarketCompsFunction(
     execution.responseStatusCode >= 400 ||
     payload.ok === false
   ) {
+    const details = asRecord(payload.details);
+    const quota = asString(details?.quota);
+    const limit = Number(details?.limit);
+    const usage = Number(details?.usage);
+    if (
+      asString(payload.code) === "QUOTA_LIMIT_REACHED" &&
+      quota === "ai" &&
+      Number.isSafeInteger(limit) &&
+      Number.isSafeInteger(usage)
+    ) {
+      reportKeepFlipLimitReached({
+        category: "scan",
+        limit,
+        plan: details?.plan === 'serious' ? 'serious' : 'free',
+        usage,
+      });
+    }
     throw new Error(
       errorMessage ||
       "KeepFlip could not complete the market search."

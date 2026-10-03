@@ -32,7 +32,7 @@ export default function FlipAiComparisonPage() {
           },
           {
             area: 'Published price',
-            keepFlip: 'US web checkout: $18/month or $180/year. The web checkout has no free trial.',
+            keepFlip: 'US web checkout: $13/month or $130/year. KeepFlip has no timed trial; the Free tier does not expire.',
             competitor: 'The site lists 10 lifetime scans on free, Pro at $9.99/month, and Power Seller at $14.99/month.',
           },
         ],

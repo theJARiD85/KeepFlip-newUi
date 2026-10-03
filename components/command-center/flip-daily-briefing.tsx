@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FlipCompanion, useFlipCompanion } from '@/components/flip';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
+import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
@@ -222,6 +223,7 @@ function OpenWork({
 
 export function FlipDailyBriefingLauncher() {
   const { user } = useKeepFlipAuth();
+  const { canUse } = useKeepFlipSubscription();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const { height, responsiveFont, width } = useResponsiveLayout();
@@ -235,8 +237,9 @@ export function FlipDailyBriefingLauncher() {
   const attemptedDateRef = useRef<string | null>(null);
   const inFlightDateRef = useRef<string | null>(null);
   const briefingDateRef = useRef<string | null>(null);
-  const userId = user?.$id ?? null;
-  const displayName = user?.name?.trim() || null;
+  const flipEnabled = canUse('flip_assistant');
+  const userId = flipEnabled ? user?.$id ?? null : null;
+  const displayName = flipEnabled ? user?.name?.trim() || null : null;
   const isHome = pathname === '/' || pathname === '/command-center';
 
   useEffect(() => {

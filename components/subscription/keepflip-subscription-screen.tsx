@@ -28,7 +28,6 @@ import {
 } from '@/hooks/use-responsive-layout';
 import {
   KEEPFLIP_PLAN_DEFINITIONS,
-  areKeepFlipSubscriptionsEnforced,
   type KeepFlipBillingCadence,
   type KeepFlipPlanDefinition,
   type KeepFlipPlanId,
@@ -63,7 +62,7 @@ function parsePlan(value: string | undefined): KeepFlipPlanId | null {
 
 function annualSavings(plan: KeepFlipPlanId) {
   if (plan === 'hobbyist') return 'SAVE $20 / YEAR';
-  if (plan === 'serious') return 'SAVE $50 / YEAR';
+  if (plan === 'serious') return 'SAVE $26 / YEAR';
   return null;
 }
 
@@ -228,7 +227,6 @@ export function KeepFlipSubscriptionScreen({
   }>();
   const sourceValue = paramValue(source);
   const isOnboarding = sourceValue === 'onboarding';
-  const isMigration = sourceValue === 'migration';
   const requestedPlan = parsePlan(paramValue(plan));
   const requestedCadence = parseCadence(paramValue(cadenceParam));
   const insets = useSafeAreaInsets();
@@ -269,18 +267,8 @@ export function KeepFlipSubscriptionScreen({
   const catalog = snapshot?.catalog ?? null;
   const profileTrialActive =
     access?.active === true && access.isTrial && access.trialSource === 'profile';
-  const profileTrialUsed =
-    snapshot?.profileTrial?.trialUsed === true ||
-    access?.trialSource === 'profile';
-  const trialUsed =
-    access?.trialUsed === true ||
-    profileTrialUsed ||
-    snapshot?.serverRecord?.isTrial === true ||
-    Boolean(snapshot?.serverRecord?.trialEndsAt);
   const checkoutEnabled = state === 'ready' && snapshot?.configured === true;
-  const isPaywallLocked =
-    snapshot?.revenueCatAccess.active !== true &&
-    (isOnboarding || isMigration || areKeepFlipSubscriptionsEnforced());
+  const isPaywallLocked = false;
 
   const presentRevenueCatPaywall = useCallback(async () => {
     if (!checkoutEnabled || presentingRevenueCatPaywall || purchasing) return;
@@ -349,7 +337,6 @@ export function KeepFlipSubscriptionScreen({
     return unsubscribe;
   }, [isPaywallLocked, navigation]);
 
-  const trialEnds = formatDate(access?.isTrial ? access.expiresAt : null);
   const renewalDate = formatDate(
     access?.active && !access.isTrial ? access.expiresAt : null,
   );
@@ -366,14 +353,10 @@ export function KeepFlipSubscriptionScreen({
       return 'KeepFlip could not verify subscription access.';
     }
     if (profileTrialActive) {
-      return trialEnds
-        ? `Your KeepFlip trial is active through ${trialEnds}. You have full Serious access until then.`
-        : 'Your KeepFlip trial is active with full Serious access.';
+      return 'Your Serious access is active.';
     }
     if (access?.isTrial) {
-      return trialEnds
-        ? `Store trial active through ${trialEnds}.`
-        : 'Your store trial is active.';
+      return 'Your Serious access is active.';
     }
     if (access?.billingIssue) {
       if (!access.active) {
@@ -390,25 +373,16 @@ export function KeepFlipSubscriptionScreen({
         ? `${access.willRenew ? 'Renews' : 'Access continues'} through ${renewalDate}.`
         : 'Your subscription is active.';
     }
-    if (profileTrialUsed) {
-      return 'Your 7-day KeepFlip trial has already been used on this device. Choose a plan to continue.';
-    }
-    if (trialUsed) {
-      return 'Your initial trial has finished. Choose a paid plan to continue.';
-    }
-    return 'Choose monthly or annual billing to start a paid KeepFlip plan.';
+    return 'Choose monthly or annual billing for Serious. Free accounts keep the full workflow, with limits on active items, scans, and listing generations.';
   }, [
     access?.active,
     access?.billingIssue,
     access?.isTrial,
     access?.willRenew,
     profileTrialActive,
-    profileTrialUsed,
     graceEnds,
     renewalDate,
     state,
-    trialEnds,
-    trialUsed,
   ]);
 
   const handlePurchase = async (
@@ -519,19 +493,13 @@ export function KeepFlipSubscriptionScreen({
           </View>
           <View style={styles.trialCopy}>
             <Text style={[styles.trialTitle, { fontSize: responsiveFont(8) }]}>
-              {profileTrialActive
-                ? 'YOUR KEEPFLIP TRIAL IS ACTIVE'
-                : access?.isTrial
-                  ? 'YOUR STORE TRIAL IS ACTIVE'
-                  : access?.billingIssue
-                    ? access.active
-                      ? 'PAYMENT ISSUE · 7-DAY GRACE'
-                      : 'PAYMENT ISSUE · ACTION REQUIRED'
-                    : profileTrialUsed
-                      ? 'YOUR KEEPFLIP TRIAL HAS FINISHED'
-                      : trialUsed
-                        ? 'YOUR STORE TRIAL HAS FINISHED'
-                        : 'CHOOSE A PAID PLAN'}
+              {access?.billingIssue
+                ? access.active
+                  ? 'PAYMENT ISSUE · 7-DAY GRACE'
+                  : 'PAYMENT ISSUE · ACTION REQUIRED'
+                : access?.active
+                  ? 'SERIOUS IS ACTIVE'
+                  : 'CHOOSE SERIOUS'}
             </Text>
             <Text style={[styles.trialBody, { fontSize: responsiveFont(12) }]}>{statusCopy}</Text>
             {access?.billingIssue ? (
@@ -796,9 +764,10 @@ export function KeepFlipSubscriptionScreen({
         </View>
 
         <Text selectable style={styles.finePrint}>
-          KeepFlip records its 7-day trial to your account and device. Store
-          subscription eligibility, billing, renewals, upgrades, and
-          cancellations are controlled by Google Play or the App Store.
+          Serious is $13 per month or $130 per year. Free accounts can use the
+          core workflow within the monthly scan and listing limits. Store
+          billing, renewals, and cancellations are managed by Google Play or
+          the App Store.
         </Text>
       </ScrollView>
     </KeepFlipBackground>

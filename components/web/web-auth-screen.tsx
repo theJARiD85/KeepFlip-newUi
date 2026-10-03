@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { ComponentProps } from 'react';
 import {
   ActivityIndicator,
@@ -27,12 +27,6 @@ import {
   KEEPFLIP_ANALYTICS_EVENTS,
   trackKeepFlipEvent,
 } from '@/services/keepflip-analytics';
-import {
-  keepFlipWebBillingCustomerHasActiveEntitlement,
-  linkKeepFlipWebBillingAccount,
-  presentKeepFlipWebBillingPaywall,
-  presentKeepFlipWebBillingPaywallBeforeAccount,
-} from '@/services/keepflip-web-billing';
 import type { ResellerBuyRules } from '@/services/reseller-buy-rules-service';
 import { completeScanInventoryWalkthrough } from '@/services/user-profile-onboarding-service';
 
@@ -89,27 +83,15 @@ export function WebAuthScreen({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
-  const [preAccountSubscriptionActive, setPreAccountSubscriptionActive] =
-    useState(false);
-  const [openSignupPaywall, setOpenSignupPaywall] = useState(false);
-  const [paywallAccountUserId, setPaywallAccountUserId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // purchases-js requires an actual DOM element. A React Native Web View ref is
-  // a component wrapper, not a stable HTMLDivElement across RNW versions.
-  const paywallHostRef = useRef<HTMLDivElement>(null);
-  const signupPaywallHostRef = useRef<HTMLDivElement>(null);
-  const openingPaywallRef = useRef(false);
-  const openingSignupPaywallRef = useRef(false);
   const signupAccountPendingRef = useRef(false);
   const signupCompletionTrackedRef = useRef(false);
   const loginCompletionTrackedRef = useRef(false);
 
   const isCreateAccount = initialMode === 'create-account';
   const submitLabel = isCreateAccount
-    ? preAccountSubscriptionActive
-      ? 'Create my workspace'
-      : 'Start subscription & continue'
-      : 'Sign in to KeepFlip';
+    ? 'Create free workspace'
+    : 'Sign in to KeepFlip';
 
   const trackAuthenticatedOutcome = useCallback(() => {
     if (isCreateAccount) {
@@ -123,7 +105,7 @@ export function WebAuthScreen({
       signupAccountPendingRef.current = false;
       trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.signupCompleted, {
         method: 'email',
-        flow: 'web_subscription_first',
+        flow: 'free_tier',
       });
       return;
     }
@@ -135,110 +117,6 @@ export function WebAuthScreen({
     });
   }, [isCreateAccount]);
 
-  useEffect(() => {
-    const htmlTarget = paywallHostRef.current;
-    if (!paywallAccountUserId || !htmlTarget || openingPaywallRef.current) return;
-    openingPaywallRef.current = true;
-    let cancelled = false;
-
-    void (async () => {
-      try {
-        await presentKeepFlipWebBillingPaywall(
-          paywallAccountUserId,
-          htmlTarget,
-        );
-
-        // The paywall purchase response is not the access authority. Retry
-        // Appwrite sign-in so the subscription Function can reconcile and
-        // confirm the durable entitlement before the app session is committed.
-        let lastError: unknown = null;
-        for (let attempt = 0; attempt < 6; attempt += 1) {
-          if (attempt) await new Promise((resolve) => setTimeout(resolve, 1_500));
-          if (cancelled) return;
-          try {
-            await signIn(email, password);
-            if (!cancelled) {
-              setPaywallAccountUserId(null);
-              trackAuthenticatedOutcome();
-              await finishAuthenticatedFlow();
-            }
-            return;
-          } catch (error) {
-            lastError = error;
-            if (
-              !(error instanceof KeepFlipAuthError) ||
-              error.code !== 'AUTH_SUBSCRIPTION_REQUIRED'
-            ) {
-              throw error;
-            }
-          }
-        }
-        if (!cancelled) {
-          setLocalError(
-            lastError instanceof Error
-              ? `${lastError.message} If you just purchased, wait a moment and try signing in again.`
-              : 'KeepFlip has not confirmed the subscription yet. Please try again shortly.',
-          );
-          setPaywallAccountUserId(null);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setLocalError(
-            error instanceof Error
-              ? error.message
-              : 'KeepFlip could not open the subscription paywall.',
-          );
-          setPaywallAccountUserId(null);
-        }
-      } finally {
-        openingPaywallRef.current = false;
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      openingPaywallRef.current = false;
-    };
-  }, [email, finishAuthenticatedFlow, password, paywallAccountUserId, signIn, trackAuthenticatedOutcome]);
-
-  useEffect(() => {
-    const htmlTarget = signupPaywallHostRef.current;
-    if (!openSignupPaywall || !htmlTarget || openingSignupPaywallRef.current) return;
-    openingSignupPaywallRef.current = true;
-    let cancelled = false;
-
-    void (async () => {
-      try {
-        const result = await presentKeepFlipWebBillingPaywallBeforeAccount(
-          htmlTarget,
-        );
-        if (
-          keepFlipWebBillingCustomerHasActiveEntitlement(result.customerInfo)
-        ) {
-          if (!cancelled) setPreAccountSubscriptionActive(true);
-        } else if (!cancelled) {
-          setLocalError('KeepFlip could not confirm an active subscription. The account was not created.');
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setLocalError(
-            error instanceof Error
-              ? error.message
-              : 'KeepFlip could not open the subscription paywall.',
-          );
-        }
-      } finally {
-        if (!cancelled) setOpenSignupPaywall(false);
-        openingSignupPaywallRef.current = false;
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      openingSignupPaywallRef.current = false;
-    };
-  }, [openSignupPaywall]);
-
   async function submit() {
     if (isBusy || isSubmitting) return;
 
@@ -249,65 +127,27 @@ export function WebAuthScreen({
         if (name.trim().length < 2 || !/^\S+@\S+\.\S+$/.test(email.trim()) || password.length < 8) {
           throw new Error('Enter your name, a valid email, and a password with at least 8 characters.');
         }
-        if (!preAccountSubscriptionActive) {
-          setOpenSignupPaywall(true);
-          return;
-        }
-
-        let accountUserId: string;
         let sessionEstablished = false;
         try {
-          const createdUser = await createAccount(
+          await createAccount(
             name,
             email,
             password,
           );
           signupAccountPendingRef.current = true;
-          accountUserId = createdUser.$id;
         } catch (accountError) {
-          /*
-           * A browser refresh or a failed post-create link can leave the
-           * Appwrite user behind while the successful anonymous RevenueCat
-           * purchase remains in this tab. Recover that exact account and link
-           * the pending purchase instead of starting another subscription.
-           */
           if (
             accountError instanceof KeepFlipAuthError &&
             accountError.code === 'AUTH_ACCOUNT_EXISTS'
           ) {
             await signIn(email, password);
-            const { account } = getAppwriteCoreServices();
-            accountUserId = (await account.get()).$id;
             sessionEstablished = true;
           } else {
             throw accountError;
           }
         }
 
-        await linkKeepFlipWebBillingAccount(accountUserId);
-        if (!sessionEstablished) {
-          let accessConfirmed = false;
-          for (let attempt = 0; attempt < 6; attempt += 1) {
-            if (attempt) await new Promise((resolve) => setTimeout(resolve, 1_500));
-            try {
-              await signIn(email, password);
-              accessConfirmed = true;
-              break;
-            } catch (error) {
-              if (
-                !(error instanceof KeepFlipAuthError) ||
-                error.code !== 'AUTH_SUBSCRIPTION_REQUIRED'
-              ) {
-                throw error;
-              }
-            }
-          }
-          if (!accessConfirmed) {
-            throw new Error(
-              'Your account was created, but KeepFlip has not confirmed the subscription yet. Try signing in again in a moment.',
-            );
-          }
-        }
+        if (!sessionEstablished) await signIn(email, password);
       } else {
         await signIn(email, password);
         trackAuthenticatedOutcome();
@@ -319,14 +159,6 @@ export function WebAuthScreen({
       const mfaIsPending =
         error instanceof KeepFlipAuthError &&
         error.code === 'AUTH_MFA_REQUIRED';
-      if (
-        error instanceof KeepFlipAuthError &&
-        error.code === 'AUTH_SUBSCRIPTION_REQUIRED' &&
-        error.userId
-      ) {
-        setPaywallAccountUserId(error.userId);
-        return;
-      }
       setLocalError(
         mfaIsPending
           ? null
@@ -369,11 +201,6 @@ export function WebAuthScreen({
   }
 
   async function finishAfterMfa() {
-    if (isCreateAccount) {
-      const { account } = getAppwriteCoreServices();
-      const currentUser = await account.get();
-      await linkKeepFlipWebBillingAccount(currentUser.$id);
-    }
     trackAuthenticatedOutcome();
     await finishAuthenticatedFlow();
   }
@@ -394,7 +221,11 @@ export function WebAuthScreen({
         <View style={[styles.card, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
           <Text style={[styles.eyebrow, { color: colors.goldBright }]}>RESELLER OPERATIONS, EVERYWHERE</Text>
           <Text style={[styles.title, { color: colors.text }]}>Make every flip easier to trust.</Text>
-          <Text style={[styles.subtitle, { color: colors.textMuted }]}>Use the web workspace for inventory, Books, market research, and assistant planning. Open the Android app when it is time to capture an item.</Text>
+          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+            {isCreateAccount
+              ? 'Start with 10 active items, 10 AI scans, and 10 listing generations each month. Books and insights are included. Serious is $13/month or $130/year and includes Flip.'
+              : 'Use the web workspace for inventory, Books, market research, and assistant planning. Open the Android app when it is time to capture an item.'}
+          </Text>
 
           {onBack && !pendingMfaSignIn ? (
             <Pressable
@@ -443,12 +274,6 @@ export function WebAuthScreen({
             value={password}
           /> : null}
 
-          {isCreateAccount && openSignupPaywall ? (
-            <div ref={signupPaywallHostRef} style={{ minHeight: 520, width: '100%' }} />
-          ) : null}
-          {!isCreateAccount && paywallAccountUserId ? (
-            <div ref={paywallHostRef} style={{ minHeight: 520, width: '100%' }} />
-          ) : null}
 
           {localError || errorMessage ? (
             <View style={[styles.errorBox, { backgroundColor: colors.dangerSurface, borderColor: colors.danger }]}>
@@ -511,7 +336,7 @@ export function WebAuthScreen({
           <Text style={[styles.footerText, { color: colors.textMuted }]}>KeepFlip’s live scanner, camera permissions, and native vision pipeline stay in the Android app. Your decisions, records, and realized financial picture stay available here.</Text>
         </View>
         <WebSiteFooter
-          suppressAuthLinks={isSubmitting || openSignupPaywall || Boolean(paywallAccountUserId)}
+          suppressAuthLinks={isSubmitting}
         />
       </ScrollView>
     </KeyboardAvoidingView>

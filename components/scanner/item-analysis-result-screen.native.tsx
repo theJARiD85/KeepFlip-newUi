@@ -50,6 +50,7 @@ import {
 } from "@/services/inventory-service";
 import { refineItemAnalysis } from "@/services/item-analysis-service";
 import { checkKeepFlipAiValuationAccess } from "@/services/keepflip-subscription-service";
+import { reportKeepFlipLimitReached } from "@/services/keepflip-limit-alert-service";
 import { getItemPhotos } from "@/services/itemPhotoService";
 import { neutralizeMarketplaceBrand } from "@/services/market-copy";
 import {
@@ -390,7 +391,6 @@ export function ItemAnalysisResultScreen() {
 
   useEffect(() => {
     if (
-      !isFreeTierAccount ||
       !scannerSession ||
       scannerSession.state.status !== 'result' ||
       notifiedFreeScanSessionRef.current === scannerSession.id
@@ -404,6 +404,15 @@ export function ItemAnalysisResultScreen() {
     void checkKeepFlipAiValuationAccess()
       .then(({ limit, usage }) => {
         if (cancelled || limit == null || usage == null) return;
+        if (usage >= limit) {
+          reportKeepFlipLimitReached({
+            category: 'scan',
+            limit,
+            plan: isFreeTierAccount ? 'free' : 'serious',
+            usage,
+          });
+        }
+        if (!isFreeTierAccount) return;
         const scansLeft = Math.max(0, limit - usage);
         setFreeScanNotice(
           scansLeft === 0

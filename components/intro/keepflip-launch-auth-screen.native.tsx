@@ -1,10 +1,8 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 import {
   useState,
-  useEffect,
   useRef,
   type ComponentProps,
   type ComponentRef,
@@ -13,7 +11,6 @@ import {
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -45,8 +42,6 @@ import {
 import { getAppwriteCoreServices } from '@/lib/appwrite';
 import {
   KEEPFLIP_PLAN_DEFINITIONS,
-  linkKeepFlipPreAccountPurchase,
-  loadKeepFlipPreAccountSubscriptionAccess,
   type KeepFlipBillingCadence,
   type KeepFlipPlanId,
 } from '@/services/keepflip-subscription-service';
@@ -164,13 +159,13 @@ function PlanSelection({
         <View style={styles.checkoutBannerCopy}>
           <Text style={[styles.checkoutBannerTitle, { fontSize: responsiveFont(8) }]}>
             {migrationMode
-              ? 'TRIAL ELIGIBILITY IS CHECKED IN GOOGLE PLAY'
-              : '7 DAYS FREE ON EITHER BILLING OPTION'}
+              ? 'SERIOUS / PLAN & BILLING'
+              : 'SERIOUS / PLAN & BILLING'}
           </Text>
           <Text style={[styles.checkoutBannerBody, { fontSize: responsiveFont(12) }]}>
             {beforeAccount
-              ? 'Choose a plan first. Google Play must confirm the subscription before KeepFlip creates your account session. Your account details come next.'
-              : 'Choose a plan now. After your KeepFlip account is created, the selected plan opens its Google Play signup sheet right here.'}
+              ? 'Serious is $13 per month or $130 per year. No timed trial is included.'
+              : 'Serious is $13 per month or $130 per year. No timed trial is included.'}
           </Text>
         </View>
       </View>
@@ -232,7 +227,7 @@ function PlanSelection({
             cadence === 'annual'
               ? definition.id === 'hobbyist'
                 ? 'SAVE $20 / YEAR'
-                : 'SAVE $50 / YEAR'
+                : 'SAVE $26 / YEAR'
               : null;
 
           return (
@@ -276,17 +271,6 @@ function PlanSelection({
                 <Text style={styles.checkoutSavingsLine}>{savings}</Text>
               ) : null}
 
-              <View style={styles.checkoutTrialIncludedRow}>
-                <IconSymbol
-                  color={theme.colors.scannerCyan}
-                  name="sparkles"
-                  size={14}
-                />
-                <Text style={[styles.checkoutTrialIncludedText, { fontSize: responsiveFont(7) }]}>
-                  7-DAY FREE TRIAL INCLUDED
-                </Text>
-              </View>
-
               <Text style={[styles.checkoutPlanDescription, { fontSize: responsiveFont(12) }]}>
                 {definition.description}
               </Text>
@@ -321,7 +305,7 @@ function PlanSelection({
               </View>
               <Text style={[styles.checkoutAfterTrialText, { fontSize: responsiveFont(9) }]}>
                 {price} {cadence === 'annual' ? 'per year' : 'per month'}
-                {' '}after any eligible trial. Cancel anytime through Google Play.
+                {' '}with no timed trial. Cancel anytime through Google Play.
               </Text>
             </Pressable>
           );
@@ -345,9 +329,8 @@ function MigrationNotice() {
         <Text style={[styles.migrationEyebrow, { fontSize: responsiveFont(8) }]}>EXISTING ACCOUNT UPDATE</Text>
         <Text style={[styles.migrationTitle, { fontSize: responsiveFont(15) }]}>KeepFlip is moving to subscriptions.</Text>
         <Text style={[styles.migrationBody, { fontSize: responsiveFont(12) }]}>
-          Your existing account stays yours. During this rollout, choose a
-          plan below to check eligibility for a one-week store trial and keep your inventory and
-          history connected.
+          Your existing account and history stay connected. Serious is $13 per
+          month or $130 per year. KeepFlip has no timed trial.
         </Text>
       </View>
     </View>
@@ -398,8 +381,6 @@ export function KeepFlipLaunchAuthScreen({
   });
   const [localError, setLocalError] = useState<string | null>(null);
   const [createdUserId, setCreatedUserId] = useState<string | null>(null);
-  const [preAccountSubscriptionActive, setPreAccountSubscriptionActive] =
-    useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [profileSavedForAccount, setProfileSavedForAccount] = useState(true);
   const signupAnalyticsTrackedRef = useRef(false);
@@ -410,27 +391,7 @@ export function KeepFlipLaunchAuthScreen({
   const accountReady =
     mode === 'create-account' &&
     Boolean(createdUserId || (status === 'signed-in' && user?.$id));
-  const needsPreAccountSubscription =
-    isPreAccountSignup && !preAccountSubscriptionActive && !accountReady;
-
-  useEffect(() => {
-    if (!isPreAccountSignup) return;
-
-    let cancelled = false;
-    void loadKeepFlipPreAccountSubscriptionAccess()
-      .then((access) => {
-        if (!cancelled && access?.active) {
-          setPreAccountSubscriptionActive(true);
-        }
-      })
-      .catch(() => undefined);
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isPreAccountSignup]);
-
-  const submit = async (freeTierSignup = false) => {
+  const submit = async () => {
     if (isBusy || isSubmitting || status === 'setup') return;
 
     const normalizedEmail = email.trim().toLowerCase();
@@ -464,71 +425,8 @@ export function KeepFlipLaunchAuthScreen({
 
     setIsSubmitting(true);
     try {
-      if (needsPreAccountSubscription && !freeTierSignup) {
-        const result = await RevenueCatUI.presentPaywall();
-        if (
-          result !== PAYWALL_RESULT.PURCHASED &&
-          result !== PAYWALL_RESULT.RESTORED
-        ) {
-          return;
-        }
-        const access = await loadKeepFlipPreAccountSubscriptionAccess();
-        if (!access?.active) {
-          throw new Error(
-            'KeepFlip could not confirm an active Google Play subscription. Try again or restore purchases.',
-          );
-        }
-
-        setPreAccountSubscriptionActive(true);
-        setLocalError(null);
-        return;
-      }
-
       if (mode === 'sign-in') {
-        try {
-          await signIn(normalizedEmail, password);
-        } catch (error) {
-          if (
-            !(error instanceof KeepFlipAuthError) ||
-            error.code !== 'AUTH_SUBSCRIPTION_REQUIRED' ||
-            !error.userId
-          ) {
-            throw error;
-          }
-
-          const paywallResult = await RevenueCatUI.presentPaywall();
-          if (
-            paywallResult !== PAYWALL_RESULT.PURCHASED &&
-            paywallResult !== PAYWALL_RESULT.RESTORED
-          ) {
-            return;
-          }
-
-          // Appwrite access is restored only after Subscription Police sees
-          // the entitlement. RevenueCat's immediate purchase result is not
-          // sufficient to open the authenticated part of the app.
-          let accessConfirmed = false;
-          for (let attempt = 0; attempt < 6; attempt += 1) {
-            if (attempt) await new Promise((resolve) => setTimeout(resolve, 1_500));
-            try {
-              await signIn(normalizedEmail, password);
-              accessConfirmed = true;
-              break;
-            } catch (retryError) {
-              if (
-                !(retryError instanceof KeepFlipAuthError) ||
-                retryError.code !== 'AUTH_SUBSCRIPTION_REQUIRED'
-              ) {
-                throw retryError;
-              }
-            }
-          }
-          if (!accessConfirmed) {
-            throw new Error(
-              'KeepFlip has not confirmed your subscription yet. Wait a moment, then try signing in again.',
-            );
-          }
-        }
+        await signIn(normalizedEmail, password);
         trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.loginCompleted, {
           method: 'email',
         });
@@ -539,13 +437,12 @@ export function KeepFlipLaunchAuthScreen({
         return;
       }
 
+      const hadAccount = accountReady;
       let accountUserId =
         createdUserId || (status === 'signed-in' ? user?.$id ?? null : null);
       let profileSaved = profileSavedForAccount;
-
-      if (freeTierSignup && Platform.OS === 'android' && isPreAccountSignup) {
-        let accountUserId: string;
-        let sessionEstablished = false;
+      let sessionEstablished = status === 'signed-in';
+      if (!accountUserId) {
         try {
           const createdUser = await createAccount(
             normalizedName,
@@ -553,6 +450,7 @@ export function KeepFlipLaunchAuthScreen({
             password,
           );
           accountUserId = createdUser.$id;
+          setCreatedUserId(accountUserId);
         } catch (accountError) {
           if (
             !(accountError instanceof KeepFlipAuthError) ||
@@ -565,122 +463,37 @@ export function KeepFlipLaunchAuthScreen({
           const { account } = getAppwriteCoreServices();
           accountUserId = (await account.get()).$id;
         }
-        if (!sessionEstablished) await signIn(normalizedEmail, password);
+      }
+      if (!accountUserId) throw new Error('KeepFlip could not create your account.');
+      if (!sessionEstablished) await signIn(normalizedEmail, password);
 
-        if (!signupAnalyticsTrackedRef.current) {
-          trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.signupCompleted, {
-            method: 'email',
-            flow: 'free_tier',
-          });
-          signupAnalyticsTrackedRef.current = true;
-        }
-
-        const { account } = getAppwriteCoreServices();
-        const currentUser = await account.get();
-        if (initialBuyRules) {
-          try {
-            await completeScanInventoryWalkthrough(
-              accountUserId,
-              currentUser.name || normalizedName,
-              initialBuyRules,
+      const { account } = getAppwriteCoreServices();
+      const currentUser = await account.get();
+      if (initialBuyRules) {
+        try {
+          await completeScanInventoryWalkthrough(
+            accountUserId,
+            currentUser.name || normalizedName,
+            initialBuyRules,
+          );
+        } catch (error) {
+          profileSaved = false;
+          setProfileSavedForAccount(false);
+          if (__DEV__) {
+            console.warn(
+              '[KeepFlip][Onboarding] Seller setup could not be saved after account creation:',
+              error,
             );
-          } catch (error) {
-            profileSaved = false;
-            setProfileSavedForAccount(false);
-            if (__DEV__) {
-              console.warn(
-                '[KeepFlip][Onboarding] Free-tier profile setup could not be saved:',
-                error,
-              );
-            }
           }
         }
-        void Haptics.notificationAsync(
-          Haptics.NotificationFeedbackType.Success,
-        ).catch(() => undefined);
-        onAuthenticated?.({ ...selection, profileSaved });
-        return;
       }
 
-      if (isPreAccountSignup) {
-        if (!preAccountSubscriptionActive) {
-          throw new Error(
-            'Complete the Google Play subscription before creating your KeepFlip session.',
-          );
-        }
-
-        if (!accountUserId) {
-          const createdUser = await createAccount(
-            normalizedName,
-            normalizedEmail,
-            password,
-          );
-          accountUserId = createdUser.$id;
-          setCreatedUserId(accountUserId);
-        }
-
-        // Linking occurs before signIn(). If linking or sign-in fails, the
-        // account remains sessionless and the same screen can retry safely.
-        await linkKeepFlipPreAccountPurchase(accountUserId);
-        if (status !== 'signed-in') {
-          let accessConfirmed = false;
-          for (let attempt = 0; attempt < 6; attempt += 1) {
-            if (attempt) await new Promise((resolve) => setTimeout(resolve, 1_500));
-            try {
-              await signIn(normalizedEmail, password);
-              accessConfirmed = true;
-              break;
-            } catch (error) {
-              if (
-                !(error instanceof KeepFlipAuthError) ||
-                error.code !== 'AUTH_SUBSCRIPTION_REQUIRED'
-              ) {
-                throw error;
-              }
-            }
-          }
-          if (!accessConfirmed) {
-            throw new Error(
-              'Your account was created, but KeepFlip has not confirmed the subscription yet. Try signing in again in a moment.',
-            );
-          }
-        }
-
-        if (!signupAnalyticsTrackedRef.current) {
-          trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.signupCompleted, {
-            method: 'email',
-            flow: 'subscription_first',
-          });
-          signupAnalyticsTrackedRef.current = true;
-        }
-
-        const { account } = getAppwriteCoreServices();
-        const currentUser = await account.get();
-        if (initialBuyRules) {
-          try {
-            await completeScanInventoryWalkthrough(
-              accountUserId,
-              currentUser.name || normalizedName,
-              initialBuyRules,
-            );
-          } catch (error) {
-            profileSaved = false;
-            setProfileSavedForAccount(false);
-            if (__DEV__) {
-              console.warn(
-                '[KeepFlip][Onboarding] Seller setup could not be saved after account creation:',
-                error,
-              );
-            }
-          }
-        }
-      } else {
-        // Every create-account route must use the subscription-first branch.
-        // Keeping a second sign-up-then-purchase path here would recreate the
-        // exact loophole this screen is intended to prevent.
-        throw new Error(
-          'KeepFlip requires an active subscription before creating an account.',
-        );
+      if (!hadAccount && !signupAnalyticsTrackedRef.current) {
+        trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.signupCompleted, {
+          method: 'email',
+          flow: 'free_tier',
+        });
+        signupAnalyticsTrackedRef.current = true;
       }
 
       void Haptics.notificationAsync(
@@ -688,28 +501,17 @@ export function KeepFlipLaunchAuthScreen({
       ).catch(() => undefined);
       onAuthenticated?.({ ...selection, profileSaved });
     } catch (error) {
-      const wasCancelled =
-        Boolean(
-          error &&
-          typeof error === 'object' &&
-          'userCancelled' in error &&
-          (error as { userCancelled?: unknown }).userCancelled === true,
-        );
       const mfaIsPending =
         error instanceof KeepFlipAuthError &&
         error.code === 'AUTH_MFA_REQUIRED';
       setLocalError(
         mfaIsPending
           ? null
-          : wasCancelled
-          ? needsPreAccountSubscription
-            ? 'The Google Play signup was canceled. No KeepFlip account or session was created.'
-            : 'The Google Play signup was canceled. Your KeepFlip account is ready; choose a plan and try again.'
-          : error instanceof Error
+        : error instanceof Error
             ? error.message
-            : 'KeepFlip could not complete authentication and subscription signup. Please try again.',
+            : 'KeepFlip could not complete authentication. Please try again.',
       );
-      if (!wasCancelled && !mfaIsPending) {
+      if (!mfaIsPending) {
         void Haptics.notificationAsync(
           Haptics.NotificationFeedbackType.Error,
         ).catch(() => undefined);
@@ -764,7 +566,7 @@ export function KeepFlipLaunchAuthScreen({
               {migrationMode
                 ? 'Sign in to your existing KeepFlip account, then choose the tier you want to try.'
                 : isPreAccountSignup
-                ? 'Enter your details first. KeepFlip will open its secure subscription paywall before creating your account.'
+                ? 'Start with the full KeepFlip workflow: 10 active items, 10 scans, and 10 listing generations each month. Serious is $13/month or $130/year and includes Flip.'
                 : mode === 'create-account'
                   ? 'Flip has your seller setup. Add your login details and choose how you want KeepFlip to work for you.'
                   : 'Sign in to continue to your KeepFlip command center.'}
@@ -883,8 +685,8 @@ export function KeepFlipLaunchAuthScreen({
                 />
                 <Text style={[styles.accountReadyText, { fontSize: responsiveFont(12) }]}>
                   {isPreAccountSignup
-                    ? 'Your subscription is active. Finish the secure sign-in step to open KeepFlip.'
-                    : 'Your KeepFlip account is ready. Continue to open Google Play for the selected plan.'}
+                    ? 'Your free account is ready. Continue to open KeepFlip.'
+                    : 'Your KeepFlip account is ready. Continue to open KeepFlip.'}
                 </Text>
               </View>
             )}
@@ -893,11 +695,9 @@ export function KeepFlipLaunchAuthScreen({
               accessibilityLabel={
                 mode === 'sign-in'
                   ? 'Enter KeepFlip'
-                  : needsPreAccountSubscription
-                    ? 'Continue to KeepFlip subscription paywall'
-                    : accountReady
-                      ? 'Start selected KeepFlip plan'
-                      : 'Create KeepFlip account and start trial'
+                  : accountReady
+                    ? 'Continue to KeepFlip'
+                    : 'Create a free KeepFlip account'
               }
               accessibilityRole="button"
               accessibilityState={{ busy: isBusy || isSubmitting, disabled: isBusy || isSubmitting || setupRequired }}
@@ -912,13 +712,9 @@ export function KeepFlipLaunchAuthScreen({
                   <Text style={[styles.submitText, { fontSize: responsiveFont(11) }]}>
                     {mode === 'sign-in'
                       ? 'ENTER KEEPFLIP'
-                      : needsPreAccountSubscription
-                        ? 'CONTINUE TO SUBSCRIPTION'
-                        : isPreAccountSignup
-                          ? 'CREATE ACCOUNT & ENTER KEEPFLIP'
-                          : accountReady
-                            ? 'START SELECTED PLAN'
-                            : 'CREATE ACCOUNT & START TRIAL'}
+                      : accountReady
+                        ? 'CONTINUE TO KEEPFLIP'
+                        : 'CREATE FREE ACCOUNT & ENTER KEEPFLIP'}
                   </Text>
                   <IconSymbol color={theme.colors.textOnAccent} name="arrow.right" size={19} />
                 </>
@@ -929,32 +725,6 @@ export function KeepFlipLaunchAuthScreen({
               <FacebookSignInButton
                 disabled={isBusy || isSubmitting || setupRequired}
               />
-            ) : null}
-
-            {Platform.OS === 'android' && mode === 'create-account' && isPreAccountSignup && !accountReady ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityState={{ busy: isBusy || isSubmitting, disabled: isBusy || isSubmitting || setupRequired }}
-                disabled={isBusy || isSubmitting || setupRequired}
-                onPress={() => void submit(true)}
-                style={({ pressed }) => ({
-                  alignItems: 'center',
-                  borderColor: theme.colors.divider,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  marginTop: 10,
-                  minHeight: 48,
-                  justifyContent: 'center',
-                  opacity: pressed ? 0.75 : 1,
-                  paddingHorizontal: 14,
-                })}>
-                <Text style={{ color: theme.colors.text, fontSize: responsiveFont(10), fontWeight: '700' }}>
-                  Continue with free access · 20 AI valuations/month
-                </Text>
-                <Text style={{ color: theme.colors.textMuted, fontSize: responsiveFont(8), marginTop: 3 }}>
-                  Full workspace on Android and web · usage limits apply
-                </Text>
-              </Pressable>
             ) : null}
 
             {mode === 'create-account' ? (

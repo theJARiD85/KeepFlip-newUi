@@ -15,8 +15,6 @@ export const USER_PROFILE_BUY_RULES_COLUMN = 'resellerBuyRulesJson';
 export const USER_PROFILE_TRIALING_COLUMN = 'isTrialing';
 export const USER_PROFILE_TRIAL_END_DATE_COLUMN = 'trialEndDate';
 
-const PROFILE_TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
-
 type UserProfileRow = {
   $id: string;
   createdAt?: string;
@@ -175,11 +173,7 @@ export async function ensureUserProfile({
   const existing = await maybeFindUserProfileRow(cleanUserId);
   if (existing) return existing;
 
-  const nowDate = new Date();
-  const now = nowDate.toISOString();
-  const trialEndDate = new Date(
-    nowDate.getTime() + PROFILE_TRIAL_DURATION_MS,
-  ).toISOString();
+  const now = new Date().toISOString();
   const cleanDisplayName = displayName?.replace(/\s+/g, ' ').trim().slice(0, 100);
 
   try {
@@ -194,11 +188,10 @@ export async function ensureUserProfile({
         displayName: cleanDisplayName || 'KeepFlip Reseller',
         defaultCurrency: 'USD',
         createdAt: now,
-        // Let a first-run profile honestly reflect its seven-day trial right
-        // away. The Subscription Police Function recomputes and locks the
-        // authoritative cutoff from Appwrite's server-created $createdAt.
-        isTrialing: true,
-        trialEndDate,
+        // These legacy required columns remain in the profile schema, but
+        // new accounts start on the Free tier without a timed trial.
+        isTrialing: false,
+        trialEndDate: now,
         updatedAt: now,
       },
       permissions: profilePermissions(cleanUserId),

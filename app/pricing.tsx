@@ -15,7 +15,8 @@ import {
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import {
-  KEEPFLIP_FREE_ANDROID_SCANS_PER_MONTH,
+  KEEPFLIP_FREE_LISTING_GENERATIONS_PER_MONTH,
+  KEEPFLIP_FREE_SCANS_PER_MONTH,
   KEEPFLIP_GOOGLE_PLAY_URL,
   KEEPFLIP_PUBLIC_PRICING_USD,
   KEEPFLIP_SITE_URL,
@@ -25,7 +26,7 @@ import { getKeepFlipThemeColors } from '@/constants/keepflip-theme';
 const pricingMetadata = {
   canonicalPath: '/pricing',
   description:
-    'See KeepFlip Serious Reseller pricing: $18 per month or $180 per year at US web checkout, with every feature and up to 250 active listings.',
+    'See KeepFlip Serious Reseller pricing: $13 per month or $130 per year, with unlimited active inventory items, 100 monthly AI scans, unlimited listing generations, and Flip.',
   title: 'KeepFlip pricing | One plan for resellers',
   structuredData: {
     '@context': 'https://schema.org',
@@ -66,7 +67,7 @@ export default function PricingPage() {
         metadata={pricingMetadata}
         eyebrow="ONE PAID PLAN"
         title="One plan for the work of a flip."
-        intro="Serious Reseller includes every KeepFlip feature. US web checkout is $18 per month or $180 per year."
+        intro="Serious Reseller includes every KeepFlip feature. US web checkout is $13 per month or $130 per year."
       >
         <WebContentSection title="Serious Reseller">
           <WebCopy>
@@ -110,17 +111,19 @@ export default function PricingPage() {
               </WebCopy>
             ) : null}
             <WebBulletList
-              items={[
-                'Every KeepFlip feature is included.',
-                'Up to 250 active listings total.',
-                'US web checkout in US dollars.',
-              ]}
+            items={[
+              'Unlimited active inventory items.',
+              '100 AI scans and unlimited listing generations each month.',
+              'Flip and the full KeepFlip workflow are included.',
+              'Up to 250 active marketplace listings.',
+              'US web checkout in US dollars.',
+            ]}
             />
             <WebActionLink href="/meet-flip" label="Continue to setup and choose your billing period" />
           </View>
           <BillingComparisonTable colors={colors} />
           <WebCopy>
-            Your checkout shows the billing period and amount before you confirm. The current web checkout does not include a free trial.
+            There is no timed trial. Free accounts can use the full workflow within the Free tier limits.
           </WebCopy>
         </WebContentSection>
 
@@ -131,21 +134,22 @@ export default function PricingPage() {
               'Count acquisition cost, fees, shipping, and discounts before buying.',
               'Track inventory, storage location, quantity, and eBay listing status.',
               'Review sales, expenses, fees, and inventory costs in Books.',
-              'Use every KeepFlip feature, with up to 250 active listings total.',
+              'Use the full workflow for AI valuation, inventory, Books, and insights.',
+              'Serious includes Flip, 100 AI scans each month, and unlimited listing generations.',
             ]}
           />
         </WebContentSection>
 
         <WebContentSection eyebrow="FREE ACCESS" title="Start with the full KeepFlip workspace.">
           <WebCopy>
-            Create a free account in the Android app, then use the KeepFlip workspace on Android and web with up to 10 inventory items, 10 active listings, and {KEEPFLIP_FREE_ANDROID_SCANS_PER_MONTH} AI valuations per month. No card is required. Web checkout is for paid plans and does not include a free trial.
+            Create a free account and use the full KeepFlip workflow, including AI valuation, inventory, Books, and insights. Free includes up to 10 active items, {KEEPFLIP_FREE_SCANS_PER_MONTH} AI scans per month, and {KEEPFLIP_FREE_LISTING_GENERATIONS_PER_MONTH} listing generations per month. Flip is included with Serious. No card or timed trial is required.
           </WebCopy>
           <WebActionLink href={KEEPFLIP_GOOGLE_PLAY_URL} label="Start free on Android" />
         </WebContentSection>
 
         <WebContentSection eyebrow="GOOGLE PLAY" title="The store shows its own checkout price.">
           <WebCopy>
-            Google Play sets the amount shown in its purchase screen. Its public listing currently reports in-app purchases from $18 to $180. Review the exact plan, billing period, and price in Google Play before confirming a purchase.
+            Serious is $13 per month or $130 per year. Review the exact plan, billing period, and amount shown by the store before confirming a purchase.
           </WebCopy>
           <WebTextLink href={KEEPFLIP_GOOGLE_PLAY_URL} label="See KeepFlip on Google Play" />
         </WebContentSection>
@@ -154,7 +158,7 @@ export default function PricingPage() {
           <View style={styles.answerGrid}>
             <WebInfoCard title="Is there a free trial?">
               <WebCopy>
-                The current web checkout does not offer a free trial. We do not advertise one here.
+                KeepFlip has no timed trial. The Free tier is available as soon as you create an account.
               </WebCopy>
             </WebInfoCard>
             <WebInfoCard title="What happens if a scan is wrong?">
@@ -178,9 +182,16 @@ function BillingComparisonTable({
 }: {
   colors: ReturnType<typeof getKeepFlipThemeColors>;
 }) {
+  const monthly = KEEPFLIP_PUBLIC_PRICING_USD.web.monthly;
+  const annual = KEEPFLIP_PUBLIC_PRICING_USD.web.annual;
+  const annualSavings = KEEPFLIP_PUBLIC_PRICING_USD.web.annualSavings;
   const rows = [
-    ['Monthly', '$18 each month', '$216 over 12 months'],
-    ['Annual', '$180 once per year', '$15/month equivalent · save $36'],
+    ['Monthly', `$${monthly} each month`, `$${monthly * 12} over 12 months`],
+    [
+      'Annual',
+      `$${annual} once per year`,
+      `$${(annual / 12).toFixed(2)}/month equivalent · save $${annualSavings}`,
+    ],
   ] as const;
 
   if (Platform.OS !== 'web') {

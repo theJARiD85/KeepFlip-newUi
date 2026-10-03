@@ -20,6 +20,7 @@ import {
   trackKeepFlipEvent,
 } from '@/services/keepflip-analytics';
 import { trackTenjinEvent } from '@/services/tenjin-attribution-service';
+import { reportKeepFlipLimitReached } from '@/services/keepflip-limit-alert-service';
 
 const ANALYSIS_SNAPSHOT_COLUMN = 'analysisSnapshotJson';
 const INVENTORY_RESELLER_COLUMNS = [
@@ -307,6 +308,17 @@ async function executeInventorySubscriptionRequest<T>(
     execution.responseStatusCode >= 300 ||
     payload.ok !== true
   ) {
+    if (payload.code === 'QUOTA_LIMIT_REACHED') {
+      const details =
+        payload.details && typeof payload.details === 'object' && !Array.isArray(payload.details)
+          ? (payload.details as Record<string, unknown>)
+          : {};
+      const limit = Number(details.limit);
+      const usage = Number(details.usage);
+      if (details.quota === 'inventory' && Number.isSafeInteger(limit) && Number.isSafeInteger(usage)) {
+        reportKeepFlipLimitReached({ category: 'inventory', limit, plan: 'free', usage });
+      }
+    }
     throw new Error(
       typeof payload.error === 'string'
         ? payload.error
@@ -322,7 +334,23 @@ async function createInventoryItemRow(
 ): Promise<InventoryRow> {
   const response = await executeInventorySubscriptionRequest<{
     inventoryItem?: InventoryRow;
+    limit?: number | null;
+    usage?: number;
   }>('/inventory/items/create', { rowId: ID.unique(), data });
+  if (
+    typeof response.limit === 'number' &&
+    Number.isSafeInteger(response.limit) &&
+    typeof response.usage === 'number' &&
+    Number.isSafeInteger(response.usage) &&
+    response.usage >= response.limit
+  ) {
+    reportKeepFlipLimitReached({
+      category: 'inventory',
+      limit: response.limit,
+      plan: 'free',
+      usage: response.usage,
+    });
+  }
   if (!response.inventoryItem) {
     throw new Error('KeepFlip did not return the saved inventory item.');
   }

@@ -11,6 +11,7 @@ import { AppState } from 'react-native';
 import type { RealtimeSubscription } from 'react-native-appwrite';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
+import { KeepFlipLimitAlert } from '@/components/subscription/keepflip-limit-alert';
 import {
   keepFlipPlanAllows,
   keepFlipPlanLimit,
@@ -55,6 +56,7 @@ type KeepFlipSubscriptionContextValue = {
       | 'inventoryItems'
       | 'concurrentActiveListings'
       | 'monthlyPublishQuota'
+      | 'listingGenerationsPerMonth'
       | 'activeListingsPerMonth'
       | 'aiValuationScansPerMonth',
   ) => number | null;
@@ -64,23 +66,8 @@ function preserveKnownTrialHistory(
   access: KeepFlipSubscriptionSnapshot['access'],
   current: KeepFlipSubscriptionSnapshot | null,
 ) {
-  const profileTrialEndsAt = current?.profileTrial?.trialEndDate;
-  const profileTrialStillActive =
-    current?.access.active === true &&
-    current.access.trialSource === 'profile' &&
-    typeof profileTrialEndsAt === 'string' &&
-    Number.isFinite(Date.parse(profileTrialEndsAt)) &&
-    Date.parse(profileTrialEndsAt) > Date.now();
-
-  // RevenueCat knows store entitlements, not KeepFlip's first-party trial.
-  // Do not let an inactive store update erase valid server-verified access.
-  if (!access.active && profileTrialStillActive && current) {
-    return {
-      ...current.access,
-      trialUsed: true,
-    };
-  }
-
+  // Keep historical purchase metadata for account display, but do not preserve
+  // first-party profile trials as active access.
   return {
     ...access,
     trialUsed:
@@ -470,11 +457,8 @@ export function KeepFlipSubscriptionProvider({
 
   const value = useMemo<KeepFlipSubscriptionContextValue>(
     () => {
-      const profileTrialActive =
-        snapshot?.access.active === true &&
-        snapshot.access.trialSource === 'profile';
       let activePlan: KeepFlipPlanId | null = null;
-      if (snapshot?.access.active === true && !profileTrialActive) {
+      if (snapshot?.access.active === true) {
         activePlan = snapshot.access.plan;
       }
       const serverAccessVerified =
@@ -492,7 +476,6 @@ export function KeepFlipSubscriptionProvider({
           ((!snapshot?.access.active && freeFeatures.includes(feature)) ||
             (serverAccessVerified &&
               (freeFeatures.includes(feature) ||
-                profileTrialActive ||
                 keepFlipPlanAllows(activePlan, feature)))),
         errorMessage: error,
         limitFor: (limit) => {
@@ -501,13 +484,6 @@ export function KeepFlipSubscriptionProvider({
             return snapshot?.access.limits[limit] ?? 0;
           }
           if (!serverAccessVerified) return 0;
-          if (profileTrialActive) {
-            return limit === 'aiValuationScansPerMonth'
-              ? 20
-              : limit === 'inventoryItems'
-                ? 10
-                : null;
-          }
           return keepFlipPlanLimit(activePlan, limit);
         },
         manage,
@@ -538,6 +514,7 @@ export function KeepFlipSubscriptionProvider({
   return (
     <KeepFlipSubscriptionContext.Provider value={value}>
       {children}
+      <KeepFlipLimitAlert />
     </KeepFlipSubscriptionContext.Provider>
   );
 }

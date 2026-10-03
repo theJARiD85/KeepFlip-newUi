@@ -19,6 +19,7 @@ import {
   isFlipGuideId,
   type FlipGuideId,
 } from '@/services/keepflip-guide-service';
+import { checkKeepFlipCapabilityAccess } from '@/services/keepflip-subscription-service';
 
 export type AssistantTaskStatus = 'open' | 'completed' | 'cancelled';
 export type AssistantTaskSource = 'user' | 'assistant' | 'system';
@@ -1585,6 +1586,10 @@ export async function runKeepFlipAssistant({
 }): Promise<KeepFlipAssistantRun> {
   const cleanMessage = cleanText(message, 2_000);
   if (!cleanMessage) throw new Error('Tell Flip what you need help with.');
+  const flipAccess = await checkKeepFlipCapabilityAccess('flip_assistant');
+  if (!flipAccess.allowed) {
+    throw new Error('Flip is part of Serious Reseller. Subscribe for $13/month or $130/year.');
+  }
   const fallback = localAssistantReply(cleanMessage, context);
   const functionId = assistantFunctionId();
   const cleanConversationId = conversationId.trim();

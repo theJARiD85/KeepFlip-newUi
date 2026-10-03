@@ -1,6 +1,7 @@
 import { type Href, usePathname, useRouter } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
+import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
 import { FlipConversationalAssistantPanel } from '@/components/command-center/flip-conversational-assistant-panel';
 import {
   FlipGuidanceOverlay,
@@ -14,12 +15,32 @@ import type { AssistantRoute } from '@/services/keepflip-assistant-service';
 function WebFlipAssistantScreen() {
   const pathname = usePathname();
   const router = useRouter();
+  const { canUse } = useKeepFlipSubscription();
   const {
     webContentMaxWidth,
     webContentWidth,
     webPageGutter,
     webResponsiveFont,
   } = useResponsiveLayout();
+
+  if (!canUse('flip_assistant')) {
+    return (
+      <View style={[styles.page, { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter }]}>
+        <View style={styles.gateCard}>
+          <Text style={[styles.eyebrow, { fontSize: webResponsiveFont(12) }]}>SERIOUS FEATURE</Text>
+          <Text style={[styles.title, { fontSize: webResponsiveFont(24) }]}>Flip is part of Serious Reseller.</Text>
+          <Text style={[styles.body, { fontSize: webResponsiveFont(14), lineHeight: webResponsiveFont(20) }]}>Keep using the full Free workflow. Serious is $13/month or $130/year and includes Flip.</Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/subscription' as Href)}
+            style={({ pressed }) => [styles.gateButton, pressed && styles.gateButtonPressed]}
+          >
+            <Text style={styles.gateButtonText}>View Serious</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
 
   const navigate = (route: AssistantRoute) => {
     router.push(route as Href);
@@ -98,5 +119,33 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     fontFamily: theme.fonts.body,
     maxWidth: 720,
+  },
+  gateCard: {
+    alignSelf: 'center',
+    backgroundColor: theme.colors.backgroundRaised,
+    borderColor: theme.colors.accentGoldBorder,
+    borderRadius: 18,
+    borderWidth: 1,
+    gap: 12,
+    marginTop: 44,
+    maxWidth: 620,
+    padding: 24,
+    width: '100%',
+  },
+  gateButton: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: theme.colors.gold,
+    borderRadius: 12,
+    justifyContent: 'center',
+    marginTop: 4,
+    minHeight: 46,
+    paddingHorizontal: 20,
+  },
+  gateButtonPressed: { opacity: 0.8 },
+  gateButtonText: {
+    color: theme.colors.textOnAccent,
+    fontFamily: theme.fonts.bold,
+    fontWeight: '900',
   },
 });

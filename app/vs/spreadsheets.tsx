@@ -32,7 +32,7 @@ export default function SpreadsheetComparisonPage() {
           },
           {
             area: 'Published price',
-            keepFlip: 'US web checkout: $18/month or $180/year.',
+            keepFlip: 'US web checkout: $13/month or $130/year. KeepFlip has no timed trial; the Free tier does not expire.',
             competitor: 'Spreadsheet app and template costs vary; there is no single price to compare.',
           },
         ],

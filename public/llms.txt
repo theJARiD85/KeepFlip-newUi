@@ -5,17 +5,17 @@
 ## Product
 
 - KeepFlip has an Android app and a browser workspace.
-- Free accounts can use the KeepFlip workspace on Android and web, with up to 10 inventory items, 10 active listings, and 20 AI valuations per month. Free account setup starts in the Android app and does not require a credit card.
+- Free accounts can use the KeepFlip workspace on Android and web, with up to 10 active inventory items, 10 AI scans, and 10 listing generations per month. Books and insights are included; Flip is part of Serious Reseller.
 - Scan and resale values are estimates. Resellers review the evidence and make their own buy decisions.
 - KeepFlip connects to eBay through eBay sign-in and authorized eBay APIs for selected seller and listing details.
 - KeepFlip is not a five-marketplace crosslisting tool.
 
 ## Pricing
 
-- The US web Serious Reseller plan is $18 per month or $180 per year. Annual billing saves $36 compared with 12 monthly payments.
-- One paid plan includes every KeepFlip feature and up to 250 active listings total.
-- The web checkout does not currently include a free trial.
-- Google Play shows its purchase price in the store before confirmation. The public listing currently reports in-app purchases from $18 to $180.
+- Serious Reseller is $13 per month or $130 per year. Annual billing saves $26 compared with 12 monthly payments.
+- Serious includes unlimited active inventory items, 100 AI scans each month, unlimited listing generations, and Flip. It allows up to 250 active marketplace listings.
+- KeepFlip has no timed trial. The Free tier is available when an account is created.
+- Google Play shows the current purchase price in the store before confirmation.
 
 ## Public pages
 

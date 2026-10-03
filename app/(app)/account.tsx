@@ -165,7 +165,7 @@ function AccountDetailsTab() {
         : subscriptionState === 'error'
           ? 'Subscription status is unavailable right now.'
             : subscriptionAccess?.isTrial
-              ? `${subscriptionPlan?.name ?? 'KeepFlip plan'} · 7-day free trial active.`
+              ? `${subscriptionPlan?.name ?? 'KeepFlip plan'} access is active.`
             : subscriptionAccess?.billingIssue
               ? subscriptionAccess.active
                 ? subscriptionAccess.expiresAt
@@ -174,7 +174,7 @@ function AccountDetailsTab() {
                 : 'Your payment grace period has ended. Update your payment method to restore access.'
             : subscriptionAccess?.active
               ? `${subscriptionPlan?.name ?? 'KeepFlip plan'} is active on this account.`
-              : 'Choose Hobbyist or Serious Reseller and start with 7 days free.';
+              : 'Free includes the full workflow with monthly limits. Serious adds unlimited active items, 100 scans per month, unlimited listing generations, and Flip.';
 
   const subscriptionStatus =
     subscriptionState === 'error'

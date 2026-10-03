@@ -6,6 +6,7 @@ import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanima
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
+import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
 import { FlipConversationalAssistantPanel } from '@/components/command-center/flip-conversational-assistant-panel';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 
@@ -39,6 +40,7 @@ function clamp(value: number, minimum: number, maximum: number) {
 
 export function FlipAssistantOverlay() {
   const { user } = useKeepFlipAuth();
+  const { canUse } = useKeepFlipSubscription();
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
   const router = useRouter();
@@ -173,7 +175,7 @@ export function FlipAssistantOverlay() {
     ],
   );
 
-  if (!user || pathname === '/walkthrough') return null;
+  if (!user || !canUse('flip_assistant') || pathname === '/walkthrough') return null;
 
   return (
     <KeyboardAvoidingView

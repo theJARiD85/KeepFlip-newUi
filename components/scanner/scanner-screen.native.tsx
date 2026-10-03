@@ -64,7 +64,11 @@ import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout, useResponsiveStyles } from "@/hooks/use-responsive-layout";
-import { areKeepFlipSubscriptionsEnforced } from "@/services/keepflip-subscription-service";
+import {
+  areKeepFlipSubscriptionsEnforced,
+  checkKeepFlipAiValuationAccess,
+} from "@/services/keepflip-subscription-service";
+import { reportKeepFlipLimitReached } from "@/services/keepflip-limit-alert-service";
 import { lookupBarcodeWithEbay } from "@/services/ebaySoldCompsService";
 import { MAX_ANALYSIS_PHOTOS } from "@/services/item-analysis-service";
 import { neutralizeMarketplaceBrand } from "@/services/market-copy";
@@ -1160,6 +1164,22 @@ export default function ScannerScreen() {
   const handleToolActivate = async (tool: ScannerToolId) => {
     if (isCapturing || isInspectingProof || isPickingPhoto || isMenuOpen) {
       return;
+    }
+
+    try {
+      const access = await checkKeepFlipAiValuationAccess();
+      if (!access.allowed && access.reason === "limit_reached" && access.limit !== null) {
+        reportKeepFlipLimitReached({
+          category: "scan",
+          limit: access.limit,
+          plan: access.plan === 'serious' ? 'serious' : 'free',
+          usage: access.usage ?? access.limit,
+        });
+        return;
+      }
+    } catch {
+      // The scan Function still enforces the quota before calling a provider.
+      // Let the request reach that server gate if this display-only precheck is unavailable.
     }
 
     if (tool === "upload") {

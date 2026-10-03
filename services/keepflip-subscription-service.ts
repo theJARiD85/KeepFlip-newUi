@@ -19,7 +19,6 @@ import {
   functions,
   realtime,
 } from '@/lib/appwrite';
-import { getKeepFlipTrialDeviceIdHash } from '@/services/keepflip-trial-device-service';
 import {
   getTenjinAnalyticsInstallationId,
   setKeepFlipTenjinCustomerUserId,
@@ -48,12 +47,14 @@ export type KeepFlipSubscriptionFeature =
   | 'cross_marketplace_sync'
   | 'automatic_delisting'
   | 'seller_analytics'
-  | 'multi_user';
+  | 'multi_user'
+  | 'flip_assistant';
 
 export type KeepFlipPlanLimits = {
   inventoryItems: number | null;
   concurrentActiveListings: number | null;
   monthlyPublishQuota: number | null;
+  listingGenerationsPerMonth: number | null;
   /** @deprecated Compatibility alias for concurrentActiveListings. */
   activeListingsPerMonth: number | null;
   aiValuationScansPerMonth: number | null;
@@ -68,19 +69,23 @@ export const KEEPFLIP_PLAN_LIMITS: Record<
     inventoryItems: 10,
     concurrentActiveListings: 10,
     monthlyPublishQuota: null,
+    listingGenerationsPerMonth: 10,
     activeListingsPerMonth: 10,
-    aiValuationScansPerMonth: 20,
+    aiValuationScansPerMonth: 10,
     features: new Set<KeepFlipSubscriptionFeature>([
       'basic_books',
       'automated_books',
+      'advanced_bookkeeping_analytics',
+      'seller_analytics',
     ]),
   },
   serious: {
     inventoryItems: null,
     concurrentActiveListings: 250,
     monthlyPublishQuota: null,
+    listingGenerationsPerMonth: null,
     activeListingsPerMonth: 250,
-    aiValuationScansPerMonth: null,
+    aiValuationScansPerMonth: 100,
     features: new Set<KeepFlipSubscriptionFeature>([
       'basic_books',
       'automated_books',
@@ -96,6 +101,7 @@ export const KEEPFLIP_PLAN_LIMITS: Record<
       'automatic_delisting',
       'seller_analytics',
       'multi_user',
+      'flip_assistant',
     ]),
   },
 };
@@ -142,6 +148,7 @@ export type KeepFlipProfileTrial = {
 export type KeepFlipAiValuationAccess = {
   allowed: boolean;
   limit: number | null;
+  plan: KeepFlipPlanId | null;
   profileTrial: KeepFlipProfileTrial | null;
   reason: string;
   usage: number | null;
@@ -156,6 +163,7 @@ export type KeepFlipAiValuationAccess = {
 export type KeepFlipCapabilityAccess = {
   allowed: boolean;
   limit: number | null;
+  plan: KeepFlipPlanId | null;
   profileTrial: KeepFlipProfileTrial | null;
   reason: string;
   usage: number | null;
@@ -237,16 +245,18 @@ export const KEEPFLIP_PLAN_DEFINITIONS: KeepFlipPlanDefinition[] = [
     id: 'serious',
     name: 'Serious Reseller',
     eyebrow: 'SERIOUS / BEST FOR BUSINESS',
-    monthlyPriceFallback: '$25',
-    annualPriceFallback: '$250',
+    monthlyPriceFallback: '$13',
+    annualPriceFallback: '$130',
     recommended: true,
     description:
-      'KeepFlip\'s top tier for active resale businesses. Every KeepFlip feature is unlocked; the only plan limit is up to 250 active listings total.',
-    limits: ['Up to 250 active listings total'],
+      'The full KeepFlip workspace, with unlimited active items, 100 AI scans each month, and Flip included.',
+    limits: ['Unlimited active items', '100 AI scans per month'],
     features: [
       'Every KeepFlip feature unlocked',
       'Unlimited saved inventory items',
-      'Unlimited AI valuation scans',
+      '100 AI valuation scans per month',
+      'Unlimited listing generations',
+      'Flip assistant',
       'Advanced bookkeeping analytics',
       'Schedule C export',
     ],
@@ -270,7 +280,7 @@ const PACKAGE_IDS: Record<
 };
 
 const EMPTY_ACCESS: KeepFlipSubscriptionAccess = {
-  active: false,
+    active: false,
   billingIssue: false,
   entitlementId: null,
   expiresAt: null,
@@ -280,6 +290,7 @@ const EMPTY_ACCESS: KeepFlipSubscriptionAccess = {
     inventoryItems: 0,
     concurrentActiveListings: 0,
     monthlyPublishQuota: null,
+    listingGenerationsPerMonth: 0,
     activeListingsPerMonth: 0,
     aiValuationScansPerMonth: 0,
   },
@@ -402,9 +413,8 @@ export function keepFlipPlanAllows(
 ) {
   if (!plan) return false;
 
-  // Serious is KeepFlip's top tier. It intentionally unlocks every current
-  // and future feature; its only plan-level restriction is the 250 active
-  // listing cap enforced through keepFlipPlanLimit().
+  // Serious unlocks every current and future paid feature. Its active listing
+  // cap remains separate from the unlimited saved inventory item count.
   if (plan === 'serious') return true;
 
   return KEEPFLIP_PLAN_LIMITS[plan].features.has(feature);
@@ -416,6 +426,7 @@ export function keepFlipPlanLimit(
     | 'inventoryItems'
     | 'concurrentActiveListings'
     | 'monthlyPublishQuota'
+    | 'listingGenerationsPerMonth'
     | 'activeListingsPerMonth'
     | 'aiValuationScansPerMonth',
 ) {
@@ -628,6 +639,7 @@ function parseServerSubscriptionAccess(
     'automatic_delisting',
     'seller_analytics',
     'multi_user',
+    'flip_assistant',
   ]);
 
   return {
@@ -650,6 +662,7 @@ function parseServerSubscriptionAccess(
       inventoryItems: parseLimit('inventoryItems'),
       concurrentActiveListings: parseLimit('concurrentActiveListings'),
       monthlyPublishQuota: parseLimit('monthlyPublishQuota'),
+      listingGenerationsPerMonth: parseLimit('listingGenerationsPerMonth'),
       activeListingsPerMonth: parseLimit('activeListingsPerMonth'),
       aiValuationScansPerMonth: parseLimit('aiValuationScansPerMonth'),
     },
@@ -665,7 +678,6 @@ function parseServerSubscriptionAccess(
 }
 
 async function loadKeepFlipServerSubscriptionViaFunction(
-  deviceIdHash: string | null,
   refresh = false,
 ): Promise<KeepFlipServerStatusResponse> {
   const functionId = APPWRITE.subscriptionFunctionId;
@@ -682,10 +694,7 @@ async function loadKeepFlipServerSubscriptionViaFunction(
 
   const execution = await functions.createExecution({
     async: false,
-    body: JSON.stringify({
-      refresh,
-      ...(deviceIdHash ? { deviceIdHash } : {}),
-    }),
+    body: JSON.stringify({ refresh }),
     functionId,
     headers: { 'content-type': 'application/json' },
     method: ExecutionMethod.POST,
@@ -720,6 +729,7 @@ function parseKeepFlipCapabilityAccess(
   return {
     allowed: payload.allowed === true,
     limit: nonNegativeSafeInteger(payload.limit),
+    plan: payload.plan === 'serious' ? 'serious' : null,
     profileTrial: parseServerProfileTrial(payload.profileTrial),
     reason: appwriteText(payload.reason, 80) || 'access_unavailable',
     usage: nonNegativeSafeInteger(payload.usage),
@@ -734,13 +744,9 @@ async function executeKeepFlipCapabilityCheck(
     throw new Error('KeepFlip subscription access is not configured in this build.');
   }
 
-  const deviceIdHash = await getKeepFlipTrialDeviceIdHash().catch(() => null);
   const execution = await functions.createExecution({
     async: false,
-    body: JSON.stringify({
-      ...body,
-      ...(deviceIdHash ? { deviceIdHash } : {}),
-    }),
+    body: JSON.stringify(body),
     functionId,
     headers: { 'content-type': 'application/json' },
     method: ExecutionMethod.POST,
@@ -807,7 +813,6 @@ export async function loadKeepFlipServerSubscriptionRecord(
 ) {
   const result = await loadKeepFlipServerSubscriptionStatus(
     userId,
-    null,
     refresh,
   );
   return result.record;
@@ -815,7 +820,6 @@ export async function loadKeepFlipServerSubscriptionRecord(
 
 async function loadKeepFlipServerSubscriptionStatus(
   userId: string,
-  deviceIdHash: string | null,
   refresh = false,
 ): Promise<KeepFlipServerStatusResponse> {
   if (!userId.trim()) {
@@ -832,7 +836,6 @@ async function loadKeepFlipServerSubscriptionStatus(
   if (APPWRITE.subscriptionFunctionId) {
     try {
       const result = await loadKeepFlipServerSubscriptionViaFunction(
-        deviceIdHash,
         refresh,
       );
       return result;
@@ -942,13 +945,9 @@ function effectiveSubscriptionAccess(
     serverStatus.access ||
     (serverRecord ? subscriptionAccessFromServerRecord(serverRecord) : null);
 
-  // A previously deployed Function may still return the legacy first-party
-  // profile trial while the server rollout is being updated. Enforced builds
-  // must not let that stale response unlock the app shell.
-  if (
-    areKeepFlipSubscriptionsEnforced() &&
-    serverAccess?.trialSource === 'profile'
-  ) {
+  // KeepFlip no longer grants first-party profile trials. A previously
+  // deployed Function must not turn legacy profile fields into paid access.
+  if (serverAccess?.trialSource === 'profile') {
     return {
       ...EMPTY_ACCESS,
       managementUrl: localAccess.managementUrl,
@@ -1335,10 +1334,8 @@ export async function loadKeepFlipSubscription(
   userId: string,
   options: KeepFlipSubscriptionLoadOptions = {},
 ): Promise<KeepFlipSubscriptionSnapshot> {
-  const deviceIdHash = await getKeepFlipTrialDeviceIdHash().catch(() => null);
   const serverStatusPromise = loadKeepFlipServerSubscriptionStatus(
     userId,
-    deviceIdHash,
     options.reconcileServerStatus === true,
   ).catch(() => ({
     access: null,

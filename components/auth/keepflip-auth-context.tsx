@@ -136,36 +136,14 @@ class MfaRequiredError extends Error {
 }
 
 async function verifySubscriptionStatus(user: Models.User) {
-  if (!areKeepFlipSubscriptionsEnforced()) return;
-
-  let subscription: Awaited<ReturnType<typeof loadKeepFlipSubscription>>;
   try {
-    subscription = await loadKeepFlipSubscription(user.$id, {
+    await loadKeepFlipSubscription(user.$id, {
       reconcileServerStatus: true,
     });
   } catch {
-    throw new KeepFlipAuthError(
-      'KeepFlip could not verify your subscription right now. Check your connection and try again.',
-      'AUTH_SUBSCRIPTION_UNVERIFIED',
-      user.$id,
-    );
+    // A valid Appwrite session opens the workspace. Subscription Police still
+    // fails closed for quotas and paid features until it can verify access.
   }
-  if (
-    !subscription.serverRecordAvailable ||
-    !subscription.revenueCatVerified
-  ) {
-    const verificationError = subscription.serverVerificationError;
-    throw new KeepFlipAuthError(
-      verificationError
-        ? `KeepFlip could not verify your subscription right now. ${verificationError}`
-        : 'KeepFlip could not verify your subscription right now. Check your connection and try again.',
-      'AUTH_SUBSCRIPTION_UNVERIFIED',
-      user.$id,
-    );
-  }
-  // A verified free-tier account may sign in on every platform. Individual
-  // paid capabilities and free usage limits are still checked by the
-  // subscription context and the authenticated server functions.
 }
 
 // A healthy no-session request returns immediately. Never let a stalled browser
@@ -221,12 +199,6 @@ function errorTextForClassification(error: unknown) {
 function isSignedOutResponse(error: unknown) {
   const code = appwriteErrorCode(error);
   return code === 401 || code === 403;
-}
-
-function areKeepFlipSubscriptionsEnforced() {
-  // Keep the auth boundary fail-closed even when a production build omitted
-  // the public flag. The Subscription Police Function uses the same default.
-  return process.env.EXPO_PUBLIC_KEEPFLIP_SUBSCRIPTIONS_ENFORCED !== 'false';
 }
 
 function isNetworkFailure(error: unknown) {
@@ -1064,13 +1036,6 @@ export function KeepFlipAuthProvider({ children }: PropsWithChildren) {
 
       let sessionRequestStarted = false;
       try {
-        if (areKeepFlipSubscriptionsEnforced()) {
-          throw new KeepFlipAuthError(
-            'Start a KeepFlip subscription before creating an account.',
-            'AUTH_SUBSCRIPTION_REQUIRED',
-          );
-        }
-
         const configurationStatus = getAppwriteCoreConfigurationStatus();
         if (!configurationStatus.configured) {
           commit(setupSnapshot(configurationStatus.missingKeys));
