@@ -354,7 +354,7 @@ export function ConnectionsScreen() {
                 <View style={[styles.statusDot, plaidConnections.length > 0 ? styles.statusDotConnected : styles.statusDotOff]} />
                   <Text style={[styles.statusText, { fontSize: responsiveFont(8) }, plaidConnections.length > 0 && styles.statusTextConnected]}>
                   {!automatedBooksAllowed
-                    ? 'PLAN REQUIRED'
+                    ? 'ACCESS UNAVAILABLE'
                     : !plaidConfigured
                       ? 'UNAVAILABLE'
                       : isLoadingPlaid
@@ -375,9 +375,9 @@ export function ConnectionsScreen() {
 
           {!automatedBooksAllowed ? (
             <View style={styles.infoBanner}>
-              <IconSymbol color={theme.colors.goldBright} name="lock.fill" size={16} />
+              <IconSymbol color={theme.colors.goldBright} name="exclamationmark.triangle.fill" size={16} />
               <Text style={[styles.infoText, { fontSize: responsiveFont(10), lineHeight: responsiveHeight(15) }]}>
-                Business bank connections are included with the Serious Reseller plan.
+                KeepFlip could not verify access to Books automation. Refresh the app and try again.
               </Text>
             </View>
           ) : !plaidConfigured ? (

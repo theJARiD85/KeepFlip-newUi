@@ -171,10 +171,10 @@ export function PlaidBankConnectionCard({
             <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>BANK EXPENSES</Text>
             <Text style={[styles.title, { fontSize: responsiveFont(16) }]}>Automate the money out</Text>
           </View>
-          <IconSymbol color={theme.colors.textMuted} name="lock.fill" size={15} />
+          <IconSymbol color={theme.colors.goldBright} name="exclamationmark.triangle.fill" size={15} />
         </View>
         <Text style={[styles.body, { fontSize: responsiveFont(11), lineHeight: responsiveHeight(16) }]}>
-          Connect a business bank account to bring eligible outgoing transactions into Books. This is included with the Serious Reseller plan.
+          KeepFlip could not verify access to Books automation. Refresh the app and try again.
         </Text>
       </View>
     );
