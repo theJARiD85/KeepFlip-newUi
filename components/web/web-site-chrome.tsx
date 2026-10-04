@@ -1,8 +1,8 @@
 import { Image } from 'expo-image';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Link, type Href, useRouter } from 'expo-router';
 import { createElement, type CSSProperties } from 'react';
 import { Linking, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
-
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
@@ -14,6 +14,7 @@ type WebSiteHeaderProps = {
   onHowItWorks?: () => void;
   onSignIn?: () => void;
   showActions?: boolean;
+  showBackButton?: boolean;
   showMarketingLinks?: boolean;
 };
 
@@ -22,6 +23,7 @@ export function WebSiteHeader({
   onGetStarted,
   onHowItWorks,
   onSignIn,
+  showBackButton = false,
   showMarketingLinks = false,
   showActions = true,
 }: WebSiteHeaderProps) {
@@ -62,6 +64,31 @@ export function WebSiteHeader({
         <Text style={[styles.headerLabel, isPhone && styles.headerLabelPhone, { color: colors.textMuted }]}>{label}</Text>
         {showActions ? (
           <View style={[styles.headerActions, isPhone && styles.headerActionsPhone]}>
+            {showBackButton ? (
+              <Pressable
+                accessibilityLabel="Go back from legal documents"
+                accessibilityRole="button"
+                hitSlop={8}
+                onPress={() => {
+                  if (router.canGoBack()) {
+                    router.back();
+                  } else {
+                    router.replace('/');
+                  }
+                }}
+                style={({ pressed }) => [
+                  styles.headerBackButton,
+                  {
+                    backgroundColor: colors.iconSurfaceGold,
+                    borderColor: colors.accentGoldBorder,
+                  },
+                  pressed && styles.headerBackButtonPressed,
+                ]}
+              >
+                <Ionicons color={colors.goldBright} name="chevron-back" size={17} />
+                <Text style={[styles.headerBackButtonText, { color: colors.goldBright }]}>BACK</Text>
+              </Pressable>
+            ) : null}
             {showMarketingLinks ? (
               <>
                 <HeaderRouteLink colors={colors} href="/features" label="HOW IT WORKS" />
@@ -109,6 +136,7 @@ export function WebSiteHeader({
                 </Pressable>
               </>
             )}
+
           </View>
         ) : null}
       </View>
@@ -480,6 +508,25 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     width: '100%',
   },
+  headerBackButton: {
+    alignItems: 'center',
+    borderRadius: theme.radii.pill,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 4,
+    justifyContent: 'center',
+    minHeight: 38,
+    paddingHorizontal: 11,
+  },
+  headerBackButtonText: {
+    fontFamily: theme.fonts.bold,
+    fontSize: 11,
+    letterSpacing: 0.85,
+  },
+  headerBackButtonPressed: {
+    opacity: 0.72,
+    transform: [{ translateX: -2 }],
+  },
   headerLink: {
     minHeight: 38,
     justifyContent: 'center',
@@ -507,16 +554,16 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     borderTopWidth: 1,
     gap: 0,
-    maxWidth: 1120,
+    maxWidth: '100%',
     minWidth: 0,
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingBottom: 15,
     width: '100%',
   },
   footerPhone: {
     gap: 20,
     paddingHorizontal: 10,
-    paddingVertical: 20,
+    paddingVertical: 10,
   },
   footerMain: {
     alignItems: 'flex-end',

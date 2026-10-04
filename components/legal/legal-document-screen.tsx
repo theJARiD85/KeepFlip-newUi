@@ -3,18 +3,15 @@ import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { WebSiteFooter, WebSiteHeader } from '@/components/web/web-site-chrome';
 import {
   getKeepFlipThemeColors,
+  keepFlipTheme as theme,
 } from "@/constants/keepflip-theme";
-import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 
 import {
   useResponsiveLayout,
   useResponsiveStyles,
 } from '@/hooks/use-responsive-layout';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { useRouter } from "expo-router";
 import {
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   View,
@@ -48,9 +45,7 @@ export function LegalDocumentScreen({
     webPageGutter,
     contentWidth
   } = useResponsiveLayout();
-  const router = useRouter();
   const insets = useSafeAreaInsets();
-  const colors = getKeepFlipThemeColors('dark');
 
   return (
     <KeepFlipBackground colorScheme="dark">
@@ -65,7 +60,7 @@ export function LegalDocumentScreen({
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
       >
-        <WebSiteHeader label="LEGAL DOCUMENTS" />
+        <WebSiteHeader label="LEGAL DOCUMENTS" showBackButton />
 
         <View style={styles.headerColumn}>
           <View style={[styles.headerRow]}>
@@ -79,26 +74,6 @@ export function LegalDocumentScreen({
             </Text>
 
           </View>
-          <Pressable
-            accessibilityLabel="Return to account creation"
-            accessibilityRole="button"
-            hitSlop={10}
-            onPress={() => {
-              if (router.canGoBack()) {
-                router.back();
-              } else {
-                router.replace('/'); // Fallback if there's no history on web
-              }
-            }} 
-            style={({ pressed }) => [
-              styles.backButton,
-              pressed && styles.backButtonPressed,
-            ]}
-          >
-            <View style={styles.backButtonContent}>
-              <Ionicons name="close-sharp" size={30} color={colors.goldBright} />
-            </View>
-          </Pressable>
           </View>
           <View style={{ alignItems: 'center', justifyContent: 'flex-start'}}>
             <Text selectable style={[styles.intro, {fontSize: responsiveFont(12), fontFamily: theme.fonts.body}]}>
@@ -165,30 +140,6 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       alignSelf: "center",
       gap: 15,
 
-    },
-    backButton: {
-      alignSelf: "flex-start",
-      minHeight: 40,
-      justifyContent: "center",
-    },
-    backButtonPressed: {
-      opacity: 0.62,
-      transform: [{ translateX: -2 }],
-    },
-    backButtonText: {
-      color: colors.goldBright,
-      fontSize: 11,
-      fontWeight: "800",
-      letterSpacing: 1.1,
-      textAlign: "center",
-      textAlignVertical: 'center',
-    },
-    backButtonContent: {
-      flexDirection: "row",
-      justifyContent: 'flex-start',
-      alignItems: 'flex-start',
-      bottom: 20,
-      right: 10
     },
     headerRow: {
       width: '100%',
@@ -292,12 +243,6 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   });
   return {
     ...staticStyles,
-    backButtonText: [
-      staticStyles.backButtonText,
-      {
-        fontSize: responsiveFont(11),
-      },
-    ],
     eyebrow: [
       staticStyles.eyebrow,
       {
