@@ -1,9 +1,7 @@
-import { AdvancedHoloOverlay } from '@/components/scanner/advanced-holo-overlay';
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
-import { withAlpha } from '@/lib/withAlpha';
 import {
   releaseInventoryCoverImageUri,
   resolveInventoryCoverImageUri,
@@ -51,22 +49,6 @@ function formatCost(value: number | null, currency: string) {
   } catch {
     return "$" + value.toFixed(2);
   }
-}
-
-function formatDate(value: string) {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "RECENT SCAN";
-
-  return parsed
-    .toLocaleDateString(undefined, {
-      day: "numeric",
-      month: "short",
-    })
-    .toUpperCase();
-}
-
-function displaySignal(value: string | null) {
-  return value?.replace(/_/g, " ").toUpperCase() || null;
 }
 
 export function InventoryCard({
@@ -145,12 +127,10 @@ export function InventoryCard({
   const photoGeneration = useRef(0);
   const resolvedPhotoUris = useRef(new Set<string>());
   const meta = [item.brand, item.model, item.category]
-    .filter(Boolean)
+    .filter((value) => Boolean(value) && value !== "Other")
     .join(" / ");
   const hasValuation = item.estimatedValue != null;
-  const flipDecision = displaySignal(item.flipDecision ?? item.flipVerdict);
-  const resaleVelocity = displaySignal(item.resaleVelocity);
-  const costBasis = item.acquisitionCost ?? item.inventoryCostOnHand;
+  const costOnHand = item.inventoryCostOnHand ?? item.acquisitionCost;
 
   const requestPhoto = useCallback((photoId: string | undefined) => {
     if (
@@ -287,7 +267,6 @@ export function InventoryCard({
         ]}
       >
         <View style={[styles.hero, compact && styles.compactHero]}>
-          {!compact ? <AdvancedHoloOverlay width={500} height={240} /> : null}
           {photoPageKeys.length > 0 ? (
             <ScrollView
               bounces={photoPageKeys.length > 1}
@@ -381,155 +360,103 @@ export function InventoryCard({
               </Text>
             </View>
           )}
-          {!compact ? (
-            <>
-              <LinearGradient
-                colors={[
-                  "rgba(1, 1, 2, 0.04)",
-                  "rgba(1, 1, 2, 0.14)",
-                  "rgba(1, 1, 2, 0.94)",
-                ]}
-                locations={[0, 0.42, 1]}
-                pointerEvents="none"
-                style={styles.heroShade}
-              />
-
-              <View pointerEvents="none" style={styles.heroTopRail}>
-                <View style={styles.conditionPill}>
-                  <Text numberOfLines={1} style={[styles.conditionText, { fontSize: responsiveFont(8) }]}>
-                    {item.condition}
-                  </Text>
-                  {flipDecision && flipDecision !== "UNKNOWN" ? (
-                    <Text numberOfLines={1} style={[styles.flipDecisionText, { fontSize: responsiveFont(7) }]}>
-                      {flipDecision}{resaleVelocity ? ` / ${resaleVelocity}` : ""}
-                    </Text>
-                  ) : null}
-                </View>
-                {photoPageKeys.length > 0 ? (
-                  <View style={styles.photoPill}>
-                    <IconSymbol
-                      color={theme.colors.scannerCyan}
-                      name="photo.on.rectangle.angled"
-                      size={14}
-                    />
-                    <Text style={[styles.photoPillText, { fontSize: responsiveFont(8) }]}>
-                      {photoIndex + 1}/{photoPageKeys.length}
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
-
-              <View pointerEvents="none" style={styles.heroCopy}>
-                <Text numberOfLines={2} selectable style={[styles.title, { fontSize: responsiveFont(21), lineHeight: 25 }]}>
-                  {item.title}
+          <View pointerEvents="none" style={styles.heroTopRail}>
+            {!compact && item.condition.toLowerCase() !== "unknown" ? (
+              <View style={styles.conditionPill}>
+                <Text numberOfLines={1} style={styles.conditionText}>
+                  {item.condition}
                 </Text>
-                {meta ? (
-                  <Text numberOfLines={2} selectable style={styles.meta}>
-                    {meta}
-                  </Text>
-                ) : null}
               </View>
-              <View style={styles.savedAt}>
-                <Text style={[styles.savedAtLabel, { fontSize: responsiveFont(7) }]}>SAVED</Text>
-                <Text style={[styles.savedAtValue, { fontSize: responsiveFont(8) }]}>{formatDate(item.createdAt)}</Text>
+            ) : <View />}
+            {photoPageKeys.length > 1 ? (
+              <View style={styles.photoPill}>
+                <IconSymbol
+                  color={theme.colors.scannerCyan}
+                  name="photo.on.rectangle.angled"
+                  size={14}
+                />
+                <Text style={styles.photoPillText}>
+                  {photoIndex + 1}/{photoPageKeys.length}
+                </Text>
               </View>
-              {photoPageKeys.length > 1 ? (
-                <View pointerEvents="none" style={styles.photoIndicators}>
-                  {photoPageKeys.map((photoKey, index) => (
-                    <View
-                      key={photoKey}
-                      style={[
-                        styles.photoIndicator,
-                        index === photoIndex && styles.photoIndicatorActive,
-                      ]}
-                    />
-                  ))}
-                </View>
-              ) : null}
-            </>
+            ) : null}
+          </View>
+          {photoPageKeys.length > 1 ? (
+            <View pointerEvents="none" style={styles.photoIndicators}>
+              {photoPageKeys.map((photoKey, index) => (
+                <View
+                  key={photoKey}
+                  style={[
+                    styles.photoIndicator,
+                    index === photoIndex && styles.photoIndicatorActive,
+                  ]}
+                />
+              ))}
+            </View>
           ) : null}
         </View>
 
-        {compact ? (
-          <View style={styles.compactDetails}>
-            <Text numberOfLines={2} selectable style={styles.compactTitle}>
+        <View style={[styles.details, compact && styles.compactDetails]}>
+          <View style={styles.identity}>
+            <Text numberOfLines={2} selectable style={[styles.itemTitle, compact && styles.compactTitle]}>
               {item.title}
             </Text>
+            {!compact && meta ? (
+              <Text numberOfLines={1} selectable style={styles.meta}>
+                {meta}
+              </Text>
+            ) : null}
+          </View>
+
+          {compact ? (
             <View style={styles.compactValuation}>
-              <Text style={styles.compactValuationLabel}>MARKET VALUE</Text>
+              <Text style={styles.compactValuationLabel}>EST. VALUE</Text>
               <Text numberOfLines={1} selectable style={styles.compactValuationValue}>
-                {formatMoney(item.estimatedValue, item.currency)}
+                {hasValuation ? formatMoney(item.estimatedValue, item.currency) : "Not set"}
               </Text>
             </View>
-          </View>
-        ) : (
-          <>
-            <View
-              style={[
-                styles.valuationDivider,
-                !hasValuation && styles.valuationDividerPending,
-              ]}
-            >
-              <LinearGradient
-                colors={[
-                  withAlpha(theme.colors.scannerViolet, 1),
-                  withAlpha(theme.colors.goldBright, 1),
-                  withAlpha(theme.colors.scannerCyan, 1),
-                ]}
-                end={{ x: 1, y: 0.5 }}
-                locations={[0, 0.5, 1]}
-                start={{ x: 0, y: 0.5 }}
-                style={StyleSheet.absoluteFill}
-              />
-              <View style={styles.dividerMedianMarker} />
-            </View>
-
-            <View style={styles.valuationSummary}>
-              <View style={styles.medianBlock}>
-                <Text style={[styles.medianLabel, { fontSize: responsiveFont(5) }]}>
-                  {hasValuation ? "MARKET MEDIAN" : "MARKET VALUE"}
-                </Text>
-                <Text selectable style={[styles.medianValue, { fontSize: responsiveFont(30), lineHeight: 46 }]}>
-                  {formatMoney(item.estimatedValue, item.currency)}
-                </Text>
+          ) : (
+            <>
+              <View style={styles.valuationSummary}>
+                <View style={styles.medianBlock}>
+                  <Text style={styles.medianLabel}>
+                    {hasValuation ? "ESTIMATED RESALE VALUE" : "RESALE VALUE"}
+                  </Text>
+                  <Text numberOfLines={1} selectable style={styles.medianValue}>
+                    {hasValuation ? formatMoney(item.estimatedValue, item.currency) : "Not set"}
+                  </Text>
+                </View>
               </View>
 
-              <View style={styles.confidenceBlock}>
-                <Text style={[styles.confidenceValue, { fontSize: responsiveFont(12) }]}>
-                  {item.aiConfidence == null ? "—" : `${item.aiConfidence}%`}
-                </Text>
-                <Text style={[styles.confidenceLabel, { fontSize: responsiveFont(5) }]}>CONF.</Text>
+              <View style={styles.recordStrip}>
+                <View style={styles.recordMetric}>
+                  <Text style={styles.recordLabel}>COST ON HAND</Text>
+                  <Text numberOfLines={1} style={styles.recordValue}>
+                    {formatCost(costOnHand, item.currency)}
+                  </Text>
+                </View>
+                <View style={styles.recordMetric}>
+                  <Text style={styles.recordLabel}>QUANTITY</Text>
+                  <Text numberOfLines={1} style={styles.recordValue}>
+                    {item.quantityOnHand.toLocaleString()}
+                  </Text>
+                </View>
+                <View style={styles.recordMetricStorage}>
+                  <Text style={styles.recordLabel}>LOCATION</Text>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.recordValue,
+                      !item.storageLocation && styles.recordValueMuted,
+                    ]}
+                  >
+                    {item.storageLocation || "Not set"}
+                  </Text>
+                </View>
               </View>
-            </View>
-
-            <View style={styles.recordStrip}>
-              <View style={styles.recordMetric}>
-                <Text style={[styles.recordLabel]}>COGS</Text>
-                <Text numberOfLines={1} style={[styles.recordValue]}>
-                  {formatCost(costBasis, item.currency)}
-                </Text>
-              </View>
-              <View style={styles.recordMetric}>
-                <Text style={[styles.recordLabel]}>ON HAND</Text>
-                <Text numberOfLines={1} style={[styles.recordValue]}>
-                  {item.quantityOnHand.toLocaleString()}
-                </Text>
-              </View>
-              <View style={styles.recordMetricStorage}>
-                <Text style={[styles.recordLabel]}>STORAGE</Text>
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    styles.recordValue,
-                    !item.storageLocation && styles.recordValueMuted,
-                  ]}
-                >
-                  {item.storageLocation ?? "NOT SET"}
-                </Text>
-              </View>
-            </View>
-          </>
-        )}
+            </>
+          )}
+        </View>
       </Pressable>
 
       {onListingGuidePress || onAddPhotosPress || onDeletePress ? (
@@ -546,6 +473,9 @@ export function InventoryCard({
               pressed && styles.listingGuideButtonPressed,
             ]}
           >
+            <Text style={styles.itemActionsToggleLabel}>
+              {actionsExpanded ? "Hide actions" : "More actions"}
+            </Text>
             <IconSymbol
               color={theme.colors.scannerCyan}
               name="ellipsis"
@@ -681,13 +611,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     card: {
       overflow: "hidden",
       width: '100%',
-      borderRadius: theme.radii.large,
+      borderRadius: theme.radii.medium,
       borderCurve: "continuous",
-      borderWidth: 0.5,
-      borderColor: theme.colors.accentGoldBorder,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.dividerStrong,
       backgroundColor: theme.colors.card,
-      boxShadow:
-        "0 18px 42px rgba(0, 0, 0, 0.46), 0 0 28px rgba(215, 168, 74, 0.08)",
+      boxShadow: "0 8px 20px rgba(0, 0, 0, 0.24)",
     },
     cardPressTarget: {
       backgroundColor: theme.colors.card,
@@ -697,38 +626,87 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       transform: [{ scale: 0.985 }],
     },
     hero: {
-      height: 240,
-      justifyContent: "space-between",
+      height: 190,
       backgroundColor: theme.colors.surfaceInset,
     },
-    compactDetails: {
-      height: 82,
-      justifyContent: "space-between",
-      paddingHorizontal: 10,
-      paddingVertical: 8,
+    details: {
+      gap: 12,
+      padding: 14,
       backgroundColor: theme.colors.card,
     },
-    compactTitle: {
-      color: theme.colors.text,
+    compactDetails: {
+      gap: 9,
+      paddingHorizontal: 11,
+      paddingVertical: 10,
+    },
+    identity: {
+      gap: 3,
+      minWidth: 0,
+    },
+    itemTitle: {
+      color: theme.colors.cream,
       fontFamily: theme.fonts.bold,
-      fontSize: 13,
-      fontWeight: "900",
-      lineHeight: 17,
+      fontSize: responsiveFont(16),
+      fontWeight: "800",
+      lineHeight: 20,
+    },
+    compactTitle: {
+      fontSize: responsiveFont(12),
+      lineHeight: 16,
+    },
+    meta: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.body,
+      fontSize: responsiveFont(10),
+      lineHeight: 14,
     },
     compactValuation: {
-      gap: 2,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 6,
+      paddingTop: 8,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.colors.divider,
     },
     compactValuationLabel: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.body,
-      fontSize: 7,
-      fontWeight: "900",
-      letterSpacing: 0.7,
+      fontSize: responsiveFont(8),
+      fontWeight: "800",
+      letterSpacing: 0.65,
     },
     compactValuationValue: {
       color: theme.colors.goldBright,
       fontFamily: theme.fonts.numbers,
-      fontSize: 17,
+      fontSize: responsiveFont(14),
+      fontWeight: "900",
+      fontVariant: ["tabular-nums"],
+    },
+    valuationSummary: {
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      borderRadius: theme.radii.small,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.divider,
+      backgroundColor: theme.colors.surfaceInset,
+    },
+    medianBlock: {
+      alignItems: "flex-start",
+      gap: 3,
+    },
+    medianLabel: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.body,
+      fontSize: responsiveFont(8),
+      fontWeight: "900",
+      letterSpacing: 0.8,
+    },
+    medianValue: {
+      color: theme.colors.goldBright,
+      fontFamily: theme.fonts.numbers,
+      fontSize: responsiveFont(24),
+      lineHeight: 30,
       fontWeight: "900",
       fontVariant: ["tabular-nums"],
     },
@@ -780,19 +758,18 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontWeight: "900",
       letterSpacing: 1.1,
     },
-    heroShade: {
+    heroTopRail: {
       position: "absolute",
       top: 0,
       right: 0,
-      bottom: 0,
       left: 0,
-    },
-    heroTopRail: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      gap: 10,
-      padding: 14,
+      minHeight: 42,
+      paddingHorizontal: 10,
+      paddingTop: 10,
+      zIndex: 1,
     },
     photoPill: {
       flexDirection: "row",
@@ -814,184 +791,50 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     conditionPill: {
       maxWidth: "58%",
-      paddingHorizontal: 9,
-      paddingVertical: 6,
-      borderRadius: theme.radii.pill,
+      paddingHorizontal: 8,
+      paddingVertical: 5,
+      borderRadius: theme.radii.small,
       borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.accentGoldBorder,
-      backgroundColor: theme.colors.iconSurfaceGold,
+      borderColor: theme.colors.dividerStrong,
+      backgroundColor: "rgba(5, 5, 8, 0.78)",
     },
     conditionText: {
-      color: theme.colors.goldBright,
+      color: theme.colors.cream,
       fontFamily: theme.fonts.body,
       fontSize: responsiveFont(8),
       fontWeight: "900",
       letterSpacing: 0.8,
       textTransform: "uppercase",
-    },
-    flipDecisionText: {
-      color: theme.colors.scannerCyan,
-      fontFamily: theme.fonts.body,
-      fontSize: responsiveFont(7),
-      fontWeight: "900",
-      letterSpacing: 0.7,
-      marginTop: 3,
-      textTransform: "uppercase",
-    },
-    heroCopy: {
-      gap: 5,
-      paddingHorizontal: 16,
-      paddingBottom: 16,
-    },
-    title: {
-      color: theme.colors.text,
-      fontFamily: theme.fonts.bold,
-      fontSize: responsiveFont(21),
-      lineHeight: 25,
-      fontWeight: "900",
-      letterSpacing: -0.3,
-      textShadowColor: "rgba(0, 0, 0, 0.96)",
-      textShadowOffset: { width: 0, height: 2 },
-      textShadowRadius: 7,
-    },
-    meta: {
-      color: theme.colors.textMuted,
-      fontFamily: theme.fonts.body,
-      fontSize: responsiveFont(9),
-      lineHeight: 13,
-      fontWeight: "800",
-      letterSpacing: 0.4,
-      textShadowColor: "rgba(0, 0, 0, 0.98)",
-      textShadowOffset: { width: 0, height: 1 },
-      textShadowRadius: 4,
-    },
-    valuationDivider: {
-      height: 7,
-      overflow: "visible",
-      backgroundColor: theme.colors.goldBright,
-      boxShadow:
-        "0 0 12px rgba(141, 114, 255, 0.46), 0 0 18px rgba(242, 211, 138, 0.56), 0 0 12px rgba(88, 223, 232, 0.42)",
-    },
-    valuationDividerPending: {
-      opacity: 0.36,
-    },
-    dividerMedianMarker: {
-      position: "absolute",
-      top: -3,
-      left: "50%",
-      width: 2,
-      height: 13,
-      marginLeft: -1,
-      backgroundColor: theme.colors.text,
-      boxShadow: "0 0 8px rgba(255, 255, 255, 0.96)",
-    },
-    valuationSummary: {
-      position: "relative",
-      minHeight: 70,
-      alignItems: "center",
-      justifyContent: "center",
-      paddingHorizontal: 16,
-      paddingVertical: 7,
-      backgroundColor: theme.colors.card,
-      experimental_backgroundImage:
-        "radial-gradient(circle at 50% 0%, rgba(242, 211, 138, 0.13) 0%, transparent 48%), linear-gradient(90deg, rgba(141, 114, 255, 0.08) 0%, rgba(5, 5, 8, 0) 28%, rgba(5, 5, 8, 0) 72%, rgba(88, 223, 232, 0.08) 100%)",
-    },
-    savedAt: {
-      position: "absolute",
-      bottom: 18,
-      left: 16,
-      gap: 3,
-    },
-    savedAtLabel: {
-      color: theme.colors.textMuted,
-      fontFamily: theme.fonts.body,
-      fontSize: responsiveFont(7),
-      fontWeight: "900",
-      letterSpacing: 0.8,
-    },
-    savedAtValue: {
-      color: theme.colors.text,
-      fontFamily: theme.fonts.body,
-      fontSize: responsiveFont(8),
-      fontWeight: "900",
-      letterSpacing: 0.5,
-    },
-    medianBlock: {
-      alignItems: "center",
-      gap: 3,
-    },
-    medianLabel: {
-      color: theme.colors.goldBright,
-      fontFamily: theme.fonts.body,
-      fontSize: responsiveFont(8),
-      fontWeight: "900",
-      letterSpacing: 1.1,
-    },
-    medianValue: {
-      color: theme.colors.goldBright,
-      fontFamily: theme.fonts.numbers,
-      fontSize: responsiveFont(40),
-      lineHeight: 46,
-      fontWeight: "900",
-      fontVariant: ["tabular-nums"],
-      textShadowColor: "rgba(242, 211, 138, 0.52)",
-      textShadowOffset: { width: 0, height: 0 },
-      textShadowRadius: 9,
-    },
-    confidenceBlock: {
-      position: "absolute",
-      right: 16,
-      bottom: 17,
-      alignItems: "flex-end",
-      gap: 3,
-    },
-    confidenceValue: {
-      color: theme.colors.scannerCyan,
-      fontFamily: theme.fonts.numbers,
-      fontSize: responsiveFont(16),
-      fontWeight: "900",
-      fontVariant: ["tabular-nums"],
-      textShadowColor: "rgba(88, 223, 232, 0.58)",
-      textShadowOffset: { width: 0, height: 0 },
-      textShadowRadius: 7,
-    },
-    confidenceLabel: {
-      color: theme.colors.scannerCyan,
-      fontFamily: theme.fonts.body,
-      fontSize: responsiveFont(7),
-      fontWeight: "900",
-      letterSpacing: 0.65,
     },
     recordStrip: {
       flexDirection: "row",
       alignItems: "flex-start",
-      gap: 12,
-      paddingHorizontal: 16,
-      paddingVertical: 11,
+      gap: 10,
+      paddingTop: 11,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: theme.colors.divider,
-      backgroundColor: theme.colors.iconSurfaceCyan,
     },
     recordMetric: {
-      flex: 0.78,
-      minWidth: '25%',
-      gap: 3,
+      flex: 1,
+      minWidth: 0,
+      gap: 4,
     },
     recordMetricStorage: {
-      flex: 1.2,
+      flex: 1.15,
       minWidth: 0,
-      gap: 3,
+      gap: 4,
     },
     recordLabel: {
-      color: theme.colors.scannerCyan,
-      fontFamily: theme.fonts.numbers,
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.body,
+      fontSize: responsiveFont(8),
       fontWeight: "900",
-      letterSpacing: 0.65,
+      letterSpacing: 0.55,
     },
     recordValue: {
       color: theme.colors.cream,
       fontFamily: theme.fonts.body,
-      fontSize: responsiveFont(11),
+      fontSize: responsiveFont(10),
       fontWeight: "900",
       fontVariant: ["tabular-nums"],
     },
@@ -1004,16 +847,21 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.surfaceInset,
     },
     itemActionsToggle: {
-      width: 44,
-      height: 44,
+      minHeight: 40,
+      flexDirection: "row",
       alignItems: "center",
-      justifyContent: "center",
+      justifyContent: "flex-end",
+      gap: 8,
       alignSelf: "flex-end",
-      marginRight: 7,
-      borderRadius: theme.radii.pill,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.accentCyanBorder,
-      backgroundColor: theme.colors.iconSurfaceCyan,
+      paddingHorizontal: 13,
+      paddingVertical: 8,
+    },
+    itemActionsToggleLabel: {
+      color: theme.colors.scannerCyan,
+      fontFamily: theme.fonts.body,
+      fontSize: responsiveFont(9),
+      fontWeight: "900",
+      letterSpacing: 0.5,
     },
     itemActionsToggleExpanded: {
       backgroundColor: theme.colors.cardSoft,
@@ -1106,7 +954,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     hero: [
       staticStyles.hero,
       {
-        height: responsiveHeight(240),
+        height: responsiveHeight(190),
       },
     ],
     compactHero: {
@@ -1128,89 +976,6 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       staticStyles.conditionText,
       {
         fontSize: responsiveFont(8),
-      },
-    ],
-    flipDecisionText: [
-      staticStyles.flipDecisionText,
-      {
-        fontSize: responsiveFont(7),
-      },
-    ],
-    title: [
-      staticStyles.title,
-      {
-        fontSize: responsiveFont(21),
-        textShadowOffset: { width: responsiveWidth(0), height: responsiveHeight(2) },
-      },
-    ],
-    meta: [
-      staticStyles.meta,
-      {
-        fontSize: responsiveFont(9),
-        textShadowOffset: { width: responsiveWidth(0), height: responsiveHeight(1) },
-      },
-    ],
-    valuationDivider: [
-      staticStyles.valuationDivider,
-      {
-        height: responsiveHeight(7),
-      },
-    ],
-    dividerMedianMarker: [
-      staticStyles.dividerMedianMarker,
-      {
-        width: responsiveWidth(2),
-        height: responsiveHeight(13),
-      },
-    ],
-    savedAtLabel: [
-      staticStyles.savedAtLabel,
-      {
-        fontSize: responsiveFont(7),
-      },
-    ],
-    savedAtValue: [
-      staticStyles.savedAtValue,
-      {
-        fontSize: responsiveFont(8),
-      },
-    ],
-    medianLabel: [
-      staticStyles.medianLabel,
-      {
-        fontSize: responsiveFont(8),
-      },
-    ],
-    medianValue: [
-      staticStyles.medianValue,
-      {
-        fontSize: responsiveFont(40),
-        textShadowOffset: { width: responsiveWidth(0), height: responsiveHeight(0) },
-      },
-    ],
-    confidenceValue: [
-      staticStyles.confidenceValue,
-      {
-        fontSize: responsiveFont(12),
-        textShadowOffset: { width: responsiveWidth(0), height: responsiveHeight(0) },
-      },
-    ],
-    confidenceLabel: [
-      staticStyles.confidenceLabel,
-      {
-        fontSize: responsiveFont(7),
-      },
-    ],
-    recordLabel: [
-      staticStyles.recordLabel,
-      {
-        fontSize: responsiveFont(1),
-      },
-    ],
-    recordValue: [
-      staticStyles.recordValue,
-      {
-        fontSize: responsiveFont(10),
       },
     ],
     listingGuideButtonIcon: [

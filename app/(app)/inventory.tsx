@@ -354,15 +354,15 @@ export default function InventoryScreen() {
 
   return (
     <KeepFlipBackground>
-      <View style={[styles.screen, webContentSizing, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
+      <View style={[styles.screen, webContentSizing, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center' }]}>
       <View style={[styles.header, { paddingTop: insets.top + 15, paddingLeft: 15, width: contentWidth }]}>
                 <Text style={[styles.eyebrow, { fontFamily: theme.fonts.display, fontSize: responsiveFont(10) }]}>YOUR ITEMS</Text>
                 <Text
-                  style={[styles.title, {fontFamily: theme.fonts.bold, fontSize: responsiveFont(26), paddingVertical: 7 }]}
+                  style={[styles.title, {fontFamily: theme.fonts.bold, fontSize: responsiveFont(26) }]}
                 >
                   Inventory
                 </Text>
-                <Text style={[styles.subtitle, { maxWidth: '90%', fontSize: responsiveFont(12), fontFamily: theme.fonts.display }]}>
+                <Text style={[styles.subtitle, { maxWidth: '90%', fontSize: responsiveFont(12), fontFamily: theme.fonts.body }]}>
                   Scanned and manually added items, purchase costs, and market
                   estimates in one place.
                 </Text>
@@ -459,12 +459,12 @@ export default function InventoryScreen() {
                   name="line.3.horizontal"
                   size={16}
                 />
-                <Text style={[styles.filterTriggerLabel, { fontSize: responsiveFont(9) }]}>
+                <Text style={[styles.filterTriggerLabel, { fontSize: responsiveFont(7) }]}>
                   FILTER &amp; SORT
                 </Text>
               </View>
 
-              <Text numberOfLines={1} style={[styles.filterTriggerSummary, { fontSize: responsiveFont(8) }]}>
+              <Text numberOfLines={1} style={[styles.filterTriggerSummary, { fontSize: responsiveFont(7) }]}>
                 {appliedSelectionSummary}
               </Text>
             </Pressable>
@@ -504,7 +504,7 @@ export default function InventoryScreen() {
               ) : (
                 <View style={[styles.feedItem, { width: inventoryCardWidth }]}>
                   <InventoryCard
-                    compact={Platform.OS !== "web" || !isTablet}
+                    compact={Platform.OS !== "web" || inventoryCardWidth < 320}
                     item={row.item}
                     onPress={() =>
                       router.push({

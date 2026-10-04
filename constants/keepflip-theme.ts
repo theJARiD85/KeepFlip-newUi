@@ -8,7 +8,7 @@ const darkColors = {
   surfaceSoft: '#1e150aff',
   card: 'rgba(5, 13, 19, 0.91)',
   surfaceOverlay: 'rgba(8, 8, 11, 0.98)',
-  surfaceInset: 'rgba(5, 13, 19, 0.48)',
+  surfaceInset: 'rgba(5, 13, 19, 0.83)',
   cardSoft: 'rgba(12, 10, 9, 0.95)',
   iconSurface: 'rgba(3, 3, 6, 0.98)',
   iconSurfaceCyan: 'rgba(88, 223, 232, 0.12)',

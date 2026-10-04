@@ -1253,8 +1253,8 @@ function ChartZoomModal({
           },
         ]}
       >
-        <View style={zoomUiStyles.panel}>
-          <View style={zoomUiStyles.header}>
+        <View style={[zoomUiStyles.panel, {marginTop: insets.top, marginBottom: insets.bottom, marginLeft: insets.left, marginRight: insets.right}]}>
+          <View style={[zoomUiStyles.header, { paddingTop: insets.top}]}>
             <View style={zoomUiStyles.headingCopy}>
               <Text style={[zoomUiStyles.eyebrow, { fontSize: responsiveFont(8) }]}>
                 {eyebrow}
