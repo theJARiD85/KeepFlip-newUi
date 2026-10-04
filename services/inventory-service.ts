@@ -237,7 +237,7 @@ type ItemPhotoRow = {
 
 export type SaveAnalyzedItemInput = {
   analysis: ItemAnalysisSuccess;
-  acquisitionCost?: number | null;
+  acquisitionCost: number;
   acquiredAt?: string | null;
   itemSpecifics?: Record<string, string> | string | null;
   modelFile?: string | null;
@@ -249,6 +249,20 @@ export type SaveAnalyzedItemInput = {
   scanId: string;
   sku?: string | null;
   storageLocation?: string | null;
+};
+
+export type CreateManualInventoryItemInput = {
+  acquisitionCostCents: number;
+  acquiredAt: string;
+  itemSpecifics?: Record<string, string> | string | null;
+  ownerId: string;
+  purchaseNotes?: string | null;
+  purchaseSource?: string | null;
+  quantity: number;
+  receiptFileId?: string | null;
+  sku?: string | null;
+  storageLocation?: string | null;
+  title: string;
 };
 
 export type SaveAnalyzedItemResult = {
@@ -959,6 +973,9 @@ export async function saveAnalyzedItemToInventory({
   const now = new Date().toISOString();
   const analysisSnapshotJson = serializeAnalysisSnapshot(analysis, now);
   const acquisitionCostCents = centsFromAmount(acquisitionCost);
+  if (!acquisitionCostCents) {
+    throw new Error('Enter the actual purchase price before saving this scanned item.');
+  }
   const normalizedAcquiredAt = acquiredAt?.trim() || null;
   const normalizedQuantity = purchaseQuantity(quantity);
   const inventoryCostCentsOnHand = acquisitionCostCents;
@@ -1076,6 +1093,115 @@ export async function saveAnalyzedItemToInventory({
     }),
     photoWarning: attached.warning,
   };
+}
+
+export async function createManualInventoryItem({
+  acquisitionCostCents,
+  acquiredAt,
+  itemSpecifics: suppliedItemSpecifics,
+  ownerId,
+  purchaseNotes,
+  purchaseSource,
+  quantity,
+  receiptFileId,
+  sku,
+  storageLocation,
+  title: suppliedTitle,
+}: CreateManualInventoryItemInput): Promise<InventoryItem> {
+  assertInventoryConfigured();
+  const cleanOwnerId = ownerId.trim();
+  const title = boundedText(suppliedTitle, 300);
+  const cleanAcquiredAt = acquiredAt.trim();
+  const acquiredDate = new Date(cleanAcquiredAt);
+  const normalizedQuantity = purchaseQuantity(quantity);
+
+  if (!cleanOwnerId) throw new Error('Sign in before saving an item.');
+  if (!title) throw new Error('Enter an item name.');
+  if (
+    !Number.isSafeInteger(acquisitionCostCents) ||
+    acquisitionCostCents < 1 ||
+    acquisitionCostCents > MAX_INVENTORY_NUMBER_CENTS
+  ) {
+    throw new Error('Enter a purchase price from $0.01 to $21,474,836.47.');
+  }
+  if (!Number.isFinite(acquiredDate.getTime())) {
+    throw new Error('Enter a valid acquisition date.');
+  }
+
+  const now = new Date().toISOString();
+  const itemDetailData = {
+    itemSpecificsJson: serializedItemSpecifics(suppliedItemSpecifics),
+    purchaseNotes: boundedText(purchaseNotes, 2_000),
+    purchaseSource: boundedText(purchaseSource, 120),
+    receiptFileId: boundedText(receiptFileId, 64),
+    sku: boundedText(sku, 120),
+    storageLocation: boundedText(storageLocation, 180),
+  };
+
+  let created: InventoryRow;
+  try {
+    created = await createInventoryItemRow({
+      ownerId: cleanOwnerId,
+      title,
+      category: 'Other',
+      brand: null,
+      model: null,
+      condition: 'unknown',
+      status: 'undecided',
+      description: boundedText(purchaseNotes, 2_000),
+      estimatedValueCents: null,
+      acquisitionCostCents,
+      inventoryCostCentsOnHand: acquisitionCostCents,
+      quantityPurchased: normalizedQuantity,
+      quantityOnHand: normalizedQuantity,
+      ...itemDetailData,
+      variant: null,
+      color: null,
+      era: null,
+      serialNumber: null,
+      originalRetailCents: null,
+      coverPhotoId: null,
+      modelFile: null,
+      photoCount: 0,
+      itemPhotos: [],
+      aiConfidence: null,
+      analysisSnapshotJson: null,
+      isListed: false,
+      acquiredAt: acquiredDate.toISOString(),
+      createdAt: now,
+      updatedAt: now,
+    });
+  } catch (error) {
+    if (isInventorySchemaError(error)) {
+      throw inventorySchemaMigrationError(error);
+    }
+    throw error;
+  }
+
+  trackTenjinEvent('inventory_item_saved');
+  trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.addedInventoryItem, {
+    has_acquisition_cost: true,
+    quantity: normalizedQuantity,
+    source: 'manual',
+  });
+  trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.inventoryItemAdded, {
+    item_id: created.$id,
+    photo_count: 0,
+    source: 'manual',
+  });
+
+  return rowToInventoryItem({
+    ...created,
+    acquisitionCostCents,
+    inventoryCostCentsOnHand: acquisitionCostCents,
+    quantityPurchased: normalizedQuantity,
+    quantityOnHand: normalizedQuantity,
+    ...itemDetailData,
+    photoCount: 0,
+    itemPhotos: [],
+    isListed: false,
+    acquiredAt: acquiredDate.toISOString(),
+  });
 }
 
 export async function listInventoryItems(

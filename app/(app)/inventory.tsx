@@ -1,7 +1,9 @@
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { MetricsAnalyticsScreen } from "@/components/analytics/metrics-analytics-screen";
 import { InventoryCard } from "@/components/inventory/inventory-card";
+import { ManualInventoryItemDialog } from "@/components/inventory/manual-inventory-item-dialog";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { KeepFlipControlRow } from "@/components/ui/keepflip-control-row";
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
@@ -180,6 +182,7 @@ export default function InventoryScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
+  const [manualAddOpen, setManualAddOpen] = useState(false);
 
   const [flipDecision, setFlipDecision] = useState<
     InventoryFlipDecision | undefined
@@ -360,9 +363,20 @@ export default function InventoryScreen() {
                   Inventory
                 </Text>
                 <Text style={[styles.subtitle, { maxWidth: '90%', fontSize: responsiveFont(12), fontFamily: theme.fonts.display }]}>
-                  Every saved scan, observed condition, and current market estimate
-                  in one place.
+                  Scanned and manually added items, purchase costs, and market
+                  estimates in one place.
                 </Text>
+                <View style={{ marginTop: 14 }}>
+                  <KeepFlipControlRow
+                    accent="cyan"
+                    actionLabel="ADD ITEM"
+                    accessibilityHint="Add inventory without a scan or resale valuation."
+                    description="Add an item manually and record what you paid for Books and COGS."
+                    icon="shippingbox.fill"
+                    label="Add inventory item manually"
+                    onPress={() => setManualAddOpen(true)}
+                  />
+                </View>
               </View>
         <View
           style={[
@@ -470,9 +484,9 @@ export default function InventoryScreen() {
                       size={34}
                     />
                   </View>
-                  <Text style={[styles.emptyTitle, { fontSize: responsiveFont(20) }]}>No saved scans yet</Text>
+                  <Text style={[styles.emptyTitle, { fontSize: responsiveFont(20) }]}>No inventory items yet</Text>
                   <Text style={[styles.emptyBody, { fontSize: responsiveFont(13) }]}>
-                    Complete an item analysis and choose Save to Inventory.
+                    Add an item manually and enter what you paid, or scan it if you also want an estimated resale value.
                   </Text>
                 </View>
               ) : null
@@ -519,6 +533,15 @@ export default function InventoryScreen() {
             showsVerticalScrollIndicator={false}
           />
         )}
+
+        <ManualInventoryItemDialog
+          onCancel={() => setManualAddOpen(false)}
+          onSaved={() => {
+            void loadItems(true);
+          }}
+          ownerId={userId ?? ""}
+          visible={manualAddOpen}
+        />
 
       <Modal
         animationType="fade"

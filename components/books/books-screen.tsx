@@ -45,6 +45,7 @@ import {
   recordBookkeepingEvent,
   type BookkeepingEventType,
   type BookkeepingMoneyEvent,
+  type BookkeepingSaleMargin,
 } from '@/services/reseller-bookkeeping-service';
 import {
   buildResellerLedgerCsv,
@@ -68,8 +69,10 @@ type LedgerDraft = {
   idempotencyKey: string;
   itemId: string | null;
   notes: string;
+  orderId: string;
   occurredOn: string;
   quantity: string;
+  shipping: string;
 };
 
 type MetricProps = {
@@ -81,6 +84,8 @@ type MetricProps = {
 
 const ENTRY_TYPE_OPTIONS: ResellerLedgerEntryType[] = [
   'sale_proceeds',
+  'inventory_write_off',
+  'inventory_value_adjustment',
   'inventory_purchase',
   'marketplace_fee',
   'shipping_label',
@@ -103,8 +108,10 @@ function makeDraft(entryType: ResellerLedgerEntryType): LedgerDraft {
     idempotencyKey: createBookkeepingIdempotencyKey(`manual-${entryType}`),
     itemId: null,
     notes: '',
+    orderId: '',
     occurredOn: todayBusinessDate(),
     quantity: '1',
+    shipping: '',
   };
 }
 
@@ -310,6 +317,7 @@ function bookkeepingEventsAsLedgerEntries(
 ): ResellerLedgerEntry[] {
   return events.map((event) => ({
     amountCents: event.amountCents,
+    bookTransactionId: event.transactionId ?? null,
     channel: 'KeepFlip Books',
     createdAt: event.occurredAt,
     currency: 'USD',
@@ -321,6 +329,7 @@ function bookkeepingEventsAsLedgerEntries(
     notes: null,
     occurredAt: event.occurredAt,
     ownerId,
+    orderId: event.orderId ?? null,
     receiptFileId: null,
     saleGroupId: null,
     source: 'migration',
@@ -336,6 +345,8 @@ function advancedEventTypeForLedgerEntry(
     case 'sale_proceeds':
       return 'sale';
     case 'inventory_purchase':
+    case 'inventory_write_off':
+    case 'inventory_value_adjustment':
     case 'marketplace_fee':
     case 'shipping_label':
     case 'refund':
@@ -377,6 +388,7 @@ export function BooksScreen() {
   const ledgerConfigured = legacyLedgerConfigured || advancedBookkeepingConfigured;
   const [entries, setEntries] = useState<ResellerLedgerEntry[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [saleMargins, setSaleMargins] = useState<BookkeepingSaleMargin[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -398,6 +410,7 @@ export function BooksScreen() {
       if (!userId) {
         setEntries([]);
         setInventory([]);
+        setSaleMargins(null);
         setLoading(false);
         setRefreshing(false);
         return;
@@ -431,9 +444,11 @@ export function BooksScreen() {
           advancedResult.status === 'fulfilled' ? advancedResult.value : null;
 
         setInventory(savedInventory);
+        setSaleMargins(advancedOverview?.saleMargins ?? null);
 
         if (!ledgerConfigured) {
           setEntries([]);
+          setSaleMargins(null);
           setSetupNotice(
             'Deploy the private Books service and add its Function ID to this app configuration to start recording transactions. Your existing inventory stays unchanged.',
           );
@@ -464,6 +479,7 @@ export function BooksScreen() {
           ),
         );
       } catch (caughtError) {
+        setSaleMargins(null);
         setError(
           caughtError instanceof Error
             ? caughtError.message
@@ -488,10 +504,27 @@ export function BooksScreen() {
     }, [loadBooks]),
   );
 
-  const summary = useMemo(
-    () => summarizeResellerBooks({ entries, inventory }),
-    [entries, inventory],
-  );
+  const summary = useMemo(() => {
+    const base = summarizeResellerBooks({ entries, inventory });
+    if (saleMargins == null) return base;
+
+    const now = new Date();
+    const currentMonthSales = saleMargins.filter((sale) => {
+      const occurredAt = new Date(sale.occurredAt);
+      return occurredAt.getFullYear() === now.getFullYear() &&
+        occurredAt.getMonth() === now.getMonth();
+    });
+    return {
+      ...base,
+      realizedItemProfitCents: currentMonthSales.reduce(
+        (total, sale) => total + (sale.netProfitCents ?? 0),
+        0,
+      ),
+      unlinkedSalesCount: currentMonthSales.filter(
+        (sale) => sale.netProfitCents == null,
+      ).length,
+    };
+  }, [entries, inventory, saleMargins]);
   const inventoryNames = useMemo(
     () => new Map(inventory.map((item) => [item.id, item.title])),
     [inventory],
@@ -502,10 +535,28 @@ export function BooksScreen() {
   const selectedTransactionItem = selectedTransaction?.itemId
     ? inventory.find((item) => item.id === selectedTransaction.itemId) ?? null
     : null;
+  const selectedSaleMargin =
+    selectedTransaction?.entryType === 'sale_proceeds' && saleMargins
+      ? saleMargins.find((sale) =>
+          selectedTransaction.orderId
+            ? sale.orderId === selectedTransaction.orderId
+            : Boolean(
+                selectedTransaction.bookTransactionId &&
+                  sale.id === selectedTransaction.bookTransactionId,
+              ),
+        ) ?? null
+      : null;
   const draftDetails = ledgerEntryDetails(draft.entryType);
+  const isWriteOff = draft.entryType === 'inventory_write_off';
+  const isValueAdjustment = draft.entryType === 'inventory_value_adjustment';
+  const itemNeedsOnHand = isWriteOff || isValueAdjustment;
   const availableEntryTypeOptions = advancedBookkeepingConfigured
     ? ENTRY_TYPE_OPTIONS.filter((entryType) => entryType !== 'other_income')
-    : ENTRY_TYPE_OPTIONS;
+    : ENTRY_TYPE_OPTIONS.filter(
+        (entryType) =>
+          entryType !== 'inventory_write_off' &&
+          entryType !== 'inventory_value_adjustment',
+      );
 
   const openTransactionDetails = (entry: ResellerLedgerEntry) => {
     hapticSelection();
@@ -537,9 +588,32 @@ export function BooksScreen() {
   const saveEntry = async () => {
     if (!userId || saving) return;
 
-    const amountCents = centsFromLedgerAmount(draft.amount);
-    if (!amountCents) {
+    const isSale = draft.entryType === 'sale_proceeds';
+    const amountCents = draft.amount.trim()
+      ? centsFromLedgerAmount(draft.amount, isValueAdjustment)
+      : null;
+    if (!isWriteOff && amountCents == null) {
       setFormError('Enter a valid amount from $0.01 to $10,000,000.00.');
+      return;
+    }
+
+    if (isValueAdjustment && selectedItem) {
+      const currentValueCents = selectedItem.inventoryCostOnHand != null
+        ? Math.max(0, Math.round(selectedItem.inventoryCostOnHand * 100))
+        : selectedItem.acquisitionCost != null
+          ? Math.max(0, Math.round(selectedItem.acquisitionCost * 100))
+          : null;
+      if (currentValueCents == null || amountCents == null || amountCents >= currentValueCents) {
+        setFormError('The new on-hand value must be lower than the item’s known current value.');
+        return;
+      }
+    }
+
+    const shippingCents = draft.shipping.trim()
+      ? centsFromLedgerAmount(draft.shipping, true)
+      : null;
+    if (draft.shipping.trim() && shippingCents == null) {
+      setFormError('Shipping cost must be a valid non-negative amount.');
       return;
     }
 
@@ -552,16 +626,16 @@ export function BooksScreen() {
     const quantity = Number(draft.quantity);
     if (
       advancedBookkeepingConfigured &&
-      draft.entryType === 'sale_proceeds' &&
+      (isSale || isWriteOff) &&
       (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 100_000)
     ) {
-      setFormError('How many sold must be a whole number from 1 to 100,000.');
+      setFormError(`Quantity must be a whole number from 1 to 100,000.`);
       return;
     }
 
     if (
       advancedBookkeepingConfigured &&
-      draft.entryType === 'sale_proceeds' &&
+      (isSale || isWriteOff) &&
       selectedItem &&
       quantity > selectedItem.quantityOnHand
     ) {
@@ -569,6 +643,20 @@ export function BooksScreen() {
         `Only ${selectedItem.quantityOnHand.toLocaleString()} unit${selectedItem.quantityOnHand === 1 ? '' : 's'
         } remain for this item.`,
       );
+      return;
+    }
+
+    if (
+      advancedBookkeepingConfigured &&
+      (isSale || isWriteOff || isValueAdjustment || draft.entryType === 'inventory_purchase') &&
+      !draft.itemId
+    ) {
+      setFormError('Choose the inventory item linked to this Books entry.');
+      return;
+    }
+
+    if ((isWriteOff || isValueAdjustment) && !draft.notes.trim()) {
+      setFormError('Add a reason for this inventory adjustment.');
       return;
     }
 
@@ -583,18 +671,6 @@ export function BooksScreen() {
           );
           return;
         }
-        if (
-          (advancedEventType === 'sale' ||
-            advancedEventType === 'inventory_purchase') &&
-          !draft.itemId
-        ) {
-          setFormError(
-            advancedEventType === 'sale'
-              ? 'Choose the item that sold so KeepFlip can move its original cost.'
-              : 'Choose the item you bought so KeepFlip can save its original cost.',
-          );
-          return;
-        }
         const advancedNotes = [
           draft.channel.trim() ? `Source: ${draft.channel.trim()}` : '',
           draft.notes.trim(),
@@ -603,19 +679,27 @@ export function BooksScreen() {
           .join(' | ');
         await recordBookkeepingEvent({
           ...(advancedEventType === 'sale'
-            ? { grossSaleCents: amountCents }
-            : { amountCents }),
+            ? { grossSaleCents: amountCents! }
+            : advancedEventType === 'inventory_write_off'
+              ? {}
+              : advancedEventType === 'inventory_value_adjustment'
+                ? { newInventoryValueCents: amountCents! }
+                : { amountCents: amountCents! }),
           eventType: advancedEventType,
           idempotencyKey: draft.idempotencyKey,
           itemId: draft.itemId,
           notes: advancedNotes || null,
+          orderId: draft.orderId.trim() || null,
           occurredAt,
-          ...(advancedEventType === 'sale' ? { quantity } : {}),
+          ...(advancedEventType === 'sale' || advancedEventType === 'inventory_write_off'
+            ? { quantity }
+            : {}),
+          ...(advancedEventType === 'sale' ? { shippingCents } : {}),
           summary: draftDetails.label,
         });
       } else {
         await createManualLedgerEntry({
-          amountCents,
+          amountCents: amountCents!,
           channel: draft.channel,
           entryType: draft.entryType,
           itemId: draft.itemId,
@@ -629,7 +713,7 @@ export function BooksScreen() {
       hapticSuccess();
       recordCompletedAction();
       trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.bookkeepingEntryCreated, {
-        amount_cents: amountCents,
+        amount_cents: amountCents ?? 0,
         entry_type: draft.entryType,
       });
       await loadBooks(true);
@@ -835,8 +919,8 @@ export function BooksScreen() {
               value={formatMoney(summary.inventoryBasisCents)}
             />
             <Metric
-              detail="Linked sales after item cost and fees"
-              label="TRUE ITEM PROFIT"
+              detail="Sales with linked item cost, fees, and shipping"
+              label="REALIZED SALE PROFIT"
               value={formatSignedMoney(summary.realizedItemProfitCents)}
             />
             <Metric
@@ -856,7 +940,7 @@ export function BooksScreen() {
                 ? `${formatMoney(summary.unlinkedInventoryPurchaseCents)} of inventory cost is not linked to an item. `
                 : ''}
               {summary.unlinkedSalesCount > 0
-                ? `${summary.unlinkedSalesCount} sale${summary.unlinkedSalesCount === 1 ? '' : 's'} cannot be included in item-level profit until linked.`
+                ? `${summary.unlinkedSalesCount} sale${summary.unlinkedSalesCount === 1 ? '' : 's'} need a known item cost and linked shipping before profit is complete.`
                 : ''}
             </Text>
           ) : null}
@@ -981,9 +1065,11 @@ export function BooksScreen() {
                 showsVerticalScrollIndicator={false}>
                 <View style={styles.transactionDetailAmountCard}>
                   <Text style={[styles.transactionDetailAmountLabel, { fontSize: responsiveFont(8) }]}>
-                    {selectedTransaction.direction === 'income'
-                      ? 'MONEY IN'
-                      : 'MONEY OUT'}
+                    {selectedTransaction.direction === 'adjustment'
+                      ? 'INVENTORY VALUE CHANGE'
+                      : selectedTransaction.direction === 'income'
+                        ? 'MONEY IN'
+                        : 'MONEY OUT'}
                   </Text>
                   <Text
                     selectable
@@ -997,9 +1083,11 @@ export function BooksScreen() {
                     {formatMoney(selectedTransaction.amountCents)}
                   </Text>
                   <Text style={[styles.transactionDetailDirection, { fontSize: responsiveFont(11) }]}>
-                    {selectedTransaction.direction === 'income'
-                      ? 'Income'
-                      : 'Expense'}{' '}
+                    {selectedTransaction.direction === 'adjustment'
+                      ? 'Non-cash adjustment'
+                      : selectedTransaction.direction === 'income'
+                        ? 'Income'
+                        : 'Expense'}{' '}
                     · {selectedTransaction.currency}
                   </Text>
                 </View>
@@ -1018,6 +1106,10 @@ export function BooksScreen() {
                         ? 'KeepFlip Books'
                         : selectedTransaction.source.replace(/_/g, ' '))
                     }
+                  />
+                  <TransactionDetailRow
+                    label="Order number"
+                    value={selectedTransaction.orderId}
                   />
                   <TransactionDetailRow
                     label="Linked item"
@@ -1045,6 +1137,58 @@ export function BooksScreen() {
                     value={selectedTransaction.receiptFileId}
                   />
                 </View>
+
+                {advancedBookkeepingConfigured &&
+                selectedTransaction.entryType === 'sale_proceeds' ? (
+                  <View style={styles.transactionDetailSection}>
+                    <Text style={[styles.transactionDetailSectionTitle, { fontSize: responsiveFont(8) }]}>
+                      {selectedSaleMargin?.orderId ? 'ORDER PROFIT' : 'SALE PROFIT'}
+                    </Text>
+                    {selectedSaleMargin ? (
+                      <>
+                        {selectedSaleMargin.saleCount > 1 ? (
+                          <TransactionDetailRow
+                            label="Sales included"
+                            value={`${selectedSaleMargin.saleCount} sales across ${selectedSaleMargin.itemCount} item${selectedSaleMargin.itemCount === 1 ? '' : 's'}`}
+                          />
+                        ) : null}
+                        <TransactionDetailRow
+                          label="Gross sale"
+                          value={formatMoney(selectedSaleMargin.grossSaleCents)}
+                        />
+                        <TransactionDetailRow
+                          label="Marketplace fees"
+                          value={formatMoney(selectedSaleMargin.feeCents)}
+                        />
+                        <TransactionDetailRow
+                          label="Shipping"
+                          value={selectedSaleMargin.shippingConflict
+                            ? 'Both sale shipping and a linked label are recorded'
+                            : selectedSaleMargin.shippingKnown
+                              ? formatMoney(selectedSaleMargin.shippingCents ?? 0)
+                              : 'Not linked or recorded'}
+                        />
+                        <TransactionDetailRow
+                          label="Item cost"
+                          value={selectedSaleMargin.costCents == null
+                            ? 'Not recorded'
+                            : formatMoney(selectedSaleMargin.costCents)}
+                        />
+                        <TransactionDetailRow
+                          label="Net sale profit"
+                          value={selectedSaleMargin.netProfitCents == null
+                            ? 'Incomplete: check item cost and shipping'
+                            : formatSignedMoney(selectedSaleMargin.netProfitCents)}
+                        />
+                      </>
+                    ) : (
+                      <TransactionDetailRow
+                        label="Net sale profit"
+                        value="Not available until the linked cost and shipping are recorded."
+                      />
+                    )}
+                  </View>
+                ) : null}
 
                 <View style={styles.transactionDetailSection}>
                   <Text style={[styles.transactionDetailSectionTitle, { fontSize: responsiveFont(8) }]}>RECORD</Text>
@@ -1144,35 +1288,48 @@ export function BooksScreen() {
                   })}
                 </View>
                 <Text style={styles.typeHelp}>
-                  {draftDetails.direction === 'income'
-                    ? 'Income increases cash in Books.'
-                    : 'Expenses reduce cash in Books.'}
+                  {draftDetails.direction === 'adjustment'
+                    ? 'Changes inventory value without changing cash.'
+                    : draftDetails.direction === 'income'
+                      ? 'Income increases cash in Books.'
+                      : 'Expenses reduce cash in Books.'}
                 </Text>
               </View>
 
               <View style={styles.formRow}>
                 <View style={styles.formFieldWide}>
-                  <Text style={[styles.formLabel, { fontSize: responsiveFont(8) }]}>
-                    {draft.entryType === 'sale_proceeds'
-                      ? 'GROSS PAID BY BUYER'
-                      : 'AMOUNT'}
-                  </Text>
-                  <View style={styles.amountInputWrap}>
-                    <Text style={styles.currencyPrefix}>$</Text>
-                    <TextInput
-                      accessibilityLabel="Transaction amount"
-                      autoCorrect={false}
-                      keyboardType="decimal-pad"
-                      maxLength={13}
-                      onChangeText={(amount) =>
-                        setDraft((current) => ({ ...current, amount }))
-                      }
-                      placeholder="0.00"
-                      placeholderTextColor={theme.colors.textMuted}
-                      style={styles.amountInput}
-                      value={draft.amount}
-                    />
-                  </View>
+                  {draft.entryType === 'inventory_write_off' ? (
+                    <>
+                      <Text style={[styles.formLabel, { fontSize: responsiveFont(8) }]}>COST REMOVED</Text>
+                      <Text style={styles.typeHelp}>KeepFlip calculates this from the saved lot cost and quantity.</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={[styles.formLabel, { fontSize: responsiveFont(8) }]}>
+                        {draft.entryType === 'sale_proceeds'
+                          ? 'GROSS PAID BY BUYER'
+                          : draft.entryType === 'inventory_value_adjustment'
+                            ? 'NEW TOTAL ON-HAND VALUE'
+                            : 'AMOUNT'}
+                      </Text>
+                      <View style={styles.amountInputWrap}>
+                        <Text style={styles.currencyPrefix}>$</Text>
+                        <TextInput
+                          accessibilityLabel={draft.entryType === 'inventory_value_adjustment' ? 'New total on-hand inventory value' : 'Transaction amount'}
+                          autoCorrect={false}
+                          keyboardType="decimal-pad"
+                          maxLength={13}
+                          onChangeText={(amount) =>
+                            setDraft((current) => ({ ...current, amount }))
+                          }
+                          placeholder="0.00"
+                          placeholderTextColor={theme.colors.textMuted}
+                          style={styles.amountInput}
+                          value={draft.amount}
+                        />
+                      </View>
+                    </>
+                  )}
                 </View>
                 <View style={styles.formFieldDate}>
                   <Text style={[styles.formLabel, { fontSize: responsiveFont(8) }]}>DATE</Text>
@@ -1214,8 +1371,53 @@ export function BooksScreen() {
                 />
               </View>
 
+              {advancedBookkeepingConfigured &&
+              (draft.entryType === 'sale_proceeds' || draft.entryType === 'shipping_label') ? (
+                <View style={styles.formSection}>
+                  <Text style={[styles.formLabel, { fontSize: responsiveFont(8) }]}>ORDER NUMBER</Text>
+                  <TextInput
+                    accessibilityLabel="Order number for linking sale and shipping"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    maxLength={180}
+                    onChangeText={(orderId) =>
+                      setDraft((current) => ({ ...current, orderId }))
+                    }
+                    placeholder="Use the same order number on its sale and label"
+                    placeholderTextColor={theme.colors.textMuted}
+                    style={styles.textInput}
+                    value={draft.orderId}
+                  />
+                </View>
+              ) : null}
+
+              {advancedBookkeepingConfigured && draft.entryType === 'sale_proceeds' ? (
+                <View style={styles.formSection}>
+                  <Text style={[styles.formLabel, { fontSize: responsiveFont(8) }]}>OUTBOUND SHIPPING PAID</Text>
+                  <TextInput
+                    accessibilityLabel="Outbound shipping cost paid for this sale"
+                    keyboardType="decimal-pad"
+                    maxLength={13}
+                    onChangeText={(shipping) =>
+                      setDraft((current) => ({ ...current, shipping }))
+                    }
+                    placeholder="Enter 0.00 if no label cost"
+                    placeholderTextColor={theme.colors.textMuted}
+                    style={styles.textInput}
+                    value={draft.shipping}
+                  />
+                  <Text style={styles.typeHelp}>
+                    If you record the shipping label separately, leave this blank and use the same order number to link it.
+                  </Text>
+                </View>
+              ) : null}
+
               <View style={styles.formSection}>
-                <Text style={[styles.formLabel, { fontSize: responsiveFont(8) }]}>INVENTORY ITEM (OPTIONAL)</Text>
+                <Text style={[styles.formLabel, { fontSize: responsiveFont(8) }]}>
+                  {itemNeedsOnHand || draft.entryType === 'sale_proceeds' || draft.entryType === 'inventory_purchase'
+                    ? 'INVENTORY ITEM (REQUIRED)'
+                    : 'INVENTORY ITEM (OPTIONAL)'}
+                </Text>
                 <Pressable
                   accessibilityHint="Links this transaction to a saved inventory item."
                   accessibilityRole="button"
@@ -1232,7 +1434,9 @@ export function BooksScreen() {
                       {selectedItem?.title ?? 'No item linked'}
                     </Text>
                     <Text style={[styles.itemPickerDetail, { fontSize: responsiveFont(10) }]}>
-                      Link sales and related costs to calculate item-level profit.
+                      {itemNeedsOnHand
+                        ? 'Link the exact lot being written off or adjusted.'
+                        : 'Link sales and shipping costs with the same order number to calculate profit.'}
                     </Text>
                   </View>
                   <IconSymbol
@@ -1245,18 +1449,20 @@ export function BooksScreen() {
 
                 {showItemPicker ? (
                   <View style={styles.itemOptions}>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: !draft.itemId }}
-                      onPress={() => {
-                        setDraft((current) => ({ ...current, itemId: null }));
-                        setShowItemPicker(false);
-                      }}
-                      style={styles.itemOption}>
-                      <Text style={[styles.itemOptionText, { fontSize: responsiveFont(12) }]}>No item linked</Text>
-                    </Pressable>
-                    {inventory.length ? (
-                      inventory.map((item) => {
+                    {!(itemNeedsOnHand || draft.entryType === 'sale_proceeds' || draft.entryType === 'inventory_purchase') ? (
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: !draft.itemId }}
+                        onPress={() => {
+                          setDraft((current) => ({ ...current, itemId: null }));
+                          setShowItemPicker(false);
+                        }}
+                        style={styles.itemOption}>
+                        <Text style={[styles.itemOptionText, { fontSize: responsiveFont(12) }]}>No item linked</Text>
+                      </Pressable>
+                    ) : null}
+                    {inventory.filter((item) => !itemNeedsOnHand || item.quantityOnHand > 0).length ? (
+                      inventory.filter((item) => !itemNeedsOnHand || item.quantityOnHand > 0).map((item) => {
                         const selected = draft.itemId === item.id;
                         const itemCostCents = resolvedInventoryCostCents(item);
                         return (
@@ -1292,11 +1498,14 @@ export function BooksScreen() {
                 ) : null}
               </View>
 
-              {advancedBookkeepingConfigured && draft.entryType === 'sale_proceeds' ? (
+              {advancedBookkeepingConfigured &&
+              (draft.entryType === 'sale_proceeds' || isWriteOff) ? (
                 <View style={styles.formSection}>
-                  <Text style={[styles.formLabel, { fontSize: responsiveFont(8) }]}>HOW MANY SOLD?</Text>
+                  <Text style={[styles.formLabel, { fontSize: responsiveFont(8) }]}>
+                    {isWriteOff ? 'HOW MANY UNITS WRITTEN OFF?' : 'HOW MANY SOLD?'}
+                  </Text>
                   <TextInput
-                    accessibilityLabel="Number of inventory units sold"
+                    accessibilityLabel={isWriteOff ? 'Number of inventory units written off' : 'Number of inventory units sold'}
                     keyboardType="number-pad"
                     maxLength={6}
                     onChangeText={(quantity) =>
@@ -1309,20 +1518,30 @@ export function BooksScreen() {
                   />
                   {selectedItem ? (
                     <Text style={styles.typeHelp}>
-                      {selectedItem.quantityOnHand.toLocaleString()} on hand. KeepFlip moves
-                      only this many units of cost into your sold cost.
+                      {selectedItem.quantityOnHand.toLocaleString()} on hand. {isWriteOff
+                        ? 'KeepFlip removes this quantity and its average cost from inventory.'
+                        : 'KeepFlip moves this quantity’s average cost into sold cost.'}
                     </Text>
                   ) : (
                     <Text style={styles.typeHelp}>
-                      Choose an item above so KeepFlip can move the right cost into your sold
-                      cost.
+                      Choose an item above so KeepFlip can use the saved cost for these units.
                     </Text>
                   )}
                 </View>
               ) : null}
 
+              {advancedBookkeepingConfigured && isValueAdjustment ? (
+                <View style={styles.formSection}>
+                  <Text style={styles.typeHelp}>
+                    Enter the new total book value of the remaining units. For a year-end stocktake, use the year-end date and record one adjustment per lot. KeepFlip records only the decrease, leaves original acquisition cost intact, and does not change cash or quantity.
+                  </Text>
+                </View>
+              ) : null}
+
               <View style={styles.formSection}>
-                <Text style={[styles.formLabel, { fontSize: responsiveFont(8) }]}>NOTE (OPTIONAL)</Text>
+                <Text style={[styles.formLabel, { fontSize: responsiveFont(8) }]}>
+                  {(isWriteOff || isValueAdjustment) ? 'REASON (REQUIRED)' : 'NOTE (OPTIONAL)'}
+                </Text>
                 <TextInput
                   accessibilityLabel="Transaction note"
                   maxLength={2000}
@@ -1330,7 +1549,7 @@ export function BooksScreen() {
                   onChangeText={(notes) =>
                     setDraft((current) => ({ ...current, notes }))
                   }
-                  placeholder="Order number, lot detail, reason for expense…"
+                  placeholder="Damage, lost stock, market evidence, or other reason…"
                   placeholderTextColor={theme.colors.textMuted}
                   style={[styles.textInput, styles.notesInput]}
                   textAlignVertical="top"

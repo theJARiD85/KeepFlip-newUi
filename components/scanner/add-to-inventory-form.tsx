@@ -32,12 +32,14 @@ export type AddToInventoryFormValues = {
   location: string;
   receiptReference: string;
   notes: string;
+  title: string;
 };
 
 type AddToInventoryFormProps = {
   itemTitle: string;
   onCancel: () => void;
   onSubmit: (values: AddToInventoryFormValues) => void | Promise<void>;
+  manualEntry?: boolean;
   sourcingTrip?: SourcingTripSummary | null;
   submitting?: boolean;
   visible: boolean;
@@ -54,6 +56,7 @@ function emptyValues(sourcingTrip: SourcingTripSummary | null = null): AddToInve
     location: "",
     receiptReference: "",
     notes: "",
+    title: "",
   };
 }
 
@@ -379,6 +382,7 @@ function FieldLabel({ children, required = false }: { children: string; required
 
 export function AddToInventoryForm({
   itemTitle,
+  manualEntry = false,
   onCancel,
   onSubmit,
   sourcingTrip = null,
@@ -511,10 +515,12 @@ export function AddToInventoryForm({
                 <View style={styles.headerCopy}>
                   <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>BOOKS &amp; RECORDS</Text>
                   <Text numberOfLines={2} style={[styles.title, { fontSize: responsiveFont(22), lineHeight: 27 }]}>
-                    Add {itemTitle} to inventory
+                    {manualEntry ? "Add item to inventory" : `Add ${itemTitle} to inventory`}
                   </Text>
                   <Text style={[styles.subtitle, { fontSize: responsiveFont(13), lineHeight: 18 }]}>
-                    Confirm what you actually paid. KeepFlip&apos;s projection stays separate from these records.
+                    {manualEntry
+                      ? "No scan or resale estimate is needed. Enter what you paid so Books can track inventory cost and sale COGS."
+                      : "Confirm what you actually paid. KeepFlip&apos;s projection stays separate from these records."}
                   </Text>
                 </View>
                 <Pressable
@@ -546,11 +552,25 @@ export function AddToInventoryForm({
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
               >
+                {manualEntry ? (
+                  <View style={styles.column}>
+                    <FieldLabel required>Item name</FieldLabel>
+                    <TextInput
+                      autoFocus
+                      editable={!submitting}
+                      onChangeText={(value) => update("title", value)}
+                      placeholder="Vintage denim jacket"
+                      placeholderTextColor="rgba(255,255,255,0.34)"
+                      style={styles.input}
+                      value={values.title}
+                    />
+                  </View>
+                ) : null}
                 <View style={styles.twoColumn}>
                   <View style={styles.column}>
                     <FieldLabel required>Total paid</FieldLabel>
                     <TextInput
-                      autoFocus
+                      autoFocus={!manualEntry}
                       editable={!submitting}
                       keyboardType="decimal-pad"
                       onChangeText={(value) => update("acquisitionCost", value)}
@@ -574,7 +594,7 @@ export function AddToInventoryForm({
                   </View>
                 </View>
                 <Text style={styles.helper}>
-                  This actual amount becomes COGS. KeepFlip keeps the market buy ceiling separate and tracks the cost per item as units sell.
+                  This is the total cost for this inventory row. KeepFlip spreads it across the units in the row as they sell. Add items with different costs as separate rows.
                 </Text>
                 <View style={styles.column}>
                   <FieldLabel required>Acquisition date</FieldLabel>

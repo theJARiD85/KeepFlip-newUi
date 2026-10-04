@@ -12,6 +12,7 @@ import {
   KeepFlipControlRow,
   type KeepFlipControlRowProps,
 } from '@/components/ui/keepflip-control-row';
+import { ManualInventoryItemDialog } from '@/components/inventory/manual-inventory-item-dialog';
 import { KeepFlipText as Text, KeepFlipTextInput as TextInput } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { EbaySellerHealthPanel } from '@/components/command-center/ebay-seller-health-panel';
@@ -395,6 +396,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
   const [ebayOrders, setEbayOrders] = useState<EbaySellerOrder[]>([]);
   const [ebayListings, setEbayListings] = useState<EbaySellerListing[]>([]);
   const [selectedItemId, setSelectedItemId] = useState('');
+  const [manualInventoryAddOpen, setManualInventoryAddOpen] = useState(false);
   const [draft, setDraft] = useState<SaleDraft>(EMPTY_DRAFT);
   const [tracking, setTracking] = useState<Record<string, { carrier: string; number: string }>>({});
   const [loading, setLoading] = useState(true);
@@ -758,6 +760,21 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
         onPress={() => void loadBase()}
       />
 
+      <Section title="Inventory">
+        <Text style={styles.muted}>
+          Add an item without scanning it or getting a resale valuation first.
+          KeepFlip records the purchase cost for Books and COGS.
+        </Text>
+        <Button
+          title="Add inventory item manually"
+          description="Enter the item and what you paid, then use that cost when it sells."
+          icon="shippingbox.fill"
+          accent="cyan"
+          actionLabel="ADD ITEM"
+          onPress={() => setManualInventoryAddOpen(true)}
+        />
+      </Section>
+
       <Section title="Listing lifecycle">
         <Text style={styles.muted}>
           {listingLimit && listingLimit > 0
@@ -1076,6 +1093,19 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
           scan and listing-generation limits and up to 10 saved inventory items.
         </Text>
       </Section>
+
+      <ManualInventoryItemDialog
+        onCancel={() => setManualInventoryAddOpen(false)}
+        onSaved={(item) => {
+          setInventory((current) => [
+            item,
+            ...current.filter((candidate) => candidate.id !== item.id),
+          ]);
+          setNotice('Inventory item and purchase cost saved to Books.');
+        }}
+        ownerId={ownerId}
+        visible={manualInventoryAddOpen}
+      />
     </>
   );
 

@@ -15,6 +15,8 @@ import type { InventoryItem } from '@/services/inventory-service';
 export const RESELLER_LEDGER_ENTRY_TYPES = [
   'inventory_purchase',
   'sale_proceeds',
+  'inventory_write_off',
+  'inventory_value_adjustment',
   'marketplace_fee',
   'shipping_label',
   'refund',
@@ -30,13 +32,15 @@ export const RESELLER_LEDGER_ENTRY_TYPES = [
 
 export type ResellerLedgerEntryType =
   (typeof RESELLER_LEDGER_ENTRY_TYPES)[number];
-export type ResellerLedgerDirection = 'income' | 'expense';
+export type ResellerLedgerDirection = 'income' | 'expense' | 'adjustment';
 export type ResellerLedgerSource = 'manual' | 'ebay_import' | 'migration';
 
 export type ResellerLedgerEntry = {
   id: string;
   ownerId: string;
   itemId: string | null;
+  bookTransactionId?: string | null;
+  orderId?: string | null;
   saleGroupId: string | null;
   entryType: ResellerLedgerEntryType;
   direction: ResellerLedgerDirection;
@@ -115,6 +119,16 @@ const ENTRY_DETAILS: Record<
     direction: 'income',
     label: 'Sale proceeds',
     shortLabel: 'Sale',
+  },
+  inventory_write_off: {
+    direction: 'adjustment',
+    label: 'Inventory write-off',
+    shortLabel: 'Write-off',
+  },
+  inventory_value_adjustment: {
+    direction: 'adjustment',
+    label: 'Inventory value adjustment',
+    shortLabel: 'Value change',
   },
   marketplace_fee: {
     direction: 'expense',
@@ -246,7 +260,9 @@ function assertLedgerConfigured() {
 }
 
 function entryIsActive(entry: ResellerLedgerEntry) {
-  return !entry.voidedAt && entry.currency === 'USD' && entry.amountCents > 0;
+  return !entry.voidedAt &&
+    entry.currency === 'USD' &&
+    (entry.amountCents > 0 || entry.direction === 'adjustment');
 }
 
 function positiveAmountCents(amount: number | null | undefined) {
@@ -265,6 +281,10 @@ export function resolvedInventoryCostCents(
   item: Pick<InventoryItem, 'acquisitionCost' | 'inventoryCostOnHand'>,
   linkedPurchaseCents = 0,
 ) {
+  if (item.inventoryCostOnHand != null && Number.isFinite(item.inventoryCostOnHand)) {
+    return Math.max(0, Math.round(item.inventoryCostOnHand * 100));
+  }
+
   const onHandCostCents = positiveAmountCents(item.inventoryCostOnHand);
   if (onHandCostCents > 0) return onHandCostCents;
 
@@ -401,7 +421,7 @@ export function parseLedgerDate(value: string) {
   return date.toISOString();
 }
 
-export function centsFromLedgerAmount(value: string) {
+export function centsFromLedgerAmount(value: string, allowZero = false) {
   const normalized = value.trim().replace(/[$,\s]/g, '');
   if (!/^\d+(?:\.\d{1,2})?$/.test(normalized)) return null;
 
@@ -411,7 +431,7 @@ export function centsFromLedgerAmount(value: string) {
   const amountCents = dollars * 100 + cents;
 
   return Number.isSafeInteger(amountCents) &&
-    amountCents > 0 &&
+    (allowZero ? amountCents >= 0 : amountCents > 0) &&
     amountCents <= MAX_LEDGER_AMOUNT_CENTS
     ? amountCents
     : null;

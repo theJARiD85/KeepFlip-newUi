@@ -7,6 +7,8 @@ import {
 export type BookkeepingEventType =
   | 'inventory_purchase'
   | 'sale'
+  | 'inventory_write_off'
+  | 'inventory_value_adjustment'
   | 'marketplace_fee'
   | 'shipping_label'
   | 'refund'
@@ -28,6 +30,8 @@ export type RecordBookkeepingEventInput = {
   grossSaleCents?: number;
   itemId?: string | null;
   quantity?: number;
+  shippingCents?: number | null;
+  newInventoryValueCents?: number;
   marketplaceCollectedTaxCents?: number;
   notes?: string | null;
   orderId?: string | null;
@@ -45,11 +49,15 @@ export type BookkeepingMoneyEvent = {
   id: string;
   itemId: string | null;
   occurredAt: string;
+  orderId?: string | null;
+  transactionId?: string | null;
   amountCents: number;
-  direction: 'income' | 'expense';
+  direction: 'income' | 'expense' | 'adjustment';
   entryType:
     | 'inventory_purchase'
     | 'sale_proceeds'
+    | 'inventory_write_off'
+    | 'inventory_value_adjustment'
     | 'marketplace_fee'
     | 'shipping_label'
     | 'refund'
@@ -63,8 +71,25 @@ export type BookkeepingMoneyEvent = {
     | 'other_expense';
 };
 
+export type BookkeepingSaleMargin = {
+  id: string;
+  orderId: string | null;
+  itemId: string | null;
+  itemCount: number;
+  saleCount: number;
+  occurredAt: string;
+  grossSaleCents: number;
+  feeCents: number;
+  shippingCents: number | null;
+  shippingKnown: boolean;
+  shippingConflict: boolean;
+  costCents: number | null;
+  netProfitCents: number | null;
+};
+
 export type BookkeepingOverviewResult = {
   moneyEvents: BookkeepingMoneyEvent[];
+  saleMargins: BookkeepingSaleMargin[];
   truncated: boolean;
 };
 
@@ -316,10 +341,13 @@ export async function getBookkeepingOverview(): Promise<BookkeepingOverviewResul
     const id = text(event.id, 64);
     const itemId = text(event.itemId, 64) || null;
 
-    const validDirection = direction === 'income' || direction === 'expense';
+    const validDirection =
+      direction === 'income' || direction === 'expense' || direction === 'adjustment';
     const validEntryType = [
       'inventory_purchase',
       'sale_proceeds',
+      'inventory_write_off',
+      'inventory_value_adjustment',
       'marketplace_fee',
       'shipping_label',
       'refund',
@@ -333,7 +361,11 @@ export async function getBookkeepingOverview(): Promise<BookkeepingOverviewResul
       'other_expense',
     ].includes(String(entryType));
 
-    if (!id || !occurredAt || !positiveInteger(amountCents) || !validDirection || !validEntryType) {
+    const validAmount =
+      Number.isSafeInteger(amountCents) &&
+      Number(amountCents) >= 0 &&
+      (Number(amountCents) > 0 || direction === 'adjustment');
+    if (!id || !occurredAt || !validAmount || !validDirection || !validEntryType) {
       return [];
     }
 
@@ -345,11 +377,72 @@ export async function getBookkeepingOverview(): Promise<BookkeepingOverviewResul
         id,
         itemId,
         occurredAt,
+        orderId: text(event.orderId, 180) || null,
+        transactionId: text(event.transactionId, 64) || null,
       },
     ];
   });
 
-  return { moneyEvents, truncated: payload.truncated === true };
+  const saleMargins = (Array.isArray(payload.saleMargins) ? payload.saleMargins : [])
+    .flatMap((raw): BookkeepingSaleMargin[] => {
+      const sale = raw && typeof raw === 'object' ? (raw as FunctionPayload) : {};
+      const id = text(sale.id, 180);
+      const occurredAt = text(sale.occurredAt, 64);
+      const grossSaleCents = Number(sale.grossSaleCents);
+      const feeCents = Number(sale.feeCents);
+      const itemCount = count(sale.itemCount);
+      const saleCount = count(sale.saleCount);
+      const rawShipping = sale.shippingCents;
+      const rawCost = sale.costCents;
+      const rawProfit = sale.netProfitCents;
+      const shippingCents = rawShipping == null
+        ? null
+        : Number.isSafeInteger(Number(rawShipping)) && Number(rawShipping) >= 0
+          ? Number(rawShipping)
+          : null;
+      const costCents = rawCost == null
+        ? null
+        : Number.isSafeInteger(Number(rawCost)) && Number(rawCost) >= 0
+          ? Number(rawCost)
+          : null;
+      const netProfitCents = rawProfit == null
+        ? null
+        : Number.isSafeInteger(Number(rawProfit))
+          ? Number(rawProfit)
+          : null;
+
+      if (
+        !id ||
+        !occurredAt ||
+        !Number.isSafeInteger(grossSaleCents) ||
+        grossSaleCents < 0 ||
+        !Number.isSafeInteger(feeCents) ||
+        feeCents < 0 ||
+        saleCount < 1 ||
+        (sale.shippingKnown === true && shippingCents == null) ||
+        (sale.netProfitCents != null && netProfitCents == null)
+      ) {
+        return [];
+      }
+
+      return [{
+        costCents,
+        feeCents,
+        grossSaleCents,
+        id,
+        itemCount,
+        itemId: text(sale.itemId, 64) || null,
+        netProfitCents,
+        occurredAt,
+        orderId: text(sale.orderId, 180) || null,
+        saleCount,
+        shippingCents,
+        shippingConflict: sale.shippingConflict === true,
+        shippingKnown: sale.shippingKnown === true,
+      }];
+    });
+
+  return { moneyEvents, saleMargins, truncated: payload.truncated === true };
 }
 
 export async function getBookkeepingReviewQueue(): Promise<BookkeepingReviewQueueResult> {
