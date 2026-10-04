@@ -58,6 +58,7 @@ export function InventoryCard({
   onPress,
   onListingGuidePress,
   onAddPhotosPress,
+  onMarkSoldPress,
   onDeletePress,
   isDeleting = false,
 }: {
@@ -67,6 +68,7 @@ export function InventoryCard({
   onPress: () => void;
   onListingGuidePress?: () => void;
   onAddPhotosPress?: () => void;
+  onMarkSoldPress?: () => void;
   onDeletePress?: () => void;
   isDeleting?: boolean;
 }) {
@@ -398,7 +400,7 @@ export function InventoryCard({
 
         <View style={[styles.details, compact && styles.compactDetails]}>
           <View style={styles.identity}>
-            <Text numberOfLines={2} selectable style={[styles.itemTitle, compact && styles.compactTitle]}>
+            <Text numberOfLines={compact ? 1 : 2} selectable style={[styles.itemTitle, compact && styles.compactTitle]}>
               {item.title}
             </Text>
             {!compact && meta ? (
@@ -459,10 +461,10 @@ export function InventoryCard({
         </View>
       </Pressable>
 
-      {onListingGuidePress || onAddPhotosPress || onDeletePress ? (
+      {onListingGuidePress || onAddPhotosPress || onMarkSoldPress || onDeletePress ? (
         <View style={styles.itemActions}>
           <Pressable
-            accessibilityHint={`${actionsExpanded ? "Hides" : "Shows"} the listing, photo, and delete actions for ${item.title}`}
+            accessibilityHint={`${actionsExpanded ? "Hides" : "Shows"} the listing, photo, sale, and delete actions for ${item.title}`}
             accessibilityLabel={`${actionsExpanded ? "Hide" : "Show"} item actions for ${item.title}`}
             accessibilityRole="button"
             accessibilityState={{ expanded: actionsExpanded }}
@@ -474,7 +476,7 @@ export function InventoryCard({
             ]}
           >
             <Text style={styles.itemActionsToggleLabel}>
-              {actionsExpanded ? "Hide actions" : "More actions"}
+              {actionsExpanded ? "Close" : "Actions"}
             </Text>
             <IconSymbol
               color={theme.colors.scannerCyan}
@@ -515,8 +517,7 @@ export function InventoryCard({
                     />
                   </View>
                   <View style={styles.listingGuideButtonCopy}>
-                    <Text style={[styles.listingGuideButtonEyebrow, { fontSize: responsiveFont(7) }]}>SELLER WORKFLOW</Text>
-                    <Text style={[styles.listingGuideButtonLabel, { fontSize: responsiveFont(15) }]}>List item</Text>
+                    <Text style={styles.listingGuideButtonLabel}>List</Text>
                   </View>
                   <IconSymbol
                     color={theme.colors.goldBright}
@@ -546,11 +547,40 @@ export function InventoryCard({
                     />
                   </View>
                   <View style={styles.listingGuideButtonCopy}>
-                    <Text style={[styles.listingGuideButtonEyebrow, { fontSize: responsiveFont(7) }]}>PHOTO SET</Text>
-                    <Text style={[styles.listingGuideButtonLabel, { fontSize: responsiveFont(15) }]}> Add photos</Text>
+                    <Text style={styles.listingGuideButtonLabel}>Photos</Text>
                   </View>
                   <IconSymbol
                     color={theme.colors.scannerCyan}
+                    name="arrow.right"
+                    size={18}
+                  />
+                </Pressable>
+              ) : null}
+
+              {onMarkSoldPress ? (
+                <Pressable
+                  accessibilityHint={`Opens the manual sale form with ${item.title} selected. Enter the actual sold amount and quantity to record the sale.`}
+                  accessibilityLabel={`Mark ${item.title} sold`}
+                  accessibilityRole="button"
+                  onPress={onMarkSoldPress}
+                  style={({ pressed }) => [
+                    styles.listingGuideButton,
+                    styles.markSoldButton,
+                    pressed && styles.listingGuideButtonPressed,
+                  ]}
+                >
+                  <View style={[styles.listingGuideButtonIcon, styles.markSoldButtonIcon]}>
+                    <IconSymbol
+                      color={theme.colors.goldBright}
+                      name="checkmark.circle.fill"
+                      size={17}
+                    />
+                  </View>
+                  <View style={styles.listingGuideButtonCopy}>
+                    <Text style={[styles.listingGuideButtonLabel, styles.markSoldButtonLabel]}>Mark sold</Text>
+                  </View>
+                  <IconSymbol
+                    color={theme.colors.goldBright}
                     name="arrow.right"
                     size={18}
                   />
@@ -588,9 +618,8 @@ export function InventoryCard({
                     />
                   </View>
                   <View style={styles.listingGuideButtonCopy}>
-                    <Text style={[styles.listingGuideButtonEyebrow, styles.deleteButtonLabel, { fontSize: responsiveFont(7) }]}>INVENTORY CONTROL</Text>
-                    <Text style={[styles.listingGuideButtonLabel, styles.deleteButtonLabel, { fontSize: responsiveFont(15) }]}>
-                      {isDeleting ? "Deleting…" : "Delete item"}
+                    <Text style={[styles.listingGuideButtonLabel, styles.deleteButtonLabel]}>
+                      {isDeleting ? "Deleting…" : "Delete"}
                     </Text>
                   </View>
                 </Pressable>
@@ -884,6 +913,18 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderTopColor: theme.colors.accentCyanBorder,
       backgroundColor: theme.colors.surfaceInset,
     },
+    markSoldButton: {
+      borderTopColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.iconSurfaceGold,
+    },
+    markSoldButtonIcon: {
+      borderColor: theme.colors.accentGoldBorder,
+      backgroundColor: theme.colors.iconSurfaceGold,
+      boxShadow: "0 0 16px rgba(242, 211, 138, 0.12)",
+    },
+    markSoldButtonLabel: {
+      color: theme.colors.goldBright,
+    },
     deleteButton: {
       borderTopColor: theme.colors.danger,
       backgroundColor: theme.colors.dangerSurface,
@@ -934,13 +975,6 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flex: 1,
       gap: 2,
     },
-    listingGuideButtonEyebrow: {
-      color: theme.colors.scannerCyan,
-      fontFamily: theme.fonts.body,
-      fontSize: responsiveFont(7),
-      fontWeight: "900",
-      letterSpacing: 0.75,
-    },
     listingGuideButtonLabel: {
       color: theme.colors.cream,
       fontFamily: theme.fonts.bold,
@@ -985,16 +1019,10 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
         height: responsiveHeight(34),
       },
     ],
-    listingGuideButtonEyebrow: [
-      staticStyles.listingGuideButtonEyebrow,
-      {
-        fontSize: responsiveFont(7),
-      },
-    ],
     listingGuideButtonLabel: [
       staticStyles.listingGuideButtonLabel,
       {
-        fontSize: responsiveFont(15),
+        fontSize: responsiveFont(15) / 2,
       },
     ],
   };

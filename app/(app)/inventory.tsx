@@ -524,6 +524,18 @@ export default function InventoryScreen() {
                         params: { focus: "photos", itemId: row.item.id },
                       })
                     }
+                    onMarkSoldPress={
+                      row.item.quantityOnHand > 0 || row.item.isListed
+                        ? () =>
+                            router.push({
+                              pathname: "/command-center",
+                              params: {
+                                openSellerOperations: "1",
+                                saleItemId: row.item.id,
+                              },
+                            })
+                        : undefined
+                    }
                     onDeletePress={() => confirmDelete(row.item)}
                     isDeleting={deletingItemId === row.item.id}
                   />

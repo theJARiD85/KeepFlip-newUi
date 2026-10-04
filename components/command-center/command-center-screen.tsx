@@ -245,10 +245,12 @@ export function CommandCenterScreen() {
     openReviewQueue: openReviewQueueParam,
     openSellerOperations: openSellerOperationsParam,
     openAiPreferences: openAiPreferencesParam,
+    saleItemId: saleItemIdParam,
   } = useLocalSearchParams<{
     openReviewQueue?: string | string[];
     openSellerOperations?: string | string[];
     openAiPreferences?: string | string[];
+    saleItemId?: string | string[];
   }>();
   const insets = useSafeAreaInsets();
   const { user } = useKeepFlipAuth();
@@ -289,6 +291,9 @@ export function CommandCenterScreen() {
   const shouldOpenSellerOperations = Array.isArray(openSellerOperationsParam)
     ? openSellerOperationsParam[0] === '1'
     : openSellerOperationsParam === '1';
+  const initialSaleItemId = Array.isArray(saleItemIdParam)
+    ? saleItemIdParam[0]
+    : saleItemIdParam;
   const shouldOpenAiPreferences = Array.isArray(openAiPreferencesParam)
     ? openAiPreferencesParam[0] === '1'
     : openAiPreferencesParam === '1';
@@ -754,7 +759,12 @@ export function CommandCenterScreen() {
 
         {commandCenterTab === 'operations' ? (
           <Animated.View entering={FadeInDown.duration(260).delay(60)} style={styles.operationsTab}>
-            <SellerOperationsPanel key={user.$id} embedded ownerId={user.$id} />
+            <SellerOperationsPanel
+              key={user.$id}
+              embedded
+              initialSaleItemId={initialSaleItemId}
+              ownerId={user.$id}
+            />
           </Animated.View>
         ) : (
           <>

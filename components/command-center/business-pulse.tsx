@@ -17,6 +17,10 @@ import {
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
+import {
+  BusinessPulseBreakdownModal,
+  type BusinessPulseMetric,
+} from '@/components/command-center/business-pulse-breakdown-modal';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import {
   useResponsiveLayout,
@@ -167,6 +171,8 @@ export function BusinessPulse({
     null,
   );
   const [moneyFlowZoomOpen, setMoneyFlowZoomOpen] = useState(false);
+  const [activeBreakdown, setActiveBreakdown] =
+    useState<BusinessPulseMetric | null>(null);
 
   if (loading && !overview) {
     return (
@@ -265,8 +271,20 @@ export function BusinessPulse({
         </Text>
 
         <View style={styles.metricGrid}>
-          <Metric label="MONEY IN" value={money(overview.currentMonth.moneyInCents)} tone="cyan" />
-          <Metric label="COSTS" value={money(overview.currentMonth.moneyOutCents)} tone="gold" />
+          <Metric
+            accessibilityHint="Shows every income entry that makes up this month's total"
+            label="MONEY IN"
+            onPress={() => setActiveBreakdown('money-in')}
+            value={money(overview.currentMonth.moneyInCents)}
+            tone="cyan"
+          />
+          <Metric
+            accessibilityHint="Shows every cost entry that makes up this month's total"
+            label="COSTS"
+            onPress={() => setActiveBreakdown('costs')}
+            value={money(overview.currentMonth.moneyOutCents)}
+            tone="gold"
+          />
           <Metric
             label="LEFT AFTER COSTS"
             value={money(overview.currentMonth.leftAfterCostsCents)}
@@ -277,7 +295,13 @@ export function BusinessPulse({
             }
             tone="violet"
           />
-          <Metric label="CASH TIED UP" value={money(overview.inventory.cashTiedUpCents)} tone="muted" />
+          <Metric
+            accessibilityHint="Shows the on-hand items included in this total and their saved costs"
+            label="CASH TIED UP"
+            onPress={() => setActiveBreakdown('cash-tied-up')}
+            value={money(overview.inventory.cashTiedUpCents)}
+            tone="muted"
+          />
         </View>
       </View>
 
@@ -461,6 +485,14 @@ export function BusinessPulse({
           <IconSymbol color={theme.colors.backgroundDeep} name="chart.bar.fill" size={15} />
         </Pressable>
       </View>
+
+      <BusinessPulseBreakdownModal
+        metric={activeBreakdown}
+        notice={errorMessage}
+        onClose={() => setActiveBreakdown(null)}
+        overview={overview}
+        visible={activeBreakdown !== null}
+      />
     </View>
   );
 }
@@ -1128,12 +1160,16 @@ function FinancialReporting({
 }
 
 function Metric({
+  accessibilityHint,
   label,
+  onPress,
   value,
   tone,
   valueStyle,
 }: {
+  accessibilityHint?: string;
   label: string;
+  onPress?: () => void;
   value: string;
   tone: 'cyan' | 'gold' | 'violet' | 'muted';
   valueStyle?: object;
@@ -1149,11 +1185,27 @@ function Metric({
     muted: styles.metricMuted,
     violet: styles.metricViolet,
   }[tone];
-  return (
-    <View style={[styles.metric, toneStyle]}>
-      <Text style={[styles.metricLabel, { fontSize: responsiveFont(8) }]}>{label}</Text>
+  const contents = (
+    <>
+      <View style={styles.metricLabelRow}>
+        <Text style={[styles.metricLabel, { fontSize: responsiveFont(8) }]}>{label}</Text>
+        {onPress ? <IconSymbol color={theme.colors.textMuted} name="chevron.right" size={12} /> : null}
+      </View>
       <Text numberOfLines={1} style={[styles.metricValue, valueStyle]}>{value}</Text>
-    </View>
+    </>
+  );
+  if (!onPress) return <View style={[styles.metric, toneStyle]}>{contents}</View>;
+
+  return (
+    <Pressable
+      accessibilityHint={accessibilityHint}
+      accessibilityLabel={`${label}, ${value}`}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.metric, toneStyle, pressed && styles.metricPressed]}
+    >
+      {contents}
+    </Pressable>
   );
 }
 
@@ -1382,9 +1434,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     metricGold: { backgroundColor: theme.colors.iconSurfaceGold, borderColor: theme.colors.accentGoldBorder },
     metricViolet: { backgroundColor: theme.colors.iconSurfaceViolet, borderColor: theme.colors.accentVioletBorder },
     metricMuted: { backgroundColor: theme.colors.cardSoft, borderColor: theme.colors.divider },
+    metricLabelRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
     metricLabel: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 0.9 },
     metricValue: { color: theme.colors.cream, fontSize: 21, fontWeight: '900', letterSpacing: -0.45, lineHeight: 25 },
     metricNegativeValue: { color: theme.colors.danger },
+    metricPressed: { opacity: 0.8, transform: [{ scale: 0.985 }] },
     chartSurface: { backgroundColor: theme.colors.cardSoft, borderColor: theme.colors.accentCyanBorder, borderRadius: 12, borderWidth: 1, gap: 11, padding: 12 },
     reportingSurface: { backgroundColor: theme.colors.surfaceOverlay, borderColor: theme.colors.accentVioletBorder, borderRadius: 12, borderWidth: 1, gap: 12, padding: 12 },
     reportingHeader: { alignItems: 'flex-start', flexDirection: 'row', gap: 10, justifyContent: 'space-between' },

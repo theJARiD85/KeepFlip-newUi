@@ -12,6 +12,10 @@ import {
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { BusinessPulse } from '@/components/command-center/business-pulse';
+import {
+  BusinessPulseBreakdownModal,
+  type BusinessPulseMetric,
+} from '@/components/command-center/business-pulse-breakdown-modal';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
@@ -70,6 +74,8 @@ function MetricCard({
   accent,
   colors,
   compact,
+  accessibilityHint,
+  onPress,
 }: {
   label: string;
   value: string;
@@ -78,18 +84,36 @@ function MetricCard({
   accent: string;
   colors: ReturnType<typeof getKeepFlipThemeColors>;
   compact?: boolean;
+  accessibilityHint?: string;
+  onPress?: () => void;
 }) {
-  return (
-    <View style={[styles.metricCard, { backgroundColor: colors.card, borderColor: colors.divider }]}>
+  const contents = (
+    <>
       <View style={styles.metricTopline}>
         <View style={[styles.metricIcon, { backgroundColor: `${accent}1A`, borderColor: `${accent}55` }]}>
           <IconSymbol color={accent} name={icon} size={17} />
         </View>
         <Text style={[styles.metricLabel, { color: colors.textMuted }]}>{label}</Text>
+        {onPress ? <IconSymbol color={accent} name="chevron.right" size={13} /> : null}
       </View>
       <Text selectable style={[styles.metricValue, compact && styles.metricValueCompact, { color: colors.text }]}>{value}</Text>
       <Text style={[styles.metricDetail, { color: colors.textMuted }]}>{detail}</Text>
-    </View>
+    </>
+  );
+
+  const cardStyle = [styles.metricCard, { backgroundColor: colors.card, borderColor: colors.divider }];
+  if (!onPress) return <View style={cardStyle}>{contents}</View>;
+
+  return (
+    <Pressable
+      accessibilityHint={accessibilityHint}
+      accessibilityLabel={`${label}, ${value}`}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [cardStyle, pressed && styles.metricCardPressed]}
+    >
+      {contents}
+    </Pressable>
   );
 }
 
@@ -188,6 +212,8 @@ export function CommandCenterScreen() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [activeBreakdown, setActiveBreakdown] =
+    useState<BusinessPulseMetric | null>(null);
 
   const ownerId = user?.$id ?? null;
 
@@ -302,6 +328,8 @@ export function CommandCenterScreen() {
             detail="Realized income this month"
             icon="arrow.right"
             label="MONEY IN"
+            accessibilityHint="Shows every income entry that makes up this month's total"
+            onPress={overview ? () => setActiveBreakdown('money-in') : undefined}
             value={loading ? '—' : money(overview?.currentMonth.moneyInCents ?? 0)}
           />
           <MetricCard
@@ -310,6 +338,8 @@ export function CommandCenterScreen() {
             detail="Purchases, fees, and expenses"
             icon="chart.bar.fill"
             label="COSTS"
+            accessibilityHint="Shows every cost entry that makes up this month's total"
+            onPress={overview ? () => setActiveBreakdown('costs') : undefined}
             value={loading ? '—' : money(overview?.currentMonth.moneyOutCents ?? 0)}
           />
           <MetricCard
@@ -326,6 +356,8 @@ export function CommandCenterScreen() {
             detail="Actual cash tied to on-hand items"
             icon="shippingbox.fill"
             label="CASH TIED UP"
+            accessibilityHint="Shows the on-hand items included in this total and their saved costs"
+            onPress={overview ? () => setActiveBreakdown('cash-tied-up') : undefined}
             value={loading ? '—' : money(overview?.inventory.cashTiedUpCents ?? 0)}
             compact
           />
@@ -431,6 +463,13 @@ export function CommandCenterScreen() {
           <ActionButton accent={colors.goldBright} colors={colors} detail="Run the numbers before you buy" icon="dollarsign.circle.fill" label="Plan a flip" onPress={() => navigate('/flip-plan')} />
         </View>
       </ScrollView>
+      <BusinessPulseBreakdownModal
+        metric={activeBreakdown}
+        notice={errorMessage}
+        onClose={() => setActiveBreakdown(null)}
+        overview={overview}
+        visible={activeBreakdown !== null}
+      />
     </View>
   );
 }
@@ -457,6 +496,7 @@ const styles = StyleSheet.create({
   metricGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   metricGridCompact: { flexDirection: 'column' },
   metricCard: { flex: 1, minWidth: 180, minHeight: 132, borderWidth: 1, borderRadius: 17, padding: 16, gap: 10 },
+  metricCardPressed: { opacity: 0.8, transform: [{ scale: 0.985 }] },
   metricTopline: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   metricIcon: { width: 29, height: 29, borderRadius: 9, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   metricLabel: { fontFamily: theme.fonts.bold, fontSize: 8, letterSpacing: 1.2 },

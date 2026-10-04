@@ -41,6 +41,24 @@ export type BusinessMoneyFlowEntry = {
   amountCents: number;
 };
 
+export type BusinessMoneyBreakdownEntry = {
+  id: string;
+  amountCents: number;
+  occurredAt: string;
+  label: string;
+  channel: string | null;
+  itemTitle: string | null;
+  notes: string | null;
+};
+
+export type BusinessCashTiedUpItem = {
+  id: string;
+  title: string;
+  quantityOnHand: number;
+  costCents: number;
+  costSource: 'on_hand' | 'linked_purchase' | 'legacy_cost' | 'missing';
+};
+
 export type BusinessMoneyFlowBucket = BusinessMoneyFlowMonth;
 
 export type BusinessMoneyFlowRangeOption = {
@@ -108,6 +126,8 @@ export type ResellerBusinessOverview = {
     moneyInCents: number;
     moneyOutCents: number;
     leftAfterCostsCents: number;
+    moneyInEntries: BusinessMoneyBreakdownEntry[];
+    moneyOutEntries: BusinessMoneyBreakdownEntry[];
   };
   inventory: {
     onHandCount: number;
@@ -117,6 +137,7 @@ export type ResellerBusinessOverview = {
     knownCostCount: number;
     missingCostCount: number;
     cashTiedUpCents: number;
+    cashTiedUpItems: BusinessCashTiedUpItem[];
     estimatedOnHandValueCents: number;
   };
   attention: {
@@ -167,6 +188,14 @@ function buildMonths(now: Date) {
 
 function expenseLabel(entryType: ResellerLedgerEntryType) {
   return EXPENSE_LABELS[entryType] ?? 'Other costs';
+}
+
+function moneyEntryLabel(entryType: ResellerLedgerEntryType) {
+  if (entryType === 'sale_proceeds') return 'Sale proceeds';
+  if (entryType === 'other_income') return 'Other income';
+  if (entryType === 'inventory_write_off') return 'Inventory write-off';
+  if (entryType === 'inventory_value_adjustment') return 'Inventory value adjustment';
+  return expenseLabel(entryType);
 }
 
 function percentage(value: number, denominator: number) {
@@ -427,6 +456,8 @@ export function buildResellerBusinessOverview({
   const purchaseCentsByItem = new Map<string, number>();
   const soldItemIds = new Set<string>();
   const costsByType = new Map<ResellerLedgerEntryType, number>();
+  const moneyInEntries: BusinessMoneyBreakdownEntry[] = [];
+  const moneyOutEntries: BusinessMoneyBreakdownEntry[] = [];
   const profitAndLossByMonth = new Map(
     months.map((month) => [
       month.key,
@@ -489,12 +520,26 @@ export function buildResellerBusinessOverview({
 
     if (occurredMonthKey !== currentMonthKey) return;
 
+    const breakdownEntry: BusinessMoneyBreakdownEntry = {
+      id: entry.id,
+      amountCents: entry.amountCents,
+      occurredAt: entry.occurredAt,
+      label: moneyEntryLabel(entry.entryType),
+      channel: entry.channel?.trim() || null,
+      itemTitle: entry.itemId
+        ? inventoryById.get(entry.itemId)?.title ?? 'Linked item unavailable'
+        : null,
+      notes: entry.notes?.trim() || null,
+    };
+
     if (entry.direction === 'income') {
       currentMonthMoneyInCents += entry.amountCents;
+      moneyInEntries.push(breakdownEntry);
       return;
     }
 
     currentMonthMoneyOutCents += entry.amountCents;
+    moneyOutEntries.push(breakdownEntry);
     costsByType.set(
       entry.entryType,
       (costsByType.get(entry.entryType) ?? 0) + entry.amountCents,
@@ -572,31 +617,45 @@ export function buildResellerBusinessOverview({
       item.quantityOnHand > 0 &&
       !(soldItemIds.has(item.id) && item.quantityPurchased <= 1),
   );
-  let cashTiedUpCents = 0;
-  let knownCostCount = 0;
-  let missingCostCount = 0;
   let estimatedOnHandValueCents = 0;
 
-  onHandItems.forEach((item) => {
+  const cashTiedUpItems = onHandItems.map((item): BusinessCashTiedUpItem => {
     const recordedPurchaseCents = purchaseCentsByItem.get(item.id) ?? 0;
     const costCents = resolvedInventoryCostCents(item, recordedPurchaseCents);
-
-    if (costCents > 0) {
-      cashTiedUpCents += costCents;
-      knownCostCount += 1;
-    } else {
-      missingCostCount += 1;
-    }
+    const costSource: BusinessCashTiedUpItem['costSource'] =
+      item.inventoryCostOnHand != null && Number.isFinite(item.inventoryCostOnHand)
+        ? 'on_hand'
+        : Number.isSafeInteger(recordedPurchaseCents) && recordedPurchaseCents > 0
+          ? 'linked_purchase'
+          : amountToCents(item.acquisitionCost) > 0
+            ? 'legacy_cost'
+            : 'missing';
 
     estimatedOnHandValueCents +=
       amountToCents(item.estimatedValue) * item.quantityOnHand;
+
+    return {
+      id: item.id,
+      title: item.title,
+      quantityOnHand: item.quantityOnHand,
+      costCents,
+      costSource,
+    };
   });
+  const cashTiedUpCents = cashTiedUpItems.reduce(
+    (total, item) => total + (item.costCents > 0 ? item.costCents : 0),
+    0,
+  );
+  const knownCostCount = cashTiedUpItems.filter((item) => item.costCents > 0).length;
+  const missingCostCount = cashTiedUpItems.length - knownCostCount;
 
   return {
     currentMonth: {
       moneyInCents: currentMonthMoneyInCents,
       moneyOutCents: currentMonthMoneyOutCents,
       leftAfterCostsCents: currentMonthMoneyInCents - currentMonthMoneyOutCents,
+      moneyInEntries,
+      moneyOutEntries,
     },
     inventory: {
       onHandCount: onHandItems.reduce(
@@ -615,6 +674,7 @@ export function buildResellerBusinessOverview({
       knownCostCount,
       missingCostCount,
       cashTiedUpCents,
+      cashTiedUpItems,
       estimatedOnHandValueCents,
     },
     attention: {

@@ -382,7 +382,7 @@ const NO_SELLER_FEATURE_ACCESS: SellerFeatureAccess = {
   sellerAnalytics: false,
 };
 
-export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: string; embedded?: boolean }) {
+export function SellerOperationsPanel({ ownerId, embedded = false, initialSaleItemId }: { ownerId: string; embedded?: boolean; initialSaleItemId?: string }) {
   const styles = useResponsiveStyles(createResponsiveStyles);
   const {
     responsiveFont
@@ -459,13 +459,19 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
     if (inventoryResult.status === 'fulfilled') {
       setInventory(inventoryResult.value);
       setSelectedItemId((current) =>
-        current &&
+        initialSaleItemId &&
         inventoryResult.value.some(
           (item) =>
-            item.id === current && (item.quantityOnHand > 0 || item.isListed),
+            item.id === initialSaleItemId && (item.quantityOnHand > 0 || item.isListed),
         )
-          ? current
-          : '',
+          ? initialSaleItemId
+          : current &&
+            inventoryResult.value.some(
+              (item) =>
+                item.id === current && (item.quantityOnHand > 0 || item.isListed),
+            )
+            ? current
+            : '',
       );
     } else {
       nextErrors.inventory = message(inventoryResult.reason, 'Inventory could not load.');
@@ -488,7 +494,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false }: { ownerId: 
 
     setErrors(nextErrors);
     setLoading(false);
-  }, [ownerId]);
+  }, [initialSaleItemId, ownerId]);
 
   useEffect(() => {
     void loadBase();
