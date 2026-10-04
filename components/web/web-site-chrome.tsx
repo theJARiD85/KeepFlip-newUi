@@ -146,19 +146,28 @@ export function WebSiteFooter({
   return (
     <View style={[styles.footer, isPhone && styles.footerPhone, { backgroundColor: colors.backgroundDeep, borderTopColor: colors.divider }]}>
       <View style={[styles.footerMain, isPhone && styles.footerMainPhone]}>
-        <View style={[styles.footerBrand, isPhone && styles.footerBrandPhone]}>
-        <Image
-            accessibilityLabel="KeepFlip"
-            contentFit="contain"
-            source={require('@/assets/images/icon3.png')}
-            style={styles.brandMark}
-          />
-          <Text style={[styles.footerName, { color: colors.text }]}>KEEPFLIP</Text>
-          <Text style={[styles.footerDescription, { color: colors.textMuted }]}>
-            Research a find, check the numbers before you buy, and track what you keep after the sale.
-          </Text>
-        </View>
+      </View>
 
+      <View style={[styles.footerMeta, isPhone && styles.footerMetaPhone, { borderTopColor: colors.divider }]}>
+        <View>
+          <View style={[styles.footerBrand, isPhone && styles.footerBrandPhone]}>
+              <Image
+                  accessibilityLabel="KeepFlip"
+                  contentFit="contain"
+                  source={require('@/assets/images/icon3.png')}
+                  style={styles.brandMark}
+                />
+                <View style={{alignItems: 'flex-start', justifyContent: 'center'}}>
+                  <Text style={[styles.footerName, { color: colors.text }]}>KEEPFLIP</Text>
+                  <Text style={[styles.footerDescription, { color: colors.textMuted }]}>
+                    Research a find, check the numbers before you buy, and track what you keep after the sale.
+                  </Text>
+                </View>
+          </View>
+          <Text style={[styles.footerMetaText, { color: colors.textMuted }]}>
+          © 2026 KeepFlip. Built for resellers.
+        </Text>
+        </View>
         <View style={[styles.footerLinks, isPhone && styles.footerLinksPhone]}>
           {showMarketingLinks ? (
             <>
@@ -202,15 +211,6 @@ export function WebSiteFooter({
             </>
           ) : null}
         </View>
-      </View>
-
-      <View style={[styles.footerMeta, isPhone && styles.footerMetaPhone, { borderTopColor: colors.divider }]}>
-        <Text style={[styles.footerMetaText, { color: colors.textMuted }]}>
-          © 2026 KeepFlip. Built for resellers.
-        </Text>
-        <Text style={[styles.footerMetaText, { color: colors.goldBright }]}>
-          SOURCING SMARTER. FLIPPING BETTER.
-        </Text>
       </View>
     </View>
   );
@@ -416,11 +416,11 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
   },
   brand: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'flex-start',
+    justifyContent: 'flex-end',
     flexDirection: 'row',
     flexShrink: 1,
-    gap: 10,
+    gap: 0,
   },
   brandMark: {
     height: 75,
@@ -506,11 +506,11 @@ const styles = StyleSheet.create({
   footer: {
     alignSelf: 'center',
     borderTopWidth: 1,
-    gap: 17,
+    gap: 0,
     maxWidth: 1120,
     minWidth: 0,
-    paddingHorizontal: 24,
-    paddingVertical: 23,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     width: '100%',
   },
   footerPhone: {
@@ -519,20 +519,18 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   footerMain: {
-    alignItems: 'flex-start',
+    alignItems: 'flex-end',
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 18,
     justifyContent: 'space-between',
     minWidth: 0,
   },
   footerMainPhone: {
     flexDirection: 'column',
-    gap: 16,
     width: '100%',
   },
   footerBrand: {
-    flex: 1,
+    flexDirection: 'row',
     gap: 5,
     minWidth: 0,
   },

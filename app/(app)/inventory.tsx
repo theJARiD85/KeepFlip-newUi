@@ -147,16 +147,22 @@ export default function InventoryScreen() {
     webContentMaxWidth,
     webPageGutter,
     webGridColumns,
+    isTablet,
   } =
     useResponsiveLayout();
   const inventoryColumns =
     Platform.OS === "web"
-      ? webGridColumns
-      : 1;
-  const inventoryColumnGap = 50;
+      ? isTablet
+        ? webGridColumns
+        : 2
+      : 2;
+  const inventoryColumnGap = Platform.OS === "web" && isTablet ? 50 : 12;
   const inventoryCardWidth =
-    (contentWidth - inventoryColumnGap * (inventoryColumns)) /
-    inventoryColumns;
+    Platform.OS === "web" && isTablet
+      ? (contentWidth - inventoryColumnGap * inventoryColumns) /
+        inventoryColumns
+      : (contentWidth - pageGutter * 2 - inventoryColumnGap * (inventoryColumns - 1)) /
+        inventoryColumns;
   const webContentSizing =
     Platform.OS === "web"
       ? {
@@ -484,6 +490,7 @@ export default function InventoryScreen() {
               ) : (
                 <View style={[styles.feedItem, { width: inventoryCardWidth }]}>
                   <InventoryCard
+                    compact={Platform.OS !== "web" || !isTablet}
                     item={row.item}
                     onPress={() =>
                       router.push({

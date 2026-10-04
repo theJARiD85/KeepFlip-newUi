@@ -83,7 +83,13 @@ export function LegalDocumentScreen({
             accessibilityLabel="Return to account creation"
             accessibilityRole="button"
             hitSlop={10}
-            onPress={() => router.back()}
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace('/'); // Fallback if there's no history on web
+              }
+            }} 
             style={({ pressed }) => [
               styles.backButton,
               pressed && styles.backButtonPressed,

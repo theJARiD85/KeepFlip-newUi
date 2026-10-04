@@ -555,7 +555,7 @@ export function KeepFlipLaunchAuthScreen({
                           style={styles.logo}
                         />
                       </View>
-                      <Text style={[styles.brandName, { fontSize: responsiveFont(40) }]}>{migrationMode ? 'Welcome back.' : mode === 'create-account' ? 'Make your edge official.' : 'Welcome back.'}</Text>
+                      <Text style={[styles.brandName, { fontSize: responsiveFont(35) }]}>{migrationMode ? 'Welcome back.' : mode === 'create-account' ? 'Make your edge official.' : 'Welcome back.'}</Text>
                       <Text style={styles.brandTagline}>{migrationMode
                 ? 'Sign in to your existing KeepFlip account, then choose the tier you want to try.'
                 : isPreAccountSignup
@@ -735,7 +735,7 @@ export function KeepFlipLaunchAuthScreen({
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
   const { responsiveFont, responsiveHeight, responsiveWidth } = responsiveLayout;
   const staticStyles = StyleSheet.create({
-    logo: { height: 175, width: 175 },
+    logo: { height: 130, width: 130 },
     logoHalo: {
       alignItems: 'center',
       backgroundColor: theme.colors.iconSurface,
@@ -743,16 +743,16 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderRadius: theme.radii.pill,
       borderWidth: 1.5,
       boxShadow: '0 0 44px rgba(224, 172, 75, 0.15)',
-      height: 175,
+      height: 145,
       justifyContent: 'center',
-      width: 175,
+      width: 140,
     },
         brandLockup: { alignItems: 'center', gap: 8 },
         brandName: {
           color: theme.colors.cream,
           fontFamily: theme.fonts.bold,
-          fontSize: 40,
-          letterSpacing: 5,
+          fontSize: 35,
+          letterSpacing: 3,
           textShadowColor: theme.colors.dividerStrong,
           textShadowOffset: { width: 0, height: 0 },
           textShadowRadius: 15,
@@ -880,6 +880,20 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   });
   return {
     ...staticStyles,
+    logo: [
+      staticStyles.logo,
+      {
+        width: responsiveWidth(130),
+        height: responsiveHeight(130),
+      },
+    ],
+    logoHalo: [
+      staticStyles.logoHalo,
+      {
+        width: responsiveWidth(140),
+        height: responsiveHeight(145),
+      },
+    ],
     backButtonText: [
       staticStyles.backButtonText,
       {

@@ -248,7 +248,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       letterSpacing: 1.1,
     },
     flipWelcomeText: { color: theme.colors.cream, fontFamily: theme.fonts.body, fontSize: 13, lineHeight: 17 },
-    logo: { height: 175, width: 175 },
+    logo: { height: 130, width: 130 },
     logoHalo: {
       alignItems: 'center',
       backgroundColor: theme.colors.iconSurface,
@@ -256,9 +256,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderRadius: theme.radii.pill,
       borderWidth: 1.5,
       boxShadow: '0 0 44px rgba(224, 172, 75, 0.15)',
-      height: 175,
+      height: 150,
       justifyContent: 'center',
-      width: 175,
+      width: 150,
     },
     pressed: { opacity: 0.76, transform: [{ scale: 0.985 }] },
     title: {
@@ -324,15 +324,15 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     logo: [
       staticStyles.logo,
       {
-        height: responsiveHeight(175),
-        width: responsiveWidth(175),
+        height: responsiveHeight(130),
+        width: responsiveWidth(130),
       },
     ],
     logoHalo: [
       staticStyles.logoHalo,
       {
-        height: responsiveHeight(175),
-        width: responsiveWidth(175),
+        height: responsiveHeight(145),
+        width: responsiveWidth(140),
       },
     ],
     title: [
