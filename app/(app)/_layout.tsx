@@ -26,6 +26,7 @@ import { ItemAnalysisResultProvider } from '@/components/scanner/item-analysis-r
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { SourcingTripProvider } from '@/components/sourcing/sourcing-trip-provider';
 import { getKeepFlipThemeColors } from '@/constants/keepflip-theme';
+import { CROSSLISTING_LAB_ENABLED } from '@/constants/crosslisting-lab';
 import { notificationRouteFromData } from '@/services/keepflip-notification-service';
 import { hasCompletedScanInventoryWalkthrough } from '@/services/user-profile-onboarding-service';
 import { hasCompletedKeepFlipLaunchExperience } from '@/services/keepflip-launch-state-service';
@@ -164,6 +165,7 @@ export default function AppShellLayout() {
                   <Stack.Screen name="analysis-result" />
                   <Stack.Screen name="account" />
                   <Stack.Screen name="facebook-dashboard" />
+                  {CROSSLISTING_LAB_ENABLED ? <Stack.Screen name="crosslisting" /> : null}
                 </Stack>
               <FlipAssistantOverlay />
               <FlipDailyBriefingLauncher />

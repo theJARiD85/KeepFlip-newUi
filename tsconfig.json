@@ -17,6 +17,7 @@
   ],
   "exclude": [
     "backup",
+    "KeepFlip-Crosslisting",
     "node_modules"
   ]
 }

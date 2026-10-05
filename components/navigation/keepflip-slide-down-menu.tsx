@@ -27,6 +27,7 @@ import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance
 import { SourcingTripControl } from '@/components/sourcing/sourcing-trip-control';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
+import { CROSSLISTING_LAB_ENABLED } from '@/constants/crosslisting-lab';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type MenuDestination = {
@@ -46,6 +47,14 @@ const destinations: MenuDestination[] = [
   { eyebrow: 'IDENTIFY & VALUE', href: '/scanner' as Href, icon: 'viewfinder', label: 'Scanner' },
   { eyebrow: 'START HERE', href: '/first-analysis-guide' as Href, icon: 'sparkles', label: 'First item guide' },
   { eyebrow: 'YOUR SAVED FINDS', href: '/inventory', icon: 'shippingbox.fill', label: 'Inventory' },
+  ...(CROSSLISTING_LAB_ENABLED
+    ? [{
+        eyebrow: 'LIST ACROSS CHANNELS',
+        href: '/crosslisting' as Href,
+        icon: 'shippingbox.fill' as const,
+        label: 'Crosslisting Lab',
+      }]
+    : []),
 ];
 
 const MENU_BACKGROUND_DARK = `

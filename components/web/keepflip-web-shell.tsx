@@ -13,6 +13,7 @@ import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { WebSiteFooter } from '@/components/web/web-site-chrome';
+import { CROSSLISTING_LAB_ENABLED } from '@/constants/crosslisting-lab';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 
@@ -39,6 +40,14 @@ const primaryNavigation: NavItem[] = [
     icon: 'shippingbox.fill',
     label: 'Inventory',
   },
+  ...(CROSSLISTING_LAB_ENABLED
+    ? [{
+        eyebrow: 'WORKSPACE',
+        href: '/crosslisting' as Href,
+        icon: 'shippingbox.fill' as const,
+        label: 'Crosslisting Lab',
+      }]
+    : []),
   {
     eyebrow: 'WORKSPACE',
     href: '/books',
@@ -99,6 +108,7 @@ function initials(name: string | null | undefined) {
 function displaySection(pathname: string) {
   if (pathname === '/' || pathname === '/command-center') return 'COMMAND CENTER';
   if (pathname.startsWith('/inventory')) return 'INVENTORY';
+  if (pathname.startsWith('/crosslisting')) return 'CROSSLISTING LAB';
   if (pathname.startsWith('/books')) return 'BOOKS & REPORTS';
   if (pathname.startsWith('/market-research')) return 'MARKET RESEARCH';
   if (pathname.startsWith('/seller-assistant')) return 'FLIP ASSISTANT';

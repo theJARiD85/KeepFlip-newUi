@@ -33,6 +33,9 @@ const expoModulesCoreGradlePluginGeneratedOutput =
 // Block non-app directories from Metro's crawl.  Without Watchman, the
 // fallback watcher times out trying to traverse all of these on Windows.
 const nonAppDirectories = [
+  // The standalone prototype is a separate Expo project and is never imported
+  // by KeepFlip's main bundle.
+  projectDirectory('KeepFlip-Crosslisting'),
   projectDirectory('.venv'),
   projectDirectory('.venv-tapseg'),
   projectDirectory('.gradle-pika-test'),
@@ -54,6 +57,17 @@ const nonAppDirectories = [
   // Block expo-dev-launcher Gradle plugin build artifacts
   /node_modules[\\/]expo-dev-launcher[\\/].*[\\/](?:bin|build)(?:[\\/]|$)/,
 ];
+
+// Expo Router discovers every file below app/. Exclude the optional lab routes
+// and implementation modules from the Metro file map unless an explicit lab
+// build is requested. The app layouts and navigation use the same flag.
+if (process.env.EXPO_PUBLIC_ENABLE_CROSSLISTING_LAB !== 'true') {
+  nonAppDirectories.push(
+    projectDirectory('app/(app)/crosslisting'),
+    projectDirectory('components/crosslisting-lab'),
+    projectDirectory('services/crosslisting-lab-api.ts'),
+  );
+}
 
 const existingBlockList = config.resolver.blockList
   ? Array.isArray(config.resolver.blockList)

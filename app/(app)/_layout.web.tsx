@@ -6,6 +6,7 @@ import { ItemAnalysisResultProvider } from '@/components/scanner/item-analysis-r
 import { KeepFlipWebShell } from '@/components/web/keepflip-web-shell';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { getKeepFlipThemeColors } from '@/constants/keepflip-theme';
+import { CROSSLISTING_LAB_ENABLED } from '@/constants/crosslisting-lab';
 import { WebAppShellLayoutProvider } from '@/hooks/use-responsive-layout';
 
 export const unstable_settings = {
@@ -49,6 +50,7 @@ export default function WebAppShellLayout() {
                 <Stack.Screen name="notifications" />
                 <Stack.Screen name="seller-center" />
                 <Stack.Screen name="seller-assistant" />
+                {CROSSLISTING_LAB_ENABLED ? <Stack.Screen name="crosslisting" /> : null}
               </Stack>
             </KeepFlipWebShell>
           </WebAppShellLayoutProvider>
