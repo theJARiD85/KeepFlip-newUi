@@ -84,7 +84,7 @@ export function WebOnboardingScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.page, isPhone && styles.pagePhone, webContentSizing, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
-          <WebSiteHeader label="TOOLS FOR SOLO RESELLERS" showMarketingLinks />
+          <WebSiteHeader showMarketingLinks />
 
           <View style={[styles.hero, isWide && styles.heroWide]}>
             <View style={styles.heroCopy}>
@@ -94,14 +94,14 @@ export function WebOnboardingScreen() {
                 </Text>
                 <View style={[styles.livePill, { backgroundColor: colors.iconSurfaceCyan, borderColor: colors.accentCyanBorder }]}>
                   <View style={[styles.liveDot, { backgroundColor: colors.scannerCyan }]} />
-                  <Text style={[styles.livePillText, { color: colors.scannerCyan }]}>BUILT FOR SOLO FLIPPERS</Text>
+                  <Text style={[styles.livePillText, { color: colors.scannerCyan }]}>BUILT FOR FLIPPERS</Text>
                 </View>
               </View>
               <SemanticHeading
                 level={1}
                 style={[styles.heroTitle, isPhone && styles.heroTitlePhone, { color: colors.text }]}
               >
-                KeepFlip takes you from the find to the sale: research, buy decisions, inventory, and the profit you kept after fees.
+                Know what every flip costs.
               </SemanticHeading>
               <Text style={[styles.heroBody, { color: colors.textMuted }]}>
                 Scan a find on Android, check the likely net after fees before you buy, then track what you bought and what you kept.

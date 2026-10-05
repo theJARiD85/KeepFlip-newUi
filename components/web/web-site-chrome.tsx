@@ -39,22 +39,24 @@ export function WebSiteHeader({
 
   return (
     <View style={[styles.header, isPhone && styles.headerPhone, { borderBottomColor: colors.divider }]}>
-      <Link href="/welcome" asChild>
+      <Link href="/welcome" asChild style={styles.brand}>
         <Pressable
           accessibilityLabel="KeepFlip home"
           accessibilityRole="link"
-          style={({ pressed }) => [styles.brand, pressed && styles.pressed]}
+          style={({ pressed }) => [pressed && styles.pressed]}
         >
-          <Image
-            accessibilityLabel="KeepFlip"
-            contentFit="contain"
-            source={require('@/assets/images/icon3.png')}
-            style={styles.brandMark}
-          />
+          <View style={styles.brandCopy}>
+            <Image
+              accessibilityLabel="KeepFlip"
+              contentFit="contain"
+              source={require('@/assets/images/icon3.png')}
+              style={styles.brandMark}
+            />
+          </View>
           <View style={styles.brandCopy}>
             <Text style={[styles.brandName, { color: colors.text }]}>KEEPFLIP</Text>
             <Text style={[styles.brandTagline, { color: colors.goldBright }]}>
-              SOURCING SMARTER. FLIPPING BETTER.
+              Know what every flip costs.
             </Text>
           </View>
         </Pressable>
@@ -432,7 +434,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 18,
     justifyContent: 'space-between',
-    maxWidth: 1120,
     minWidth: 0,
     paddingBottom: 16,
     width: '100%',
@@ -444,19 +445,19 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
   },
   brand: {
-    alignItems: 'flex-start',
-    justifyContent: 'flex-end',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
     flexDirection: 'row',
     flexShrink: 1,
     gap: 0,
   },
   brandMark: {
     height: 75,
-    width: 65,
+    width: 75,
   },
   brandCopy: {
-    alignItems: 'center',
-    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    justifyContent: 'center',
     minWidth: 0,
     flexShrink: 1,
     gap: 2,
@@ -468,7 +469,7 @@ const styles = StyleSheet.create({
   },
   brandTagline: {
     fontFamily: theme.fonts.bold,
-    fontSize: 10,
+    fontSize: 12,
     letterSpacing: 0.75,
   },
   headerRight: {
