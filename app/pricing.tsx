@@ -119,7 +119,7 @@ export default function PricingPage() {
               'US web checkout in US dollars.',
             ]}
             />
-            <WebActionLink href="/meet-flip" label="Continue to setup and choose your billing period" />
+            <WebActionLink href="/meet-flip" label="Meet Flip and create a free account" />
           </View>
           <BillingComparisonTable colors={colors} />
           <WebCopy>

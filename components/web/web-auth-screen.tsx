@@ -221,12 +221,12 @@ export function WebAuthScreen({
           label={isCreateAccount ? 'CREATE RESELLER WORKSPACE' : 'SIGN IN TO KEEPFLIP'}
           showActions
         />
-        <View style={[styles.card, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
+        <View style={[styles.card, { backgroundColor: colors.backgroundRaised }]}>
           <Text style={[styles.eyebrow, { color: colors.goldBright }]}>RESELLER OPERATIONS, EVERYWHERE</Text>
-          <Text style={[styles.title, { color: colors.text }]}>Make every flip easier to trust.</Text>
+          <Text style={[styles.title, { color: colors.text }]}>{isCreateAccount ? "Let's make your account." : 'Welcome back.'}</Text>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>
             {isCreateAccount
-              ? 'Start with every KeepFlip feature except Flip Assistant: 10 saved inventory items, 10 AI scans, and 10 listing generations each month. Books and insights are included. Serious is $13/month or $130/year and includes Flip.'
+              ? 'Add your name, email, and password. No credit card is required. Your Flip setup and workflow tour begin after you sign in.'
               : 'Use the web workspace for inventory, Books, market research, and assistant planning. Open the Android app when it is time to capture an item.'}
           </Text>
 

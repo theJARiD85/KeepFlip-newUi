@@ -43,6 +43,9 @@ function isMarketplaceHost(url: string, platform: CrosslistingMarketplace) {
 
 function isListingFormUrl(url: string, platform: CrosslistingMarketplace) {
   if (!isMarketplaceHost(url, platform)) return false;
+  // OfferUp opens its posting form in a modal on the home page, so its URL
+  // does not change when the user taps Post.
+  if (platform === 'offerUp') return true;
   try {
     return /sell|list|create/i.test(new URL(url).pathname);
   } catch {
@@ -54,10 +57,19 @@ function readFillResult(value: string) {
   try {
     const parsed: unknown = JSON.parse(value);
     if (!parsed || typeof parsed !== 'object') return null;
-    const message = parsed as { kind?: unknown; filled?: unknown; photoCount?: unknown; error?: unknown };
+    const message = parsed as {
+      kind?: unknown;
+      filled?: unknown;
+      fields?: unknown;
+      photoCount?: unknown;
+      error?: unknown;
+    };
     if (message.kind !== 'keepflip-crosslisting-result') return null;
     return {
       filled: typeof message.filled === 'number' ? message.filled : 0,
+      fields: Array.isArray(message.fields)
+        ? message.fields.filter((field): field is string => typeof field === 'string')
+        : [],
       photoCount: typeof message.photoCount === 'number' ? message.photoCount : 0,
       error: typeof message.error === 'string' ? message.error : null,
     };
@@ -183,13 +195,19 @@ export function MarketplaceAuthModal({
       setStatus(`Session saved. Opening the ${destination.label} listing form…`);
       setSourceUrl(destination.createUrl);
       setCurrentUrl(destination.createUrl);
+      if (platform === 'offerUp') {
+        // OfferUp opens its listing form as a modal without changing the URL.
+        // Start the bounded DOM watcher now so it can fill the form after the
+        // user opens it from the page.
+        webViewRef.current?.injectJavaScript(buildWebViewAutofillScript(payload));
+      }
       onSaved?.();
     } catch {
       setError('KeepFlip could not save this marketplace session. Check the marketplace_sessions table setup and try again.');
     } finally {
       setSavingSession(false);
     }
-  }, [currentUrl, destination, onSaved, platform, savingSession, userId]);
+  }, [currentUrl, destination, onSaved, payload, platform, savingSession, userId]);
 
   const handleForgetSession = useCallback(async () => {
     if (forgettingSession) return;
@@ -241,7 +259,26 @@ export function MarketplaceAuthModal({
       return;
     }
     if (result.filled > 0) {
-      setStatus(`KeepFlip filled ${result.filled} fields. Add ${result.photoCount} item photos, review the listing, and post it when ready.`);
+      const fieldLabels: Record<string, string> = {
+        title: 'title',
+        description: 'description',
+        price: 'price',
+        category: 'category',
+        condition: 'condition',
+        brand: 'brand',
+        size: 'size',
+        color: 'color',
+      };
+      const filledLabels = result.fields
+        .map((field) => fieldLabels[field])
+        .filter((field): field is string => Boolean(field));
+      const filledSummary = filledLabels.length > 0
+        ? filledLabels.join(', ')
+        : `${result.filled} fields`;
+      const photoInstruction = result.photoCount > 0
+        ? `Add your ${result.photoCount} saved item photos using the marketplace photo picker.`
+        : 'Add item photos using the marketplace photo picker.';
+      setStatus(`KeepFlip filled ${filledSummary}. ${photoInstruction} Review the listing and post it when ready.`);
     } else {
       setStatus('The listing form is open. KeepFlip did not find supported fields, so fill the details on the page.');
     }

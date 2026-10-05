@@ -3,6 +3,7 @@ import { useKeepFlipFeedbackNudge } from "@/components/feedback/keepflip-feedbac
 import { ListingNetProceedsPanel } from "@/components/seller/listing-net-proceeds-panel";
 import { ListingReadinessPanel } from "@/components/seller/listing-readiness-panel";
 import { MarketplaceAuthModal } from "@/components/connections/marketplace-auth-modal";
+import { CROSSLISTING_AUTOFILL_ENABLED } from "@/constants/crosslisting-autofill";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
@@ -121,7 +122,7 @@ const CROSSLIST_PLATFORMS: {
       mode: "ASSISTED HANDOFF",
       description:
         "Send the prepared copy to OfferUp, then confirm category, shipping, and listing details.",
-      url: "https://offerup.com/",
+      url: CROSSLISTING_DESTINATIONS.offerUp.createUrl,
     },
     {
       id: "depop",
@@ -705,21 +706,32 @@ export default function ListingCreationGuideScreen() {
 
           // Open synchronously from the user's click so popup blockers do not
           // prevent the marketplace tab while the clipboard write is pending.
+          const useAutofill = Boolean(
+            CROSSLISTING_AUTOFILL_ENABLED &&
+              crosslistingMarketplace &&
+              crosslistingPayload,
+          );
           const clipboardWrite = navigator.clipboard.writeText(
-            crosslistingPayload ? JSON.stringify(crosslistingPayload) : message,
+            useAutofill && crosslistingPayload
+              ? JSON.stringify(crosslistingPayload)
+              : message,
           );
           window.open(platformInfo.url, "_blank", "noopener,noreferrer");
           await clipboardWrite;
-          if (crosslistingPayload) {
+          if (useAutofill && crosslistingPayload) {
             setShareNotice(
-              `${platformInfo.label} listing data copied. Open the listing form and click KeepFlip Autofill to fill supported fields; add photos and review the listing.`,
+              `${platformInfo.label} listing data copied. Open the listing form and run KeepFlip Autofill to fill supported fields; add photos and review the listing.`,
             );
           } else {
             setShareNotice(
               `${platformInfo.label} draft copied. Paste it into the marketplace form, add your photos, and review the listing before posting.`,
             );
           }
-        } else if (Platform.OS === "android" && crosslistingMarketplace && crosslistingPayload) {
+        } else if (
+          CROSSLISTING_AUTOFILL_ENABLED &&
+          crosslistingMarketplace &&
+          crosslistingPayload
+        ) {
           if (!userId) {
             throw new Error("Sign in to KeepFlip before preparing a marketplace listing.");
           }
@@ -1282,9 +1294,11 @@ export default function ListingCreationGuideScreen() {
                     </View>
                   </View>
                   <Text style={[styles.crosslistDescription, { fontSize: responsiveFont(12) }]}>
-                    KeepFlip keeps item facts consistent across channels. eBay can publish the reviewed draft. Facebook Marketplace, Depop, Mercari, and Poshmark can fill supported fields with the browser bookmarklet or Android app; add photos and review marketplace-specific selections before posting.
+                    KeepFlip keeps item facts consistent across channels. eBay can publish the reviewed draft.{CROSSLISTING_AUTOFILL_ENABLED
+                      ? " Facebook Marketplace, OfferUp, Depop, Mercari, and Poshmark can open in a marketplace view or browser bookmarklet to fill supported text fields. Add photos and review the marketplace details before posting."
+                      : " For Facebook Marketplace, OfferUp, Depop, Mercari, and Poshmark, prepare the draft here and finish the listing on the marketplace."}
                   </Text>
-                  {Platform.OS === "web" ? (
+                  {Platform.OS === "web" && CROSSLISTING_AUTOFILL_ENABLED ? (
                     <View style={styles.bookmarkletSetup}>
                       <View style={styles.bookmarkletCopy}>
                         <Text style={[styles.bookmarkletTitle, { fontSize: responsiveFont(9) }]}>MARKETPLACE AUTOFILL</Text>
@@ -1682,7 +1696,7 @@ export default function ListingCreationGuideScreen() {
             </>
           )}
       </ScrollView>
-      {crosslistingModal ? (
+      {CROSSLISTING_AUTOFILL_ENABLED && crosslistingModal ? (
         <MarketplaceAuthModal
           onClose={() => setCrosslistingModal(null)}
           onSaved={() => {

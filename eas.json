@@ -9,7 +9,8 @@
       "distribution": "internal",
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_ENABLE_CROSSLISTING_LAB": "false"
+        "EXPO_PUBLIC_ENABLE_CROSSLISTING_LAB": "false",
+        "EXPO_PUBLIC_ENABLE_CROSSLISTING_AUTOFILL": "false"
       },
       "android": {
         "buildType": "apk"
@@ -18,7 +19,8 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_ENABLE_CROSSLISTING_LAB": "false"
+        "EXPO_PUBLIC_ENABLE_CROSSLISTING_LAB": "false",
+        "EXPO_PUBLIC_ENABLE_CROSSLISTING_AUTOFILL": "false"
       },
       "android": {
         "buildType": "apk"
@@ -28,7 +30,8 @@
       "autoIncrement": true,
       "env": {
         "NODE_ENV": "production",
-        "EXPO_PUBLIC_ENABLE_CROSSLISTING_LAB": "false"
+        "EXPO_PUBLIC_ENABLE_CROSSLISTING_LAB": "false",
+        "EXPO_PUBLIC_ENABLE_CROSSLISTING_AUTOFILL": "false"
       },
       "android": {
         "buildType": "apk"
@@ -38,6 +41,7 @@
       "extends": "preview",
       "env": {
         "EXPO_PUBLIC_ENABLE_CROSSLISTING_LAB": "true",
+        "EXPO_PUBLIC_ENABLE_CROSSLISTING_AUTOFILL": "true",
         "EXPO_PUBLIC_CROSSLISTING_FUNCTION_ID": "crosslisting-api"
       }
     }

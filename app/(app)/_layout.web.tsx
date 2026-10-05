@@ -1,6 +1,8 @@
-import { Stack } from 'expo-router';
+import { Stack, type Href, usePathname, useRouter } from 'expo-router';
+import { useEffect, useRef } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { EbayConnectionProvider } from '@/components/ebay/ebay-connection-context';
 import { ItemAnalysisResultProvider } from '@/components/scanner/item-analysis-result-context';
 import { KeepFlipWebShell } from '@/components/web/keepflip-web-shell';
@@ -8,10 +10,39 @@ import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance
 import { getKeepFlipThemeColors } from '@/constants/keepflip-theme';
 import { CROSSLISTING_LAB_ENABLED } from '@/constants/crosslisting-lab';
 import { WebAppShellLayoutProvider } from '@/hooks/use-responsive-layout';
+import { hasCompletedScanInventoryWalkthrough } from '@/services/user-profile-onboarding-service';
 
 export const unstable_settings = {
   anchor: 'index',
 };
+
+function WebWalkthroughAutoLauncher() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { user } = useKeepFlipAuth();
+  const checkedUserId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      checkedUserId.current = null;
+      return;
+    }
+    if (pathname === '/walkthrough' || checkedUserId.current === user.$id) return;
+
+    let cancelled = false;
+    checkedUserId.current = user.$id;
+    void hasCompletedScanInventoryWalkthrough(user.$id, user.name)
+      .then((completed) => {
+        if (!cancelled && !completed) router.replace('/walkthrough' as Href);
+      })
+      .catch(() => {
+        if (!cancelled) checkedUserId.current = null;
+      });
+    return () => { cancelled = true; };
+  }, [pathname, router, user]);
+
+  return null;
+}
 
 export default function WebAppShellLayout() {
   const { effectiveColorScheme } = useKeepFlipAppearance();
@@ -23,6 +54,7 @@ export default function WebAppShellLayout() {
         <ItemAnalysisResultProvider>
           <WebAppShellLayoutProvider>
             <KeepFlipWebShell>
+              <WebWalkthroughAutoLauncher />
               <Stack
                 screenOptions={{
                   animation: 'fade',
@@ -30,6 +62,7 @@ export default function WebAppShellLayout() {
                   headerShown: false,
                 }}>
                 <Stack.Screen name="index" />
+                <Stack.Screen name="walkthrough" />
                 <Stack.Screen name="scanner" />
                 <Stack.Screen name="inventory" />
                 <Stack.Screen name="analysis" />

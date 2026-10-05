@@ -83,8 +83,9 @@ export function WebOnboardingScreen() {
         contentContainerStyle={[styles.scrollContent, webContentSizing, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         showsVerticalScrollIndicator={false}
       >
+      <WebSiteHeader showMarketingLinks />
         <View style={[styles.page, isPhone && styles.pagePhone, webContentSizing, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
-          <WebSiteHeader showMarketingLinks />
+
 
           <View style={[styles.hero, isWide && styles.heroWide]}>
             <View style={styles.heroCopy}>
@@ -101,42 +102,27 @@ export function WebOnboardingScreen() {
                 level={1}
                 style={[styles.heroTitle, isPhone && styles.heroTitlePhone, { color: colors.text }]}
               >
-                Know what every flip costs.
+                KeepFlip is your go-to reseller assistant that shows you exactly how much every flip costs.
               </SemanticHeading>
               <Text style={[styles.heroBody, { color: colors.textMuted }]}>
-                Scan a find on Android, check the likely net after fees before you buy, then track what you bought and what you kept.
+              KeepFlip tracks every item from the shelf to the sale. Scan a find, see your estimated net after fees before you spend, then follow it through inventory and into the books. No spreadsheet. No tab chaos.
               </Text>
-              <View style={styles.heroActions}>
-                <WebActionLink
-                  href={KEEPFLIP_GOOGLE_PLAY_URL}
-                  label="Start free on Android"
-                />
-                <WebActionLink
-                  href="/pricing"
-                  label="See plan prices"
-                  secondary
-                />
-                <WebActionLink
-                  href="/features"
-                  label="How it works"
-                  secondary
-                />
-              </View>
               <Text style={[styles.freeEntryNote, { color: colors.textMuted }]}>
                 Free includes every KeepFlip feature except Flip Assistant on Android and web, with up to 10 saved inventory items, {KEEPFLIP_FREE_SCANS_PER_MONTH} AI scans, and {KEEPFLIP_FREE_LISTING_GENERATIONS_PER_MONTH} listing generations each month. Books and insights are included. Serious adds unlimited saved inventory, 200 scans per month, unlimited listing generations, and Flip for $13/month or $130/year. No card or timed trial is required.
               </Text>
-              <Text style={[styles.scopeCopy, { color: colors.textMuted }]}>
-                Built for solo flippers who source in person and sell on eBay. If you crosslist to five marketplaces, KeepFlip is not that tool yet.
-              </Text>
-              <View style={styles.downloadProof}>
-                <WebTextLink href={KEEPFLIP_GOOGLE_PLAY_URL} label="100+ downloads on Google Play" />
-              </View>
               <View style={styles.heroProof}>
                 <ProofItem colors={colors} label="SOURCE" detail="Scan with the Android app" />
                 <ProofItem colors={colors} label="DECIDE" detail="Know the numbers before you buy" />
                 <ProofItem colors={colors} label="TRACK" detail="See what you kept after the sale" />
               </View>
             </View>
+            <View style={[styles.flipStrip, { backgroundColor: colors.iconSurfaceViolet, borderColor: colors.accentVioletBorder }]}>
+                <FlipCompanion cropToSquare={false} size={isWide ? 78 : 64} />
+                <View style={styles.flipStripCopy}>
+                  <Text style={[styles.flipStripEyebrow, { color: colors.scannerViolet }]}>FLIP KEEPS THE NEXT MOVE CLEAR</Text>
+                  <Text style={[styles.flipStripText, { color: colors.textMuted }]}>Less guesswork. Less cash stuck in the wrong inventory.</Text>
+                </View>
+              </View>
 
             <View style={[styles.heroVisual, !isWide && styles.heroVisualStacked, isPhone && styles.heroVisualPhone, { backgroundColor: colors.card, borderColor: colors.divider }]}>
               <View style={[styles.heroVisualHeader, isPhone && styles.heroVisualHeaderPhone]}>
@@ -171,13 +157,6 @@ export function WebOnboardingScreen() {
               <Text style={[styles.exampleNote, { color: colors.textMuted }]}>
                 Illustrative example. Actual estimates depend on the item, condition, market evidence, and your costs.
               </Text>
-              <View style={[styles.flipStrip, { backgroundColor: colors.iconSurfaceViolet, borderColor: colors.accentVioletBorder }]}>
-                <FlipCompanion cropToSquare={false} size={isWide ? 78 : 64} />
-                <View style={styles.flipStripCopy}>
-                  <Text style={[styles.flipStripEyebrow, { color: colors.scannerViolet }]}>FLIP KEEPS THE NEXT MOVE CLEAR</Text>
-                  <Text style={[styles.flipStripText, { color: colors.textMuted }]}>Less guesswork. Less cash stuck in the wrong inventory.</Text>
-                </View>
-              </View>
             </View>
           </View>
 
@@ -306,14 +285,34 @@ export function WebOnboardingScreen() {
           </View>
 
           <WebContentSection
-            eyebrow="REAL RESELLER EXPERIENCES"
+            eyebrow="SOUND FAMILIAR?"
             id="reseller-stories"
-            title="Stories from people who flip."
+            title="What resellers say about tracking the old way."
           >
-            <View style={[styles.storyPlaceholder, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
-              <WebCopy>
-                We are collecting 3–5 named reseller stories and will publish them only after each person approves their words and name. No customer quotes are published here yet.
-              </WebCopy>
+            <View style={[styles.storyPlaceholder, { gap: 20 }]}>
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-start', gap: 10 }}>
+                <Text style={{color: theme.colors.text, fontFamily: theme.fonts.body, fontSize: 16}}>"I used spreadsheets for a decade...</Text> <Text style={{color: theme.colors.text, fontFamily: theme.fonts.medium}}>so much less stress."</Text>
+                <Text style={{color: theme.colors.scannerCyan, fontFamily: theme.fonts.body, fontSize: 16}}>— Full-time reseller, r/Flipping</Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
+                <Text style={{color: theme.colors.text, fontFamily: theme.fonts.body, fontSize: 18}}>"My time is more valuable than $20 a month having to create a spreadsheet and update it constantly. It also helps at the end of the year for tax purposes."</Text>
+                <Text style={{color: theme.colors.scannerCyan, fontFamily: theme.fonts.body, fontSize: 18}}>— Flipwise user, Reddit</Text>
+              </View>              
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-center', gap: 10 }}>
+                <Text style={{color: theme.colors.text, fontFamily: theme.fonts.body, fontSize: 16}}>"I started using a spreadsheet but as I grew, it became too time consuming to track items on an individual basis."</Text>
+                <Text style={{color: theme.colors.scannerCyan, fontFamily: theme.fonts.body, fontSize: 16}}>— r/Flipping</Text>
+              </View>             
+               <View style={{ flexDirection: 'row', justifyContent: 'flex-start', gap: 10 }}>
+                <Text style={{color: theme.colors.text, fontFamily: theme.fonts.body, fontSize: 16}}>"I was selling sewing patterns thinking I was making about $1.40 but I didn't realize about the flat fee and the fact eBay's fees include shipping. My actual net profit was actually .15."</Text>
+                <Text style={{color: theme.colors.scannerCyan, fontFamily: theme.fonts.body, fontSize: 16}}>— Full-time reseller, r/Flipping</Text>
+              </View>
+
+
+
+<Text></Text>
+<Text>— r/Flipping</Text>
+
+
             </View>
           </WebContentSection>
 
@@ -361,9 +360,8 @@ export function WebOnboardingScreen() {
             </View>
             <WebActionLink href="/pricing" label="See plan prices" />
           </View>
-
-            <WebSiteFooter showMarketingLinks />
           </View>
+          <WebSiteFooter showMarketingLinks />
         </ScrollView>
       </View>
       </LinearGradient>
@@ -603,9 +601,10 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   page: {
+    paddingTop: 35,
+    paddingBottom: 170,
     alignSelf: 'center',
-    gap: 58,
-    maxWidth: 1120,
+    gap: 50,
     paddingBottom: 6,
     width: '100%',
   },
@@ -639,13 +638,13 @@ const styles = StyleSheet.create({
   livePillText: { fontFamily: theme.fonts.semibold, fontSize: 8, letterSpacing: 0.9 },
   heroTitle: {
     fontFamily: theme.fonts.bold,
-    fontSize: 38,
+    fontSize: 35,
+    maxWidth: 730,
     letterSpacing: -1.1,
-    lineHeight: 53,
-    maxWidth: 720,
+    lineHeight: 40,
   },
   heroTitlePhone: { fontSize: 31, lineHeight: 39, letterSpacing: -0.7 },
-  heroBody: { fontFamily: theme.fonts.body, fontSize: 16, lineHeight: 25, maxWidth: 650 },
+  heroBody: { fontFamily: theme.fonts.body, fontSize: 15, lineHeight: 25, maxWidth: 650 },
   heroActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 6 },
   freeEntryNote: { fontFamily: theme.fonts.body, fontSize: 12, lineHeight: 18, maxWidth: 600 },
   scopeCopy: { fontFamily: theme.fonts.body, fontSize: 12, lineHeight: 18, maxWidth: 600 },

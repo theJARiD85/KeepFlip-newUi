@@ -438,10 +438,10 @@ function AccountDetailsTab() {
             />
             <KeepFlipControlRow
               accent="cyan"
-              accessibilityHint="Replays the scan, analysis, and inventory walkthrough."
-              description="Revisit the first-item walkthrough with the real scanner."
+              accessibilityHint="Replays Flip's buy rules and scan-to-records workflow tour."
+              description="Revisit your buy rules and Flip's scan-to-records example."
               icon="viewfinder"
-              label="Scanner walkthrough"
+              label="Workflow tour"
               onPress={() => {
                 hapticSelection();
                 router.push('/walkthrough' as Href);

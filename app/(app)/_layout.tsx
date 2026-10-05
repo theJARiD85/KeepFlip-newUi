@@ -29,7 +29,6 @@ import { getKeepFlipThemeColors } from '@/constants/keepflip-theme';
 import { CROSSLISTING_LAB_ENABLED } from '@/constants/crosslisting-lab';
 import { notificationRouteFromData } from '@/services/keepflip-notification-service';
 import { hasCompletedScanInventoryWalkthrough } from '@/services/user-profile-onboarding-service';
-import { hasCompletedKeepFlipLaunchExperience } from '@/services/keepflip-launch-state-service';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
@@ -75,7 +74,6 @@ function WalkthroughAutoLauncher() {
 
     if (
       pathname === '/walkthrough' ||
-      pathname === '/first-analysis-guide' ||
       checkedUserIdRef.current === user.$id
     ) {
       return;
@@ -85,11 +83,7 @@ function WalkthroughAutoLauncher() {
     let frame: number | null = null;
     checkedUserIdRef.current = user.$id;
 
-    void hasCompletedKeepFlipLaunchExperience()
-      .then((launchCompleted) => {
-        if (cancelled || launchCompleted) return true;
-        return hasCompletedScanInventoryWalkthrough(user.$id, user.name);
-      })
+    void hasCompletedScanInventoryWalkthrough(user.$id, user.name)
       .then((completed) => {
         if (cancelled || completed) return;
         frame = requestAnimationFrame(() => {
@@ -145,6 +139,7 @@ export default function AppShellLayout() {
                   headerShown: false,
                 }}>
                   <Stack.Screen name="index" />
+                  <Stack.Screen name="walkthrough" />
                   <Stack.Screen name="inventory" />
                   <Stack.Screen name="listing-guide" />
                   <Stack.Screen name="repair-assist" />
@@ -159,7 +154,6 @@ export default function AppShellLayout() {
                   <Stack.Screen name="books-records" />
                   <Stack.Screen name="market-research" />
                   <Stack.Screen name="notifications" />
-                  <Stack.Screen name="first-analysis-guide" />
                   <Stack.Screen name="scanner" />
                   <Stack.Screen name="analysis" />
                   <Stack.Screen name="analysis-result" />

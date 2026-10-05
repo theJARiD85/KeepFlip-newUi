@@ -1,9 +1,7 @@
 import * as Haptics from "expo-haptics";
-import { Image } from "expo-image";
 import { type Href, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,12 +13,13 @@ import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
+import { FlipCompanion } from '@/components/flip';
+import { WorkflowTour } from '@/components/onboarding/workflow-tour';
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import { responsiveWidth } from '@/lib/responsiveFont';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 import {
   buyRuleDayLimit,
   DEFAULT_RESELLER_BUY_RULES,
@@ -28,7 +27,6 @@ import {
 } from "@/services/reseller-buy-rules-service";
 import { completeScanInventoryWalkthrough } from "@/services/user-profile-onboarding-service";
 
-import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type FlipIcon =
   | "barcode.viewfinder"
   | "bolt.fill"
@@ -57,8 +55,6 @@ type FlipQuestion = {
   prompt: string;
   choices?: FlipChoice[];
 };
-
-const FLIP_MASCOT_IMAGE = require("@/assets/images/flip-mascot.png");
 
 const FLIP_QUESTIONS: FlipQuestion[] = [
   {
@@ -291,13 +287,7 @@ function FlipCoin({ step }: { step: number }) {
     >
       <View style={styles.coinOrbit}>
         <View style={styles.coinFace}>
-          <Image
-            accessibilityLabel="Flip, KeepFlip's friendly gold coin resale sidekick"
-            contentFit="cover"
-            source={FLIP_MASCOT_IMAGE}
-            style={styles.coinImage}
-            transition={180}
-          />
+          <FlipCompanion size={112} />
         </View>
       </View>
       <View style={styles.coinSignal}>
@@ -375,6 +365,7 @@ export function ScanInventoryWalkthroughScreen() {
   const [profitInput, setProfitInput] = useState(() => String(DEFAULT_RESELLER_BUY_RULES.minimumNetProfitCents / 100));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const tourScreen = FLIP_QUESTIONS.length + 2;
 
   const question =
     screen > 0 && screen <= FLIP_QUESTIONS.length
@@ -442,7 +433,7 @@ export function ScanInventoryWalkthroughScreen() {
       await completeScanInventoryWalkthrough(user.$id, user.name, rules);
       completionHaptic();
 
-      router.replace("/first-analysis-guide" as Href);
+      router.replace("/(app)" as Href);
     } catch (caught) {
       setError(
         caught instanceof Error
@@ -489,14 +480,14 @@ export function ScanInventoryWalkthroughScreen() {
         </View>
 
         <View style={styles.main}>
-          <FlipCoin step={screen} />
+          {screen < tourScreen ? <FlipCoin step={screen} /> : null}
 
           {screen === 0 ? (
             <Animated.View entering={FadeInDown.duration(300)} style={styles.panel}>
               <Text style={styles.hello}>Hey {firstName(user?.name)}.</Text>
               <Text style={[styles.headline, { fontSize: responsiveFont(28) }]}>I’m Flip, your resale sidekick.</Text>
               <Text style={[styles.body, { fontSize: responsiveFont(15) }]}>
-                Give me five quick answers and I’ll make every Buy or Pass call feel built around your business—not somebody else’s.
+                Give me five quick answers so your buy rules fit your business. On the free plan, your rules stay saved; ongoing Flip Assistant help comes with Serious.
               </Text>
               <Pressable
                 accessibilityRole="button"
@@ -562,7 +553,7 @@ export function ScanInventoryWalkthroughScreen() {
                 </View>
               )}
             </Animated.View>
-          ) : (
+          ) : screen === FLIP_QUESTIONS.length + 1 ? (
             <Animated.View entering={FadeInDown.duration(300)} style={styles.panel}>
               <Text style={styles.hello}>Locked in.</Text>
               <Text style={[styles.headline, { fontSize: responsiveFont(28) }]}>Now I know what a good flip looks like to you.</Text>
@@ -571,25 +562,28 @@ export function ScanInventoryWalkthroughScreen() {
                 <Text selectable style={[styles.summarySecondary, { fontSize: responsiveFont(13) }]}>{summary.details}</Text>
               </View>
               <Text style={[styles.body, { fontSize: responsiveFont(15) }]}>
-                I’ll use this to make market-backed recommendations stricter when a find does not match your cash, pace, prep, or storage rules. The sold-market evidence stays separate and visible.
+                Your buy rules are ready. KeepFlip can use them alongside market evidence, and you can change them later. Now let me show you how an item moves through the app.
               </Text>
               {error ? <Text selectable style={[styles.errorText, { fontSize: responsiveFont(13) }]}>{error}</Text> : null}
               <Pressable
                 accessibilityRole="button"
-                disabled={saving}
-                onPress={() => void finish()}
+                onPress={() => setScreen(tourScreen)}
                 style={({ pressed }) => [
                   styles.primaryButton,
-                  saving && styles.buttonDisabled,
-                  pressed && !saving && styles.pressed,
+                  pressed && styles.pressed,
                 ]}
               >
-                {saving ? <ActivityIndicator color={theme.colors.backgroundDeep} /> : <>
-                  <Text style={[styles.primaryButtonText, { fontSize: responsiveFont(15) }]}>Let’s find some flips</Text>
+                <>
+                  <Text style={[styles.primaryButtonText, { fontSize: responsiveFont(15) }]}>Show me the workflow</Text>
                   <IconSymbol color={theme.colors.backgroundDeep} name="viewfinder" size={21} />
-                </>}
+                </>
               </Pressable>
             </Animated.View>
+          ) : (
+            <>
+              <WorkflowTour onBack={() => setScreen(tourScreen - 1)} onFinish={() => void finish()} saving={saving} />
+              {error ? <Text selectable style={[styles.errorText, { fontSize: responsiveFont(13) }]}>{error}</Text> : null}
+            </>
           )}
         </View>
       </ScrollView>

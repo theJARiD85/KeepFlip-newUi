@@ -12,7 +12,6 @@ import { StatusBar } from "expo-status-bar";
 import {
   useEffect,
   useRef,
-  useState,
 } from "react";
 import { View } from "react-native";
 import * as ScreenOrientation from 'expo-screen-orientation';
@@ -33,7 +32,6 @@ import {
 } from '@/components/flip';
 import { KeepFlipFeedbackNudgeProvider } from "@/components/feedback/keepflip-feedback-nudge";
 import { KeepFlipPushRegistration } from '@/components/notifications/keepflip-push-registration';
-import KeepFlipLaunchExperience from "@/components/intro/keepflip-launch-experience";
 import { KeepFlipMinimumVersionGate } from '@/components/update/keepflip-minimum-version-gate';
 import {
   getKeepFlipThemeColors,
@@ -122,6 +120,7 @@ function ProtectedRootStack() {
         headerShown: false,
       }}
     >
+      <Stack.Screen name="index" />
       <Stack.Protected guard={isChecking}>
         <Stack.Screen name="auth-check" />
       </Stack.Protected>
@@ -130,17 +129,12 @@ function ProtectedRootStack() {
         <Stack.Screen name="subscription-check" />
       </Stack.Protected>
 
-      <Stack.Protected
-        guard={
-          !isChecking &&
-          !isSignedIn
-        }
-      >
-        <Stack.Screen name="(auth)" />
-      </Stack.Protected>
-
       <Stack.Protected guard={canShowOnboarding}>
         <Stack.Screen name="(onboarding)" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={!isChecking && !isSignedIn}>
+        <Stack.Screen name="(auth)" />
       </Stack.Protected>
 
       <Stack.Protected
@@ -160,11 +154,6 @@ function RootLayoutContent() {
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const appearanceColors = getKeepFlipThemeColors(effectiveColorScheme);
   const pathname = usePathname();
-  const [
-    launchVisible,
-    setLaunchVisible,
-  ] = useState(true);
-
   const [
     fontsLoaded,
     fontError,
@@ -288,24 +277,11 @@ function RootLayoutContent() {
                       <ProtectedRootStack />
                     </KeepFlipFeedbackNudgeProvider>
                   </KeepFlipSubscriptionProvider>
-                  <View
-                    pointerEvents={launchVisible ? "auto" : "none"}
-                    style={{
-                      bottom: 0,
-                      left: 0,
-                      position: "absolute",
-                      right: 0,
-                      top: 0,
-                    }}
-                  >
-                    <KeepFlipLaunchExperience onVisibilityChange={setLaunchVisible} />
-                  </View>
                 </KeepFlipAuthProvider>
               </KeepFlipMinimumVersionGate>
 
               <StatusBar
                 animated
-                hidden={launchVisible}
                 style={effectiveColorScheme === 'dark' ? 'light' : 'dark'}
               />
             </ThemeProvider>

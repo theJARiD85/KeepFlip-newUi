@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
+import { BooksRecordRow } from '@/components/books/books-record-row';
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
@@ -85,17 +86,6 @@ function fullDate(value: string) {
   });
 }
 
-function shortDate(value: string) {
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return 'Unknown date';
-
-  return date.toLocaleDateString(undefined, {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
 function bookkeepingEventsAsLedgerEntries(
   ownerId: string,
   events: BookkeepingMoneyEvent[],
@@ -155,73 +145,6 @@ function FilterChip({
   );
 }
 
-function RecordRow({
-  entry,
-  itemName,
-  onPress,
-  styles,
-}: {
-  entry: ResellerLedgerEntry;
-  itemName: string | null;
-  onPress: () => void;
-  styles: RecordsStyles;
-}) {
-  const details = ledgerEntryDetails(entry.entryType);
-  const isIncome = entry.direction === 'income';
-  const secondary = [
-    shortDate(entry.occurredAt),
-    entry.channel,
-    itemName,
-  ]
-    .filter(Boolean)
-    .join(' · ');
-
-  return (
-    <Pressable
-      accessibilityHint="Opens the complete transaction record."
-      accessibilityLabel={`${details.label}, ${formatMoney(entry.amountCents, entry.currency)}`}
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.recordRow,
-        pressed && styles.recordRowPressed,
-      ]}>
-      <View
-        style={[
-          styles.recordMarker,
-          isIncome ? styles.recordMarkerIncome : styles.recordMarkerExpense,
-        ]}
-      />
-      <View style={styles.recordDateColumn}>
-        <Text style={styles.recordDate}>{shortDate(entry.occurredAt)}</Text>
-        <Text style={styles.recordSource}>{entry.source.toUpperCase()}</Text>
-      </View>
-      <View style={styles.recordCopy}>
-        <Text numberOfLines={1} style={styles.recordTitle}>
-          {details.label}
-        </Text>
-        <Text numberOfLines={1} style={styles.recordSecondary}>
-          {entry.notes || secondary || 'Recorded Books transaction'}
-        </Text>
-      </View>
-      <View style={styles.recordAmountColumn}>
-        <Text
-          style={[
-            styles.recordAmount,
-            isIncome ? styles.recordAmountIncome : styles.recordAmountExpense,
-          ]}>
-          {isIncome ? '+' : '−'}
-          {formatMoney(entry.amountCents, entry.currency)}
-        </Text>
-        <Text style={styles.recordDirection}>
-          {isIncome ? 'IN' : 'OUT'}
-        </Text>
-      </View>
-      <IconSymbol color={theme.colors.textMuted} name="chevron.right" size={14} />
-    </Pressable>
-  );
-}
-
 function DetailRow({
   label,
   value,
@@ -245,7 +168,6 @@ function DetailRow({
 
 export function BooksRecordsScreen() {
   const styles = useResponsiveStyles(createResponsiveStyles);
-  const router = useRouter();
   const {
     contentMaxWidth,
     contentWidth,
@@ -566,14 +488,13 @@ export function BooksRecordsScreen() {
           />
         }
         renderItem={({ item }) => (
-          <RecordRow
+          <BooksRecordRow
             entry={item}
             itemName={item.itemId ? inventoryNames.get(item.itemId) ?? null : null}
             onPress={() => {
               hapticSelection();
               setSelectedEntry(item);
             }}
-            styles={styles}
           />
         )}
         showsVerticalScrollIndicator={false}

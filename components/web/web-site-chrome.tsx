@@ -19,7 +19,6 @@ type WebSiteHeaderProps = {
 };
 
 export function WebSiteHeader({
-  label = 'RESELLER OPERATIONS',
   onGetStarted,
   onHowItWorks,
   onSignIn,
@@ -63,7 +62,6 @@ export function WebSiteHeader({
       </Link>
 
       <View style={[styles.headerRight, isCompact && styles.headerRightCompact, isPhone && styles.headerRightPhone]}>
-        <Text style={[styles.headerLabel, isPhone && styles.headerLabelPhone, { color: colors.textMuted }]}>{label}</Text>
         {showActions ? (
           <View style={[styles.headerActions, isPhone && styles.headerActionsPhone]}>
             {showBackButton ? (
@@ -109,12 +107,6 @@ export function WebSiteHeader({
             {showMarketingLinks ? (
               <>
                 <HeaderRouteLink colors={colors} href="/sign-in" label="SIGN IN" />
-                <HeaderRouteLink
-                  colors={colors}
-                  href="https://play.google.com/store/apps/details?id=com.keepflip.app"
-                  label="START FREE ON ANDROID"
-                  primary
-                />
               </>
             ) : (
               <>
@@ -172,28 +164,25 @@ export function WebSiteFooter({
       `mailto:support@keep-flip.com?subject=${encodeURIComponent(subject)}`,
     );
   };
+  const handlePress = async () => {
+    const url = 'https://play.google.com/store/apps/details?id=com.keepflip.app';
+    const supported = await Linking.canOpenURL(url);
+
+    if (supported) {
+      await Linking.openURL(url);
+    } else {
+      console.error("Don't know how to open URI: " + url);
+    }
+  };
 
   return (
-    <View style={[styles.footer, isPhone && styles.footerPhone, { backgroundColor: colors.backgroundDeep, borderTopColor: colors.divider }]}>
+    <View style={[styles.footer, isPhone && styles.footerPhone, { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: colors.backgroundDeep, borderTopColor: colors.divider }]}>
       <View style={[styles.footerMain, isPhone && styles.footerMainPhone]}>
       </View>
 
       <View style={[styles.footerMeta, isPhone && styles.footerMetaPhone, { borderTopColor: colors.divider }]}>
         <View>
-          <View style={[styles.footerBrand, isPhone && styles.footerBrandPhone]}>
-              <Image
-                  accessibilityLabel="KeepFlip"
-                  contentFit="contain"
-                  source={require('@/assets/images/icon3.png')}
-                  style={styles.brandMark}
-                />
-                <View style={{alignItems: 'flex-start', justifyContent: 'center'}}>
-                  <Text style={[styles.footerName, { color: colors.text }]}>KEEPFLIP</Text>
-                  <Text style={[styles.footerDescription, { color: colors.textMuted }]}>
-                    Research a find, check the numbers before you buy, and track what you keep after the sale.
-                  </Text>
-                </View>
-          </View>
+
           <Text style={[styles.footerMetaText, { color: colors.textMuted }]}>
           © 2026 KeepFlip. Built for resellers.
         </Text>
@@ -201,18 +190,10 @@ export function WebSiteFooter({
         <View style={[styles.footerLinks, isPhone && styles.footerLinksPhone]}>
           {showMarketingLinks ? (
             <>
-              <FooterRouteLink colors={colors} href="/pricing" label="Pricing" />
-              <FooterRouteLink colors={colors} href="/features" label="How it works" />
-              <FooterRouteLink colors={colors} href="/about" label="About" />
               <FooterRouteLink colors={colors} href="/changelog" label="Changelog" />
-              <FooterRouteLink colors={colors} href="/vs/flipai" label="Compare FlipAI" />
-              <FooterRouteLink colors={colors} href="/vs/vendoo" label="Compare Vendoo" />
-              <FooterRouteLink colors={colors} href="/vs/spreadsheets" label="Compare spreadsheets" />
-              <FooterExternalLink
-                colors={colors}
-                href="https://play.google.com/store/apps/details?id=com.keepflip.app"
-                label="Try free on Android"
-              />
+              <FooterRouteLink colors={colors} href="/terms" label="Terms" />
+          <FooterRouteLink colors={colors} href="/privacy" label="Privacy" />
+
             </>
           ) : null}
           <FooterLink
@@ -225,21 +206,9 @@ export function WebSiteFooter({
             label="Contact us"
             onPress={() => openSupport('KeepFlip contact')}
           />
-          <FooterRouteLink colors={colors} href="/terms" label="Terms" />
-          <FooterRouteLink colors={colors} href="/privacy" label="Privacy" />
-          {!shouldHideAuthLinks ? (
-            <>
-              <FooterRouteLink colors={colors} href="/sign-in" label="Sign in" />
-              {!hideGetStarted ? (
-                <FooterRouteLink
-                  accent
-                  colors={colors}
-                  label={showMarketingLinks ? 'View pricing' : 'Get started'}
-                  href={showMarketingLinks ? '/pricing' : '/meet-flip'}
-                />
-              ) : null}
-            </>
-          ) : null}
+          <Pressable onPress={handlePress} style={{ justifyContent: 'center', alignItems: 'center'}}>
+          <Image source={require('@/assets/images/google-play.png')} style={{height: 50, width: 145}} />
+          </Pressable>
         </View>
       </View>
     </View>
@@ -474,6 +443,10 @@ const styles = StyleSheet.create({
   },
   headerRight: {
     alignItems: 'flex-end',
+    justifyContent: 'flex-end',
+    position: 'absolute', 
+    right: 0,
+    top: 25,
     flexShrink: 1,
     gap: 9,
     minWidth: 0,

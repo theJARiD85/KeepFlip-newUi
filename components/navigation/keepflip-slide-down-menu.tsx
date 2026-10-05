@@ -45,7 +45,7 @@ const destinations: MenuDestination[] = [
     label: 'Command Center',
   },
   { eyebrow: 'IDENTIFY & VALUE', href: '/scanner' as Href, icon: 'viewfinder', label: 'Scanner' },
-  { eyebrow: 'START HERE', href: '/first-analysis-guide' as Href, icon: 'sparkles', label: 'First item guide' },
+  { eyebrow: 'START HERE', href: '/walkthrough' as Href, icon: 'sparkles', label: 'Workflow tour' },
   { eyebrow: 'YOUR SAVED FINDS', href: '/inventory', icon: 'shippingbox.fill', label: 'Inventory' },
   ...(CROSSLISTING_LAB_ENABLED
     ? [{
@@ -89,7 +89,7 @@ function isDestinationActive(destinationPath: string, pathname: string) {
     return true;
   }
 
-  if (destinationPath === '/first-analysis-guide') {
+  if (destinationPath === '/walkthrough') {
     return pathname === destinationPath;
   }
 

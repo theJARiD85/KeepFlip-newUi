@@ -38,7 +38,6 @@ import {
   hasCompletedScanInventoryWalkthrough,
   getResellerBuyRules,
 } from '@/services/user-profile-onboarding-service';
-import { hasCompletedKeepFlipLaunchExperience } from '@/services/keepflip-launch-state-service';
 
 const DAILY_BRIEFING_PROMPT = [
   "Give me today's KeepFlip business briefing.",
@@ -275,18 +274,9 @@ export function FlipDailyBriefingLauncher() {
     }
 
     let cancelled = false;
-    let retryTimer: ReturnType<typeof setTimeout> | null = null;
     inFlightDateRef.current = dateKey;
 
     const load = async () => {
-      const launchCompleted = await hasCompletedKeepFlipLaunchExperience();
-      if (!launchCompleted) {
-        retryTimer = setTimeout(() => {
-          if (!cancelled) setProbe((current) => current + 1);
-        }, 1_000);
-        return;
-      }
-
       const onboardingCompleted = await hasCompletedScanInventoryWalkthrough(
         userId,
         displayName,
@@ -381,7 +371,6 @@ export function FlipDailyBriefingLauncher() {
 
     return () => {
       cancelled = true;
-      if (retryTimer) clearTimeout(retryTimer);
       if (inFlightDateRef.current === dateKey) {
         inFlightDateRef.current = null;
       }

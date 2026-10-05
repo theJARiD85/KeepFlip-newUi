@@ -18,7 +18,7 @@ import {
   type TextInputProps,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import {
   KeepFlipAuthError,
   useKeepFlipAuth,
@@ -385,8 +385,7 @@ export function KeepFlipLaunchAuthScreen({
   const [profileSavedForAccount, setProfileSavedForAccount] = useState(true);
   const signupAnalyticsTrackedRef = useRef(false);
 
-  const isPreAccountSignup =
-    mode === 'create-account' && !migrationMode && Boolean(initialBuyRules);
+  const isPreAccountSignup = mode === 'create-account' && !migrationMode;
   const showPlanSelection = migrationMode;
   const accountReady =
     mode === 'create-account' &&
@@ -555,11 +554,11 @@ export function KeepFlipLaunchAuthScreen({
                           style={styles.logo}
                         />
                       </View>
-                      <Text style={[styles.brandName, { fontSize: responsiveFont(35) }]}>{migrationMode ? 'Welcome back.' : mode === 'create-account' ? 'Make your edge official.' : 'Welcome back.'}</Text>
+                      <Text style={[styles.brandName, { fontSize: responsiveFont(35) }]}>{migrationMode ? 'Welcome back.' : mode === 'create-account' ? "Let's make your account." : 'Welcome back.'}</Text>
                       <Text style={styles.brandTagline}>{migrationMode
                 ? 'Sign in to your existing KeepFlip account, then choose the tier you want to try.'
                 : isPreAccountSignup
-                  ? 'Start with every KeepFlip feature except Flip Assistant: 10 saved inventory items, 10 scans, and 10 listing generations each month. Serious is $13/month or $130/year and includes Flip.'
+                  ? 'Add your name and login details. Your free account needs no credit card, and your Flip setup starts right after you sign in.'
                   : mode === 'create-account'
                     ? 'Flip has your seller setup. Add your login details and choose how you want KeepFlip to work for you.'
                     : 'Sign in to continue to your KeepFlip command center.'}</Text>

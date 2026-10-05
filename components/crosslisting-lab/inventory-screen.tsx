@@ -1,9 +1,13 @@
 import { SymbolView } from 'expo-symbols';
-import { useState } from 'react';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
+import { File } from 'expo-file-system';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
   Pressable,
+  ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
@@ -16,13 +20,25 @@ import type {
   NewInventoryProduct,
   ProductCondition,
 } from '@/components/crosslisting-lab/types';
+import type { InventoryItem } from '@/services/inventory-service';
+
+type AddProductResult = {
+  product: InventoryProduct;
+  failedPhotoCount: number;
+};
 
 export interface InventoryScreenProps {
   items: InventoryProduct[];
+  inventoryItems: InventoryItem[];
   isLoading?: boolean;
+  inventoryLoading?: boolean;
   loadError?: string | null;
+  inventoryError?: string | null;
   onRetry?: () => void;
-  onAddProduct: (item: NewInventoryProduct) => Promise<void> | void;
+  onRetryInventory?: () => void;
+  onViewInventory?: () => void;
+  onOpenInventoryItem?: (item: InventoryItem) => void;
+  onAddProduct: (item: NewInventoryProduct, images: ImagePicker.ImagePickerAsset[]) => Promise<AddProductResult>;
   onOpenProduct?: (item: InventoryProduct) => void;
 }
 
@@ -52,25 +68,98 @@ function money(value: number): string {
 
 export function InventoryScreen({
   items,
+  inventoryItems,
   isLoading = false,
+  inventoryLoading = false,
   loadError = null,
+  inventoryError = null,
   onRetry,
+  onRetryInventory,
+  onViewInventory,
+  onOpenInventoryItem,
   onAddProduct,
   onOpenProduct,
 }: InventoryScreenProps) {
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
   const [condition, setCondition] = useState<ProductCondition>('good');
+  const [inventorySearch, setInventorySearch] = useState('');
+  const [selectedImages, setSelectedImages] = useState<ImagePicker.ImagePickerAsset[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
+  const [photoUploadWarning, setPhotoUploadWarning] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [savedDraft, setSavedDraft] = useState<AddProductResult | null>(null);
   const products = items;
+  const matchingInventoryItems = useMemo(() => {
+    const query = inventorySearch.trim().toLocaleLowerCase();
+    if (!query) return inventoryItems;
+    return inventoryItems.filter((item) => [item.title, item.brand, item.category, item.sku]
+      .some((value) => value?.toLocaleLowerCase().includes(query)));
+  }, [inventoryItems, inventorySearch]);
+  const visibleInventoryItems = matchingInventoryItems.slice(0, 6);
+
+  async function chooseImages() {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        setFormError('Allow photo library access to add listing images.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: false,
+        allowsMultipleSelection: true,
+        selectionLimit: 10,
+        quality: 0.9,
+      });
+      if (result.canceled) return;
+
+      setSelectedImages((current) => {
+        const merged = [...current];
+        for (const image of result.assets) {
+          if (!merged.some((selected) => selected.uri === image.uri) && merged.length < 10) {
+            merged.push(image);
+          }
+        }
+        return merged;
+      });
+      setFormError(null);
+      setPhotoUploadWarning(null);
+      setSavedDraft(null);
+      setSaveState('idle');
+    } catch {
+      setFormError('Photos could not be opened. Check photo access and try again.');
+    }
+  }
+
+  function removeImage(uri: string) {
+    setSelectedImages((current) => current.filter((image) => image.uri !== uri));
+    setFormError(null);
+    setPhotoUploadWarning(null);
+    setSavedDraft(null);
+    setSaveState('idle');
+  }
 
   async function addProduct() {
     if (saveState === 'saving') return;
     const cleanTitle = title.trim();
-    const validationError = cleanTitle.length < 2
-      ? 'Enter an item title of at least two characters.'
-      : priceError(price);
+    const unsupportedImage = selectedImages.some((image) => {
+      const fileSize = image.fileSize || new File(image.uri).size;
+      return !['image/jpeg', 'image/png', 'image/webp'].includes(image.mimeType ?? '')
+        || !fileSize
+        || fileSize > 12_000_000;
+    });
+    let validationError: string | null = null;
+    if (selectedImages.length === 0) {
+      validationError = 'Choose at least one photo before creating a listing draft.';
+    } else if (unsupportedImage) {
+      validationError = 'Use JPG, PNG, or WebP photos under 12 MB each.';
+    } else if (cleanTitle.length < 2) {
+      validationError = 'Enter an item title of at least two characters.';
+    } else {
+      validationError = priceError(price);
+    }
     if (validationError) {
       setFormError(validationError);
       setSaveState('idle');
@@ -79,15 +168,22 @@ export function InventoryScreen({
 
     const draft = { title: cleanTitle, targetPrice: Number(price.trim()), condition };
     setFormError(null);
+    setPhotoUploadWarning(null);
+    setSavedDraft(null);
     setSaveState('saving');
     try {
-      await onAddProduct(draft);
+      const result = await onAddProduct(draft, selectedImages);
       setTitle('');
       setPrice('');
       setCondition('good');
+      setSelectedImages([]);
+      setSavedDraft(result);
+      setPhotoUploadWarning(result.failedPhotoCount > 0
+        ? `${result.failedPhotoCount} photo${result.failedPhotoCount === 1 ? '' : 's'} could not upload. Open the draft to add them again.`
+        : null);
       setSaveState('saved');
     } catch {
-      setFormError('The item could not be saved. Check your connection and try again.');
+      setFormError('The listing draft could not be saved. Check your connection and try again.');
       setSaveState('idle');
     }
   }
@@ -108,17 +204,87 @@ export function InventoryScreen({
         <Text style={styles.heading}>List once. Start here.</Text>
         <Text style={styles.subtitle}>Create one item record, then prepare it for each marketplace.</Text>
       </View>
-      <View style={styles.summaryRow}>
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryLabel}>MASTER DRAFTS</Text>
-          <Text style={styles.summaryValue}>{products.length}</Text>
-          <Text style={styles.summaryNote}>Items in this catalog</Text>
+      <View style={styles.inventorySection}>
+        <View style={styles.inventoryHeadingRow}>
+          <View style={styles.inventoryHeadingCopy}>
+            <Text style={styles.eyebrow}>KEEPFLIP INVENTORY</Text>
+            <Text style={styles.sectionTitle}>Pick a saved item</Text>
+          </View>
+          {onViewInventory ? (
+            <Pressable accessibilityRole="button" onPress={onViewInventory} style={styles.viewInventoryButton}>
+              <Text style={styles.viewInventoryText}>View inventory →</Text>
+            </Pressable>
+          ) : null}
         </View>
-        <View style={[styles.summaryCard, styles.summaryCardMuted]}>
-          <Text style={styles.summaryLabel}>MARKETPLACES</Text>
-          <Text style={styles.summaryValue}>7</Text>
-          <Text style={styles.summaryNote}>Adapter paths in progress</Text>
-        </View>
+        <TextInput
+          accessibilityLabel="Search KeepFlip inventory"
+          autoCapitalize="none"
+          onChangeText={setInventorySearch}
+          placeholder="Search title, brand, or SKU"
+          placeholderTextColor={brand.colors.textMuted}
+          style={styles.input}
+          value={inventorySearch}
+        />
+        {inventoryLoading ? (
+          <View style={styles.inventoryState}>
+            <ActivityIndicator color={brand.colors.goldBright} size="small" />
+            <Text style={styles.inventoryStateText}>Loading your KeepFlip inventory…</Text>
+          </View>
+        ) : inventoryError ? (
+          <View style={styles.errorCard}>
+            <Text style={styles.errorTitle}>KeepFlip inventory unavailable</Text>
+            <Text style={styles.errorBody}>{inventoryError}</Text>
+            {onRetryInventory ? (
+              <Pressable accessibilityRole="button" onPress={onRetryInventory} style={styles.retryButton}>
+                <Text style={styles.retryText}>Try again</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        ) : inventoryItems.length === 0 ? (
+          <View style={styles.inventoryEmpty}>
+            <Text style={styles.inventoryStateText}>No saved items yet. Add inventory in KeepFlip or start below with photos.</Text>
+          </View>
+        ) : matchingInventoryItems.length === 0 ? (
+          <View style={styles.inventoryEmpty}>
+            <Text style={styles.inventoryStateText}>No inventory items match that search.</Text>
+          </View>
+        ) : (
+          <>
+            {visibleInventoryItems.map((item) => {
+              const priceValue = item.listingCurrentPrice ?? item.estimatedValue;
+              return (
+                <View key={item.id} style={styles.keepFlipItemCard}>
+                  <View style={styles.productIcon}>
+                    <SymbolView name={{ ios: 'shippingbox', android: 'inventory_2', web: 'inventory_2' }} size={21} tintColor={brand.colors.cyan} />
+                  </View>
+                  <View style={styles.productCopy}>
+                    <Text numberOfLines={2} style={styles.productTitle}>{item.title}</Text>
+                    <Text style={styles.productMeta}>
+                      {[item.brand, `${item.photoCount} photo${item.photoCount === 1 ? '' : 's'}`].filter(Boolean).join(' · ')}
+                    </Text>
+                  </View>
+                  <View style={styles.productRight}>
+                    <Text style={styles.productPrice}>{priceValue === null ? 'Price needed' : money(priceValue)}</Text>
+                    {onOpenInventoryItem ? (
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Prepare listing for ${item.title}`}
+                        onPress={() => onOpenInventoryItem(item)}
+                        style={styles.listButton}>
+                        <Text style={styles.listButtonText}>Prepare →</Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
+                </View>
+              );
+            })}
+            {matchingInventoryItems.length > visibleInventoryItems.length ? (
+              <Text style={styles.inventoryHint}>
+                Showing {visibleInventoryItems.length} of {matchingInventoryItems.length}. Search to narrow the list.
+              </Text>
+            ) : null}
+          </>
+        )}
       </View>
 
       <View style={styles.formCard}>
@@ -127,16 +293,45 @@ export function InventoryScreen({
             <SymbolView name={{ ios: 'plus', android: 'add', web: 'add' }} size={19} tintColor={brand.colors.goldBright} />
           </View>
           <View style={styles.formHeadingCopy}>
-            <Text style={styles.formTitle}>Add a master item</Text>
-            <Text style={styles.formSubtitle}>You can add marketplace details after the draft is saved.</Text>
+            <Text style={styles.formTitle}>Start a listing with photos</Text>
+            <Text style={styles.formSubtitle}>Choose up to 10 photos first, then add a title, price, and condition. This creates a Crosslisting Lab draft.</Text>
           </View>
         </View>
-        <Text style={styles.fieldLabel}>ITEM TITLE</Text>
+        <Text style={styles.fieldLabel}>1. LISTING PHOTOS · {selectedImages.length}/10</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={selectedImages.length ? 'Add listing photos' : 'Choose listing photos'}
+          accessibilityState={{ disabled: saveState === 'saving' }}
+          disabled={saveState === 'saving'}
+          onPress={() => { void chooseImages(); }}
+          style={({ pressed }) => [styles.photoPickerButton, pressed && styles.addButtonPressed]}>
+          <SymbolView name={{ ios: 'photo', android: 'add_photo_alternate', web: 'add_photo_alternate' }} size={20} tintColor={brand.colors.goldBright} />
+          <Text style={styles.photoPickerText}>{selectedImages.length ? 'Add more photos' : 'Choose photos'}</Text>
+        </Pressable>
+        {selectedImages.length > 0 ? (
+          <ScrollView horizontal contentContainerStyle={styles.photoPreviewList} showsHorizontalScrollIndicator={false}>
+            {selectedImages.map((image) => (
+              <View key={image.uri} style={styles.photoPreviewWrap}>
+                <Image contentFit="cover" source={{ uri: image.uri }} style={styles.photoPreview} />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Remove ${image.fileName ?? 'photo'}`}
+                  onPress={() => removeImage(image.uri)}
+                  style={styles.removePhotoButton}>
+                  <Text style={styles.removePhotoText}>×</Text>
+                </Pressable>
+              </View>
+            ))}
+          </ScrollView>
+        ) : (
+          <Text style={styles.previewNote}>JPG, PNG, or WebP · up to 12 MB each</Text>
+        )}
+        <Text style={styles.fieldLabel}>2. ITEM TITLE</Text>
         <TextInput
           accessibilityLabel="Item title"
           autoCapitalize="sentences"
           maxLength={200}
-          onChangeText={(value) => { setTitle(value); setFormError(null); setSaveState('idle'); }}
+          onChangeText={(value) => { setTitle(value); setFormError(null); setPhotoUploadWarning(null); setSavedDraft(null); setSaveState('idle'); }}
           placeholder="e.g. Vintage denim jacket"
           placeholderTextColor={brand.colors.textMuted}
           style={styles.input}
@@ -148,7 +343,7 @@ export function InventoryScreen({
           <TextInput
             accessibilityLabel="Target price in dollars"
             keyboardType="decimal-pad"
-            onChangeText={(value) => { setPrice(value); setFormError(null); setSaveState('idle'); }}
+            onChangeText={(value) => { setPrice(value); setFormError(null); setPhotoUploadWarning(null); setSavedDraft(null); setSaveState('idle'); }}
             placeholder="0.00"
             placeholderTextColor={brand.colors.textMuted}
             style={styles.priceInput}
@@ -162,23 +357,33 @@ export function InventoryScreen({
               key={choice.value}
               accessibilityRole="radio"
               accessibilityState={{ checked: condition === choice.value }}
-              onPress={() => { setCondition(choice.value); setSaveState('idle'); }}
+              onPress={() => { setCondition(choice.value); setPhotoUploadWarning(null); setSavedDraft(null); setSaveState('idle'); }}
               style={[styles.conditionChip, condition === choice.value && styles.conditionChipActive]}>
               <Text style={[styles.conditionText, condition === choice.value && styles.conditionTextActive]}>{choice.label}</Text>
             </Pressable>
           ))}
         </View>
         {formError ? <Text accessibilityRole="alert" style={styles.formError}>{formError}</Text> : null}
-        {saveState === 'saved' ? <Text accessibilityRole="alert" style={styles.formSuccess}>Item saved to your master catalog.</Text> : null}
+        {saveState === 'saved' ? <Text style={styles.formSuccess}>Draft saved to your Crosslisting Lab catalog.</Text> : null}
+        {photoUploadWarning ? <Text accessibilityRole="alert" style={styles.formWarning}>{photoUploadWarning}</Text> : null}
         <Pressable
           accessibilityRole="button"
           accessibilityState={{ disabled: saveState === 'saving' }}
+          disabled={saveState === 'saving'}
           onPress={() => { void addProduct(); }}
           style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed, saveState === 'saving' && styles.addButtonDisabled]}>
           {saveState === 'saving' ? <ActivityIndicator color={brand.colors.background} size="small" /> : null}
-          <Text style={styles.addButtonText}>{saveState === 'saving' ? 'Saving item…' : 'Add item'}</Text>
+          <Text style={styles.addButtonText}>{saveState === 'saving' ? 'Saving listing…' : 'Create listing draft'}</Text>
           {saveState !== 'saving' ? <Text style={styles.addArrow}>→</Text> : null}
         </Pressable>
+        {savedDraft && onOpenProduct ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => onOpenProduct(savedDraft.product)}
+            style={styles.continueButton}>
+            <Text style={styles.continueButtonText}>Continue to listing →</Text>
+          </Pressable>
+        ) : null}
       </View>
 
       <View style={styles.listHeading}>
@@ -263,6 +468,16 @@ const styles = StyleSheet.create({
   summaryLabel: { color: brand.colors.gold, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
   summaryValue: { color: brand.colors.goldBright, fontSize: 27, fontWeight: '900' },
   summaryNote: { color: brand.colors.textMuted, fontSize: 11, lineHeight: 15 },
+  inventorySection: { gap: 10, marginBottom: 18 },
+  inventoryHeadingRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 },
+  inventoryHeadingCopy: { flex: 1, gap: 4 },
+  viewInventoryButton: { paddingVertical: 7, paddingLeft: 8 },
+  viewInventoryText: { color: brand.colors.cyan, fontSize: 11, fontWeight: '800' },
+  inventoryState: { minHeight: 58, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: brand.colors.card, borderWidth: 1, borderColor: brand.colors.border, borderRadius: brand.radii.small, padding: 12 },
+  inventoryStateText: { color: brand.colors.textMuted, fontSize: 11, lineHeight: 16, flexShrink: 1 },
+  inventoryEmpty: { backgroundColor: brand.colors.card, borderWidth: 1, borderColor: brand.colors.border, borderRadius: brand.radii.small, padding: 13 },
+  inventoryHint: { color: brand.colors.textMuted, fontSize: 10, lineHeight: 15, textAlign: 'center' },
+  keepFlipItemCard: { width: '100%', maxWidth: 760, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: brand.colors.card, borderWidth: 1, borderColor: brand.colors.border, borderRadius: brand.radii.medium, padding: 13 },
   formCard: { backgroundColor: brand.colors.card, borderWidth: 1, borderColor: brand.colors.borderStrong, borderRadius: brand.radii.medium, padding: 16, gap: 9 },
   formHeadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 5 },
   formIcon: { width: 38, height: 38, borderRadius: brand.radii.small, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.colors.goldSurface },
@@ -270,6 +485,13 @@ const styles = StyleSheet.create({
   formTitle: { color: brand.colors.text, fontSize: 16, fontWeight: '800' },
   formSubtitle: { color: brand.colors.textMuted, fontSize: 11, lineHeight: 16, marginTop: 2 },
   fieldLabel: { color: brand.colors.goldBright, fontSize: 9, fontWeight: '900', letterSpacing: 1.15, marginTop: 5 },
+  photoPickerButton: { minHeight: 46, borderRadius: brand.radii.small, borderWidth: 1, borderColor: brand.colors.borderStrong, backgroundColor: brand.colors.inset, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 },
+  photoPickerText: { color: brand.colors.goldBright, fontSize: 12, fontWeight: '800' },
+  photoPreviewList: { gap: 9, paddingVertical: 2, paddingRight: 4 },
+  photoPreviewWrap: { width: 78, height: 78, position: 'relative' },
+  photoPreview: { width: 78, height: 78, borderRadius: brand.radii.small, backgroundColor: brand.colors.inset },
+  removePhotoButton: { position: 'absolute', top: 3, right: 3, width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(12, 16, 22, 0.88)', borderWidth: 1, borderColor: brand.colors.borderStrong, alignItems: 'center', justifyContent: 'center' },
+  removePhotoText: { color: brand.colors.text, fontSize: 18, fontWeight: '700', lineHeight: 21 },
   input: { minHeight: 48, borderRadius: brand.radii.small, borderWidth: 1, borderColor: brand.colors.border, backgroundColor: brand.colors.inset, paddingHorizontal: 13, color: brand.colors.text, fontSize: 14 },
   priceField: { minHeight: 48, borderRadius: brand.radii.small, borderWidth: 1, borderColor: brand.colors.border, backgroundColor: brand.colors.inset, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 13 },
   dollarSign: { color: brand.colors.goldBright, fontSize: 17, fontWeight: '800', marginRight: 5 },
@@ -280,12 +502,15 @@ const styles = StyleSheet.create({
   conditionText: { color: brand.colors.textMuted, fontSize: 11, fontWeight: '700' },
   conditionTextActive: { color: brand.colors.goldBright },
   formError: { color: brand.colors.danger, fontSize: 12, lineHeight: 17 },
+  formWarning: { color: brand.colors.goldBright, fontSize: 12, lineHeight: 17 },
   formSuccess: { color: brand.colors.success, fontSize: 12, lineHeight: 17 },
   addButton: { minHeight: 48, borderRadius: brand.radii.small, backgroundColor: brand.colors.goldBright, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 5 },
   addButtonPressed: { opacity: 0.8 },
   addButtonDisabled: { opacity: 0.7 },
   addButtonText: { color: brand.colors.background, fontSize: 14, fontWeight: '900' },
   addArrow: { color: brand.colors.background, fontSize: 19, fontWeight: '700' },
+  continueButton: { minHeight: 42, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: brand.colors.cyan, borderRadius: brand.radii.small, backgroundColor: brand.colors.cyanSurface },
+  continueButtonText: { color: brand.colors.cyan, fontSize: 12, fontWeight: '900' },
   previewNote: { color: brand.colors.textMuted, fontSize: 11, lineHeight: 16, marginTop: 3 },
   listHeading: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 25, marginBottom: 12 },
   sectionTitle: { color: brand.colors.text, fontSize: 20, fontWeight: '900', marginTop: 4 },

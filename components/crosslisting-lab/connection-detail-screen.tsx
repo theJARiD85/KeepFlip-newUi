@@ -118,7 +118,7 @@ export function ConnectionDetailScreen({ platform }: { platform: string }) {
               <>
                 <Text style={styles.label}>PLAYWRIGHT STORAGE STATE JSON</Text>
                 <TextInput accessibilityLabel="Browser storage state JSON" autoCapitalize="none" autoCorrect={false} multiline onChangeText={setStorageState} placeholder={'{"cookies":[],"origins":[]}'} placeholderTextColor={brand.colors.textMuted} style={[styles.input, styles.jsonInput]} textAlignVertical="top" value={storageState} />
-                <Text style={styles.hint}>Export storageState after signing in to {channel.name} in your own browser. Paste the JSON here, including only this marketplace's cookies and origins. Do not enter a password.</Text>
+                <Text style={styles.hint}>Export storageState after signing in to {channel.name} in your own browser. Paste the JSON here with cookies and origins from that marketplace only. Do not enter a password.</Text>
               </>
             )}
             {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
