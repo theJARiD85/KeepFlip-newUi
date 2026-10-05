@@ -74,6 +74,7 @@ function WalkthroughAutoLauncher() {
 
     if (
       pathname === '/walkthrough' ||
+      pathname === '/first-analysis-guide' ||
       checkedUserIdRef.current === user.$id
     ) {
       return;
@@ -157,6 +158,7 @@ export default function AppShellLayout() {
                   <Stack.Screen name="books-records" />
                   <Stack.Screen name="market-research" />
                   <Stack.Screen name="notifications" />
+                  <Stack.Screen name="first-analysis-guide" />
                   <Stack.Screen name="scanner" />
                   <Stack.Screen name="analysis" />
                   <Stack.Screen name="analysis-result" />

@@ -44,6 +44,7 @@ const destinations: MenuDestination[] = [
     label: 'Command Center',
   },
   { eyebrow: 'IDENTIFY & VALUE', href: '/scanner' as Href, icon: 'viewfinder', label: 'Scanner' },
+  { eyebrow: 'START HERE', href: '/first-analysis-guide' as Href, icon: 'sparkles', label: 'First item guide' },
   { eyebrow: 'YOUR SAVED FINDS', href: '/inventory', icon: 'shippingbox.fill', label: 'Inventory' },
 ];
 
@@ -77,6 +78,10 @@ function isDestinationActive(destinationPath: string, pathname: string) {
       pathname === '/analysis-result')
   ) {
     return true;
+  }
+
+  if (destinationPath === '/first-analysis-guide') {
+    return pathname === destinationPath;
   }
 
   if (destinationPath === '/command-center') {
