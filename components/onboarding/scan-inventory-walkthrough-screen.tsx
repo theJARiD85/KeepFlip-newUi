@@ -442,7 +442,7 @@ export function ScanInventoryWalkthroughScreen() {
       await completeScanInventoryWalkthrough(user.$id, user.name, rules);
       completionHaptic();
 
-      router.replace("/" as Href);
+      router.replace("/first-analysis-guide" as Href);
     } catch (caught) {
       setError(
         caught instanceof Error
