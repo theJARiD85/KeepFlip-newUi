@@ -6,7 +6,7 @@ const darkColors = {
   scrim: 'rgba(99, 81, 54, 0.16)',
   surface: '#211404ff',
   surfaceSoft: '#1e150aff',
-  card: 'rgba(5, 13, 19, 0.91)',
+  card: 'rgba(5, 13, 19, 0.99)',
   surfaceOverlay: 'rgba(8, 8, 11, 0.98)',
   surfaceInset: 'rgba(5, 13, 19, 0.83)',
   cardSoft: 'rgba(12, 10, 9, 0.95)',

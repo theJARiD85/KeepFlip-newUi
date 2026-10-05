@@ -1,4 +1,4 @@
-import { FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
@@ -13,7 +13,7 @@ import type {
   BusinessMoneyBreakdownEntry,
   ResellerBusinessOverview,
 } from '@/services/reseller-business-overview';
-
+import Modal from 'react-native-modal';
 export type BusinessPulseMetric = 'money-in' | 'costs' | 'cash-tied-up';
 
 type BusinessPulseBreakdownModalProps = {
@@ -137,30 +137,25 @@ export function BusinessPulseBreakdownModal({
 
   return (
     <Modal
-      animationType="fade"
-      onRequestClose={onClose}
-      statusBarTranslucent
-      transparent
-      visible={visible}
+      animationIn="fadeIn"
+      animationOut="fadeOut"
+      backdropColor={theme.colors.backgroundRaised}
+      backdropOpacity={0.05}
+      onBackdropPress={onClose}
+      isVisible={visible}
+      style={{position: 'absolute', bottom: insets.bottom, top: insets.top * 2, left: -18, right: -18}}
     >
-      <View
-        accessibilityViewIsModal
-        style={[
-          styles.backdrop,
-          {
-            paddingBottom: Math.max(insets.bottom, 8),
-            paddingTop: Math.max(insets.top, 8),
-          },
-        ]}
-      >
         <View
           style={[
             styles.panel,
             {
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              top: insets.top * 2,
               marginBottom: insets.bottom,
-              marginLeft: insets.left,
-              marginRight: insets.right,
-              marginTop: insets.top,
+              marginTop: insets.top * 2,
             },
           ]}
         >
@@ -199,7 +194,6 @@ export function BusinessPulseBreakdownModal({
             />
           )}
         </View>
-      </View>
     </Modal>
   );
 }
@@ -447,7 +441,8 @@ function createResponsiveStyles() {
     panel: {
       backgroundColor: theme.colors.card,
       borderColor: theme.colors.accentCyanBorder,
-      borderRadius: 18,
+      borderTopLeftRadius: 18,
+      borderTopRightRadius: 18,
       borderWidth: 1,
       flex: 1,
       gap: 14,
