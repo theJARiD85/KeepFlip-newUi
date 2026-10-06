@@ -299,7 +299,7 @@ export function WebOnboardingScreen() {
                 <Text style={{color: theme.colors.text, fontFamily: theme.fonts.body, fontSize: responsiveFont(18)}}>"My time is more valuable than $20 a month having to create a spreadsheet and update it constantly. It also helps at the end of the year for tax purposes."</Text>
                 <Text style={{color: theme.colors.scannerCyan, fontFamily: theme.fonts.body, fontSize: responsiveFont(18)}}>— Flipwise user, Reddit</Text>
               </View>              
-              <View style={{ flexDirection: 'row', justifyContent: 'flex-center', gap: 10 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-start', gap: 10 }}>
                 <Text style={{color: theme.colors.text, fontFamily: theme.fonts.body, fontSize: responsiveFont(16)}}>"I started using a spreadsheet but as I grew, it became too time consuming to track items on an individual basis."</Text>
                 <Text style={{color: theme.colors.scannerCyan, fontFamily: theme.fonts.body, fontSize: responsiveFont(16)}}>— r/Flipping</Text>
               </View>             
@@ -606,7 +606,6 @@ const styles = StyleSheet.create({
     paddingBottom: 170,
     alignSelf: 'center',
     gap: 50,
-    paddingBottom: 6,
     width: '100%',
   },
   pagePhone: {

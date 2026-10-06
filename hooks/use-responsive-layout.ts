@@ -6,7 +6,6 @@ import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance
 
 const BASE_PHONE_WIDTH = 390;
 const BASE_PHONE_HEIGHT = 844;
-const WEB_PUBLIC_CONTENT_MAX_WIDTH = 1_366;
 const WEB_SIDEBAR_WIDTH = 264;
 
 const WebAppShellLayoutContext = createContext(false);
@@ -25,6 +24,8 @@ export function clamp(value: number, minimum: number, maximum: number) {
 
 export function useResponsiveLayout() {
   const { width, height, fontScale, scale: pixelRatio } = useWindowDimensions();
+  const WEB_PUBLIC_CONTENT_MAX_WIDTH = width;
+
   const insets = useSafeAreaInsets();
   const isInsideWebAppShell = useContext(WebAppShellLayoutContext);
 
