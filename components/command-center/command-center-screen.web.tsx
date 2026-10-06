@@ -1,6 +1,7 @@
 import { type Href, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import type { ComponentProps } from 'react';
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring } from 'react-native-reanimated';
 import {
   ActivityIndicator,
   Pressable,
@@ -12,6 +13,7 @@ import {
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { BusinessPulse } from '@/components/command-center/business-pulse';
+import { KeepFlipAuroraShader } from '@/components/command-center/keepflip-aurora-shader.web';
 import {
   BusinessPulseBreakdownModal,
   type BusinessPulseMetric,
@@ -36,6 +38,17 @@ function money(cents: number) {
   return `${sign}$${(Math.abs(cents) / 100).toLocaleString(undefined, {
     maximumFractionDigits: 0,
   })}`;
+}
+
+function colorWithAlpha(color: string, alpha: number) {
+  const hex = color.trim().replace(/^#/, '');
+  const rgb = hex.length === 8 ? hex.slice(0, 6) : hex;
+  if (!/^(?:[\da-f]{3}|[\da-f]{6})$/i.test(rgb)) return color;
+  const expanded = rgb.length === 3 ? [...rgb].map((part) => part + part).join('') : rgb;
+  const red = Number.parseInt(expanded.slice(0, 2), 16);
+  const green = Number.parseInt(expanded.slice(2, 4), 16);
+  const blue = Number.parseInt(expanded.slice(4, 6), 16);
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
 }
 
 function dollars(value: number | null | undefined) {
@@ -87,10 +100,32 @@ function MetricCard({
   accessibilityHint?: string;
   onPress?: () => void;
 }) {
+  const prefersReducedMotion = useReducedMotion();
+  const hoverProgress = useSharedValue(0);
+  const animatedCardStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: -4 * hoverProgress.value },
+      { scale: 1 + 0.012 * hoverProgress.value },
+    ],
+  }));
+  const setHovered = (hovered: boolean) => {
+    if (prefersReducedMotion) {
+      hoverProgress.value = 0;
+      return;
+    }
+    hoverProgress.value = withSpring(hovered ? 1 : 0, { damping: 18, stiffness: 180 });
+  };
   const contents = (
     <>
+      <View
+        pointerEvents="none"
+        style={[styles.metricAccentGlow, {
+          backgroundColor: accent,
+          boxShadow: `0 0 42px 18px ${colorWithAlpha(accent, 0.34)}`,
+        }]}
+      />
       <View style={styles.metricTopline}>
-        <View style={[styles.metricIcon, { backgroundColor: `${accent}1A`, borderColor: `${accent}55` }]}>
+        <View style={[styles.metricIcon, { backgroundColor: colorWithAlpha(accent, 0.13), borderColor: colorWithAlpha(accent, 0.30) }]}>
           <IconSymbol color={accent} name={icon} size={17} />
         </View>
         <Text style={[styles.metricLabel, { color: colors.textMuted }]}>{label}</Text>
@@ -102,18 +137,26 @@ function MetricCard({
   );
 
   const cardStyle = [styles.metricCard, { backgroundColor: colors.card, borderColor: colors.divider }];
-  if (!onPress) return <View style={cardStyle}>{contents}</View>;
-
   return (
-    <Pressable
-      accessibilityHint={accessibilityHint}
-      accessibilityLabel={`${label}, ${value}`}
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [cardStyle, pressed && styles.metricCardPressed]}
-    >
-      {contents}
-    </Pressable>
+    <Animated.View style={[styles.metricMotion, animatedCardStyle]}>
+      {onPress ? (
+        <Pressable
+          accessibilityHint={accessibilityHint}
+          accessibilityLabel={`${label}, ${value}`}
+          accessibilityRole="button"
+          onFocus={() => setHovered(true)}
+          onHoverIn={() => setHovered(true)}
+          onHoverOut={() => setHovered(false)}
+          onBlur={() => setHovered(false)}
+          onPress={onPress}
+          style={({ pressed }) => [cardStyle, pressed && styles.metricCardPressed]}
+        >
+          {contents}
+        </Pressable>
+      ) : (
+        <View style={cardStyle}>{contents}</View>
+      )}
+    </Animated.View>
   );
 }
 
@@ -125,6 +168,7 @@ function ActionButton({
   onPress,
   colors,
   primary = false,
+  flexible = false,
 }: {
   label: string;
   detail: string;
@@ -133,29 +177,60 @@ function ActionButton({
   onPress: () => void;
   colors: ReturnType<typeof getKeepFlipThemeColors>;
   primary?: boolean;
+  flexible?: boolean;
 }) {
+  const prefersReducedMotion = useReducedMotion();
+  const hoverProgress = useSharedValue(0);
+  const animatedButtonStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: -3 * hoverProgress.value },
+      { scale: 1 + 0.01 * hoverProgress.value },
+    ],
+  }));
+  const setHovered = (hovered: boolean) => {
+    if (prefersReducedMotion) {
+      hoverProgress.value = 0;
+      return;
+    }
+    hoverProgress.value = withSpring(hovered ? 1 : 0, { damping: 18, stiffness: 180 });
+  };
   return (
-    <Pressable
-      accessibilityLabel={label}
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.actionButton,
-        {
-          backgroundColor: primary ? accent : colors.card,
-          borderColor: primary ? accent : colors.divider,
-        },
-        pressed && styles.pressed,
-      ]}>
-      <View style={[styles.actionIcon, { backgroundColor: primary ? 'rgba(0,0,0,0.16)' : `${accent}1A` }]}>
-        <IconSymbol color={primary ? colors.textOnAccent : accent} name={icon} size={18} />
-      </View>
-      <View style={styles.actionCopy}>
-        <Text style={[styles.actionLabel, { color: primary ? colors.textOnAccent : colors.text }]}>{label}</Text>
-        <Text style={[styles.actionDetail, { color: primary ? `${colors.textOnAccent}B3` : colors.textMuted }]}>{detail}</Text>
-      </View>
-      <IconSymbol color={primary ? colors.textOnAccent : colors.textMuted} name="chevron.right" size={16} />
-    </Pressable>
+    <Animated.View style={[styles.actionMotion, flexible && styles.actionMotionFlexible, animatedButtonStyle]}>
+      <Pressable
+        accessibilityLabel={label}
+        accessibilityRole="button"
+        onFocus={() => setHovered(true)}
+        onHoverIn={() => setHovered(true)}
+        onHoverOut={() => setHovered(false)}
+        onBlur={() => setHovered(false)}
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.actionButton,
+          {
+            backgroundColor: primary ? accent : colors.card,
+            borderColor: primary ? accent : colors.divider,
+          },
+          pressed && styles.pressed,
+        ]}>
+        {!primary ? (
+          <View
+            pointerEvents="none"
+            style={[styles.actionAccentGlow, {
+              backgroundColor: accent,
+              boxShadow: `0 0 32px 12px ${colorWithAlpha(accent, 0.30)}`,
+            }]}
+          />
+        ) : null}
+        <View style={[styles.actionIcon, { backgroundColor: primary ? 'rgba(0,0,0,0.16)' : colorWithAlpha(accent, 0.13) }]}>
+          <IconSymbol color={primary ? colors.textOnAccent : accent} name={icon} size={18} />
+        </View>
+        <View style={styles.actionCopy}>
+          <Text style={[styles.actionLabel, { color: primary ? colors.textOnAccent : colors.text }]}>{label}</Text>
+          <Text style={[styles.actionDetail, { color: primary ? colorWithAlpha(colors.textOnAccent, 0.72) : colors.textMuted }]}>{detail}</Text>
+        </View>
+        <IconSymbol color={primary ? colors.textOnAccent : accent} name="chevron.right" size={16} />
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -266,7 +341,9 @@ export function CommandCenterScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.backgroundDeep }]}>
+      <KeepFlipAuroraShader isLight={effectiveColorScheme === 'light'} />
       <ScrollView
+        style={styles.scrollView}
         contentContainerStyle={[styles.content,
           {
             paddingHorizontal: isWide ? 42 : isMedium ? 28 : 18,
@@ -457,10 +534,10 @@ export function CommandCenterScreen() {
           <Text style={[styles.sectionHint, { color: colors.textMuted }]}>Fast paths from the desk</Text>
         </View>
         <View style={[styles.actionGrid, !isMedium && styles.actionGridCompact]}>
-          <ActionButton accent={colors.scannerCyan} colors={colors} detail="Browse saved items and decisions" icon="shippingbox.fill" label="Work inventory" onPress={() => navigate('/inventory')} />
-          <ActionButton accent={colors.goldBright} colors={colors} detail="See realized profit and costs" icon="chart.bar.fill" label="Reconcile Books" onPress={() => navigate('/books')} />
-          <ActionButton accent={colors.scannerViolet} colors={colors} detail="Research a possible next buy" icon="magnifyingglass" label="Research the market" onPress={() => navigate('/market-research')} />
-          <ActionButton accent={colors.goldBright} colors={colors} detail="Run the numbers before you buy" icon="dollarsign.circle.fill" label="Plan a flip" onPress={() => navigate('/flip-plan')} />
+          <ActionButton accent={colors.scannerCyan} colors={colors} detail="Browse saved items and decisions" flexible icon="shippingbox.fill" label="Work inventory" onPress={() => navigate('/inventory')} />
+          <ActionButton accent={colors.goldBright} colors={colors} detail="See realized profit and costs" flexible icon="chart.bar.fill" label="Reconcile Books" onPress={() => navigate('/books')} />
+          <ActionButton accent={colors.scannerViolet} colors={colors} detail="Research a possible next buy" flexible icon="magnifyingglass" label="Research the market" onPress={() => navigate('/market-research')} />
+          <ActionButton accent={colors.goldBright} colors={colors} detail="Run the numbers before you buy" flexible icon="dollarsign.circle.fill" label="Plan a flip" onPress={() => navigate('/flip-plan')} />
         </View>
       </ScrollView>
       <BusinessPulseBreakdownModal
@@ -475,7 +552,8 @@ export function CommandCenterScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, minHeight: '100%' },
+  root: { flex: 1, minHeight: '100%', overflow: 'hidden', position: 'relative' },
+  scrollView: { position: 'relative', zIndex: 1 },
   content: { gap: 22 },
   hero: { gap: 22 },
   heroWide: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 30 },
@@ -488,14 +566,19 @@ const styles = StyleSheet.create({
   heroTitle: { fontFamily: theme.fonts.semibold, fontSize: 34, letterSpacing: -0.8 },
   heroSubtitle: { maxWidth: 580, fontFamily: theme.fonts.body, fontSize: 14, lineHeight: 21 },
   heroActions: { gap: 10, minWidth: 280, maxWidth: 380 },
-  actionButton: { minHeight: 62, flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 13, paddingVertical: 10, borderWidth: 1, borderRadius: 15 },
+  actionMotion: { minWidth: 220, alignSelf: 'stretch' },
+  actionMotionFlexible: { flex: 1 },
+  actionButton: { minHeight: 62, width: '100%', flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 13, paddingVertical: 10, borderWidth: 1, borderRadius: 15, overflow: 'hidden' },
+  actionAccentGlow: { position: 'absolute', width: 96, height: 96, top: -42, right: -24, borderRadius: 48, opacity: 0.12 },
   actionIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   actionCopy: { flex: 1, minWidth: 0, gap: 3 },
   actionLabel: { fontFamily: theme.fonts.semibold, fontSize: 12 },
   actionDetail: { fontFamily: theme.fonts.body, fontSize: 10, lineHeight: 14 },
   metricGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   metricGridCompact: { flexDirection: 'column' },
-  metricCard: { flex: 1, minWidth: 180, minHeight: 132, borderWidth: 1, borderRadius: 17, padding: 16, gap: 10 },
+  metricMotion: { flex: 1, minWidth: 180 },
+  metricCard: { flex: 1, minWidth: 180, minHeight: 132, borderWidth: 1, borderRadius: 17, padding: 16, gap: 10, overflow: 'hidden' },
+  metricAccentGlow: { position: 'absolute', width: 132, height: 108, top: -48, right: -38, borderRadius: 70, opacity: 0.09 },
   metricCardPressed: { opacity: 0.8, transform: [{ scale: 0.985 }] },
   metricTopline: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   metricIcon: { width: 29, height: 29, borderRadius: 9, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
