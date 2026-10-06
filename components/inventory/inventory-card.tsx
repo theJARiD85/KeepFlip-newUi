@@ -58,6 +58,7 @@ export function InventoryCard({
   onPress,
   onListingGuidePress,
   onAddPhotosPress,
+  onRemoveBackgroundPress,
   onMarkSoldPress,
   onDeletePress,
   isDeleting = false,
@@ -68,6 +69,7 @@ export function InventoryCard({
   onPress: () => void;
   onListingGuidePress?: () => void;
   onAddPhotosPress?: () => void;
+  onRemoveBackgroundPress?: () => void;
   onMarkSoldPress?: () => void;
   onDeletePress?: () => void;
   isDeleting?: boolean;
@@ -461,7 +463,7 @@ export function InventoryCard({
         </View>
       </Pressable>
 
-      {onListingGuidePress || onAddPhotosPress || onMarkSoldPress || onDeletePress ? (
+      {onListingGuidePress || onAddPhotosPress || onRemoveBackgroundPress || onMarkSoldPress || onDeletePress ? (
         <View style={styles.itemActions}>
           <Pressable
             accessibilityHint={`${actionsExpanded ? "Hides" : "Shows"} the listing, photo, sale, and delete actions for ${item.title}`}
@@ -548,6 +550,36 @@ export function InventoryCard({
                   </View>
                   <View style={styles.listingGuideButtonCopy}>
                     <Text style={styles.listingGuideButtonLabel}>Photos</Text>
+                  </View>
+                  <IconSymbol
+                    color={theme.colors.scannerCyan}
+                    name="arrow.right"
+                    size={18}
+                  />
+                </Pressable>
+              ) : null}
+
+              {onRemoveBackgroundPress ? (
+                <Pressable
+                  accessibilityHint={"Opens background removal for saved photos of " + item.title}
+                  accessibilityLabel={"Remove background from a photo of " + item.title}
+                  accessibilityRole="button"
+                  onPress={onRemoveBackgroundPress}
+                  style={({ pressed }) => [
+                    styles.listingGuideButton,
+                    styles.photoManagerButton,
+                    pressed && styles.listingGuideButtonPressed,
+                  ]}
+                >
+                  <View style={styles.listingGuideButtonIcon}>
+                    <IconSymbol
+                      color={theme.colors.scannerCyan}
+                      name="photo.on.rectangle.angled"
+                      size={17}
+                    />
+                  </View>
+                  <View style={styles.listingGuideButtonCopy}>
+                    <Text style={styles.listingGuideButtonLabel}>Remove background</Text>
                   </View>
                   <IconSymbol
                     color={theme.colors.scannerCyan}
