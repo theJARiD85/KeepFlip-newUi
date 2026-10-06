@@ -3,6 +3,7 @@ import { useKeepFlipFeedbackNudge } from "@/components/feedback/keepflip-feedbac
 import { ListingNetProceedsPanel } from "@/components/seller/listing-net-proceeds-panel";
 import { ListingReadinessPanel } from "@/components/seller/listing-readiness-panel";
 import { MarketplaceAuthModal } from "@/components/connections/marketplace-auth-modal";
+import { PhotoBackgroundRemover } from "@/components/inventory/photo-background-remover";
 import { CROSSLISTING_AUTOFILL_ENABLED } from "@/constants/crosslisting-autofill";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
@@ -996,6 +997,14 @@ export default function ListingCreationGuideScreen() {
                   <Text selectable style={[styles.photoUploadError, { fontSize: responsiveFont(12) }]}>
                     {photoUploadError}
                   </Text>
+                ) : null}
+                {userId ? (
+                  <PhotoBackgroundRemover
+                    itemId={item.id}
+                    ownerId={userId}
+                    photoCount={item.photoCount}
+                    onSaved={loadItem}
+                  />
                 ) : null}
               </View>
 

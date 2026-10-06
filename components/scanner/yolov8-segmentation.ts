@@ -51,6 +51,8 @@ export type DecodeYoloV8SegmentationOptions = {
   maskThreshold?: number;
   maxDetections?: number;
   classIds?: readonly number[];
+  /** Pixel-space box coordinates are divided by this model input size. */
+  coordinateScale?: number;
 };
 
 function withoutBatch(shape: readonly number[]): number[] {
@@ -292,6 +294,10 @@ export function decodeYoloV8Segmentation(
   const scoreThreshold = options.scoreThreshold ?? 0.35;
   const maskThreshold = options.maskThreshold ?? 0.5;
   const maxDetections = Math.max(1, options.maxDetections ?? 3);
+  const coordinateScale = options.coordinateScale ?? 1;
+  if (!Number.isFinite(coordinateScale) || coordinateScale <= 0) {
+    throw new Error("YOLOv8-seg coordinate scale must be positive.");
+  }
   const allowedClasses = options.classIds
     ? new Set(options.classIds)
     : undefined;
@@ -354,15 +360,15 @@ export function decodeYoloV8Segmentation(
       layout,
       0,
       candidate,
-    );
+    ) / coordinateScale;
     const centerY = readDetectionValue(
       detectionOutput,
       layout,
       1,
       candidate,
-    );
-    const width = readDetectionValue(detectionOutput, layout, 2, candidate);
-    const height = readDetectionValue(detectionOutput, layout, 3, candidate);
+    ) / coordinateScale;
+    const width = readDetectionValue(detectionOutput, layout, 2, candidate) / coordinateScale;
+    const height = readDetectionValue(detectionOutput, layout, 3, candidate) / coordinateScale;
 
     if (
       !Number.isFinite(centerX) ||
@@ -453,4 +459,3 @@ export function decodeYoloV8Segmentation(
     };
   });
 }
-

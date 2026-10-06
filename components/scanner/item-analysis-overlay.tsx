@@ -452,7 +452,7 @@ function SetupState({ state }: { state: Extract<ItemAnalysisState, { status: 'se
 
   const requirements = state.requirements ?? [
     'Connect the KeepFlip analysis function.',
-    'Add server-side OpenAI and Google Vision credentials.',
+    'Configure the required image-analysis credentials on the server.',
     'Capture at least one clear item photo.',
   ];
 

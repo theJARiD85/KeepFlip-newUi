@@ -7,6 +7,7 @@ import {
   storage,
   tablesDB,
 } from "../lib/appwrite";
+import { uploadItemImage } from "./uploadItemImage";
 
 export type ItemPhoto = {
   id: string;
@@ -184,6 +185,43 @@ export async function appendPhotoToItem({
         cleanFileId,
     photos: [...photos, appendedPhoto],
   });
+}
+
+/** Save a transparent cutout as another listing photo, preserving its source. */
+export async function saveBackgroundRemovedItemPhoto({
+  itemId,
+  ownerId,
+  previewUri,
+}: {
+  itemId: string;
+  ownerId: string;
+  previewUri: string;
+}): Promise<string> {
+  const photos = await getItemPhotos({ itemId, ownerId });
+  if (photos.length >= 10) {
+    throw new Error("This item already has 10 photos. Remove one before saving the cutout.");
+  }
+
+  const uploaded = await uploadItemImage(
+    previewUri,
+    `keepflip-cutout-${itemId}-${Date.now()}.png`,
+    "image/png",
+    ownerId,
+  );
+  try {
+    await appendPhotoToItem({ itemId, ownerId, fileId: uploaded.$id });
+  } catch (error) {
+    try {
+      await storage.deleteFile({
+        bucketId: APPWRITE.itemImagesBucketId,
+        fileId: uploaded.$id,
+      });
+    } catch {
+      // Preserve the photo-link failure as the useful error.
+    }
+    throw error;
+  }
+  return uploaded.$id;
 }
 
 export async function removeItemPhoto({
