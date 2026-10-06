@@ -139,7 +139,11 @@ export async function removePhotoBackground(sourceUri: string): Promise<string> 
     input[planeLength * 2 + index] = modelPixels[pixel + 2] / 255;
   }
 
-  if (model.inputs.length !== 1 || model.inputs[0].dataType !== "float32") {
+  if (
+    model.inputs.length !== 1 ||
+    model.inputs[0].dataType !== "float32" ||
+    model.inputs[0].shape.join(",") !== `1,3,${YOLOV8_SEG_MODEL_SIZE},${YOLOV8_SEG_MODEL_SIZE}`
+  ) {
     throw new Error("The item cutout model has an unexpected input format.");
   }
   const outputs = await model.run([input.buffer]);

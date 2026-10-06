@@ -524,6 +524,15 @@ export default function InventoryScreen() {
                         params: { focus: "photos", itemId: row.item.id },
                       })
                     }
+                    onRemoveBackgroundPress={
+                      Platform.OS !== "web" && row.item.photoCount > 0
+                        ? () =>
+                            router.push({
+                              pathname: "/listing-guide",
+                              params: { focus: "background", itemId: row.item.id },
+                            })
+                        : undefined
+                    }
                     onMarkSoldPress={
                       row.item.quantityOnHand > 0 || row.item.isListed
                         ? () =>

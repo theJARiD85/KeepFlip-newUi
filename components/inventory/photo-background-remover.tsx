@@ -20,6 +20,7 @@ export function PhotoBackgroundRemover({ itemId, ownerId, photoCount, onSaved }:
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [source, setSource] = useState<{ fileId: string; uri: string } | null>(null);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
+  const [showOriginal, setShowOriginal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -78,12 +79,14 @@ export function PhotoBackgroundRemover({ itemId, ownerId, photoCount, onSaved }:
 
   useEffect(() => () => releasePhotoBackgroundPreview(previewUri), [previewUri]);
 
-  const sourceUri = source?.fileId === selected?.fileId ? source.uri : null;
+  const sourceUri =
+    source && selected && source.fileId === selected.fileId ? source.uri : null;
 
   const choosePhoto = useCallback((direction: -1 | 1) => {
     if (processing || saving || photos.length < 2) return;
     setSelectedIndex((current) => (current + direction + photos.length) % photos.length);
     setPreviewUri(null);
+    setShowOriginal(false);
     setError(null);
     setNotice(null);
   }, [photos.length, processing, saving]);
@@ -94,6 +97,7 @@ export function PhotoBackgroundRemover({ itemId, ownerId, photoCount, onSaved }:
     setError(null);
     setNotice(null);
     setPreviewUri(null);
+    setShowOriginal(false);
     try {
       const uri = await removePhotoBackground(sourceUri);
       if (mountedRef.current) setPreviewUri(uri);
@@ -112,6 +116,7 @@ export function PhotoBackgroundRemover({ itemId, ownerId, photoCount, onSaved }:
     try {
       await saveBackgroundRemovedItemPhoto({ itemId, ownerId, previewUri });
       setPreviewUri(null);
+      setShowOriginal(false);
       setNotice("Cutout saved as another item photo. The original is still here.");
       await onSaved();
     } catch (caughtError) {
@@ -122,7 +127,7 @@ export function PhotoBackgroundRemover({ itemId, ownerId, photoCount, onSaved }:
   }, [itemId, onSaved, ownerId, previewUri, processing, saving]);
 
   const busy = processing || saving;
-  const displayedUri = previewUri ?? sourceUri;
+  const displayedUri = previewUri && !showOriginal ? previewUri : sourceUri;
 
   return (
     <View style={styles.panel}>
@@ -150,7 +155,7 @@ export function PhotoBackgroundRemover({ itemId, ownerId, photoCount, onSaved }:
             <View style={styles.previewFrame}>
               {displayedUri ? (
                 <Image
-                  accessibilityLabel={previewUri ? "Background removed preview" : "Original item photo"}
+                  accessibilityLabel={previewUri && !showOriginal ? "Background removed preview" : "Original item photo"}
                   contentFit="contain"
                   source={{ uri: displayedUri }}
                   style={styles.previewImage}
@@ -171,15 +176,25 @@ export function PhotoBackgroundRemover({ itemId, ownerId, photoCount, onSaved }:
             </Pressable>
           </View>
           <Text style={styles.helper}>
-            Photo {selectedIndex + 1} of {photos.length} · {previewUri ? "Cutout preview" : "Original"}
+            Photo {selectedIndex + 1} of {photos.length} · {previewUri && !showOriginal ? "Cutout preview" : "Original"}
           </Text>
+          {previewUri ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={showOriginal ? "Show background removed preview" : "Show original photo"}
+              onPress={() => setShowOriginal((current) => !current)}
+              style={({ pressed }) => [styles.compareButton, pressed && styles.pressed]}
+            >
+              <Text style={styles.compareText}>{showOriginal ? "SHOW CUTOUT" : "SHOW ORIGINAL"}</Text>
+            </Pressable>
+          ) : null}
           {previewUri ? (
             <View style={styles.actions}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Discard cutout preview"
                 disabled={busy}
-                onPress={() => setPreviewUri(null)}
+                onPress={() => { setPreviewUri(null); setShowOriginal(false); }}
                 style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}
               >
                 <Text style={styles.secondaryText}>DISCARD</Text>
@@ -210,6 +225,7 @@ export function PhotoBackgroundRemover({ itemId, ownerId, photoCount, onSaved }:
           {photoCount >= 10 && previewUri ? (
             <Text style={styles.helper}>This item has 10 photos. Remove one before saving the cutout.</Text>
           ) : null}
+          {processing ? <Text style={styles.helper}>Removing the background on this device…</Text> : null}
         </>
       )}
       {error ? <Text selectable style={styles.error}>{error}</Text> : null}
@@ -274,6 +290,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   secondaryText: { color: theme.colors.text, fontSize: 10, fontWeight: "800" },
+  compareButton: { alignItems: "center", paddingVertical: 4 },
+  compareText: { color: theme.colors.scannerCyan, fontSize: 10, fontWeight: "800", letterSpacing: 0.5 },
   pressed: { opacity: 0.76 },
   dimmed: { opacity: 0.55 },
   error: { color: theme.colors.goldBright, fontSize: 12, lineHeight: 18 },

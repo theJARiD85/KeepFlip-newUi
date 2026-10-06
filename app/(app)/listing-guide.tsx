@@ -320,6 +320,22 @@ export default function ListingCreationGuideScreen() {
   const [addingPhotos, setAddingPhotos] = useState(false);
   const [photoUploadError, setPhotoUploadError] = useState<string | null>(null);
   const promptedForPhotosRef = useRef<string | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  const itemCardYRef = useRef<number | null>(null);
+  const backgroundPanelYRef = useRef<number | null>(null);
+  const scrolledToBackgroundRef = useRef<string | null>(null);
+  const scrollToBackground = useCallback(() => {
+    if (focus !== "background" || !itemId || scrolledToBackgroundRef.current === itemId) return;
+    if (itemCardYRef.current == null || backgroundPanelYRef.current == null) return;
+    const targetY = Math.max(0, itemCardYRef.current + backgroundPanelYRef.current - 18);
+    scrolledToBackgroundRef.current = itemId;
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({
+        animated: true,
+        y: targetY,
+      });
+    });
+  }, [focus, itemId]);
 
   const loadItem = useCallback(async () => {
     if (!userId) {
@@ -890,6 +906,7 @@ export default function ListingCreationGuideScreen() {
   return (
     <KeepFlipBackground>
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={[styles.content,
           { paddingTop: insets.top + 15, paddingBottom: insets.bottom + 30, gap: 10 }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }, Platform.OS === "web" ? { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter } : undefined]}
         style={{ marginTop: insets.top, marginBottom: insets.bottom, gap: 15 }}
@@ -934,7 +951,13 @@ export default function ListingCreationGuideScreen() {
             </View>
           ) : (
             <>
-              <View style={styles.itemCard}>
+              <View
+                onLayout={(event) => {
+                  itemCardYRef.current = event.nativeEvent.layout.y;
+                  scrollToBackground();
+                }}
+                style={styles.itemCard}
+              >
                 <View style={styles.itemCardRail} />
                 <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(10) }]}>ITEM TO LIST</Text>
                 <Text selectable style={[styles.itemTitle, { fontSize: responsiveFont(26) }]}>{title}</Text>
@@ -999,12 +1022,20 @@ export default function ListingCreationGuideScreen() {
                   </Text>
                 ) : null}
                 {userId ? (
-                  <PhotoBackgroundRemover
-                    itemId={item.id}
-                    ownerId={userId}
-                    photoCount={item.photoCount}
-                    onSaved={loadItem}
-                  />
+                  <View
+                    onLayout={(event) => {
+                      backgroundPanelYRef.current = event.nativeEvent.layout.y;
+                      scrollToBackground();
+                    }}
+                  >
+                    <PhotoBackgroundRemover
+                      key={item.id}
+                      itemId={item.id}
+                      ownerId={userId}
+                      photoCount={item.photoCount}
+                      onSaved={loadItem}
+                    />
+                  </View>
                 ) : null}
               </View>
 
