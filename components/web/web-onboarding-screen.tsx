@@ -34,6 +34,7 @@ import {
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
 
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import responsiveFont from '@/lib/responsiveFont';
 type IconName = ComponentProps<typeof IconSymbol>['name'];
 type FlowVisualKind = 'source' | 'decide' | 'run';
 
@@ -291,20 +292,20 @@ export function WebOnboardingScreen() {
           >
             <View style={[styles.storyPlaceholder, { gap: 20 }]}>
               <View style={{ flexDirection: 'row', justifyContent: 'flex-start', gap: 10 }}>
-                <Text style={{color: theme.colors.text, fontFamily: theme.fonts.body, fontSize: 16}}>"I used spreadsheets for a decade...</Text> <Text style={{color: theme.colors.text, fontFamily: theme.fonts.medium}}>so much less stress."</Text>
-                <Text style={{color: theme.colors.scannerCyan, fontFamily: theme.fonts.body, fontSize: 16}}>— Full-time reseller, r/Flipping</Text>
+                <Text style={{color: theme.colors.text, fontFamily: theme.fonts.body, fontSize: responsiveFont(16)}}>"I used spreadsheets for a decade... <Text style={{color: theme.colors.text, fontFamily: theme.fonts.medium}}>so much less stress."</Text></Text>
+                <Text style={{color: theme.colors.scannerCyan, fontFamily: theme.fonts.body, fontSize: responsiveFont(16)}}>— Full-time reseller, r/Flipping</Text>
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
-                <Text style={{color: theme.colors.text, fontFamily: theme.fonts.body, fontSize: 18}}>"My time is more valuable than $20 a month having to create a spreadsheet and update it constantly. It also helps at the end of the year for tax purposes."</Text>
-                <Text style={{color: theme.colors.scannerCyan, fontFamily: theme.fonts.body, fontSize: 18}}>— Flipwise user, Reddit</Text>
+                <Text style={{color: theme.colors.text, fontFamily: theme.fonts.body, fontSize: responsiveFont(18)}}>"My time is more valuable than $20 a month having to create a spreadsheet and update it constantly. It also helps at the end of the year for tax purposes."</Text>
+                <Text style={{color: theme.colors.scannerCyan, fontFamily: theme.fonts.body, fontSize: responsiveFont(18)}}>— Flipwise user, Reddit</Text>
               </View>              
               <View style={{ flexDirection: 'row', justifyContent: 'flex-center', gap: 10 }}>
-                <Text style={{color: theme.colors.text, fontFamily: theme.fonts.body, fontSize: 16}}>"I started using a spreadsheet but as I grew, it became too time consuming to track items on an individual basis."</Text>
-                <Text style={{color: theme.colors.scannerCyan, fontFamily: theme.fonts.body, fontSize: 16}}>— r/Flipping</Text>
+                <Text style={{color: theme.colors.text, fontFamily: theme.fonts.body, fontSize: responsiveFont(16)}}>"I started using a spreadsheet but as I grew, it became too time consuming to track items on an individual basis."</Text>
+                <Text style={{color: theme.colors.scannerCyan, fontFamily: theme.fonts.body, fontSize: responsiveFont(16)}}>— r/Flipping</Text>
               </View>             
                <View style={{ flexDirection: 'row', justifyContent: 'flex-start', gap: 10 }}>
-                <Text style={{color: theme.colors.text, fontFamily: theme.fonts.body, fontSize: 16}}>"I was selling sewing patterns thinking I was making about $1.40 but I didn't realize about the flat fee and the fact eBay's fees include shipping. My actual net profit was actually .15."</Text>
-                <Text style={{color: theme.colors.scannerCyan, fontFamily: theme.fonts.body, fontSize: 16}}>— Full-time reseller, r/Flipping</Text>
+                <Text style={{color: theme.colors.text, fontFamily: theme.fonts.body, fontSize: responsiveFont(16)}}>"I was selling sewing patterns thinking I was making about $1.40 but I didn't realize about the flat fee and the fact eBay's fees include shipping. My actual net profit was actually .15."</Text>
+                <Text style={{color: theme.colors.scannerCyan, fontFamily: theme.fonts.body, fontSize: responsiveFont(16)}}>— Full-time reseller, r/Flipping</Text>
               </View>
 
 

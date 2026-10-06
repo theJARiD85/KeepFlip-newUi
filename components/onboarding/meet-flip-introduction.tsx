@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
+import { Image } from 'expo-image';
 import { FlipCompanion } from '@/components/flip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
@@ -38,14 +38,15 @@ const INTRO = [
 
 export function MeetFlipIntroduction({ onBack, onContinue }: MeetFlipIntroductionProps) {
   const insets = useSafeAreaInsets();
-  const { contentMaxWidth, contentWidth, pageGutter, responsiveFont } = useResponsiveLayout();
+  const { contentMaxWidth, contentWidth, pageGutter, responsiveFont, responsiveHeight, responsiveWidth } = useResponsiveLayout();
   const [step, setStep] = useState(0);
   const current = INTRO[step];
   const isLast = step === INTRO.length - 1;
 
   return (
     <KeepFlipBackground>
-      <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 22, paddingBottom: insets.bottom + 30 }]}>
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 15, paddingBottom: insets.bottom + 30 }]} style={{marginTop: insets.top, marginBottom: insets.bottom}}>
+
         <View style={[styles.page, { maxWidth: contentMaxWidth, paddingHorizontal: pageGutter, width: contentWidth }]}>
           <View style={styles.topBar}>
             <Text style={[styles.brand, { fontSize: responsiveFont(10) }]}>KEEPFLIP / MEET FLIP</Text>
@@ -58,7 +59,10 @@ export function MeetFlipIntroduction({ onBack, onContinue }: MeetFlipIntroductio
           <View accessibilityLabel={`Introduction step ${step + 1} of ${INTRO.length}`} style={styles.progress}>
             {INTRO.map((item, index) => <View key={item.eyebrow} style={[styles.progressSegment, index <= step && styles.progressActive]} />)}
           </View>
-
+          <View style={styles.flipStage}>
+            <Image style={{ height: responsiveHeight(85), width: responsiveWidth(85), zIndex: 0, position: 'absolute', borderRadius: 16, overflow: 'hidden' }} source={require('@/assets/flip/background.jpg')} />
+            <FlipCompanion size={85} />
+          </View>
           <Animated.View key={`flip-${step}`} entering={FadeInDown.duration(300)} style={styles.flipStage}>
             <View style={styles.flipHalo}><FlipCompanion size={112} /></View>
             <View style={styles.onlineRow}><View style={styles.onlineDot} /><Text style={styles.onlineText}>FLIP IS HERE</Text></View>

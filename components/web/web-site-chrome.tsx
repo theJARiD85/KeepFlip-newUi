@@ -8,6 +8,7 @@ import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
 
+import { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 type WebSiteHeaderProps = {
   label?: string;
   onGetStarted?: () => void;
@@ -207,7 +208,7 @@ export function WebSiteFooter({
             onPress={() => openSupport('KeepFlip contact')}
           />
           <Pressable onPress={handlePress} style={{ justifyContent: 'center', alignItems: 'center'}}>
-          <Image source={require('@/assets/images/google-play.png')} style={{height: 50, width: 145}} />
+          <Image source={require('@/assets/images/google-play.png')} style={{height: responsiveHeight(50), width: responsiveWidth(145)}} />
           </Pressable>
         </View>
       </View>

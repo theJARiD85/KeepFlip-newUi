@@ -556,8 +556,7 @@ function itemSpecifics(value: unknown): Record<string, string> {
       ])
       .filter(
         (entry): entry is [string, string] => Boolean(entry[0] && entry[1]),
-      )
-      .slice(0, 24),
+      ),
   );
 }
 

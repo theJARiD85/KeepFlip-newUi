@@ -377,6 +377,8 @@ export default function ListingCreationGuideScreen() {
     : [];
   const listingHasAnswer = listingQuestions.some((question) =>
     Boolean(listingAnswers[question.id]?.trim()),
+  ) && listingQuestions.every((question) =>
+    !question.required || Boolean(listingAnswers[question.id]?.trim()),
   );
 
   const toggleStep = useCallback((targetItemId: string, step: ChecklistStep) => {
@@ -1040,7 +1042,7 @@ export default function ListingCreationGuideScreen() {
                   </View>
                 </View>
                 <Text style={[styles.generatorDescription, { fontSize: responsiveFont(12) }]}>
-                  Use the saved item facts, photos, condition notes, and market reference to create platform-ready copy. Review every claim before publishing.
+                  Use the saved item details and market reference to create platform-ready copy. Review every claim before publishing.
                 </Text>
                 <Pressable
                   accessibilityLabel={generatedListing ? "Recheck details and regenerate listing draft" : "Check item details and generate listing draft"}
@@ -1072,7 +1074,7 @@ export default function ListingCreationGuideScreen() {
                     <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9) }]}>SELLER DETAILS NEEDED</Text>
                     <Text style={[styles.sectionTitle, { fontSize: responsiveFont(17) }]}>Add the missing item details</Text>
                     <Text style={[styles.generatorDescription, { fontSize: responsiveFont(12) }]}>
-                      Save any details you know. KeepFlip adds them to this item and checks again. If more information is still needed, the remaining questions will appear here.
+                      Answer every required detail. KeepFlip saves your answers to this item, then checks the updated information before making marketplace drafts. You can say unknown or not verified when that is the answer.
                     </Text>
                     {listingQuestions.map((question, index) => (
                       <View key={question.id} style={styles.listingQuestionBlock}>
@@ -1087,14 +1089,10 @@ export default function ListingCreationGuideScreen() {
                             {question.whyItMatters}
                           </Text>
                         ) : null}
-                        {question.requestedPhoto ? (
-                          <Text style={[styles.listingPhotoRequest, { fontSize: responsiveFont(11) }]}>
-                            Photo to add: {question.requestedPhoto}
-                          </Text>
-                        ) : null}
                         <TextInput
                           accessibilityLabel={`Answer required listing detail: ${question.question}`}
                           autoCapitalize="sentences"
+                          maxLength={240}
                           multiline
                           onChangeText={(value) => setListingAnswers((current) => ({
                             ...current,
@@ -1108,7 +1106,7 @@ export default function ListingCreationGuideScreen() {
                       </View>
                     ))}
                     <Pressable
-                      accessibilityLabel="Save item details and regenerate listing"
+                      accessibilityLabel="Save item details and generate listing"
                       accessibilityRole="button"
                       disabled={generatingListing || !listingHasAnswer}
                       onPress={() => void submitListingDetails()}
@@ -1122,7 +1120,7 @@ export default function ListingCreationGuideScreen() {
                         <ActivityIndicator color={theme.colors.textOnAccent} />
                       ) : (
                         <Text style={[styles.generateButtonText, { fontSize: responsiveFont(10) }]}>
-                          SAVE DETAILS & REGENERATE LISTING
+                          SAVE DETAILS & GENERATE LISTING
                         </Text>
                       )}
                     </Pressable>
@@ -1131,7 +1129,7 @@ export default function ListingCreationGuideScreen() {
 
                 {listingReadiness && !pendingListingReview ? (
                   <View style={styles.listingEvidenceCard}>
-                    <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9) }]}>SERPAPI ITEM REVIEW</Text>
+                    <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9) }]}>SAVED ITEM DETAILS</Text>
                     <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>Facts used in this draft</Text>
                     {listingReadiness.facts
                       .filter((fact) => fact.value)
@@ -2021,11 +2019,6 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     listingAnswerInput: {
       minHeight: 72,
-    },
-    listingPhotoRequest: {
-      color: theme.colors.goldBright,
-      fontFamily: theme.fonts.body,
-      lineHeight: 16,
     },
     listingOptionalQuestions: {
       gap: 8,

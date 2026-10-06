@@ -1,4 +1,4 @@
-import { analytics } from '@heycatch/sdk';
+import { analytics, HeyCatchProvider } from '@heycatch/sdk';
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router/react-navigation';
 import { Stack, usePathname, useRouter, type Href } from 'expo-router';
 import Head from 'expo-router/head';
@@ -174,9 +174,11 @@ function WebRootContent() {
 
 export default function WebRootLayout() {
   return (
-    <KeepFlipAppearanceProvider>
-      <WebRootContent />
-    </KeepFlipAppearanceProvider>
+    <HeyCatchProvider>
+      <KeepFlipAppearanceProvider>
+        <WebRootContent />
+      </KeepFlipAppearanceProvider>
+    </HeyCatchProvider>
   );
 }
 
