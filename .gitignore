@@ -118,10 +118,12 @@ scripts/*
 !/scripts/apply-responsive-layout.cjs
 !/scripts/make-ui-values-responsive.cjs
 !/scripts/test-make-ui-values-responsive.cjs
+!/scripts/provision-crosslisting-form-configs.ps1
 /runs
 /output
 /modules/keepflip-ar-measure/android/build
 /modules/keepflip-ar-measure/android/.gradle
 .tmp.driveupload/*
 docs/*
+!docs/CROSSLISTING_FORM_SELECTORS.md
 backend/functions/ebay-account-deletion

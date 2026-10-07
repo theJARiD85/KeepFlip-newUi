@@ -19,6 +19,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
+import { MARKETPLACE_CHOICES } from '@/lib/listing-marketplaces';
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 import {
   buyRuleDayLimit,
@@ -26,6 +27,7 @@ import {
   type ResellerBuyRules,
 } from "@/services/reseller-buy-rules-service";
 import { completeScanInventoryWalkthrough } from "@/services/user-profile-onboarding-service";
+import type { ListingPlatform } from '@/services/listingService';
 
 type FlipIcon =
   | "barcode.viewfinder"
@@ -246,6 +248,12 @@ const FLIP_QUESTIONS: FlipQuestion[] = [
       },
     ],
   },
+  {
+    eyebrow: 'WHERE YOU SELL',
+    id: 'marketplaces',
+    message: 'Great. I can have listing drafts ready for the places you use most.',
+    prompt: 'Which marketplaces do you usually sell on?',
+  },
 ];
 
 function selectionHaptic() {
@@ -363,6 +371,7 @@ export function ScanInventoryWalkthroughScreen() {
     includedCostTypes: [...DEFAULT_RESELLER_BUY_RULES.includedCostTypes],
   }));
   const [profitInput, setProfitInput] = useState(() => String(DEFAULT_RESELLER_BUY_RULES.minimumNetProfitCents / 100));
+  const [marketplaceSelections, setMarketplaceSelections] = useState<ListingPlatform[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const tourScreen = FLIP_QUESTIONS.length + 2;
@@ -387,8 +396,11 @@ export function ScanInventoryWalkthroughScreen() {
     return {
       line: `${moneyFromCents(rules.minimumNetProfitCents)}+ take-home · ${rules.minimumRoiPercent}%+ ROI`,
       details: `${pace} · up to ${moneyFromCents(rules.maximumItemCostCents)} in one item · ${storage}`,
+      marketplaces: marketplaceSelections.length
+        ? MARKETPLACE_CHOICES.filter((choice) => marketplaceSelections.includes(choice.id)).map((choice) => choice.label).join(', ')
+        : 'Choose marketplaces later in Listing',
     };
-  }, [rules]);
+  }, [marketplaceSelections, rules]);
 
   const goBack = useCallback(() => {
     if (saving || screen === 0) return;
@@ -430,7 +442,7 @@ export function ScanInventoryWalkthroughScreen() {
     setError(null);
     try {
       if (!user) throw new Error("Sign in before finishing your Flip profile.");
-      await completeScanInventoryWalkthrough(user.$id, user.name, rules);
+      await completeScanInventoryWalkthrough(user.$id, user.name, rules, marketplaceSelections);
       completionHaptic();
 
       router.replace("/(app)" as Href);
@@ -443,7 +455,7 @@ export function ScanInventoryWalkthroughScreen() {
     } finally {
       setSaving(false);
     }
-  }, [router, rules, saving, user]);
+  }, [marketplaceSelections, router, rules, saving, user]);
 
   return (
     <KeepFlipBackground>
@@ -487,7 +499,7 @@ export function ScanInventoryWalkthroughScreen() {
               <Text style={styles.hello}>Hey {firstName(user?.name)}.</Text>
               <Text style={[styles.headline, { fontSize: responsiveFont(28) }]}>I’m Flip, your resale sidekick.</Text>
               <Text style={[styles.body, { fontSize: responsiveFont(15) }]}>
-                Give me five quick answers so your buy rules fit your business. On the free plan, your rules stay saved; ongoing Flip Assistant help comes with Serious.
+                Give me a few quick answers so your buy rules and listing destinations fit your business. On the free plan, your rules stay saved; ongoing Flip Assistant help comes with Serious.
               </Text>
               <Pressable
                 accessibilityRole="button"
@@ -509,7 +521,34 @@ export function ScanInventoryWalkthroughScreen() {
               </View>
               <Text style={[styles.questionEyebrow, { fontSize: responsiveFont(9) }]}>{question.eyebrow}</Text>
               <Text style={[styles.questionTitle, { fontSize: responsiveFont(24) }]}>{question.prompt}</Text>
-              {question.id === "profit" ? (
+              {question.id === 'marketplaces' ? (
+                <View style={styles.choiceList}>
+                  <Text style={[styles.body, { fontSize: responsiveFont(14) }]}>Pick as many as you use. You can change this in Listing later.</Text>
+                  {MARKETPLACE_CHOICES.map((choice) => {
+                    const selected = marketplaceSelections.includes(choice.id);
+                    return (
+                      <Pressable
+                        key={choice.id}
+                        accessibilityRole="checkbox"
+                        accessibilityState={{ checked: selected }}
+                        onPress={() => {
+                          selectionHaptic();
+                          setMarketplaceSelections((current) => selected
+                            ? current.filter((id) => id !== choice.id)
+                            : [...current, choice.id]);
+                        }}
+                        style={({ pressed }) => [styles.choiceCard, selected && styles.choiceCardSelected, pressed && styles.pressed]}
+                      >
+                        <Text style={[styles.choiceTitle, selected && styles.choiceTitleSelected]}>{selected ? '✓  ' : '+  '}{choice.label}</Text>
+                      </Pressable>
+                    );
+                  })}
+                  <Pressable accessibilityRole="button" onPress={() => setScreen((current) => current + 1)} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}>
+                    <Text style={[styles.primaryButtonText, { fontSize: responsiveFont(15) }]}>{marketplaceSelections.length ? 'Continue' : 'I’m still deciding'}</Text>
+                    <IconSymbol color={theme.colors.backgroundDeep} name="arrow.right" size={21} />
+                  </Pressable>
+                </View>
+              ) : question.id === "profit" ? (
                 <>
                   <Text style={[styles.body, { fontSize: responsiveFont(15) }]}>Set the minimum profit you need after the flip&apos;s costs.</Text>
                   <View style={{ gap: 6 }}>
@@ -560,6 +599,7 @@ export function ScanInventoryWalkthroughScreen() {
               <View style={styles.summaryCard}>
                 <Text selectable style={[styles.summaryPrimary, { fontSize: responsiveFont(16) }]}>{summary.line}</Text>
                 <Text selectable style={[styles.summarySecondary, { fontSize: responsiveFont(13) }]}>{summary.details}</Text>
+                <Text selectable style={[styles.summarySecondary, { fontSize: responsiveFont(13) }]}>Listing: {summary.marketplaces}</Text>
               </View>
               <Text style={[styles.body, { fontSize: responsiveFont(15) }]}>
                 Your buy rules are ready. KeepFlip can use them alongside market evidence, and you can change them later. Now let me show you how an item moves through the app.

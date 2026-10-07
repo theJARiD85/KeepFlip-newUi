@@ -7,7 +7,14 @@ export type MarketplaceAuthModalProps = {
   visible: boolean;
   onClose: () => void;
   onSaved?: () => void;
+  onPrepared?: () => void;
+  onSubmitPressed?: () => void;
+  onNext?: () => void;
+  nextLabel?: string;
+  progressLabel?: string;
   userId: string;
   platform: CrosslistingMarketplace;
   payload: CrosslistingPayload;
+  photoFileIds: string[];
+  photoBucketId?: string;
 };

@@ -4,11 +4,13 @@ import { File } from 'expo-file-system';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { ID } from 'react-native-appwrite';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { KeepFlipText as Text, KeepFlipTextInput as TextInput } from '@/components/ui/keepflip-text';
+import { MarketplaceAuthModal } from '@/components/connections/marketplace-auth-modal';
+import { CROSSLISTING_DESTINATIONS, createCrosslistingPayload, type CrosslistingMarketplace, type CrosslistingPayload } from '@/services/crosslisting-service';
 import { brand } from '@/components/crosslisting-lab/brand';
 import type {
   InventoryProduct,
@@ -18,7 +20,7 @@ import type {
   ProductPhoto,
 } from '@/components/crosslisting-lab/types';
 import { channels } from '@/components/crosslisting-lab/types';
-import { deleteProductPhoto, getProduct, listConnections, listListingJobs, listProductPhotos, queueListing, uploadProductPhoto } from '@/services/crosslisting-lab-api';
+import { CROSSLISTING_PHOTOS_BUCKET_ID, deleteProductPhoto, getProduct, listConnections, listListingJobs, listProductPhotos, queueListing, uploadProductPhoto } from '@/services/crosslisting-lab-api';
 
 const requiredFields: Record<MarketplaceId, string[]> = {
   ebay: ['categoryId', 'merchantLocationKey', 'fulfillmentPolicyId', 'paymentPolicyId', 'returnPolicyId'],
@@ -32,6 +34,29 @@ const requiredFields: Record<MarketplaceId, string[]> = {
 
 function messageFrom(error: unknown): string {
   return error instanceof Error ? error.message.replaceAll('_', ' ') : 'Could not complete the listing request.';
+}
+
+function toWebViewMarketplace(platform: MarketplaceId): CrosslistingMarketplace | null {
+  switch (platform) {
+    case 'poshmark':
+    case 'mercari':
+    case 'depop':
+      return platform;
+    case 'facebook_marketplace':
+      return 'facebookMarketplace';
+    case 'offerup':
+      return 'offerUp';
+    default:
+      return null;
+  }
+}
+
+function stringFields(value: Record<string, unknown>) {
+  return Object.fromEntries(
+    Object.entries(value).filter(
+      (entry): entry is [string, string] => typeof entry[1] === 'string',
+    ),
+  );
 }
 
 export function ListItemScreen({ productId }: { productId: string }) {
@@ -49,6 +74,10 @@ export function ListItemScreen({ productId }: { productId: string }) {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [webViewPayload, setWebViewPayload] = useState<{
+    marketplace: CrosslistingMarketplace;
+    payload: CrosslistingPayload;
+  } | null>(null);
   const pendingKey = useRef<string | null>(null);
 
   const refresh = useCallback(async () => {
@@ -116,7 +145,6 @@ export function ListItemScreen({ productId }: { productId: string }) {
     if (saving || !product || !platform) return;
     setError(null);
     setSuccess(null);
-    if (connections[platform] !== 'connected') { setError('Save test access for this marketplace first.'); return; }
     if (!photos.length) { setError('Add at least one item photo before queueing a listing.'); return; }
     if (!/^\d+(\.\d{1,2})?$/.test(price.trim()) || Number(price) <= 0 || Number(price) > 21_474_836.47) {
       setError('Enter a valid listing price with up to two decimal places.');
@@ -137,6 +165,47 @@ export function ListItemScreen({ productId }: { productId: string }) {
       setError(`Add these ${platform} fields before queueing: ${missing.join(', ')}.`);
       return;
     }
+
+    const webViewMarketplace = toWebViewMarketplace(platform);
+    if (webViewMarketplace) {
+      if (!user?.$id) { setError('Sign in to KeepFlip before preparing a marketplace listing.'); return; }
+      const values = stringFields(platformFields);
+      const payload = createCrosslistingPayload({
+        marketplace: webViewMarketplace,
+        title: product.title,
+        description: values.description ?? '',
+        price: price.trim(),
+        category: values.category ?? '',
+        condition: values.condition ?? product.condition?.replaceAll('_', ' ') ?? '',
+        brand: values.brand ?? '',
+        size: values.size ?? '',
+        color: values.color ?? '',
+        photoCount: photos.length,
+        platformFields: values,
+      });
+
+      if (Platform.OS === 'web') {
+        if (typeof window === 'undefined' || !navigator.clipboard?.writeText) {
+          setError('This browser cannot copy the listing draft. Copy the details from the editor instead.');
+          return;
+        }
+        const clipboardWrite = navigator.clipboard.writeText(JSON.stringify(payload));
+        window.open(CROSSLISTING_DESTINATIONS[webViewMarketplace].createUrl, '_blank', 'noopener,noreferrer');
+        try {
+          await clipboardWrite;
+          setSuccess(`KeepFlip copied the draft and opened ${channels.find((channel) => channel.id === platform)?.name ?? platform}. Add photos if needed, review the details, and post it when ready.`);
+        } catch {
+          setError('KeepFlip could not copy the listing draft. Allow clipboard access and try again.');
+        }
+        return;
+      }
+
+      setWebViewPayload({ marketplace: webViewMarketplace, payload });
+      setSuccess('Draft ready. KeepFlip will open the marketplace here, fill supported fields, and try to attach saved photos after you log in. Review the page before submitting.');
+      return;
+    }
+
+    if (connections[platform] !== 'connected') { setError('Connect eBay or Shopify before queueing an API listing.'); return; }
     setSaving(true);
     pendingKey.current ??= ID.unique();
     try {
@@ -157,16 +226,14 @@ export function ListItemScreen({ productId }: { productId: string }) {
     }
   }
 
-  const savedChannels = channels.filter((channel) => connections[channel.id] === 'connected');
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.content}>
           <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.backButton}><Text style={styles.backText}>← Master catalog</Text></Pressable>
-          <Text style={styles.eyebrow}>KEEPFLIP / CROSSLISTING LAB</Text>
+          <Text style={styles.eyebrow}>KEEPFLIP / LISTING WORKFLOW</Text>
           <Text style={styles.title}>Prepare a listing</Text>
-          <Text style={styles.subtitle}>Choose one marketplace, map its required fields, then queue a test listing.</Text>
+          <Text style={styles.subtitle}>Use this saved item and its photos to prepare a marketplace draft. KeepFlip leaves the final review and post with you.</Text>
 
           {loading && !product ? <View style={styles.card}><ActivityIndicator color={brand.colors.goldBright} /><Text style={styles.body}>Loading item…</Text></View> : null}
           {product ? <View style={styles.itemCard}><Text style={styles.itemTitle}>{product.title}</Text><Text style={styles.itemPrice}>Target ${product.targetPrice.toFixed(2)}</Text></View> : null}
@@ -175,7 +242,7 @@ export function ListItemScreen({ productId }: { productId: string }) {
 
           {product ? <View style={styles.card}>
             <Text style={styles.cardTitle}>Item photos</Text>
-            <Text style={styles.body}>Photos stay in the private crosslisting bucket. Add at least one before queueing a listing.</Text>
+            <Text style={styles.body}>Photos stay in your private crosslisting bucket. Add at least one before preparing the listing.</Text>
             <View style={styles.photoGrid}>{photos.map((photo) => <View key={photo.id} style={styles.photoTile}>
               <Image source={{ uri: photo.viewUrl }} cachePolicy="disk" contentFit="cover" style={styles.photo} />
               <Pressable accessibilityRole="button" accessibilityLabel={`Remove photo ${photo.position + 1}`} disabled={uploadingPhoto} onPress={() => { void removePhoto(photo.id); }} style={styles.removePhoto}><Text style={styles.removePhotoText}>Remove</Text></Pressable>
@@ -185,12 +252,15 @@ export function ListItemScreen({ productId }: { productId: string }) {
 
           {product ? <View style={styles.card}>
             <Text style={styles.cardTitle}>Marketplace</Text>
-            {savedChannels.length ? <View style={styles.channelRow}>{savedChannels.map((channel) => (
+            <Text style={styles.body}>Choose a marketplace. KeepFlip opens a visible listing page for browser marketplaces; eBay and Shopify use their connected APIs.</Text>
+            <View style={styles.channelRow}>{channels.map((channel) => (
               <Pressable key={channel.id} accessibilityRole="radio" accessibilityState={{ checked: platform === channel.id }} onPress={() => { setPlatform(channel.id); setFieldsJson('{}'); pendingKey.current = null; }} style={[styles.channelChip, platform === channel.id && styles.channelChipActive]}>
                 <Text style={[styles.channelText, platform === channel.id && styles.channelTextActive]}>{channel.name}</Text>
               </Pressable>
-            ))}</View> : <Text style={styles.body}>No marketplace access is saved yet. Open Connections to add a test account.</Text>}
-            <Pressable accessibilityRole="button" onPress={() => router.push('/crosslisting/connections' as Href)} style={styles.linkButton}><Text style={styles.linkText}>Open Connections →</Text></Pressable>
+            ))}</View>
+            {platform === 'ebay' || platform === 'shopify' ? (
+              <Pressable accessibilityRole="button" onPress={() => router.push('/crosslisting/connections' as Href)} style={styles.linkButton}><Text style={styles.linkText}>Open Connections →</Text></Pressable>
+            ) : null}
 
             {platform ? <>
               <Text style={styles.label}>LISTING PRICE</Text>
@@ -198,10 +268,10 @@ export function ListItemScreen({ productId }: { productId: string }) {
               <Text style={styles.label}>MARKETPLACE FIELDS / JSON</Text>
               <Text style={styles.hint}>Required keys: {requiredFields[platform].join(', ')}. Use IDs and values from your seller account.</Text>
               <TextInput accessibilityLabel="Marketplace fields JSON" autoCapitalize="none" autoCorrect={false} multiline onChangeText={(value) => { setFieldsJson(value); pendingKey.current = null; }} placeholder="{}" placeholderTextColor={brand.colors.textMuted} style={[styles.input, styles.jsonInput]} textAlignVertical="top" value={fieldsJson} />
-              <Text style={styles.hint}>Submitting queues a real publish attempt when your local worker is running. Browser form mappings are still unverified.</Text>
+              <Text style={styles.hint}>{toWebViewMarketplace(platform) ? 'KeepFlip will open the marketplace here, fill supported fields, and try to attach saved photos. Review the draft and post it on the marketplace.' : 'Submitting queues an eBay or Shopify listing through the connected API account.'}</Text>
               <Pressable accessibilityRole="button" accessibilityState={{ disabled: saving }} disabled={saving} onPress={() => { void submit(); }} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed, saving && styles.disabled]}>
                 {saving ? <ActivityIndicator color={brand.colors.background} size="small" /> : null}
-                <Text style={styles.primaryText}>{saving ? 'Queueing…' : 'Queue test listing'}</Text>
+                <Text style={styles.primaryText}>{saving ? 'Queueing…' : toWebViewMarketplace(platform) ? 'Open marketplace draft' : 'Queue API listing'}</Text>
               </Pressable>
             </> : null}
           </View> : null}
@@ -216,6 +286,22 @@ export function ListItemScreen({ productId }: { productId: string }) {
           </View> : null}
         </View>
       </ScrollView>
+      {webViewPayload && user?.$id ? (
+        <MarketplaceAuthModal
+          onClose={() => setWebViewPayload(null)}
+          onSaved={() => {
+            setSuccess(
+              `Opening the ${CROSSLISTING_DESTINATIONS[webViewPayload.marketplace].label} listing page in this device's WebView. Sign in there again if requested.`,
+            );
+          }}
+          payload={webViewPayload.payload}
+          photoBucketId={CROSSLISTING_PHOTOS_BUCKET_ID}
+          photoFileIds={photos.slice().sort((first, second) => first.position - second.position).map((photo) => photo.fileId)}
+          platform={webViewPayload.marketplace}
+          userId={user.$id}
+          visible
+        />
+      ) : null}
     </SafeAreaView>
   );
 }

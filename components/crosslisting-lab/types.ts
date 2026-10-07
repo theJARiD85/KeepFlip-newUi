@@ -23,11 +23,11 @@ export interface NewInventoryProduct {
 export const channels = [
   { id: 'ebay', name: 'eBay', method: 'Official API', type: 'API' },
   { id: 'shopify', name: 'Shopify', method: 'Admin GraphQL API', type: 'API' },
-  { id: 'poshmark', name: 'Poshmark', method: 'Browser adapter prototype', type: 'WEB' },
-  { id: 'mercari', name: 'Mercari', method: 'Browser adapter prototype', type: 'WEB' },
-  { id: 'depop', name: 'Depop', method: 'Browser adapter prototype', type: 'WEB' },
-  { id: 'facebook_marketplace', name: 'Facebook Marketplace', method: 'Browser adapter prototype', type: 'WEB' },
-  { id: 'offerup', name: 'OfferUp', method: 'Browser adapter prototype', type: 'WEB' },
+  { id: 'poshmark', name: 'Poshmark', method: 'In-app WebView assist', type: 'WEB' },
+  { id: 'mercari', name: 'Mercari', method: 'In-app WebView assist', type: 'WEB' },
+  { id: 'depop', name: 'Depop', method: 'In-app WebView assist', type: 'WEB' },
+  { id: 'facebook_marketplace', name: 'Facebook Marketplace', method: 'In-app WebView assist', type: 'WEB' },
+  { id: 'offerup', name: 'OfferUp', method: 'In-app WebView assist', type: 'WEB' },
 ] as const;
 
 export type MarketplaceId = (typeof channels)[number]['id'];

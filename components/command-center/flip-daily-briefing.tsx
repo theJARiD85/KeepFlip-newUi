@@ -28,6 +28,7 @@ import {
 } from '@/services/keepflip-daily-briefing-state-service';
 import {
   listAssistantTasks,
+  KEEPFLIP_DAILY_BRIEFING_PROMPT,
   runKeepFlipAssistant,
   type AssistantAdvisory,
   type AssistantProfileContext,
@@ -38,18 +39,6 @@ import {
   hasCompletedScanInventoryWalkthrough,
   getResellerBuyRules,
 } from '@/services/user-profile-onboarding-service';
-
-const DAILY_BRIEFING_PROMPT = [
-  "Give me today's KeepFlip business briefing.",
-  'Start with a warm greeting using my display name.',
-  'Review the fresh server workspace snapshot and give me a concise strategic read:',
-  'what matters now, the top one to three things I need to take care of today, and one recommended next move.',
-  'Use real inventory, Books, seller operations, open tasks, and saved buy rules when available.',
-  'Keep realized money separate from estimated resale value.',
-  'Call out missing, unavailable, stale, or truncated data instead of filling gaps.',
-  'Do not create a task or navigate anywhere; this is a briefing only.',
-  'Return a structured advisory for this briefing.',
-].join(' ');
 
 type BriefingResult = KeepFlipDailyBriefingCache;
 
@@ -335,7 +324,7 @@ export function FlipDailyBriefingLauncher() {
       try {
         const response = await runKeepFlipAssistant({
           ownerId: userId,
-          message: DAILY_BRIEFING_PROMPT,
+          message: KEEPFLIP_DAILY_BRIEFING_PROMPT,
           history: [],
           context,
         });

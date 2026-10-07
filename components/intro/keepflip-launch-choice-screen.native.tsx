@@ -115,7 +115,6 @@ export function KeepFlipLaunchChoiceScreen({
 
         <Animated.View entering={FadeInDown.delay(120).duration(260)} style={styles.flipWelcome}>
           <View style={styles.flipWelcomeAvatar}>
-            <Image style={{ height: responsiveHeight(85), width: responsiveWidth(85), zIndex: 0, position: 'absolute', borderRadius: 16, overflow: 'hidden' }} source={require('@/assets/flip/background.jpg')} />
             <FlipCompanion size={85} />
           </View>
           <View style={styles.flipWelcomeCopy}>

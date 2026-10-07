@@ -21,6 +21,8 @@ type ListingData = {
   size?: string;
   color?: string;
   photoCount?: number;
+  photoFileIds?: string[];
+  photoBucketId?: string;
 };
 
 interface CrosslistActionProps {
@@ -72,7 +74,7 @@ export const CrosslistActionButton: React.FC<CrosslistActionProps> = ({
       return;
     }
 
-    if (Platform.OS === 'android') {
+    if (Platform.OS === 'android' || Platform.OS === 'ios') {
       if (!userId.trim()) {
         setNotice('Sign in to KeepFlip before preparing a marketplace listing.');
         return;
@@ -103,6 +105,8 @@ export const CrosslistActionButton: React.FC<CrosslistActionProps> = ({
         <MarketplaceAuthModal
           onClose={() => setSessionPayload(null)}
           payload={sessionPayload}
+          photoFileIds={listing.photoFileIds ?? []}
+          photoBucketId={listing.photoBucketId}
           platform={platform}
           userId={userId}
           visible

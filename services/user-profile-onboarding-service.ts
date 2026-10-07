@@ -5,6 +5,8 @@ import {
   Role,
   tablesDB,
 } from '@/lib/appwrite';
+import { normalizeMarketplaceSelections } from '@/lib/listing-marketplaces';
+import type { ListingPlatform } from '@/services/listingService';
 import {
   normalizeResellerBuyRules,
   type ResellerBuyRules,
@@ -24,6 +26,7 @@ type UserProfileRow = {
   isTrialing?: boolean;
   onboardingCompletedAt?: string | null;
   resellerBuyRulesJson?: string | null;
+  marketplaceSelections?: ListingPlatform[] | null;
   trialDeviceIdHash?: string | null;
   trialEndDate?: string | null;
   updatedAt?: string;
@@ -247,6 +250,7 @@ export async function completeScanInventoryWalkthrough(
   userId: string,
   displayName?: string | null,
   buyRules?: ResellerBuyRulesInput,
+  marketplaceSelections: readonly ListingPlatform[] = [],
 ) {
   const row = await ensureUserProfile({ displayName, userId });
   const normalizedBuyRules = normalizeResellerBuyRules(buyRules);
@@ -267,6 +271,7 @@ export async function completeScanInventoryWalkthrough(
             ? row.onboardingCompletedAt
             : completedAt,
         [USER_PROFILE_BUY_RULES_COLUMN]: JSON.stringify(normalizedBuyRules),
+        marketplaceSelections: normalizeMarketplaceSelections(marketplaceSelections),
         updatedAt: completedAt,
       },
     });

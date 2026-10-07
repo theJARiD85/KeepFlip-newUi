@@ -1,109 +1,103 @@
 import { useCallback, useState } from 'react';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
-import type { ImagePickerAsset } from 'expo-image-picker';
-import { File } from 'expo-file-system';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
-import { InventoryScreen } from '@/components/crosslisting-lab/inventory-screen';
-import type {
-  InventoryProduct,
-  NewInventoryProduct,
-} from '@/components/crosslisting-lab/types';
-import { listInventoryItems, type InventoryItem } from '@/services/inventory-service';
-import {
-  createProduct,
-  listProducts,
-  uploadProductPhoto,
-} from '@/services/crosslisting-lab-api';
+import { ListingCreationGuideScreen } from '@/components/listing/listing-creation-guide-screen';
+import { ListingHubScreen } from '@/components/listing/listing-hub-screen';
+import { ListedListingDetail } from '@/components/listing/listed-listing-detail';
+import { listListingInventoryPage, type InventoryItem } from '@/services/inventory-service';
+import { getMarketplaceSelections, saveMarketplaceSelections } from '@/services/marketplace-selections-service';
+import type { ListingPlatform } from '@/services/listingService';
 
-function messageFrom(error: unknown, fallback: string): string {
+function errorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback;
 }
 
-export default function CrosslistingInventoryRoute() {
+export default function ListingRoute() {
   const router = useRouter();
   const { status, user } = useKeepFlipAuth();
-  const [items, setItems] = useState<InventoryProduct[]>([]);
-  const [keepFlipItems, setKeepFlipItems] = useState<InventoryItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingInventory, setIsLoadingInventory] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [inventoryLoadError, setInventoryLoadError] = useState<string | null>(null);
+  const [items, setItems] = useState<InventoryItem[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [selections, setSelections] = useState<ListingPlatform[]>([]);
+  const [savingSelections, setSavingSelections] = useState(false);
+  const [selectionError, setSelectionError] = useState<string | null>(null);
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [editingListedItem, setEditingListedItem] = useState(false);
 
-  const load = useCallback(async () => {
+  const refresh = useCallback(async () => {
     if (status !== 'signed-in' || !user) {
-      setIsLoading(false);
-      setIsLoadingInventory(false);
-      setItems([]);
-      setKeepFlipItems([]);
-      return;
+      setItems([]); setNextCursor(null); setLoading(false); return;
     }
-
-    setIsLoading(true);
-    setIsLoadingInventory(true);
-    setLoadError(null);
-    setInventoryLoadError(null);
-
-    const [labResult, inventoryResult] = await Promise.allSettled([
-      listProducts(),
-      listInventoryItems(user.$id),
+    setLoading(true);
+    setError(null);
+    const [inventoryResult, selectionResult] = await Promise.allSettled([
+      listListingInventoryPage(user.$id),
+      getMarketplaceSelections(user.$id, user.name),
     ]);
-
-    if (labResult.status === 'fulfilled') {
-      setItems(labResult.value);
-    } else {
-      setLoadError(messageFrom(labResult.reason, 'Could not load your crosslisting drafts.'));
-    }
     if (inventoryResult.status === 'fulfilled') {
-      setKeepFlipItems(inventoryResult.value);
+      setItems(inventoryResult.value.items);
+      setNextCursor(inventoryResult.value.nextCursor);
     } else {
-      setInventoryLoadError(messageFrom(inventoryResult.reason, 'Could not load KeepFlip inventory.'));
+      setError(errorMessage(inventoryResult.reason, 'Could not load your listing items.'));
     }
-
-    setIsLoading(false);
-    setIsLoadingInventory(false);
+    if (selectionResult.status === 'fulfilled') setSelections(selectionResult.value);
+    else setSelectionError(errorMessage(selectionResult.reason, 'Could not load your marketplaces.'));
+    setLoading(false);
   }, [status, user]);
 
-  useFocusEffect(useCallback(() => { void load(); }, [load]));
+  useFocusEffect(useCallback(() => { void refresh(); }, [refresh]));
 
-  async function add(item: NewInventoryProduct, images: ImagePickerAsset[]) {
-    if (!user?.$id) throw new Error('Sign in to create a crosslisting draft.');
-
-    const saved = await createProduct(item);
-    const photoResults = await Promise.allSettled(
-      images.map((image) => uploadProductPhoto(saved.id, user.$id, {
-        uri: image.uri,
-        fileName: image.fileName,
-        fileSize: image.fileSize || new File(image.uri).size,
-        mimeType: image.mimeType,
-      })),
-    );
-    const failedPhotoCount = photoResults.filter((result) => result.status === 'rejected').length;
-
-    setItems((current) => [saved, ...current]);
-    setLoadError(null);
-    return { product: saved, failedPhotoCount };
+  async function loadMore() {
+    if (!user || !nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const page = await listListingInventoryPage(user.$id, nextCursor);
+      setItems((current) => [...current, ...page.items.filter((item) => !current.some((existing) => existing.id === item.id))]);
+      setNextCursor(page.nextCursor);
+    } catch (caught) {
+      setError(errorMessage(caught, 'Could not load more items.'));
+    } finally {
+      setLoadingMore(false);
+    }
   }
 
-  return (
-    <InventoryScreen
-      inventoryError={inventoryLoadError}
-      inventoryItems={keepFlipItems}
-      inventoryLoading={isLoadingInventory}
-      items={items}
-      isLoading={isLoading}
-      loadError={loadError}
-      onAddProduct={add}
-      onOpenInventoryItem={(item) => router.push({
-        pathname: '/listing-guide',
-        params: { itemId: item.id },
-      })}
-      onOpenProduct={(item) => router.push(
-        `/crosslisting/product/${encodeURIComponent(item.id)}` as Href,
-      )}
-      onRetry={() => { void load(); }}
-      onRetryInventory={() => { void load(); }}
-      onViewInventory={() => router.push('/inventory' as Href)}
-    />
-  );
+  async function saveSelections(value: ListingPlatform[]) {
+    if (!user) return;
+    setSavingSelections(true);
+    setSelectionError(null);
+    try {
+      setSelections(await saveMarketplaceSelections(user.$id, value, user.name));
+    } catch (caught) {
+      setSelectionError(errorMessage(caught, 'Could not save marketplaces.'));
+    } finally {
+      setSavingSelections(false);
+    }
+  }
+
+  if (selectedItem) {
+    return selectedItem.isListed && !editingListedItem ? (
+      <ListedListingDetail itemId={selectedItem.id} onBack={() => { setSelectedItem(null); void refresh(); }} onEdit={() => setEditingListedItem(true)} />
+    ) : (
+      <ListingCreationGuideScreen itemIdOverride={selectedItem.id} onBack={() => { setSelectedItem(null); setEditingListedItem(false); void refresh(); }} selectedMarketplaces={selections} />
+    );
+  }
+
+  return <ListingHubScreen
+    items={items}
+    loading={loading}
+    loadingMore={loadingMore}
+    hasMore={Boolean(nextCursor)}
+    error={error}
+    selections={selections}
+    savingSelections={savingSelections}
+    selectionError={selectionError}
+    onSaveSelections={(value) => { void saveSelections(value); }}
+    onOpenItem={setSelectedItem}
+    onLoadMore={() => { void loadMore(); }}
+    onRefresh={() => { void refresh(); }}
+    onAddItem={() => router.push('/inventory' as Href)}
+  />;
 }

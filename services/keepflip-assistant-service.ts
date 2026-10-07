@@ -102,6 +102,18 @@ export type AssistantConversationPage = {
 
 export const ASSISTANT_CONVERSATION_PAGE_SIZE = 40;
 
+export const KEEPFLIP_DAILY_BRIEFING_PROMPT = [
+  "Give me today's KeepFlip business briefing.",
+  'Start with a warm greeting using my display name.',
+  'Review the fresh server workspace snapshot and give me a concise strategic read:',
+  'what matters now, the top one to three things I need to take care of today, and one recommended next move.',
+  'Use real inventory, Books, seller operations, open tasks, and saved buy rules when available.',
+  'Keep realized money separate from estimated resale value.',
+  'Call out missing, unavailable, stale, or truncated data instead of filling gaps.',
+  'Do not create a task or navigate anywhere; this is a briefing only.',
+  'Return a structured advisory for this briefing.',
+].join(' ');
+
 export type AssistantProfileContext = {
   inventoryFocus?: string | null;
   saleSpeed?: string | null;
@@ -347,6 +359,7 @@ function rowToConversationMessage(
   const createdAt = cleanText(row.$createdAt, 80);
   if (!content || !createdAt) return null;
   if (row.role !== 'user' && row.role !== 'assistant') return null;
+  if (row.role === 'user' && content === KEEPFLIP_DAILY_BRIEFING_PROMPT) return null;
   return {
     content,
     conversationId,
@@ -552,20 +565,20 @@ async function listLegacyAssistantConversation(ownerId: string, limit: number) {
     );
     if (!userText || !assistantText) continue;
     const createdAt = row.createdAt || new Date().toISOString();
-    messages.push(
-      {
+    if (userText !== KEEPFLIP_DAILY_BRIEFING_PROMPT) {
+      messages.push({
         id: `${row.id}:user`,
         role: 'user',
         content: userText,
         createdAt,
-      },
-      {
-        id: `${row.id}:assistant`,
-        role: 'assistant',
-        content: assistantText,
-        createdAt,
-      },
-    );
+      });
+    }
+    messages.push({
+      id: `${row.id}:assistant`,
+      role: 'assistant',
+      content: assistantText,
+      createdAt,
+    });
   }
 
   return messages

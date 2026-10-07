@@ -60,7 +60,6 @@ export function MeetFlipIntroduction({ onBack, onContinue }: MeetFlipIntroductio
             {INTRO.map((item, index) => <View key={item.eyebrow} style={[styles.progressSegment, index <= step && styles.progressActive]} />)}
           </View>
           <View style={styles.flipStage}>
-            <Image style={{ height: responsiveHeight(85), width: responsiveWidth(85), zIndex: 0, position: 'absolute', borderRadius: 16, overflow: 'hidden' }} source={require('@/assets/flip/background.jpg')} />
             <FlipCompanion size={85} />
           </View>
           <Animated.View key={`flip-${step}`} entering={FadeInDown.duration(300)} style={styles.flipStage}>

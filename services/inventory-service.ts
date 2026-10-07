@@ -170,6 +170,7 @@ export type InventoryItem = {
   ebayOfferId: string | null;
   ebayListingId: string | null;
   listedAt: string | null;
+  listingJson: unknown;
   receiptFileId: string | null;
   purchaseNotes: string | null;
   acquiredAt?: string | null;
@@ -216,6 +217,7 @@ type InventoryRow = {
   ebayOfferId?: string | null;
   ebayListingId?: string | null;
   listedAt?: string | null;
+  listingJson?: unknown;
   receiptFileId?: string | null;
   purchaseNotes?: string | null;
   photoCount?: number | null;
@@ -825,7 +827,7 @@ function rowToInventoryItem(row: InventoryRow): InventoryItem {
     isListed: row.isListed === true,
     resaleStatus: cleanText(row.resaleStatus),
     listingChannel:
-      row.isListed === true || row.ebayListingId || row.ebayOfferId || row.ebaySku
+      row.ebayListingId || row.ebayOfferId || row.ebaySku
         ? 'ebay'
         : null,
     externalListingId: cleanText(row.ebayListingId),
@@ -838,6 +840,7 @@ function rowToInventoryItem(row: InventoryRow): InventoryItem {
     ebayOfferId: cleanText(row.ebayOfferId),
     ebayListingId: cleanText(row.ebayListingId),
     listedAt: row.listedAt || null,
+    listingJson: row.listingJson ?? null,
     receiptFileId: cleanText(row.receiptFileId),
     purchaseNotes: cleanText(row.purchaseNotes),
     acquiredAt: row.acquiredAt || null,
@@ -1270,6 +1273,32 @@ export async function listInventoryItems(
       options,
     );
   }
+}
+
+/** Paged directory for the Listing screen, including saved draft presence. */
+export async function listListingInventoryPage(
+  ownerId: string,
+  cursor?: string,
+): Promise<{ items: InventoryItem[]; nextCursor: string | null }> {
+  assertInventoryTableConfigured();
+  if (!ownerId.trim()) return { items: [], nextCursor: null };
+  const pageSize = 40;
+  const baseQueries = [
+    Query.equal('ownerId', [ownerId.trim()]),
+    Query.orderDesc('createdAt'),
+    Query.limit(pageSize),
+    ...(cursor ? [Query.cursorAfter(cursor)] : []),
+  ];
+  const response = await tablesDB.listRows({
+    databaseId: APPWRITE.databaseId,
+    tableId: APPWRITE.itemsTableId,
+    queries: [...baseQueries, Query.select([...INVENTORY_LIST_COLUMNS, 'listingJson'])],
+  });
+  const rows = response.rows as unknown as InventoryRow[];
+  return {
+    items: rows.map(rowToInventoryItem),
+    nextCursor: rows.length === pageSize ? rows[rows.length - 1].$id : null,
+  };
 }
 
 const INVENTORY_ANALYTICS_PAGE_SIZE = 100;

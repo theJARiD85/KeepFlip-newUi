@@ -1,0 +1,186 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import * as Haptics from 'expo-haptics';
+import { Pressable, StyleSheet, View } from 'react-native';
+
+import { MarketplaceAuthModal } from '@/components/connections/marketplace-auth-modal';
+import type { CrosslistingRunProps } from '@/components/crosslist/crosslisting-run.types';
+import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
+import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import {
+  CROSSLISTING_DESTINATIONS,
+  createGeneratedCrosslistingPayload,
+  type CrosslistingMarketplace,
+} from '@/services/crosslisting-service';
+
+const MARKETPLACES: CrosslistingMarketplace[] = [
+  'depop',
+  'poshmark',
+  'mercari',
+  'facebookMarketplace',
+  'offerUp',
+];
+
+type RunStatus = 'prepared' | 'submit_tapped';
+
+export function CrosslistingRun({ item, listing, userId, onDraftPrepared }: CrosslistingRunProps) {
+  const [selected, setSelected] = useState<CrosslistingMarketplace[]>(MARKETPLACES);
+  const [runTargets, setRunTargets] = useState<CrosslistingMarketplace[]>([]);
+  const [runIndex, setRunIndex] = useState(0);
+  const [active, setActive] = useState<CrosslistingMarketplace | null>(null);
+  const [statuses, setStatuses] = useState<Partial<Record<CrosslistingMarketplace, RunStatus>>>({});
+  const [finished, setFinished] = useState(false);
+  const preparedRef = useRef<Set<CrosslistingMarketplace>>(new Set());
+  const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+  }, []);
+  const photoFileIds = item.itemPhotos.length ? item.itemPhotos : item.coverPhotoId ? [item.coverPhotoId] : [];
+  const payload = useMemo(
+    () => active ? createGeneratedCrosslistingPayload({ marketplace: active, listing, item }) : null,
+    [active, item, listing],
+  );
+  const next = runTargets[runIndex + 1] ?? null;
+
+  function toggle(marketplace: CrosslistingMarketplace) {
+    if (runTargets.length) return;
+    setSelected((current) => current.includes(marketplace)
+      ? current.filter((value) => value !== marketplace)
+      : MARKETPLACES.filter((value) => value === marketplace || current.includes(value)));
+    void Haptics.selectionAsync().catch(() => undefined);
+  }
+
+  function start() {
+    if (!selected.length) return;
+    const targets = MARKETPLACES.filter((marketplace) => selected.includes(marketplace));
+    setRunTargets(targets);
+    setRunIndex(0);
+    setStatuses({});
+    preparedRef.current = new Set();
+    setFinished(false);
+    setActive(targets[0]);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+  }
+
+  function continueRun() {
+    if (transitionTimerRef.current) return;
+    setActive(null);
+    if (next) {
+      setRunIndex((index) => index + 1);
+      transitionTimerRef.current = setTimeout(() => {
+        transitionTimerRef.current = null;
+        setActive(next);
+      }, 400);
+      void Haptics.selectionAsync().catch(() => undefined);
+      return;
+    }
+    setRunTargets([]);
+    setRunIndex(0);
+    setFinished(true);
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+  }
+
+  function markPrepared(marketplace: CrosslistingMarketplace) {
+    if (preparedRef.current.has(marketplace)) return;
+    preparedRef.current.add(marketplace);
+    setStatuses((current) => ({ ...current, [marketplace]: 'prepared' }));
+    onDraftPrepared?.(marketplace);
+  }
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.headingRow}>
+        <View style={styles.headingCopy}>
+          <Text style={styles.eyebrow}>CROSSLISTING RUN</Text>
+          <Text style={styles.title}>Pick where this item goes</Text>
+        </View>
+        <View style={styles.countBadge}><Text style={styles.countText}>{selected.length} SELECTED</Text></View>
+      </View>
+      <Text style={styles.body}>One run, one marketplace at a time. KeepFlip opens each seller page, fills the draft and tries to attach saved photos. You can review each listing before submitting.</Text>
+      <View style={styles.marketplaces}>
+        {MARKETPLACES.map((marketplace) => {
+          const checked = selected.includes(marketplace);
+          const status = statuses[marketplace];
+          return (
+            <Pressable
+              key={marketplace}
+              accessibilityLabel={`${CROSSLISTING_DESTINATIONS[marketplace].label}, ${status === 'submit_tapped' ? 'submit tapped' : status === 'prepared' ? 'draft prepared' : checked ? 'selected' : 'not selected'}`}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked, disabled: runTargets.length > 0 }}
+              disabled={runTargets.length > 0}
+              onPress={() => toggle(marketplace)}
+              style={[styles.marketplace, checked && styles.marketplaceSelected]}
+            >
+              <Text style={[styles.check, checked && styles.checkSelected]}>{checked ? '✓' : '+'}</Text>
+              <Text style={[styles.marketplaceName, checked && styles.marketplaceNameSelected]}>{CROSSLISTING_DESTINATIONS[marketplace].label}</Text>
+              {status ? <Text style={styles.marketplaceStatus}>{status === 'submit_tapped' ? 'SUBMIT TAPPED' : 'DRAFT FILLED'}</Text> : null}
+            </Pressable>
+          );
+        })}
+      </View>
+      {finished ? <Text accessibilityRole="alert" style={styles.finished}>You reached the end of this run. Check each marketplace page for its own posting confirmation.</Text> : null}
+      {runTargets.length ? (
+        <View style={styles.runControls}>
+          <Text style={styles.progress}>STOP {runIndex + 1} OF {runTargets.length} · {CROSSLISTING_DESTINATIONS[runTargets[runIndex]].label}</Text>
+          <Pressable accessibilityRole="button" onPress={() => setActive(runTargets[runIndex])} style={styles.startButton}>
+            <Text style={styles.startText}>{active ? 'Marketplace open' : 'Return to marketplace'}</Text>
+          </Pressable>
+          <Pressable accessibilityRole="button" onPress={() => {
+            if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+            transitionTimerRef.current = null;
+            setActive(null);
+            setRunTargets([]);
+          }} style={styles.endButton}>
+            <Text style={styles.endText}>End run</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <Pressable accessibilityRole="button" accessibilityState={{ disabled: selected.length === 0 }} disabled={selected.length === 0} onPress={start} style={[styles.startButton, selected.length === 0 && styles.disabled]}>
+          <Text style={styles.startText}>Start crosslisting →</Text>
+        </Pressable>
+      )}
+      {active && payload ? (
+        <MarketplaceAuthModal
+          key={active}
+          nextLabel={next ? CROSSLISTING_DESTINATIONS[next].label : 'Finish run'}
+          onClose={() => setActive(null)}
+          onNext={continueRun}
+          onPrepared={() => markPrepared(active)}
+          onSubmitPressed={() => setStatuses((current) => ({ ...current, [active]: 'submit_tapped' }))}
+          payload={payload}
+          photoFileIds={photoFileIds}
+          platform={active}
+          progressLabel={`${runIndex + 1} of ${runTargets.length}`}
+          userId={userId}
+          visible
+        />
+      ) : null}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { gap: 12, borderWidth: 1, borderColor: theme.colors.dividerStrong, borderRadius: 10, backgroundColor: theme.colors.card, padding: 15 },
+  headingRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  headingCopy: { flex: 1, gap: 4 },
+  eyebrow: { color: theme.colors.scannerCyan, fontSize: 9, fontWeight: '900', letterSpacing: 1.1 },
+  title: { color: theme.colors.text, fontSize: 17, fontWeight: '900' },
+  countBadge: { borderRadius: 20, backgroundColor: theme.colors.iconSurfaceCyan, paddingHorizontal: 9, paddingVertical: 6 },
+  countText: { color: theme.colors.scannerCyan, fontSize: 9, fontWeight: '900' },
+  body: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 18 },
+  marketplaces: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  marketplace: { minHeight: 42, flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: theme.colors.dividerStrong, borderRadius: 8, backgroundColor: theme.colors.surfaceInset, paddingHorizontal: 10 },
+  marketplaceSelected: { borderColor: theme.colors.scannerCyan, backgroundColor: theme.colors.iconSurfaceCyan },
+  check: { color: theme.colors.textMuted, fontSize: 15, fontWeight: '900' },
+  checkSelected: { color: theme.colors.scannerCyan },
+  marketplaceName: { color: theme.colors.textMuted, fontSize: 11, fontWeight: '800' },
+  marketplaceNameSelected: { color: theme.colors.text },
+  marketplaceStatus: { color: theme.colors.scannerCyan, fontSize: 8, fontWeight: '900' },
+  startButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: theme.colors.scannerCyan, paddingHorizontal: 12 },
+  startText: { color: theme.colors.textOnAccent, fontSize: 13, fontWeight: '900' },
+  disabled: { opacity: 0.5 },
+  runControls: { gap: 8 },
+  progress: { color: theme.colors.scannerCyan, fontSize: 10, fontWeight: '900', letterSpacing: 0.7 },
+  endButton: { minHeight: 36, alignItems: 'center', justifyContent: 'center' },
+  endText: { color: theme.colors.textMuted, fontSize: 11, fontWeight: '800' },
+  finished: { color: theme.colors.scannerCyan, fontSize: 12, lineHeight: 18 },
+});

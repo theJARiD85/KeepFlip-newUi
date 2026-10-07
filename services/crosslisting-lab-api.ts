@@ -19,6 +19,8 @@ import type {
 const crosslistingFunctionId =
   process.env.EXPO_PUBLIC_CROSSLISTING_FUNCTION_ID?.trim() ?? '';
 
+export const CROSSLISTING_PHOTOS_BUCKET_ID = 'crosslisting_photos';
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -226,7 +228,7 @@ export async function uploadProductPhoto(productId: string, ownerId: string, ass
     Permission.delete(Role.user(ownerId)),
   ];
   await storage.createFile({
-    bucketId: 'crosslisting_photos',
+    bucketId: CROSSLISTING_PHOTOS_BUCKET_ID,
     fileId,
     file: { name: asset.fileName || `${fileId}${extension}`, type: mimeType, size: asset.fileSize, uri: asset.uri },
     permissions,

@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
-
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { FlipCompanion, useFlipCompanion } from '@/components/flip';
 import { useFlipGuidance } from '@/components/command-center/flip-guidance-overlay';
@@ -57,6 +57,7 @@ import {
   KEEPFLIP_ANALYTICS_EVENTS,
   trackKeepFlipEvent,
 } from '@/services/keepflip-analytics';
+import { InstancedMesh } from 'three';
 
 const FLIP_MASCOT_IMAGE = require('@/assets/images/flip-mascot.png');
 const OPTIMISTIC_USER_MESSAGE_PREFIX = 'local-user-';
@@ -379,7 +380,7 @@ export function FlipConversationalAssistantPanel({
   const responsiveLayout = useResponsiveLayout();
   const responsiveFont = (size: number, factor?: number) =>
     responsiveLayout.responsiveFont(Math.max(size, 11), factor);
-
+  const insets = useSafeAreaInsets();
   const { user } = useKeepFlipAuth();
   const [command, setCommand] = useState('');
   const [isExpanded, setIsExpanded] = useState(startsExpanded);
@@ -956,7 +957,7 @@ export function FlipConversationalAssistantPanel({
         fillAvailableHeight && isExpanded && styles.fillAvailableHeight,
         isOverlay && styles.overlaySurface,
         isOverlay && isExpanded && styles.overlaySurfaceExpanded,
-        isOverlay && !isExpanded && styles.overlaySurfaceCollapsed,
+        { paddingBottom: insets.bottom * 1.5 }
       ]}>
       {!isExpanded ? (
         <Animated.View entering={FadeIn.duration(220)} exiting={FadeOut.duration(140)}>
@@ -982,16 +983,14 @@ export function FlipConversationalAssistantPanel({
                 styles.collapsedAvatar,
                 isOverlay && styles.overlayCollapsedAvatar,
               ]}>
-              <FlipCompanion size={isOverlay ? 38 : 46} />
-              {isOverlay ? <View style={styles.overlayStatusDot} /> : null}
+              <FlipCompanion size={isOverlay ? 38 : 80} />
             </View>
             {!isOverlay ? (
               <>
                 <View style={styles.collapsedCopy}>
                   <View style={styles.searchMeta}>
-                    <Text style={[styles.searchLabel, { fontSize: responsiveFont(8) }]}>FLIP ASSISTANT</Text>
+                    <Text style={[styles.searchLabel, { fontSize: responsiveFont(3) }]}>FLIP ASSISTANT</Text>
                     <View style={styles.onlineDot} />
-                    <Text style={[styles.onlineText, { fontSize: responsiveFont(7) }]}>{presenceLabel}</Text>
                   </View>
                   <Text numberOfLines={1} style={styles.searchPlaceholder}>
                     {"Tell Flip what you're working on..."}
@@ -1003,6 +1002,7 @@ export function FlipConversationalAssistantPanel({
               </>
             ) : null}
           </Pressable>
+          {isOverlay ? <View style={styles.overlayStatusDot} /> : null}
         </Animated.View>
       ) : (
         <Animated.View
@@ -1012,18 +1012,20 @@ export function FlipConversationalAssistantPanel({
             styles.expandedContent,
             fillAvailableHeight && styles.fillAvailableHeightExpandedContent,
             isOverlay && styles.overlayExpandedContent,
+            { paddingBottom: isExpanded ? 60 : insets.bottom}
           ]}>
-          <View style={[styles.heading, isOverlay && styles.overlayHeading]}>
+          <View style={[styles.heading, isOverlay && styles.overlayHeading, { width: '95%', paddingLeft: 10}]}>
             <View style={styles.headingAvatar}>
-              <FlipCompanion size={46} />
+              <FlipCompanion size={44} />
             </View>
             <View style={styles.headingCopy}>
               <View style={styles.searchMeta}>
-                <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>FLIP ASSISTANT</Text>
+                <Text style={[styles.eyebrow, { fontSize: responsiveFont(3) }]}>FLIP ASSISTANT</Text>
                 <View style={styles.onlineDot} />
-                <Text style={[styles.onlineText, { fontSize: responsiveFont(7) }]}>{presenceLabel}</Text>
               </View>
-              <Text style={[styles.title, { fontSize: responsiveFont(17) }]}>Talk it through with Flip</Text>
+              <View style={{}}>
+                <Text style={[styles.title, { fontSize: responsiveFont(18) }]}>Talk it through with Flip</Text>
+              </View>
             </View>
             <View style={styles.headingActions}>
               <Pressable
@@ -1158,14 +1160,6 @@ export function FlipConversationalAssistantPanel({
                       entry.role === 'user' && styles.messageRowUser,
                     ]}>
                     {entry.role === 'assistant' ? (
-                      <Image
-                        accessibilityLabel="Flip"
-                        contentFit="cover"
-                        source={FLIP_MASCOT_IMAGE}
-                        style={styles.messageAvatar}
-                      />
-                    ) : null}
-                    {entry.role === 'assistant' ? (
                       <View style={styles.assistantMessageStack}>
                         <View style={[styles.messageBubble, styles.assistantBubble]}>
                           <Text selectable style={[styles.messageText, { fontSize: responsiveFont(14), lineHeight: 21 }]}>
@@ -1191,12 +1185,6 @@ export function FlipConversationalAssistantPanel({
                 ))}
                 {isInteractionLocked ? (
                   <Animated.View entering={FadeIn.duration(140)} style={styles.typingRow}>
-                    <Image
-                      accessibilityLabel="Flip"
-                      contentFit="cover"
-                      source={FLIP_MASCOT_IMAGE}
-                      style={styles.messageAvatar}
-                    />
                     <View style={styles.typingBubble}>
                       <ActivityIndicator color={theme.colors.scannerCyan} size="small" />
                       <Text style={[styles.typingText, { fontSize: responsiveFont(10) }]}>
@@ -1391,8 +1379,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     overlaySurface: {
       width: '100%',
-      alignSelf: 'flex-end',
-      borderRadius: 18,
+      height: '100%',
+      borderTopRightRadius: 30,
+      borderTopLeftRadius: 30,
+      alignItems: 'center',
+      justifyContent: 'center',
       backgroundColor: theme.colors.card,
       boxShadow: '0 16px 36px rgba(0, 0, 0, 0.42), 0 0 18px rgba(88, 223, 232, 0.12)',
       elevation: 8,
@@ -1400,10 +1391,15 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     overlaySurfaceExpanded: {
       flex: 1,
       minHeight: 0,
+      position: 'absolute',
+      top: 60,
+      bottom: 0,
+      left: 0,
+      right: 0,
     },
     overlaySurfaceCollapsed: {
-      width: '100%',
-      height: '100%',
+      width: 60,
+      height: 60,
       borderRadius: 999,
       opacity: 0.74,
     },
@@ -1411,13 +1407,10 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       minHeight: 70,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 10,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
     },
     overlayCollapsedBar: {
-      width: '100%',
-      height: '100%',
+      width: 60,
+      height: 60,
       minHeight: 0,
       justifyContent: 'center',
       gap: 0,
@@ -1426,19 +1419,21 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     collapsedBarPressed: { backgroundColor: theme.colors.iconSurfaceCyan },
     collapsedAvatar: {
-      width: 48,
-      height: 48,
+      width: 55,
+      height: 55,
       overflow: 'hidden',
+      justifyContent: 'center',
+      alignItems: 'center',
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
-      borderRadius: 24,
+      borderRadius: 28,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.iconSurfaceGold,
     },
     overlayCollapsedAvatar: {
-      width: 38,
-      height: 38,
-      borderRadius: 19,
+      width: 55,
+      height: 55,
+      borderRadius: 28,
     },
     overlayStatusDot: {
       position: 'absolute',
@@ -1450,9 +1445,10 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderColor: theme.colors.background,
       borderRadius: 4,
       backgroundColor: theme.colors.scannerCyan,
+      zIndex: 2,
     },
     collapsedCopy: { flex: 1, minWidth: 0, gap: 4 },
-    searchMeta: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+    searchMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', width: '100%', gap: 5 },
     searchLabel: {
       color: theme.colors.scannerCyan,
       fontSize: 8,
@@ -1483,26 +1479,27 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderCurve: 'continuous',
       backgroundColor: theme.colors.iconSurfaceCyan,
     },
-    expandedContent: { gap: 12, padding: 14 },
+    expandedContent: { gap: 12, paddingHorizontal: 5, paddingTop: 20, width: '100%'},
     overlayExpandedContent: {
-      flex: 1,
       minHeight: 0,
+      height: '100%',
+      width: '100%'
     },
-    heading: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    heading: {width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
     // The always-visible navigation trigger occupies the top-right corner of
     // the overlay. Keep the assistant actions out of its hit area when open.
-    overlayHeading: { paddingRight: 58 },
+    overlayHeading: { paddingRight: 0 },
     headingAvatar: {
-      width: 46,
-      height: 46,
+      width: 56,
+      height: 56,
       overflow: 'hidden',
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
-      borderRadius: 23,
+      borderRadius: 28,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.iconSurfaceGold,
     },
-    headingCopy: { flex: 1, gap: 3 },
+    headingCopy: { gap: 3, width: '50%' },
     headingActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     eyebrow: {
       color: theme.colors.scannerCyan,
@@ -1510,7 +1507,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontWeight: '900',
       letterSpacing: 1.5,
     },
-    title: { color: theme.colors.cream, fontSize: 17, fontWeight: '900' },
+    title: { width: 150,color: theme.colors.cream, fontSize: 17, fontFamily: theme.fonts.bold, fontWeight: '900' },
     subtitle: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 14 },
     menuButton: {
       width: 32,
@@ -1549,7 +1546,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     conversationContent: {
       gap: 9,
-      padding: 10,
+      padding: 5,
     },
     overlayConversation: {
       flex: 1,
@@ -1589,9 +1586,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     messageRow: {
       flexDirection: 'row',
       alignItems: 'flex-end',
+      justifyContent: 'space-between',
+      width: '100%',
       gap: 7,
     },
-    messageRowUser: { justifyContent: 'flex-end' },
+    messageRowUser: { justifyContent: 'flex-end', paddingLeft: '15%', width: '100%' },
     messageAvatar: {
       width: 24,
       height: 24,
@@ -1602,14 +1601,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderCurve: 'continuous',
     },
     messageBubble: {
-      maxWidth: '86%',
+      maxWidth: '100%',
       paddingHorizontal: 11,
       paddingVertical: 9,
       borderRadius: 13,
       borderCurve: 'continuous',
     },
     assistantMessageStack: {
-      maxWidth: '86%',
+      maxWidth: '85%',
       minWidth: 0,
       gap: 6,
     },
@@ -1994,19 +1993,19 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     overlayHeading: [
       staticStyles.overlayHeading,
       {
-        paddingRight: responsiveWidth(58),
+        paddingRight: responsiveWidth(0),
       },
     ],
     eyebrow: [
       staticStyles.eyebrow,
       {
-        fontSize: responsiveFont(8),
+        fontSize: responsiveFont(5),
       },
     ],
     title: [
       staticStyles.title,
       {
-        fontSize: responsiveFont(17),
+        fontSize: responsiveFont(20),
       },
     ],
     subtitle: [

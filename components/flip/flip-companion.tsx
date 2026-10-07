@@ -16,7 +16,6 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import {
-  FLIP_BACKGROUND_SOURCE,
   FLIP_VIDEO_SOURCES,
 } from '@/components/flip/flip-assets';
 import { useFlipCompanion } from '@/components/flip/flip-companion-provider';
@@ -359,21 +358,12 @@ export function FlipCompanion({
         },
         style,
       ]}>
-      {Platform.OS !== 'web' ? (
-        <Image
-          cachePolicy="memory-disk"
-          contentFit={cropToSquare ? 'cover' : 'contain'}
-          pointerEvents="none"
-          source={FLIP_BACKGROUND_SOURCE}
-          style={StyleSheet.absoluteFill}
-        />
-      ) : null}
       <Animated.View
         pointerEvents="none"
         style={[StyleSheet.absoluteFill, firstVideoStyle]}>
         <VideoView
           player={playerA}
-          style={[StyleSheet.absoluteFill, Platform.OS === 'web' && styles.webVideo]}
+          style={[StyleSheet.absoluteFill, Platform.OS === 'web' && styles.webVideo, { borderRadius: size / 2}]}
           nativeControls={false}
           contentFit={cropToSquare ? 'cover' : 'contain'}
           playsInline
@@ -386,7 +376,7 @@ export function FlipCompanion({
         style={[StyleSheet.absoluteFill, secondVideoStyle]}>
         <VideoView
           player={playerB}
-          style={[StyleSheet.absoluteFill, Platform.OS === 'web' && styles.webVideo]}
+          style={[StyleSheet.absoluteFill, Platform.OS === 'web' && styles.webVideo, { borderRadius: size / 2}]}
           nativeControls={false}
           contentFit={cropToSquare ? 'cover' : 'contain'}
           playsInline
@@ -401,10 +391,11 @@ export function FlipCompanion({
 const styles = StyleSheet.create({
   container: {
     overflow: 'hidden',
-    backgroundColor: '#08080c',
+    backgroundColor: 'transparent',
   },
   webVideo: {
     width: '100%',
     height: '100%',
+    backgroundColor: 'transparent',
   },
 });
