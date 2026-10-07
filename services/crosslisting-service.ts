@@ -76,7 +76,7 @@ export const CROSSLISTING_DESTINATIONS: Record<
   },
   offerUp: {
     label: 'OfferUp',
-    loginUrl: 'https://offerup.com/',
+    loginUrl: 'https://offerup.com/login',
     createUrl: 'https://offerup.com/',
     origin: 'https://offerup.com',
   },

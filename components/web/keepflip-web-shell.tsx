@@ -45,7 +45,7 @@ const primaryNavigation: NavItem[] = [
         eyebrow: 'WORKSPACE',
         href: '/crosslisting' as Href,
         icon: 'shippingbox.fill' as const,
-        label: 'Crosslisting Lab',
+        label: 'Listing',
       }]
     : []),
   {
@@ -108,7 +108,7 @@ function initials(name: string | null | undefined) {
 function displaySection(pathname: string) {
   if (pathname === '/' || pathname === '/command-center') return 'COMMAND CENTER';
   if (pathname.startsWith('/inventory')) return 'INVENTORY';
-  if (pathname.startsWith('/crosslisting')) return 'CROSSLISTING LAB';
+  if (pathname.startsWith('/crosslisting')) return 'LISTING';
   if (pathname.startsWith('/books')) return 'BOOKS & REPORTS';
   if (pathname.startsWith('/market-research')) return 'MARKET RESEARCH';
   if (pathname.startsWith('/seller-assistant')) return 'FLIP ASSISTANT';

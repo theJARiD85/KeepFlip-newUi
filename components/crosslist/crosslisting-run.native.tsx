@@ -11,6 +11,8 @@ import {
   createGeneratedCrosslistingPayload,
   type CrosslistingMarketplace,
 } from '@/services/crosslisting-service';
+import { confirmMarketplaceListing, parseSavedListingDraft } from '@/services/listing-draft-service';
+import { getMarketplaceSelections } from '@/services/marketplace-selections-service';
 
 const MARKETPLACES: CrosslistingMarketplace[] = [
   'depop',
@@ -20,20 +22,31 @@ const MARKETPLACES: CrosslistingMarketplace[] = [
   'offerUp',
 ];
 
-type RunStatus = 'prepared' | 'submit_tapped';
+type RunStatus = 'prepared' | 'submit_tapped' | 'confirmed';
 
-export function CrosslistingRun({ item, listing, userId, onDraftPrepared }: CrosslistingRunProps) {
-  const [selected, setSelected] = useState<CrosslistingMarketplace[]>(MARKETPLACES);
+export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onListingConfirmed, initialSelections }: CrosslistingRunProps) {
+  const confirmedMarketplaces = useMemo(() => parseSavedListingDraft(item.listingJson)?.confirmedMarketplaces ?? {}, [item.listingJson]);
+  const [selected, setSelected] = useState<CrosslistingMarketplace[]>(() => MARKETPLACES.filter((marketplace) => initialSelections?.includes(marketplace) && !confirmedMarketplaces[marketplace]));
+  const selectedAvailable = selected.filter((marketplace) => !confirmedMarketplaces[marketplace]);
   const [runTargets, setRunTargets] = useState<CrosslistingMarketplace[]>([]);
   const [runIndex, setRunIndex] = useState(0);
   const [active, setActive] = useState<CrosslistingMarketplace | null>(null);
   const [statuses, setStatuses] = useState<Partial<Record<CrosslistingMarketplace, RunStatus>>>({});
   const [finished, setFinished] = useState(false);
+  const [runError, setRunError] = useState<string | null>(null);
   const preparedRef = useRef<Set<CrosslistingMarketplace>>(new Set());
   const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => {
     if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
   }, []);
+  useEffect(() => {
+    let active = true;
+    if (initialSelections) return;
+    void getMarketplaceSelections(userId).then((saved) => {
+      if (active) setSelected(MARKETPLACES.filter((marketplace) => saved.includes(marketplace) && !confirmedMarketplaces[marketplace]));
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, [confirmedMarketplaces, initialSelections, userId]);
   const photoFileIds = item.itemPhotos.length ? item.itemPhotos : item.coverPhotoId ? [item.coverPhotoId] : [];
   const payload = useMemo(
     () => active ? createGeneratedCrosslistingPayload({ marketplace: active, listing, item }) : null,
@@ -42,7 +55,7 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared }: Cros
   const next = runTargets[runIndex + 1] ?? null;
 
   function toggle(marketplace: CrosslistingMarketplace) {
-    if (runTargets.length) return;
+    if (runTargets.length || confirmedMarketplaces[marketplace]) return;
     setSelected((current) => current.includes(marketplace)
       ? current.filter((value) => value !== marketplace)
       : MARKETPLACES.filter((value) => value === marketplace || current.includes(value)));
@@ -50,8 +63,9 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared }: Cros
   }
 
   function start() {
-    if (!selected.length) return;
-    const targets = MARKETPLACES.filter((marketplace) => selected.includes(marketplace));
+    if (!selectedAvailable.length) return;
+    const targets = MARKETPLACES.filter((marketplace) => selected.includes(marketplace) && !confirmedMarketplaces[marketplace]);
+    if (!targets.length) return;
     setRunTargets(targets);
     setRunIndex(0);
     setStatuses({});
@@ -86,6 +100,18 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared }: Cros
     onDraftPrepared?.(marketplace);
   }
 
+  async function confirm(marketplace: CrosslistingMarketplace, externalUrl?: string) {
+    setRunError(null);
+    try {
+      await confirmMarketplaceListing(userId, item.id, marketplace, externalUrl);
+      setStatuses((current) => ({ ...current, [marketplace]: 'confirmed' }));
+      onListingConfirmed?.(marketplace);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+    } catch (caught) {
+      setRunError(caught instanceof Error ? caught.message : 'KeepFlip could not record this live listing.');
+    }
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.headingRow}>
@@ -93,26 +119,28 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared }: Cros
           <Text style={styles.eyebrow}>CROSSLISTING RUN</Text>
           <Text style={styles.title}>Pick where this item goes</Text>
         </View>
-        <View style={styles.countBadge}><Text style={styles.countText}>{selected.length} SELECTED</Text></View>
+        <View style={styles.countBadge}><Text style={styles.countText}>{selectedAvailable.length} SELECTED</Text></View>
       </View>
       <Text style={styles.body}>One run, one marketplace at a time. KeepFlip opens each seller page, fills the draft and tries to attach saved photos. You can review each listing before submitting.</Text>
+      {runError ? <Text accessibilityRole="alert" style={styles.finished}>{runError}</Text> : null}
       <View style={styles.marketplaces}>
         {MARKETPLACES.map((marketplace) => {
           const checked = selected.includes(marketplace);
           const status = statuses[marketplace];
+          const alreadyListed = Boolean(confirmedMarketplaces[marketplace]);
           return (
             <Pressable
               key={marketplace}
-              accessibilityLabel={`${CROSSLISTING_DESTINATIONS[marketplace].label}, ${status === 'submit_tapped' ? 'submit tapped' : status === 'prepared' ? 'draft prepared' : checked ? 'selected' : 'not selected'}`}
+              accessibilityLabel={`${CROSSLISTING_DESTINATIONS[marketplace].label}, ${alreadyListed || status === 'confirmed' ? 'live listing confirmed' : status === 'submit_tapped' ? 'submit tapped' : status === 'prepared' ? 'draft prepared' : checked ? 'selected' : 'not selected'}`}
               accessibilityRole="checkbox"
-              accessibilityState={{ checked, disabled: runTargets.length > 0 }}
-              disabled={runTargets.length > 0}
+              accessibilityState={{ checked: checked || alreadyListed, disabled: runTargets.length > 0 || alreadyListed }}
+              disabled={runTargets.length > 0 || alreadyListed}
               onPress={() => toggle(marketplace)}
-              style={[styles.marketplace, checked && styles.marketplaceSelected]}
+              style={[styles.marketplace, (checked || alreadyListed) && styles.marketplaceSelected]}
             >
-              <Text style={[styles.check, checked && styles.checkSelected]}>{checked ? '✓' : '+'}</Text>
-              <Text style={[styles.marketplaceName, checked && styles.marketplaceNameSelected]}>{CROSSLISTING_DESTINATIONS[marketplace].label}</Text>
-              {status ? <Text style={styles.marketplaceStatus}>{status === 'submit_tapped' ? 'SUBMIT TAPPED' : 'DRAFT FILLED'}</Text> : null}
+              <Text style={[styles.check, (checked || alreadyListed) && styles.checkSelected]}>{checked || alreadyListed ? '✓' : '+'}</Text>
+              <Text style={[styles.marketplaceName, (checked || alreadyListed) && styles.marketplaceNameSelected]}>{CROSSLISTING_DESTINATIONS[marketplace].label}</Text>
+              {status || alreadyListed ? <Text style={styles.marketplaceStatus}>{alreadyListed || status === 'confirmed' ? 'LISTED' : status === 'submit_tapped' ? 'SUBMIT TAPPED' : 'DRAFT FILLED'}</Text> : null}
             </Pressable>
           );
         })}
@@ -134,7 +162,7 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared }: Cros
           </Pressable>
         </View>
       ) : (
-        <Pressable accessibilityRole="button" accessibilityState={{ disabled: selected.length === 0 }} disabled={selected.length === 0} onPress={start} style={[styles.startButton, selected.length === 0 && styles.disabled]}>
+        <Pressable accessibilityRole="button" accessibilityState={{ disabled: selectedAvailable.length === 0 }} disabled={selectedAvailable.length === 0} onPress={start} style={[styles.startButton, selectedAvailable.length === 0 && styles.disabled]}>
           <Text style={styles.startText}>Start crosslisting →</Text>
         </Pressable>
       )}
@@ -146,6 +174,7 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared }: Cros
           onNext={continueRun}
           onPrepared={() => markPrepared(active)}
           onSubmitPressed={() => setStatuses((current) => ({ ...current, [active]: 'submit_tapped' }))}
+          onConfirmed={(externalUrl) => { void confirm(active, externalUrl); }}
           payload={payload}
           photoFileIds={photoFileIds}
           platform={active}

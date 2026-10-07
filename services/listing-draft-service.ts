@@ -1,4 +1,5 @@
 import { APPWRITE, tablesDB } from '@/lib/appwrite';
+import { CROSSLISTING_DESTINATIONS, type CrosslistingMarketplace } from '@/services/crosslisting-service';
 import { getInventoryItem } from '@/services/inventory-service';
 import type { ListingGeneratorResult, ListingPlatform, ListingReadiness } from '@/services/listingService';
 
@@ -22,7 +23,9 @@ export function parseSavedListingDraft(value: unknown): SavedListingDraft | null
     if (!isRecord(parsed) || parsed.schemaVersion !== 1 || !isRecord(parsed.listing)) return null;
     const listing = parsed.listing;
     if (typeof listing.title !== 'string' || typeof listing.description !== 'string' ||
-      !isRecord(listing.priceRange) || !isRecord(listing.marketplaceListings) || !isRecord(listing.platformCopy)) return null;
+      !isRecord(listing.priceRange) || typeof listing.priceRange.targetPrice !== 'number' ||
+      !Number.isFinite(listing.priceRange.targetPrice) || !isRecord(listing.marketplaceListings) ||
+      !isRecord(listing.platformCopy) || !Array.isArray(listing.warnings)) return null;
     return {
       schemaVersion: 1,
       generatedAt: typeof parsed.generatedAt === 'string' ? parsed.generatedAt : '',
@@ -50,7 +53,21 @@ export async function saveListingDraft(ownerId: string, itemId: string, draft: S
   });
 }
 
-export async function confirmMarketplaceListing(ownerId: string, itemId: string, marketplace: ListingPlatform): Promise<void> {
+function confirmedListingUrl(marketplace: CrosslistingMarketplace, value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  try {
+    const candidate = new URL(value);
+    const allowedHost = new URL(CROSSLISTING_DESTINATIONS[marketplace].origin).hostname.replace(/^www\./, '');
+    if (candidate.protocol !== 'https:' || candidate.hostname !== allowedHost &&
+      !candidate.hostname.endsWith(`.${allowedHost}`)) return undefined;
+    if (candidate.pathname === '/' || /\/(login|signin|sign-in|sell|create)(\/|$)/i.test(candidate.pathname)) return undefined;
+    candidate.search = '';
+    candidate.hash = '';
+    return candidate.toString();
+  } catch { return undefined; }
+}
+
+export async function confirmMarketplaceListing(ownerId: string, itemId: string, marketplace: CrosslistingMarketplace, externalUrl?: string): Promise<void> {
   const item = await getInventoryItem(ownerId, itemId);
   const draft = parseSavedListingDraft(item.listingJson);
   if (!draft) throw new Error('Save a generated listing before marking a marketplace as listed.');
@@ -59,7 +76,7 @@ export async function confirmMarketplaceListing(ownerId: string, itemId: string,
     ...draft,
     confirmedMarketplaces: {
       ...draft.confirmedMarketplaces,
-      [marketplace]: { confirmedAt: now },
+      [marketplace]: { confirmedAt: now, externalUrl: confirmedListingUrl(marketplace, externalUrl) },
     },
   };
   await tablesDB.updateRow({

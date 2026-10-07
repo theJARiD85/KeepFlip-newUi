@@ -9,8 +9,8 @@
       "distribution": "internal",
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_ENABLE_CROSSLISTING_LAB": "false",
-        "EXPO_PUBLIC_ENABLE_CROSSLISTING_AUTOFILL": "false"
+        "EXPO_PUBLIC_ENABLE_CROSSLISTING_LAB": "true",
+        "EXPO_PUBLIC_ENABLE_CROSSLISTING_AUTOFILL": "true"
       },
       "android": {
         "buildType": "apk"
@@ -19,8 +19,8 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_ENABLE_CROSSLISTING_LAB": "false",
-        "EXPO_PUBLIC_ENABLE_CROSSLISTING_AUTOFILL": "false"
+        "EXPO_PUBLIC_ENABLE_CROSSLISTING_LAB": "true",
+        "EXPO_PUBLIC_ENABLE_CROSSLISTING_AUTOFILL": "true"
       },
       "android": {
         "buildType": "apk"
@@ -30,8 +30,8 @@
       "autoIncrement": true,
       "env": {
         "NODE_ENV": "production",
-        "EXPO_PUBLIC_ENABLE_CROSSLISTING_LAB": "false",
-        "EXPO_PUBLIC_ENABLE_CROSSLISTING_AUTOFILL": "false"
+        "EXPO_PUBLIC_ENABLE_CROSSLISTING_LAB": "true",
+        "EXPO_PUBLIC_ENABLE_CROSSLISTING_AUTOFILL": "true"
       },
       "android": {
         "buildType": "apk"

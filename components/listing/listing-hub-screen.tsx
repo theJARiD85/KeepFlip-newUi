@@ -40,6 +40,7 @@ function ListingItemCard({ item, onPress }: { item: InventoryItem; onPress: () =
   }, [item.coverPhotoId]);
   const draft = parseSavedListingDraft(item.listingJson);
   const confirmed = Object.keys(draft?.confirmedMarketplaces ?? {}).length;
+  const tracked = confirmed || (item.ebayListingId ? 1 : 0);
   const price = draft?.listing.priceRange.targetPrice ?? item.estimatedValue;
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={`${item.title}, ${item.isListed ? 'listed' : 'not listed'}`} onPress={onPress} style={({ pressed }) => [styles.itemCard, pressed && styles.pressed]}>
@@ -47,7 +48,7 @@ function ListingItemCard({ item, onPress }: { item: InventoryItem; onPress: () =
       <View style={styles.itemCopy}>
         <Text numberOfLines={2} style={styles.itemTitle}>{item.title}</Text>
         <Text numberOfLines={1} style={styles.itemMeta}>{[item.brand, item.category, item.sku].filter(Boolean).join(' · ') || 'Saved inventory'}</Text>
-        <Text style={styles.itemStatus}>{item.isListed ? `${confirmed || (item.ebayListingId ? 1 : 0)} marketplace${confirmed || item.ebayListingId ? 's' : ''} tracked` : draft ? 'Draft ready to finish' : 'Ready to prepare'}</Text>
+        <Text style={styles.itemStatus}>{item.isListed ? `${tracked} marketplace${tracked === 1 ? '' : 's'} tracked` : draft ? 'Draft ready to finish' : 'Ready to prepare'}</Text>
       </View>
       <View style={styles.itemRight}>
         <Text style={styles.price}>{typeof price === 'number' && Number.isFinite(price) ? `$${price.toFixed(0)}` : '—'}</Text>
@@ -62,7 +63,6 @@ export function ListingHubScreen({ items, loading, loadingMore, hasMore, error, 
   const [query, setQuery] = useState('');
   const [editingPreferences, setEditingPreferences] = useState(false);
   const [draftSelections, setDraftSelections] = useState<ListingPlatform[]>(selections);
-  useEffect(() => { if (!editingPreferences) setDraftSelections(selections); }, [editingPreferences, selections]);
   const visible = items.filter((item) => {
     if (tab === 'listed' ? !item.isListed : item.isListed) return false;
     const needle = query.trim().toLocaleLowerCase();
@@ -91,7 +91,7 @@ export function ListingHubScreen({ items, loading, loadingMore, hasMore, error, 
           <View style={styles.preferenceCard}>
             <View style={styles.preferenceHeading}>
               <View style={styles.preferenceCopy}><Text style={styles.preferenceTitle}>Your marketplaces</Text><Text style={styles.preferenceBody}>{selectedLabels.length ? selectedLabels.join(' · ') : 'Tell Flip where you usually sell.'}</Text></View>
-              <Pressable accessibilityRole="button" onPress={() => setEditingPreferences((current) => !current)} style={styles.editButton}><Text style={styles.editText}>{editingPreferences ? 'Done' : 'Edit'}</Text></Pressable>
+              <Pressable accessibilityRole="button" onPress={() => { setDraftSelections(selections); setEditingPreferences((current) => !current); }} style={styles.editButton}><Text style={styles.editText}>{editingPreferences ? 'Done' : 'Edit'}</Text></Pressable>
             </View>
             {editingPreferences ? <View style={styles.preferenceChoices}>
               {MARKETPLACE_CHOICES.map((choice) => {

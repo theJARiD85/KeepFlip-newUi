@@ -85,6 +85,7 @@ function isProfileSchemaError(error: unknown) {
   const details = (message + ' ' + type).toLowerCase();
 
   return (
+    details.includes('marketplaceselections') ||
     details.includes(USER_PROFILE_BUY_RULES_COLUMN.toLowerCase()) ||
     details.includes(USER_PROFILE_TRIALING_COLUMN.toLowerCase()) ||
     details.includes(USER_PROFILE_TRIAL_END_DATE_COLUMN.toLowerCase()) ||
@@ -97,7 +98,7 @@ function isProfileSchemaError(error: unknown) {
 function userProfileSchemaMigrationError(cause: unknown) {
   const error = new Error(
     "KeepFlip's user_profiles table is missing a required profile column. " +
-      'It needs resellerBuyRulesJson, isTrialing, and trialEndDate to be Available before the app can save this profile. ' +
+      'It needs resellerBuyRulesJson, isTrialing, trialEndDate, and marketplaceSelections (enum array) to be Available before the app can save this profile. ' +
       'Follow docs/USER_PROFILE_TRIAL_APPWRITE_SCHEMA.md, then retry.',
   );
   error.name = 'UserProfileSchemaMigrationError';

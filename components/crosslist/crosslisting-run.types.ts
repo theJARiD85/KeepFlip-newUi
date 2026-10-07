@@ -1,5 +1,5 @@
 import type { InventoryItem } from '@/services/inventory-service';
-import type { ListingGeneratorResult } from '@/services/listingService';
+import type { ListingGeneratorResult, ListingPlatform } from '@/services/listingService';
 import type { CrosslistingMarketplace } from '@/services/crosslisting-service';
 
 export type CrosslistingRunProps = {
@@ -7,4 +7,6 @@ export type CrosslistingRunProps = {
   listing: ListingGeneratorResult['listing'];
   userId: string;
   onDraftPrepared?: (marketplace: CrosslistingMarketplace) => void;
+  onListingConfirmed?: (marketplace: CrosslistingMarketplace) => void;
+  initialSelections?: ListingPlatform[];
 };

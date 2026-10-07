@@ -29,10 +29,11 @@ export default function ListingRoute() {
 
   const refresh = useCallback(async () => {
     if (status !== 'signed-in' || !user) {
-      setItems([]); setNextCursor(null); setLoading(false); return;
+      setItems([]); setSelections([]); setSelectedItem(null); setNextCursor(null); setLoading(false); return;
     }
     setLoading(true);
     setError(null);
+    setSelectionError(null);
     const [inventoryResult, selectionResult] = await Promise.allSettled([
       listListingInventoryPage(user.$id),
       getMarketplaceSelections(user.$id, user.name),
@@ -81,7 +82,7 @@ export default function ListingRoute() {
     return selectedItem.isListed && !editingListedItem ? (
       <ListedListingDetail itemId={selectedItem.id} onBack={() => { setSelectedItem(null); void refresh(); }} onEdit={() => setEditingListedItem(true)} />
     ) : (
-      <ListingCreationGuideScreen itemIdOverride={selectedItem.id} onBack={() => { setSelectedItem(null); setEditingListedItem(false); void refresh(); }} selectedMarketplaces={selections} />
+      <ListingCreationGuideScreen itemIdOverride={selectedItem.id} onBack={() => { if (editingListedItem) setEditingListedItem(false); else setSelectedItem(null); void refresh(); }} selectedMarketplaces={selections} />
     );
   }
 

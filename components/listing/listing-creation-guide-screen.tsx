@@ -9,7 +9,8 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
-import { useResponsiveLayout } from "@/hooks/use-responsive-layout";
+import { useResponsiveLayout, useResponsiveStyles } from "@/hooks/use-responsive-layout";
+import { parseSavedListingDraft, saveListingDraft, type SavedListingDraft } from '@/services/listing-draft-service';
 import {
   KEEPFLIP_ANALYTICS_EVENTS,
   trackKeepFlipEvent,
@@ -36,7 +37,6 @@ import {
 } from "@/services/listingService";
 import {
   createGeneratedCrosslistingPayload,
-  CROSSLISTING_BOOKMARKLET,
   CROSSLISTING_DESTINATIONS,
   getCrosslistingMarketplace,
 } from "@/services/crosslisting-service";
@@ -55,10 +55,8 @@ import {
   StyleSheet,
   TextInput,
   View,
-  useWindowDimensions,
 } from "react-native";
 
-import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type ChecklistStep = {
   completeByDefault: boolean;
   detail: string;
@@ -188,6 +186,21 @@ function listingTitle(item: InventoryItem) {
     .trim();
 }
 
+function listingWithTargetPrice(listing: ListingGeneratorResult['listing'], amount: number): ListingGeneratorResult['listing'] {
+  return {
+    ...listing,
+    priceRange: { ...listing.priceRange, targetPrice: amount },
+    marketplaceListings: {
+      facebookMarketplace: { ...listing.marketplaceListings.facebookMarketplace, price: amount },
+      ebay: { ...listing.marketplaceListings.ebay, price: amount },
+      offerUp: { ...listing.marketplaceListings.offerUp, price: amount },
+      depop: { ...listing.marketplaceListings.depop, price: amount },
+      poshmark: { ...listing.marketplaceListings.poshmark, price: amount },
+      mercari: { ...listing.marketplaceListings.mercari, price: amount },
+    },
+  };
+}
+
 function buildChecklist(item: InventoryItem): ChecklistStep[] {
   const hasIdentityDetail = Boolean(item.brand || item.model || item.category);
   const hasConditionNotes = item.conditionNotes.trim().length >= 12;
@@ -238,7 +251,7 @@ function buildChecklist(item: InventoryItem): ChecklistStep[] {
   ];
 }
 
-export function ListingCreationGuideScreen({ itemIdOverride }: { itemIdOverride?: string }) {
+export function ListingCreationGuideScreen({ itemIdOverride, onBack, selectedMarketplaces }: { itemIdOverride?: string; onBack?: () => void; selectedMarketplaces?: ListingPlatform[] }) {
   const styles = useResponsiveStyles(createResponsiveStyles);
   const params = useLocalSearchParams<{
     focus?: string | string[];
@@ -254,15 +267,12 @@ export function ListingCreationGuideScreen({ itemIdOverride }: { itemIdOverride?
     insets,
     pageGutter,
     responsiveFont,
-    responsiveWidth,
-    responsiveHeight,
     contentMaxWidth,
     webContentWidth,
     webContentMaxWidth,
     webPageGutter,
   } =
     useResponsiveLayout();
-    const { width } = useWindowDimensions();
   const [item, setItem] = useState<InventoryItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -279,6 +289,11 @@ export function ListingCreationGuideScreen({ itemIdOverride }: { itemIdOverride?
   const [listingAnswers, setListingAnswers] = useState<Record<string, string>>({});
   const [listingConfidence, setListingConfidence] = useState<number | null>(null);
   const [listingGenerationError, setListingGenerationError] = useState<string | null>(null);
+  const [draftSaveError, setDraftSaveError] = useState<string | null>(null);
+  const [priceEditError, setPriceEditError] = useState<string | null>(null);
+  const [targetPriceInput, setTargetPriceInput] = useState('');
+  const [editRevision, setEditRevision] = useState(0);
+  const savedDraftRef = useRef<SavedListingDraft | null>(null);
   const [generatingListing, setGeneratingListing] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<
     ListingPlatform
@@ -287,7 +302,6 @@ export function ListingCreationGuideScreen({ itemIdOverride }: { itemIdOverride?
     useState<ListingPlatform | null>(null);
   const [shareError, setShareError] = useState<string | null>(null);
   const [shareNotice, setShareNotice] = useState<string | null>(null);
-  const [bookmarkletNotice, setBookmarkletNotice] = useState<string | null>(null);
   const [ebayPublishOpen, setEbayPublishOpen] = useState(false);
   const [ebayPublishing, setEbayPublishing] = useState(false);
   const [ebayReady, setEbayReady] = useState(false);
@@ -297,10 +311,6 @@ export function ListingCreationGuideScreen({ itemIdOverride }: { itemIdOverride?
   const handleEbayReadyChange = useCallback((ready: boolean) => {
     setEbayReady(ready);
   }, []);
-  useEffect(() => {
-    setEbayReady(false); setEbayReview({ ...EMPTY_EBAY_LISTING_REVIEW });
-    setEbayAspects({}); setEbayMeasurements({});
-  }, [item?.id]);
 
   const [ebayPublishError, setEbayPublishError] = useState<string | null>(null);
   const [ebayPublishResult, setEbayPublishResult] =
@@ -313,6 +323,7 @@ export function ListingCreationGuideScreen({ itemIdOverride }: { itemIdOverride?
   const [addingPhotos, setAddingPhotos] = useState(false);
   const [photoUploadError, setPhotoUploadError] = useState<string | null>(null);
   const promptedForPhotosRef = useRef<string | null>(null);
+  const loadedItemIdRef = useRef<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const itemCardYRef = useRef<number | null>(null);
   const backgroundPanelYRef = useRef<number | null>(null);
@@ -349,7 +360,24 @@ export function ListingCreationGuideScreen({ itemIdOverride }: { itemIdOverride?
     setError(null);
 
     try {
-      setItem(await getInventoryItem(userId, itemId));
+      const loaded = await getInventoryItem(userId, itemId);
+      if (loadedItemIdRef.current !== loaded.id) {
+        loadedItemIdRef.current = loaded.id;
+        setEbayReady(false);
+        setEbayReview({ ...EMPTY_EBAY_LISTING_REVIEW });
+        setEbayAspects({});
+        setEbayMeasurements({});
+      }
+      setItem(loaded);
+      const saved = parseSavedListingDraft(loaded.listingJson);
+      savedDraftRef.current = saved;
+      setGeneratedListing(saved?.listing ?? null);
+      setTargetPriceInput(saved ? String(saved.listing.priceRange.targetPrice) : '');
+      setListingReadiness(saved?.readiness ?? null);
+      setListingConfidence(saved?.confidence ?? null);
+      setDraftSaveError(null);
+      setPriceEditError(null);
+      setEditRevision(0);
     } catch (caughtError) {
       setItem(null);
       setError(
@@ -405,7 +433,7 @@ export function ListingCreationGuideScreen({ itemIdOverride }: { itemIdOverride?
   }, []);
 
   const acceptListingResponse = useCallback(
-    (result: ListingGeneratorResponse) => {
+    async (result: ListingGeneratorResponse) => {
       setListingReadiness(result.readiness);
       if (result.status === "needs_seller_input") {
         setPendingListingReview(result);
@@ -418,8 +446,28 @@ export function ListingCreationGuideScreen({ itemIdOverride }: { itemIdOverride?
       setPendingListingReview(null);
       setListingAnswers({});
       setGeneratedListing(result.listing);
+      setTargetPriceInput(String(result.listing.priceRange.targetPrice));
+      setEditRevision(0);
       setListingConfidence(result.confidence);
       setSelectedPlatform("ebay");
+      if (item && userId) {
+        const draft: SavedListingDraft = {
+          schemaVersion: 1,
+          generatedAt: result.generatedAt,
+          savedAt: new Date().toISOString(),
+          confidence: result.confidence,
+          readiness: result.readiness,
+          listing: result.listing,
+          confirmedMarketplaces: savedDraftRef.current?.confirmedMarketplaces ?? {},
+        };
+        try {
+          await saveListingDraft(userId, item.id, draft);
+          savedDraftRef.current = draft;
+          setDraftSaveError(null);
+        } catch (caught) {
+          setDraftSaveError(caught instanceof Error ? caught.message : 'KeepFlip could not save this listing draft.');
+        }
+      }
       if (item) {
         trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.listingGenerated, {
           item_id: item.id,
@@ -427,7 +475,7 @@ export function ListingCreationGuideScreen({ itemIdOverride }: { itemIdOverride?
       }
       recordCompletedAction();
     },
-    [item, recordCompletedAction],
+    [item, recordCompletedAction, userId],
   );
 
   const generateListing = useCallback(async () => {
@@ -439,7 +487,7 @@ export function ListingCreationGuideScreen({ itemIdOverride }: { itemIdOverride?
     setListingAnswers({});
     try {
       const result = await runListingGenerator({ itemId: item.id });
-      acceptListingResponse(result);
+      await acceptListingResponse(result);
     } catch (caughtError) {
       setListingGenerationError(
         caughtError instanceof Error
@@ -465,7 +513,7 @@ export function ListingCreationGuideScreen({ itemIdOverride }: { itemIdOverride?
         const refreshedItem = await getInventoryItem(userId, item.id).catch(() => null);
         if (refreshedItem) setItem(refreshedItem);
       }
-      acceptListingResponse(result);
+      await acceptListingResponse(result);
     } catch (caughtError) {
       setListingGenerationError(
         caughtError instanceof Error
@@ -482,6 +530,7 @@ export function ListingCreationGuideScreen({ itemIdOverride }: { itemIdOverride?
       field: "title" | "subtitle" | "description" | "conditionDisclosure",
       value: string,
     ) => {
+      setEditRevision((current) => current + 1);
       setGeneratedListing((current) => {
         if (!current) return current;
         const updated = { ...current, [field]: value };
@@ -519,6 +568,7 @@ export function ListingCreationGuideScreen({ itemIdOverride }: { itemIdOverride?
 
   const updateGeneratedPlatformCopy = useCallback(
     (platform: ListingPlatform, value: string) => {
+      setEditRevision((current) => current + 1);
       setGeneratedListing((current) =>
         current
           ? {
@@ -554,6 +604,56 @@ export function ListingCreationGuideScreen({ itemIdOverride }: { itemIdOverride?
     },
     [],
   );
+
+  const applyTargetPrice = useCallback((amount: number) => {
+    setTargetPriceInput(String(amount));
+    setEditRevision((current) => current + 1);
+    setGeneratedListing((current) => current ? listingWithTargetPrice(current, amount) : current);
+  }, []);
+
+  const commitTargetPrice = useCallback(() => {
+    const amount = Number(targetPriceInput.trim());
+    if (!/^\d+(?:\.\d{1,2})?$/.test(targetPriceInput.trim()) || !Number.isFinite(amount) || amount <= 0) {
+      setPriceEditError('Enter a price above $0 with up to two decimal places.');
+      return;
+    }
+    setPriceEditError(null);
+    applyTargetPrice(amount);
+  }, [applyTargetPrice, targetPriceInput]);
+
+  const persistCurrentDraft = useCallback(async () => {
+    if (!userId || !item || !generatedListing) return true;
+    const enteredPrice = targetPriceInput.trim();
+    if (!/^\d+(?:\.\d{1,2})?$/.test(enteredPrice) || Number(enteredPrice) <= 0) {
+      setPriceEditError('Enter a valid price before leaving this listing.');
+      return false;
+    }
+    const listingToSave = listingWithTargetPrice(generatedListing, Number(enteredPrice));
+    const draft: SavedListingDraft = {
+      schemaVersion: 1,
+      generatedAt: savedDraftRef.current?.generatedAt ?? new Date().toISOString(),
+      savedAt: new Date().toISOString(),
+      confidence: listingConfidence,
+      readiness: listingReadiness,
+      listing: listingToSave,
+      confirmedMarketplaces: savedDraftRef.current?.confirmedMarketplaces ?? {},
+    };
+    try {
+      await saveListingDraft(userId, item.id, draft);
+      savedDraftRef.current = draft;
+      setDraftSaveError(null);
+      return true;
+    } catch (caught) {
+      setDraftSaveError(caught instanceof Error ? caught.message : 'KeepFlip could not save your edits.');
+      return false;
+    }
+  }, [generatedListing, item, listingConfidence, listingReadiness, targetPriceInput, userId]);
+
+  useEffect(() => {
+    if (editRevision === 0) return;
+    const timer = setTimeout(() => { void persistCurrentDraft(); }, 700);
+    return () => clearTimeout(timer);
+  }, [editRevision, persistCurrentDraft]);
 
   const uploadAdditionalPhotoAssets = useCallback(
     async (assets: readonly ImagePicker.ImagePickerAsset[]) => {
@@ -791,26 +891,12 @@ export function ListingCreationGuideScreen({ itemIdOverride }: { itemIdOverride?
     [generatedListing, item, recordCompletedAction],
   );
 
-  const copyAutofillBookmarklet = useCallback(async () => {
-    if (Platform.OS !== "web") return;
-    setBookmarkletNotice(null);
-    try {
-      if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) {
-        throw new Error("This browser cannot copy the bookmarklet.");
-      }
-      await navigator.clipboard.writeText(CROSSLISTING_BOOKMARKLET);
-      setBookmarkletNotice(
-        "Copied. Add a bookmark named KeepFlip Autofill and paste the code into its URL field.",
-      );
-    } catch {
-      setBookmarkletNotice(
-        "KeepFlip could not copy the bookmarklet. Use a secure browser page and allow clipboard access, then try again.",
-      );
-    }
-  }, []);
-
-
   const openEbayPublishForm = useCallback(() => {
+    if (item?.ebayListingId) {
+      void Linking.openURL(`https://www.ebay.com/itm/${encodeURIComponent(item.ebayListingId)}`)
+        .catch(() => setEbayPublishError('KeepFlip could not open the live eBay listing.'));
+      return;
+    }
     if (!generatedListing) {
       setListingGenerationError("Generate the listing draft before publishing on eBay.");
       return;
@@ -818,7 +904,7 @@ export function ListingCreationGuideScreen({ itemIdOverride }: { itemIdOverride?
     setEbayPublishError(null);
     setEbayPublishResult(null);
     setEbayPublishOpen(true);
-  }, [generatedListing]);
+  }, [generatedListing, item]);
 
   const publishListingToEbay = useCallback(async () => {
     if (!item || !generatedListing || ebayPublishing) return;
@@ -861,6 +947,8 @@ export function ListingCreationGuideScreen({ itemIdOverride }: { itemIdOverride?
             listedAt: new Date().toISOString(),
             ownerId: userId,
           });
+          const refreshed = await getInventoryItem(userId, item.id).catch(() => null);
+          if (refreshed) setItem(refreshed);
         } catch (linkError) {
           setEbayPublishError(
             "Your eBay listing is live, but KeepFlip could not save its tracking link. Add the eBay tracking columns to inventory, then publish or open this item again to reconnect it." +
@@ -922,13 +1010,14 @@ export function ListingCreationGuideScreen({ itemIdOverride }: { itemIdOverride?
         showsVerticalScrollIndicator={false}
       >
           <View style={styles.topRow}>
+            {onBack ? <Pressable accessibilityRole="button" onPress={() => { void persistCurrentDraft().then((saved) => { if (saved) onBack(); }); }} style={{ paddingVertical: 8 }}><Text style={{ color: theme.colors.scannerCyan, fontWeight: '800' }}>‹  Listing</Text></Pressable> : null}
             <View style={styles.topCopy}>
               <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>SELLER WORKFLOW</Text>
               <Text style={[styles.title, { fontFamily: theme.fonts.bold, fontSize: responsiveFont(26) }]}>
-                Listing Workspace
+                Let’s list this item
               </Text>
               <Text style={[styles.subtitle, { fontSize: responsiveFont(12) }]}>
-                Draft once from the item facts, then hand off a platform-ready version to each marketplace. Review every destination before publishing.
+                Flip prepares the listing from your saved item. Review it once, then KeepFlip takes it to your marketplaces.
               </Text>
             </View>
           </View>
@@ -1205,6 +1294,8 @@ export function ListingCreationGuideScreen({ itemIdOverride }: { itemIdOverride?
 
                 {generatedListing ? (
                   <View style={styles.generatedCopy}>
+                    {draftSaveError ? <Text accessibilityRole="alert" style={styles.generatorWarning}>Draft save failed: {draftSaveError}</Text> : null}
+                    {item.isListed ? <Text style={styles.generatorWarning}>Changes here save your KeepFlip draft. Review and update each live marketplace listing before relying on those changes.</Text> : null}
                     <View style={styles.generatedTitleRow}>
                       <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>TITLE</Text>
                       <TextInput
@@ -1251,6 +1342,16 @@ export function ListingCreationGuideScreen({ itemIdOverride }: { itemIdOverride?
                         {generatedListing.sellingStrategy.replace(/_/g, " ").toUpperCase()}
                       </Text>
                     </View>
+                    <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>TARGET PRICE</Text>
+                    <TextInput
+                      accessibilityLabel="Edit listing target price"
+                      keyboardType="decimal-pad"
+                      onChangeText={(value) => { setTargetPriceInput(value); setPriceEditError(null); }}
+                      onEndEditing={commitTargetPrice}
+                      style={[styles.generatedEditorInput, styles.generatedTitleInput, { fontSize: responsiveFont(13) }]}
+                      value={targetPriceInput}
+                    />
+                    {priceEditError ? <Text accessibilityRole="alert" style={styles.generatorWarning}>{priceEditError}</Text> : null}
                     <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>PLATFORM COPY</Text>
                     <View style={styles.platformTabs}>
                       {(
@@ -1342,46 +1443,24 @@ export function ListingCreationGuideScreen({ itemIdOverride }: { itemIdOverride?
                     </View>
                     <View style={styles.crosslistBadge}>
                       <Text style={[styles.crosslistBadgeText, { fontSize: responsiveFont(9) }]}>
-                        {CROSSLIST_PLATFORMS.length} CHANNELS
+                        {Platform.OS === 'web' ? 1 : CROSSLIST_PLATFORMS.length} CHANNELS
                       </Text>
                     </View>
                   </View>
                   <Text style={[styles.crosslistDescription, { fontSize: responsiveFont(12) }]}>
-                    KeepFlip keeps item facts consistent across channels. eBay can publish the reviewed draft.{CROSSLISTING_AUTOFILL_ENABLED
-                      ? Platform.OS === "web"
-                        ? " Browser marketplaces use a copied draft and the KeepFlip Autofill bookmarklet. Add photos and review each listing before posting."
-                        : " Choose the other marketplaces below and KeepFlip will walk through their listing pages with you."
-                      : " For Facebook Marketplace, OfferUp, Depop, Mercari, and Poshmark, prepare the draft here and finish the listing on the marketplace."}
+                    KeepFlip keeps item facts consistent across channels. eBay can publish the reviewed draft.{Platform.OS === 'web'
+                      ? ' Open KeepFlip on your phone to run the in-app listing flow for other marketplaces.'
+                      : ' KeepFlip opens each selected marketplace, fills its form, and helps you finish the post.'}
                   </Text>
-                  {Platform.OS === "web" && CROSSLISTING_AUTOFILL_ENABLED ? (
-                    <View style={styles.bookmarkletSetup}>
-                      <View style={styles.bookmarkletCopy}>
-                        <Text style={[styles.bookmarkletTitle, { fontSize: responsiveFont(9) }]}>MARKETPLACE AUTOFILL</Text>
-                        <Text style={[styles.crosslistDescription, { fontSize: responsiveFont(12) }]}>
-                          Copy the bookmarklet once, then save it as a browser bookmark URL.
-                        </Text>
-                      </View>
-                      <Pressable
-                        accessibilityRole="button"
-                        onPress={() => void copyAutofillBookmarklet()}
-                        style={({ pressed }) => [
-                          styles.copyBookmarkletButton,
-                          pressed && styles.pressed,
-                        ]}
-                      >
-                        <Text style={[styles.copyBookmarkletText, { fontSize: responsiveFont(8) }]}>COPY BOOKMARKLET</Text>
-                      </Pressable>
-                      {bookmarkletNotice ? (
-                        <Text selectable style={styles.crosslistFootnote}>
-                          {bookmarkletNotice}
-                        </Text>
-                      ) : null}
-                    </View>
-                  ) : null}
                   {Platform.OS !== "web" && CROSSLISTING_AUTOFILL_ENABLED && item && userId ? (
                     <CrosslistingRun
                       item={item}
                       listing={generatedListing}
+                      initialSelections={selectedMarketplaces}
+                      onListingConfirmed={() => { void getInventoryItem(userId, item.id).then((updated) => {
+                        setItem(updated);
+                        savedDraftRef.current = parseSavedListingDraft(updated.listingJson);
+                      }).catch(() => setDraftSaveError('The listing was recorded, but KeepFlip could not refresh its details. Reopen this item to see the latest status.')); }}
                       onDraftPrepared={(marketplace) => {
                         trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.listingShared, { platform: marketplace });
                         recordCompletedAction();
@@ -1390,9 +1469,7 @@ export function ListingCreationGuideScreen({ itemIdOverride }: { itemIdOverride?
                     />
                   ) : null}
                   <View style={styles.destinationList}>
-                    {CROSSLIST_PLATFORMS.filter((platform) =>
-                      Platform.OS === "web" || !CROSSLISTING_AUTOFILL_ENABLED || platform.id === "ebay",
-                    ).map((platform) => {
+                    {CROSSLIST_PLATFORMS.filter((platform) => platform.id === 'ebay').map((platform) => {
                       const shared = sharedPlatform === platform.id;
                       const isEbay = platform.id === "ebay";
                       return (
@@ -1420,7 +1497,7 @@ export function ListingCreationGuideScreen({ itemIdOverride }: { itemIdOverride?
                           <Pressable
                             accessibilityLabel={
                               isEbay
-                                ? ebayPublishResult
+                                ? item?.ebayListingId || ebayPublishResult
                                   ? "Open published eBay listing"
                                   : "Publish listing on eBay"
                               : (Platform.OS === "web"
@@ -1452,8 +1529,8 @@ export function ListingCreationGuideScreen({ itemIdOverride }: { itemIdOverride?
                               ]}
                             >
                               {isEbay
-                                ? ebayPublishResult
-                                  ? "PUBLISHED"
+                                ? item?.ebayListingId || ebayPublishResult
+                                  ? "OPEN LISTING"
                                   : ebayPublishOpen
                                     ? "EDIT"
                                     : "PUBLISH"
@@ -1474,9 +1551,7 @@ export function ListingCreationGuideScreen({ itemIdOverride }: { itemIdOverride?
                       {item && generatedListing && userId ? (
                         <ListingNetProceedsPanel key={item.id} item={item} ownerId={userId}
                           prices={generatedListing.priceRange}
-                          onTargetPriceChange={(targetPrice) => setGeneratedListing((current) => current ? ({
-                            ...current, priceRange: { ...current.priceRange, targetPrice },
-                          }) : current)} />
+                          onTargetPriceChange={applyTargetPrice} />
                       ) : null}
                       <View style={styles.ebayPublishHeader}>
                         <View style={styles.ebayPublishHeaderCopy}>

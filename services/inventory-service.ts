@@ -170,7 +170,7 @@ export type InventoryItem = {
   ebayOfferId: string | null;
   ebayListingId: string | null;
   listedAt: string | null;
-  listingJson: unknown;
+  listingJson?: unknown;
   receiptFileId: string | null;
   purchaseNotes: string | null;
   acquiredAt?: string | null;

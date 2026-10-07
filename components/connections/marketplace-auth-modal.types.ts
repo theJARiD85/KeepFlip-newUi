@@ -9,6 +9,7 @@ export type MarketplaceAuthModalProps = {
   onSaved?: () => void;
   onPrepared?: () => void;
   onSubmitPressed?: () => void;
+  onConfirmed?: (externalUrl?: string) => void;
   onNext?: () => void;
   nextLabel?: string;
   progressLabel?: string;

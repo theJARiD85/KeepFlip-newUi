@@ -52,7 +52,7 @@ const destinations: MenuDestination[] = [
         eyebrow: 'LIST ACROSS CHANNELS',
         href: '/crosslisting' as Href,
         icon: 'shippingbox.fill' as const,
-        label: 'Crosslisting Lab',
+        label: 'Listing',
       }]
     : []),
 ];

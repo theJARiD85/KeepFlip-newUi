@@ -173,6 +173,7 @@ export function MarketplaceAuthModal({
   onSaved,
   onPrepared,
   onSubmitPressed,
+  onConfirmed,
   onNext,
   nextLabel,
   progressLabel,
@@ -487,6 +488,18 @@ export function MarketplaceAuthModal({
         {onNext ? (
           <Pressable accessibilityRole="button" onPress={onNext} style={styles.nextButton}>
             <Text style={styles.nextButtonText}>{nextLabel === 'Finish run' ? 'Finish run →' : `Next: ${nextLabel ?? 'marketplace'} →`}</Text>
+          </Pressable>
+        ) : null}
+        {onConfirmed && sessionSaved ? (
+          <Pressable accessibilityRole="button" onPress={() => Alert.alert(
+            `Is your ${destination.label} listing live?`,
+            'Confirm only after the marketplace shows that your listing was posted. KeepFlip will then move this item to Listed.',
+            [
+              { text: 'Keep checking', style: 'cancel' },
+              { text: 'Yes, it is live', onPress: () => onConfirmed(isMarketplaceHost(currentUrl, platform) ? currentUrl : undefined) },
+            ],
+          )} style={styles.nextButton}>
+            <Text style={styles.nextButtonText}>I SEE MY LIVE LISTING ✓</Text>
           </Pressable>
         ) : null}
         {sessionSaved ? (

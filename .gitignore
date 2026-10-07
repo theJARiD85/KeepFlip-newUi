@@ -126,4 +126,5 @@ scripts/*
 .tmp.driveupload/*
 docs/*
 !docs/CROSSLISTING_FORM_SELECTORS.md
+!docs/LISTING_WORKSPACE_SCHEMA.md
 backend/functions/ebay-account-deletion

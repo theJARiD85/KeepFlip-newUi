@@ -1,6 +1,6 @@
 /**
- * Keep the assisted marketplace autofill flow out of regular app builds.
- * Enable it only in a dedicated crosslisting build profile.
+ * Assisted native marketplace listing runs are part of the Listing workspace
+ * when enabled for the build profile.
  */
 export const CROSSLISTING_AUTOFILL_ENABLED =
   process.env.EXPO_PUBLIC_ENABLE_CROSSLISTING_AUTOFILL === 'true';
