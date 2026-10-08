@@ -23,6 +23,7 @@ import {
   initializeKeepFlipFirebaseAnalytics,
   trackKeepFlipFirebaseWebScreen,
 } from '@/services/keepflip-firebase-analytics';
+import { WebAppShellLayoutProvider } from '@/hooks/use-responsive-layout';
 import { areKeepFlipSubscriptionsEnforced } from '@/services/keepflip-subscription-service';
 
 analytics.init({
@@ -174,9 +175,11 @@ function WebRootContent() {
 
 export default function WebRootLayout() {
   return (
-    <KeepFlipAppearanceProvider>
-      <WebRootContent />
-    </KeepFlipAppearanceProvider>
+    <WebAppShellLayoutProvider>
+      <KeepFlipAppearanceProvider>
+        <WebRootContent />
+      </KeepFlipAppearanceProvider>
+    </WebAppShellLayoutProvider>
   );
 }
 

@@ -127,7 +127,7 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
     }
   }
 
-  async function action(actionName: 'LISTING_FOCUS' | 'LISTING_RESUME' | 'LISTING_SUBMIT', marketplace: CrosslistingMarketplace) {
+  async function action(actionName: 'LISTING_FOCUS' | 'LISTING_RESUME' | 'LISTING_RETRY' | 'LISTING_SUBMIT', marketplace: CrosslistingMarketplace) {
     if (!runIdRef.current) return;
     setError(null);
     try {
@@ -175,7 +175,8 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
           {details?.uploadedPhotoCount ? <Text style={styles.jobDetail}>{details.uploadedPhotoCount} photo{details.uploadedPhotoCount === 1 ? '' : 's'} handed to the upload control. Check thumbnails in the marketplace tab.</Text> : null}
           {!listed ? <View style={styles.jobActions}>
             <Pressable accessibilityRole="button" onPress={() => { void action('LISTING_FOCUS', job.marketplace); }} style={styles.smallButton}><Text style={styles.smallText}>Open tab</Text></Pressable>
-            {job.status === 'login_required' || job.status === 'needs_review' ? <Pressable accessibilityRole="button" onPress={() => { void action('LISTING_RESUME', job.marketplace); }} style={styles.smallButton}><Text style={styles.smallText}>Resume form</Text></Pressable> : null}
+            {job.status === 'login_required' ? <Pressable accessibilityRole="button" onPress={() => { void action('LISTING_RESUME', job.marketplace); }} style={styles.smallButton}><Text style={styles.smallText}>Resume form</Text></Pressable> : null}
+            {job.status === 'needs_review' ? <Pressable accessibilityRole="button" onPress={() => { void action('LISTING_RETRY', job.marketplace); }} style={styles.smallButton}><Text style={styles.smallText}>Try filling again</Text></Pressable> : null}
             {job.status === 'filled' ? <Pressable accessibilityRole="button" onPress={() => { void action('LISTING_SUBMIT', job.marketplace); }} style={styles.postButton}><Text style={styles.postText}>Post listing</Text></Pressable> : null}
             {job.status === 'submit_clicked' || job.status === 'needs_review' || job.status === 'confirmed' ? <Pressable accessibilityRole="button" onPress={() => { void markListed(job.marketplace); }} style={styles.smallButton}><Text style={styles.smallText}>{job.status === 'confirmed' ? 'Save as listed' : 'I see it live'}</Text></Pressable> : null}
           </View> : null}

@@ -133,6 +133,10 @@
       await chrome.tabs.update(job.tabId, { url: DESTINATIONS[job.marketplace].createUrl, active: true });
       return { ok: true };
     }
+    if (request.action === 'LISTING_RETRY') {
+      await chrome.tabs.sendMessage(job.tabId, { type: 'KEEPFLIP_LISTING_RETRY', runId: run.id, marketplace: job.marketplace });
+      return { ok: true };
+    }
     if (request.action === 'LISTING_SUBMIT') {
       if (job.status !== 'filled') return { ok: false, error: 'The draft must fill its required fields before posting.' };
       const tab = await chrome.tabs.get(job.tabId);

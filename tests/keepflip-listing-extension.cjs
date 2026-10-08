@@ -46,6 +46,18 @@ function listingPayload(marketplace) {
     size: 'L', color: 'Black', photoCount: 1, platformFields: {} };
 }
 
+test('the unpacked manifest points to bundled scripts and does not request cookie access', () => {
+  const extensionDirectory = path.join(__dirname, '..', 'extensions', 'keepflip-sale-watcher');
+  const manifest = JSON.parse(fs.readFileSync(path.join(extensionDirectory, 'manifest.json'), 'utf8'));
+  assert.equal(manifest.manifest_version, 3);
+  assert.equal(manifest.background.service_worker, 'background.js');
+  assert.equal(manifest.permissions.includes('cookies'), false);
+  for (const entry of manifest.content_scripts) {
+    for (const script of entry.js) assert.equal(fs.existsSync(path.join(extensionDirectory, script)), true, script);
+  }
+  assert.equal(fs.existsSync(path.join(extensionDirectory, 'listing-background.js')), true);
+});
+
 test('the extension binds a listing run to KeepFlip and its marketplace tabs', async () => {
   const app = harness();
   const request = { source: 'keepflip-webapp', protocol: 1, action: 'LISTING_START',

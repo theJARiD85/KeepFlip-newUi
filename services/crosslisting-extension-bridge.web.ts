@@ -21,7 +21,7 @@ export type ExtensionStatus = {
 
 type ExtensionReply = { ok: boolean; error?: string; run?: { id: string; jobs: ExtensionJob[] } | null };
 type ExtensionRequest = {
-  action: 'HELLO' | 'LISTING_START' | 'LISTING_FOCUS' | 'LISTING_RESUME' | 'LISTING_SUBMIT';
+  action: 'HELLO' | 'LISTING_START' | 'LISTING_FOCUS' | 'LISTING_RESUME' | 'LISTING_RETRY' | 'LISTING_SUBMIT';
   ownerId: string;
   itemId?: string;
   runId?: string;

@@ -98,8 +98,10 @@
   async function attachPhotos(photos) {
     if (!photos.length) return 0;
     if (typeof DataTransfer === 'undefined') return 0;
-    const input = document.querySelector('input[type="file"][accept*="image" i],input[type="file"]');
-    const dropZone = document.querySelector('.dz-clickable,#co-uploader,[data-testid="uploader-dropzone"],[class*="dropzone" i],[id*="dropzone" i]');
+    const fileInputs = Array.from(document.querySelectorAll('input[type="file"]'));
+    const input = fileInputs.find((candidate) => candidate.closest('main,form,[role="dialog"]') &&
+      /image/i.test(candidate.getAttribute('accept') || '')) || fileInputs.find((candidate) => /image/i.test(candidate.getAttribute('accept') || '')) || null;
+    const dropZone = document.querySelector('main .dz-clickable,main #co-uploader,main [data-testid="uploader-dropzone"],main [class*="dropzone" i],[role="dialog"] [class*="dropzone" i]');
     if (!input && !dropZone) return 0;
     const selected = photos.slice(0, input && !input.multiple && !dropZone ? 1 : 8);
     const files = await Promise.all(selected.map(async (photo) => {
@@ -152,7 +154,7 @@
         const input = findField(key);
         if (input && setField(input, value)) filledFields.push(key);
       }
-      if (assignment.photos.length && uploadedPhotoCount === 0) {
+      if (assignment.photos.length && uploadedPhotoCount === 0 && filledFields.includes('title')) {
         try { uploadedPhotoCount = await attachPhotos(assignment.photos); } catch { /* Report for review below. */ }
       }
       if (core.every((key) => filledFields.includes(key)) &&
@@ -214,6 +216,7 @@
 
   chrome.runtime.onMessage.addListener((message) => {
     if (message?.type === 'KEEPFLIP_LISTING_SUBMIT' && assignment?.runId === message.runId && marketplace === message.marketplace) submit();
+    if (message?.type === 'KEEPFLIP_LISTING_RETRY' && assignment?.runId === message.runId && marketplace === message.marketplace) void fill();
   });
 
   let requests = 0;
