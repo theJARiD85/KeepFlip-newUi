@@ -1,5 +1,4 @@
 import { APPWRITE, ExecutionMethod, functions, ID } from "../lib/appwrite";
-import { reportKeepFlipLimitReached } from "@/services/keepflip-limit-alert-service";
 
 export type ListingPlatform =
   | "facebookMarketplace"
@@ -117,7 +116,6 @@ type ListingGeneratorReadyResult = {
   };
   confidence: number;
   generatedAt: string;
-  generationQuota?: { limit: number | null; usage: number };
 };
 
 type ListingGeneratorPendingResult = {
@@ -154,19 +152,6 @@ function readExecutionPayload<T extends { ok: true }>(execution: { responseBody?
   catch { throw new Error("KeepFlip received an unreadable listing response."); }
   if (execution.responseStatusCode && execution.responseStatusCode >= 400) {
     const failure = payload as FailurePayload;
-    if (
-      failure.code === "QUOTA_LIMIT_REACHED" &&
-      failure.details?.quota === "listing_generation" &&
-      Number.isSafeInteger(failure.details.limit) &&
-      Number.isSafeInteger(failure.details.usage)
-    ) {
-      reportKeepFlipLimitReached({
-        category: "listing_generation",
-        limit: failure.details!.limit as number,
-        plan: 'free',
-        usage: failure.details!.usage as number,
-      });
-    }
     throw new Error(failure.error || fallbackMessage);
   }
   if (!payload.ok) throw new Error((payload as FailurePayload).error || fallbackMessage);
@@ -300,17 +285,6 @@ export async function runListingGenerator({
   });
   const result = readExecutionPayload<ListingGeneratorResponse>(execution, "KeepFlip could not generate this listing.");
   if (result.status === "needs_seller_input") return result;
-  if (
-    result.generationQuota?.limit != null &&
-    result.generationQuota.usage >= result.generationQuota.limit
-  ) {
-    reportKeepFlipLimitReached({
-      category: "listing_generation",
-      limit: result.generationQuota.limit,
-      plan: 'free',
-      usage: result.generationQuota.usage,
-    });
-  }
   const serverListing = result.listing;
   const serverCopy = asRecord(serverListing.platformCopy) as Partial<Record<ListingPlatform, string>>;
   const rawMarketplaces = asRecord(serverListing.marketplaceListings);
