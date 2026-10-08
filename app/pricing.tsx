@@ -21,7 +21,7 @@ import {
   KEEPFLIP_PUBLIC_PRICING_USD,
   KEEPFLIP_SITE_URL,
 } from '@/constants/keepflip-public-site';
-import { getKeepFlipThemeColors } from '@/constants/keepflip-theme';
+import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
 
 const pricingMetadata = {
   canonicalPath: '/pricing',
@@ -227,7 +227,7 @@ function BillingComparisonTable({
     { style: { border: `1px solid ${colors.divider}`, borderRadius: 14, maxWidth: '100%', overflowX: 'auto' } },
     createElement(
       'table',
-      { style: { borderCollapse: 'collapse', minWidth: '520px', width: '100%' } },
+      { style: { borderCollapse: 'collapse', fontFamily: theme.fonts.body, minWidth: '520px', width: '100%' } },
       createElement('caption', { style: { clip: 'rect(0 0 0 0)', clipPath: 'inset(50%)', height: 1, overflow: 'hidden', position: 'absolute', whiteSpace: 'nowrap', width: 1 } }, 'Compare monthly and annual billing for Serious Reseller'),
       createElement(
         'thead',
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
   planTop: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 13, justifyContent: 'space-between' },
   planTitle: { flex: 1, gap: 5, minWidth: 180 },
   planEyebrow: { fontSize: 9, fontWeight: '700', letterSpacing: 1.2 },
-  planName: { fontSize: 22, lineHeight: 29 },
+  planName: { fontFamily: theme.fonts.bold, fontSize: 22, lineHeight: 29 },
   billingToggle: { borderRadius: 14, borderWidth: 1, flexDirection: 'row', padding: 3 },
   billingOption: { alignItems: 'center', borderRadius: 11, justifyContent: 'center', minHeight: 38, paddingHorizontal: 14 },
   billingText: { fontSize: 13, fontWeight: '600' },

@@ -176,9 +176,7 @@ function WebRootContent() {
 export default function WebRootLayout() {
   return (
     <WebAppShellLayoutProvider>
-      <KeepFlipAppearanceProvider>
         <WebRootContent />
-      </KeepFlipAppearanceProvider>
     </WebAppShellLayoutProvider>
   );
 }

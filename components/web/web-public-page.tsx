@@ -1,6 +1,6 @@
 import Head from 'expo-router/head';
 import { Link, type Href } from 'expo-router';
-import { createElement, type CSSProperties, type ReactNode } from 'react';
+import { createElement, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import {
   Linking,
   Platform,
@@ -114,6 +114,12 @@ export function WebMarketingPage({
 }) {
   const colors = KEEPFLIP_PUBLIC_COLORS;
   const { width, webPageGutter } = useResponsiveLayout();
+  const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [metadata.canonicalPath]);
+
   const contentSizing =
     Platform.OS === 'web'
       ? {
@@ -130,6 +136,7 @@ export function WebMarketingPage({
       <WebPageHead {...metadata} />
       <KeepFlipBackground colorScheme="dark">
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={[styles.scrollContent, contentSizing]}
           showsVerticalScrollIndicator={false}
         >

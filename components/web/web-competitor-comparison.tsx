@@ -2,6 +2,7 @@ import { createElement, type CSSProperties } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
+import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import {
   WebActionLink,
   WebContentSection,
@@ -135,6 +136,7 @@ function WebComparisonTable({ comparison }: { comparison: CompetitorComparison }
   const tableStyle: CSSProperties = {
     borderCollapse: 'collapse',
     color: colors.text,
+    fontFamily: theme.fonts.body,
     minWidth: '680px',
     tableLayout: 'fixed',
     width: '100%',
