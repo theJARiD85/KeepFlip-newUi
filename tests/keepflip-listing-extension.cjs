@@ -6,13 +6,17 @@ const vm = require('node:vm');
 
 function harness() {
   const listeners = [];
+  const externalListeners = [];
   const opened = [];
   const sent = [];
   const records = new Map();
   const tabs = new Map();
   let nextTabId = 100;
   const chrome = {
-    runtime: { onMessage: { addListener: (listener) => listeners.push(listener) } },
+    runtime: {
+      onMessage: { addListener: (listener) => listeners.push(listener) },
+      onMessageExternal: { addListener: (listener) => externalListeners.push(listener) },
+    },
     storage: { session: {
       get: async (key) => ({ [key]: records.get(key) }),
       set: async (values) => Object.entries(values).forEach(([key, value]) => records.set(key, structuredClone(value))),
@@ -37,7 +41,13 @@ function harness() {
       assert.equal(accepted, true);
     });
   }
-  return { dispatch, opened, sent, records, tabs };
+  async function dispatchExternal(message, sender) {
+    return new Promise((resolve) => {
+      const accepted = externalListeners[0](message, sender, resolve);
+      assert.equal(accepted, true);
+    });
+  }
+  return { dispatch, dispatchExternal, opened, sent, records, tabs };
 }
 
 function listingPayload(marketplace) {
@@ -52,10 +62,27 @@ test('the unpacked manifest points to bundled scripts and does not request cooki
   assert.equal(manifest.manifest_version, 3);
   assert.equal(manifest.background.service_worker, 'background.js');
   assert.equal(manifest.permissions.includes('cookies'), false);
+  assert.deepEqual(manifest.externally_connectable.matches, [
+    'https://keep-flip.com/*', 'https://www.keep-flip.com/*',
+    'http://localhost:8081/*', 'http://127.0.0.1:8081/*',
+  ]);
   for (const entry of manifest.content_scripts) {
     for (const script of entry.js) assert.equal(fs.existsSync(path.join(extensionDirectory, script)), true, script);
   }
   assert.equal(fs.existsSync(path.join(extensionDirectory, 'listing-background.js')), true);
+});
+
+test('the external web bridge replies to KeepFlip origins and rejects other sites', async () => {
+  const app = harness();
+  const request = { source: 'keepflip-webapp', protocol: 1, action: 'HELLO', ownerId: 'owner-1', itemId: 'item-1' };
+  const untrusted = await app.dispatchExternal({ type: 'KEEPFLIP_LISTING_EXTERNAL', request },
+    { url: 'https://example.com/listing', tab: { id: 7 } });
+  assert.equal(untrusted.ok, false);
+
+  const trusted = await app.dispatchExternal({ type: 'KEEPFLIP_LISTING_EXTERNAL', request },
+    { url: 'https://keep-flip.com/crosslisting', tab: { id: 7 } });
+  assert.equal(trusted.ok, true);
+  assert.equal(trusted.run, null);
 });
 
 test('the extension binds a listing run to KeepFlip and its marketplace tabs', async () => {

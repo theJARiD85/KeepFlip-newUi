@@ -195,4 +195,17 @@
     })();
     return true;
   });
+
+  chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => {
+    if (message?.type !== 'KEEPFLIP_LISTING_EXTERNAL') return;
+    void (async () => {
+      try {
+        const reply = await handlePage(message.request, sender);
+        sendResponse(reply || { ok: true });
+      } catch {
+        sendResponse({ ok: false, error: 'KeepFlip could not complete the extension action.' });
+      }
+    })();
+    return true;
+  });
 })();

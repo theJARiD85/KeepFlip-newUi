@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import type { CrosslistingRunProps } from '@/components/crosslist/crosslisting-run.types';
@@ -62,7 +62,7 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
     return () => { mounted = false; };
   }, [item.id, userId]);
 
-  useEffect(() => subscribeCrosslistingExtensionStatus((status) => {
+  const applyExtensionStatus = useCallback((status: ExtensionStatus) => {
     if (status.itemId !== item.id || status.runId !== runIdRef.current || !MARKETPLACES.includes(status.marketplace)) return;
     setJobs((current) => current.some((job) => job.marketplace === status.marketplace)
       ? current.map((job) => job.marketplace === status.marketplace
@@ -82,7 +82,38 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
         setError(caught instanceof Error ? caught.message : 'KeepFlip could not record the listing.');
       });
     }
-  }), [item.id, onDraftPrepared, onListingConfirmed, userId]);
+  }, [item.id, onDraftPrepared, onListingConfirmed, userId]);
+
+  useEffect(() => subscribeCrosslistingExtensionStatus(applyExtensionStatus), [applyExtensionStatus]);
+
+  useEffect(() => {
+    if (!jobs.length) return;
+    let mounted = true;
+    const refreshRun = async () => {
+      const currentRunId = runIdRef.current;
+      if (!currentRunId) return;
+      try {
+        const reply = await requestCrosslistingExtension({ action: 'HELLO', ownerId: userId, itemId: item.id });
+        if (!mounted || !reply.run || reply.run.id !== currentRunId) return;
+        setJobs(reply.run.jobs);
+        for (const job of reply.run.jobs) {
+          if (!job.details) continue;
+          applyExtensionStatus({
+            ...job.details,
+            runId: reply.run.id,
+            itemId: item.id,
+            marketplace: job.marketplace,
+            status: job.status,
+          });
+        }
+      } catch { /* Live status messages or the next poll will refresh the page. */ }
+    };
+    const timer = window.setInterval(() => void refreshRun(), 2500);
+    return () => {
+      mounted = false;
+      window.clearInterval(timer);
+    };
+  }, [applyExtensionStatus, item.id, jobs.length, userId]);
 
   function toggle(marketplace: CrosslistingMarketplace) {
     if (jobs.length || confirmed[marketplace]) return;

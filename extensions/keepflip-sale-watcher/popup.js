@@ -3,7 +3,6 @@ const QUEUE_KEY = 'saleQueue';
 const COMPLETED_KEY = 'completedSaleIds';
 const IGNORED_KEY = 'ignoredSaleIds';
 const SETTINGS_KEY = 'keepflipAppwriteSettings';
-const SESSION_KEY = 'keepflipAppwriteSession';
 
 const $ = (id) => document.getElementById(id);
 const loginPanel = $('loginPanel');
@@ -25,34 +24,26 @@ async function loadSettings() {
   };
 }
 
-async function sessionSecret() {
-  const stored = await chrome.storage.session.get(SESSION_KEY);
-  return stored[SESSION_KEY]?.secret || null;
-}
-
-async function appwriteRequest(path, { method = 'GET', body, session } = {}) {
+async function appwriteRequest(path, { method = 'GET', body } = {}) {
   const settings = await loadSettings();
   const headers = { 'X-Appwrite-Project': settings.appwriteProjectId };
   if (body !== undefined) headers['Content-Type'] = 'application/json';
-  if (session) headers['X-Appwrite-Session'] = session;
   const response = await fetch(settings.appwriteEndpoint.replace(/\/+$/, '') + path, {
     method,
     headers,
-    credentials: 'omit',
+    credentials: 'include',
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     const message = typeof payload.message === 'string' ? payload.message : 'Appwrite request failed.';
-    throw new Error(message);
+    throw Object.assign(new Error(message), { status: response.status });
   }
   return payload;
 }
 
 async function functionRequest(functionId, path, body) {
   if (!functionId) throw new Error('Enter the required Appwrite Function ID in settings.');
-  const session = await sessionSecret();
-  if (!session) throw new Error('Sign in to KeepFlip again.');
   const settings = await loadSettings();
   const response = await fetch(
     settings.appwriteEndpoint.replace(/\/+$/, '') + '/functions/' + encodeURIComponent(functionId) + '/executions',
@@ -60,10 +51,9 @@ async function functionRequest(functionId, path, body) {
       method: 'POST',
       headers: {
         'X-Appwrite-Project': settings.appwriteProjectId,
-        'X-Appwrite-Session': session,
         'Content-Type': 'application/json',
       },
-      credentials: 'omit',
+      credentials: 'include',
       body: JSON.stringify({
         body: JSON.stringify(body),
         path,
@@ -318,16 +308,27 @@ async function signIn() {
   $('signIn').disabled = true;
   setStatus('Connecting to KeepFlip…');
   try {
-    const session = await appwriteRequest('/account/sessions/email', {
+    await appwriteRequest('/account/sessions/email', {
       method: 'POST',
       body: { email, password },
     });
-    if (!session.secret) throw new Error('Appwrite did not return a session.');
-    await chrome.storage.session.set({ [SESSION_KEY]: { secret: session.secret, userId: session.userId || null } });
+    let account;
+    try {
+      account = await appwriteRequest('/account');
+    } catch (error) {
+      if (error.status === 401) {
+        throw new Error('Appwrite accepted the login request, but the extension could not verify a signed-in session. Check the extension platform entry and Chrome cookie settings for Appwrite.');
+      }
+      throw error;
+    }
     $('password').value = '';
-    await refreshConnectionState();
-    setStatus('Connected to KeepFlip.', 'success');
+    loginPanel.hidden = true;
+    queuePanel.hidden = false;
+    await renderQueue();
+    setStatus('Connected as ' + (account.email || 'KeepFlip user') + '.', 'success');
   } catch (error) {
+    loginPanel.hidden = false;
+    queuePanel.hidden = true;
     setStatus(error.message || 'Could not connect to KeepFlip.', 'warning');
   } finally {
     $('signIn').disabled = false;
@@ -335,33 +336,34 @@ async function signIn() {
 }
 
 async function signOut() {
-  const session = await sessionSecret();
-  if (session) {
-    try { await appwriteRequest('/account/sessions/current', { method: 'DELETE', session }); }
-    catch { /* Local credentials are still cleared. */ }
+  try {
+    await appwriteRequest('/account/sessions/current', { method: 'DELETE' });
+  } catch (error) {
+    if (error.status !== 401) {
+      setStatus(error.message || 'Could not sign out of KeepFlip.', 'warning');
+      return;
+    }
   }
-  await chrome.storage.session.remove(SESSION_KEY);
-  await refreshConnectionState();
+  loginPanel.hidden = false;
+  queuePanel.hidden = true;
   setStatus('Signed out.');
 }
 
 async function refreshConnectionState() {
-  const session = await sessionSecret();
-  loginPanel.hidden = Boolean(session);
-  queuePanel.hidden = !session;
-  if (!session) {
-    setStatus('Connect your KeepFlip account to review sale matches.');
-    return;
-  }
   try {
-    const account = await appwriteRequest('/account', { session });
+    const account = await appwriteRequest('/account');
+    loginPanel.hidden = true;
+    queuePanel.hidden = false;
     setStatus('Connected as ' + (account.email || 'KeepFlip user') + '.');
     await renderQueue();
-  } catch {
-    await chrome.storage.session.remove(SESSION_KEY);
+  } catch (error) {
     loginPanel.hidden = false;
     queuePanel.hidden = true;
-    setStatus('Your KeepFlip session expired. Sign in again.', 'warning');
+    if (error.status === 401 || error.status === 403) {
+      setStatus('Connect your KeepFlip account to review sale matches.');
+      return;
+    }
+    setStatus(error.message || 'Could not verify your KeepFlip session.', 'warning');
   }
 }
 

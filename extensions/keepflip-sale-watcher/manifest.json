@@ -15,6 +15,14 @@
   "background": {
     "service_worker": "background.js"
   },
+  "externally_connectable": {
+    "matches": [
+      "https://keep-flip.com/*",
+      "https://www.keep-flip.com/*",
+      "http://localhost:8081/*",
+      "http://127.0.0.1:8081/*"
+    ]
+  },
   "action": {
     "default_title": "KeepFlip Assistant",
     "default_popup": "popup.html"
