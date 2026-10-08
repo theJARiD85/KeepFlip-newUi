@@ -4,8 +4,9 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import type { CrosslistingRunProps } from '@/components/crosslist/crosslisting-run.types';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { dispatchToAutomationEngine } from '@/services/crosslisting-automation-dispatch.web';
+import { CROSSLISTING_RUN_MARKETPLACES } from '@/services/crosslisting-automation-plan';
 import {
-  createGeneratedCrosslistingPayload,
   CROSSLISTING_DESTINATIONS,
   type CrosslistingMarketplace,
 } from '@/services/crosslisting-service';
@@ -15,11 +16,10 @@ import {
   type ExtensionJob,
   type ExtensionStatus,
 } from '@/services/crosslisting-extension-bridge.web';
-import { loadCrosslistingExtensionPhotos } from '@/services/crosslisting-extension-photos.web';
 import { confirmMarketplaceListing, parseSavedListingDraft } from '@/services/listing-draft-service';
 import { getMarketplaceSelections } from '@/services/marketplace-selections-service';
 
-const MARKETPLACES: CrosslistingMarketplace[] = ['depop', 'poshmark', 'mercari', 'facebookMarketplace', 'offerUp'];
+const MARKETPLACES = CROSSLISTING_RUN_MARKETPLACES;
 
 const STATUS_LABELS: Record<string, string> = {
   opening: 'OPENING', opened: 'OPEN', login_required: 'SIGN IN', filled: 'DRAFT READY',
@@ -38,7 +38,6 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
   const runIdRef = useRef<string | null>(null);
   const preparedRef = useRef<Set<CrosslistingMarketplace>>(new Set());
   const confirmedRef = useRef<Set<CrosslistingMarketplace>>(new Set());
-  const photoFileIds = item.itemPhotos.length ? item.itemPhotos : item.coverPhotoId ? [item.coverPhotoId] : [];
   const available = selected.filter((marketplace) => !confirmed[marketplace] && !recorded.has(marketplace));
 
   useEffect(() => {
@@ -101,18 +100,13 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
       if (onBeforeStart && !await onBeforeStart()) {
         throw new Error('Save the listing draft before starting this run.');
       }
-      const { photos, unavailablePhotoCount } = await loadCrosslistingExtensionPhotos(photoFileIds);
       const runId = globalThis.crypto?.randomUUID?.() ?? `run-${Date.now()}-${Math.random().toString(36).slice(2)}`;
       runIdRef.current = runId;
-      setNotice('Opening your marketplace tabs…');
-      const reply = await requestCrosslistingExtension({
-        action: 'LISTING_START', ownerId: userId, itemId: item.id, runId,
-        jobs: MARKETPLACES.filter((marketplace) => available.includes(marketplace)).map((marketplace) => ({
-          marketplace, payload: createGeneratedCrosslistingPayload({ marketplace, listing, item }),
-        })),
-        photos, unavailablePhotoCount,
+      const dispatchedJobs = await dispatchToAutomationEngine({
+        ownerId: userId, item, listing, marketplaces: available, runId,
+        onPhotosReady: () => setNotice('Opening your marketplace tabs…'),
       });
-      setJobs((current) => (reply.run?.jobs ?? []).map((job) => {
+      setJobs((current) => dispatchedJobs.map((job) => {
         const reported = current.find((candidate) => candidate.marketplace === job.marketplace);
         return reported ? { ...job, status: reported.status, details: reported.details } : job;
       }));

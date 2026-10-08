@@ -1,25 +1,6 @@
 #!/usr/bin/env node
 'use strict';
 /* global __dirname */
-
-/**
- * KeepFlip's targeted responsive-value codemod.
- *
- * It changes only literal React Native style values under these exact rules:
- *
- *   fontSize: N -> fontSize: responsiveFont(N)
- *   height: N   -> height: responsiveHeight(N)
- *   width: N    -> width: responsiveWidth(N)
- *
- * Responsive helpers are applied only to inline JSX styles. Module-level
- * StyleSheet.create declarations stay static because they cannot consume
- * component-local values returned by useResponsiveLayout().
- *
- * The runner intentionally does not touch padding, margin, gap, radius,
- * opacity, flex, zIndex, icon props, animation values, percentages, or data.
- * Its default mode is a dry run; use --write to apply a reviewed plan.
- */
-
 const fs = require('node:fs');
 const path = require('node:path');
 const ts = require('typescript');
@@ -41,7 +22,10 @@ const SKIP_DIRECTORIES = new Set([
   'node_modules',
 ]);
 const SKIP_FILE_PATTERN = /(?:\.backup(?:[-.]|$)|\.bak(?:[-.]|$)|\.orig(?:[-.]|$))/i;
-const RESPONSIVE_MODULE = '@/lib/responsiveFont';
+
+// UPDATED: Points to your unified hook definition module file
+const RESPONSIVE_MODULE = '@/hooks/useResponsiveLayout'; 
+
 const PROPERTY_HELPERS = {
   fontSize: 'responsiveFont',
   height: 'responsiveHeight',
@@ -73,7 +57,7 @@ function parseOptions(argv) {
       options.directories = directories;
     } else if (argument === '--help' || argument === '-h') {
       console.log([
-        'KeepFlip targeted responsive-value codemod',
+        'KeepFlip targeted responsive-value codemod (Hook Edition)',
         '',
         '  node scripts/make-ui-values-responsive.cjs',
         '  node scripts/make-ui-values-responsive.cjs --write',
@@ -234,12 +218,13 @@ function collectImportBindings(sourceFile) {
   for (const statement of sourceFile.statements) {
     if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) continue;
     if (statement.moduleSpecifier.text !== RESPONSIVE_MODULE || !statement.importClause) continue;
-    if (statement.importClause.name) bindings.responsiveFont = statement.importClause.name.text;
+    
+    // Look up named components inside useResponsiveLayout signatures
     const named = statement.importClause.namedBindings;
     if (!named || !ts.isNamedImports(named)) continue;
     for (const specifier of named.elements) {
       const exported = specifier.propertyName?.text || specifier.name.text;
-      if (['responsiveFont', 'responsiveHeight', 'responsiveWidth'].includes(exported)) {
+      if (['useResponsiveLayout', 'useResponsiveStyles'].includes(exported)) {
         bindings[exported] = specifier.name.text;
       }
     }
@@ -283,43 +268,38 @@ function helperPlan(sourceFile) {
   const localNames = {};
   const importsNeeded = new Set();
 
-  for (const helper of new Set(Object.values(PROPERTY_HELPERS))) {
-    if (imported[helper]) {
-      localNames[helper] = imported[helper];
-    } else if (topLevel.has(helper)) {
-      // A top-level function or existing import with this exact helper name is
-      // already available. Reuse it rather than introduce a conflicting import.
-      localNames[helper] = helper;
+  // REFACTOR: Standardize lookups directly onto your style sheet generation wrappers
+  const targetHooks = ['useResponsiveLayout', 'useResponsiveStyles'];
+  for (const hook of targetHooks) {
+    if (imported[hook]) {
+      localNames[hook] = imported[hook];
+    } else if (topLevel.has(hook)) {
+      localNames[hook] = hook;
     } else {
-      localNames[helper] = helper;
-      importsNeeded.add(helper);
+      localNames[hook] = hook;
+      importsNeeded.add(hook);
     }
   }
 
   return { importsNeeded, localNames };
 }
 
-function importEdit(sourceFile, source, helpers) {
-  const needsDefault = helpers.has('responsiveFont');
-  const named = ['responsiveHeight', 'responsiveWidth'].filter((helper) => helpers.has(helper));
-  if (!needsDefault && named.length === 0) return null;
+// REFACTOR: Generate a named object structure destructured from useResponsiveStyles loops
+function importEdit(sourceFile, source, requiredHooks) {
+  if (requiredHooks.size === 0) return null;
 
-  const declaration = needsDefault
-    ? `import responsiveFont${named.length > 0 ? `, { ${named.join(', ')} }` : ''} from '${RESPONSIVE_MODULE}';`
-    : `import { ${named.join(', ')} } from '${RESPONSIVE_MODULE}';`;
+  const namedImports = Array.from(requiredHooks).join(', ');
+  const declaration = `import { ${namedImports} } from '${RESPONSIVE_MODULE}';`;
   const imports = sourceFile.statements.filter((statement) => ts.isImportDeclaration(statement));
   const eol = source.includes('\r\n') ? '\r\n' : '\n';
+  
   if (imports.length === 0) return { end: 0, replacement: `${declaration}${eol}`, start: 0 };
 
-  // Keep generated helper imports in the leading import section. A dirty
-  // file can contain a top-level statement before a later import; appending
-  // after the last import would leave the new import below executable code.
   const firstNonImport = sourceFile.statements.find((statement) => !ts.isImportDeclaration(statement));
   if (firstNonImport) {
     const start = firstNonImport.getStart(sourceFile);
     return { end: start, replacement: `${declaration}${eol}`, start };
   }
-
   const lastImport = imports[imports.length - 1];
   return { end: lastImport.end, replacement: `${eol}${declaration}`, start: lastImport.end };
 }
@@ -331,7 +311,6 @@ function applyEdits(source, edits) {
       throw new Error(`Overlapping edits at offsets ${ordered[index - 1].start} and ${ordered[index].start}.`);
     }
   }
-
   let nextSource = source;
   for (const edit of [...ordered].sort((left, right) => right.start - left.start)) {
     nextSource = `${nextSource.slice(0, edit.start)}${edit.replacement}${nextSource.slice(edit.end)}`;
@@ -354,10 +333,11 @@ function buildPlan(filePath, root) {
     const key = `${start}:${end}`;
     if (positions.has(key)) return;
     positions.add(key);
-    const helper = PROPERTY_HELPERS[property];
+
+    const helperName = PROPERTY_HELPERS[property];
     edits.push({
       end,
-      replacement: `${helpers.localNames[helper]}(${source.slice(start, end)})`,
+      replacement: `layout.${helperName}(${source.slice(start, end)})`,
       start,
     });
     counts[property] += 1;
@@ -375,15 +355,18 @@ function buildPlan(filePath, root) {
 
   for (const styleRoot of findStyleRoots(sourceFile)) visitStyleNode(styleRoot);
 
-  const requiredHelpers = new Set();
-  for (const property of Object.keys(counts)) {
-    if (counts[property] > 0 && helpers.importsNeeded.has(PROPERTY_HELPERS[property])) {
-      requiredHelpers.add(PROPERTY_HELPERS[property]);
+  const requiredHooks = new Set();
+  const valuesChanged = counts.fontSize > 0 || counts.height > 0 || counts.width > 0;
+  if (valuesChanged) {
+    // When elements change inside components, default to injecting useResponsiveStyles
+    if (helpers.importsNeeded.has('useResponsiveStyles')) {
+      requiredHooks.add('useResponsiveStyles');
     }
   }
+
   const nextEdits = [...edits];
   if (nextEdits.length > 0) {
-    const addImport = importEdit(sourceFile, source, requiredHelpers);
+    const addImport = importEdit(sourceFile, source, requiredHooks);
     if (addImport) nextEdits.push(addImport);
   }
 
@@ -418,28 +401,24 @@ function main() {
     totals.width += plan.counts.width;
     totals.values += plan.values;
   }
-
   const report = {
     applied: options.write,
     changedFiles: changed.map((plan) => ({ file: plan.relativePath, values: plan.values, ...plan.counts })),
     scannedFiles: files.length,
     totals,
   };
-
-  // Every transformed file has parsed before this loop begins.
   if (options.write) {
     for (const plan of changed) fs.writeFileSync(plan.filePath, plan.nextSource, 'utf8');
   }
-
   if (options.json) {
     console.log(JSON.stringify(report, null, 2));
   } else {
     console.log(`Targeted responsive-value codemod ${options.write ? 'applied' : 'dry run'}`);
     console.log(`Files scanned: ${report.scannedFiles}`);
     console.log(`Files with changes: ${report.totals.files}`);
-    console.log(`fontSize → responsiveFont: ${report.totals.fontSize}`);
-    console.log(`height → responsiveHeight: ${report.totals.height}`);
-    console.log(`width → responsiveWidth: ${report.totals.width}`);
+    console.log(`fontSize → layout.responsiveFont: ${report.totals.fontSize}`);
+    console.log(`height → layout.responsiveHeight: ${report.totals.height}`);
+    console.log(`width → layout.responsiveWidth: ${report.totals.width}`);
     if (!options.write && changed.length > 0) console.log('No source files were changed. Re-run with --write to apply this exact mapping.');
   }
 }

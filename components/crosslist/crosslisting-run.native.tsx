@@ -6,25 +6,21 @@ import { MarketplaceAuthModal } from '@/components/connections/marketplace-auth-
 import type { CrosslistingRunProps } from '@/components/crosslist/crosslisting-run.types';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { dispatchToAutomationEngine } from '@/services/crosslisting-automation-dispatch.native';
+import { CROSSLISTING_RUN_MARKETPLACES } from '@/services/crosslisting-automation-plan';
 import {
   CROSSLISTING_DESTINATIONS,
-  createGeneratedCrosslistingPayload,
   type CrosslistingMarketplace,
+  type CrosslistingPayload,
 } from '@/services/crosslisting-service';
 import { confirmMarketplaceListing, parseSavedListingDraft } from '@/services/listing-draft-service';
 import { getMarketplaceSelections } from '@/services/marketplace-selections-service';
 
-const MARKETPLACES: CrosslistingMarketplace[] = [
-  'depop',
-  'poshmark',
-  'mercari',
-  'facebookMarketplace',
-  'offerUp',
-];
+const MARKETPLACES = CROSSLISTING_RUN_MARKETPLACES;
 
 type RunStatus = 'prepared' | 'submit_tapped' | 'confirmed';
 
-export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onListingConfirmed, initialSelections }: CrosslistingRunProps) {
+export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onListingConfirmed, onBeforeStart, initialSelections }: CrosslistingRunProps) {
   const confirmedMarketplaces = useMemo(() => parseSavedListingDraft(item.listingJson)?.confirmedMarketplaces ?? {}, [item.listingJson]);
   const [selected, setSelected] = useState<CrosslistingMarketplace[]>(() => MARKETPLACES.filter((marketplace) => initialSelections?.includes(marketplace) && !confirmedMarketplaces[marketplace]));
   const selectedAvailable = selected.filter((marketplace) => !confirmedMarketplaces[marketplace]);
@@ -34,6 +30,9 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
   const [statuses, setStatuses] = useState<Partial<Record<CrosslistingMarketplace, RunStatus>>>({});
   const [finished, setFinished] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
+  const [starting, setStarting] = useState(false);
+  const [runPayloads, setRunPayloads] = useState<Partial<Record<CrosslistingMarketplace, CrosslistingPayload>>>({});
+  const [runPhotoFileIds, setRunPhotoFileIds] = useState<string[]>([]);
   const preparedRef = useRef<Set<CrosslistingMarketplace>>(new Set());
   const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => {
@@ -47,11 +46,7 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
     }).catch(() => undefined);
     return () => { active = false; };
   }, [confirmedMarketplaces, initialSelections, userId]);
-  const photoFileIds = item.itemPhotos.length ? item.itemPhotos : item.coverPhotoId ? [item.coverPhotoId] : [];
-  const payload = useMemo(
-    () => active ? createGeneratedCrosslistingPayload({ marketplace: active, listing, item }) : null,
-    [active, item, listing],
-  );
+  const payload = active ? runPayloads[active] ?? null : null;
   const next = runTargets[runIndex + 1] ?? null;
 
   function toggle(marketplace: CrosslistingMarketplace) {
@@ -62,17 +57,31 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
     void Haptics.selectionAsync().catch(() => undefined);
   }
 
-  function start() {
-    if (!selectedAvailable.length) return;
-    const targets = MARKETPLACES.filter((marketplace) => selected.includes(marketplace) && !confirmedMarketplaces[marketplace]);
-    if (!targets.length) return;
-    setRunTargets(targets);
-    setRunIndex(0);
-    setStatuses({});
-    preparedRef.current = new Set();
-    setFinished(false);
-    setActive(targets[0]);
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+  async function start() {
+    if (!selectedAvailable.length || starting) return;
+    setStarting(true);
+    setRunError(null);
+    try {
+      if (onBeforeStart && !await onBeforeStart()) {
+        throw new Error('Save the listing draft before starting this run.');
+      }
+      dispatchToAutomationEngine({ item, listing, marketplaces: selectedAvailable }, (plan) => {
+        const targets = plan.jobs.map((job) => job.marketplace);
+        setRunPayloads(Object.fromEntries(plan.jobs.map((job) => [job.marketplace, job.payload])));
+        setRunPhotoFileIds(plan.photoFileIds);
+        setRunTargets(targets);
+        setRunIndex(0);
+        setStatuses({});
+        preparedRef.current = new Set();
+        setFinished(false);
+        setActive(targets[0]);
+      });
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+    } catch (caught) {
+      setRunError(caught instanceof Error ? caught.message : 'Could not start the listing run.');
+    } finally {
+      setStarting(false);
+    }
   }
 
   function continueRun() {
@@ -162,8 +171,8 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
           </Pressable>
         </View>
       ) : (
-        <Pressable accessibilityRole="button" accessibilityState={{ disabled: selectedAvailable.length === 0 }} disabled={selectedAvailable.length === 0} onPress={start} style={[styles.startButton, selectedAvailable.length === 0 && styles.disabled]}>
-          <Text style={styles.startText}>Start crosslisting →</Text>
+        <Pressable accessibilityRole="button" accessibilityState={{ disabled: selectedAvailable.length === 0 || starting }} disabled={selectedAvailable.length === 0 || starting} onPress={() => { void start(); }} style={[styles.startButton, (selectedAvailable.length === 0 || starting) && styles.disabled]}>
+          <Text style={styles.startText}>{starting ? 'Preparing your run…' : 'Start crosslisting →'}</Text>
         </Pressable>
       )}
       {active && payload ? (
@@ -176,7 +185,7 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
           onSubmitPressed={() => setStatuses((current) => ({ ...current, [active]: 'submit_tapped' }))}
           onConfirmed={(externalUrl) => { void confirm(active, externalUrl); }}
           payload={payload}
-          photoFileIds={photoFileIds}
+          photoFileIds={runPhotoFileIds}
           platform={active}
           progressLabel={`${runIndex + 1} of ${runTargets.length}`}
           userId={userId}
