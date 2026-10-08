@@ -9,7 +9,7 @@ Create these optional columns in the existing Appwrite TablesDB tables, then wai
 - Required: No
 - Values (exact spelling): `ebay`, `poshmark`, `mercari`, `depop`, `facebookMarketplace`, `offerUp`
 
-Flip saves this choice during the onboarding questionnaire. Sellers can edit it in Listing. The choices preselect the native in-app marketplace listing run; eBay remains available through its connected API flow.
+Flip saves this choice during the onboarding questionnaire. Sellers can edit it in Listing. The choices preselect the desktop extension or native in-app marketplace listing run; eBay remains available through its connected API flow.
 
 ## `items.listingJson`
 
@@ -21,4 +21,4 @@ KeepFlip saves the generated listing, seller edits, readiness notes, and seller-
 
 These are owner-owned rows. Keep the existing row permissions and `ownerId` boundary on `items`; no marketplace credentials belong in either column.
 
-For an Appwrite Sites web build, also set `EXPO_PUBLIC_ENABLE_CROSSLISTING_LAB=true` in the Site's build environment. The native EAS development, preview, and production profiles already enable the Listing route and assisted autofill. Browser marketplaces run in the native app; web offers eBay publishing without a clipboard handoff.
+The Listing route is included in web builds by default. Native builds continue to use `EXPO_PUBLIC_ENABLE_CROSSLISTING_LAB` and the assisted WebView autofill gate from their EAS profiles. The desktop web flow uses the KeepFlip Assistant Chrome extension. Marketplace posting remains contingent on the seller's signed-in marketplace tab and the form accepting the prepared fields and photos.

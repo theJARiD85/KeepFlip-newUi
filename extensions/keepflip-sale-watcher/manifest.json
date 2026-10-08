@@ -1,15 +1,22 @@
 {
   "manifest_version": 3,
-  "name": "KeepFlip Sale Watcher",
-  "version": "0.1.0",
-  "description": "Detect marketplace sale confirmations in an open Gmail message and review an exact KeepFlip inventory match.",
+  "name": "KeepFlip Assistant",
+  "version": "0.2.0",
+  "description": "Prepare marketplace listings from KeepFlip and review sales detected in an open Gmail message.",
   "permissions": ["storage"],
-  "host_permissions": ["https://sfo.cloud.appwrite.io/*"],
+  "host_permissions": [
+    "https://sfo.cloud.appwrite.io/*",
+    "https://*.depop.com/*",
+    "https://*.poshmark.com/*",
+    "https://*.mercari.com/*",
+    "https://*.facebook.com/*",
+    "https://*.offerup.com/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "KeepFlip Sale Watcher",
+    "default_title": "KeepFlip Assistant",
     "default_popup": "popup.html"
   },
   "content_scripts": [
@@ -17,6 +24,29 @@
       "matches": ["https://mail.google.com/*"],
       "js": ["parser.js", "gmail-content.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://keep-flip.com/*",
+        "https://www.keep-flip.com/*",
+        "http://localhost:8081/*",
+        "http://127.0.0.1:8081/*"
+      ],
+      "js": ["content_scripts/webapp_bridge.js"],
+      "run_at": "document_start",
+      "all_frames": false
+    },
+    {
+      "matches": [
+        "https://*.depop.com/*",
+        "https://*.poshmark.com/*",
+        "https://*.mercari.com/*",
+        "https://*.facebook.com/*",
+        "https://*.offerup.com/*"
+      ],
+      "js": ["content_scripts/automation_runner.js"],
+      "run_at": "document_idle",
+      "all_frames": false
     }
   ]
 }

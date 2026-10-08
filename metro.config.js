@@ -58,16 +58,8 @@ const nonAppDirectories = [
   /node_modules[\\/]expo-dev-launcher[\\/].*[\\/](?:bin|build)(?:[\\/]|$)/,
 ];
 
-// Expo Router discovers every file below app/. Exclude the optional lab routes
-// and implementation modules from the Metro file map unless an explicit lab
-// build is requested. The app layouts and navigation use the same flag.
-if (process.env.EXPO_PUBLIC_ENABLE_CROSSLISTING_LAB !== 'true') {
-  nonAppDirectories.push(
-    projectDirectory('app/(app)/crosslisting'),
-    projectDirectory('components/crosslisting-lab'),
-    projectDirectory('services/crosslisting-lab-api.ts'),
-  );
-}
+// Expo Router must discover the Listing route for desktop web exports.
+// Native navigation and route access remain controlled by the feature gate.
 
 const existingBlockList = config.resolver.blockList
   ? Array.isArray(config.resolver.blockList)

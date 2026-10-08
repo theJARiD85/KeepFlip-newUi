@@ -8,5 +8,6 @@ export type CrosslistingRunProps = {
   userId: string;
   onDraftPrepared?: (marketplace: CrosslistingMarketplace) => void;
   onListingConfirmed?: (marketplace: CrosslistingMarketplace) => void;
+  onBeforeStart?: () => Promise<boolean>;
   initialSelections?: ListingPlatform[];
 };

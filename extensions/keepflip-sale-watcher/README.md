@@ -1,4 +1,17 @@
-# KeepFlip Sale Watcher (Chrome MV3)
+# KeepFlip Assistant (Chrome MV3)
+
+The same extension now handles desktop listing runs from KeepFlip's **Listing** screen. KeepFlip sends only the generated listing fields and temporary photo previews. The extension opens the selected marketplace forms in the seller's own browser, fills supported fields, attempts the photo upload, and reports progress back to Listing. The seller can choose **Post listing** after checking the marketplace preview. The extension uses the browser's existing signed-in marketplace tabs; it does not read or export marketplace cookies.
+
+## Desktop listing run
+
+1. In Chrome, open `chrome://extensions`, turn on **Developer mode**, and **Load unpacked** from `extensions/keepflip-sale-watcher` in this checkout. If already loaded, choose **Reload**.
+2. Open KeepFlip at `https://keep-flip.com` (or the local Expo web development server) and sign in. In **Listing → Not listed**, open an item with saved photos and generate its listing.
+3. Select marketplaces and choose **Start listing**. KeepFlip opens the marketplace tabs. Sign in on a marketplace if asked, return to KeepFlip, and choose **Resume form** for that marketplace.
+4. Check the fields and photo thumbnails in each marketplace tab. Choose **Post listing** in KeepFlip when the draft is ready. KeepFlip records a live listing when the marketplace reaches a recognized listing URL; otherwise use **I see it live** after verifying the post yourself.
+
+`items.listingJson` must be a large string column and `user_profiles.marketplaceSelections` must be an enum array with the marketplace IDs already used by KeepFlip. The extension keeps one active run in `chrome.storage.session`; starting another run replaces that temporary tab handoff. Refreshing the KeepFlip tab can restore a run in the same browser tab. Marketplace layouts and upload controls change, so a draft can stop at **Check form**. The extension reports that state instead of claiming a listing was published. Synthetic file drops are not guaranteed to be accepted by every marketplace. No passwords, session cookies, or item photos are written to extension logs or durable storage.
+
+The manifest grants site access only to KeepFlip's known web origin, localhost for development, and the five marketplace domains. The existing Sale Watcher popup and Gmail flow remain available. The extension has no `cookies` or `scripting` permission because the declared content scripts and the seller's browser session provide what this flow needs.
 
 This local extension watches only an expanded message in an open Gmail tab. It recognizes sale wording from Depop, Poshmark, and Mercari, then extracts a visible listing title, an explicitly labeled SKU, and a labeled sale amount. It stores those extracted fields in `chrome.storage.local`; it never stores or sends the email body.
 

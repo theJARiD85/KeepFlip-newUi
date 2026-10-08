@@ -1443,20 +1443,20 @@ export function ListingCreationGuideScreen({ itemIdOverride, onBack, selectedMar
                     </View>
                     <View style={styles.crosslistBadge}>
                       <Text style={[styles.crosslistBadgeText, { fontSize: responsiveFont(9) }]}>
-                        {Platform.OS === 'web' ? 1 : CROSSLIST_PLATFORMS.length} CHANNELS
+                        {CROSSLIST_PLATFORMS.length} CHANNELS
                       </Text>
                     </View>
                   </View>
                   <Text style={[styles.crosslistDescription, { fontSize: responsiveFont(12) }]}>
-                    KeepFlip keeps item facts consistent across channels. eBay can publish the reviewed draft.{Platform.OS === 'web'
-                      ? ' Open KeepFlip on your phone to run the in-app listing flow for other marketplaces.'
-                      : ' KeepFlip opens each selected marketplace, fills its form, and helps you finish the post.'}
+                    KeepFlip keeps item facts consistent across channels. eBay can publish the reviewed draft. KeepFlip opens each selected marketplace, fills its form, and helps you finish the post.
                   </Text>
-                  {Platform.OS !== "web" && CROSSLISTING_AUTOFILL_ENABLED && item && userId ? (
+                  {(Platform.OS === "web" || CROSSLISTING_AUTOFILL_ENABLED) && item && userId ? (
                     <CrosslistingRun
+                      key={item.id}
                       item={item}
                       listing={generatedListing}
                       initialSelections={selectedMarketplaces}
+                      onBeforeStart={persistCurrentDraft}
                       onListingConfirmed={() => { void getInventoryItem(userId, item.id).then((updated) => {
                         setItem(updated);
                         savedDraftRef.current = parseSavedListingDraft(updated.listingJson);

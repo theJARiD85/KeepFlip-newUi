@@ -1,4 +1,5 @@
 /* global chrome */
+importScripts('listing-background.js');
 const QUEUE_KEY = 'saleQueue';
 const COMPLETED_KEY = 'completedSaleIds';
 const IGNORED_KEY = 'ignoredSaleIds';
