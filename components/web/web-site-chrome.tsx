@@ -6,10 +6,12 @@ import { Linking, Platform, Pressable, StyleSheet, View, useWindowDimensions } f
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
-import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { WebBlogMenu } from '@/components/web/web-blog-menu';
+import { getKeepFlipThemeColors, keepFlipTheme as theme, type KeepFlipColorScheme } from '@/constants/keepflip-theme';
 
 import { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 type WebSiteHeaderProps = {
+  colorScheme?: KeepFlipColorScheme;
   label?: string;
   onGetStarted?: () => void;
   onHowItWorks?: () => void;
@@ -20,6 +22,7 @@ type WebSiteHeaderProps = {
 };
 
 export function WebSiteHeader({
+  colorScheme,
   onGetStarted,
   onHowItWorks,
   onSignIn,
@@ -30,7 +33,7 @@ export function WebSiteHeader({
   const router = useRouter();
   const { width } = useWindowDimensions();
   const { effectiveColorScheme } = useKeepFlipAppearance();
-  const colors = getKeepFlipThemeColors(effectiveColorScheme);
+  const colors = getKeepFlipThemeColors(colorScheme ?? effectiveColorScheme);
   const isCompact = width < 720;
   const isPhone = width < 480;
 
@@ -38,7 +41,7 @@ export function WebSiteHeader({
   const goToGetStarted = onGetStarted ?? (() => router.push('/meet-flip' as Href));
 
   return (
-    <View style={[styles.header, isPhone && styles.headerPhone, { borderBottomColor: colors.divider }]}>
+    <View style={[styles.header, isCompact && styles.headerCompact, isPhone && styles.headerPhone, { borderBottomColor: colors.divider }]}>
       <Link href="/welcome" asChild style={styles.brand}>
         <Pressable
           accessibilityLabel="KeepFlip home"
@@ -95,6 +98,7 @@ export function WebSiteHeader({
                 <HeaderRouteLink colors={colors} href="/features" label="HOW IT WORKS" />
                 <HeaderRouteLink colors={colors} href="/pricing" label="PRICING" />
                 <HeaderRouteLink colors={colors} href="/about" label="ABOUT" />
+                <WebBlogMenu colors={colors} isPhone={isPhone} width={width} />
               </>
             ) : onHowItWorks ? (
               <Pressable
@@ -140,17 +144,21 @@ export function WebSiteHeader({
 }
 
 export function WebSiteFooter({
+  colorScheme,
+  inFlow = false,
   showMarketingLinks = false,
   suppressAuthLinks = false,
   hideGetStarted = false,
 }: {
+  colorScheme?: KeepFlipColorScheme;
+  inFlow?: boolean;
   showMarketingLinks?: boolean;
   suppressAuthLinks?: boolean;
   hideGetStarted?: boolean;
 }) {
   const { isBusy, pendingMfaSignIn, status } = useKeepFlipAuth();
   const { effectiveColorScheme } = useKeepFlipAppearance();
-  const colors = getKeepFlipThemeColors(effectiveColorScheme);
+  const colors = getKeepFlipThemeColors(colorScheme ?? effectiveColorScheme);
   const shouldHideAuthLinks =
     suppressAuthLinks ||
     status === 'signed-in' ||
@@ -177,7 +185,7 @@ export function WebSiteFooter({
   };
 
   return (
-    <View style={[styles.footer, isPhone && styles.footerPhone, { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: colors.backgroundDeep, borderTopColor: colors.divider }]}>
+    <View style={[styles.footer, isPhone && styles.footerPhone, inFlow ? styles.footerInFlow : styles.footerOverlay, { backgroundColor: colors.backgroundDeep, borderTopColor: colors.divider }]}>
       <View style={[styles.footerMain, isPhone && styles.footerMainPhone]}>
       </View>
 
@@ -398,7 +406,7 @@ function FooterLink({
 
 const styles = StyleSheet.create({
   header: {
-    alignItems: 'flex-start',
+    alignItems: 'center',
     alignSelf: 'center',
     borderBottomWidth: 1,
     flexDirection: 'row',
@@ -407,6 +415,12 @@ const styles = StyleSheet.create({
     minWidth: 0,
     paddingBottom: 16,
     width: '100%',
+    zIndex: 10,
+  },
+  headerCompact: {
+    alignItems: 'stretch',
+    flexDirection: 'column',
+    gap: 8,
   },
   headerPhone: {
     alignItems: 'stretch',
@@ -444,15 +458,15 @@ const styles = StyleSheet.create({
   },
   headerRight: {
     alignItems: 'flex-end',
-    justifyContent: 'flex-end',
-    position: 'absolute', 
-    right: 0,
-    top: 25,
+    justifyContent: 'center',
+    marginLeft: 'auto',
     flexShrink: 1,
     gap: 9,
     minWidth: 0,
   },
   headerRightCompact: {
+    alignItems: 'flex-start',
+    marginLeft: 0,
     gap: 7,
   },
   headerRightPhone: {
@@ -534,6 +548,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 15,
     width: '100%',
+  },
+  footerInFlow: {
+    marginTop: 12,
+  },
+  footerOverlay: {
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    right: 0,
   },
   footerPhone: {
     gap: 20,

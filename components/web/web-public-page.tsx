@@ -16,15 +16,16 @@ import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { WebSiteFooter, WebSiteHeader } from '@/components/web/web-site-chrome';
 import {
+  KEEPFLIP_PUBLIC_COLORS,
   KEEPFLIP_SITE_URL,
 } from '@/constants/keepflip-public-site';
-import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
+import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 
 export type PublicPageMetadata = {
   canonicalPath: string;
   description: string;
+  ogType?: 'article' | 'website';
   structuredData?: Record<string, unknown> | readonly Record<string, unknown>[];
   title: string;
 };
@@ -32,6 +33,7 @@ export type PublicPageMetadata = {
 export function WebPageHead({
   canonicalPath,
   description,
+  ogType = 'website',
   structuredData,
   title,
 }: PublicPageMetadata) {
@@ -43,7 +45,7 @@ export function WebPageHead({
       <title>{title}</title>
       <meta name="description" content={description} />
       <link rel="canonical" href={canonicalUrl} />
-      <meta property="og:type" content="website" />
+      <meta property="og:type" content={ogType} />
       <meta property="og:site_name" content="KeepFlip" />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
@@ -76,8 +78,8 @@ export function SemanticHeading({
   }
 
   const nativeStyle = StyleSheet.flatten(style) ?? {};
-  const toCssLength = (value: number | string | undefined) =>
-    typeof value === 'number' ? `${value}px` : value;
+  const toCssLength = (value: unknown) =>
+    typeof value === 'number' ? `${value}px` : typeof value === 'string' ? value : undefined;
   const cssStyle: CSSProperties = {
     color: typeof nativeStyle.color === 'string' ? nativeStyle.color : undefined,
     fontFamily: nativeStyle.fontFamily,
@@ -88,7 +90,7 @@ export function SemanticHeading({
     margin: 0,
     maxWidth: toCssLength(nativeStyle.maxWidth),
     padding: 0,
-    textAlign: nativeStyle.textAlign,
+    textAlign: nativeStyle.textAlign === 'auto' ? undefined : nativeStyle.textAlign,
   };
   const tag = level === 1 ? 'h1' : level === 2 ? 'h2' : 'h3';
 
@@ -98,24 +100,25 @@ export function SemanticHeading({
 export function WebMarketingPage({
   children,
   eyebrow,
+  heroMeta,
   intro,
   metadata,
   title,
 }: {
   children: ReactNode;
   eyebrow: string;
+  heroMeta?: ReactNode;
   intro: string;
   metadata: PublicPageMetadata;
   title: string;
 }) {
-  const { effectiveColorScheme } = useKeepFlipAppearance();
-  const colors = getKeepFlipThemeColors(effectiveColorScheme);
-  const { width, webContentMaxWidth, webPageGutter } = useResponsiveLayout();
+  const colors = KEEPFLIP_PUBLIC_COLORS;
+  const { width, webPageGutter } = useResponsiveLayout();
   const contentSizing =
     Platform.OS === 'web'
       ? {
           alignSelf: 'center' as const,
-          maxWidth: webContentMaxWidth,
+          maxWidth: 1560,
           minWidth: 0,
           paddingHorizontal: webPageGutter,
           width: '100%' as const,
@@ -125,22 +128,23 @@ export function WebMarketingPage({
   return (
     <>
       <WebPageHead {...metadata} />
-      <KeepFlipBackground>
+      <KeepFlipBackground colorScheme="dark">
         <ScrollView
           contentContainerStyle={[styles.scrollContent, contentSizing]}
           showsVerticalScrollIndicator={false}
         >
-          <View style={[styles.page, width < 480 && styles.pagePhone, contentSizing]}>
-            <WebSiteHeader label="TOOLS FOR SOLO RESELLERS" showMarketingLinks />
+          <View style={[styles.page, width < 480 && styles.pagePhone]}>
+            <WebSiteHeader colorScheme="dark" label="TOOLS FOR SOLO RESELLERS" showMarketingLinks />
             <View style={styles.hero}>
               <Text style={[styles.eyebrow, { color: colors.goldBright }]}>{eyebrow}</Text>
-              <SemanticHeading level={1} style={[styles.title, { color: colors.text }]}>
+              <SemanticHeading level={1} style={[styles.title, width < 480 && styles.titlePhone, { color: colors.text }]}>
                 {title}
               </SemanticHeading>
               <Text style={[styles.intro, { color: colors.textMuted }]}>{intro}</Text>
+              {heroMeta ? <View style={styles.heroMeta}>{heroMeta}</View> : null}
             </View>
             {children}
-            <WebSiteFooter showMarketingLinks />
+            <WebSiteFooter colorScheme="dark" inFlow showMarketingLinks />
           </View>
         </ScrollView>
       </KeepFlipBackground>
@@ -159,8 +163,7 @@ export function WebContentSection({
   id?: string;
   title: string;
 }) {
-  const { effectiveColorScheme } = useKeepFlipAppearance();
-  const colors = getKeepFlipThemeColors(effectiveColorScheme);
+  const colors = KEEPFLIP_PUBLIC_COLORS;
 
   return (
     <View nativeID={id} style={styles.section}>
@@ -176,14 +179,12 @@ export function WebContentSection({
 }
 
 export function WebCopy({ children }: { children: ReactNode }) {
-  const { effectiveColorScheme } = useKeepFlipAppearance();
-  const colors = getKeepFlipThemeColors(effectiveColorScheme);
+  const colors = KEEPFLIP_PUBLIC_COLORS;
   return <Text style={[styles.copy, { color: colors.textMuted }]}>{children}</Text>;
 }
 
 export function WebBulletList({ items }: { items: readonly string[] }) {
-  const { effectiveColorScheme } = useKeepFlipAppearance();
-  const colors = getKeepFlipThemeColors(effectiveColorScheme);
+  const colors = KEEPFLIP_PUBLIC_COLORS;
 
   return (
     <View style={styles.list}>
@@ -204,8 +205,7 @@ export function WebInfoCard({
   children: ReactNode;
   title: string;
 }) {
-  const { effectiveColorScheme } = useKeepFlipAppearance();
-  const colors = getKeepFlipThemeColors(effectiveColorScheme);
+  const colors = KEEPFLIP_PUBLIC_COLORS;
 
   return (
     <View style={[styles.card, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
@@ -226,9 +226,8 @@ export function WebActionLink({
   label: string;
   secondary?: boolean;
 }) {
-  const { effectiveColorScheme } = useKeepFlipAppearance();
   const { width } = useResponsiveLayout();
-  const colors = getKeepFlipThemeColors(effectiveColorScheme);
+  const colors = KEEPFLIP_PUBLIC_COLORS;
   if (Platform.OS === 'web') {
     const external = href.startsWith('http') || href.startsWith('mailto:');
     const isPhone = width < 480;
@@ -306,8 +305,7 @@ export function WebTextLink({
   href: string;
   label: string;
 }) {
-  const { effectiveColorScheme } = useKeepFlipAppearance();
-  const colors = getKeepFlipThemeColors(effectiveColorScheme);
+  const colors = KEEPFLIP_PUBLIC_COLORS;
   const linkText = <Text style={[styles.inlineLinkText, { color: colors.goldBright }]}>{label}</Text>;
 
   if (href.startsWith('http') || href.startsWith('mailto:')) {
@@ -340,13 +338,12 @@ const styles = StyleSheet.create({
   scrollContent: {
     alignItems: 'center',
     flexGrow: 1,
-    paddingBottom: 24,
+    paddingBottom: 40,
     paddingTop: 24,
   },
   page: {
     alignSelf: 'center',
-    gap: 34,
-    maxWidth: 1120,
+    gap: 50,
     paddingBottom: 8,
     width: '100%',
   },
@@ -354,9 +351,11 @@ const styles = StyleSheet.create({
     gap: 27,
   },
   hero: {
-    alignSelf: 'center',
-    gap: 10,
-    maxWidth: 800,
+    alignSelf: 'flex-start',
+    gap: 14,
+    maxWidth: 960,
+    paddingBottom: 28,
+    paddingTop: 20,
     width: '100%',
   },
   eyebrow: {
@@ -366,15 +365,26 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: theme.fonts.bold,
-    fontSize: 39,
+    fontSize: 43,
     letterSpacing: -0.8,
-    lineHeight: 48,
+    lineHeight: 52,
+  },
+  titlePhone: {
+    fontSize: 33,
+    lineHeight: 41,
   },
   intro: {
     fontFamily: theme.fonts.body,
-    fontSize: 16,
-    lineHeight: 25,
+    fontSize: 17,
+    lineHeight: 27,
     maxWidth: 720,
+  },
+  heroMeta: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    paddingTop: 8,
   },
   section: {
     gap: 13,

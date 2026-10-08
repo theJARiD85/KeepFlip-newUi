@@ -60,7 +60,7 @@ export function LegalDocumentScreen({
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
       >
-        <WebSiteHeader label="LEGAL DOCUMENTS" showBackButton />
+        <WebSiteHeader colorScheme="dark" label="LEGAL DOCUMENTS" showBackButton />
 
         <View style={styles.headerColumn}>
           <View style={[styles.headerRow]}>
@@ -117,7 +117,7 @@ export function LegalDocumentScreen({
             Contact KeepFlip at support@keep-flip.com.
           </Text>
         </View>
-        <WebSiteFooter />
+        <WebSiteFooter colorScheme="dark" inFlow />
       </ScrollView>
     </KeepFlipBackground>
   );

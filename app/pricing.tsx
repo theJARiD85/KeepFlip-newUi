@@ -13,8 +13,8 @@ import {
   WebTextLink,
 } from '@/components/web/web-public-page';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
-import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import {
+  KEEPFLIP_PUBLIC_COLORS,
   KEEPFLIP_FREE_LISTING_GENERATIONS_PER_MONTH,
   KEEPFLIP_FREE_SCANS_PER_MONTH,
   KEEPFLIP_GOOGLE_PLAY_URL,
@@ -55,8 +55,7 @@ const pricingMetadata = {
 
 export default function PricingPage() {
   const [cadence, setCadence] = useState<'monthly' | 'annual'>('monthly');
-  const { effectiveColorScheme } = useKeepFlipAppearance();
-  const colors = getKeepFlipThemeColors(effectiveColorScheme);
+  const colors = KEEPFLIP_PUBLIC_COLORS;
   const displayedPrice =
     cadence === 'annual'
       ? KEEPFLIP_PUBLIC_PRICING_USD.web.annual

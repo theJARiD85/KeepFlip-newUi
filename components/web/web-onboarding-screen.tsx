@@ -10,7 +10,6 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { FlipCompanion } from '@/components/flip';
-import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { WebSiteFooter, WebSiteHeader } from '@/components/web/web-site-chrome';
@@ -20,16 +19,15 @@ import {
   WebContentSection,
   WebCopy,
   WebPageHead,
-  WebTextLink,
 } from '@/components/web/web-public-page';
 import {
   KEEPFLIP_EBAY_CONNECTION_COPY,
   KEEPFLIP_FREE_LISTING_GENERATIONS_PER_MONTH,
   KEEPFLIP_FREE_SCANS_PER_MONTH,
-  KEEPFLIP_GOOGLE_PLAY_URL,
   KEEPFLIP_HOME_FAQS,
   KEEPFLIP_HOME_DESCRIPTION,
   KEEPFLIP_HOME_TITLE,
+  KEEPFLIP_PUBLIC_COLORS,
 } from '@/constants/keepflip-public-site';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
 
@@ -51,8 +49,7 @@ export function WebOnboardingScreen() {
     pageGutter
   } = useResponsiveLayout();
 
-  const { effectiveColorScheme } = useKeepFlipAppearance();
-  const colors = getKeepFlipThemeColors(effectiveColorScheme);
+  const colors = KEEPFLIP_PUBLIC_COLORS;
   const { width } = useWindowDimensions();
   const isWide = width >= 1040;
   const isTablet = width >= 720 && !isWide;
@@ -74,7 +71,7 @@ export function WebOnboardingScreen() {
         description={KEEPFLIP_HOME_DESCRIPTION}
         title={KEEPFLIP_HOME_TITLE}
       />
-      <KeepFlipBackground>
+      <KeepFlipBackground colorScheme="dark">
       <LinearGradient
         colors={['#1e161298', '#34200534', '#1e161271', '#3420052e']}
         style={styles.background}
@@ -84,7 +81,7 @@ export function WebOnboardingScreen() {
         contentContainerStyle={[styles.scrollContent, webContentSizing, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         showsVerticalScrollIndicator={false}
       >
-      <WebSiteHeader showMarketingLinks />
+      <WebSiteHeader colorScheme="dark" showMarketingLinks />
         <View style={[styles.page, isPhone && styles.pagePhone, webContentSizing, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
 
 
@@ -292,20 +289,20 @@ export function WebOnboardingScreen() {
           >
             <View style={[styles.storyPlaceholder, { gap: 20 }]}>
               <View style={{ flexDirection: 'row', justifyContent: 'flex-start', gap: 10 }}>
-                <Text style={{color: theme.colors.text, fontFamily: theme.fonts.body, fontSize: responsiveFont(16)}}>"I used spreadsheets for a decade... <Text style={{color: theme.colors.text, fontFamily: theme.fonts.medium}}>so much less stress."</Text></Text>
-                <Text style={{color: theme.colors.scannerCyan, fontFamily: theme.fonts.body, fontSize: responsiveFont(16)}}>— Full-time reseller, r/Flipping</Text>
+                <Text style={{color: colors.text, fontFamily: theme.fonts.body, fontSize: responsiveFont(16)}}>&quot;I used spreadsheets for a decade... <Text style={{color: colors.text, fontFamily: theme.fonts.medium}}>so much less stress.&quot;</Text></Text>
+                <Text style={{color: colors.scannerCyan, fontFamily: theme.fonts.body, fontSize: responsiveFont(16)}}>— Full-time reseller, r/Flipping</Text>
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
-                <Text style={{color: theme.colors.text, fontFamily: theme.fonts.body, fontSize: responsiveFont(18)}}>"My time is more valuable than $20 a month having to create a spreadsheet and update it constantly. It also helps at the end of the year for tax purposes."</Text>
-                <Text style={{color: theme.colors.scannerCyan, fontFamily: theme.fonts.body, fontSize: responsiveFont(18)}}>— Flipwise user, Reddit</Text>
+                <Text style={{color: colors.text, fontFamily: theme.fonts.body, fontSize: responsiveFont(18)}}>&quot;My time is more valuable than $20 a month having to create a spreadsheet and update it constantly. It also helps at the end of the year for tax purposes.&quot;</Text>
+                <Text style={{color: colors.scannerCyan, fontFamily: theme.fonts.body, fontSize: responsiveFont(18)}}>— Flipwise user, Reddit</Text>
               </View>              
               <View style={{ flexDirection: 'row', justifyContent: 'flex-start', gap: 10 }}>
-                <Text style={{color: theme.colors.text, fontFamily: theme.fonts.body, fontSize: responsiveFont(16)}}>"I started using a spreadsheet but as I grew, it became too time consuming to track items on an individual basis."</Text>
-                <Text style={{color: theme.colors.scannerCyan, fontFamily: theme.fonts.body, fontSize: responsiveFont(16)}}>— r/Flipping</Text>
+                <Text style={{color: colors.text, fontFamily: theme.fonts.body, fontSize: responsiveFont(16)}}>&quot;I started using a spreadsheet but as I grew, it became too time consuming to track items on an individual basis.&quot;</Text>
+                <Text style={{color: colors.scannerCyan, fontFamily: theme.fonts.body, fontSize: responsiveFont(16)}}>— r/Flipping</Text>
               </View>             
                <View style={{ flexDirection: 'row', justifyContent: 'flex-start', gap: 10 }}>
-                <Text style={{color: theme.colors.text, fontFamily: theme.fonts.body, fontSize: responsiveFont(16)}}>"I was selling sewing patterns thinking I was making about $1.40 but I didn't realize about the flat fee and the fact eBay's fees include shipping. My actual net profit was actually .15."</Text>
-                <Text style={{color: theme.colors.scannerCyan, fontFamily: theme.fonts.body, fontSize: responsiveFont(16)}}>— Full-time reseller, r/Flipping</Text>
+                <Text style={{color: colors.text, fontFamily: theme.fonts.body, fontSize: responsiveFont(16)}}>&quot;I was selling sewing patterns thinking I was making about $1.40 but I didn&apos;t realize about the flat fee and the fact eBay&apos;s fees include shipping. My actual net profit was actually .15.&quot;</Text>
+                <Text style={{color: colors.scannerCyan, fontFamily: theme.fonts.body, fontSize: responsiveFont(16)}}>— Full-time reseller, r/Flipping</Text>
               </View>
 
 
@@ -362,7 +359,7 @@ export function WebOnboardingScreen() {
             <WebActionLink href="/pricing" label="See plan prices" />
           </View>
           </View>
-          <WebSiteFooter showMarketingLinks />
+          <WebSiteFooter colorScheme="dark" inFlow showMarketingLinks />
         </ScrollView>
       </View>
       </LinearGradient>

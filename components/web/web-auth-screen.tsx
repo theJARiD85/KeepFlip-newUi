@@ -18,10 +18,11 @@ import {
 } from '@/components/auth/keepflip-auth-context';
 import { FacebookSignInButton } from '@/components/auth/facebook-sign-in-button';
 import { KeepFlipMfaChallenge } from '@/components/auth/keepflip-mfa-challenge';
-import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
+import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { WebSiteFooter, WebSiteHeader } from '@/components/web/web-site-chrome';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { KEEPFLIP_PUBLIC_COLORS } from '@/constants/keepflip-public-site';
 import { getAppwriteCoreServices } from '@/lib/appwrite';
 import {
   KEEPFLIP_ANALYTICS_EVENTS,
@@ -52,18 +53,13 @@ export function WebAuthScreen({
   onAuthenticated,
   onBack,
 }: WebAuthScreenProps) {
-  const {
-    webContentMaxWidth,
-    webPageGutter,
-    contentMaxWidth,
-    contentWidth,
-    pageGutter
-  } = useResponsiveLayout();
+  const { width, webPageGutter } = useResponsiveLayout();
+  const isWide = width >= 900;
   const webContentSizing =
     Platform.OS === 'web'
       ? {
           width: '100%' as const,
-          maxWidth: webContentMaxWidth,
+          maxWidth: 1560,
           minWidth: 0,
           alignSelf: 'center' as const,
           paddingHorizontal: webPageGutter,
@@ -71,8 +67,7 @@ export function WebAuthScreen({
       : undefined;
 
   const router = useRouter();
-  const { effectiveColorScheme } = useKeepFlipAppearance();
-  const colors = getKeepFlipThemeColors(effectiveColorScheme);
+  const colors = KEEPFLIP_PUBLIC_COLORS;
   const {
     createAccount,
     errorMessage,
@@ -209,19 +204,33 @@ export function WebAuthScreen({
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior="padding"
-      style={[styles.root, { backgroundColor: colors.backgroundDeep }]}
-    >
+    <KeepFlipBackground colorScheme="dark">
+    <KeyboardAvoidingView behavior="padding" style={styles.root}>
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, webContentSizing, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+        contentContainerStyle={[styles.scrollContent, webContentSizing]}
         keyboardShouldPersistTaps="handled"
       >
         <WebSiteHeader
+          colorScheme="dark"
           label={isCreateAccount ? 'CREATE RESELLER WORKSPACE' : 'SIGN IN TO KEEPFLIP'}
-          showActions
+          showMarketingLinks
         />
-        <View style={[styles.card, { backgroundColor: colors.backgroundRaised }]}>
+        <View style={[styles.authLayout, !isWide && styles.authLayoutNarrow]}>
+          {isWide ? (
+            <View style={[styles.story, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
+              <Text style={[styles.storyEyebrow, { color: colors.goldBright }]}>KEEPFLIP / RESELLER OPERATIONS</Text>
+              <Text style={[styles.storyTitle, { color: colors.text }]}>From the find to the sale.</Text>
+              <Text style={[styles.storyBody, { color: colors.textMuted }]}>
+                Research a possible buy, keep track of the item, and see what you kept after fees.
+              </Text>
+              <View style={[styles.storySteps, { borderTopColor: colors.divider }]}>
+                <StoryStep number="01" title="SOURCE" detail="Research the find" color={colors.goldBright} />
+                <StoryStep number="02" title="DECIDE" detail="Count the costs" color={colors.goldBright} />
+                <StoryStep number="03" title="TRACK" detail="See what you kept" color={colors.goldBright} />
+              </View>
+            </View>
+          ) : null}
+        <View style={[styles.card, isWide && styles.cardWide, !isWide && styles.cardNarrow, width < 480 && styles.cardPhone, { backgroundColor: colors.card, borderColor: colors.divider }]}>
           <Text style={[styles.eyebrow, { color: colors.goldBright }]}>RESELLER OPERATIONS, EVERYWHERE</Text>
           <Text style={[styles.title, { color: colors.text }]}>{isCreateAccount ? "Let's make your account." : 'Welcome back.'}</Text>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>
@@ -333,16 +342,33 @@ export function WebAuthScreen({
             </Pressable>
           </View> : null}
         </View>
+        </View>
 
         <View style={[styles.footerNote, { borderColor: colors.divider }]}>
           <Text style={[styles.footerLabel, { color: colors.goldBright }]}>CAPTURE WHERE IT WORKS BEST</Text>
           <Text style={[styles.footerText, { color: colors.textMuted }]}>KeepFlip’s live scanner, camera permissions, and native vision pipeline stay in the Android app. Your decisions, records, and realized financial picture stay available here.</Text>
         </View>
         <WebSiteFooter
+          colorScheme="dark"
+          inFlow
+          showMarketingLinks
           suppressAuthLinks={isSubmitting}
         />
       </ScrollView>
     </KeyboardAvoidingView>
+    </KeepFlipBackground>
+  );
+}
+
+function StoryStep({ number, title, detail, color }: { number: string; title: string; detail: string; color: string }) {
+  return (
+    <View style={styles.storyStep}>
+      <Text style={[styles.storyNumber, { color }]}>{number}</Text>
+      <View style={styles.storyStepCopy}>
+        <Text style={[styles.storyStepTitle, { color }]}>{title}</Text>
+        <Text style={[styles.storyStepDetail, { color: KEEPFLIP_PUBLIC_COLORS.textMuted }]}>{detail}</Text>
+      </View>
+    </View>
   );
 }
 
@@ -370,9 +396,42 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   scrollContent: {
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 34,
+    flexGrow: 1,
+    paddingVertical: 24,
   },
+  authLayout: {
+    alignItems: 'center',
+    alignSelf: 'center',
+    flexDirection: 'row',
+    gap: 28,
+    justifyContent: 'center',
+    marginTop: 42,
+    maxWidth: 1120,
+    width: '100%',
+  },
+  authLayoutNarrow: {
+    alignItems: 'stretch',
+    flexDirection: 'column',
+    minWidth: 0,
+  },
+  story: {
+    borderRadius: 24,
+    borderWidth: 1,
+    flex: 1,
+    gap: 15,
+    justifyContent: 'center',
+    minHeight: 540,
+    padding: 36,
+  },
+  storyEyebrow: { fontFamily: theme.fonts.bold, fontSize: 10, letterSpacing: 1.5 },
+  storyTitle: { fontFamily: theme.fonts.bold, fontSize: 40, lineHeight: 48, maxWidth: 400 },
+  storyBody: { fontFamily: theme.fonts.body, fontSize: 16, lineHeight: 26, maxWidth: 410 },
+  storySteps: { borderTopWidth: 1, gap: 14, marginTop: 16, paddingTop: 22 },
+  storyStep: { alignItems: 'center', flexDirection: 'row', gap: 16 },
+  storyNumber: { fontFamily: theme.fonts.bold, fontSize: 22, minWidth: 35 },
+  storyStepCopy: { gap: 3 },
+  storyStepTitle: { fontFamily: theme.fonts.bold, fontSize: 10, letterSpacing: 1 },
+  storyStepDetail: { fontFamily: theme.fonts.body, fontSize: 13 },
   brandRow: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -403,11 +462,21 @@ const styles = StyleSheet.create({
   statusDot: { borderRadius: 4, height: 7, width: 7 },
   webPillText: { fontFamily: theme.fonts.bold, fontSize: 12, letterSpacing: 1 },
   card: {
-    borderRadius: theme.radii.large,
+    borderRadius: 24,
     borderWidth: 1,
-    maxWidth: 620,
-    padding: 30,
+    maxWidth: 560,
+    padding: 32,
     width: '100%',
+  },
+  cardWide: {
+    flex: 1,
+  },
+  cardNarrow: {
+    alignSelf: 'center',
+    minWidth: 0,
+  },
+  cardPhone: {
+    padding: 22,
   },
   eyebrow: { fontFamily: theme.fonts.bold, fontSize: 13, letterSpacing: 1.7 },
   title: { fontFamily: theme.fonts.bold, fontSize: 38, lineHeight: 44, marginTop: 10 },
@@ -439,10 +508,10 @@ const styles = StyleSheet.create({
   submitText: { fontFamily: theme.fonts.bold, fontSize: 14 },
   pressed: { opacity: 0.82 },
   disabled: { opacity: 0.6 },
-  switchRow: { alignItems: 'center', flexDirection: 'row', gap: 6, justifyContent: 'center', marginTop: 22 },
+  switchRow: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center', marginTop: 22 },
   switchText: { fontFamily: theme.fonts.body, fontSize: 13 },
   switchAction: { fontFamily: theme.fonts.semibold, fontSize: 13 },
-  footerNote: { borderTopWidth: 1, marginTop: 24, maxWidth: 620, paddingTop: 18, width: '100%' },
+  footerNote: { alignSelf: 'center', borderTopWidth: 1, marginTop: 40, maxWidth: 1120, paddingTop: 18, width: '100%' },
   footerLabel: { fontFamily: theme.fonts.bold, fontSize: 12, letterSpacing: 1.4 },
   footerText: { fontFamily: theme.fonts.body, fontSize: 12, lineHeight: 18, marginTop: 7 },
 });

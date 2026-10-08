@@ -1,9 +1,7 @@
 import { createElement, type CSSProperties } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
-import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
-import { getKeepFlipThemeColors } from '@/constants/keepflip-theme';
 import {
   WebActionLink,
   WebContentSection,
@@ -12,7 +10,7 @@ import {
   WebMarketingPage,
   WebTextLink,
 } from '@/components/web/web-public-page';
-import { KEEPFLIP_PUBLIC_PRICING_USD, KEEPFLIP_SITE_URL } from '@/constants/keepflip-public-site';
+import { KEEPFLIP_PUBLIC_COLORS, KEEPFLIP_PUBLIC_PRICING_USD, KEEPFLIP_SITE_URL } from '@/constants/keepflip-public-site';
 
 export type CompetitorComparison = {
   canonicalPath: string;
@@ -32,7 +30,6 @@ export type CompetitorComparison = {
 };
 
 export function WebCompetitorComparison({ comparison }: { comparison: CompetitorComparison }) {
-  const { effectiveColorScheme } = useKeepFlipAppearance();
   const faq = [
     {
       question: `Is KeepFlip a replacement for ${comparison.competitor}?`,
@@ -118,8 +115,7 @@ export function WebCompetitorComparison({ comparison }: { comparison: Competitor
 }
 
 function WebComparisonTable({ comparison }: { comparison: CompetitorComparison }) {
-  const { effectiveColorScheme } = useKeepFlipAppearance();
-  const colors = getKeepFlipThemeColors(effectiveColorScheme);
+  const colors = KEEPFLIP_PUBLIC_COLORS;
 
   if (Platform.OS !== 'web') {
     return (

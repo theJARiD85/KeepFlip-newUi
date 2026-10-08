@@ -1,3 +1,8 @@
+import { getKeepFlipThemeColors } from '@/constants/keepflip-theme';
+
+// The public site keeps one visual identity regardless of the signed-in app preference.
+export const KEEPFLIP_PUBLIC_COLORS = getKeepFlipThemeColors('dark');
+
 export const KEEPFLIP_SITE_URL = 'https://keep-flip.com';
 export const KEEPFLIP_GOOGLE_PLAY_URL =
   'https://play.google.com/store/apps/details?id=com.keepflip.app';

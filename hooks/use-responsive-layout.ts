@@ -86,10 +86,10 @@ export function useResponsiveLayout() {
 
     // Dynamic Sizers
     const moderateScale = (value: number, factor = 0.5) => scaleWithWidth(value, factor, widthScale);
-    const webModerateScale = (value: number, factor = 0.5) => scaleWithWidth(value, factor, webWidthScale);
     const verticalScale = (value: number, factor = 1) => scaleWithWidth(value, factor, heightScale);
 
     const responsiveFont = (value: number, factor = 0.35) => scaleWithWidth(value, factor, widthScale);
+    const webResponsiveFont = (value: number, factor = 0.35) => scaleWithWidth(value, factor, webWidthScale);
     const responsiveWidth = (value: number, factor = 0.5) => scaleWithWidth(value, factor, widthScale);
     const responsiveHeight = (value: number, factor = 1) => scaleWithWidth(value, factor, heightScale);
 
@@ -129,8 +129,12 @@ export function useResponsiveLayout() {
       moderateScale,
       verticalScale,
       responsiveFont,
+      webResponsiveFont,
       responsiveWidth,
       responsiveHeight,
+      webContentMaxWidth,
+      webContentWidth,
+      webPageGutter,
       webGridColumns,
       scannerWidth,
       scannerHeight,
