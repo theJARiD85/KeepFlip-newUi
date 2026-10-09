@@ -111,6 +111,11 @@ app-example
 .dyad/
 /work
 /tools
+/tools/*
+!/tools/
+!/tools/birefnet/
+!/tools/birefnet/**
+/tools/birefnet/__pycache__/
 /skills
 /scripts
 !/scripts/
