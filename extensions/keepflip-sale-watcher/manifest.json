@@ -7,6 +7,7 @@
   "host_permissions": [
     "https://sfo.cloud.appwrite.io/*",
     "https://app.keep-flip.com/*",
+    "https://keep-flip.com/*",
     "https://*.depop.com/*",
     "https://*.poshmark.com/*",
     "https://*.mercari.com/*",

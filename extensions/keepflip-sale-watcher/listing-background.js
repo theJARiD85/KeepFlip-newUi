@@ -5,7 +5,7 @@
     depop: { host: 'depop.com', createUrl: 'https://www.depop.com/products/create/' },
     poshmark: { host: 'poshmark.com', createUrl: 'https://poshmark.com/create-listing' },
     mercari: { host: 'mercari.com', createUrl: 'https://www.mercari.com/sell/' },
-    facebookMarketplace: { host: 'facebook.com', createUrl: 'https://www.facebook.com/marketplace/selling/item/?listing_id' },
+    facebookMarketplace: { host: 'facebook.com', createUrl: 'https://www.facebook.com/marketplace/create/' },
     offerUp: { host: 'offerup.com', createUrl: 'https://offerup.com/' },
   };
   const WEB_ORIGINS = new Set(['https://keep-flip.com', 'https://www.keep-flip.com', 'https://app.keep-flip.com', 'http://localhost:8081', 'http://127.0.0.1:8081']);
@@ -108,19 +108,46 @@
         jobs: request.jobs.map((job) => ({ marketplace: job.marketplace, payload: job.payload, tabId: null, status: 'opening', details: null })),
       };
       await writeRun(run);
-      for (const [index, job] of run.jobs.entries()) {
+      // Allocate blank tabs first and persist their IDs before loading marketplace pages.
+      // That way no marketplace content script can ask for its assignment before it exists.
+      for (const job of run.jobs) {
         try {
-          const tab = await chrome.tabs.create({ url: DESTINATIONS[job.marketplace].createUrl, active: index === 0 });
+          const tab = await chrome.tabs.create({ url: 'about:blank', active: false });
           job.tabId = tab.id;
           job.status = 'opened';
+          await writeRun(run);
         } catch {
           job.status = 'error';
           job.details = { message: 'Could not open the marketplace tab.' };
+          await writeRun(run);
         }
       }
-      await writeRun(run);
-      for (const job of run.jobs) await notifyWeb(run, job, job.details || {});
-      return { ok: true, run: { id: run.id, jobs: run.jobs.map(({ marketplace, tabId, status, details }) => ({ marketplace, tabId, status, details })) } };
+      const firstTabId = run.jobs.find((job) => job.tabId && job.status === 'opened')?.tabId;
+      for (const job of run.jobs) {
+        if (!job.tabId || job.status !== 'opened') continue;
+        try {
+          await chrome.tabs.update(job.tabId, {
+            url: DESTINATIONS[job.marketplace].createUrl,
+            active: job.tabId === firstTabId,
+          });
+        } catch {
+          const currentRun = await readRun();
+          const currentJob = currentRun?.id === run.id
+            ? currentRun.jobs.find((candidate) => candidate.marketplace === job.marketplace)
+            : null;
+          if (currentJob) {
+            currentJob.status = 'error';
+            currentJob.details = { message: 'Could not open the marketplace tab.' };
+            await writeRun(currentRun);
+          }
+        }
+      }
+      const currentRun = await readRun();
+      if (!currentRun || currentRun.id !== run.id) {
+        return { ok: false, error: 'This listing run was replaced before its marketplace tabs were ready.' };
+      }
+      for (const job of currentRun.jobs) await notifyWeb(currentRun, job, job.details || {});
+      return { ok: true, run: { id: currentRun.id, jobs: currentRun.jobs.map(({ marketplace, tabId, status, details }) => ({ marketplace, tabId, status, details })) } };
     }
     const run = await readRun();
     if (!run || run.id !== request.runId || run.webTabId !== sender.tab.id || run.ownerId !== request.ownerId) {

@@ -9,6 +9,7 @@ function harness() {
   const listeners = [];
   const externalListeners = [];
   const opened = [];
+  const navigationSnapshots = [];
   const sent = [];
   const records = new Map();
   const tabs = new Map();
@@ -30,7 +31,15 @@ function harness() {
         return tab;
       },
       get: async (id) => tabs.get(id),
-      update: async (id, options) => { Object.assign(tabs.get(id), options); return tabs.get(id); },
+      update: async (id, options) => {
+        Object.assign(tabs.get(id), options);
+        const openedTab = opened.find((candidate) => candidate.id === id);
+        if (openedTab) Object.assign(openedTab, options);
+        if (options.url && options.url !== 'about:blank') {
+          navigationSnapshots.push(structuredClone(records.get('keepflipListingRun')));
+        }
+        return tabs.get(id);
+      },
       sendMessage: async (id, message) => { sent.push({ id, message }); },
     },
   };
@@ -48,7 +57,7 @@ function harness() {
       assert.equal(accepted, true);
     });
   }
-  return { dispatch, dispatchExternal, opened, sent, records, tabs };
+  return { dispatch, dispatchExternal, opened, navigationSnapshots, sent, records, tabs };
 }
 
 function listingPayload(marketplace) {
@@ -123,6 +132,7 @@ test('the injected page bridge ignores other routes and handles the crosslisting
   };
   const chrome = {
     runtime: {
+      id: 'keepflip-test-extension',
       lastError: undefined,
       onMessage: { addListener: (handler) => { handlers.status = handler; } },
       sendMessage: (message, callback) => { sent.push(message); callback({ ok: true }); },
@@ -152,6 +162,7 @@ test('the injected page bridge ignores other routes and handles the crosslisting
   };
   const appChrome = {
     runtime: {
+      id: 'keepflip-test-extension',
       lastError: undefined,
       onMessage: { addListener: (handler) => { appHandlers.status = handler; } },
       sendMessage: (message, callback) => { appSent.push(message); callback({ ok: true }); },
@@ -166,6 +177,47 @@ test('the injected page bridge ignores other routes and handles the crosslisting
   appHandlers.message({ source: appWindow, origin: appLocation.origin,
     data: { source: 'keepflip-webapp', protocol: 1, requestId: 'request-3', action: 'HELLO' } });
   assert.equal(appSent.length, 2);
+
+  const staleHandlers = {};
+  const stalePosted = [];
+  const staleWindow = {
+    addEventListener: (type, handler) => { staleHandlers[type] = handler; },
+    postMessage: (message, targetOrigin) => stalePosted.push({ message, targetOrigin }),
+  };
+  const staleChrome = {
+    runtime: {
+      id: 'keepflip-test-extension',
+      onMessage: { addListener: (handler) => { staleHandlers.status = handler; } },
+      sendMessage: () => { throw new Error('Extension context invalidated.'); },
+    },
+  };
+  vm.runInNewContext(fs.readFileSync(bridgePath, 'utf8'), {
+    chrome: staleChrome, location: appLocation, window: staleWindow, Set,
+  });
+  assert.doesNotThrow(() => staleHandlers.message({ source: staleWindow, origin: appLocation.origin,
+    data: { source: 'keepflip-webapp', protocol: 1, requestId: 'request-stale', action: 'HELLO' } }));
+  assert.match(stalePosted.at(-1)?.message.error || '', /reload the extension.*refresh this page/i);
+
+  const callbackHandlers = {};
+  const callbackPosted = [];
+  const callbackWindow = {
+    addEventListener: (type, handler) => { callbackHandlers[type] = handler; },
+    postMessage: (message, targetOrigin) => callbackPosted.push({ message, targetOrigin }),
+  };
+  const callbackChrome = {
+    runtime: {
+      id: 'keepflip-test-extension',
+      get lastError() { throw new Error('Extension context invalidated.'); },
+      onMessage: { addListener: (handler) => { callbackHandlers.status = handler; } },
+      sendMessage: (_message, callback) => callback({ ok: true }),
+    },
+  };
+  vm.runInNewContext(fs.readFileSync(bridgePath, 'utf8'), {
+    chrome: callbackChrome, location: appLocation, window: callbackWindow, Set,
+  });
+  assert.doesNotThrow(() => callbackHandlers.message({ source: callbackWindow, origin: appLocation.origin,
+    data: { source: 'keepflip-webapp', protocol: 1, requestId: 'request-callback', action: 'HELLO' } }));
+  assert.match(callbackPosted.at(-1)?.message.error || '', /reload the extension.*refresh this page/i);
 });
 
 test('the extension binds a listing run to KeepFlip and its marketplace tabs', async () => {
@@ -176,6 +228,7 @@ test('the extension binds a listing run to KeepFlip and its marketplace tabs', a
       { marketplace: 'poshmark', payload: listingPayload('poshmark') },
       { marketplace: 'mercari', payload: listingPayload('mercari') },
       { marketplace: 'facebookMarketplace', payload: listingPayload('facebookMarketplace') },
+      { marketplace: 'offerUp', payload: listingPayload('offerUp') },
     ],
     photos: [{ name: 'item.jpg', dataUrl: 'data:image/jpeg;base64,AAAA' }], unavailablePhotoCount: 0 };
   const spoof = await app.dispatch({ type: 'KEEPFLIP_LISTING_PAGE', request },
@@ -188,11 +241,18 @@ test('the extension binds a listing run to KeepFlip and its marketplace tabs', a
   assert.equal(started.ok, true);
   assert.deepEqual(app.opened.map((tab) => tab.url), [
     'https://poshmark.com/create-listing', 'https://www.mercari.com/sell/',
-    'https://www.facebook.com/marketplace/selling/item/?listing_id',
+    'https://www.facebook.com/marketplace/create/',
+    'https://offerup.com/',
   ]);
   assert.equal(app.opened[0].active, true);
   assert.equal(app.opened[1].active, false);
   assert.equal(app.opened[2].active, false);
+  assert.equal(app.opened[3].active, false);
+  assert.equal(app.navigationSnapshots.length, 4);
+  for (const snapshot of app.navigationSnapshots) {
+    assert.ok(snapshot.jobs.every((job) => Number.isInteger(job.tabId)),
+      'all marketplace tab assignments must be saved before marketplace pages load');
+  }
 
   const poshmark = await app.dispatch({ type: 'KEEPFLIP_LISTING_TAB_READY' },
     { url: 'https://poshmark.com/create-listing', tab: { id: 100 } });
@@ -206,9 +266,13 @@ test('the extension binds a listing run to KeepFlip and its marketplace tabs', a
     { url: 'https://www.mercari.com/sell/', tab: { id: 100 } });
   assert.equal(wrongHost.ok, false);
   const facebook = await app.dispatch({ type: 'KEEPFLIP_LISTING_TAB_READY' },
-    { url: 'https://www.facebook.com/marketplace/selling/item/?listing_id', tab: { id: 102 } });
+    { url: 'https://www.facebook.com/marketplace/create/', tab: { id: 102 } });
   assert.equal(facebook.ok, true);
   assert.equal(facebook.payload.marketplace, 'facebookMarketplace');
+  const offerUp = await app.dispatch({ type: 'KEEPFLIP_LISTING_TAB_READY' },
+    { url: 'https://offerup.com/', tab: { id: 103 } });
+  assert.equal(offerUp.ok, true);
+  assert.equal(offerUp.payload.marketplace, 'offerUp');
 
   const postBeforeFill = await app.dispatch({ type: 'KEEPFLIP_LISTING_PAGE', request: {
     source: 'keepflip-webapp', protocol: 1, action: 'LISTING_SUBMIT', runId: request.runId,
@@ -351,7 +415,10 @@ test('OfferUp opens its Sell popup before filling the listing form', async () =>
 
 test('Facebook opens its Item for sale composer and fills the listing fields', async () => {
   let composerOpen = false;
-  let composerClicks = 0;
+  let createNewListingClicks = 0;
+  let itemForSaleClicks = 0;
+  let vehicleForSaleClicks = 0;
+  let metaAiSwitchClicks = 0;
   const statuses = [];
   const makeField = (name, tagName, placeholder = '') => ({
     name, id: name, type: 'text', value: '', tagName, placeholder, labels: [], disabled: false, readOnly: false,
@@ -367,19 +434,49 @@ test('Facebook opens its Item for sale composer and fills the listing fields', a
     makeField('description', 'TEXTAREA', 'Description'),
     makeField('price', 'INPUT', 'Price'),
   ];
-  const itemForSaleButton = {
+  const metaAiSwitch = {
+    checked: true,
     disabled: false,
-    innerText: 'Item for sale',
-    textContent: 'Item for sale',
-    getAttribute: () => null,
+    getAttribute: (attribute) => ({
+      'aria-label': 'Draft listings with Meta AI',
+      'aria-checked': metaAiSwitch.checked ? 'true' : 'false',
+    })[attribute] || null,
+    click: () => { metaAiSwitchClicks += 1; metaAiSwitch.checked = false; },
+  };
+  const makeChoice = (innerText, click) => ({
+    disabled: false,
+    innerText,
+    textContent: innerText,
+    getAttribute: (attribute) => attribute === 'aria-label' ? null : null,
     getBoundingClientRect: () => ({ width: 180, height: 44 }),
-    click: () => { composerClicks += 1; composerOpen = true; },
+    click,
+  });
+  const createNewListingLink = makeChoice('Create new listing', () => { createNewListingClicks += 1; });
+  const itemForSaleButton = makeChoice(
+    'Item for sale\nCreate a single listing for one or more items to sell.',
+    () => { itemForSaleClicks += 1; composerOpen = true; },
+  );
+  const vehicleForSaleButton = makeChoice(
+    'Vehicle for sale\nSell a car, truck or other type of vehicle.',
+    () => { vehicleForSaleClicks += 1; },
+  );
+  const listingTypeDialog = {
+    innerText: 'Create new listing Choose listing type Item for sale Vehicle for sale',
+    getAttribute: (attribute) => attribute === 'aria-label' ? 'Create new listing' : null,
+    querySelectorAll: (selector) => selector === 'a,button,[role="button"]' && !composerOpen
+      ? [itemForSaleButton, vehicleForSaleButton]
+      : [],
   };
   const document = {
-    querySelector: () => null,
+    querySelector: (selector) => selector === 'input[type="checkbox"][role="switch"][aria-label="Draft listings with Meta AI"]' && composerOpen
+      ? metaAiSwitch
+      : null,
     getElementById: () => null,
     querySelectorAll: (selector) => {
-      if (selector === 'a,button,[role="button"]') return composerOpen ? [] : [itemForSaleButton];
+      if (selector === '[role="dialog"]') return composerOpen ? [] : [listingTypeDialog];
+      if (selector === 'a,button,[role="button"]') {
+        return composerOpen ? [] : [createNewListingLink, itemForSaleButton, vehicleForSaleButton];
+      }
       if (!composerOpen) return [];
       if (selector === 'input,textarea,select,[contenteditable="true"]') return fields;
       const fieldName = /name\*="([^"]+)"/i.exec(selector)?.[1]?.toLowerCase();
@@ -414,7 +511,7 @@ test('Facebook opens its Item for sale composer and fills the listing fields', a
   vm.runInNewContext(fs.readFileSync(runnerPath, 'utf8'), {
     chrome,
     document,
-    location: { protocol: 'https:', hostname: 'www.facebook.com', pathname: '/marketplace/selling/item/' },
+    location: { protocol: 'https:', hostname: 'www.facebook.com', pathname: '/marketplace/create/' },
     Event: class TestEvent {},
     HTMLSelectElement: class HTMLSelectElement {},
     setTimeout: (callback) => { queueMicrotask(callback); return 1; },
@@ -423,11 +520,16 @@ test('Facebook opens its Item for sale composer and fills the listing fields', a
   });
 
   await new Promise((resolve) => setTimeout(resolve, 0));
-  assert.equal(composerClicks, 1);
+  assert.equal(createNewListingClicks, 0);
+  assert.equal(itemForSaleClicks, 1);
+  assert.equal(vehicleForSaleClicks, 0);
+  assert.equal(metaAiSwitchClicks, 1);
+  assert.equal(metaAiSwitch.checked, false);
   assert.deepEqual(fields.map((field) => field.value), [
     'Vintage jacket', 'Leather jacket in good condition.', '85',
   ]);
   assert.equal(statuses.at(-1)?.status, 'filled');
+  assert.match(statuses.at(-1)?.message || '', /Draft fields filled/i);
 });
 
 test('Facebook runner initialization failure is surfaced to the Listing page', async () => {
@@ -441,7 +543,7 @@ test('Facebook runner initialization failure is surfaced to the Listing page', a
   assert.equal(started.ok, true);
 
   await app.dispatch({ type: 'KEEPFLIP_LISTING_TAB_INIT_ERROR', marketplace: 'facebookMarketplace' },
-    { url: 'https://www.facebook.com/marketplace/selling/item/?listing_id', tab: { id: 100 } });
+    { url: 'https://www.facebook.com/marketplace/create/', tab: { id: 100 } });
   const reported = app.sent.filter(({ id, message }) => id === 7 && message.status?.marketplace === 'facebookMarketplace').at(-1);
   assert.equal(reported?.message.status.status, 'error');
   assert.match(reported?.message.status.message || '', /could not connect/i);

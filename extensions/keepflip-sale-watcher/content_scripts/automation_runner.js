@@ -38,11 +38,18 @@
   let filledFields = [];
   let uploadedPhotoCount = 0;
   let offerUpSellMenuOpened = false;
+  let facebookMetaAiSwitchClickRequested = false;
+
+  function sendMessageQuietly(message) {
+    void (async () => {
+      try { await chrome.runtime.sendMessage(message); } catch { /* The extension may be reloading. */ }
+    })();
+  }
 
   function report(status, details = {}) {
     if (!assignment) return;
-    chrome.runtime.sendMessage({ type: 'KEEPFLIP_LISTING_TAB_STATUS', runId: assignment.runId,
-      marketplace, status, ...details }, () => void chrome.runtime.lastError);
+    sendMessageQuietly({ type: 'KEEPFLIP_LISTING_TAB_STATUS', runId: assignment.runId,
+      marketplace, status, ...details });
   }
 
   function labelFor(element) {
@@ -71,6 +78,17 @@
       if (usable(element, key) && patterns[key].test(labelFor(element))) return element;
     }
     return null;
+  }
+
+  function turnOffFacebookMetaAiDrafts() {
+    if (marketplace !== 'facebookMarketplace') return true;
+    const toggle = document.querySelector('input[type="checkbox"][role="switch"][aria-label="Draft listings with Meta AI"]');
+    if (!toggle || toggle.disabled) return false;
+    if (toggle.checked && !facebookMetaAiSwitchClickRequested) {
+      facebookMetaAiSwitchClickRequested = true;
+      toggle.click();
+    }
+    return !toggle.checked;
   }
 
   function setField(element, raw) {
@@ -148,8 +166,10 @@
     for (const key of Object.keys(patterns)) fields[key] = payload[key];
     let attempts = 0;
     let composerOpenRequested = false;
+    let facebookMetaAiDraftsOff = marketplace !== 'facebookMarketplace';
     while (attempts < 24) {
       attempts += 1;
+      if (!facebookMetaAiDraftsOff) facebookMetaAiDraftsOff = turnOffFacebookMetaAiDrafts();
       const retryComposerEntry = marketplace === 'offerUp' || !composerOpenRequested;
       if (attempts >= 5 && retryComposerEntry && !findField('title')) {
         composerOpenRequested = openComposerIfNeeded() || composerOpenRequested;
@@ -163,16 +183,17 @@
         try { uploadedPhotoCount = await attachPhotos(assignment.photos); } catch { /* Report for review below. */ }
       }
       if (core.every((key) => filledFields.includes(key)) &&
-        (!assignment.photos.length || uploadedPhotoCount === assignment.photos.length)) break;
+        (!assignment.photos.length || uploadedPhotoCount === assignment.photos.length) && facebookMetaAiDraftsOff) break;
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
     const missingFields = Object.keys(fields).filter((key) => fields[key] && !filledFields.includes(key));
     const photosReady = payload.photoCount === 0 ||
       (uploadedPhotoCount === payload.photoCount && assignment.unavailablePhotoCount === 0);
-    const status = core.every((key) => filledFields.includes(key)) && photosReady ? 'filled' : 'needs_review';
+    const status = core.every((key) => filledFields.includes(key)) && photosReady && facebookMetaAiDraftsOff ? 'filled' : 'needs_review';
     report(status, { fields: filledFields, missingFields, uploadedPhotoCount,
       message: status === 'filled' ? 'Draft fields filled and photos sent to the upload control. Check the marketplace preview before posting.'
-        : 'Some fields or photos need attention in this marketplace tab.' });
+        : !facebookMetaAiDraftsOff ? 'Facebook could not turn off Draft listings with Meta AI. Check that switch before continuing.'
+          : 'Some fields or photos need attention in this marketplace tab.' });
   }
 
   function visible(element) {
@@ -199,10 +220,39 @@
       return true;
     }
 
-    const expected = marketplace === 'facebookMarketplace'
-      ? /^(item for sale|sell an item|sell item|create a new listing|create new listing)$/i
-      : /^sell now$/i;
     const controls = document.querySelectorAll('a,button,[role="button"]');
+    if (marketplace === 'facebookMarketplace') {
+      const isItemForSaleChoice = (control) => {
+        const label = (control.getAttribute('aria-label') || control.innerText || control.textContent || '')
+          .replace(/\s+/g, ' ').trim();
+        // Facebook includes the explanatory copy in the card's accessible text,
+        // e.g. "Item for sale Create a single listing for one or more items...".
+        return /^item for sale(?:\s|$)/i.test(label);
+      };
+      const dialogs = document.querySelectorAll('[role="dialog"]');
+      for (const dialog of dialogs) {
+        for (const control of dialog.querySelectorAll('a,button,[role="button"]')) {
+          if (visible(control) && isItemForSaleChoice(control)) {
+            control.click();
+            return true;
+          }
+        }
+      }
+      // Some Facebook layouts render the listing-type chooser without a dialog.
+      // Prefer the item card over the surrounding "Create new listing" navigation link.
+      for (const control of controls) {
+        if (visible(control) && isItemForSaleChoice(control)) {
+          control.click();
+          return true;
+        }
+      }
+      // Do not click the sidebar entry again while a chooser dialog is already open.
+      if (dialogs.length) return false;
+    }
+
+    const expected = marketplace === 'facebookMarketplace'
+      ? /^(create a new listing|create new listing)$/i
+      : /^sell now$/i;
     for (const control of controls) {
       const label = (control.innerText || control.textContent || '').replace(/\s+/g, ' ').trim();
       if (visible(control) && expected.test(label)) {
@@ -248,7 +298,7 @@
   let requests = 0;
   function assignmentUnavailable() {
     console.warn('KeepFlip could not connect this marketplace tab to its listing run.');
-    chrome.runtime.sendMessage({ type: 'KEEPFLIP_LISTING_TAB_INIT_ERROR', marketplace }, () => void chrome.runtime.lastError);
+    sendMessageQuietly({ type: 'KEEPFLIP_LISTING_TAB_INIT_ERROR', marketplace });
   }
 
   function retryAssignment() {
