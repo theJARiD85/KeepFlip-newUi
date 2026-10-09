@@ -4,6 +4,12 @@ This conversion uses the MIT ONNX export whose model card identifies
 `ZhengPeng7/BiRefNet_lite` as its base model. The source revision is pinned in
 `export_birefnet_lite_tflite.py`. No training or fine-tuning is involved.
 
+The first attempt used onnx2tf's default `flatbuffer_direct` backend. It wrote
+TFLite files, but the CPU interpreter rejected an integer `MINIMUM` operation
+at runtime. This exporter now selects onnx2tf's TensorFlow Lite Converter
+compatibility backend instead, which the converter's migration guide
+recommends for compatibility cases.
+
 ## Run from Colab
 
 The ONNX graph is about 224 MB. Run the conversion in Colab rather than on a
@@ -11,12 +17,14 @@ low-memory developer machine. In the BiRefNet notebook, add a code cell and
 install the converter and its validation tools:
 
 ```python
-%pip install -q "onnx2tf==2.6.9" huggingface_hub
+%pip install -q "onnx2tf[tensorflow]==2.6.9" huggingface_hub
 ```
 
-`onnx2tf` installs its pinned ONNX Runtime and LiteRT conversion dependencies.
-The notebook already selected Python 3.13, which this converter version
-supports.
+This installs the optional TensorFlow Lite Converter dependencies as well as
+onnx2tf's pinned ONNX Runtime and LiteRT packages. The notebook already
+selected Python 3.13, which this converter version supports. Restart the Colab
+session if it prompts you to do so, then reupload the exporter if it is no
+longer listed in `/content`.
 
 Upload `export_birefnet_lite_tflite.py` from this folder with Colab's file
 picker, then run:
@@ -27,7 +35,8 @@ picker, then run:
   --precision float16
 ```
 
-The script downloads the pinned ONNX export and converts it. It invokes the
+The script downloads the pinned ONNX export and converts it using the
+`tf_converter` compatibility backend. It invokes the
 float32 TFLite sibling on CPU and compares that mask to ONNX Runtime. The
 float16 model is packaged for the Android GPU test, and its input/output tensor
 contract is checked. The Colab CPU interpreter cannot execute this converted

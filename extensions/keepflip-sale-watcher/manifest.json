@@ -6,6 +6,7 @@
   "permissions": ["storage"],
   "host_permissions": [
     "https://sfo.cloud.appwrite.io/*",
+    "https://app.keep-flip.com/*",
     "https://*.depop.com/*",
     "https://*.poshmark.com/*",
     "https://*.mercari.com/*",
@@ -17,8 +18,11 @@
   },
   "externally_connectable": {
     "matches": [
-      "https://keep-flip.com/*",
-      "https://www.keep-flip.com/*",
+      "https://keep-flip.com/crosslisting",
+      "https://keep-flip.com/crosslisting/*",
+      "https://www.keep-flip.com/crosslisting",
+      "https://www.keep-flip.com/crosslisting/*",
+      "https://app.keep-flip.com/*",
       "http://localhost:8081/*",
       "http://127.0.0.1:8081/*"
     ]
@@ -37,6 +41,7 @@
       "matches": [
         "https://keep-flip.com/*",
         "https://www.keep-flip.com/*",
+        "https://app.keep-flip.com/*",
         "http://localhost:8081/*",
         "http://127.0.0.1:8081/*"
       ],

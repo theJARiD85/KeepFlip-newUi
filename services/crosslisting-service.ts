@@ -65,7 +65,7 @@ export const CROSSLISTING_DESTINATIONS: Record<
   facebookMarketplace: {
     label: 'Facebook Marketplace',
     loginUrl: 'https://www.facebook.com/login/',
-    createUrl: 'https://www.facebook.com/marketplace/create/item',
+    createUrl: 'https://www.facebook.com/marketplace/selling/item/?listing_id',
     origin: 'https://www.facebook.com',
   },
   mercari: {

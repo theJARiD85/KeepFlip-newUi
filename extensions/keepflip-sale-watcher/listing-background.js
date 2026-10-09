@@ -5,10 +5,11 @@
     depop: { host: 'depop.com', createUrl: 'https://www.depop.com/products/create/' },
     poshmark: { host: 'poshmark.com', createUrl: 'https://poshmark.com/create-listing' },
     mercari: { host: 'mercari.com', createUrl: 'https://www.mercari.com/sell/' },
-    facebookMarketplace: { host: 'facebook.com', createUrl: 'https://www.facebook.com/marketplace/create/item' },
+    facebookMarketplace: { host: 'facebook.com', createUrl: 'https://www.facebook.com/marketplace/selling/item/?listing_id' },
     offerUp: { host: 'offerup.com', createUrl: 'https://offerup.com/' },
   };
-  const WEB_ORIGINS = new Set(['https://keep-flip.com', 'https://www.keep-flip.com', 'http://localhost:8081', 'http://127.0.0.1:8081']);
+  const WEB_ORIGINS = new Set(['https://keep-flip.com', 'https://www.keep-flip.com', 'https://app.keep-flip.com', 'http://localhost:8081', 'http://127.0.0.1:8081']);
+  const CROSSLISTING_ONLY_ORIGINS = new Set(['https://keep-flip.com', 'https://www.keep-flip.com']);
   const textFields = ['title', 'description', 'price', 'category', 'condition', 'brand', 'size', 'color'];
 
   function urlFor(value) {
@@ -17,7 +18,9 @@
 
   function isWebTab(sender) {
     const url = urlFor(sender.url);
-    return Boolean(sender.tab?.id && url && WEB_ORIGINS.has(url.origin));
+    const isCrosslistingPath = url && (url.pathname === '/crosslisting' || url.pathname.startsWith('/crosslisting/'));
+    return Boolean(sender.tab?.id && url && WEB_ORIGINS.has(url.origin) &&
+      (!CROSSLISTING_ONLY_ORIGINS.has(url.origin) || isCrosslistingPath));
   }
 
   function isMarketplaceUrl(value, marketplace) {
@@ -155,6 +158,17 @@
       unavailablePhotoCount: run.unavailablePhotoCount };
   }
 
+  async function handleTabInitializationError(message, sender) {
+    const run = await readRun();
+    const job = run?.jobs.find((candidate) => candidate.tabId === sender.tab?.id);
+    if (!job || job.marketplace !== message.marketplace || job.status !== 'opened' ||
+      !isMarketplaceUrl(sender.url, job.marketplace)) return;
+    job.status = 'error';
+    job.details = { message: 'KeepFlip could not connect its listing helper to this marketplace tab. Reload the tab and retry from Listing.' };
+    await writeRun(run);
+    await notifyWeb(run, job, job.details);
+  }
+
   async function handleTabStatus(message, sender) {
     const run = await readRun();
     const job = run?.jobs.find((candidate) => candidate.tabId === sender.tab?.id);
@@ -180,13 +194,15 @@
   }
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (!['KEEPFLIP_LISTING_PAGE', 'KEEPFLIP_LISTING_TAB_READY', 'KEEPFLIP_LISTING_TAB_STATUS'].includes(message?.type)) return;
+    if (!['KEEPFLIP_LISTING_PAGE', 'KEEPFLIP_LISTING_TAB_READY', 'KEEPFLIP_LISTING_TAB_STATUS', 'KEEPFLIP_LISTING_TAB_INIT_ERROR'].includes(message?.type)) return;
     void (async () => {
       try {
         const reply = message.type === 'KEEPFLIP_LISTING_PAGE'
           ? await handlePage(message.request, sender)
           : message.type === 'KEEPFLIP_LISTING_TAB_READY'
             ? await handleTabReady(sender)
+            : message.type === 'KEEPFLIP_LISTING_TAB_INIT_ERROR'
+              ? await handleTabInitializationError(message, sender)
             : await handleTabStatus(message, sender);
         sendResponse(reply || { ok: true });
       } catch {

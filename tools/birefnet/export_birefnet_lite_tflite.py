@@ -75,7 +75,7 @@ def convert(args: argparse.Namespace) -> None:
     except ImportError as exc:
         raise RuntimeError(
             "Install the conversion dependencies first: "
-            "pip install huggingface_hub onnxruntime onnx2tf==2.6.9"
+            "pip install 'onnx2tf[tensorflow]==2.6.9' huggingface_hub"
         ) from exc
 
     onnx2tf = shutil.which("onnx2tf")
@@ -133,6 +133,8 @@ def convert(args: argparse.Namespace) -> None:
                 "1",
                 "-kt",
                 onnx_input_name,
+                "--tflite_backend",
+                "tf_converter",
             ],
             check=True,
         )
@@ -263,6 +265,7 @@ def convert(args: argparse.Namespace) -> None:
             "onnx_source": f"{MODEL_REPO}@{MODEL_REVISION}/{MODEL_FILENAME}",
             "license": "MIT",
             "converter": "onnx2tf",
+            "converter_backend": "tf_converter",
             "precision": args.precision,
             "input": {
                 "name": onnx_input_name,

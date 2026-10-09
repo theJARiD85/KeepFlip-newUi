@@ -37,6 +37,7 @@
   let assignment = null;
   let filledFields = [];
   let uploadedPhotoCount = 0;
+  let offerUpSellMenuOpened = false;
 
   function report(status, details = {}) {
     if (!assignment) return;
@@ -146,9 +147,13 @@
     const fields = {};
     for (const key of Object.keys(patterns)) fields[key] = payload[key];
     let attempts = 0;
+    let composerOpenRequested = false;
     while (attempts < 24) {
       attempts += 1;
-      if (attempts === 5) openComposerIfNeeded();
+      const retryComposerEntry = marketplace === 'offerUp' || !composerOpenRequested;
+      if (attempts >= 5 && retryComposerEntry && !findField('title')) {
+        composerOpenRequested = openComposerIfNeeded() || composerOpenRequested;
+      }
       for (const [key, value] of Object.entries(fields)) {
         if (filledFields.includes(key) || !value) continue;
         const input = findField(key);
@@ -176,15 +181,36 @@
   }
 
   function openComposerIfNeeded() {
-    if (!['offerUp', 'depop'].includes(marketplace) || findField('title')) return;
-    const expected = marketplace === 'offerUp' ? /^post$/i : /^sell now$/i;
+    if (!['offerUp', 'depop', 'facebookMarketplace'].includes(marketplace) || findField('title')) return false;
+    if (marketplace === 'offerUp') {
+      const postItemAction = document.querySelectorAll('a,button,[role="button"],[role="menuitem"]');
+      for (const control of postItemAction) {
+        const label = (control.innerText || control.textContent || '').replace(/\s+/g, ' ').trim();
+        if (visible(control) && /^(post an item|post item|sell an item|sell item|item for sale|start selling)$/i.test(label)) {
+          control.click();
+          return true;
+        }
+      }
+      const sellButton = document.querySelector('[data-testid="HeaderSellButton"]') ||
+        document.querySelector('button[aria-label="Sell"]');
+      if (!sellButton || !visible(sellButton) || offerUpSellMenuOpened) return false;
+      sellButton.click();
+      offerUpSellMenuOpened = true;
+      return true;
+    }
+
+    const expected = marketplace === 'facebookMarketplace'
+      ? /^(item for sale|sell an item|sell item|create a new listing|create new listing)$/i
+      : /^sell now$/i;
     const controls = document.querySelectorAll('a,button,[role="button"]');
     for (const control of controls) {
-      if (visible(control) && expected.test((control.innerText || control.textContent || '').trim())) {
+      const label = (control.innerText || control.textContent || '').replace(/\s+/g, ' ').trim();
+      if (visible(control) && expected.test(label)) {
         control.click();
-        return;
+        return true;
       }
     }
+    return false;
   }
 
   function submit() {
@@ -220,12 +246,22 @@
   });
 
   let requests = 0;
+  function assignmentUnavailable() {
+    console.warn('KeepFlip could not connect this marketplace tab to its listing run.');
+    chrome.runtime.sendMessage({ type: 'KEEPFLIP_LISTING_TAB_INIT_ERROR', marketplace }, () => void chrome.runtime.lastError);
+  }
+
+  function retryAssignment() {
+    if (requests < 12) setTimeout(getAssignment, 500);
+    else assignmentUnavailable();
+  }
+
   async function getAssignment() {
     requests += 1;
     try {
       const response = await chrome.runtime.sendMessage({ type: 'KEEPFLIP_LISTING_TAB_READY' });
       if (!response?.ok) {
-        if (requests < 12) setTimeout(getAssignment, 500);
+        retryAssignment();
         return;
       }
       assignment = response;
@@ -235,7 +271,9 @@
         return;
       }
       await fill();
-    } catch { /* A marketplace tab without an active KeepFlip run stays untouched. */ }
+    } catch {
+      retryAssignment();
+    }
   }
   void getAssignment();
 })();
