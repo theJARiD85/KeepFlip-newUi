@@ -64,12 +64,19 @@ The script downloads the pinned ONNX export and converts it using the
 channel-last conversion. Do not add `-kt input_image`: onnx2tf defines `-kt`
 as preserving an already-NHWC input, which mislabels this model's NCHW input
 and causes later decoder tensor dimensions to disagree. The exporter also
-includes targeted axis replacements for the decoder `Split_1` and `Split_2`:
-the converter trace showed it attempting to divide a dimension of size 3 into 32 pieces,
-while the intended split is the dimension of size 1024. It invokes the
+includes targeted axis replacements for the decoder splits whose converted
+axes are misidentified: the converter trace showed it attempting to divide a
+dimension of size 3 into 32 pieces, while the intended split is the dimension
+of size 1024. It invokes the
 float32 TFLite sibling on CPU and compares that mask to ONNX Runtime. The
-float16 model is packaged for the Android GPU test, and its input/output tensor
-contract is checked. The Colab CPU interpreter cannot execute this converted
+source graph has 62 decoder `Split` nodes whose ONNX axis is the second-last
+dimension: `Split_1` through `Split_49`, `Split_51` through `Split_58`,
+`Split_60` through `Split_63`, and `Split_65`. Their rank-three tensors have
+source shape `[3, 1024, width]`; after onnx2tf's layout conversion, the
+corresponding tensors are `[1024, width, 3]`, so their split axis must be 0.
+The exporter applies that correction to the full set instead of fixing only
+the first decoder nodes encountered at runtime. The float16 model is packaged
+for the Android GPU test, and its input/output tensor contract is checked. The Colab CPU interpreter cannot execute this converted
 float16 model's convolution, so this smoke test does not establish float16 GPU
 runtime compatibility. The app test must verify that on a phone. A JSON
 manifest beside the TFLite file records the tensor shapes, precision, parity

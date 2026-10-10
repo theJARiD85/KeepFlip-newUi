@@ -28,24 +28,25 @@ MODEL_FILENAME = "onnx/model.onnx"
 BASE_MODEL = "ZhengPeng7/BiRefNet_lite"
 IMAGE_SIZE = 1024
 EXPECTED_ONNX_INPUT_SHAPE = [1, 3, IMAGE_SIZE, IMAGE_SIZE]
+SPLITS_WITH_CHANNEL_LAST_AXIS_BUG = (
+    *range(1, 50),
+    *range(51, 59),
+    *range(60, 64),
+    65,
+)
 ONNX2TF_PARAMETER_REPLACEMENTS = {
     "format_version": 1,
     "operations": [
         {
-            "op_name": "wa/decoder/Split_1",
+            "op_name": f"wa/decoder/Split_{split_index}",
             "param_target": "attributes",
             "param_name": "axis",
-            # In the converted [1024, 32, 3] tensor, split the 1024 axis
-            # into 32 chunks. onnx2tf's default axis mapping selects size 3.
+            # These ONNX nodes split the second-last axis in [3, 1024, width].
+            # onnx2tf lays the converted tensor out as [1024, width, 3], so the
+            # matching axis is 0. Its default mapping incorrectly selects 2.
             "values": 0,
-        },
-        {
-            "op_name": "wa/decoder/Split_2",
-            "param_target": "attributes",
-            "param_name": "axis",
-            # The converter trace shows the same [1024, 32, 3] layout here.
-            "values": 0,
-        },
+        }
+        for split_index in SPLITS_WITH_CHANNEL_LAST_AXIS_BUG
     ],
 }
 
