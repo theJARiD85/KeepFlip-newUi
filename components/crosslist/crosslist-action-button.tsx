@@ -148,21 +148,21 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     ...styles,
     container: {
       ...styles["container"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
     },
     button: {
       ...styles["button"],
-      minHeight: layout.isWeb ? layout.webResponsiveHeight(44) : 44,
-      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(20) : 20,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(44) : layout.responsiveHeight(44),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(20) : layout.responsiveWidth(20),
     },
     buttonText: {
       ...styles["buttonText"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : layout.responsiveFont(10),
     },
     notice: {
       ...styles["notice"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(17) : 17,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : layout.responsiveFont(12),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(17) : layout.responsiveFont(17),
     },
   });
 }

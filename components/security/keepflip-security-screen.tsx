@@ -243,7 +243,7 @@ export function KeepFlipSecurityScreen() {
       <ScrollView
         contentContainerStyle={{
           alignSelf: 'center',
-          gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(18) : 18,
+          gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(18) : responsiveLayout.responsiveWidth(18),
           maxWidth: contentMaxWidth,
           paddingBottom: insets.bottom + 28,
           paddingHorizontal: pageGutter,
@@ -256,18 +256,18 @@ export function KeepFlipSecurityScreen() {
         <Pressable
           accessibilityRole="button"
           onPress={() => router.back()}
-          style={({ pressed }) => ({ alignItems: 'center', alignSelf: 'flex-start', flexDirection: 'row', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8, opacity: pressed ? 0.7 : 1, paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(8) : 8 })}
+          style={({ pressed }) => ({ alignItems: 'center', alignSelf: 'flex-start', flexDirection: 'row', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8), opacity: pressed ? 0.7 : 1, paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(8) : responsiveLayout.responsiveHeight(8) })}
         >
           <Ionicons color={colors.scannerCyan} name="chevron-back" size={17} />
           <Text style={{ color: colors.scannerCyan, fontSize: responsiveFont(10), fontWeight: '700' }}>ACCOUNT</Text>
         </Pressable>
 
-        <View style={{ gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6 }}>
+        <View style={{ gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : responsiveLayout.responsiveWidth(6) }}>
           <Text style={{ color: colors.goldBright, fontSize: responsiveFont(9), fontWeight: '700', letterSpacing: 1.3 }}>KEEPFLIP / SECURITY</Text>
           <Text style={{ color: colors.text, fontSize: responsiveFont(27), fontWeight: '800' }}>
             Two-step verification
           </Text>
-          <Text style={{ color: colors.textMuted, fontSize: responsiveFont(12), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : 18 }}>
+          <Text style={{ color: colors.textMuted, fontSize: responsiveFont(12), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : responsiveLayout.responsiveFont(18) }}>
             Use an authenticator app to add a one-time code after your password when you sign in. This is optional.
           </Text>
         </View>
@@ -283,7 +283,7 @@ export function KeepFlipSecurityScreen() {
           <ActivityIndicator color={colors.scannerCyan} />
         ) : (
           <View style={sectionStyle}>
-            <View style={{ alignItems: 'center', flexDirection: 'row', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10 }}>
+            <View style={{ alignItems: 'center', flexDirection: 'row', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10) }}>
               <View style={[responsiveStyles.statusDot, { backgroundColor: mfaEnabled ? colors.scannerCyan : colors.gold }]} />
               <Text style={{ color: colors.text, flex: 1, fontSize: responsiveFont(15), fontWeight: '700' }}>
                 {mfaEnabled ? 'MFA is on' : 'MFA is off'}
@@ -295,7 +295,7 @@ export function KeepFlipSecurityScreen() {
 
             {mfaEnabled ? (
               <>
-                <Text style={{ color: colors.textMuted, fontSize: responsiveFont(11), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : 17 }}>
+                <Text style={{ color: colors.textMuted, fontSize: responsiveFont(11), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : responsiveLayout.responsiveFont(17) }}>
                   Sign-in currently requires your password and a second-factor code. You can turn this off while MFA is optional.
                 </Text>
                 <ActionButton
@@ -310,13 +310,13 @@ export function KeepFlipSecurityScreen() {
               </>
             ) : authenticatorSecret ? (
               <>
-                <Text style={{ color: colors.textMuted, fontSize: responsiveFont(11), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : 17 }}>
+                <Text style={{ color: colors.textMuted, fontSize: responsiveFont(11), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : responsiveLayout.responsiveFont(17) }}>
                   In your authenticator app, choose “enter setup key.” Name it KeepFlip, then enter this key:
                 </Text>
                 <Text selectable style={[responsiveStyles.secret, { backgroundColor: colors.surfaceInset, borderColor: colors.divider, color: colors.text, fontSize: responsiveFont(16) }]}>
                   {authenticatorSecret}
                 </Text>
-                <Text style={{ color: colors.textMuted, fontSize: responsiveFont(10), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16 }}>
+                <Text style={{ color: colors.textMuted, fontSize: responsiveFont(10), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : responsiveLayout.responsiveFont(16) }}>
                   Keep this setup key private. Enter the current 6-digit code below to verify the authenticator.
                 </Text>
                 <TextInput
@@ -357,7 +357,7 @@ export function KeepFlipSecurityScreen() {
               </>
             ) : hasAuthenticator ? (
               <>
-                <Text style={{ color: colors.textMuted, fontSize: responsiveFont(11), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : 17 }}>
+                <Text style={{ color: colors.textMuted, fontSize: responsiveFont(11), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : responsiveLayout.responsiveFont(17) }}>
                   Your authenticator is connected. Generate and save your recovery codes to finish enabling MFA.
                 </Text>
                 {recoveryCodes ? (
@@ -374,7 +374,7 @@ export function KeepFlipSecurityScreen() {
                   <>
                     {recoveryCodeResetRequired ? (
                       <>
-                        <Text style={{ color: colors.textMuted, fontSize: responsiveFont(10), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16 }}>
+                        <Text style={{ color: colors.textMuted, fontSize: responsiveFont(10), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : responsiveLayout.responsiveFont(16) }}>
                           Enter a current authenticator code to replace any existing recovery-code set.
                         </Text>
                         <TextInput
@@ -414,7 +414,7 @@ export function KeepFlipSecurityScreen() {
               </>
             ) : (
               <>
-                <Text style={{ color: colors.textMuted, fontSize: responsiveFont(11), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : 17 }}>
+                <Text style={{ color: colors.textMuted, fontSize: responsiveFont(11), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : responsiveLayout.responsiveFont(17) }}>
                   Add a time-based authenticator and save recovery codes to optionally require a second code when you sign in.
                 </Text>
                 <ActionButton
@@ -430,7 +430,7 @@ export function KeepFlipSecurityScreen() {
           </View>
         )}
 
-        <Text style={{ color: colors.textMuted, fontSize: responsiveFont(10), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16 }}>
+        <Text style={{ color: colors.textMuted, fontSize: responsiveFont(10), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : responsiveLayout.responsiveFont(16) }}>
           Two-step verification is optional. If you enable it, Appwrite verifies authenticator or recovery codes during sign-in.
         </Text>
       </ScrollView>
@@ -462,8 +462,8 @@ function RecoveryCodeSetup({
   const responsiveLayout2 = useResponsiveLayout();
   const responsiveStyles2 = useResponsiveStyles(createStylesWebResponsive);
   return (
-    <View style={{ gap: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveWidth(12) : 12 }}>
-      <Text style={{ color: colors.goldBright, fontSize: responsiveFont(11), fontWeight: '700', lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(17) : 17 }}>
+    <View style={{ gap: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveWidth(12) : responsiveLayout2.responsiveWidth(12) }}>
+      <Text style={{ color: colors.goldBright, fontSize: responsiveFont(11), fontWeight: '700', lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(17) : responsiveLayout2.responsiveFont(17) }}>
         Save these one-time recovery codes somewhere private. Each code can be used once if you lose your authenticator.
       </Text>
       <View style={[responsiveStyles2.recoveryGrid, { backgroundColor: colors.surfaceInset, borderColor: colors.divider }]}>
@@ -478,12 +478,12 @@ function RecoveryCodeSetup({
         accessibilityState={{ checked: acknowledged, disabled: isBusy }}
         disabled={isBusy}
         onPress={onAcknowledge}
-        style={{ alignItems: 'center', flexDirection: 'row', gap: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveWidth(9) : 9, opacity: isBusy ? 0.55 : 1, paddingVertical: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveHeight(5) : 5 }}
+        style={{ alignItems: 'center', flexDirection: 'row', gap: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveWidth(9) : responsiveLayout2.responsiveWidth(9), opacity: isBusy ? 0.55 : 1, paddingVertical: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveHeight(5) : responsiveLayout2.responsiveHeight(5) }}
       >
         <View style={[responsiveStyles2.checkbox, { backgroundColor: acknowledged ? colors.scannerCyan : 'transparent', borderColor: acknowledged ? colors.scannerCyan : colors.textMuted }]}>
           {acknowledged ? <Ionicons color={colors.textOnAccent} name="checkmark-circle" size={12} /> : null}
         </View>
-        <Text style={{ color: colors.text, flex: 1, fontSize: responsiveFont(11), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(16) : 16 }}>
+        <Text style={{ color: colors.text, flex: 1, fontSize: responsiveFont(11), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(16) : responsiveLayout2.responsiveFont(16) }}>
           I saved my recovery codes somewhere safe.
         </Text>
       </Pressable>
@@ -527,15 +527,15 @@ function ActionButton({
         alignItems: 'center',
         backgroundColor: secondary ? colors.surfaceInset : colors.gold,
         borderColor: secondary ? colors.divider : colors.gold,
-        borderRadius: responsiveLayout3.isWeb ? responsiveLayout3.webResponsiveWidth(13) : 13,
+        borderRadius: responsiveLayout3.isWeb ? responsiveLayout3.webResponsiveWidth(13) : responsiveLayout3.responsiveWidth(13),
         borderWidth: 1,
         flex: 1,
         flexDirection: 'row',
-        gap: responsiveLayout3.isWeb ? responsiveLayout3.webResponsiveWidth(8) : 8,
+        gap: responsiveLayout3.isWeb ? responsiveLayout3.webResponsiveWidth(8) : responsiveLayout3.responsiveWidth(8),
         justifyContent: 'center',
-        minHeight: responsiveLayout3.isWeb ? responsiveLayout3.webResponsiveHeight(48) : 48,
+        minHeight: responsiveLayout3.isWeb ? responsiveLayout3.webResponsiveHeight(48) : responsiveLayout3.responsiveHeight(48),
         opacity: disabled ? 0.5 : pressed ? 0.75 : 1,
-        paddingHorizontal: responsiveLayout3.isWeb ? responsiveLayout3.webResponsiveWidth(12) : 12,
+        paddingHorizontal: responsiveLayout3.isWeb ? responsiveLayout3.webResponsiveWidth(12) : responsiveLayout3.responsiveWidth(12),
       })}
     >
       {busy ? <ActivityIndicator color={secondary ? colors.text : colors.textOnAccent} size="small" /> : null}
@@ -598,35 +598,35 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     ...styles,
     checkbox: {
       ...styles["checkbox"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(5) : 5,
-      height: layout.isWeb ? layout.webResponsiveHeight(20) : 20,
-      width: layout.isWeb ? layout.webResponsiveWidth(20) : 20,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(5) : layout.responsiveWidth(5),
+      height: layout.isWeb ? layout.webResponsiveHeight(20) : layout.responsiveHeight(20),
+      width: layout.isWeb ? layout.webResponsiveWidth(20) : layout.responsiveWidth(20),
     },
     otpInput: {
       ...styles["otpInput"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
-      minHeight: layout.isWeb ? layout.webResponsiveHeight(52) : 52,
-      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(52) : layout.responsiveHeight(52),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(14) : layout.responsiveWidth(14),
     },
     recoveryGrid: {
       ...styles["recoveryGrid"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
-      gap: layout.isWeb ? layout.webResponsiveWidth(13) : 13,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
+      gap: layout.isWeb ? layout.webResponsiveWidth(13) : layout.responsiveWidth(13),
     },
     section: {
       ...styles["section"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(18) : 18,
-      gap: layout.isWeb ? layout.webResponsiveWidth(15) : 15,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(18) : layout.responsiveWidth(18),
+      gap: layout.isWeb ? layout.webResponsiveWidth(15) : layout.responsiveWidth(15),
     },
     secret: {
       ...styles["secret"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
     },
     statusDot: {
       ...styles["statusDot"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
-      height: layout.isWeb ? layout.webResponsiveHeight(9) : 9,
-      width: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(9) : layout.responsiveWidth(9),
+      height: layout.isWeb ? layout.webResponsiveHeight(9) : layout.responsiveHeight(9),
+      width: layout.isWeb ? layout.webResponsiveWidth(9) : layout.responsiveWidth(9),
     },
   });
 }

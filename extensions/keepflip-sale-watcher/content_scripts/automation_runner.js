@@ -40,8 +40,10 @@
   let offerUpSellMenuOpened = false;
   let facebookMetaAiSwitchClickRequested = false;
   let facebookMoreDetailsClickRequested = false;
+  let facebookCategoryPickerOpenRequested = false;
   let facebookNextClicked = false;
   let facebookSubmissionInProgress = false;
+  let facebookShippingLabelOpenRequested = false;
 
   async function sendMessageQuietly(message) {
     try { return await chrome.runtime.sendMessage(message); } catch { /* The extension may be reloading. */ }
@@ -119,6 +121,7 @@
 
   function facebookCategoryAlias(value) {
     const normalized = normalizeChoiceLabel(value);
+    if (/\b(strollers?|prams?|baby|babies|infants?|toddlers?|car seats?|high chairs?|cribs?|bassinets?|baby gear|baby products)\b/.test(normalized)) return 'baby and kids';
     if (/\b(video games?|gaming|game consoles?|consoles?)\b/.test(normalized)) return 'electronics and computers';
     if (/\b(cameras?|photography|dslr|mirrorless|lenses?|computers?|electronics?|phones?|tablets?|audio|speakers?|printers?|televisions?|tv)\b/.test(normalized)) return 'electronics and computers';
     if (/\b(trading cards?|sports cards?|pokemon|collectibles?|toys?|dolls?|action figures?)\b/.test(normalized)) return 'toys and games';
@@ -126,40 +129,73 @@
     return '';
   }
 
-  function selectFacebookSuggestedCategory(value) {
+  function findFacebookCategoryCombobox() {
+    return Array.from(document.querySelectorAll('[role="combobox"]')).find((element) =>
+      visible(element) && /category/i.test(labelFor(element))) || null;
+  }
+
+  function facebookCategoryScore(value, label, context = '') {
+    const normalizedValue = normalizeChoiceLabel(value);
+    const normalizedLabel = normalizeChoiceLabel(String(label || '').replace(/^Suggested category:\s*/i, ''));
+    if (!normalizedLabel) return 0;
+    if (normalizedLabel === normalizedValue) return 120;
+
+    const alias = facebookCategoryAlias(`${value} ${context}`);
+    if (!alias) return 0;
+    if (normalizedLabel === alias) return 110;
+    if (alias === 'baby and kids') {
+      const isStroller = /\b(strollers?|prams?)\b/i.test(`${value} ${context}`);
+      if (isStroller && /\b(strollers?|prams?)\b/.test(normalizedLabel)) return 130;
+      if (/\b(baby|babies|infant|infants|toddler|toddlers|kids|children)\b/.test(normalizedLabel)) return 90;
+      return 0;
+    }
+    if (alias === 'electronics and computers' && /\b(electronics?|computers?|technology)\b/.test(normalizedLabel)) return 90;
+    if (alias === 'toys and games' && /\b(toys?|games?|collectibles?)\b/.test(normalizedLabel)) return 90;
+    if (alias === 'clothing and accessories' && /\b(clothing|apparel|fashion|accessories)\b/.test(normalizedLabel)) return 90;
+    return 0;
+  }
+
+  function bestFacebookCategoryCandidate(elements, value, context = '') {
+    const ranked = elements.map((element) => {
+      const label = element.getAttribute('aria-label') || element.innerText || element.textContent || '';
+      return { element, score: facebookCategoryScore(value, label, context) };
+    }).filter((entry) => entry.score > 0).sort((left, right) => right.score - left.score);
+    return ranked[0]?.element || null;
+  }
+
+  async function selectFacebookSuggestedCategory(value, context = '') {
     if (marketplace !== 'facebookMarketplace' || !value) return false;
     const group = document.querySelector('[aria-label="Suggested categories"]');
-    if (!group) return false;
-    const suggestions = Array.from(group.querySelectorAll('[aria-label^="Suggested category:"]'))
+    const suggestions = group
+      ? Array.from(group.querySelectorAll('[aria-label^="Suggested category:"]')).filter(visible)
+      : [];
+    let target = bestFacebookCategoryCandidate(suggestions, value, context);
+    if (target) {
+      target.click();
+      return true;
+    }
+
+    const combo = findFacebookCategoryCombobox();
+    if (!combo) return false;
+    const currentValue = facebookComboboxValue(combo);
+    if (facebookCategoryScore(value, currentValue, context) > 0) return true;
+
+    if (combo.getAttribute('aria-expanded') !== 'true' && !facebookCategoryPickerOpenRequested) {
+      facebookCategoryPickerOpenRequested = true;
+      combo.click();
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+    const options = Array.from(document.querySelectorAll('[role="option"], [role="menuitem"], [role="button"]'))
       .filter(visible);
-    if (!suggestions.length) return false;
-    const wanted = normalizeChoiceLabel(value);
-    const alias = facebookCategoryAlias(value);
-    const labelForSuggestion = (suggestion) => normalizeChoiceLabel(
-      (suggestion.getAttribute('aria-label') || '').replace(/^Suggested category:\s*/i, '') ||
-      suggestion.innerText || suggestion.textContent,
-    );
-    const exact = suggestions.find((suggestion) => {
-      const label = labelForSuggestion(suggestion);
-      return label === wanted || (alias && label === alias);
-    });
-    const words = new Set(wanted.split(' ').filter((word) => word.length > 2 && !['and', 'for', 'the'].includes(word)));
-    const overlap = suggestions.map((suggestion) => {
-      const label = labelForSuggestion(suggestion);
-      const count = label.split(' ').filter((word) => words.has(word)).length;
-      return { suggestion, count };
-    }).sort((left, right) => right.count - left.count);
-    const bestOverlap = overlap[0]?.count ? overlap[0].suggestion : null;
-    // Facebook's ordered suggestions are already ranked against the item. Use
-    // the first suggestion only when the generated broad category has no text match.
-    const target = exact || bestOverlap || suggestions[0];
+    target = bestFacebookCategoryCandidate(options, value, context);
+    if (!target) return false;
     target.click();
     return true;
   }
 
-  function findFacebookConditionCombobox() {
+  function findFacebookCombobox(key) {
     return Array.from(document.querySelectorAll('[role="combobox"]')).find((element) =>
-      visible(element) && /condition/i.test(labelFor(element))) || null;
+      visible(element) && new RegExp(key, 'i').test(labelFor(element))) || null;
   }
 
   function facebookConditionMatches(value, optionLabel) {
@@ -181,14 +217,154 @@
     return normalizeChoiceLabel((combo.innerText || combo.textContent || '').replace(labelText, ' '));
   }
 
-  async function selectFacebookCondition(value) {
+  function isFacebookDeliveryStep() {
+    return marketplace === 'facebookMarketplace' &&
+      (/([?&])step=delivery(?:&|$)/i.test(location.search || '') || Boolean(findFacebookCombobox('delivery method')));
+  }
+
+  function facebookDeliveryPreference() {
+    const payload = assignment?.payload || {};
+    const platformFields = payload.platformFields && typeof payload.platformFields === 'object'
+      ? payload.platformFields
+      : {};
+    const normalized = normalizeChoiceLabel(payload.deliveryMethod || platformFields.deliveryMethod);
+    if (['both', 'shipping and local pickup', 'shipping local pickup'].includes(normalized)) {
+      return ['shipping', 'local_pickup'];
+    }
+    if (normalized === 'shipping') return ['shipping'];
+    if (normalized === 'local pickup') return ['local_pickup'];
+    return null;
+  }
+
+  function facebookDeliverySelection(combo) {
+    const value = facebookComboboxValue(combo);
+    return {
+      value,
+      shipping: /\bshipping\b/.test(value),
+      localPickup: /\blocal pickup\b/.test(value),
+    };
+  }
+
+  function findFacebookDeliveryOption(method) {
+    const controls = Array.from(document.querySelectorAll(
+      '[role="option"],[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"],[role="checkbox"],[role="radio"],[role="button"],button',
+    )).filter(visible);
+    const matches = controls.filter((control) => {
+      const text = normalizeChoiceLabel([
+        control.getAttribute('aria-label'), control.innerText, control.textContent,
+      ].filter(Boolean).join(' '));
+      if (method === 'shipping') return /\bshipping\b/.test(text) && !/\blocal pickup\b/.test(text);
+      return /\blocal pickup\b/.test(text);
+    });
+    return matches.find((control) => /^(option|menuitem|menuitemcheckbox|menuitemradio|checkbox|radio)$/.test(control.getAttribute('role') || '')) ||
+      matches[0] || null;
+  }
+
+  async function applyFacebookDeliveryPreference(combo, preference) {
+    let currentCombo = combo;
+    let selection = facebookDeliverySelection(currentCombo);
+    const wantedShipping = preference.includes('shipping');
+    const wantedLocalPickup = preference.includes('local_pickup');
+
+    for (const [method, wanted, selected] of [
+      ['shipping', wantedShipping, selection.shipping],
+      ['local_pickup', wantedLocalPickup, selection.localPickup],
+    ]) {
+      if (wanted === selected) continue;
+      currentCombo = findFacebookCombobox('delivery method') || currentCombo;
+      if (currentCombo.getAttribute('aria-expanded') !== 'true') {
+        currentCombo.click();
+        await new Promise((resolve) => setTimeout(resolve, 120));
+      }
+      const option = findFacebookDeliveryOption(method);
+      if (!option) return { ok: false, message: `Facebook's ${method === 'local_pickup' ? 'local pickup' : 'shipping'} option was not found. Choose the delivery method in Facebook.` };
+      option.click();
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      currentCombo = findFacebookCombobox('delivery method') || currentCombo;
+      selection = facebookDeliverySelection(currentCombo);
+      if (method === 'shipping' && selection.shipping !== wanted) {
+        return { ok: false, message: 'Facebook did not confirm the requested shipping selection. Check the delivery menu.' };
+      }
+      if (method === 'local_pickup' && selection.localPickup !== wanted) {
+        return { ok: false, message: 'Facebook did not confirm the requested local pickup selection. Check the delivery menu.' };
+      }
+    }
+
+    selection = facebookDeliverySelection(findFacebookCombobox('delivery method') || currentCombo);
+    if (selection.shipping !== wantedShipping || selection.localPickup !== wantedLocalPickup) {
+      return { ok: false, message: 'Facebook could not confirm the requested delivery methods. Check the delivery menu.' };
+    }
+    return { ok: true, selection };
+  }
+
+  function findFacebookShippingLabelButton() {
+    return Array.from(document.querySelectorAll('button,[role="button"]')).find((control) =>
+      visible(control) && /^select shipping label$/i.test(facebookButtonLabel(control))) || null;
+  }
+
+  async function prepareFacebookDeliveryStep() {
+    let combo = findFacebookCombobox('delivery method');
+    if (!combo) return { ready: false, message: 'Facebook opened the delivery step, but KeepFlip could not find its delivery method menu.' };
+    if (combo.getAttribute('aria-expanded') !== 'true') {
+      combo.click();
+      await new Promise((resolve) => setTimeout(resolve, 120));
+      combo = findFacebookCombobox('delivery method') || combo;
+    }
+
+    const preference = facebookDeliveryPreference();
+    if (preference) {
+      const result = await applyFacebookDeliveryPreference(combo, preference);
+      if (!result.ok) return result;
+      combo = findFacebookCombobox('delivery method') || combo;
+    }
+
+    let selection = facebookDeliverySelection(combo);
+    if (!selection.shipping && !selection.localPickup) {
+      return { ready: false, message: 'Choose Shipping, Local pickup, or both in Facebook before continuing.' };
+    }
+
+    if (combo.getAttribute('aria-expanded') === 'true') {
+      combo.click();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    if (selection.shipping) {
+      const shippingLabelButton = findFacebookShippingLabelButton();
+      if (!shippingLabelButton) {
+        return { ready: false, message: 'Shipping is selected, but Facebook’s Select shipping label button was not found.' };
+      }
+      let opened = false;
+      if (!facebookShippingLabelOpenRequested) {
+        facebookShippingLabelOpenRequested = true;
+        shippingLabelButton.click();
+        await new Promise((resolve) => setTimeout(resolve, 150));
+        opened = true;
+      }
+      return { ready: false, message: opened
+        ? 'KeepFlip pressed Select shipping label. Choose the label you want in Facebook, then resume the listing in KeepFlip.'
+        : 'Choose a shipping label in Facebook before resuming the listing in KeepFlip.' };
+    }
+
+    return { ready: true, selection };
+  }
+
+  function facebookComboboxMatches(key, value, optionLabel) {
+    if (key === 'condition') return facebookConditionMatches(value, optionLabel);
+    const wanted = normalizeChoiceLabel(value);
+    const option = normalizeChoiceLabel(optionLabel);
+    if (!wanted || !option) return false;
+    return option === wanted || (wanted.length > 2 && option.split(' ').includes(wanted));
+  }
+
+  async function selectFacebookComboboxValue(key, value) {
     if (marketplace !== 'facebookMarketplace' || !value) return false;
-    const combo = findFacebookConditionCombobox();
+    const combo = findFacebookCombobox(key);
     if (!combo) return false;
-    if (facebookConditionMatches(value, facebookComboboxValue(combo))) return true;
+    if (facebookComboboxMatches(key, value, facebookComboboxValue(combo))) return true;
     let options = Array.from(document.querySelectorAll('[role="listbox"] [role="option"], [role="option"]'))
       .filter(visible);
-    let selected = options.find((option) => facebookConditionMatches(
+    let selected = options.find((option) => facebookComboboxMatches(
+      key,
       value,
       option.getAttribute('aria-label') || option.innerText || option.textContent,
     ));
@@ -197,7 +373,8 @@
       await new Promise((resolve) => setTimeout(resolve, 100));
       options = Array.from(document.querySelectorAll('[role="listbox"] [role="option"], [role="option"]'))
         .filter(visible);
-      selected = options.find((option) => facebookConditionMatches(
+      selected = options.find((option) => facebookComboboxMatches(
+        key,
         value,
         option.getAttribute('aria-label') || option.innerText || option.textContent,
       ));
@@ -205,6 +382,10 @@
     if (!selected) return false;
     selected.click();
     return true;
+  }
+
+  async function selectFacebookCondition(value) {
+    return selectFacebookComboboxValue('condition', value);
   }
 
   function setField(element, raw) {
@@ -278,6 +459,11 @@
       report('login_required', { message: 'Sign in on this marketplace, then return to KeepFlip and choose Resume.' });
       return;
     }
+    if (isFacebookDeliveryStep()) {
+      facebookNextClicked = true;
+      await submitFacebookListing();
+      return;
+    }
     const platformFields = payload.platformFields && typeof payload.platformFields === 'object' && !Array.isArray(payload.platformFields)
       ? payload.platformFields
       : {};
@@ -308,19 +494,24 @@
       for (const [key, value] of Object.entries(fields)) {
         if (filledFields.includes(key) || !value) continue;
         if (marketplace === 'facebookMarketplace' && key === 'category') {
-          if (selectFacebookSuggestedCategory(value)) filledFields.push(key);
+          const context = [fields.title, fields.description, platformFields.model, platformFields.itemType]
+            .filter(Boolean).join(' ');
+          if (await selectFacebookSuggestedCategory(value, context)) filledFields.push(key);
           continue;
         }
         if (marketplace === 'facebookMarketplace' && key === 'condition') {
           if (await selectFacebookCondition(value)) filledFields.push(key);
           continue;
         }
+        if (marketplace === 'facebookMarketplace' && key === 'color' && !findField(key)) {
+          if (await selectFacebookComboboxValue(key, value)) filledFields.push(key);
+          continue;
+        }
         const input = findField(key);
         if (input && setField(input, value)) filledFields.push(key);
       }
       const facebookFormReady = marketplace !== 'facebookMarketplace' ||
-        !['category', 'condition'].every((key) => Boolean(fields[key])) ||
-        Object.entries(fields).every(([key, value]) => !value || filledFields.includes(key));
+        ['category', 'condition'].every((key) => Boolean(fields[key]) && filledFields.includes(key));
       if (assignment.photos.length && uploadedPhotoCount === 0 && filledFields.includes('title')) {
         try { uploadedPhotoCount = await attachPhotos(assignment.photos); } catch { /* Report for review below. */ }
       }
@@ -330,20 +521,26 @@
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
     const missingFields = Object.keys(fields).filter((key) =>
-      (marketplace === 'facebookMarketplace' && ['category', 'condition'].includes(key) && !fields[key]) ||
-      (fields[key] && !filledFields.includes(key)),
+      marketplace === 'facebookMarketplace'
+        ? (core.includes(key) || ['category', 'condition'].includes(key)) && (!fields[key] || !filledFields.includes(key))
+        : fields[key] && !filledFields.includes(key),
     );
     const photosReady = payload.photoCount === 0 ||
       (uploadedPhotoCount === payload.photoCount && assignment.unavailablePhotoCount === 0);
     const facebookDetailsReady = marketplace !== 'facebookMarketplace' ||
-      (['category', 'condition'].every((key) => Boolean(fields[key]) && filledFields.includes(key)) &&
-        missingFields.length === 0);
+      ['category', 'condition'].every((key) => Boolean(fields[key]) && filledFields.includes(key));
     const status = core.every((key) => filledFields.includes(key)) && facebookDetailsReady &&
       photosReady && facebookMetaAiDraftsOff ? 'filled' : 'needs_review';
-    const details = { fields: filledFields, missingFields, uploadedPhotoCount,
-      message: status === 'filled' ? 'Draft fields filled and photos sent to the upload control. Check the marketplace preview before posting.'
-        : !facebookMetaAiDraftsOff ? 'Facebook could not turn off Draft listings with Meta AI. Check that switch before continuing.'
-          : 'Some fields or photos need attention in this marketplace tab.' };
+  const details = { fields: filledFields, missingFields, uploadedPhotoCount,
+    message: status === 'filled' ? 'Draft fields filled and photos sent to the upload control. Check the marketplace preview before posting.'
+      : !facebookMetaAiDraftsOff ? 'Facebook could not turn off Draft listings with Meta AI. Check that switch before continuing.'
+        : marketplace === 'facebookMarketplace' && !filledFields.includes('category')
+          ? 'Facebook did not offer a category that matches this item. Choose the correct category in the Facebook tab before continuing.'
+          : marketplace === 'facebookMarketplace' && !fields.condition
+            ? 'Add this item’s condition in KeepFlip, then retry the Facebook form.'
+            : marketplace === 'facebookMarketplace' && !filledFields.includes('condition')
+              ? 'Facebook’s condition menu did not show a matching option. Choose the item condition in the Facebook tab before continuing.'
+              : 'Some required fields or photos need attention in this marketplace tab.' };
     await report(status, marketplace === 'facebookMarketplace' && status === 'filled'
       ? { ...details, message: 'Facebook listing details and photos are ready. Moving to the next listing step…' }
       : details);
@@ -449,7 +646,7 @@
     if (facebookSubmissionInProgress) return;
     facebookSubmissionInProgress = true;
     try {
-      if (!facebookNextClicked) {
+      if (!facebookNextClicked && !isFacebookDeliveryStep()) {
         let nextButton = null;
         for (let attempt = 0; attempt < 20 && !nextButton; attempt += 1) {
           nextButton = findFacebookNextButton();
@@ -462,6 +659,8 @@
         }
         facebookNextClicked = true;
         nextButton.click();
+      } else if (isFacebookDeliveryStep()) {
+        facebookNextClicked = true;
       }
 
       for (let attempt = 0; attempt < 24; attempt += 1) {
@@ -470,6 +669,21 @@
             message: 'Facebook advanced to the live listing. Checking the listing page…' });
           await report('confirmed', { externalUrl: location.href });
           return;
+        }
+        if (isFacebookDeliveryStep()) {
+          const delivery = await prepareFacebookDeliveryStep();
+          if (!delivery.ready) {
+            await report('needs_review', { fields: filledFields, uploadedPhotoCount, message: delivery.message });
+            return;
+          }
+          const deliveryNextButton = findFacebookNextButton();
+          if (deliveryNextButton) {
+            deliveryNextButton.click();
+            await report('filled', { fields: filledFields, uploadedPhotoCount,
+              message: 'Facebook delivery settings are ready. Advanced to the final listing step.' });
+          }
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          continue;
         }
         const publishButton = findFacebookFinalSubmitButton();
         if (publishButton) {
@@ -489,11 +703,13 @@
   }
 
   async function submit() {
-    if (!assignment || !core.every((key) => filledFields.includes(key))) return;
+    if (!assignment) return;
     if (marketplace === 'facebookMarketplace') {
+      if (!isFacebookDeliveryStep() && !core.every((key) => filledFields.includes(key))) return;
       await submitFacebookListing();
       return;
     }
+    if (!core.every((key) => filledFields.includes(key))) return;
     const buttons = Array.from(document.querySelectorAll('button,input[type="submit"],[role="button"]')).filter(visible);
     const label = (button) => (button.innerText || button.textContent || button.value || '').trim();
     const listingArea = (button) => button.closest('main,form,[role="dialog"]');

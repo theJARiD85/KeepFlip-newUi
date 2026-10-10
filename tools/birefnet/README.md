@@ -63,7 +63,10 @@ The script downloads the pinned ONNX export and converts it using the
 (`[1, 3, 1024, 1024]`), so the exporter lets onnx2tf perform its normal
 channel-last conversion. Do not add `-kt input_image`: onnx2tf defines `-kt`
 as preserving an already-NHWC input, which mislabels this model's NCHW input
-and causes later decoder tensor dimensions to disagree. It invokes the
+and causes later decoder tensor dimensions to disagree. The exporter also
+includes targeted axis replacements for the decoder `Split_1` and `Split_2`:
+the converter trace showed it attempting to divide a dimension of size 3 into 32 pieces,
+while the intended split is the dimension of size 1024. It invokes the
 float32 TFLite sibling on CPU and compares that mask to ONNX Runtime. The
 float16 model is packaged for the Android GPU test, and its input/output tensor
 contract is checked. The Colab CPU interpreter cannot execute this converted

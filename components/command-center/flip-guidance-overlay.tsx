@@ -170,7 +170,7 @@ export function FlipGuidanceOverlay() {
             </View>
             <View style={styles.headingCopy}>
               <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>FLIP / GUIDED HELP</Text>
-              <Text numberOfLines={2} style={[styles.title, { fontSize: responsiveFont(17), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(21) : 21 }]}>
+              <Text numberOfLines={2} style={[styles.title, { fontSize: responsiveFont(17), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(21) : responsiveLayout.responsiveFont(21) }]}>
                 {activeGuide.title}
               </Text>
             </View>
@@ -197,10 +197,10 @@ export function FlipGuidanceOverlay() {
             <View style={[styles.progressFill, { width: `${progress}%` }]} />
           </View>
 
-          <Text style={[styles.stepTitle, { fontSize: responsiveFont(14), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : 18 }]}>
+          <Text style={[styles.stepTitle, { fontSize: responsiveFont(14), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : responsiveLayout.responsiveFont(18) }]}>
             {step.title}
           </Text>
-          <Text selectable style={[styles.body, { fontSize: responsiveFont(10), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15 }]}>
+          <Text selectable style={[styles.body, { fontSize: responsiveFont(10), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : responsiveLayout.responsiveFont(15) }]}>
             {step.body}
           </Text>
 

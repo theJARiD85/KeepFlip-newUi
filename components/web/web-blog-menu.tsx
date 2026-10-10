@@ -162,39 +162,39 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     ...styles,
     trigger: {
       ...styles["trigger"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(4) : 4,
-      minHeight: layout.isWeb ? layout.webResponsiveHeight(38) : 38,
-      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(6) : 6,
+      gap: layout.isWeb ? layout.webResponsiveWidth(4) : layout.responsiveWidth(4),
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(38) : layout.responsiveHeight(38),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(6) : layout.responsiveWidth(6),
     },
     triggerText: {
       ...styles["triggerText"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : layout.responsiveFont(12),
     },
     panel: {
       ...styles["panel"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(16) : 16,
-      width: layout.isWeb ? layout.webResponsiveWidth(310) : 310,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(16) : layout.responsiveWidth(16),
+      width: layout.isWeb ? layout.webResponsiveWidth(310) : layout.responsiveWidth(310),
     },
     eyebrow: {
       ...styles["eyebrow"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : layout.responsiveFont(10),
     },
     divider: {
       ...styles["divider"],
-      marginVertical: layout.isWeb ? layout.webResponsiveHeight(4) : 4,
+      marginVertical: layout.isWeb ? layout.webResponsiveHeight(4) : layout.responsiveHeight(4),
     },
     nativeLink: {
       ...styles["nativeLink"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
-      gap: layout.isWeb ? layout.webResponsiveWidth(5) : 5,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(10) : layout.responsiveWidth(10),
+      gap: layout.isWeb ? layout.webResponsiveWidth(5) : layout.responsiveWidth(5),
     },
     linkTitle: {
       ...styles["linkTitle"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : layout.responsiveFont(14),
     },
     linkSubtitle: {
       ...styles["linkSubtitle"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : layout.responsiveFont(12),
     },
   });
 }

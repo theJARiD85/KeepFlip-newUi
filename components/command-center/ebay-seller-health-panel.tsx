@@ -295,7 +295,7 @@ export function EbaySellerHealthPanel({ enabled }: { enabled: boolean }) {
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
   const staticStyles = StyleSheet.create({
     card: {
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       padding: 14,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
@@ -305,11 +305,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     headerRow: {
       flexDirection: 'row',
       alignItems: 'flex-start',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
     },
     headerCopy: {
       flex: 1,
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5),
     },
     heading: {
       color: theme.colors.text,
@@ -317,9 +317,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       letterSpacing: -0.1,
     },
     liveBadge: {
-      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
-      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(5) : 5,
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(5) : responsiveLayout.responsiveHeight(5),
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5),
       backgroundColor: theme.colors.iconSurfaceCyan,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
@@ -331,35 +331,35 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     muted: {
       color: theme.colors.textMuted,
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : responsiveLayout.responsiveFont(15),
     },
     text: {
       color: theme.colors.text,
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : 18,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : responsiveLayout.responsiveFont(18),
     },
     error: {
       color: theme.colors.danger,
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : responsiveLayout.responsiveFont(16),
     },
     loadingRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
-      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(4) : 4,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(4) : responsiveLayout.responsiveHeight(4),
     },
     emptyState: {
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
     },
     levelGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
     },
     levelCard: {
       flexGrow: 1,
       flexBasis: '46%',
-      minWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(145) : 145,
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5,
+      minWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(145) : responsiveLayout.responsiveWidth(145),
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5),
       padding: 11,
       borderRadius: theme.radii.small,
       backgroundColor: theme.colors.iconSurfaceGold,
@@ -379,13 +379,13 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     metricGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
     },
     metricCard: {
       flexGrow: 1,
       flexBasis: '46%',
-      minWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(145) : 145,
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
+      minWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(145) : responsiveLayout.responsiveWidth(145),
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
       padding: 10,
       borderRadius: theme.radii.small,
       borderWidth: 1,
@@ -401,17 +401,17 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontWeight: '700',
     },
     returnCard: {
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : responsiveLayout.responsiveWidth(6),
       padding: 11,
       borderRadius: theme.radii.small,
       backgroundColor: theme.colors.iconSurfaceGold,
     },
     button: {
-      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(40) : 40,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(40) : responsiveLayout.responsiveHeight(40),
       justifyContent: 'center',
       alignItems: 'center',
-      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
-      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(9) : 9,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(9) : responsiveLayout.responsiveHeight(9),
       borderRadius: theme.radii.small,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
@@ -428,7 +428,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     dashboardLink: {
       alignSelf: 'flex-start',
-      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(4) : 4,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(4) : responsiveLayout.responsiveHeight(4),
       paddingHorizontal: 2,
     },
     dashboardLinkText: {

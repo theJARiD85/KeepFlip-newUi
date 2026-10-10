@@ -413,7 +413,7 @@ test('OfferUp opens its Sell popup before filling the listing form', async () =>
   assert.ok(messages.some((message) => message.type === 'KEEPFLIP_LISTING_TAB_STATUS'));
 });
 
-test('Facebook opens its Item for sale composer and fills the listing fields', async () => {
+test('Facebook selects a stroller category and advances when optional fields are unavailable', async () => {
   let composerOpen = false;
   let createNewListingClicks = 0;
   let itemForSaleClicks = 0;
@@ -421,6 +421,14 @@ test('Facebook opens its Item for sale composer and fills the listing fields', a
   let metaAiSwitchClicks = 0;
   let moreDetailsClicks = 0;
   let moreDetailsExpanded = false;
+  let selectedCategory = 'Household';
+  let selectedCondition = '';
+  let selectedColor = '';
+  let categoryPickerOpen = false;
+  let conditionPickerOpen = false;
+  let colorPickerOpen = false;
+  let householdCategoryClicks = 0;
+  let babyCategoryClicks = 0;
   let facebookNextClicks = 0;
   let facebookPublishClicks = 0;
   let fieldsReadyWhenNextClicked = false;
@@ -441,15 +449,58 @@ test('Facebook opens its Item for sale composer and fills the listing fields', a
     makeField('price', 'INPUT', 'Price'),
   ];
   const detailFields = [
-    makeField('category', 'INPUT', 'Category'),
-    makeField('condition', 'INPUT', 'Condition'),
-    makeField('brand', 'INPUT', 'Brand'),
-    makeField('size', 'INPUT', 'Size'),
-    makeField('color', 'INPUT', 'Color'),
     makeField('material', 'INPUT', 'Material'),
-    makeField('era', 'INPUT', 'Era'),
   ];
   const fields = [...coreFields, ...detailFields];
+  const categoryCombo = {
+    innerText: '',
+    textContent: '',
+    getAttribute: (attribute) => attribute === 'aria-labelledby' ? 'category-label'
+      : attribute === 'aria-expanded' ? String(categoryPickerOpen) : null,
+    getBoundingClientRect: () => ({ width: 220, height: 44 }),
+    closest: () => null,
+    click: () => { categoryPickerOpen = true; },
+  };
+  Object.defineProperty(categoryCombo, 'innerText', { get: () => `Category ${selectedCategory}` });
+  Object.defineProperty(categoryCombo, 'textContent', { get: () => `Category ${selectedCategory}` });
+  const makePickerCombo = (name, currentValue, isOpen, setOpen) => {
+    const combo = {
+      getAttribute: (attribute) => attribute === 'aria-labelledby' ? `${name}-label`
+        : attribute === 'aria-expanded' ? String(isOpen()) : null,
+      getBoundingClientRect: () => ({ width: 220, height: 44 }),
+      closest: () => null,
+      click: () => setOpen(true),
+    };
+    Object.defineProperty(combo, 'innerText', { get: () => `${name} ${currentValue()}` });
+    Object.defineProperty(combo, 'textContent', { get: () => `${name} ${currentValue()}` });
+    return combo;
+  };
+  const conditionCombo = makePickerCombo('Condition', () => selectedCondition,
+    () => conditionPickerOpen, (value) => { conditionPickerOpen = value; });
+  const colorCombo = makePickerCombo('Color', () => selectedColor,
+    () => colorPickerOpen, (value) => { colorPickerOpen = value; });
+  const makeChoice = (label, onClick, ariaLabel = null) => ({
+    disabled: false,
+    innerText: label,
+    textContent: label,
+    getAttribute: (attribute) => attribute === 'aria-label' ? ariaLabel : null,
+    getBoundingClientRect: () => ({ width: 180, height: 44 }),
+    click: onClick,
+  });
+  const categorySuggestions = [
+    makeChoice('Household', () => { householdCategoryClicks += 1; selectedCategory = 'Household'; }, 'Suggested category: Household'),
+    makeChoice('Books, Movies & Music', () => undefined, 'Suggested category: Books, Movies & Music'),
+    makeChoice('Arts & Crafts', () => undefined, 'Suggested category: Arts & Crafts'),
+  ];
+  const suggestedCategories = {
+    querySelectorAll: (selector) => selector === '[aria-label^="Suggested category:"]' ? categorySuggestions : [],
+  };
+  const babyCategoryOption = makeChoice('Baby & Kids', () => {
+    babyCategoryClicks += 1;
+    selectedCategory = 'Baby & Kids';
+  }, 'Baby & Kids');
+  const conditionOption = makeChoice('New', () => { selectedCondition = 'New'; }, 'New');
+  const colorOption = makeChoice('Champagne', () => { selectedColor = 'Champagne'; }, 'Champagne');
   const moreDetailsButton = {
     disabled: false,
     innerText: 'More details\nAttract more interest by including more details.',
@@ -476,7 +527,8 @@ test('Facebook opens its Item for sale composer and fills the listing fields', a
     closest: () => null,
     click: () => {
       facebookNextClicks += 1;
-      fieldsReadyWhenNextClicked = fields.every((field) => field.value);
+      fieldsReadyWhenNextClicked = coreFields.every((field) => field.value) &&
+        selectedCategory === 'Baby & Kids' && selectedCondition === 'New';
     },
   };
   const publishButton = {
@@ -492,14 +544,6 @@ test('Facebook opens its Item for sale composer and fills the listing fields', a
       facebookLocation.href = 'https://www.facebook.com/marketplace/item/123456789';
     },
   };
-  const makeChoice = (innerText, click) => ({
-    disabled: false,
-    innerText,
-    textContent: innerText,
-    getAttribute: (attribute) => attribute === 'aria-label' ? null : null,
-    getBoundingClientRect: () => ({ width: 180, height: 44 }),
-    click,
-  });
   const createNewListingLink = makeChoice('Create new listing', () => { createNewListingClicks += 1; });
   const itemForSaleButton = makeChoice(
     'Item for sale\nCreate a single listing for one or more items to sell.',
@@ -517,12 +561,22 @@ test('Facebook opens its Item for sale composer and fills the listing fields', a
       : [],
   };
   const document = {
-    querySelector: (selector) => selector === 'input[type="checkbox"][role="switch"][aria-label="Draft listings with Meta AI"]' && composerOpen
-      ? metaAiSwitch
-      : null,
-    getElementById: () => null,
+    querySelector: (selector) => {
+      if (selector === 'input[type="checkbox"][role="switch"][aria-label="Draft listings with Meta AI"]' && composerOpen) return metaAiSwitch;
+      if (selector === '[aria-label="Suggested categories"]' && composerOpen) return suggestedCategories;
+      return null;
+    },
+    getElementById: (id) => ({ textContent: id === 'category-label' ? 'Category'
+      : id === 'Condition-label' ? 'Condition' : id === 'Color-label' ? 'Color' : '' }),
     querySelectorAll: (selector) => {
       if (selector === '[role="dialog"]') return composerOpen ? [] : [listingTypeDialog];
+      if (selector === '[role="combobox"]') return composerOpen ? [categoryCombo, conditionCombo, colorCombo] : [];
+      if (selector === '[role="listbox"] [role="option"], [role="option"]') {
+        return [...(conditionPickerOpen ? [conditionOption] : []), ...(colorPickerOpen ? [colorOption] : [])];
+      }
+      if (selector === '[role="option"], [role="menuitem"], [role="button"]') {
+        return categoryPickerOpen ? [babyCategoryOption] : [];
+      }
       if (selector === 'a,button,[role="button"]') {
         return composerOpen ? [] : [createNewListingLink, itemForSaleButton, vehicleForSaleButton];
       }
@@ -549,9 +603,9 @@ test('Facebook opens its Item for sale composer and fills the listing fields', a
     ok: true,
     jobStatus: 'opened',
     runId: 'facebook-run-123456',
-    payload: { title: 'Vintage jacket', description: 'Leather jacket in good condition.', price: '85',
-      category: 'Jackets', condition: 'Good', brand: 'Harley Davidson', size: 'L', color: 'Black',
-      photoCount: 0, platformFields: { material: 'Leather', era: 'Vintage' } },
+    payload: { title: 'Evenflo Transformer Stroller', description: 'New Evenflo stroller, factory sealed.', price: '450',
+      category: 'Baby & Toddler Gear', condition: 'New', brand: 'Evenflo', size: 'One Size', color: 'Champagne',
+      photoCount: 0, platformFields: { material: 'Plastic', era: 'Modern' } },
     photos: [],
     unavailablePhotoCount: 0,
   };
@@ -588,9 +642,13 @@ test('Facebook opens its Item for sale composer and fills the listing fields', a
   assert.equal(moreDetailsClicks, 1);
   assert.equal(metaAiSwitchClicks, 1);
   assert.equal(metaAiSwitch.checked, false);
+  assert.equal(householdCategoryClicks, 0);
+  assert.equal(babyCategoryClicks, 1);
+  assert.equal(selectedCategory, 'Baby & Kids');
+  assert.equal(selectedCondition, 'New');
+  assert.equal(selectedColor, 'Champagne');
   assert.deepEqual(fields.map((field) => field.value), [
-    'Vintage jacket', 'Leather jacket in good condition.', '85', 'Jackets', 'Good',
-    'Harley Davidson', 'L', 'Black', 'Leather', 'Vintage',
+    'Evenflo Transformer Stroller', 'New Evenflo stroller, factory sealed.', '450', 'Plastic',
   ]);
   assert.equal(fieldsReadyWhenNextClicked, true);
   assert.equal(facebookNextClicks, 1);
@@ -599,6 +657,130 @@ test('Facebook opens its Item for sale composer and fills the listing fields', a
   assert.ok(statuses.some((status) => status.status === 'submit_clicked'));
   assert.equal(statuses.at(-1)?.status, 'confirmed');
   assert.equal(statuses.at(-1)?.externalUrl, facebookLocation.href);
+});
+
+test('Facebook applies an explicit shipping and pickup choice, then opens the shipping label picker', async () => {
+  let deliveryMenuOpen = false;
+  let shippingSelected = false;
+  let localPickupSelected = false;
+  let shippingOptionClicks = 0;
+  let localPickupOptionClicks = 0;
+  let shippingLabelClicks = 0;
+  let nextClicks = 0;
+  const statuses = [];
+  const currentDeliveryText = () => {
+    const selections = [shippingSelected ? 'Shipping' : '', localPickupSelected ? 'Local pickup' : ''].filter(Boolean);
+    return selections.join(' & ');
+  };
+  const deliveryCombo = {
+    disabled: false,
+    name: '',
+    id: 'delivery-method',
+    getAttribute: (attribute) => attribute === 'aria-labelledby' ? 'delivery-label'
+      : attribute === 'aria-expanded' ? String(deliveryMenuOpen) : null,
+    getBoundingClientRect: () => ({ width: 260, height: 44 }),
+    closest: () => null,
+    click: () => { deliveryMenuOpen = !deliveryMenuOpen; },
+  };
+  Object.defineProperty(deliveryCombo, 'innerText', { get: () => `Delivery method ${currentDeliveryText()}` });
+  Object.defineProperty(deliveryCombo, 'textContent', { get: () => `Delivery method ${currentDeliveryText()}` });
+  const shippingOption = {
+    disabled: false,
+    innerText: 'Shipping. Buyers pay for shipping. We provide the prepaid shipping labels.',
+    textContent: 'Shipping. Buyers pay for shipping. We provide the prepaid shipping labels.',
+    getAttribute: (attribute) => attribute === 'role' ? 'option' : null,
+    getBoundingClientRect: () => ({ width: 260, height: 48 }),
+    click: () => { shippingOptionClicks += 1; shippingSelected = !shippingSelected; },
+  };
+  const localPickupOption = {
+    disabled: false,
+    innerText: 'Local pickup',
+    textContent: 'Local pickup',
+    getAttribute: (attribute) => attribute === 'role' ? 'option' : null,
+    getBoundingClientRect: () => ({ width: 260, height: 48 }),
+    click: () => { localPickupOptionClicks += 1; localPickupSelected = !localPickupSelected; },
+  };
+  const shippingLabelButton = {
+    disabled: false,
+    innerText: 'Select shipping label',
+    textContent: 'Select shipping label',
+    getAttribute: (attribute) => attribute === 'aria-label' ? 'Select shipping label' : null,
+    getBoundingClientRect: () => ({ width: 260, height: 44 }),
+    click: () => { shippingLabelClicks += 1; },
+  };
+  const nextButton = {
+    disabled: true,
+    innerText: 'Next',
+    textContent: 'Next',
+    getAttribute: (attribute) => attribute === 'aria-label' ? 'Next' : null,
+    getBoundingClientRect: () => ({ width: 120, height: 44 }),
+    click: () => { nextClicks += 1; },
+  };
+  const document = {
+    getElementById: (id) => ({ textContent: id === 'delivery-label' ? 'Delivery method' : '' }),
+    querySelector: () => null,
+    querySelectorAll: (selector) => {
+      if (selector === '[role="combobox"]') return [deliveryCombo];
+      if (selector === '[role="option"],[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"],[role="checkbox"],[role="radio"],[role="button"],button') {
+        return deliveryMenuOpen ? [shippingOption, localPickupOption] : [];
+      }
+      if (selector === 'button,[role="button"]' || selector === 'button,input[type="submit"],[role="button"]') {
+        return [shippingLabelButton, nextButton];
+      }
+      return [];
+    },
+  };
+  const assignment = {
+    ok: true,
+    jobStatus: 'opened',
+    runId: 'facebook-delivery-run-123456',
+    payload: { title: 'Baby stroller', description: 'Stroller in good condition.', price: '80', photoCount: 0,
+      platformFields: { deliveryMethod: 'shipping_and_local_pickup' } },
+    photos: [],
+    unavailablePhotoCount: 0,
+  };
+  const chrome = {
+    runtime: {
+      lastError: undefined,
+      onMessage: { addListener: () => undefined },
+      sendMessage: (message) => {
+        if (message.type === 'KEEPFLIP_LISTING_TAB_READY') return Promise.resolve(assignment);
+        if (message.type === 'KEEPFLIP_LISTING_TAB_STATUS') statuses.push(message);
+        return Promise.resolve({ ok: true });
+      },
+    },
+  };
+  const location = {
+    protocol: 'https:',
+    hostname: 'www.facebook.com',
+    pathname: '/marketplace/create/item',
+    search: '?step=delivery',
+    href: 'https://www.facebook.com/marketplace/create/item?step=delivery',
+  };
+  const runnerPath = path.join(__dirname, '..', 'extensions', 'keepflip-sale-watcher', 'content_scripts', 'automation_runner.js');
+  vm.runInNewContext(fs.readFileSync(runnerPath, 'utf8'), {
+    chrome,
+    document,
+    location,
+    Event: class TestEvent {},
+    HTMLSelectElement: class HTMLSelectElement {},
+    setTimeout: (callback) => { queueMicrotask(callback); return 1; },
+    clearTimeout: () => undefined,
+    setInterval: (callback) => { queueMicrotask(callback); return 1; },
+    clearInterval: () => undefined,
+    console,
+  });
+
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(shippingSelected, true);
+  assert.equal(localPickupSelected, true);
+  assert.equal(shippingOptionClicks, 1);
+  assert.equal(localPickupOptionClicks, 1);
+  assert.equal(deliveryMenuOpen, false);
+  assert.equal(shippingLabelClicks, 1);
+  assert.equal(nextClicks, 0);
+  assert.equal(statuses.at(-1)?.status, 'needs_review');
+  assert.match(statuses.at(-1)?.message || '', /pressed Select shipping label/i);
 });
 
 test('Facebook runner initialization failure is surfaced to the Listing page', async () => {

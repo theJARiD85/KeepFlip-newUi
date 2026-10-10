@@ -209,19 +209,19 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     ...styles,
     actions: {
       ...styles["actions"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
     },
     faqList: {
       ...styles["faqList"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
     },
     mobileRows: {
       ...styles["mobileRows"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
     },
     cellHeading: {
       ...styles["cellHeading"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : layout.responsiveFont(12),
     },
   });
 }

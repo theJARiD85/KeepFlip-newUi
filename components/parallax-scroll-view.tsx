@@ -82,7 +82,7 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     ...styles,
     content: {
       ...styles["content"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(16) : 16,
+      gap: layout.isWeb ? layout.webResponsiveWidth(16) : layout.responsiveWidth(16),
     },
   });
 }

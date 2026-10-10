@@ -363,58 +363,58 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     ...styles,
     card: {
       ...styles["card"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(13) : 13,
-      gap: layout.isWeb ? layout.webResponsiveWidth(11) : 11,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(13) : layout.responsiveWidth(13),
+      gap: layout.isWeb ? layout.webResponsiveWidth(11) : layout.responsiveWidth(11),
     },
     headerRow: {
       ...styles["headerRow"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : layout.responsiveWidth(10),
     },
     iconCircle: {
       ...styles["iconCircle"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(20) : 20,
-      height: layout.isWeb ? layout.webResponsiveHeight(36) : 36,
-      width: layout.isWeb ? layout.webResponsiveWidth(36) : 36,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(20) : layout.responsiveWidth(20),
+      height: layout.isWeb ? layout.webResponsiveHeight(36) : layout.responsiveHeight(36),
+      width: layout.isWeb ? layout.webResponsiveWidth(36) : layout.responsiveWidth(36),
     },
     connectionRow: {
       ...styles["connectionRow"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
-      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(10) : layout.responsiveWidth(10),
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : layout.responsiveWidth(10),
     },
     connectionCopy: {
       ...styles["connectionCopy"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(3) : 3,
+      gap: layout.isWeb ? layout.webResponsiveWidth(3) : layout.responsiveWidth(3),
     },
     connectionActions: {
       ...styles["connectionActions"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(3) : 3,
+      gap: layout.isWeb ? layout.webResponsiveWidth(3) : layout.responsiveWidth(3),
     },
     iconButton: {
       ...styles["iconButton"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
-      height: layout.isWeb ? layout.webResponsiveHeight(34) : 34,
-      width: layout.isWeb ? layout.webResponsiveWidth(34) : 34,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
+      height: layout.isWeb ? layout.webResponsiveHeight(34) : layout.responsiveHeight(34),
+      width: layout.isWeb ? layout.webResponsiveWidth(34) : layout.responsiveWidth(34),
     },
     automationText: {
       ...styles["automationText"],
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(15) : 15,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(15) : layout.responsiveFont(15),
     },
     refreshAction: {
       ...styles["refreshAction"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(6) : 6,
-      minHeight: layout.isWeb ? layout.webResponsiveHeight(30) : 30,
+      gap: layout.isWeb ? layout.webResponsiveWidth(6) : layout.responsiveWidth(6),
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(30) : layout.responsiveHeight(30),
     },
     warningText: {
       ...styles["warningText"],
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(15) : 15,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(15) : layout.responsiveFont(15),
     },
     errorText: {
       ...styles["errorText"],
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(15) : 15,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(15) : layout.responsiveFont(15),
     },
     messageText: {
       ...styles["messageText"],
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(15) : 15,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(15) : layout.responsiveFont(15),
     },
   });
 }

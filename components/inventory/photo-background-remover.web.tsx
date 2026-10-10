@@ -40,18 +40,18 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     ...styles,
     panel: {
       ...styles["panel"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
-      marginTop: layout.isWeb ? layout.webResponsiveHeight(16) : 16,
-      paddingTop: layout.isWeb ? layout.webResponsiveHeight(16) : 16,
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(16) : layout.responsiveHeight(16),
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(16) : layout.responsiveHeight(16),
     },
     eyebrow: {
       ...styles["eyebrow"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : layout.responsiveFont(10),
     },
     description: {
       ...styles["description"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : 18,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : layout.responsiveFont(12),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : layout.responsiveFont(18),
     },
   });
 }

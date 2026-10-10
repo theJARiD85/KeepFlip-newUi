@@ -159,7 +159,7 @@ export default function PricingPage() {
           <View style={responsiveStyles.answerGrid}>
             <WebInfoCard title="Is there a free trial?">
               <WebCopy>
-                KeepFlip has no timed trial. The Free tier is available as soon as you create an account.
+                Flip Scout is our free tier. Allows everyone the chance to checkout all that KeepFlip has to offer without the need for any subscription promise or credit card information.
               </WebCopy>
             </WebInfoCard>
             <WebInfoCard title="What happens if a scan is wrong?">
@@ -284,78 +284,78 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     ...styles,
     planCard: {
       ...styles["planCard"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(18) : 18,
-      gap: layout.isWeb ? layout.webResponsiveWidth(15) : 15,
-      maxWidth: layout.isWeb ? layout.webResponsiveWidth(720) : 720,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(18) : layout.responsiveWidth(18),
+      gap: layout.isWeb ? layout.webResponsiveWidth(15) : layout.responsiveWidth(15),
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(720) : layout.responsiveWidth(720),
     },
     planTop: {
       ...styles["planTop"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(13) : 13,
+      gap: layout.isWeb ? layout.webResponsiveWidth(13) : layout.responsiveWidth(13),
     },
     planTitle: {
       ...styles["planTitle"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(5) : 5,
-      minWidth: layout.isWeb ? layout.webResponsiveWidth(180) : 180,
+      gap: layout.isWeb ? layout.webResponsiveWidth(5) : layout.responsiveWidth(5),
+      minWidth: layout.isWeb ? layout.webResponsiveWidth(180) : layout.responsiveWidth(180),
     },
     planEyebrow: {
       ...styles["planEyebrow"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(9) : 9,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(9) : layout.responsiveFont(9),
     },
     planName: {
       ...styles["planName"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(22) : 22,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(29) : 29,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(22) : layout.responsiveFont(22),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(29) : layout.responsiveFont(29),
     },
     billingToggle: {
       ...styles["billingToggle"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(14) : layout.responsiveWidth(14),
     },
     billingOption: {
       ...styles["billingOption"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(11) : 11,
-      minHeight: layout.isWeb ? layout.webResponsiveHeight(38) : 38,
-      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(11) : layout.responsiveWidth(11),
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(38) : layout.responsiveHeight(38),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(14) : layout.responsiveWidth(14),
     },
     billingText: {
       ...styles["billingText"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : layout.responsiveFont(13),
     },
     priceRow: {
       ...styles["priceRow"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
     },
     price: {
       ...styles["price"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(34) : 34,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(41) : 41,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(34) : layout.responsiveFont(34),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(41) : layout.responsiveFont(41),
     },
     period: {
       ...styles["period"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(15) : 15,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(21) : 21,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(15) : layout.responsiveFont(15),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(21) : layout.responsiveFont(21),
     },
     answerGrid: {
       ...styles["answerGrid"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
     },
     billingRows: {
       ...styles["billingRows"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
+      gap: layout.isWeb ? layout.webResponsiveWidth(9) : layout.responsiveWidth(9),
     },
     billingRow: {
       ...styles["billingRow"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(5) : 5,
-      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(12) : 12,
-      paddingTop: layout.isWeb ? layout.webResponsiveHeight(7) : 7,
+      gap: layout.isWeb ? layout.webResponsiveWidth(5) : layout.responsiveWidth(5),
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(12) : layout.responsiveHeight(12),
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(7) : layout.responsiveHeight(7),
     },
     billingHeader: {
       ...styles["billingHeader"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : layout.responsiveFont(14),
     },
     billingCopy: {
       ...styles["billingCopy"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(20) : 20,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : layout.responsiveFont(13),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(20) : layout.responsiveFont(20),
     },
   });
 }

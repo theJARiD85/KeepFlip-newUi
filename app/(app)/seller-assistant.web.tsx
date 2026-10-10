@@ -157,34 +157,34 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     ...styles,
     page: {
       ...styles["page"],
-      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(28) : 28,
-      paddingTop: layout.isWeb ? layout.webResponsiveHeight(28) : 28,
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(28) : layout.responsiveHeight(28),
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(28) : layout.responsiveHeight(28),
     },
     content: {
       ...styles["content"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(20) : 20,
+      gap: layout.isWeb ? layout.webResponsiveWidth(20) : layout.responsiveWidth(20),
     },
     intro: {
       ...styles["intro"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+      gap: layout.isWeb ? layout.webResponsiveWidth(7) : layout.responsiveWidth(7),
     },
     body: {
       ...styles["body"],
-      maxWidth: layout.isWeb ? layout.webResponsiveWidth(720) : 720,
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(720) : layout.responsiveWidth(720),
     },
     gateCard: {
       ...styles["gateCard"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(18) : 18,
-      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
-      marginTop: layout.isWeb ? layout.webResponsiveHeight(44) : 44,
-      maxWidth: layout.isWeb ? layout.webResponsiveWidth(620) : 620,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(18) : layout.responsiveWidth(18),
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(44) : layout.responsiveHeight(44),
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(620) : layout.responsiveWidth(620),
     },
     gateButton: {
       ...styles["gateButton"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
-      marginTop: layout.isWeb ? layout.webResponsiveHeight(4) : 4,
-      minHeight: layout.isWeb ? layout.webResponsiveHeight(46) : 46,
-      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(20) : 20,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(4) : layout.responsiveHeight(4),
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(46) : layout.responsiveHeight(46),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(20) : layout.responsiveWidth(20),
     },
   });
 }

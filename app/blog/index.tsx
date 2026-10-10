@@ -51,11 +51,11 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     ...styles,
     articleCard: {
       ...styles["articleCard"],
-      maxWidth: layout.isWeb ? layout.webResponsiveWidth(760) : 760,
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(760) : layout.responsiveWidth(760),
     },
     action: {
       ...styles["action"],
-      marginTop: layout.isWeb ? layout.webResponsiveHeight(8) : 8,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(8) : layout.responsiveHeight(8),
     },
   });
 }

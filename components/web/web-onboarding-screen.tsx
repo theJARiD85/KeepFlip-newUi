@@ -8,6 +8,7 @@ import {
   WebCopy,
   WebPageHead,
 } from '@/components/web/web-public-page';
+import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { WebSiteFooter, WebSiteHeader } from '@/components/web/web-site-chrome';
 import {
   KEEPFLIP_EBAY_CONNECTION_COPY,
@@ -18,6 +19,7 @@ import {
   KEEPFLIP_HOME_TITLE,
   KEEPFLIP_PUBLIC_COLORS,
 } from '@/constants/keepflip-public-site';
+import KeepFlipShader from '@/components/ui/keepflip-shader';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { Image } from 'expo-image';
@@ -50,8 +52,8 @@ export function WebOnboardingScreen() {
     contentWidth,
     pageGutter
   } = useResponsiveLayout();
-
-  const colors = KEEPFLIP_PUBLIC_COLORS;
+  const { effectiveColorScheme } = useKeepFlipAppearance();
+  const colors = getKeepFlipThemeColors(effectiveColorScheme);
   const { width } = useWindowDimensions();
   const isWide = width >= 1040;
   const isTablet = width >= 720 && !isWide;
@@ -73,12 +75,10 @@ export function WebOnboardingScreen() {
         description={KEEPFLIP_HOME_DESCRIPTION}
         title={KEEPFLIP_HOME_TITLE}
       />
-      <KeepFlipBackground colorScheme="dark">
-        <LinearGradient
-          colors={['#1e161298', '#34200534', '#1e161271', '#3420052e']}
-          style={responsiveStyles.background}
-        >
+
           <View style={responsiveStyles.root}>
+          <KeepFlipShader isLight={effectiveColorScheme === 'light'} />
+
             <ScrollView
               contentContainerStyle={[responsiveStyles.scrollContent, webContentSizing, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
               showsVerticalScrollIndicator={false}
@@ -289,20 +289,20 @@ export function WebOnboardingScreen() {
                   id="reseller-stories"
                   title="What resellers say about tracking the old way."
                 >
-                  <View style={[responsiveStyles.storyPlaceholder, { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(20) : 20 }]}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'flex-start', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10 }}>
+                  <View style={[responsiveStyles.storyPlaceholder, { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(20) : responsiveLayout.responsiveWidth(20) }]}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'flex-start', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10) }}>
                       <Text style={{ color: colors.text, fontFamily: theme.fonts.body, fontSize: responsiveFont(16) }}>&quot;I used spreadsheets for a decade... <Text style={{ color: colors.text, fontFamily: theme.fonts.medium }}>so much less stress.&quot;</Text></Text>
                       <Text style={{ color: colors.scannerCyan, fontFamily: theme.fonts.body, fontSize: responsiveFont(16) }}>— Full-time reseller, r/Flipping</Text>
                     </View>
-                    <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10) }}>
                       <Text style={{ color: colors.text, fontFamily: theme.fonts.body, fontSize: responsiveFont(18) }}>&quot;My time is more valuable than $20 a month having to create a spreadsheet and update it constantly. It also helps at the end of the year for tax purposes.&quot;</Text>
                       <Text style={{ color: colors.scannerCyan, fontFamily: theme.fonts.body, fontSize: responsiveFont(18) }}>— Flipwise user, Reddit</Text>
                     </View>
-                    <View style={{ flexDirection: 'row', justifyContent: 'flex-start', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'flex-start', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10) }}>
                       <Text style={{ color: colors.text, fontFamily: theme.fonts.body, fontSize: responsiveFont(16) }}>&quot;I started using a spreadsheet but as I grew, it became too time consuming to track items on an individual basis.&quot;</Text>
                       <Text style={{ color: colors.scannerCyan, fontFamily: theme.fonts.body, fontSize: responsiveFont(16) }}>— r/Flipping</Text>
                     </View>
-                    <View style={{ flexDirection: 'row', justifyContent: 'flex-start', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'flex-start', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10) }}>
                       <Text style={{ color: colors.text, fontFamily: theme.fonts.body, fontSize: responsiveFont(16) }}>&quot;I was selling sewing patterns thinking I was making about $1.40 but I didn&apos;t realize about the flat fee and the fact eBay&apos;s fees include shipping. My actual net profit was actually .15.&quot;</Text>
                       <Text style={{ color: colors.scannerCyan, fontFamily: theme.fonts.body, fontSize: responsiveFont(16) }}>— Full-time reseller, r/Flipping</Text>
                     </View>
@@ -364,8 +364,7 @@ export function WebOnboardingScreen() {
               <WebSiteFooter colorScheme="dark" inFlow showMarketingLinks />
             </ScrollView>
           </View>
-        </LinearGradient>
-      </KeepFlipBackground>
+
     </>
   );
 }
@@ -765,486 +764,486 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     ...styles,
     scrollContent: {
       ...styles["scrollContent"],
-      paddingTop: layout.isWeb ? layout.webResponsiveHeight(24) : 24,
-      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(24) : 24,
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(24) : layout.responsiveHeight(24),
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(24) : layout.responsiveHeight(24),
     },
     page: {
       ...styles["page"],
-      paddingTop: layout.isWeb ? layout.webResponsiveHeight(35) : 35,
-      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(170) : 170,
-      gap: layout.isWeb ? layout.webResponsiveWidth(50) : 50,
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(35) : layout.responsiveHeight(35),
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(170) : layout.responsiveHeight(170),
+      gap: layout.isWeb ? layout.webResponsiveWidth(50) : layout.responsiveWidth(50),
     },
     pagePhone: {
       ...styles["pagePhone"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(42) : 42,
+      gap: layout.isWeb ? layout.webResponsiveWidth(42) : layout.responsiveWidth(42),
     },
     hero: {
       ...styles["hero"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(32) : 32,
+      gap: layout.isWeb ? layout.webResponsiveWidth(32) : layout.responsiveWidth(32),
     },
     heroCopy: {
       ...styles["heroCopy"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(15) : 15,
+      gap: layout.isWeb ? layout.webResponsiveWidth(15) : layout.responsiveWidth(15),
     },
     eyebrowRow: {
       ...styles["eyebrowRow"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : layout.responsiveWidth(10),
     },
     eyebrow: {
       ...styles["eyebrow"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : 8,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : layout.responsiveFont(8),
     },
     livePill: {
       ...styles["livePill"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(999) : 999,
-      gap: layout.isWeb ? layout.webResponsiveWidth(6) : 6,
-      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
-      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(5) : 5,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(999) : layout.responsiveWidth(999),
+      gap: layout.isWeb ? layout.webResponsiveWidth(6) : layout.responsiveWidth(6),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(9) : layout.responsiveWidth(9),
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(5) : layout.responsiveHeight(5),
     },
     liveDot: {
       ...styles["liveDot"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(4) : 4,
-      height: layout.isWeb ? layout.webResponsiveHeight(7) : 7,
-      width: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(4) : layout.responsiveWidth(4),
+      height: layout.isWeb ? layout.webResponsiveHeight(7) : layout.responsiveHeight(7),
+      width: layout.isWeb ? layout.webResponsiveWidth(7) : layout.responsiveWidth(7),
     },
     livePillText: {
       ...styles["livePillText"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : 8,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : layout.responsiveFont(8),
     },
     heroTitle: {
       ...styles["heroTitle"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(35) : 35,
-      maxWidth: layout.isWeb ? layout.webResponsiveWidth(730) : 730,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(40) : 40,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(35) : responsiveFont(35),
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(730) : layout.responsiveWidth(730),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(40) : layout.responsiveFont(40),
     },
     heroTitlePhone: {
       ...styles["heroTitlePhone"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(31) : 31,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(39) : 39,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(31) : layout.responsiveFont(31),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(39) : layout.responsiveFont(39),
     },
     heroBody: {
       ...styles["heroBody"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(15) : 15,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(25) : 25,
-      maxWidth: layout.isWeb ? layout.webResponsiveWidth(650) : 650,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(15) : layout.responsiveFont(15),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(25) : layout.responsiveFont(25),
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(650) : layout.responsiveWidth(650),
     },
     heroActions: {
       ...styles["heroActions"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
-      marginTop: layout.isWeb ? layout.webResponsiveHeight(6) : 6,
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : layout.responsiveWidth(10),
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(6) : layout.responsiveHeight(6),
     },
     freeEntryNote: {
       ...styles["freeEntryNote"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : 18,
-      maxWidth: layout.isWeb ? layout.webResponsiveWidth(600) : 600,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : layout.responsiveFont(12),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : layout.responsiveFont(18),
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(600) : layout.responsiveWidth(600),
     },
     scopeCopy: {
       ...styles["scopeCopy"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : 18,
-      maxWidth: layout.isWeb ? layout.webResponsiveWidth(600) : 600,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : layout.responsiveFont(12),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : layout.responsiveFont(18),
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(600) : layout.responsiveWidth(600),
     },
     exampleNote: {
       ...styles["exampleNote"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(9) : 9,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(9) : layout.responsiveFont(9),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(14) : layout.responsiveFont(14),
     },
     heroProof: {
       ...styles["heroProof"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(16) : 16,
-      marginTop: layout.isWeb ? layout.webResponsiveHeight(4) : 4,
+      gap: layout.isWeb ? layout.webResponsiveWidth(16) : layout.responsiveWidth(16),
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(4) : layout.responsiveHeight(4),
     },
     proofItem: {
       ...styles["proofItem"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
-      maxWidth: layout.isWeb ? layout.webResponsiveWidth(180) : 180,
+      gap: layout.isWeb ? layout.webResponsiveWidth(7) : layout.responsiveWidth(7),
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(180) : layout.responsiveWidth(180),
     },
     proofDot: {
       ...styles["proofDot"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(3) : 3,
-      height: layout.isWeb ? layout.webResponsiveHeight(6) : 6,
-      marginTop: layout.isWeb ? layout.webResponsiveHeight(5) : 5,
-      width: layout.isWeb ? layout.webResponsiveWidth(6) : 6,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(3) : layout.responsiveWidth(3),
+      height: layout.isWeb ? layout.webResponsiveHeight(6) : layout.responsiveHeight(6),
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(5) : layout.responsiveHeight(5),
+      width: layout.isWeb ? layout.webResponsiveWidth(6) : layout.responsiveWidth(6),
     },
     proofCopy: {
       ...styles["proofCopy"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(3) : 3,
+      gap: layout.isWeb ? layout.webResponsiveWidth(3) : layout.responsiveWidth(3),
     },
     proofLabel: {
       ...styles["proofLabel"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : 8,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : layout.responsiveFont(8),
     },
     proofDetail: {
       ...styles["proofDetail"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : layout.responsiveFont(10),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(14) : layout.responsiveFont(14),
     },
     heroVisual: {
       ...styles["heroVisual"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(24) : 24,
-      gap: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
-      maxWidth: layout.isWeb ? layout.webResponsiveWidth(500) : 500,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(24) : layout.responsiveWidth(24),
+      gap: layout.isWeb ? layout.webResponsiveWidth(14) : layout.responsiveWidth(14),
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(500) : layout.responsiveWidth(500),
     },
     heroVisualStacked: {
       ...styles["heroVisualStacked"],
-      maxWidth: layout.isWeb ? layout.webResponsiveWidth(680) : 680,
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(680) : layout.responsiveWidth(680),
     },
     heroVisualHeader: {
       ...styles["heroVisualHeader"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
     },
     heroVisualHeaderPhone: {
       ...styles["heroVisualHeaderPhone"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
     },
     visualEyebrow: {
       ...styles["visualEyebrow"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : 8,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : layout.responsiveFont(8),
     },
     visualTitle: {
       ...styles["visualTitle"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(18) : 18,
-      marginTop: layout.isWeb ? layout.webResponsiveHeight(4) : 4,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(18) : layout.responsiveFont(18),
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(4) : layout.responsiveHeight(4),
     },
     visualStatus: {
       ...styles["visualStatus"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(999) : 999,
-      gap: layout.isWeb ? layout.webResponsiveWidth(5) : 5,
-      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
-      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(5) : 5,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(999) : layout.responsiveWidth(999),
+      gap: layout.isWeb ? layout.webResponsiveWidth(5) : layout.responsiveWidth(5),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(5) : layout.responsiveHeight(5),
     },
     visualStatusText: {
       ...styles["visualStatusText"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(7) : 7,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(7) : layout.responsiveFont(7),
     },
     heroScreenshotFrame: {
       ...styles["heroScreenshotFrame"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(17) : 17,
-      height: layout.isWeb ? layout.webResponsiveHeight(260) : 260,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(17) : layout.responsiveWidth(17),
+      height: layout.isWeb ? layout.webResponsiveHeight(260) : layout.responsiveHeight(260),
     },
     screenshotOverlay: {
       ...styles["screenshotOverlay"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(13) : 13,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(13) : layout.responsiveWidth(13),
     },
     overlayEyebrow: {
       ...styles["overlayEyebrow"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : 8,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : layout.responsiveFont(8),
     },
     overlayTitle: {
       ...styles["overlayTitle"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(15) : 15,
-      marginTop: layout.isWeb ? layout.webResponsiveHeight(4) : 4,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(15) : layout.responsiveFont(15),
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(4) : layout.responsiveHeight(4),
     },
     overlayBody: {
       ...styles["overlayBody"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : layout.responsiveFont(10),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(14) : layout.responsiveFont(14),
     },
     heroMetricRow: {
       ...styles["heroMetricRow"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
     },
     miniMetric: {
       ...styles["miniMetric"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(11) : 11,
-      gap: layout.isWeb ? layout.webResponsiveWidth(5) : 5,
-      minHeight: layout.isWeb ? layout.webResponsiveHeight(53) : 53,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(11) : layout.responsiveWidth(11),
+      gap: layout.isWeb ? layout.webResponsiveWidth(5) : layout.responsiveWidth(5),
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(53) : layout.responsiveHeight(53),
     },
     miniMetricLabel: {
       ...styles["miniMetricLabel"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(7) : 7,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(7) : layout.responsiveFont(7),
     },
     miniMetricValue: {
       ...styles["miniMetricValue"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : layout.responsiveFont(14),
     },
     flipStrip: {
       ...styles["flipStrip"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
-      gap: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
-      minHeight: layout.isWeb ? layout.webResponsiveHeight(72) : 72,
-      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(14) : layout.responsiveWidth(14),
+      gap: layout.isWeb ? layout.webResponsiveWidth(9) : layout.responsiveWidth(9),
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(72) : layout.responsiveHeight(72),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(10) : layout.responsiveWidth(10),
     },
     flipStripCopy: {
       ...styles["flipStripCopy"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(4) : 4,
+      gap: layout.isWeb ? layout.webResponsiveWidth(4) : layout.responsiveWidth(4),
     },
     flipStripEyebrow: {
       ...styles["flipStripEyebrow"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : 8,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : layout.responsiveFont(8),
     },
     flipStripText: {
       ...styles["flipStripText"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : layout.responsiveFont(10),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(14) : layout.responsiveFont(14),
     },
     promiseBand: {
       ...styles["promiseBand"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(18) : 18,
-      gap: layout.isWeb ? layout.webResponsiveWidth(20) : 20,
-      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(19) : 19,
-      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(17) : 17,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(18) : layout.responsiveWidth(18),
+      gap: layout.isWeb ? layout.webResponsiveWidth(20) : layout.responsiveWidth(20),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(19) : layout.responsiveWidth(19),
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(17) : layout.responsiveHeight(17),
     },
     promiseBandPhone: {
       ...styles["promiseBandPhone"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
-      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
+      gap: layout.isWeb ? layout.webResponsiveWidth(14) : layout.responsiveWidth(14),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(14) : layout.responsiveWidth(14),
     },
     promiseCopy: {
       ...styles["promiseCopy"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(5) : 5,
+      gap: layout.isWeb ? layout.webResponsiveWidth(5) : layout.responsiveWidth(5),
     },
     promiseEyebrow: {
       ...styles["promiseEyebrow"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : 8,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : layout.responsiveFont(8),
     },
     promiseTitle: {
       ...styles["promiseTitle"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(18) : 18,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(18) : layout.responsiveFont(18),
     },
     promiseStats: {
       ...styles["promiseStats"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(22) : 22,
+      gap: layout.isWeb ? layout.webResponsiveWidth(22) : layout.responsiveWidth(22),
     },
     promiseStat: {
       ...styles["promiseStat"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(3) : 3,
+      gap: layout.isWeb ? layout.webResponsiveWidth(3) : layout.responsiveWidth(3),
     },
     promiseValue: {
       ...styles["promiseValue"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(20) : 20,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(20) : layout.responsiveFont(20),
     },
     promiseLabel: {
       ...styles["promiseLabel"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(7) : 7,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(7) : layout.responsiveFont(7),
     },
     sectionHeader: {
       ...styles["sectionHeader"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
-      maxWidth: layout.isWeb ? layout.webResponsiveWidth(740) : 740,
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(740) : layout.responsiveWidth(740),
     },
     sectionEyebrow: {
       ...styles["sectionEyebrow"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(9) : 9,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(9) : layout.responsiveFont(9),
     },
     sectionTitle: {
       ...styles["sectionTitle"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(31) : 31,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(37) : 37,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(31) : layout.responsiveFont(31),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(37) : layout.responsiveFont(37),
     },
     sectionTitlePhone: {
       ...styles["sectionTitlePhone"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(26) : 26,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(32) : 32,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(26) : layout.responsiveFont(26),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(32) : layout.responsiveFont(32),
     },
     sectionBody: {
       ...styles["sectionBody"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(22) : 22,
-      maxWidth: layout.isWeb ? layout.webResponsiveWidth(680) : 680,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : layout.responsiveFont(14),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(22) : layout.responsiveFont(22),
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(680) : layout.responsiveWidth(680),
     },
     flowGrid: {
       ...styles["flowGrid"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
+      gap: layout.isWeb ? layout.webResponsiveWidth(14) : layout.responsiveWidth(14),
     },
     flowCard: {
       ...styles["flowCard"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(20) : 20,
-      gap: layout.isWeb ? layout.webResponsiveWidth(15) : 15,
-      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(17) : 17,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(20) : layout.responsiveWidth(20),
+      gap: layout.isWeb ? layout.webResponsiveWidth(15) : layout.responsiveWidth(15),
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(17) : layout.responsiveHeight(17),
     },
     flowGridTabletCard: {
       ...styles["flowGridTabletCard"],
-      minWidth: layout.isWeb ? layout.webResponsiveWidth(280) : 280,
+      minWidth: layout.isWeb ? layout.webResponsiveWidth(280) : layout.responsiveWidth(280),
     },
     flowVisual: {
       ...styles["flowVisual"],
-      height: layout.isWeb ? layout.webResponsiveHeight(220) : 220,
+      height: layout.isWeb ? layout.webResponsiveHeight(220) : layout.responsiveHeight(220),
     },
     flowVisualPhone: {
       ...styles["flowVisualPhone"],
-      height: layout.isWeb ? layout.webResponsiveHeight(190) : 190,
+      height: layout.isWeb ? layout.webResponsiveHeight(190) : layout.responsiveHeight(190),
     },
     flowOverlay: {
       ...styles["flowOverlay"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
     },
     decisionPanel: {
       ...styles["decisionPanel"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
     },
     businessVisual: {
       ...styles["businessVisual"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+      gap: layout.isWeb ? layout.webResponsiveWidth(7) : layout.responsiveWidth(7),
     },
     businessTotal: {
       ...styles["businessTotal"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(34) : 34,
-      marginTop: layout.isWeb ? layout.webResponsiveHeight(3) : 3,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(34) : layout.responsiveFont(34),
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(3) : layout.responsiveHeight(3),
     },
     businessBars: {
       ...styles["businessBars"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
-      height: layout.isWeb ? layout.webResponsiveHeight(72) : 72,
-      marginTop: layout.isWeb ? layout.webResponsiveHeight(12) : 12,
+      gap: layout.isWeb ? layout.webResponsiveWidth(9) : layout.responsiveWidth(9),
+      height: layout.isWeb ? layout.webResponsiveHeight(72) : layout.responsiveHeight(72),
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(12) : layout.responsiveHeight(12),
     },
     businessBar: {
       ...styles["businessBar"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(5) : 5,
-      minHeight: layout.isWeb ? layout.webResponsiveHeight(12) : 12,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(5) : layout.responsiveWidth(5),
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(12) : layout.responsiveHeight(12),
     },
     inventoryStatus: {
       ...styles["inventoryStatus"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(999) : 999,
-      gap: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
-      marginTop: layout.isWeb ? layout.webResponsiveHeight(10) : 10,
-      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
-      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(7) : 7,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(999) : layout.responsiveWidth(999),
+      gap: layout.isWeb ? layout.webResponsiveWidth(7) : layout.responsiveWidth(7),
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(10) : layout.responsiveHeight(10),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(9) : layout.responsiveWidth(9),
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(7) : layout.responsiveHeight(7),
     },
     statusDot: {
       ...styles["statusDot"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(4) : 4,
-      height: layout.isWeb ? layout.webResponsiveHeight(7) : 7,
-      width: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(4) : layout.responsiveWidth(4),
+      height: layout.isWeb ? layout.webResponsiveHeight(7) : layout.responsiveHeight(7),
+      width: layout.isWeb ? layout.webResponsiveWidth(7) : layout.responsiveWidth(7),
     },
     flowCopy: {
       ...styles["flowCopy"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
-      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(17) : 17,
+      gap: layout.isWeb ? layout.webResponsiveWidth(9) : layout.responsiveWidth(9),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(17) : layout.responsiveWidth(17),
     },
     flowLabelRow: {
       ...styles["flowLabelRow"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
     },
     flowNumber: {
       ...styles["flowNumber"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : layout.responsiveFont(10),
     },
     flowLabel: {
       ...styles["flowLabel"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : 8,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : layout.responsiveFont(8),
     },
     flowTitle: {
       ...styles["flowTitle"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(19) : 19,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(24) : 24,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(19) : layout.responsiveFont(19),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(24) : layout.responsiveFont(24),
     },
     flowBody: {
       ...styles["flowBody"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : 18,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : layout.responsiveFont(12),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : layout.responsiveFont(18),
     },
     featureGrid: {
       ...styles["featureGrid"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
     },
     featureCard: {
       ...styles["featureCard"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(17) : 17,
-      gap: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
-      minHeight: layout.isWeb ? layout.webResponsiveHeight(175) : 175,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(17) : layout.responsiveWidth(17),
+      gap: layout.isWeb ? layout.webResponsiveWidth(9) : layout.responsiveWidth(9),
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(175) : layout.responsiveHeight(175),
     },
     featureCardColumns: {
       ...styles["featureCardColumns"],
-      minWidth: layout.isWeb ? layout.webResponsiveWidth(270) : 270,
+      minWidth: layout.isWeb ? layout.webResponsiveWidth(270) : layout.responsiveWidth(270),
     },
     featureIcon: {
       ...styles["featureIcon"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
-      height: layout.isWeb ? layout.webResponsiveHeight(34) : 34,
-      width: layout.isWeb ? layout.webResponsiveWidth(34) : 34,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(10) : layout.responsiveWidth(10),
+      height: layout.isWeb ? layout.webResponsiveHeight(34) : layout.responsiveHeight(34),
+      width: layout.isWeb ? layout.webResponsiveWidth(34) : layout.responsiveWidth(34),
     },
     featureTitle: {
       ...styles["featureTitle"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(19) : 19,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : layout.responsiveFont(14),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(19) : layout.responsiveFont(19),
     },
     featureBody: {
       ...styles["featureBody"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(17) : 17,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : layout.responsiveFont(11),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(17) : layout.responsiveFont(17),
     },
     storyPlaceholder: {
       ...styles["storyPlaceholder"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(16) : 16,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(16) : layout.responsiveWidth(16),
     },
     faqGrid: {
       ...styles["faqGrid"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
     },
     faqCard: {
       ...styles["faqCard"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(16) : 16,
-      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(16) : layout.responsiveWidth(16),
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
     },
     faqQuestion: {
       ...styles["faqQuestion"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(16) : 16,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(22) : 22,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(16) : layout.responsiveFont(16),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(22) : layout.responsiveFont(22),
     },
     compareSection: {
       ...styles["compareSection"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(22) : 22,
+      gap: layout.isWeb ? layout.webResponsiveWidth(22) : layout.responsiveWidth(22),
     },
     compareCopy: {
       ...styles["compareCopy"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
     },
     compareGrid: {
       ...styles["compareGrid"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
     },
     compareCard: {
       ...styles["compareCard"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(18) : 18,
-      gap: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(18) : layout.responsiveWidth(18),
+      gap: layout.isWeb ? layout.webResponsiveWidth(14) : layout.responsiveWidth(14),
     },
     compareLabel: {
       ...styles["compareLabel"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : layout.responsiveFont(10),
     },
     compareList: {
       ...styles["compareList"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(11) : 11,
+      gap: layout.isWeb ? layout.webResponsiveWidth(11) : layout.responsiveWidth(11),
     },
     compareItem: {
       ...styles["compareItem"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
     },
     compareItemText: {
       ...styles["compareItemText"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(16) : 16,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : layout.responsiveFont(11),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(16) : layout.responsiveFont(16),
     },
     cta: {
       ...styles["cta"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(21) : 21,
-      gap: layout.isWeb ? layout.webResponsiveWidth(20) : 20,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(21) : layout.responsiveWidth(21),
+      gap: layout.isWeb ? layout.webResponsiveWidth(20) : layout.responsiveWidth(20),
     },
     ctaPhone: {
       ...styles["ctaPhone"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
+      gap: layout.isWeb ? layout.webResponsiveWidth(14) : layout.responsiveWidth(14),
     },
     ctaCopy: {
       ...styles["ctaCopy"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
     },
     ctaTitle: {
       ...styles["ctaTitle"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(29) : 29,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(35) : 35,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(29) : layout.responsiveFont(29),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(35) : layout.responsiveFont(35),
     },
     ctaTitlePhone: {
       ...styles["ctaTitlePhone"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(25) : 25,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(31) : 31,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(25) : layout.responsiveFont(25),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(31) : layout.responsiveFont(31),
     },
     ctaBody: {
       ...styles["ctaBody"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(20) : 20,
-      maxWidth: layout.isWeb ? layout.webResponsiveWidth(650) : 650,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : layout.responsiveFont(13),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(20) : layout.responsiveFont(20),
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(650) : layout.responsiveWidth(650),
     },
   });
 }

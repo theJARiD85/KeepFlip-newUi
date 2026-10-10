@@ -40,26 +40,26 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   const { responsiveFont } = responsiveLayout;
   const staticStyles = StyleSheet.create({
     default: {
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16,
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(24) : 24,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : responsiveLayout.responsiveFont(16),
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(24) : responsiveLayout.responsiveFont(24),
     },
     defaultSemiBold: {
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16,
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(24) : 24,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : responsiveLayout.responsiveFont(16),
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(24) : responsiveLayout.responsiveFont(24),
       fontWeight: '600',
     },
     title: {
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(32) : 32,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(32) : responsiveLayout.responsiveFont(32),
       fontWeight: 'bold',
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(32) : 32,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(32) : responsiveLayout.responsiveFont(32),
     },
     subtitle: {
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(20) : 20,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(20) : responsiveLayout.responsiveFont(20),
       fontWeight: 'bold',
     },
     link: {
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(30) : 30,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(30) : responsiveLayout.responsiveFont(30),
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : responsiveLayout.responsiveFont(16),
       color: theme.colors.scannerCyan,
     },
   });

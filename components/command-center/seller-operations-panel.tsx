@@ -161,32 +161,32 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     content: {
       width: '100%',
-      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(850) : 850,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(850) : responsiveLayout.responsiveWidth(850),
       alignSelf: 'center',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
       padding: 16,
-      paddingBottom: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(44) : 44,
+      paddingBottom: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(44) : responsiveLayout.responsiveHeight(44),
     },
     section: {
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
     },
     sectionHeading: {
       gap: 2,
     },
     sectionEyebrow: {
       color: theme.colors.goldBright,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '900',
       letterSpacing: 1.35,
     },
     sectionTitle: {
       color: theme.colors.text,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : responsiveLayout.responsiveFont(16),
       fontWeight: '800',
       letterSpacing: -0.1,
     },
     sectionSurface: {
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       padding: 10,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
@@ -208,13 +208,13 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.cardSoft,
     },
     recordDetails: {
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
-      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
-      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(3) : 3,
-      paddingBottom: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
+      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(3) : responsiveLayout.responsiveHeight(3),
+      paddingBottom: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : responsiveLayout.responsiveHeight(10),
     },
     formSurface: {
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       padding: 10,
       borderRadius: theme.radii.small,
       borderWidth: 1,
@@ -223,49 +223,49 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     heading: {
       color: theme.colors.text,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15,
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(20) : 20,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : responsiveLayout.responsiveFont(15),
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(20) : responsiveLayout.responsiveFont(20),
       fontWeight: '800',
       letterSpacing: -0.1,
     },
     text: {
       color: theme.colors.text,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : 18,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12),
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : responsiveLayout.responsiveFont(18),
     },
     muted: {
       color: theme.colors.textMuted,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : responsiveLayout.responsiveFont(15),
     },
     label: {
       color: theme.colors.goldBright,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '900',
       letterSpacing: 1.1,
     },
     field: {
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5),
     },
     input: {
-      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(42) : 42,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(42) : responsiveLayout.responsiveHeight(42),
       color: theme.colors.text,
       backgroundColor: theme.colors.surfaceInset,
       borderColor: theme.colors.dividerStrong,
       borderWidth: 1,
       borderRadius: theme.radii.small,
-      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : 11,
-      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : 10,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : responsiveLayout.responsiveWidth(11),
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : responsiveLayout.responsiveHeight(10),
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12),
     },
     multiline: {
-      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(84) : 84,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(84) : responsiveLayout.responsiveHeight(84),
       textAlignVertical: 'top',
     },
     error: {
       color: theme.colors.danger,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11,
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11),
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : responsiveLayout.responsiveFont(16),
     },
   });
   return {
@@ -740,7 +740,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false, initialSaleIt
 
   const content = (
     <>
-      <Text accessibilityRole="header" style={[styles.heading, { fontSize: responsiveFont(15), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(20) : 20 }]}>
+      <Text accessibilityRole="header" style={[styles.heading, { fontSize: responsiveFont(15), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(20) : responsiveLayout2.responsiveFont(20) }]}>
         Orders, fulfillment and realized profit
       </Text>
       <Text style={styles.muted}>
@@ -752,11 +752,11 @@ export function SellerOperationsPanel({ ownerId, embedded = false, initialSaleIt
       {Object.entries(errors)
         .filter(([, value]) => value)
         .map(([key, value]) => (
-          <Text key={key} accessibilityRole="alert" style={[styles.error, { fontSize: responsiveFont(11), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(16) : 16 }]}>
+          <Text key={key} accessibilityRole="alert" style={[styles.error, { fontSize: responsiveFont(11), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(16) : responsiveLayout2.responsiveFont(16) }]}>
             {key}: {value}
           </Text>
         ))}
-      {notice ? <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(18) : 18 }]}>{notice}</Text> : null}
+      {notice ? <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(18) : responsiveLayout2.responsiveFont(18) }]}>{notice}</Text> : null}
       <Button
         title={loading ? 'Refreshing…' : 'Refresh seller operations'}
         description="Reload inventory, orders, fulfillment status and realized margin."
@@ -832,7 +832,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false, initialSaleIt
           );
         })}
         {!inventory.some((item) => item.isListed || item.listedAt) && !loading ? (
-          <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(18) : 18 }]}>No linked live listings yet.</Text>
+          <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(18) : responsiveLayout2.responsiveFont(18) }]}>No linked live listings yet.</Text>
         ) : null}
       </Section>
 
@@ -889,7 +889,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false, initialSaleIt
             />
           </Animated.View>
         ) : (
-          <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(18) : 18 }]}>
+          <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(18) : responsiveLayout2.responsiveFont(18) }]}>
             {saleItems.length
               ? 'Select an inventory item above to expand sale details.'
               : 'Save an inventory item before recording its sale.'}
@@ -1047,7 +1047,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false, initialSaleIt
               }}
             />
             <View style={styles.recordDetails}>
-              <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(18) : 18 }]}>
+              <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(18) : responsiveLayout2.responsiveFont(18) }]}>
                 Fees {money(margin.marketplaceFeesCents)} · shipping {money(margin.shippingExpenseCents)} · refunds {money(margin.refundCents)}
               </Text>
               <Text style={styles.muted}>
@@ -1057,20 +1057,20 @@ export function SellerOperationsPanel({ ownerId, embedded = false, initialSaleIt
           </View>
         ))}
         {!margins.length && !loading ? (
-          <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(18) : 18 }]}>No item-linked sale proceeds have posted to Books yet.</Text>
+          <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(18) : responsiveLayout2.responsiveFont(18) }]}>No item-linked sale proceeds have posted to Books yet.</Text>
         ) : null}
       </Section>
 
       <Section title="KeepFlip performance">
         {advancedAnalytics ? (
           <>
-            <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(18) : 18 }]}>
+            <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(18) : responsiveLayout2.responsiveFont(18) }]}>
               Sell-through {percent(performance.sellThroughPercent)} · average days-to-sale {performance.averageDaysToSale == null ? '—' : performance.averageDaysToSale.toFixed(1)}
             </Text>
-            <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(18) : 18 }]}>
+            <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(18) : responsiveLayout2.responsiveFont(18) }]}>
               Realized profit {money(performance.realizedProfitCents)} · realized margin {percent(performance.realizedMarginPercent)} · average ROI {percent(performance.averageRoiPercent)}
             </Text>
-            <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(18) : 18 }]}>
+            <Text style={[styles.text, { fontSize: responsiveFont(12), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(18) : responsiveLayout2.responsiveFont(18) }]}>
               Average discount {percent(performance.averageDiscountPercent)} · return rate {percent(performance.returnRatePercent)}
             </Text>
             {performance.bySource.map((row) => (
@@ -1142,7 +1142,7 @@ function createEmbeddedStylesWebResponsive(layout: ReturnType<typeof useResponsi
     ...embeddedStyles,
     content: {
       ...embeddedStyles["content"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
     },
   });
 }

@@ -145,37 +145,37 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     ...styles,
     card: {
       ...styles["card"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(22) : 22,
-      gap: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
-      maxWidth: layout.isWeb ? layout.webResponsiveWidth(480) : 480,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(22) : layout.responsiveWidth(22),
+      gap: layout.isWeb ? layout.webResponsiveWidth(14) : layout.responsiveWidth(14),
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(480) : layout.responsiveWidth(480),
     },
     eyebrow: {
       ...styles["eyebrow"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : layout.responsiveFont(11),
     },
     title: {
       ...styles["title"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(24) : 24,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(24) : layout.responsiveFont(24),
     },
     message: {
       ...styles["message"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(21) : 21,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : layout.responsiveFont(14),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(21) : layout.responsiveFont(21),
     },
     progressRow: {
       ...styles["progressRow"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
     },
     backButton: {
       ...styles["backButton"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(13) : 13,
-      marginTop: layout.isWeb ? layout.webResponsiveHeight(4) : 4,
-      minHeight: layout.isWeb ? layout.webResponsiveHeight(48) : 48,
-      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(16) : 16,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(13) : layout.responsiveWidth(13),
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(4) : layout.responsiveHeight(4),
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(48) : layout.responsiveHeight(48),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(16) : layout.responsiveWidth(16),
     },
     backButtonText: {
       ...styles["backButtonText"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : layout.responsiveFont(13),
     },
   });
 }

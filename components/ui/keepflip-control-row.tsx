@@ -111,7 +111,7 @@ export function KeepFlipControlRow({
           <Text style={[styles.rowTitle, { fontSize: responsiveFont(14) }]}>{label}</Text>
           {status ? <KeepFlipStatusBadge label={status.label} tone={status.tone} /> : null}
         </View>
-        <Text style={[styles.rowDescription, { fontSize: responsiveFont(10), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(14) : 14 }]}>{description}</Text>
+        <Text style={[styles.rowDescription, { fontSize: responsiveFont(10), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(14) : responsiveLayout2.responsiveFont(14) }]}>{description}</Text>
       </View>
       {actionBusy ? (
         <ActivityIndicator color={iconColor} size="small" style={styles.rowSpinner} />
@@ -153,16 +153,16 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   const staticStyles = StyleSheet.create({
     container: {
       flexDirection: 'row',
-      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
       alignItems: 'center',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7)
     },
     controlRow: {
-      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(70) : 70,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(70) : responsiveLayout.responsiveHeight(70),
       flexDirection: 'row',
       alignItems: 'center',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
-      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(9) : 9,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(9) : responsiveLayout.responsiveHeight(9),
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: theme.colors.divider,
     },
@@ -170,11 +170,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.iconSurfaceGold,
     },
     rowIcon: {
-      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(32) : 32,
-      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(32) : 32,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(32) : responsiveLayout.responsiveWidth(32),
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(32) : responsiveLayout.responsiveHeight(32),
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
       borderWidth: 1,
       backgroundColor: theme.colors.iconSurface,
     },
@@ -198,25 +198,25 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     rowTitleLine: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : responsiveLayout.responsiveWidth(6),
     },
     rowTitle: {
       minWidth: 0,
       flexShrink: 1,
       color: theme.colors.text,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : responsiveLayout.responsiveFont(14),
       fontWeight: '800',
     },
     rowDescription: {
       color: theme.colors.textMuted,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : responsiveLayout.responsiveFont(14),
     },
     rowAction: {
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
-      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : 6,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : responsiveLayout.responsiveHeight(6),
       borderRadius: theme.radii.pill,
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
@@ -224,16 +224,16 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     rowActionText: {
       color: theme.colors.goldBright,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: '900',
       letterSpacing: 0.65,
     },
     rowChevron: { marginLeft: 1 },
-    rowSpinner: { marginHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4 },
+    rowSpinner: { marginHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4) },
     rowStaticLabel: {
-      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(68) : 68,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(68) : responsiveLayout.responsiveWidth(68),
       color: theme.colors.goldMuted,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: '900',
       letterSpacing: 0.6,
       textAlign: 'right',
@@ -241,9 +241,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     statusBadge: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
-      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
-      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(3) : 3,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : responsiveLayout.responsiveWidth(6),
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(3) : responsiveLayout.responsiveHeight(3),
       borderRadius: theme.radii.pill,
       borderWidth: 1,
     },
@@ -268,8 +268,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.iconSurfaceViolet,
     },
     statusBadgeDot: {
-      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
-      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(4) : 4,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(4) : responsiveLayout.responsiveHeight(4),
       borderRadius: theme.radii.pill,
     },
     statusBadgeDotActive: { backgroundColor: theme.colors.scannerCyan },
@@ -278,7 +278,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     statusBadgeDotDanger: { backgroundColor: theme.colors.danger },
     statusBadgeDotViolet: { backgroundColor: theme.colors.scannerViolet },
     statusBadgeText: {
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: '900',
       letterSpacing: 0.62,
     },

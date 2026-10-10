@@ -3,12 +3,13 @@
 /* global __dirname */
 
 /**
- * Add web-responsive values to React styles under app/ and components/.
+ * Add platform-responsive values to React styles under app/ and components/.
  * Every nested source file is parsed. Numeric UI values are changed only when
  * they can be connected to a component: inline JSX styles, a responsive style
- * factory, or a module-level StyleSheet used by a component. The mobile branch
- * keeps the original value. Geometry expressed as formulas, percentages,
- * transforms, and platform-specific native files is left for manual review.
+ * factory, or a module-level StyleSheet used by a component. Both web and
+ * native branches use the responsive helpers from use-responsive-layout.
+ * Geometry expressed as formulas, percentages, transforms, and
+ * platform-specific native files is left for manual review.
  *
  * npm run responsive:ui           # inspect the plan
  * npm run responsive:ui:apply     # write the plan
@@ -43,6 +44,12 @@ const PROPERTY_HELPER = new Map([
     'height', 'minHeight', 'maxHeight', 'paddingVertical', 'paddingTop',
     'paddingBottom', 'marginVertical', 'marginTop', 'marginBottom', 'rowGap',
   ].map((name) => [name, 'webResponsiveHeight']),
+]);
+
+const NATIVE_HELPER = new Map([
+  ['webResponsiveFont', 'responsiveFont'],
+  ['webResponsiveWidth', 'responsiveWidth'],
+  ['webResponsiveHeight', 'responsiveHeight'],
 ]);
 
 function parseOptions(args) {
@@ -120,6 +127,52 @@ function valueHelper(property, node) {
   // Tiny values are often hairlines, indicator geometry, or deliberate zeros.
   if (!helper || value === null || !Number.isFinite(value) || Math.abs(value) < 3) return null;
   return helper;
+}
+
+function isWebCondition(node, helper) {
+  if (!ts.isConditionalExpression(node) || !helper) return null;
+  const condition = unwrap(node.condition);
+  const whenTrue = unwrap(node.whenTrue);
+  const whenFalse = unwrap(node.whenFalse);
+  if (!condition || !whenTrue || !whenFalse
+    || !ts.isPropertyAccessExpression(condition)
+    || condition.name.text !== 'isWeb'
+    || !ts.isIdentifier(condition.expression)
+    || !ts.isCallExpression(whenTrue)
+    || !ts.isPropertyAccessExpression(whenTrue.expression)
+    || whenTrue.expression.name.text !== helper
+    || whenTrue.expression.expression.getText() !== condition.expression.text
+    || whenTrue.arguments.length !== 1
+    || numericValue(whenFalse) === null
+    || numericValue(whenTrue.arguments[0]) !== numericValue(whenFalse)) return null;
+  return {
+    receiver: condition.expression.text,
+    argument: whenTrue.arguments[0].getText(),
+    falseBranch: whenFalse,
+  };
+}
+
+function styleValueHelper(property, node) {
+  const helper = PROPERTY_HELPER.get(property);
+  if (valueHelper(property, node)) return helper;
+  return helper && isWebCondition(node, helper) ? helper : null;
+}
+
+function responsiveStyleValue(receiver, helper, node, sourceFile) {
+  const nativeHelper = NATIVE_HELPER.get(helper);
+  if (!nativeHelper) return null;
+
+  const literal = node.getText(sourceFile);
+  if (numericValue(node) !== null) {
+    return `${receiver}.isWeb ? ${receiver}.${helper}(${literal}) : ${receiver}.${nativeHelper}(${literal})`;
+  }
+
+  const existing = isWebCondition(node, helper);
+  if (!existing) return null;
+  const original = node.getText(sourceFile);
+  const falseStart = existing.falseBranch.getStart(sourceFile) - node.getStart(sourceFile);
+  const falseEnd = existing.falseBranch.end - node.getStart(sourceFile);
+  return `${original.slice(0, falseStart)}${existing.receiver}.${nativeHelper}(${existing.argument})${original.slice(falseEnd)}`;
 }
 
 function isStyleSheetCreate(node) {
@@ -349,15 +402,21 @@ function planFile(filePath, root) {
         for (const object of objects) {
           for (const property of object.properties) {
             if (!ts.isPropertyAssignment(property)) continue;
-            const helper = valueHelper(propertyName(property), property.initializer);
+            const helper = styleValueHelper(propertyName(property), property.initializer);
             if (!helper) continue;
-            const info = detail(owner);
-            if (!info.layoutName) info.layoutName = uniqueName('responsiveLayout', usedNames);
-            info.inline = true;
-            const literal = property.initializer.getText(sourceFile);
+            const existing = isWebCondition(property.initializer, helper);
+            let receiver = existing?.receiver;
+            if (!receiver) {
+              const info = detail(owner);
+              if (!info.layoutName) info.layoutName = uniqueName('responsiveLayout', usedNames);
+              info.inline = true;
+              receiver = info.layoutName;
+            }
+            const replacement = responsiveStyleValue(receiver, helper, property.initializer, sourceFile);
+            if (!replacement) continue;
             edits.push({
               start: property.initializer.getStart(sourceFile), end: property.initializer.end,
-              replacement: `${info.layoutName}.isWeb ? ${info.layoutName}.${helper}(${literal}) : ${literal}`,
+              replacement,
             });
             inlineValues += 1;
           }
@@ -379,7 +438,7 @@ function planFile(filePath, root) {
           const name = functionName(parent);
           const parameter = parent.parameters[0];
           const parameterName = parameter && ts.isIdentifier(parameter.name) ? parameter.name.text : null;
-          if (name && /^create.*Styles$/i.test(name)
+          if (name && /^create.*(?:Styles|Responsive)$/i.test(name)
             && parameterName && /^(?:layout|responsiveLayout|responsiveUi)$/.test(parameterName)
             && (parameter.type?.getText(sourceFile).includes('useResponsiveLayout')
               || /responsive(?:Font|Width|Height)/.test(parent.body?.getText(sourceFile) || ''))) {
@@ -401,12 +460,13 @@ function planFile(filePath, root) {
           if (!ts.isPropertyAssignment(style) || !ts.isObjectLiteralExpression(style.initializer)) continue;
           for (const property of style.initializer.properties) {
             if (!ts.isPropertyAssignment(property)) continue;
-            const helper = valueHelper(propertyName(property), property.initializer);
+            const helper = styleValueHelper(propertyName(property), property.initializer);
             if (!helper) continue;
-            const literal = property.initializer.getText(sourceFile);
+            const replacement = responsiveStyleValue(receiver, helper, property.initializer, sourceFile);
+            if (!replacement) continue;
             edits.push({
               start: property.initializer.getStart(sourceFile), end: property.initializer.end,
-              replacement: `${receiver}.isWeb ? ${receiver}.${helper}(${literal}) : ${literal}`,
+              replacement,
             });
             stylesheetValues += 1;
           }
@@ -445,7 +505,7 @@ function planFile(filePath, root) {
     const overrides = sheet.entries.map((entry) => {
       const key = /^[A-Za-z_$][\w$]*$/.test(entry.name) ? entry.name : JSON.stringify(entry.name);
       const fields = entry.values.map(({ field, helper, literal }) =>
-        `      ${field}: layout.isWeb ? layout.${helper}(${literal}) : ${literal},`).join(eol);
+        `      ${field}: layout.isWeb ? layout.${helper}(${literal}) : layout.${NATIVE_HELPER.get(helper)}(${literal}),`).join(eol);
       return `    ${key}: {${eol}      ...${sheet.name}[${JSON.stringify(entry.name)}],${eol}${fields}${eol}    },`;
     }).join(eol);
     const declaration = [
@@ -486,7 +546,8 @@ function planFile(filePath, root) {
     const transformed = parse(filePath, next);
     if (transformed.parseDiagnostics.length) {
       const diagnostic = transformed.parseDiagnostics[0];
-      throw new Error(`${name}: generated code failed to parse: ${ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ')}`);
+      const line = transformed.getLineAndCharacterOfPosition(diagnostic.start || 0).line + 1;
+      throw new Error(`${name}:${line}: generated code failed to parse: ${ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ')}`);
     }
   }
   return { filePath, file: name, next, inlineValues, stylesheetValues, reason: next === source ? 'no-eligible-values' : null };

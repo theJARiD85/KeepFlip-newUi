@@ -221,7 +221,7 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
             <Text style={[styles.countPillText, { fontSize: responsiveFont(7) }]}>{countLabel}</Text>
           </View>
         </View>
-        <Text style={[styles.intro, { fontSize: responsiveFont(10), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(15) : 15 }]}>Add durable details about your resale business, sourcing habits, goals, and working style. Flip uses these private notes to make responses and suggestions more relevant.</Text>
+        <Text style={[styles.intro, { fontSize: responsiveFont(10), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(15) : responsiveLayout2.responsiveFont(15) }]}>Add durable details about your resale business, sourcing habits, goals, and working style. Flip uses these private notes to make responses and suggestions more relevant.</Text>
         <Text style={[styles.privateNote, { fontSize: responsiveFont(8) }]}>PRIVATE TO YOUR ACCOUNT · DO NOT ADD PASSWORDS, PAYMENT DETAILS, OR API KEYS</Text>
       </View>
 
@@ -253,7 +253,7 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
               <View style={styles.sectionCopy}>
                 <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>USER-SPECIFIC MEMORY</Text>
                 <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>What should Flip remember?</Text>
-                <Text style={[styles.sectionBody, { fontSize: responsiveFont(10), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(15) : 15 }]}>These are the business details Flip can carry from one conversation to the next. Tap a type badge to cycle its category.</Text>
+                <Text style={[styles.sectionBody, { fontSize: responsiveFont(10), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(15) : responsiveLayout2.responsiveFont(15) }]}>These are the business details Flip can carry from one conversation to the next. Tap a type badge to cycle its category.</Text>
               </View>
               <Ionicons color={theme.colors.scannerViolet} name="flash" size={20} />
             </View>
@@ -287,7 +287,7 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
                       onChangeText={(value) => updateFact(index, value)}
                       placeholder="Add a durable detail Flip should remember"
                       placeholderTextColor={theme.colors.textMuted}
-                      style={[styles.memoryInput, { fontSize: responsiveFont(11), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(16) : 16 }]}
+                      style={[styles.memoryInput, { fontSize: responsiveFont(11), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(16) : responsiveLayout2.responsiveFont(16) }]}
                       textAlignVertical="top"
                       value={fact.value}
                     />
@@ -298,7 +298,7 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
             ) : (
               <View style={styles.emptyState}>
                 <Text style={[styles.emptyStateTitle, { fontSize: responsiveFont(10) }]}>No manual memories yet</Text>
-                <Text style={[styles.emptyStateBody, { fontSize: responsiveFont(9), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(14) : 14 }]}>Add your first durable business detail below. Flip may also learn concise facts when you state them in conversation.</Text>
+                <Text style={[styles.emptyStateBody, { fontSize: responsiveFont(9), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(14) : responsiveLayout2.responsiveFont(14) }]}>Add your first durable business detail below. Flip may also learn concise facts when you state them in conversation.</Text>
               </View>
             )}
 
@@ -314,7 +314,7 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
                 }}
                 placeholder="Example: I usually source vintage cameras under $40."
                 placeholderTextColor={theme.colors.textMuted}
-                style={[styles.memoryInput, { fontSize: responsiveFont(11), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(16) : 16 }]}
+                style={[styles.memoryInput, { fontSize: responsiveFont(11), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(16) : responsiveLayout2.responsiveFont(16) }]}
                 textAlignVertical="top"
                 value={newMemory}
               />
@@ -363,7 +363,7 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
               </View>
               <Ionicons color={theme.colors.scannerCyan} name="chatbubbles-outline" size={20} />
             </View>
-            <Text style={[styles.sectionBody, { fontSize: responsiveFont(10), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(15) : 15 }]}>Tell Flip what to consider when it answers or makes suggestions. Keep it stable and practical — for example, your preferred risk level, the way you want tradeoffs explained, or what kind of inventory you are building.</Text>
+            <Text style={[styles.sectionBody, { fontSize: responsiveFont(10), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(15) : responsiveLayout2.responsiveFont(15) }]}>Tell Flip what to consider when it answers or makes suggestions. Keep it stable and practical — for example, your preferred risk level, the way you want tradeoffs explained, or what kind of inventory you are building.</Text>
             <TextInput
               accessibilityLabel="Things Flip should know"
               maxLength={MAX_ASSISTANT_MEMORY_FACT_LENGTH}
@@ -376,7 +376,7 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
               }}
               placeholder="Example: Be direct about downside risk. Show the likely net profit after fees and call out unknown costs before recommending a buy."
               placeholderTextColor={theme.colors.textMuted}
-              style={[styles.guidanceInput, { fontSize: responsiveFont(11), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(17) : 17 }]}
+              style={[styles.guidanceInput, { fontSize: responsiveFont(11), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(17) : responsiveLayout2.responsiveFont(17) }]}
               textAlignVertical="top"
               value={guidance}
             />
@@ -409,36 +409,36 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
   const { responsiveFont, responsiveHeight, responsiveWidth } = responsiveLayout;
   const staticStyles = StyleSheet.create({
-    wrap: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12 },
+    wrap: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12) },
     heroCard: {
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
       padding: 14,
       borderWidth: 1,
       borderColor: theme.colors.accentVioletBorder,
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
       backgroundColor: theme.colors.cardSoft,
     },
     heroTopline: {
       flexDirection: 'row',
       alignItems: 'flex-start',
       justifyContent: 'space-between',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
     },
-    heroCopy: { flex: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3 },
+    heroCopy: { flex: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3) },
     eyebrow: {
       color: theme.colors.scannerViolet,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '900',
       letterSpacing: 1.2,
     },
     title: {
       color: theme.colors.cream,
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(25) : 25,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(25) : responsiveLayout.responsiveFont(25),
       fontWeight: '900',
     },
     countPill: {
-      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
-      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(5) : 5,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(5) : responsiveLayout.responsiveHeight(5),
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
       borderRadius: theme.radii.pill,
@@ -446,7 +446,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     countPillText: {
       color: theme.colors.scannerCyan,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: '900',
       letterSpacing: 0.55,
     },
@@ -457,54 +457,54 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       letterSpacing: 0.55,
     },
     sectionCard: {
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       padding: 14,
       borderWidth: 1,
       borderColor: theme.colors.dividerStrong,
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
       backgroundColor: theme.colors.card,
     },
     sectionHeader: {
       flexDirection: 'row',
       alignItems: 'flex-start',
       justifyContent: 'space-between',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
     },
-    sectionCopy: { flex: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3 },
+    sectionCopy: { flex: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3) },
     sectionEyebrow: {
       color: theme.colors.goldBright,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '900',
       letterSpacing: 1.25,
     },
     sectionTitle: {
       color: theme.colors.text,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16,
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(20) : 20,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : responsiveLayout.responsiveFont(16),
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(20) : responsiveLayout.responsiveFont(20),
       fontWeight: '800',
     },
     sectionBody: { color: theme.colors.textMuted },
-    factList: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8 },
+    factList: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8) },
     factCard: {
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
       padding: 10,
       borderWidth: 1,
       borderColor: theme.colors.accentVioletBorder,
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       backgroundColor: theme.colors.cardSoft,
     },
     factHeader: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
     },
     categoryBadge: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3,
-      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
-      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(5) : 5,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3),
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(5) : responsiveLayout.responsiveHeight(5),
       borderWidth: 1,
       borderColor: theme.colors.accentVioletBorder,
       borderRadius: theme.radii.pill,
@@ -512,24 +512,24 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     categoryBadgeText: {
       color: theme.colors.scannerViolet,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: '900',
       letterSpacing: 0.45,
     },
     removeButton: {
-      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(30) : 30,
-      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(30) : 30,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(30) : responsiveLayout.responsiveWidth(30),
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(30) : responsiveLayout.responsiveHeight(30),
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
     },
     memoryInput: {
-      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(58) : 58,
-      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
-      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(9) : 9,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(58) : responsiveLayout.responsiveHeight(58),
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(9) : responsiveLayout.responsiveHeight(9),
       borderWidth: 1,
       borderColor: theme.colors.divider,
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
       color: theme.colors.cream,
       backgroundColor: theme.colors.surfaceInset,
     },
@@ -538,25 +538,25 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       textAlign: 'right',
     },
     addCard: {
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
       padding: 10,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       backgroundColor: theme.colors.cardSoft,
     },
     addEyebrow: {
       color: theme.colors.scannerCyan,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '900',
       letterSpacing: 1.1,
     },
-    categoryList: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6, paddingRight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3 },
+    categoryList: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : responsiveLayout.responsiveWidth(6), paddingRight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3) },
     categoryOption: {
-      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(30) : 30,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(30) : responsiveLayout.responsiveHeight(30),
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
       borderWidth: 1,
       borderColor: theme.colors.divider,
       borderRadius: theme.radii.pill,
@@ -567,103 +567,103 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     categoryOptionText: {
       color: theme.colors.textMuted,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: '800',
     },
     categoryOptionTextSelected: { color: theme.colors.scannerCyan },
     guidanceInput: {
-      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(116) : 116,
-      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : 11,
-      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : 10,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(116) : responsiveLayout.responsiveHeight(116),
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : responsiveLayout.responsiveWidth(11),
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : responsiveLayout.responsiveHeight(10),
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       color: theme.colors.cream,
       backgroundColor: theme.colors.surfaceInset,
     },
     emptyState: {
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
       padding: 12,
       borderWidth: 1,
       borderColor: theme.colors.divider,
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
       backgroundColor: theme.colors.cardSoft,
     },
     emptyStateTitle: { color: theme.colors.text, fontWeight: '800' },
     emptyStateBody: { color: theme.colors.textMuted },
     addButton: {
-      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(42) : 42,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(42) : responsiveLayout.responsiveHeight(42),
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
-      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
       backgroundColor: theme.colors.scannerCyan,
     },
     addButtonText: {
       color: theme.colors.textOnAccent,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '900',
       letterSpacing: 0.7,
     },
     saveButton: {
-      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(48) : 48,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(48) : responsiveLayout.responsiveHeight(48),
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
-      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14,
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       backgroundColor: theme.colors.goldBright,
     },
     saveButtonText: {
       color: theme.colors.textOnAccent,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: '900',
       letterSpacing: 0.8,
     },
     messageCardError: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       padding: 11,
       borderWidth: 1,
       borderColor: theme.colors.danger,
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       backgroundColor: theme.colors.dangerSurface,
     },
-    messageTextError: { flex: 1, color: theme.colors.danger, lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15 },
+    messageTextError: { flex: 1, color: theme.colors.danger, lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : responsiveLayout.responsiveFont(15) },
     retryButton: {
-      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(32) : 32,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(32) : responsiveLayout.responsiveHeight(32),
       flexDirection: 'row',
       alignItems: 'center',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
-      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
     },
     retryButtonText: {
       color: theme.colors.goldBright,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '900',
       letterSpacing: 0.6,
     },
     loadingCard: {
-      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(120) : 120,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(120) : responsiveLayout.responsiveHeight(120),
       alignItems: 'center',
       justifyContent: 'center',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
       backgroundColor: theme.colors.card,
     },
     loadingText: { color: theme.colors.textMuted },
     noticeText: {
       color: theme.colors.scannerCyan,
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : responsiveLayout.responsiveFont(15),
       textAlign: 'center',
     },
     pressed: { opacity: 0.72 },

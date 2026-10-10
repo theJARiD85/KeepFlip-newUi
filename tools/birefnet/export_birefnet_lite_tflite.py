@@ -28,6 +28,26 @@ MODEL_FILENAME = "onnx/model.onnx"
 BASE_MODEL = "ZhengPeng7/BiRefNet_lite"
 IMAGE_SIZE = 1024
 EXPECTED_ONNX_INPUT_SHAPE = [1, 3, IMAGE_SIZE, IMAGE_SIZE]
+ONNX2TF_PARAMETER_REPLACEMENTS = {
+    "format_version": 1,
+    "operations": [
+        {
+            "op_name": "wa/decoder/Split_1",
+            "param_target": "attributes",
+            "param_name": "axis",
+            # In the converted [1024, 32, 3] tensor, split the 1024 axis
+            # into 32 chunks. onnx2tf's default axis mapping selects size 3.
+            "values": 0,
+        },
+        {
+            "op_name": "wa/decoder/Split_2",
+            "param_target": "attributes",
+            "param_name": "axis",
+            # The converter trace shows the same [1024, 32, 3] layout here.
+            "values": 0,
+        },
+    ],
+}
 
 
 def load_interpreter():
@@ -123,6 +143,10 @@ def convert(args: argparse.Namespace) -> None:
     with tempfile.TemporaryDirectory(prefix="birefnet-lite-tflite-") as temp_name:
         temp_dir = Path(temp_name)
         converted_dir = temp_dir / "converted"
+        replacement_path = temp_dir / "param_replacements.json"
+        replacement_path.write_text(
+            json.dumps(ONNX2TF_PARAMETER_REPLACEMENTS), encoding="utf-8"
+        )
         subprocess.run(
             [
                 onnx2tf,
@@ -132,6 +156,8 @@ def convert(args: argparse.Namespace) -> None:
                 str(converted_dir),
                 "-b",
                 "1",
+                "-prf",
+                str(replacement_path),
                 "--tflite_backend",
                 "tf_converter",
             ],

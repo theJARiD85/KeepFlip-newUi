@@ -208,10 +208,10 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     ...styles,
     button: {
       ...styles["button"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
-      gap: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
-      minHeight: layout.isWeb ? layout.webResponsiveHeight(41) : 41,
-      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(9) : layout.responsiveWidth(9),
+      gap: layout.isWeb ? layout.webResponsiveWidth(7) : layout.responsiveWidth(7),
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(41) : layout.responsiveHeight(41),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
     },
   });
 }
