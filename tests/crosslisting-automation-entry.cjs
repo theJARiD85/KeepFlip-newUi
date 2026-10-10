@@ -35,16 +35,19 @@ async function main() {
     marketplaceListings: {
       poshmark: { title: 'Poshmark jacket', description: 'Vintage jacket', fields: { size: 'L' } },
       mercari: { title: 'Mercari jacket', description: 'Leather jacket', fields: { brand: 'Harley Davidson' } },
+      facebookMarketplace: { title: 'Facebook jacket', description: 'Vintage leather jacket', fields: { shippingWeight: '24 lbs' } },
     },
   };
   const plan = planService.createCrosslistingAutomationPlan({
-    item, listing, marketplaces: ['mercari', 'poshmark', 'mercari'],
+    item, listing, marketplaces: ['mercari', 'poshmark', 'mercari', 'facebookMarketplace'], sellerPaysShipping: true,
   });
-  assert.deepEqual(JSON.parse(JSON.stringify(plan.jobs.map((job) => job.marketplace))), ['poshmark', 'mercari']);
+  assert.deepEqual(JSON.parse(JSON.stringify(plan.jobs.map((job) => job.marketplace))), ['poshmark', 'mercari', 'facebookMarketplace']);
   assert.deepEqual(JSON.parse(JSON.stringify(plan.photoFileIds)), ['photo-1', 'photo-2']);
   assert.equal(plan.jobs[0].payload.title, 'Poshmark jacket');
   assert.equal(plan.jobs[1].payload.title, 'Mercari jacket');
   assert.equal(plan.jobs[0].payload.price, '85.00');
+  assert.equal(plan.jobs[2].payload.platformFields.shippingWeight, '24 lbs');
+  assert.equal(plan.jobs[2].payload.platformFields.sellerPaysShipping, 'true');
   assert.throws(() => planService.createCrosslistingAutomationPlan({ item, listing, marketplaces: [] }), /Choose at least one/);
 
   const sent = [];
@@ -66,15 +69,18 @@ async function main() {
   let photosReady = false;
   const jobs = await web.dispatchToAutomationEngine({
     ownerId: 'owner-1', runId: 'run-123456789', item, listing,
-    marketplaces: ['poshmark', 'mercari'], onPhotosReady: () => { photosReady = true; },
+    marketplaces: ['poshmark', 'mercari', 'facebookMarketplace'], sellerPaysShipping: false,
+    onPhotosReady: () => { photosReady = true; },
   });
   assert.equal(photosReady, true);
-  assert.equal(jobs.length, 2);
+  assert.equal(jobs.length, 3);
   assert.equal(sent[0].action, 'LISTING_START');
   assert.equal(sent[0].ownerId, 'owner-1');
   assert.equal(sent[0].itemId, 'item-1');
   assert.equal(sent[0].photos.length, 1);
   assert.equal(sent[0].unavailablePhotoCount, 1);
+  const facebookJob = sent[0].jobs.find((job) => job.marketplace === 'facebookMarketplace');
+  assert.equal(facebookJob.payload.platformFields.sellerPaysShipping, 'false');
 
   const emptyWeb = loadService('services/crosslisting-automation-dispatch.web.ts', {
     '@/services/crosslisting-automation-plan': planService,

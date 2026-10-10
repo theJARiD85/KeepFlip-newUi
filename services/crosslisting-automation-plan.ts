@@ -19,15 +19,19 @@ export type CrosslistingAutomationInput = {
   item: InventoryItem;
   listing: ListingGeneratorResult['listing'];
   marketplaces: readonly CrosslistingMarketplace[];
+  sellerPaysShipping?: boolean;
 };
 
 /** Freeze one generated draft per selected marketplace before either execution host starts. */
-export function createCrosslistingAutomationPlan({ item, listing, marketplaces }: CrosslistingAutomationInput): CrosslistingAutomationPlan {
+export function createCrosslistingAutomationPlan({ item, listing, marketplaces, sellerPaysShipping }: CrosslistingAutomationInput): CrosslistingAutomationPlan {
   const selected = new Set(marketplaces);
-  const jobs = CROSSLISTING_RUN_MARKETPLACES.filter((marketplace) => selected.has(marketplace)).map((marketplace) => ({
-    marketplace,
-    payload: createGeneratedCrosslistingPayload({ marketplace, listing, item }),
-  }));
+  const jobs = CROSSLISTING_RUN_MARKETPLACES.filter((marketplace) => selected.has(marketplace)).map((marketplace) => {
+    const payload = createGeneratedCrosslistingPayload({ marketplace, listing, item });
+    if (marketplace === 'facebookMarketplace' && sellerPaysShipping !== undefined) {
+      payload.platformFields.sellerPaysShipping = String(sellerPaysShipping);
+    }
+    return { marketplace, payload };
+  });
   if (!jobs.length) throw new Error('Choose at least one marketplace to list this item.');
   const savedPhotos = item.itemPhotos.length ? item.itemPhotos : item.coverPhotoId ? [item.coverPhotoId] : [];
   return {

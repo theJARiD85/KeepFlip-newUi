@@ -122,13 +122,13 @@
           await writeRun(run);
         }
       }
-      const firstTabId = run.jobs.find((job) => job.tabId && job.status === 'opened')?.tabId;
+      // Keep the KeepFlip Listing page in front while marketplace forms load in their own tabs.
       for (const job of run.jobs) {
         if (!job.tabId || job.status !== 'opened') continue;
         try {
           await chrome.tabs.update(job.tabId, {
             url: DESTINATIONS[job.marketplace].createUrl,
-            active: job.tabId === firstTabId,
+            active: false,
           });
         } catch {
           const currentRun = await readRun();

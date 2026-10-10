@@ -32,6 +32,7 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
   const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const confirmed = useMemo(() => parseSavedListingDraft(item.listingJson)?.confirmedMarketplaces ?? {}, [item.listingJson]);
   const [selected, setSelected] = useState<CrosslistingMarketplace[]>(() => MARKETPLACES.filter((value) => initialSelections?.includes(value) && !confirmed[value]));
+  const [sellerPaysShipping, setSellerPaysShipping] = useState(false);
   const [extensionReady, setExtensionReady] = useState<boolean | null>(null);
   const [jobs, setJobs] = useState<ExtensionJob[]>([]);
   const [recorded, setRecorded] = useState<Set<CrosslistingMarketplace>>(() => new Set());
@@ -138,6 +139,7 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
       runIdRef.current = runId;
       const dispatchedJobs = await dispatchToAutomationEngine({
         ownerId: userId, item, listing, marketplaces: available, runId,
+        sellerPaysShipping: selected.includes('facebookMarketplace') ? sellerPaysShipping : undefined,
         onPhotosReady: () => setNotice('Opening your marketplace tabs…'),
       });
       setJobs((current) => dispatchedJobs.map((job) => {
@@ -145,7 +147,7 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
         return reported ? { ...job, status: reported.status, details: reported.details } : job;
       }));
       setExtensionReady(true);
-      setNotice('KeepFlip opened your listing tabs. Sign in if asked; each tab will fill when its form is ready.');
+      setNotice('Your marketplace tabs are running in the background. Open a tab if sign-in or review is needed.');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not start the desktop listing run.');
       setNotice(null);
@@ -190,6 +192,13 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
       const checked = selected.includes(marketplace) || listed;
       return <Pressable key={marketplace} accessibilityRole="checkbox" accessibilityState={{ checked, disabled: listed || jobs.length > 0 }} disabled={listed || jobs.length > 0} onPress={() => toggle(marketplace)} style={[responsiveStyles.choice, checked && responsiveStyles.choiceSelected]}><Text style={[responsiveStyles.choiceText, checked && responsiveStyles.choiceTextSelected]}><Ionicons color={checked ? theme.colors.scannerCyan : theme.colors.textMuted} name={checked ? 'checkmark-circle' : 'add'} size={15} />{' '}{CROSSLISTING_DESTINATIONS[marketplace].label}</Text></Pressable>;
     })}</View>
+    {selected.includes('facebookMarketplace') ? <Pressable
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: sellerPaysShipping, disabled: jobs.length > 0 || busy }}
+      disabled={jobs.length > 0 || busy}
+      onPress={() => setSellerPaysShipping((current) => !current)}
+      style={[responsiveStyles.shippingPreference, sellerPaysShipping && responsiveStyles.shippingPreferenceSelected]}
+    ><Text style={[responsiveStyles.shippingPreferenceText, sellerPaysShipping && responsiveStyles.choiceTextSelected]}><Ionicons color={sellerPaysShipping ? theme.colors.scannerCyan : theme.colors.textMuted} name={sellerPaysShipping ? 'checkmark-circle' : 'ellipse-outline'} size={15} />{' '}Cover shipping cost so buyers see free shipping</Text></Pressable> : null}
     {error ? <Text accessibilityRole="alert" style={responsiveStyles.error}>{error}</Text> : null}
     {notice ? <Text style={responsiveStyles.notice}>{notice}</Text> : null}
     {!jobs.length ? <Pressable accessibilityRole="button" accessibilityState={{ disabled: !available.length || busy }} disabled={!available.length || busy} onPress={() => { void start(); }} style={[responsiveStyles.primary, (!available.length || busy) && responsiveStyles.disabled]}><Text style={responsiveStyles.primaryText}>{busy ? 'Preparing your run…' : <>Start listing <Ionicons color={theme.colors.textOnAccent} name="arrow-forward" size={14} /></>}</Text></Pressable> :
@@ -223,6 +232,9 @@ const styles = StyleSheet.create({
   body: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 18 },
   hint: { color: theme.colors.goldBright, fontSize: 12, lineHeight: 18 },
   choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  shippingPreference: { minHeight: 38, justifyContent: 'center', borderWidth: 1, borderColor: theme.colors.dividerStrong, borderRadius: 8, backgroundColor: theme.colors.surfaceInset, paddingHorizontal: 10 },
+  shippingPreferenceSelected: { borderColor: theme.colors.scannerCyan, backgroundColor: theme.colors.iconSurfaceCyan },
+  shippingPreferenceText: { color: theme.colors.textMuted, fontSize: 11, fontWeight: '800' },
   choice: { minHeight: 38, justifyContent: 'center', borderWidth: 1, borderColor: theme.colors.dividerStrong, borderRadius: 8, backgroundColor: theme.colors.surfaceInset, paddingHorizontal: 10 },
   choiceSelected: { borderColor: theme.colors.scannerCyan, backgroundColor: theme.colors.iconSurfaceCyan },
   choiceText: { color: theme.colors.textMuted, fontSize: 11, fontWeight: '800' },

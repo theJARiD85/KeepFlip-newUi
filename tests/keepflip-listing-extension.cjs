@@ -244,10 +244,16 @@ test('the extension binds a listing run to KeepFlip and its marketplace tabs', a
     'https://www.facebook.com/marketplace/create/',
     'https://offerup.com/',
   ]);
-  assert.equal(app.opened[0].active, true);
+  assert.equal(app.opened[0].active, false);
   assert.equal(app.opened[1].active, false);
   assert.equal(app.opened[2].active, false);
   assert.equal(app.opened[3].active, false);
+  const focused = await app.dispatch({ type: 'KEEPFLIP_LISTING_PAGE', request: {
+    source: 'keepflip-webapp', protocol: 1, action: 'LISTING_FOCUS', ownerId: 'owner-1',
+    runId: 'run-123456789012', marketplace: 'facebookMarketplace',
+  } }, { url: 'https://keep-flip.com/crosslisting', tab: { id: 7 } });
+  assert.equal(focused.ok, true);
+  assert.equal(app.opened[2].active, true, 'the user can still bring a marketplace tab forward for sign-in or review');
   assert.equal(app.navigationSnapshots.length, 4);
   for (const snapshot of app.navigationSnapshots) {
     assert.ok(snapshot.jobs.every((job) => Number.isInteger(job.tabId)),
@@ -704,7 +710,7 @@ test('Facebook applies an explicit shipping and pickup choice, then opens the sh
     disabled: false,
     innerText: 'Select shipping label',
     textContent: 'Select shipping label',
-    getAttribute: (attribute) => attribute === 'aria-label' ? 'Select shipping label' : null,
+    getAttribute: () => null,
     getBoundingClientRect: () => ({ width: 260, height: 44 }),
     click: () => { shippingLabelClicks += 1; },
   };
@@ -781,6 +787,197 @@ test('Facebook applies an explicit shipping and pickup choice, then opens the sh
   assert.equal(nextClicks, 0);
   assert.equal(statuses.at(-1)?.status, 'needs_review');
   assert.match(statuses.at(-1)?.message || '', /pressed Select shipping label/i);
+});
+
+async function runFacebookShippingOptionsScenario({ runId, platformFields, selectedWeight = null }) {
+  let deliveryMenuOpen = false;
+  let weightMenuOpen = false;
+  let shippingDialogOpen = false;
+  let packageWeightClicks = 0;
+  let shippingLabelClicks = 0;
+  let shippingCostChecked = false;
+  let shippingCostClicks = 0;
+  let updateClicks = 0;
+  let nextClicks = 0;
+  const shippingActions = [];
+  const statuses = [];
+  const deliveryCombo = {
+    disabled: false,
+    name: '',
+    id: 'delivery-method',
+    getAttribute: (attribute) => attribute === 'aria-labelledby' ? 'delivery-label'
+      : attribute === 'aria-expanded' ? String(deliveryMenuOpen) : null,
+    getBoundingClientRect: () => ({ width: 260, height: 44 }),
+    closest: () => null,
+    click: () => { deliveryMenuOpen = !deliveryMenuOpen; },
+  };
+  Object.defineProperty(deliveryCombo, 'innerText', { get: () => 'Delivery method Shipping & local pickup' });
+  Object.defineProperty(deliveryCombo, 'textContent', { get: () => 'Delivery method Shipping & local pickup' });
+  const packageWeightCombo = {
+    disabled: false,
+    name: '',
+    id: 'package-weight',
+    getAttribute: (attribute) => attribute === 'aria-labelledby' ? 'weight-label'
+      : attribute === 'aria-expanded' ? String(weightMenuOpen) : null,
+    getBoundingClientRect: () => ({ width: 260, height: 44 }),
+    closest: () => null,
+    click: () => { packageWeightClicks += 1; weightMenuOpen = !weightMenuOpen; },
+  };
+  Object.defineProperty(packageWeightCombo, 'innerText', { get: () => 'Package weight' });
+  Object.defineProperty(packageWeightCombo, 'textContent', { get: () => 'Package weight' });
+  const weightValues = ['Under 0.5 lbs', '0.5-1 lbs', '1-2 lbs', '2-5 lbs', '5-10 lbs', '10-70 lbs'];
+  const weightRadios = weightValues.map((value) => {
+    let checked = value === selectedWeight;
+    const radio = {
+      type: 'radio',
+      name: 'package_weight_range',
+      value,
+      get checked() { return checked; },
+      set checked(next) { checked = next; },
+      getAttribute: (attribute) => attribute === 'aria-checked' ? String(checked)
+        : attribute === 'value' ? value : null,
+      closest: () => ({ innerText: value, textContent: value }),
+      click: () => {
+        weightRadios.forEach((other) => { other.checked = false; });
+        checked = true;
+        weightMenuOpen = false;
+      },
+    };
+    return radio;
+  });
+  const sellerShippingControl = {
+    disabled: false,
+    getAttribute: (attribute) => attribute === 'aria-checked' ? String(shippingCostChecked) : null,
+    getBoundingClientRect: () => ({ width: 280, height: 44 }),
+    closest: () => null,
+    innerText: 'Cover the shipping cost so buyers see free shipping.',
+    textContent: 'Cover the shipping cost so buyers see free shipping.',
+    click: () => { shippingCostClicks += 1; shippingCostChecked = !shippingCostChecked; },
+  };
+  const updateButton = {
+    disabled: false,
+    getAttribute: (attribute) => attribute === 'aria-label' ? 'Update' : null,
+    getBoundingClientRect: () => ({ width: 90, height: 44 }),
+    innerText: 'Update',
+    textContent: 'Update',
+    click: () => { updateClicks += 1; shippingActions.push('Update'); shippingDialogOpen = false; },
+  };
+  const shippingDialog = {
+    getAttribute: () => null,
+    getBoundingClientRect: () => ({ width: 500, height: 600 }),
+    querySelectorAll: (selector) => {
+      if (selector === 'input[type="radio"][name="package_weight_range"]') return weightRadios;
+      if (selector === '[role="checkbox"]') return [sellerShippingControl];
+      if (selector === 'button,[role="button"]') return [updateButton];
+      return [];
+    },
+  };
+  const shippingLabelButton = {
+    disabled: false,
+    getAttribute: (attribute) => attribute === 'aria-label' ? 'Select shipping label' : null,
+    getBoundingClientRect: () => ({ width: 260, height: 44 }),
+    innerText: 'Select shipping label',
+    textContent: 'Select shipping label',
+    click: () => { shippingLabelClicks += 1; shippingDialogOpen = true; },
+  };
+  const nextButton = {
+    disabled: false,
+    getAttribute: (attribute) => attribute === 'aria-label' ? 'Next' : null,
+    getBoundingClientRect: () => ({ width: 260, height: 44 }),
+    innerText: 'Next',
+    textContent: 'Next',
+    click: () => { nextClicks += 1; shippingActions.push('Next'); location.pathname = '/marketplace/item/123456789'; },
+  };
+  const document = {
+    getElementById: (id) => ({ textContent: id === 'delivery-label' ? 'Delivery method'
+      : id === 'weight-label' ? 'Package weight' : '' }),
+    querySelector: (selector) => selector.includes('Package weight and shipping options') && shippingDialogOpen
+      ? shippingDialog : null,
+    querySelectorAll: (selector) => {
+      if (selector === '[role="combobox"]') return [deliveryCombo, ...(shippingDialogOpen ? [packageWeightCombo] : [])];
+      if (selector === 'button,[role="button"]' || selector === 'button,input[type="submit"],[role="button"]') {
+        return [shippingLabelButton, nextButton];
+      }
+      return [];
+    },
+  };
+  const assignment = {
+    ok: true,
+    jobStatus: 'opened',
+    runId,
+    payload: { title: 'Baby stroller', description: 'Stroller in good condition.', price: '80', photoCount: 0,
+      platformFields },
+    photos: [],
+    unavailablePhotoCount: 0,
+  };
+  const chrome = {
+    runtime: {
+      lastError: undefined,
+      onMessage: { addListener: () => undefined },
+      sendMessage: (message) => {
+        if (message.type === 'KEEPFLIP_LISTING_TAB_READY') return Promise.resolve(assignment);
+        if (message.type === 'KEEPFLIP_LISTING_TAB_STATUS') statuses.push(message);
+        return Promise.resolve({ ok: true });
+      },
+    },
+  };
+  const location = {
+    protocol: 'https:',
+    hostname: 'www.facebook.com',
+    pathname: '/marketplace/create/item',
+    search: '?step=delivery',
+    href: 'https://www.facebook.com/marketplace/create/item?step=delivery',
+  };
+  const runnerPath = path.join(__dirname, '..', 'extensions', 'keepflip-sale-watcher', 'content_scripts', 'automation_runner.js');
+  vm.runInNewContext(fs.readFileSync(runnerPath, 'utf8'), {
+    chrome,
+    document,
+    location,
+    Event: class TestEvent {},
+    HTMLSelectElement: class HTMLSelectElement {},
+    setTimeout: (callback) => { queueMicrotask(callback); return 1; },
+    clearTimeout: () => undefined,
+    setInterval: (callback) => { queueMicrotask(callback); return 1; },
+    clearInterval: () => undefined,
+    console,
+  });
+
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  return { statuses, weightRadios, packageWeightClicks, shippingLabelClicks, shippingCostChecked,
+    shippingCostClicks, updateClicks, nextClicks, shippingActions };
+}
+
+test('Facebook opens the shipping options before opening the Package weight dropdown', async () => {
+  const result = await runFacebookShippingOptionsScenario({
+    runId: 'facebook-weight-run-123456',
+    platformFields: { deliveryMethod: 'shipping_and_local_pickup' },
+  });
+
+  assert.equal(result.shippingLabelClicks, 1);
+  assert.equal(result.packageWeightClicks, 1);
+  assert.equal(result.updateClicks, 0);
+  assert.equal(result.statuses.at(-1)?.status, 'needs_review');
+  assert.match(result.statuses.at(-1)?.message || '', /total package weight/i);
+});
+
+test('Facebook selects the saved package-weight range, applies seller-paid shipping, and presses Update', async () => {
+  const result = await runFacebookShippingOptionsScenario({
+    runId: 'facebook-weight-save-run-123456',
+    platformFields: {
+      deliveryMethod: 'shipping_and_local_pickup',
+      shippingWeight: '24 lbs',
+      sellerPaysShipping: 'true',
+    },
+    selectedWeight: '0.5-1 lbs',
+  });
+
+  assert.equal(result.weightRadios.find((radio) => radio.value === '10-70 lbs')?.checked, true);
+  assert.equal(result.shippingCostChecked, true);
+  assert.equal(result.shippingCostClicks, 1);
+  assert.equal(result.updateClicks, 1);
+  assert.equal(result.nextClicks, 1);
+  assert.deepEqual(result.shippingActions, ['Update', 'Next']);
+  assert.equal(result.statuses.at(-1)?.status, 'confirmed');
 });
 
 test('Facebook runner initialization failure is surfaced to the Listing page', async () => {

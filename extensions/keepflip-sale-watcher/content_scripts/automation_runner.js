@@ -44,6 +44,7 @@
   let facebookNextClicked = false;
   let facebookSubmissionInProgress = false;
   let facebookShippingLabelOpenRequested = false;
+  let facebookShippingOptionsSaved = false;
 
   async function sendMessageQuietly(message) {
     try { return await chrome.runtime.sendMessage(message); } catch { /* The extension may be reloading. */ }
@@ -302,6 +303,191 @@
       visible(control) && /^select shipping label$/i.test(facebookButtonLabel(control))) || null;
   }
 
+  function findFacebookShippingOptionsDialog() {
+    const dialog = document.querySelector('[role="dialog"][aria-label*="Package weight and shipping options"]');
+    return dialog && visible(dialog) ? dialog : null;
+  }
+
+  const facebookPackageWeightRanges = [
+    'Under 0.5 lbs', '0.5-1 lbs', '1-2 lbs', '2-5 lbs', '5-10 lbs', '10-70 lbs',
+  ];
+
+  function facebookPackageWeightRangeForPounds(pounds) {
+    if (!Number.isFinite(pounds) || pounds < 0) return null;
+    if (pounds < 0.5) return facebookPackageWeightRanges[0];
+    if (pounds < 1) return facebookPackageWeightRanges[1];
+    if (pounds < 2) return facebookPackageWeightRanges[2];
+    if (pounds < 5) return facebookPackageWeightRanges[3];
+    if (pounds < 10) return facebookPackageWeightRanges[4];
+    if (pounds <= 70) return facebookPackageWeightRanges[5];
+    return null;
+  }
+
+  function facebookPackageWeightHint(payload) {
+    const platformFields = payload?.platformFields && typeof payload.platformFields === 'object'
+      ? payload.platformFields
+      : {};
+    const entries = [
+      ...Object.entries(platformFields).filter(([key]) => /weight/i.test(key)),
+      ...['packageWeight', 'shippingWeight', 'weight', 'packageWeightOz', 'shippingWeightOz']
+        .filter((key) => payload?.[key] !== undefined && payload?.[key] !== null)
+        .map((key) => [key, payload[key]]),
+    ];
+
+    for (const [key, rawValue] of entries) {
+      const value = String(rawValue ?? '').trim();
+      if (!value) continue;
+      const directRange = facebookPackageWeightRanges.find((range) =>
+        normalizeChoiceLabel(range) === normalizeChoiceLabel(value));
+      if (directRange) return directRange;
+
+      const amount = value.match(/\d+(?:\.\d+)?/);
+      if (!amount) continue;
+      const textUnit = value.match(/\b(lb|lbs|pounds?|oz|ounces?|kg|kilograms?|g|grams?)\b/i)?.[1]?.toLowerCase();
+      const keyUnit = key.match(/(lbs?|pounds?|oz|ounces?|kg|kilograms?|g|grams?)$/i)?.[1]?.toLowerCase();
+      const normalizedKey = key.toLowerCase().replace(/[^a-z]/g, '');
+      const unit = textUnit || keyUnit || (/^(package|shipping)weight$/.test(normalizedKey) ? 'lbs' : '');
+      if (!unit) continue;
+      let pounds = Number(amount[0]);
+      if (/^(oz|ounce|ounces)$/.test(unit)) pounds /= 16;
+      else if (/^(kg|kilogram|kilograms)$/.test(unit)) pounds *= 2.2046226218;
+      else if (/^(g|gram|grams)$/.test(unit)) pounds /= 453.59237;
+      const range = facebookPackageWeightRangeForPounds(pounds);
+      if (range) return range;
+    }
+    return null;
+  }
+
+  function facebookPackageWeightRadios(dialog) {
+    return Array.from(dialog?.querySelectorAll('input[type="radio"][name="package_weight_range"]') || []);
+  }
+
+  function facebookPackageWeightRadioLabel(radio) {
+    return radio.value || radio.getAttribute('value') || radio.getAttribute('aria-label') ||
+      radio.closest('label')?.innerText || radio.closest('label')?.textContent || '';
+  }
+
+  function facebookSelectedPackageWeight(dialog) {
+    return facebookPackageWeightRadios(dialog).find((radio) =>
+      radio.checked || radio.getAttribute('aria-checked') === 'true') || null;
+  }
+
+  function facebookSellerPaysShippingPreference(payload) {
+    const fields = payload?.platformFields && typeof payload.platformFields === 'object'
+      ? payload.platformFields
+      : {};
+    const values = [
+      ['sellerPaysShipping', fields.sellerPaysShipping ?? payload?.sellerPaysShipping],
+      ['coverShippingCost', fields.coverShippingCost ?? payload?.coverShippingCost],
+      ['freeShipping', fields.freeShipping ?? payload?.freeShipping],
+      ['shippingPaidBy', fields.shippingPaidBy ?? payload?.shippingPaidBy],
+      ['shippingPayer', fields.shippingPayer ?? payload?.shippingPayer],
+    ];
+    for (const [key, value] of values) {
+      if (typeof value === 'boolean') return value;
+      const normalized = normalizeChoiceLabel(value);
+      if (!normalized) continue;
+      if (['true', 'yes', '1', 'seller', 'seller pays', 'seller pays shipping', 'free shipping'].includes(normalized)) return true;
+      if (['false', 'no', '0', 'buyer', 'buyer pays', 'buyer pays shipping', 'paid shipping'].includes(normalized)) return false;
+    }
+    return null;
+  }
+
+  function findFacebookSellerPaysShippingControl(dialog) {
+    const selectors = ['[role="checkbox"]', '[role="switch"]', 'input[type="checkbox"]', 'button', '[role="button"]', 'label'];
+    for (const selector of selectors) {
+      const control = Array.from(dialog?.querySelectorAll(selector) || []).find((element) => {
+        const parentLabel = element.closest('label,[role="checkbox"],[role="switch"],button,[role="button"]');
+        const labelText = [
+          element.getAttribute('aria-label'), element.innerText, element.textContent,
+          parentLabel?.getAttribute('aria-label'), parentLabel?.innerText, parentLabel?.textContent,
+        ].filter(Boolean).join(' ');
+        return /cover the shipping cost so buyers see free shipping/i.test(labelText) &&
+          !element.disabled && (element.tagName === 'INPUT' || visible(element));
+      });
+      if (control) return control;
+    }
+    const textNode = Array.from(dialog?.querySelectorAll('*') || []).find((element) =>
+      /cover the shipping cost so buyers see free shipping/i.test(element.innerText || element.textContent || ''));
+    return textNode?.closest('input[type="checkbox"],[role="checkbox"],[role="switch"],button,[role="button"],label') || null;
+  }
+
+  function facebookShippingPaidBySellerIsChecked(control) {
+    if (typeof control.checked === 'boolean') return control.checked;
+    return control.getAttribute('aria-checked') === 'true';
+  }
+
+  function findFacebookDialogUpdateButton(dialog) {
+    return Array.from(dialog?.querySelectorAll('button,[role="button"]') || []).find((control) =>
+      visible(control) && /^update$/i.test(facebookButtonLabel(control))) || null;
+  }
+
+  async function saveFacebookShippingOptions(dialog, packageWeightCombo) {
+    const payload = assignment?.payload || {};
+    const expectedRange = facebookPackageWeightHint(payload);
+    let radios = facebookPackageWeightRadios(dialog);
+    let selectedRadio = facebookSelectedPackageWeight(dialog);
+    let selectedLabel = selectedRadio ? facebookPackageWeightRadioLabel(selectedRadio) : '';
+
+    if (expectedRange && normalizeChoiceLabel(selectedLabel) !== normalizeChoiceLabel(expectedRange)) {
+      if (packageWeightCombo?.getAttribute('aria-expanded') !== 'true') {
+        packageWeightCombo?.click();
+        await new Promise((resolve) => setTimeout(resolve, 120));
+        dialog = findFacebookShippingOptionsDialog() || dialog;
+        packageWeightCombo = findFacebookCombobox('package weight') || packageWeightCombo;
+      }
+      radios = facebookPackageWeightRadios(dialog);
+      const target = radios.find((radio) =>
+        normalizeChoiceLabel(facebookPackageWeightRadioLabel(radio)) === normalizeChoiceLabel(expectedRange));
+      if (!target) return { ready: false, message: `KeepFlip could not find Facebook’s ${expectedRange} package-weight option. Choose the shipping weight in Facebook.` };
+      target.click();
+      await new Promise((resolve) => setTimeout(resolve, 120));
+      dialog = findFacebookShippingOptionsDialog() || dialog;
+      selectedRadio = facebookSelectedPackageWeight(dialog);
+      selectedLabel = selectedRadio ? facebookPackageWeightRadioLabel(selectedRadio) : '';
+      if (normalizeChoiceLabel(selectedLabel) !== normalizeChoiceLabel(expectedRange)) {
+        return { ready: false, message: `Facebook did not confirm the ${expectedRange} package weight. Choose it in Facebook before continuing.` };
+      }
+    }
+
+    if (!selectedRadio && !facebookComboboxValue(packageWeightCombo)) {
+      if (packageWeightCombo?.getAttribute('aria-expanded') !== 'true') {
+        packageWeightCombo?.click();
+        await new Promise((resolve) => setTimeout(resolve, 120));
+      }
+      return { ready: false, message: 'Choose the item’s total package weight in Facebook, then resume the listing in KeepFlip.' };
+    }
+
+    const sellerPaysShipping = facebookSellerPaysShippingPreference(payload);
+    if (sellerPaysShipping !== null) {
+      const sellerShippingControl = findFacebookSellerPaysShippingControl(dialog);
+      if (!sellerShippingControl) {
+        return { ready: false, message: 'KeepFlip could not find Facebook’s “Cover the shipping cost so buyers see free shipping” option.' };
+      }
+      if (facebookShippingPaidBySellerIsChecked(sellerShippingControl) !== sellerPaysShipping) {
+        sellerShippingControl.click();
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      if (facebookShippingPaidBySellerIsChecked(sellerShippingControl) !== sellerPaysShipping) {
+        return { ready: false, message: 'Facebook did not confirm the requested seller-paid shipping setting. Check the shipping option.' };
+      }
+    }
+
+    const updateButton = findFacebookDialogUpdateButton(dialog);
+    if (!updateButton) return { ready: false, message: 'KeepFlip could not find Facebook’s Update button to save shipping info.' };
+    updateButton.click();
+    let dialogStillOpen = Boolean(findFacebookShippingOptionsDialog());
+    for (let attempt = 0; dialogStillOpen && attempt < 10; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      dialogStillOpen = Boolean(findFacebookShippingOptionsDialog());
+    }
+    if (dialogStillOpen) {
+      return { ready: false, message: 'KeepFlip pressed Update, but Facebook’s shipping options are still open. Review the dialog and resume.' };
+    }
+    facebookShippingOptionsSaved = true;
+    return { ready: true };
+  }
+
   async function prepareFacebookDeliveryStep() {
     let combo = findFacebookCombobox('delivery method');
     if (!combo) return { ready: false, message: 'Facebook opened the delivery step, but KeepFlip could not find its delivery method menu.' };
@@ -329,20 +515,27 @@
     }
 
     if (selection.shipping) {
+      if (facebookShippingOptionsSaved) return { ready: true, selection };
+      let shippingOptionsDialog = findFacebookShippingOptionsDialog();
       const shippingLabelButton = findFacebookShippingLabelButton();
-      if (!shippingLabelButton) {
-        return { ready: false, message: 'Shipping is selected, but Facebook’s Select shipping label button was not found.' };
-      }
-      let opened = false;
-      if (!facebookShippingLabelOpenRequested) {
+      if (!shippingOptionsDialog && shippingLabelButton && !facebookShippingLabelOpenRequested) {
         facebookShippingLabelOpenRequested = true;
         shippingLabelButton.click();
         await new Promise((resolve) => setTimeout(resolve, 150));
-        opened = true;
+        shippingOptionsDialog = findFacebookShippingOptionsDialog();
       }
-      return { ready: false, message: opened
-        ? 'KeepFlip pressed Select shipping label. Choose the label you want in Facebook, then resume the listing in KeepFlip.'
-        : 'Choose a shipping label in Facebook before resuming the listing in KeepFlip.' };
+      if (!shippingOptionsDialog) {
+        if (!shippingLabelButton) return { ready: false, message: 'Shipping is selected, but Facebook’s Select shipping label button was not found.' };
+        if (!facebookShippingLabelOpenRequested) return { ready: false, message: 'Facebook’s shipping options could not be opened. Try again from the marketplace tab.' };
+        facebookShippingLabelOpenRequested = false;
+        return { ready: false, message: 'KeepFlip pressed Select shipping label. Facebook’s shipping options did not open yet; resume the listing to retry.' };
+      }
+
+      const packageWeightCombo = findFacebookCombobox('package weight');
+      if (!packageWeightCombo && !facebookSelectedPackageWeight(shippingOptionsDialog)) {
+        return { ready: false, message: 'Facebook opened its shipping options, but KeepFlip could not find the Package weight control.' };
+      }
+      return saveFacebookShippingOptions(shippingOptionsDialog, packageWeightCombo);
     }
 
     return { ready: true, selection };
@@ -766,7 +959,8 @@
         return;
       }
       await fill();
-    } catch {
+    } catch (error) {
+      console.error('KeepFlip listing runner initialization failed:', error);
       retryAssignment();
     }
   }
