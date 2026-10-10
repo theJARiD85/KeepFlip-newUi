@@ -1,3 +1,4 @@
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
@@ -172,7 +173,7 @@ export function BusinessPulseBreakdownModal({
             onPress={onClose}
             style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
           >
-            <Ionicons color={theme.colors.text} name="xmark" size={19} />
+            <Ionicons color={theme.colors.text} name="close" size={19} />
           </Pressable>
         </View>
 

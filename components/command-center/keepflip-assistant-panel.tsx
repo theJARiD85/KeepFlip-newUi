@@ -1,3 +1,4 @@
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { FlipSellerDecisions } from '@/components/command-center/flip-seller-decisions';
 import {
@@ -276,7 +277,7 @@ export function KeepFlipAssistantPanel({
               accessibilityRole="button"
               onPress={() => setIsExpanded(false)}
               style={({ pressed }) => [styles.closeButton, pressed && styles.closeButtonPressed]}>
-              <Ionicons color={theme.colors.textMuted} name="xmark" size={17} />
+              <Ionicons color={theme.colors.textMuted} name="close" size={17} />
             </Pressable>
           </View>
 
@@ -365,7 +366,7 @@ export function KeepFlipAssistantPanel({
                   accent={task.taskType === 'reminder' ? 'cyan' : 'gold'}
                   actionLabel="DONE"
                   description={task.dueAt ? dueLabel(task.dueAt) : 'No due date'}
-                  icon={task.taskType === 'reminder' ? 'envelope.fill' : 'checkmark-circle'}
+                  icon={task.taskType === 'reminder' ? 'mail' : 'checkmark-circle'}
                   label={task.title}
                   onPress={() => void finishTask(task)}
                 />

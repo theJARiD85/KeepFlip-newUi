@@ -1,6 +1,7 @@
 import { Image } from "expo-image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
@@ -152,7 +153,7 @@ export function PhotoBackgroundRemover({ itemId, ownerId, photoCount, onSaved }:
               onPress={() => choosePhoto(-1)}
               style={({ pressed }) => [responsiveStyles.photoArrow, pressed && responsiveStyles.pressed]}
             >
-              <Text style={responsiveStyles.arrowText}>‹</Text>
+              <Ionicons color={theme.colors.goldBright} name="chevron-back" size={21} style={responsiveStyles.arrowText} />
             </Pressable>
             <View style={responsiveStyles.previewFrame}>
               {displayedUri ? (
@@ -174,7 +175,7 @@ export function PhotoBackgroundRemover({ itemId, ownerId, photoCount, onSaved }:
               onPress={() => choosePhoto(1)}
               style={({ pressed }) => [responsiveStyles.photoArrow, pressed && responsiveStyles.pressed]}
             >
-              <Text style={responsiveStyles.arrowText}>›</Text>
+              <Ionicons color={theme.colors.goldBright} name="chevron-forward" size={21} style={responsiveStyles.arrowText} />
             </Pressable>
           </View>
           <Text style={responsiveStyles.helper}>

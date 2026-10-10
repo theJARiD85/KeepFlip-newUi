@@ -19,7 +19,6 @@ import {
 } from '@/hooks/use-responsive-layout';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { getAppwriteCoreServices } from '@/lib/appwrite';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KEEPFLIP_ANALYTICS_EVENTS, trackKeepFlipEvent } from '@/services/keepflip-analytics';
 import {
   KEEPFLIP_PLAN_DEFINITIONS,
@@ -67,7 +66,7 @@ type KeepFlipLaunchAuthScreenProps = {
   onBack?: () => void;
 };
 
-type IconName = ComponentProps<typeof IconSymbol > ['name'];
+type IconName = ComponentProps<typeof Ionicons>['name'];
 type TextInputHandle = ComponentRef<typeof TextInput>;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -101,7 +100,7 @@ function AuthField({
     <View style={styles.fieldGroup}>
       <Text style={[styles.fieldLabel, { fontSize: responsiveFont(10) }]}>{label}</Text>
       <View style={styles.fieldShell}>
-        <IconSymbol color={theme.colors.goldMuted} name={icon} size={18} />
+        <Ionicons color={theme.colors.goldMuted} name={icon} size={18} />
         <TextInput
           {...inputProps}
           accessibilityLabel={label}
@@ -615,7 +614,7 @@ export function KeepFlipLaunchAuthScreen({
                     autoCapitalize="words"
                     autoComplete="name"
                     editable={!isBusy && !setupRequired}
-                    icon="person.fill"
+                    icon="person"
                     label="Display name"
                     onChangeText={(value) => { setName(value); setLocalError(null); }}
                     placeholder="Your name"
@@ -628,7 +627,7 @@ export function KeepFlipLaunchAuthScreen({
                   autoComplete="email"
                   autoCorrect={false}
                   editable={!isBusy && !setupRequired}
-                  icon="envelope.fill"
+                  icon="mail"
                   inputMode="email"
                   keyboardType="email-address"
                   label="Email"
@@ -641,7 +640,7 @@ export function KeepFlipLaunchAuthScreen({
                   autoCapitalize="none"
                   autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
                   editable={!isBusy && !setupRequired}
-                  icon="lock.fill"
+                  icon="lock-closed"
                   label="Password"
                   onChangeText={(value) => { setPassword(value); setLocalError(null); }}
                   onToggleSecure={() => setPasswordVisible((current) => !current)}

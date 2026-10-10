@@ -1,3 +1,4 @@
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import * as Haptics from 'expo-haptics';
 import {
   useLocalSearchParams,
@@ -141,7 +142,7 @@ function PlanCard({
           <View key={feature} style={styles.featureRow}>
             <Ionicons
               color={theme.colors.scannerCyan}
-              name="checkmark.circle.fill"
+              name="checkmark-circle"
               size={15}
             />
             <Text style={[styles.featureText, { fontSize: responsiveFont(11) }]}>{feature}</Text>
@@ -527,7 +528,7 @@ export function KeepFlipSubscriptionScreen({
                 ) : (
                   <Ionicons
                     color={theme.colors.goldBright}
-                    name="arrow.clockwise"
+                    name="refresh"
                     size={16}
                   />
                 )}
@@ -651,7 +652,7 @@ export function KeepFlipSubscriptionScreen({
           <View style={styles.checkoutNotice}>
             <Ionicons
               color={theme.colors.goldBright}
-              name="exclamationmark.triangle.fill"
+              name="warning"
               size={16}
             />
             <Text style={[styles.checkoutNoticeText, { fontSize: responsiveFont(10) }]}>

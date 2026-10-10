@@ -204,7 +204,7 @@ export function KeepFlipNotificationInboxScreen() {
                 {notification.source.replaceAll('_', ' ')} · {new Date(notification.createdAt).toLocaleString()}
               </Text>
             </View>
-            {notification.url ? <checkmark-circle color={theme.colors.goldMuted} name="chevron.right" size={18} /> : null}
+            {notification.url ? <Ionicons color={theme.colors.goldMuted} name="chevron-forward" size={18} /> : null}
           </Pressable>
         ))}
       </ScrollView>

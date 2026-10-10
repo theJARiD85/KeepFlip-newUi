@@ -1,3 +1,4 @@
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
 import { usePlaidLink, type PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
@@ -174,7 +175,7 @@ export function PlaidBankLinkButton({
       {busy ? (
         <ActivityIndicator color={theme.colors.textOnAccent} size="small" />
       ) : (
-        <Ionicons color={theme.colors.textOnAccent} name="arrow.right" size={15} />
+        <Ionicons color={theme.colors.textOnAccent} name="arrow-forward" size={15} />
       )}
       <Text style={[responsiveStyles.label, { fontSize }]}>CONNECT BUSINESS BANK</Text>
     </Pressable>

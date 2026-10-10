@@ -1,3 +1,4 @@
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -343,7 +344,7 @@ export function ConnectionsScreen() {
         <View style={responsiveStyles.serviceCard}>
           <View style={responsiveStyles.serviceHeader}>
             <View style={[responsiveStyles.serviceIcon, responsiveStyles.bankIcon]}>
-              <Ionicons color={theme.colors.scannerCyan} name="creditcard.fill" size={19} />
+              <Ionicons color={theme.colors.scannerCyan} name="card-outline" size={19} />
             </View>
             <View style={responsiveStyles.serviceCopy}>
               <Text style={[responsiveStyles.serviceEyebrow, { fontSize: responsiveFont(8) }]}>BUSINESS BANK</Text>
@@ -375,14 +376,14 @@ export function ConnectionsScreen() {
 
           {!automatedBooksAllowed ? (
             <View style={responsiveStyles.infoBanner}>
-              <Ionicons color={theme.colors.goldBright} name="exclamationmark.triangle.fill" size={16} />
+              <Ionicons color={theme.colors.goldBright} name="warning" size={16} />
               <Text style={[responsiveStyles.infoText, { fontSize: responsiveFont(10), lineHeight: responsiveHeight(15) }]}>
                 KeepFlip could not verify access to Books automation. Refresh the app and try again.
               </Text>
             </View>
           ) : !plaidConfigured ? (
             <View style={responsiveStyles.infoBanner}>
-              <Ionicons color={theme.colors.goldBright} name="exclamationmark.triangle.fill" size={16} />
+              <Ionicons color={theme.colors.goldBright} name="warning" size={16} />
               <Text style={[responsiveStyles.infoText, { fontSize: responsiveFont(10), lineHeight: responsiveHeight(15) }]}>
                 Bank connections are not configured in this app build yet.
               </Text>
@@ -493,7 +494,7 @@ export function ConnectionsScreen() {
               />
             ) : (
               <View style={responsiveStyles.infoBanner}>
-                <Ionicons color={theme.colors.goldBright} name="lock.fill" size={16} />
+                <Ionicons color={theme.colors.goldBright} name="lock-closed" size={16} />
                 <Text style={[responsiveStyles.infoText, { fontSize: responsiveFont(10), lineHeight: responsiveHeight(15) }]}>
                   Bank linking is available on Android and web. You can still manage existing connections here.
                 </Text>

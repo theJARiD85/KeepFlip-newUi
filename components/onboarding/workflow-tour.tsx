@@ -1,3 +1,4 @@
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { Image } from 'expo-image';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -74,7 +75,7 @@ function ScanDemo({ phase }: { phase: number }) {
         <Image accessibilityLabel="Example Coach bag used in the walkthrough" contentFit="cover" source={DEMO_IMAGE} style={responsiveStyles.photo} />
         <SmartEvidenceCaptureGuide photoCount={phase} plan={DEMO_CAPTURE_PLAN} />
         {!reducedMotion ? <Animated.View pointerEvents="none" style={[responsiveStyles.scanBeam, beamStyle]} /> : null}
-        {phase >= 1 ? <Animated.View entering={FadeInDown.duration(280)} style={responsiveStyles.photoResult}><Ionicons color={theme.colors.scannerCyan} name="checkmark.circle.fill" size={17} /><Text style={responsiveStyles.resultText}>Photo captured · review the match</Text></Animated.View> : null}
+        {phase >= 1 ? <Animated.View entering={FadeInDown.duration(280)} style={responsiveStyles.photoResult}><Ionicons color={theme.colors.scannerCyan} name="checkmark-circle" size={17} /><Text style={responsiveStyles.resultText}>Photo captured · review the match</Text></Animated.View> : null}
       </View>
       {phase >= 2 ? <Animated.View entering={SlideInRight.duration(360)} style={responsiveStyles.infoStrip}><Text style={responsiveStyles.infoTitle}>Market context appears here</Text><Text style={responsiveStyles.infoBody}>Check the item identity, condition, and sold evidence. A range is a research starting point, not a promised sale price.</Text></Animated.View> : null}
     </View>
@@ -88,8 +89,8 @@ function InventoryDemo({ phase }: { phase: number }) {
       <Animated.View entering={FadeInDown.springify().damping(17)} style={responsiveStyles2.inventoryWrap}>
         <InventoryCard compact coverImageSource={DEMO_IMAGE} item={DEMO_ITEM} onPress={() => undefined} onListingGuidePress={() => undefined} />
       </Animated.View>
-      {phase >= 1 ? <Animated.View entering={SlideInRight.duration(350)} style={responsiveStyles2.infoStrip}><Ionicons color={theme.colors.scannerCyan} name="checkmark.circle.fill" size={19} /><View style={responsiveStyles2.infoCopy}><Text style={responsiveStyles2.infoTitle}>Saved to inventory</Text><Text style={responsiveStyles2.infoBody}>Actual cost $20 · Shelf A · ready for a listing draft</Text></View></Animated.View> : null}
-      {phase >= 2 ? <Animated.View entering={FadeInDown.duration(300)} style={responsiveStyles2.nextMove}><Ionicons color={theme.colors.goldBright} name="arrow.right" size={18} /><Text style={responsiveStyles2.nextMoveText}>Next move: open the listing guide from this card.</Text></Animated.View> : null}
+      {phase >= 1 ? <Animated.View entering={SlideInRight.duration(350)} style={responsiveStyles2.infoStrip}><Ionicons color={theme.colors.scannerCyan} name="checkmark-circle" size={19} /><View style={responsiveStyles2.infoCopy}><Text style={responsiveStyles2.infoTitle}>Saved to inventory</Text><Text style={responsiveStyles2.infoBody}>Actual cost $20 · Shelf A · ready for a listing draft</Text></View></Animated.View> : null}
+      {phase >= 2 ? <Animated.View entering={FadeInDown.duration(300)} style={responsiveStyles2.nextMove}><Ionicons color={theme.colors.goldBright} name="arrow-forward" size={18} /><Text style={responsiveStyles2.nextMoveText}>Next move: open the listing guide from this card.</Text></Animated.View> : null}
     </View>
   );
 }
@@ -117,7 +118,7 @@ function ListingDemo({ phase }: { phase: number }) {
       <View style={responsiveStyles3.readinessClip}>
         <ListingReadinessPanel input={DEMO_LISTING} review={review} disabled onReviewChange={() => undefined} onAspectsChange={() => undefined} onMeasurementsChange={() => undefined} onReadyChange={() => undefined} />
       </View>
-      {phase >= 2 ? <Animated.View entering={FadeInDown.duration(300)} style={responsiveStyles3.infoStrip}><Ionicons color={theme.colors.goldBright} name="checkmark.circle.fill" size={20} /><View style={responsiveStyles3.infoCopy}><Text style={responsiveStyles3.infoTitle}>You stay in control</Text><Text style={responsiveStyles3.infoBody}>A draft is not published automatically. Confirm the details and choose where to list.</Text></View></Animated.View> : null}
+      {phase >= 2 ? <Animated.View entering={FadeInDown.duration(300)} style={responsiveStyles3.infoStrip}><Ionicons color={theme.colors.goldBright} name="checkmark-circle" size={20} /><View style={responsiveStyles3.infoCopy}><Text style={responsiveStyles3.infoTitle}>You stay in control</Text><Text style={responsiveStyles3.infoBody}>A draft is not published automatically. Confirm the details and choose where to list.</Text></View></Animated.View> : null}
     </View>
   );
 }
@@ -180,7 +181,7 @@ export function WorkflowTour({ onBack, onFinish, saving }: { onBack: () => void;
       </Animated.View>
       <View style={responsiveStyles5.controls}>
         <Pressable accessibilityLabel="Previous workflow step" accessibilityRole="button" disabled={saving} onPress={back} style={({ pressed }) => [responsiveStyles5.backButton, pressed && responsiveStyles5.pressed]}><Text style={responsiveStyles5.backText}>Back</Text></Pressable>
-        <Pressable accessibilityLabel={index === TOUR.length - 1 ? 'Finish onboarding and open KeepFlip' : 'Next workflow step'} accessibilityRole="button" disabled={saving} onPress={next} style={({ pressed }) => [responsiveStyles5.nextButton, saving && responsiveStyles5.disabled, pressed && responsiveStyles5.pressed]} testID="keepflip-workflow-next"><Text style={responsiveStyles5.nextText}>{index === TOUR.length - 1 ? saving ? 'SAVING...' : 'OPEN KEEPFLIP' : 'NEXT STEP'}</Text><Ionicons color={theme.colors.textOnAccent} name="arrow.right" size={17} /></Pressable>
+        <Pressable accessibilityLabel={index === TOUR.length - 1 ? 'Finish onboarding and open KeepFlip' : 'Next workflow step'} accessibilityRole="button" disabled={saving} onPress={next} style={({ pressed }) => [responsiveStyles5.nextButton, saving && responsiveStyles5.disabled, pressed && responsiveStyles5.pressed]} testID="keepflip-workflow-next"><Text style={responsiveStyles5.nextText}>{index === TOUR.length - 1 ? saving ? 'SAVING...' : 'OPEN KEEPFLIP' : 'NEXT STEP'}</Text><Ionicons color={theme.colors.textOnAccent} name="arrow-forward" size={17} /></Pressable>
       </View>
     </View>
   );

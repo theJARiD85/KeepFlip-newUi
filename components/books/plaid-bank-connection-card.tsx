@@ -1,3 +1,4 @@
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
@@ -165,13 +166,13 @@ export function PlaidBankConnectionCard({
       <View style={responsiveStyles.card}>
         <View style={responsiveStyles.headerRow}>
           <View style={responsiveStyles.iconCircle}>
-            <Ionicons color={theme.colors.goldBright} name="creditcard.fill" size={17} />
+            <Ionicons color={theme.colors.goldBright} name="card-outline" size={17} />
           </View>
           <View style={responsiveStyles.copy}>
             <Text style={[responsiveStyles.eyebrow, { fontSize: responsiveFont(8) }]}>BANK EXPENSES</Text>
             <Text style={[responsiveStyles.title, { fontSize: responsiveFont(16) }]}>Automate the money out</Text>
           </View>
-          <Ionicons color={theme.colors.goldBright} name="exclamationmark.triangle.fill" size={15} />
+          <Ionicons color={theme.colors.goldBright} name="warning" size={15} />
         </View>
         <Text style={[responsiveStyles.body, { fontSize: responsiveFont(11), lineHeight: responsiveHeight(16) }]}>
           KeepFlip could not verify access to Books automation. Refresh the app and try again.
@@ -184,7 +185,7 @@ export function PlaidBankConnectionCard({
     <View style={responsiveStyles.card}>
       <View style={responsiveStyles.headerRow}>
         <View style={responsiveStyles.iconCircle}>
-          <Ionicons color={theme.colors.scannerCyan} name="creditcard.fill" size={17} />
+          <Ionicons color={theme.colors.scannerCyan} name="card-outline" size={17} />
         </View>
         <View style={responsiveStyles.copy}>
           <Text style={[responsiveStyles.eyebrow, { fontSize: responsiveFont(8) }]}>BANK EXPENSES</Text>
@@ -219,7 +220,7 @@ export function PlaidBankConnectionCard({
               disabled={busy}
               onPress={() => disconnect(connection)}
               style={({ pressed }) => [responsiveStyles.iconButton, pressed && responsiveStyles.pressed, busy && responsiveStyles.disabled]}>
-              <Ionicons color={theme.colors.textMuted} name="xmark" size={15} />
+              <Ionicons color={theme.colors.textMuted} name="close" size={15} />
             </Pressable>
           </View>
         </View>
@@ -258,7 +259,7 @@ export function PlaidBankConnectionCard({
             pressed && responsiveStyles.pressed,
             busy && responsiveStyles.disabled,
           ]}>
-          <Ionicons color={theme.colors.scannerCyan} name="arrow.clockwise" size={14} />
+          <Ionicons color={theme.colors.scannerCyan} name="refresh" size={14} />
           <Text style={[responsiveStyles.refreshActionText, { fontSize: responsiveFont(10) }]}>Refresh connection</Text>
         </Pressable>
       ) : (

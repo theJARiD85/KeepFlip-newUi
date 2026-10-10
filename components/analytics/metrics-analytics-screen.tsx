@@ -1,23 +1,3 @@
-import * as Haptics from 'expo-haptics';
-import { useRouter, type Href } from 'expo-router';
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  useWindowDimensions,
-  View,
-} from 'react-native';
-import Animated, { FadeInDown, useAnimatedStyle } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  LineChart,
-  LineChartDimensionsContext,
-  useLineChart,
-} from 'react-native-wagmi-charts';
-import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
@@ -50,6 +30,26 @@ import {
   type EbaySellerOrder,
   type SellerOrder,
 } from '@/services/seller-order-service';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
+import * as Haptics from 'expo-haptics';
+import { useRouter, type Href } from 'expo-router';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import Animated, { FadeInDown, useAnimatedStyle } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  LineChart,
+  LineChartDimensionsContext,
+  useLineChart,
+} from 'react-native-wagmi-charts';
 
 const MAX_EBAY_ORDER_PAGES = 5;
 
@@ -414,7 +414,7 @@ function ChartCard({
         </View>
       ) : (
         <View style={styles.chartEmpty}>
-          <Ionicons color={theme.colors.textMuted} name="chart.bar.fill" size={19} />
+          <Ionicons color={theme.colors.textMuted} name="stats-chart" size={19} />
           <Text style={styles.chartEmptyText}>
             {metric.id === 'roi' || metric.id === 'profit'
               ? 'No reconciled Books records with a known acquisition cost yet.'
@@ -649,7 +649,7 @@ export function MetricsAnalyticsScreen({ embedded = false }: { embedded?: boolea
       {loadState === 'locked' ? (
         <View style={styles.lockedCard}>
           <View style={styles.lockIcon}>
-            <Ionicons color={theme.colors.goldBright} name="lock.fill" size={20} />
+            <Ionicons color={theme.colors.goldBright} name="lock-closed" size={20} />
           </View>
           <Text accessibilityRole="header" style={[styles.lockedTitle, webFontStyle(18)]}>A clearer view of your flips</Text>
           <Text style={[styles.lockedCopy, webFontStyle(12)]}>KeepFlip could not verify access to performance charts. Refresh and try again.</Text>
@@ -658,7 +658,7 @@ export function MetricsAnalyticsScreen({ embedded = false }: { embedded?: boolea
             onPress={() => void loadAnalytics()}
             style={styles.actionButton}>
             <Text style={[styles.actionButtonText, webFontStyle(12)]}>Try again</Text>
-            <Ionicons color={theme.colors.backgroundDeep} name="arrow.clockwise" size={16} />
+            <Ionicons color={theme.colors.backgroundDeep} name="refresh" size={16} />
           </Pressable>
         </View>
       ) : null}
@@ -667,7 +667,7 @@ export function MetricsAnalyticsScreen({ embedded = false }: { embedded?: boolea
         <>
           {warnings.map((warning) => (
             <View key={warning} style={styles.warningCard}>
-              <Ionicons color={theme.colors.goldBright} name="exclamationmark.triangle.fill" size={16} />
+              <Ionicons color={theme.colors.goldBright} name="warning" size={16} />
               <Text style={[styles.warningText, webFontStyle(10)]}>{warning}</Text>
             </View>
           ))}
@@ -692,7 +692,7 @@ export function MetricsAnalyticsScreen({ embedded = false }: { embedded?: boolea
               <Text style={[styles.chartEmptyText, webFontStyle(10)]}>Save your first item to start comparing performance across your inventory.</Text>
               <Pressable accessibilityRole="button" onPress={() => router.push('/scanner' as Href)} style={styles.actionButton}>
                 <Text style={[styles.actionButtonText, webFontStyle(12)]}>Open scanner</Text>
-                <Ionicons color={theme.colors.backgroundDeep} name="chevron.right" size={16} />
+                <Ionicons color={theme.colors.backgroundDeep} name="chevron-forward" size={16} />
               </Pressable>
             </View>
           ) : null}
@@ -759,7 +759,7 @@ export function MetricsAnalyticsScreen({ embedded = false }: { embedded?: boolea
               </View>
               <Ionicons
                 color={theme.colors.textMuted}
-                name="chevron.right"
+                name="chevron-forward"
                 size={16}
                 style={metricPickerOpen ? { transform: [{ rotate: '90deg' }] } : undefined}
               />

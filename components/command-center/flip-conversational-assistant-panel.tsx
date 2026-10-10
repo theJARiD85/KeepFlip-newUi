@@ -998,7 +998,7 @@ export function FlipConversationalAssistantPanel({
                   </Text>
                 </View>
                 <View style={styles.chevronButton}>
-                  <Ionicons color={theme.colors.scannerCyan} name="chevron.right" size={16} />
+                  <Ionicons color={theme.colors.scannerCyan} name="chevron-forward" size={16} />
                 </View>
               </>
             ) : null}
@@ -1042,7 +1042,7 @@ export function FlipConversationalAssistantPanel({
                   isMemoryOpen && styles.menuButtonOpen,
                   pressed && styles.menuButtonPressed,
                 ]}>
-                <Ionicons color={theme.colors.scannerCyan} name="ellipsis" size={18} />
+                <Ionicons color={theme.colors.scannerCyan} name="ellipsis-horizontal" size={18} />
               </Pressable>
               <Pressable
                 accessibilityLabel="Collapse Flip assistant"
@@ -1053,7 +1053,7 @@ export function FlipConversationalAssistantPanel({
                   styles.closeButton,
                   pressed && styles.closeButtonPressed,
                 ]}>
-                <Ionicons color={theme.colors.textMuted} name="xmark" size={17} />
+                <Ionicons color={theme.colors.textMuted} name="close" size={17} />
               </Pressable>
             </View>
           </View>
@@ -1257,7 +1257,7 @@ export function FlipConversationalAssistantPanel({
                     ]}>
                     <Ionicons
                       color={theme.colors.textMuted}
-                      name="arrow.clockwise"
+                      name="refresh"
                       size={14}
                     />
                   </Pressable>
@@ -1277,7 +1277,7 @@ export function FlipConversationalAssistantPanel({
                         accent={task.taskType === 'reminder' ? 'cyan' : 'gold'}
                         actionLabel="DONE"
                         description={task.dueAt ? dueLabel(task.dueAt) : 'No due date'}
-                        icon={task.taskType === 'reminder' ? 'envelope.fill' : 'checkmark-circle'}
+                        icon={task.taskType === 'reminder' ? 'mail' : 'checkmark-circle'}
                         label={task.title}
                         onPress={() => void finishTask(task)}
                       />
@@ -1331,7 +1331,7 @@ export function FlipConversationalAssistantPanel({
                 {isInteractionLocked ? (
                   <ActivityIndicator color={theme.colors.background} size="small" />
                 ) : (
-                  <Ionicons color={theme.colors.background} name="paperplane.fill" size={16} />
+                  <Ionicons color={theme.colors.background} name="paper-plane-outline" size={16} />
                 )}
               </Pressable>
             </View>

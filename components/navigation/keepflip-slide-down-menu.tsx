@@ -18,7 +18,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ConnectionsMenuLink } from '@/components/navigation/connections-menu-link';
 import {
   MENU_CLOSE_DURATION_MS,
@@ -33,7 +32,7 @@ import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive
 type MenuDestination = {
   eyebrow: string;
   href: Href;
-  icon: ComponentProps<typeof IconSymbol > ['name'];
+  icon: ComponentProps<typeof Ionicons>['name'];
 label: string;
 };
 
@@ -41,17 +40,17 @@ const destinations: MenuDestination[] = [
   {
     eyebrow: 'RUN YOUR BUSINESS',
     href: '/command-center' as Href,
-    icon: 'gauge.with.dots.needle.67percent',
+    icon: 'speedometer-outline',
     label: 'Command Center',
   },
-  { eyebrow: 'IDENTIFY & VALUE', href: '/scanner' as Href, icon: 'viewfinder', label: 'Scanner' },
+  { eyebrow: 'IDENTIFY & VALUE', href: '/scanner' as Href, icon: 'scan-outline', label: 'Scanner' },
   { eyebrow: 'START HERE', href: '/walkthrough' as Href, icon: 'sparkles', label: 'Workflow tour' },
-  { eyebrow: 'YOUR SAVED FINDS', href: '/inventory', icon: 'shippingbox.fill', label: 'Inventory' },
+  { eyebrow: 'YOUR SAVED FINDS', href: '/inventory', icon: 'cube-outline', label: 'Inventory' },
   ...(CROSSLISTING_LAB_ENABLED
     ? [{
       eyebrow: 'LIST ACROSS CHANNELS',
       href: '/crosslisting' as Href,
-      icon: 'shippingbox.fill' as const,
+      icon: 'cube-outline' as const,
       label: 'Listing',
     }]
     : []),
@@ -344,7 +343,7 @@ export function KeepFlipSlideDownMenu() {
                             styles.destinationIcon,
                             isActive && styles.destinationIconActive,
                           ]}>
-                          <IconSymbol
+                          <Ionicons
                             color={
                               isActive
                                 ? theme.colors.goldBright

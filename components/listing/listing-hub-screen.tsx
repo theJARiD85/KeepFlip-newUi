@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 
 import { KeepFlipText as Text, KeepFlipTextInput as TextInput } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
@@ -46,7 +47,7 @@ function ListingItemCard({ item, onPress }: { item: InventoryItem; onPress: () =
   const price = draft?.listing.priceRange.targetPrice ?? item.estimatedValue;
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={`${item.title}, ${item.isListed ? 'listed' : 'not listed'}`} onPress={onPress} style={({ pressed }) => [responsiveStyles.itemCard, pressed && responsiveStyles.pressed]}>
-      {imageUri ? <Image contentFit="cover" source={{ uri: imageUri }} style={responsiveStyles.thumbnail} /> : <View style={responsiveStyles.thumbnailFallback}><Text style={responsiveStyles.thumbnailGlyph}>◇</Text></View>}
+      {imageUri ? <Image contentFit="cover" source={{ uri: imageUri }} style={responsiveStyles.thumbnail} /> : <View style={responsiveStyles.thumbnailFallback}><Ionicons color={theme.colors.textMuted} name="image-outline" size={18} /></View>}
       <View style={responsiveStyles.itemCopy}>
         <Text numberOfLines={2} style={responsiveStyles.itemTitle}>{item.title}</Text>
         <Text numberOfLines={1} style={responsiveStyles.itemMeta}>{[item.brand, item.category, item.sku].filter(Boolean).join(' · ') || 'Saved inventory'}</Text>
@@ -54,7 +55,7 @@ function ListingItemCard({ item, onPress }: { item: InventoryItem; onPress: () =
       </View>
       <View style={responsiveStyles.itemRight}>
         <Text style={responsiveStyles.price}>{typeof price === 'number' && Number.isFinite(price) ? `$${price.toFixed(0)}` : '—'}</Text>
-        <Text style={responsiveStyles.arrow}>›</Text>
+        <Ionicons color={theme.colors.goldMuted} name="chevron-forward" size={17} style={responsiveStyles.arrow} />
       </View>
     </Pressable>
   );
@@ -99,7 +100,7 @@ export function ListingHubScreen({ items, loading, loadingMore, hasMore, error, 
             {editingPreferences ? <View style={responsiveStyles2.preferenceChoices}>
               {MARKETPLACE_CHOICES.map((choice) => {
                 const checked = draftSelections.includes(choice.id);
-                return <Pressable key={choice.id} accessibilityRole="checkbox" accessibilityState={{ checked }} onPress={() => setDraftSelections((current) => checked ? current.filter((id) => id !== choice.id) : [...current, choice.id])} style={[responsiveStyles2.choice, checked && responsiveStyles2.choiceActive]}><Text style={[responsiveStyles2.choiceText, checked && responsiveStyles2.choiceTextActive]}>{checked ? '✓ ' : '+ '}{choice.label}</Text></Pressable>;
+                return <Pressable key={choice.id} accessibilityRole="checkbox" accessibilityState={{ checked }} onPress={() => setDraftSelections((current) => checked ? current.filter((id) => id !== choice.id) : [...current, choice.id])} style={[responsiveStyles2.choice, checked && responsiveStyles2.choiceActive]}><Text style={[responsiveStyles2.choiceText, checked && responsiveStyles2.choiceTextActive]}><Ionicons color={checked ? theme.colors.scannerCyan : theme.colors.textMuted} name={checked ? 'checkmark-circle' : 'add'} size={15} />{' '}{choice.label}</Text></Pressable>;
               })}
               <Pressable accessibilityRole="button" disabled={savingSelections} onPress={() => { onSaveSelections(draftSelections); setEditingPreferences(false); }} style={[responsiveStyles2.saveButton, savingSelections && responsiveStyles2.disabled]}><Text style={responsiveStyles2.saveText}>{savingSelections ? 'Saving…' : 'Save marketplaces'}</Text></Pressable>
             </View> : null}

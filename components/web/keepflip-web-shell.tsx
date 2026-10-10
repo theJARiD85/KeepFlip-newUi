@@ -43,14 +43,14 @@ const primaryNavigation: NavItem[] = [
     ? [{
       eyebrow: 'WORKSPACE',
       href: '/crosslisting' as Href,
-      icon: 'list-outline',
+      icon: 'list-outline' as const,
       label: 'Listing',
     }]
     : []),
   {
     eyebrow: 'WORKSPACE',
     href: '/books',
-    icon: 'bar-chart-outline',
+    icon: 'stats-chart',
     label: 'Books & Reports',
   },
   {
@@ -255,7 +255,7 @@ export function KeepFlipWebShell({ children }: PropsWithChildren) {
               accessibilityRole="button"
               onPress={() => void signOut()}
               style={({ pressed }) => [responsiveStyles3.signOutButton, pressed && responsiveStyles3.navButtonPressed]}>
-              <Ionicons color={colors.textMuted} name="log-out-outline" size={16} />
+              <Ionicons color={colors.textMuted} name="log-out" size={16} />
               <Text style={[responsiveStyles3.signOutLabel, { color: colors.textMuted }]}>SIGN OUT</Text>
             </Pressable>
           </View>

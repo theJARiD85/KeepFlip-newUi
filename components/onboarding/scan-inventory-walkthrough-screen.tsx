@@ -15,7 +15,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { FlipCompanion } from '@/components/flip';
 import { WorkflowTour } from '@/components/onboarding/workflow-tour';
-import { Ionicons } from "@/components/ui/icon-symbol";
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
@@ -28,18 +27,19 @@ import {
   type ResellerBuyRules,
 } from "@/services/reseller-buy-rules-service";
 import { completeScanInventoryWalkthrough } from "@/services/user-profile-onboarding-service";
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 
 type FlipIcon =
-  | "barcode.viewfinder"
-  | "bolt.fill"
-  | "chart.bar.fill"
-  | "dollarsign.circle.fill"
-  | "gauge.with.dots.needle.67percent"
-  | "shippingbox.fill"
-  | "square.grid.2x2.fill"
-  | "star.fill"
-  | "tag.fill"
-  | "wrench.and.screwdriver.fill";
+  | "barcode-outline"
+  | "flash"
+  | "stats-chart"
+  | "cash-outline"
+  | "speedometer-outline"
+  | "cube-outline"
+  | "grid-outline"
+  | "star"
+  | "pricetag"
+  | "construct";
 
 type FlipChoice = {
   detail: string;
@@ -67,7 +67,7 @@ const FLIP_QUESTIONS: FlipQuestion[] = [
     choices: [
       {
         detail: "Games, media, and easy wins",
-        icon: "barcode.viewfinder",
+        icon: "barcode-outline",
         id: "quick",
         isSelected: (rules) =>
           rules.inventoryFocus === "media_games" &&
@@ -81,7 +81,7 @@ const FLIP_QUESTIONS: FlipQuestion[] = [
       },
       {
         detail: "Clothes, shoes, and style finds",
-        icon: "tag.fill",
+        icon: "pricetag",
         id: "fashion",
         isSelected: (rules) => rules.inventoryFocus === "fashion",
         label: "Fashion finder",
@@ -93,7 +93,7 @@ const FLIP_QUESTIONS: FlipQuestion[] = [
       },
       {
         detail: "I can clean, test, or repair",
-        icon: "wrench.and.screwdriver.fill",
+        icon: "construct",
         id: "hands-on",
         isSelected: (rules) => rules.laborTolerance === "hands_on",
         label: "Worth the work",
@@ -105,7 +105,7 @@ const FLIP_QUESTIONS: FlipQuestion[] = [
       },
       {
         detail: "The hunt is half the fun",
-        icon: "square.grid.2x2.fill",
+        icon: "grid-outline",
         id: "general",
         isSelected: (rules) =>
           rules.inventoryFocus === "general" &&
@@ -127,7 +127,7 @@ const FLIP_QUESTIONS: FlipQuestion[] = [
     choices: [
       {
         detail: "Move it quickly and keep cash moving",
-        icon: "bolt.fill",
+        icon: "flash",
         id: "fast",
         isSelected: (rules) => rules.saleSpeed === "quick",
         label: "Fast cash",
@@ -140,7 +140,7 @@ const FLIP_QUESTIONS: FlipQuestion[] = [
       },
       {
         detail: "A healthy mix of speed and margin",
-        icon: "gauge.with.dots.needle.67percent",
+        icon: "speedometer-outline",
         id: "balanced",
         isSelected: (rules) => rules.saleSpeed === "steady",
         label: "Good balance",
@@ -153,7 +153,7 @@ const FLIP_QUESTIONS: FlipQuestion[] = [
       },
       {
         detail: "I can wait for the better payday",
-        icon: "star.fill",
+        icon: "star",
         id: "profit",
         isSelected: (rules) => rules.saleSpeed === "patient",
         label: "Bigger payday",
@@ -180,7 +180,7 @@ const FLIP_QUESTIONS: FlipQuestion[] = [
     choices: [
       {
         detail: "Keep every buy light",
-        icon: "dollarsign.circle.fill",
+        icon: "cash-outline",
         id: "twenty-five",
         isSelected: (rules) => rules.maximumItemCostCents === 2_500,
         label: "Up to $25",
@@ -188,7 +188,7 @@ const FLIP_QUESTIONS: FlipQuestion[] = [
       },
       {
         detail: "My normal sourcing range",
-        icon: "dollarsign.circle.fill",
+        icon: "cash-outline",
         id: "seventy-five",
         isSelected: (rules) => rules.maximumItemCostCents === 7_500,
         label: "Up to $75",
@@ -196,7 +196,7 @@ const FLIP_QUESTIONS: FlipQuestion[] = [
       },
       {
         detail: "I can take on stronger finds",
-        icon: "dollarsign.circle.fill",
+        icon: "cash-outline",
         id: "one-fifty",
         isSelected: (rules) => rules.maximumItemCostCents === 15_000,
         label: "Up to $150",
@@ -204,7 +204,7 @@ const FLIP_QUESTIONS: FlipQuestion[] = [
       },
       {
         detail: "Show me higher-ticket opportunities",
-        icon: "dollarsign.circle.fill",
+        icon: "cash-outline",
         id: "three-hundred",
         isSelected: (rules) => rules.maximumItemCostCents === 30_000,
         label: "$300+",
@@ -220,7 +220,7 @@ const FLIP_QUESTIONS: FlipQuestion[] = [
     choices: [
       {
         detail: "Every inch matters",
-        icon: "shippingbox.fill",
+        icon: "cube-outline",
         id: "closet",
         isSelected: (rules) => rules.storageCapacity === "closet_or_bin",
         label: "Closet or bin",
@@ -228,7 +228,7 @@ const FLIP_QUESTIONS: FlipQuestion[] = [
       },
       {
         detail: "I have some breathing room",
-        icon: "shippingbox.fill",
+        icon: "cube-outline",
         id: "room",
         isSelected: (rules) => rules.storageCapacity === "dedicated_room",
         label: "Dedicated room",
@@ -236,7 +236,7 @@ const FLIP_QUESTIONS: FlipQuestion[] = [
       },
       {
         detail: "Bring on the big finds",
-        icon: "shippingbox.fill",
+        icon: "cube-outline",
         id: "garage",
         isSelected: (rules) =>
           rules.storageCapacity === "garage_or_warehouse",
@@ -511,7 +511,7 @@ export function ScanInventoryWalkthroughScreen() {
                 style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}
               >
                 <Text style={[styles.primaryButtonText, { fontSize: responsiveFont(15) }]}>Let’s build my flip style</Text>
-                <Ionicons color={theme.colors.backgroundDeep} name="arrow.right" size={21} />
+                <Ionicons color={theme.colors.backgroundDeep} name="arrow-forward" size={21} />
               </Pressable>
             </Animated.View>
           ) : question ? (
@@ -540,13 +540,13 @@ export function ScanInventoryWalkthroughScreen() {
                         }}
                         style={({ pressed }) => [styles.choiceCard, selected && styles.choiceCardSelected, pressed && styles.pressed]}
                       >
-                        <Text style={[styles.choiceTitle, selected && styles.choiceTitleSelected]}>{selected ? '✓  ' : '+  '}{choice.label}</Text>
+                        <Text style={[styles.choiceTitle, selected && styles.choiceTitleSelected]}><Ionicons color={selected ? theme.colors.scannerCyan : theme.colors.textMuted} name={selected ? 'checkmark-circle' : 'add'} size={16} />{'  '}{choice.label}</Text>
                       </Pressable>
                     );
                   })}
                   <Pressable accessibilityRole="button" onPress={() => setScreen((current) => current + 1)} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}>
                     <Text style={[styles.primaryButtonText, { fontSize: responsiveFont(15) }]}>{marketplaceSelections.length ? 'Continue' : 'I’m still deciding'}</Text>
-                    <Ionicons color={theme.colors.backgroundDeep} name="arrow.right" size={21} />
+                    <Ionicons color={theme.colors.backgroundDeep} name="arrow-forward" size={21} />
                   </Pressable>
                 </View>
               ) : question.id === "profit" ? (
@@ -577,7 +577,7 @@ export function ScanInventoryWalkthroughScreen() {
                     style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}
                   >
                     <Text style={[styles.primaryButtonText, { fontSize: responsiveFont(15) }]}>Continue</Text>
-                    <Ionicons color={theme.colors.backgroundDeep} name="arrow.right" size={21} />
+                    <Ionicons color={theme.colors.backgroundDeep} name="arrow-forward" size={21} />
                   </Pressable>
                 </>
               ) : (
@@ -616,7 +616,7 @@ export function ScanInventoryWalkthroughScreen() {
               >
                 <>
                   <Text style={[styles.primaryButtonText, { fontSize: responsiveFont(15) }]}>Show me the workflow</Text>
-                  <Ionicons color={theme.colors.backgroundDeep} name="viewfinder" size={21} />
+                  <Ionicons color={theme.colors.backgroundDeep} name="scan-outline" size={21} />
                 </>
               </Pressable>
             </Animated.View>

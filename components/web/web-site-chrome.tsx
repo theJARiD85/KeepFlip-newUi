@@ -3,7 +3,7 @@ import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { WebBlogMenu } from '@/components/web/web-blog-menu';
 import { getKeepFlipThemeColors, keepFlipTheme as theme, type KeepFlipColorScheme } from '@/constants/keepflip-theme';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { Image } from 'expo-image';
 import { Link, useRouter, type Href } from 'expo-router';
 import { createElement, type CSSProperties } from 'react';

@@ -6,6 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { ID } from 'react-native-appwrite';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { KeepFlipText as Text, KeepFlipTextInput as TextInput } from '@/components/ui/keepflip-text';
@@ -232,7 +233,7 @@ export function ListItemScreen({ productId }: { productId: string }) {
     <SafeAreaView style={responsiveStyles.safeArea}>
       <ScrollView contentContainerStyle={responsiveStyles.scroll} keyboardShouldPersistTaps="handled">
         <View style={responsiveStyles.content}>
-          <Pressable accessibilityRole="button" onPress={() => router.back()} style={responsiveStyles.backButton}><Text style={responsiveStyles.backText}>← Master catalog</Text></Pressable>
+          <Pressable accessibilityRole="button" onPress={() => router.back()} style={responsiveStyles.backButton}><Text style={responsiveStyles.backText}><Ionicons color={brand.colors.cyan} name="chevron-back" size={15} /> Master catalog</Text></Pressable>
           <Text style={responsiveStyles.eyebrow}>KEEPFLIP / LISTING WORKFLOW</Text>
           <Text style={responsiveStyles.title}>Prepare a listing</Text>
           <Text style={responsiveStyles.subtitle}>Use this saved item and its photos to prepare a marketplace draft. KeepFlip leaves the final review and post with you.</Text>
@@ -261,7 +262,7 @@ export function ListItemScreen({ productId }: { productId: string }) {
               </Pressable>
             ))}</View>
             {platform === 'ebay' || platform === 'shopify' ? (
-              <Pressable accessibilityRole="button" onPress={() => router.push('/crosslisting/connections' as Href)} style={responsiveStyles.linkButton}><Text style={responsiveStyles.linkText}>Open Connections →</Text></Pressable>
+              <Pressable accessibilityRole="button" onPress={() => router.push('/crosslisting/connections' as Href)} style={responsiveStyles.linkButton}><Text style={responsiveStyles.linkText}>Open Connections <Ionicons color={brand.colors.goldBright} name="arrow-forward" size={13} /></Text></Pressable>
             ) : null}
 
             {platform ? <>

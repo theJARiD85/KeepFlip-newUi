@@ -112,6 +112,101 @@
     }
   }
 
+  function normalizeChoiceLabel(value) {
+    return String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  function facebookCategoryAlias(value) {
+    const normalized = normalizeChoiceLabel(value);
+    if (/\b(video games?|gaming|game consoles?|consoles?)\b/.test(normalized)) return 'electronics and computers';
+    if (/\b(cameras?|photography|dslr|mirrorless|lenses?|computers?|electronics?|phones?|tablets?|audio|speakers?|printers?|televisions?|tv)\b/.test(normalized)) return 'electronics and computers';
+    if (/\b(trading cards?|sports cards?|pokemon|collectibles?|toys?|dolls?|action figures?)\b/.test(normalized)) return 'toys and games';
+    if (/\b(apparel|clothing|fashion|shoes|handbags?|accessories)\b/.test(normalized)) return 'clothing and accessories';
+    return '';
+  }
+
+  function selectFacebookSuggestedCategory(value) {
+    if (marketplace !== 'facebookMarketplace' || !value) return false;
+    const group = document.querySelector('[aria-label="Suggested categories"]');
+    if (!group) return false;
+    const suggestions = Array.from(group.querySelectorAll('[aria-label^="Suggested category:"]'))
+      .filter(visible);
+    if (!suggestions.length) return false;
+    const wanted = normalizeChoiceLabel(value);
+    const alias = facebookCategoryAlias(value);
+    const labelForSuggestion = (suggestion) => normalizeChoiceLabel(
+      (suggestion.getAttribute('aria-label') || '').replace(/^Suggested category:\s*/i, '') ||
+      suggestion.innerText || suggestion.textContent,
+    );
+    const exact = suggestions.find((suggestion) => {
+      const label = labelForSuggestion(suggestion);
+      return label === wanted || (alias && label === alias);
+    });
+    const words = new Set(wanted.split(' ').filter((word) => word.length > 2 && !['and', 'for', 'the'].includes(word)));
+    const overlap = suggestions.map((suggestion) => {
+      const label = labelForSuggestion(suggestion);
+      const count = label.split(' ').filter((word) => words.has(word)).length;
+      return { suggestion, count };
+    }).sort((left, right) => right.count - left.count);
+    const bestOverlap = overlap[0]?.count ? overlap[0].suggestion : null;
+    // Facebook's ordered suggestions are already ranked against the item. Use
+    // the first suggestion only when the generated broad category has no text match.
+    const target = exact || bestOverlap || suggestions[0];
+    target.click();
+    return true;
+  }
+
+  function findFacebookConditionCombobox() {
+    return Array.from(document.querySelectorAll('[role="combobox"]')).find((element) =>
+      visible(element) && /condition/i.test(labelFor(element))) || null;
+  }
+
+  function facebookConditionMatches(value, optionLabel) {
+    const wanted = normalizeChoiceLabel(value).replace(/\s+/g, '_');
+    const option = normalizeChoiceLabel(optionLabel);
+    if (!option) return false;
+    if (wanted === 'new') return /^(?:brand )?new(?: with tags| without tags)?$|^unused$/.test(option);
+    if (wanted === 'like_new') return /\blike new\b|\bexcellent\b/.test(option);
+    if (wanted === 'good') return /\bgood\b/.test(option);
+    if (wanted === 'fair') return /\bfair\b/.test(option);
+    if (wanted === 'poor') return /\bpoor\b/.test(option);
+    if (wanted === 'for_parts_or_repair') return /\bfor parts\b|\brepair\b/.test(option);
+    return option === normalizeChoiceLabel(value);
+  }
+
+  function facebookComboboxValue(combo) {
+    const labelText = (combo.getAttribute('aria-labelledby') || '').split(/\s+/)
+      .map((id) => document.getElementById(id)?.textContent || '').join(' ');
+    return normalizeChoiceLabel((combo.innerText || combo.textContent || '').replace(labelText, ' '));
+  }
+
+  async function selectFacebookCondition(value) {
+    if (marketplace !== 'facebookMarketplace' || !value) return false;
+    const combo = findFacebookConditionCombobox();
+    if (!combo) return false;
+    if (facebookConditionMatches(value, facebookComboboxValue(combo))) return true;
+    let options = Array.from(document.querySelectorAll('[role="listbox"] [role="option"], [role="option"]'))
+      .filter(visible);
+    let selected = options.find((option) => facebookConditionMatches(
+      value,
+      option.getAttribute('aria-label') || option.innerText || option.textContent,
+    ));
+    if (!selected && combo.getAttribute('aria-expanded') !== 'true') {
+      combo.click();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      options = Array.from(document.querySelectorAll('[role="listbox"] [role="option"], [role="option"]'))
+        .filter(visible);
+      selected = options.find((option) => facebookConditionMatches(
+        value,
+        option.getAttribute('aria-label') || option.innerText || option.textContent,
+      ));
+    }
+    if (!selected) return false;
+    selected.click();
+    return true;
+  }
+
   function setField(element, raw) {
     const value = String(raw).trim();
     if (!value) return false;
@@ -212,20 +307,37 @@
       expandFacebookMoreDetails(fields);
       for (const [key, value] of Object.entries(fields)) {
         if (filledFields.includes(key) || !value) continue;
+        if (marketplace === 'facebookMarketplace' && key === 'category') {
+          if (selectFacebookSuggestedCategory(value)) filledFields.push(key);
+          continue;
+        }
+        if (marketplace === 'facebookMarketplace' && key === 'condition') {
+          if (await selectFacebookCondition(value)) filledFields.push(key);
+          continue;
+        }
         const input = findField(key);
         if (input && setField(input, value)) filledFields.push(key);
       }
+      const facebookFormReady = marketplace !== 'facebookMarketplace' ||
+        !['category', 'condition'].every((key) => Boolean(fields[key])) ||
+        Object.entries(fields).every(([key, value]) => !value || filledFields.includes(key));
       if (assignment.photos.length && uploadedPhotoCount === 0 && filledFields.includes('title')) {
         try { uploadedPhotoCount = await attachPhotos(assignment.photos); } catch { /* Report for review below. */ }
       }
       if (core.every((key) => filledFields.includes(key)) &&
-        (!assignment.photos.length || uploadedPhotoCount === assignment.photos.length) && facebookMetaAiDraftsOff) break;
+        (!assignment.photos.length || uploadedPhotoCount === assignment.photos.length) &&
+        facebookMetaAiDraftsOff && facebookFormReady) break;
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
-    const missingFields = Object.keys(fields).filter((key) => fields[key] && !filledFields.includes(key));
+    const missingFields = Object.keys(fields).filter((key) =>
+      (marketplace === 'facebookMarketplace' && ['category', 'condition'].includes(key) && !fields[key]) ||
+      (fields[key] && !filledFields.includes(key)),
+    );
     const photosReady = payload.photoCount === 0 ||
       (uploadedPhotoCount === payload.photoCount && assignment.unavailablePhotoCount === 0);
-    const facebookDetailsReady = marketplace !== 'facebookMarketplace' || missingFields.length === 0;
+    const facebookDetailsReady = marketplace !== 'facebookMarketplace' ||
+      (['category', 'condition'].every((key) => Boolean(fields[key]) && filledFields.includes(key)) &&
+        missingFields.length === 0);
     const status = core.every((key) => filledFields.includes(key)) && facebookDetailsReady &&
       photosReady && facebookMetaAiDraftsOff ? 'filled' : 'needs_review';
     const details = { fields: filledFields, missingFields, uploadedPhotoCount,

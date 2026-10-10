@@ -27,7 +27,7 @@ import {
   type ScannerHudToolId,
 } from "@/components/scanner/scanner-hud-store";
 import { useKeepFlipAppearance } from "@/components/settings/keepflip-appearance-context";
-import { Ionicons } from "@/components/ui/icon-symbol";
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout, useResponsiveStyles } from "@/hooks/use-responsive-layout";
@@ -38,11 +38,11 @@ type ScannerTool = {
   accent: string;
   glow: string;
   icon:
-  | "viewfinder"
-  | "barcode.viewfinder"
-  | "rectangle.stack.fill"
-  | "square.grid.2x2.fill"
-  | "photo.on.rectangle.angled";
+  | "scan-outline"
+  | "barcode-outline"
+  | "albums-outline"
+  | "grid-outline"
+  | "images-outline";
   id: ScannerToolId;
   label: string;
   surface: string;
@@ -62,7 +62,7 @@ const scannerToolDefinitions: {
     {
       id: "barcode",
       label: "Barcode scanner",
-      icon: "barcode.viewfinder",
+      icon: "barcode-outline",
       accentKey: "scannerCyan",
       surfaceKey: "iconSurfaceViolet",
       glowAlpha: 0.5,
@@ -70,7 +70,7 @@ const scannerToolDefinitions: {
     {
       id: "multi",
       label: "Multi-scan",
-      icon: "viewfinder",
+      icon: "scan-outline",
       accentKey: "goldBright",
       surfaceKey: "iconSurfaceCyan",
       glowAlpha: 0.5,
@@ -78,7 +78,7 @@ const scannerToolDefinitions: {
     {
       id: "batch",
       label: "Batch-scan",
-      icon: "square.grid.2x2.fill",
+      icon: "grid-outline",
       accentKey: "scannerViolet",
       surfaceKey: "iconSurface",
       glowAlpha: 0.5,
@@ -86,7 +86,7 @@ const scannerToolDefinitions: {
     {
       id: "upload",
       label: "Upload photo",
-      icon: "photo.on.rectangle.angled",
+      icon: "images-outline",
       accentKey: "cream",
       surfaceKey: "iconSurfaceViolet",
       glowAlpha: 0.5,

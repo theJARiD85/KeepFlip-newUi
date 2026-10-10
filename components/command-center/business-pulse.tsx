@@ -1,3 +1,4 @@
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
 import {
@@ -177,7 +178,7 @@ export function BusinessPulse({
   if (loading && !overview) {
     return (
       <View style={styles.loadingCard}>
-        <Ionicons color={theme.colors.scannerCyan} name="chart.bar.fill" size={20} />
+        <Ionicons color={theme.colors.scannerCyan} name="stats-chart" size={20} />
         <View style={styles.loadingCopy}>
           <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>BUSINESS PULSE</Text>
           <Text style={[styles.loadingText, { fontSize: responsiveFont(12), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(17) : 17 }]}>Loading your saved money and inventory records</Text>
@@ -190,7 +191,7 @@ export function BusinessPulse({
     return (
       <View style={styles.emptyCard}>
         <View style={styles.emptyIcon}>
-          <Ionicons color={theme.colors.goldBright} name="chart.bar.fill" size={20} />
+          <Ionicons color={theme.colors.goldBright} name="stats-chart" size={20} />
         </View>
         <View style={styles.emptyCopy}>
           <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>BUSINESS PULSE</Text>
@@ -205,7 +206,7 @@ export function BusinessPulse({
             style={({ pressed }) => [styles.emptyPlanAction, pressed && styles.pressed]}
           >
             <Text style={[styles.emptyPlanActionText, { fontSize: responsiveFont(11) }]}>Plan a possible flip</Text>
-            <Ionicons color={theme.colors.scannerCyan} name="chevron.right" size={14} />
+            <Ionicons color={theme.colors.scannerCyan} name="chevron-forward" size={14} />
           </Pressable>
         </View>
       </View>
@@ -446,7 +447,7 @@ export function BusinessPulse({
 
       {attention.length ? (
         <View style={styles.attentionSurface}>
-          <Ionicons color={theme.colors.goldBright} name="exclamationmark.triangle.fill" size={18} />
+          <Ionicons color={theme.colors.goldBright} name="warning" size={18} />
           <View style={styles.attentionCopy}>
             <Text style={[styles.attentionTitle, { fontSize: responsiveFont(11), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(15) : 15 }]}>A couple things need your eyes</Text>
             {attention.slice(0, 2).map((message) => (
@@ -465,13 +466,13 @@ export function BusinessPulse({
         style={({ pressed }) => [styles.planAction, pressed && styles.pressed]}
       >
         <View style={styles.planActionIcon}>
-          <Ionicons color={theme.colors.scannerCyan} name="star.fill" size={16} />
+          <Ionicons color={theme.colors.scannerCyan} name="star" size={16} />
         </View>
         <View style={styles.planActionCopy}>
           <Text style={[styles.planActionTitle, { fontSize: responsiveFont(12) }]}>Plan the next flip</Text>
           <Text style={[styles.planActionText, { fontSize: responsiveFont(10), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(14) : 14 }]}>Test the buy, fix-up, selling costs, and an optional partner split.</Text>
         </View>
-        <Ionicons color={theme.colors.scannerCyan} name="chevron.right" size={15} />
+        <Ionicons color={theme.colors.scannerCyan} name="chevron-forward" size={15} />
       </Pressable>
 
       <View style={styles.actions}>
@@ -482,7 +483,7 @@ export function BusinessPulse({
           style={({ pressed }) => [styles.primaryAction, pressed && styles.pressed]}
         >
           <Text style={[styles.primaryActionText, { fontSize: responsiveFont(12) }]}>Open books</Text>
-          <Ionicons color={theme.colors.backgroundDeep} name="chart.bar.fill" size={15} />
+          <Ionicons color={theme.colors.backgroundDeep} name="stats-chart" size={15} />
         </Pressable>
       </View>
 
@@ -854,7 +855,7 @@ function MoneyMovementChart({
                   pressed && responsiveZoomUiStyles.pressed,
                 ]}
               >
-                <Ionicons color={theme.colors.text} name="chevron.left" size={17} />
+                <Ionicons color={theme.colors.text} name="chevron-back" size={17} />
               </Pressable>
               <View style={responsiveZoomUiStyles.dateRangeCopy}>
                 <Text style={[responsiveZoomUiStyles.dateRange, { fontSize: responsiveFont(11) }]}>
@@ -881,7 +882,7 @@ function MoneyMovementChart({
                   pressed && responsiveZoomUiStyles.pressed,
                 ]}
               >
-                <Ionicons color={theme.colors.text} name="chevron.right" size={17} />
+                <Ionicons color={theme.colors.text} name="chevron-forward" size={17} />
               </Pressable>
             </View>
             {renderChart(true)}
@@ -1075,7 +1076,7 @@ function FinancialReporting({
         </View>
         <Ionicons
           color={chartOption.color}
-          name="chevron.right"
+          name="chevron-forward"
           size={18}
           style={{ transform: [{ rotate: chartPickerOpen ? '90deg' : '0deg' }] }}
         />
@@ -1105,7 +1106,7 @@ function FinancialReporting({
                   <Text style={[styles.chartPickerOptionTitle, { fontSize: responsiveFont(10) }]}>{option.label}</Text>
                   <Text style={[styles.chartPickerOptionDescription, { fontSize: responsiveFont(8) }]}>{option.description}</Text>
                 </View>
-                {selected ? <Ionicons color={option.color} name="checkmark.circle.fill" size={17} /> : null}
+                {selected ? <Ionicons color={option.color} name="checkmark-circle" size={17} /> : null}
               </Pressable>
             );
           })}
@@ -1192,7 +1193,7 @@ function Metric({
     <>
       <View style={styles.metricLabelRow}>
         <Text style={[styles.metricLabel, { fontSize: responsiveFont(8) }]}>{label}</Text>
-        {onPress ? <Ionicons color={theme.colors.textMuted} name="chevron.right" size={12} /> : null}
+        {onPress ? <Ionicons color={theme.colors.textMuted} name="chevron-forward" size={12} /> : null}
       </View>
       <Text numberOfLines={1} style={[styles.metricValue, valueStyle]}>{value}</Text>
     </>
@@ -1245,7 +1246,7 @@ function ChartZoomButton({
     >
       <Ionicons
         color={theme.colors.scannerCyan}
-        name="arrow.up.left.and.arrow.down.right"
+        name="expand"
         size={responsiveWidth(17)}
       />
     </Pressable>
@@ -1330,7 +1331,7 @@ function ChartZoomModal({
               onPress={onClose}
               style={({ pressed }) => [responsiveZoomUiStyles3.closeButton, pressed && responsiveZoomUiStyles3.pressed]}
             >
-              <Ionicons color={theme.colors.text} name="xmark" size={19} />
+              <Ionicons color={theme.colors.text} name="close" size={19} />
             </Pressable>
           </View>
           <ScrollView

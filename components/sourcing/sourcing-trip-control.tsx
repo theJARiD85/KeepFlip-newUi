@@ -1,4 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { useRouter, type Href } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -347,7 +348,7 @@ export function SourcingTripControl() {
       >
         <Ionicons
           color={activeTrip ? theme.colors.scannerCyan : theme.colors.goldMuted}
-          name="rectangle.stack.fill"
+          name="albums-outline"
           size={29}
         />
         <View style={styles.tripButtonCopy}>
@@ -360,7 +361,7 @@ export function SourcingTripControl() {
         </View>
         <Ionicons
           color={activeTrip ? theme.colors.scannerCyan : theme.colors.goldMuted}
-          name="chevron.right"
+          name="chevron-forward"
           size={18}
         />
       </Pressable>
@@ -457,7 +458,7 @@ export function SourcingTripControl() {
                   </Text>
                 </View>
                 <View style={styles.locationNoticeCard}>
-                  <Ionicons color={theme.colors.scannerCyan} name="location.fill" size={20} />
+                  <Ionicons color={theme.colors.scannerCyan} name="location" size={20} />
                   <View style={styles.locationNoticeCopy}>
                     <Text style={[styles.locationNoticeTitle, { fontSize: responsiveFont(9) }]}>LOCATION · ACTIVE TRIP ONLY</Text>
                     <Text style={[styles.locationNoticeBody, { fontSize: responsiveFont(11), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(16) : 16 }]}>KeepFlip asks for location permission only when you start this trip. Background location may continue while you travel so the app can calculate business mileage until you close the trip.</Text>
@@ -543,7 +544,7 @@ export function SourcingTripControl() {
 
               <View style={styles.formContent}>
                 <View style={styles.locationDisclosureCard}>
-                  <Ionicons color={theme.colors.scannerCyan} name="location.fill" size={23} />
+                  <Ionicons color={theme.colors.scannerCyan} name="location" size={23} />
                   <View style={styles.locationDisclosureCopy}>
                     <Text style={[styles.locationDisclosureTitle, { fontSize: responsiveFont(10) }]}>HOW LOCATION IS USED</Text>
                     <Text style={[styles.locationDisclosureBody, { fontSize: responsiveFont(12), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(17) : 17 }]}>Location points are processed and temporarily stored on this device while the trip is active. KeepFlip saves the trip mileage total, point count, and trip details to your account; it does not upload GPS coordinates or a route history. Tracking stops when you end the trip.</Text>
@@ -702,7 +703,7 @@ export function SourcingTripControl() {
                               : 'Take a photo or choose one from your device'}
                         </Text>
                       </View>
-                      <Text style={styles.receiptArrow}>›</Text>
+                      <Ionicons color={theme.colors.goldBright} name="chevron-forward" size={20} style={styles.receiptArrow} />
                     </Pressable>
                   </View>
                   {activeTrip.trip.receiptTotalCents != null ? (

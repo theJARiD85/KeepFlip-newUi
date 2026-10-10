@@ -1,3 +1,4 @@
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
@@ -364,7 +365,7 @@ export function BooksRecordsScreen() {
             </View>
           ) : entries.length ? (
             <View style={styles.emptyState}>
-              <Ionicons color={theme.colors.goldBright} name="magnifyingglass" size={22} />
+              <Ionicons color={theme.colors.goldBright} name="search" size={22} />
               <Text style={styles.emptyStateTitle}>No matching records</Text>
               <Text style={styles.emptyStateText}>
                 Try a different search term or clear one of the filters.
@@ -393,7 +394,7 @@ export function BooksRecordsScreen() {
 
             {error ? (
               <View style={styles.errorCard}>
-                <Ionicons color={theme.colors.danger} name="exclamationmark.triangle.fill" size={18} />
+                <Ionicons color={theme.colors.danger} name="warning" size={18} />
                 <Text selectable style={styles.errorText}>{error}</Text>
                 <Pressable
                   accessibilityRole="button"
@@ -406,13 +407,13 @@ export function BooksRecordsScreen() {
 
             {setupNotice ? (
               <View style={styles.noticeCard}>
-                <Ionicons color={theme.colors.goldBright} name="exclamationmark.triangle.fill" size={18} />
+                <Ionicons color={theme.colors.goldBright} name="warning" size={18} />
                 <Text selectable style={styles.noticeText}>{setupNotice}</Text>
               </View>
             ) : null}
 
             <View style={styles.searchBar}>
-              <Ionicons color={theme.colors.textMuted} name="magnifyingglass" size={18} />
+              <Ionicons color={theme.colors.textMuted} name="search" size={18} />
               <TextInput
                 accessibilityLabel="Search transaction records"
                 autoCapitalize="none"
@@ -429,7 +430,7 @@ export function BooksRecordsScreen() {
                   accessibilityRole="button"
                   onPress={() => setQuery('')}
                   style={styles.clearSearchButton}>
-                  <Ionicons color={theme.colors.textMuted} name="xmark" size={16} />
+                  <Ionicons color={theme.colors.textMuted} name="close" size={16} />
                 </Pressable>
               ) : null}
             </View>
@@ -529,7 +530,7 @@ export function BooksRecordsScreen() {
                   accessibilityRole="button"
                   onPress={() => setSelectedEntry(null)}
                   style={styles.closeButton}>
-                  <Ionicons color={theme.colors.cream} name="xmark" size={18} />
+                  <Ionicons color={theme.colors.cream} name="close" size={18} />
                 </Pressable>
               </View>
 

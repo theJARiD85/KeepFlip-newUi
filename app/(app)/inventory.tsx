@@ -2,7 +2,7 @@ import { MetricsAnalyticsScreen } from "@/components/analytics/metrics-analytics
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { InventoryCard } from "@/components/inventory/inventory-card";
 import { ManualInventoryItemDialog } from "@/components/inventory/manual-inventory-item-dialog";
-import { Ionicons } from "@/components/ui/icon-symbol";
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipControlRow } from "@/components/ui/keepflip-control-row";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
@@ -373,7 +373,7 @@ export default function InventoryScreen() {
               actionLabel="ADD ITEM"
               accessibilityHint="Add inventory without a scan or resale valuation."
               description="Add an item manually and record what you paid for Books and COGS."
-              icon="shippingbox.fill"
+              icon="cube-outline"
               label="Add inventory item manually"
               onPress={() => setManualAddOpen(true)}
             />
@@ -457,7 +457,7 @@ export default function InventoryScreen() {
                 <View style={styles.filterTriggerTitle}>
                   <Ionicons
                     color={theme.colors.scannerCyan}
-                    name="line.3.horizontal"
+                    name="menu"
                     size={16}
                   />
                   <Text style={[styles.filterTriggerLabel, { fontSize: responsiveFont(7) }]}>
@@ -481,7 +481,7 @@ export default function InventoryScreen() {
                   <View style={styles.emptyIcon}>
                     <Ionicons
                       color={theme.colors.goldBright}
-                      name="viewfinder"
+                      name="scan-outline"
                       size={34}
                     />
                   </View>
@@ -601,7 +601,7 @@ export default function InventoryScreen() {
                 >
                   <Ionicons
                     color={theme.colors.cream}
-                    name="xmark"
+                    name="close"
                     size={18}
                   />
                 </Pressable>

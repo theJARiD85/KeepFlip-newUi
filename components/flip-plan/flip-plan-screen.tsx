@@ -4,14 +4,13 @@ import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { type ComponentProps, useCallback, useMemo, useState } from 'react';
 import {
   Pressable,
   ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
@@ -114,7 +113,7 @@ function StageToolButton({
 }: {
   active: boolean;
   detail: string;
-  icon: Parameters<typeof IconSymbol > [0]['name'];
+  icon: ComponentProps<typeof Ionicons>['name'];
 label: string;
 onPress: () => void;
 }) {
@@ -132,7 +131,7 @@ onPress: () => void;
         pressed && styles.pressed,
       ]}>
       <View style={[styles.stageIcon, active && styles.stageIconActive]}>
-        <IconSymbol
+        <Ionicons
           color={active ? theme.colors.backgroundDeep : theme.colors.textMuted}
           name={icon}
           size={15}
@@ -637,14 +636,14 @@ export function FlipPlanScreen() {
               <StageToolButton
                 active={activeStage === 'buy'}
                 detail={money(plan.buyCost)}
-                icon="shippingbox.fill"
+                icon="cube-outline"
                 label="1. Buy Device"
                 onPress={() => setActiveStage('buy')}
               />
               <StageToolButton
                 active={activeStage === 'refurbish'}
                 detail={'+' + money(plan.extraCost)}
-                icon="wrench.and.screwdriver.fill"
+                icon="construct"
                 label="2. Refurbish"
                 onPress={() => setActiveStage('refurbish')}
               />
@@ -653,14 +652,14 @@ export function FlipPlanScreen() {
               <StageToolButton
                 active={activeStage === 'sell'}
                 detail={money(plan.salePrice)}
-                icon="tag.fill"
+                icon="pricetag"
                 label="3. Sell Item"
                 onPress={() => setActiveStage('sell')}
               />
               <StageToolButton
                 active={activeStage === 'split'}
                 detail={percent(plan.partnerShare) + ' Split'}
-                icon="person.fill"
+                icon="person"
                 label="4. Split Payout"
                 onPress={() => setActiveStage('split')}
               />
@@ -702,9 +701,9 @@ export function FlipPlanScreen() {
                   : 'Projection ledger not balanced'
               }
               style={[styles.balancePill, !ledger.isBalanced && styles.balancePillUnbalanced]}>
-              <IconSymbol
+              <Ionicons
                 color={ledger.isBalanced ? theme.colors.scannerCyan : theme.colors.goldBright}
-                name={ledger.isBalanced ? 'checkmark-circle' : 'exclamationmark.triangle.fill'}
+                name={ledger.isBalanced ? 'checkmark-circle' : 'warning'}
                 size={13}
               />
               <Text

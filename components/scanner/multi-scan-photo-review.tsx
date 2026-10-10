@@ -1,3 +1,4 @@
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { Image } from 'expo-image';
 import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated, {
@@ -226,7 +227,7 @@ export function MultiScanPhotoReview({
                     styles.deleteButton,
                     pressed && styles.deleteButtonPressed,
                   ]}>
-                  <Ionicons color={theme.colors.cream} name="xmark" size={18} />
+                  <Ionicons color={theme.colors.cream} name="close" size={18} />
                 </Pressable>
               </Animated.View>
             ))}

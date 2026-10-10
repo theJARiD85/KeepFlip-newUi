@@ -19,10 +19,9 @@ import {
   KEEPFLIP_PUBLIC_COLORS,
 } from '@/constants/keepflip-public-site';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Ionicons } from '@react-native-vector-icons/ionicons';
 import type { ComponentProps } from 'react';
 import {
   Platform,
@@ -34,7 +33,7 @@ import {
 
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 import responsiveFont from '@/lib/responsiveFont';
-type IconName = ComponentProps<typeof IconSymbol > ['name'];
+type IconName = ComponentProps<typeof Ionicons>['name'];
 type FlowVisualKind = 'source' | 'decide' | 'run';
 
 const FLOW_SCANNER_IMAGE = require('@/assets/google-play/keepflip-play-scanner.png');
@@ -230,28 +229,28 @@ export function WebOnboardingScreen() {
                   <FeatureCard
                     accent={colors.scannerCyan}
                     colors={colors}
-                    icon="barcode.viewfinder"
+                    icon="barcode-outline"
                     title="Scan a find and check its resale range"
                     body="Use the Android app to identify an item, review the market evidence, and see an estimated resale range with confidence signals. It is a starting point for your research, not a guaranteed sale price."
                   />
                   <FeatureCard
                     accent={colors.goldBright}
                     colors={colors}
-                    icon="checkmark.circle.fill"
+                    icon="checkmark-circle"
                     title="Buy rules that fit how you sell"
                     body="Set your own categories, target return, and buying rules. Flip uses them as context while you decide whether a find is worth your cash."
                   />
                   <FeatureCard
                     accent={colors.scannerViolet}
                     colors={colors}
-                    icon="dollarsign.circle.fill"
+                    icon="cash-outline"
                     title="Know what you may keep after fees"
                     body="Count what you paid, marketplace fees, shipping, discounts, and other costs so the listing price is not mistaken for your profit."
                   />
                   <FeatureCard
                     accent={colors.scannerCyan}
                     colors={colors}
-                    icon="shippingbox.fill"
+                    icon="cube-outline"
                     title="Know what is where and what it cost"
                     body="Keep an item’s cost, storage location, quantity, eBay listing, and status together so you can find it and see what is still tied up in stock."
                   />
@@ -265,21 +264,21 @@ export function WebOnboardingScreen() {
                   <FeatureCard
                     accent={colors.scannerViolet}
                     colors={colors}
-                    icon="chart.bar.fill"
+                    icon="stats-chart"
                     title="Keep up with sales, costs, and tax records"
                     body="Bring sales, expenses, fees, and inventory costs together. Export Schedule C information from Books and separate earnings from cash still tied up in stock."
                   />
                   <FeatureCard
                     accent={colors.scannerCyan}
                     colors={colors}
-                    icon="creditcard.fill"
+                    icon="card-outline"
                     title="Connect your eBay account"
                     body={KEEPFLIP_EBAY_CONNECTION_COPY}
                   />
                   <FeatureCard
                     accent={colors.goldBright}
                     colors={colors}
-                    icon="bubble.left.and.bubble.right.fill"
+                    icon="chatbubbles-outline"
                     title="Ask Flip what to check next"
                     body="Use Flip to think through a find, review market evidence, and apply your own buying rules before you spend."
                   />
@@ -468,7 +467,7 @@ function FlowVisual({
           style={responsiveStyles5.flowImage}
         />
         <View style={[responsiveStyles5.flowOverlay, { backgroundColor: colors.surfaceOverlay, borderColor: colors.accentCyanBorder }]}>
-          <Text style={[responsiveStyles5.overlayEyebrow, { color: colors.scannerCyan }]}>ANDROID SCAN → IDENTIFY</Text>
+          <Text style={[responsiveStyles5.overlayEyebrow, { color: colors.scannerCyan }]}>ANDROID SCAN <Ionicons color={colors.scannerCyan} name="arrow-forward" size={11} /> IDENTIFY</Text>
           <Text style={[responsiveStyles5.overlayTitle, { color: colors.text }]}>Evidence attached</Text>
         </View>
       </View>
@@ -564,7 +563,7 @@ function CompareCard({
       <View style={responsiveStyles7.compareList}>
         {items.map((item) => (
           <View key={item} style={responsiveStyles7.compareItem}>
-            <Ionicons color={highlighted ? colors.success : colors.danger} name={highlighted ? 'checkmark.circle.fill' : 'xmark'} size={16} />
+            <Ionicons color={highlighted ? colors.success : colors.danger} name={highlighted ? 'checkmark-circle' : 'close'} size={16} />
             <Text style={[responsiveStyles7.compareItemText, { color: colors.textMuted }]}>{item}</Text>
           </View>
         ))}

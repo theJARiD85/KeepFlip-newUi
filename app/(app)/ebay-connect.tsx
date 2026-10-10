@@ -1,3 +1,4 @@
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import * as Haptics from 'expo-haptics';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -27,19 +28,19 @@ import {
 
 const BENEFITS = [
   {
-    icon: 'magnifyingglass' as const,
+    icon: 'search' as const,
     title: 'Source with your eBay account',
     description:
       'Let KeepFlip use your authorized eBay identity when sourcing and item-research tools need account-level access.',
   },
   {
-    icon: 'envelope.fill' as const,
+    icon: 'mail' as const,
     title: 'Enable eBay messaging',
     description:
       'Connect the account needed for planned buyer and seller messaging around items and sourcing opportunities.',
   },
   {
-    icon: 'lock.fill' as const,
+    icon: 'lock-closed' as const,
     title: 'Keep your eBay password private',
     description:
       'You sign in and approve permissions on eBay. KeepFlip receives authorization tokens, not your eBay password.',

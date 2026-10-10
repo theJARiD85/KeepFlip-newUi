@@ -9,7 +9,6 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
@@ -558,7 +557,7 @@ export default function EbayAccountScreen() {
                 <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>LISTING SETUP</Text>
                 <View style={styles.settingsCard}>
                   <View style={styles.settingRow}>
-                    <IconSymbol
+                    <Ionicons
                       color={
                         listingSetup.state === 'ready'
                           ? theme.colors.scannerCyan
@@ -567,7 +566,7 @@ export default function EbayAccountScreen() {
                       name={
                         listingSetup.state === 'ready'
                           ? 'checkmark-circle'
-                          : 'exclamationmark.triangle.fill'
+                          : 'warning'
                       }
                       size={20}
                     />

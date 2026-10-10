@@ -1,3 +1,4 @@
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo } from 'react';
@@ -23,11 +24,11 @@ type ScannerTool = {
   accent: string;
   glow: string;
   icon:
-  | 'viewfinder'
-  | 'barcode.viewfinder'
-  | 'rectangle.stack.fill'
-  | 'square.grid.2x2.fill'
-  | 'photo.on.rectangle.angled';
+  | 'scan-outline'
+  | 'barcode-outline'
+  | 'albums-outline'
+  | 'grid-outline'
+  | 'images-outline';
   id: ScannerToolId;
   label: string;
   surface: string;
@@ -47,7 +48,7 @@ const scannerToolDefinitions: {
     {
       id: 'barcode',
       label: 'Barcode scanner',
-      icon: 'barcode.viewfinder',
+      icon: 'barcode-outline',
       accentKey: 'scannerViolet',
       surfaceKey: 'iconSurfaceViolet',
       glowAlpha: 0.46,
@@ -55,7 +56,7 @@ const scannerToolDefinitions: {
     {
       id: 'multi',
       label: 'Smart scan',
-      icon: 'rectangle.stack.fill',
+      icon: 'albums-outline',
       accentKey: 'scannerCyan',
       surfaceKey: 'iconSurfaceCyan',
       glowAlpha: 0.46,
@@ -63,7 +64,7 @@ const scannerToolDefinitions: {
     {
       id: 'batch',
       label: 'Batch-scan',
-      icon: 'square.grid.2x2.fill',
+      icon: 'grid-outline',
       accentKey: 'scannerViolet',
       surfaceKey: 'iconSurfaceViolet',
       glowAlpha: 0.38,
@@ -71,7 +72,7 @@ const scannerToolDefinitions: {
     {
       id: 'upload',
       label: 'Upload photo',
-      icon: 'photo.on.rectangle.angled',
+      icon: 'images-outline',
       accentKey: 'cream',
       surfaceKey: 'iconSurface',
       glowAlpha: 0.38,

@@ -8,14 +8,14 @@ import {
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
+import { EbaySellerHealthPanel } from '@/components/command-center/ebay-seller-health-panel';
+import { ManualInventoryItemDialog } from '@/components/inventory/manual-inventory-item-dialog';
 import {
   KeepFlipControlRow,
   type KeepFlipControlRowProps,
 } from '@/components/ui/keepflip-control-row';
-import { ManualInventoryItemDialog } from '@/components/inventory/manual-inventory-item-dialog';
 import { KeepFlipText as Text, KeepFlipTextInput as TextInput } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { EbaySellerHealthPanel } from '@/components/command-center/ebay-seller-health-panel';
 
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
 import {
@@ -84,7 +84,7 @@ function Button({
   onPress,
   disabled = false,
   description = 'Open this seller operation.',
-  icon = 'arrow.right',
+  icon = 'arrow-forward',
   accent = 'gold',
   actionLabel,
   status,
@@ -462,10 +462,10 @@ export function SellerOperationsPanel({ ownerId, embedded = false, initialSaleIt
       setInventory(inventoryResult.value);
       setSelectedItemId((current) =>
         initialSaleItemId &&
-        inventoryResult.value.some(
-          (item) =>
-            item.id === initialSaleItemId && (item.quantityOnHand > 0 || item.isListed),
-        )
+          inventoryResult.value.some(
+            (item) =>
+              item.id === initialSaleItemId && (item.quantityOnHand > 0 || item.isListed),
+          )
           ? initialSaleItemId
           : current &&
             inventoryResult.value.some(
@@ -760,7 +760,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false, initialSaleIt
       <Button
         title={loading ? 'Refreshing…' : 'Refresh seller operations'}
         description="Reload inventory, orders, fulfillment status and realized margin."
-        icon="arrow.clockwise"
+        icon="refresh"
         accent="cyan"
         actionLabel="REFRESH"
         busy={loading || working}
@@ -776,7 +776,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false, initialSaleIt
         <Button
           title="Add inventory item manually"
           description="Enter the item and what you paid, then use that cost when it sells."
-          icon="shippingbox.fill"
+          icon="cube-outline"
           accent="cyan"
           actionLabel="ADD ITEM"
           onPress={() => setManualInventoryAddOpen(true)}
@@ -807,7 +807,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false, initialSaleIt
               <KeepFlipControlRow
                 accent="cyan"
                 description={`SKU ${listing?.sku || item.ebaySku || item.sku || 'missing'} · storage ${item.storageLocation || 'missing'} · ${listingStatus.toLowerCase()}`}
-                icon="tag.fill"
+                icon="pricetag"
                 label={item.title}
                 staticLabel={listingStatus}
                 status={{
@@ -847,7 +847,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false, initialSaleIt
               key={item.id}
               title={item.title}
               description={`SKU ${item.sku || 'no SKU'} · storage ${item.storageLocation || 'no bin'} · quantity ${item.quantityOnHand}`}
-              icon="shippingbox.fill"
+              icon="cube-outline"
               accent="cyan"
               status={selectedItemId === item.id
                 ? { label: 'SELECTED', tone: 'active' }
@@ -862,7 +862,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false, initialSaleIt
             <KeepFlipControlRow
               accent="cyan"
               description={`SKU ${selectedItem.sku || 'no SKU'} · stored at ${selectedItem.storageLocation || 'location not set'}`}
-              icon="shippingbox.fill"
+              icon="cube-outline"
               label={selectedItem.title}
               staticLabel="SELECTED"
               status={{ label: 'SALE DRAFT', tone: 'active' }}
@@ -880,7 +880,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false, initialSaleIt
             <Button
               title="Save sale and reconcile Books"
               description="Save this sale and connect it to the selected inventory item in Books."
-              icon="checkmark.circle.fill"
+              icon="checkmark-circle"
               accent="gold"
               actionLabel="SAVE"
               busy={working}
@@ -907,7 +907,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false, initialSaleIt
           <Button
             title="Sync eBay orders"
             description="Pull the latest eBay orders and ship-by deadlines through KeepFlip."
-            icon="arrow.clockwise"
+            icon="refresh"
             accent="cyan"
             actionLabel="SYNC"
             busy={working}
@@ -925,7 +925,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false, initialSaleIt
             <KeepFlipControlRow
               accent={order.fulfillmentStatus === 'shipped' ? 'cyan' : 'gold'}
               description={`Sold ${money(order.soldPriceCents)} · storage ${inventory.find((item) => item.id === order.sourceItemId)?.storageLocation || 'not set'} · ship by ${dateLabel(order.shipBy)}`}
-              icon="shippingbox.fill"
+              icon="cube-outline"
               label={order.title}
               staticLabel={order.trackingNumber ? 'TRACKED' : 'MANUAL'}
               status={{
@@ -943,7 +943,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false, initialSaleIt
                   <Button
                     title="Mark manual order shipped"
                     description="Save the tracking details and mark this manual order shipped."
-                    icon="shippingbox.fill"
+                    icon="cube-outline"
                     accent="gold"
                     actionLabel="SHIP"
                     busy={working}
@@ -961,7 +961,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false, initialSaleIt
             <KeepFlipControlRow
               accent="cyan"
               description={`Ship by ${dateLabel(order.shipBy)} · payment ${order.paymentStatus || 'unknown'}`}
-              icon="shippingbox.fill"
+              icon="cube-outline"
               label={`eBay order ${order.orderId}`}
               staticLabel={order.paymentStatus || 'REVIEW'}
               status={{
@@ -988,7 +988,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false, initialSaleIt
                   <Button
                     title="Mark shipped on eBay"
                     description="Submit carrier and tracking details to eBay for this order."
-                    icon="shippingbox.fill"
+                    icon="cube-outline"
                     accent="cyan"
                     actionLabel="SHIP"
                     busy={working}
@@ -1011,7 +1011,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false, initialSaleIt
           <Button
             title="Run eBay Money Sync"
             description="Reconcile eBay sales, fees, refunds and payouts into Books."
-            icon="dollarsign.circle.fill"
+            icon="cash-outline"
             accent="gold"
             actionLabel="SYNC"
             busy={working}
@@ -1026,7 +1026,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false, initialSaleIt
         <Button
           title="Open Books review queue"
           description="Review unresolved item-linked Books records and reconciliation work."
-          icon="chart.bar.fill"
+          icon="stats-chart"
           accent="violet"
           actionLabel="OPEN"
           staticLabel={!basicBooks ? 'CHECK' : undefined}
@@ -1038,7 +1038,7 @@ export function SellerOperationsPanel({ ownerId, embedded = false, initialSaleIt
             <KeepFlipControlRow
               accent={margin.reconciliationStatus === 'complete' ? 'cyan' : 'gold'}
               description={`Bought for ${money(margin.acquisitionCostCents)} · sold for ${money(margin.soldProceedsCents)} · net profit ${money(margin.netProfitCents)}`}
-              icon="chart.bar.fill"
+              icon="stats-chart"
               label={margin.title}
               staticLabel={margin.reconciliationStatus === 'complete' ? 'POSTED' : 'REVIEW'}
               status={{

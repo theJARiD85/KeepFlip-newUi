@@ -44,7 +44,7 @@ import {
   hasBooksRecordsProjection,
 } from "@/components/scanner/books-records-projection";
 import { SmartProfitCalculator } from "@/components/scanner/smart-profit-calculator";
-import { Ionicons } from "@/components/ui/icon-symbol";
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import {
@@ -1341,7 +1341,7 @@ function ExpandedResultDetails({
             >
               <Ionicons
                 color={theme.colors.scannerCyan}
-                name="camera.fill"
+                name="camera"
                 size={15}
               />
               <Text style={[styles.scanDetailButtonText, { fontSize: responsiveFont(9) }]}>
@@ -1943,7 +1943,7 @@ export function ValuationResultStage({
                   (saving || refining) && styles.disabled,
                 ]}
               >
-                <Ionicons color={theme.colors.backgroundDeep} name="save.fill" size={16} />
+                <Ionicons color={theme.colors.backgroundDeep} name="save-outline" size={16} />
                 <Text style={[styles.saveButtonText, { fontSize: responsiveFont(9) }]}>
                   {saving ? "SAVING..." : saveLabel.toUpperCase()}
                 </Text>
@@ -1964,7 +1964,7 @@ export function ValuationResultStage({
               >
                 <Ionicons
                   color={theme.colors.backgroundDeep}
-                  name="tag.fill"
+                  name="pricetag"
                   size={16}
                 />
                 <Text style={[styles.saveButtonText, { fontSize: responsiveFont(9) }]}>LIST ITEM</Text>
@@ -1986,7 +1986,7 @@ export function ValuationResultStage({
               >
                 <Ionicons
                   color={theme.colors.goldBright}
-                  name="photo.on.rectangle.angled"
+                  name="images-outline"
                   size={16}
                 />
                 <Text style={[styles.saveButtonTextSecondary, { fontSize: responsiveFont(9) }]}>ADD PHOTOS</Text>
@@ -2006,7 +2006,7 @@ export function ValuationResultStage({
               pressed && styles.pressed,
               (saving || refining || scanningMorePhotos) && styles.disabled,
             ]}>
-            <Ionicons color={theme.colors.textMuted} name="exclamationmark.triangle.fill" size={13} />
+            <Ionicons color={theme.colors.textMuted} name="warning" size={13} />
             <Text style={[styles.incorrectIdentificationActionText, { fontSize: responsiveFont(8) }]}>
               FLAG INCORRECT IDENTIFICATION
             </Text>

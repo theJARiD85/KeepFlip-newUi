@@ -1,3 +1,4 @@
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { File, Paths } from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
@@ -279,7 +280,7 @@ function TransactionRow({
       </View>
       <Ionicons
         color={theme.colors.textMuted}
-        name="chevron.right"
+        name="chevron-forward"
         size={13}
       />
     </Pressable>
@@ -818,7 +819,7 @@ export function BooksScreen() {
               ]}>
               <Ionicons
                 color={theme.colors.textOnAccent}
-                name="dollarsign.circle.fill"
+                name="cash-outline"
                 size={16}
               />
               <Text style={[styles.primaryActionText, { fontSize: responsiveFont(9) }]}>RECORD SALE</Text>
@@ -833,7 +834,7 @@ export function BooksScreen() {
                 !ledgerConfigured && styles.actionDisabled,
                 pressed && ledgerConfigured && styles.secondaryActionPressed,
               ]}>
-              <Ionicons color={theme.colors.goldBright} name="save.fill" size={15} />
+              <Ionicons color={theme.colors.goldBright} name="save-outline" size={15} />
               <Text style={[styles.secondaryActionText, { fontSize: responsiveFont(9) }]}>ADD EXPENSE</Text>
             </Pressable>
           </View>
@@ -841,7 +842,7 @@ export function BooksScreen() {
 
         {setupNotice ? (
           <View style={styles.setupNotice}>
-            <Ionicons color={theme.colors.goldBright} name="lock.fill" size={16} />
+            <Ionicons color={theme.colors.goldBright} name="lock-closed" size={16} />
             <View style={styles.noticeCopy}>
               <Text style={[styles.noticeTitle, { fontSize: responsiveFont(9) }]}>PRIVATE LEDGER SETUP NEEDED</Text>
               <Text selectable style={[styles.noticeText, { fontSize: responsiveFont(12) }]}>
@@ -958,7 +959,7 @@ export function BooksScreen() {
                 ]}>
                 <Ionicons
                   color={theme.colors.scannerCyan}
-                  name="rectangle.stack.fill"
+                  name="albums-outline"
                   size={14}
                 />
                 <Text style={[styles.exportButtonText, { fontSize: responsiveFont(8) }]}>ALL RECORDS</Text>
@@ -1055,7 +1056,7 @@ export function BooksScreen() {
                   accessibilityRole="button"
                   onPress={() => setSelectedTransaction(null)}
                   style={styles.closeButton}>
-                  <Ionicons color={theme.colors.cream} name="xmark" size={18} />
+                  <Ionicons color={theme.colors.cream} name="close" size={18} />
                 </Pressable>
               </View>
 
@@ -1249,7 +1250,7 @@ export function BooksScreen() {
                 disabled={saving}
                 onPress={() => setSheetOpen(false)}
                 style={styles.closeButton}>
-                <Ionicons color={theme.colors.cream} name="xmark" size={18} />
+                <Ionicons color={theme.colors.cream} name="close" size={18} />
               </Pressable>
             </View>
 
@@ -1440,7 +1441,7 @@ export function BooksScreen() {
                   </View>
                   <Ionicons
                     color={theme.colors.goldMuted}
-                    name="chevron.right"
+                    name="chevron-forward"
                     size={17}
                     style={showItemPicker ? styles.itemPickerChevronOpen : undefined}
                   />

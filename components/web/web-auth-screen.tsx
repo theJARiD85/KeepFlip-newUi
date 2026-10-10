@@ -11,6 +11,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 
 import {
   KeepFlipAuthError,
@@ -246,7 +247,7 @@ export function WebAuthScreen({
               onPress={onBack}
               style={({ pressed }) => [responsiveStyles.backButton, pressed && responsiveStyles.pressed]}
             >
-              <Text style={[responsiveStyles.backButtonText, { color: colors.scannerCyan }]}>← BACK TO FLIP SETUP</Text>
+              <Text style={[responsiveStyles.backButtonText, { color: colors.scannerCyan }]}><Ionicons color={colors.scannerCyan} name="arrow-back" size={13} /> BACK TO FLIP SETUP</Text>
             </Pressable>
           ) : null}
 

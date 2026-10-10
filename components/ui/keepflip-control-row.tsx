@@ -1,10 +1,10 @@
 import { type ComponentProps, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
-type KeepFlipControlIconName = ComponentProps<typeof IconSymbol> ['name'];
+type KeepFlipControlIconName = ComponentProps<typeof Ionicons>['name'];
 export type KeepFlipStatusTone =
   | 'active'
   | 'muted'
@@ -122,7 +122,7 @@ export function KeepFlipControlRow({
       ) : isPressable ? (
         <Ionicons
           color={theme.colors.goldMuted}
-          name="chevron.right"
+          name="chevron-forward"
           size={18}
           style={styles.rowChevron}
         />

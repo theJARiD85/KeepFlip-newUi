@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { WebView, type WebView as WebViewInstance } from 'react-native-webview';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import type { MarketplaceAuthModalProps } from '@/components/connections/marketplace-auth-modal.types';
@@ -487,7 +488,7 @@ export function MarketplaceAuthModal({
         {error ? <Text selectable style={styles.error}>{error}</Text> : null}
         {onNext ? (
           <Pressable accessibilityRole="button" onPress={onNext} style={styles.nextButton}>
-            <Text style={styles.nextButtonText}>{nextLabel === 'Finish run' ? 'Finish run →' : `Next: ${nextLabel ?? 'marketplace'} →`}</Text>
+            <Text style={styles.nextButtonText}>{nextLabel === 'Finish run' ? 'Finish run' : `Next: ${nextLabel ?? 'marketplace'}`} <Ionicons color={theme.colors.textOnAccent} name="arrow-forward" size={14} /></Text>
           </Pressable>
         ) : null}
         {onConfirmed && sessionSaved ? (
@@ -499,7 +500,7 @@ export function MarketplaceAuthModal({
               { text: 'Yes, it is live', onPress: () => onConfirmed(isMarketplaceHost(currentUrl, platform) ? currentUrl : undefined) },
             ],
           )} style={styles.nextButton}>
-            <Text style={styles.nextButtonText}>I SEE MY LIVE LISTING ✓</Text>
+            <Text style={styles.nextButtonText}>I SEE MY LIVE LISTING <Ionicons color={theme.colors.textOnAccent} name="checkmark-circle" size={14} /></Text>
           </Pressable>
         ) : null}
         {sessionSaved ? (

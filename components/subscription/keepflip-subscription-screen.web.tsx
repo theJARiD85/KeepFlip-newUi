@@ -1,3 +1,4 @@
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -208,7 +209,7 @@ export function KeepFlipSubscriptionScreen({
 
         <View style={responsiveStyles.header}>
           <View style={responsiveStyles.headerIcon}>
-            <Ionicons color={colors.goldBright} name="creditcard.fill" size={24} />
+            <Ionicons color={colors.goldBright} name="card-outline" size={24} />
           </View>
           <View style={responsiveStyles.headerCopy}>
             <Text style={[responsiveStyles.eyebrow, { color: colors.goldBright }]}>KEEPFLIP / WEB BILLING</Text>
@@ -229,13 +230,13 @@ export function KeepFlipSubscriptionScreen({
             accessibilityRole="button"
             onPress={() => router.push('/account')}
             style={({ pressed }) => [responsiveStyles.backButton, pressed && responsiveStyles.pressed]}>
-            <Text style={[responsiveStyles.backButtonText, { color: colors.scannerCyan }]}>← ACCOUNT SETTINGS</Text>
+            <Text style={[responsiveStyles.backButtonText, { color: colors.scannerCyan }]}><Ionicons color={colors.scannerCyan} name="arrow-back" size={13} /> ACCOUNT SETTINGS</Text>
           </Pressable>
         ) : null}
 
         {accountHasActivePlan ? (
           <View style={[responsiveStyles.activeBanner, { backgroundColor: colors.successSurface, borderColor: colors.success }]}>
-            <Ionicons color={colors.success} name="checkmark.circle.fill" size={22} />
+            <Ionicons color={colors.success} name="checkmark-circle" size={22} />
             <View style={responsiveStyles.activeCopy}>
               <Text style={[responsiveStyles.activeTitle, { color: colors.success }]}>{activePlanName} is active</Text>
               <Text style={[responsiveStyles.body, { color: colors.textMuted }]}>
@@ -259,14 +260,14 @@ export function KeepFlipSubscriptionScreen({
 
         {serverNotice ? (
           <View style={[responsiveStyles.notice, { backgroundColor: colors.iconSurfaceGold, borderColor: colors.goldMuted }]}>
-            <Ionicons color={colors.goldBright} name="exclamationmark.triangle.fill" size={19} />
+            <Ionicons color={colors.goldBright} name="warning" size={19} />
             <Text style={[responsiveStyles.body, { color: colors.textMuted }]}>{serverNotice}</Text>
           </View>
         ) : null}
 
         {billingError ? (
           <View style={[responsiveStyles.notice, { backgroundColor: colors.dangerSurface, borderColor: colors.danger }]}>
-            <Ionicons color={colors.danger} name="exclamationmark.triangle.fill" size={19} />
+            <Ionicons color={colors.danger} name="warning" size={19} />
             <Text style={[responsiveStyles.body, { color: colors.danger }]}>{billingError}</Text>
           </View>
         ) : null}
@@ -299,7 +300,7 @@ export function KeepFlipSubscriptionScreen({
             accessibilityRole="button"
             onPress={() => void refreshPaymentStatus()}
             style={({ pressed }) => [responsiveStyles.outlineButton, { borderColor: colors.accentCyanBorder }, pressed && responsiveStyles.pressed]}>
-            <Ionicons color={colors.scannerCyan} name="arrow.clockwise" size={17} />
+            <Ionicons color={colors.scannerCyan} name="refresh" size={17} />
             <Text style={[responsiveStyles.buttonText, { color: colors.scannerCyan }]}>REFRESH PAYMENT STATUS</Text>
           </Pressable>
           <Pressable

@@ -1,3 +1,4 @@
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
@@ -42,7 +43,7 @@ export function ConnectionsMenuLink({
         <Text style={[styles.label, { fontSize: responsiveFont(13) }]}>Connections</Text>
         <Text style={[styles.detail, { fontSize: responsiveFont(7) }]}>EBAY + BANK ACCOUNTS</Text>
       </View>
-      <Ionicons color={theme.colors.goldMuted} name="chevron.right" size={18} />
+      <Ionicons color={theme.colors.goldMuted} name="chevron-forward" size={18} />
     </Pressable>
   );
 }

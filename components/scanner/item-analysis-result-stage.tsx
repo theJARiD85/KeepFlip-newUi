@@ -10,7 +10,7 @@ import {
 import Animated, { FadeIn, FadeInUp, FadeOut } from "react-native-reanimated";
 
 import type { ItemAnalysisState } from "@/components/scanner/item-analysis-overlay";
-import { Ionicons } from "@/components/ui/icon-symbol";
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 
@@ -146,7 +146,7 @@ export function ItemAnalysisResultStage({
             saving && styles.disabled,
           ]}
         >
-          <Ionicons color={theme.colors.cream} name="xmark" size={19} />
+          <Ionicons color={theme.colors.cream} name="close" size={19} />
         </Pressable>
       </View>
 

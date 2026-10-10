@@ -1,4 +1,4 @@
-import { SymbolView } from 'expo-symbols';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -53,7 +53,7 @@ export function ConnectionsScreen({
 
       <View style={responsiveStyles.overviewCard}>
         <View style={responsiveStyles.overviewIcon}>
-          <SymbolView name={{ ios: 'link', android: 'link', web: 'link' }} size={23} tintColor={brand.colors.cyan} />
+          <Ionicons color={brand.colors.cyan} name="link-outline" size={23} />
         </View>
         <View style={responsiveStyles.overviewCopy}>
           <Text style={responsiveStyles.overviewTitle}>{connectedCount} of {channels.length} saved</Text>
@@ -108,7 +108,7 @@ export function ConnectionsScreen({
                   <Text style={[responsiveStyles.statusText, status === 'connected' && responsiveStyles.connectedText, status === 'attention' && responsiveStyles.attentionText]}>{statusLabels[status]}</Text>
                 </View>
               </View>
-              {onOpenConnection ? <Text style={responsiveStyles.channelArrow}>›</Text> : null}
+              {onOpenConnection ? <Ionicons color={brand.colors.cyan} name="chevron-forward" size={16} style={responsiveStyles.channelArrow} /> : null}
             </Pressable>
           );
         }}

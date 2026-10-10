@@ -1,4 +1,5 @@
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -11,7 +12,7 @@ import {
   ScrollView,
   StyleSheet,
   View,
-  useWindowDimensions,
+  useWindowDimensions
 } from 'react-native';
 import Modal from 'react-native-modal';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -31,7 +32,6 @@ import {
   KeepFlipTextInput as TextInput,
 } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { responsiveWidth } from '@/lib/responsiveFont';
 import { withAlpha } from '@/lib/withAlpha';
 import {
   connectEbayAccount,
@@ -61,8 +61,6 @@ import {
 } from '@/services/reseller-ledger-service';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
-import { InstancedMesh } from 'three';
-import { isNativePlatformSupported } from 'react-native-screens/lib/typescript/core';
 type EbayConnectionViewState =
   | 'checking'
   | 'connected'
@@ -71,6 +69,8 @@ type EbayConnectionViewState =
   | 'error';
 
 type CommandCenterTab = 'pulse' | 'operations';
+
+const isWeb = Platform.OS = 'web';
 
 function bookkeepingEventsForBusinessPulse(
   ownerId: string,
@@ -712,224 +712,224 @@ export function CommandCenterScreen() {
 
   return (
     <KeepFlipBackground>
-      <View style={{marginBottom: insets.bottom, marginTop: insets.top}}>
-      <ScrollView
-        contentContainerStyle={[styles.content,
-        { paddingHorizontal: pageGutter, paddingTop: insets.top + 15, paddingBottom: insets.bottom + 30 }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
-        contentInsetAdjustmentBehavior="automatic"
-        showsVerticalScrollIndicator={false}>
-        <Animated.View entering={FadeInDown.duration(260)} style={styles.header}>
-          <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>KEEPFLIP / COMMAND CENTER</Text>
-          <Text style={[styles.title, { fontSize: responsiveFont(26) }]}>Run the business</Text>
-          <Text style={[styles.subtitle, { maxWidth: '90%', fontSize: responsiveFont(12), fontFamily: theme.fonts.display }]}>
-            Marketplace access, inventory, books, and workspace controls in one place.
-          </Text>
-        </Animated.View>
-
-        <View style={styles.commandTabs}>
-          <Pressable
-            accessibilityRole="tab"
-            accessibilityState={{ selected: commandCenterTab === 'pulse' }}
-            onPress={() => {
-              hapticSelection();
-              setCommandCenterTab('pulse');
-            }}
-            style={({ pressed }) => [
-              styles.commandTab,
-              commandCenterTab === 'pulse' && styles.commandTabActive,
-              pressed && styles.commandTabPressed,
-            ]}>
-            <Text style={[styles.commandTabLabel, commandCenterTab === 'pulse' && styles.commandTabLabelActive, { fontSize: responsiveFont(9) }]}>BUSINESS PULSE</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="tab"
-            accessibilityState={{ selected: commandCenterTab === 'operations' }}
-            onPress={() => {
-              hapticSelection();
-              setCommandCenterTab('operations');
-            }}
-            style={({ pressed }) => [
-              styles.commandTab,
-              commandCenterTab === 'operations' && styles.commandTabActive,
-              pressed && styles.commandTabPressed,
-            ]}>
-            <Text style={[styles.commandTabLabel, commandCenterTab === 'operations' && styles.commandTabLabelActive, { fontSize: responsiveFont(9) }]}>SELLER OPERATIONS</Text>
-          </Pressable>
-        </View>
-
-        {commandCenterTab === 'operations' ? (
-          <Animated.View entering={FadeInDown.duration(260).delay(60)} style={styles.operationsTab}>
-            <SellerOperationsPanel
-              key={user.$id}
-              embedded
-              initialSaleItemId={initialSaleItemId}
-              ownerId={user.$id}
-            />
+      <View style={{ marginBottom: isWeb ? 500 : insets.bottom, marginTop: insets.top }}>
+        <ScrollView
+          contentContainerStyle={[styles.content,
+          { paddingHorizontal: pageGutter, paddingTop: isWeb ? insets.top + 15, paddingBottom: insets.bottom + 30 }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+          contentInsetAdjustmentBehavior="automatic"
+          showsVerticalScrollIndicator={false}>
+          <Animated.View entering={FadeInDown.duration(260)} style={styles.header}>
+            <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>KEEPFLIP / COMMAND CENTER</Text>
+            <Text style={[styles.title, { fontSize: responsiveFont(26) }]}>Run the business</Text>
+            <Text style={[styles.subtitle, { maxWidth: '90%', fontSize: responsiveFont(12), fontFamily: theme.fonts.display }]}>
+              Marketplace access, inventory, books, and workspace controls in one place.
+            </Text>
           </Animated.View>
-        ) : (
-          <>
-        <Animated.View entering={FadeInDown.duration(260).delay(60)} style={styles.section}>
-          <BusinessPulse
-            errorMessage={businessError}
-            loading={businessLoading}
-            onOpenBooks={() => {
-              hapticSelection();
-              router.push('/books' as Href);
-            }}
-            onOpenFlipPlan={() => {
-              hapticSelection();
-              router.push('/flip-plan' as Href);
-            }}
-            overview={businessOverview}
-          />
-        </Animated.View>
 
-        <Animated.View entering={FadeInDown.duration(260).delay(75)} style={styles.section}>
-          <View style={styles.sectionHeading}>
-            <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>MARKETPLACE</Text>
-            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>Connected services</Text>
-          </View>
-          <View style={styles.eBaySurface}>
-            <KeepFlipControlRow
-              accent="cyan"
-              actionBusy={eBayIsBusy}
-              actionLabel={eBayActionLabel}
-              accessibilityHint={
-                eBayState === 'connected'
-                  ? 'Refreshes the eBay connection status.'
-                  : 'Starts the secure eBay connection.'
-              }
-              description={eBayDetails.description}
-              label="eBay"
-              leading={
-                <Image
-                  accessible={false}
-                  resizeMode="contain"
-                  source={require('@/assets/images/ebay-seeklogo.png')}
-                  style={styles.eBayLogo}
-                />
-              }
-              onPress={eBayIsBusy ? undefined : () => void handleEbayConnection()}
-              status={eBayDetails.status}
-            />
-          </View>
-          <View style={styles.eBaySurface}>
-            <KeepFlipControlRow
-              accent="gold"
-              actionBusy={eBayBooksSyncing}
-              actionLabel={
-                !advancedBooksAllowed
-                  ? 'CHECK'
-                  : eBayState === 'connected'
-                    ? 'SYNC'
-                    : undefined
-              }
-              accessibilityHint={
-                !advancedBooksAllowed
-                  ? 'KeepFlip could not verify access. Refresh and try again.'
-                  : 'Brings in eBay sales, fees, labels, refunds, and payouts using the connected seller account.'
-              }
-              description={
-                eBayBooksSyncMessage ??
-                (!advancedBooksAllowed
-                  ? 'KeepFlip could not verify access to Books. Refresh and try again.'
-                  : !bookkeepingFunctionConfigured
-                    ? 'Money sync is waiting for the Books Function to be configured in this build.'
-                    : 'Bring in eBay sales, fees, shipping labels, refunds, and payouts. Payouts are matched without counting them as a second sale.')
-              }
-              icon="chart.bar.fill"
-              label="eBay money sync"
-              onPress={eBayBooksSyncing ? undefined : () => void handleEbayBooksSync()}
-              status={{
-                label: !advancedBooksAllowed
-                  ? 'CHECK'
-                  : !bookkeepingFunctionConfigured
-                    ? 'SETUP'
-                    : eBayBooksSyncing
-                      ? 'SYNCING'
-                      : eBayState === 'connected'
-                        ? 'READY'
-                        : 'CONNECT FIRST',
-                tone: !advancedBooksAllowed
-                  ? 'warning'
-                  : !bookkeepingFunctionConfigured
-                    ? 'muted'
-                    : eBayBooksSyncing
-                      ? 'violet'
-                      : eBayState === 'connected'
-                        ? 'active'
-                        : 'muted',
+          <View style={styles.commandTabs}>
+            <Pressable
+              accessibilityRole="tab"
+              accessibilityState={{ selected: commandCenterTab === 'pulse' }}
+              onPress={() => {
+                hapticSelection();
+                setCommandCenterTab('pulse');
               }}
-            />
+              style={({ pressed }) => [
+                styles.commandTab,
+                commandCenterTab === 'pulse' && styles.commandTabActive,
+                pressed && styles.commandTabPressed,
+              ]}>
+              <Text style={[styles.commandTabLabel, commandCenterTab === 'pulse' && styles.commandTabLabelActive, { fontSize: responsiveFont(9) }]}>BUSINESS PULSE</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="tab"
+              accessibilityState={{ selected: commandCenterTab === 'operations' }}
+              onPress={() => {
+                hapticSelection();
+                setCommandCenterTab('operations');
+              }}
+              style={({ pressed }) => [
+                styles.commandTab,
+                commandCenterTab === 'operations' && styles.commandTabActive,
+                pressed && styles.commandTabPressed,
+              ]}>
+              <Text style={[styles.commandTabLabel, commandCenterTab === 'operations' && styles.commandTabLabelActive, { fontSize: responsiveFont(9) }]}>SELLER OPERATIONS</Text>
+            </Pressable>
           </View>
 
-          {advancedBookkeepingConfigured ? (
+          {commandCenterTab === 'operations' ? (
+            <Animated.View entering={FadeInDown.duration(260).delay(60)} style={styles.operationsTab}>
+              <SellerOperationsPanel
+                key={user.$id}
+                embedded
+                initialSaleItemId={initialSaleItemId}
+                ownerId={user.$id}
+              />
+            </Animated.View>
+          ) : (
             <>
-              {reviewItems.length > 0 || reviewError ? (
-                <View style={[styles.reviewSurface, { borderColor: theme.colors.danger, backgroundColor: withAlpha(theme.colors.danger, 0.15) }]}>
+              <Animated.View entering={FadeInDown.duration(260).delay(60)} style={styles.section}>
+                <BusinessPulse
+                  errorMessage={businessError}
+                  loading={businessLoading}
+                  onOpenBooks={() => {
+                    hapticSelection();
+                    router.push('/books' as Href);
+                  }}
+                  onOpenFlipPlan={() => {
+                    hapticSelection();
+                    router.push('/flip-plan' as Href);
+                  }}
+                  overview={businessOverview}
+                />
+              </Animated.View>
+
+              <Animated.View entering={FadeInDown.duration(260).delay(75)} style={styles.section}>
+                <View style={styles.sectionHeading}>
+                  <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>MARKETPLACE</Text>
+                  <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>Connected services</Text>
+                </View>
+                <View style={styles.eBaySurface}>
                   <KeepFlipControlRow
-                    accent="danger"
-                    actionBusy={reviewLoading}
-                    actionLabel={reviewItems.length > 0 ? 'REVIEW' : 'RETRY'}
-                    accessibilityHint="Opens the synced money records that still need attention."
-                    description={
-                      reviewError ??
-                      `${reviewItems.length} money record${reviewItems.length === 1 ? '' : 's'} still need${reviewItems.length === 1 ? 's' : ''} attention. Open the queue to see the exact records and finish supported reviews here.`
+                    accent="cyan"
+                    actionBusy={eBayIsBusy}
+                    actionLabel={eBayActionLabel}
+                    accessibilityHint={
+                      eBayState === 'connected'
+                        ? 'Refreshes the eBay connection status.'
+                        : 'Starts the secure eBay connection.'
                     }
-                    icon="exclamationmark.triangle.fill"
-                    label="Money review"
-                    onPress={reviewLoading ? undefined : openReviewQueue}
+                    description={eBayDetails.description}
+                    label="eBay"
+                    leading={
+                      <Image
+                        accessible={false}
+                        resizeMode="contain"
+                        source={require('@/assets/images/ebay-seeklogo.png')}
+                        style={styles.eBayLogo}
+                      />
+                    }
+                    onPress={eBayIsBusy ? undefined : () => void handleEbayConnection()}
+                    status={eBayDetails.status}
+                  />
+                </View>
+                <View style={styles.eBaySurface}>
+                  <KeepFlipControlRow
+                    accent="gold"
+                    actionBusy={eBayBooksSyncing}
+                    actionLabel={
+                      !advancedBooksAllowed
+                        ? 'CHECK'
+                        : eBayState === 'connected'
+                          ? 'SYNC'
+                          : undefined
+                    }
+                    accessibilityHint={
+                      !advancedBooksAllowed
+                        ? 'KeepFlip could not verify access. Refresh and try again.'
+                        : 'Brings in eBay sales, fees, labels, refunds, and payouts using the connected seller account.'
+                    }
+                    description={
+                      eBayBooksSyncMessage ??
+                      (!advancedBooksAllowed
+                        ? 'KeepFlip could not verify access to Books. Refresh and try again.'
+                        : !bookkeepingFunctionConfigured
+                          ? 'Money sync is waiting for the Books Function to be configured in this build.'
+                          : 'Bring in eBay sales, fees, shipping labels, refunds, and payouts. Payouts are matched without counting them as a second sale.')
+                    }
+                    icon="stats-chart"
+                    label="eBay money sync"
+                    onPress={eBayBooksSyncing ? undefined : () => void handleEbayBooksSync()}
                     status={{
-                      label: reviewError ? 'CHECK' : `${reviewItems.length} OPEN`,
-                      tone: reviewError ? 'danger' : 'warning',
+                      label: !advancedBooksAllowed
+                        ? 'CHECK'
+                        : !bookkeepingFunctionConfigured
+                          ? 'SETUP'
+                          : eBayBooksSyncing
+                            ? 'SYNCING'
+                            : eBayState === 'connected'
+                              ? 'READY'
+                              : 'CONNECT FIRST',
+                      tone: !advancedBooksAllowed
+                        ? 'warning'
+                        : !bookkeepingFunctionConfigured
+                          ? 'muted'
+                          : eBayBooksSyncing
+                            ? 'violet'
+                            : eBayState === 'connected'
+                              ? 'active'
+                              : 'muted',
                     }}
                   />
                 </View>
-              ) : null}
+
+                {advancedBookkeepingConfigured ? (
+                  <>
+                    {reviewItems.length > 0 || reviewError ? (
+                      <View style={[styles.reviewSurface, { borderColor: theme.colors.danger, backgroundColor: withAlpha(theme.colors.danger, 0.15) }]}>
+                        <KeepFlipControlRow
+                          accent="danger"
+                          actionBusy={reviewLoading}
+                          actionLabel={reviewItems.length > 0 ? 'REVIEW' : 'RETRY'}
+                          accessibilityHint="Opens the synced money records that still need attention."
+                          description={
+                            reviewError ??
+                            `${reviewItems.length} money record${reviewItems.length === 1 ? '' : 's'} still need${reviewItems.length === 1 ? 's' : ''} attention. Open the queue to see the exact records and finish supported reviews here.`
+                          }
+                          icon="warning"
+                          label="Money review"
+                          onPress={reviewLoading ? undefined : openReviewQueue}
+                          status={{
+                            label: reviewError ? 'CHECK' : `${reviewItems.length} OPEN`,
+                            tone: reviewError ? 'danger' : 'warning',
+                          }}
+                        />
+                      </View>
+                    ) : null}
+                  </>
+                ) : null}
+              </Animated.View>
+
+              <Animated.View entering={FadeInDown.duration(260).delay(90)} style={styles.section}>
+                <View style={styles.sectionHeading}>
+                  <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>BUSINESS TOOLS</Text>
+                  <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>Seller workspace</Text>
+                </View>
+                <View style={styles.settingsList}>
+                  <KeepFlipControlRow
+                    accent="gold"
+                    accessibilityHint="Opens the reseller ledger, reports, and export."
+                    description="Record actual sales, fees, expenses, and inventory cost."
+                    icon="stats-chart"
+                    label="Books & reports"
+                    onPress={() => {
+                      hapticSelection();
+                      router.push('/books' as Href);
+                    }}
+                  />
+                </View>
+              </Animated.View>
             </>
-          ) : null}
-        </Animated.View>
+          )}
+        </ScrollView>
 
-        <Animated.View entering={FadeInDown.duration(260).delay(90)} style={styles.section}>
-          <View style={styles.sectionHeading}>
-            <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>BUSINESS TOOLS</Text>
-            <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>Seller workspace</Text>
-          </View>
-          <View style={styles.settingsList}>
-            <KeepFlipControlRow
-              accent="gold"
-              accessibilityHint="Opens the reseller ledger, reports, and export."
-              description="Record actual sales, fees, expenses, and inventory cost."
-              icon="chart.bar.fill"
-              label="Books & reports"
-              onPress={() => {
-                hapticSelection();
-                router.push('/books' as Href);
-              }}
-            />
-          </View>
-        </Animated.View>
-          </>
-        )}
-      </ScrollView>
-
-      <Modal
-        animationIn="fadeIn"
-        animationOut="fadeOut"
-        onRequestClose={() => {
-          if (reviewResolving) return;
-          setReviewOpen(false);
-          setActiveReview(null);
-        }}
-        onBackdropPress={() => {
-          setReviewOpen(false);
-          setActiveReview(null);
-        }}
-        transparent
-        isVisible={reviewOpen}
-        style={{position: 'absolute', bottom: 0, left: 0, right: 0, top: '15%'}}
+        <Modal
+          animationIn="fadeIn"
+          animationOut="fadeOut"
+          onRequestClose={() => {
+            if (reviewResolving) return;
+            setReviewOpen(false);
+            setActiveReview(null);
+          }}
+          onBackdropPress={() => {
+            setReviewOpen(false);
+            setActiveReview(null);
+          }}
+          transparent
+          isVisible={reviewOpen}
+          style={{ position: 'absolute', bottom: 0, left: 0, right: 0, top: '15%' }}
         >
-          <View style={[styles.reviewModal, { width: width, marginBottom: insets.bottom}]}>
+          <View style={[styles.reviewModal, { width: width, marginBottom: insets.bottom }]}>
             <View style={styles.reviewModalHeader}>
               <View style={styles.reviewModalHeading}>
                 <Text style={[styles.reviewModalEyebrow, { fontSize: responsiveFont(8) }]}>BOOKS / MONEY REVIEW</Text>
@@ -1166,13 +1166,13 @@ export function CommandCenterScreen() {
                         ? `TRIP ${item.externalKey}`
                         : `TXN ${item.externalKey}`}
                     </Text>
-                    <Text style={styles.reviewCardAction}>REVIEW →</Text>
+                    <Text style={styles.reviewCardAction}>REVIEW <Ionicons color={theme.colors.goldBright} name="arrow-forward" size={12} /></Text>
                   </Pressable>
                 ))}
               </ScrollView>
             )}
-              </View>
-      </Modal>
+          </View>
+        </Modal>
       </View>
     </KeepFlipBackground>
   );

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 
 import type { CrosslistingRunProps } from '@/components/crosslist/crosslisting-run.types';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
@@ -187,11 +188,11 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
     <View style={responsiveStyles.choices}>{MARKETPLACES.map((marketplace) => {
       const listed = Boolean(confirmed[marketplace]) || recorded.has(marketplace);
       const checked = selected.includes(marketplace) || listed;
-      return <Pressable key={marketplace} accessibilityRole="checkbox" accessibilityState={{ checked, disabled: listed || jobs.length > 0 }} disabled={listed || jobs.length > 0} onPress={() => toggle(marketplace)} style={[responsiveStyles.choice, checked && responsiveStyles.choiceSelected]}><Text style={[responsiveStyles.choiceText, checked && responsiveStyles.choiceTextSelected]}>{listed ? '✓' : checked ? '✓' : '+'} {CROSSLISTING_DESTINATIONS[marketplace].label}</Text></Pressable>;
+      return <Pressable key={marketplace} accessibilityRole="checkbox" accessibilityState={{ checked, disabled: listed || jobs.length > 0 }} disabled={listed || jobs.length > 0} onPress={() => toggle(marketplace)} style={[responsiveStyles.choice, checked && responsiveStyles.choiceSelected]}><Text style={[responsiveStyles.choiceText, checked && responsiveStyles.choiceTextSelected]}><Ionicons color={checked ? theme.colors.scannerCyan : theme.colors.textMuted} name={checked ? 'checkmark-circle' : 'add'} size={15} />{' '}{CROSSLISTING_DESTINATIONS[marketplace].label}</Text></Pressable>;
     })}</View>
     {error ? <Text accessibilityRole="alert" style={responsiveStyles.error}>{error}</Text> : null}
     {notice ? <Text style={responsiveStyles.notice}>{notice}</Text> : null}
-    {!jobs.length ? <Pressable accessibilityRole="button" accessibilityState={{ disabled: !available.length || busy }} disabled={!available.length || busy} onPress={() => { void start(); }} style={[responsiveStyles.primary, (!available.length || busy) && responsiveStyles.disabled]}><Text style={responsiveStyles.primaryText}>{busy ? 'Preparing your run…' : 'Start listing →'}</Text></Pressable> :
+    {!jobs.length ? <Pressable accessibilityRole="button" accessibilityState={{ disabled: !available.length || busy }} disabled={!available.length || busy} onPress={() => { void start(); }} style={[responsiveStyles.primary, (!available.length || busy) && responsiveStyles.disabled]}><Text style={responsiveStyles.primaryText}>{busy ? 'Preparing your run…' : <>Start listing <Ionicons color={theme.colors.textOnAccent} name="arrow-forward" size={14} /></>}</Text></Pressable> :
       <View style={responsiveStyles.jobs}>{jobs.map((job) => {
         const listed = Boolean(confirmed[job.marketplace]) || recorded.has(job.marketplace);
         const details = job.details as ExtensionStatus | null | undefined;

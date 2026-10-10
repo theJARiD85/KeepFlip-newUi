@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
@@ -46,7 +47,7 @@ export function ListedListingDetail({ itemId, onBack, onEdit }: { itemId: string
   const targetPrice = draft?.listing.priceRange.targetPrice ?? item?.listingCurrentPrice ?? item?.estimatedValue;
   return <SafeAreaView edges={['top']} style={responsiveStyles.safeArea}>
     <ScrollView contentContainerStyle={responsiveStyles.content}>
-      <Pressable accessibilityRole="button" onPress={onBack} style={responsiveStyles.back}><Text style={responsiveStyles.backText}>‹  Listing</Text></Pressable>
+      <Pressable accessibilityRole="button" onPress={onBack} style={responsiveStyles.back}><Text style={responsiveStyles.backText}><Ionicons color={theme.colors.scannerCyan} name="chevron-back" size={15} />  Listing</Text></Pressable>
       {loading ? <ActivityIndicator color={theme.colors.goldBright} /> : error ? <Text accessibilityRole="alert" style={responsiveStyles.error}>{error}</Text> : item ? <>
         <Text style={responsiveStyles.eyebrow}>LISTED ITEM</Text>
         <Text style={responsiveStyles.title}>{draft?.listing.title || item.title}</Text>
@@ -58,17 +59,17 @@ export function ListedListingDetail({ itemId, onBack, onEdit }: { itemId: string
         </View>
         <View style={responsiveStyles.card}><Text style={responsiveStyles.cardTitle}>Listing details</Text><Text style={responsiveStyles.line}>First listed: {dateLabel(item.listedAt)}</Text><Text style={responsiveStyles.line}>Draft last saved: {dateLabel(draft?.savedAt)}</Text><Text style={responsiveStyles.line}>Condition: {item.condition}</Text><Text style={responsiveStyles.line}>Available quantity: {item.quantityOnHand}</Text></View>
         <View style={responsiveStyles.card}><Text style={responsiveStyles.cardTitle}>Where it is listed</Text>
-          {item.ebayListingId ? <Pressable accessibilityRole="link" onPress={() => { void Linking.openURL(`https://www.ebay.com/itm/${encodeURIComponent(item.ebayListingId!)}`); }}><Text style={responsiveStyles.link}>eBay · Open live listing ↗</Text></Pressable> : null}
+          {item.ebayListingId ? <Pressable accessibilityRole="link" onPress={() => { void Linking.openURL(`https://www.ebay.com/itm/${encodeURIComponent(item.ebayListingId!)}`); }}><Text style={responsiveStyles.link}>eBay · Open live listing <Ionicons color={theme.colors.scannerCyan} name="open-outline" size={13} /></Text></Pressable> : null}
           {confirmed.map((choice) => {
             const saved = draft?.confirmedMarketplaces[choice.id];
-            return saved?.externalUrl ? <Pressable key={choice.id} accessibilityRole="link" onPress={() => { void Linking.openURL(saved.externalUrl!); }}><Text style={responsiveStyles.link}>{choice.label} · Open live listing ↗</Text></Pressable>
+            return saved?.externalUrl ? <Pressable key={choice.id} accessibilityRole="link" onPress={() => { void Linking.openURL(saved.externalUrl!); }}><Text style={responsiveStyles.link}>{choice.label} · Open live listing <Ionicons color={theme.colors.scannerCyan} name="open-outline" size={13} /></Text></Pressable>
               : <Text key={choice.id} style={responsiveStyles.line}>{choice.label} · Confirmed {dateLabel(saved?.confirmedAt)}</Text>;
           })}
           {!platformCount ? <Text style={responsiveStyles.line}>No marketplace link is saved yet. Open Edit listing to review the draft and its posting status.</Text> : null}
         </View>
         {draft ? <View style={responsiveStyles.card}><Text style={responsiveStyles.cardTitle}>Saved listing copy</Text><Text style={responsiveStyles.description}>{draft.listing.description}</Text></View> : null}
         <Text style={responsiveStyles.statsNote}>Views, likes, and watchers are shown only when a marketplace provides verified metrics. KeepFlip does not have those numbers for this listing.</Text>
-        <Pressable accessibilityRole="button" onPress={onEdit} style={responsiveStyles.editButton}><Text style={responsiveStyles.editText}>Edit listing →</Text></Pressable>
+        <Pressable accessibilityRole="button" onPress={onEdit} style={responsiveStyles.editButton}><Text style={responsiveStyles.editText}>Edit listing <Ionicons color={theme.colors.textOnAccent} name="arrow-forward" size={13} /></Text></Pressable>
       </> : null}
     </ScrollView>
   </SafeAreaView>;

@@ -1,3 +1,4 @@
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { PropsWithChildren, useState } from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
 
@@ -19,9 +20,8 @@ export function Collapsible({ children, title }: PropsWithChildren & { title: st
         onPress={() => setIsOpen((value) => !value)}
         activeOpacity={0.8}>
         <Ionicons
-          name="chevron.right"
+          name="chevron-forward"
           size={18}
-          weight="medium"
           color={theme === 'light' ? Colors.light.icon : Colors.dark.icon}
           style={{ transform: [{ rotate: isOpen ? '90deg' : '0deg' }] }}
         />

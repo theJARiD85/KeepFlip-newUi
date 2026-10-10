@@ -2,7 +2,7 @@ import { Image } from "expo-image";
 import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 
-import { Ionicons } from "@/components/ui/icon-symbol";
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
@@ -92,7 +92,7 @@ export function BarcodeLookupOverlay({
             isSearching && styles.disabled,
           ]}
         >
-          <Ionicons color={theme.colors.cream} name="xmark" size={20} />
+          <Ionicons color={theme.colors.cream} name="close" size={20} />
         </Pressable>
       </View>
 
@@ -100,7 +100,7 @@ export function BarcodeLookupOverlay({
         <View style={styles.codePill}>
           <Ionicons
             color={theme.colors.scannerViolet}
-            name="barcode.viewfinder"
+            name="barcode-outline"
             size={18}
           />
           <Text selectable style={[styles.codeText, { fontSize: responsiveFont(12) }]}>
@@ -130,7 +130,7 @@ export function BarcodeLookupOverlay({
               <View style={styles.productImageFallback}>
                 <Ionicons
                   color={theme.colors.scannerCyan}
-                  name="barcode.viewfinder"
+                  name="barcode-outline"
                   size={34}
                 />
               </View>
@@ -169,7 +169,7 @@ export function BarcodeLookupOverlay({
             <View style={styles.loadingIcon}>
               <Ionicons
                 color={theme.colors.goldBright}
-                name="barcode.viewfinder"
+                name="barcode-outline"
                 size={32}
               />
             </View>
@@ -195,7 +195,7 @@ export function BarcodeLookupOverlay({
           >
             <Ionicons
               color={theme.colors.background}
-              name="barcode.viewfinder"
+              name="barcode-outline"
               size={20}
             />
             <Text style={[styles.primaryActionText, { fontSize: responsiveFont(15) }]}>Scan another code</Text>

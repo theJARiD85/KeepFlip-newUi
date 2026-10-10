@@ -8,6 +8,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import type { AnalysisValuation } from "@/components/scanner/analysis-visual-types";
@@ -618,7 +619,7 @@ export function SmartProfitCalculator({
         <View>
           <Text style={[styles.sectionLabel, { fontSize: responsiveFont(7) }]}>CHANNEL COMPARISON</Text>
           <Text selectable style={styles.legend}>
-            COSTS <Text style={styles.legendDot}>●</Text> FEES <Text style={styles.legendFee}>●</Text> NET <Text style={styles.legendProfit}>●</Text>
+            COSTS <Ionicons color={BAR_COST} name="ellipse" size={7} /> FEES <Ionicons color={theme.colors.danger} name="ellipse" size={7} /> NET <Ionicons color={POSITIVE_PROFIT} name="ellipse" size={7} />
           </Text>
         </View>
         <View style={styles.comparisonSummary}>

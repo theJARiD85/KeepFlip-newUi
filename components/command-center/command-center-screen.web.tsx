@@ -1,17 +1,3 @@
-import { useRouter, type Href } from 'expo-router';
-import type { ComponentProps } from 'react';
-import { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-  useWindowDimensions,
-} from 'react-native';
-import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring } from 'react-native-reanimated';
-import { Ionicons } from '@react-native-vector-icons/ionicons';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { BusinessPulse } from '@/components/command-center/business-pulse';
 import {
@@ -31,6 +17,19 @@ import {
   type ResellerBusinessOverview,
 } from '@/services/reseller-business-overview';
 import { listResellerLedgerEntries } from '@/services/reseller-ledger-service';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
+import { useRouter, type Href } from 'expo-router';
+import type { ComponentProps } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+} from 'react-native';
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 function money(cents: number) {
@@ -93,7 +92,7 @@ function MetricCard({
   label: string;
   value: string;
   detail: string;
-  icon: ComponentProps<typeof IconSymbol>['name'];
+  icon: ComponentProps<typeof Ionicons>['name'];
   accent: string;
   colors: ReturnType<typeof getKeepFlipThemeColors>;
   compact?: boolean;
@@ -127,7 +126,7 @@ function MetricCard({
       />
       <View style={responsiveStyles.metricTopline}>
         <View style={[responsiveStyles.metricIcon, { backgroundColor: colorWithAlpha(accent, 0.13), borderColor: colorWithAlpha(accent, 0.30) }]}>
-          <IconSymbol color={accent} name={icon} size={17} />
+          <Ionicons color={accent} name={icon} size={17} />
         </View>
         <Text style={[responsiveStyles.metricLabel, { color: colors.textMuted }]}>{label}</Text>
         {onPress ? <Ionicons color={accent} name="chevron-forward" size={13} /> : null}
@@ -173,7 +172,7 @@ function ActionButton({
 }: {
   label: string;
   detail: string;
-  icon: ComponentProps<typeof IconSymbol>['name'];
+  icon: ComponentProps<typeof Ionicons>['name'];
   accent: string;
   onPress: () => void;
   colors: ReturnType<typeof getKeepFlipThemeColors>;
@@ -224,7 +223,7 @@ function ActionButton({
           />
         ) : null}
         <View style={[responsiveStyles2.actionIcon, { backgroundColor: primary ? 'rgba(0,0,0,0.16)' : colorWithAlpha(accent, 0.13) }]}>
-          <IconSymbol color={primary ? colors.textOnAccent : accent} name={icon} size={18} />
+          <Ionicons color={primary ? colors.textOnAccent : accent} name={icon} size={18} />
         </View>
         <View style={responsiveStyles2.actionCopy}>
           <Text style={[responsiveStyles2.actionLabel, { color: primary ? colors.textOnAccent : colors.text }]}>{label}</Text>
@@ -374,7 +373,7 @@ export function CommandCenterScreen() {
               accent={colors.scannerCyan}
               colors={colors}
               detail="Use the Android app for live capture"
-              icon="viewfinder"
+              icon="scan-outline"
               label="Scan an item"
               onPress={() => navigate('/scanner')}
               primary
@@ -383,7 +382,7 @@ export function CommandCenterScreen() {
               accent={colors.goldBright}
               colors={colors}
               detail="Record a real sale or cost"
-              icon="chart.bar.fill"
+              icon="stats-chart"
               label="Open Books"
               onPress={() => navigate('/books')}
             />
@@ -408,7 +407,7 @@ export function CommandCenterScreen() {
             accent={colors.scannerCyan}
             colors={colors}
             detail="Realized income this month"
-            icon="arrow.right"
+            icon="wallet"
             label="MONEY IN"
             accessibilityHint="Shows every income entry that makes up this month's total"
             onPress={overview ? () => setActiveBreakdown('money-in') : undefined}
@@ -418,7 +417,7 @@ export function CommandCenterScreen() {
             accent={colors.goldBright}
             colors={colors}
             detail="Purchases, fees, and expenses"
-            icon="chart.bar.fill"
+            icon="stats-chart"
             label="COSTS"
             accessibilityHint="Shows every cost entry that makes up this month's total"
             onPress={overview ? () => setActiveBreakdown('costs') : undefined}
@@ -428,7 +427,7 @@ export function CommandCenterScreen() {
             accent={colors.scannerViolet}
             colors={colors}
             detail="Money in minus recorded costs"
-            icon="dollarsign.circle.fill"
+            icon="cash-outline"
             label="LEFT AFTER COSTS"
             value={loading ? '—' : money(overview?.currentMonth.leftAfterCostsCents ?? 0)}
           />
@@ -436,7 +435,7 @@ export function CommandCenterScreen() {
             accent={colors.textMuted}
             colors={colors}
             detail="Actual cash tied to on-hand items"
-            icon="shippingbox.fill"
+            icon="cube-outline"
             label="CASH TIED UP"
             accessibilityHint="Shows the on-hand items included in this total and their saved costs"
             onPress={overview ? () => setActiveBreakdown('cash-tied-up') : undefined}
@@ -471,7 +470,7 @@ export function CommandCenterScreen() {
                 <Pressable accessibilityRole="button" onPress={() => navigate('/books')} style={({ pressed }) => [responsiveStyles4.focusRow, { borderColor: colors.divider }, pressed && responsiveStyles4.pressed]}>
                   <View style={[responsiveStyles4.focusIcon, { backgroundColor: colors.dangerSurface }]}><Ionicons color={colors.danger} name="warning" size={17} /></View>
                   <View style={responsiveStyles4.focusCopy}><Text style={[responsiveStyles4.focusTitle, { color: colors.text }]}>{overview.attention.unlinkedSaleCount} sale{overview.attention.unlinkedSaleCount === 1 ? '' : 's'} needs an item match</Text><Text style={[responsiveStyles4.focusDetail, { color: colors.textMuted }]}>Linking it lets Books calculate realized margin.</Text></View>
-                  <Ionicons color={colors.textMuted} name="chevron-foward" size={15} />
+                  <Ionicons color={colors.textMuted} name="chevron-forward" size={15} />
                 </Pressable>
               ) : null}
               {overview?.attention.unlinkedInventoryCostCents ? (
@@ -539,10 +538,10 @@ export function CommandCenterScreen() {
           <Text style={[responsiveStyles4.sectionHint, { color: colors.textMuted }]}>Fast paths from the desk</Text>
         </View>
         <View style={[responsiveStyles4.actionGrid, !isMedium && responsiveStyles4.actionGridCompact]}>
-          <ActionButton accent={colors.scannerCyan} colors={colors} detail="Browse saved items and decisions" flexible icon="shippingbox.fill" label="Work inventory" onPress={() => navigate('/inventory')} />
-          <ActionButton accent={colors.goldBright} colors={colors} detail="See realized profit and costs" flexible icon="chart.bar.fill" label="Reconcile Books" onPress={() => navigate('/books')} />
-          <ActionButton accent={colors.scannerViolet} colors={colors} detail="Research a possible next buy" flexible icon="magnifyingglass" label="Research the market" onPress={() => navigate('/market-research')} />
-          <ActionButton accent={colors.goldBright} colors={colors} detail="Run the numbers before you buy" flexible icon="dollarsign.circle.fill" label="Plan a flip" onPress={() => navigate('/flip-plan')} />
+          <ActionButton accent={colors.scannerCyan} colors={colors} detail="Browse saved items and decisions" flexible icon="cube-outline" label="Work inventory" onPress={() => navigate('/inventory')} />
+          <ActionButton accent={colors.goldBright} colors={colors} detail="See realized profit and costs" flexible icon="stats-chart" label="Reconcile Books" onPress={() => navigate('/books')} />
+          <ActionButton accent={colors.scannerViolet} colors={colors} detail="Research a possible next buy" flexible icon="search" label="Research the market" onPress={() => navigate('/market-research')} />
+          <ActionButton accent={colors.goldBright} colors={colors} detail="Run the numbers before you buy" flexible icon="cash-outline" label="Plan a flip" onPress={() => navigate('/flip-plan')} />
         </View>
       </ScrollView>
       <BusinessPulseBreakdownModal

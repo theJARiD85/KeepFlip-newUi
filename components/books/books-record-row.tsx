@@ -1,3 +1,4 @@
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
@@ -52,7 +53,7 @@ export function BooksRecordRow({ entry, itemName, onPress }: {
         </Text>
         <Text style={responsiveStyles.direction}>{isIncome ? 'IN' : 'OUT'}</Text>
       </View>
-      <Ionicons color={theme.colors.textMuted} name="chevron.right" size={14} />
+      <Ionicons color={theme.colors.textMuted} name="chevron-forward" size={14} />
     </Pressable>
   );
 }

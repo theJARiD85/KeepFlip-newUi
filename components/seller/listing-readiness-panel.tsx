@@ -7,6 +7,7 @@ import type { PublishEbayListingInput } from '@/services/ebayListingService';
 import { useRouter, type Href } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 const reviews: { key: Exclude<keyof EbayListingReview, 'measurements'>; label: string }[] = [
@@ -70,7 +71,7 @@ export function ListingReadinessPanel({ input, review, onReviewChange, onAspects
       {aspect.mode === 'SELECTION_ONLY' ? <Text selectable style={[styles.hint, { fontSize: responsiveFont(13), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(20) : 20 }]}>Use an exact value: {aspect.allowedValues.slice(0, 40).join(', ')}{aspect.allowedValues.length > 40 ? '…' : ''}</Text> : null}
     </View>)}
     {result && !fresh ? <Text style={[styles.hint, { fontSize: responsiveFont(13), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(20) : 20 }]}>The draft changed. Check readiness again.</Text> : null}
-    {fresh ? result?.data.checks.map((check) => <Text key={check.id} style={check.complete ? styles.hint : styles.error}>{check.complete ? '✓ ' : '○ '}{names[check.id] || reviews.find(entry => `review.${entry.key}` === check.id)?.label || check.id.replace(/^aspects\./, 'Item specific: ')}{check.complete ? '' : ` — ${check.detail}`}</Text>) : null}
+    {fresh ? result?.data.checks.map((check) => <Text key={check.id} style={check.complete ? styles.hint : styles.error}><Ionicons color={check.complete ? theme.colors.scannerCyan : theme.colors.danger} name={check.complete ? 'checkmark-circle' : 'ellipse-outline'} size={14} />{' '}{names[check.id] || reviews.find(entry => `review.${entry.key}` === check.id)?.label || check.id.replace(/^aspects\./, 'Item specific: ')}{check.complete ? '' : ` — ${check.detail}`}</Text>) : null}
     {error ? <Text selectable style={[styles.error, { fontSize: responsiveFont(13), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(20) : 20 }]}>{error}</Text> : null}
     <View style={styles.row}><Pressable accessibilityRole="button" disabled={busy || disabled} onPress={() => void check()} style={styles.button}>{busy ? <ActivityIndicator color={theme.colors.scannerCyan} /> : <Text style={styles.link}>Check readiness</Text>}</Pressable><Pressable accessibilityRole="link" disabled={busy || disabled} style={styles.button} onPress={() => router.push('/ebay-account' as Href)}><Text style={styles.link}>Seller policies</Text></Pressable></View>
     {fresh && result?.data.ready ? <Text style={styles.link}>Ready for your publish confirmation. eBay rechecks the listing when it is submitted.</Text> : null}

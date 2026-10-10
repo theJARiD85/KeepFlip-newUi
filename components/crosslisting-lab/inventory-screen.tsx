@@ -1,4 +1,4 @@
-import { SymbolView } from 'expo-symbols';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { File } from 'expo-file-system';
@@ -214,7 +214,7 @@ export function InventoryScreen({
           </View>
           {onViewInventory ? (
             <Pressable accessibilityRole="button" onPress={onViewInventory} style={responsiveStyles.viewInventoryButton}>
-              <Text style={responsiveStyles.viewInventoryText}>View inventory →</Text>
+              <Text style={responsiveStyles.viewInventoryText}>View inventory <Ionicons color={brand.colors.cyan} name="arrow-forward" size={13} /></Text>
             </Pressable>
           ) : null}
         </View>
@@ -257,7 +257,7 @@ export function InventoryScreen({
               return (
                 <View key={item.id} style={responsiveStyles.keepFlipItemCard}>
                   <View style={responsiveStyles.productIcon}>
-                    <SymbolView name={{ ios: 'shippingbox', android: 'inventory_2', web: 'inventory_2' }} size={21} tintColor={brand.colors.cyan} />
+                    <Ionicons color={brand.colors.cyan} name="cube-outline" size={21} />
                   </View>
                   <View style={responsiveStyles.productCopy}>
                     <Text numberOfLines={2} style={responsiveStyles.productTitle}>{item.title}</Text>
@@ -273,7 +273,7 @@ export function InventoryScreen({
                         accessibilityLabel={`Prepare listing for ${item.title}`}
                         onPress={() => onOpenInventoryItem(item)}
                         style={responsiveStyles.listButton}>
-                        <Text style={responsiveStyles.listButtonText}>Prepare →</Text>
+                        <Text style={responsiveStyles.listButtonText}>Prepare <Ionicons color={brand.colors.background} name="arrow-forward" size={12} /></Text>
                       </Pressable>
                     ) : null}
                   </View>
@@ -292,7 +292,7 @@ export function InventoryScreen({
       <View style={responsiveStyles.formCard}>
         <View style={responsiveStyles.formHeadingRow}>
           <View style={responsiveStyles.formIcon}>
-            <SymbolView name={{ ios: 'plus', android: 'add', web: 'add' }} size={19} tintColor={brand.colors.goldBright} />
+            <Ionicons color={brand.colors.goldBright} name="add" size={19} />
           </View>
           <View style={responsiveStyles.formHeadingCopy}>
             <Text style={responsiveStyles.formTitle}>Start a listing with photos</Text>
@@ -307,7 +307,7 @@ export function InventoryScreen({
           disabled={saveState === 'saving'}
           onPress={() => { void chooseImages(); }}
           style={({ pressed }) => [responsiveStyles.photoPickerButton, pressed && responsiveStyles.addButtonPressed]}>
-          <SymbolView name={{ ios: 'photo', android: 'add_photo_alternate', web: 'add_photo_alternate' }} size={20} tintColor={brand.colors.goldBright} />
+          <Ionicons color={brand.colors.goldBright} name="images-outline" size={20} />
           <Text style={responsiveStyles.photoPickerText}>{selectedImages.length ? 'Add more photos' : 'Choose photos'}</Text>
         </Pressable>
         {selectedImages.length > 0 ? (
@@ -376,14 +376,14 @@ export function InventoryScreen({
           style={({ pressed }) => [responsiveStyles.addButton, pressed && responsiveStyles.addButtonPressed, saveState === 'saving' && responsiveStyles.addButtonDisabled]}>
           {saveState === 'saving' ? <ActivityIndicator color={brand.colors.background} size="small" /> : null}
           <Text style={responsiveStyles.addButtonText}>{saveState === 'saving' ? 'Saving listing…' : 'Create listing draft'}</Text>
-          {saveState !== 'saving' ? <Text style={responsiveStyles.addArrow}>→</Text> : null}
+          {saveState !== 'saving' ? <Ionicons color={brand.colors.background} name="arrow-forward" size={17} style={responsiveStyles.addArrow} /> : null}
         </Pressable>
         {savedDraft && onOpenProduct ? (
           <Pressable
             accessibilityRole="button"
             onPress={() => onOpenProduct(savedDraft.product)}
             style={responsiveStyles.continueButton}>
-            <Text style={responsiveStyles.continueButtonText}>Continue to listing →</Text>
+            <Text style={responsiveStyles.continueButtonText}>Continue to listing <Ionicons color={brand.colors.goldBright} name="arrow-forward" size={13} /></Text>
           </Pressable>
         ) : null}
       </View>
@@ -417,14 +417,14 @@ export function InventoryScreen({
           <View style={responsiveStyles.emptyCard}><ActivityIndicator color={brand.colors.goldBright} /><Text style={responsiveStyles.emptyTitle}>Loading your catalog…</Text></View>
         ) : loadError ? null : (
           <View style={responsiveStyles.emptyCard}>
-            <View style={responsiveStyles.emptyIcon}><SymbolView name={{ ios: 'shippingbox', android: 'inventory_2', web: 'inventory_2' }} size={30} tintColor={brand.colors.goldBright} /></View>
+            <View style={responsiveStyles.emptyIcon}><Ionicons color={brand.colors.goldBright} name="cube-outline" size={30} /></View>
             <Text style={responsiveStyles.emptyTitle}>Your catalog starts here</Text>
             <Text style={responsiveStyles.emptyBody}>Add an item above to create your first master draft.</Text>
           </View>
         )}
         renderItem={({ item }) => (
           <View style={responsiveStyles.productCard}>
-            <View style={responsiveStyles.productIcon}><SymbolView name={{ ios: 'shippingbox', android: 'inventory_2', web: 'inventory_2' }} size={22} tintColor={brand.colors.cyan} /></View>
+            <View style={responsiveStyles.productIcon}><Ionicons color={brand.colors.cyan} name="cube-outline" size={22} /></View>
             <View style={responsiveStyles.productCopy}>
               <Text numberOfLines={2} style={responsiveStyles.productTitle}>{item.title}</Text>
               <Text style={responsiveStyles.productMeta}>Master item{item.condition ? ` · ${conditionChoices.find((choice) => choice.value === item.condition)?.label ?? item.condition}` : ''}</Text>
@@ -432,7 +432,7 @@ export function InventoryScreen({
             <View style={responsiveStyles.productRight}>
               <Text style={responsiveStyles.productPrice}>{money(item.targetPrice)}</Text>
               <View style={responsiveStyles.draftPill}><Text style={responsiveStyles.draftText}>{(item.status ?? 'draft').toUpperCase()}</Text></View>
-              {onOpenProduct ? <Pressable accessibilityRole="button" accessibilityLabel={`Prepare listing for ${item.title}`} onPress={() => onOpenProduct(item)} style={responsiveStyles.listButton}><Text style={responsiveStyles.listButtonText}>List →</Text></Pressable> : null}
+              {onOpenProduct ? <Pressable accessibilityRole="button" accessibilityLabel={`Prepare listing for ${item.title}`} onPress={() => onOpenProduct(item)} style={responsiveStyles.listButton}><Text style={responsiveStyles.listButtonText}>List <Ionicons color={brand.colors.background} name="arrow-forward" size={12} /></Text></Pressable> : null}
             </View>
           </View>
         )}

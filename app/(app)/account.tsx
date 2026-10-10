@@ -321,7 +321,7 @@ function AccountDetailsTab() {
           <View style={styles.settingsList}>
             <KeepFlipControlRow
               description="Your signed-in name and email are shown above."
-              icon="person.fill"
+              icon="person"
               label="Profile"
               staticLabel="CURRENT"
             />
@@ -332,7 +332,7 @@ function AccountDetailsTab() {
               description={user?.mfa
                 ? 'Authenticator-based sign-in verification is enabled.'
                 : 'Set up an authenticator app and recovery codes for sign-in.'}
-              icon="lock.fill"
+              icon="lock-closed"
               label="Security"
               onPress={() => {
                 hapticSelection();
@@ -348,7 +348,7 @@ function AccountDetailsTab() {
               accessibilityHint="Starts an email request to delete your KeepFlip account and associated data."
               actionLabel="REQUEST"
               description="Start a verified request to delete your account and associated data."
-              icon="trash.fill"
+              icon="trash"
               label="Delete account"
               onPress={() => void handleAccountDeletionRequest()}
             />
@@ -367,7 +367,7 @@ function AccountDetailsTab() {
               actionBusy={subscriptionState === 'loading'}
               actionLabel={subscriptionAccess?.active ? 'MANAGE' : 'VIEW PLANS'}
               description={subscriptionDescription}
-              icon="creditcard.fill"
+              icon="card-outline"
               label={subscriptionPlan?.name ?? 'KeepFlip plan'}
               onPress={() => {
                 hapticSelection();
@@ -411,7 +411,7 @@ function AccountDetailsTab() {
               accent="violet"
               accessibilityHint="Opens editable memories and response guidance for Flip."
               description="Edit what Flip remembers and the specifics it should consider in responses and suggestions."
-              icon="bolt.fill"
+              icon="flash"
               label="AI preferences"
               onPress={() => {
                 hapticSelection();
@@ -423,7 +423,7 @@ function AccountDetailsTab() {
               actionLabel="CHANGE"
               accessibilityHint="Opens options for using the device setting, light mode, or dark mode."
               description={appearanceDescription}
-              icon="eye.fill"
+              icon="eye"
               label="Appearance"
               onPress={() => {
                 hapticSelection();
@@ -438,7 +438,7 @@ function AccountDetailsTab() {
               accent="cyan"
               accessibilityHint="Replays Flip's buy rules and scan-to-records workflow tour."
               description="Revisit your buy rules and Flip's scan-to-records example."
-              icon="viewfinder"
+              icon="scan-outline"
               label="Workflow tour"
               onPress={() => {
                 hapticSelection();
@@ -449,7 +449,7 @@ function AccountDetailsTab() {
               accent="cyan"
               accessibilityHint="Opens an email to KeepFlip support."
               description="Contact KeepFlip support for your account or the app."
-              icon="envelope.fill"
+              icon="mail"
               label="Get help"
               onPress={() => void handleOpenFeedback()}
             />
@@ -465,7 +465,7 @@ function AccountDetailsTab() {
             <KeepFlipControlRow
               accessibilityHint="Opens KeepFlip's terms of service."
               description="The terms that apply when you use KeepFlip."
-              icon="tag.fill"
+              icon="pricetag"
               label="Terms"
               onPress={() => {
                 hapticSelection();
@@ -496,7 +496,7 @@ function AccountDetailsTab() {
               accent="cyan"
               accessibilityHint="Opens an email to share feedback with KeepFlip."
               description="Tell us what worked, what missed, or what would make KeepFlip more useful."
-              icon="envelope.fill"
+              icon="mail"
               label="Share feedback"
               onPress={() => void handleOpenFeedback()}
             />
@@ -504,7 +504,7 @@ function AccountDetailsTab() {
               accent="gold"
               accessibilityHint="Opens KeepFlip's Google Play page where you can leave a review."
               description="Open Google Play to leave an honest review."
-              icon="star.fill"
+              icon="star"
               label="Rate KeepFlip"
               onPress={() => void handleOpenStoreReview()}
             />
@@ -540,7 +540,7 @@ function AccountDetailsTab() {
           ) : (
             <Ionicons
               color={theme.colors.danger}
-              name="log-out-outline"
+              name="log-out"
               size={21}
             />
           )}

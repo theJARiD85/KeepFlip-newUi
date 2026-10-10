@@ -1015,7 +1015,7 @@ export function ListingCreationGuideScreen({ itemIdOverride, onBack, selectedMar
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.topRow}>
-          {onBack ? <Pressable accessibilityRole="button" onPress={() => { void persistCurrentDraft().then((saved) => { if (saved) onBack(); }); }} style={{ paddingVertical: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveHeight(8) : 8 }}><Text style={{ color: theme.colors.scannerCyan, fontWeight: '800' }}>‹  Listing</Text></Pressable> : null}
+          {onBack ? <Pressable accessibilityRole="button" onPress={() => { void persistCurrentDraft().then((saved) => { if (saved) onBack(); }); }} style={{ paddingVertical: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveHeight(8) : 8 }}><Text style={{ color: theme.colors.scannerCyan, fontWeight: '800' }}><Ionicons color={theme.colors.scannerCyan} name="chevron-back" size={15} />  Listing</Text></Pressable> : null}
           <View style={styles.topCopy}>
             <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>SELLER WORKFLOW</Text>
             <Text style={[styles.title, { fontFamily: theme.fonts.bold, fontSize: responsiveFont(26) }]}>

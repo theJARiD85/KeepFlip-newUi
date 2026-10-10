@@ -1,4 +1,5 @@
 import { useYoloV8Model } from "@/hooks/use-yolov8-model.native";
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
@@ -1031,7 +1032,7 @@ export function ValueRadarOverlay({
                   CLASS {marker.classId.toString().padStart(2, "0")} {"//"} TAP
                   TO ANALYZE VALUE
                 </Text>
-                <Text style={styles.markerChevron}>›</Text>
+                <Ionicons color={theme.colors.goldBright} name="chevron-forward" size={14} style={styles.markerChevron} />
               </View>
             </Pressable>
           </Animated.View>

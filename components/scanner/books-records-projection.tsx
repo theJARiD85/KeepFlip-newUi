@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, View } from "react-native";
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 
 import type { ItemAnalysisResult } from "@/components/scanner/analysis-visual-types";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
@@ -202,7 +203,7 @@ export function BooksRecordsProjection({
           style={({ pressed }) => [styles.action, pressed && styles.pressed]}
         >
           <Text style={[styles.actionText, { fontSize: responsiveFont(9) }]}>ADD TO INVENTORY</Text>
-          <Text style={styles.actionArrow}>›</Text>
+          <Ionicons color={theme.colors.goldBright} name="chevron-forward" size={17} style={styles.actionArrow} />
         </Pressable>
       ) : (
         <Text style={[styles.savedHint, { fontSize: responsiveFont(11) }]}>

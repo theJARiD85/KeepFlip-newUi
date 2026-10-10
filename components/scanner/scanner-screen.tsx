@@ -1,3 +1,4 @@
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
@@ -57,7 +58,7 @@ export default function ScannerScreen() {
             },
           ]}>
             <View style={styles.iconRing}>
-              <Ionicons name="camera.fill" size={30} color={theme.colors.goldBright} />
+              <Ionicons name="camera" size={30} color={theme.colors.goldBright} />
             </View>
 
             <View style={styles.copy}>
@@ -79,7 +80,7 @@ export default function ScannerScreen() {
             </View>
 
             <View style={styles.buildPill}>
-              <Ionicons name="bolt.fill" size={15} color={theme.colors.scannerCyan} />
+              <Ionicons name="flash" size={15} color={theme.colors.scannerCyan} />
               <Text selectable style={[styles.buildPillText, { fontSize: responsiveFont(9) }]}>OPEN THE DEVELOPMENT BUILD TO SCAN</Text>
             </View>
           </View>

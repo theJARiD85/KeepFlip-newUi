@@ -1,4 +1,4 @@
-import { Ionicons } from "@/components/ui/icon-symbol";
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
@@ -340,7 +340,7 @@ export function InventoryCard({
                       <View style={styles.coverFallback}>
                         <Ionicons
                           color={theme.colors.goldBright}
-                          name="photo.on.rectangle.angled"
+                          name="images-outline"
                           size={36}
                         />
                         <Text style={[styles.fallbackLabel, { fontSize: responsiveFont(8) }]}>
@@ -356,7 +356,7 @@ export function InventoryCard({
             <View style={styles.coverFallback}>
               <Ionicons
                 color={theme.colors.goldBright}
-                name="photo.on.rectangle.angled"
+                name="images-outline"
                 size={36}
               />
               <Text style={[styles.fallbackLabel, { fontSize: responsiveFont(8) }]}>
@@ -376,7 +376,7 @@ export function InventoryCard({
               <View style={styles.photoPill}>
                 <Ionicons
                   color={theme.colors.scannerCyan}
-                  name="photo.on.rectangle.angled"
+                  name="images-outline"
                   size={14}
                 />
                 <Text style={styles.photoPillText}>
@@ -482,7 +482,7 @@ export function InventoryCard({
             </Text>
             <Ionicons
               color={theme.colors.scannerCyan}
-              name="ellipsis"
+              name="ellipsis-horizontal"
               size={21}
             />
           </Pressable>
@@ -514,7 +514,7 @@ export function InventoryCard({
                   <View style={styles.listingGuideButtonIcon}>
                     <Ionicons
                       color={theme.colors.scannerCyan}
-                      name="tag.fill"
+                      name="pricetag"
                       size={17}
                     />
                   </View>
@@ -523,7 +523,7 @@ export function InventoryCard({
                   </View>
                   <Ionicons
                     color={theme.colors.goldBright}
-                    name="arrow.right"
+                    name="arrow-forward"
                     size={18}
                   />
                 </Pressable>
@@ -544,7 +544,7 @@ export function InventoryCard({
                   <View style={styles.listingGuideButtonIcon}>
                     <Ionicons
                       color={theme.colors.scannerCyan}
-                      name="photo.on.rectangle.angled"
+                      name="images-outline"
                       size={17}
                     />
                   </View>
@@ -553,7 +553,7 @@ export function InventoryCard({
                   </View>
                   <Ionicons
                     color={theme.colors.scannerCyan}
-                    name="arrow.right"
+                    name="arrow-forward"
                     size={18}
                   />
                 </Pressable>
@@ -574,7 +574,7 @@ export function InventoryCard({
                   <View style={styles.listingGuideButtonIcon}>
                     <Ionicons
                       color={theme.colors.scannerCyan}
-                      name="photo.on.rectangle.angled"
+                      name="images-outline"
                       size={17}
                     />
                   </View>
@@ -583,7 +583,7 @@ export function InventoryCard({
                   </View>
                   <Ionicons
                     color={theme.colors.scannerCyan}
-                    name="arrow.right"
+                    name="arrow-forward"
                     size={18}
                   />
                 </Pressable>
@@ -604,7 +604,7 @@ export function InventoryCard({
                   <View style={[styles.listingGuideButtonIcon, styles.markSoldButtonIcon]}>
                     <Ionicons
                       color={theme.colors.goldBright}
-                      name="checkmark.circle.fill"
+                      name="checkmark-circle"
                       size={17}
                     />
                   </View>
@@ -613,7 +613,7 @@ export function InventoryCard({
                   </View>
                   <Ionicons
                     color={theme.colors.goldBright}
-                    name="arrow.right"
+                    name="arrow-forward"
                     size={18}
                   />
                 </Pressable>
@@ -645,7 +645,7 @@ export function InventoryCard({
                   <View style={[styles.listingGuideButtonIcon, styles.deleteButtonIcon]}>
                     <Ionicons
                       color={theme.colors.danger}
-                      name="trash.fill"
+                      name="trash"
                       size={17}
                     />
                   </View>

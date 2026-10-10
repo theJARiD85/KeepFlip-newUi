@@ -5,6 +5,7 @@ import { responsiveWidth } from '@/lib/responsiveFont';
 import { todayBusinessDate } from "@/services/reseller-ledger-service";
 import type { SourcingTripSummary } from "@/services/sourcing-trip-service";
 import * as ImagePicker from "expo-image-picker";
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { useState } from "react";
 import {
   Alert,
@@ -695,7 +696,7 @@ export function AddToInventoryForm({
                               : "Take a photo or choose one from your device"}
                       </Text>
                     </View>
-                    <Text style={[styles.receiptButtonArrow, { fontSize: responsiveFont(24) }]}>›</Text>
+                    <Ionicons color={theme.colors.goldBright} name="chevron-forward" size={20} style={styles.receiptButtonArrow} />
                   </Pressable>
                 </View>
                 <View style={styles.column}>

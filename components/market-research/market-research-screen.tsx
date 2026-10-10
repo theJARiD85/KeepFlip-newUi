@@ -1,3 +1,4 @@
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useMemo, useState } from 'react';
@@ -297,7 +298,7 @@ export function MarketResearchScreen() {
                 {isSearching ? (
                   <ActivityIndicator color={theme.colors.textOnAccent} size="small" />
                 ) : (
-                  <Ionicons color={theme.colors.textOnAccent} name="magnifyingglass" size={22} />
+                  <Ionicons color={theme.colors.textOnAccent} name="search" size={22} />
                 )}
               </Pressable>
             </View>
@@ -351,7 +352,7 @@ export function MarketResearchScreen() {
                       <Image contentFit="cover" source={{ uri: comp.imageUrl }} style={styles.compImage} />
                     ) : (
                       <View style={[styles.compImage, styles.compImagePlaceholder]}>
-                        <Ionicons color={theme.colors.goldMuted} name="tag.fill" size={28} />
+                        <Ionicons color={theme.colors.goldMuted} name="pricetag" size={28} />
                       </View>
                     )}
                     <View style={styles.compContent}>

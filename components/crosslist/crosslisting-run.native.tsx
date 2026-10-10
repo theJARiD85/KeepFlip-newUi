@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 
 import { MarketplaceAuthModal } from '@/components/connections/marketplace-auth-modal';
 import type { CrosslistingRunProps } from '@/components/crosslist/crosslisting-run.types';
@@ -147,7 +148,7 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
               onPress={() => toggle(marketplace)}
               style={[styles.marketplace, (checked || alreadyListed) && styles.marketplaceSelected]}
             >
-              <Text style={[styles.check, (checked || alreadyListed) && styles.checkSelected]}>{checked || alreadyListed ? '✓' : '+'}</Text>
+              <Ionicons color={checked || alreadyListed ? theme.colors.scannerCyan : theme.colors.textMuted} name={checked || alreadyListed ? 'checkmark-circle' : 'add'} size={19} style={[styles.check, (checked || alreadyListed) && styles.checkSelected]} />
               <Text style={[styles.marketplaceName, (checked || alreadyListed) && styles.marketplaceNameSelected]}>{CROSSLISTING_DESTINATIONS[marketplace].label}</Text>
               {status || alreadyListed ? <Text style={styles.marketplaceStatus}>{alreadyListed || status === 'confirmed' ? 'LISTED' : status === 'submit_tapped' ? 'SUBMIT TAPPED' : 'DRAFT FILLED'}</Text> : null}
             </Pressable>
@@ -172,7 +173,7 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
         </View>
       ) : (
         <Pressable accessibilityRole="button" accessibilityState={{ disabled: selectedAvailable.length === 0 || starting }} disabled={selectedAvailable.length === 0 || starting} onPress={() => { void start(); }} style={[styles.startButton, (selectedAvailable.length === 0 || starting) && styles.disabled]}>
-          <Text style={styles.startText}>{starting ? 'Preparing your run…' : 'Start crosslisting →'}</Text>
+          <Text style={styles.startText}>{starting ? 'Preparing your run…' : <>Start crosslisting <Ionicons color={theme.colors.textOnAccent} name="arrow-forward" size={14} /></>}</Text>
         </Pressable>
       )}
       {active && payload ? (

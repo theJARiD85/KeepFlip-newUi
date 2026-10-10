@@ -1,3 +1,4 @@
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import {
@@ -633,7 +634,7 @@ export function ItemAnalysisBubbles({
               pressed && !saving && styles.pressed,
               saving && styles.disabled,
             ]}>
-            <Ionicons color={theme.colors.cream} name="xmark" size={19} />
+            <Ionicons color={theme.colors.cream} name="close" size={19} />
           </Pressable>
         ) : null}
       </Animated.View>

@@ -58,7 +58,7 @@ import {
   type ValueRadarViewport,
 } from "@/components/scanner/value-radar.native";
 import { useKeepFlipAppearance } from "@/components/settings/keepflip-appearance-context";
-import { Ionicons } from "@/components/ui/icon-symbol";
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
@@ -1423,14 +1423,7 @@ export default function ScannerScreen() {
                   : "Analyze item"}
             </Text>
           </View>
-          <Text
-            style={[
-              styles.analyzeButtonArrow,
-              { fontSize: responsiveFont(27), lineHeight: 30 },
-            ]}
-          >
-            ›
-          </Text>
+          <Ionicons color={theme.colors.textOnAccent} name="chevron-forward" size={21} style={styles.analyzeButtonArrow} />
         </Pressable>
       </Animated.View>
     ) : null;
@@ -1494,7 +1487,7 @@ export default function ScannerScreen() {
               ]}
             >
               <Ionicons
-                name="camera.fill"
+                name="camera"
                 size={Math.round(moderateScale(30, 0.6))}
                 color={theme.colors.goldBright}
               />
@@ -1538,7 +1531,7 @@ export default function ScannerScreen() {
               ]}
             >
               <Ionicons
-                name="photo.on.rectangle.angled"
+                name="images-outline"
                 size={20}
                 color={theme.colors.cream}
               />
@@ -1611,7 +1604,7 @@ export default function ScannerScreen() {
               ]}
             >
               <Ionicons
-                name="photo.on.rectangle.angled"
+                name="images-outline"
                 size={20}
                 color={theme.colors.cream}
               />
@@ -1873,7 +1866,7 @@ export default function ScannerScreen() {
               ]}
             >
               <Ionicons
-                name={torchEnabled ? "bolt.fill" : "bolt.slash.fill"}
+                name={torchEnabled ? "flash" : "flash-off"}
                 size={Math.round(moderateScale(22, 0.6))}
                 color={
                   torchEnabled

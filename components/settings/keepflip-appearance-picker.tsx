@@ -1,3 +1,4 @@
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import * as Haptics from 'expo-haptics';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 
@@ -10,25 +11,25 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const APPEARANCE_OPTIONS: {
   description: string;
-  icon: 'circle.lefthalf.filled' | 'sun.max.fill' | 'moon.fill';
+  icon: 'contrast' | 'sunny' | 'moon';
   label: string;
   preference: KeepFlipAppearancePreference;
 }[] = [
     {
       description: 'Follow the appearance setting on this device.',
-      icon: 'circle.lefthalf.filled',
+      icon: 'contrast',
       label: 'System',
       preference: 'system',
     },
     {
       description: 'Use the warm light palette throughout KeepFlip.',
-      icon: 'sun.max.fill',
+      icon: 'sunny',
       label: 'Light',
       preference: 'light',
     },
     {
       description: 'Keep the current dark glass-circuit palette.',
-      icon: 'moon.fill',
+      icon: 'moon',
       label: 'Dark',
       preference: 'dark',
     },
@@ -107,7 +108,7 @@ export function KeepFlipAppearancePicker({
               hitSlop={8}
               onPress={onClose}
               style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}>
-              <Ionicons color={theme.colors.textMuted} name="xmark" size={17} />
+              <Ionicons color={theme.colors.textMuted} name="close" size={17} />
             </Pressable>
           </View>
 
@@ -149,7 +150,7 @@ export function KeepFlipAppearancePicker({
                   </View>
                   <Ionicons
                     color={selected ? theme.colors.goldBright : theme.colors.textMuted}
-                    name={selected ? 'checkmark.circle.fill' : 'circle'}
+                    name={selected ? 'checkmark-circle' : 'radio-button-off'}
                     size={18}
                   />
                 </Pressable>

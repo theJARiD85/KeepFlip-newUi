@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { KeepFlipText as Text, KeepFlipTextInput as TextInput } from '@/components/ui/keepflip-text';
@@ -100,7 +101,7 @@ export function ConnectionDetailScreen({ platform }: { platform: string }) {
     <SafeAreaView style={responsiveStyles.safeArea}>
       <ScrollView contentContainerStyle={responsiveStyles.scroll} keyboardShouldPersistTaps="handled">
         <View style={responsiveStyles.content}>
-          <Pressable accessibilityRole="button" onPress={() => router.back()} style={responsiveStyles.backButton}><Text style={responsiveStyles.backText}>← Marketplaces</Text></Pressable>
+          <Pressable accessibilityRole="button" onPress={() => router.back()} style={responsiveStyles.backButton}><Text style={responsiveStyles.backText}><Ionicons color={brand.colors.cyan} name="chevron-back" size={15} /> Marketplaces</Text></Pressable>
           <Text style={responsiveStyles.eyebrow}>KEEPFLIP / CROSSLISTING LAB</Text>
           <Text style={responsiveStyles.title}>{channel.name}</Text>
           <Text style={responsiveStyles.subtitle}>{isApi ? 'Save an official API token for a test listing.' : 'Save a signed-in browser storage state for the prototype adapter.'}</Text>

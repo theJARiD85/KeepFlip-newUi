@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 
-import { Ionicons } from "@/components/ui/icon-symbol";
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import type { ScanProofAssessment } from "@/services/scan-proof-service";
@@ -177,7 +177,7 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
               <View style={styles.markerIcon}>
                 <Ionicons
                   color={theme.colors.scannerCyan}
-                  name="viewfinder"
+                  name="scan-outline"
                   size={16}
                 />
               </View>
@@ -211,7 +211,7 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
                     ? "CATEGORY + LOCAL EVIDENCE // TAP TO ANALYZE"
                     : `CLASS ${marker.classId.toString().padStart(2, "0")} // TAP TO ANALYZE VALUE`}
                 </Text>
-                <Text style={styles.markerChevron}>›</Text>
+                <Ionicons color={theme.colors.goldBright} name="chevron-forward" size={14} style={styles.markerChevron} />
               </View>
             </View>
           </Pressable>

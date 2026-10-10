@@ -1,3 +1,4 @@
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -232,7 +233,7 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
             disabled={saving}
             onPress={() => void load()}
             style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}>
-            <Ionicons color={theme.colors.goldBright} name="arrow.clockwise" size={15} />
+            <Ionicons color={theme.colors.goldBright} name="refresh" size={15} />
             <Text style={[styles.retryButtonText, { fontSize: responsiveFont(8) }]}>RETRY</Text>
           </Pressable>
         </View>
@@ -254,7 +255,7 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
                 <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>What should Flip remember?</Text>
                 <Text style={[styles.sectionBody, { fontSize: responsiveFont(10), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(15) : 15 }]}>These are the business details Flip can carry from one conversation to the next. Tap a type badge to cycle its category.</Text>
               </View>
-              <Ionicons color={theme.colors.scannerViolet} name="bolt.fill" size={20} />
+              <Ionicons color={theme.colors.scannerViolet} name="flash" size={20} />
             </View>
 
             {facts.length ? (
@@ -269,14 +270,14 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
                         onPress={() => rotateFactCategory(index)}
                         style={({ pressed }) => [styles.categoryBadge, pressed && styles.pressed]}>
                         <Text style={[styles.categoryBadgeText, { fontSize: responsiveFont(7) }]}>{CATEGORY_LABELS[fact.category]}</Text>
-                        <Ionicons color={theme.colors.scannerViolet} name="chevron.right" size={12} />
+                        <Ionicons color={theme.colors.scannerViolet} name="chevron-forward" size={12} />
                       </Pressable>
                       <Pressable
                         accessibilityLabel={`Delete memory ${index + 1}`}
                         accessibilityRole="button"
                         onPress={() => removeFact(index)}
                         style={({ pressed }) => [styles.removeButton, pressed && styles.pressed]}>
-                        <Ionicons color={theme.colors.danger} name="trash.fill" size={15} />
+                        <Ionicons color={theme.colors.danger} name="trash" size={15} />
                       </Pressable>
                     </View>
                     <TextInput
@@ -348,7 +349,7 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
                   (!canAddMemory || saving) && styles.buttonDisabled,
                   pressed && styles.pressed,
                 ]}>
-                <Ionicons color={theme.colors.backgroundDeep} name="checkmark.circle.fill" size={16} />
+                <Ionicons color={theme.colors.backgroundDeep} name="checkmark-circle" size={16} />
                 <Text style={[styles.addButtonText, { fontSize: responsiveFont(8) }]}>ADD TO MY MEMORIES</Text>
               </Pressable>
             </View>
@@ -360,7 +361,7 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
                 <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>RESPONSE GUIDANCE</Text>
                 <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>Things Flip should know</Text>
               </View>
-              <Ionicons color={theme.colors.scannerCyan} name="bubble.left.and.bubble.right.fill" size={20} />
+              <Ionicons color={theme.colors.scannerCyan} name="chatbubbles-outline" size={20} />
             </View>
             <Text style={[styles.sectionBody, { fontSize: responsiveFont(10), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(15) : 15 }]}>Tell Flip what to consider when it answers or makes suggestions. Keep it stable and practical — for example, your preferred risk level, the way you want tradeoffs explained, or what kind of inventory you are building.</Text>
             <TextInput
@@ -396,7 +397,7 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
               (!dirty || saving) && styles.buttonDisabled,
               pressed && styles.pressed,
             ]}>
-            {saving ? <ActivityIndicator color={theme.colors.backgroundDeep} size="small" /> : <Ionicons color={theme.colors.backgroundDeep} name="save.fill" size={17} />}
+            {saving ? <ActivityIndicator color={theme.colors.backgroundDeep} size="small" /> : <Ionicons color={theme.colors.backgroundDeep} name="save-outline" size={17} />}
             <Text style={[styles.saveButtonText, { fontSize: responsiveFont(9) }]}>{saving ? 'SAVING AI PREFERENCES…' : 'SAVE AI PREFERENCES'}</Text>
           </Pressable>
         </>

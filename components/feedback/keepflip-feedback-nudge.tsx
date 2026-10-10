@@ -198,7 +198,7 @@ function FeedbackPrompt({
               {busyAction === 'feedback' ? (
                 <ActivityIndicator color={theme.colors.textOnAccent} size="small" />
               ) : (
-                <Ionicons color={theme.colors.textOnAccent} name="paperplane.fill" size={16} />
+                <Ionicons color={theme.colors.textOnAccent} name="paper-plane-outline" size={16} />
               )}
               <Text style={[styles.primaryActionText, { fontSize: responsiveFont(10) }]}>SHARE FEEDBACK</Text>
             </Pressable>
@@ -216,7 +216,7 @@ function FeedbackPrompt({
               {busyAction === 'review' ? (
                 <ActivityIndicator color={theme.colors.goldBright} size="small" />
               ) : (
-                <Ionicons color={theme.colors.goldBright} name="star.fill" size={16} />
+                <Ionicons color={theme.colors.goldBright} name="star" size={16} />
               )}
               <Text style={[styles.secondaryActionText, { fontSize: responsiveFont(10) }]}>RATE ON GOOGLE PLAY</Text>
             </Pressable>
