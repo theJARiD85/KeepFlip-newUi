@@ -17,7 +17,7 @@ import {
   View,
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
-
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
@@ -168,7 +168,7 @@ function FeedbackPrompt({
 
           <View style={styles.promptHeading}>
             <View style={styles.promptIcon}>
-              <Ionicons color={theme.colors.goldBright} name="bubble.left.and.bubble.right.fill" size={20} />
+              <Ionicons color={theme.colors.goldBright} name="chatbubble" size={20} />
             </View>
             <View style={styles.promptCopy}>
               <Text style={[styles.promptTitle, { fontSize: responsiveFont(20), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(24) : 24 }]}>Help shape what comes next.</Text>

@@ -9,9 +9,10 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { useEbayConnection } from '@/components/ebay/ebay-connection-context';
 import { EbayListingSetupEditor } from '@/components/ebay/ebay-listing-setup-editor';
@@ -468,7 +469,7 @@ export default function EbayAccountScreen() {
                 <View style={styles.statusIcon}>
                   <Ionicons
                     color={theme.colors.scannerCyan}
-                    name="checkmark.shield.fill"
+                    name="checkmark-circle"
                     size={24}
                   />
                 </View>
@@ -557,7 +558,7 @@ export default function EbayAccountScreen() {
                 <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>LISTING SETUP</Text>
                 <View style={styles.settingsCard}>
                   <View style={styles.settingRow}>
-                    <Ionicons
+                    <IconSymbol
                       color={
                         listingSetup.state === 'ready'
                           ? theme.colors.scannerCyan
@@ -565,7 +566,7 @@ export default function EbayAccountScreen() {
                       }
                       name={
                         listingSetup.state === 'ready'
-                          ? 'checkmark.shield.fill'
+                          ? 'checkmark-circle'
                           : 'exclamationmark.triangle.fill'
                       }
                       size={20}
@@ -716,7 +717,7 @@ export default function EbayAccountScreen() {
                   {isImportingListings ? (
                     <ActivityIndicator color={theme.colors.textOnAccent} size="small" />
                   ) : (
-                    <Ionicons color={theme.colors.textOnAccent} name="arrow.right" size={18} />
+                    <Ionicons color={theme.colors.textOnAccent} name="chevron-forward" size={18} />
                   )}
                   <Text style={[styles.importButtonText, { fontSize: responsiveFont(10) }]}>
                     {isImportingListings ? 'READING EBAY' : 'IMPORT ACTIVE LISTINGS'}
@@ -794,7 +795,7 @@ export default function EbayAccountScreen() {
                 <View style={styles.settingRow}>
                   <Ionicons
                     color={theme.colors.scannerCyan}
-                    name="lock.fill"
+                    name="lock-closed"
                     size={20}
                   />
                   <View style={styles.settingCopy}>
@@ -809,7 +810,7 @@ export default function EbayAccountScreen() {
                 <View style={styles.settingRow}>
                   <Ionicons
                     color={theme.colors.goldBright}
-                    name="arrow.clockwise"
+                    name="refresh"
                     size={20}
                   />
                   <Pressable
@@ -853,7 +854,7 @@ export default function EbayAccountScreen() {
                 ) : (
                   <Ionicons
                     color={theme.colors.danger}
-                    name="xmark"
+                    name="close-circle"
                     size={20}
                   />
                 )}
@@ -865,7 +866,7 @@ export default function EbayAccountScreen() {
           <Animated.View entering={FadeInDown.duration(240).delay(70)} style={styles.emptyCard}>
             <Ionicons
               color={theme.colors.goldBright}
-              name="lock.fill"
+              name="lock-closed"
               size={25}
             />
             <View style={styles.emptyCopy}>
@@ -888,7 +889,7 @@ export default function EbayAccountScreen() {
               <Text style={[styles.connectButtonText, { fontSize: responsiveFont(11) }]}>CONNECT EBAY</Text>
               <Ionicons
                 color={theme.colors.textOnAccent}
-                name="arrow.right"
+                name="chevron-forward"
                 size={18}
               />
             </Pressable>

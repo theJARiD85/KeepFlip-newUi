@@ -59,7 +59,11 @@ picker, then run:
 ```
 
 The script downloads the pinned ONNX export and converts it using the
-`tf_converter` compatibility backend. It invokes the
+`tf_converter` compatibility backend. The ONNX model input is NCHW
+(`[1, 3, 1024, 1024]`), so the exporter lets onnx2tf perform its normal
+channel-last conversion. Do not add `-kt input_image`: onnx2tf defines `-kt`
+as preserving an already-NHWC input, which mislabels this model's NCHW input
+and causes later decoder tensor dimensions to disagree. It invokes the
 float32 TFLite sibling on CPU and compares that mask to ONNX Runtime. The
 float16 model is packaged for the Android GPU test, and its input/output tensor
 contract is checked. The Colab CPU interpreter cannot execute this converted

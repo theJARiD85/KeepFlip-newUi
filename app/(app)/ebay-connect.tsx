@@ -203,7 +203,7 @@ export default function EbayConnectScreen() {
         <View style={styles.permissionNote}>
           <Ionicons
             color={theme.colors.goldBright}
-            name="checkmark.shield.fill"
+            name="checkmark-circle"
             size={21}
           />
           <Text style={[styles.permissionText, { fontSize: responsiveFont(12) }]}>

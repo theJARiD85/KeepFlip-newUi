@@ -16,8 +16,9 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ConnectionsMenuLink } from '@/components/navigation/connections-menu-link';
 import {
   MENU_CLOSE_DURATION_MS,
@@ -32,8 +33,8 @@ import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive
 type MenuDestination = {
   eyebrow: string;
   href: Href;
-  icon: ComponentProps<typeof Ionicons>['name'];
-  label: string;
+  icon: ComponentProps<typeof IconSymbol > ['name'];
+label: string;
 };
 
 const destinations: MenuDestination[] = [
@@ -285,7 +286,7 @@ export function KeepFlipSlideDownMenu() {
                       styles.closeButton,
                       pressed && styles.controlPressed,
                     ]}>
-                    <Ionicons name="xmark" size={22} color={theme.colors.goldBright} />
+                    <Ionicons name="close" size={22} color={theme.colors.goldBright} />
                   </Pressable>
                 </View>
               </View>
@@ -297,7 +298,7 @@ export function KeepFlipSlideDownMenu() {
                   style={[styles.quickAction, { flexDirection: 'row', justifyContent: 'center', gap: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveWidth(16) : 16, backgroundColor: 'transparent' }]}>
                   <View>
                     <Ionicons
-                      name="person.crop.circle.fill"
+                      name="person-circle"
                       size={19}
                       color={pathname.startsWith('/account') ? theme.colors.scannerCyan : theme.colors.goldBright}
                     />
@@ -311,7 +312,7 @@ export function KeepFlipSlideDownMenu() {
                   style={[styles.quickAction, { flexDirection: 'row', justifyContent: 'center', gap: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveWidth(16) : 16, backgroundColor: 'transparent' }]}>
                   <View>
                     <Ionicons
-                      name="envelope.fill"
+                      name="mail"
                       size={19}
                       color={pathname.startsWith('/notifications') ? theme.colors.scannerCyan : theme.colors.goldBright}
                     />
@@ -343,7 +344,7 @@ export function KeepFlipSlideDownMenu() {
                             styles.destinationIcon,
                             isActive && styles.destinationIconActive,
                           ]}>
-                          <Ionicons
+                          <IconSymbol
                             color={
                               isActive
                                 ? theme.colors.goldBright
@@ -374,7 +375,7 @@ export function KeepFlipSlideDownMenu() {
                           />
                         ) : (
                           <Ionicons
-                            name="chevron.right"
+                            name="chevron-forward"
                             size={19}
                             color={theme.colors.goldMuted}
                           />
@@ -434,7 +435,7 @@ export function KeepFlipSlideDownMenu() {
           hitSlop={10}
           onPress={handleToggle}
           style={({ pressed }) => [styles.trigger, pressed && styles.controlPressed]}>
-          <Ionicons name="line.3.horizontal" size={22} color={theme.colors.goldBright} />
+          <Ionicons name="menu" size={22} color={theme.colors.goldBright} />
           <View pointerEvents="none" style={styles.triggerStatusDot} />
         </Pressable>
       </View>

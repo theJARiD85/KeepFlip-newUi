@@ -342,7 +342,7 @@ function InventoryStagePreview() {
         <View style={styles.savedSignalIcon}>
           <Ionicons
             color={theme.colors.scannerCyan}
-            name="checkmark.shield.fill"
+            name="checkmark-circle"
             size={22}
           />
         </View>

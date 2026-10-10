@@ -1,17 +1,3 @@
-import Constants from 'expo-constants';
-import * as Haptics from 'expo-haptics';
-import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
-import { useCallback, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { KeepFlipAccountTabs } from '@/components/account/keepflip-account-tabs';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { EbayShoppingBagIcon } from '@/components/ebay/ebay-shopping-bag-icon';
@@ -31,6 +17,20 @@ import {
   type EbayConnectionStatusResult,
 } from '@/services/ebayConnectionService';
 import { KEEPFLIP_PLAN_DEFINITIONS } from '@/services/keepflip-subscription-service';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
+import Constants from 'expo-constants';
+import * as Haptics from 'expo-haptics';
+import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { useCallback, useState } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 function formattedMemberDate(value: string) {
@@ -476,7 +476,7 @@ function AccountDetailsTab() {
               accent="violet"
               accessibilityHint="Opens KeepFlip's privacy policy."
               description="The current policy for privacy and data handling."
-              icon="checkmark.shield.fill"
+              icon="checkmark-circle"
               label="Privacy policy"
               onPress={() => {
                 hapticSelection();

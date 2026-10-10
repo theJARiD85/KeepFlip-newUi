@@ -10,7 +10,8 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring } from 'react-native-reanimated';
-
+import { Ionicons } from '@react-native-vector-icons/ionicons';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { BusinessPulse } from '@/components/command-center/business-pulse';
 import {
@@ -31,7 +32,7 @@ import {
 } from '@/services/reseller-business-overview';
 import { listResellerLedgerEntries } from '@/services/reseller-ledger-service';
 
-import { useResponsiveLayout , useResponsiveStyles} from '@/hooks/use-responsive-layout';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 function money(cents: number) {
   const sign = cents < 0 ? '-' : '';
   return `${sign}$${(Math.abs(cents) / 100).toLocaleString(undefined, {
@@ -92,7 +93,7 @@ function MetricCard({
   label: string;
   value: string;
   detail: string;
-  icon: ComponentProps<typeof Ionicons>['name'];
+  icon: ComponentProps<typeof IconSymbol>['name'];
   accent: string;
   colors: ReturnType<typeof getKeepFlipThemeColors>;
   compact?: boolean;
@@ -126,10 +127,10 @@ function MetricCard({
       />
       <View style={responsiveStyles.metricTopline}>
         <View style={[responsiveStyles.metricIcon, { backgroundColor: colorWithAlpha(accent, 0.13), borderColor: colorWithAlpha(accent, 0.30) }]}>
-          <Ionicons color={accent} name={icon} size={17} />
+          <IconSymbol color={accent} name={icon} size={17} />
         </View>
         <Text style={[responsiveStyles.metricLabel, { color: colors.textMuted }]}>{label}</Text>
-        {onPress ? <Ionicons color={accent} name="chevron.right" size={13} /> : null}
+        {onPress ? <Ionicons color={accent} name="chevron-forward" size={13} /> : null}
       </View>
       <Text selectable style={[responsiveStyles.metricValue, compact && responsiveStyles.metricValueCompact, { color: colors.text }]}>{value}</Text>
       <Text style={[responsiveStyles.metricDetail, { color: colors.textMuted }]}>{detail}</Text>
@@ -172,7 +173,7 @@ function ActionButton({
 }: {
   label: string;
   detail: string;
-  icon: ComponentProps<typeof Ionicons>['name'];
+  icon: ComponentProps<typeof IconSymbol>['name'];
   accent: string;
   onPress: () => void;
   colors: ReturnType<typeof getKeepFlipThemeColors>;
@@ -223,13 +224,13 @@ function ActionButton({
           />
         ) : null}
         <View style={[responsiveStyles2.actionIcon, { backgroundColor: primary ? 'rgba(0,0,0,0.16)' : colorWithAlpha(accent, 0.13) }]}>
-          <Ionicons color={primary ? colors.textOnAccent : accent} name={icon} size={18} />
+          <IconSymbol color={primary ? colors.textOnAccent : accent} name={icon} size={18} />
         </View>
         <View style={responsiveStyles2.actionCopy}>
           <Text style={[responsiveStyles2.actionLabel, { color: primary ? colors.textOnAccent : colors.text }]}>{label}</Text>
           <Text style={[responsiveStyles2.actionDetail, { color: primary ? colorWithAlpha(colors.textOnAccent, 0.72) : colors.textMuted }]}>{detail}</Text>
         </View>
-        <Ionicons color={primary ? colors.textOnAccent : accent} name="chevron.right" size={16} />
+        <Ionicons color={primary ? colors.textOnAccent : accent} name="chevron-forward" size={16} />
       </Pressable>
     </Animated.View>
   );
@@ -261,7 +262,7 @@ function PanelHeader({
           onPress={onAction}
           style={({ pressed }) => [responsiveStyles3.panelAction, { borderColor: colors.divider }, pressed && responsiveStyles3.pressed]}>
           <Text style={[responsiveStyles3.panelActionText, { color: colors.scannerCyan }]}>{action}</Text>
-          <Ionicons color={colors.scannerCyan} name="arrow.right" size={14} />
+          <Ionicons color={colors.scannerCyan} name="chevron-forward" size={14} />
         </Pressable>
       ) : null}
     </View>
@@ -391,7 +392,7 @@ export function CommandCenterScreen() {
 
         {errorMessage ? (
           <View style={[responsiveStyles4.errorBanner, { backgroundColor: colors.dangerSurface, borderColor: `${colors.danger}66` }]}>
-            <Ionicons color={colors.danger} name="exclamationmark.triangle.fill" size={18} />
+            <Ionicons color={colors.danger} name="warning" size={18} />
             <View style={responsiveStyles4.errorCopy}>
               <Text style={[responsiveStyles4.errorTitle, { color: colors.text }]}>Your workspace needs a quick check</Text>
               <Text style={[responsiveStyles4.errorBody, { color: colors.textMuted }]}>{errorMessage}</Text>
@@ -461,28 +462,28 @@ export function CommandCenterScreen() {
             <View style={responsiveStyles4.focusList}>
               {overview?.inventory.missingCostCount ? (
                 <Pressable accessibilityRole="button" onPress={() => navigate('/inventory')} style={({ pressed }) => [responsiveStyles4.focusRow, { borderColor: colors.divider }, pressed && responsiveStyles4.pressed]}>
-                  <View style={[responsiveStyles4.focusIcon, { backgroundColor: colors.iconSurfaceGold }]}><Ionicons color={colors.goldBright} name="tag.fill" size={17} /></View>
+                  <View style={[responsiveStyles4.focusIcon, { backgroundColor: colors.iconSurfaceGold }]}><Ionicons color={colors.goldBright} name="radio-button-on" size={17} /></View>
                   <View style={responsiveStyles4.focusCopy}><Text style={[responsiveStyles4.focusTitle, { color: colors.text }]}>{overview.inventory.missingCostCount} item{overview.inventory.missingCostCount === 1 ? '' : 's'} missing a real cost</Text><Text style={[responsiveStyles4.focusDetail, { color: colors.textMuted }]}>Add acquisition cost before calling profit realized.</Text></View>
-                  <Ionicons color={colors.textMuted} name="chevron.right" size={15} />
+                  <Ionicons color={colors.textMuted} name="chevron-forward" size={15} />
                 </Pressable>
               ) : null}
               {overview?.attention.unlinkedSaleCount ? (
                 <Pressable accessibilityRole="button" onPress={() => navigate('/books')} style={({ pressed }) => [responsiveStyles4.focusRow, { borderColor: colors.divider }, pressed && responsiveStyles4.pressed]}>
-                  <View style={[responsiveStyles4.focusIcon, { backgroundColor: colors.dangerSurface }]}><Ionicons color={colors.danger} name="exclamationmark.triangle.fill" size={17} /></View>
+                  <View style={[responsiveStyles4.focusIcon, { backgroundColor: colors.dangerSurface }]}><Ionicons color={colors.danger} name="warning" size={17} /></View>
                   <View style={responsiveStyles4.focusCopy}><Text style={[responsiveStyles4.focusTitle, { color: colors.text }]}>{overview.attention.unlinkedSaleCount} sale{overview.attention.unlinkedSaleCount === 1 ? '' : 's'} needs an item match</Text><Text style={[responsiveStyles4.focusDetail, { color: colors.textMuted }]}>Linking it lets Books calculate realized margin.</Text></View>
-                  <Ionicons color={colors.textMuted} name="chevron.right" size={15} />
+                  <Ionicons color={colors.textMuted} name="chevron-foward" size={15} />
                 </Pressable>
               ) : null}
               {overview?.attention.unlinkedInventoryCostCents ? (
                 <Pressable accessibilityRole="button" onPress={() => navigate('/books')} style={({ pressed }) => [responsiveStyles4.focusRow, { borderColor: colors.divider }, pressed && responsiveStyles4.pressed]}>
-                  <View style={[responsiveStyles4.focusIcon, { backgroundColor: colors.iconSurfaceViolet }]}><Ionicons color={colors.scannerViolet} name="dollarsign.circle.fill" size={17} /></View>
+                  <View style={[responsiveStyles4.focusIcon, { backgroundColor: colors.iconSurfaceViolet }]}><Ionicons color={colors.scannerViolet} name="wallet" size={17} /></View>
                   <View style={responsiveStyles4.focusCopy}><Text style={[responsiveStyles4.focusTitle, { color: colors.text }]}>{money(overview.attention.unlinkedInventoryCostCents)} of costs need an item link</Text><Text style={[responsiveStyles4.focusDetail, { color: colors.textMuted }]}>Tie working capital to inventory for a cleaner picture.</Text></View>
-                  <Ionicons color={colors.textMuted} name="chevron.right" size={15} />
+                  <Ionicons color={colors.textMuted} name="chevron-forward" size={15} />
                 </Pressable>
               ) : null}
               {!loading && attentionCount === 0 && !(overview?.attention.unlinkedInventoryCostCents) ? (
                 <View style={[responsiveStyles4.clearState, { backgroundColor: colors.successSurface, borderColor: `${colors.success}55` }]}>
-                  <Ionicons color={colors.success} name="checkmark.circle.fill" size={19} />
+                  <Ionicons color={colors.success} name="checkmark-circle" size={19} />
                   <View style={responsiveStyles4.focusCopy}><Text style={[responsiveStyles4.focusTitle, { color: colors.text }]}>Nothing urgent in the queue</Text><Text style={[responsiveStyles4.focusDetail, { color: colors.textMuted }]}>Keep sourcing, then record the next real transaction.</Text></View>
                 </View>
               ) : null}
@@ -508,7 +509,7 @@ export function CommandCenterScreen() {
                 return (
                   <Pressable key={item.id} accessibilityRole="button" onPress={() => navigate('/inventory')} style={({ pressed }) => [responsiveStyles4.inventoryRow, { borderTopColor: colors.divider }, pressed && responsiveStyles4.pressed]}>
                     <View style={[responsiveStyles4.itemThumbnail, { backgroundColor: colors.iconSurface, borderColor: colors.divider }]}>
-                      <Ionicons color={itemStatusColor} name="shippingbox.fill" size={18} />
+                      <Ionicons color={itemStatusColor} name="cube" size={18} />
                     </View>
                     <View style={responsiveStyles4.itemCopy}>
                       <Text numberOfLines={1} style={[responsiveStyles4.itemTitle, { color: colors.text }]}>{item.title || 'Untitled find'}</Text>
@@ -516,14 +517,14 @@ export function CommandCenterScreen() {
                     </View>
                     <View style={responsiveStyles4.itemStatusColumn}><Text style={[responsiveStyles4.itemStatus, { color: itemStatusColor }]}>{statusLabel(item)}</Text><Text style={[responsiveStyles4.itemCost, { color: colors.textMuted }]}>{item.isListed ? 'LISTED' : 'NOT LISTED'}</Text></View>
                     <View style={responsiveStyles4.itemValueColumn}><Text selectable style={[responsiveStyles4.itemValue, { color: colors.text }]}>{dollars(item.estimatedValue)}</Text><Text style={[responsiveStyles4.itemCost, { color: colors.textMuted }]}>EST. RESALE</Text></View>
-                    <Ionicons color={colors.textMuted} name="chevron.right" size={16} />
+                    <Ionicons color={colors.textMuted} name="chevron-forward" size={16} />
                   </Pressable>
                 );
               })}
             </View>
           ) : (
             <View style={[responsiveStyles4.emptyState, { borderColor: colors.divider }]}>
-              <Ionicons color={colors.scannerCyan} name="shippingbox.fill" size={21} />
+              <Ionicons color={colors.scannerCyan} name="cube" size={21} />
               <Text style={[responsiveStyles4.emptyTitle, { color: colors.text }]}>No saved finds yet</Text>
               <Text style={[responsiveStyles4.emptyBody, { color: colors.textMuted }]}>Scan on Android or add your first item to start building the shelf.</Text>
               <Pressable accessibilityRole="button" onPress={() => navigate('/scanner')} style={[responsiveStyles4.inlineAction, { borderColor: colors.accentCyanBorder, backgroundColor: colors.iconSurfaceCyan }]}>

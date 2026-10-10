@@ -22,6 +22,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 
 function errorMessage(cause: unknown) {
   return cause instanceof Error && cause.message.trim()
@@ -173,7 +174,7 @@ export function KeepFlipNotificationInboxScreen() {
 
         {!loading && !error && notifications.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Ionicons color={theme.colors.goldMuted} name="checkmark.shield.fill" size={30} />
+            <Ionicons color={theme.colors.goldMuted} name="checkmark-circle" size={30} />
             <Text style={[styles.emptyTitle, { fontSize: responsiveFont(18) }]}>You’re all caught up</Text>
             <Text style={[styles.stateText, { fontSize: responsiveFont(14) }]}>New KeepFlip updates will appear here.</Text>
           </View>
@@ -203,7 +204,7 @@ export function KeepFlipNotificationInboxScreen() {
                 {notification.source.replaceAll('_', ' ')} · {new Date(notification.createdAt).toLocaleString()}
               </Text>
             </View>
-            {notification.url ? <Ionicons color={theme.colors.goldMuted} name="chevron.right" size={18} /> : null}
+            {notification.url ? <checkmark-circle color={theme.colors.goldMuted} name="chevron.right" size={18} /> : null}
           </Pressable>
         ))}
       </ScrollView>

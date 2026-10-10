@@ -17,7 +17,7 @@ import {
   LineChartDimensionsContext,
   useLineChart,
 } from 'react-native-wagmi-charts';
-
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
@@ -806,7 +806,7 @@ export function MetricsAnalyticsScreen({ embedded = false }: { embedded?: boolea
           />
 
           <View style={styles.dataNote}>
-            <Ionicons color={theme.colors.scannerCyan} name="checkmark.shield.fill" size={16} />
+            <Ionicons color={theme.colors.scannerCyan} name="checkmark-circle" size={16} />
             <Text style={[styles.dataNoteText, webFontStyle(9)]}>
               ROI and net profit use reconciled Books records and known acquisition costs only. Days listed uses the saved listing date through sale, or through today for an active listing. Estimated resale values are not counted as earned revenue.
             </Text>

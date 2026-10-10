@@ -11,9 +11,10 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type PlanField =
   | 'buyCost'
@@ -113,9 +114,9 @@ function StageToolButton({
 }: {
   active: boolean;
   detail: string;
-  icon: Parameters<typeof Ionicons>[0]['name'];
-  label: string;
-  onPress: () => void;
+  icon: Parameters<typeof IconSymbol > [0]['name'];
+label: string;
+onPress: () => void;
 }) {
   const styles = useResponsiveStyles(createResponsiveStyles);
   return (
@@ -131,7 +132,7 @@ function StageToolButton({
         pressed && styles.pressed,
       ]}>
       <View style={[styles.stageIcon, active && styles.stageIconActive]}>
-        <Ionicons
+        <IconSymbol
           color={active ? theme.colors.backgroundDeep : theme.colors.textMuted}
           name={icon}
           size={15}
@@ -611,7 +612,7 @@ export function FlipPlanScreen() {
             style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
             <Ionicons
               color={theme.colors.goldBright}
-              name="chevron.right"
+              name="chevron-forward"
               size={22}
               style={styles.backIcon}
             />
@@ -701,9 +702,9 @@ export function FlipPlanScreen() {
                   : 'Projection ledger not balanced'
               }
               style={[styles.balancePill, !ledger.isBalanced && styles.balancePillUnbalanced]}>
-              <Ionicons
+              <IconSymbol
                 color={ledger.isBalanced ? theme.colors.scannerCyan : theme.colors.goldBright}
-                name={ledger.isBalanced ? 'checkmark.shield.fill' : 'exclamationmark.triangle.fill'}
+                name={ledger.isBalanced ? 'checkmark-circle' : 'exclamationmark.triangle.fill'}
                 size={13}
               />
               <Text
@@ -794,7 +795,7 @@ export function FlipPlanScreen() {
         </View>
 
         <View style={styles.planNote}>
-          <Ionicons color={theme.colors.textMuted} name="lock.fill" size={14} />
+          <Ionicons color={theme.colors.textMuted} name="lock-closed" size={14} />
           <Text style={[styles.planNoteText, { fontSize: responsiveFont(10) }]}>
             This is an estimate-only projection. It stays separate from Books, so a
             planned sale, cost, or payout cannot look like real business activity.

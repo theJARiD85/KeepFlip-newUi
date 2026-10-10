@@ -2,9 +2,10 @@
 """Convert the MIT BiRefNet Lite ONNX export to a smoke-tested TFLite model.
 
 Run this from Colab or the repository's model-conversion environment. The
-converter downloads a pinned ONNX export, asks onnx2tf to preserve its input
-shape, invokes the generated TFLite model, and reports output agreement with
-ONNX Runtime before copying the requested precision to the destination.
+converter downloads a pinned ONNX export, lets onnx2tf convert its NCHW input
+to TensorFlow's channel-last layout, invokes the generated TFLite model, and
+reports output agreement with ONNX Runtime before copying the requested
+precision to the destination.
 """
 
 from __future__ import annotations
@@ -131,8 +132,6 @@ def convert(args: argparse.Namespace) -> None:
                 str(converted_dir),
                 "-b",
                 "1",
-                "-kt",
-                onnx_input_name,
                 "--tflite_backend",
                 "tf_converter",
             ],

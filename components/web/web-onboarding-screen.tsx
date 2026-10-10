@@ -21,6 +21,8 @@ import {
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import type { ComponentProps } from 'react';
 import {
   Platform,
@@ -30,9 +32,9 @@ import {
   useWindowDimensions,
 } from 'react-native';
 
-import { useResponsiveLayout , useResponsiveStyles} from '@/hooks/use-responsive-layout';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 import responsiveFont from '@/lib/responsiveFont';
-type IconName = ComponentProps<typeof Ionicons>['name'];
+type IconName = ComponentProps<typeof IconSymbol > ['name'];
 type FlowVisualKind = 'source' | 'decide' | 'run';
 
 const FLOW_SCANNER_IMAGE = require('@/assets/google-play/keepflip-play-scanner.png');
@@ -256,7 +258,7 @@ export function WebOnboardingScreen() {
                   <FeatureCard
                     accent={colors.goldBright}
                     colors={colors}
-                    icon="checkmark.shield.fill"
+                    icon="checkmark-circle"
                     title="Get an eBay listing ready"
                     body="See what still needs work before you list: item details, photos, measurements, price, shipping, and return settings."
                   />

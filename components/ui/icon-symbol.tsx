@@ -35,7 +35,7 @@ const MAPPING = {
   'bolt.slash.fill': 'flash-off',
   'camera.fill': 'camera-alt',
   'location.fill': 'location-on',
-  'checkmark.shield.fill': 'verified-user',
+  'checkmark-circle': 'verified-user',
   'chart.bar.fill': 'bar-chart',
   'dollarsign.circle.fill': 'paid',
   'envelope.fill': 'email',

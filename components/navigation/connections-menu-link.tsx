@@ -34,7 +34,7 @@ export function ConnectionsMenuLink({
       <View style={[styles.iconShell, active && styles.iconShellActive]}>
         <Ionicons
           color={active ? theme.colors.scannerCyan : theme.colors.goldBright}
-          name="checkmark.shield.fill"
+          name="checkmark-circle"
           size={21}
         />
       </View>

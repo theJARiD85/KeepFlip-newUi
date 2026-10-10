@@ -1,16 +1,16 @@
-import { Image } from 'expo-image';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { Link, type Href, useRouter } from 'expo-router';
-import { createElement, type CSSProperties } from 'react';
-import { Linking, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { WebBlogMenu } from '@/components/web/web-blog-menu';
 import { getKeepFlipThemeColors, keepFlipTheme as theme, type KeepFlipColorScheme } from '@/constants/keepflip-theme';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { Image } from 'expo-image';
+import { Link, useRouter, type Href } from 'expo-router';
+import { createElement, type CSSProperties } from 'react';
+import { Linking, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 
-import { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
+import { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 type WebSiteHeaderProps = {
   colorScheme?: KeepFlipColorScheme;
   label?: string;
@@ -196,15 +196,15 @@ export function WebSiteFooter({
         <View>
 
           <Text style={[responsiveStyles2.footerMetaText, { color: colors.textMuted }]}>
-          © 2026 KeepFlip. Built for resellers.
-        </Text>
+            © 2026 KeepFlip. Built for resellers.
+          </Text>
         </View>
         <View style={[responsiveStyles2.footerLinks, isPhone && responsiveStyles2.footerLinksPhone]}>
           {showMarketingLinks ? (
             <>
               <FooterRouteLink colors={colors} href="/changelog" label="Changelog" />
               <FooterRouteLink colors={colors} href="/terms" label="Terms" />
-          <FooterRouteLink colors={colors} href="/privacy" label="Privacy" />
+              <FooterRouteLink colors={colors} href="/privacy" label="Privacy" />
 
             </>
           ) : null}
@@ -218,8 +218,8 @@ export function WebSiteFooter({
             label="Contact us"
             onPress={() => openSupport('KeepFlip contact')}
           />
-          <Pressable onPress={handlePress} style={{ justifyContent: 'center', alignItems: 'center'}}>
-          <Image source={require('@/assets/images/google-play.png')} style={{height: responsiveHeight(50), width: responsiveWidth(145)}} />
+          <Pressable onPress={handlePress} style={{ justifyContent: 'center', alignItems: 'center' }}>
+            <Image source={require('@/assets/images/google-play.png')} style={{ height: responsiveHeight(50), width: responsiveWidth(145) }} />
           </Pressable>
         </View>
       </View>

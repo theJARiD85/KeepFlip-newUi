@@ -17,7 +17,7 @@ import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subs
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useResponsiveLayout , useResponsiveStyles} from '@/hooks/use-responsive-layout';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 import {
   refreshEbayConnection,
   revokeEbayConnection,
@@ -227,7 +227,7 @@ export function ConnectionsScreen() {
         showsVerticalScrollIndicator={false}>
         <View style={responsiveStyles.hero}>
           <View style={responsiveStyles.heroIcon}>
-            <Ionicons color={theme.colors.scannerCyan} name="checkmark.shield.fill" size={24} />
+            <Ionicons color={theme.colors.scannerCyan} name="checkmark-circle" size={24} />
           </View>
           <Text style={[responsiveStyles.eyebrow, { fontSize: responsiveFont(9) }]}>ACCOUNT ACCESS</Text>
           <Text style={[responsiveStyles.title, { fontSize: responsiveFont(29) }]}>Connections</Text>

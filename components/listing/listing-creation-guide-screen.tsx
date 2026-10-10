@@ -4,7 +4,7 @@ import { useKeepFlipFeedbackNudge } from "@/components/feedback/keepflip-feedbac
 import { PhotoBackgroundRemover } from "@/components/inventory/photo-background-remover";
 import { ListingNetProceedsPanel } from "@/components/seller/listing-net-proceeds-panel";
 import { ListingReadinessPanel } from "@/components/seller/listing-readiness-panel";
-import { Ionicons } from "@/components/ui/icon-symbol";
+import { Ionicons } from "@react-native-vector-icons/ionicons";
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { CROSSLISTING_AUTOFILL_ENABLED } from "@/constants/crosslisting-autofill";
@@ -1037,7 +1037,7 @@ export function ListingCreationGuideScreen({ itemIdOverride, onBack, selectedMar
         ) : error || !item ? (
           <View style={styles.errorCard}>
             <View style={styles.errorIcon}>
-              <Ionicons color={theme.colors.goldBright} name="tag.fill" size={28} />
+              <Ionicons color={theme.colors.goldBright} name="alert-circle" size={28} />
             </View>
             <Text style={[styles.errorTitle, { fontSize: responsiveFont(19) }]}>Listing guide unavailable</Text>
             <Text selectable style={[styles.errorText, { fontSize: responsiveFont(14) }]}>
@@ -1074,7 +1074,7 @@ export function ListingCreationGuideScreen({ itemIdOverride, onBack, selectedMar
                 <View style={styles.signalPill}>
                   <Ionicons
                     color={theme.colors.scannerCyan}
-                    name="photo.on.rectangle.angled"
+                    name="image"
                     size={14}
                   />
                   <Text style={[styles.signalPillText, { fontSize: responsiveFont(10) }]}>
@@ -1485,7 +1485,7 @@ export function ListingCreationGuideScreen({ itemIdOverride, onBack, selectedMar
                         <View style={styles.destinationIcon}>
                           <Ionicons
                             color={theme.colors.scannerCyan}
-                            name="paperplane.fill"
+                            name="send"
                             size={18}
                           />
                         </View>
@@ -1576,7 +1576,7 @@ export function ListingCreationGuideScreen({ itemIdOverride, onBack, selectedMar
                       <View style={styles.ebayPublishSuccess}>
                         <Ionicons
                           color={theme.colors.scannerCyan}
-                          name="checkmark.shield.fill"
+                          name="checkmark-circle"
                           size={22}
                         />
                         <View style={styles.ebayPublishSuccessCopy}>
@@ -1620,7 +1620,7 @@ export function ListingCreationGuideScreen({ itemIdOverride, onBack, selectedMar
                         <View style={styles.ebaySetupNotice}>
                           <Ionicons
                             color={theme.colors.scannerCyan}
-                            name="checkmark.shield.fill"
+                            name="checkmark-circle"
                             size={16}
                           />
                           <Text style={[styles.ebaySetupNoticeText, { fontSize: responsiveFont(11) }]}>
@@ -1806,7 +1806,7 @@ export function ListingCreationGuideScreen({ itemIdOverride, onBack, selectedMar
                         {complete ? (
                           <Ionicons
                             color={theme.colors.textOnAccent}
-                            name="checkmark.shield.fill"
+                            name="checkmark-circle"
                             size={15}
                           />
                         ) : (
@@ -1824,7 +1824,7 @@ export function ListingCreationGuideScreen({ itemIdOverride, onBack, selectedMar
                               ? theme.colors.scannerCyan
                               : theme.colors.goldMuted
                           }
-                          name={complete ? "checkmark.shield.fill" : "chevron.right"}
+                          name={complete ? "checkmark-circle" : "chevron-forward"}
                           size={18}
                         />
                       ) : null}
@@ -1837,7 +1837,7 @@ export function ListingCreationGuideScreen({ itemIdOverride, onBack, selectedMar
             <View style={styles.publishNotice}>
               <Ionicons
                 color={theme.colors.goldBright}
-                name="tag.fill"
+                name="alert-circle"
                 size={20}
               />
               <Text style={[styles.publishNoticeText, { fontSize: responsiveFont(12) }]}>

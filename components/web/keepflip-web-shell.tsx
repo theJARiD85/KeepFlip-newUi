@@ -7,7 +7,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
@@ -30,39 +30,39 @@ const primaryNavigation: NavItem[] = [
   {
     eyebrow: 'OVERVIEW',
     href: '/',
-    icon: 'gauge.with.dots.needle.67percent',
+    icon: 'speedometer-outline',
     label: 'Command Center',
   },
   {
     eyebrow: 'WORKSPACE',
     href: '/inventory',
-    icon: 'shippingbox.fill',
+    icon: 'cube-outline',
     label: 'Inventory',
   },
   ...(CROSSLISTING_LAB_ENABLED
     ? [{
       eyebrow: 'WORKSPACE',
       href: '/crosslisting' as Href,
-      icon: 'shippingbox.fill' as const,
+      icon: 'list-outline',
       label: 'Listing',
     }]
     : []),
   {
     eyebrow: 'WORKSPACE',
     href: '/books',
-    icon: 'chart.bar.fill',
+    icon: 'bar-chart-outline',
     label: 'Books & Reports',
   },
   {
     eyebrow: 'INTELLIGENCE',
     href: '/market-research',
-    icon: 'magnifyingglass',
+    icon: 'search-outline',
     label: 'Market Research',
   },
   {
     eyebrow: 'INTELLIGENCE',
     href: '/seller-assistant',
-    icon: 'bubble.left.and.bubble.right.fill',
+    icon: 'chatbubble-ellipses-outline',
     label: 'Flip Assistant',
   },
 ];
@@ -71,20 +71,20 @@ const utilityNavigation: NavItem[] = [
   {
     eyebrow: 'PLAN',
     href: '/flip-plan',
-    icon: 'dollarsign.circle.fill',
+    icon: 'cash-outline',
     label: 'Plan a flip',
   },
   {
     eyebrow: 'CAPTURE',
     href: '/scanner',
-    icon: 'viewfinder',
+    icon: 'scan-outline',
     label: 'Scanner',
     androidOnly: true,
   },
   {
     eyebrow: 'ACCOUNT',
     href: '/account',
-    icon: 'person.crop.circle.fill',
+    icon: 'person-circle-outline',
     label: 'Account settings',
   },
 ];
@@ -248,7 +248,7 @@ export function KeepFlipWebShell({ children }: PropsWithChildren) {
                 </Text>
                 <Text style={[responsiveStyles3.profileMeta, { color: colors.textMuted }]}>VIEW ACCOUNT</Text>
               </View>
-              <Ionicons color={colors.textMuted} name="chevron.right" size={16} />
+              <Ionicons color={colors.textMuted} name="chevron-forward" size={16} />
             </Pressable>
             <Pressable
               accessibilityLabel="Sign out"
@@ -270,7 +270,7 @@ export function KeepFlipWebShell({ children }: PropsWithChildren) {
                 accessibilityRole="button"
                 onPress={() => navigate('/scanner')}
                 style={({ pressed }) => [responsiveStyles3.mobileAction, { borderColor: colors.accentCyanBorder, backgroundColor: colors.iconSurfaceCyan }, pressed && responsiveStyles3.navButtonPressed]}>
-                <Ionicons color={colors.scannerCyan} name="viewfinder" size={17} />
+                <Ionicons color={colors.scannerCyan} name="scan-outline" size={17} />
                 <Text style={[responsiveStyles3.mobileActionLabel, isPhone && responsiveStyles3.mobileActionLabelPhone, { color: colors.scannerCyan }]}>{isPhone ? 'ANDROID SCAN' : 'SCAN ON ANDROID'}</Text>
               </Pressable>
               <Pressable

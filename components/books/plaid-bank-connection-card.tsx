@@ -11,7 +11,7 @@ import {
 import { PlaidBankLinkButton } from '@/components/books/plaid-bank-link-button';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useResponsiveLayout , useResponsiveStyles} from '@/hooks/use-responsive-layout';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 import {
   disconnectPlaidBankConnection,
   getPlaidBankStatus,

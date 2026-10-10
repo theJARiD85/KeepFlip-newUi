@@ -10,12 +10,12 @@ import { SmartEvidenceCaptureGuide } from '@/components/scanner/smart-evidence-c
 import { ListingReadinessPanel } from '@/components/seller/listing-readiness-panel';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 import { EMPTY_EBAY_LISTING_REVIEW, type EbayListingReview } from '@/services/ebay-listing-readiness-service';
 import type { PublishEbayListingInput } from '@/services/ebayListingService';
 import type { InventoryItem } from '@/services/inventory-service';
 import type { ResellerLedgerEntry } from '@/services/reseller-ledger-service';
 import { getSmartEvidenceCapturePlan } from '@/services/smart-evidence-capture';
-import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 const DEMO_IMAGE = require('@/assets/images/walkthrough-coach-bag.jpeg');
 const DEMO_CAPTURE_PLAN = getSmartEvidenceCapturePlan({ categoryOverride: 'general' });

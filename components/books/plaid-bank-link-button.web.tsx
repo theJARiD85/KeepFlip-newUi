@@ -4,13 +4,13 @@ import { usePlaidLink, type PlaidLinkOnSuccessMetadata } from 'react-plaid-link'
 
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 import {
   createPlaidLinkToken,
   exchangePlaidPublicToken,
   syncPlaidBankTransactions,
   type PlaidBankLinkResult,
 } from '@/services/plaid-bank-service';
-import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 const LINK_TOKEN_STORAGE_KEY = 'keepflip.plaid.link_token';
 

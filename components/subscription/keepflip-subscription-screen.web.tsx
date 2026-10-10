@@ -25,7 +25,7 @@ import {
   presentKeepFlipWebBillingPaywall,
 } from '@/services/keepflip-web-billing';
 
-import { useResponsiveLayout , useResponsiveStyles} from '@/hooks/use-responsive-layout';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type KeepFlipSubscriptionScreenProps = {
   accountTab?: boolean;
 };

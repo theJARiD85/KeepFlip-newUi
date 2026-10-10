@@ -17,7 +17,9 @@ import {
   useResponsiveLayout,
   useResponsiveStyles,
 } from '@/hooks/use-responsive-layout';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { getAppwriteCoreServices } from '@/lib/appwrite';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KEEPFLIP_ANALYTICS_EVENTS, trackKeepFlipEvent } from '@/services/keepflip-analytics';
 import {
   KEEPFLIP_PLAN_DEFINITIONS,
@@ -65,7 +67,7 @@ type KeepFlipLaunchAuthScreenProps = {
   onBack?: () => void;
 };
 
-type IconName = ComponentProps<typeof Ionicons>['name'];
+type IconName = ComponentProps<typeof IconSymbol > ['name'];
 type TextInputHandle = ComponentRef<typeof TextInput>;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -99,7 +101,7 @@ function AuthField({
     <View style={styles.fieldGroup}>
       <Text style={[styles.fieldLabel, { fontSize: responsiveFont(10) }]}>{label}</Text>
       <View style={styles.fieldShell}>
-        <Ionicons color={theme.colors.goldMuted} name={icon} size={18} />
+        <IconSymbol color={theme.colors.goldMuted} name={icon} size={18} />
         <TextInput
           {...inputProps}
           accessibilityLabel={label}
@@ -117,7 +119,7 @@ function AuthField({
             style={({ pressed }) => [styles.visibilityButton, pressed && styles.pressed]}>
             <Ionicons
               color={theme.colors.textMuted}
-              name={secureVisible ? 'eye.slash.fill' : 'eye.fill'}
+              name={secureVisible ? 'eye-off' : 'eye'}
               size={19}
             />
           </Pressable>
@@ -278,7 +280,7 @@ function PlanSelection({
                   <View key={feature} style={styles.checkoutFeatureRow}>
                     <Ionicons
                       color={theme.colors.scannerCyan}
-                      name="checkmark.circle.fill"
+                      name="checkmark-circle"
                       size={15}
                     />
                     <Text style={[styles.checkoutFeatureText, { fontSize: responsiveFont(11) }]}>{feature}</Text>
@@ -654,7 +656,7 @@ export function KeepFlipLaunchAuthScreen({
                     autoCapitalize="none"
                     autoComplete="new-password"
                     editable={!isBusy && !setupRequired}
-                    icon="checkmark.shield.fill"
+                    icon="checkmark-circle"
                     label="Confirm password"
                     onChangeText={(value) => { setConfirmPassword(value); setLocalError(null); }}
                     onToggleSecure={() => setConfirmPasswordVisible((current) => !current)}
@@ -670,7 +672,7 @@ export function KeepFlipLaunchAuthScreen({
               <View style={styles.accountReadyNotice}>
                 <Ionicons
                   color={theme.colors.scannerCyan}
-                  name="checkmark.shield.fill"
+                  name="checkmark-circle"
                   size={18}
                 />
                 <Text style={[styles.accountReadyText, { fontSize: responsiveFont(12) }]}>
@@ -706,7 +708,7 @@ export function KeepFlipLaunchAuthScreen({
                         ? 'CONTINUE TO KEEPFLIP'
                         : 'CREATE FREE ACCOUNT & ENTER KEEPFLIP'}
                   </Text>
-                  <Ionicons color={theme.colors.textOnAccent} name="arrow.right" size={19} />
+                  <Ionicons color={theme.colors.textOnAccent} name="chevron-forward" size={19} />
                 </>
               )}
             </Pressable> : null}

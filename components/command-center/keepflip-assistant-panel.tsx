@@ -365,7 +365,7 @@ export function KeepFlipAssistantPanel({
                   accent={task.taskType === 'reminder' ? 'cyan' : 'gold'}
                   actionLabel="DONE"
                   description={task.dueAt ? dueLabel(task.dueAt) : 'No due date'}
-                  icon={task.taskType === 'reminder' ? 'envelope.fill' : 'checkmark.shield.fill'}
+                  icon={task.taskType === 'reminder' ? 'envelope.fill' : 'checkmark-circle'}
                   label={task.title}
                   onPress={() => void finishTask(task)}
                 />

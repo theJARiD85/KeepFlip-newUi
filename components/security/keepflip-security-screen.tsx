@@ -14,13 +14,13 @@ import {
   type Models,
 } from 'react-native-appwrite';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { getKeepFlipThemeColors } from '@/constants/keepflip-theme';
-import { useResponsiveLayout , useResponsiveStyles} from '@/hooks/use-responsive-layout';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 import { getAppwriteCoreServices } from '@/lib/appwrite';
 
 export function KeepFlipSecurityScreen() {
@@ -258,7 +258,7 @@ export function KeepFlipSecurityScreen() {
           onPress={() => router.back()}
           style={({ pressed }) => ({ alignItems: 'center', alignSelf: 'flex-start', flexDirection: 'row', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8, opacity: pressed ? 0.7 : 1, paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(8) : 8 })}
         >
-          <Ionicons color={colors.scannerCyan} name="chevron.left" size={17} />
+          <Ionicons color={colors.scannerCyan} name="chevron-back" size={17} />
           <Text style={{ color: colors.scannerCyan, fontSize: responsiveFont(10), fontWeight: '700' }}>ACCOUNT</Text>
         </Pressable>
 
@@ -481,7 +481,7 @@ function RecoveryCodeSetup({
         style={{ alignItems: 'center', flexDirection: 'row', gap: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveWidth(9) : 9, opacity: isBusy ? 0.55 : 1, paddingVertical: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveHeight(5) : 5 }}
       >
         <View style={[responsiveStyles2.checkbox, { backgroundColor: acknowledged ? colors.scannerCyan : 'transparent', borderColor: acknowledged ? colors.scannerCyan : colors.textMuted }]}>
-          {acknowledged ? <Ionicons color={colors.textOnAccent} name="checkmark.circle.fill" size={12} /> : null}
+          {acknowledged ? <Ionicons color={colors.textOnAccent} name="checkmark-circle" size={12} /> : null}
         </View>
         <Text style={{ color: colors.text, flex: 1, fontSize: responsiveFont(11), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(16) : 16 }}>
           I saved my recovery codes somewhere safe.

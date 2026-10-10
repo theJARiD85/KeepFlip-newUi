@@ -2,7 +2,7 @@ import { FlipCompanion } from '@/components/flip';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useResponsiveLayout , useResponsiveStyles} from '@/hooks/use-responsive-layout';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -73,7 +73,7 @@ export function MeetFlipIntroduction({ onBack, onContinue }: MeetFlipIntroductio
             <View style={responsiveStyles.highlights}>
               {current.highlights.map((label) => (
                 <View key={label} style={responsiveStyles.highlight}>
-                  <Ionicons color={theme.colors.scannerCyan} name="checkmark.circle.fill" size={15} />
+                  <Ionicons color={theme.colors.scannerCyan} name="checkmark-circle" size={15} />
                   <Text style={[responsiveStyles.highlightText, { fontSize: responsiveFont(11) }]}>{label}</Text>
                 </View>
               ))}
@@ -82,7 +82,7 @@ export function MeetFlipIntroduction({ onBack, onContinue }: MeetFlipIntroductio
 
           <Pressable accessibilityLabel={isLast ? 'Continue to free account details' : 'Continue introduction'} accessibilityRole="button" onPress={isLast ? onContinue : () => setStep(step + 1)} style={({ pressed }) => [responsiveStyles.continueButton, pressed && responsiveStyles.pressed]} testID="keepflip-meet-flip-continue">
             <Text style={[responsiveStyles.continueText, { fontSize: responsiveFont(14) }]}>{isLast ? 'CREATE MY FREE ACCOUNT' : 'CONTINUE'}</Text>
-            <Ionicons color={theme.colors.textOnAccent} name="arrow.right" size={18} />
+            <Ionicons color={theme.colors.textOnAccent} name="chevron-forward" size={18} />
           </Pressable>
           <Text style={responsiveStyles.footerNote}>{isLast ? 'Next: your name, email, and password.' : 'A quick introduction, then your account.'}</Text>
         </View>
