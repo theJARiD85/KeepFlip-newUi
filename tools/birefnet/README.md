@@ -69,8 +69,9 @@ axes are misidentified: the converter trace showed it attempting to divide a
 dimension of size 3 into 32 pieces, while the intended split is the dimension
 of size 1024. It invokes the
 float32 TFLite sibling on CPU and compares that mask to ONNX Runtime. The
-source graph has 62 decoder `Split` nodes whose ONNX axis is the second-last
-dimension: `Split_1` through `Split_49`, `Split_51` through `Split_58`,
+source graph has 61 decoder `Split` nodes whose ONNX axis is the second-last
+dimension: `Split_1` through `Split_32`, `Split_34` through `Split_49`,
+`Split_51` through `Split_58`,
 `Split_60` through `Split_63`, and `Split_65`. Their rank-three tensors have
 source shape `[3, 1024, width]`; after onnx2tf's layout conversion, the
 corresponding tensors are `[1024, width, 3]`, so their split axis must be 0.

@@ -29,7 +29,8 @@ BASE_MODEL = "ZhengPeng7/BiRefNet_lite"
 IMAGE_SIZE = 1024
 EXPECTED_ONNX_INPUT_SHAPE = [1, 3, IMAGE_SIZE, IMAGE_SIZE]
 SPLITS_WITH_CHANNEL_LAST_AXIS_BUG = (
-    *range(1, 50),
+    *range(1, 33),
+    *range(34, 50),
     *range(51, 59),
     *range(60, 64),
     65,
