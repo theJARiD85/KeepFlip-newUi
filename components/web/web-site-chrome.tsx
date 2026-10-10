@@ -10,6 +10,7 @@ import { WebBlogMenu } from '@/components/web/web-blog-menu';
 import { getKeepFlipThemeColors, keepFlipTheme as theme, type KeepFlipColorScheme } from '@/constants/keepflip-theme';
 
 import { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type WebSiteHeaderProps = {
   colorScheme?: KeepFlipColorScheme;
   label?: string;
@@ -30,6 +31,7 @@ export function WebSiteHeader({
   showMarketingLinks = false,
   showActions = true,
 }: WebSiteHeaderProps) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const router = useRouter();
   const { width } = useWindowDimensions();
   const { effectiveColorScheme } = useKeepFlipAppearance();
@@ -41,33 +43,33 @@ export function WebSiteHeader({
   const goToGetStarted = onGetStarted ?? (() => router.push('/meet-flip' as Href));
 
   return (
-    <View style={[styles.header, isCompact && styles.headerCompact, isPhone && styles.headerPhone, { borderBottomColor: colors.divider }]}>
-      <Link href="/welcome" asChild style={styles.brand}>
+    <View style={[responsiveStyles.header, isCompact && responsiveStyles.headerCompact, isPhone && responsiveStyles.headerPhone, { borderBottomColor: colors.divider }]}>
+      <Link href="/welcome" asChild style={responsiveStyles.brand}>
         <Pressable
           accessibilityLabel="KeepFlip home"
           accessibilityRole="link"
-          style={({ pressed }) => [pressed && styles.pressed]}
+          style={({ pressed }) => [pressed && responsiveStyles.pressed]}
         >
-          <View style={styles.brandCopy}>
+          <View style={responsiveStyles.brandCopy}>
             <Image
               accessibilityLabel="KeepFlip"
               contentFit="contain"
               source={require('@/assets/images/icon3.png')}
-              style={styles.brandMark}
+              style={responsiveStyles.brandMark}
             />
           </View>
-          <View style={styles.brandCopy}>
-            <Text style={[styles.brandName, { color: colors.text }]}>KEEPFLIP</Text>
-            <Text style={[styles.brandTagline, { color: colors.goldBright }]}>
+          <View style={responsiveStyles.brandCopy}>
+            <Text style={[responsiveStyles.brandName, { color: colors.text }]}>KEEPFLIP</Text>
+            <Text style={[responsiveStyles.brandTagline, { color: colors.goldBright }]}>
               Know what every flip costs.
             </Text>
           </View>
         </Pressable>
       </Link>
 
-      <View style={[styles.headerRight, isCompact && styles.headerRightCompact, isPhone && styles.headerRightPhone]}>
+      <View style={[responsiveStyles.headerRight, isCompact && responsiveStyles.headerRightCompact, isPhone && responsiveStyles.headerRightPhone]}>
         {showActions ? (
-          <View style={[styles.headerActions, isPhone && styles.headerActionsPhone]}>
+          <View style={[responsiveStyles.headerActions, isPhone && responsiveStyles.headerActionsPhone]}>
             {showBackButton ? (
               <Pressable
                 accessibilityLabel="Go back from legal documents"
@@ -81,16 +83,16 @@ export function WebSiteHeader({
                   }
                 }}
                 style={({ pressed }) => [
-                  styles.headerBackButton,
+                  responsiveStyles.headerBackButton,
                   {
                     backgroundColor: colors.iconSurfaceGold,
                     borderColor: colors.accentGoldBorder,
                   },
-                  pressed && styles.headerBackButtonPressed,
+                  pressed && responsiveStyles.headerBackButtonPressed,
                 ]}
               >
                 <Ionicons color={colors.goldBright} name="chevron-back" size={17} />
-                <Text style={[styles.headerBackButtonText, { color: colors.goldBright }]}>BACK</Text>
+                <Text style={[responsiveStyles.headerBackButtonText, { color: colors.goldBright }]}>BACK</Text>
               </Pressable>
             ) : null}
             {showMarketingLinks ? (
@@ -104,9 +106,9 @@ export function WebSiteHeader({
               <Pressable
                 accessibilityRole="button"
                 onPress={onHowItWorks}
-                style={({ pressed }) => [styles.headerLink, pressed && styles.pressed]}
+                style={({ pressed }) => [responsiveStyles.headerLink, pressed && responsiveStyles.pressed]}
               >
-                <Text style={[styles.headerLinkText, { color: colors.textMuted }]}>HOW IT WORKS</Text>
+                <Text style={[responsiveStyles.headerLinkText, { color: colors.textMuted }]}>HOW IT WORKS</Text>
               </Pressable>
             ) : null}
             {showMarketingLinks ? (
@@ -118,20 +120,20 @@ export function WebSiteHeader({
                 <Pressable
                   accessibilityRole="button"
                   onPress={goToSignIn}
-                  style={({ pressed }) => [styles.headerLink, pressed && styles.pressed]}
+                  style={({ pressed }) => [responsiveStyles.headerLink, pressed && responsiveStyles.pressed]}
                 >
-                  <Text style={[styles.headerLinkText, { color: colors.textMuted }]}>SIGN IN</Text>
+                  <Text style={[responsiveStyles.headerLinkText, { color: colors.textMuted }]}>SIGN IN</Text>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
                   onPress={goToGetStarted}
                   style={({ pressed }) => [
-                    styles.headerCta,
+                    responsiveStyles.headerCta,
                     { backgroundColor: colors.gold, borderColor: colors.gold },
-                    pressed && styles.pressed,
+                    pressed && responsiveStyles.pressed,
                   ]}
                 >
-                  <Text style={[styles.headerCtaText, { color: colors.textOnAccent }]}>GET STARTED</Text>
+                  <Text style={[responsiveStyles.headerCtaText, { color: colors.textOnAccent }]}>GET STARTED</Text>
                 </Pressable>
               </>
             )}
@@ -156,6 +158,7 @@ export function WebSiteFooter({
   suppressAuthLinks?: boolean;
   hideGetStarted?: boolean;
 }) {
+  const responsiveStyles2 = useResponsiveStyles(createStylesWebResponsive);
   const { isBusy, pendingMfaSignIn, status } = useKeepFlipAuth();
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const colors = getKeepFlipThemeColors(colorScheme ?? effectiveColorScheme);
@@ -185,18 +188,18 @@ export function WebSiteFooter({
   };
 
   return (
-    <View style={[styles.footer, isPhone && styles.footerPhone, inFlow ? styles.footerInFlow : styles.footerOverlay, { backgroundColor: colors.backgroundDeep, borderTopColor: colors.divider }]}>
-      <View style={[styles.footerMain, isPhone && styles.footerMainPhone]}>
+    <View style={[responsiveStyles2.footer, isPhone && responsiveStyles2.footerPhone, inFlow ? responsiveStyles2.footerInFlow : responsiveStyles2.footerOverlay, { backgroundColor: colors.backgroundDeep, borderTopColor: colors.divider }]}>
+      <View style={[responsiveStyles2.footerMain, isPhone && responsiveStyles2.footerMainPhone]}>
       </View>
 
-      <View style={[styles.footerMeta, isPhone && styles.footerMetaPhone, { borderTopColor: colors.divider }]}>
+      <View style={[responsiveStyles2.footerMeta, isPhone && responsiveStyles2.footerMetaPhone, { borderTopColor: colors.divider }]}>
         <View>
 
-          <Text style={[styles.footerMetaText, { color: colors.textMuted }]}>
+          <Text style={[responsiveStyles2.footerMetaText, { color: colors.textMuted }]}>
           © 2026 KeepFlip. Built for resellers.
         </Text>
         </View>
-        <View style={[styles.footerLinks, isPhone && styles.footerLinksPhone]}>
+        <View style={[responsiveStyles2.footerLinks, isPhone && responsiveStyles2.footerLinksPhone]}>
           {showMarketingLinks ? (
             <>
               <FooterRouteLink colors={colors} href="/changelog" label="Changelog" />
@@ -235,6 +238,7 @@ function HeaderRouteLink({
   label: string;
   primary?: boolean;
 }) {
+  const responsiveStyles3 = useResponsiveStyles(createStylesWebResponsive);
   if (Platform.OS === 'web') {
     const anchorStyle: CSSProperties = {
       alignItems: 'center',
@@ -260,16 +264,16 @@ function HeaderRouteLink({
       <Pressable
         accessibilityRole="link"
         style={({ pressed }) => [
-          primary ? styles.headerCta : styles.headerLink,
+          primary ? responsiveStyles3.headerCta : responsiveStyles3.headerLink,
           primary
             ? { backgroundColor: colors.gold, borderColor: colors.gold }
             : null,
-          pressed && styles.pressed,
+          pressed && responsiveStyles3.pressed,
         ]}
       >
         <Text
           style={[
-            primary ? styles.headerCtaText : styles.headerLinkText,
+            primary ? responsiveStyles3.headerCtaText : responsiveStyles3.headerLinkText,
             { color: primary ? colors.textOnAccent : colors.textMuted },
           ]}
         >
@@ -291,6 +295,7 @@ function FooterRouteLink({
   href: string;
   label: string;
 }) {
+  const responsiveStyles4 = useResponsiveStyles(createStylesWebResponsive);
   if (Platform.OS === 'web') {
     return createElement(
       'a',
@@ -320,12 +325,12 @@ function FooterRouteLink({
       <Pressable
         accessibilityRole="link"
         style={({ pressed }) => [
-          styles.footerLink,
+          responsiveStyles4.footerLink,
           accent && { backgroundColor: colors.gold, borderColor: colors.gold },
-          pressed && styles.pressed,
+          pressed && responsiveStyles4.pressed,
         ]}
       >
-        <Text style={[styles.footerLinkText, { color: accent ? colors.textOnAccent : colors.textMuted }]}>{label}</Text>
+        <Text style={[responsiveStyles4.footerLinkText, { color: accent ? colors.textOnAccent : colors.textMuted }]}>{label}</Text>
       </Pressable>
     </Link>
   );
@@ -340,6 +345,7 @@ function FooterExternalLink({
   href: string;
   label: string;
 }) {
+  const responsiveStyles5 = useResponsiveStyles(createStylesWebResponsive);
   if (Platform.OS === 'web') {
     return createElement(
       'a',
@@ -366,8 +372,8 @@ function FooterExternalLink({
 
   return (
     <Link href={href as Href} asChild>
-      <Pressable accessibilityRole="link" style={({ pressed }) => [styles.footerLink, pressed && styles.pressed]}>
-        <Text style={[styles.footerLinkText, { color: colors.textMuted }]}>{label}</Text>
+      <Pressable accessibilityRole="link" style={({ pressed }) => [responsiveStyles5.footerLink, pressed && responsiveStyles5.pressed]}>
+        <Text style={[responsiveStyles5.footerLinkText, { color: colors.textMuted }]}>{label}</Text>
       </Pressable>
     </Link>
   );
@@ -384,20 +390,21 @@ function FooterLink({
   label: string;
   onPress: () => void;
 }) {
+  const responsiveStyles6 = useResponsiveStyles(createStylesWebResponsive);
   return (
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [
-        styles.footerLink,
+        responsiveStyles6.footerLink,
         accent && {
           backgroundColor: colors.iconSurfaceGold,
           borderColor: colors.accentGoldBorder,
         },
-        pressed && styles.pressed,
+        pressed && responsiveStyles6.pressed,
       ]}
     >
-      <Text style={[styles.footerLinkText, { color: accent ? colors.goldBright : colors.textMuted }]}>
+      <Text style={[responsiveStyles6.footerLinkText, { color: accent ? colors.goldBright : colors.textMuted }]}>
         {label}
       </Text>
     </Pressable>
@@ -644,3 +651,143 @@ const styles = StyleSheet.create({
     opacity: 0.72,
   },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    header: {
+      ...styles["header"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(18) : 18,
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(16) : 16,
+    },
+    headerCompact: {
+      ...styles["headerCompact"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+    },
+    headerPhone: {
+      ...styles["headerPhone"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(14) : 14,
+    },
+    brandMark: {
+      ...styles["brandMark"],
+      height: layout.isWeb ? layout.webResponsiveHeight(75) : 75,
+      width: layout.isWeb ? layout.webResponsiveWidth(75) : 75,
+    },
+    brandName: {
+      ...styles["brandName"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(35) : 35,
+    },
+    brandTagline: {
+      ...styles["brandTagline"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+    headerRight: {
+      ...styles["headerRight"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
+    },
+    headerRightCompact: {
+      ...styles["headerRightCompact"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+    },
+    headerRightPhone: {
+      ...styles["headerRightPhone"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+    },
+    headerLabel: {
+      ...styles["headerLabel"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(7) : 7,
+    },
+    headerActions: {
+      ...styles["headerActions"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+    },
+    headerActionsPhone: {
+      ...styles["headerActionsPhone"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(6) : 6,
+    },
+    headerBackButton: {
+      ...styles["headerBackButton"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(4) : 4,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(38) : 38,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(11) : 11,
+    },
+    headerBackButtonText: {
+      ...styles["headerBackButtonText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+    },
+    headerLink: {
+      ...styles["headerLink"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(38) : 38,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(6) : 6,
+    },
+    headerLinkText: {
+      ...styles["headerLinkText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+    headerCta: {
+      ...styles["headerCta"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(38) : 38,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+    },
+    headerCtaText: {
+      ...styles["headerCtaText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+    },
+    footer: {
+      ...styles["footer"],
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(20) : 20,
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(15) : 15,
+    },
+    footerInFlow: {
+      ...styles["footerInFlow"],
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(12) : 12,
+    },
+    footerPhone: {
+      ...styles["footerPhone"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(20) : 20,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(10) : 10,
+    },
+    footerBrand: {
+      ...styles["footerBrand"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(5) : 5,
+    },
+    footerName: {
+      ...styles["footerName"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+    footerDescription: {
+      ...styles["footerDescription"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(15) : 15,
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(320) : 320,
+    },
+    footerLinks: {
+      ...styles["footerLinks"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(6) : 6,
+    },
+    footerLink: {
+      ...styles["footerLink"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(31) : 31,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+    },
+    footerLinkText: {
+      ...styles["footerLinkText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+    footerMeta: {
+      ...styles["footerMeta"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(15) : 15,
+    },
+    footerMetaPhone: {
+      ...styles["footerMetaPhone"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+    },
+    footerMetaText: {
+      ...styles["footerMetaText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : 8,
+    },
+  });
+}

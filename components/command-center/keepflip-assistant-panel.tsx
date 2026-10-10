@@ -4,12 +4,10 @@ import {
   FlipCompanion,
   useFlipCompanion,
 } from '@/components/flip';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipControlRow } from '@/components/ui/keepflip-control-row';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import { responsiveWidth } from '@/lib/responsiveFont';
 import {
   completeAssistantTask,
   createAssistantActionRun,
@@ -63,6 +61,7 @@ export function KeepFlipAssistantPanel({
   onNavigate: (route: AssistantRoute) => void;
   onOpenSellerOperations: () => void;
 }) {
+  const responsiveLayout2 = useResponsiveLayout();
   const styles = useResponsiveStyles(createResponsiveStyles);
   const {
     responsiveFont
@@ -268,7 +267,7 @@ export function KeepFlipAssistantPanel({
                 <Text style={[styles.onlineText, { fontSize: responsiveFont(8) }]}>ONLINE</Text>
               </View>
               <Text style={[styles.title, { fontSize: responsiveFont(18) }]}>Ask Flip</Text>
-              <Text style={[styles.subtitle, { fontSize: responsiveFont(11), lineHeight: 15 }]}>
+              <Text style={[styles.subtitle, { fontSize: responsiveFont(11), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(15) : 15 }]}>
                 Seller decisions, reminders, and business tools in one conversation.
               </Text>
             </View>
@@ -277,7 +276,7 @@ export function KeepFlipAssistantPanel({
               accessibilityRole="button"
               onPress={() => setIsExpanded(false)}
               style={({ pressed }) => [styles.closeButton, pressed && styles.closeButtonPressed]}>
-              <IconSymbol color={theme.colors.textMuted} name="xmark" size={17} />
+              <Ionicons color={theme.colors.textMuted} name="xmark" size={17} />
             </Pressable>
           </View>
 
@@ -346,8 +345,8 @@ export function KeepFlipAssistantPanel({
             ))}
           </View>
 
-          {message ? <Text style={[styles.message, { fontSize: responsiveFont(10), lineHeight: 14 }]}>{message}</Text> : null}
-          {error ? <Text style={[styles.error, { fontSize: responsiveFont(10), lineHeight: 14 }]}>{error}</Text> : null}
+          {message ? <Text style={[styles.message, { fontSize: responsiveFont(10), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(14) : 14 }]}>{message}</Text> : null}
+          {error ? <Text style={[styles.error, { fontSize: responsiveFont(10), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(14) : 14 }]}>{error}</Text> : null}
 
           <View style={styles.taskHeader}>
             <Text style={[styles.taskLabel, { fontSize: responsiveFont(8) }]}>UP NEXT</Text>
@@ -393,142 +392,142 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     surface: {
       overflow: 'hidden',
       borderWidth: 1,
-      borderColor: theme.colors.accentGoldBorder, borderRadius: 16,
+      borderColor: theme.colors.accentGoldBorder, borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.iconSurfaceGold,
     },
     searchBar: {
-      minHeight: 64,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(64) : 64,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
     },
     searchBarPressed: { backgroundColor: theme.colors.iconSurfaceCyan },
     flipAvatar: {
-      width: 190,
-      height: 190,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(190) : 190,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(190) : 190,
       overflow: 'hidden',
     },
     flipAvatarImage: { width: '100%', height: '100%' },
-    searchCopy: { flex: 1, minWidth: 0, gap: 3, padding: 5, justifyContent: 'flex-start', alignItems: 'flex-start', height: '90%' },
-    searchMeta: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+    searchCopy: { flex: 1, minWidth: 0, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3, padding: 5, justifyContent: 'flex-start', alignItems: 'flex-start', height: '90%' },
+    searchMeta: { flexDirection: 'row', alignItems: 'center', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5 },
     searchLabel: {
       color: theme.colors.gold,
       fontFamily: theme.fonts.radar,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: '900',
       letterSpacing: 1.4,
     },
     onlineDot: {
-      width: 5,
-      height: 5,
-      borderRadius: 3,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(5) : 5,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3,
       backgroundColor: theme.colors.scannerCyan,
     },
     onlineText: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.radar,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 0.9,
     },
-    searchPlaceholder: { color: theme.colors.text, fontSize: 14, fontWeight: '700', fontFamily: theme.fonts.body },
+    searchPlaceholder: { color: theme.colors.text, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14, fontWeight: '700', fontFamily: theme.fonts.body },
     searchIcon: {
-      width: 34,
-      height: 34,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(34) : 34,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(34) : 34,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
-      borderRadius: 17,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(17) : 17,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.iconSurfaceCyan,
     },
-    expandedContent: { gap: 12, padding: 14 },
-    heading: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    headingCopy: { flex: 1, gap: 3 },
+    expandedContent: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12, padding: 14 },
+    heading: { flexDirection: 'row', alignItems: 'center', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12 },
+    headingCopy: { flex: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3 },
     eyebrow: {
       color: theme.colors.scannerCyan,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 1.5,
     },
-    title: { color: theme.colors.cream, fontSize: 18, fontWeight: '900' },
-    subtitle: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 15 },
+    title: { color: theme.colors.cream, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : 18, fontWeight: '900' },
+    subtitle: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11, lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15 },
     closeButton: {
-      width: 32,
-      height: 32,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(32) : 32,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(32) : 32,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
       borderColor: theme.colors.dividerStrong,
-      borderRadius: 16,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.cardSoft,
     },
     closeButtonPressed: { backgroundColor: theme.colors.cardSoft },
-    inputRow: { flexDirection: 'row', alignItems: 'stretch', gap: 8 },
+    inputRow: { flexDirection: 'row', alignItems: 'stretch', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8 },
     inputShell: {
-      minHeight: 48,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(48) : 48,
       flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
-      paddingHorizontal: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       borderWidth: 1,
       borderColor: theme.colors.dividerStrong,
-      borderRadius: 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.surfaceInset,
     },
     inputAvatar: {
-      width: 25,
-      height: 25,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(25) : 25,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(25) : 25,
       overflow: 'hidden',
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
-      borderRadius: 13,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(13) : 13,
       borderCurve: 'continuous',
     },
     input: {
-      minHeight: 44,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(44) : 44,
       flex: 1,
       paddingHorizontal: 0,
-      paddingVertical: 8,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(8) : 8,
       color: theme.colors.text,
-      fontSize: 12,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
     },
     sendButton: {
-      minWidth: 54,
+      minWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(54) : 54,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: 10,
-      borderRadius: 10,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.goldBright,
     },
     sendButtonDisabled: { opacity: 0.42 },
     sendButtonPressed: { opacity: 0.75 },
-    sendText: { color: theme.colors.background, fontSize: 9, fontWeight: '900', letterSpacing: 0.8 },
-    quickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+    sendText: { color: theme.colors.background, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9, fontWeight: '900', letterSpacing: 0.8 },
+    quickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6 },
     quickChip: {
-      paddingHorizontal: 8,
-      paddingVertical: 6,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : 6,
       borderWidth: 1,
       borderColor: theme.colors.dividerStrong,
-      borderRadius: 8,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.iconSurfaceGold,
     },
     quickChipPressed: { backgroundColor: theme.colors.iconSurfaceGold },
-    quickText: { color: theme.colors.goldMuted, fontSize: 9, fontWeight: '700' },
-    message: { color: theme.colors.scannerCyan, fontSize: 10, lineHeight: 14 },
-    error: { color: theme.colors.danger, fontSize: 10, lineHeight: 14 },
+    quickText: { color: theme.colors.goldMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9, fontWeight: '700' },
+    message: { color: theme.colors.scannerCyan, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10, lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14 },
+    error: { color: theme.colors.danger, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10, lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14 },
     taskHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    taskLabel: { color: theme.colors.goldBright, fontSize: 8, fontWeight: '900', letterSpacing: 1.3 },
-    refresh: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 0.7 },
+    taskLabel: { color: theme.colors.goldBright, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8, fontWeight: '900', letterSpacing: 1.3 },
+    refresh: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8, fontWeight: '900', letterSpacing: 0.7 },
     taskList: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.colors.divider },
-    empty: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 15 },
+    empty: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11, lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15 },
   });
   return {
     ...staticStyles,

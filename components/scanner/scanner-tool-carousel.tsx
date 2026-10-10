@@ -13,7 +13,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
@@ -45,39 +44,39 @@ const scannerToolDefinitions: {
   label: string;
   surfaceKey: ScannerToolSurfaceKey;
 }[] = [
-  {
-    id: 'barcode',
-    label: 'Barcode scanner',
-    icon: 'barcode.viewfinder',
-    accentKey: 'scannerViolet',
-    surfaceKey: 'iconSurfaceViolet',
-    glowAlpha: 0.46,
-  },
-  {
-    id: 'multi',
-    label: 'Smart scan',
-    icon: 'rectangle.stack.fill',
-    accentKey: 'scannerCyan',
-    surfaceKey: 'iconSurfaceCyan',
-    glowAlpha: 0.46,
-  },
-  {
-    id: 'batch',
-    label: 'Batch-scan',
-    icon: 'square.grid.2x2.fill',
-    accentKey: 'scannerViolet',
-    surfaceKey: 'iconSurfaceViolet',
-    glowAlpha: 0.38,
-  },
-  {
-    id: 'upload',
-    label: 'Upload photo',
-    icon: 'photo.on.rectangle.angled',
-    accentKey: 'cream',
-    surfaceKey: 'iconSurface',
-    glowAlpha: 0.38,
-  },
-];
+    {
+      id: 'barcode',
+      label: 'Barcode scanner',
+      icon: 'barcode.viewfinder',
+      accentKey: 'scannerViolet',
+      surfaceKey: 'iconSurfaceViolet',
+      glowAlpha: 0.46,
+    },
+    {
+      id: 'multi',
+      label: 'Smart scan',
+      icon: 'rectangle.stack.fill',
+      accentKey: 'scannerCyan',
+      surfaceKey: 'iconSurfaceCyan',
+      glowAlpha: 0.46,
+    },
+    {
+      id: 'batch',
+      label: 'Batch-scan',
+      icon: 'square.grid.2x2.fill',
+      accentKey: 'scannerViolet',
+      surfaceKey: 'iconSurfaceViolet',
+      glowAlpha: 0.38,
+    },
+    {
+      id: 'upload',
+      label: 'Upload photo',
+      icon: 'photo.on.rectangle.angled',
+      accentKey: 'cream',
+      surfaceKey: 'iconSurface',
+      glowAlpha: 0.38,
+    },
+  ];
 
 export function getScannerTools(): ScannerTool[] {
   return scannerToolDefinitions.map(({ accentKey, glowAlpha, surfaceKey, ...tool }) => {
@@ -266,7 +265,7 @@ function ToolControl({
               backgroundColor: tool.surface,
             },
           ]}>
-          <IconSymbol
+          <Ionicons
             color={tool.accent}
             name={tool.icon}
             size={Math.round(controlCoreSize * 0.62)}
@@ -524,14 +523,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       right: -2,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: 5,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5,
       borderRadius: theme.radii.pill,
       borderWidth: 1,
       backgroundColor: theme.colors.background,
     },
     badgeText: {
       color: theme.colors.cream,
-      fontSize: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
       fontWeight: '900',
       fontVariant: ['tabular-nums'],
     },

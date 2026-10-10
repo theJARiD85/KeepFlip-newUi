@@ -1,20 +1,20 @@
 import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
+import { CrosslistingRun } from "@/components/crosslist/crosslisting-run";
 import { useKeepFlipFeedbackNudge } from "@/components/feedback/keepflip-feedback-nudge";
+import { PhotoBackgroundRemover } from "@/components/inventory/photo-background-remover";
 import { ListingNetProceedsPanel } from "@/components/seller/listing-net-proceeds-panel";
 import { ListingReadinessPanel } from "@/components/seller/listing-readiness-panel";
-import { CrosslistingRun } from "@/components/crosslist/crosslisting-run";
-import { PhotoBackgroundRemover } from "@/components/inventory/photo-background-remover";
-import { CROSSLISTING_AUTOFILL_ENABLED } from "@/constants/crosslisting-autofill";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Ionicons } from "@/components/ui/icon-symbol";
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
+import { CROSSLISTING_AUTOFILL_ENABLED } from "@/constants/crosslisting-autofill";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout, useResponsiveStyles } from "@/hooks/use-responsive-layout";
-import { parseSavedListingDraft, saveListingDraft, type SavedListingDraft } from '@/services/listing-draft-service';
 import {
-  KEEPFLIP_ANALYTICS_EVENTS,
-  trackKeepFlipEvent,
-} from "@/services/keepflip-analytics";
+  createGeneratedCrosslistingPayload,
+  CROSSLISTING_DESTINATIONS,
+  getCrosslistingMarketplace,
+} from "@/services/crosslisting-service";
 import { EMPTY_EBAY_LISTING_REVIEW, type EbayListingReview } from "@/services/ebay-listing-readiness-service";
 import { getEbayOAuthEnvironment } from "@/services/ebayConnectionService";
 import {
@@ -29,17 +29,18 @@ import {
 } from "@/services/inventory-service";
 import { appendPhotoToItem } from "@/services/itemPhotoService";
 import {
+  KEEPFLIP_ANALYTICS_EVENTS,
+  trackKeepFlipEvent,
+} from "@/services/keepflip-analytics";
+import { listingWithTargetPrice } from '@/services/listing-asking-price';
+import { parseSavedListingDraft, saveListingDraft, type SavedListingDraft } from '@/services/listing-draft-service';
+import {
   runListingGenerator,
-  type ListingPlatform,
   type ListingGeneratorResponse,
   type ListingGeneratorResult,
+  type ListingPlatform,
   type ListingReadiness,
 } from "@/services/listingService";
-import {
-  createGeneratedCrosslistingPayload,
-  CROSSLISTING_DESTINATIONS,
-  getCrosslistingMarketplace,
-} from "@/services/crosslisting-service";
 import { uploadItemImage } from "@/services/uploadItemImage";
 import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect, useLocalSearchParams } from "expo-router";
@@ -186,21 +187,6 @@ function listingTitle(item: InventoryItem) {
     .trim();
 }
 
-function listingWithTargetPrice(listing: ListingGeneratorResult['listing'], amount: number): ListingGeneratorResult['listing'] {
-  return {
-    ...listing,
-    priceRange: { ...listing.priceRange, targetPrice: amount },
-    marketplaceListings: {
-      facebookMarketplace: { ...listing.marketplaceListings.facebookMarketplace, price: amount },
-      ebay: { ...listing.marketplaceListings.ebay, price: amount },
-      offerUp: { ...listing.marketplaceListings.offerUp, price: amount },
-      depop: { ...listing.marketplaceListings.depop, price: amount },
-      poshmark: { ...listing.marketplaceListings.poshmark, price: amount },
-      mercari: { ...listing.marketplaceListings.mercari, price: amount },
-    },
-  };
-}
-
 function buildChecklist(item: InventoryItem): ChecklistStep[] {
   const hasIdentityDetail = Boolean(item.brand || item.model || item.category);
   const hasConditionNotes = item.conditionNotes.trim().length >= 12;
@@ -252,6 +238,7 @@ function buildChecklist(item: InventoryItem): ChecklistStep[] {
 }
 
 export function ListingCreationGuideScreen({ itemIdOverride, onBack, selectedMarketplaces }: { itemIdOverride?: string; onBack?: () => void; selectedMarketplaces?: ListingPlatform[] }) {
+  const responsiveLayout2 = useResponsiveLayout();
   const styles = useResponsiveStyles(createResponsiveStyles);
   const params = useLocalSearchParams<{
     focus?: string | string[];
@@ -370,14 +357,27 @@ export function ListingCreationGuideScreen({ itemIdOverride, onBack, selectedMar
       }
       setItem(loaded);
       const saved = parseSavedListingDraft(loaded.listingJson);
-      savedDraftRef.current = saved;
-      setGeneratedListing(saved?.listing ?? null);
+      const correctedListing = saved
+        ? listingWithTargetPrice(saved.listing, saved.listing.priceRange.targetPrice, loaded.currency)
+        : null;
+      const correctedDraft = saved && correctedListing
+        ? { ...saved, listing: correctedListing }
+        : null;
+      savedDraftRef.current = correctedDraft;
+      setGeneratedListing(correctedListing);
       setTargetPriceInput(saved ? String(saved.listing.priceRange.targetPrice) : '');
       setListingReadiness(saved?.readiness ?? null);
       setListingConfidence(saved?.confidence ?? null);
       setDraftSaveError(null);
       setPriceEditError(null);
       setEditRevision(0);
+      if (correctedDraft && JSON.stringify(correctedListing) !== JSON.stringify(saved?.listing)) {
+        try {
+          await saveListingDraft(userId, loaded.id, correctedDraft);
+        } catch (caught) {
+          setDraftSaveError(caught instanceof Error ? caught.message : 'KeepFlip could not save the corrected price copy.');
+        }
+      }
     } catch (caughtError) {
       setItem(null);
       setError(
@@ -409,9 +409,9 @@ export function ListingCreationGuideScreen({ itemIdOverride, onBack, selectedMar
     : null;
   const listingQuestions = pendingListingReview
     ? [
-        ...pendingListingReview.readiness.blockingQuestions,
-        ...pendingListingReview.readiness.recommendedQuestions,
-      ]
+      ...pendingListingReview.readiness.blockingQuestions,
+      ...pendingListingReview.readiness.recommendedQuestions,
+    ]
     : [];
   const listingHasAnswer = listingQuestions.some((question) =>
     Boolean(listingAnswers[question.id]?.trim()),
@@ -443,10 +443,15 @@ export function ListingCreationGuideScreen({ itemIdOverride, onBack, selectedMar
         return;
       }
 
+      const listing = listingWithTargetPrice(
+        result.listing,
+        result.listing.priceRange.targetPrice,
+        item?.currency ?? 'USD',
+      );
       setPendingListingReview(null);
       setListingAnswers({});
-      setGeneratedListing(result.listing);
-      setTargetPriceInput(String(result.listing.priceRange.targetPrice));
+      setGeneratedListing(listing);
+      setTargetPriceInput(String(listing.priceRange.targetPrice));
       setEditRevision(0);
       setListingConfidence(result.confidence);
       setSelectedPlatform("ebay");
@@ -457,7 +462,7 @@ export function ListingCreationGuideScreen({ itemIdOverride, onBack, selectedMar
           savedAt: new Date().toISOString(),
           confidence: result.confidence,
           readiness: result.readiness,
-          listing: result.listing,
+          listing,
           confirmedMarketplaces: savedDraftRef.current?.confirmedMarketplaces ?? {},
         };
         try {
@@ -572,33 +577,33 @@ export function ListingCreationGuideScreen({ itemIdOverride, onBack, selectedMar
       setGeneratedListing((current) =>
         current
           ? {
-              ...current,
-              platformCopy: {
-                ...current.platformCopy,
-                [platform]: value,
-              },
-              marketplaceListings: {
-                ...current.marketplaceListings,
-                facebookMarketplace: platform === "facebookMarketplace"
-                  ? { ...current.marketplaceListings.facebookMarketplace, description: value }
-                  : current.marketplaceListings.facebookMarketplace,
-                ebay: platform === "ebay"
-                  ? { ...current.marketplaceListings.ebay, description: value }
-                  : current.marketplaceListings.ebay,
-                offerUp: platform === "offerUp"
-                  ? { ...current.marketplaceListings.offerUp, description: value }
-                  : current.marketplaceListings.offerUp,
-                depop: platform === "depop"
-                  ? { ...current.marketplaceListings.depop, description: value }
-                  : current.marketplaceListings.depop,
-                poshmark: platform === "poshmark"
-                  ? { ...current.marketplaceListings.poshmark, description: value }
-                  : current.marketplaceListings.poshmark,
-                mercari: platform === "mercari"
-                  ? { ...current.marketplaceListings.mercari, description: value }
-                  : current.marketplaceListings.mercari,
-              },
-            }
+            ...current,
+            platformCopy: {
+              ...current.platformCopy,
+              [platform]: value,
+            },
+            marketplaceListings: {
+              ...current.marketplaceListings,
+              facebookMarketplace: platform === "facebookMarketplace"
+                ? { ...current.marketplaceListings.facebookMarketplace, description: value }
+                : current.marketplaceListings.facebookMarketplace,
+              ebay: platform === "ebay"
+                ? { ...current.marketplaceListings.ebay, description: value }
+                : current.marketplaceListings.ebay,
+              offerUp: platform === "offerUp"
+                ? { ...current.marketplaceListings.offerUp, description: value }
+                : current.marketplaceListings.offerUp,
+              depop: platform === "depop"
+                ? { ...current.marketplaceListings.depop, description: value }
+                : current.marketplaceListings.depop,
+              poshmark: platform === "poshmark"
+                ? { ...current.marketplaceListings.poshmark, description: value }
+                : current.marketplaceListings.poshmark,
+              mercari: platform === "mercari"
+                ? { ...current.marketplaceListings.mercari, description: value }
+                : current.marketplaceListings.mercari,
+            },
+          }
           : current,
       );
     },
@@ -608,8 +613,8 @@ export function ListingCreationGuideScreen({ itemIdOverride, onBack, selectedMar
   const applyTargetPrice = useCallback((amount: number) => {
     setTargetPriceInput(String(amount));
     setEditRevision((current) => current + 1);
-    setGeneratedListing((current) => current ? listingWithTargetPrice(current, amount) : current);
-  }, []);
+    setGeneratedListing((current) => current ? listingWithTargetPrice(current, amount, item?.currency ?? 'USD') : current);
+  }, [item?.currency]);
 
   const commitTargetPrice = useCallback(() => {
     const amount = Number(targetPriceInput.trim());
@@ -628,7 +633,7 @@ export function ListingCreationGuideScreen({ itemIdOverride, onBack, selectedMar
       setPriceEditError('Enter a valid price before leaving this listing.');
       return false;
     }
-    const listingToSave = listingWithTargetPrice(generatedListing, Number(enteredPrice));
+    const listingToSave = listingWithTargetPrice(generatedListing, Number(enteredPrice), item.currency);
     const draft: SavedListingDraft = {
       schemaVersion: 1,
       generatedAt: savedDraftRef.current?.generatedAt ?? new Date().toISOString(),
@@ -835,10 +840,10 @@ export function ListingCreationGuideScreen({ itemIdOverride, onBack, selectedMar
       const crosslistingMarketplace = getCrosslistingMarketplace(platform);
       const crosslistingPayload = crosslistingMarketplace && item
         ? createGeneratedCrosslistingPayload({
-            marketplace: crosslistingMarketplace,
-            listing: generatedListing,
-            item,
-          })
+          marketplace: crosslistingMarketplace,
+          listing: generatedListing,
+          item,
+        })
         : null;
 
       try {
@@ -851,8 +856,8 @@ export function ListingCreationGuideScreen({ itemIdOverride, onBack, selectedMar
           // prevent the marketplace tab while the clipboard write is pending.
           const useAutofill = Boolean(
             CROSSLISTING_AUTOFILL_ENABLED &&
-              crosslistingMarketplace &&
-              crosslistingPayload,
+            crosslistingMarketplace &&
+            crosslistingPayload,
           );
           const clipboardWrite = navigator.clipboard.writeText(
             useAutofill && crosslistingPayload
@@ -1005,839 +1010,842 @@ export function ListingCreationGuideScreen({ itemIdOverride, onBack, selectedMar
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={[styles.content,
-          { paddingTop: insets.top + 15, paddingBottom: insets.bottom + 30, gap: 10 }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }, Platform.OS === "web" ? { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter } : undefined]}
-        style={{ marginTop: insets.top, marginBottom: insets.bottom, gap: 15 }}
+        { paddingTop: insets.top + 15, paddingBottom: insets.bottom + 30, gap: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveWidth(10) : 10 }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }, Platform.OS === "web" ? { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter } : undefined]}
+        style={{ marginTop: insets.top, marginBottom: insets.bottom, gap: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveWidth(15) : 15 }}
         showsVerticalScrollIndicator={false}
       >
-          <View style={styles.topRow}>
-            {onBack ? <Pressable accessibilityRole="button" onPress={() => { void persistCurrentDraft().then((saved) => { if (saved) onBack(); }); }} style={{ paddingVertical: 8 }}><Text style={{ color: theme.colors.scannerCyan, fontWeight: '800' }}>‹  Listing</Text></Pressable> : null}
-            <View style={styles.topCopy}>
-              <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>SELLER WORKFLOW</Text>
-              <Text style={[styles.title, { fontFamily: theme.fonts.bold, fontSize: responsiveFont(26) }]}>
-                Let’s list this item
-              </Text>
-              <Text style={[styles.subtitle, { fontSize: responsiveFont(12) }]}>
-                Flip prepares the listing from your saved item. Review it once, then KeepFlip takes it to your marketplaces.
-              </Text>
-            </View>
+        <View style={styles.topRow}>
+          {onBack ? <Pressable accessibilityRole="button" onPress={() => { void persistCurrentDraft().then((saved) => { if (saved) onBack(); }); }} style={{ paddingVertical: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveHeight(8) : 8 }}><Text style={{ color: theme.colors.scannerCyan, fontWeight: '800' }}>‹  Listing</Text></Pressable> : null}
+          <View style={styles.topCopy}>
+            <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>SELLER WORKFLOW</Text>
+            <Text style={[styles.title, { fontFamily: theme.fonts.bold, fontSize: responsiveFont(26) }]}>
+              Let’s list this item
+            </Text>
+            <Text style={[styles.subtitle, { fontSize: responsiveFont(12) }]}>
+              Flip prepares the listing from your saved item. Review it once, then KeepFlip takes it to your marketplaces.
+            </Text>
           </View>
+        </View>
 
 
 
-          {loading ? (
-            <View style={styles.loadingCard}>
-              <ActivityIndicator color={theme.colors.scannerCyan} />
-              <Text style={[styles.loadingText, { fontSize: responsiveFont(15) }]}>Preparing your listing guide</Text>
+        {loading ? (
+          <View style={styles.loadingCard}>
+            <ActivityIndicator color={theme.colors.scannerCyan} />
+            <Text style={[styles.loadingText, { fontSize: responsiveFont(15) }]}>Preparing your listing guide</Text>
+          </View>
+        ) : error || !item ? (
+          <View style={styles.errorCard}>
+            <View style={styles.errorIcon}>
+              <Ionicons color={theme.colors.goldBright} name="tag.fill" size={28} />
             </View>
-          ) : error || !item ? (
-            <View style={styles.errorCard}>
-              <View style={styles.errorIcon}>
-                <IconSymbol color={theme.colors.goldBright} name="tag.fill" size={28} />
+            <Text style={[styles.errorTitle, { fontSize: responsiveFont(19) }]}>Listing guide unavailable</Text>
+            <Text selectable style={[styles.errorText, { fontSize: responsiveFont(14) }]}>
+              {error ?? "This item could not be opened."}
+            </Text>
+            <Pressable
+              accessibilityLabel="Try opening the listing guide again"
+              accessibilityRole="button"
+              onPress={() => void loadItem()}
+              style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
+            >
+              <Text style={[styles.retryText, { fontSize: responsiveFont(13) }]}>Try again</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <>
+            <View
+              onLayout={(event) => {
+                itemCardYRef.current = event.nativeEvent.layout.y;
+                scrollToBackground();
+              }}
+              style={styles.itemCard}
+            >
+              <View style={styles.itemCardRail} />
+              <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(10) }]}>ITEM TO LIST</Text>
+              <Text selectable style={[styles.itemTitle, { fontSize: responsiveFont(26) }]}>{title}</Text>
+              <Text selectable style={styles.itemMeta}>
+                {[item.brand, item.model, item.category]
+                  .filter(Boolean)
+                  .join(" / ") || "Add identity details before publishing"}
+              </Text>
+
+              <View style={styles.itemSignals}>
+                <View style={styles.signalPill}>
+                  <Ionicons
+                    color={theme.colors.scannerCyan}
+                    name="photo.on.rectangle.angled"
+                    size={14}
+                  />
+                  <Text style={[styles.signalPillText, { fontSize: responsiveFont(10) }]}>
+                    {item.photoCount} PHOTO{item.photoCount === 1 ? "" : "S"}
+                  </Text>
+                </View>
+                <View style={styles.signalPill}>
+                  <Text style={[styles.signalPillLabel, { fontSize: responsiveFont(8) }]}>CONDITION</Text>
+                  <Text style={[styles.signalPillText, { fontSize: responsiveFont(10) }]}>{item.condition || "ADD"}</Text>
+                </View>
               </View>
-              <Text style={[styles.errorTitle, { fontSize: responsiveFont(19) }]}>Listing guide unavailable</Text>
-              <Text selectable style={[styles.errorText, { fontSize: responsiveFont(14) }]}>
-                {error ?? "This item could not be opened."}
+
+              <View style={styles.photoPrepRow}>
+                <View style={styles.photoPrepCopy}>
+                  <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>LISTING PHOTO SET</Text>
+                  <Text style={[styles.photoPrepText, { fontSize: responsiveFont(12) }]}>
+                    {item.photoCount} of {MAX_LISTING_PHOTOS} photos saved. Add
+                    close-ups of labels, flaws, measurements, and the full item
+                    before handing the draft to a marketplace.
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityLabel="Add more item photos"
+                  accessibilityRole="button"
+                  disabled={addingPhotos || item.photoCount >= MAX_LISTING_PHOTOS}
+                  onPress={addItemPhotos}
+                  style={({ pressed }) => [
+                    styles.addPhotosButton,
+                    pressed && styles.pressed,
+                    (addingPhotos || item.photoCount >= MAX_LISTING_PHOTOS) &&
+                    styles.addPhotosButtonDisabled,
+                  ]}
+                >
+                  {addingPhotos ? (
+                    <ActivityIndicator color={theme.colors.textOnAccent} />
+                  ) : (
+                    <Text style={[styles.addPhotosButtonText, { fontSize: responsiveFont(8) }]}>
+                      {item.photoCount >= MAX_LISTING_PHOTOS
+                        ? "FULL"
+                        : "ADD PHOTOS"}
+                    </Text>
+                  )}
+                </Pressable>
+              </View>
+              {photoUploadError ? (
+                <Text selectable style={[styles.photoUploadError, { fontSize: responsiveFont(12) }]}>
+                  {photoUploadError}
+                </Text>
+              ) : null}
+              {userId ? (
+                <View
+                  onLayout={(event) => {
+                    backgroundPanelYRef.current = event.nativeEvent.layout.y;
+                    scrollToBackground();
+                  }}
+                >
+                  <PhotoBackgroundRemover
+                    key={item.id}
+                    itemId={item.id}
+                    ownerId={userId}
+                    photoCount={item.photoCount}
+                    onSaved={loadItem}
+                  />
+                </View>
+              ) : null}
+            </View>
+
+            <View style={styles.draftCard}>
+              <View style={styles.sectionHeader}>
+                <View>
+                  <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9) }]}>LISTING BRIEF</Text>
+                  <Text style={[styles.sectionTitle, { fontSize: responsiveFont(18) }]}>Start with the facts</Text>
+                </View>
+                <View style={styles.localPill}>
+                  <Text style={[styles.localPillText, { fontSize: responsiveFont(8) }]}>LOCAL GUIDE</Text>
+                </View>
+              </View>
+
+              <View style={styles.fieldBlock}>
+                <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>TITLE STARTER</Text>
+                <Text selectable style={[styles.fieldValue, { fontSize: responsiveFont(14) }]}>{title}</Text>
+              </View>
+              <View style={styles.fieldBlock}>
+                <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>CONDITION DISCLOSURE</Text>
+                <Text selectable style={[styles.fieldValue, { fontSize: responsiveFont(14) }]}>
+                  {item.conditionNotes.trim() ||
+                    "Add factual notes about testing, wear, missing pieces, and defects."}
+                </Text>
+              </View>
+              <View style={styles.fieldBlock}>
+                <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>MARKET REFERENCE</Text>
+                <Text selectable style={[styles.fieldValue, { fontSize: responsiveFont(14) }]}>
+                  {priceReference
+                    ? `${priceReference} saved estimate. It is a reference, not a recommended list price.`
+                    : "No saved market estimate. Analyze the item before setting a price."}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.generatorCard}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.generatorHeading}>
+                  <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9), fontFamily: theme.fonts.display }]}>DRAFT BUILDER</Text>
+                  <Text style={[styles.sectionTitle, { fontSize: responsiveFont(18) }]}>Generate the working draft</Text>
+                </View>
+                <View style={styles.generatorBadge}>
+                  <Text style={[styles.generatorBadgeText, { fontSize: responsiveFont(8) }]}>MASTER DRAFT</Text>
+                </View>
+              </View>
+              <Text style={[styles.generatorDescription, { fontSize: responsiveFont(12) }]}>
+                Use the saved item details and market reference to create platform-ready copy. Review every claim before publishing.
               </Text>
               <Pressable
-                accessibilityLabel="Try opening the listing guide again"
+                accessibilityLabel={generatedListing ? "Recheck details and regenerate listing draft" : "Check item details and generate listing draft"}
                 accessibilityRole="button"
-                onPress={() => void loadItem()}
-                style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
+                disabled={generatingListing}
+                onPress={() => void generateListing()}
+                style={({ pressed }) => [
+                  styles.generateButton,
+                  pressed && styles.pressed,
+                  generatingListing && styles.generateButtonBusy,
+                ]}
               >
-                <Text style={[styles.retryText, { fontSize: responsiveFont(13) }]}>Try again</Text>
+                {generatingListing ? (
+                  <ActivityIndicator color={theme.colors.textOnAccent} />
+                ) : (
+                  <Text style={[styles.generateButtonText, { fontSize: responsiveFont(10) }]}>
+                    {generatedListing ? "RECHECK DETAILS & REGENERATE" : "CHECK DETAILS & GENERATE DRAFT"}
+                  </Text>
+                )}
               </Pressable>
-            </View>
-          ) : (
-            <>
-              <View
-                onLayout={(event) => {
-                  itemCardYRef.current = event.nativeEvent.layout.y;
-                  scrollToBackground();
-                }}
-                style={styles.itemCard}
-              >
-                <View style={styles.itemCardRail} />
-                <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(10) }]}>ITEM TO LIST</Text>
-                <Text selectable style={[styles.itemTitle, { fontSize: responsiveFont(26) }]}>{title}</Text>
-                <Text selectable style={styles.itemMeta}>
-                  {[item.brand, item.model, item.category]
-                    .filter(Boolean)
-                    .join(" / ") || "Add identity details before publishing"}
+              {listingGenerationError ? (
+                <Text selectable style={[styles.generatorError, { fontSize: responsiveFont(12) }]}>
+                  {listingGenerationError}
                 </Text>
+              ) : null}
 
-                <View style={styles.itemSignals}>
-                  <View style={styles.signalPill}>
-                    <IconSymbol
-                      color={theme.colors.scannerCyan}
-                      name="photo.on.rectangle.angled"
-                      size={14}
-                    />
-                    <Text style={[styles.signalPillText, { fontSize: responsiveFont(10) }]}>
-                      {item.photoCount} PHOTO{item.photoCount === 1 ? "" : "S"}
-                    </Text>
-                  </View>
-                  <View style={styles.signalPill}>
-                    <Text style={[styles.signalPillLabel, { fontSize: responsiveFont(8) }]}>CONDITION</Text>
-                    <Text style={[styles.signalPillText, { fontSize: responsiveFont(10) }]}>{item.condition || "ADD"}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.photoPrepRow}>
-                  <View style={styles.photoPrepCopy}>
-                    <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>LISTING PHOTO SET</Text>
-                    <Text style={[styles.photoPrepText, { fontSize: responsiveFont(12) }]}>
-                      {item.photoCount} of {MAX_LISTING_PHOTOS} photos saved. Add
-                      close-ups of labels, flaws, measurements, and the full item
-                      before handing the draft to a marketplace.
-                    </Text>
-                  </View>
+              {pendingListingReview ? (
+                <View style={styles.listingQuestionsCard}>
+                  <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9) }]}>SELLER DETAILS NEEDED</Text>
+                  <Text style={[styles.sectionTitle, { fontSize: responsiveFont(17) }]}>Add the missing item details</Text>
+                  <Text style={[styles.generatorDescription, { fontSize: responsiveFont(12) }]}>
+                    Answer every required detail. KeepFlip saves your answers to this item, then checks the updated information before making marketplace drafts. You can say unknown or not verified when that is the answer.
+                  </Text>
+                  {listingQuestions.map((question, index) => (
+                    <View key={question.id} style={styles.listingQuestionBlock}>
+                      <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>
+                        {question.required ? "REQUIRED" : "OPTIONAL"} DETAIL {index + 1} · {question.field.toUpperCase()}
+                      </Text>
+                      <Text style={[styles.fieldValue, { fontSize: responsiveFont(13) }]}>
+                        {question.question}
+                      </Text>
+                      {question.whyItMatters ? (
+                        <Text style={[styles.generatorDescription, { fontSize: responsiveFont(11) }]}>
+                          {question.whyItMatters}
+                        </Text>
+                      ) : null}
+                      <TextInput
+                        accessibilityLabel={`Answer required listing detail: ${question.question}`}
+                        autoCapitalize="sentences"
+                        maxLength={240}
+                        multiline
+                        onChangeText={(value) => setListingAnswers((current) => ({
+                          ...current,
+                          [question.id]: value,
+                        }))}
+                        placeholder="Enter what you confirmed. You can say unknown or not verified."
+                        placeholderTextColor={theme.colors.textMuted}
+                        style={[styles.generatedEditorInput, styles.listingAnswerInput, { fontSize: responsiveFont(12) }]}
+                        value={listingAnswers[question.id] ?? ""}
+                      />
+                    </View>
+                  ))}
                   <Pressable
-                    accessibilityLabel="Add more item photos"
+                    accessibilityLabel="Save item details and generate listing"
                     accessibilityRole="button"
-                    disabled={addingPhotos || item.photoCount >= MAX_LISTING_PHOTOS}
-                    onPress={addItemPhotos}
+                    disabled={generatingListing || !listingHasAnswer}
+                    onPress={() => void submitListingDetails()}
                     style={({ pressed }) => [
-                      styles.addPhotosButton,
+                      styles.generateButton,
                       pressed && styles.pressed,
-                      (addingPhotos || item.photoCount >= MAX_LISTING_PHOTOS) &&
-                      styles.addPhotosButtonDisabled,
+                      (generatingListing || !listingHasAnswer) && styles.generateButtonBusy,
                     ]}
                   >
-                    {addingPhotos ? (
+                    {generatingListing ? (
                       <ActivityIndicator color={theme.colors.textOnAccent} />
                     ) : (
-                      <Text style={[styles.addPhotosButtonText, { fontSize: responsiveFont(8) }]}>
-                        {item.photoCount >= MAX_LISTING_PHOTOS
-                          ? "FULL"
-                          : "ADD PHOTOS"}
+                      <Text style={[styles.generateButtonText, { fontSize: responsiveFont(10) }]}>
+                        SAVE DETAILS & GENERATE LISTING
                       </Text>
                     )}
                   </Pressable>
                 </View>
-                {photoUploadError ? (
-                  <Text selectable style={[styles.photoUploadError, { fontSize: responsiveFont(12) }]}>
-                    {photoUploadError}
+              ) : null}
+
+              {listingReadiness && !pendingListingReview ? (
+                <View style={styles.listingEvidenceCard}>
+                  <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9) }]}>SAVED ITEM DETAILS</Text>
+                  <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>Facts used in this draft</Text>
+                  {listingReadiness.facts
+                    .filter((fact) => fact.value)
+                    .map((fact) => (
+                      <Text key={fact.field} style={[styles.listingEvidenceText, { fontSize: responsiveFont(11) }]}>
+                        {fact.label}: {fact.value} ({fact.source})
+                      </Text>
+                    ))}
+                  {listingReadiness.conditionByArea.map((area) => (
+                    <Text key={area.area} style={[styles.listingEvidenceText, { fontSize: responsiveFont(11) }]}>
+                      {area.area.replace(/_/g, " ")}: {area.details.length ? area.details.join("; ") : area.status.replace(/_/g, " ")}
+                    </Text>
+                  ))}
+                  <Text style={[styles.listingEvidenceText, { fontSize: responsiveFont(11) }]}>
+                    Authenticity: {listingReadiness.authenticity.status.replace(/_/g, " ")}
                   </Text>
-                ) : null}
-                {userId ? (
-                  <View
-                    onLayout={(event) => {
-                      backgroundPanelYRef.current = event.nativeEvent.layout.y;
-                      scrollToBackground();
-                    }}
-                  >
-                    <PhotoBackgroundRemover
-                      key={item.id}
-                      itemId={item.id}
-                      ownerId={userId}
-                      photoCount={item.photoCount}
-                      onSaved={loadItem}
+                  {listingReadiness.completeness.includedItems.length ? (
+                    <Text style={[styles.listingEvidenceText, { fontSize: responsiveFont(11) }]}>
+                      Included: {listingReadiness.completeness.includedItems.join(", ")}
+                    </Text>
+                  ) : null}
+                </View>
+              ) : null}
+
+              {generatedListing ? (
+                <View style={styles.generatedCopy}>
+                  {draftSaveError ? <Text accessibilityRole="alert" style={styles.generatorWarning}>Draft save failed: {draftSaveError}</Text> : null}
+                  {item.isListed ? <Text style={styles.generatorWarning}>Changes here save your KeepFlip draft. Review and update each live marketplace listing before relying on those changes.</Text> : null}
+                  <View style={styles.generatedTitleRow}>
+                    <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>TITLE</Text>
+                    <TextInput
+                      multiline
+                      accessibilityLabel="Edit generated listing title"
+                      autoCapitalize="sentences"
+                      onChangeText={(value) => updateGeneratedText("title", value)}
+                      style={[
+                        styles.generatedTitle,
+                        styles.generatedEditorInput,
+                        styles.generatedTitleInput,
+                        { fontSize: responsiveFont(13) },
+                      ]}
+                      value={generatedListing.title}
                     />
+                    <Text style={[styles.confidenceText, { fontSize: responsiveFont(8) }]}>
+                      {formatConfidence(listingConfidence)}% CONFIDENCE
+                    </Text>
                   </View>
-                ) : null}
-              </View>
-
-              <View style={styles.draftCard}>
-                <View style={styles.sectionHeader}>
-                  <View>
-                    <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9) }]}>LISTING BRIEF</Text>
-                    <Text style={[styles.sectionTitle, { fontSize: responsiveFont(18) }]}>Start with the facts</Text>
+                  <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>SUBTITLE</Text>
+                  <TextInput
+                    accessibilityLabel="Edit generated listing subtitle"
+                    autoCapitalize="sentences"
+                    multiline
+                    onChangeText={(value) => updateGeneratedText("subtitle", value)}
+                    style={[
+                      styles.generatedSubtitle,
+                      styles.generatedEditorInput,
+                      styles.generatedSubtitleInput,
+                      {
+                        fontSize: responsiveFont(13),
+                        height: 'auto',
+                      },
+                    ]}
+                    value={generatedListing.subtitle}
+                  />
+                  <View style={styles.generatedSignals}>
+                    <Text style={styles.generatedSignal}>
+                      {generatedListing.conditionLabel.replace(/_/g, " ").toUpperCase()}
+                    </Text>
+                    <Text style={styles.generatedSignal}>
+                      TARGET ${generatedListing.priceRange.targetPrice.toFixed(0)}
+                    </Text>
+                    <Text style={styles.generatedSignal}>
+                      {generatedListing.sellingStrategy.replace(/_/g, " ").toUpperCase()}
+                    </Text>
                   </View>
-                  <View style={styles.localPill}>
-                    <Text style={[styles.localPillText, { fontSize: responsiveFont(8) }]}>LOCAL GUIDE</Text>
+                  <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>TARGET PRICE</Text>
+                  <TextInput
+                    accessibilityLabel="Edit listing target price"
+                    keyboardType="decimal-pad"
+                    onChangeText={(value) => { setTargetPriceInput(value); setPriceEditError(null); }}
+                    onEndEditing={commitTargetPrice}
+                    style={[styles.generatedEditorInput, styles.generatedTitleInput, { fontSize: responsiveFont(13) }]}
+                    value={targetPriceInput}
+                  />
+                  {priceEditError ? <Text accessibilityRole="alert" style={styles.generatorWarning}>{priceEditError}</Text> : null}
+                  <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>PLATFORM COPY</Text>
+                  <View style={styles.platformTabs}>
+                    {(
+                      Object.keys(generatedListing.platformCopy) as (keyof ListingGeneratorResult["listing"]["platformCopy"])[]
+                    ).map((platform) => (
+                      <Pressable
+                        key={platform}
+                        accessibilityRole="button"
+                        onPress={() => setSelectedPlatform(platform)}
+                        style={[
+                          styles.platformTab,
+                          selectedPlatform === platform && styles.platformTabActive,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.platformTabText,
+                            selectedPlatform === platform && styles.platformTabTextActive,
+                          ]}
+                        >
+                          {PLATFORM_COPY_LABELS[platform]}
+                        </Text>
+                      </Pressable>
+                    ))}
                   </View>
-                </View>
-
-                <View style={styles.fieldBlock}>
-                  <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>TITLE STARTER</Text>
-                  <Text selectable style={[styles.fieldValue, { fontSize: responsiveFont(14) }]}>{title}</Text>
-                </View>
-                <View style={styles.fieldBlock}>
+                  <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>LONG DESCRIPTION</Text>
+                  <TextInput
+                    accessibilityLabel="Edit generated listing description"
+                    autoCapitalize="sentences"
+                    multiline
+                    onChangeText={(value) => updateGeneratedText("description", value)}
+                    style={[
+                      styles.generatedBody,
+                      styles.generatedEditorInput,
+                      styles.generatedDescriptionInput,
+                      { fontSize: responsiveFont(13) },
+                    ]}
+                    value={generatedListing.description}
+                  />
+                  <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>MARKETPLACE COPY</Text>
+                  <TextInput
+                    accessibilityLabel={`Edit ${selectedPlatform} marketplace copy`}
+                    autoCapitalize="sentences"
+                    multiline
+                    onChangeText={(value) => updateGeneratedPlatformCopy(selectedPlatform, value)}
+                    style={[
+                      styles.generatedBody,
+                      styles.generatedEditorInput,
+                      styles.generatedPlatformInput,
+                      { fontSize: responsiveFont(13) },
+                    ]}
+                    value={generatedListing.platformCopy[selectedPlatform]}
+                  />
+                  <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>
+                    {PLATFORM_COPY_LABELS[selectedPlatform].toUpperCase()} LISTING JSON
+                  </Text>
+                  <Text selectable style={[styles.marketplaceJsonPreview, { fontSize: responsiveFont(10) }]}>
+                    {JSON.stringify(generatedListing.marketplaceListings[selectedPlatform], null, 2)}
+                  </Text>
                   <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>CONDITION DISCLOSURE</Text>
-                  <Text selectable style={[styles.fieldValue, { fontSize: responsiveFont(14) }]}>
-                    {item.conditionNotes.trim() ||
-                      "Add factual notes about testing, wear, missing pieces, and defects."}
-                  </Text>
+                  <TextInput
+                    accessibilityLabel="Edit generated condition disclosure"
+                    autoCapitalize="sentences"
+                    multiline
+                    onChangeText={(value) => updateGeneratedText("conditionDisclosure", value)}
+                    style={[
+                      styles.generatedBody,
+                      styles.generatedEditorInput,
+                      styles.generatedConditionInput,
+                      { fontSize: responsiveFont(13) },
+                    ]}
+                    value={generatedListing.conditionDisclosure}
+                  />
+                  {generatedListing.warnings.length ? (
+                    <Text selectable style={styles.generatorWarning}>
+                      Review: {generatedListing.warnings.join(" ")}
+                    </Text>
+                  ) : null}
                 </View>
-                <View style={styles.fieldBlock}>
-                  <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>MARKET REFERENCE</Text>
-                  <Text selectable style={[styles.fieldValue, { fontSize: responsiveFont(14) }]}>
-                    {priceReference
-                      ? `${priceReference} saved estimate. It is a reference, not a recommended list price.`
-                      : "No saved market estimate. Analyze the item before setting a price."}
-                  </Text>
-                </View>
-              </View>
+              ) : null}
+            </View>
 
-              <View style={styles.generatorCard}>
+            {generatedListing ? (
+              <View style={styles.crosslistCard}>
                 <View style={styles.sectionHeader}>
                   <View style={styles.generatorHeading}>
-                    <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9), fontFamily: theme.fonts.display }]}>DRAFT BUILDER</Text>
-                    <Text style={[styles.sectionTitle, { fontSize: responsiveFont(18) }]}>Generate the working draft</Text>
+                    <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(10) }]}>CROSSLIST DESTINATIONS</Text>
+                    <Text style={[styles.sectionTitle, { fontSize: responsiveFont(18) }]}>Send the draft where you sell</Text>
                   </View>
-                  <View style={styles.generatorBadge}>
-                    <Text style={[styles.generatorBadgeText, { fontSize: responsiveFont(8) }]}>MASTER DRAFT</Text>
+                  <View style={styles.crosslistBadge}>
+                    <Text style={[styles.crosslistBadgeText, { fontSize: responsiveFont(9) }]}>
+                      {CROSSLIST_PLATFORMS.length} CHANNELS
+                    </Text>
                   </View>
                 </View>
-                <Text style={[styles.generatorDescription, { fontSize: responsiveFont(12) }]}>
-                  Use the saved item details and market reference to create platform-ready copy. Review every claim before publishing.
+                <Text style={[styles.crosslistDescription, { fontSize: responsiveFont(12) }]}>
+                  KeepFlip keeps item facts consistent across channels. eBay can publish the reviewed draft. KeepFlip opens each selected marketplace, fills its form, and helps you finish the post.
                 </Text>
-                <Pressable
-                  accessibilityLabel={generatedListing ? "Recheck details and regenerate listing draft" : "Check item details and generate listing draft"}
-                  accessibilityRole="button"
-                  disabled={generatingListing}
-                  onPress={() => void generateListing()}
-                  style={({ pressed }) => [
-                    styles.generateButton,
-                    pressed && styles.pressed,
-                    generatingListing && styles.generateButtonBusy,
-                  ]}
-                >
-                  {generatingListing ? (
-                    <ActivityIndicator color={theme.colors.textOnAccent} />
-                  ) : (
-                    <Text style={[styles.generateButtonText, { fontSize: responsiveFont(10) }]}>
-                      {generatedListing ? "RECHECK DETAILS & REGENERATE" : "CHECK DETAILS & GENERATE DRAFT"}
-                    </Text>
-                  )}
-                </Pressable>
-                {listingGenerationError ? (
-                  <Text selectable style={[styles.generatorError, { fontSize: responsiveFont(12) }]}>
-                    {listingGenerationError}
-                  </Text>
+                {(Platform.OS === "web" || CROSSLISTING_AUTOFILL_ENABLED) && item && userId ? (
+                  <CrosslistingRun
+                    key={item.id}
+                    item={item}
+                    listing={generatedListing}
+                    initialSelections={selectedMarketplaces}
+                    onBeforeStart={persistCurrentDraft}
+                    onListingConfirmed={() => {
+                      void getInventoryItem(userId, item.id).then((updated) => {
+                        setItem(updated);
+                        savedDraftRef.current = parseSavedListingDraft(updated.listingJson);
+                      }).catch(() => setDraftSaveError('The listing was recorded, but KeepFlip could not refresh its details. Reopen this item to see the latest status.'));
+                    }}
+                    onDraftPrepared={(marketplace) => {
+                      trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.listingShared, { platform: marketplace });
+                      recordCompletedAction();
+                    }}
+                    userId={userId}
+                  />
                 ) : null}
-
-                {pendingListingReview ? (
-                  <View style={styles.listingQuestionsCard}>
-                    <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9) }]}>SELLER DETAILS NEEDED</Text>
-                    <Text style={[styles.sectionTitle, { fontSize: responsiveFont(17) }]}>Add the missing item details</Text>
-                    <Text style={[styles.generatorDescription, { fontSize: responsiveFont(12) }]}>
-                      Answer every required detail. KeepFlip saves your answers to this item, then checks the updated information before making marketplace drafts. You can say unknown or not verified when that is the answer.
-                    </Text>
-                    {listingQuestions.map((question, index) => (
-                      <View key={question.id} style={styles.listingQuestionBlock}>
-                        <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>
-                          {question.required ? "REQUIRED" : "OPTIONAL"} DETAIL {index + 1} · {question.field.toUpperCase()}
-                        </Text>
-                        <Text style={[styles.fieldValue, { fontSize: responsiveFont(13) }]}>
-                          {question.question}
-                        </Text>
-                        {question.whyItMatters ? (
-                          <Text style={[styles.generatorDescription, { fontSize: responsiveFont(11) }]}>
-                            {question.whyItMatters}
+                <View style={styles.destinationList}>
+                  {CROSSLIST_PLATFORMS.filter((platform) => platform.id === 'ebay').map((platform) => {
+                    const shared = sharedPlatform === platform.id;
+                    const isEbay = platform.id === "ebay";
+                    return (
+                      <View key={platform.id} style={styles.destinationRow}>
+                        <View style={styles.destinationIcon}>
+                          <Ionicons
+                            color={theme.colors.scannerCyan}
+                            name="paperplane.fill"
+                            size={18}
+                          />
+                        </View>
+                        <View style={styles.destinationCopy}>
+                          <View style={styles.destinationTopline}>
+                            <Text style={[styles.destinationName, { fontSize: responsiveFont(14) }]}>
+                              {platform.label}
+                            </Text>
+                            <Text style={styles.destinationMode}>
+                              {platform.mode}
+                            </Text>
+                          </View>
+                          <Text style={[styles.destinationDescription, { fontSize: responsiveFont(11) }]}>
+                            {platform.description}
                           </Text>
-                        ) : null}
-                        <TextInput
-                          accessibilityLabel={`Answer required listing detail: ${question.question}`}
-                          autoCapitalize="sentences"
-                          maxLength={240}
-                          multiline
-                          onChangeText={(value) => setListingAnswers((current) => ({
-                            ...current,
-                            [question.id]: value,
-                          }))}
-                          placeholder="Enter what you confirmed. You can say unknown or not verified."
-                          placeholderTextColor={theme.colors.textMuted}
-                          style={[styles.generatedEditorInput, styles.listingAnswerInput, { fontSize: responsiveFont(12) }]}
-                          value={listingAnswers[question.id] ?? ""}
-                        />
-                      </View>
-                    ))}
-                    <Pressable
-                      accessibilityLabel="Save item details and generate listing"
-                      accessibilityRole="button"
-                      disabled={generatingListing || !listingHasAnswer}
-                      onPress={() => void submitListingDetails()}
-                      style={({ pressed }) => [
-                        styles.generateButton,
-                        pressed && styles.pressed,
-                        (generatingListing || !listingHasAnswer) && styles.generateButtonBusy,
-                      ]}
-                    >
-                      {generatingListing ? (
-                        <ActivityIndicator color={theme.colors.textOnAccent} />
-                      ) : (
-                        <Text style={[styles.generateButtonText, { fontSize: responsiveFont(10) }]}>
-                          SAVE DETAILS & GENERATE LISTING
-                        </Text>
-                      )}
-                    </Pressable>
-                  </View>
-                ) : null}
-
-                {listingReadiness && !pendingListingReview ? (
-                  <View style={styles.listingEvidenceCard}>
-                    <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9) }]}>SAVED ITEM DETAILS</Text>
-                    <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>Facts used in this draft</Text>
-                    {listingReadiness.facts
-                      .filter((fact) => fact.value)
-                      .map((fact) => (
-                        <Text key={fact.field} style={[styles.listingEvidenceText, { fontSize: responsiveFont(11) }]}>
-                          {fact.label}: {fact.value} ({fact.source})
-                        </Text>
-                      ))}
-                    {listingReadiness.conditionByArea.map((area) => (
-                      <Text key={area.area} style={[styles.listingEvidenceText, { fontSize: responsiveFont(11) }]}>
-                        {area.area.replace(/_/g, " ")}: {area.details.length ? area.details.join("; ") : area.status.replace(/_/g, " ")}
-                      </Text>
-                    ))}
-                    <Text style={[styles.listingEvidenceText, { fontSize: responsiveFont(11) }]}>
-                      Authenticity: {listingReadiness.authenticity.status.replace(/_/g, " ")}
-                    </Text>
-                    {listingReadiness.completeness.includedItems.length ? (
-                      <Text style={[styles.listingEvidenceText, { fontSize: responsiveFont(11) }]}>
-                        Included: {listingReadiness.completeness.includedItems.join(", ")}
-                      </Text>
-                    ) : null}
-                  </View>
-                ) : null}
-
-                {generatedListing ? (
-                  <View style={styles.generatedCopy}>
-                    {draftSaveError ? <Text accessibilityRole="alert" style={styles.generatorWarning}>Draft save failed: {draftSaveError}</Text> : null}
-                    {item.isListed ? <Text style={styles.generatorWarning}>Changes here save your KeepFlip draft. Review and update each live marketplace listing before relying on those changes.</Text> : null}
-                    <View style={styles.generatedTitleRow}>
-                      <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>TITLE</Text>
-                      <TextInput
-                        multiline
-                        accessibilityLabel="Edit generated listing title"
-                        autoCapitalize="sentences"
-                        onChangeText={(value) => updateGeneratedText("title", value)}
-                        style={[
-                          styles.generatedTitle,
-                          styles.generatedEditorInput,
-                          styles.generatedTitleInput,
-                          { fontSize: responsiveFont(13) },
-                        ]}
-                        value={generatedListing.title}
-                      />
-                      <Text style={[styles.confidenceText, { fontSize: responsiveFont(8) }]}>
-                        {formatConfidence(listingConfidence)}% CONFIDENCE
-                      </Text>
-                    </View>
-                    <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>SUBTITLE</Text>
-                    <TextInput
-                      accessibilityLabel="Edit generated listing subtitle"
-                      autoCapitalize="sentences"
-                      multiline
-                      onChangeText={(value) => updateGeneratedText("subtitle", value)}
-                      style={[
-                        styles.generatedSubtitle,
-                        styles.generatedEditorInput,
-                        styles.generatedSubtitleInput,
-                        { fontSize: responsiveFont(13),
-                          height: 'auto',
-                        },
-                      ]}
-                      value={generatedListing.subtitle}
-                    />
-                    <View style={styles.generatedSignals}>
-                      <Text style={styles.generatedSignal}>
-                        {generatedListing.conditionLabel.replace(/_/g, " ").toUpperCase()}
-                      </Text>
-                      <Text style={styles.generatedSignal}>
-                        TARGET ${generatedListing.priceRange.targetPrice.toFixed(0)}
-                      </Text>
-                      <Text style={styles.generatedSignal}>
-                        {generatedListing.sellingStrategy.replace(/_/g, " ").toUpperCase()}
-                      </Text>
-                    </View>
-                    <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>TARGET PRICE</Text>
-                    <TextInput
-                      accessibilityLabel="Edit listing target price"
-                      keyboardType="decimal-pad"
-                      onChangeText={(value) => { setTargetPriceInput(value); setPriceEditError(null); }}
-                      onEndEditing={commitTargetPrice}
-                      style={[styles.generatedEditorInput, styles.generatedTitleInput, { fontSize: responsiveFont(13) }]}
-                      value={targetPriceInput}
-                    />
-                    {priceEditError ? <Text accessibilityRole="alert" style={styles.generatorWarning}>{priceEditError}</Text> : null}
-                    <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>PLATFORM COPY</Text>
-                    <View style={styles.platformTabs}>
-                      {(
-                        Object.keys(generatedListing.platformCopy) as (keyof ListingGeneratorResult["listing"]["platformCopy"])[]
-                      ).map((platform) => (
+                        </View>
                         <Pressable
-                          key={platform}
+                          accessibilityLabel={
+                            isEbay
+                              ? item?.ebayListingId || ebayPublishResult
+                                ? "Open published eBay listing"
+                                : "Publish listing on eBay"
+                              : (Platform.OS === "web"
+                                ? shared ? "Copy and open again" : "Copy and open"
+                                : Platform.OS === "android" && getCrosslistingMarketplace(platform.id)
+                                  ? shared ? "Prepare again" : "Open and prepare"
+                                  : shared ? "Share again" : "Share") +
+                              " " +
+                              platform.label +
+                              " listing draft"
+                          }
                           accessibilityRole="button"
-                          onPress={() => setSelectedPlatform(platform)}
-                          style={[
-                            styles.platformTab,
-                            selectedPlatform === platform && styles.platformTabActive,
+                          onPress={() =>
+                            isEbay
+                              ? openEbayPublishForm()
+                              : void shareListingDraft(platform.id)
+                          }
+                          style={({ pressed }) => [
+                            styles.shareDraftButton,
+                            (shared || (isEbay && ebayPublishResult)) &&
+                            styles.shareDraftButtonDone,
+                            pressed && styles.pressed,
                           ]}
                         >
                           <Text
                             style={[
-                              styles.platformTabText,
-                              selectedPlatform === platform && styles.platformTabTextActive,
+                              styles.shareDraftText,
+                              shared && styles.shareDraftTextDone,
                             ]}
                           >
-                            {PLATFORM_COPY_LABELS[platform]}
+                            {isEbay
+                              ? item?.ebayListingId || ebayPublishResult
+                                ? "OPEN LISTING"
+                                : ebayPublishOpen
+                                  ? "EDIT"
+                                  : "PUBLISH"
+                              : Platform.OS === "web"
+                                ? shared ? "COPIED" : "COPY + OPEN"
+                                : Platform.OS === "android" && getCrosslistingMarketplace(platform.id)
+                                  ? shared ? "PREPARED" : "OPEN + FILL"
+                                  : shared ? "SHARED" : "SHARE"}
                           </Text>
                         </Pressable>
-                      ))}
-                    </View>
-                    <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>LONG DESCRIPTION</Text>
-                    <TextInput
-                      accessibilityLabel="Edit generated listing description"
-                      autoCapitalize="sentences"
-                      multiline
-                      onChangeText={(value) => updateGeneratedText("description", value)}
-                      style={[
-                        styles.generatedBody,
-                        styles.generatedEditorInput,
-                        styles.generatedDescriptionInput,
-                        { fontSize: responsiveFont(13) },
-                      ]}
-                      value={generatedListing.description}
-                    />
-                    <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>MARKETPLACE COPY</Text>
-                    <TextInput
-                      accessibilityLabel={`Edit ${selectedPlatform} marketplace copy`}
-                      autoCapitalize="sentences"
-                      multiline
-                      onChangeText={(value) => updateGeneratedPlatformCopy(selectedPlatform, value)}
-                      style={[
-                        styles.generatedBody,
-                        styles.generatedEditorInput,
-                        styles.generatedPlatformInput,
-                        { fontSize: responsiveFont(13) },
-                      ]}
-                      value={generatedListing.platformCopy[selectedPlatform]}
-                    />
-                    <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>
-                      {PLATFORM_COPY_LABELS[selectedPlatform].toUpperCase()} LISTING JSON
-                    </Text>
-                    <Text selectable style={[styles.marketplaceJsonPreview, { fontSize: responsiveFont(10) }]}>
-                      {JSON.stringify(generatedListing.marketplaceListings[selectedPlatform], null, 2)}
-                    </Text>
-                    <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>CONDITION DISCLOSURE</Text>
-                    <TextInput
-                      accessibilityLabel="Edit generated condition disclosure"
-                      autoCapitalize="sentences"
-                      multiline
-                      onChangeText={(value) => updateGeneratedText("conditionDisclosure", value)}
-                      style={[
-                        styles.generatedBody,
-                        styles.generatedEditorInput,
-                        styles.generatedConditionInput,
-                        { fontSize: responsiveFont(13) },
-                      ]}
-                      value={generatedListing.conditionDisclosure}
-                    />
-                    {generatedListing.warnings.length ? (
-                      <Text selectable style={styles.generatorWarning}>
-                        Review: {generatedListing.warnings.join(" ")}
-                      </Text>
-                    ) : null}
-                  </View>
-                ) : null}
-              </View>
-
-              {generatedListing ? (
-                <View style={styles.crosslistCard}>
-                  <View style={styles.sectionHeader}>
-                    <View style={styles.generatorHeading}>
-                      <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(10) }]}>CROSSLIST DESTINATIONS</Text>
-                      <Text style={[styles.sectionTitle, { fontSize: responsiveFont(18) }]}>Send the draft where you sell</Text>
-                    </View>
-                    <View style={styles.crosslistBadge}>
-                      <Text style={[styles.crosslistBadgeText, { fontSize: responsiveFont(9) }]}>
-                        {CROSSLIST_PLATFORMS.length} CHANNELS
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={[styles.crosslistDescription, { fontSize: responsiveFont(12) }]}>
-                    KeepFlip keeps item facts consistent across channels. eBay can publish the reviewed draft. KeepFlip opens each selected marketplace, fills its form, and helps you finish the post.
-                  </Text>
-                  {(Platform.OS === "web" || CROSSLISTING_AUTOFILL_ENABLED) && item && userId ? (
-                    <CrosslistingRun
-                      key={item.id}
-                      item={item}
-                      listing={generatedListing}
-                      initialSelections={selectedMarketplaces}
-                      onBeforeStart={persistCurrentDraft}
-                      onListingConfirmed={() => { void getInventoryItem(userId, item.id).then((updated) => {
-                        setItem(updated);
-                        savedDraftRef.current = parseSavedListingDraft(updated.listingJson);
-                      }).catch(() => setDraftSaveError('The listing was recorded, but KeepFlip could not refresh its details. Reopen this item to see the latest status.')); }}
-                      onDraftPrepared={(marketplace) => {
-                        trackKeepFlipEvent(KEEPFLIP_ANALYTICS_EVENTS.listingShared, { platform: marketplace });
-                        recordCompletedAction();
-                      }}
-                      userId={userId}
-                    />
-                  ) : null}
-                  <View style={styles.destinationList}>
-                    {CROSSLIST_PLATFORMS.filter((platform) => platform.id === 'ebay').map((platform) => {
-                      const shared = sharedPlatform === platform.id;
-                      const isEbay = platform.id === "ebay";
-                      return (
-                        <View key={platform.id} style={styles.destinationRow}>
-                          <View style={styles.destinationIcon}>
-                            <IconSymbol
-                              color={theme.colors.scannerCyan}
-                              name="paperplane.fill"
-                              size={18}
-                            />
-                          </View>
-                          <View style={styles.destinationCopy}>
-                            <View style={styles.destinationTopline}>
-                              <Text style={[styles.destinationName, { fontSize: responsiveFont(14) }]}>
-                                {platform.label}
-                              </Text>
-                              <Text style={styles.destinationMode}>
-                                {platform.mode}
-                              </Text>
-                            </View>
-                            <Text style={[styles.destinationDescription, { fontSize: responsiveFont(11) }]}>
-                              {platform.description}
-                            </Text>
-                          </View>
-                          <Pressable
-                            accessibilityLabel={
-                              isEbay
-                                ? item?.ebayListingId || ebayPublishResult
-                                  ? "Open published eBay listing"
-                                  : "Publish listing on eBay"
-                              : (Platform.OS === "web"
-                                    ? shared ? "Copy and open again" : "Copy and open"
-                                    : Platform.OS === "android" && getCrosslistingMarketplace(platform.id)
-                                      ? shared ? "Prepare again" : "Open and prepare"
-                                      : shared ? "Share again" : "Share") +
-                                " " +
-                                platform.label +
-                                " listing draft"
-                            }
-                            accessibilityRole="button"
-                            onPress={() =>
-                              isEbay
-                                ? openEbayPublishForm()
-                                : void shareListingDraft(platform.id)
-                            }
-                            style={({ pressed }) => [
-                              styles.shareDraftButton,
-                              (shared || (isEbay && ebayPublishResult)) &&
-                              styles.shareDraftButtonDone,
-                              pressed && styles.pressed,
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.shareDraftText,
-                                shared && styles.shareDraftTextDone,
-                              ]}
-                            >
-                              {isEbay
-                                ? item?.ebayListingId || ebayPublishResult
-                                  ? "OPEN LISTING"
-                                  : ebayPublishOpen
-                                    ? "EDIT"
-                                    : "PUBLISH"
-                                : Platform.OS === "web"
-                                  ? shared ? "COPIED" : "COPY + OPEN"
-                                  : Platform.OS === "android" && getCrosslistingMarketplace(platform.id)
-                                    ? shared ? "PREPARED" : "OPEN + FILL"
-                                    : shared ? "SHARED" : "SHARE"}
-                            </Text>
-                          </Pressable>
-                        </View>
-                      );
-                    })}
-                  </View>
-
-                  {ebayPublishOpen ? (
-                    <View style={styles.ebayPublishPanel}>
-                      {item && generatedListing && userId ? (
-                        <ListingNetProceedsPanel key={item.id} item={item} ownerId={userId}
-                          prices={generatedListing.priceRange}
-                          onTargetPriceChange={applyTargetPrice} />
-                      ) : null}
-                      <View style={styles.ebayPublishHeader}>
-                        <View style={styles.ebayPublishHeaderCopy}>
-                          <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>PUBLISH TO EBAY</Text>
-                          <Text style={[styles.ebayPublishTitle, { fontSize: responsiveFont(15) }]}>
-                            Review seller settings
-                          </Text>
-                        </View>
-                        <Text style={styles.ebayPublishMode}>
-                          LIVE INVENTORY API
-                        </Text>
                       </View>
-                      {ebayPublishResult ? (
-                        <View style={styles.ebayPublishSuccess}>
-                          <IconSymbol
-                            color={theme.colors.scannerCyan}
-                            name="checkmark.shield.fill"
-                            size={22}
-                          />
-                          <View style={styles.ebayPublishSuccessCopy}>
-                            <Text style={[styles.ebayPublishSuccessTitle, { fontSize: responsiveFont(14) }]}>
-                              {ebayPublishResult.status === "already_published"
-                                ? "This item is already live on eBay."
-                                : "Live eBay listing created."}
-                            </Text>
-                            <Text selectable style={[styles.ebayPublishSuccessDetail, { fontSize: responsiveFont(11) }]}>
-                              {ebayPublishResult.listingId
-                                ? "Listing ID " + ebayPublishResult.listingId
-                                : "eBay accepted the listing."}
-                            </Text>
-                          </View>
-                        </View>
-                      ) : (
-                        <>
-                          <Text style={[styles.ebayPublishHint, { fontSize: responsiveFont(11) }]}>
-                            Choose the category and quantity. KeepFlip will use the
-                            shipping, payment, return, and inventory-location setup
-                            saved to your Seller Account.
-                          </Text>
-                          <View style={styles.ebayField}>
-                            <Text style={[styles.ebayFieldLabel, { fontSize: responsiveFont(8) }]}>CATEGORY ID</Text>
-                            <TextInput
-                              autoCapitalize="none"
-                              autoCorrect={false}
-                              keyboardType="number-pad"
-                              onChangeText={(value) =>
-                                setEbayForm((current) => ({
-                                  ...current,
-                                  categoryId: value,
-                                }))
-                              }
-                              placeholder="Example: 9355"
-                              placeholderTextColor={theme.colors.textMuted}
-                              style={styles.ebayFieldInput}
-                              value={ebayForm.categoryId}
-                            />
-                          </View>
-                          <View style={styles.ebaySetupNotice}>
-                            <IconSymbol
-                              color={theme.colors.scannerCyan}
-                              name="checkmark.shield.fill"
-                              size={16}
-                            />
-                            <Text style={[styles.ebaySetupNoticeText, { fontSize: responsiveFont(11) }]}>
-                              Saved eBay setup will be used automatically. Refresh
-                              Seller Account if KeepFlip says listing setup needs
-                              attention.
-                            </Text>
-                          </View>
-                          <View style={styles.ebayField}>
-                            <Text style={[styles.ebayFieldLabel, { fontSize: responsiveFont(8) }]}>QUANTITY</Text>
-                            <TextInput
-                              keyboardType="number-pad"
-                              onChangeText={(value) =>
-                                setEbayForm((current) => ({
-                                  ...current,
-                                  quantity: value,
-                                }))
-                              }
-                              placeholder="1"
-                              placeholderTextColor={theme.colors.textMuted}
-                              style={styles.ebayFieldInput}
-                              value={ebayForm.quantity}
-                            />
-                          </View>                          <View style={styles.ebayField}>
-                            <Text style={[styles.ebayFieldLabel, { fontSize: responsiveFont(8) }]}>
-                              MARKETPLACE
-                            </Text>
-                            <TextInput
-                              autoCapitalize="characters"
-                              autoCorrect={false}
-                              onChangeText={(value) =>
-                                setEbayForm((current) => ({
-                                  ...current,
-                                  marketplaceId: value.toUpperCase(),
-                                }))
-                              }
-                              placeholder="EBAY_US"
-                              placeholderTextColor={theme.colors.textMuted}
-                              style={styles.ebayFieldInput}
-                              value={ebayForm.marketplaceId}
-                            />
-                          </View>
-                          {item && generatedListing ? (
-                            <ListingReadinessPanel
-                              input={ebayPublishInput(item, generatedListing, ebayForm, ebayReview, ebayAspects, ebayMeasurements)}
-                              review={ebayReview} onReviewChange={setEbayReview}
-                              onAspectsChange={setEbayAspects} onMeasurementsChange={setEbayMeasurements}
-                              onReadyChange={handleEbayReadyChange} disabled={ebayPublishing} />
-                          ) : null}
-                          {ebayPublishError ? (
-                            <Text selectable style={[styles.ebayPublishError, { fontSize: responsiveFont(12) }]}>
-                              {ebayPublishError}
-                            </Text>
-                          ) : null}
-                          <View style={styles.ebayPublishActions}>
-                            <Pressable
-                              accessibilityRole="button"
-                              onPress={() => setEbayPublishOpen(false)}
-                              style={({ pressed }) => [
-                                styles.ebayCancelButton,
-                                pressed && styles.pressed,
-                              ]}
-                            >
-                              <Text style={[styles.ebayCancelButtonText, { fontSize: responsiveFont(9) }]}>CLOSE</Text>
-                            </Pressable>
-                            <Pressable
-                              accessibilityLabel="Publish live eBay listing"
-                              accessibilityRole="button"
-                              disabled={ebayPublishing}
-                              onPress={confirmEbayPublish}
-                              style={({ pressed }) => [
-                                styles.ebayPublishButton,
-                                pressed && styles.pressed,
-                                ebayPublishing && styles.ebayPublishButtonDisabled,
-                                !ebayReady && styles.ebayPublishButtonNeedsReadiness,
-                              ]}
-                            >
-                              {ebayPublishing ? (
-                                <ActivityIndicator
-                                  color={theme.colors.textOnAccent}
-                                  size="small"
-                                />
-                              ) : (
-                                <Text style={[styles.ebayPublishButtonText, { fontSize: responsiveFont(9) }]}>
-                                  PUBLISH LIVE LISTING
-                                </Text>
-                              )}
-                            </Pressable>
-                          </View>
-                        </>
-                      )}
-                      {ebayPublishResult?.listingUrl ? (
-                        <Pressable
-                          accessibilityRole="link"
-                          onPress={() =>
-                            void Linking.openURL(ebayPublishResult.listingUrl!).catch(
-                              () => undefined,
-                            )
-                          }
-                          style={({ pressed }) => [
-                            styles.ebayOpenButton,
-                            pressed && styles.pressed,
-                          ]}
-                        >
-                          <Text style={[styles.ebayOpenButtonText, { fontSize: responsiveFont(9) }]}>
-                            OPEN EBAY LISTING
-                          </Text>
-                        </Pressable>
-                      ) : null}
-                    </View>
-                  ) : null}
-                  {shareError ? (
-                    <Text selectable style={[styles.crosslistError, { fontSize: responsiveFont(12) }]}>
-                      {shareError}
-                    </Text>
-                  ) : null}
-                  {shareNotice ? (
-                    <Text selectable style={styles.crosslistFootnote}>
-                      {shareNotice}
-                    </Text>
-                  ) : null}
-                  <Text style={styles.crosslistFootnote}>
-                    KeepFlip does not claim a listing is live until the marketplace confirms it. Confirm the final category, item specifics, shipping, returns, and fees in each destination.
-                  </Text>
-                </View>
-              ) : null}
-              <View style={styles.progressCard}>
-                <View style={styles.progressHeader}>
-                  <View>
-                    <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9) }]}>PUBLISHING READINESS</Text>
-                    <Text style={[styles.sectionTitle, { fontSize: responsiveFont(18) }]}>
-                      {completeStepCount} of {checklist.length} steps reviewed
-                    </Text>
-                  </View>
-                  <View style={styles.progressCount}>
-                    <Text style={[styles.progressCountText, { fontSize: responsiveFont(13) }]}>
-                      {Math.round((completeStepCount / checklist.length) * 100)}%
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.progressTrack}>
-                  <View
-                    style={[
-                      styles.progressFill,
-                      {
-                        width: `${(completeStepCount / checklist.length) * 100}%`,
-                      },
-                    ]}
-                  />
-                </View>
-
-                <View style={styles.checklist}>
-                  {checklist.map((step, index) => {
-                    const complete =
-                      step.completeByDefault || confirmedStepIds.includes(step.id);
-
-                    return (
-                      <Pressable
-                        accessibilityHint={
-                          step.completeByDefault
-                            ? "This saved item detail is ready for review."
-                            : "Marks this listing step as reviewed for this session."
-                        }
-                        accessibilityLabel={step.label}
-                        accessibilityRole="checkbox"
-                        accessibilityState={{ checked: complete }}
-                        disabled={step.completeByDefault}
-                        key={step.id}
-                        onPress={() => toggleStep(item.id, step)}
-                        style={({ pressed }) => [
-                          styles.checklistStep,
-                          complete && styles.checklistStepComplete,
-                          pressed && !step.completeByDefault && styles.pressed,
-                        ]}
-                      >
-                        <View
-                          style={[
-                            styles.checkmark,
-                            complete && styles.checkmarkComplete,
-                          ]}
-                        >
-                          {complete ? (
-                            <IconSymbol
-                              color={theme.colors.textOnAccent}
-                              name="checkmark.shield.fill"
-                              size={15}
-                            />
-                          ) : (
-                            <Text style={styles.checkmarkNumber}>0{index + 1}</Text>
-                          )}
-                        </View>
-                        <View style={styles.checklistCopy}>
-                          <Text style={[styles.checklistLabel, { fontSize: responsiveFont(14) }]}>{step.label}</Text>
-                          <Text style={[styles.checklistDetail, { fontSize: responsiveFont(12) }]}>{step.detail}</Text>
-                        </View>
-                        {!step.completeByDefault ? (
-                          <IconSymbol
-                            color={
-                              complete
-                                ? theme.colors.scannerCyan
-                                : theme.colors.goldMuted
-                            }
-                            name={complete ? "checkmark.shield.fill" : "chevron.right"}
-                            size={18}
-                          />
-                        ) : null}
-                      </Pressable>
                     );
                   })}
                 </View>
-              </View>
 
-              <View style={styles.publishNotice}>
-                <IconSymbol
-                  color={theme.colors.goldBright}
-                  name="tag.fill"
-                  size={20}
-                />
-                <Text style={[styles.publishNoticeText, { fontSize: responsiveFont(12) }]}>
-                  When you are ready to publish, confirm the live marketplace category, item specifics, shipping, returns, and fees before creating the listing.
+                {ebayPublishOpen ? (
+                  <View style={styles.ebayPublishPanel}>
+                    {item && generatedListing && userId ? (
+                      <ListingNetProceedsPanel key={item.id} item={item} ownerId={userId}
+                        prices={generatedListing.priceRange}
+                        onTargetPriceChange={applyTargetPrice} />
+                    ) : null}
+                    <View style={styles.ebayPublishHeader}>
+                      <View style={styles.ebayPublishHeaderCopy}>
+                        <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>PUBLISH TO EBAY</Text>
+                        <Text style={[styles.ebayPublishTitle, { fontSize: responsiveFont(15) }]}>
+                          Review seller settings
+                        </Text>
+                      </View>
+                      <Text style={styles.ebayPublishMode}>
+                        LIVE INVENTORY API
+                      </Text>
+                    </View>
+                    {ebayPublishResult ? (
+                      <View style={styles.ebayPublishSuccess}>
+                        <Ionicons
+                          color={theme.colors.scannerCyan}
+                          name="checkmark.shield.fill"
+                          size={22}
+                        />
+                        <View style={styles.ebayPublishSuccessCopy}>
+                          <Text style={[styles.ebayPublishSuccessTitle, { fontSize: responsiveFont(14) }]}>
+                            {ebayPublishResult.status === "already_published"
+                              ? "This item is already live on eBay."
+                              : "Live eBay listing created."}
+                          </Text>
+                          <Text selectable style={[styles.ebayPublishSuccessDetail, { fontSize: responsiveFont(11) }]}>
+                            {ebayPublishResult.listingId
+                              ? "Listing ID " + ebayPublishResult.listingId
+                              : "eBay accepted the listing."}
+                          </Text>
+                        </View>
+                      </View>
+                    ) : (
+                      <>
+                        <Text style={[styles.ebayPublishHint, { fontSize: responsiveFont(11) }]}>
+                          Choose the category and quantity. KeepFlip will use the
+                          shipping, payment, return, and inventory-location setup
+                          saved to your Seller Account.
+                        </Text>
+                        <View style={styles.ebayField}>
+                          <Text style={[styles.ebayFieldLabel, { fontSize: responsiveFont(8) }]}>CATEGORY ID</Text>
+                          <TextInput
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            keyboardType="number-pad"
+                            onChangeText={(value) =>
+                              setEbayForm((current) => ({
+                                ...current,
+                                categoryId: value,
+                              }))
+                            }
+                            placeholder="Example: 9355"
+                            placeholderTextColor={theme.colors.textMuted}
+                            style={styles.ebayFieldInput}
+                            value={ebayForm.categoryId}
+                          />
+                        </View>
+                        <View style={styles.ebaySetupNotice}>
+                          <Ionicons
+                            color={theme.colors.scannerCyan}
+                            name="checkmark.shield.fill"
+                            size={16}
+                          />
+                          <Text style={[styles.ebaySetupNoticeText, { fontSize: responsiveFont(11) }]}>
+                            Saved eBay setup will be used automatically. Refresh
+                            Seller Account if KeepFlip says listing setup needs
+                            attention.
+                          </Text>
+                        </View>
+                        <View style={styles.ebayField}>
+                          <Text style={[styles.ebayFieldLabel, { fontSize: responsiveFont(8) }]}>QUANTITY</Text>
+                          <TextInput
+                            keyboardType="number-pad"
+                            onChangeText={(value) =>
+                              setEbayForm((current) => ({
+                                ...current,
+                                quantity: value,
+                              }))
+                            }
+                            placeholder="1"
+                            placeholderTextColor={theme.colors.textMuted}
+                            style={styles.ebayFieldInput}
+                            value={ebayForm.quantity}
+                          />
+                        </View>                          <View style={styles.ebayField}>
+                          <Text style={[styles.ebayFieldLabel, { fontSize: responsiveFont(8) }]}>
+                            MARKETPLACE
+                          </Text>
+                          <TextInput
+                            autoCapitalize="characters"
+                            autoCorrect={false}
+                            onChangeText={(value) =>
+                              setEbayForm((current) => ({
+                                ...current,
+                                marketplaceId: value.toUpperCase(),
+                              }))
+                            }
+                            placeholder="EBAY_US"
+                            placeholderTextColor={theme.colors.textMuted}
+                            style={styles.ebayFieldInput}
+                            value={ebayForm.marketplaceId}
+                          />
+                        </View>
+                        {item && generatedListing ? (
+                          <ListingReadinessPanel
+                            input={ebayPublishInput(item, generatedListing, ebayForm, ebayReview, ebayAspects, ebayMeasurements)}
+                            review={ebayReview} onReviewChange={setEbayReview}
+                            onAspectsChange={setEbayAspects} onMeasurementsChange={setEbayMeasurements}
+                            onReadyChange={handleEbayReadyChange} disabled={ebayPublishing} />
+                        ) : null}
+                        {ebayPublishError ? (
+                          <Text selectable style={[styles.ebayPublishError, { fontSize: responsiveFont(12) }]}>
+                            {ebayPublishError}
+                          </Text>
+                        ) : null}
+                        <View style={styles.ebayPublishActions}>
+                          <Pressable
+                            accessibilityRole="button"
+                            onPress={() => setEbayPublishOpen(false)}
+                            style={({ pressed }) => [
+                              styles.ebayCancelButton,
+                              pressed && styles.pressed,
+                            ]}
+                          >
+                            <Text style={[styles.ebayCancelButtonText, { fontSize: responsiveFont(9) }]}>CLOSE</Text>
+                          </Pressable>
+                          <Pressable
+                            accessibilityLabel="Publish live eBay listing"
+                            accessibilityRole="button"
+                            disabled={ebayPublishing}
+                            onPress={confirmEbayPublish}
+                            style={({ pressed }) => [
+                              styles.ebayPublishButton,
+                              pressed && styles.pressed,
+                              ebayPublishing && styles.ebayPublishButtonDisabled,
+                              !ebayReady && styles.ebayPublishButtonNeedsReadiness,
+                            ]}
+                          >
+                            {ebayPublishing ? (
+                              <ActivityIndicator
+                                color={theme.colors.textOnAccent}
+                                size="small"
+                              />
+                            ) : (
+                              <Text style={[styles.ebayPublishButtonText, { fontSize: responsiveFont(9) }]}>
+                                PUBLISH LIVE LISTING
+                              </Text>
+                            )}
+                          </Pressable>
+                        </View>
+                      </>
+                    )}
+                    {ebayPublishResult?.listingUrl ? (
+                      <Pressable
+                        accessibilityRole="link"
+                        onPress={() =>
+                          void Linking.openURL(ebayPublishResult.listingUrl!).catch(
+                            () => undefined,
+                          )
+                        }
+                        style={({ pressed }) => [
+                          styles.ebayOpenButton,
+                          pressed && styles.pressed,
+                        ]}
+                      >
+                        <Text style={[styles.ebayOpenButtonText, { fontSize: responsiveFont(9) }]}>
+                          OPEN EBAY LISTING
+                        </Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
+                ) : null}
+                {shareError ? (
+                  <Text selectable style={[styles.crosslistError, { fontSize: responsiveFont(12) }]}>
+                    {shareError}
+                  </Text>
+                ) : null}
+                {shareNotice ? (
+                  <Text selectable style={styles.crosslistFootnote}>
+                    {shareNotice}
+                  </Text>
+                ) : null}
+                <Text style={styles.crosslistFootnote}>
+                  KeepFlip does not claim a listing is live until the marketplace confirms it. Confirm the final category, item specifics, shipping, returns, and fees in each destination.
                 </Text>
               </View>
-            </>
-          )}
+            ) : null}
+            <View style={styles.progressCard}>
+              <View style={styles.progressHeader}>
+                <View>
+                  <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(9) }]}>PUBLISHING READINESS</Text>
+                  <Text style={[styles.sectionTitle, { fontSize: responsiveFont(18) }]}>
+                    {completeStepCount} of {checklist.length} steps reviewed
+                  </Text>
+                </View>
+                <View style={styles.progressCount}>
+                  <Text style={[styles.progressCountText, { fontSize: responsiveFont(13) }]}>
+                    {Math.round((completeStepCount / checklist.length) * 100)}%
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.progressTrack}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    {
+                      width: `${(completeStepCount / checklist.length) * 100}%`,
+                    },
+                  ]}
+                />
+              </View>
+
+              <View style={styles.checklist}>
+                {checklist.map((step, index) => {
+                  const complete =
+                    step.completeByDefault || confirmedStepIds.includes(step.id);
+
+                  return (
+                    <Pressable
+                      accessibilityHint={
+                        step.completeByDefault
+                          ? "This saved item detail is ready for review."
+                          : "Marks this listing step as reviewed for this session."
+                      }
+                      accessibilityLabel={step.label}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: complete }}
+                      disabled={step.completeByDefault}
+                      key={step.id}
+                      onPress={() => toggleStep(item.id, step)}
+                      style={({ pressed }) => [
+                        styles.checklistStep,
+                        complete && styles.checklistStepComplete,
+                        pressed && !step.completeByDefault && styles.pressed,
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.checkmark,
+                          complete && styles.checkmarkComplete,
+                        ]}
+                      >
+                        {complete ? (
+                          <Ionicons
+                            color={theme.colors.textOnAccent}
+                            name="checkmark.shield.fill"
+                            size={15}
+                          />
+                        ) : (
+                          <Text style={styles.checkmarkNumber}>0{index + 1}</Text>
+                        )}
+                      </View>
+                      <View style={styles.checklistCopy}>
+                        <Text style={[styles.checklistLabel, { fontSize: responsiveFont(14) }]}>{step.label}</Text>
+                        <Text style={[styles.checklistDetail, { fontSize: responsiveFont(12) }]}>{step.detail}</Text>
+                      </View>
+                      {!step.completeByDefault ? (
+                        <Ionicons
+                          color={
+                            complete
+                              ? theme.colors.scannerCyan
+                              : theme.colors.goldMuted
+                          }
+                          name={complete ? "checkmark.shield.fill" : "chevron.right"}
+                          size={18}
+                        />
+                      ) : null}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+
+            <View style={styles.publishNotice}>
+              <Ionicons
+                color={theme.colors.goldBright}
+                name="tag.fill"
+                size={20}
+              />
+              <Text style={[styles.publishNoticeText, { fontSize: responsiveFont(12) }]}>
+                When you are ready to publish, confirm the live marketplace category, item specifics, shipping, returns, and fees before creating the listing.
+              </Text>
+            </View>
+          </>
+        )}
       </ScrollView>
     </KeepFlipBackground>
   );
@@ -1851,7 +1859,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     page: {
       alignSelf: "center",
-      gap: 16,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16,
     },
     topRow: {
       flexDirection: "row",
@@ -1860,12 +1868,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     topCopy: {
       flex: 1,
-      gap: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
     },
     eyebrow: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.radar,
-      fontSize: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
       fontWeight: "900",
       letterSpacing: 2,
     },
@@ -1876,14 +1884,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       letterSpacing: -0.7,
     },
     subtitle: {
-      maxWidth: 620,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(620) : 620,
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.body,
-      fontSize: 11,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11,
     },
     backButton: {
-      width: 44,
-      height: 44,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(44) : 44,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(44) : 44,
       alignItems: "center",
       justifyContent: "center",
       borderRadius: theme.radii.pill,
@@ -1892,10 +1900,10 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.surfaceOverlay,
     },
     loadingCard: {
-      minHeight: 180,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(180) : 180,
       alignItems: "center",
       justifyContent: "center",
-      gap: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
       borderRadius: theme.radii.large,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
@@ -1904,12 +1912,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     loadingText: {
       color: theme.colors.cream,
       fontFamily: theme.fonts.body,
-      fontSize: 15,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15,
       fontWeight: "800",
     },
     errorCard: {
       alignItems: "center",
-      gap: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
       padding: 24,
       borderRadius: theme.radii.large,
       borderWidth: 1,
@@ -1917,8 +1925,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.dangerSurface,
     },
     errorIcon: {
-      width: 56,
-      height: 56,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(56) : 56,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(56) : 56,
       alignItems: "center",
       justifyContent: "center",
       borderRadius: theme.radii.pill,
@@ -1927,33 +1935,33 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     errorTitle: {
       color: theme.colors.cream,
       fontFamily: theme.fonts.bold,
-      fontSize: 19,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(19) : 19,
       fontWeight: "900",
     },
     errorText: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.body,
-      fontSize: 14,
-      lineHeight: 20,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(20) : 20,
       textAlign: "center",
     },
     retryButton: {
-      minHeight: 42,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(42) : 42,
       alignItems: "center",
       justifyContent: "center",
-      paddingHorizontal: 16,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16,
       borderRadius: theme.radii.medium,
       backgroundColor: theme.colors.scannerViolet,
     },
     retryText: {
       color: theme.colors.textOnAccent,
       fontFamily: theme.fonts.body,
-      fontSize: 13,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : 13,
       fontWeight: "900",
     },
     itemCard: {
       overflow: "hidden",
-      gap: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
       padding: 20,
       borderRadius: theme.radii.large,
       borderWidth: 1,
@@ -1972,35 +1980,35 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     sectionEyebrow: {
       color: theme.colors.gold,
       fontFamily: theme.fonts.radar,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: "900",
       letterSpacing: 1.7,
     },
     itemTitle: {
       color: theme.colors.cream,
       fontFamily: theme.fonts.bold,
-      fontSize: 22,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(22) : 22,
       fontWeight: "900",
-      lineHeight: 28,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(28) : 28,
     },
     itemMeta: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.body,
-      fontSize: 13,
-      lineHeight: 19,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : 13,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(19) : 19,
     },
     itemSignals: {
       flexDirection: "row",
       flexWrap: "wrap",
-      gap: 8,
-      marginTop: 5,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      marginTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(5) : 5,
     },
     signalPill: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 6,
-      paddingHorizontal: 10,
-      paddingVertical: 7,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(7) : 7,
       borderRadius: theme.radii.pill,
       borderWidth: 1,
       borderColor: theme.colors.divider,
@@ -2009,19 +2017,19 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     signalPillLabel: {
       color: theme.colors.goldMuted,
       fontFamily: theme.fonts.radar,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: "900",
       letterSpacing: 0.7,
     },
     signalPillText: {
       color: theme.colors.cream,
       fontFamily: theme.fonts.radar,
-      fontSize: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
       fontWeight: "900",
       letterSpacing: 0.4,
     },
     draftCard: {
-      gap: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
       padding: 20,
       borderRadius: theme.radii.large,
       borderWidth: 1,
@@ -2032,18 +2040,18 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: "row",
       alignItems: "flex-start",
       justifyContent: "space-between",
-      gap: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
     },
     sectionTitle: {
       color: theme.colors.cream,
       fontFamily: theme.fonts.bold,
-      fontSize: 18,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : 18,
       fontWeight: "900",
-      lineHeight: 23,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(23) : 23,
     },
     localPill: {
-      paddingHorizontal: 9,
-      paddingVertical: 6,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : 6,
       borderRadius: theme.radii.pill,
       borderWidth: 1,
       borderColor: theme.colors.accentVioletBorder,
@@ -2052,32 +2060,32 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     localPillText: {
       color: theme.colors.scannerViolet,
       fontFamily: theme.fonts.radar,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: "900",
       letterSpacing: 0.8,
     },
     fieldBlock: {
-      gap: 5,
-      paddingTop: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5,
+      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(12) : 12,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: theme.colors.divider,
     },
     fieldLabel: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.radar,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: "900",
       letterSpacing: 1.1,
     },
     fieldValue: {
       color: theme.colors.cream,
       fontFamily: theme.fonts.body,
-      fontSize: 14,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14,
       fontWeight: "700",
-      lineHeight: 20,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(20) : 20,
     },
     generatorCard: {
-      gap: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
       padding: 20,
       borderRadius: theme.radii.large,
       borderWidth: 1,
@@ -2089,8 +2097,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       gap: 2,
     },
     generatorBadge: {
-      paddingHorizontal: 9,
-      paddingVertical: 6,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : 6,
       borderRadius: theme.radii.pill,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
@@ -2099,18 +2107,18 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     generatorBadgeText: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.radar,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: "900",
       letterSpacing: 0.8,
     },
     generatorDescription: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.body,
-      fontSize: 12,
-      lineHeight: 18,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : 18,
     },
     generateButton: {
-      minHeight: 46,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(46) : 46,
       alignItems: "center",
       justifyContent: "center",
       borderRadius: theme.radii.medium,
@@ -2122,18 +2130,18 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     generateButtonText: {
       color: theme.colors.textOnAccent,
       fontFamily: theme.fonts.radar,
-      fontSize: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
       fontWeight: "900",
       letterSpacing: 0.9,
     },
     generatorError: {
       color: theme.colors.danger,
       fontFamily: theme.fonts.body,
-      fontSize: 12,
-      lineHeight: 17,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : 17,
     },
     listingQuestionsCard: {
-      gap: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       padding: 16,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
@@ -2141,22 +2149,22 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.card,
     },
     listingQuestionBlock: {
-      gap: 7,
-      paddingTop: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
+      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : 10,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: theme.colors.divider,
     },
     listingAnswerInput: {
-      minHeight: 72,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(72) : 72,
     },
     listingOptionalQuestions: {
-      gap: 8,
-      paddingTop: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : 10,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: theme.colors.divider,
     },
     listingEvidenceCard: {
-      gap: 6,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
       padding: 15,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
@@ -2166,98 +2174,98 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     listingEvidenceText: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.body,
-      lineHeight: 16,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16,
     },
     generatedCopy: {
-      gap: 10,
-      paddingTop: 14,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(14) : 14,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: theme.colors.divider,
     },
     generatedTitleRow: {
-      gap: 6,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
     },
     generatedTitle: {
       color: theme.colors.cream,
       fontFamily: theme.fonts.bold,
-      fontSize: 18,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : 18,
       fontWeight: "900",
-      lineHeight: 24,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(24) : 24,
     },
     generatedEditorInput: {
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
-      borderRadius: 6,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
       backgroundColor: theme.colors.cardSoft,
       color: theme.colors.cream,
-      paddingHorizontal: 10,
-      paddingVertical: 9,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(9) : 9,
       textAlignVertical: "top",
     },
     generatedTitleInput: {
-      minHeight: 48,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(48) : 48,
       textAlignVertical: "center",
     },
     generatedSubtitleInput: {
-      minHeight: 64,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(64) : 64,
     },
     generatedDescriptionInput: {
-      minHeight: 132,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(132) : 132,
     },
     generatedPlatformInput: {
-      minHeight: 150,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(150) : 150,
     },
     marketplaceJsonPreview: {
       borderWidth: 1,
       borderColor: theme.colors.dividerStrong,
-      borderRadius: 6,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
       backgroundColor: theme.colors.cardSoft,
       color: theme.colors.textMuted,
       fontFamily: Platform.OS === "web" ? "monospace" : undefined,
-      lineHeight: 15,
-      paddingHorizontal: 10,
-      paddingVertical: 9,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(9) : 9,
     },
     generatedConditionInput: {
-      minHeight: 108,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(108) : 108,
     },
     confidenceText: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.radar,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: "900",
       letterSpacing: 0.8,
     },
     generatedSubtitle: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.body,
-      fontSize: 12,
-      lineHeight: 17,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : 17,
     },
     generatedSignals: {
       flexDirection: "row",
       flexWrap: "wrap",
-      gap: 6,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
     },
     generatedSignal: {
-      paddingHorizontal: 7,
-      paddingVertical: 5,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(5) : 5,
       borderWidth: 1,
       borderColor: theme.colors.dividerStrong,
       color: theme.colors.goldBright,
       fontFamily: theme.fonts.radar,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: "900",
       letterSpacing: 0.6,
     },
     platformTabs: {
       flexDirection: "row",
       flexWrap: "wrap",
-      gap: 6,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
     },
     platformTab: {
-      paddingHorizontal: 8,
-      paddingVertical: 6,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : 6,
       borderWidth: 1,
       borderColor: theme.colors.divider,
       backgroundColor: theme.colors.cardSoft,
@@ -2269,7 +2277,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     platformTabText: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.radar,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: "900",
       letterSpacing: 0.6,
     },
@@ -2279,37 +2287,37 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     generatedBody: {
       color: theme.colors.cream,
       fontFamily: theme.fonts.body,
-      fontSize: 13,
-      lineHeight: 20,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : 13,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(20) : 20,
     },
     generatorWarning: {
       color: theme.colors.goldBright,
-      fontSize: 11,
-      lineHeight: 16,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16,
     },
     photoPrepRow: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 12,
-      paddingTop: 14,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
+      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(14) : 14,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: theme.colors.divider,
     },
     photoPrepCopy: {
       flex: 1,
-      gap: 5,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5,
     },
     photoPrepText: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.body,
-      fontSize: 12,
-      lineHeight: 17,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : 17,
     },
     addPhotosButton: {
-      minHeight: 38,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(38) : 38,
       alignItems: "center",
       justifyContent: "center",
-      paddingHorizontal: 10,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
       backgroundColor: theme.colors.iconSurfaceCyan,
@@ -2320,18 +2328,18 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     addPhotosButtonText: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.radar,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: "900",
       letterSpacing: 0.6,
     },
     photoUploadError: {
       color: theme.colors.danger,
       fontFamily: theme.fonts.body,
-      fontSize: 12,
-      lineHeight: 17,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : 17,
     },
     crosslistCard: {
-      gap: 14,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14,
       padding: 20,
       borderRadius: theme.radii.large,
       borderWidth: 1,
@@ -2339,8 +2347,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.surfaceInset,
     },
     crosslistBadge: {
-      paddingHorizontal: 9,
-      paddingVertical: 6,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : 6,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
       backgroundColor: theme.colors.iconSurfaceCyan,
@@ -2348,38 +2356,38 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     crosslistBadgeText: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.radar,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: "900",
       letterSpacing: 0.8,
     },
     crosslistDescription: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.body,
-      fontSize: 12,
-      lineHeight: 18,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : 18,
     },
     bookmarkletSetup: {
-      gap: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
       padding: 12,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
       backgroundColor: theme.colors.iconSurfaceCyan,
     },
     bookmarkletCopy: {
-      gap: 4,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
     },
     bookmarkletTitle: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.radar,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: "900",
       letterSpacing: 0.7,
     },
     copyBookmarkletButton: {
       alignSelf: "flex-start",
-      minHeight: 36,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(36) : 36,
       justifyContent: "center",
-      paddingHorizontal: 12,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
       backgroundColor: theme.colors.surfaceInset,
@@ -2387,7 +2395,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     copyBookmarkletText: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.radar,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: "900",
       letterSpacing: 0.6,
     },
@@ -2399,14 +2407,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     destinationRow: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 10,
-      paddingVertical: 13,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(13) : 13,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: theme.colors.divider,
     },
     destinationIcon: {
-      width: 32,
-      height: 32,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(32) : 32,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(32) : 32,
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 1,
@@ -2415,39 +2423,39 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     destinationCopy: {
       flex: 1,
-      gap: 4,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
     },
     destinationTopline: {
       flexDirection: "row",
       alignItems: "center",
       flexWrap: "wrap",
-      gap: 7,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
     },
     destinationName: {
       color: theme.colors.cream,
       fontFamily: theme.fonts.semibold,
-      fontSize: 14,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14,
       fontWeight: "900",
     },
     destinationMode: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.radar,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: "900",
       letterSpacing: 0.7,
     },
     destinationDescription: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.body,
-      fontSize: 11,
-      lineHeight: 16,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16,
     },
     shareDraftButton: {
-      minWidth: 58,
-      minHeight: 34,
+      minWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(58) : 58,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(34) : 34,
       alignItems: "center",
       justifyContent: "center",
-      paddingHorizontal: 8,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
       backgroundColor: theme.colors.iconSurfaceGold,
@@ -2459,7 +2467,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     shareDraftText: {
       color: theme.colors.goldBright,
       fontFamily: theme.fonts.radar,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: "900",
       letterSpacing: 0.6,
     },
@@ -2467,9 +2475,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.scannerCyan,
     },
     ebayPublishPanel: {
-      gap: 12,
-      marginTop: 14,
-      paddingTop: 14,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
+      marginTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(14) : 14,
+      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(14) : 14,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: theme.colors.divider,
     },
@@ -2477,35 +2485,35 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: "row",
       alignItems: "flex-start",
       justifyContent: "space-between",
-      gap: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
     },
     ebayPublishHeaderCopy: {
       flex: 1,
-      gap: 4,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
     },
     ebayPublishTitle: {
       color: theme.colors.cream,
       fontFamily: theme.fonts.bold,
-      fontSize: 15,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15,
       fontWeight: "900",
     },
     ebayPublishMode: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.radar,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: "900",
       letterSpacing: 0.7,
     },
     ebayPublishHint: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.body,
-      fontSize: 11,
-      lineHeight: 17,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : 17,
     },
     ebaySetupNotice: {
       flexDirection: "row",
       alignItems: "flex-start",
-      gap: 9,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
       padding: 12,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
@@ -2516,66 +2524,66 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flex: 1,
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.body,
-      fontSize: 11,
-      lineHeight: 16,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16,
     }, ebayField: {
-      gap: 6,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
     },
     ebayFieldRow: {
       flexDirection: "row",
-      gap: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
     },
     ebayFieldHalf: {
       flex: 1,
-      gap: 6,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
     },
     ebayFieldLabel: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.radar,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: "900",
       letterSpacing: 0.7,
     },
     ebayFieldInput: {
-      minHeight: 42,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(42) : 42,
       borderWidth: 1,
       borderColor: theme.colors.divider,
       backgroundColor: theme.colors.cardSoft,
       color: theme.colors.cream,
-      paddingHorizontal: 12,
-      paddingVertical: 9,
-      fontSize: 13,
-      borderRadius: 4,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(9) : 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : 13,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
     },
     ebayPublishActions: {
       flexDirection: "row",
-      gap: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       justifyContent: "flex-end",
     },
     ebayCancelButton: {
-      minHeight: 40,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(40) : 40,
       alignItems: "center",
       justifyContent: "center",
-      paddingHorizontal: 14,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14,
       borderWidth: 1,
       borderColor: theme.colors.divider,
-      borderRadius: 4,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
     },
     ebayCancelButtonText: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.radar,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: "900",
       letterSpacing: 0.8,
     },
     ebayPublishButton: {
-      minHeight: 40,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(40) : 40,
       flex: 1,
       alignItems: "center",
       justifyContent: "center",
-      paddingHorizontal: 14,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14,
       backgroundColor: theme.colors.goldBright,
-      borderRadius: 4,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
     },
     ebayPublishButtonDisabled: {
       opacity: 0.6,
@@ -2586,67 +2594,67 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     ebayPublishButtonText: {
       color: theme.colors.textOnAccent,
       fontFamily: theme.fonts.radar,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: "900",
       letterSpacing: 0.8,
     },
     ebayPublishError: {
       color: theme.colors.danger,
-      fontSize: 12,
-      lineHeight: 17,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : 17,
     },
     ebayPublishSuccess: {
       flexDirection: "row",
       alignItems: "flex-start",
-      gap: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       padding: 12,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
       backgroundColor: theme.colors.iconSurfaceCyan,
-      borderRadius: 4,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
     },
     ebayPublishSuccessCopy: {
       flex: 1,
-      gap: 4,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
     },
     ebayPublishSuccessTitle: {
       color: theme.colors.cream,
-      fontSize: 14,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14,
       fontWeight: "900",
     },
     ebayPublishSuccessDetail: {
       color: theme.colors.textMuted,
-      fontSize: 11,
-      lineHeight: 16,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16,
     },
     ebayOpenButton: {
-      minHeight: 40,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(40) : 40,
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
       backgroundColor: theme.colors.iconSurfaceCyan,
-      borderRadius: 4,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
     },
     ebayOpenButtonText: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.radar,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: "900",
       letterSpacing: 0.8,
     },
     crosslistError: {
       color: theme.colors.danger,
-      fontSize: 12,
-      lineHeight: 17,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : 17,
     },
     crosslistFootnote: {
       color: theme.colors.textMuted,
-      fontSize: 11,
-      lineHeight: 16,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16,
     },
     progressCard: {
-      gap: 15,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(15) : 15,
       padding: 20,
       borderRadius: theme.radii.large,
       borderWidth: 1,
@@ -2657,11 +2665,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      gap: 16,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16,
     },
     progressCount: {
-      minWidth: 48,
-      minHeight: 48,
+      minWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(48) : 48,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(48) : 48,
       alignItems: "center",
       justifyContent: "center",
       borderRadius: theme.radii.pill,
@@ -2672,11 +2680,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     progressCountText: {
       color: theme.colors.goldBright,
       fontFamily: theme.fonts.bold,
-      fontSize: 13,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : 13,
       fontWeight: "900",
     },
     progressTrack: {
-      height: 6,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : 6,
       overflow: "hidden",
       borderRadius: theme.radii.pill,
       backgroundColor: theme.colors.divider,
@@ -2687,12 +2695,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.scannerCyan,
     },
     checklist: {
-      gap: 9,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
     },
     checklistStep: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
       padding: 13,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
@@ -2704,8 +2712,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.iconSurfaceCyan,
     },
     checkmark: {
-      width: 31,
-      height: 31,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(31) : 31,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(31) : 31,
       alignItems: "center",
       justifyContent: "center",
       borderRadius: theme.radii.pill,
@@ -2720,28 +2728,28 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     checkmarkNumber: {
       color: theme.colors.goldBright,
       fontFamily: theme.fonts.radar,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: "900",
     },
     checklistCopy: {
       flex: 1,
-      gap: 3,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3,
     },
     checklistLabel: {
       color: theme.colors.cream,
       fontFamily: theme.fonts.semibold,
-      fontSize: 14,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14,
       fontWeight: "900",
     },
     checklistDetail: {
       color: theme.colors.textMuted,
-      fontSize: 12,
-      lineHeight: 17,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : 17,
     },
     publishNotice: {
       flexDirection: "row",
       alignItems: "flex-start",
-      gap: 11,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : 11,
       padding: 16,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
@@ -2752,9 +2760,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flex: 1,
       fontFamily: theme.fonts.display,
       color: theme.colors.goldBright,
-      fontSize: 13,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : 13,
       fontWeight: "700",
-      lineHeight: 19,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(19) : 19,
     },
     pressed: {
       opacity: 0.76,

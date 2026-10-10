@@ -6,8 +6,10 @@ import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { FIRST_BLOG_POST } from '@/constants/keepflip-blog';
 import { keepFlipTheme as theme, type KeepFlipThemeColors } from '@/constants/keepflip-theme';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 export function WebBlogMenu({ colors, isPhone, width }: { colors: KeepFlipThemeColors; isPhone: boolean; width: number }) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const [isOpen, setIsOpen] = useState(false);
   const menuId = useId();
 
@@ -30,30 +32,30 @@ export function WebBlogMenu({ colors, isPhone, width }: { colors: KeepFlipThemeC
   }, [isOpen, menuId]);
 
   return (
-    <View nativeID={menuId} style={styles.menu}>
+    <View nativeID={menuId} style={responsiveStyles.menu}>
       <Pressable
         accessibilityLabel="Blog articles"
         accessibilityRole="button"
         accessibilityState={{ expanded: isOpen }}
         aria-expanded={isOpen}
         onPress={() => setIsOpen((open) => !open)}
-        style={({ pressed }) => [styles.trigger, pressed && styles.pressed]}
+        style={({ pressed }) => [responsiveStyles.trigger, pressed && responsiveStyles.pressed]}
       >
-        <Text style={[styles.triggerText, { color: colors.textMuted }]}>BLOG</Text>
+        <Text style={[responsiveStyles.triggerText, { color: colors.textMuted }]}>BLOG</Text>
         <Ionicons color={colors.textMuted} name={isOpen ? 'chevron-up' : 'chevron-down'} size={13} />
       </Pressable>
 
       {isOpen ? (
         <View
           style={[
-            styles.panel,
-            isPhone && styles.panelPhone,
-            isPhone && width < 380 && styles.panelNarrowPhone,
+            responsiveStyles.panel,
+            isPhone && responsiveStyles.panelPhone,
+            isPhone && width < 380 && responsiveStyles.panelNarrowPhone,
             isPhone && width < 380 && { width: Math.max(240, width - 24) },
             { backgroundColor: colors.surfaceOverlay, borderColor: colors.divider },
           ]}
         >
-          <Text style={[styles.eyebrow, { color: colors.goldBright }]}>RESELLER BLOG</Text>
+          <Text style={[responsiveStyles.eyebrow, { color: colors.goldBright }]}>RESELLER BLOG</Text>
           <DropdownLink
             colors={colors}
             href={FIRST_BLOG_POST.path}
@@ -61,7 +63,7 @@ export function WebBlogMenu({ colors, isPhone, width }: { colors: KeepFlipThemeC
             subtitle={`By ${FIRST_BLOG_POST.author}`}
             onNavigate={() => setIsOpen(false)}
           />
-          <View style={[styles.divider, { backgroundColor: colors.divider }]} />
+          <View style={[responsiveStyles.divider, { backgroundColor: colors.divider }]} />
           <DropdownLink
             colors={colors}
             href="/blog"
@@ -87,6 +89,7 @@ function DropdownLink({
   onNavigate: () => void;
   subtitle?: string;
 }) {
+  const responsiveStyles2 = useResponsiveStyles(createStylesWebResponsive);
   if (Platform.OS === 'web') {
     const linkStyle: CSSProperties = {
       borderRadius: 10,
@@ -111,9 +114,9 @@ function DropdownLink({
 
   return (
     <Link href={href as Href} asChild>
-      <Pressable accessibilityRole="link" onPress={onNavigate} style={styles.nativeLink}>
-        <Text style={[styles.linkTitle, { color: colors.text }]}>{label}</Text>
-        {subtitle ? <Text style={[styles.linkSubtitle, { color: colors.textMuted }]}>{subtitle}</Text> : null}
+      <Pressable accessibilityRole="link" onPress={onNavigate} style={responsiveStyles2.nativeLink}>
+        <Text style={[responsiveStyles2.linkTitle, { color: colors.text }]}>{label}</Text>
+        {subtitle ? <Text style={[responsiveStyles2.linkSubtitle, { color: colors.textMuted }]}>{subtitle}</Text> : null}
       </Pressable>
     </Link>
   );
@@ -153,3 +156,45 @@ const styles = StyleSheet.create({
   linkSubtitle: { fontFamily: theme.fonts.body, fontSize: 12 },
   pressed: { opacity: 0.72 },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    trigger: {
+      ...styles["trigger"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(4) : 4,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(38) : 38,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(6) : 6,
+    },
+    triggerText: {
+      ...styles["triggerText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+    panel: {
+      ...styles["panel"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(16) : 16,
+      width: layout.isWeb ? layout.webResponsiveWidth(310) : 310,
+    },
+    eyebrow: {
+      ...styles["eyebrow"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
+    },
+    divider: {
+      ...styles["divider"],
+      marginVertical: layout.isWeb ? layout.webResponsiveHeight(4) : 4,
+    },
+    nativeLink: {
+      ...styles["nativeLink"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      gap: layout.isWeb ? layout.webResponsiveWidth(5) : 5,
+    },
+    linkTitle: {
+      ...styles["linkTitle"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+    },
+    linkSubtitle: {
+      ...styles["linkSubtitle"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+  });
+}

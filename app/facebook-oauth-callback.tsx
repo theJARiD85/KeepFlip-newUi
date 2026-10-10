@@ -12,12 +12,14 @@ import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
 }
 
 export default function FacebookOAuthCallbackScreen() {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const router = useRouter();
   const params = useLocalSearchParams<{
     error?: string | string[];
@@ -95,20 +97,20 @@ export default function FacebookOAuthCallbackScreen() {
       : errorMessage);
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.backgroundDeep }]}>
-      <View style={[styles.card, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
-        <Text style={[styles.eyebrow, { color: colors.goldBright }]}>KEEPFLIP / SECURE ACCESS</Text>
-        <Text style={[styles.title, { color: colors.text }]}>
+    <View style={[responsiveStyles.root, { backgroundColor: colors.backgroundDeep }]}>
+      <View style={[responsiveStyles.card, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
+        <Text style={[responsiveStyles.eyebrow, { color: colors.goldBright }]}>KEEPFLIP / SECURE ACCESS</Text>
+        <Text style={[responsiveStyles.title, { color: colors.text }]}>
           {visibleError ? 'Facebook sign-in failed.' : 'Finishing sign-in…'}
         </Text>
         {visibleError ? (
-          <Text accessibilityLiveRegion="polite" style={[styles.message, { color: colors.danger }]}>
+          <Text accessibilityLiveRegion="polite" style={[responsiveStyles.message, { color: colors.danger }]}>
             {visibleError}
           </Text>
         ) : (
-          <View style={styles.progressRow}>
+          <View style={responsiveStyles.progressRow}>
             <ActivityIndicator color={colors.scannerCyan} />
-            <Text style={[styles.message, { color: colors.textMuted }]}>
+            <Text style={[responsiveStyles.message, { color: colors.textMuted }]}>
               {isCompleting ? 'Checking your Appwrite session…' : 'Opening your dashboard…'}
             </Text>
           </View>
@@ -117,8 +119,8 @@ export default function FacebookOAuthCallbackScreen() {
           <Pressable
             accessibilityRole="button"
             onPress={() => router.replace('/(auth)/sign-in' as Href)}
-            style={({ pressed }) => [styles.backButton, { backgroundColor: colors.gold }, pressed && styles.pressed]}>
-            <Text style={[styles.backButtonText, { color: colors.textOnAccent }]}>Return to sign in</Text>
+            style={({ pressed }) => [responsiveStyles.backButton, { backgroundColor: colors.gold }, pressed && responsiveStyles.pressed]}>
+            <Text style={[responsiveStyles.backButtonText, { color: colors.textOnAccent }]}>Return to sign in</Text>
           </Pressable>
         ) : null}
       </View>
@@ -137,3 +139,43 @@ const styles = StyleSheet.create({
   backButtonText: { fontFamily: theme.fonts.bold, fontSize: 13 },
   pressed: { opacity: 0.8 },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    card: {
+      ...styles["card"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(22) : 22,
+      gap: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(480) : 480,
+    },
+    eyebrow: {
+      ...styles["eyebrow"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+    },
+    title: {
+      ...styles["title"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(24) : 24,
+    },
+    message: {
+      ...styles["message"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(21) : 21,
+    },
+    progressRow: {
+      ...styles["progressRow"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+    },
+    backButton: {
+      ...styles["backButton"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(13) : 13,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(4) : 4,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(48) : 48,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(16) : 16,
+    },
+    backButtonText: {
+      ...styles["backButtonText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
+    },
+  });
+}

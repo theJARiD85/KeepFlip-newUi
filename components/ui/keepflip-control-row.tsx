@@ -1,11 +1,10 @@
 import { type ComponentProps, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
-type KeepFlipControlIconName = ComponentProps<typeof IconSymbol>['name'];
+type KeepFlipControlIconName = ComponentProps<typeof Ionicons>['name'];
 export type KeepFlipStatusTone =
   | 'active'
   | 'muted'
@@ -80,6 +79,7 @@ export function KeepFlipControlRow({
   staticLabel,
   status,
 }: KeepFlipControlRowProps) {
+  const responsiveLayout2 = useResponsiveLayout();
   const styles = useResponsiveStyles(createResponsiveStyles);
   const {
     responsiveFont
@@ -104,14 +104,14 @@ export function KeepFlipControlRow({
   const content = (
     <View style={styles.container}>
       <View style={[styles.rowIcon, iconStyle]}>
-        {leading ?? (icon ? <IconSymbol color={iconColor} name={icon} size={19} /> : null)}
+        {leading ?? (icon ? <Ionicons color={iconColor} name={icon} size={19} /> : null)}
       </View>
       <View style={styles.rowCopy}>
         <View style={styles.rowTitleLine}>
           <Text style={[styles.rowTitle, { fontSize: responsiveFont(14) }]}>{label}</Text>
           {status ? <KeepFlipStatusBadge label={status.label} tone={status.tone} /> : null}
         </View>
-        <Text style={[styles.rowDescription, { fontSize: responsiveFont(10), lineHeight: 14 }]}>{description}</Text>
+        <Text style={[styles.rowDescription, { fontSize: responsiveFont(10), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(14) : 14 }]}>{description}</Text>
       </View>
       {actionBusy ? (
         <ActivityIndicator color={iconColor} size="small" style={styles.rowSpinner} />
@@ -120,7 +120,7 @@ export function KeepFlipControlRow({
           <Text style={[styles.rowActionText, { fontSize: responsiveFont(7) }]}>{actionLabel}</Text>
         </View>
       ) : isPressable ? (
-        <IconSymbol
+        <Ionicons
           color={theme.colors.goldMuted}
           name="chevron.right"
           size={18}
@@ -153,16 +153,16 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   const staticStyles = StyleSheet.create({
     container: {
       flexDirection: 'row',
-      paddingHorizontal: 8,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
       alignItems: 'center',
-      gap: 7
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7
     },
     controlRow: {
-      minHeight: 70,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(70) : 70,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 10,
-      paddingVertical: 9,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(9) : 9,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: theme.colors.divider,
     },
@@ -170,11 +170,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.iconSurfaceGold,
     },
     rowIcon: {
-      width: 32,
-      height: 32,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(32) : 32,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(32) : 32,
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: 8,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
       borderWidth: 1,
       backgroundColor: theme.colors.iconSurface,
     },
@@ -198,25 +198,25 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     rowTitleLine: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 6,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
     },
     rowTitle: {
       minWidth: 0,
       flexShrink: 1,
       color: theme.colors.text,
-      fontSize: 14,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14,
       fontWeight: '800',
     },
     rowDescription: {
       color: theme.colors.textMuted,
-      fontSize: 10,
-      lineHeight: 14,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14,
     },
     rowAction: {
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: 7,
-      paddingVertical: 6,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : 6,
       borderRadius: theme.radii.pill,
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
@@ -224,16 +224,16 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     rowActionText: {
       color: theme.colors.goldBright,
-      fontSize: 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
       fontWeight: '900',
       letterSpacing: 0.65,
     },
     rowChevron: { marginLeft: 1 },
-    rowSpinner: { marginHorizontal: 4 },
+    rowSpinner: { marginHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4 },
     rowStaticLabel: {
-      maxWidth: 68,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(68) : 68,
       color: theme.colors.goldMuted,
-      fontSize: 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
       fontWeight: '900',
       letterSpacing: 0.6,
       textAlign: 'right',
@@ -241,9 +241,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     statusBadge: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 4,
-      paddingHorizontal: 6,
-      paddingVertical: 3,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(3) : 3,
       borderRadius: theme.radii.pill,
       borderWidth: 1,
     },
@@ -268,8 +268,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.iconSurfaceViolet,
     },
     statusBadgeDot: {
-      width: 4,
-      height: 4,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(4) : 4,
       borderRadius: theme.radii.pill,
     },
     statusBadgeDotActive: { backgroundColor: theme.colors.scannerCyan },
@@ -278,7 +278,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     statusBadgeDotDanger: { backgroundColor: theme.colors.danger },
     statusBadgeDotViolet: { backgroundColor: theme.colors.scannerViolet },
     statusBadgeText: {
-      fontSize: 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
       fontWeight: '900',
       letterSpacing: 0.62,
     },

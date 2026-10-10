@@ -21,6 +21,7 @@ import type {
   ProductCondition,
 } from '@/components/crosslisting-lab/types';
 import type { InventoryItem } from '@/services/inventory-service';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 type AddProductResult = {
   product: InventoryProduct;
@@ -80,6 +81,7 @@ export function InventoryScreen({
   onAddProduct,
   onOpenProduct,
 }: InventoryScreenProps) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
   const [condition, setCondition] = useState<ProductCondition>('good');
@@ -189,30 +191,30 @@ export function InventoryScreen({
   }
 
   const header = (
-    <View style={styles.headerContent}>
-      <View style={styles.brandRow}>
-        <View style={styles.brandMark}><Text style={styles.brandLetter}>K</Text></View>
-        <View style={styles.brandCopy}>
-          <Text style={styles.brandName}>KEEPFLIP</Text>
-          <Text style={styles.brandLabel}>CROSSLISTING LAB</Text>
+    <View style={responsiveStyles.headerContent}>
+      <View style={responsiveStyles.brandRow}>
+        <View style={responsiveStyles.brandMark}><Text style={responsiveStyles.brandLetter}>K</Text></View>
+        <View style={responsiveStyles.brandCopy}>
+          <Text style={responsiveStyles.brandName}>KEEPFLIP</Text>
+          <Text style={responsiveStyles.brandLabel}>CROSSLISTING LAB</Text>
         </View>
-        <View style={styles.previewPill}><View style={styles.previewDot} /><Text style={styles.previewText}>PROTOTYPE</Text></View>
+        <View style={responsiveStyles.previewPill}><View style={responsiveStyles.previewDot} /><Text style={responsiveStyles.previewText}>PROTOTYPE</Text></View>
       </View>
 
-      <View style={styles.headingBlock}>
-        <Text style={styles.eyebrow}>INVENTORY / MASTER CATALOG</Text>
-        <Text style={styles.heading}>List once. Start here.</Text>
-        <Text style={styles.subtitle}>Create one item record, then prepare it for each marketplace.</Text>
+      <View style={responsiveStyles.headingBlock}>
+        <Text style={responsiveStyles.eyebrow}>INVENTORY / MASTER CATALOG</Text>
+        <Text style={responsiveStyles.heading}>List once. Start here.</Text>
+        <Text style={responsiveStyles.subtitle}>Create one item record, then prepare it for each marketplace.</Text>
       </View>
-      <View style={styles.inventorySection}>
-        <View style={styles.inventoryHeadingRow}>
-          <View style={styles.inventoryHeadingCopy}>
-            <Text style={styles.eyebrow}>KEEPFLIP INVENTORY</Text>
-            <Text style={styles.sectionTitle}>Pick a saved item</Text>
+      <View style={responsiveStyles.inventorySection}>
+        <View style={responsiveStyles.inventoryHeadingRow}>
+          <View style={responsiveStyles.inventoryHeadingCopy}>
+            <Text style={responsiveStyles.eyebrow}>KEEPFLIP INVENTORY</Text>
+            <Text style={responsiveStyles.sectionTitle}>Pick a saved item</Text>
           </View>
           {onViewInventory ? (
-            <Pressable accessibilityRole="button" onPress={onViewInventory} style={styles.viewInventoryButton}>
-              <Text style={styles.viewInventoryText}>View inventory →</Text>
+            <Pressable accessibilityRole="button" onPress={onViewInventory} style={responsiveStyles.viewInventoryButton}>
+              <Text style={responsiveStyles.viewInventoryText}>View inventory →</Text>
             </Pressable>
           ) : null}
         </View>
@@ -222,56 +224,56 @@ export function InventoryScreen({
           onChangeText={setInventorySearch}
           placeholder="Search title, brand, or SKU"
           placeholderTextColor={brand.colors.textMuted}
-          style={styles.input}
+          style={responsiveStyles.input}
           value={inventorySearch}
         />
         {inventoryLoading ? (
-          <View style={styles.inventoryState}>
+          <View style={responsiveStyles.inventoryState}>
             <ActivityIndicator color={brand.colors.goldBright} size="small" />
-            <Text style={styles.inventoryStateText}>Loading your KeepFlip inventory…</Text>
+            <Text style={responsiveStyles.inventoryStateText}>Loading your KeepFlip inventory…</Text>
           </View>
         ) : inventoryError ? (
-          <View style={styles.errorCard}>
-            <Text style={styles.errorTitle}>KeepFlip inventory unavailable</Text>
-            <Text style={styles.errorBody}>{inventoryError}</Text>
+          <View style={responsiveStyles.errorCard}>
+            <Text style={responsiveStyles.errorTitle}>KeepFlip inventory unavailable</Text>
+            <Text style={responsiveStyles.errorBody}>{inventoryError}</Text>
             {onRetryInventory ? (
-              <Pressable accessibilityRole="button" onPress={onRetryInventory} style={styles.retryButton}>
-                <Text style={styles.retryText}>Try again</Text>
+              <Pressable accessibilityRole="button" onPress={onRetryInventory} style={responsiveStyles.retryButton}>
+                <Text style={responsiveStyles.retryText}>Try again</Text>
               </Pressable>
             ) : null}
           </View>
         ) : inventoryItems.length === 0 ? (
-          <View style={styles.inventoryEmpty}>
-            <Text style={styles.inventoryStateText}>No saved items yet. Add inventory in KeepFlip or start below with photos.</Text>
+          <View style={responsiveStyles.inventoryEmpty}>
+            <Text style={responsiveStyles.inventoryStateText}>No saved items yet. Add inventory in KeepFlip or start below with photos.</Text>
           </View>
         ) : matchingInventoryItems.length === 0 ? (
-          <View style={styles.inventoryEmpty}>
-            <Text style={styles.inventoryStateText}>No inventory items match that search.</Text>
+          <View style={responsiveStyles.inventoryEmpty}>
+            <Text style={responsiveStyles.inventoryStateText}>No inventory items match that search.</Text>
           </View>
         ) : (
           <>
             {visibleInventoryItems.map((item) => {
               const priceValue = item.listingCurrentPrice ?? item.estimatedValue;
               return (
-                <View key={item.id} style={styles.keepFlipItemCard}>
-                  <View style={styles.productIcon}>
+                <View key={item.id} style={responsiveStyles.keepFlipItemCard}>
+                  <View style={responsiveStyles.productIcon}>
                     <SymbolView name={{ ios: 'shippingbox', android: 'inventory_2', web: 'inventory_2' }} size={21} tintColor={brand.colors.cyan} />
                   </View>
-                  <View style={styles.productCopy}>
-                    <Text numberOfLines={2} style={styles.productTitle}>{item.title}</Text>
-                    <Text style={styles.productMeta}>
+                  <View style={responsiveStyles.productCopy}>
+                    <Text numberOfLines={2} style={responsiveStyles.productTitle}>{item.title}</Text>
+                    <Text style={responsiveStyles.productMeta}>
                       {[item.brand, `${item.photoCount} photo${item.photoCount === 1 ? '' : 's'}`].filter(Boolean).join(' · ')}
                     </Text>
                   </View>
-                  <View style={styles.productRight}>
-                    <Text style={styles.productPrice}>{priceValue === null ? 'Price needed' : money(priceValue)}</Text>
+                  <View style={responsiveStyles.productRight}>
+                    <Text style={responsiveStyles.productPrice}>{priceValue === null ? 'Price needed' : money(priceValue)}</Text>
                     {onOpenInventoryItem ? (
                       <Pressable
                         accessibilityRole="button"
                         accessibilityLabel={`Prepare listing for ${item.title}`}
                         onPress={() => onOpenInventoryItem(item)}
-                        style={styles.listButton}>
-                        <Text style={styles.listButtonText}>Prepare →</Text>
+                        style={responsiveStyles.listButton}>
+                        <Text style={responsiveStyles.listButtonText}>Prepare →</Text>
                       </Pressable>
                     ) : null}
                   </View>
@@ -279,7 +281,7 @@ export function InventoryScreen({
               );
             })}
             {matchingInventoryItems.length > visibleInventoryItems.length ? (
-              <Text style={styles.inventoryHint}>
+              <Text style={responsiveStyles.inventoryHint}>
                 Showing {visibleInventoryItems.length} of {matchingInventoryItems.length}. Search to narrow the list.
               </Text>
             ) : null}
@@ -287,46 +289,46 @@ export function InventoryScreen({
         )}
       </View>
 
-      <View style={styles.formCard}>
-        <View style={styles.formHeadingRow}>
-          <View style={styles.formIcon}>
+      <View style={responsiveStyles.formCard}>
+        <View style={responsiveStyles.formHeadingRow}>
+          <View style={responsiveStyles.formIcon}>
             <SymbolView name={{ ios: 'plus', android: 'add', web: 'add' }} size={19} tintColor={brand.colors.goldBright} />
           </View>
-          <View style={styles.formHeadingCopy}>
-            <Text style={styles.formTitle}>Start a listing with photos</Text>
-            <Text style={styles.formSubtitle}>Choose up to 10 photos first, then add a title, price, and condition. This creates a Crosslisting Lab draft.</Text>
+          <View style={responsiveStyles.formHeadingCopy}>
+            <Text style={responsiveStyles.formTitle}>Start a listing with photos</Text>
+            <Text style={responsiveStyles.formSubtitle}>Choose up to 10 photos first, then add a title, price, and condition. This creates a Crosslisting Lab draft.</Text>
           </View>
         </View>
-        <Text style={styles.fieldLabel}>1. LISTING PHOTOS · {selectedImages.length}/10</Text>
+        <Text style={responsiveStyles.fieldLabel}>1. LISTING PHOTOS · {selectedImages.length}/10</Text>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={selectedImages.length ? 'Add listing photos' : 'Choose listing photos'}
           accessibilityState={{ disabled: saveState === 'saving' }}
           disabled={saveState === 'saving'}
           onPress={() => { void chooseImages(); }}
-          style={({ pressed }) => [styles.photoPickerButton, pressed && styles.addButtonPressed]}>
+          style={({ pressed }) => [responsiveStyles.photoPickerButton, pressed && responsiveStyles.addButtonPressed]}>
           <SymbolView name={{ ios: 'photo', android: 'add_photo_alternate', web: 'add_photo_alternate' }} size={20} tintColor={brand.colors.goldBright} />
-          <Text style={styles.photoPickerText}>{selectedImages.length ? 'Add more photos' : 'Choose photos'}</Text>
+          <Text style={responsiveStyles.photoPickerText}>{selectedImages.length ? 'Add more photos' : 'Choose photos'}</Text>
         </Pressable>
         {selectedImages.length > 0 ? (
-          <ScrollView horizontal contentContainerStyle={styles.photoPreviewList} showsHorizontalScrollIndicator={false}>
+          <ScrollView horizontal contentContainerStyle={responsiveStyles.photoPreviewList} showsHorizontalScrollIndicator={false}>
             {selectedImages.map((image) => (
-              <View key={image.uri} style={styles.photoPreviewWrap}>
-                <Image contentFit="cover" source={{ uri: image.uri }} style={styles.photoPreview} />
+              <View key={image.uri} style={responsiveStyles.photoPreviewWrap}>
+                <Image contentFit="cover" source={{ uri: image.uri }} style={responsiveStyles.photoPreview} />
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`Remove ${image.fileName ?? 'photo'}`}
                   onPress={() => removeImage(image.uri)}
-                  style={styles.removePhotoButton}>
-                  <Text style={styles.removePhotoText}>×</Text>
+                  style={responsiveStyles.removePhotoButton}>
+                  <Text style={responsiveStyles.removePhotoText}>×</Text>
                 </Pressable>
               </View>
             ))}
           </ScrollView>
         ) : (
-          <Text style={styles.previewNote}>JPG, PNG, or WebP · up to 12 MB each</Text>
+          <Text style={responsiveStyles.previewNote}>JPG, PNG, or WebP · up to 12 MB each</Text>
         )}
-        <Text style={styles.fieldLabel}>2. ITEM TITLE</Text>
+        <Text style={responsiveStyles.fieldLabel}>2. ITEM TITLE</Text>
         <TextInput
           accessibilityLabel="Item title"
           autoCapitalize="sentences"
@@ -334,103 +336,103 @@ export function InventoryScreen({
           onChangeText={(value) => { setTitle(value); setFormError(null); setPhotoUploadWarning(null); setSavedDraft(null); setSaveState('idle'); }}
           placeholder="e.g. Vintage denim jacket"
           placeholderTextColor={brand.colors.textMuted}
-          style={styles.input}
+          style={responsiveStyles.input}
           value={title}
         />
-        <Text style={styles.fieldLabel}>TARGET PRICE</Text>
-        <View style={styles.priceField}>
-          <Text style={styles.dollarSign}>$</Text>
+        <Text style={responsiveStyles.fieldLabel}>TARGET PRICE</Text>
+        <View style={responsiveStyles.priceField}>
+          <Text style={responsiveStyles.dollarSign}>$</Text>
           <TextInput
             accessibilityLabel="Target price in dollars"
             keyboardType="decimal-pad"
             onChangeText={(value) => { setPrice(value); setFormError(null); setPhotoUploadWarning(null); setSavedDraft(null); setSaveState('idle'); }}
             placeholder="0.00"
             placeholderTextColor={brand.colors.textMuted}
-            style={styles.priceInput}
+            style={responsiveStyles.priceInput}
             value={price}
           />
         </View>
-        <Text style={styles.fieldLabel}>CONDITION</Text>
-        <View style={styles.conditionRow}>
+        <Text style={responsiveStyles.fieldLabel}>CONDITION</Text>
+        <View style={responsiveStyles.conditionRow}>
           {conditionChoices.map((choice) => (
             <Pressable
               key={choice.value}
               accessibilityRole="radio"
               accessibilityState={{ checked: condition === choice.value }}
               onPress={() => { setCondition(choice.value); setPhotoUploadWarning(null); setSavedDraft(null); setSaveState('idle'); }}
-              style={[styles.conditionChip, condition === choice.value && styles.conditionChipActive]}>
-              <Text style={[styles.conditionText, condition === choice.value && styles.conditionTextActive]}>{choice.label}</Text>
+              style={[responsiveStyles.conditionChip, condition === choice.value && responsiveStyles.conditionChipActive]}>
+              <Text style={[responsiveStyles.conditionText, condition === choice.value && responsiveStyles.conditionTextActive]}>{choice.label}</Text>
             </Pressable>
           ))}
         </View>
-        {formError ? <Text accessibilityRole="alert" style={styles.formError}>{formError}</Text> : null}
-        {saveState === 'saved' ? <Text style={styles.formSuccess}>Draft saved to your Crosslisting Lab catalog.</Text> : null}
-        {photoUploadWarning ? <Text accessibilityRole="alert" style={styles.formWarning}>{photoUploadWarning}</Text> : null}
+        {formError ? <Text accessibilityRole="alert" style={responsiveStyles.formError}>{formError}</Text> : null}
+        {saveState === 'saved' ? <Text style={responsiveStyles.formSuccess}>Draft saved to your Crosslisting Lab catalog.</Text> : null}
+        {photoUploadWarning ? <Text accessibilityRole="alert" style={responsiveStyles.formWarning}>{photoUploadWarning}</Text> : null}
         <Pressable
           accessibilityRole="button"
           accessibilityState={{ disabled: saveState === 'saving' }}
           disabled={saveState === 'saving'}
           onPress={() => { void addProduct(); }}
-          style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed, saveState === 'saving' && styles.addButtonDisabled]}>
+          style={({ pressed }) => [responsiveStyles.addButton, pressed && responsiveStyles.addButtonPressed, saveState === 'saving' && responsiveStyles.addButtonDisabled]}>
           {saveState === 'saving' ? <ActivityIndicator color={brand.colors.background} size="small" /> : null}
-          <Text style={styles.addButtonText}>{saveState === 'saving' ? 'Saving listing…' : 'Create listing draft'}</Text>
-          {saveState !== 'saving' ? <Text style={styles.addArrow}>→</Text> : null}
+          <Text style={responsiveStyles.addButtonText}>{saveState === 'saving' ? 'Saving listing…' : 'Create listing draft'}</Text>
+          {saveState !== 'saving' ? <Text style={responsiveStyles.addArrow}>→</Text> : null}
         </Pressable>
         {savedDraft && onOpenProduct ? (
           <Pressable
             accessibilityRole="button"
             onPress={() => onOpenProduct(savedDraft.product)}
-            style={styles.continueButton}>
-            <Text style={styles.continueButtonText}>Continue to listing →</Text>
+            style={responsiveStyles.continueButton}>
+            <Text style={responsiveStyles.continueButtonText}>Continue to listing →</Text>
           </Pressable>
         ) : null}
       </View>
 
-      <View style={styles.listHeading}>
+      <View style={responsiveStyles.listHeading}>
         <View>
-          <Text style={styles.eyebrow}>YOUR ITEMS</Text>
-          <Text style={styles.sectionTitle}>Master catalog</Text>
+          <Text style={responsiveStyles.eyebrow}>YOUR ITEMS</Text>
+          <Text style={responsiveStyles.sectionTitle}>Master catalog</Text>
         </View>
-        <View style={styles.countPill}><Text style={styles.countText}>{products.length}</Text></View>
+        <View style={responsiveStyles.countPill}><Text style={responsiveStyles.countText}>{products.length}</Text></View>
       </View>
       {loadError ? (
-        <View style={styles.errorCard}>
-          <Text style={styles.errorTitle}>Catalog unavailable</Text>
-          <Text style={styles.errorBody}>{loadError}</Text>
-          {onRetry ? <Pressable accessibilityRole="button" onPress={onRetry} style={styles.retryButton}><Text style={styles.retryText}>Try again</Text></Pressable> : null}
+        <View style={responsiveStyles.errorCard}>
+          <Text style={responsiveStyles.errorTitle}>Catalog unavailable</Text>
+          <Text style={responsiveStyles.errorBody}>{loadError}</Text>
+          {onRetry ? <Pressable accessibilityRole="button" onPress={onRetry} style={responsiveStyles.retryButton}><Text style={responsiveStyles.retryText}>Try again</Text></Pressable> : null}
         </View>
       ) : null}
     </View>
   );
 
   return (
-    <SafeAreaView edges={['top']} style={styles.safeArea}>
+    <SafeAreaView edges={['top']} style={responsiveStyles.safeArea}>
       <FlatList
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={responsiveStyles.listContent}
         data={products}
         initialNumToRender={8}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={header}
         ListEmptyComponent={isLoading ? (
-          <View style={styles.emptyCard}><ActivityIndicator color={brand.colors.goldBright} /><Text style={styles.emptyTitle}>Loading your catalog…</Text></View>
+          <View style={responsiveStyles.emptyCard}><ActivityIndicator color={brand.colors.goldBright} /><Text style={responsiveStyles.emptyTitle}>Loading your catalog…</Text></View>
         ) : loadError ? null : (
-          <View style={styles.emptyCard}>
-            <View style={styles.emptyIcon}><SymbolView name={{ ios: 'shippingbox', android: 'inventory_2', web: 'inventory_2' }} size={30} tintColor={brand.colors.goldBright} /></View>
-            <Text style={styles.emptyTitle}>Your catalog starts here</Text>
-            <Text style={styles.emptyBody}>Add an item above to create your first master draft.</Text>
+          <View style={responsiveStyles.emptyCard}>
+            <View style={responsiveStyles.emptyIcon}><SymbolView name={{ ios: 'shippingbox', android: 'inventory_2', web: 'inventory_2' }} size={30} tintColor={brand.colors.goldBright} /></View>
+            <Text style={responsiveStyles.emptyTitle}>Your catalog starts here</Text>
+            <Text style={responsiveStyles.emptyBody}>Add an item above to create your first master draft.</Text>
           </View>
         )}
         renderItem={({ item }) => (
-          <View style={styles.productCard}>
-            <View style={styles.productIcon}><SymbolView name={{ ios: 'shippingbox', android: 'inventory_2', web: 'inventory_2' }} size={22} tintColor={brand.colors.cyan} /></View>
-            <View style={styles.productCopy}>
-              <Text numberOfLines={2} style={styles.productTitle}>{item.title}</Text>
-              <Text style={styles.productMeta}>Master item{item.condition ? ` · ${conditionChoices.find((choice) => choice.value === item.condition)?.label ?? item.condition}` : ''}</Text>
+          <View style={responsiveStyles.productCard}>
+            <View style={responsiveStyles.productIcon}><SymbolView name={{ ios: 'shippingbox', android: 'inventory_2', web: 'inventory_2' }} size={22} tintColor={brand.colors.cyan} /></View>
+            <View style={responsiveStyles.productCopy}>
+              <Text numberOfLines={2} style={responsiveStyles.productTitle}>{item.title}</Text>
+              <Text style={responsiveStyles.productMeta}>Master item{item.condition ? ` · ${conditionChoices.find((choice) => choice.value === item.condition)?.label ?? item.condition}` : ''}</Text>
             </View>
-            <View style={styles.productRight}>
-              <Text style={styles.productPrice}>{money(item.targetPrice)}</Text>
-              <View style={styles.draftPill}><Text style={styles.draftText}>{(item.status ?? 'draft').toUpperCase()}</Text></View>
-              {onOpenProduct ? <Pressable accessibilityRole="button" accessibilityLabel={`Prepare listing for ${item.title}`} onPress={() => onOpenProduct(item)} style={styles.listButton}><Text style={styles.listButtonText}>List →</Text></Pressable> : null}
+            <View style={responsiveStyles.productRight}>
+              <Text style={responsiveStyles.productPrice}>{money(item.targetPrice)}</Text>
+              <View style={responsiveStyles.draftPill}><Text style={responsiveStyles.draftText}>{(item.status ?? 'draft').toUpperCase()}</Text></View>
+              {onOpenProduct ? <Pressable accessibilityRole="button" accessibilityLabel={`Prepare listing for ${item.title}`} onPress={() => onOpenProduct(item)} style={responsiveStyles.listButton}><Text style={responsiveStyles.listButtonText}>List →</Text></Pressable> : null}
             </View>
           </View>
         )}
@@ -537,3 +539,412 @@ const styles = StyleSheet.create({
   listButton: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: brand.radii.small, backgroundColor: brand.colors.cyanSurface },
   listButtonText: { color: brand.colors.cyan, fontSize: 11, fontWeight: '900' },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    listContent: {
+      ...styles["listContent"],
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(16) : 16,
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(32) : 32,
+    },
+    headerContent: {
+      ...styles["headerContent"],
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(760) : 760,
+    },
+    brandRow: {
+      ...styles["brandRow"],
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(15) : 15,
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(24) : 24,
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+    },
+    brandMark: {
+      ...styles["brandMark"],
+      width: layout.isWeb ? layout.webResponsiveWidth(38) : 38,
+      height: layout.isWeb ? layout.webResponsiveHeight(38) : 38,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(13) : 13,
+    },
+    brandLetter: {
+      ...styles["brandLetter"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(23) : 23,
+    },
+    brandName: {
+      ...styles["brandName"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+    },
+    brandLabel: {
+      ...styles["brandLabel"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(9) : 9,
+    },
+    previewPill: {
+      ...styles["previewPill"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(6) : 6,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(7) : 7,
+    },
+    previewDot: {
+      ...styles["previewDot"],
+      width: layout.isWeb ? layout.webResponsiveWidth(6) : 6,
+      height: layout.isWeb ? layout.webResponsiveHeight(6) : 6,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(3) : 3,
+    },
+    previewText: {
+      ...styles["previewText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(9) : 9,
+    },
+    headingBlock: {
+      ...styles["headingBlock"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(5) : 5,
+      marginBottom: layout.isWeb ? layout.webResponsiveHeight(20) : 20,
+    },
+    accountRow: {
+      ...styles["accountRow"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      marginBottom: layout.isWeb ? layout.webResponsiveHeight(16) : 16,
+    },
+    accountLabel: {
+      ...styles["accountLabel"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+    },
+    signOutButton: {
+      ...styles["signOutButton"],
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(11) : 11,
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(7) : 7,
+    },
+    signOutText: {
+      ...styles["signOutText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
+    },
+    eyebrow: {
+      ...styles["eyebrow"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(9) : 9,
+    },
+    heading: {
+      ...styles["heading"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(29) : 29,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(34) : 34,
+    },
+    subtitle: {
+      ...styles["subtitle"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(19) : 19,
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(560) : 560,
+    },
+    summaryRow: {
+      ...styles["summaryRow"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      marginBottom: layout.isWeb ? layout.webResponsiveHeight(18) : 18,
+    },
+    summaryCard: {
+      ...styles["summaryCard"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(4) : 4,
+    },
+    summaryLabel: {
+      ...styles["summaryLabel"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(9) : 9,
+    },
+    summaryValue: {
+      ...styles["summaryValue"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(27) : 27,
+    },
+    summaryNote: {
+      ...styles["summaryNote"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(15) : 15,
+    },
+    inventorySection: {
+      ...styles["inventorySection"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      marginBottom: layout.isWeb ? layout.webResponsiveHeight(18) : 18,
+    },
+    inventoryHeadingRow: {
+      ...styles["inventoryHeadingRow"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+    },
+    inventoryHeadingCopy: {
+      ...styles["inventoryHeadingCopy"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(4) : 4,
+    },
+    viewInventoryButton: {
+      ...styles["viewInventoryButton"],
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(7) : 7,
+      paddingLeft: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+    },
+    viewInventoryText: {
+      ...styles["viewInventoryText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+    },
+    inventoryState: {
+      ...styles["inventoryState"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(58) : 58,
+      gap: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
+    },
+    inventoryStateText: {
+      ...styles["inventoryStateText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(16) : 16,
+    },
+    inventoryHint: {
+      ...styles["inventoryHint"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(15) : 15,
+    },
+    keepFlipItemCard: {
+      ...styles["keepFlipItemCard"],
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(760) : 760,
+      gap: layout.isWeb ? layout.webResponsiveWidth(11) : 11,
+    },
+    formCard: {
+      ...styles["formCard"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
+    },
+    formHeadingRow: {
+      ...styles["formHeadingRow"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      marginBottom: layout.isWeb ? layout.webResponsiveHeight(5) : 5,
+    },
+    formIcon: {
+      ...styles["formIcon"],
+      width: layout.isWeb ? layout.webResponsiveWidth(38) : 38,
+      height: layout.isWeb ? layout.webResponsiveHeight(38) : 38,
+    },
+    formTitle: {
+      ...styles["formTitle"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(16) : 16,
+    },
+    formSubtitle: {
+      ...styles["formSubtitle"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(16) : 16,
+    },
+    fieldLabel: {
+      ...styles["fieldLabel"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(9) : 9,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(5) : 5,
+    },
+    photoPickerButton: {
+      ...styles["photoPickerButton"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(46) : 46,
+      gap: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
+    },
+    photoPickerText: {
+      ...styles["photoPickerText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+    photoPreviewList: {
+      ...styles["photoPreviewList"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
+      paddingRight: layout.isWeb ? layout.webResponsiveWidth(4) : 4,
+    },
+    photoPreviewWrap: {
+      ...styles["photoPreviewWrap"],
+      width: layout.isWeb ? layout.webResponsiveWidth(78) : 78,
+      height: layout.isWeb ? layout.webResponsiveHeight(78) : 78,
+    },
+    photoPreview: {
+      ...styles["photoPreview"],
+      width: layout.isWeb ? layout.webResponsiveWidth(78) : 78,
+      height: layout.isWeb ? layout.webResponsiveHeight(78) : 78,
+    },
+    removePhotoButton: {
+      ...styles["removePhotoButton"],
+      width: layout.isWeb ? layout.webResponsiveWidth(24) : 24,
+      height: layout.isWeb ? layout.webResponsiveHeight(24) : 24,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+    },
+    removePhotoText: {
+      ...styles["removePhotoText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(18) : 18,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(21) : 21,
+    },
+    input: {
+      ...styles["input"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(48) : 48,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(13) : 13,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+    },
+    priceField: {
+      ...styles["priceField"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(48) : 48,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(13) : 13,
+    },
+    dollarSign: {
+      ...styles["dollarSign"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(17) : 17,
+      marginRight: layout.isWeb ? layout.webResponsiveWidth(5) : 5,
+    },
+    priceInput: {
+      ...styles["priceInput"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(46) : 46,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+    },
+    conditionRow: {
+      ...styles["conditionRow"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+    },
+    conditionChip: {
+      ...styles["conditionChip"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(35) : 35,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+    },
+    conditionText: {
+      ...styles["conditionText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+    },
+    formError: {
+      ...styles["formError"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(17) : 17,
+    },
+    formWarning: {
+      ...styles["formWarning"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(17) : 17,
+    },
+    formSuccess: {
+      ...styles["formSuccess"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(17) : 17,
+    },
+    addButton: {
+      ...styles["addButton"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(48) : 48,
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(5) : 5,
+    },
+    addButtonText: {
+      ...styles["addButtonText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+    },
+    addArrow: {
+      ...styles["addArrow"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(19) : 19,
+    },
+    continueButton: {
+      ...styles["continueButton"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(42) : 42,
+    },
+    continueButtonText: {
+      ...styles["continueButtonText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+    previewNote: {
+      ...styles["previewNote"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(16) : 16,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(3) : 3,
+    },
+    listHeading: {
+      ...styles["listHeading"],
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(25) : 25,
+      marginBottom: layout.isWeb ? layout.webResponsiveHeight(12) : 12,
+    },
+    sectionTitle: {
+      ...styles["sectionTitle"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(20) : 20,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(4) : 4,
+    },
+    countPill: {
+      ...styles["countPill"],
+      minWidth: layout.isWeb ? layout.webResponsiveWidth(29) : 29,
+      height: layout.isWeb ? layout.webResponsiveHeight(29) : 29,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+    },
+    countText: {
+      ...styles["countText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+    errorCard: {
+      ...styles["errorCard"],
+      marginBottom: layout.isWeb ? layout.webResponsiveHeight(12) : 12,
+    },
+    errorTitle: {
+      ...styles["errorTitle"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+    },
+    errorBody: {
+      ...styles["errorBody"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : 18,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(4) : 4,
+    },
+    retryButton: {
+      ...styles["retryButton"],
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(8) : 8,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(5) : 5,
+    },
+    retryText: {
+      ...styles["retryText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+    emptyCard: {
+      ...styles["emptyCard"],
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(760) : 760,
+      gap: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+    },
+    emptyIcon: {
+      ...styles["emptyIcon"],
+      width: layout.isWeb ? layout.webResponsiveWidth(58) : 58,
+      height: layout.isWeb ? layout.webResponsiveHeight(58) : 58,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(19) : 19,
+      marginBottom: layout.isWeb ? layout.webResponsiveHeight(5) : 5,
+    },
+    emptyTitle: {
+      ...styles["emptyTitle"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(15) : 15,
+    },
+    emptyBody: {
+      ...styles["emptyBody"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : 18,
+    },
+    productCard: {
+      ...styles["productCard"],
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(760) : 760,
+      gap: layout.isWeb ? layout.webResponsiveWidth(11) : 11,
+      marginBottom: layout.isWeb ? layout.webResponsiveHeight(10) : 10,
+    },
+    productIcon: {
+      ...styles["productIcon"],
+      width: layout.isWeb ? layout.webResponsiveWidth(46) : 46,
+      height: layout.isWeb ? layout.webResponsiveHeight(46) : 46,
+    },
+    productTitle: {
+      ...styles["productTitle"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(19) : 19,
+    },
+    productMeta: {
+      ...styles["productMeta"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(15) : 15,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(3) : 3,
+    },
+    productRight: {
+      ...styles["productRight"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(6) : 6,
+    },
+    productPrice: {
+      ...styles["productPrice"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+    },
+    draftPill: {
+      ...styles["draftPill"],
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(4) : 4,
+    },
+    draftText: {
+      ...styles["draftText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : 8,
+    },
+    listButton: {
+      ...styles["listButton"],
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(7) : 7,
+    },
+    listButtonText: {
+      ...styles["listButtonText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+    },
+  });
+}

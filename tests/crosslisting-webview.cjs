@@ -73,6 +73,7 @@ function runScript(script, { hostname = 'poshmark.com', controls = {}, photoInpu
 async function main() {
   assert.equal(CROSSLISTING_DESTINATIONS.depop.createUrl, 'https://www.depop.com/products/create/');
   assert.equal(CROSSLISTING_DESTINATIONS.poshmark.createUrl, 'https://poshmark.com/create-listing');
+  assert.equal(CROSSLISTING_DESTINATIONS.facebookMarketplace.createUrl, 'https://www.facebook.com/marketplace/create/');
   const generated = createGeneratedCrosslistingPayload({
     marketplace: 'poshmark',
     listing: {
@@ -91,6 +92,33 @@ async function main() {
   assert.equal(generated.description, 'Vintage leather jacket\n\nCondition: Small sleeve scuff');
   assert.equal(generated.platformFields.originalPrice, '120');
   assert.equal(generated.photoCount, 1);
+
+  const facebookGenerated = createGeneratedCrosslistingPayload({
+    marketplace: 'facebookMarketplace',
+    listing: {
+      title: 'Leather jacket', conditionDisclosure: 'Light wear',
+      priceRange: { targetPrice: 60 },
+      marketplaceListings: {
+        facebookMarketplace: {
+          title: 'Leather jacket', description: 'Vintage jacket',
+          fields: { category: 'Jackets', condition: 'Good', location: 'Seattle' },
+        },
+      },
+    },
+    item: {
+      category: 'Clothing', condition: 'good', brand: 'Acme', model: 'Model 2',
+      variant: 'M', color: 'Blue', era: '1990s', serialNumber: 'SN-123', sku: 'SKU-123',
+      itemSpecifics: { size: 'M', Material: 'Leather' }, itemPhotos: [], photoCount: 0,
+    },
+  });
+  assert.equal(facebookGenerated.brand, 'Acme');
+  assert.equal(facebookGenerated.size, 'M');
+  assert.equal(facebookGenerated.color, 'Blue');
+  assert.equal(facebookGenerated.platformFields.model, 'Model 2');
+  assert.equal(facebookGenerated.platformFields.era, '1990s');
+  assert.equal(facebookGenerated.platformFields.serialNumber, 'SN-123');
+  assert.equal(facebookGenerated.platformFields.sku, 'SKU-123');
+  assert.equal(facebookGenerated.platformFields.material, 'Leather');
 
   const title = new FakeInput('listing-title');
   const description = new FakeInput('listing-description', 'TEXTAREA');

@@ -92,6 +92,8 @@ export function useResponsiveLayout() {
     const webResponsiveFont = (value: number, factor = 0.35) => scaleWithWidth(value, factor, webWidthScale);
     const responsiveWidth = (value: number, factor = 0.5) => scaleWithWidth(value, factor, widthScale);
     const responsiveHeight = (value: number, factor = 1) => scaleWithWidth(value, factor, heightScale);
+    const webResponsiveWidth = (value: number, factor = 0.5) => scaleWithWidth(value, factor, webWidthScale);
+    const webResponsiveHeight = (value: number, factor = 1) => scaleWithWidth(value, factor, webHeightScale);
 
     // Contextual Component Computations (Scoped UI layout anchors)
     const scannerWidth = clamp(contentWidth * (isTablet ? 0.72 : 0.88), isCompactWidth ? 250 : 280, isTablet ? 460 : 360);
@@ -130,6 +132,8 @@ export function useResponsiveLayout() {
       verticalScale,
       responsiveFont,
       webResponsiveFont,
+      webResponsiveWidth,
+      webResponsiveHeight,
       responsiveWidth,
       responsiveHeight,
       webContentMaxWidth,

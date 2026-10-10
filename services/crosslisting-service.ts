@@ -65,7 +65,7 @@ export const CROSSLISTING_DESTINATIONS: Record<
   facebookMarketplace: {
     label: 'Facebook Marketplace',
     loginUrl: 'https://www.facebook.com/login/',
-    createUrl: 'https://www.facebook.com/marketplace/selling/item/?listing_id',
+    createUrl: 'https://www.facebook.com/marketplace/create/',
     origin: 'https://www.facebook.com',
   },
   mercari: {
@@ -143,6 +143,30 @@ export function createGeneratedCrosslistingPayload({
     if (typeof value === 'string' && value.trim()) platformFields[key] = value.trim();
     if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
       platformFields[key] = String(value);
+    }
+  }
+
+  if (marketplace === 'facebookMarketplace') {
+    const detailEntries: [string, string | null | undefined][] = [
+      ...Object.entries(item.itemSpecifics ?? {}),
+      ['brand', item.brand],
+      ['model', item.model],
+      ['size', item.itemSpecifics?.size ?? item.variant],
+      ['color', item.color],
+      ['era', item.era],
+      ['serialNumber', item.serialNumber],
+      ['sku', item.sku],
+    ];
+    for (const [rawKey, rawValue] of detailEntries) {
+      const words = rawKey.trim().replace(/([a-z0-9])([A-Z])/g, '$1 $2').match(/[A-Za-z0-9]+/g) ?? [];
+      const [firstWord, ...remainingWords] = words;
+      const key = firstWord
+        ? firstWord.toLowerCase() + remainingWords.map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join('')
+        : '';
+      const value = typeof rawValue === 'string' ? rawValue.trim() : '';
+      if (!key || !value || key.length > 64 || Object.prototype.hasOwnProperty.call(platformFields, key) ||
+        Object.keys(platformFields).length >= 30) continue;
+      platformFields[key] = value;
     }
   }
 

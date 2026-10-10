@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -9,9 +9,8 @@ import {
 } from 'react-native';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
-import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { WebSiteFooter, WebSiteHeader } from '@/components/web/web-site-chrome';
@@ -26,7 +25,7 @@ import {
   presentKeepFlipWebBillingPaywall,
 } from '@/services/keepflip-web-billing';
 
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import { useResponsiveLayout , useResponsiveStyles} from '@/hooks/use-responsive-layout';
 type KeepFlipSubscriptionScreenProps = {
   accountTab?: boolean;
 };
@@ -49,6 +48,8 @@ function pause(milliseconds: number) {
 export function KeepFlipSubscriptionScreen({
   accountTab = false,
 }: KeepFlipSubscriptionScreenProps) {
+  const responsiveLayout = useResponsiveLayout();
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const {
     webContentMaxWidth,
     webContentWidth,
@@ -83,8 +84,8 @@ export function KeepFlipSubscriptionScreen({
     serverAccessVerified && snapshot?.access.active === true;
   const activePlanName = snapshot?.access.plan
     ? KEEPFLIP_PLAN_DEFINITIONS.find(
-        (definition) => definition.id === snapshot.access.plan,
-      )?.name ?? 'KeepFlip plan'
+      (definition) => definition.id === snapshot.access.plan,
+    )?.name ?? 'KeepFlip plan'
     : 'KeepFlip plan';
   const endsAt = formatDate(snapshot?.access.expiresAt);
 
@@ -201,20 +202,20 @@ export function KeepFlipSubscriptionScreen({
   return (
     <KeepFlipBackground>
       <ScrollView
-        contentContainerStyle={[styles.content, { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+        contentContainerStyle={[responsiveStyles.content, { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         showsVerticalScrollIndicator={false}>
         <WebSiteHeader label="SUBSCRIPTION" />
 
-        <View style={styles.header}>
-          <View style={styles.headerIcon}>
-            <IconSymbol color={colors.goldBright} name="creditcard.fill" size={24} />
+        <View style={responsiveStyles.header}>
+          <View style={responsiveStyles.headerIcon}>
+            <Ionicons color={colors.goldBright} name="creditcard.fill" size={24} />
           </View>
-          <View style={styles.headerCopy}>
-            <Text style={[styles.eyebrow, { color: colors.goldBright }]}>KEEPFLIP / WEB BILLING</Text>
-            <Text style={[styles.title, { color: colors.text }]}>
+          <View style={responsiveStyles.headerCopy}>
+            <Text style={[responsiveStyles.eyebrow, { color: colors.goldBright }]}>KEEPFLIP / WEB BILLING</Text>
+            <Text style={[responsiveStyles.title, { color: colors.text }]}>
               {accountHasActivePlan ? 'Your KeepFlip plan' : 'Built for the way you resell'}
             </Text>
-            <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+            <Text style={[responsiveStyles.subtitle, { color: colors.textMuted }]}>
               {accountHasActivePlan
                 ? 'Your plan and access are verified by KeepFlip’s server.'
                 : 'Choose your subscription in the RevenueCat paywall. Your workspace opens only after the server confirms the entitlement.'}
@@ -227,17 +228,17 @@ export function KeepFlipSubscriptionScreen({
             accessibilityLabel="Return to account settings"
             accessibilityRole="button"
             onPress={() => router.push('/account')}
-            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
-            <Text style={[styles.backButtonText, { color: colors.scannerCyan }]}>← ACCOUNT SETTINGS</Text>
+            style={({ pressed }) => [responsiveStyles.backButton, pressed && responsiveStyles.pressed]}>
+            <Text style={[responsiveStyles.backButtonText, { color: colors.scannerCyan }]}>← ACCOUNT SETTINGS</Text>
           </Pressable>
         ) : null}
 
         {accountHasActivePlan ? (
-          <View style={[styles.activeBanner, { backgroundColor: colors.successSurface, borderColor: colors.success }]}>
-            <IconSymbol color={colors.success} name="checkmark.circle.fill" size={22} />
-            <View style={styles.activeCopy}>
-              <Text style={[styles.activeTitle, { color: colors.success }]}>{activePlanName} is active</Text>
-              <Text style={[styles.body, { color: colors.textMuted }]}>
+          <View style={[responsiveStyles.activeBanner, { backgroundColor: colors.successSurface, borderColor: colors.success }]}>
+            <Ionicons color={colors.success} name="checkmark.circle.fill" size={22} />
+            <View style={responsiveStyles.activeCopy}>
+              <Text style={[responsiveStyles.activeTitle, { color: colors.success }]}>{activePlanName} is active</Text>
+              <Text style={[responsiveStyles.body, { color: colors.textMuted }]}>
                 {endsAt
                   ? snapshot?.access.willRenew
                     ? `Your plan renews on ${endsAt}.`
@@ -250,36 +251,36 @@ export function KeepFlipSubscriptionScreen({
               accessibilityRole="button"
               disabled={!managementUrl}
               onPress={manageSubscription}
-              style={({ pressed }) => [styles.outlineButton, { borderColor: colors.success }, !managementUrl && styles.disabled, pressed && styles.pressed]}>
-              <Text style={[styles.buttonText, { color: colors.success }]}>MANAGE BILLING</Text>
+              style={({ pressed }) => [responsiveStyles.outlineButton, { borderColor: colors.success }, !managementUrl && responsiveStyles.disabled, pressed && responsiveStyles.pressed]}>
+              <Text style={[responsiveStyles.buttonText, { color: colors.success }]}>MANAGE BILLING</Text>
             </Pressable>
           </View>
         ) : null}
 
         {serverNotice ? (
-          <View style={[styles.notice, { backgroundColor: colors.iconSurfaceGold, borderColor: colors.goldMuted }]}>
-            <IconSymbol color={colors.goldBright} name="exclamationmark.triangle.fill" size={19} />
-            <Text style={[styles.body, { color: colors.textMuted }]}>{serverNotice}</Text>
+          <View style={[responsiveStyles.notice, { backgroundColor: colors.iconSurfaceGold, borderColor: colors.goldMuted }]}>
+            <Ionicons color={colors.goldBright} name="exclamationmark.triangle.fill" size={19} />
+            <Text style={[responsiveStyles.body, { color: colors.textMuted }]}>{serverNotice}</Text>
           </View>
         ) : null}
 
         {billingError ? (
-          <View style={[styles.notice, { backgroundColor: colors.dangerSurface, borderColor: colors.danger }]}>
-            <IconSymbol color={colors.danger} name="exclamationmark.triangle.fill" size={19} />
-            <Text style={[styles.body, { color: colors.danger }]}>{billingError}</Text>
+          <View style={[responsiveStyles.notice, { backgroundColor: colors.dangerSurface, borderColor: colors.danger }]}>
+            <Ionicons color={colors.danger} name="exclamationmark.triangle.fill" size={19} />
+            <Text style={[responsiveStyles.body, { color: colors.danger }]}>{billingError}</Text>
           </View>
         ) : null}
 
         {!accountHasActivePlan ? (
           <>
-            <div ref={paywallHostRef} style={{ minHeight: 520, width: '100%' }} />
+            <div ref={paywallHostRef} style={{ minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(520) : 520, width: '100%' }} />
             <Pressable
               accessibilityRole="button"
               disabled={!configuration.configured || isPresenting}
               onPress={() => void openRevenueCatPaywall()}
-              style={({ pressed }) => [styles.primaryButton, { backgroundColor: colors.gold }, (!configuration.configured || isPresenting) && styles.disabled, pressed && styles.pressed]}>
+              style={({ pressed }) => [responsiveStyles.primaryButton, { backgroundColor: colors.gold }, (!configuration.configured || isPresenting) && responsiveStyles.disabled, pressed && responsiveStyles.pressed]}>
               {isPresenting ? <ActivityIndicator color={colors.textOnAccent} /> : null}
-              <Text style={[styles.buttonText, { color: colors.textOnAccent }]}>
+              <Text style={[responsiveStyles.buttonText, { color: colors.textOnAccent }]}>
                 {isPresenting ? 'OPENING REVENUECAT PAYWALL…' : 'OPEN SUBSCRIPTION PAYWALL'}
               </Text>
             </Pressable>
@@ -287,30 +288,30 @@ export function KeepFlipSubscriptionScreen({
         ) : null}
 
         {actionMessage ? (
-          <View accessibilityLiveRegion="polite" style={[styles.notice, { backgroundColor: colors.iconSurfaceCyan, borderColor: colors.accentCyanBorder }]}>
-            <Text style={[styles.body, { color: colors.text }]}>{actionMessage}</Text>
+          <View accessibilityLiveRegion="polite" style={[responsiveStyles.notice, { backgroundColor: colors.iconSurfaceCyan, borderColor: colors.accentCyanBorder }]}>
+            <Text style={[responsiveStyles.body, { color: colors.text }]}>{actionMessage}</Text>
           </View>
         ) : null}
 
-        <View style={styles.footerActions}>
+        <View style={responsiveStyles.footerActions}>
           <Pressable
             accessibilityLabel="Refresh payment status"
             accessibilityRole="button"
             onPress={() => void refreshPaymentStatus()}
-            style={({ pressed }) => [styles.outlineButton, { borderColor: colors.accentCyanBorder }, pressed && styles.pressed]}>
-            <IconSymbol color={colors.scannerCyan} name="arrow.clockwise" size={17} />
-            <Text style={[styles.buttonText, { color: colors.scannerCyan }]}>REFRESH PAYMENT STATUS</Text>
+            style={({ pressed }) => [responsiveStyles.outlineButton, { borderColor: colors.accentCyanBorder }, pressed && responsiveStyles.pressed]}>
+            <Ionicons color={colors.scannerCyan} name="arrow.clockwise" size={17} />
+            <Text style={[responsiveStyles.buttonText, { color: colors.scannerCyan }]}>REFRESH PAYMENT STATUS</Text>
           </Pressable>
           <Pressable
             accessibilityLabel="View KeepFlip terms"
             accessibilityRole="button"
             onPress={() => router.push('/terms')}
-            style={({ pressed }) => [styles.termsButton, pressed && styles.pressed]}>
-            <Text style={[styles.termsText, { color: colors.textMuted }]}>VIEW TERMS</Text>
+            style={({ pressed }) => [responsiveStyles.termsButton, pressed && responsiveStyles.pressed]}>
+            <Text style={[responsiveStyles.termsText, { color: colors.textMuted }]}>VIEW TERMS</Text>
           </Pressable>
         </View>
 
-        <Text style={[styles.disclaimer, { color: colors.textMuted }]}>
+        <Text style={[responsiveStyles.disclaimer, { color: colors.textMuted }]}>
           RevenueCat processes web subscriptions. KeepFlip’s server remains the authority for your plan and app access.
         </Text>
         <WebSiteFooter />
@@ -344,3 +345,115 @@ const styles = StyleSheet.create({
   termsText: { fontFamily: theme.fonts.bold, fontSize: 12, letterSpacing: 0.7 },
   disclaimer: { fontFamily: theme.fonts.body, fontSize: 13, lineHeight: 20, marginTop: 22, maxWidth: 800 },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    content: {
+      ...styles["content"],
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(1_170) : 1_170,
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(42) : 42,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(30) : 30,
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(36) : 36,
+    },
+    header: {
+      ...styles["header"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(16) : 16,
+    },
+    headerIcon: {
+      ...styles["headerIcon"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(16) : 16,
+      height: layout.isWeb ? layout.webResponsiveHeight(52) : 52,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(3) : 3,
+      width: layout.isWeb ? layout.webResponsiveWidth(52) : 52,
+    },
+    eyebrow: {
+      ...styles["eyebrow"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+    title: {
+      ...styles["title"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(32) : 32,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(39) : 39,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(5) : 5,
+    },
+    subtitle: {
+      ...styles["subtitle"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(15) : 15,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(23) : 23,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(7) : 7,
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(760) : 760,
+    },
+    backButton: {
+      ...styles["backButton"],
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(18) : 18,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(34) : 34,
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(7) : 7,
+    },
+    backButtonText: {
+      ...styles["backButtonText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+    activeBanner: {
+      ...styles["activeBanner"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(17) : 17,
+      gap: layout.isWeb ? layout.webResponsiveWidth(13) : 13,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(26) : 26,
+    },
+    activeTitle: {
+      ...styles["activeTitle"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(16) : 16,
+    },
+    body: {
+      ...styles["body"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(21) : 21,
+    },
+    notice: {
+      ...styles["notice"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
+      gap: layout.isWeb ? layout.webResponsiveWidth(11) : 11,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(22) : 22,
+    },
+    primaryButton: {
+      ...styles["primaryButton"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      gap: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(18) : 18,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(50) : 50,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(18) : 18,
+    },
+    outlineButton: {
+      ...styles["outlineButton"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(42) : 42,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
+    },
+    buttonText: {
+      ...styles["buttonText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+    footerActions: {
+      ...styles["footerActions"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(24) : 24,
+    },
+    termsButton: {
+      ...styles["termsButton"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(42) : 42,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+    },
+    termsText: {
+      ...styles["termsText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+    disclaimer: {
+      ...styles["disclaimer"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(20) : 20,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(22) : 22,
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(800) : 800,
+    },
+  });
+}

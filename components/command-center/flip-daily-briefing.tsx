@@ -129,6 +129,7 @@ function BriefingAdvisory({
   advisory: AssistantAdvisory;
   responsiveFont: (size: number) => number;
 }) {
+  const responsiveLayout = useResponsiveLayout();
   const styles = useBriefingStyles();
   return (
     <View style={styles.advisoryCard}>
@@ -141,7 +142,7 @@ function BriefingAdvisory({
         </Text>
       </View>
 
-      <Text style={[styles.recommendation, { fontSize: responsiveFont(13), lineHeight: 19 }]}>
+      <Text style={[styles.recommendation, { fontSize: responsiveFont(13), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(19) : 19 }]}>
         {advisory.recommendation}
       </Text>
 
@@ -152,7 +153,7 @@ function BriefingAdvisory({
               <Text style={[styles.evidenceLabel, { fontSize: responsiveFont(8) }]}>
                 {evidence.label}
               </Text>
-              <Text selectable style={[styles.evidenceValue, { fontSize: responsiveFont(9), lineHeight: 14 }]}>
+              <Text selectable style={[styles.evidenceValue, { fontSize: responsiveFont(9), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14 }]}>
                 {evidence.value}
               </Text>
             </View>
@@ -162,13 +163,13 @@ function BriefingAdvisory({
 
       <View style={styles.nextMove}>
         <Text style={[styles.nextMoveLabel, { fontSize: responsiveFont(8) }]}>NEXT MOVE</Text>
-        <Text style={[styles.nextMoveText, { fontSize: responsiveFont(11), lineHeight: 16 }]}>
+        <Text style={[styles.nextMoveText, { fontSize: responsiveFont(11), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16 }]}>
           {advisory.nextAction}
         </Text>
       </View>
 
       {advisory.unknowns.length ? (
-        <Text style={[styles.unknowns, { fontSize: responsiveFont(9), lineHeight: 14 }]}>
+        <Text style={[styles.unknowns, { fontSize: responsiveFont(9), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14 }]}>
           {`Watch-outs: ${advisory.unknowns.slice(0, 2).join(' · ')}`}
         </Text>
       ) : null}
@@ -183,6 +184,7 @@ function OpenWork({
   tasks: AssistantTask[];
   responsiveFont: (size: number) => number;
 }) {
+  const responsiveLayout2 = useResponsiveLayout();
   const styles = useBriefingStyles();
   const openTasks = tasks.filter((task) => task.status === 'open').slice(0, 4);
   if (!openTasks.length) return null;
@@ -194,7 +196,7 @@ function OpenWork({
         <View key={task.id} style={styles.openWorkRow}>
           <View style={styles.openWorkDot} />
           <View style={styles.openWorkCopy}>
-            <Text style={[styles.openWorkTitle, { fontSize: responsiveFont(10), lineHeight: 14 }]}>
+            <Text style={[styles.openWorkTitle, { fontSize: responsiveFont(10), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(14) : 14 }]}>
               {task.title}
             </Text>
             {task.dueAt ? (
@@ -210,6 +212,7 @@ function OpenWork({
 }
 
 export function FlipDailyBriefingLauncher() {
+  const responsiveLayout3 = useResponsiveLayout();
   const { user } = useKeepFlipAuth();
   const { canUse } = useKeepFlipSubscription();
   const pathname = usePathname();
@@ -421,7 +424,7 @@ export function FlipDailyBriefingLauncher() {
               </View>
               <View style={styles.headerCopy}>
                 <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>FLIP / DAILY BRIEFING</Text>
-                <Text style={[styles.greeting, { fontSize: responsiveFont(21), lineHeight: 26 }]}>
+                <Text style={[styles.greeting, { fontSize: responsiveFont(21), lineHeight: responsiveLayout3.isWeb ? responsiveLayout3.webResponsiveFont(26) : 26 }]}>
                   {greetingFor(displayName)}
                 </Text>
               </View>
@@ -449,7 +452,7 @@ export function FlipDailyBriefingLauncher() {
                 <Text style={[styles.loadingTitle, { fontSize: responsiveFont(13) }]}>
                   Flip is checking your workspace...
                 </Text>
-                <Text style={[styles.loadingText, { fontSize: responsiveFont(10), lineHeight: 15 }]}>
+                <Text style={[styles.loadingText, { fontSize: responsiveFont(10), lineHeight: responsiveLayout3.isWeb ? responsiveLayout3.webResponsiveFont(15) : 15 }]}>
                   Inventory, Books, open work, and seller operations are being read for today’s briefing.
                 </Text>
               </View>
@@ -462,7 +465,7 @@ export function FlipDailyBriefingLauncher() {
                       {briefing.source === 'cloud' ? 'LIVE WORKSPACE' : 'LIMITED LOCAL READ'}
                     </Text>
                   </View>
-                  <Text selectable style={[styles.reply, { fontSize: responsiveFont(12), lineHeight: 18 }]}>
+                  <Text selectable style={[styles.reply, { fontSize: responsiveFont(12), lineHeight: responsiveLayout3.isWeb ? responsiveLayout3.webResponsiveFont(18) : 18 }]}>
                     {briefing.reply}
                   </Text>
                 </View>
@@ -484,7 +487,7 @@ export function FlipDailyBriefingLauncher() {
           </ScrollView>
 
           <View style={styles.footer}>
-            <Text style={[styles.footerHint, { fontSize: responsiveFont(9), lineHeight: 13 }]}>
+            <Text style={[styles.footerHint, { fontSize: responsiveFont(9), lineHeight: responsiveLayout3.isWeb ? responsiveLayout3.webResponsiveFont(13) : 13 }]}>
               This briefing appears once per day. Close it when you’re ready to move on.
             </Text>
             <Pressable

@@ -42,14 +42,27 @@ export function parseSavedListingDraft(value: unknown): SavedListingDraft | null
 }
 
 export async function saveListingDraft(ownerId: string, itemId: string, draft: SavedListingDraft): Promise<void> {
-  await getInventoryItem(ownerId, itemId);
+  const item = await getInventoryItem(ownerId, itemId);
   const serialized = JSON.stringify({ ...draft, savedAt: new Date().toISOString() });
   if (serialized.length > 500_000) throw new Error('This listing draft is too large to save.');
+  const targetPrice = draft.listing.priceRange.targetPrice;
+  if (!Number.isFinite(targetPrice) || targetPrice <= 0) throw new Error('Enter a valid target price before saving this listing.');
+  const savedTargetPrice = Number(item.itemSpecifics.target_listing_price?.replace(/[$,]/g, ''));
+  const data: Record<string, string> = {
+    listingJson: serialized,
+    updatedAt: new Date().toISOString(),
+  };
+  if (savedTargetPrice !== targetPrice) {
+    data.itemSpecificsJson = JSON.stringify({
+      ...item.itemSpecifics,
+      target_listing_price: String(targetPrice),
+    });
+  }
   await tablesDB.updateRow({
     databaseId: APPWRITE.databaseId,
     tableId: APPWRITE.itemsTableId,
     rowId: itemId,
-    data: { listingJson: serialized, updatedAt: new Date().toISOString() },
+    data,
   });
 }
 

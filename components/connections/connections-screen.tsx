@@ -10,15 +10,14 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useEbayConnection } from '@/components/ebay/ebay-connection-context';
 import { PlaidBankLinkButton } from '@/components/books/plaid-bank-link-button';
+import { useEbayConnection } from '@/components/ebay/ebay-connection-context';
 import { EbayShoppingBagIcon } from '@/components/ebay/ebay-shopping-bag-icon';
+import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
+import { useResponsiveLayout , useResponsiveStyles} from '@/hooks/use-responsive-layout';
 import {
   refreshEbayConnection,
   revokeEbayConnection,
@@ -59,6 +58,7 @@ function errorText(error: unknown, fallback: string) {
 }
 
 export function ConnectionsScreen() {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { contentMaxWidth, contentWidth, pageGutter, responsiveFont, responsiveHeight } =
@@ -213,7 +213,7 @@ export function ConnectionsScreen() {
     <KeepFlipBackground>
       <ScrollView
         contentContainerStyle={[
-          styles.content,
+          responsiveStyles.content,
           {
             width: contentWidth,
             maxWidth: contentMaxWidth,
@@ -225,58 +225,58 @@ export function ConnectionsScreen() {
         ]}
         contentInsetAdjustmentBehavior="never"
         showsVerticalScrollIndicator={false}>
-        <View style={styles.hero}>
-          <View style={styles.heroIcon}>
-          <IconSymbol color={theme.colors.scannerCyan} name="checkmark.shield.fill" size={24} />
+        <View style={responsiveStyles.hero}>
+          <View style={responsiveStyles.heroIcon}>
+            <Ionicons color={theme.colors.scannerCyan} name="checkmark.shield.fill" size={24} />
           </View>
-          <Text style={[styles.eyebrow, { fontSize: responsiveFont(9) }]}>ACCOUNT ACCESS</Text>
-          <Text style={[styles.title, { fontSize: responsiveFont(29) }]}>Connections</Text>
-          <Text style={[styles.subtitle, { fontSize: responsiveFont(13), lineHeight: responsiveHeight(19) }]}>
+          <Text style={[responsiveStyles.eyebrow, { fontSize: responsiveFont(9) }]}>ACCOUNT ACCESS</Text>
+          <Text style={[responsiveStyles.title, { fontSize: responsiveFont(29) }]}>Connections</Text>
+          <Text style={[responsiveStyles.subtitle, { fontSize: responsiveFont(13), lineHeight: responsiveHeight(19) }]}>
             Connect and manage the eBay and business bank accounts you use with KeepFlip.
           </Text>
         </View>
 
-        <View style={styles.serviceCard}>
-          <View style={styles.serviceHeader}>
-            <View style={[styles.serviceIcon, styles.ebayIcon]}>
+        <View style={responsiveStyles.serviceCard}>
+          <View style={responsiveStyles.serviceHeader}>
+            <View style={[responsiveStyles.serviceIcon, responsiveStyles.ebayIcon]}>
               <EbayShoppingBagIcon size={24} />
             </View>
-            <View style={styles.serviceCopy}>
-              <Text style={[styles.serviceEyebrow, { fontSize: responsiveFont(8) }]}>MARKETPLACE</Text>
-              <Text style={[styles.serviceTitle, { fontSize: responsiveFont(17) }]}>eBay</Text>
+            <View style={responsiveStyles.serviceCopy}>
+              <Text style={[responsiveStyles.serviceEyebrow, { fontSize: responsiveFont(8) }]}>MARKETPLACE</Text>
+              <Text style={[responsiveStyles.serviceTitle, { fontSize: responsiveFont(17) }]}>eBay</Text>
             </View>
             {isCheckingEbay ? <ActivityIndicator color={theme.colors.scannerCyan} size="small" /> : (
-              <View style={[styles.statusPill, eBayIsConnected ? styles.statusPillConnected : styles.statusPillOff]}>
-                <View style={[styles.statusDot, eBayIsConnected ? styles.statusDotConnected : styles.statusDotOff]} />
-                <Text style={[styles.statusText, { fontSize: responsiveFont(8) }, eBayIsConnected && styles.statusTextConnected]}>
+              <View style={[responsiveStyles.statusPill, eBayIsConnected ? responsiveStyles.statusPillConnected : responsiveStyles.statusPillOff]}>
+                <View style={[responsiveStyles.statusDot, eBayIsConnected ? responsiveStyles.statusDotConnected : responsiveStyles.statusDotOff]} />
+                <Text style={[responsiveStyles.statusText, { fontSize: responsiveFont(8) }, eBayIsConnected && responsiveStyles.statusTextConnected]}>
                   {eBayStatusLabel.toUpperCase()}
                 </Text>
               </View>
             )}
           </View>
 
-          <Text style={[styles.description, { fontSize: responsiveFont(11), lineHeight: responsiveHeight(16) }]}>
+          <Text style={[responsiveStyles.description, { fontSize: responsiveFont(11), lineHeight: responsiveHeight(16) }]}>
             KeepFlip uses only the eBay permissions you approve. Your eBay sign-in stays with eBay.
           </Text>
 
           {eBayIsConnected ? (
-            <View style={styles.connectionDetails}>
-              <Text selectable style={[styles.connectionName, { fontSize: responsiveFont(13) }]}>
+            <View style={responsiveStyles.connectionDetails}>
+              <Text selectable style={[responsiveStyles.connectionName, { fontSize: responsiveFont(13) }]}>
                 {ebayConnection.ebayUsername || 'eBay seller account'}
               </Text>
-              <Text style={[styles.connectionMeta, { fontSize: responsiveFont(10) }]}>
+              <Text style={[responsiveStyles.connectionMeta, { fontSize: responsiveFont(10) }]}>
                 {ebayConnection.environment === 'sandbox' ? 'eBay Sandbox' : 'Production eBay'}
               </Text>
             </View>
           ) : null}
 
           {ebayStatusError ? (
-            <Text accessibilityLiveRegion="polite" selectable style={[styles.errorText, { fontSize: responsiveFont(10) }]}>
+            <Text accessibilityLiveRegion="polite" selectable style={[responsiveStyles.errorText, { fontSize: responsiveFont(10) }]}>
               {ebayStatusError}
             </Text>
           ) : null}
 
-          <View style={styles.actions}>
+          <View style={responsiveStyles.actions}>
             {eBayIsConnected ? (
               <>
                 <ActionButton
@@ -340,19 +340,19 @@ export function ConnectionsScreen() {
           ) : null}
         </View>
 
-        <View style={styles.serviceCard}>
-          <View style={styles.serviceHeader}>
-            <View style={[styles.serviceIcon, styles.bankIcon]}>
-              <IconSymbol color={theme.colors.scannerCyan} name="creditcard.fill" size={19} />
+        <View style={responsiveStyles.serviceCard}>
+          <View style={responsiveStyles.serviceHeader}>
+            <View style={[responsiveStyles.serviceIcon, responsiveStyles.bankIcon]}>
+              <Ionicons color={theme.colors.scannerCyan} name="creditcard.fill" size={19} />
             </View>
-            <View style={styles.serviceCopy}>
-              <Text style={[styles.serviceEyebrow, { fontSize: responsiveFont(8) }]}>BUSINESS BANK</Text>
-              <Text style={[styles.serviceTitle, { fontSize: responsiveFont(17) }]}>Plaid</Text>
+            <View style={responsiveStyles.serviceCopy}>
+              <Text style={[responsiveStyles.serviceEyebrow, { fontSize: responsiveFont(8) }]}>BUSINESS BANK</Text>
+              <Text style={[responsiveStyles.serviceTitle, { fontSize: responsiveFont(17) }]}>Plaid</Text>
             </View>
             {canManagePlaid && isLoadingPlaid ? <ActivityIndicator color={theme.colors.scannerCyan} size="small" /> : (
-              <View style={[styles.statusPill, plaidConnections.length > 0 ? styles.statusPillConnected : styles.statusPillOff]}>
-                <View style={[styles.statusDot, plaidConnections.length > 0 ? styles.statusDotConnected : styles.statusDotOff]} />
-                  <Text style={[styles.statusText, { fontSize: responsiveFont(8) }, plaidConnections.length > 0 && styles.statusTextConnected]}>
+              <View style={[responsiveStyles.statusPill, plaidConnections.length > 0 ? responsiveStyles.statusPillConnected : responsiveStyles.statusPillOff]}>
+                <View style={[responsiveStyles.statusDot, plaidConnections.length > 0 ? responsiveStyles.statusDotConnected : responsiveStyles.statusDotOff]} />
+                <Text style={[responsiveStyles.statusText, { fontSize: responsiveFont(8) }, plaidConnections.length > 0 && responsiveStyles.statusTextConnected]}>
                   {!automatedBooksAllowed
                     ? 'ACCESS UNAVAILABLE'
                     : !plaidConfigured
@@ -361,50 +361,50 @@ export function ConnectionsScreen() {
                         ? 'CHECKING'
                         : plaidStatusError
                           ? 'STATUS UNAVAILABLE'
-                        : plaidConnections.length > 0
-                          ? `${plaidConnections.length} CONNECTED`
-                          : 'NOT CONNECTED'}
+                          : plaidConnections.length > 0
+                            ? `${plaidConnections.length} CONNECTED`
+                            : 'NOT CONNECTED'}
                 </Text>
               </View>
             )}
           </View>
 
-          <Text style={[styles.description, { fontSize: responsiveFont(11), lineHeight: responsiveHeight(16) }]}>
+          <Text style={[responsiveStyles.description, { fontSize: responsiveFont(11), lineHeight: responsiveHeight(16) }]}>
             Plaid lets KeepFlip sync eligible outgoing business transactions into Books as recorded expenses.
           </Text>
 
           {!automatedBooksAllowed ? (
-            <View style={styles.infoBanner}>
-              <IconSymbol color={theme.colors.goldBright} name="exclamationmark.triangle.fill" size={16} />
-              <Text style={[styles.infoText, { fontSize: responsiveFont(10), lineHeight: responsiveHeight(15) }]}>
+            <View style={responsiveStyles.infoBanner}>
+              <Ionicons color={theme.colors.goldBright} name="exclamationmark.triangle.fill" size={16} />
+              <Text style={[responsiveStyles.infoText, { fontSize: responsiveFont(10), lineHeight: responsiveHeight(15) }]}>
                 KeepFlip could not verify access to Books automation. Refresh the app and try again.
               </Text>
             </View>
           ) : !plaidConfigured ? (
-            <View style={styles.infoBanner}>
-                <IconSymbol color={theme.colors.goldBright} name="exclamationmark.triangle.fill" size={16} />
-              <Text style={[styles.infoText, { fontSize: responsiveFont(10), lineHeight: responsiveHeight(15) }]}>
+            <View style={responsiveStyles.infoBanner}>
+              <Ionicons color={theme.colors.goldBright} name="exclamationmark.triangle.fill" size={16} />
+              <Text style={[responsiveStyles.infoText, { fontSize: responsiveFont(10), lineHeight: responsiveHeight(15) }]}>
                 Bank connections are not configured in this app build yet.
               </Text>
             </View>
           ) : null}
 
           {plaidConnections.map((bankConnection) => (
-            <View key={bankConnection.connectionId} style={styles.bankConnection}>
-              <View style={styles.bankConnectionCopy}>
-                <Text selectable style={[styles.connectionName, { fontSize: responsiveFont(13) }]}>
+            <View key={bankConnection.connectionId} style={responsiveStyles.bankConnection}>
+              <View style={responsiveStyles.bankConnectionCopy}>
+                <Text selectable style={[responsiveStyles.connectionName, { fontSize: responsiveFont(13) }]}>
                   {bankConnection.institutionName}
                 </Text>
-                <Text style={[styles.connectionMeta, { fontSize: responsiveFont(10) }]}>
+                <Text style={[responsiveStyles.connectionMeta, { fontSize: responsiveFont(10) }]}>
                   {accountLabel(bankConnection)} · {lastSyncedLabel(bankConnection.lastSyncedAt)}
                 </Text>
                 {bankConnection.lastError ? (
-                  <Text selectable style={[styles.warningText, { fontSize: responsiveFont(10) }]}>
+                  <Text selectable style={[responsiveStyles.warningText, { fontSize: responsiveFont(10) }]}>
                     Last sync issue: {bankConnection.lastError}
                   </Text>
                 ) : null}
               </View>
-              <View style={styles.bankActions}>
+              <View style={responsiveStyles.bankActions}>
                 <ActionButton
                   busy={busyAction === `plaid-refresh:${bankConnection.connectionId}`}
                   disabled={busyAction !== null || isLoadingPlaid}
@@ -441,18 +441,18 @@ export function ConnectionsScreen() {
           ))}
 
           {canManagePlaid && plaidStatus?.automationEnabled ? (
-            <Text style={[styles.syncNote, { fontSize: responsiveFont(10) }]}>
+            <Text style={[responsiveStyles.syncNote, { fontSize: responsiveFont(10) }]}>
               Background transaction updates are enabled.
             </Text>
           ) : canManagePlaid && plaidConnections.length > 0 ? (
-            <Text style={[styles.syncNote, { fontSize: responsiveFont(10) }]}>
+            <Text style={[responsiveStyles.syncNote, { fontSize: responsiveFont(10) }]}>
               Refresh a connection to check for new bank expenses.
             </Text>
           ) : null}
 
           {plaidStatusError ? (
             <>
-              <Text accessibilityLiveRegion="polite" selectable style={[styles.errorText, { fontSize: responsiveFont(10) }]}>
+              <Text accessibilityLiveRegion="polite" selectable style={[responsiveStyles.errorText, { fontSize: responsiveFont(10) }]}>
                 {plaidStatusError}
               </Text>
               {canManagePlaid ? (
@@ -492,9 +492,9 @@ export function ConnectionsScreen() {
                 }}
               />
             ) : (
-              <View style={styles.infoBanner}>
-                <IconSymbol color={theme.colors.goldBright} name="lock.fill" size={16} />
-                <Text style={[styles.infoText, { fontSize: responsiveFont(10), lineHeight: responsiveHeight(15) }]}>
+              <View style={responsiveStyles.infoBanner}>
+                <Ionicons color={theme.colors.goldBright} name="lock.fill" size={16} />
+                <Text style={[responsiveStyles.infoText, { fontSize: responsiveFont(10), lineHeight: responsiveHeight(15) }]}>
                   Bank linking is available on Android and web. You can still manage existing connections here.
                 </Text>
               </View>
@@ -503,15 +503,15 @@ export function ConnectionsScreen() {
         </View>
 
         {actionError ? (
-          <View style={styles.feedbackError}>
-            <Text accessibilityLiveRegion="polite" selectable style={[styles.feedbackText, { fontSize: responsiveFont(11) }]}>
+          <View style={responsiveStyles.feedbackError}>
+            <Text accessibilityLiveRegion="polite" selectable style={[responsiveStyles.feedbackText, { fontSize: responsiveFont(11) }]}>
               {actionError}
             </Text>
           </View>
         ) : null}
         {notice ? (
-          <View style={styles.feedbackSuccess}>
-            <Text accessibilityLiveRegion="polite" style={[styles.feedbackText, { fontSize: responsiveFont(11) }]}>
+          <View style={responsiveStyles.feedbackSuccess}>
+            <Text accessibilityLiveRegion="polite" style={[responsiveStyles.feedbackText, { fontSize: responsiveFont(11) }]}>
               {notice}
             </Text>
           </View>
@@ -538,6 +538,7 @@ function ActionButton({
   onPress: () => void;
   primary?: boolean;
 }) {
+  const responsiveStyles2 = useResponsiveStyles(createStylesWebResponsive);
   const { responsiveFont } = useResponsiveLayout();
   return (
     <Pressable
@@ -547,19 +548,19 @@ function ActionButton({
       disabled={disabled || busy}
       onPress={onPress}
       style={({ pressed }) => [
-        styles.actionButton,
-        compact && styles.compactActionButton,
-        primary && styles.primaryActionButton,
-        destructive && styles.destructiveActionButton,
-        (disabled || busy) && styles.disabledActionButton,
-        pressed && !disabled && !busy && styles.pressedActionButton,
+        responsiveStyles2.actionButton,
+        compact && responsiveStyles2.compactActionButton,
+        primary && responsiveStyles2.primaryActionButton,
+        destructive && responsiveStyles2.destructiveActionButton,
+        (disabled || busy) && responsiveStyles2.disabledActionButton,
+        pressed && !disabled && !busy && responsiveStyles2.pressedActionButton,
       ]}>
       {busy ? <ActivityIndicator color={primary ? theme.colors.textOnAccent : theme.colors.scannerCyan} size="small" /> : null}
       <Text style={[
-        styles.actionLabel,
+        responsiveStyles2.actionLabel,
         { fontSize: responsiveFont(compact ? 9 : 10) },
-        primary && styles.primaryActionLabel,
-        destructive && styles.destructiveActionLabel,
+        primary && responsiveStyles2.primaryActionLabel,
+        destructive && responsiveStyles2.destructiveActionLabel,
       ]}>
         {busy ? `${label}…` : label}
       </Text>
@@ -582,11 +583,12 @@ function ConfirmAction({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  const responsiveStyles3 = useResponsiveStyles(createStylesWebResponsive);
   const { responsiveFont } = useResponsiveLayout();
   return (
-    <View style={styles.confirmBox}>
-      <Text style={[styles.confirmMessage, { fontSize: responsiveFont(10) }]}>{message}</Text>
-      <View style={styles.confirmActions}>
+    <View style={responsiveStyles3.confirmBox}>
+      <Text style={[responsiveStyles3.confirmMessage, { fontSize: responsiveFont(10) }]}>{message}</Text>
+      <View style={responsiveStyles3.confirmActions}>
         <ActionButton disabled={busy} label={cancelLabel} onPress={onCancel} compact />
         <ActionButton busy={busy} disabled={busy} destructive label={confirmLabel} onPress={onConfirm} compact />
       </View>
@@ -769,3 +771,115 @@ const styles = StyleSheet.create({
   },
   feedbackText: { color: theme.colors.cream, lineHeight: 16 },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    content: {
+      ...styles["content"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(16) : 16,
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(28) : 28,
+    },
+    hero: {
+      ...styles["hero"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+    },
+    heroIcon: {
+      ...styles["heroIcon"],
+      width: layout.isWeb ? layout.webResponsiveWidth(46) : 46,
+      height: layout.isWeb ? layout.webResponsiveHeight(46) : 46,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(23) : 23,
+      marginBottom: layout.isWeb ? layout.webResponsiveHeight(3) : 3,
+    },
+    subtitle: {
+      ...styles["subtitle"],
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(520) : 520,
+    },
+    serviceCard: {
+      ...styles["serviceCard"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(13) : 13,
+    },
+    serviceHeader: {
+      ...styles["serviceHeader"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(11) : 11,
+    },
+    serviceIcon: {
+      ...styles["serviceIcon"],
+      width: layout.isWeb ? layout.webResponsiveWidth(42) : 42,
+      height: layout.isWeb ? layout.webResponsiveHeight(42) : 42,
+    },
+    statusPill: {
+      ...styles["statusPill"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(25) : 25,
+      gap: layout.isWeb ? layout.webResponsiveWidth(6) : 6,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
+    },
+    statusDot: {
+      ...styles["statusDot"],
+      width: layout.isWeb ? layout.webResponsiveWidth(6) : 6,
+      height: layout.isWeb ? layout.webResponsiveHeight(6) : 6,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(3) : 3,
+    },
+    connectionDetails: {
+      ...styles["connectionDetails"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(3) : 3,
+    },
+    actions: {
+      ...styles["actions"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+    },
+    actionButton: {
+      ...styles["actionButton"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(39) : 39,
+      gap: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(8) : 8,
+    },
+    compactActionButton: {
+      ...styles["compactActionButton"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(33) : 33,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(6) : 6,
+    },
+    bankConnection: {
+      ...styles["bankConnection"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+    },
+    bankConnectionCopy: {
+      ...styles["bankConnectionCopy"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(3) : 3,
+    },
+    bankActions: {
+      ...styles["bankActions"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+    },
+    warningText: {
+      ...styles["warningText"],
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(15) : 15,
+    },
+    infoBanner: {
+      ...styles["infoBanner"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
+    },
+    errorText: {
+      ...styles["errorText"],
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(15) : 15,
+    },
+    confirmBox: {
+      ...styles["confirmBox"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+    },
+    confirmMessage: {
+      ...styles["confirmMessage"],
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(15) : 15,
+    },
+    confirmActions: {
+      ...styles["confirmActions"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+    },
+    feedbackText: {
+      ...styles["feedbackText"],
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(16) : 16,
+    },
+  });
+}

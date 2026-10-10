@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
 
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import type { PlaidBankLinkResult } from '@/services/plaid-bank-service';
 import { linkPlaidBankAccount } from '@/services/plaid-bank-link.android';
+import type { PlaidBankLinkResult } from '@/services/plaid-bank-service';
 
 type PlaidBankLinkButtonProps = {
   busy: boolean;
@@ -57,7 +56,7 @@ export function PlaidBankLinkButton({
       {busy || opening ? (
         <ActivityIndicator color={theme.colors.textOnAccent} size="small" />
       ) : (
-        <IconSymbol color={theme.colors.textOnAccent} name="arrow.right" size={15} />
+        <Ionicons color={theme.colors.textOnAccent} name="arrow.right" size={15} />
       )}
       <Text style={[styles.label, { fontSize }]}>CONNECT BUSINESS BANK</Text>
     </Pressable>

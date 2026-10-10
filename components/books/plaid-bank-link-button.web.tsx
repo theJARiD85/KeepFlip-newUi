@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { usePlaidLink, type PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
 import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
+import { usePlaidLink, type PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
 
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import {
@@ -11,6 +10,7 @@ import {
   syncPlaidBankTransactions,
   type PlaidBankLinkResult,
 } from '@/services/plaid-bank-service';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 const LINK_TOKEN_STORAGE_KEY = 'keepflip.plaid.link_token';
 
@@ -48,6 +48,7 @@ export function PlaidBankLinkButton({
   onLinked,
   onStart,
 }: PlaidBankLinkButtonProps) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [receivedRedirectUri, setReceivedRedirectUri] = useState<string>();
   const [openWhenReady, setOpenWhenReady] = useState(false);
@@ -169,13 +170,13 @@ export function PlaidBankLinkButton({
       accessibilityState={{ busy, disabled: busy || disabled }}
       disabled={busy || disabled}
       onPress={() => void start()}
-      style={({ pressed }) => [styles.button, pressed && styles.pressed, (busy || disabled) && styles.disabled]}>
+      style={({ pressed }) => [responsiveStyles.button, pressed && responsiveStyles.pressed, (busy || disabled) && responsiveStyles.disabled]}>
       {busy ? (
         <ActivityIndicator color={theme.colors.textOnAccent} size="small" />
       ) : (
-        <IconSymbol color={theme.colors.textOnAccent} name="arrow.right" size={15} />
+        <Ionicons color={theme.colors.textOnAccent} name="arrow.right" size={15} />
       )}
-      <Text style={[styles.label, { fontSize }]}>CONNECT BUSINESS BANK</Text>
+      <Text style={[responsiveStyles.label, { fontSize }]}>CONNECT BUSINESS BANK</Text>
     </Pressable>
   );
 }
@@ -200,3 +201,16 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.78 },
   disabled: { opacity: 0.48 },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    button: {
+      ...styles["button"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
+      gap: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(41) : 41,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+    },
+  });
+}

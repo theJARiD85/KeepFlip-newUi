@@ -419,6 +419,12 @@ test('Facebook opens its Item for sale composer and fills the listing fields', a
   let itemForSaleClicks = 0;
   let vehicleForSaleClicks = 0;
   let metaAiSwitchClicks = 0;
+  let moreDetailsClicks = 0;
+  let moreDetailsExpanded = false;
+  let facebookNextClicks = 0;
+  let facebookPublishClicks = 0;
+  let fieldsReadyWhenNextClicked = false;
+  let facebookLocation = { protocol: 'https:', hostname: 'www.facebook.com', pathname: '/marketplace/create/', href: 'https://www.facebook.com/marketplace/create/' };
   const statuses = [];
   const makeField = (name, tagName, placeholder = '') => ({
     name, id: name, type: 'text', value: '', tagName, placeholder, labels: [], disabled: false, readOnly: false,
@@ -429,11 +435,29 @@ test('Facebook opens its Item for sale composer and fills the listing fields', a
     blur: () => undefined,
     closest: () => null,
   });
-  const fields = [
+  const coreFields = [
     makeField('title', 'INPUT', 'Title'),
     makeField('description', 'TEXTAREA', 'Description'),
     makeField('price', 'INPUT', 'Price'),
   ];
+  const detailFields = [
+    makeField('category', 'INPUT', 'Category'),
+    makeField('condition', 'INPUT', 'Condition'),
+    makeField('brand', 'INPUT', 'Brand'),
+    makeField('size', 'INPUT', 'Size'),
+    makeField('color', 'INPUT', 'Color'),
+    makeField('material', 'INPUT', 'Material'),
+    makeField('era', 'INPUT', 'Era'),
+  ];
+  const fields = [...coreFields, ...detailFields];
+  const moreDetailsButton = {
+    disabled: false,
+    innerText: 'More details\nAttract more interest by including more details.',
+    textContent: 'More details Attract more interest by including more details.',
+    getAttribute: (attribute) => attribute === 'aria-expanded' ? String(moreDetailsExpanded) : null,
+    getBoundingClientRect: () => ({ width: 300, height: 60 }),
+    click: () => { moreDetailsClicks += 1; moreDetailsExpanded = true; },
+  };
   const metaAiSwitch = {
     checked: true,
     disabled: false,
@@ -442,6 +466,31 @@ test('Facebook opens its Item for sale composer and fills the listing fields', a
       'aria-checked': metaAiSwitch.checked ? 'true' : 'false',
     })[attribute] || null,
     click: () => { metaAiSwitchClicks += 1; metaAiSwitch.checked = false; },
+  };
+  const nextButton = {
+    disabled: false,
+    innerText: 'Next',
+    textContent: 'Next',
+    getAttribute: (attribute) => attribute === 'aria-label' ? 'Next' : null,
+    getBoundingClientRect: () => ({ width: 120, height: 44 }),
+    closest: () => null,
+    click: () => {
+      facebookNextClicks += 1;
+      fieldsReadyWhenNextClicked = fields.every((field) => field.value);
+    },
+  };
+  const publishButton = {
+    disabled: false,
+    innerText: 'Publish',
+    textContent: 'Publish',
+    getAttribute: (attribute) => attribute === 'aria-label' ? 'Publish' : null,
+    getBoundingClientRect: () => ({ width: 140, height: 44 }),
+    closest: () => ({}),
+    click: () => {
+      facebookPublishClicks += 1;
+      facebookLocation.pathname = '/marketplace/item/123456789';
+      facebookLocation.href = 'https://www.facebook.com/marketplace/item/123456789';
+    },
   };
   const makeChoice = (innerText, click) => ({
     disabled: false,
@@ -477,12 +526,22 @@ test('Facebook opens its Item for sale composer and fills the listing fields', a
       if (selector === 'a,button,[role="button"]') {
         return composerOpen ? [] : [createNewListingLink, itemForSaleButton, vehicleForSaleButton];
       }
+      if (selector === 'button,[role="button"]') {
+        if (!composerOpen) return [];
+        if (!moreDetailsExpanded) return [moreDetailsButton];
+        return facebookNextClicks ? [publishButton] : [nextButton];
+      }
+      if (selector === 'button,input[type="submit"],[role="button"]') {
+        if (!composerOpen || !moreDetailsExpanded) return [];
+        return facebookNextClicks ? [publishButton] : [nextButton];
+      }
       if (!composerOpen) return [];
-      if (selector === 'input,textarea,select,[contenteditable="true"]') return fields;
+      const availableFields = moreDetailsExpanded ? fields : coreFields;
+      if (selector === 'input,textarea,select,[contenteditable="true"]') return availableFields;
       const fieldName = /name\*="([^"]+)"/i.exec(selector)?.[1]?.toLowerCase();
       const placeholder = /placeholder\*="([^"]+)"/i.exec(selector)?.[1]?.toLowerCase();
-      if (fieldName) return fields.filter((field) => field.name.toLowerCase().includes(fieldName));
-      if (placeholder) return fields.filter((field) => field.placeholder.toLowerCase().includes(placeholder));
+      if (fieldName) return availableFields.filter((field) => field.name.toLowerCase().includes(fieldName));
+      if (placeholder) return availableFields.filter((field) => field.placeholder.toLowerCase().includes(placeholder));
       return [];
     },
   };
@@ -491,7 +550,8 @@ test('Facebook opens its Item for sale composer and fills the listing fields', a
     jobStatus: 'opened',
     runId: 'facebook-run-123456',
     payload: { title: 'Vintage jacket', description: 'Leather jacket in good condition.', price: '85',
-      category: '', condition: '', brand: '', size: '', color: '', photoCount: 0 },
+      category: 'Jackets', condition: 'Good', brand: 'Harley Davidson', size: 'L', color: 'Black',
+      photoCount: 0, platformFields: { material: 'Leather', era: 'Vintage' } },
     photos: [],
     unavailablePhotoCount: 0,
   };
@@ -511,11 +571,13 @@ test('Facebook opens its Item for sale composer and fills the listing fields', a
   vm.runInNewContext(fs.readFileSync(runnerPath, 'utf8'), {
     chrome,
     document,
-    location: { protocol: 'https:', hostname: 'www.facebook.com', pathname: '/marketplace/create/' },
+    location: facebookLocation,
     Event: class TestEvent {},
     HTMLSelectElement: class HTMLSelectElement {},
     setTimeout: (callback) => { queueMicrotask(callback); return 1; },
     clearTimeout: () => undefined,
+    setInterval: (callback) => { queueMicrotask(callback); return 1; },
+    clearInterval: () => undefined,
     console,
   });
 
@@ -523,13 +585,20 @@ test('Facebook opens its Item for sale composer and fills the listing fields', a
   assert.equal(createNewListingClicks, 0);
   assert.equal(itemForSaleClicks, 1);
   assert.equal(vehicleForSaleClicks, 0);
+  assert.equal(moreDetailsClicks, 1);
   assert.equal(metaAiSwitchClicks, 1);
   assert.equal(metaAiSwitch.checked, false);
   assert.deepEqual(fields.map((field) => field.value), [
-    'Vintage jacket', 'Leather jacket in good condition.', '85',
+    'Vintage jacket', 'Leather jacket in good condition.', '85', 'Jackets', 'Good',
+    'Harley Davidson', 'L', 'Black', 'Leather', 'Vintage',
   ]);
-  assert.equal(statuses.at(-1)?.status, 'filled');
-  assert.match(statuses.at(-1)?.message || '', /Draft fields filled/i);
+  assert.equal(fieldsReadyWhenNextClicked, true);
+  assert.equal(facebookNextClicks, 1);
+  assert.equal(facebookPublishClicks, 1);
+  assert.ok(statuses.some((status) => status.status === 'filled'));
+  assert.ok(statuses.some((status) => status.status === 'submit_clicked'));
+  assert.equal(statuses.at(-1)?.status, 'confirmed');
+  assert.equal(statuses.at(-1)?.externalUrl, facebookLocation.href);
 });
 
 test('Facebook runner initialization failure is surfaced to the Listing page', async () => {

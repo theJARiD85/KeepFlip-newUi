@@ -62,10 +62,10 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   const staticStyles = StyleSheet.create({
     tab: {
       alignItems: 'center',
-      borderRadius: 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       flex: 1,
       justifyContent: 'center',
-      minHeight: 42,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(42) : 42,
     },
     tabActive: {
       backgroundColor: theme.colors.iconSurfaceGold,
@@ -75,7 +75,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     tabText: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.radar,
-      fontSize: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
       fontWeight: '900',
       letterSpacing: 0.95,
     },
@@ -83,10 +83,10 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     tabs: {
       backgroundColor: theme.colors.surfaceOverlay,
       borderColor: theme.colors.divider,
-      borderRadius: 13,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(13) : 13,
       borderWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
-      gap: 4,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
       padding: 4,
     },
   });

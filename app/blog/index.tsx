@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { WebActionLink, WebContentSection, WebCopy, WebInfoCard, WebMarketingPage } from '@/components/web/web-public-page';
 import { FIRST_BLOG_POST } from '@/constants/keepflip-blog';
 import { KEEPFLIP_SITE_URL } from '@/constants/keepflip-public-site';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 const metadata = {
   canonicalPath: '/blog',
@@ -17,6 +18,7 @@ const metadata = {
 } as const;
 
 export default function BlogIndexPage() {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   return (
     <WebMarketingPage
       metadata={metadata}
@@ -25,11 +27,11 @@ export default function BlogIndexPage() {
       intro="Practical guides for researching items, checking costs, and learning what your sales actually earned."
     >
       <WebContentSection title="Latest article">
-        <View style={styles.articleCard}>
+        <View style={responsiveStyles.articleCard}>
           <WebInfoCard title={FIRST_BLOG_POST.headline}>
             <WebCopy>By {FIRST_BLOG_POST.author} · Updated {FIRST_BLOG_POST.updated}</WebCopy>
             <WebCopy>{FIRST_BLOG_POST.description}</WebCopy>
-            <View style={styles.action}>
+            <View style={responsiveStyles.action}>
               <WebActionLink href={FIRST_BLOG_POST.path} label="Read the article" />
             </View>
           </WebInfoCard>
@@ -43,3 +45,17 @@ const styles = StyleSheet.create({
   articleCard: { maxWidth: 760, width: '100%' },
   action: { alignItems: 'flex-start', marginTop: 8 },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    articleCard: {
+      ...styles["articleCard"],
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(760) : 760,
+    },
+    action: {
+      ...styles["action"],
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(8) : 8,
+    },
+  });
+}

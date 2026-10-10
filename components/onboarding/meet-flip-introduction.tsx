@@ -1,14 +1,13 @@
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Image } from 'expo-image';
 import { FlipCompanion } from '@/components/flip';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import { useResponsiveLayout , useResponsiveStyles} from '@/hooks/use-responsive-layout';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
+import { useState } from 'react';
+import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type MeetFlipIntroductionProps = {
   onBack: () => void;
@@ -37,55 +36,55 @@ const INTRO = [
 ] as const;
 
 export function MeetFlipIntroduction({ onBack, onContinue }: MeetFlipIntroductionProps) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const insets = useSafeAreaInsets();
   const { contentMaxWidth, contentWidth, pageGutter, responsiveFont, responsiveHeight, responsiveWidth } = useResponsiveLayout();
   const [step, setStep] = useState(0);
   const current = INTRO[step];
   const isLast = step === INTRO.length - 1;
 
+  // Web: Hide the brand bar and progress indicator
+  const isWeb = Platform.OS === 'web';
+
   return (
     <KeepFlipBackground>
-      <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 15, paddingBottom: insets.bottom + 30 }]} style={{marginTop: insets.top, marginBottom: insets.bottom}}>
+      <ScrollView contentContainerStyle={[responsiveStyles.scroll, { paddingTop: insets.top + 15, paddingBottom: insets.bottom + 30 }]} style={{ marginTop: insets.top, marginBottom: insets.bottom }}>
 
-        <View style={[styles.page, { maxWidth: contentMaxWidth, paddingHorizontal: pageGutter, width: contentWidth }]}>
-          <View style={styles.topBar}>
-            <Text style={[styles.brand, { fontSize: responsiveFont(10) }]}>KEEPFLIP / MEET FLIP</Text>
-            <Pressable accessibilityLabel={step === 0 ? 'Back to welcome' : 'Previous introduction step'} accessibilityRole="button" onPress={() => step === 0 ? onBack() : setStep(step - 1)} style={styles.backButton}>
-              <IconSymbol color={theme.colors.cream} name="chevron.left" size={16} />
-              <Text style={styles.backText}>Back</Text>
+        <View style={[responsiveStyles.page, { maxWidth: contentMaxWidth, paddingHorizontal: pageGutter, width: contentWidth }]}>
+          <View style={responsiveStyles.topBar}>
+            <Text style={[responsiveStyles.brand, { fontSize: responsiveFont(10) }]}>KEEPFLIP / MEET FLIP</Text>
+            <Pressable accessibilityLabel={step === 0 ? 'Back to welcome' : 'Previous introduction step'} accessibilityRole="button" onPress={() => step === 0 ? onBack() : setStep(step - 1)} style={responsiveStyles.backButton}>
+              <Ionicons color={theme.colors.cream} name="close" size={isWeb ? 30 : 16} />
             </Pressable>
           </View>
 
-          <View accessibilityLabel={`Introduction step ${step + 1} of ${INTRO.length}`} style={styles.progress}>
-            {INTRO.map((item, index) => <View key={item.eyebrow} style={[styles.progressSegment, index <= step && styles.progressActive]} />)}
+          <View accessibilityLabel={`Introduction step ${step + 1} of ${INTRO.length}`} style={responsiveStyles.progress}>
+            {INTRO.map((item, index) => <View key={item.eyebrow} style={[responsiveStyles.progressSegment, index <= step && responsiveStyles.progressActive]} />)}
           </View>
-          <View style={styles.flipStage}>
-            <FlipCompanion size={85} />
-          </View>
-          <Animated.View key={`flip-${step}`} entering={FadeInDown.duration(300)} style={styles.flipStage}>
-            <View style={styles.flipHalo}><FlipCompanion size={112} /></View>
-            <View style={styles.onlineRow}><View style={styles.onlineDot} /><Text style={styles.onlineText}>FLIP IS HERE</Text></View>
+          <Animated.View key={`flip-${step}`} entering={FadeInDown.duration(300)} style={responsiveStyles.flipStage}>
+            <View style={[responsiveStyles.flipHalo, { borderRadius: isWeb ? 190 : 85, height: isWeb ? 250 : 112, width: isWeb ? 250 : 112 }]}><FlipCompanion size={isWeb ? 250 : 112} /></View>
+            <View style={responsiveStyles.onlineRow}><View style={responsiveStyles.onlineDot} /><Text style={responsiveStyles.onlineText}>FLIP IS HERE</Text></View>
           </Animated.View>
 
-          <Animated.View key={current.eyebrow} entering={FadeInDown.duration(360).delay(70)} style={styles.messageCard}>
-            <Text style={[styles.eyebrow, { fontSize: responsiveFont(10) }]}>{current.eyebrow}</Text>
-            <Text style={[styles.title, { fontSize: responsiveFont(29), lineHeight: responsiveFont(35) }]}>{current.title}</Text>
-            <Text style={[styles.message, { fontSize: responsiveFont(15), lineHeight: responsiveFont(23) }]}>{current.message}</Text>
-            <View style={styles.highlights}>
+          <Animated.View key={current.eyebrow} entering={FadeInDown.duration(360).delay(70)} style={responsiveStyles.messageCard}>
+            <Text style={[responsiveStyles.eyebrow, { fontSize: responsiveFont(10) }]}>{current.eyebrow}</Text>
+            <Text style={[responsiveStyles.title, { fontSize: responsiveFont(29), lineHeight: responsiveFont(35) }]}>{current.title}</Text>
+            <Text style={[responsiveStyles.message, { fontSize: responsiveFont(15), lineHeight: responsiveFont(23) }]}>{current.message}</Text>
+            <View style={responsiveStyles.highlights}>
               {current.highlights.map((label) => (
-                <View key={label} style={styles.highlight}>
-                  <IconSymbol color={theme.colors.scannerCyan} name="checkmark.circle.fill" size={15} />
-                  <Text style={[styles.highlightText, { fontSize: responsiveFont(11) }]}>{label}</Text>
+                <View key={label} style={responsiveStyles.highlight}>
+                  <Ionicons color={theme.colors.scannerCyan} name="checkmark.circle.fill" size={15} />
+                  <Text style={[responsiveStyles.highlightText, { fontSize: responsiveFont(11) }]}>{label}</Text>
                 </View>
               ))}
             </View>
           </Animated.View>
 
-          <Pressable accessibilityLabel={isLast ? 'Continue to free account details' : 'Continue introduction'} accessibilityRole="button" onPress={isLast ? onContinue : () => setStep(step + 1)} style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]} testID="keepflip-meet-flip-continue">
-            <Text style={[styles.continueText, { fontSize: responsiveFont(14) }]}>{isLast ? 'CREATE MY FREE ACCOUNT' : 'CONTINUE'}</Text>
-            <IconSymbol color={theme.colors.textOnAccent} name="arrow.right" size={18} />
+          <Pressable accessibilityLabel={isLast ? 'Continue to free account details' : 'Continue introduction'} accessibilityRole="button" onPress={isLast ? onContinue : () => setStep(step + 1)} style={({ pressed }) => [responsiveStyles.continueButton, pressed && responsiveStyles.pressed]} testID="keepflip-meet-flip-continue">
+            <Text style={[responsiveStyles.continueText, { fontSize: responsiveFont(14) }]}>{isLast ? 'CREATE MY FREE ACCOUNT' : 'CONTINUE'}</Text>
+            <Ionicons color={theme.colors.textOnAccent} name="arrow.right" size={18} />
           </Pressable>
-          <Text style={styles.footerNote}>{isLast ? 'Next: your name, email, and password.' : 'A quick introduction, then your account.'}</Text>
+          <Text style={responsiveStyles.footerNote}>{isLast ? 'Next: your name, email, and password.' : 'A quick introduction, then your account.'}</Text>
         </View>
       </ScrollView>
     </KeepFlipBackground>
@@ -93,8 +92,8 @@ export function MeetFlipIntroduction({ onBack, onContinue }: MeetFlipIntroductio
 }
 
 const styles = StyleSheet.create({
-  scroll: { alignItems: 'center', flexGrow: 1 },
-  page: { alignSelf: 'center', flexGrow: 1, gap: 20, justifyContent: 'center' },
+  scroll: { alignItems: 'center', justifyContent: 'space-between', flexGrow: 1 },
+  page: { alignSelf: 'center', flexGrow: 1, gap: 20, justifyContent: 'space-between' },
   topBar: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   brand: { color: theme.colors.goldBright, fontFamily: theme.fonts.radar, letterSpacing: 1.2 },
   backButton: { alignItems: 'center', flexDirection: 'row', gap: 4, minHeight: 42, paddingHorizontal: 5 },
@@ -102,8 +101,8 @@ const styles = StyleSheet.create({
   progress: { flexDirection: 'row', gap: 7 },
   progressSegment: { backgroundColor: theme.colors.divider, borderRadius: 4, flex: 1, height: 4 },
   progressActive: { backgroundColor: theme.colors.scannerCyan },
-  flipStage: { alignItems: 'center', gap: 8, paddingVertical: 5 },
-  flipHalo: { alignItems: 'center', backgroundColor: theme.colors.iconSurfaceCyan, borderColor: theme.colors.accentCyanBorder, borderRadius: 85, borderWidth: 1, height: 155, justifyContent: 'center', width: 155 },
+  flipStage: { height: '25%', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  flipHalo: { alignItems: 'center', backgroundColor: theme.colors.iconSurfaceCyan, borderColor: theme.colors.accentCyanBorder, borderWidth: 5, justifyContent: 'center' },
   onlineRow: { alignItems: 'center', flexDirection: 'row', gap: 7 },
   onlineDot: { backgroundColor: theme.colors.scannerCyan, borderRadius: 4, height: 7, width: 7 },
   onlineText: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 9, letterSpacing: 1 },
@@ -119,3 +118,77 @@ const styles = StyleSheet.create({
   footerNote: { color: theme.colors.textMuted, fontFamily: theme.fonts.body, fontSize: 11, textAlign: 'center' },
   pressed: { opacity: 0.78, transform: [{ scale: 0.985 }] },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    page: {
+      ...styles["page"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(20) : 20,
+    },
+    backButton: {
+      ...styles["backButton"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(4) : 4,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(42) : 42,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(5) : 5,
+    },
+    backText: {
+      ...styles["backText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+    progress: {
+      ...styles["progress"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+    },
+    progressSegment: {
+      ...styles["progressSegment"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(4) : 4,
+      height: layout.isWeb ? layout.webResponsiveHeight(4) : 4,
+    },
+    flipStage: {
+      ...styles["flipStage"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+    },
+    onlineRow: {
+      ...styles["onlineRow"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+    },
+    onlineDot: {
+      ...styles["onlineDot"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(4) : 4,
+      height: layout.isWeb ? layout.webResponsiveHeight(7) : 7,
+      width: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+    },
+    onlineText: {
+      ...styles["onlineText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(9) : 9,
+    },
+    messageCard: {
+      ...styles["messageCard"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(24) : 24,
+      gap: layout.isWeb ? layout.webResponsiveWidth(15) : 15,
+    },
+    highlights: {
+      ...styles["highlights"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+    },
+    highlight: {
+      ...styles["highlight"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
+      gap: layout.isWeb ? layout.webResponsiveWidth(6) : 6,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(7) : 7,
+    },
+    continueButton: {
+      ...styles["continueButton"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(17) : 17,
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(56) : 56,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(15) : 15,
+    },
+    footerNote: {
+      ...styles["footerNote"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+    },
+  });
+}

@@ -2,14 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import {
   KeepFlipText as Text,
   KeepFlipTextInput as TextInput,
 } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ASSISTANT_MEMORY_CATEGORIES,
   getAssistantMemory,
@@ -19,6 +17,7 @@ import {
   type AssistantMemoryCategory,
   type AssistantMemoryFact,
 } from '@/services/keepflip-assistant-memory-service';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const GUIDANCE_KEY = 'flip_guidance';
 
@@ -26,13 +25,13 @@ const CATEGORY_OPTIONS: {
   id: AssistantMemoryCategory;
   label: string;
 }[] = [
-  { id: 'business_profile', label: 'Business' },
-  { id: 'sourcing_preference', label: 'Sourcing' },
-  { id: 'buying_rule', label: 'Buying rule' },
-  { id: 'workflow_preference', label: 'Workflow' },
-  { id: 'goal', label: 'Goal' },
-  { id: 'communication_preference', label: 'Responses' },
-];
+    { id: 'business_profile', label: 'Business' },
+    { id: 'sourcing_preference', label: 'Sourcing' },
+    { id: 'buying_rule', label: 'Buying rule' },
+    { id: 'workflow_preference', label: 'Workflow' },
+    { id: 'goal', label: 'Goal' },
+    { id: 'communication_preference', label: 'Responses' },
+  ];
 
 const CATEGORY_LABELS: Record<AssistantMemoryCategory, string> =
   Object.fromEntries(CATEGORY_OPTIONS.map((option) => [option.id, option.label])) as Record<
@@ -52,6 +51,7 @@ function categoryAfter(category: AssistantMemoryCategory) {
 }
 
 export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
+  const responsiveLayout2 = useResponsiveLayout();
   const styles = useResponsiveStyles(createResponsiveStyles);
   const { responsiveFont } = useResponsiveLayout();
   const [facts, setFacts] = useState<AssistantMemoryFact[]>([]);
@@ -175,14 +175,14 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
 
     const nextFacts = guidance.trim()
       ? [
-          ...facts,
-          {
-            category: 'communication_preference' as const,
-            key: GUIDANCE_KEY,
-            updatedAt: null,
-            value: guidance.trim(),
-          },
-        ]
+        ...facts,
+        {
+          category: 'communication_preference' as const,
+          key: GUIDANCE_KEY,
+          updatedAt: null,
+          value: guidance.trim(),
+        },
+      ]
       : facts;
 
     if (nextFacts.length > MAX_ASSISTANT_MEMORY_FACTS) {
@@ -209,7 +209,7 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
   }
 
   return (
-    <Animated.View entering={FadeInDown.duration(260).delay(60)} style={[styles.wrap, { paddingTop: insets.top + 15}]}>
+    <Animated.View entering={FadeInDown.duration(260).delay(60)} style={[styles.wrap, { paddingTop: insets.top + 15 }]}>
       <View style={styles.heroCard}>
         <View style={styles.heroTopline}>
           <View style={styles.heroCopy}>
@@ -220,7 +220,7 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
             <Text style={[styles.countPillText, { fontSize: responsiveFont(7) }]}>{countLabel}</Text>
           </View>
         </View>
-        <Text style={[styles.intro, { fontSize: responsiveFont(10), lineHeight: 15 }]}>Add durable details about your resale business, sourcing habits, goals, and working style. Flip uses these private notes to make responses and suggestions more relevant.</Text>
+        <Text style={[styles.intro, { fontSize: responsiveFont(10), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(15) : 15 }]}>Add durable details about your resale business, sourcing habits, goals, and working style. Flip uses these private notes to make responses and suggestions more relevant.</Text>
         <Text style={[styles.privateNote, { fontSize: responsiveFont(8) }]}>PRIVATE TO YOUR ACCOUNT · DO NOT ADD PASSWORDS, PAYMENT DETAILS, OR API KEYS</Text>
       </View>
 
@@ -232,7 +232,7 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
             disabled={saving}
             onPress={() => void load()}
             style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}>
-            <IconSymbol color={theme.colors.goldBright} name="arrow.clockwise" size={15} />
+            <Ionicons color={theme.colors.goldBright} name="arrow.clockwise" size={15} />
             <Text style={[styles.retryButtonText, { fontSize: responsiveFont(8) }]}>RETRY</Text>
           </Pressable>
         </View>
@@ -252,9 +252,9 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
               <View style={styles.sectionCopy}>
                 <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>USER-SPECIFIC MEMORY</Text>
                 <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>What should Flip remember?</Text>
-                <Text style={[styles.sectionBody, { fontSize: responsiveFont(10), lineHeight: 15 }]}>These are the business details Flip can carry from one conversation to the next. Tap a type badge to cycle its category.</Text>
+                <Text style={[styles.sectionBody, { fontSize: responsiveFont(10), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(15) : 15 }]}>These are the business details Flip can carry from one conversation to the next. Tap a type badge to cycle its category.</Text>
               </View>
-              <IconSymbol color={theme.colors.scannerViolet} name="bolt.fill" size={20} />
+              <Ionicons color={theme.colors.scannerViolet} name="bolt.fill" size={20} />
             </View>
 
             {facts.length ? (
@@ -269,14 +269,14 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
                         onPress={() => rotateFactCategory(index)}
                         style={({ pressed }) => [styles.categoryBadge, pressed && styles.pressed]}>
                         <Text style={[styles.categoryBadgeText, { fontSize: responsiveFont(7) }]}>{CATEGORY_LABELS[fact.category]}</Text>
-                        <IconSymbol color={theme.colors.scannerViolet} name="chevron.right" size={12} />
+                        <Ionicons color={theme.colors.scannerViolet} name="chevron.right" size={12} />
                       </Pressable>
                       <Pressable
                         accessibilityLabel={`Delete memory ${index + 1}`}
                         accessibilityRole="button"
                         onPress={() => removeFact(index)}
                         style={({ pressed }) => [styles.removeButton, pressed && styles.pressed]}>
-                        <IconSymbol color={theme.colors.danger} name="trash.fill" size={15} />
+                        <Ionicons color={theme.colors.danger} name="trash.fill" size={15} />
                       </Pressable>
                     </View>
                     <TextInput
@@ -286,7 +286,7 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
                       onChangeText={(value) => updateFact(index, value)}
                       placeholder="Add a durable detail Flip should remember"
                       placeholderTextColor={theme.colors.textMuted}
-                      style={[styles.memoryInput, { fontSize: responsiveFont(11), lineHeight: 16 }]}
+                      style={[styles.memoryInput, { fontSize: responsiveFont(11), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(16) : 16 }]}
                       textAlignVertical="top"
                       value={fact.value}
                     />
@@ -297,7 +297,7 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
             ) : (
               <View style={styles.emptyState}>
                 <Text style={[styles.emptyStateTitle, { fontSize: responsiveFont(10) }]}>No manual memories yet</Text>
-                <Text style={[styles.emptyStateBody, { fontSize: responsiveFont(9), lineHeight: 14 }]}>Add your first durable business detail below. Flip may also learn concise facts when you state them in conversation.</Text>
+                <Text style={[styles.emptyStateBody, { fontSize: responsiveFont(9), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(14) : 14 }]}>Add your first durable business detail below. Flip may also learn concise facts when you state them in conversation.</Text>
               </View>
             )}
 
@@ -313,7 +313,7 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
                 }}
                 placeholder="Example: I usually source vintage cameras under $40."
                 placeholderTextColor={theme.colors.textMuted}
-                style={[styles.memoryInput, { fontSize: responsiveFont(11), lineHeight: 16 }]}
+                style={[styles.memoryInput, { fontSize: responsiveFont(11), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(16) : 16 }]}
                 textAlignVertical="top"
                 value={newMemory}
               />
@@ -348,7 +348,7 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
                   (!canAddMemory || saving) && styles.buttonDisabled,
                   pressed && styles.pressed,
                 ]}>
-                <IconSymbol color={theme.colors.backgroundDeep} name="checkmark.circle.fill" size={16} />
+                <Ionicons color={theme.colors.backgroundDeep} name="checkmark.circle.fill" size={16} />
                 <Text style={[styles.addButtonText, { fontSize: responsiveFont(8) }]}>ADD TO MY MEMORIES</Text>
               </Pressable>
             </View>
@@ -360,9 +360,9 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
                 <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>RESPONSE GUIDANCE</Text>
                 <Text style={[styles.sectionTitle, { fontSize: responsiveFont(16) }]}>Things Flip should know</Text>
               </View>
-              <IconSymbol color={theme.colors.scannerCyan} name="bubble.left.and.bubble.right.fill" size={20} />
+              <Ionicons color={theme.colors.scannerCyan} name="bubble.left.and.bubble.right.fill" size={20} />
             </View>
-            <Text style={[styles.sectionBody, { fontSize: responsiveFont(10), lineHeight: 15 }]}>Tell Flip what to consider when it answers or makes suggestions. Keep it stable and practical — for example, your preferred risk level, the way you want tradeoffs explained, or what kind of inventory you are building.</Text>
+            <Text style={[styles.sectionBody, { fontSize: responsiveFont(10), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(15) : 15 }]}>Tell Flip what to consider when it answers or makes suggestions. Keep it stable and practical — for example, your preferred risk level, the way you want tradeoffs explained, or what kind of inventory you are building.</Text>
             <TextInput
               accessibilityLabel="Things Flip should know"
               maxLength={MAX_ASSISTANT_MEMORY_FACT_LENGTH}
@@ -375,7 +375,7 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
               }}
               placeholder="Example: Be direct about downside risk. Show the likely net profit after fees and call out unknown costs before recommending a buy."
               placeholderTextColor={theme.colors.textMuted}
-              style={[styles.guidanceInput, { fontSize: responsiveFont(11), lineHeight: 17 }]}
+              style={[styles.guidanceInput, { fontSize: responsiveFont(11), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(17) : 17 }]}
               textAlignVertical="top"
               value={guidance}
             />
@@ -396,7 +396,7 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
               (!dirty || saving) && styles.buttonDisabled,
               pressed && styles.pressed,
             ]}>
-            {saving ? <ActivityIndicator color={theme.colors.backgroundDeep} size="small" /> : <IconSymbol color={theme.colors.backgroundDeep} name="save.fill" size={17} />}
+            {saving ? <ActivityIndicator color={theme.colors.backgroundDeep} size="small" /> : <Ionicons color={theme.colors.backgroundDeep} name="save.fill" size={17} />}
             <Text style={[styles.saveButtonText, { fontSize: responsiveFont(9) }]}>{saving ? 'SAVING AI PREFERENCES…' : 'SAVE AI PREFERENCES'}</Text>
           </Pressable>
         </>
@@ -408,36 +408,36 @@ export function AiPreferencesPanel({ ownerId }: { ownerId: string }) {
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
   const { responsiveFont, responsiveHeight, responsiveWidth } = responsiveLayout;
   const staticStyles = StyleSheet.create({
-    wrap: { gap: 12 },
+    wrap: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12 },
     heroCard: {
-      gap: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
       padding: 14,
       borderWidth: 1,
       borderColor: theme.colors.accentVioletBorder,
-      borderRadius: 14,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14,
       backgroundColor: theme.colors.cardSoft,
     },
     heroTopline: {
       flexDirection: 'row',
       alignItems: 'flex-start',
       justifyContent: 'space-between',
-      gap: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
     },
-    heroCopy: { flex: 1, gap: 3 },
+    heroCopy: { flex: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3 },
     eyebrow: {
       color: theme.colors.scannerViolet,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 1.2,
     },
     title: {
       color: theme.colors.cream,
-      lineHeight: 25,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(25) : 25,
       fontWeight: '900',
     },
     countPill: {
-      paddingHorizontal: 8,
-      paddingVertical: 5,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(5) : 5,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
       borderRadius: theme.radii.pill,
@@ -445,7 +445,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     countPillText: {
       color: theme.colors.scannerCyan,
-      fontSize: 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
       fontWeight: '900',
       letterSpacing: 0.55,
     },
@@ -456,54 +456,54 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       letterSpacing: 0.55,
     },
     sectionCard: {
-      gap: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       padding: 14,
       borderWidth: 1,
       borderColor: theme.colors.dividerStrong,
-      borderRadius: 14,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14,
       backgroundColor: theme.colors.card,
     },
     sectionHeader: {
       flexDirection: 'row',
       alignItems: 'flex-start',
       justifyContent: 'space-between',
-      gap: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
     },
-    sectionCopy: { flex: 1, gap: 3 },
+    sectionCopy: { flex: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3 },
     sectionEyebrow: {
       color: theme.colors.goldBright,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 1.25,
     },
     sectionTitle: {
       color: theme.colors.text,
-      fontSize: 16,
-      lineHeight: 20,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(20) : 20,
       fontWeight: '800',
     },
     sectionBody: { color: theme.colors.textMuted },
-    factList: { gap: 8 },
+    factList: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8 },
     factCard: {
-      gap: 7,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
       padding: 10,
       borderWidth: 1,
       borderColor: theme.colors.accentVioletBorder,
-      borderRadius: 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       backgroundColor: theme.colors.cardSoft,
     },
     factHeader: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      gap: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
     },
     categoryBadge: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 3,
-      paddingHorizontal: 7,
-      paddingVertical: 5,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(5) : 5,
       borderWidth: 1,
       borderColor: theme.colors.accentVioletBorder,
       borderRadius: theme.radii.pill,
@@ -511,24 +511,24 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     categoryBadgeText: {
       color: theme.colors.scannerViolet,
-      fontSize: 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
       fontWeight: '900',
       letterSpacing: 0.45,
     },
     removeButton: {
-      width: 30,
-      height: 30,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(30) : 30,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(30) : 30,
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: 8,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
     },
     memoryInput: {
-      minHeight: 58,
-      paddingHorizontal: 10,
-      paddingVertical: 9,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(58) : 58,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(9) : 9,
       borderWidth: 1,
       borderColor: theme.colors.divider,
-      borderRadius: 9,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
       color: theme.colors.cream,
       backgroundColor: theme.colors.surfaceInset,
     },
@@ -537,25 +537,25 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       textAlign: 'right',
     },
     addCard: {
-      gap: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
       padding: 10,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
-      borderRadius: 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       backgroundColor: theme.colors.cardSoft,
     },
     addEyebrow: {
       color: theme.colors.scannerCyan,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 1.1,
     },
-    categoryList: { gap: 6, paddingRight: 3 },
+    categoryList: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6, paddingRight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3 },
     categoryOption: {
-      minHeight: 30,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(30) : 30,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: 8,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
       borderWidth: 1,
       borderColor: theme.colors.divider,
       borderRadius: theme.radii.pill,
@@ -566,103 +566,103 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     categoryOptionText: {
       color: theme.colors.textMuted,
-      fontSize: 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
       fontWeight: '800',
     },
     categoryOptionTextSelected: { color: theme.colors.scannerCyan },
     guidanceInput: {
-      minHeight: 116,
-      paddingHorizontal: 11,
-      paddingVertical: 10,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(116) : 116,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : 11,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : 10,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
-      borderRadius: 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       color: theme.colors.cream,
       backgroundColor: theme.colors.surfaceInset,
     },
     emptyState: {
-      gap: 4,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
       padding: 12,
       borderWidth: 1,
       borderColor: theme.colors.divider,
-      borderRadius: 9,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
       backgroundColor: theme.colors.cardSoft,
     },
     emptyStateTitle: { color: theme.colors.text, fontWeight: '800' },
     emptyStateBody: { color: theme.colors.textMuted },
     addButton: {
-      minHeight: 42,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(42) : 42,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 7,
-      paddingHorizontal: 12,
-      borderRadius: 9,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
       backgroundColor: theme.colors.scannerCyan,
     },
     addButtonText: {
       color: theme.colors.textOnAccent,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 0.7,
     },
     saveButton: {
-      minHeight: 48,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(48) : 48,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 8,
-      paddingHorizontal: 14,
-      borderRadius: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       backgroundColor: theme.colors.goldBright,
     },
     saveButtonText: {
       color: theme.colors.textOnAccent,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: '900',
       letterSpacing: 0.8,
     },
     messageCardError: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       padding: 11,
       borderWidth: 1,
       borderColor: theme.colors.danger,
-      borderRadius: 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       backgroundColor: theme.colors.dangerSurface,
     },
-    messageTextError: { flex: 1, color: theme.colors.danger, lineHeight: 15 },
+    messageTextError: { flex: 1, color: theme.colors.danger, lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15 },
     retryButton: {
-      minHeight: 32,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(32) : 32,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 4,
-      paddingHorizontal: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
-      borderRadius: 8,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
     },
     retryButtonText: {
       color: theme.colors.goldBright,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 0.6,
     },
     loadingCard: {
-      minHeight: 120,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(120) : 120,
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 9,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
-      borderRadius: 12,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
       backgroundColor: theme.colors.card,
     },
     loadingText: { color: theme.colors.textMuted },
     noticeText: {
       color: theme.colors.scannerCyan,
-      lineHeight: 15,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15,
       textAlign: 'center',
     },
     pressed: { opacity: 0.72 },

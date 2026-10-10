@@ -1,14 +1,13 @@
 import { ScrollView, StyleSheet, View } from 'react-native';
 
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import { responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export default function ScannerScreen() {
+  const responsiveLayout2 = useResponsiveLayout();
   const styles = useResponsiveStyles(createResponsiveStyles);
   const {
     contentWidth,
@@ -58,7 +57,7 @@ export default function ScannerScreen() {
             },
           ]}>
             <View style={styles.iconRing}>
-              <IconSymbol name="camera.fill" size={30} color={theme.colors.goldBright} />
+              <Ionicons name="camera.fill" size={30} color={theme.colors.goldBright} />
             </View>
 
             <View style={styles.copy}>
@@ -72,7 +71,7 @@ export default function ScannerScreen() {
                 selectable
                 style={[
                   styles.body,
-                  { fontSize: responsiveFont(14), lineHeight: 21 },
+                  { fontSize: responsiveFont(14), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(21) : 21 },
                 ]}>
                 Camera scanning runs in the KeepFlip iOS or Android development build. The web
                 preview keeps the scanner interface available without requesting camera access.
@@ -80,7 +79,7 @@ export default function ScannerScreen() {
             </View>
 
             <View style={styles.buildPill}>
-              <IconSymbol name="bolt.fill" size={15} color={theme.colors.scannerCyan} />
+              <Ionicons name="bolt.fill" size={15} color={theme.colors.scannerCyan} />
               <Text selectable style={[styles.buildPillText, { fontSize: responsiveFont(9) }]}>OPEN THE DEVELOPMENT BUILD TO SCAN</Text>
             </View>
           </View>
@@ -97,13 +96,13 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexGrow: 1,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: 22,
-      paddingVertical: 40,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(22) : 22,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(40) : 40,
     },
     preview: {
       width: '100%',
-      maxWidth: 520,
-      minHeight: 560,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(520) : 520,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(560) : 560,
       alignItems: 'center',
       justifyContent: 'center',
       overflow: 'hidden',
@@ -126,31 +125,31 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       top: 22,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 7,
-      paddingHorizontal: 12,
-      paddingVertical: 7,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(7) : 7,
       borderRadius: theme.radii.pill,
       borderWidth: 1,
       borderColor: 'rgba(88, 223, 232, 0.34)',
       backgroundColor: 'rgba(3, 3, 6, 0.80)',
     },
     liveDot: {
-      width: 6,
-      height: 6,
-      borderRadius: 3,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : 6,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3,
       backgroundColor: theme.colors.scannerCyan,
       boxShadow: '0 0 10px rgba(88, 223, 232, 0.92)',
     },
     liveBadgeText: {
       color: theme.colors.scannerCyan,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: '900',
       letterSpacing: 1.5,
     },
     corner: {
       position: 'absolute',
-      width: 58,
-      height: 58,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(58) : 58,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(58) : 58,
       borderColor: theme.colors.goldBright,
     },
     topLeft: {
@@ -193,9 +192,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     card: {
       width: '82%',
-      maxWidth: 380,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(380) : 380,
       alignItems: 'center',
-      gap: 20,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(20) : 20,
       padding: 28,
       borderRadius: theme.radii.large,
       borderWidth: 1,
@@ -204,8 +203,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       boxShadow: '0 18px 52px rgba(0, 0, 0, 0.58), 0 0 26px rgba(215, 168, 74, 0.09)',
     },
     iconRing: {
-      width: 66,
-      height: 66,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(66) : 66,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(66) : 66,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: theme.radii.pill,
@@ -216,33 +215,33 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     copy: {
       alignItems: 'center',
-      gap: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
     },
     eyebrow: {
       color: theme.colors.gold,
-      fontSize: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
       fontWeight: '900',
       letterSpacing: 2.2,
     },
     title: {
       color: theme.colors.cream,
-      fontSize: 25,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(25) : 25,
       fontWeight: '800',
       letterSpacing: -0.5,
       textAlign: 'center',
     },
     body: {
       color: theme.colors.textMuted,
-      fontSize: 14,
-      lineHeight: 21,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(21) : 21,
       textAlign: 'center',
     },
     buildPill: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 7,
-      paddingHorizontal: 12,
-      paddingVertical: 9,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(9) : 9,
       borderRadius: theme.radii.pill,
       borderWidth: 1,
       borderColor: 'rgba(141, 114, 255, 0.30)',
@@ -251,7 +250,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     buildPillText: {
       flexShrink: 1,
       color: theme.colors.text,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: '800',
       letterSpacing: 0.8,
       textAlign: 'center',

@@ -1,6 +1,5 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
@@ -33,7 +32,7 @@ export function ConnectionsMenuLink({
         pressed && !disabled && styles.linkPressed,
       ]}>
       <View style={[styles.iconShell, active && styles.iconShellActive]}>
-        <IconSymbol
+        <Ionicons
           color={active ? theme.colors.scannerCyan : theme.colors.goldBright}
           name="checkmark.shield.fill"
           size={21}
@@ -43,7 +42,7 @@ export function ConnectionsMenuLink({
         <Text style={[styles.label, { fontSize: responsiveFont(13) }]}>Connections</Text>
         <Text style={[styles.detail, { fontSize: responsiveFont(7) }]}>EBAY + BANK ACCOUNTS</Text>
       </View>
-      <IconSymbol color={theme.colors.goldMuted} name="chevron.right" size={18} />
+      <Ionicons color={theme.colors.goldMuted} name="chevron.right" size={18} />
     </Pressable>
   );
 }

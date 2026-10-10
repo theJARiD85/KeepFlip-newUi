@@ -6,6 +6,7 @@ import { SemanticHeading, WebMarketingPage, WebTextLink } from '@/components/web
 import { FIRST_BLOG_POST } from '@/constants/keepflip-blog';
 import { KEEPFLIP_PUBLIC_COLORS as colors, KEEPFLIP_SITE_URL } from '@/constants/keepflip-public-site';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 const categories = [
   {
@@ -62,6 +63,7 @@ const contents = [
 ] as const;
 
 export function WebEbayBlogArticle() {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   return (
     <WebMarketingPage
       metadata={metadata}
@@ -70,24 +72,24 @@ export function WebEbayBlogArticle() {
       intro="“Best-selling” does not automatically mean “best buy.” A category can have plenty of buyers and still be a poor fit if the item costs too much to source, is expensive to ship, or carries a high return or authenticity risk."
       heroMeta={
         <>
-          <Text style={styles.byline}>By {FIRST_BLOG_POST.author}</Text>
-          <Text style={styles.metaDot}>•</Text>
-          <Text style={styles.updated}>Updated {FIRST_BLOG_POST.updated}</Text>
+          <Text style={responsiveStyles.byline}>By {FIRST_BLOG_POST.author}</Text>
+          <Text style={responsiveStyles.metaDot}>•</Text>
+          <Text style={responsiveStyles.updated}>Updated {FIRST_BLOG_POST.updated}</Text>
         </>
       }
     >
-      <View style={styles.article}>
+      <View style={responsiveStyles.article}>
         <ArticleText>
           A better way to evaluate a potential flip is to look at the specific item, recent sold listings, your total costs, and how long you may have to wait for your money back. This guide covers common resale categories, practical price bands, and a simple way to test a niche before you buy deeply.
         </ArticleText>
 
-        <View style={[styles.contents, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
-          <Text style={styles.contentsLabel}>IN THIS GUIDE</Text>
-          <View style={styles.contentsLinks}>
+        <View style={[responsiveStyles.contents, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
+          <Text style={responsiveStyles.contentsLabel}>IN THIS GUIDE</Text>
+          <View style={responsiveStyles.contentsLinks}>
             {contents.map(([id, label]) =>
               Platform.OS === 'web'
                 ? createElement('a', { key: id, href: `#${id}`, style: { color: colors.goldBright, fontFamily: theme.fonts.semibold, fontSize: 13, textDecoration: 'none' } }, label)
-                : <Text key={id} style={styles.contentsLink}>{label}</Text>,
+                : <Text key={id} style={responsiveStyles.contentsLink}>{label}</Text>,
             )}
           </View>
         </View>
@@ -106,13 +108,13 @@ export function WebEbayBlogArticle() {
           <ArticleText>
             Resellers often explore used clothing and shoes, electronics, collectibles, auto parts, and home goods. Each category has different research and handling needs. The categories below are a starting point for evaluation, not a ranking of sales volume.
           </ArticleText>
-          <View style={styles.categoryGrid}>
+          <View style={responsiveStyles.categoryGrid}>
             {categories.map((category) => (
-              <View key={category.name} style={[styles.categoryCard, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
-                <Text style={styles.categoryTitle}>{category.name}</Text>
-                <Text style={styles.cardLabel}>CHECK BEFORE BUYING</Text>
+              <View key={category.name} style={[responsiveStyles.categoryCard, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
+                <Text style={responsiveStyles.categoryTitle}>{category.name}</Text>
+                <Text style={responsiveStyles.cardLabel}>CHECK BEFORE BUYING</Text>
                 <ArticleText>{category.check}</ArticleText>
-                <Text style={styles.cardLabel}>COMMON CONSIDERATIONS</Text>
+                <Text style={responsiveStyles.cardLabel}>COMMON CONSIDERATIONS</Text>
                 <ArticleText>{category.consider}</ArticleText>
               </View>
             ))}
@@ -155,9 +157,9 @@ export function WebEbayBlogArticle() {
           <ArticleText>
             For a useful estimate, start with the amount you expect to receive after eBay’s fees and deductions, then subtract your acquisition cost and the other expenses you pay. Avoid treating a simple percentage as the complete answer: the category, shipping amount, buyer’s tax, and optional promotion can all affect the final numbers.
           </ArticleText>
-          <View style={[styles.formula, { backgroundColor: colors.iconSurfaceGold, borderColor: colors.divider }]}>
-            <Text style={styles.formulaLabel}>A BASIC ESTIMATE</Text>
-            <Text style={styles.formulaText}>
+          <View style={[responsiveStyles.formula, { backgroundColor: colors.iconSurfaceGold, borderColor: colors.divider }]}>
+            <Text style={responsiveStyles.formulaLabel}>A BASIC ESTIMATE</Text>
+            <Text style={responsiveStyles.formulaText}>
               Estimated net profit = expected proceeds after selling fees − acquisition cost − seller-paid shipping − packing and other selling costs
             </Text>
           </View>
@@ -279,7 +281,7 @@ export function WebEbayBlogArticle() {
         </ArticleSection>
 
         <ArticleSection id="sources" title="Sources">
-          <View style={styles.sourceLinks}>
+          <View style={responsiveStyles.sourceLinks}>
             <WebTextLink href="https://www.ebay.com/help/selling/fees-credits-invoices/x?id=4822" label="eBay selling fees" />
             <WebTextLink href="https://www.ebay.com/help/policies/selling-policies/seller-standards-policy?id=4347" label="eBay seller standards policy" />
             <WebTextLink href="https://www.ebay.com/authenticity-guarantee" label="eBay Authenticity Guarantee" />
@@ -291,29 +293,33 @@ export function WebEbayBlogArticle() {
 }
 
 function ArticleSection({ children, id, title }: { children: ReactNode; id: string; title: string }) {
+  const responsiveStyles2 = useResponsiveStyles(createStylesWebResponsive);
   return (
-    <View nativeID={id} style={[styles.section, { borderTopColor: colors.divider }]}>
-      <SemanticHeading level={2} style={styles.sectionTitle}>{title}</SemanticHeading>
+    <View nativeID={id} style={[responsiveStyles2.section, { borderTopColor: colors.divider }]}>
+      <SemanticHeading level={2} style={responsiveStyles2.sectionTitle}>{title}</SemanticHeading>
       {children}
     </View>
   );
 }
 
 function ArticleSubheading({ title }: { title: string }) {
-  return <SemanticHeading level={3} style={styles.subheading}>{title}</SemanticHeading>;
+  const responsiveStyles3 = useResponsiveStyles(createStylesWebResponsive);
+  return <SemanticHeading level={3} style={responsiveStyles3.subheading}>{title}</SemanticHeading>;
 }
 
 function ArticleText({ children }: { children: ReactNode }) {
-  return <Text style={styles.copy}>{children}</Text>;
+  const responsiveStyles4 = useResponsiveStyles(createStylesWebResponsive);
+  return <Text style={responsiveStyles4.copy}>{children}</Text>;
 }
 
 function ArticleList({ items, ordered = false }: { items: readonly string[]; ordered?: boolean }) {
+  const responsiveStyles5 = useResponsiveStyles(createStylesWebResponsive);
   return (
-    <View style={styles.list}>
+    <View style={responsiveStyles5.list}>
       {items.map((item, index) => (
-        <View key={item} style={styles.listItem}>
-          <Text style={styles.listMarker}>{ordered ? `${index + 1}.` : '•'}</Text>
-          <Text style={styles.listCopy}>{item}</Text>
+        <View key={item} style={responsiveStyles5.listItem}>
+          <Text style={responsiveStyles5.listMarker}>{ordered ? `${index + 1}.` : '•'}</Text>
+          <Text style={responsiveStyles5.listCopy}>{item}</Text>
         </View>
       ))}
     </View>
@@ -346,3 +352,122 @@ const styles = StyleSheet.create({
   formulaText: { color: colors.text, fontFamily: theme.fonts.semibold, fontSize: 16, lineHeight: 25 },
   sourceLinks: { alignItems: 'flex-start', gap: 10 },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    byline: {
+      ...styles["byline"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
+    },
+    metaDot: {
+      ...styles["metaDot"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+    updated: {
+      ...styles["updated"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
+    },
+    article: {
+      ...styles["article"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(32) : 32,
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(860) : 860,
+    },
+    copy: {
+      ...styles["copy"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(16) : 16,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(27) : 27,
+    },
+    contents: {
+      ...styles["contents"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(18) : 18,
+      gap: layout.isWeb ? layout.webResponsiveWidth(13) : 13,
+    },
+    contentsLabel: {
+      ...styles["contentsLabel"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
+    },
+    contentsLinks: {
+      ...styles["contentsLinks"],
+      columnGap: layout.isWeb ? layout.webResponsiveWidth(20) : 20,
+      rowGap: layout.isWeb ? layout.webResponsiveHeight(10) : 10,
+    },
+    contentsLink: {
+      ...styles["contentsLink"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
+    },
+    section: {
+      ...styles["section"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(16) : 16,
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(28) : 28,
+    },
+    sectionTitle: {
+      ...styles["sectionTitle"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(27) : 27,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(36) : 36,
+    },
+    subheading: {
+      ...styles["subheading"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(20) : 20,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(28) : 28,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(8) : 8,
+    },
+    list: {
+      ...styles["list"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+    },
+    listItem: {
+      ...styles["listItem"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+    },
+    listMarker: {
+      ...styles["listMarker"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(16) : 16,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(27) : 27,
+      minWidth: layout.isWeb ? layout.webResponsiveWidth(18) : 18,
+    },
+    listCopy: {
+      ...styles["listCopy"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(16) : 16,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(27) : 27,
+    },
+    categoryGrid: {
+      ...styles["categoryGrid"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+    },
+    categoryCard: {
+      ...styles["categoryCard"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(16) : 16,
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+      minWidth: layout.isWeb ? layout.webResponsiveWidth(250) : 250,
+    },
+    categoryTitle: {
+      ...styles["categoryTitle"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(17) : 17,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(24) : 24,
+    },
+    cardLabel: {
+      ...styles["cardLabel"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(9) : 9,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(8) : 8,
+    },
+    formula: {
+      ...styles["formula"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(16) : 16,
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+    },
+    formulaLabel: {
+      ...styles["formulaLabel"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
+    },
+    formulaText: {
+      ...styles["formulaText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(16) : 16,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(25) : 25,
+    },
+    sourceLinks: {
+      ...styles["sourceLinks"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+    },
+  });
+}

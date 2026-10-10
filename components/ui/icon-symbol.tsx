@@ -51,7 +51,7 @@ const MAPPING = {
   'ellipsis': 'more-vert',
   'lock.fill': 'lock',
   'person.fill': 'person',
-  'rectangle.portrait.and.arrow.right': 'logout',
+  'log-out-outline': 'logout',
   'arrow.clockwise': 'refresh',
   'arrow.up.left.and.arrow.down.right': 'fullscreen',
   'arrow.right': 'arrow-forward',

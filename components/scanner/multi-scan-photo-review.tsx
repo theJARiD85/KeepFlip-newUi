@@ -8,11 +8,9 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import { responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type MultiScanPhotoStackProps = {
@@ -228,7 +226,7 @@ export function MultiScanPhotoReview({
                     styles.deleteButton,
                     pressed && styles.deleteButtonPressed,
                   ]}>
-                  <IconSymbol color={theme.colors.cream} name="xmark" size={18} />
+                  <Ionicons color={theme.colors.cream} name="xmark" size={18} />
                 </Pressable>
               </Animated.View>
             ))}
@@ -243,8 +241,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   const { responsiveWidth, responsiveHeight, responsiveFont } = responsiveLayout;
   const staticStyles = StyleSheet.create({
     stackButton: {
-      width: 48,
-      height: 48,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(48) : 48,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(48) : 48,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -254,10 +252,10 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       position: 'absolute',
       right: 14,
       bottom: 14,
-      width: 20,
-      height: 20,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(20) : 20,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(20) : 20,
       overflow: 'hidden',
-      borderRadius: 5,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5,
       borderCurve: 'continuous',
       borderWidth: 1,
       borderColor: 'rgba(88, 223, 232, 0.72)',
@@ -269,11 +267,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       right: 0,
       bottom: 0,
       zIndex: 8,
-      minWidth: 16,
-      height: 16,
+      minWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(16) : 16,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: 3,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3,
       borderRadius: theme.radii.pill,
       borderWidth: 1,
       borderColor: theme.colors.scannerCyan,
@@ -282,7 +280,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     stackCountText: {
       color: theme.colors.scannerCyan,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       fontVariant: ['tabular-nums'],
     },
@@ -296,49 +294,49 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       linear-gradient(160deg, rgba(10, 9, 14, 0.99) 0%, rgba(2, 2, 4, 0.99) 72%)
     `,
     },
-    reviewShell: { flex: 1, paddingHorizontal: 20 },
+    reviewShell: { flex: 1, paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(20) : 20 },
     reviewHeader: {
-      minHeight: 72,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(72) : 72,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      gap: 16,
-      paddingRight: 64,
-      paddingBottom: 14,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16,
+      paddingRight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(64) : 64,
+      paddingBottom: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(14) : 14,
       borderBottomWidth: 1,
       borderBottomColor: 'rgba(88, 223, 232, 0.18)',
     },
-    reviewTitleGroup: { flexShrink: 1, gap: 3 },
+    reviewTitleGroup: { flexShrink: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3 },
     reviewEyebrow: {
       color: theme.colors.scannerCyan,
-      fontSize: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
       fontWeight: '900',
       letterSpacing: 1.8,
     },
-    reviewTitle: { color: theme.colors.cream, fontSize: 26, fontWeight: '800' },
+    reviewTitle: { color: theme.colors.cream, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(26) : 26, fontWeight: '800' },
     doneButton: {
-      minWidth: 70,
-      minHeight: 44,
+      minWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(70) : 70,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(44) : 44,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: 16,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16,
       borderRadius: theme.radii.pill,
       borderWidth: 1,
       borderColor: 'rgba(88, 223, 232, 0.48)',
       backgroundColor: 'rgba(88, 223, 232, 0.10)',
     },
     doneButtonPressed: { opacity: 0.72, transform: [{ scale: 0.96 }] },
-    doneButtonText: { color: theme.colors.scannerCyan, fontSize: 14, fontWeight: '900' },
+    doneButtonText: { color: theme.colors.scannerCyan, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14, fontWeight: '900' },
     reviewScroll: { flex: 1, width: '100%' },
-    reviewContent: { width: '100%', paddingTop: 18, paddingBottom: 28 },
+    reviewContent: { width: '100%', paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(18) : 18, paddingBottom: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(28) : 28 },
     photoGrid: {
       width: '100%',
-      maxWidth: 760,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(760) : 760,
       alignSelf: 'center',
       flexDirection: 'row',
       flexWrap: 'wrap',
       justifyContent: 'space-between',
-      gap: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
     },
     photoCard: {
       overflow: 'hidden',
@@ -353,11 +351,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       position: 'absolute',
       left: 10,
       bottom: 10,
-      minWidth: 26,
-      height: 26,
+      minWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(26) : 26,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(26) : 26,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: 6,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
       borderRadius: theme.radii.pill,
       borderWidth: 1,
       borderColor: 'rgba(242, 211, 138, 0.34)',
@@ -365,7 +363,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     photoNumberText: {
       color: theme.colors.cream,
-      fontSize: 11,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11,
       fontWeight: '900',
       fontVariant: ['tabular-nums'],
     },
@@ -373,8 +371,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       position: 'absolute',
       top: 9,
       right: 9,
-      width: 42,
-      height: 42,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(42) : 42,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(42) : 42,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: theme.radii.pill,

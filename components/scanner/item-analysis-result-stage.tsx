@@ -10,10 +10,9 @@ import {
 import Animated, { FadeIn, FadeInUp, FadeOut } from "react-native-reanimated";
 
 import type { ItemAnalysisState } from "@/components/scanner/item-analysis-overlay";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Ionicons } from "@/components/ui/icon-symbol";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import { responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type ResultState = Extract<ItemAnalysisState, { status: "result" }>;
@@ -98,6 +97,7 @@ export function ItemAnalysisResultStage({
   state,
   topInset,
 }: ItemAnalysisResultStageProps) {
+  const responsiveLayout2 = useResponsiveLayout();
   const styles = useResponsiveStyles(createResponsiveStyles);
   const {
     responsiveFont
@@ -125,7 +125,7 @@ export function ItemAnalysisResultStage({
     >
       <View style={[styles.header, { top: topInset + 14 }]}>
         <View style={styles.headerCopy}>
-          <Text numberOfLines={2} selectable style={[styles.title, { fontSize: responsiveFont(27), lineHeight: 32 }]}>
+          <Text numberOfLines={2} selectable style={[styles.title, { fontSize: responsiveFont(27), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(32) : 32 }]}>
             {result.identity.title}
           </Text>
           {identityMeta ? (
@@ -146,7 +146,7 @@ export function ItemAnalysisResultStage({
             saving && styles.disabled,
           ]}
         >
-          <IconSymbol color={theme.colors.cream} name="xmark" size={19} />
+          <Ionicons color={theme.colors.cream} name="xmark" size={19} />
         </Pressable>
       </View>
 
@@ -162,7 +162,7 @@ export function ItemAnalysisResultStage({
           {result.summary ? (
             <View style={styles.card}>
               <Text style={[styles.eyebrow, { fontSize: responsiveFont(9) }]}>ITEM SUMMARY</Text>
-              <Text numberOfLines={6} selectable style={[styles.body, { fontSize: responsiveFont(12), lineHeight: 18 }]}>
+              <Text numberOfLines={6} selectable style={[styles.body, { fontSize: responsiveFont(12), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(18) : 18 }]}>
                 {result.summary}
               </Text>
             </View>
@@ -199,10 +199,10 @@ export function ItemAnalysisResultStage({
 
           <View style={styles.card}>
             <Text style={[styles.eyebrow, { fontSize: responsiveFont(9) }]}>CONFIDENCE</Text>
-            <Text style={[styles.confidenceValue, { fontSize: responsiveFont(34), lineHeight: 38 }]}>
+            <Text style={[styles.confidenceValue, { fontSize: responsiveFont(34), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(38) : 38 }]}>
               {percentage(result.confidence?.overall) ?? "--"}%
             </Text>
-            <Text style={[styles.body, { fontSize: responsiveFont(12), lineHeight: 18 }]}>
+            <Text style={[styles.body, { fontSize: responsiveFont(12), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(18) : 18 }]}>
               {result.valuationReadiness.reason ??
                 result.valuationReadiness.label ??
                 "KeepFlip completed the available evidence review."}
@@ -216,7 +216,7 @@ export function ItemAnalysisResultStage({
                 {result.condition.label}
               </Text>
               {result.condition.summary ? (
-                <Text numberOfLines={4} selectable style={[styles.body, { fontSize: responsiveFont(12), lineHeight: 18 }]}>
+                <Text numberOfLines={4} selectable style={[styles.body, { fontSize: responsiveFont(12), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(18) : 18 }]}>
                   {result.condition.summary}
                 </Text>
               ) : null}
@@ -258,32 +258,32 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       zIndex: 10,
       flexDirection: "row",
       alignItems: "flex-start",
-      gap: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
     },
     headerCopy: {
       flex: 1,
       alignItems: "center",
-      gap: 5,
-      paddingLeft: 42,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5,
+      paddingLeft: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(42) : 42,
     },
     title: {
       width: "100%",
       color: theme.colors.cream,
-      fontSize: 27,
-      lineHeight: 32,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(27) : 27,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(32) : 32,
       fontWeight: "900",
       textAlign: "center",
     },
     meta: {
       color: theme.colors.textMuted,
-      fontSize: 10,
-      lineHeight: 15,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15,
       letterSpacing: 0.5,
       textAlign: "center",
     },
     closeButton: {
-      width: 42,
-      height: 42,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(42) : 42,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(42) : 42,
       alignItems: "center",
       justifyContent: "center",
       borderRadius: theme.radii.pill,
@@ -296,96 +296,96 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       right: 0,
       bottom: 0,
       left: 0,
-      gap: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
     },
     rail: {
       alignItems: "stretch",
-      gap: 14,
-      paddingHorizontal: 18,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(18) : 18,
     },
     card: {
-      width: 270,
-      height: 146,
-      gap: 9,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(270) : 270,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(146) : 146,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
       padding: 15,
-      borderRadius: 20,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(20) : 20,
       borderWidth: 1,
       borderColor: "rgba(88, 223, 232, 0.28)",
       backgroundColor: "rgba(5, 5, 10, 0.88)",
     },
     valuationCard: {
-      width: 310,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(310) : 310,
       borderColor: "rgba(242, 211, 138, 0.34)",
     },
     eyebrow: {
       color: theme.colors.scannerCyan,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: "900",
       letterSpacing: 1.2,
     },
     body: {
       color: theme.colors.textMuted,
-      fontSize: 12,
-      lineHeight: 18,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : 18,
     },
     valuationRow: {
       flex: 1,
       flexDirection: "row",
-      gap: 7,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
     },
     valuationMetric: {
       flex: 1,
       minWidth: 0,
       alignItems: "center",
       justifyContent: "center",
-      gap: 5,
-      borderRadius: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
       backgroundColor: "rgba(242, 211, 138, 0.05)",
     },
     metricLabel: {
       color: theme.colors.goldMuted,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: "900",
       letterSpacing: 0.8,
     },
     metricValue: {
       width: "100%",
       color: theme.colors.cream,
-      fontSize: 15,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15,
       fontWeight: "800",
       textAlign: "center",
     },
     metricValueFeatured: {
       width: "100%",
       color: theme.colors.goldBright,
-      fontSize: 18,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : 18,
       fontWeight: "900",
       textAlign: "center",
     },
     confidenceValue: {
       color: theme.colors.goldBright,
-      fontSize: 34,
-      lineHeight: 38,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(34) : 34,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(38) : 38,
       fontWeight: "900",
       fontVariant: ["tabular-nums"],
     },
     conditionGrade: {
       color: theme.colors.scannerViolet,
-      fontSize: 21,
-      lineHeight: 25,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(21) : 21,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(25) : 25,
       fontWeight: "900",
     },
     actions: {
       flexDirection: "row",
-      gap: 10,
-      paddingHorizontal: 18,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(18) : 18,
     },
     action: {
       flex: 1,
-      minHeight: 48,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(48) : 48,
       alignItems: "center",
       justifyContent: "center",
-      paddingHorizontal: 16,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16,
       borderRadius: theme.radii.pill,
       borderWidth: 1,
       borderColor: theme.colors.goldBright,
@@ -396,7 +396,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     actionText: {
       color: theme.colors.backgroundDeep,
-      fontSize: 11,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11,
       fontWeight: "900",
       letterSpacing: 0.7,
     },

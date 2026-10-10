@@ -9,6 +9,7 @@ import {
   WebTextLink,
 } from '@/components/web/web-public-page';
 import { KEEPFLIP_SITE_URL } from '@/constants/keepflip-public-site';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 const metadata = {
   canonicalPath: '/about',
@@ -25,6 +26,7 @@ const metadata = {
 } as const;
 
 export default function AboutPage() {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   return (
     <WebMarketingPage
       metadata={metadata}
@@ -42,7 +44,7 @@ export default function AboutPage() {
       </WebContentSection>
 
       <WebContentSection eyebrow="PUBLISHER" title="A real name to start with.">
-        <View style={styles.cardGrid}>
+        <View style={responsiveStyles.cardGrid}>
           <WebInfoCard title="Published by Jarid & Found">
             <WebCopy>
               Google Play lists Jarid &amp; Found as KeepFlip&apos;s app publisher. KeepFlip also maintains a public Facebook page.
@@ -65,7 +67,7 @@ export default function AboutPage() {
         </View>
       </WebContentSection>
 
-      <View style={styles.actions}>
+      <View style={responsiveStyles.actions}>
         <WebActionLink href="/pricing" label="See plan prices" />
         <WebActionLink href="/features" label="How KeepFlip works" secondary />
       </View>
@@ -77,3 +79,17 @@ const styles = StyleSheet.create({
   cardGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   actions: { alignItems: 'flex-start', flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    cardGrid: {
+      ...styles["cardGrid"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+    },
+    actions: {
+      ...styles["actions"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+    },
+  });
+}

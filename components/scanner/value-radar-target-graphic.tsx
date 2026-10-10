@@ -49,6 +49,7 @@ export function ValueRadarTargetGraphic({
   style,
   width,
 }: ValueRadarTargetGraphicProps) {
+  const responsiveLayout2 = useResponsiveLayout();
   const styles = useResponsiveStyles(createResponsiveStyles);
   const {
     responsiveFont
@@ -167,7 +168,7 @@ export function ValueRadarTargetGraphic({
         style={[styles.targetScanBeam, scanBeamAnimatedStyle]}
       />
       <View pointerEvents="none" style={styles.targetCaption}>
-        <Text numberOfLines={1} style={[styles.targetCaptionLabel, { fontSize: responsiveFont(7), lineHeight: 9 }]}>
+        <Text numberOfLines={1} style={[styles.targetCaptionLabel, { fontSize: responsiveFont(7), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(9) : 9 }]}>
           {label.toUpperCase()}
         </Text>
         <Text style={styles.targetCaptionScore}>{scoreText}</Text>
@@ -187,31 +188,31 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     targetHalo: {
       ...StyleSheet.absoluteFill,
-      borderRadius: 999,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(999) : 999,
       experimental_backgroundImage: `
       radial-gradient(circle at center, rgba(88, 223, 232, 0.19) 0%, rgba(141, 114, 255, 0.08) 38%, transparent 72%)
     `,
     },
     targetOrbit: {
       position: "absolute",
-      borderRadius: 999,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(999) : 999,
       borderWidth: 1,
       borderStyle: "dashed",
       borderColor: "rgba(141, 114, 255, 0.66)",
       boxShadow: "0 0 12px rgba(141, 114, 255, 0.18)",
     },
     targetInnerRing: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(32) : 32,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(32) : 32,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16,
       borderWidth: 1,
       borderColor: "rgba(88, 223, 232, 0.42)",
       backgroundColor: "rgba(3, 8, 13, 0.16)",
     },
     targetCorner: {
       position: "absolute",
-      width: 25,
-      height: 25,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(25) : 25,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(25) : 25,
       borderColor: theme.colors.scannerCyan,
     },
     targetCornerTopLeft: {
@@ -260,9 +261,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     targetCore: {
       position: "absolute",
-      width: 12,
-      height: 12,
-      borderRadius: 6,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(12) : 12,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
       borderWidth: 1,
       borderColor: "rgba(242, 211, 138, 0.64)",
       alignItems: "center",
@@ -270,8 +271,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       boxShadow: "0 0 10px rgba(242, 211, 138, 0.34)",
     },
     targetCoreDot: {
-      width: 3,
-      height: 3,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(3) : 3,
       borderRadius: 2,
       backgroundColor: theme.colors.goldBright,
     },
@@ -292,14 +293,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      gap: 6,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
     },
     targetCaptionLabel: {
       flexShrink: 1,
       color: theme.colors.text,
       fontFamily: theme.fonts.radar,
-      fontSize: 7,
-      lineHeight: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       letterSpacing: 0.8,
       textShadowColor: "rgba(0, 0, 0, 0.92)",
       textShadowOffset: { width: 0, height: 1 },
@@ -308,8 +309,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     targetCaptionScore: {
       color: theme.colors.goldBright,
       fontFamily: theme.fonts.radar,
-      fontSize: 6.5,
-      lineHeight: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(6.5) : 6.5,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       letterSpacing: 0.35,
       textShadowColor: "rgba(0, 0, 0, 0.92)",
       textShadowOffset: { width: 0, height: 1 },

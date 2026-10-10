@@ -31,7 +31,7 @@ import {
 import type { ResellerBuyRules } from '@/services/reseller-buy-rules-service';
 import { completeScanInventoryWalkthrough } from '@/services/user-profile-onboarding-service';
 
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import { useResponsiveLayout , useResponsiveStyles} from '@/hooks/use-responsive-layout';
 type WebAuthMode = 'sign-in' | 'create-account';
 
 type WebAuthCompletion = {
@@ -53,6 +53,7 @@ export function WebAuthScreen({
   onAuthenticated,
   onBack,
 }: WebAuthScreenProps) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const { width, webPageGutter } = useResponsiveLayout();
   const isWide = width >= 900;
   const webContentSizing =
@@ -205,9 +206,9 @@ export function WebAuthScreen({
 
   return (
     <KeepFlipBackground colorScheme="dark">
-    <KeyboardAvoidingView behavior="padding" style={styles.root}>
+    <KeyboardAvoidingView behavior="padding" style={responsiveStyles.root}>
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, webContentSizing]}
+        contentContainerStyle={[responsiveStyles.scrollContent, webContentSizing]}
         keyboardShouldPersistTaps="handled"
       >
         <WebSiteHeader
@@ -215,25 +216,25 @@ export function WebAuthScreen({
           label={isCreateAccount ? 'CREATE RESELLER WORKSPACE' : 'SIGN IN TO KEEPFLIP'}
           showMarketingLinks
         />
-        <View style={[styles.authLayout, !isWide && styles.authLayoutNarrow]}>
+        <View style={[responsiveStyles.authLayout, !isWide && responsiveStyles.authLayoutNarrow]}>
           {isWide ? (
-            <View style={[styles.story, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
-              <Text style={[styles.storyEyebrow, { color: colors.goldBright }]}>KEEPFLIP / RESELLER OPERATIONS</Text>
-              <Text style={[styles.storyTitle, { color: colors.text }]}>From the find to the sale.</Text>
-              <Text style={[styles.storyBody, { color: colors.textMuted }]}>
+            <View style={[responsiveStyles.story, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
+              <Text style={[responsiveStyles.storyEyebrow, { color: colors.goldBright }]}>KEEPFLIP / RESELLER OPERATIONS</Text>
+              <Text style={[responsiveStyles.storyTitle, { color: colors.text }]}>From the find to the sale.</Text>
+              <Text style={[responsiveStyles.storyBody, { color: colors.textMuted }]}>
                 Research a possible buy, keep track of the item, and see what you kept after fees.
               </Text>
-              <View style={[styles.storySteps, { borderTopColor: colors.divider }]}>
+              <View style={[responsiveStyles.storySteps, { borderTopColor: colors.divider }]}>
                 <StoryStep number="01" title="SOURCE" detail="Research the find" color={colors.goldBright} />
                 <StoryStep number="02" title="DECIDE" detail="Count the costs" color={colors.goldBright} />
                 <StoryStep number="03" title="TRACK" detail="See what you kept" color={colors.goldBright} />
               </View>
             </View>
           ) : null}
-        <View style={[styles.card, isWide && styles.cardWide, !isWide && styles.cardNarrow, width < 480 && styles.cardPhone, { backgroundColor: colors.card, borderColor: colors.divider }]}>
-          <Text style={[styles.eyebrow, { color: colors.goldBright }]}>RESELLER OPERATIONS, EVERYWHERE</Text>
-          <Text style={[styles.title, { color: colors.text }]}>{isCreateAccount ? "Let's make your account." : 'Welcome back.'}</Text>
-          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+        <View style={[responsiveStyles.card, isWide && responsiveStyles.cardWide, !isWide && responsiveStyles.cardNarrow, width < 480 && responsiveStyles.cardPhone, { backgroundColor: colors.card, borderColor: colors.divider }]}>
+          <Text style={[responsiveStyles.eyebrow, { color: colors.goldBright }]}>RESELLER OPERATIONS, EVERYWHERE</Text>
+          <Text style={[responsiveStyles.title, { color: colors.text }]}>{isCreateAccount ? "Let's make your account." : 'Welcome back.'}</Text>
+          <Text style={[responsiveStyles.subtitle, { color: colors.textMuted }]}>
             {isCreateAccount
               ? 'Add your name, email, and password. No credit card is required. Your Flip setup and workflow tour begin after you sign in.'
               : 'Use the web workspace for inventory, Books, market research, and assistant planning. Open the Android app when it is time to capture an item.'}
@@ -243,9 +244,9 @@ export function WebAuthScreen({
             <Pressable
               accessibilityRole="button"
               onPress={onBack}
-              style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+              style={({ pressed }) => [responsiveStyles.backButton, pressed && responsiveStyles.pressed]}
             >
-              <Text style={[styles.backButtonText, { color: colors.scannerCyan }]}>← BACK TO FLIP SETUP</Text>
+              <Text style={[responsiveStyles.backButtonText, { color: colors.scannerCyan }]}>← BACK TO FLIP SETUP</Text>
             </Pressable>
           ) : null}
 
@@ -288,15 +289,15 @@ export function WebAuthScreen({
 
 
           {localError || errorMessage ? (
-            <View style={[styles.errorBox, { backgroundColor: colors.dangerSurface, borderColor: colors.danger }]}>
-              <Text style={[styles.errorText, { color: colors.danger }]}>{localError ?? errorMessage}</Text>
+            <View style={[responsiveStyles.errorBox, { backgroundColor: colors.dangerSurface, borderColor: colors.danger }]}>
+              <Text style={[responsiveStyles.errorText, { color: colors.danger }]}>{localError ?? errorMessage}</Text>
             </View>
           ) : null}
 
           {status === 'setup' && missingKeys.length ? (
-            <View style={[styles.setupBox, { backgroundColor: colors.iconSurfaceGold, borderColor: colors.goldMuted }]}>
-              <Text style={[styles.setupTitle, { color: colors.goldBright }]}>Appwrite is not configured for this build yet.</Text>
-              <Text style={[styles.setupText, { color: colors.textMuted }]}>The browser shell is ready, but authentication needs the public Appwrite endpoint and project ID in the web environment.</Text>
+            <View style={[responsiveStyles.setupBox, { backgroundColor: colors.iconSurfaceGold, borderColor: colors.goldMuted }]}>
+              <Text style={[responsiveStyles.setupTitle, { color: colors.goldBright }]}>Appwrite is not configured for this build yet.</Text>
+              <Text style={[responsiveStyles.setupText, { color: colors.textMuted }]}>The browser shell is ready, but authentication needs the public Appwrite endpoint and project ID in the web environment.</Text>
             </View>
           ) : null}
 
@@ -305,14 +306,14 @@ export function WebAuthScreen({
             disabled={isBusy || isSubmitting}
             onPress={() => void submit()}
             style={({ pressed }) => [
-              styles.submitButton,
+              responsiveStyles.submitButton,
               { backgroundColor: colors.gold },
-              pressed && styles.pressed,
-              (isBusy || isSubmitting) && styles.disabled,
+              pressed && responsiveStyles.pressed,
+              (isBusy || isSubmitting) && responsiveStyles.disabled,
             ]}
           >
             {isBusy || isSubmitting ? <ActivityIndicator color={colors.textOnAccent} /> : null}
-            <Text style={[styles.submitText, { color: colors.textOnAccent }]}>{submitLabel}</Text>
+            <Text style={[responsiveStyles.submitText, { color: colors.textOnAccent }]}>{submitLabel}</Text>
           </Pressable> : null}
 
           {!isCreateAccount && !pendingMfaSignIn ? (
@@ -321,8 +322,8 @@ export function WebAuthScreen({
             />
           ) : null}
 
-          {!pendingMfaSignIn ? <View style={styles.switchRow}>
-            <Text style={[styles.switchText, { color: colors.textMuted }]}>
+          {!pendingMfaSignIn ? <View style={responsiveStyles.switchRow}>
+            <Text style={[responsiveStyles.switchText, { color: colors.textMuted }]}>
               {isCreateAccount ? 'Already have a KeepFlip account?' : 'New to KeepFlip?'}
             </Text>
             <Pressable
@@ -336,7 +337,7 @@ export function WebAuthScreen({
                 router.push('/meet-flip');
               }}
             >
-              <Text style={[styles.switchAction, { color: colors.scannerCyan }]}>
+              <Text style={[responsiveStyles.switchAction, { color: colors.scannerCyan }]}>
                 {isCreateAccount ? 'Sign in' : 'Meet Flip & start setup'}
               </Text>
             </Pressable>
@@ -344,9 +345,9 @@ export function WebAuthScreen({
         </View>
         </View>
 
-        <View style={[styles.footerNote, { borderColor: colors.divider }]}>
-          <Text style={[styles.footerLabel, { color: colors.goldBright }]}>CAPTURE WHERE IT WORKS BEST</Text>
-          <Text style={[styles.footerText, { color: colors.textMuted }]}>KeepFlip’s live scanner, camera permissions, and native vision pipeline stay in the Android app. Your decisions, records, and realized financial picture stay available here.</Text>
+        <View style={[responsiveStyles.footerNote, { borderColor: colors.divider }]}>
+          <Text style={[responsiveStyles.footerLabel, { color: colors.goldBright }]}>CAPTURE WHERE IT WORKS BEST</Text>
+          <Text style={[responsiveStyles.footerText, { color: colors.textMuted }]}>KeepFlip’s live scanner, camera permissions, and native vision pipeline stay in the Android app. Your decisions, records, and realized financial picture stay available here.</Text>
         </View>
         <WebSiteFooter
           colorScheme="dark"
@@ -361,12 +362,13 @@ export function WebAuthScreen({
 }
 
 function StoryStep({ number, title, detail, color }: { number: string; title: string; detail: string; color: string }) {
+  const responsiveStyles2 = useResponsiveStyles(createStylesWebResponsive);
   return (
-    <View style={styles.storyStep}>
-      <Text style={[styles.storyNumber, { color }]}>{number}</Text>
-      <View style={styles.storyStepCopy}>
-        <Text style={[styles.storyStepTitle, { color }]}>{title}</Text>
-        <Text style={[styles.storyStepDetail, { color: KEEPFLIP_PUBLIC_COLORS.textMuted }]}>{detail}</Text>
+    <View style={responsiveStyles2.storyStep}>
+      <Text style={[responsiveStyles2.storyNumber, { color }]}>{number}</Text>
+      <View style={responsiveStyles2.storyStepCopy}>
+        <Text style={[responsiveStyles2.storyStepTitle, { color }]}>{title}</Text>
+        <Text style={[responsiveStyles2.storyStepDetail, { color: KEEPFLIP_PUBLIC_COLORS.textMuted }]}>{detail}</Text>
       </View>
     </View>
   );
@@ -380,13 +382,14 @@ function Field({
   colors: ReturnType<typeof getKeepFlipThemeColors>;
   label: string;
 }) {
+  const responsiveStyles3 = useResponsiveStyles(createStylesWebResponsive);
   return (
-    <View style={styles.fieldGroup}>
-      <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{label}</Text>
+    <View style={responsiveStyles3.fieldGroup}>
+      <Text style={[responsiveStyles3.fieldLabel, { color: colors.textMuted }]}>{label}</Text>
       <TextInput
         {...props}
         placeholderTextColor={colors.textMuted}
-        style={[styles.input, { backgroundColor: colors.surfaceInset, borderColor: colors.divider, color: colors.text }]}
+        style={[responsiveStyles3.input, { backgroundColor: colors.surfaceInset, borderColor: colors.divider, color: colors.text }]}
       />
     </View>
   );
@@ -515,3 +518,276 @@ const styles = StyleSheet.create({
   footerLabel: { fontFamily: theme.fonts.bold, fontSize: 12, letterSpacing: 1.4 },
   footerText: { fontFamily: theme.fonts.body, fontSize: 12, lineHeight: 18, marginTop: 7 },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    scrollContent: {
+      ...styles["scrollContent"],
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(24) : 24,
+    },
+    authLayout: {
+      ...styles["authLayout"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(28) : 28,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(42) : 42,
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(1120) : 1120,
+    },
+    story: {
+      ...styles["story"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(24) : 24,
+      gap: layout.isWeb ? layout.webResponsiveWidth(15) : 15,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(540) : 540,
+    },
+    storyEyebrow: {
+      ...styles["storyEyebrow"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
+    },
+    storyTitle: {
+      ...styles["storyTitle"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(40) : 40,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(48) : 48,
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(400) : 400,
+    },
+    storyBody: {
+      ...styles["storyBody"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(16) : 16,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(26) : 26,
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(410) : 410,
+    },
+    storySteps: {
+      ...styles["storySteps"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(16) : 16,
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(22) : 22,
+    },
+    storyStep: {
+      ...styles["storyStep"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(16) : 16,
+    },
+    storyNumber: {
+      ...styles["storyNumber"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(22) : 22,
+      minWidth: layout.isWeb ? layout.webResponsiveWidth(35) : 35,
+    },
+    storyStepCopy: {
+      ...styles["storyStepCopy"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(3) : 3,
+    },
+    storyStepTitle: {
+      ...styles["storyStepTitle"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
+    },
+    storyStepDetail: {
+      ...styles["storyStepDetail"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
+    },
+    brandRow: {
+      ...styles["brandRow"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      marginBottom: layout.isWeb ? layout.webResponsiveHeight(28) : 28,
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(620) : 620,
+    },
+    brandMark: {
+      ...styles["brandMark"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      height: layout.isWeb ? layout.webResponsiveHeight(34) : 34,
+      width: layout.isWeb ? layout.webResponsiveWidth(34) : 34,
+    },
+    brandMarkText: {
+      ...styles["brandMarkText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(19) : 19,
+    },
+    brandName: {
+      ...styles["brandName"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+    },
+    webPill: {
+      ...styles["webPill"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(6) : 6,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(7) : 7,
+    },
+    statusDot: {
+      ...styles["statusDot"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(4) : 4,
+      height: layout.isWeb ? layout.webResponsiveHeight(7) : 7,
+      width: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+    },
+    webPillText: {
+      ...styles["webPillText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+    card: {
+      ...styles["card"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(24) : 24,
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(560) : 560,
+    },
+    eyebrow: {
+      ...styles["eyebrow"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
+    },
+    title: {
+      ...styles["title"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(38) : 38,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(44) : 44,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(10) : 10,
+    },
+    subtitle: {
+      ...styles["subtitle"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(15) : 15,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(23) : 23,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(12) : 12,
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(560) : 560,
+    },
+    backButton: {
+      ...styles["backButton"],
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(18) : 18,
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(4) : 4,
+    },
+    backButtonText: {
+      ...styles["backButtonText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+    fieldGroup: {
+      ...styles["fieldGroup"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(20) : 20,
+    },
+    fieldLabel: {
+      ...styles["fieldLabel"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+    },
+    input: {
+      ...styles["input"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(15) : 15,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(50) : 50,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(15) : 15,
+    },
+    errorBox: {
+      ...styles["errorBox"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(18) : 18,
+    },
+    errorText: {
+      ...styles["errorText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(19) : 19,
+    },
+    setupBox: {
+      ...styles["setupBox"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(18) : 18,
+    },
+    setupTitle: {
+      ...styles["setupTitle"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
+    },
+    setupText: {
+      ...styles["setupText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : 18,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(4) : 4,
+    },
+    billingSection: {
+      ...styles["billingSection"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(22) : 22,
+    },
+    billingEyebrow: {
+      ...styles["billingEyebrow"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+    },
+    billingCopy: {
+      ...styles["billingCopy"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : 18,
+    },
+    billingToggle: {
+      ...styles["billingToggle"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+    },
+    billingToggleOption: {
+      ...styles["billingToggleOption"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(999) : 999,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(38) : 38,
+    },
+    billingToggleText: {
+      ...styles["billingToggleText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+    },
+    billingPlanList: {
+      ...styles["billingPlanList"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+    },
+    billingPlan: {
+      ...styles["billingPlan"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      gap: layout.isWeb ? layout.webResponsiveWidth(5) : 5,
+    },
+    billingPlanHeading: {
+      ...styles["billingPlanHeading"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+    },
+    billingPlanName: {
+      ...styles["billingPlanName"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
+    },
+    billingPlanPrice: {
+      ...styles["billingPlanPrice"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
+    },
+    billingPlanDescription: {
+      ...styles["billingPlanDescription"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(16) : 16,
+    },
+    billingConfirmed: {
+      ...styles["billingConfirmed"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(17) : 17,
+    },
+    submitButton: {
+      ...styles["submitButton"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
+      gap: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(24) : 24,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(52) : 52,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(18) : 18,
+    },
+    submitText: {
+      ...styles["submitText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+    },
+    switchRow: {
+      ...styles["switchRow"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(6) : 6,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(22) : 22,
+    },
+    switchText: {
+      ...styles["switchText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
+    },
+    switchAction: {
+      ...styles["switchAction"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
+    },
+    footerNote: {
+      ...styles["footerNote"],
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(40) : 40,
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(1120) : 1120,
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(18) : 18,
+    },
+    footerLabel: {
+      ...styles["footerLabel"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+    footerText: {
+      ...styles["footerText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : 18,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(7) : 7,
+    },
+  });
+}

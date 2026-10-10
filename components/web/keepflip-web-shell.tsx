@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { type Href, usePathname, useRouter } from 'expo-router';
-import { type PropsWithChildren, type ComponentProps } from 'react';
+import { type ComponentProps, type PropsWithChildren } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -10,14 +10,13 @@ import {
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { WebSiteFooter } from '@/components/web/web-site-chrome';
 import { CROSSLISTING_LAB_ENABLED } from '@/constants/crosslisting-lab';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
-type IconName = ComponentProps<typeof IconSymbol>['name'];
+type IconName = ComponentProps<typeof Ionicons>['name'];
 
 type NavItem = {
   label: string;
@@ -42,11 +41,11 @@ const primaryNavigation: NavItem[] = [
   },
   ...(CROSSLISTING_LAB_ENABLED
     ? [{
-        eyebrow: 'WORKSPACE',
-        href: '/crosslisting' as Href,
-        icon: 'shippingbox.fill' as const,
-        label: 'Listing',
-      }]
+      eyebrow: 'WORKSPACE',
+      href: '/crosslisting' as Href,
+      icon: 'shippingbox.fill' as const,
+      label: 'Listing',
+    }]
     : []),
   {
     eyebrow: 'WORKSPACE',
@@ -118,18 +117,19 @@ function displaySection(pathname: string) {
 }
 
 function Brand({ compact = false }: { compact?: boolean }) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   return (
-    <View style={compact ? styles.brandCompact : styles.brand}>
+    <View style={compact ? responsiveStyles.brandCompact : responsiveStyles.brand}>
       <Image
         accessibilityLabel="KeepFlip"
         contentFit="contain"
         source={require('@/assets/images/icon3.png')}
-        style={compact ? styles.brandMarkCompact : styles.brandMark}
+        style={compact ? responsiveStyles.brandMarkCompact : responsiveStyles.brandMark}
       />
       {!compact ? (
-        <View style={styles.brandCopy}>
-          <Text style={styles.brandName}>KEEPFLIP</Text>
-          <Text style={styles.brandTagline}>SOURCING SMARTER. FLIPPING BETTER.</Text>
+        <View style={responsiveStyles.brandCopy}>
+          <Text style={responsiveStyles.brandName}>KEEPFLIP</Text>
+          <Text style={responsiveStyles.brandTagline}>SOURCING SMARTER. FLIPPING BETTER.</Text>
         </View>
       ) : null}
     </View>
@@ -147,6 +147,7 @@ function NavButton({
   onPress: () => void;
   colors: ReturnType<typeof getKeepFlipThemeColors>;
 }) {
+  const responsiveStyles2 = useResponsiveStyles(createStylesWebResponsive);
   return (
     <Pressable
       accessibilityLabel={item.androidOnly ? `${item.label}, Android app` : item.label}
@@ -154,34 +155,35 @@ function NavButton({
       accessibilityState={{ selected: active }}
       onPress={onPress}
       style={({ pressed }) => [
-        styles.navButton,
+        responsiveStyles2.navButton,
         active && {
           backgroundColor: colors.iconSurfaceGold,
           borderColor: colors.accentGoldBorder,
         },
-        pressed && styles.navButtonPressed,
+        pressed && responsiveStyles2.navButtonPressed,
       ]}>
-      <View style={[styles.navIcon, active && { backgroundColor: colors.iconSurfaceGold }]}>
-        <IconSymbol
+      <View style={[responsiveStyles2.navIcon, active && { backgroundColor: colors.iconSurfaceGold }]}>
+        <Ionicons
           color={active ? colors.goldBright : colors.textMuted}
           name={item.icon}
           size={18}
         />
       </View>
-      <View style={styles.navCopy}>
-        <Text style={[styles.navLabel, { color: active ? colors.text : colors.textMuted }]}>
+      <View style={responsiveStyles2.navCopy}>
+        <Text style={[responsiveStyles2.navLabel, { color: active ? colors.text : colors.textMuted }]}>
           {item.label}
         </Text>
         {item.androidOnly ? (
-          <Text style={[styles.navMeta, { color: colors.goldBright }]}>ANDROID CAPTURE</Text>
+          <Text style={[responsiveStyles2.navMeta, { color: colors.goldBright }]}>ANDROID CAPTURE</Text>
         ) : null}
       </View>
-      {active ? <View style={[styles.navActiveDot, { backgroundColor: colors.goldBright }]} /> : null}
+      {active ? <View style={[responsiveStyles2.navActiveDot, { backgroundColor: colors.goldBright }]} /> : null}
     </Pressable>
   );
 }
 
 export function KeepFlipWebShell({ children }: PropsWithChildren) {
+  const responsiveStyles3 = useResponsiveStyles(createStylesWebResponsive);
   const { width } = useResponsiveLayout();
   const isWide = width >= 980;
   const isPhone = width < 480;
@@ -198,7 +200,7 @@ export function KeepFlipWebShell({ children }: PropsWithChildren) {
 
   const navigation = (
     <>
-      <Text style={[styles.navGroupLabel, { color: colors.textMuted }]}>WORKSPACE</Text>
+      <Text style={[responsiveStyles3.navGroupLabel, { color: colors.textMuted }]}>WORKSPACE</Text>
       {primaryNavigation.map((item) => (
         <NavButton
           colors={colors}
@@ -208,7 +210,7 @@ export function KeepFlipWebShell({ children }: PropsWithChildren) {
           onPress={() => navigate(item.href)}
         />
       ))}
-      <Text style={[styles.navGroupLabel, styles.navGroupLabelSpaced, { color: colors.textMuted }]}>TOOLS</Text>
+      <Text style={[responsiveStyles3.navGroupLabel, responsiveStyles3.navGroupLabelSpaced, { color: colors.textMuted }]}>TOOLS</Text>
       {utilityNavigation.map((item) => (
         <NavButton
           colors={colors}
@@ -222,70 +224,70 @@ export function KeepFlipWebShell({ children }: PropsWithChildren) {
   );
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.backgroundDeep }]}>
+    <View style={[responsiveStyles3.root, { backgroundColor: colors.backgroundDeep }]}>
       {isWide ? (
-        <View style={[styles.sidebar, { backgroundColor: colors.background, borderRightColor: colors.divider }]}>
+        <View style={[responsiveStyles3.sidebar, { backgroundColor: colors.background, borderRightColor: colors.divider }]}>
           <Brand />
           <ScrollView
-            contentContainerStyle={styles.sidebarNavigation}
+            contentContainerStyle={responsiveStyles3.sidebarNavigation}
             showsVerticalScrollIndicator={false}>
             {navigation}
           </ScrollView>
-          <View style={[styles.sidebarFooter, { borderTopColor: colors.divider }]}>
+          <View style={[responsiveStyles3.sidebarFooter, { borderTopColor: colors.divider }]}>
             <Pressable
               accessibilityLabel="Open account settings"
               accessibilityRole="button"
               onPress={() => navigate('/account')}
-              style={({ pressed }) => [styles.profileButton, pressed && styles.navButtonPressed]}>
-              <View style={[styles.avatar, { backgroundColor: colors.iconSurfaceGold, borderColor: colors.accentGoldBorder }]}>
-                <Text style={[styles.avatarText, { color: colors.goldBright }]}>{userInitials}</Text>
+              style={({ pressed }) => [responsiveStyles3.profileButton, pressed && responsiveStyles3.navButtonPressed]}>
+              <View style={[responsiveStyles3.avatar, { backgroundColor: colors.iconSurfaceGold, borderColor: colors.accentGoldBorder }]}>
+                <Text style={[responsiveStyles3.avatarText, { color: colors.goldBright }]}>{userInitials}</Text>
               </View>
-              <View style={styles.profileCopy}>
-                <Text numberOfLines={1} style={[styles.profileName, { color: colors.text }]}>
+              <View style={responsiveStyles3.profileCopy}>
+                <Text numberOfLines={1} style={[responsiveStyles3.profileName, { color: colors.text }]}>
                   {user?.name?.trim() || 'KeepFlip seller'}
                 </Text>
-                <Text style={[styles.profileMeta, { color: colors.textMuted }]}>VIEW ACCOUNT</Text>
+                <Text style={[responsiveStyles3.profileMeta, { color: colors.textMuted }]}>VIEW ACCOUNT</Text>
               </View>
-              <IconSymbol color={colors.textMuted} name="chevron.right" size={16} />
+              <Ionicons color={colors.textMuted} name="chevron.right" size={16} />
             </Pressable>
             <Pressable
               accessibilityLabel="Sign out"
               accessibilityRole="button"
               onPress={() => void signOut()}
-              style={({ pressed }) => [styles.signOutButton, pressed && styles.navButtonPressed]}>
-              <IconSymbol color={colors.textMuted} name="rectangle.portrait.and.arrow.right" size={16} />
-              <Text style={[styles.signOutLabel, { color: colors.textMuted }]}>SIGN OUT</Text>
+              style={({ pressed }) => [responsiveStyles3.signOutButton, pressed && responsiveStyles3.navButtonPressed]}>
+              <Ionicons color={colors.textMuted} name="log-out-outline" size={16} />
+              <Text style={[responsiveStyles3.signOutLabel, { color: colors.textMuted }]}>SIGN OUT</Text>
             </Pressable>
           </View>
         </View>
       ) : (
-        <View style={[styles.mobileChrome, isPhone && styles.mobileChromePhone, { backgroundColor: colors.background, borderBottomColor: colors.divider }]}>
-          <View style={styles.mobileTopRow}>
+        <View style={[responsiveStyles3.mobileChrome, isPhone && responsiveStyles3.mobileChromePhone, { backgroundColor: colors.background, borderBottomColor: colors.divider }]}>
+          <View style={responsiveStyles3.mobileTopRow}>
             <Brand compact />
-            <View style={styles.mobileTopActions}>
+            <View style={responsiveStyles3.mobileTopActions}>
               <Pressable
                 accessibilityLabel="Open Android scanner"
                 accessibilityRole="button"
                 onPress={() => navigate('/scanner')}
-                style={({ pressed }) => [styles.mobileAction, { borderColor: colors.accentCyanBorder, backgroundColor: colors.iconSurfaceCyan }, pressed && styles.navButtonPressed]}>
-                <IconSymbol color={colors.scannerCyan} name="viewfinder" size={17} />
-                <Text style={[styles.mobileActionLabel, isPhone && styles.mobileActionLabelPhone, { color: colors.scannerCyan }]}>{isPhone ? 'ANDROID SCAN' : 'SCAN ON ANDROID'}</Text>
+                style={({ pressed }) => [responsiveStyles3.mobileAction, { borderColor: colors.accentCyanBorder, backgroundColor: colors.iconSurfaceCyan }, pressed && responsiveStyles3.navButtonPressed]}>
+                <Ionicons color={colors.scannerCyan} name="viewfinder" size={17} />
+                <Text style={[responsiveStyles3.mobileActionLabel, isPhone && responsiveStyles3.mobileActionLabelPhone, { color: colors.scannerCyan }]}>{isPhone ? 'ANDROID SCAN' : 'SCAN ON ANDROID'}</Text>
               </Pressable>
               <Pressable
                 accessibilityLabel="Open account settings"
                 accessibilityRole="button"
                 onPress={() => navigate('/account')}
-                style={[styles.avatar, { backgroundColor: colors.iconSurfaceGold, borderColor: colors.accentGoldBorder }]}>
-                <Text style={[styles.avatarText, { color: colors.goldBright }]}>{userInitials}</Text>
+                style={[responsiveStyles3.avatar, { backgroundColor: colors.iconSurfaceGold, borderColor: colors.accentGoldBorder }]}>
+                <Text style={[responsiveStyles3.avatarText, { color: colors.goldBright }]}>{userInitials}</Text>
               </Pressable>
             </View>
           </View>
-          <View style={[styles.mobileSectionRow, isPhone && styles.mobileSectionRowPhone]}>
-            <Text numberOfLines={1} style={[styles.mobileSectionLabel, { color: colors.goldBright }]}>{displaySection(pathname)}</Text>
-            <Text numberOfLines={1} style={[styles.mobileSectionMeta, { color: colors.textMuted }]}>PRIVATE WORKSPACE</Text>
+          <View style={[responsiveStyles3.mobileSectionRow, isPhone && responsiveStyles3.mobileSectionRowPhone]}>
+            <Text numberOfLines={1} style={[responsiveStyles3.mobileSectionLabel, { color: colors.goldBright }]}>{displaySection(pathname)}</Text>
+            <Text numberOfLines={1} style={[responsiveStyles3.mobileSectionMeta, { color: colors.textMuted }]}>PRIVATE WORKSPACE</Text>
           </View>
           <ScrollView
-            contentContainerStyle={[styles.mobileNavigation, isPhone && styles.mobileNavigationPhone]}
+            contentContainerStyle={[responsiveStyles3.mobileNavigation, isPhone && responsiveStyles3.mobileNavigationPhone]}
             horizontal
             showsHorizontalScrollIndicator={false}>
             {primaryNavigation.concat(utilityNavigation.slice(0, 2)).map((item) => (
@@ -301,18 +303,18 @@ export function KeepFlipWebShell({ children }: PropsWithChildren) {
         </View>
       )}
 
-      <View style={[styles.main, !isWide && styles.mainMobile, isPhone && styles.mainMobilePhone]}>
-        <View style={[styles.topbar, !isWide && styles.topbarMobile, { borderBottomColor: colors.divider }]}>
+      <View style={[responsiveStyles3.main, !isWide && responsiveStyles3.mainMobile, isPhone && responsiveStyles3.mainMobilePhone]}>
+        <View style={[responsiveStyles3.topbar, !isWide && responsiveStyles3.topbarMobile, { borderBottomColor: colors.divider }]}>
           <View>
-            <Text style={[styles.topbarEyebrow, { color: colors.textMuted }]}>{displaySection(pathname)}</Text>
-            <Text style={[styles.topbarTitle, { color: colors.text }]}>KeepFlip workspace</Text>
+            <Text style={[responsiveStyles3.topbarEyebrow, { color: colors.textMuted }]}>{displaySection(pathname)}</Text>
+            <Text style={[responsiveStyles3.topbarTitle, { color: colors.text }]}>KeepFlip workspace</Text>
           </View>
-          <View style={styles.topbarStatus}>
-            <View style={[styles.statusDot, { backgroundColor: colors.success }]} />
-            <Text style={[styles.topbarStatusText, { color: colors.textMuted }]}>PRIVATE WORKSPACE</Text>
+          <View style={responsiveStyles3.topbarStatus}>
+            <View style={[responsiveStyles3.statusDot, { backgroundColor: colors.success }]} />
+            <Text style={[responsiveStyles3.topbarStatusText, { color: colors.textMuted }]}>PRIVATE WORKSPACE</Text>
           </View>
         </View>
-        <View style={styles.routeContent}>{children}</View>
+        <View style={responsiveStyles3.routeContent}>{children}</View>
         <WebSiteFooter />
       </View>
     </View>
@@ -610,3 +612,226 @@ const styles = StyleSheet.create({
     paddingTop: 7,
   },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    sidebar: {
+      ...styles["sidebar"],
+      width: layout.isWeb ? layout.webResponsiveWidth(264) : 264,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(16) : 16,
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(24) : 24,
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(16) : 16,
+    },
+    brand: {
+      ...styles["brand"],
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(28) : 28,
+    },
+    brandMark: {
+      ...styles["brandMark"],
+      width: layout.isWeb ? layout.webResponsiveWidth(55) : 55,
+      height: layout.isWeb ? layout.webResponsiveHeight(55) : 55,
+    },
+    brandMarkCompact: {
+      ...styles["brandMarkCompact"],
+      width: layout.isWeb ? layout.webResponsiveWidth(50) : 50,
+      height: layout.isWeb ? layout.webResponsiveHeight(50) : 50,
+    },
+    brandCopy: {
+      ...styles["brandCopy"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(3) : 3,
+    },
+    brandName: {
+      ...styles["brandName"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(19) : 19,
+    },
+    brandTagline: {
+      ...styles["brandTagline"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(7) : 7,
+    },
+    sidebarNavigation: {
+      ...styles["sidebarNavigation"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(5) : 5,
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(20) : 20,
+    },
+    navGroupLabel: {
+      ...styles["navGroupLabel"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(7) : 7,
+    },
+    navGroupLabelSpaced: {
+      ...styles["navGroupLabelSpaced"],
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(22) : 22,
+    },
+    navButton: {
+      ...styles["navButton"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(48) : 48,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(15) : 15,
+    },
+    navIcon: {
+      ...styles["navIcon"],
+      width: layout.isWeb ? layout.webResponsiveWidth(35) : 35,
+      height: layout.isWeb ? layout.webResponsiveHeight(35) : 35,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+    },
+    navLabel: {
+      ...styles["navLabel"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+    navMeta: {
+      ...styles["navMeta"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(7) : 7,
+    },
+    navActiveDot: {
+      ...styles["navActiveDot"],
+      width: layout.isWeb ? layout.webResponsiveWidth(5) : 5,
+      height: layout.isWeb ? layout.webResponsiveHeight(5) : 5,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(3) : 3,
+    },
+    sidebarFooter: {
+      ...styles["sidebarFooter"],
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(14) : 14,
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+    },
+    profileButton: {
+      ...styles["profileButton"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(52) : 52,
+      gap: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+    },
+    profileCopy: {
+      ...styles["profileCopy"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(3) : 3,
+    },
+    profileName: {
+      ...styles["profileName"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+    },
+    profileMeta: {
+      ...styles["profileMeta"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(7) : 7,
+    },
+    avatar: {
+      ...styles["avatar"],
+      width: layout.isWeb ? layout.webResponsiveWidth(32) : 32,
+      height: layout.isWeb ? layout.webResponsiveHeight(32) : 32,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(16) : 16,
+    },
+    avatarText: {
+      ...styles["avatarText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
+    },
+    signOutButton: {
+      ...styles["signOutButton"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(32) : 32,
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
+    },
+    signOutLabel: {
+      ...styles["signOutLabel"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : 8,
+    },
+    mainMobile: {
+      ...styles["mainMobile"],
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(104) : 104,
+    },
+    mainMobilePhone: {
+      ...styles["mainMobilePhone"],
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(110) : 110,
+    },
+    topbar: {
+      ...styles["topbar"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(78) : 78,
+      gap: layout.isWeb ? layout.webResponsiveWidth(20) : 20,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(30) : 30,
+    },
+    topbarEyebrow: {
+      ...styles["topbarEyebrow"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : 8,
+    },
+    topbarTitle: {
+      ...styles["topbarTitle"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(4) : 4,
+    },
+    topbarStatus: {
+      ...styles["topbarStatus"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+    },
+    statusDot: {
+      ...styles["statusDot"],
+      width: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+      height: layout.isWeb ? layout.webResponsiveHeight(7) : 7,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(4) : 4,
+    },
+    topbarStatusText: {
+      ...styles["topbarStatusText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : 8,
+    },
+    mobileChrome: {
+      ...styles["mobileChrome"],
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(16) : 16,
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(12) : 12,
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(8) : 8,
+    },
+    mobileChromePhone: {
+      ...styles["mobileChromePhone"],
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(10) : 10,
+    },
+    mobileTopRow: {
+      ...styles["mobileTopRow"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(38) : 38,
+    },
+    mobileTopActions: {
+      ...styles["mobileTopActions"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+    },
+    mobileSectionRow: {
+      ...styles["mobileSectionRow"],
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(7) : 7,
+    },
+    mobileSectionRowPhone: {
+      ...styles["mobileSectionRowPhone"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+    },
+    mobileSectionLabel: {
+      ...styles["mobileSectionLabel"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : 8,
+    },
+    mobileSectionMeta: {
+      ...styles["mobileSectionMeta"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(7) : 7,
+    },
+    mobileAction: {
+      ...styles["mobileAction"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(30) : 30,
+      gap: layout.isWeb ? layout.webResponsiveWidth(6) : 6,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(999) : 999,
+    },
+    mobileActionLabel: {
+      ...styles["mobileActionLabel"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(7) : 7,
+    },
+    mobileActionLabelPhone: {
+      ...styles["mobileActionLabelPhone"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(6.5) : 6.5,
+    },
+    mobileNavigation: {
+      ...styles["mobileNavigation"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(5) : 5,
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(8) : 8,
+    },
+    mobileNavigationPhone: {
+      ...styles["mobileNavigationPhone"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(4) : 4,
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(7) : 7,
+    },
+  });
+}

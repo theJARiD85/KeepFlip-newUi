@@ -7,24 +7,26 @@ import {
   getKeepFlipThemeColors,
   keepFlipTheme as theme,
 } from '@/constants/keepflip-theme';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 export default function ARMeasureWebScreen() {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const colors = getKeepFlipThemeColors(effectiveColorScheme);
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.backgroundDeep }]}>
+    <View style={[responsiveStyles.root, { backgroundColor: colors.backgroundDeep }]}>
       <View
         style={[
-          styles.card,
+          responsiveStyles.card,
           {
             backgroundColor: colors.backgroundRaised,
             borderColor: colors.divider,
           },
         ]}>
-        <Text style={[styles.eyebrow, { color: colors.scannerCyan }]}>ANDROID-ONLY TOOL</Text>
-        <Text style={[styles.title, { color: colors.text }]}>Measure in the real world from the Android app.</Text>
-        <Text style={[styles.copy, { color: colors.textMuted }]}>
+        <Text style={[responsiveStyles.eyebrow, { color: colors.scannerCyan }]}>ANDROID-ONLY TOOL</Text>
+        <Text style={[responsiveStyles.title, { color: colors.text }]}>Measure in the real world from the Android app.</Text>
+        <Text style={[responsiveStyles.copy, { color: colors.textMuted }]}>
           KeepFlip AR Measure needs the device camera and native depth capabilities,
           so it stays in the Android app. Your web workspace is ready for the
           inventory, Books, research, and planning work around that measurement.
@@ -33,11 +35,11 @@ export default function ARMeasureWebScreen() {
           <Pressable
             accessibilityRole="button"
             style={({ pressed }) => [
-              styles.button,
+              responsiveStyles.button,
               { backgroundColor: colors.gold },
-              pressed && styles.pressed,
+              pressed && responsiveStyles.pressed,
             ]}>
-            <Text style={[styles.buttonText, { color: colors.textOnAccent }]}>Go to web workspace</Text>
+            <Text style={[responsiveStyles.buttonText, { color: colors.textOnAccent }]}>Go to web workspace</Text>
           </Pressable>
         </Link>
       </View>
@@ -92,3 +94,40 @@ const styles = StyleSheet.create({
     opacity: 0.82,
   },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    card: {
+      ...styles["card"],
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(580) : 580,
+    },
+    eyebrow: {
+      ...styles["eyebrow"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
+    },
+    title: {
+      ...styles["title"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(30) : 30,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(37) : 37,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(10) : 10,
+    },
+    copy: {
+      ...styles["copy"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(15) : 15,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(23) : 23,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(13) : 13,
+    },
+    button: {
+      ...styles["button"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(24) : 24,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(50) : 50,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(18) : 18,
+    },
+    buttonText: {
+      ...styles["buttonText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+    },
+  });
+}

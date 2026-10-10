@@ -8,6 +8,7 @@ import {
   subscribeToKeepFlipLimitNotices,
   type KeepFlipLimitNotice,
 } from '@/services/keepflip-limit-alert-service';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 function noticeCopy(notice: KeepFlipLimitNotice) {
   switch (notice.category) {
@@ -36,6 +37,7 @@ function noticeCopy(notice: KeepFlipLimitNotice) {
 }
 
 export function KeepFlipLimitAlert() {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const router = useRouter();
   const [notice, setNotice] = useState<KeepFlipLimitNotice | null>(null);
 
@@ -58,31 +60,31 @@ export function KeepFlipLimitAlert() {
       transparent
       visible={notice !== null}
     >
-      <View style={styles.backdrop}>
-        <View accessibilityRole="alert" style={styles.card}>
-          <Text style={styles.eyebrow}>
+      <View style={responsiveStyles.backdrop}>
+        <View accessibilityRole="alert" style={responsiveStyles.card}>
+          <Text style={responsiveStyles.eyebrow}>
             {notice?.plan === 'serious' ? 'SERIOUS PLAN' : 'KEEPFLIP FREE'}
           </Text>
-          <Text style={styles.title}>{copy?.title}</Text>
-          <Text style={styles.body}>{copy?.body}</Text>
+          <Text style={responsiveStyles.title}>{copy?.title}</Text>
+          <Text style={responsiveStyles.body}>{copy?.body}</Text>
           {notice?.plan === 'free' ? (
-            <Text style={styles.price}>Serious is $13/month or $130/year.</Text>
+            <Text style={responsiveStyles.price}>Serious is $13/month or $130/year.</Text>
           ) : null}
-          <View style={styles.actions}>
+          <View style={responsiveStyles.actions}>
             <Pressable
               accessibilityRole="button"
               onPress={dismiss}
-              style={({ pressed }) => [styles.okButton, pressed && styles.pressed]}
+              style={({ pressed }) => [responsiveStyles.okButton, pressed && responsiveStyles.pressed]}
             >
-              <Text style={styles.okText}>OK</Text>
+              <Text style={responsiveStyles.okText}>OK</Text>
             </Pressable>
             {notice?.plan === 'free' ? (
               <Pressable
                 accessibilityRole="button"
                 onPress={subscribe}
-                style={({ pressed }) => [styles.subscribeButton, pressed && styles.pressed]}
+                style={({ pressed }) => [responsiveStyles.subscribeButton, pressed && responsiveStyles.pressed]}
               >
-                <Text style={styles.subscribeText}>Subscribe</Text>
+                <Text style={responsiveStyles.subscribeText}>Subscribe</Text>
               </Pressable>
             ) : null}
           </View>
@@ -171,3 +173,55 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.78 },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    card: {
+      ...styles["card"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(20) : 20,
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(440) : 440,
+    },
+    eyebrow: {
+      ...styles["eyebrow"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+    },
+    title: {
+      ...styles["title"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(21) : 21,
+    },
+    body: {
+      ...styles["body"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(15) : 15,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(22) : 22,
+    },
+    price: {
+      ...styles["price"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+    },
+    actions: {
+      ...styles["actions"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(6) : 6,
+    },
+    okButton: {
+      ...styles["okButton"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(48) : 48,
+    },
+    okText: {
+      ...styles["okText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(15) : 15,
+    },
+    subscribeButton: {
+      ...styles["subscribeButton"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(48) : 48,
+    },
+    subscribeText: {
+      ...styles["subscribeText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(15) : 15,
+    },
+  });
+}

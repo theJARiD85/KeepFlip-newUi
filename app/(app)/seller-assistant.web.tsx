@@ -9,10 +9,11 @@ import {
 } from '@/components/command-center/flip-guidance-overlay';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import { useResponsiveLayout , useResponsiveStyles} from '@/hooks/use-responsive-layout';
 import type { AssistantRoute } from '@/services/keepflip-assistant-service';
 
 function WebFlipAssistantScreen() {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const pathname = usePathname();
   const router = useRouter();
   const { canUse } = useKeepFlipSubscription();
@@ -28,17 +29,17 @@ function WebFlipAssistantScreen() {
 
   if (!canUse('flip_assistant')) {
     return (
-      <View style={[styles.page, { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
-        <View style={styles.gateCard}>
-          <Text style={[styles.eyebrow, { fontSize: webResponsiveFont(12) }]}>SERIOUS FEATURE</Text>
-          <Text style={[styles.title, { fontSize: webResponsiveFont(24) }]}>Flip is part of Serious Reseller.</Text>
-          <Text style={[styles.body, { fontSize: webResponsiveFont(14), lineHeight: webResponsiveFont(20) }]}>Keep using the full Free workflow. Serious is $13/month or $130/year and includes Flip.</Text>
+      <View style={[responsiveStyles.page, { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
+        <View style={responsiveStyles.gateCard}>
+          <Text style={[responsiveStyles.eyebrow, { fontSize: webResponsiveFont(12) }]}>SERIOUS FEATURE</Text>
+          <Text style={[responsiveStyles.title, { fontSize: webResponsiveFont(24) }]}>Flip is part of Serious Reseller.</Text>
+          <Text style={[responsiveStyles.body, { fontSize: webResponsiveFont(14), lineHeight: webResponsiveFont(20) }]}>Keep using the full Free workflow. Serious is $13/month or $130/year and includes Flip.</Text>
           <Pressable
             accessibilityRole="button"
             onPress={() => router.push('/subscription' as Href)}
-            style={({ pressed }) => [styles.gateButton, pressed && styles.gateButtonPressed]}
+            style={({ pressed }) => [responsiveStyles.gateButton, pressed && responsiveStyles.gateButtonPressed]}
           >
-            <Text style={styles.gateButtonText}>View Serious</Text>
+            <Text style={responsiveStyles.gateButtonText}>View Serious</Text>
           </Pressable>
         </View>
       </View>
@@ -50,9 +51,9 @@ function WebFlipAssistantScreen() {
   };
 
   return (
-    <View style={[styles.page, { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
+    <View style={[responsiveStyles.page, { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
       <View
-        style={[styles.content,
+        style={[responsiveStyles.content,
           {
             flex: 1,
             minHeight: 0,
@@ -60,10 +61,10 @@ function WebFlipAssistantScreen() {
             paddingHorizontal: webPageGutter,
             width: webContentWidth,
           }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}>
-        <View style={styles.intro}>
-          <Text style={[styles.eyebrow, { fontSize: webResponsiveFont(12) }]}>FLIP ASSISTANT</Text>
-          <Text style={[styles.title, { fontSize: webResponsiveFont(24) }]}>A second set of eyes for every move.</Text>
-          <Text style={[styles.body, { fontSize: webResponsiveFont(14), lineHeight: webResponsiveFont(20) }]}>Ask Flip about your inventory, priorities, cash flow, or the next action worth taking. The conversation stays tied to your KeepFlip workspace.</Text>
+        <View style={responsiveStyles.intro}>
+          <Text style={[responsiveStyles.eyebrow, { fontSize: webResponsiveFont(12) }]}>FLIP ASSISTANT</Text>
+          <Text style={[responsiveStyles.title, { fontSize: webResponsiveFont(24) }]}>A second set of eyes for every move.</Text>
+          <Text style={[responsiveStyles.body, { fontSize: webResponsiveFont(14), lineHeight: webResponsiveFont(20) }]}>Ask Flip about your inventory, priorities, cash flow, or the next action worth taking. The conversation stays tied to your KeepFlip workspace.</Text>
         </View>
         <FlipConversationalAssistantPanel
           currentRoute={pathname}
@@ -150,3 +151,40 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    page: {
+      ...styles["page"],
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(28) : 28,
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(28) : 28,
+    },
+    content: {
+      ...styles["content"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(20) : 20,
+    },
+    intro: {
+      ...styles["intro"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+    },
+    body: {
+      ...styles["body"],
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(720) : 720,
+    },
+    gateCard: {
+      ...styles["gateCard"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(18) : 18,
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(44) : 44,
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(620) : 620,
+    },
+    gateButton: {
+      ...styles["gateButton"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(4) : 4,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(46) : 46,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(20) : 20,
+    },
+  });
+}

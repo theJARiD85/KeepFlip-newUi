@@ -60,9 +60,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     `,
     },
     core: {
-      width: 120,
-      height: 120,
-      borderRadius: 60,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(120) : 120,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(120) : 120,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(60) : 60,
       borderWidth: 1,
       backgroundColor: "rgba(0, 255, 255, 0.06)",
     },

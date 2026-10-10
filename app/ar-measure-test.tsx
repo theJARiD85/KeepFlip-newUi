@@ -307,53 +307,53 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.surfaceOverlay,
       borderColor: theme.colors.accentGoldBorder,
       borderWidth: 1,
-      borderRadius: 20,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(20) : 20,
       padding: 18,
-      gap: 6,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
     },
 
     title: {
       color: theme.colors.text,
-      fontSize: 20,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(20) : 20,
       fontWeight: "700",
     },
 
     status: {
       color: theme.colors.text,
-      fontSize: 14,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14,
     },
 
     instructions: {
       color: theme.colors.textMuted,
-      fontSize: 15,
-      marginTop: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15,
+      marginTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(8) : 8,
     },
 
     measurement: {
       color: theme.colors.goldBright,
-      fontSize: 34,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(34) : 34,
       fontWeight: "700",
-      marginTop: 8,
+      marginTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(8) : 8,
     },
 
     secondaryMeasurement: {
       color: theme.colors.textMuted,
-      fontSize: 18,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : 18,
     },
 
     error: {
       color: theme.colors.danger,
-      fontSize: 13,
-      marginTop: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : 13,
+      marginTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(8) : 8,
     },
 
     button: {
-      marginTop: 12,
+      marginTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(12) : 12,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
       backgroundColor: theme.colors.iconSurfaceCyan,
-      borderRadius: 14,
-      paddingVertical: 12,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(12) : 12,
       alignItems: "center",
     },
 
@@ -370,9 +370,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
 
     reticle: {
-      width: 58,
-      height: 58,
-      borderRadius: 29,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(58) : 58,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(58) : 58,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(29) : 29,
       borderWidth: 2,
       borderColor: theme.colors.scannerCyan,
       alignItems: "center",
@@ -388,22 +388,22 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
 
     reticleDot: {
-      width: 7,
-      height: 7,
-      borderRadius: 4,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(7) : 7,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
       backgroundColor: theme.colors.scannerCyan,
     },
 
     reticleLabel: {
-      marginTop: 12,
+      marginTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(12) : 12,
       color: theme.colors.text,
-      fontSize: 12,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
       fontWeight: "800",
       letterSpacing: 1.4,
       backgroundColor: theme.colors.scrim,
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-      borderRadius: 10,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : 6,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
     }
   });
   return {

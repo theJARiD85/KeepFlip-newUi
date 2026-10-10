@@ -25,7 +25,6 @@ import {
 } from '@/components/navigation/keepflip-menu-context';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { SourcingTripControl } from '@/components/sourcing/sourcing-trip-control';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { CROSSLISTING_LAB_ENABLED } from '@/constants/crosslisting-lab';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
@@ -33,7 +32,7 @@ import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive
 type MenuDestination = {
   eyebrow: string;
   href: Href;
-  icon: ComponentProps<typeof IconSymbol>['name'];
+  icon: ComponentProps<typeof Ionicons>['name'];
   label: string;
 };
 
@@ -49,11 +48,11 @@ const destinations: MenuDestination[] = [
   { eyebrow: 'YOUR SAVED FINDS', href: '/inventory', icon: 'shippingbox.fill', label: 'Inventory' },
   ...(CROSSLISTING_LAB_ENABLED
     ? [{
-        eyebrow: 'LIST ACROSS CHANNELS',
-        href: '/crosslisting' as Href,
-        icon: 'shippingbox.fill' as const,
-        label: 'Listing',
-      }]
+      eyebrow: 'LIST ACROSS CHANNELS',
+      href: '/crosslisting' as Href,
+      icon: 'shippingbox.fill' as const,
+      label: 'Listing',
+    }]
     : []),
 ];
 
@@ -105,6 +104,7 @@ function isDestinationActive(destinationPath: string, pathname: string) {
 }
 
 export function KeepFlipSlideDownMenu() {
+  const responsiveLayout2 = useResponsiveLayout();
   const styles = useResponsiveStyles(createResponsiveStyles);
   const {
     responsiveFont
@@ -285,37 +285,37 @@ export function KeepFlipSlideDownMenu() {
                       styles.closeButton,
                       pressed && styles.controlPressed,
                     ]}>
-                    <IconSymbol name="xmark" size={22} color={theme.colors.goldBright} />
+                    <Ionicons name="xmark" size={22} color={theme.colors.goldBright} />
                   </Pressable>
                 </View>
               </View>
 
               <View pointerEvents="none" style={styles.goldRail} />
-              <View style={{flexDirection: 'row', justifyContent: 'center', gap: 16, backgroundColor: 'transparent'}}>
+              <View style={{ flexDirection: 'row', justifyContent: 'center', gap: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveWidth(16) : 16, backgroundColor: 'transparent' }}>
                 <Pressable
-                    onPress={() => handleQuickNavigate('/account')}
-                    style={[styles.quickAction, {flexDirection: 'row', justifyContent: 'center', gap: 16, backgroundColor: 'transparent'}]}>
+                  onPress={() => handleQuickNavigate('/account')}
+                  style={[styles.quickAction, { flexDirection: 'row', justifyContent: 'center', gap: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveWidth(16) : 16, backgroundColor: 'transparent' }]}>
                   <View>
-                      <IconSymbol
-                        name="person.crop.circle.fill"
-                        size={19}
-                        color={pathname.startsWith('/account') ? theme.colors.scannerCyan : theme.colors.goldBright}
-                      />
-                    </View>
+                    <Ionicons
+                      name="person.crop.circle.fill"
+                      size={19}
+                      color={pathname.startsWith('/account') ? theme.colors.scannerCyan : theme.colors.goldBright}
+                    />
+                  </View>
                 </Pressable>
                 <Pressable
                   onPress={() => handleQuickNavigate('/notifications')}
                   accessibilityLabel="Open Notifications"
                   accessibilityRole="button"
                   hitSlop={8}
-                  style={[styles.quickAction, {flexDirection: 'row', justifyContent: 'center', gap: 16, backgroundColor: 'transparent'}]}>
+                  style={[styles.quickAction, { flexDirection: 'row', justifyContent: 'center', gap: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveWidth(16) : 16, backgroundColor: 'transparent' }]}>
                   <View>
-                        <IconSymbol
-                          name="envelope.fill"
-                          size={19}
-                          color={pathname.startsWith('/notifications') ? theme.colors.scannerCyan : theme.colors.goldBright}
-                        />
-                      </View>
+                    <Ionicons
+                      name="envelope.fill"
+                      size={19}
+                      color={pathname.startsWith('/notifications') ? theme.colors.scannerCyan : theme.colors.goldBright}
+                    />
+                  </View>
                 </Pressable>
               </View>
               <View style={styles.navigationBlock}>
@@ -343,7 +343,7 @@ export function KeepFlipSlideDownMenu() {
                             styles.destinationIcon,
                             isActive && styles.destinationIconActive,
                           ]}>
-                          <IconSymbol
+                          <Ionicons
                             color={
                               isActive
                                 ? theme.colors.goldBright
@@ -373,7 +373,7 @@ export function KeepFlipSlideDownMenu() {
                             style={styles.activeIndicator}
                           />
                         ) : (
-                          <IconSymbol
+                          <Ionicons
                             name="chevron.right"
                             size={19}
                             color={theme.colors.goldMuted}
@@ -434,7 +434,7 @@ export function KeepFlipSlideDownMenu() {
           hitSlop={10}
           onPress={handleToggle}
           style={({ pressed }) => [styles.trigger, pressed && styles.controlPressed]}>
-          <IconSymbol name="line.3.horizontal" size={22} color={theme.colors.goldBright} />
+          <Ionicons name="line.3.horizontal" size={22} color={theme.colors.goldBright} />
           <View pointerEvents="none" style={styles.triggerStatusDot} />
         </Pressable>
       </View>
@@ -474,34 +474,34 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     panelContent: {
       flexGrow: 1,
-      gap: 15,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(15) : 15,
       top: 14,
-      paddingHorizontal: 20,
-      paddingBottom: 30,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(20) : 20,
+      paddingBottom: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(30) : 30,
     },
     brandRow: {
-      minHeight: 58,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(58) : 58,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      gap: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
     },
     brandActions: {
       alignItems: 'center',
       flexDirection: 'row',
-      gap: 6,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
     },
     brandLockup: {
       minWidth: 0,
       flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
     },
     brandBackdrop: {
-      width: 70,
-      height: 70,
-      borderRadius: 35,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(70) : 70,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(70) : 70,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(35) : 35,
       backgroundColor: theme.colors.backgroundRaised,
       alignItems: 'center',
       justifyContent: 'center',
@@ -509,32 +509,32 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderColor: theme.colors.gold,
     },
     brandMark: {
-      width: 65,
-      height: 50,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(65) : 65,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(50) : 50,
     },
     brandCopy: {
       minWidth: 0,
-      gap: 5,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5,
       bottom: 5,
     },
     brandName: {
       color: theme.colors.cream,
-      fontSize: 22,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(22) : 22,
       fontWeight: '900',
       letterSpacing: 2.6,
     },
     brandDescriptorContainer: {
-      maxWidth: 150,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(150) : 150,
     },
     brandDescriptor: {
       color: theme.colors.gold,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: '800',
       letterSpacing: 1.8,
     },
     closeButton: {
-      width: 46,
-      height: 46,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(46) : 46,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(46) : 46,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: theme.radii.pill,
@@ -543,8 +543,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.iconSurfaceGold,
     },
     quickAction: {
-      width: 40,
-      height: 40,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(40) : 40,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(40) : 40,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: theme.radii.pill,
@@ -567,28 +567,28 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       boxShadow: '0 0 12px rgba(215, 168, 74, 0.24)',
     },
     navigationBlock: {
-      gap: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
     },
     workflowBlock: {
-      gap: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
     },
     sectionLabel: {
       color: theme.colors.textMuted,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: '900',
       letterSpacing: 2.2,
     },
     destinationList: {
-      gap: 9,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
     },
     destination: {
-      minHeight: 76,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(76) : 76,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 13,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(13) : 13,
       overflow: 'hidden',
-      paddingHorizontal: 14,
-      paddingVertical: 11,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(11) : 11,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
       borderColor: 'rgba(138, 100, 43, 0.18)',
@@ -604,8 +604,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       transform: [{ scale: 0.985 }],
     },
     destinationIcon: {
-      width: 46,
-      height: 46,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(46) : 46,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(46) : 46,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: theme.radii.medium,
@@ -620,11 +620,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     destinationCopy: {
       minWidth: 0,
       flex: 1,
-      gap: 3,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3,
     },
     destinationLabel: {
       color: theme.colors.text,
-      fontSize: 17,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : 17,
       fontWeight: '800',
     },
     destinationLabelActive: {
@@ -632,13 +632,13 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     destinationEyebrow: {
       color: theme.colors.textMuted,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '800',
       letterSpacing: 1.35,
     },
     activeIndicator: {
-      width: 7,
-      height: 7,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(7) : 7,
       borderRadius: theme.radii.pill,
       backgroundColor: theme.colors.scannerCyan,
       boxShadow: '0 0 10px rgba(88, 223, 232, 0.88)',
@@ -648,17 +648,17 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       right: 8,
       bottom: -6,
       color: 'rgba(242, 211, 138, 0.055)',
-      fontSize: 38,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(38) : 38,
       fontWeight: '900',
       letterSpacing: -2,
     },
     ebayLink: {
-      minHeight: 48,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(48) : 48,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 11,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : 11,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(8) : 8,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
       borderColor: 'rgba(242, 211, 138, 0.18)',
@@ -678,30 +678,30 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     ebayLinkText: {
       color: theme.colors.cream,
-      fontSize: 13,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : 13,
       fontWeight: '800',
     },
     ebayLinkEyebrow: {
       color: theme.colors.textMuted,
-      fontSize: 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
       fontWeight: '900',
       letterSpacing: 1.2,
     },
     systemStatus: {
-      minHeight: 54,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(54) : 54,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 10,
-      paddingHorizontal: 14,
-      paddingVertical: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : 10,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
       borderColor: 'rgba(88, 223, 232, 0.18)',
       backgroundColor: theme.colors.cardSoft,
     },
     systemStatusDot: {
-      width: 6,
-      height: 6,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : 6,
       borderRadius: theme.radii.pill,
       backgroundColor: theme.colors.scannerCyan,
       boxShadow: '0 0 10px rgba(88, 223, 232, 0.85)',
@@ -712,19 +712,19 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     systemStatusLabel: {
       color: theme.colors.textMuted,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '800',
       letterSpacing: 1.35,
     },
     systemStatusValue: {
       color: theme.colors.scannerCyan,
-      fontSize: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
       fontWeight: '900',
       letterSpacing: 1.2,
     },
     systemStatusCode: {
       color: theme.colors.goldMuted,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: '800',
       letterSpacing: 1,
     },
@@ -735,8 +735,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       elevation: 10002,
     },
     trigger: {
-      width: 48,
-      height: 48,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(48) : 48,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(48) : 48,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: theme.radii.pill,
@@ -749,8 +749,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       position: 'absolute',
       right: 5,
       bottom: 5,
-      width: 5,
-      height: 5,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(5) : 5,
       borderRadius: theme.radii.pill,
       borderWidth: 1,
       borderColor: theme.colors.background,

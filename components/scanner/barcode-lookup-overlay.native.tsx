@@ -2,11 +2,10 @@ import { Image } from "expo-image";
 import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Ionicons } from "@/components/ui/icon-symbol";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import { responsiveWidth } from '@/lib/responsiveFont';
 import type { EbayBarcodeLookupResult } from "@/services/ebaySoldCompsService";
 import { neutralizeMarketplaceBrand } from "@/services/market-copy";
 
@@ -93,13 +92,13 @@ export function BarcodeLookupOverlay({
             isSearching && styles.disabled,
           ]}
         >
-          <IconSymbol color={theme.colors.cream} name="xmark" size={20} />
+          <Ionicons color={theme.colors.cream} name="xmark" size={20} />
         </Pressable>
       </View>
 
       <View style={styles.content}>
         <View style={styles.codePill}>
-          <IconSymbol
+          <Ionicons
             color={theme.colors.scannerViolet}
             name="barcode.viewfinder"
             size={18}
@@ -129,7 +128,7 @@ export function BarcodeLookupOverlay({
               />
             ) : (
               <View style={styles.productImageFallback}>
-                <IconSymbol
+                <Ionicons
                   color={theme.colors.scannerCyan}
                   name="barcode.viewfinder"
                   size={34}
@@ -168,7 +167,7 @@ export function BarcodeLookupOverlay({
         ) : (
           <View style={styles.loadingState}>
             <View style={styles.loadingIcon}>
-              <IconSymbol
+              <Ionicons
                 color={theme.colors.goldBright}
                 name="barcode.viewfinder"
                 size={32}
@@ -194,7 +193,7 @@ export function BarcodeLookupOverlay({
             onPress={onScanAgain}
             style={({ pressed }) => [styles.primaryAction, pressed && styles.pressed]}
           >
-            <IconSymbol
+            <Ionicons
               color={theme.colors.background}
               name="barcode.viewfinder"
               size={20}

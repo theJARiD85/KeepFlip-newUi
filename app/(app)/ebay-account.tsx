@@ -14,17 +14,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { useEbayConnection } from '@/components/ebay/ebay-connection-context';
-import { EbayShoppingBagIcon } from '@/components/ebay/ebay-shopping-bag-icon';
 import { EbayListingSetupEditor } from '@/components/ebay/ebay-listing-setup-editor';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { EbayShoppingBagIcon } from '@/components/ebay/ebay-shopping-bag-icon';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
-import {
-  KEEPFLIP_ANALYTICS_EVENTS,
-  trackKeepFlipEvent,
-} from '@/services/keepflip-analytics';
 import {
   fetchEbayListingImportCandidates,
   linkImportedEbayListing,
@@ -33,11 +28,11 @@ import {
   getEbayConnectionStatus,
   getEbayOAuthEnvironment,
   getEbaySellerAccount,
-  updateEbaySellerListingDefaults,
   revokeEbayConnection,
+  updateEbaySellerListingDefaults,
   type EbayConnectionStatusResult,
-  type EbaySellerListingDefaults,
   type EbaySellerAccountResult,
+  type EbaySellerListingDefaults,
 } from '@/services/ebayConnectionService';
 import {
   createImportedEbayInventoryItem,
@@ -45,6 +40,10 @@ import {
   updateInventoryMarketplaceLink,
   type InventoryItem,
 } from '@/services/inventory-service';
+import {
+  KEEPFLIP_ANALYTICS_EVENTS,
+  trackKeepFlipEvent,
+} from '@/services/keepflip-analytics';
 import type { EbayListingImportCandidate } from '@/types/ebay-listing-import';
 
 function hapticSelection() {
@@ -450,7 +449,7 @@ export default function EbayAccountScreen() {
           <Text style={[styles.title, { fontFamily: theme.fonts.bold, fontSize: responsiveFont(26) }]}>
             {activeConnection ? 'Your seller account' : 'eBay connection'}
           </Text>
-          <Text style={[styles.subtitle, {fontFamily: theme.fonts.body, fontSize: responsiveFont(12) }]}>
+          <Text style={[styles.subtitle, { fontFamily: theme.fonts.body, fontSize: responsiveFont(12) }]}>
             {activeConnection
               ? 'Seller details and KeepFlip-published listings, with secure account controls below.'
               : 'Connect an eBay account to manage authorized account-level features.'}
@@ -467,7 +466,7 @@ export default function EbayAccountScreen() {
             <Animated.View entering={FadeInDown.duration(250).delay(70)} style={styles.accountCard}>
               <View style={styles.accountHeading}>
                 <View style={styles.statusIcon}>
-                  <IconSymbol
+                  <Ionicons
                     color={theme.colors.scannerCyan}
                     name="checkmark.shield.fill"
                     size={24}
@@ -558,7 +557,7 @@ export default function EbayAccountScreen() {
                 <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>LISTING SETUP</Text>
                 <View style={styles.settingsCard}>
                   <View style={styles.settingRow}>
-                    <IconSymbol
+                    <Ionicons
                       color={
                         listingSetup.state === 'ready'
                           ? theme.colors.scannerCyan
@@ -717,7 +716,7 @@ export default function EbayAccountScreen() {
                   {isImportingListings ? (
                     <ActivityIndicator color={theme.colors.textOnAccent} size="small" />
                   ) : (
-                    <IconSymbol color={theme.colors.textOnAccent} name="arrow.right" size={18} />
+                    <Ionicons color={theme.colors.textOnAccent} name="arrow.right" size={18} />
                   )}
                   <Text style={[styles.importButtonText, { fontSize: responsiveFont(10) }]}>
                     {isImportingListings ? 'READING EBAY' : 'IMPORT ACTIVE LISTINGS'}
@@ -793,7 +792,7 @@ export default function EbayAccountScreen() {
               <Text style={[styles.sectionEyebrow, { fontSize: responsiveFont(8) }]}>ACCESS SETTINGS</Text>
               <View style={styles.settingsCard}>
                 <View style={styles.settingRow}>
-                  <IconSymbol
+                  <Ionicons
                     color={theme.colors.scannerCyan}
                     name="lock.fill"
                     size={20}
@@ -808,7 +807,7 @@ export default function EbayAccountScreen() {
                 </View>
                 <View style={styles.settingDivider} />
                 <View style={styles.settingRow}>
-                  <IconSymbol
+                  <Ionicons
                     color={theme.colors.goldBright}
                     name="arrow.clockwise"
                     size={20}
@@ -852,7 +851,7 @@ export default function EbayAccountScreen() {
                 {isRevoking ? (
                   <ActivityIndicator color={theme.colors.danger} size="small" />
                 ) : (
-                  <IconSymbol
+                  <Ionicons
                     color={theme.colors.danger}
                     name="xmark"
                     size={20}
@@ -864,7 +863,7 @@ export default function EbayAccountScreen() {
           </>
         ) : (
           <Animated.View entering={FadeInDown.duration(240).delay(70)} style={styles.emptyCard}>
-            <IconSymbol
+            <Ionicons
               color={theme.colors.goldBright}
               name="lock.fill"
               size={25}
@@ -887,7 +886,7 @@ export default function EbayAccountScreen() {
               }}
               style={({ pressed }) => [styles.connectButton, pressed && styles.pressed]}>
               <Text style={[styles.connectButtonText, { fontSize: responsiveFont(11) }]}>CONNECT EBAY</Text>
-              <IconSymbol
+              <Ionicons
                 color={theme.colors.textOnAccent}
                 name="arrow.right"
                 size={18}
@@ -914,20 +913,20 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   const staticStyles = StyleSheet.create({
     content: {
       width: '100%',
-      maxWidth: 720,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(720) : 720,
       alignSelf: 'center',
-      gap: 20,
-      paddingHorizontal: 20,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(20) : 20,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(20) : 20,
     },
     topBar: {
-      minHeight: 44,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(44) : 44,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
     },
     backButton: {
-      width: 44,
-      height: 44,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(44) : 44,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(44) : 44,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: theme.radii.pill,
@@ -940,26 +939,26 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     topLabel: {
       color: theme.colors.textMuted,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: '900',
       letterSpacing: 1.8,
     },
     topSpacer: {
-      width: 44,
-      height: 44,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(44) : 44,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(44) : 44,
     },
     hero: {
       alignItems: 'center',
-      gap: 9,
-      paddingHorizontal: 8,
-      paddingVertical: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(8) : 8,
     },
     logoShell: {
-      width: 104,
-      height: 104,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(104) : 104,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(104) : 104,
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: 30,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(30) : 30,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
       backgroundColor: theme.colors.card,
@@ -967,28 +966,28 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     eyebrow: {
       color: theme.colors.gold,
-      fontSize: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
       fontWeight: '900',
       letterSpacing: 2,
     },
     title: {
       color: theme.colors.cream,
-      fontSize: 30,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(30) : 30,
       fontWeight: '900',
       textAlign: 'center',
     },
     subtitle: {
-      maxWidth: 540,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(540) : 540,
       color: theme.colors.textMuted,
-      fontSize: 14,
-      lineHeight: 21,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(21) : 21,
       textAlign: 'center',
     },
     loadingCard: {
-      minHeight: 82,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(82) : 82,
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
@@ -996,12 +995,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     loadingText: {
       color: theme.colors.scannerCyan,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: '900',
       letterSpacing: 1.2,
     },
     accountCard: {
-      gap: 16,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16,
       padding: 17,
       borderRadius: theme.radii.large,
       borderWidth: 1,
@@ -1012,11 +1011,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     accountHeading: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 13,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(13) : 13,
     },
     statusIcon: {
-      width: 48,
-      height: 48,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(48) : 48,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(48) : 48,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: theme.radii.medium,
@@ -1027,50 +1026,50 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     accountCopy: {
       minWidth: 0,
       flex: 1,
-      gap: 3,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3,
     },
     accountTitle: {
       color: theme.colors.cream,
-      fontSize: 17,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : 17,
       fontWeight: '900',
     },
     accountIdentity: {
       color: theme.colors.textMuted,
-      fontSize: 12,
-      lineHeight: 18,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : 18,
     },
     accountMeta: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      gap: 12,
-      paddingTop: 13,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
+      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(13) : 13,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderColor: theme.colors.accentCyanBorder,
     },
     metaLabel: {
       color: theme.colors.textMuted,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 1.2,
     },
     metaValue: {
       color: theme.colors.scannerCyan,
-      fontSize: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
       fontWeight: '900',
       letterSpacing: 1.1,
     },
     section: {
-      gap: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
     },
     sectionEyebrow: {
       color: theme.colors.goldBright,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 1.5,
     },
     settingsCard: {
-      gap: 14,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14,
       padding: 16,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
@@ -1080,26 +1079,26 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     settingRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
     },
     settingCopy: {
       minWidth: 0,
       flex: 1,
-      gap: 3,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3,
     },
     settingTitle: {
       color: theme.colors.cream,
-      fontSize: 14,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14,
       fontWeight: '800',
     },
     settingDescription: {
       color: theme.colors.textMuted,
-      fontSize: 11,
-      lineHeight: 16,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16,
     },
     connectedPill: {
       color: theme.colors.scannerCyan,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 1,
     },
@@ -1111,20 +1110,20 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.iconSurfaceGold,
     },
     sellerSummary: {
-      gap: 4,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
     },
     detailRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      gap: 14,
-      paddingTop: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14,
+      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(12) : 12,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderColor: theme.colors.divider,
     },
     detailLabel: {
       color: theme.colors.textMuted,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 1.1,
     },
@@ -1132,74 +1131,74 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       minWidth: 0,
       flexShrink: 1,
       color: theme.colors.cream,
-      fontSize: 12,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
       fontWeight: '700',
       textAlign: 'right',
     },
     profileSyncNote: {
       color: theme.colors.textMuted,
-      fontSize: 11,
-      lineHeight: 16,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16,
     },
     listingHeader: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
     },
     listingRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 12,
-      paddingTop: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
+      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(12) : 12,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderColor: theme.colors.divider,
     },
     listingCopy: {
       minWidth: 0,
       flex: 1,
-      gap: 3,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3,
     },
     listingTitle: {
       color: theme.colors.cream,
-      fontSize: 12,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
       fontWeight: '800',
-      lineHeight: 17,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : 17,
     },
     listingMeta: {
       color: theme.colors.textMuted,
-      fontSize: 10,
-      lineHeight: 14,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14,
     },
     listingPrice: {
       color: theme.colors.goldBright,
-      fontSize: 12,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
       fontWeight: '900',
     },
     importButton: {
-      minHeight: 48,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(48) : 48,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 9,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
       borderRadius: theme.radii.medium,
       backgroundColor: theme.colors.goldBright,
     },
     importButtonText: {
       color: theme.colors.textOnAccent,
-      fontSize: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
       fontWeight: '900',
       letterSpacing: 1,
     },
     importListingAction: {
       alignItems: 'flex-end',
-      gap: 7,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
     },
     importRowButton: {
-      minWidth: 72,
-      minHeight: 28,
+      minWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(72) : 72,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(28) : 28,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: 9,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
       borderRadius: theme.radii.pill,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
@@ -1211,12 +1210,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     importRowButtonText: {
       color: theme.colors.scannerCyan,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 0.8,
     },
     loadMoreButton: {
-      minHeight: 42,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(42) : 42,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: theme.radii.medium,
@@ -1226,24 +1225,24 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     loadMoreText: {
       color: theme.colors.goldBright,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: '900',
       letterSpacing: 1,
     },
     importCoverageNote: {
       color: theme.colors.textMuted,
-      fontSize: 10,
-      lineHeight: 15,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15,
     },
     actions: {
-      gap: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
     },
     secondaryButton: {
-      minHeight: 52,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(52) : 52,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
@@ -1251,32 +1250,32 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     secondaryButtonText: {
       color: theme.colors.goldBright,
-      fontSize: 11,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11,
       fontWeight: '900',
       letterSpacing: 1.1,
     },
     reconnectButton: {
-      minHeight: 56,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(56) : 56,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 11,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : 11,
       borderRadius: theme.radii.medium,
       backgroundColor: theme.colors.goldBright,
       boxShadow: '0 12px 28px rgba(215, 168, 74, 0.16)',
     },
     reconnectButtonText: {
       color: theme.colors.textOnAccent,
-      fontSize: 12,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
       fontWeight: '900',
       letterSpacing: 1.1,
     },
     revokeButton: {
-      minHeight: 52,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(52) : 52,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
       borderColor: theme.colors.danger,
@@ -1284,13 +1283,13 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     revokeButtonText: {
       color: theme.colors.danger,
-      fontSize: 11,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11,
       fontWeight: '900',
       letterSpacing: 1.05,
     },
     emptyCard: {
       alignItems: 'stretch',
-      gap: 14,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14,
       padding: 17,
       borderRadius: theme.radii.large,
       borderWidth: 1,
@@ -1298,30 +1297,30 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.surfaceOverlay,
     },
     emptyCopy: {
-      gap: 4,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
     },
     emptyTitle: {
       color: theme.colors.cream,
-      fontSize: 17,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : 17,
       fontWeight: '900',
     },
     emptyBody: {
       color: theme.colors.textMuted,
-      fontSize: 12,
-      lineHeight: 18,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : 18,
     },
     connectButton: {
-      minHeight: 50,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(50) : 50,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       borderRadius: theme.radii.medium,
       backgroundColor: theme.colors.goldBright,
     },
     connectButtonText: {
       color: theme.colors.textOnAccent,
-      fontSize: 11,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11,
       fontWeight: '900',
       letterSpacing: 1.05,
     },
@@ -1340,8 +1339,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     messageText: {
       color: theme.colors.textMuted,
-      fontSize: 12,
-      lineHeight: 18,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : 18,
       textAlign: 'center',
     },
     buttonDisabled: {

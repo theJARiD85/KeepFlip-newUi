@@ -25,7 +25,7 @@ import {
   ValueRadarOverlay,
   type ValueRadarMarker,
 } from "@/components/scanner/value-radar.native";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Ionicons } from "@/components/ui/icon-symbol";
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
@@ -270,7 +270,7 @@ function ScannerStagePreview({
               <Text style={styles.analysisEyebrow}>KEEPFLIP INTELLIGENCE</Text>
               <Text style={styles.analysisTitle}>Analyze item</Text>
             </View>
-            <IconSymbol
+            <Ionicons
               color={theme.colors.scannerCyan}
               name="chevron.right"
               size={23}
@@ -340,7 +340,7 @@ function InventoryStagePreview() {
     <View style={styles.inventoryStage}>
       <View style={styles.savedSignal}>
         <View style={styles.savedSignalIcon}>
-          <IconSymbol
+          <Ionicons
             color={theme.colors.scannerCyan}
             name="checkmark.shield.fill"
             size={22}
@@ -554,7 +554,7 @@ export function ScanInventoryWalkthroughScreen() {
               ) : (
                 <>
                   <Text style={styles.primaryButtonText}>START SCANNING</Text>
-                  <IconSymbol
+                  <Ionicons
                     color={theme.colors.backgroundDeep}
                     name="viewfinder"
                     size={19}
@@ -573,7 +573,7 @@ export function ScanInventoryWalkthroughScreen() {
               ]}
             >
               <Text style={styles.primaryButtonText}>NEXT STEP</Text>
-              <IconSymbol
+              <Ionicons
                 color={theme.colors.backgroundDeep}
                 name="arrow.right"
                 size={19}

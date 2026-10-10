@@ -32,6 +32,7 @@ export function AnalysisTerminal({
   detail,
   stage,
 }: AnalysisTerminalProps) {
+  const responsiveLayout2 = useResponsiveLayout();
   const styles = useResponsiveStyles(createResponsiveStyles);
   const {
     responsiveFont
@@ -94,7 +95,7 @@ export function AnalysisTerminal({
       {detail ? (
         <Text
           numberOfLines={2}
-          style={[styles.detail, { fontSize: responsiveFont(8), lineHeight: 12 }]}
+          style={[styles.detail, { fontSize: responsiveFont(8), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(12) : 12 }]}
         >
           {detail}
         </Text>
@@ -116,15 +117,15 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   const staticStyles = StyleSheet.create({
     terminal: {
       width: "100%",
-      maxWidth: 390,
-      minHeight: 116,
-      paddingHorizontal: 15,
-      paddingTop: 12,
-      paddingBottom: 11,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(390) : 390,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(116) : 116,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(15) : 15,
+      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(12) : 12,
+      paddingBottom: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(11) : 11,
       overflow: "hidden",
       borderWidth: 1,
       borderColor: "rgba(88, 223, 232, 0.34)",
-      borderRadius: 8,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
       backgroundColor: "rgba(1, 6, 10, 0.88)",
       boxShadow:
         "0 12px 28px rgba(0, 0, 0, 0.62), 0 0 22px rgba(88, 223, 232, 0.11)",
@@ -133,13 +134,13 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     header: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 7,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
     },
 
     signal: {
-      width: 6,
-      height: 6,
-      borderRadius: 999,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : 6,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(999) : 999,
       backgroundColor: theme.colors.scannerCyan,
       boxShadow:
         "0 0 10px rgba(88, 223, 232, 0.92)",
@@ -152,7 +153,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
         Platform.OS === "ios"
           ? "Courier New"
           : "monospace",
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: "800",
       letterSpacing: 1.05,
     },
@@ -163,24 +164,24 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
         Platform.OS === "ios"
           ? "Courier New"
           : "monospace",
-      fontSize: 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
       fontWeight: "900",
       letterSpacing: 1,
     },
 
     divider: {
       height: StyleSheet.hairlineWidth,
-      marginTop: 9,
-      marginBottom: 13,
+      marginTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(9) : 9,
+      marginBottom: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(13) : 13,
       backgroundColor:
         "rgba(88, 223, 232, 0.18)",
     },
 
     commandRow: {
-      minHeight: 25,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(25) : 25,
       flexDirection: "row",
       alignItems: "center",
-      gap: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
     },
 
     prompt: {
@@ -189,7 +190,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
         Platform.OS === "ios"
           ? "Courier New"
           : "monospace",
-      fontSize: 13,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : 13,
       fontWeight: "900",
       textShadowColor:
         "rgba(88, 223, 232, 0.8)",
@@ -207,7 +208,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
         Platform.OS === "ios"
           ? "Courier New"
           : "monospace",
-      fontSize: 11,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11,
       fontWeight: "800",
       letterSpacing: 0.7,
     },
@@ -217,25 +218,25 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
 
     detail: {
-      marginTop: 6,
-      paddingLeft: 19,
+      marginTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : 6,
+      paddingLeft: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(19) : 19,
       color: "rgba(218, 238, 241, 0.56)",
       fontFamily:
         Platform.OS === "ios"
           ? "Courier New"
           : "monospace",
-      fontSize: 8,
-      lineHeight: 12,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
       letterSpacing: 0.35,
     },
 
     footer: {
-      minHeight: 17,
-      marginTop: 10,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(17) : 17,
+      marginTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : 10,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "flex-end",
-      gap: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
     },
 
     footerText: {
@@ -244,14 +245,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
         Platform.OS === "ios"
           ? "Courier New"
           : "monospace",
-      fontSize: 6,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(6) : 6,
       fontWeight: "800",
       letterSpacing: 0.9,
     },
 
     cursor: {
-      width: 6,
-      height: 10,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : 10,
       backgroundColor:
         "rgba(88, 223, 232, 0.72)",
       boxShadow:

@@ -18,6 +18,7 @@ import {
 } from '@/services/crosslisting-extension-bridge.web';
 import { confirmMarketplaceListing, parseSavedListingDraft } from '@/services/listing-draft-service';
 import { getMarketplaceSelections } from '@/services/marketplace-selections-service';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 const MARKETPLACES = CROSSLISTING_RUN_MARKETPLACES;
 
@@ -27,6 +28,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onListingConfirmed, onBeforeStart, initialSelections }: CrosslistingRunProps) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const confirmed = useMemo(() => parseSavedListingDraft(item.listingJson)?.confirmedMarketplaces ?? {}, [item.listingJson]);
   const [selected, setSelected] = useState<CrosslistingMarketplace[]>(() => MARKETPLACES.filter((value) => initialSelections?.includes(value) && !confirmed[value]));
   const [extensionReady, setExtensionReady] = useState<boolean | null>(null);
@@ -178,32 +180,32 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
     }
   }
 
-  return <View style={styles.card}>
-    <View style={styles.topline}><View style={styles.heading}><Text style={styles.eyebrow}>DESKTOP LISTING RUN</Text><Text style={styles.title}>List where you sell</Text></View><Text style={styles.count}>{available.length} SELECTED</Text></View>
-    <Text style={styles.body}>KeepFlip opens your marketplace tabs, fills the saved draft, and sends item photos to each upload control. Check each preview before posting.</Text>
-    {extensionReady === false ? <Text accessibilityRole="alert" style={styles.hint}>Load the KeepFlip Assistant extension in Chrome, then refresh this page.</Text> : null}
-    <View style={styles.choices}>{MARKETPLACES.map((marketplace) => {
+  return <View style={responsiveStyles.card}>
+    <View style={responsiveStyles.topline}><View style={responsiveStyles.heading}><Text style={responsiveStyles.eyebrow}>DESKTOP LISTING RUN</Text><Text style={responsiveStyles.title}>List where you sell</Text></View><Text style={responsiveStyles.count}>{available.length} SELECTED</Text></View>
+    <Text style={responsiveStyles.body}>KeepFlip opens your marketplace tabs, fills the saved draft, and sends item photos to each upload control. Check each preview before posting.</Text>
+    {extensionReady === false ? <Text accessibilityRole="alert" style={responsiveStyles.hint}>Load the KeepFlip Assistant extension in Chrome, then refresh this page.</Text> : null}
+    <View style={responsiveStyles.choices}>{MARKETPLACES.map((marketplace) => {
       const listed = Boolean(confirmed[marketplace]) || recorded.has(marketplace);
       const checked = selected.includes(marketplace) || listed;
-      return <Pressable key={marketplace} accessibilityRole="checkbox" accessibilityState={{ checked, disabled: listed || jobs.length > 0 }} disabled={listed || jobs.length > 0} onPress={() => toggle(marketplace)} style={[styles.choice, checked && styles.choiceSelected]}><Text style={[styles.choiceText, checked && styles.choiceTextSelected]}>{listed ? '✓' : checked ? '✓' : '+'} {CROSSLISTING_DESTINATIONS[marketplace].label}</Text></Pressable>;
+      return <Pressable key={marketplace} accessibilityRole="checkbox" accessibilityState={{ checked, disabled: listed || jobs.length > 0 }} disabled={listed || jobs.length > 0} onPress={() => toggle(marketplace)} style={[responsiveStyles.choice, checked && responsiveStyles.choiceSelected]}><Text style={[responsiveStyles.choiceText, checked && responsiveStyles.choiceTextSelected]}>{listed ? '✓' : checked ? '✓' : '+'} {CROSSLISTING_DESTINATIONS[marketplace].label}</Text></Pressable>;
     })}</View>
-    {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
-    {notice ? <Text style={styles.notice}>{notice}</Text> : null}
-    {!jobs.length ? <Pressable accessibilityRole="button" accessibilityState={{ disabled: !available.length || busy }} disabled={!available.length || busy} onPress={() => { void start(); }} style={[styles.primary, (!available.length || busy) && styles.disabled]}><Text style={styles.primaryText}>{busy ? 'Preparing your run…' : 'Start listing →'}</Text></Pressable> :
-      <View style={styles.jobs}>{jobs.map((job) => {
+    {error ? <Text accessibilityRole="alert" style={responsiveStyles.error}>{error}</Text> : null}
+    {notice ? <Text style={responsiveStyles.notice}>{notice}</Text> : null}
+    {!jobs.length ? <Pressable accessibilityRole="button" accessibilityState={{ disabled: !available.length || busy }} disabled={!available.length || busy} onPress={() => { void start(); }} style={[responsiveStyles.primary, (!available.length || busy) && responsiveStyles.disabled]}><Text style={responsiveStyles.primaryText}>{busy ? 'Preparing your run…' : 'Start listing →'}</Text></Pressable> :
+      <View style={responsiveStyles.jobs}>{jobs.map((job) => {
         const listed = Boolean(confirmed[job.marketplace]) || recorded.has(job.marketplace);
         const details = job.details as ExtensionStatus | null | undefined;
-        return <View key={job.marketplace} style={styles.job}>
-          <View style={styles.jobTop}><Text style={styles.jobName}>{CROSSLISTING_DESTINATIONS[job.marketplace].label}</Text><Text style={styles.jobStatus}>{listed ? 'LISTED' : job.status === 'confirmed' ? 'POST DETECTED' : STATUS_LABELS[job.status] ?? 'WORKING'}</Text></View>
-          {details?.message ? <Text style={styles.jobDetail}>{details.message}</Text> : null}
-          {details?.missingFields?.length ? <Text style={styles.jobDetail}>Check: {details.missingFields.join(', ')}</Text> : null}
-          {details?.uploadedPhotoCount ? <Text style={styles.jobDetail}>{details.uploadedPhotoCount} photo{details.uploadedPhotoCount === 1 ? '' : 's'} handed to the upload control. Check thumbnails in the marketplace tab.</Text> : null}
-          {!listed ? <View style={styles.jobActions}>
-            <Pressable accessibilityRole="button" onPress={() => { void action('LISTING_FOCUS', job.marketplace); }} style={styles.smallButton}><Text style={styles.smallText}>Open tab</Text></Pressable>
-            {job.status === 'login_required' ? <Pressable accessibilityRole="button" onPress={() => { void action('LISTING_RESUME', job.marketplace); }} style={styles.smallButton}><Text style={styles.smallText}>Resume form</Text></Pressable> : null}
-            {job.status === 'needs_review' ? <Pressable accessibilityRole="button" onPress={() => { void action('LISTING_RETRY', job.marketplace); }} style={styles.smallButton}><Text style={styles.smallText}>Try filling again</Text></Pressable> : null}
-            {job.status === 'filled' ? <Pressable accessibilityRole="button" onPress={() => { void action('LISTING_SUBMIT', job.marketplace); }} style={styles.postButton}><Text style={styles.postText}>Post listing</Text></Pressable> : null}
-            {job.status === 'submit_clicked' || job.status === 'needs_review' || job.status === 'confirmed' ? <Pressable accessibilityRole="button" onPress={() => { void markListed(job.marketplace); }} style={styles.smallButton}><Text style={styles.smallText}>{job.status === 'confirmed' ? 'Save as listed' : 'I see it live'}</Text></Pressable> : null}
+        return <View key={job.marketplace} style={responsiveStyles.job}>
+          <View style={responsiveStyles.jobTop}><Text style={responsiveStyles.jobName}>{CROSSLISTING_DESTINATIONS[job.marketplace].label}</Text><Text style={responsiveStyles.jobStatus}>{listed ? 'LISTED' : job.status === 'confirmed' ? 'POST DETECTED' : STATUS_LABELS[job.status] ?? 'WORKING'}</Text></View>
+          {details?.message ? <Text style={responsiveStyles.jobDetail}>{details.message}</Text> : null}
+          {details?.missingFields?.length ? <Text style={responsiveStyles.jobDetail}>Check: {details.missingFields.join(', ')}</Text> : null}
+          {details?.uploadedPhotoCount ? <Text style={responsiveStyles.jobDetail}>{details.uploadedPhotoCount} photo{details.uploadedPhotoCount === 1 ? '' : 's'} handed to the upload control. Check thumbnails in the marketplace tab.</Text> : null}
+          {!listed ? <View style={responsiveStyles.jobActions}>
+            <Pressable accessibilityRole="button" onPress={() => { void action('LISTING_FOCUS', job.marketplace); }} style={responsiveStyles.smallButton}><Text style={responsiveStyles.smallText}>Open tab</Text></Pressable>
+            {job.status === 'login_required' ? <Pressable accessibilityRole="button" onPress={() => { void action('LISTING_RESUME', job.marketplace); }} style={responsiveStyles.smallButton}><Text style={responsiveStyles.smallText}>Resume form</Text></Pressable> : null}
+            {job.status === 'needs_review' ? <Pressable accessibilityRole="button" onPress={() => { void action('LISTING_RETRY', job.marketplace); }} style={responsiveStyles.smallButton}><Text style={responsiveStyles.smallText}>Try filling again</Text></Pressable> : null}
+            {job.status === 'filled' && job.marketplace !== 'facebookMarketplace' ? <Pressable accessibilityRole="button" onPress={() => { void action('LISTING_SUBMIT', job.marketplace); }} style={responsiveStyles.postButton}><Text style={responsiveStyles.postText}>Post listing</Text></Pressable> : null}
+            {job.status === 'submit_clicked' || job.status === 'needs_review' || job.status === 'confirmed' ? <Pressable accessibilityRole="button" onPress={() => { void markListed(job.marketplace); }} style={responsiveStyles.smallButton}><Text style={responsiveStyles.smallText}>{job.status === 'confirmed' ? 'Save as listed' : 'I see it live'}</Text></Pressable> : null}
           </View> : null}
         </View>;
       })}</View>}
@@ -241,3 +243,127 @@ const styles = StyleSheet.create({
   postButton: { minHeight: 34, justifyContent: 'center', borderRadius: 6, backgroundColor: theme.colors.scannerCyan, paddingHorizontal: 10 },
   postText: { color: theme.colors.textOnAccent, fontSize: 10, fontWeight: '900' },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    card: {
+      ...styles["card"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+    },
+    topline: {
+      ...styles["topline"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+    },
+    heading: {
+      ...styles["heading"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(4) : 4,
+    },
+    eyebrow: {
+      ...styles["eyebrow"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(9) : 9,
+    },
+    title: {
+      ...styles["title"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(17) : 17,
+    },
+    count: {
+      ...styles["count"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(9) : 9,
+    },
+    body: {
+      ...styles["body"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : 18,
+    },
+    hint: {
+      ...styles["hint"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : 18,
+    },
+    choices: {
+      ...styles["choices"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+    },
+    choice: {
+      ...styles["choice"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(38) : 38,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+    },
+    choiceText: {
+      ...styles["choiceText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+    },
+    error: {
+      ...styles["error"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : 18,
+    },
+    notice: {
+      ...styles["notice"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : 18,
+    },
+    primary: {
+      ...styles["primary"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(48) : 48,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+    },
+    primaryText: {
+      ...styles["primaryText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
+    },
+    jobs: {
+      ...styles["jobs"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
+    },
+    job: {
+      ...styles["job"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+    },
+    jobTop: {
+      ...styles["jobTop"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+    },
+    jobName: {
+      ...styles["jobName"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+    jobStatus: {
+      ...styles["jobStatus"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(9) : 9,
+    },
+    jobDetail: {
+      ...styles["jobDetail"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(16) : 16,
+    },
+    jobActions: {
+      ...styles["jobActions"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+    },
+    smallButton: {
+      ...styles["smallButton"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(34) : 34,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(6) : 6,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+    },
+    smallText: {
+      ...styles["smallText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
+    },
+    postButton: {
+      ...styles["postButton"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(34) : 34,
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(6) : 6,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+    },
+    postText: {
+      ...styles["postText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
+    },
+  });
+}

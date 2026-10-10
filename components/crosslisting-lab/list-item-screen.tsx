@@ -21,6 +21,7 @@ import type {
 } from '@/components/crosslisting-lab/types';
 import { channels } from '@/components/crosslisting-lab/types';
 import { CROSSLISTING_PHOTOS_BUCKET_ID, deleteProductPhoto, getProduct, listConnections, listListingJobs, listProductPhotos, queueListing, uploadProductPhoto } from '@/services/crosslisting-lab-api';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 const requiredFields: Record<MarketplaceId, string[]> = {
   ebay: ['categoryId', 'merchantLocationKey', 'fulfillmentPolicyId', 'paymentPolicyId', 'returnPolicyId'],
@@ -60,6 +61,7 @@ function stringFields(value: Record<string, unknown>) {
 }
 
 export function ListItemScreen({ productId }: { productId: string }) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const router = useRouter();
   const { user } = useKeepFlipAuth();
   const [product, setProduct] = useState<InventoryProduct | null>(null);
@@ -227,62 +229,62 @@ export function ListItemScreen({ productId }: { productId: string }) {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <View style={styles.content}>
-          <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.backButton}><Text style={styles.backText}>← Master catalog</Text></Pressable>
-          <Text style={styles.eyebrow}>KEEPFLIP / LISTING WORKFLOW</Text>
-          <Text style={styles.title}>Prepare a listing</Text>
-          <Text style={styles.subtitle}>Use this saved item and its photos to prepare a marketplace draft. KeepFlip leaves the final review and post with you.</Text>
+    <SafeAreaView style={responsiveStyles.safeArea}>
+      <ScrollView contentContainerStyle={responsiveStyles.scroll} keyboardShouldPersistTaps="handled">
+        <View style={responsiveStyles.content}>
+          <Pressable accessibilityRole="button" onPress={() => router.back()} style={responsiveStyles.backButton}><Text style={responsiveStyles.backText}>← Master catalog</Text></Pressable>
+          <Text style={responsiveStyles.eyebrow}>KEEPFLIP / LISTING WORKFLOW</Text>
+          <Text style={responsiveStyles.title}>Prepare a listing</Text>
+          <Text style={responsiveStyles.subtitle}>Use this saved item and its photos to prepare a marketplace draft. KeepFlip leaves the final review and post with you.</Text>
 
-          {loading && !product ? <View style={styles.card}><ActivityIndicator color={brand.colors.goldBright} /><Text style={styles.body}>Loading item…</Text></View> : null}
-          {product ? <View style={styles.itemCard}><Text style={styles.itemTitle}>{product.title}</Text><Text style={styles.itemPrice}>Target ${product.targetPrice.toFixed(2)}</Text></View> : null}
-          {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
-          {success ? <Text accessibilityRole="alert" style={styles.success}>{success}</Text> : null}
+          {loading && !product ? <View style={responsiveStyles.card}><ActivityIndicator color={brand.colors.goldBright} /><Text style={responsiveStyles.body}>Loading item…</Text></View> : null}
+          {product ? <View style={responsiveStyles.itemCard}><Text style={responsiveStyles.itemTitle}>{product.title}</Text><Text style={responsiveStyles.itemPrice}>Target ${product.targetPrice.toFixed(2)}</Text></View> : null}
+          {error ? <Text accessibilityRole="alert" style={responsiveStyles.error}>{error}</Text> : null}
+          {success ? <Text accessibilityRole="alert" style={responsiveStyles.success}>{success}</Text> : null}
 
-          {product ? <View style={styles.card}>
-            <Text style={styles.cardTitle}>Item photos</Text>
-            <Text style={styles.body}>Photos stay in your private crosslisting bucket. Add at least one before preparing the listing.</Text>
-            <View style={styles.photoGrid}>{photos.map((photo) => <View key={photo.id} style={styles.photoTile}>
-              <Image source={{ uri: photo.viewUrl }} cachePolicy="disk" contentFit="cover" style={styles.photo} />
-              <Pressable accessibilityRole="button" accessibilityLabel={`Remove photo ${photo.position + 1}`} disabled={uploadingPhoto} onPress={() => { void removePhoto(photo.id); }} style={styles.removePhoto}><Text style={styles.removePhotoText}>Remove</Text></Pressable>
+          {product ? <View style={responsiveStyles.card}>
+            <Text style={responsiveStyles.cardTitle}>Item photos</Text>
+            <Text style={responsiveStyles.body}>Photos stay in your private crosslisting bucket. Add at least one before preparing the listing.</Text>
+            <View style={responsiveStyles.photoGrid}>{photos.map((photo) => <View key={photo.id} style={responsiveStyles.photoTile}>
+              <Image source={{ uri: photo.viewUrl }} cachePolicy="disk" contentFit="cover" style={responsiveStyles.photo} />
+              <Pressable accessibilityRole="button" accessibilityLabel={`Remove photo ${photo.position + 1}`} disabled={uploadingPhoto} onPress={() => { void removePhoto(photo.id); }} style={responsiveStyles.removePhoto}><Text style={responsiveStyles.removePhotoText}>Remove</Text></Pressable>
             </View>)}</View>
-            <Pressable accessibilityRole="button" disabled={uploadingPhoto} onPress={() => { void addPhoto(); }} style={styles.linkButton}><Text style={styles.linkText}>{uploadingPhoto ? 'Uploading photo…' : '+ Add photo'}</Text></Pressable>
+            <Pressable accessibilityRole="button" disabled={uploadingPhoto} onPress={() => { void addPhoto(); }} style={responsiveStyles.linkButton}><Text style={responsiveStyles.linkText}>{uploadingPhoto ? 'Uploading photo…' : '+ Add photo'}</Text></Pressable>
           </View> : null}
 
-          {product ? <View style={styles.card}>
-            <Text style={styles.cardTitle}>Marketplace</Text>
-            <Text style={styles.body}>Choose a marketplace. KeepFlip opens a visible listing page for browser marketplaces; eBay and Shopify use their connected APIs.</Text>
-            <View style={styles.channelRow}>{channels.map((channel) => (
-              <Pressable key={channel.id} accessibilityRole="radio" accessibilityState={{ checked: platform === channel.id }} onPress={() => { setPlatform(channel.id); setFieldsJson('{}'); pendingKey.current = null; }} style={[styles.channelChip, platform === channel.id && styles.channelChipActive]}>
-                <Text style={[styles.channelText, platform === channel.id && styles.channelTextActive]}>{channel.name}</Text>
+          {product ? <View style={responsiveStyles.card}>
+            <Text style={responsiveStyles.cardTitle}>Marketplace</Text>
+            <Text style={responsiveStyles.body}>Choose a marketplace. KeepFlip opens a visible listing page for browser marketplaces; eBay and Shopify use their connected APIs.</Text>
+            <View style={responsiveStyles.channelRow}>{channels.map((channel) => (
+              <Pressable key={channel.id} accessibilityRole="radio" accessibilityState={{ checked: platform === channel.id }} onPress={() => { setPlatform(channel.id); setFieldsJson('{}'); pendingKey.current = null; }} style={[responsiveStyles.channelChip, platform === channel.id && responsiveStyles.channelChipActive]}>
+                <Text style={[responsiveStyles.channelText, platform === channel.id && responsiveStyles.channelTextActive]}>{channel.name}</Text>
               </Pressable>
             ))}</View>
             {platform === 'ebay' || platform === 'shopify' ? (
-              <Pressable accessibilityRole="button" onPress={() => router.push('/crosslisting/connections' as Href)} style={styles.linkButton}><Text style={styles.linkText}>Open Connections →</Text></Pressable>
+              <Pressable accessibilityRole="button" onPress={() => router.push('/crosslisting/connections' as Href)} style={responsiveStyles.linkButton}><Text style={responsiveStyles.linkText}>Open Connections →</Text></Pressable>
             ) : null}
 
             {platform ? <>
-              <Text style={styles.label}>LISTING PRICE</Text>
-              <TextInput accessibilityLabel="Listing price in dollars" keyboardType="decimal-pad" onChangeText={(value) => { setPrice(value); pendingKey.current = null; }} placeholder="0.00" placeholderTextColor={brand.colors.textMuted} style={styles.input} value={price} />
-              <Text style={styles.label}>MARKETPLACE FIELDS / JSON</Text>
-              <Text style={styles.hint}>Required keys: {requiredFields[platform].join(', ')}. Use IDs and values from your seller account.</Text>
-              <TextInput accessibilityLabel="Marketplace fields JSON" autoCapitalize="none" autoCorrect={false} multiline onChangeText={(value) => { setFieldsJson(value); pendingKey.current = null; }} placeholder="{}" placeholderTextColor={brand.colors.textMuted} style={[styles.input, styles.jsonInput]} textAlignVertical="top" value={fieldsJson} />
-              <Text style={styles.hint}>{toWebViewMarketplace(platform) ? 'KeepFlip will open the marketplace here, fill supported fields, and try to attach saved photos. Review the draft and post it on the marketplace.' : 'Submitting queues an eBay or Shopify listing through the connected API account.'}</Text>
-              <Pressable accessibilityRole="button" accessibilityState={{ disabled: saving }} disabled={saving} onPress={() => { void submit(); }} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed, saving && styles.disabled]}>
+              <Text style={responsiveStyles.label}>LISTING PRICE</Text>
+              <TextInput accessibilityLabel="Listing price in dollars" keyboardType="decimal-pad" onChangeText={(value) => { setPrice(value); pendingKey.current = null; }} placeholder="0.00" placeholderTextColor={brand.colors.textMuted} style={responsiveStyles.input} value={price} />
+              <Text style={responsiveStyles.label}>MARKETPLACE FIELDS / JSON</Text>
+              <Text style={responsiveStyles.hint}>Required keys: {requiredFields[platform].join(', ')}. Use IDs and values from your seller account.</Text>
+              <TextInput accessibilityLabel="Marketplace fields JSON" autoCapitalize="none" autoCorrect={false} multiline onChangeText={(value) => { setFieldsJson(value); pendingKey.current = null; }} placeholder="{}" placeholderTextColor={brand.colors.textMuted} style={[responsiveStyles.input, responsiveStyles.jsonInput]} textAlignVertical="top" value={fieldsJson} />
+              <Text style={responsiveStyles.hint}>{toWebViewMarketplace(platform) ? 'KeepFlip will open the marketplace here, fill supported fields, and try to attach saved photos. Review the draft and post it on the marketplace.' : 'Submitting queues an eBay or Shopify listing through the connected API account.'}</Text>
+              <Pressable accessibilityRole="button" accessibilityState={{ disabled: saving }} disabled={saving} onPress={() => { void submit(); }} style={({ pressed }) => [responsiveStyles.primaryButton, pressed && responsiveStyles.pressed, saving && responsiveStyles.disabled]}>
                 {saving ? <ActivityIndicator color={brand.colors.background} size="small" /> : null}
-                <Text style={styles.primaryText}>{saving ? 'Queueing…' : toWebViewMarketplace(platform) ? 'Open marketplace draft' : 'Queue API listing'}</Text>
+                <Text style={responsiveStyles.primaryText}>{saving ? 'Queueing…' : toWebViewMarketplace(platform) ? 'Open marketplace draft' : 'Queue API listing'}</Text>
               </Pressable>
             </> : null}
           </View> : null}
 
-          {product ? <View style={styles.card}>
-            <View style={styles.activityHeader}><Text style={styles.cardTitle}>Listing activity</Text><Pressable accessibilityRole="button" onPress={() => { void refresh(); }}><Text style={styles.linkText}>Refresh</Text></Pressable></View>
-            {jobs.length ? jobs.map((job) => <View key={job.id} style={styles.jobRow}>
-              <Text style={styles.jobName}>{channels.find((channel) => channel.id === job.marketplace)?.name ?? job.marketplace}</Text>
-              <Text style={styles.jobStatus}>{job.status.replaceAll('_', ' ')}</Text>
-              {job.lastError ? <Text style={styles.jobError}>{job.lastError}</Text> : null}
-            </View>) : <Text style={styles.body}>No listing jobs for this item yet.</Text>}
+          {product ? <View style={responsiveStyles.card}>
+            <View style={responsiveStyles.activityHeader}><Text style={responsiveStyles.cardTitle}>Listing activity</Text><Pressable accessibilityRole="button" onPress={() => { void refresh(); }}><Text style={responsiveStyles.linkText}>Refresh</Text></Pressable></View>
+            {jobs.length ? jobs.map((job) => <View key={job.id} style={responsiveStyles.jobRow}>
+              <Text style={responsiveStyles.jobName}>{channels.find((channel) => channel.id === job.marketplace)?.name ?? job.marketplace}</Text>
+              <Text style={responsiveStyles.jobStatus}>{job.status.replaceAll('_', ' ')}</Text>
+              {job.lastError ? <Text style={responsiveStyles.jobError}>{job.lastError}</Text> : null}
+            </View>) : <Text style={responsiveStyles.body}>No listing jobs for this item yet.</Text>}
           </View> : null}
         </View>
       </ScrollView>
@@ -349,3 +351,165 @@ const styles = StyleSheet.create({
   jobStatus: { color: brand.colors.cyan, fontSize: 11, fontWeight: '800', textTransform: 'capitalize' },
   jobError: { color: brand.colors.danger, fontSize: 11, lineHeight: 17 },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    scroll: {
+      ...styles["scroll"],
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(45) : 45,
+    },
+    content: {
+      ...styles["content"],
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(760) : 760,
+      gap: layout.isWeb ? layout.webResponsiveWidth(13) : 13,
+    },
+    backButton: {
+      ...styles["backButton"],
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(10) : 10,
+    },
+    backText: {
+      ...styles["backText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+    eyebrow: {
+      ...styles["eyebrow"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(9) : 9,
+    },
+    title: {
+      ...styles["title"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(29) : 29,
+    },
+    subtitle: {
+      ...styles["subtitle"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(19) : 19,
+      marginBottom: layout.isWeb ? layout.webResponsiveHeight(4) : 4,
+    },
+    itemCard: {
+      ...styles["itemCard"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(4) : 4,
+    },
+    itemTitle: {
+      ...styles["itemTitle"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(16) : 16,
+    },
+    itemPrice: {
+      ...styles["itemPrice"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+    photoGrid: {
+      ...styles["photoGrid"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+    },
+    photoTile: {
+      ...styles["photoTile"],
+      width: layout.isWeb ? layout.webResponsiveWidth(102) : 102,
+      gap: layout.isWeb ? layout.webResponsiveWidth(4) : 4,
+    },
+    photo: {
+      ...styles["photo"],
+      width: layout.isWeb ? layout.webResponsiveWidth(102) : 102,
+      height: layout.isWeb ? layout.webResponsiveHeight(102) : 102,
+    },
+    removePhoto: {
+      ...styles["removePhoto"],
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(4) : 4,
+    },
+    removePhotoText: {
+      ...styles["removePhotoText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
+    },
+    card: {
+      ...styles["card"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(11) : 11,
+    },
+    cardTitle: {
+      ...styles["cardTitle"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(17) : 17,
+    },
+    body: {
+      ...styles["body"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : 18,
+    },
+    channelRow: {
+      ...styles["channelRow"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+    },
+    channelChip: {
+      ...styles["channelChip"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(38) : 38,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+    },
+    channelText: {
+      ...styles["channelText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+    },
+    linkButton: {
+      ...styles["linkButton"],
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(5) : 5,
+    },
+    linkText: {
+      ...styles["linkText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+    label: {
+      ...styles["label"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(9) : 9,
+    },
+    hint: {
+      ...styles["hint"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(17) : 17,
+    },
+    input: {
+      ...styles["input"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(48) : 48,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(10) : 10,
+    },
+    jsonInput: {
+      ...styles["jsonInput"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(120) : 120,
+    },
+    primaryButton: {
+      ...styles["primaryButton"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(48) : 48,
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+    },
+    primaryText: {
+      ...styles["primaryText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+    },
+    error: {
+      ...styles["error"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : 18,
+    },
+    success: {
+      ...styles["success"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : 18,
+    },
+    jobRow: {
+      ...styles["jobRow"],
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(10) : 10,
+      gap: layout.isWeb ? layout.webResponsiveWidth(3) : 3,
+    },
+    jobName: {
+      ...styles["jobName"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
+    },
+    jobStatus: {
+      ...styles["jobStatus"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+    },
+    jobError: {
+      ...styles["jobError"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(17) : 17,
+    },
+  });
+}

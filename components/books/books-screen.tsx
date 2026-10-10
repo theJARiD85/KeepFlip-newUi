@@ -16,20 +16,15 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
+import { PlaidBankConnectionCard } from '@/components/books/plaid-bank-connection-card';
 import { useKeepFlipFeedbackNudge } from '@/components/feedback/keepflip-feedback-nudge';
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
-import { PlaidBankConnectionCard } from '@/components/books/plaid-bank-connection-card';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import {
   KeepFlipText as Text,
   KeepFlipTextInput as TextInput,
 } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import {
-  KEEPFLIP_ANALYTICS_EVENTS,
-  trackKeepFlipEvent,
-} from '@/services/keepflip-analytics';
 import {
   useResponsiveLayout,
   useResponsiveStyles,
@@ -38,6 +33,10 @@ import {
   listInventoryItems,
   type InventoryItem,
 } from '@/services/inventory-service';
+import {
+  KEEPFLIP_ANALYTICS_EVENTS,
+  trackKeepFlipEvent,
+} from '@/services/keepflip-analytics';
 import {
   createBookkeepingIdempotencyKey,
   getBookkeepingOverview,
@@ -278,7 +277,7 @@ function TransactionRow({
         </Text>
         <Text style={styles.transactionSource}>{entry.source.toUpperCase()}</Text>
       </View>
-      <IconSymbol
+      <Ionicons
         color={theme.colors.textMuted}
         name="chevron.right"
         size={13}
@@ -538,13 +537,13 @@ export function BooksScreen() {
   const selectedSaleMargin =
     selectedTransaction?.entryType === 'sale_proceeds' && saleMargins
       ? saleMargins.find((sale) =>
-          selectedTransaction.orderId
-            ? sale.orderId === selectedTransaction.orderId
-            : Boolean(
-                selectedTransaction.bookTransactionId &&
-                  sale.id === selectedTransaction.bookTransactionId,
-              ),
-        ) ?? null
+        selectedTransaction.orderId
+          ? sale.orderId === selectedTransaction.orderId
+          : Boolean(
+            selectedTransaction.bookTransactionId &&
+            sale.id === selectedTransaction.bookTransactionId,
+          ),
+      ) ?? null
       : null;
   const draftDetails = ledgerEntryDetails(draft.entryType);
   const isWriteOff = draft.entryType === 'inventory_write_off';
@@ -553,10 +552,10 @@ export function BooksScreen() {
   const availableEntryTypeOptions = advancedBookkeepingConfigured
     ? ENTRY_TYPE_OPTIONS.filter((entryType) => entryType !== 'other_income')
     : ENTRY_TYPE_OPTIONS.filter(
-        (entryType) =>
-          entryType !== 'inventory_write_off' &&
-          entryType !== 'inventory_value_adjustment',
-      );
+      (entryType) =>
+        entryType !== 'inventory_write_off' &&
+        entryType !== 'inventory_value_adjustment',
+    );
 
   const openTransactionDetails = (entry: ResellerLedgerEntry) => {
     hapticSelection();
@@ -817,8 +816,8 @@ export function BooksScreen() {
                 !ledgerConfigured && styles.actionDisabled,
                 pressed && ledgerConfigured && styles.primaryActionPressed,
               ]}>
-              <IconSymbol
-      color={theme.colors.textOnAccent}
+              <Ionicons
+                color={theme.colors.textOnAccent}
                 name="dollarsign.circle.fill"
                 size={16}
               />
@@ -834,7 +833,7 @@ export function BooksScreen() {
                 !ledgerConfigured && styles.actionDisabled,
                 pressed && ledgerConfigured && styles.secondaryActionPressed,
               ]}>
-              <IconSymbol color={theme.colors.goldBright} name="save.fill" size={15} />
+              <Ionicons color={theme.colors.goldBright} name="save.fill" size={15} />
               <Text style={[styles.secondaryActionText, { fontSize: responsiveFont(9) }]}>ADD EXPENSE</Text>
             </Pressable>
           </View>
@@ -842,7 +841,7 @@ export function BooksScreen() {
 
         {setupNotice ? (
           <View style={styles.setupNotice}>
-            <IconSymbol color={theme.colors.goldBright} name="lock.fill" size={16} />
+            <Ionicons color={theme.colors.goldBright} name="lock.fill" size={16} />
             <View style={styles.noticeCopy}>
               <Text style={[styles.noticeTitle, { fontSize: responsiveFont(9) }]}>PRIVATE LEDGER SETUP NEEDED</Text>
               <Text selectable style={[styles.noticeText, { fontSize: responsiveFont(12) }]}>
@@ -957,7 +956,7 @@ export function BooksScreen() {
                   styles.recordsButton,
                   pressed && styles.recordsButtonPressed,
                 ]}>
-                <IconSymbol
+                <Ionicons
                   color={theme.colors.scannerCyan}
                   name="rectangle.stack.fill"
                   size={14}
@@ -1056,7 +1055,7 @@ export function BooksScreen() {
                   accessibilityRole="button"
                   onPress={() => setSelectedTransaction(null)}
                   style={styles.closeButton}>
-                  <IconSymbol color={theme.colors.cream} name="xmark" size={18} />
+                  <Ionicons color={theme.colors.cream} name="xmark" size={18} />
                 </Pressable>
               </View>
 
@@ -1139,7 +1138,7 @@ export function BooksScreen() {
                 </View>
 
                 {advancedBookkeepingConfigured &&
-                selectedTransaction.entryType === 'sale_proceeds' ? (
+                  selectedTransaction.entryType === 'sale_proceeds' ? (
                   <View style={styles.transactionDetailSection}>
                     <Text style={[styles.transactionDetailSectionTitle, { fontSize: responsiveFont(8) }]}>
                       {selectedSaleMargin?.orderId ? 'ORDER PROFIT' : 'SALE PROFIT'}
@@ -1250,7 +1249,7 @@ export function BooksScreen() {
                 disabled={saving}
                 onPress={() => setSheetOpen(false)}
                 style={styles.closeButton}>
-                <IconSymbol color={theme.colors.cream} name="xmark" size={18} />
+                <Ionicons color={theme.colors.cream} name="xmark" size={18} />
               </Pressable>
             </View>
 
@@ -1372,7 +1371,7 @@ export function BooksScreen() {
               </View>
 
               {advancedBookkeepingConfigured &&
-              (draft.entryType === 'sale_proceeds' || draft.entryType === 'shipping_label') ? (
+                (draft.entryType === 'sale_proceeds' || draft.entryType === 'shipping_label') ? (
                 <View style={styles.formSection}>
                   <Text style={[styles.formLabel, { fontSize: responsiveFont(8) }]}>ORDER NUMBER</Text>
                   <TextInput
@@ -1439,7 +1438,7 @@ export function BooksScreen() {
                         : 'Link sales and shipping costs with the same order number to calculate profit.'}
                     </Text>
                   </View>
-                  <IconSymbol
+                  <Ionicons
                     color={theme.colors.goldMuted}
                     name="chevron.right"
                     size={17}
@@ -1499,7 +1498,7 @@ export function BooksScreen() {
               </View>
 
               {advancedBookkeepingConfigured &&
-              (draft.entryType === 'sale_proceeds' || isWriteOff) ? (
+                (draft.entryType === 'sale_proceeds' || isWriteOff) ? (
                 <View style={styles.formSection}>
                   <Text style={[styles.formLabel, { fontSize: responsiveFont(8) }]}>
                     {isWriteOff ? 'HOW MANY UNITS WRITTEN OFF?' : 'HOW MANY SOLD?'}
@@ -1592,59 +1591,59 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   const staticStyles = StyleSheet.create({
     content: {
       alignSelf: 'center',
-      gap: 26,
-      maxWidth: 720,
-      paddingHorizontal: 18,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(26) : 26,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(720) : 720,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(18) : 18,
       width: '100%',
     },
-    header: { gap: 7 },
+    header: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7 },
     eyebrow: {
       color: theme.colors.gold,
       fontFamily: theme.fonts.radar,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: '900',
       letterSpacing: 1.8,
     },
     title: {
       color: theme.colors.cream,
-      fontSize: 28,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(28) : 28,
       fontWeight: '900',
       letterSpacing: -0.65,
     },
     subtitle: {
       color: theme.colors.textMuted,
-      fontSize: 14,
-      lineHeight: 20,
-      maxWidth: 510,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(20) : 20,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(510) : 510,
     },
     actions: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: 9,
-      marginTop: 9,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
+      marginTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(9) : 9,
     },
     ledgerActions: {
       alignItems: 'center',
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: 7,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
       justifyContent: 'flex-end',
     },
     primaryAction: {
       alignItems: 'center',
       backgroundColor: theme.colors.scannerCyan,
-      borderRadius: 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       flexDirection: 'row',
-      gap: 7,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
       justifyContent: 'center',
-      minHeight: 43,
-      paddingHorizontal: 14,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(43) : 43,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14,
     },
     primaryActionPressed: { opacity: 0.82 },
     primaryActionText: {
       color: theme.colors.textOnAccent,
       fontFamily: theme.fonts.radar,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: '900',
       letterSpacing: 0.95,
     },
@@ -1652,19 +1651,19 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       alignItems: 'center',
       backgroundColor: theme.colors.iconSurfaceGold,
       borderColor: theme.colors.accentGoldBorder,
-      borderRadius: 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       borderWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
-      gap: 7,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
       justifyContent: 'center',
-      minHeight: 43,
-      paddingHorizontal: 14,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(43) : 43,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14,
     },
     secondaryActionPressed: { backgroundColor: theme.colors.iconSurfaceGold },
     secondaryActionText: {
       color: theme.colors.goldBright,
       fontFamily: theme.fonts.radar,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: '900',
       letterSpacing: 0.95,
     },
@@ -1673,97 +1672,97 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       alignItems: 'flex-start',
       backgroundColor: theme.colors.iconSurfaceGold,
       borderColor: theme.colors.accentGoldBorder,
-      borderRadius: 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       borderWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
-      gap: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       padding: 13,
     },
-    noticeCopy: { flex: 1, gap: 3 },
+    noticeCopy: { flex: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3 },
     noticeTitle: {
       color: theme.colors.goldBright,
       fontFamily: theme.fonts.radar,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: '900',
       letterSpacing: 1,
     },
-    noticeText: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 17 },
+    noticeText: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12, lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : 17 },
     errorCard: {
       alignItems: 'center',
       backgroundColor: theme.colors.dangerSurface,
       borderColor: theme.colors.danger,
-      borderRadius: 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       borderWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
-      gap: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
       padding: 13,
     },
     errorTitle: {
       color: theme.colors.danger,
       fontFamily: theme.fonts.radar,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: '900',
       letterSpacing: 1,
     },
-    errorText: { color: theme.colors.text, fontSize: 12, lineHeight: 17 },
+    errorText: { color: theme.colors.text, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12, lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : 17 },
     retryButton: {
       alignItems: 'center',
       borderColor: theme.colors.danger,
-      borderRadius: 8,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
       borderWidth: StyleSheet.hairlineWidth,
       justifyContent: 'center',
-      minHeight: 34,
-      paddingHorizontal: 10,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(34) : 34,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
     },
     retryText: {
       color: theme.colors.text,
       fontFamily: theme.fonts.radar,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 0.8,
     },
-    statusMessage: { color: theme.colors.scannerCyan, fontSize: 12, lineHeight: 17 },
+    statusMessage: { color: theme.colors.scannerCyan, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12, lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : 17 },
     section: {
       borderTopColor: theme.colors.divider,
       borderTopWidth: StyleSheet.hairlineWidth,
-      gap: 13,
-      paddingTop: 17,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(13) : 13,
+      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(17) : 17,
     },
     sectionHeader: {
       alignItems: 'flex-end',
       flexDirection: 'row',
-      gap: 14,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14,
       justifyContent: 'space-between',
     },
     sectionHeading: { gap: 2 },
     sectionEyebrow: {
       color: theme.colors.gold,
       fontFamily: theme.fonts.radar,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 1.25,
     },
     sectionTitle: {
       color: theme.colors.cream,
-      fontSize: 17,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : 17,
       fontWeight: '800',
       letterSpacing: -0.2,
     },
     loadingLine: {
       alignItems: 'center',
       flexDirection: 'row',
-      gap: 9,
-      minHeight: 84,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(84) : 84,
     },
-    loadingText: { color: theme.colors.textMuted, fontSize: 12 },
-    metricGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
+    loadingText: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12 },
+    metricGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9 },
     metric: {
       backgroundColor: theme.colors.card,
-      borderRadius: 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       borderWidth: StyleSheet.hairlineWidth,
       flexGrow: 1,
       flexShrink: 1,
-      minWidth: 150,
+      minWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(150) : 150,
       padding: 12,
     },
     metricGold: { borderColor: theme.colors.accentGoldBorder },
@@ -1772,53 +1771,53 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     metricLabel: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.radar,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 0.95,
     },
     metricValue: {
       color: theme.colors.cream,
-      fontSize: 21,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(21) : 21,
       fontVariant: ['tabular-nums'],
       fontWeight: '800',
       letterSpacing: -0.45,
-      marginTop: 5,
+      marginTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(5) : 5,
     },
     metricDetail: {
       color: theme.colors.textMuted,
-      fontSize: 10,
-      lineHeight: 14,
-      marginTop: 3,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14,
+      marginTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(3) : 3,
     },
-    summaryNote: { color: theme.colors.goldBright, fontSize: 11, lineHeight: 16 },
+    summaryNote: { color: theme.colors.goldBright, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11, lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16 },
     exportButton: {
       alignItems: 'center',
       borderColor: theme.colors.accentCyanBorder,
-      borderRadius: 8,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
       borderWidth: StyleSheet.hairlineWidth,
       justifyContent: 'center',
-      minHeight: 32,
-      minWidth: 86,
-      paddingHorizontal: 9,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(32) : 32,
+      minWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(86) : 86,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
     },
     exportButtonDisabled: { opacity: 0.35 },
     exportButtonPressed: { backgroundColor: theme.colors.iconSurfaceCyan },
     recordsButton: {
       alignItems: 'center',
       borderColor: theme.colors.accentCyanBorder,
-      borderRadius: 8,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
       borderWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
-      gap: 5,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5,
       justifyContent: 'center',
-      minHeight: 32,
-      paddingHorizontal: 9,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(32) : 32,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
     },
     recordsButtonPressed: { backgroundColor: theme.colors.iconSurfaceCyan },
     exportButtonText: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.radar,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 0.8,
     },
@@ -1831,29 +1830,29 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderBottomColor: theme.colors.divider,
       borderBottomWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
-      gap: 10,
-      minHeight: 67,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(67) : 67,
       paddingHorizontal: 2,
-      paddingVertical: 9,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(9) : 9,
     },
     transactionRowPressed: {
       backgroundColor: theme.colors.cardSoft,
     },
-    transactionMarker: { borderRadius: 2, height: 25, width: 3 },
+    transactionMarker: { borderRadius: 2, height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(25) : 25, width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3 },
     transactionMarkerIncome: { backgroundColor: theme.colors.scannerCyan },
     transactionMarkerExpense: { backgroundColor: theme.colors.gold },
     transactionCopy: { flex: 1, gap: 2, minWidth: 0 },
-    transactionTitle: { color: theme.colors.cream, fontSize: 13, fontWeight: '700' },
-    transactionSecondary: { color: theme.colors.textMuted, fontSize: 11 },
-    transactionTertiary: { color: theme.colors.textMuted, fontSize: 10 },
-    transactionAmountColumn: { alignItems: 'flex-end', gap: 3 },
-    transactionAmount: { fontSize: 13, fontVariant: ['tabular-nums'], fontWeight: '800' },
+    transactionTitle: { color: theme.colors.cream, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : 13, fontWeight: '700' },
+    transactionSecondary: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11 },
+    transactionTertiary: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10 },
+    transactionAmountColumn: { alignItems: 'flex-end', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3 },
+    transactionAmount: { fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : 13, fontVariant: ['tabular-nums'], fontWeight: '800' },
     transactionAmountIncome: { color: theme.colors.scannerCyan },
     transactionAmountExpense: { color: theme.colors.goldBright },
     transactionSource: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.radar,
-      fontSize: 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
       fontWeight: '900',
       letterSpacing: 0.7,
     },
@@ -1861,30 +1860,30 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       alignItems: 'flex-start',
       backgroundColor: theme.colors.card,
       borderColor: theme.colors.divider,
-      borderRadius: 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       borderWidth: StyleSheet.hairlineWidth,
-      gap: 4,
-      minHeight: 108,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(108) : 108,
       justifyContent: 'center',
       padding: 14,
     },
-    emptyLedgerTitle: { color: theme.colors.cream, fontSize: 14, fontWeight: '700' },
+    emptyLedgerTitle: { color: theme.colors.cream, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14, fontWeight: '700' },
     emptyLedgerText: {
       color: theme.colors.textMuted,
-      fontSize: 12,
-      lineHeight: 17,
-      maxWidth: 430,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : 17,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(430) : 430,
     },
     disclaimer: {
       borderTopColor: theme.colors.divider,
       borderTopWidth: StyleSheet.hairlineWidth,
-      paddingTop: 14,
+      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(14) : 14,
     },
     disclaimerText: {
       color: theme.colors.textMuted,
-      fontSize: 10,
-      lineHeight: 15,
-      maxWidth: 560,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(560) : 560,
     },
     transactionDetailModalRoot: {
       flex: 1,
@@ -1898,95 +1897,95 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderTopRightRadius: 18,
       borderWidth: StyleSheet.hairlineWidth,
       maxHeight: '84%',
-      maxWidth: 720,
-      paddingHorizontal: 18,
-      paddingTop: 17,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(720) : 720,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(18) : 18,
+      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(17) : 17,
       width: '100%',
     },
     transactionDetailHeader: {
       alignItems: 'center',
       flexDirection: 'row',
-      gap: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
       justifyContent: 'space-between',
-      marginBottom: 14,
+      marginBottom: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(14) : 14,
     },
     transactionDetailHeaderCopy: { flex: 1, gap: 2 },
     transactionDetailTitle: {
       color: theme.colors.cream,
-      fontSize: 22,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(22) : 22,
       fontWeight: '900',
       letterSpacing: -0.4,
     },
     transactionDetailContent: {
-      gap: 14,
-      paddingBottom: 4,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14,
+      paddingBottom: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(4) : 4,
     },
     transactionDetailAmountCard: {
       backgroundColor: theme.colors.iconSurfaceCyan,
       borderColor: theme.colors.accentCyanBorder,
-      borderRadius: 11,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : 11,
       borderWidth: StyleSheet.hairlineWidth,
-      gap: 3,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3,
       padding: 14,
     },
     transactionDetailAmountLabel: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.radar,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 1,
     },
     transactionDetailAmount: {
-      fontSize: 27,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(27) : 27,
       fontVariant: ['tabular-nums'],
       fontWeight: '900',
       letterSpacing: -0.5,
     },
     transactionDetailDirection: {
       color: theme.colors.textMuted,
-      fontSize: 11,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11,
     },
     transactionDetailSection: {
       backgroundColor: theme.colors.cardSoft,
       borderColor: theme.colors.divider,
-      borderRadius: 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       borderWidth: StyleSheet.hairlineWidth,
       overflow: 'hidden',
     },
     transactionDetailSectionTitle: {
       color: theme.colors.goldBright,
       fontFamily: theme.fonts.radar,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 1,
-      paddingBottom: 7,
-      paddingHorizontal: 12,
-      paddingTop: 11,
+      paddingBottom: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(7) : 7,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
+      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(11) : 11,
     },
     transactionDetailRow: {
       borderTopColor: theme.colors.divider,
       borderTopWidth: StyleSheet.hairlineWidth,
-      gap: 4,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : 10,
     },
     transactionDetailLabel: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.radar,
-      fontSize: 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
       fontWeight: '900',
       letterSpacing: 0.75,
       textTransform: 'uppercase',
     },
     transactionDetailValue: {
       color: theme.colors.cream,
-      fontSize: 12,
-      lineHeight: 17,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : 17,
     },
     transactionDetailHint: {
       color: theme.colors.textMuted,
-      fontSize: 10,
-      lineHeight: 15,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15,
     },
     modalRoot: { flex: 1, justifyContent: 'flex-end' },
     modalDismiss: { ...StyleSheet.absoluteFill, backgroundColor: theme.colors.scrim },
@@ -1997,18 +1996,18 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderTopRightRadius: 16,
       borderWidth: StyleSheet.hairlineWidth,
       maxHeight: '95%',
-      paddingHorizontal: 18,
-      paddingTop: 17,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(18) : 18,
+      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(17) : 17,
     },
     sheetHeader: {
       alignItems: 'center',
       flexDirection: 'row',
       justifyContent: 'space-between',
-      marginBottom: 15,
+      marginBottom: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(15) : 15,
     },
     sheetTitle: {
       color: theme.colors.cream,
-      fontSize: 22,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(22) : 22,
       fontWeight: '900',
       letterSpacing: -0.4,
     },
@@ -2016,30 +2015,30 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       alignItems: 'center',
       backgroundColor: theme.colors.cardSoft,
       borderColor: theme.colors.dividerStrong,
-      borderRadius: 8,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
       borderWidth: StyleSheet.hairlineWidth,
-      height: 34,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(34) : 34,
       justifyContent: 'center',
-      width: 34,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(34) : 34,
     },
-    sheetContent: { gap: 17, paddingBottom: 4 },
-    formSection: { gap: 7 },
+    sheetContent: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(17) : 17, paddingBottom: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(4) : 4 },
+    formSection: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7 },
     formLabel: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.radar,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 1,
     },
-    typeOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+    typeOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6 },
     typeOption: {
       backgroundColor: theme.colors.cardSoft,
       borderColor: theme.colors.divider,
-      borderRadius: 7,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
       borderWidth: StyleSheet.hairlineWidth,
-      minHeight: 29,
-      paddingHorizontal: 8,
-      paddingVertical: 6,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(29) : 29,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : 6,
     },
     typeOptionSelected: {
       backgroundColor: theme.colors.iconSurfaceCyan,
@@ -2048,35 +2047,35 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     typeOptionText: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.radar,
-      fontSize: 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
       fontWeight: '900',
       letterSpacing: 0.6,
     },
     typeOptionTextSelected: { color: theme.colors.scannerCyan },
-    typeHelp: { color: theme.colors.textMuted, fontSize: 11 },
-    formRow: { flexDirection: 'row', gap: 9 },
-    formFieldWide: { flex: 1.2, gap: 7 },
-    formFieldDate: { flex: 1, gap: 7 },
+    typeHelp: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11 },
+    formRow: { flexDirection: 'row', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9 },
+    formFieldWide: { flex: 1.2, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7 },
+    formFieldDate: { flex: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7 },
     amountInputWrap: {
       alignItems: 'center',
       backgroundColor: theme.colors.cardSoft,
       borderColor: theme.colors.divider,
-      borderRadius: 8,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
       borderWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
-      height: 45,
-      paddingHorizontal: 11,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(45) : 45,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : 11,
     },
     currencyPrefix: {
       color: theme.colors.goldBright,
-      fontSize: 16,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16,
       fontWeight: '700',
-      marginRight: 3,
+      marginRight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3,
     },
     amountInput: {
       color: theme.colors.cream,
       flex: 1,
-      fontSize: 17,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : 17,
       fontVariant: ['tabular-nums'],
       fontWeight: '700',
       padding: 0,
@@ -2084,47 +2083,47 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     dateInput: {
       backgroundColor: theme.colors.cardSoft,
       borderColor: theme.colors.divider,
-      borderRadius: 8,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
       borderWidth: StyleSheet.hairlineWidth,
       color: theme.colors.cream,
-      fontSize: 13,
-      height: 45,
-      paddingHorizontal: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : 13,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(45) : 45,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
     },
     textInput: {
       backgroundColor: theme.colors.cardSoft,
       borderColor: theme.colors.divider,
-      borderRadius: 8,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
       borderWidth: StyleSheet.hairlineWidth,
       color: theme.colors.cream,
-      fontSize: 13,
-      minHeight: 45,
-      paddingHorizontal: 11,
-      paddingVertical: 11,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : 13,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(45) : 45,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : 11,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(11) : 11,
     },
-    notesInput: { minHeight: 84 },
+    notesInput: { minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(84) : 84 },
     itemPickerButton: {
       alignItems: 'center',
       backgroundColor: theme.colors.cardSoft,
       borderColor: theme.colors.divider,
-      borderRadius: 8,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
       borderWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
-      gap: 8,
-      minHeight: 53,
-      paddingHorizontal: 11,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(53) : 53,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : 11,
     },
     itemPickerButtonPressed: { backgroundColor: theme.colors.cardSoft },
     itemPickerCopy: { flex: 1, gap: 2, minWidth: 0 },
-    itemPickerTitle: { color: theme.colors.cream, fontSize: 13, fontWeight: '700' },
-    itemPickerDetail: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 14 },
+    itemPickerTitle: { color: theme.colors.cream, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : 13, fontWeight: '700' },
+    itemPickerDetail: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10, lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14 },
     itemPickerChevronOpen: { transform: [{ rotate: '90deg' }] },
     itemOptions: {
       backgroundColor: theme.colors.surfaceOverlay,
       borderColor: theme.colors.accentVioletBorder,
-      borderRadius: 8,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
       borderWidth: StyleSheet.hairlineWidth,
-      maxHeight: 230,
+      maxHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(230) : 230,
       overflow: 'hidden',
     },
     itemOption: {
@@ -2132,25 +2131,25 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderBottomColor: theme.colors.divider,
       borderBottomWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
-      gap: 8,
-      minHeight: 42,
-      paddingHorizontal: 11,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(42) : 42,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : 11,
     },
     itemOptionSelected: { backgroundColor: theme.colors.iconSurfaceCyan },
-    itemOptionText: { color: theme.colors.cream, flex: 1, fontSize: 12 },
+    itemOptionText: { color: theme.colors.cream, flex: 1, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12 },
     itemOptionCost: {
       color: theme.colors.goldBright,
-      fontSize: 11,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11,
       fontVariant: ['tabular-nums'],
     },
-    noItemText: { color: theme.colors.textMuted, fontSize: 12, padding: 11 },
-    formError: { color: theme.colors.danger, fontSize: 12, lineHeight: 17 },
+    noItemText: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12, padding: 11 },
+    formError: { color: theme.colors.danger, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12, lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : 17 },
     saveButton: {
       alignItems: 'center',
       backgroundColor: theme.colors.scannerCyan,
-      borderRadius: 9,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
       justifyContent: 'center',
-      minHeight: 48,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(48) : 48,
       marginTop: 2,
     },
     saveButtonDisabled: { opacity: 0.55 },
@@ -2158,7 +2157,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     saveButtonText: {
       color: theme.colors.textOnAccent,
       fontFamily: theme.fonts.radar,
-      fontSize: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
       fontWeight: '900',
       letterSpacing: 1,
     },

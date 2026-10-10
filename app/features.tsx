@@ -9,7 +9,8 @@ import {
   WebMarketingPage,
   WebTextLink,
 } from '@/components/web/web-public-page';
-import { KEEPFLIP_EBAY_CONNECTION_COPY, KEEPFLIP_GOOGLE_PLAY_URL, KEEPFLIP_SITE_URL } from '@/constants/keepflip-public-site';
+import { KEEPFLIP_EBAY_CONNECTION_COPY, KEEPFLIP_GOOGLE_PLAY_URL, KEEPFLIP_SITE_URL, KEEPFLIP_SIGNUP_URL } from '@/constants/keepflip-public-site';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 const metadata = {
   canonicalPath: '/features',
@@ -27,6 +28,7 @@ const metadata = {
 } as const;
 
 export default function FeaturesPage() {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   return (
     <WebMarketingPage
       metadata={metadata}
@@ -35,7 +37,7 @@ export default function FeaturesPage() {
       intro="KeepFlip puts the buy decision, item details, and money left after the sale in one place, so you can check the numbers before cash is tied up."
     >
       <WebContentSection title="Start with the item in front of you.">
-        <View style={styles.cardGrid}>
+        <View style={responsiveStyles.cardGrid}>
           <WebInfoCard title="1. Research the find">
             <WebCopy>
               Scan or photograph a possible buy in the Android app. Review item identity, confidence signals, and market evidence where available.
@@ -76,8 +78,8 @@ export default function FeaturesPage() {
         </WebCopy>
       </WebContentSection>
 
-      <View style={styles.actions}>
-        <WebActionLink href={KEEPFLIP_GOOGLE_PLAY_URL} label="Start free on Android" />
+      <View style={responsiveStyles.actions}>
+        <WebActionLink href="/meet-flip" label="SIGN UP FOR FREE" />
         <WebActionLink href="/pricing" label="See plan prices" secondary />
         <WebTextLink href="/about" label="Who KeepFlip is for" />
       </View>
@@ -89,3 +91,17 @@ const styles = StyleSheet.create({
   cardGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   actions: { alignItems: 'flex-start', flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    cardGrid: {
+      ...styles["cardGrid"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+    },
+    actions: {
+      ...styles["actions"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+    },
+  });
+}

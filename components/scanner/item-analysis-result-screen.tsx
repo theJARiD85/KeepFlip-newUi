@@ -50,6 +50,7 @@ function firstParam(value: string | string[] | undefined) {
 }
 
 export function ItemAnalysisResultScreen() {
+  const responsiveLayout2 = useResponsiveLayout();
   const styles = useResponsiveStyles(createResponsiveStyles);
   const {
     responsiveFont
@@ -414,7 +415,7 @@ export function ItemAnalysisResultScreen() {
         {loading ? (
           <ActivityIndicator color={theme.colors.scannerCyan} />
         ) : (
-          <Text selectable style={[styles.message, { fontSize: responsiveFont(13), lineHeight: 19 }]}>
+          <Text selectable style={[styles.message, { fontSize: responsiveFont(13), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(19) : 19 }]}>
             {resolvedError ?? "No analysis result was supplied."}
           </Text>
         )}
@@ -496,27 +497,27 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flex: 1,
       alignItems: "center",
       justifyContent: "center",
-      gap: 16,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16,
       padding: 28,
       backgroundColor: theme.colors.backgroundDeep,
     },
     message: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.radar,
-      fontSize: 13,
-      lineHeight: 19,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : 13,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(19) : 19,
       textAlign: "center",
     },
     backButton: {
-      paddingHorizontal: 18,
-      paddingVertical: 12,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(18) : 18,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(12) : 12,
       borderWidth: 1,
       borderColor: "rgba(88, 223, 232, 0.42)",
     },
     backButtonText: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.radar,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: "900",
       letterSpacing: 1.1,
     },

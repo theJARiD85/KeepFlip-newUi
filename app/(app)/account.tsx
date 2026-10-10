@@ -11,22 +11,20 @@ import {
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { KeepFlipAccountTabs } from '@/components/account/keepflip-account-tabs';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { EbayShoppingBagIcon } from '@/components/ebay/ebay-shopping-bag-icon';
 import { useKeepFlipFeedbackNudge } from '@/components/feedback/keepflip-feedback-nudge';
-import { KeepFlipAppearancePicker } from '@/components/settings/keepflip-appearance-picker';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
+import { KeepFlipAppearancePicker } from '@/components/settings/keepflip-appearance-picker';
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
 import { KeepFlipSubscriptionScreen } from '@/components/subscription/keepflip-subscription-screen';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipControlRow } from '@/components/ui/keepflip-control-row';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import { responsiveWidth } from '@/lib/responsiveFont';
 import { openKeepFlipAccountDeletionRequest } from '@/lib/keepflip-feedback';
 import {
   getEbayConnectionStatus,
@@ -164,17 +162,17 @@ function AccountDetailsTab() {
         ? 'Plan checkout is ready for RevenueCat store configuration.'
         : subscriptionState === 'error'
           ? 'Subscription status is unavailable right now.'
-            : subscriptionAccess?.isTrial
-              ? `${subscriptionPlan?.name ?? 'KeepFlip plan'} access is active.`
+          : subscriptionAccess?.isTrial
+            ? `${subscriptionPlan?.name ?? 'KeepFlip plan'} access is active.`
             : subscriptionAccess?.billingIssue
               ? subscriptionAccess.active
                 ? subscriptionAccess.expiresAt
                   ? `Payment issue detected. Access remains available through ${new Date(subscriptionAccess.expiresAt).toLocaleDateString()} while you update your payment method.`
                   : 'Payment issue detected. Access remains available for 7 days while you update your payment method.'
                 : 'Your payment grace period has ended. Update your payment method to restore access.'
-            : subscriptionAccess?.active
-              ? `${subscriptionPlan?.name ?? 'KeepFlip plan'} is active on this account.`
-              : 'Free includes every KeepFlip feature except Flip Assistant, with limits of 10 saved inventory items, 10 scans, and 10 listing generations per month. Serious adds unlimited saved inventory, 200 scans per month, unlimited listing generations, and Flip.';
+              : subscriptionAccess?.active
+                ? `${subscriptionPlan?.name ?? 'KeepFlip plan'} is active on this account.`
+                : 'Free includes every KeepFlip feature except Flip Assistant, with limits of 10 saved inventory items, 10 scans, and 10 listing generations per month. Serious adds unlimited saved inventory, 200 scans per month, unlimited listing generations, and Flip.';
 
   const subscriptionStatus =
     subscriptionState === 'error'
@@ -540,9 +538,9 @@ function AccountDetailsTab() {
           {isBusy ? (
             <ActivityIndicator color={theme.colors.danger} size="small" />
           ) : (
-            <IconSymbol
+            <Ionicons
               color={theme.colors.danger}
-              name="rectangle.portrait.and.arrow.right"
+              name="log-out-outline"
               size={21}
             />
           )}
@@ -571,38 +569,38 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   const staticStyles = StyleSheet.create({
     content: {
       width: '100%',
-      maxWidth: 760,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(760) : 760,
       alignSelf: 'center',
-      gap: 16,
-      paddingHorizontal: 18,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(18) : 18,
     },
-    header: { gap: 4 },
+    header: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4 },
     eyebrow: {
       color: theme.colors.gold,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: '900',
       letterSpacing: 1.7,
     },
     title: {
       color: theme.colors.cream,
-      fontSize: 28,
-      lineHeight: 33,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(28) : 28,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(33) : 33,
       fontWeight: '900',
       letterSpacing: -0.35,
     },
     subtitle: {
-      maxWidth: 520,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(520) : 520,
       color: theme.colors.textMuted,
-      fontSize: 13,
-      lineHeight: 19,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : 13,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(19) : 19,
     },
     profileCard: {
-      minHeight: 108,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(108) : 108,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
       padding: 15,
-      borderRadius: 16,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16,
       borderCurve: 'continuous',
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
@@ -610,8 +608,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       boxShadow: '0 12px 28px rgba(0, 0, 0, 0.28)',
     },
     avatar: {
-      width: 54,
-      height: 54,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(54) : 54,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(54) : 54,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: theme.radii.pill,
@@ -619,18 +617,18 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderColor: theme.colors.accentGoldBorder,
       backgroundColor: theme.colors.iconSurfaceGold,
     },
-    avatarText: { color: theme.colors.goldBright, fontSize: 22, fontWeight: '900' },
-    profileCopy: { minWidth: 0, flex: 1, gap: 3 },
-    name: { color: theme.colors.text, fontSize: 18, fontWeight: '900' },
-    email: { color: theme.colors.textMuted, fontSize: 12 },
-    memberDate: { color: theme.colors.goldBright, fontSize: 9, fontWeight: '800' },
+    avatarText: { color: theme.colors.goldBright, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(22) : 22, fontWeight: '900' },
+    profileCopy: { minWidth: 0, flex: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3 },
+    name: { color: theme.colors.text, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : 18, fontWeight: '900' },
+    email: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12 },
+    memberDate: { color: theme.colors.goldBright, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9, fontWeight: '800' },
     verificationBadge: {
       alignSelf: 'flex-start',
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 5,
-      paddingHorizontal: 7,
-      paddingVertical: 4,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(4) : 4,
       borderRadius: theme.radii.pill,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
@@ -641,8 +639,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.iconSurfaceGold,
     },
     verificationDot: {
-      width: 5,
-      height: 5,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(5) : 5,
       borderRadius: theme.radii.pill,
       backgroundColor: theme.colors.scannerCyan,
       boxShadow: '0 0 8px rgba(88, 223, 232, 0.88)',
@@ -653,23 +651,23 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     verificationText: {
       color: theme.colors.scannerCyan,
-      fontSize: 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
       fontWeight: '900',
       letterSpacing: 0.65,
     },
     verificationTextPending: { color: theme.colors.scannerAmber },
-    section: { gap: 7 },
+    section: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7 },
     sectionHeading: { gap: 2 },
     sectionEyebrow: {
       color: theme.colors.goldBright,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 1.4,
     },
     sectionTitle: {
       color: theme.colors.text,
-      fontSize: 16,
-      lineHeight: 20,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(20) : 20,
       fontWeight: '800',
     },
     settingsList: {
@@ -679,17 +677,17 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     errorText: {
       color: theme.colors.danger,
-      fontSize: 11,
-      lineHeight: 16,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16,
       textAlign: 'center',
     },
     signOutButton: {
-      minHeight: 48,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(48) : 48,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 10,
-      borderRadius: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
       borderCurve: 'continuous',
       borderWidth: 1,
       borderColor: theme.colors.danger,
@@ -699,7 +697,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     signOutButtonDisabled: { opacity: 0.45 },
     signOutText: {
       color: theme.colors.danger,
-      fontSize: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
       fontWeight: '900',
       letterSpacing: 1.05,
     },
@@ -707,24 +705,24 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       alignSelf: 'center',
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 6,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
       paddingTop: 1,
     },
     versionDot: {
-      width: 4,
-      height: 4,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(4) : 4,
       borderRadius: theme.radii.pill,
       backgroundColor: theme.colors.scannerCyan,
     },
     versionLabel: {
       color: theme.colors.textMuted,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 1.25,
     },
     versionValue: {
       color: theme.colors.goldMuted,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: '800',
     },
   });

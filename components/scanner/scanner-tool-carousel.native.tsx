@@ -27,7 +27,7 @@ import {
   type ScannerHudToolId,
 } from "@/components/scanner/scanner-hud-store";
 import { useKeepFlipAppearance } from "@/components/settings/keepflip-appearance-context";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Ionicons } from "@/components/ui/icon-symbol";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout, useResponsiveStyles } from "@/hooks/use-responsive-layout";
@@ -59,39 +59,39 @@ const scannerToolDefinitions: {
   label: string;
   surfaceKey: ScannerToolSurfaceKey;
 }[] = [
-  {
-    id: "barcode",
-    label: "Barcode scanner",
-    icon: "barcode.viewfinder",
-    accentKey: "scannerCyan",
-    surfaceKey: "iconSurfaceViolet",
-    glowAlpha: 0.5,
-  },
-  {
-    id: "multi",
-    label: "Multi-scan",
-    icon: "viewfinder",
-    accentKey: "goldBright",
-    surfaceKey: "iconSurfaceCyan",
-    glowAlpha: 0.5,
-  },
-  {
-    id: "batch",
-    label: "Batch-scan",
-    icon: "square.grid.2x2.fill",
-    accentKey: "scannerViolet",
-    surfaceKey: "iconSurface",
-    glowAlpha: 0.5,
-  },
-  {
-    id: "upload",
-    label: "Upload photo",
-    icon: "photo.on.rectangle.angled",
-    accentKey: "cream",
-    surfaceKey: "iconSurfaceViolet",
-    glowAlpha: 0.5,
-  },
-];
+    {
+      id: "barcode",
+      label: "Barcode scanner",
+      icon: "barcode.viewfinder",
+      accentKey: "scannerCyan",
+      surfaceKey: "iconSurfaceViolet",
+      glowAlpha: 0.5,
+    },
+    {
+      id: "multi",
+      label: "Multi-scan",
+      icon: "viewfinder",
+      accentKey: "goldBright",
+      surfaceKey: "iconSurfaceCyan",
+      glowAlpha: 0.5,
+    },
+    {
+      id: "batch",
+      label: "Batch-scan",
+      icon: "square.grid.2x2.fill",
+      accentKey: "scannerViolet",
+      surfaceKey: "iconSurface",
+      glowAlpha: 0.5,
+    },
+    {
+      id: "upload",
+      label: "Upload photo",
+      icon: "photo.on.rectangle.angled",
+      accentKey: "cream",
+      surfaceKey: "iconSurfaceViolet",
+      glowAlpha: 0.5,
+    },
+  ];
 
 export function getScannerTools(): ScannerTool[] {
   return scannerToolDefinitions.map(({ accentKey, glowAlpha, surfaceKey, ...tool }) => {
@@ -349,7 +349,7 @@ function ToolControl({
               styles.iconGhostCyan,
             ]}
           >
-            <IconSymbol
+            <Ionicons
               color="#4FEFFF"
               name={tool.icon}
               size={iconSize}
@@ -362,14 +362,14 @@ function ToolControl({
               styles.iconGhostViolet,
             ]}
           >
-            <IconSymbol
+            <Ionicons
               color="#A885FF"
               name={tool.icon}
               size={iconSize}
             />
           </View>
 
-          <IconSymbol
+          <Ionicons
             color={tool.accent}
             name={tool.icon}
             size={iconSize}
@@ -707,7 +707,7 @@ export function ScannerToolCarousel({
           ]}
         >
           <HUDSkiaPlatterRing
-          accents={toolAccents}
+            accents={toolAccents}
             height={platterHeight}
             position={position}
             radiusX={orbitRadiusX}

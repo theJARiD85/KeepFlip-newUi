@@ -1,14 +1,11 @@
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import { ScrollView, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { AiPreferencesPanel } from '@/components/command-center/ai-preferences-panel';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
-import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
@@ -56,22 +53,22 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   const staticStyles = StyleSheet.create({
     content: {
       width: '100%',
-      maxWidth: 760,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(760) : 760,
       alignSelf: 'center',
-      gap: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
     },
     topBar: {
-      minHeight: 34,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(34) : 34,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
     },
     backButton: {
-      width: 34,
-      height: 34,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(34) : 34,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(34) : 34,
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
       backgroundColor: theme.colors.iconSurfaceGold,
@@ -79,7 +76,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     backIcon: { transform: [{ rotate: '180deg' }] },
     topLabel: {
       color: theme.colors.goldMuted,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: '900',
       letterSpacing: 1.25,
     },

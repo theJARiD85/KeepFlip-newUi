@@ -25,6 +25,7 @@ export function KeepFlipMfaChallenge({
   pending,
   onAuthenticated,
 }: KeepFlipMfaChallengeProps) {
+  const responsiveLayout = useResponsiveLayout();
   const {
     cancelMfaSignIn,
     changeMfaSignInFactor,
@@ -108,18 +109,18 @@ export function KeepFlipMfaChallenge({
   }
 
   return (
-    <View style={{ gap: 14, paddingTop: 12 }}>
-      <View style={{ gap: 5 }}>
+    <View style={{ gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14, paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(12) : 12 }}>
+      <View style={{ gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5 }}>
         <Text style={{ color: colors.text, fontSize: responsiveFont(20), fontWeight: '700' }}>
           Verify it’s you
         </Text>
-        <Text style={{ color: colors.textMuted, fontSize: responsiveFont(12), lineHeight: 18 }}>
+        <Text style={{ color: colors.textMuted, fontSize: responsiveFont(12), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : 18 }}>
           {instructions}
         </Text>
       </View>
 
       {methods.length > 1 ? (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8 }}>
           {methods.map((method) => (
             <Pressable
               accessibilityRole="button"
@@ -130,11 +131,11 @@ export function KeepFlipMfaChallenge({
               style={({ pressed }) => ({
                 backgroundColor: method.factor === pending.factor ? colors.iconSurfaceCyan : colors.surfaceInset,
                 borderColor: method.factor === pending.factor ? colors.scannerCyan : colors.divider,
-                borderRadius: 999,
+                borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(999) : 999,
                 borderWidth: 1,
                 opacity: pressed || isBusy ? 0.7 : 1,
-                paddingHorizontal: 12,
-                paddingVertical: 8,
+                paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
+                paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(8) : 8,
               })}
             >
               <Text style={{ color: method.factor === pending.factor ? colors.scannerCyan : colors.textMuted, fontSize: responsiveFont(10), fontWeight: '700' }}>
@@ -145,7 +146,7 @@ export function KeepFlipMfaChallenge({
         </View>
       ) : null}
 
-      <View style={{ gap: 7 }}>
+      <View style={{ gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7 }}>
         <Text style={{ color: colors.textMuted, fontSize: responsiveFont(10), fontWeight: '700' }}>
           {isRecoveryCode ? 'RECOVERY CODE' : 'VERIFICATION CODE'}
         </Text>
@@ -167,13 +168,13 @@ export function KeepFlipMfaChallenge({
           style={{
             backgroundColor: colors.surfaceInset,
             borderColor: colors.divider,
-            borderRadius: 14,
+            borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14,
             borderWidth: 1,
             color: colors.text,
             fontSize: responsiveFont(16),
             letterSpacing: isRecoveryCode ? 1 : 5,
-            minHeight: 54,
-            paddingHorizontal: 14,
+            minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(54) : 54,
+            paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14,
             textAlign: isRecoveryCode ? 'left' : 'center',
           }}
           value={code}
@@ -187,7 +188,7 @@ export function KeepFlipMfaChallenge({
           accessibilityRole="button"
           disabled={isBusy}
           onPress={() => void selectMethod(pending.factor)}
-          style={({ pressed }) => ({ alignSelf: 'flex-start', opacity: pressed || isBusy ? 0.65 : 1, paddingVertical: 5 })}
+          style={({ pressed }) => ({ alignSelf: 'flex-start', opacity: pressed || isBusy ? 0.65 : 1, paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(5) : 5 })}
         >
           <Text style={{ color: colors.scannerCyan, fontSize: responsiveFont(10), fontWeight: '700' }}>
             {pending.factor === AuthenticationFactor.Email
@@ -207,13 +208,13 @@ export function KeepFlipMfaChallenge({
         style={({ pressed }) => ({
           alignItems: 'center',
           backgroundColor: colors.gold,
-          borderRadius: 14,
+          borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14,
           flexDirection: 'row',
-          gap: 8,
+          gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
           justifyContent: 'center',
-          minHeight: 52,
+          minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(52) : 52,
           opacity: isBusy || !code.trim() ? 0.55 : pressed ? 0.78 : 1,
-          paddingHorizontal: 16,
+          paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16,
         })}
       >
         {isBusy ? <ActivityIndicator color={colors.textOnAccent} /> : null}

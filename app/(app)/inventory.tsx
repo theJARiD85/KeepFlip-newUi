@@ -1,10 +1,10 @@
-import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { MetricsAnalyticsScreen } from "@/components/analytics/metrics-analytics-screen";
+import { useKeepFlipAuth } from "@/components/auth/keepflip-auth-context";
 import { InventoryCard } from "@/components/inventory/inventory-card";
 import { ManualInventoryItemDialog } from "@/components/inventory/manual-inventory-item-dialog";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { KeepFlipControlRow } from "@/components/ui/keepflip-control-row";
+import { Ionicons } from "@/components/ui/icon-symbol";
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
+import { KeepFlipControlRow } from "@/components/ui/keepflip-control-row";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout, useResponsiveStyles } from "@/hooks/use-responsive-layout";
@@ -133,6 +133,7 @@ function buildInventoryFeed(
 }
 
 export default function InventoryScreen() {
+  const responsiveLayout2 = useResponsiveLayout();
   const styles = useResponsiveStyles(createResponsiveStyles);
   const router = useRouter();
   const { tab } = useLocalSearchParams<{ tab?: string | string[] }>();
@@ -162,17 +163,17 @@ export default function InventoryScreen() {
   const inventoryCardWidth =
     Platform.OS === "web" && isTablet
       ? (contentWidth - inventoryColumnGap * inventoryColumns) /
-        inventoryColumns
+      inventoryColumns
       : (contentWidth - pageGutter * 2 - inventoryColumnGap * (inventoryColumns - 1)) /
-        inventoryColumns;
+      inventoryColumns;
   const webContentSizing =
     Platform.OS === "web"
       ? {
-          width: webContentWidth,
-          maxWidth: webContentMaxWidth,
-          alignSelf: "center" as const,
-          paddingHorizontal: webPageGutter,
-        }
+        width: webContentWidth,
+        maxWidth: webContentMaxWidth,
+        alignSelf: "center" as const,
+        paddingHorizontal: webPageGutter,
+      }
       : undefined;
   const responsiveFont = (size: number, factor?: number) =>
     scaleResponsiveFont(Math.max(size, 11), factor);
@@ -355,29 +356,29 @@ export default function InventoryScreen() {
   return (
     <KeepFlipBackground>
       <View style={[styles.screen, webContentSizing, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center' }]}>
-      <View style={[styles.header, { paddingTop: insets.top + 15, paddingLeft: 15, width: contentWidth }]}>
-                <Text style={[styles.eyebrow, { fontFamily: theme.fonts.display, fontSize: responsiveFont(10) }]}>YOUR ITEMS</Text>
-                <Text
-                  style={[styles.title, {fontFamily: theme.fonts.bold, fontSize: responsiveFont(26) }]}
-                >
-                  Inventory
-                </Text>
-                <Text style={[styles.subtitle, { maxWidth: '90%', fontSize: responsiveFont(12), fontFamily: theme.fonts.body }]}>
-                  Scanned and manually added items, purchase costs, and market
-                  estimates in one place.
-                </Text>
-                <View style={{ marginTop: 14 }}>
-                  <KeepFlipControlRow
-                    accent="cyan"
-                    actionLabel="ADD ITEM"
-                    accessibilityHint="Add inventory without a scan or resale valuation."
-                    description="Add an item manually and record what you paid for Books and COGS."
-                    icon="shippingbox.fill"
-                    label="Add inventory item manually"
-                    onPress={() => setManualAddOpen(true)}
-                  />
-                </View>
-              </View>
+        <View style={[styles.header, { paddingTop: insets.top + 15, paddingLeft: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveWidth(15) : 15, width: contentWidth }]}>
+          <Text style={[styles.eyebrow, { fontFamily: theme.fonts.display, fontSize: responsiveFont(10) }]}>YOUR ITEMS</Text>
+          <Text
+            style={[styles.title, { fontFamily: theme.fonts.bold, fontSize: responsiveFont(26) }]}
+          >
+            Inventory
+          </Text>
+          <Text style={[styles.subtitle, { maxWidth: '90%', fontSize: responsiveFont(12), fontFamily: theme.fonts.body }]}>
+            Scanned and manually added items, purchase costs, and market
+            estimates in one place.
+          </Text>
+          <View style={{ marginTop: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveHeight(14) : 14 }}>
+            <KeepFlipControlRow
+              accent="cyan"
+              actionLabel="ADD ITEM"
+              accessibilityHint="Add inventory without a scan or resale valuation."
+              description="Add an item manually and record what you paid for Books and COGS."
+              icon="shippingbox.fill"
+              label="Add inventory item manually"
+              onPress={() => setManualAddOpen(true)}
+            />
+          </View>
+        </View>
         <View
           style={[
             styles.viewTabs,
@@ -421,11 +422,11 @@ export default function InventoryScreen() {
           <FlatList
             key={`inventory-${inventoryColumns}`}
             contentContainerStyle={[styles.content,
-              {
-                paddingBottom: insets.bottom + 30,
-                paddingHorizontal: Platform.OS === "web" ? 0 : pageGutter,
-                paddingTop: 15,
-              },
+            {
+              paddingBottom: insets.bottom + 30,
+              paddingHorizontal: Platform.OS === "web" ? 0 : pageGutter,
+              paddingTop: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveHeight(15) : 15,
+            },
               webContentSizing, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
             style={[
               styles.list,
@@ -433,7 +434,7 @@ export default function InventoryScreen() {
                 alignSelf: "center",
                 width: contentWidth,
                 maxWidth: contentMaxWidth,
-                paddingHorizontal: 30,
+                paddingHorizontal: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveWidth(30) : 30,
               },
               { marginBottom: insets.bottom },
             ]}
@@ -445,29 +446,29 @@ export default function InventoryScreen() {
             keyExtractor={(row) => row.id}
             ListHeaderComponent={
               <Pressable
-              accessibilityHint="Opens inventory filters and sorting options"
-              accessibilityRole="button"
-              onPress={openFilters}
-              style={({ pressed }) => [
-                styles.filterTrigger,
-                pressed && styles.filterTriggerPressed,
-              ]}
-            >
-              <View style={styles.filterTriggerTitle}>
-                <IconSymbol
-                  color={theme.colors.scannerCyan}
-                  name="line.3.horizontal"
-                  size={16}
-                />
-                <Text style={[styles.filterTriggerLabel, { fontSize: responsiveFont(7) }]}>
-                  FILTER &amp; SORT
-                </Text>
-              </View>
+                accessibilityHint="Opens inventory filters and sorting options"
+                accessibilityRole="button"
+                onPress={openFilters}
+                style={({ pressed }) => [
+                  styles.filterTrigger,
+                  pressed && styles.filterTriggerPressed,
+                ]}
+              >
+                <View style={styles.filterTriggerTitle}>
+                  <Ionicons
+                    color={theme.colors.scannerCyan}
+                    name="line.3.horizontal"
+                    size={16}
+                  />
+                  <Text style={[styles.filterTriggerLabel, { fontSize: responsiveFont(7) }]}>
+                    FILTER &amp; SORT
+                  </Text>
+                </View>
 
-              <Text numberOfLines={1} style={[styles.filterTriggerSummary, { fontSize: responsiveFont(7) }]}>
-                {appliedSelectionSummary}
-              </Text>
-            </Pressable>
+                <Text numberOfLines={1} style={[styles.filterTriggerSummary, { fontSize: responsiveFont(7) }]}>
+                  {appliedSelectionSummary}
+                </Text>
+              </Pressable>
             }
             ListEmptyComponent={
               loading ? (
@@ -478,7 +479,7 @@ export default function InventoryScreen() {
               ) : !error ? (
                 <View style={[styles.emptyState, { width: contentWidth }]}>
                   <View style={styles.emptyIcon}>
-                    <IconSymbol
+                    <Ionicons
                       color={theme.colors.goldBright}
                       name="viewfinder"
                       size={34}
@@ -527,22 +528,22 @@ export default function InventoryScreen() {
                     onRemoveBackgroundPress={
                       Platform.OS !== "web" && row.item.photoCount > 0
                         ? () =>
-                            router.push({
-                              pathname: "/listing-guide",
-                              params: { focus: "background", itemId: row.item.id },
-                            })
+                          router.push({
+                            pathname: "/listing-guide",
+                            params: { focus: "background", itemId: row.item.id },
+                          })
                         : undefined
                     }
                     onMarkSoldPress={
                       row.item.quantityOnHand > 0 || row.item.isListed
                         ? () =>
-                            router.push({
-                              pathname: "/command-center",
-                              params: {
-                                openSellerOperations: "1",
-                                saleItemId: row.item.id,
-                              },
-                            })
+                          router.push({
+                            pathname: "/command-center",
+                            params: {
+                              openSellerOperations: "1",
+                              saleItemId: row.item.id,
+                            },
+                          })
                         : undefined
                     }
                     onDeletePress={() => confirmDelete(row.item)}
@@ -564,173 +565,173 @@ export default function InventoryScreen() {
           visible={manualAddOpen}
         />
 
-      <Modal
-        animationType="fade"
-        onRequestClose={() => setFiltersOpen(false)}
-        transparent
-        visible={filtersOpen}
-      >
-        <View accessibilityViewIsModal style={styles.modalBackdrop}>
-          <Pressable
-            accessibilityLabel="Close filters and sorting"
-            accessibilityRole="button"
-            onPress={() => setFiltersOpen(false)}
-            style={styles.modalDismiss}
-          />
+        <Modal
+          animationType="fade"
+          onRequestClose={() => setFiltersOpen(false)}
+          transparent
+          visible={filtersOpen}
+        >
+          <View accessibilityViewIsModal style={styles.modalBackdrop}>
+            <Pressable
+              accessibilityLabel="Close filters and sorting"
+              accessibilityRole="button"
+              onPress={() => setFiltersOpen(false)}
+              style={styles.modalDismiss}
+            />
 
-          <View
-            style={[
-              styles.filterSheet,
-              { paddingBottom: insets.bottom + 20 },
-            ]}
-          >
-            <View style={styles.filterSheetHeader}>
-              <View>
-                <Text style={[styles.filterSheetEyebrow, { fontSize: responsiveFont(8) }]}>
-                  INVENTORY TOOLS
-                </Text>
-                <Text style={[styles.filterSheetTitle, { fontSize: responsiveFont(24) }]}>Filter &amp; Sort</Text>
-              </View>
-
-              <Pressable
-                accessibilityLabel="Close filters and sorting"
-                accessibilityRole="button"
-                onPress={() => setFiltersOpen(false)}
-                style={styles.filterCloseButton}
-              >
-                <IconSymbol
-                  color={theme.colors.cream}
-                  name="xmark"
-                  size={18}
-                />
-              </Pressable>
-            </View>
-
-            <ScrollView
-              contentContainerStyle={styles.filterSheetContent}
-              showsVerticalScrollIndicator={false}
+            <View
+              style={[
+                styles.filterSheet,
+                { paddingBottom: insets.bottom + 20 },
+              ]}
             >
-              <View style={styles.filterSection}>
-                <Text style={[styles.controlLabel, { fontSize: responsiveFont(8) }]}>FLIP DECISION</Text>
-
-                <View style={styles.controlOptions}>
-                  {DECISION_FILTERS.map((option) => {
-                    const selected = option.value === draftFlipDecision;
-
-                    return (
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityState={{ selected }}
-                        key={option.label}
-                        onPress={() => setDraftFlipDecision(option.value)}
-                        style={[
-                          styles.controlChip,
-                          selected && styles.controlChipSelected,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.controlChipText,
-                            selected && styles.controlChipTextSelected,
-                          ]}
-                        >
-                          {option.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
+              <View style={styles.filterSheetHeader}>
+                <View>
+                  <Text style={[styles.filterSheetEyebrow, { fontSize: responsiveFont(8) }]}>
+                    INVENTORY TOOLS
+                  </Text>
+                  <Text style={[styles.filterSheetTitle, { fontSize: responsiveFont(24) }]}>Filter &amp; Sort</Text>
                 </View>
-              </View>
-
-              <View style={styles.filterSection}>
-                <Text style={[styles.controlLabel, { fontSize: responsiveFont(8) }]}>RESALE VELOCITY</Text>
-
-                <View style={styles.controlOptions}>
-                  {VELOCITY_FILTERS.map((option) => {
-                    const selected = option.value === draftResaleVelocity;
-
-                    return (
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityState={{ selected }}
-                        key={option.label}
-                        onPress={() => setDraftResaleVelocity(option.value)}
-                        style={[
-                          styles.controlChip,
-                          selected && styles.controlChipSelected,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.controlChipText,
-                            selected && styles.controlChipTextSelected,
-                          ]}
-                        >
-                          {option.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </View>
-
-              <View style={styles.filterSection}>
-                <Text style={[styles.controlLabel, { fontSize: responsiveFont(8) }]}>SORT INVENTORY</Text>
-
-                <View style={styles.controlOptions}>
-                  {SORT_OPTIONS.map((option) => {
-                    const selected = option.value === draftSort;
-
-                    return (
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityState={{ selected }}
-                        key={option.value}
-                        onPress={() => setDraftSort(option.value)}
-                        style={[
-                          styles.controlChip,
-                          selected && styles.controlChipSelected,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.controlChipText,
-                            selected && styles.controlChipTextSelected,
-                          ]}
-                        >
-                          {option.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </View>
-
-              <View style={styles.filterActions}>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => {
-                    setDraftFlipDecision(undefined);
-                    setDraftResaleVelocity(undefined);
-                    setDraftSort("newest");
-                  }}
-                  style={styles.clearFiltersButton}
-                >
-                  <Text style={[styles.clearFiltersText, { fontSize: responsiveFont(10) }]}>CLEAR</Text>
-                </Pressable>
 
                 <Pressable
+                  accessibilityLabel="Close filters and sorting"
                   accessibilityRole="button"
-                  onPress={applyFilters}
-                  style={styles.applyFiltersButton}
+                  onPress={() => setFiltersOpen(false)}
+                  style={styles.filterCloseButton}
                 >
-                  <Text style={[styles.applyFiltersText, { fontSize: responsiveFont(10) }]}>APPLY</Text>
+                  <Ionicons
+                    color={theme.colors.cream}
+                    name="xmark"
+                    size={18}
+                  />
                 </Pressable>
               </View>
-            </ScrollView>
+
+              <ScrollView
+                contentContainerStyle={styles.filterSheetContent}
+                showsVerticalScrollIndicator={false}
+              >
+                <View style={styles.filterSection}>
+                  <Text style={[styles.controlLabel, { fontSize: responsiveFont(8) }]}>FLIP DECISION</Text>
+
+                  <View style={styles.controlOptions}>
+                    {DECISION_FILTERS.map((option) => {
+                      const selected = option.value === draftFlipDecision;
+
+                      return (
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityState={{ selected }}
+                          key={option.label}
+                          onPress={() => setDraftFlipDecision(option.value)}
+                          style={[
+                            styles.controlChip,
+                            selected && styles.controlChipSelected,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.controlChipText,
+                              selected && styles.controlChipTextSelected,
+                            ]}
+                          >
+                            {option.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                <View style={styles.filterSection}>
+                  <Text style={[styles.controlLabel, { fontSize: responsiveFont(8) }]}>RESALE VELOCITY</Text>
+
+                  <View style={styles.controlOptions}>
+                    {VELOCITY_FILTERS.map((option) => {
+                      const selected = option.value === draftResaleVelocity;
+
+                      return (
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityState={{ selected }}
+                          key={option.label}
+                          onPress={() => setDraftResaleVelocity(option.value)}
+                          style={[
+                            styles.controlChip,
+                            selected && styles.controlChipSelected,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.controlChipText,
+                              selected && styles.controlChipTextSelected,
+                            ]}
+                          >
+                            {option.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                <View style={styles.filterSection}>
+                  <Text style={[styles.controlLabel, { fontSize: responsiveFont(8) }]}>SORT INVENTORY</Text>
+
+                  <View style={styles.controlOptions}>
+                    {SORT_OPTIONS.map((option) => {
+                      const selected = option.value === draftSort;
+
+                      return (
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityState={{ selected }}
+                          key={option.value}
+                          onPress={() => setDraftSort(option.value)}
+                          style={[
+                            styles.controlChip,
+                            selected && styles.controlChipSelected,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.controlChipText,
+                              selected && styles.controlChipTextSelected,
+                            ]}
+                          >
+                            {option.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                <View style={styles.filterActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => {
+                      setDraftFlipDecision(undefined);
+                      setDraftResaleVelocity(undefined);
+                      setDraftSort("newest");
+                    }}
+                    style={styles.clearFiltersButton}
+                  >
+                    <Text style={[styles.clearFiltersText, { fontSize: responsiveFont(10) }]}>CLEAR</Text>
+                  </Pressable>
+
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={applyFilters}
+                    style={styles.applyFiltersButton}
+                  >
+                    <Text style={[styles.applyFiltersText, { fontSize: responsiveFont(10) }]}>APPLY</Text>
+                  </Pressable>
+                </View>
+              </ScrollView>
+            </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
       </View>
     </KeepFlipBackground>
   );
@@ -758,18 +759,18 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     viewTabs: {
       backgroundColor: theme.colors.surfaceOverlay,
       borderColor: theme.colors.dividerStrong,
-      borderRadius: 13,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(13) : 13,
       borderWidth: 1,
       flexDirection: "row",
-      gap: 4,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
       padding: 4,
     },
     viewTab: {
       alignItems: "center",
-      borderRadius: 9,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
       flex: 1,
       justifyContent: "center",
-      minHeight: 40,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(40) : 40,
     },
     viewTabActive: {
       backgroundColor: theme.colors.iconSurfaceCyan,
@@ -788,7 +789,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     header: {
     },
     feedItem: {
-      marginBottom: 14,
+      marginBottom: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(14) : 14,
     },
     eyebrow: {
       color: theme.colors.gold,
@@ -802,11 +803,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       letterSpacing: -0.6,
     },
     subtitle: {
-      maxWidth: 560,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(560) : 560,
       fontFamily: theme.fonts.body,
       color: theme.colors.textMuted,
-      fontSize: 12,
-      lineHeight: 15,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15,
     },
     filterTrigger: {
       alignItems: "center",
@@ -816,10 +817,10 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderWidth: StyleSheet.hairlineWidth,
       width: '100%',
       flexDirection: "row",
-      gap: 12,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-      marginBottom: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : 10,
+      marginBottom: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : 10,
       backgroundColor: theme.colors.surfaceInset,
     },
     filterTriggerPressed: {
@@ -828,22 +829,22 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     filterTriggerTitle: {
       alignItems: "center",
       flexDirection: "row",
-      gap: 7,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
     },
     filterTriggerLabel: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.body,
-      fontSize: 11,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11,
       fontWeight: "900",
       letterSpacing: 0.8,
     },
     filterTriggerSummary: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.body,
-      fontSize: 11,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11,
       fontWeight: "900",
       letterSpacing: 0.5,
-      maxWidth: 190,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(190) : 190,
     },
     modalBackdrop: {
       flex: 1,
@@ -859,8 +860,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderTopRightRadius: theme.radii.large,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: theme.colors.accentVioletBorder,
-      paddingHorizontal: 18,
-      paddingTop: 18,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(18) : 18,
+      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(18) : 18,
       backgroundColor: theme.colors.surfaceOverlay,
       boxShadow: "0 -12px 36px rgba(0, 0, 0, 0.36)",
     },
@@ -868,25 +869,25 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       alignItems: "center",
       flexDirection: "row",
       justifyContent: "space-between",
-      marginBottom: 16,
+      marginBottom: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(16) : 16,
     },
     filterSheetEyebrow: {
       color: theme.colors.gold,
       fontFamily: theme.fonts.body,
-      fontSize: 11,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11,
       fontWeight: "900",
       letterSpacing: 1.2,
     },
     filterSheetTitle: {
       color: theme.colors.cream,
-      fontSize: 24,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(24) : 24,
       fontWeight: "900",
       letterSpacing: -0.4,
     },
     filterCloseButton: {
       alignItems: "center",
-      width: 38,
-      height: 38,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(38) : 38,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(38) : 38,
       justifyContent: "center",
       borderRadius: theme.radii.pill,
       borderWidth: StyleSheet.hairlineWidth,
@@ -894,30 +895,30 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.iconSurfaceViolet,
     },
     filterSheetContent: {
-      gap: 20,
-      paddingBottom: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(20) : 20,
+      paddingBottom: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(12) : 12,
     },
     filterSection: {
-      gap: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
     },
     controlLabel: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.body,
-      fontSize: 11,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11,
       fontWeight: "900",
       letterSpacing: 1.1,
     },
     controlOptions: {
       flexDirection: "row",
       flexWrap: "wrap",
-      gap: 7,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
     },
     controlChip: {
       borderColor: theme.colors.accentVioletBorder,
       borderRadius: theme.radii.pill,
       borderWidth: StyleSheet.hairlineWidth,
-      paddingHorizontal: 9,
-      paddingVertical: 6,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : 6,
       backgroundColor: theme.colors.surfaceInset,
     },
     controlChipSelected: {
@@ -927,7 +928,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     controlChipText: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.body,
-      fontSize: 11,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11,
       fontWeight: "900",
       letterSpacing: 0.65,
     },
@@ -936,14 +937,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     filterActions: {
       flexDirection: "row",
-      gap: 10,
-      marginTop: 4,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      marginTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(4) : 4,
     },
     clearFiltersButton: {
       alignItems: "center",
       flex: 1,
       justifyContent: "center",
-      minHeight: 46,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(46) : 46,
       borderRadius: theme.radii.medium,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: theme.colors.accentVioletBorder,
@@ -952,7 +953,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     clearFiltersText: {
       color: theme.colors.cream,
       fontFamily: theme.fonts.body,
-      fontSize: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
       fontWeight: "900",
       letterSpacing: 1,
     },
@@ -960,22 +961,22 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       alignItems: "center",
       flex: 1.4,
       justifyContent: "center",
-      minHeight: 46,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(46) : 46,
       borderRadius: theme.radii.medium,
       backgroundColor: theme.colors.scannerCyan,
     },
     applyFiltersText: {
       color: theme.colors.textOnAccent,
       fontFamily: theme.fonts.body,
-      fontSize: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
       fontWeight: "900",
       letterSpacing: 1,
     },
     errorCard: {
-      marginTop: 10,
+      marginTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : 10,
       flexDirection: "row",
       alignItems: "center",
-      gap: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
       padding: 14,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
@@ -985,31 +986,31 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     errorText: {
       flex: 1,
       color: theme.colors.text,
-      fontSize: 13,
-      lineHeight: 18,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : 13,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : 18,
     },
     retryButton: {
-      paddingHorizontal: 13,
-      paddingVertical: 8,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(13) : 13,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(8) : 8,
       borderRadius: theme.radii.pill,
       backgroundColor: theme.colors.gold,
     },
     retryText: {
       color: theme.colors.textOnAccent,
-      fontSize: 12,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
       fontWeight: "900",
     },
     emptyState: {
       flex: 1,
-      minHeight: 360,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(360) : 360,
       alignItems: "center",
       justifyContent: "center",
-      gap: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
       padding: 24,
     },
     emptyIcon: {
-      width: 74,
-      height: 74,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(74) : 74,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(74) : 74,
       alignItems: "center",
       justifyContent: "center",
       borderRadius: theme.radii.pill,
@@ -1020,14 +1021,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     emptyTitle: {
       color: theme.colors.cream,
-      fontSize: 20,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(20) : 20,
       fontWeight: "900",
     },
     emptyBody: {
-      maxWidth: 330,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(330) : 330,
       color: theme.colors.textMuted,
-      fontSize: 13,
-      lineHeight: 19,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : 13,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(19) : 19,
       textAlign: "center",
     },
   });

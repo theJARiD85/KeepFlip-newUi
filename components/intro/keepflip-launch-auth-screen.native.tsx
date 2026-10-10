@@ -1,32 +1,10 @@
-import * as Haptics from 'expo-haptics';
-import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
-import {
-  useState,
-  useRef,
-  type ComponentProps,
-  type ComponentRef,
-  type RefObject,
-} from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-  type TextInputProps,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import { FacebookSignInButton } from '@/components/auth/facebook-sign-in-button';
 import {
   KeepFlipAuthError,
   useKeepFlipAuth,
 } from '@/components/auth/keepflip-auth-context';
-import { FacebookSignInButton } from '@/components/auth/facebook-sign-in-button';
 import { KeepFlipMfaChallenge } from '@/components/auth/keepflip-mfa-challenge';
 import { FlipCompanion } from '@/components/flip';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import {
   KeepFlipBackground,
 } from '@/components/ui/keepflip-background';
@@ -40,6 +18,7 @@ import {
   useResponsiveStyles,
 } from '@/hooks/use-responsive-layout';
 import { getAppwriteCoreServices } from '@/lib/appwrite';
+import { KEEPFLIP_ANALYTICS_EVENTS, trackKeepFlipEvent } from '@/services/keepflip-analytics';
 import {
   KEEPFLIP_PLAN_DEFINITIONS,
   type KeepFlipBillingCadence,
@@ -47,7 +26,27 @@ import {
 } from '@/services/keepflip-subscription-service';
 import type { ResellerBuyRules } from '@/services/reseller-buy-rules-service';
 import { completeScanInventoryWalkthrough } from '@/services/user-profile-onboarding-service';
-import { KEEPFLIP_ANALYTICS_EVENTS, trackKeepFlipEvent } from '@/services/keepflip-analytics';
+import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
+import {
+  useRef,
+  useState,
+  type ComponentProps,
+  type ComponentRef,
+  type RefObject,
+} from 'react';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  type TextInputProps,
+} from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export type AuthSubscriptionSelection = {
   cadence: KeepFlipBillingCadence;
@@ -66,7 +65,7 @@ type KeepFlipLaunchAuthScreenProps = {
   onBack?: () => void;
 };
 
-type IconName = ComponentProps<typeof IconSymbol>['name'];
+type IconName = ComponentProps<typeof Ionicons>['name'];
 type TextInputHandle = ComponentRef<typeof TextInput>;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -100,7 +99,7 @@ function AuthField({
     <View style={styles.fieldGroup}>
       <Text style={[styles.fieldLabel, { fontSize: responsiveFont(10) }]}>{label}</Text>
       <View style={styles.fieldShell}>
-        <IconSymbol color={theme.colors.goldMuted} name={icon} size={18} />
+        <Ionicons color={theme.colors.goldMuted} name={icon} size={18} />
         <TextInput
           {...inputProps}
           accessibilityLabel={label}
@@ -116,7 +115,7 @@ function AuthField({
             hitSlop={10}
             onPress={onToggleSecure}
             style={({ pressed }) => [styles.visibilityButton, pressed && styles.pressed]}>
-            <IconSymbol
+            <Ionicons
               color={theme.colors.textMuted}
               name={secureVisible ? 'eye.slash.fill' : 'eye.fill'}
               size={19}
@@ -150,7 +149,7 @@ function PlanSelection({
     <View style={styles.checkoutSection}>
       <View style={styles.checkoutBanner}>
         <View style={styles.checkoutBannerIcon}>
-          <IconSymbol
+          <Ionicons
             color={theme.colors.scannerCyan}
             name="sparkles"
             size={20}
@@ -277,7 +276,7 @@ function PlanSelection({
               <View style={styles.checkoutFeatureList}>
                 {[...definition.limits, ...definition.features].map((feature) => (
                   <View key={feature} style={styles.checkoutFeatureRow}>
-                    <IconSymbol
+                    <Ionicons
                       color={theme.colors.scannerCyan}
                       name="checkmark.circle.fill"
                       size={15}
@@ -323,7 +322,7 @@ function MigrationNotice() {
   return (
     <View style={styles.migrationNotice}>
       <View style={styles.migrationIcon}>
-        <IconSymbol color={theme.colors.scannerCyan} name="sparkles" size={17} />
+        <Ionicons color={theme.colors.scannerCyan} name="sparkles" size={17} />
       </View>
       <View style={styles.migrationCopy}>
         <Text style={[styles.migrationEyebrow, { fontSize: responsiveFont(8) }]}>EXISTING ACCOUNT UPDATE</Text>
@@ -506,7 +505,7 @@ export function KeepFlipLaunchAuthScreen({
       setLocalError(
         mfaIsPending
           ? null
-        : error instanceof Error
+          : error instanceof Error
             ? error.message
             : 'KeepFlip could not complete authentication. Please try again.',
       );
@@ -542,26 +541,26 @@ export function KeepFlipLaunchAuthScreen({
         <ScrollView
           contentContainerStyle={[styles.content,
           { paddingBottom: insets.bottom + 30, paddingTop: insets.top + 15 }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
-          style={{marginTop: insets.top, marginBottom: insets.bottom}}
+          style={{ marginTop: insets.top, marginBottom: insets.bottom }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <Animated.View entering={FadeIn.duration(260)} style={styles.brandLockup}>
-                      <View style={styles.logoHalo}>
-                        <Image
-                          accessibilityLabel="KeepFlip logo"
-                          contentFit="contain"
-                          source={KEEPFLIP_LOGO}
-                          style={styles.logo}
-                        />
-                      </View>
-                      <Text style={[styles.brandName, { fontSize: responsiveFont(35) }]}>{migrationMode ? 'Welcome back.' : mode === 'create-account' ? "Let's make your account." : 'Welcome back.'}</Text>
-                      <Text style={styles.brandTagline}>{migrationMode
-                ? 'Sign in to your existing KeepFlip account, then choose the tier you want to try.'
-                : isPreAccountSignup
-                  ? 'Add your name and login details. Your free account needs no credit card, and your Flip setup starts right after you sign in.'
-                  : mode === 'create-account'
-                    ? 'Flip has your seller setup. Add your login details and choose how you want KeepFlip to work for you.'
-                    : 'Sign in to continue to your KeepFlip command center.'}</Text>
+            <View style={styles.logoHalo}>
+              <Image
+                accessibilityLabel="KeepFlip logo"
+                contentFit="contain"
+                source={KEEPFLIP_LOGO}
+                style={styles.logo}
+              />
+            </View>
+            <Text style={[styles.brandName, { fontSize: responsiveFont(35) }]}>{migrationMode ? 'Welcome back.' : mode === 'create-account' ? "Let's make your account." : 'Welcome back.'}</Text>
+            <Text style={styles.brandTagline}>{migrationMode
+              ? 'Sign in to your existing KeepFlip account, then choose the tier you want to try.'
+              : isPreAccountSignup
+                ? 'Add your name and login details. Your free account needs no credit card, and your Flip setup starts right after you sign in.'
+                : mode === 'create-account'
+                  ? 'Flip has your seller setup. Add your login details and choose how you want KeepFlip to work for you.'
+                  : 'Sign in to continue to your KeepFlip command center.'}</Text>
           </Animated.View>
 
           <View style={styles.panel}>
@@ -669,7 +668,7 @@ export function KeepFlipLaunchAuthScreen({
               </View>
             ) : (
               <View style={styles.accountReadyNotice}>
-                <IconSymbol
+                <Ionicons
                   color={theme.colors.scannerCyan}
                   name="checkmark.shield.fill"
                   size={18}
@@ -707,7 +706,7 @@ export function KeepFlipLaunchAuthScreen({
                         ? 'CONTINUE TO KEEPFLIP'
                         : 'CREATE FREE ACCOUNT & ENTER KEEPFLIP'}
                   </Text>
-                  <IconSymbol color={theme.colors.textOnAccent} name="arrow.right" size={19} />
+                  <Ionicons color={theme.colors.textOnAccent} name="arrow.right" size={19} />
                 </>
               )}
             </Pressable> : null}
@@ -746,23 +745,23 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: 'center',
       width: 140,
     },
-        brandLockup: { alignItems: 'center', gap: 8 },
-        brandName: {
-          color: theme.colors.cream,
-          fontFamily: theme.fonts.bold,
-          fontSize: 35,
-          letterSpacing: 3,
-          textShadowColor: theme.colors.dividerStrong,
-          textShadowOffset: { width: 0, height: 0 },
-          textShadowRadius: 15,
-        },
-        brandTagline: {
-          color: theme.colors.textMuted,
-          fontFamily: theme.fonts.display,
-          fontSize: 12,
-          letterSpacing: 2.05,
-          textAlign: 'center',
-        },
+    brandLockup: { alignItems: 'center', gap: 8 },
+    brandName: {
+      color: theme.colors.cream,
+      fontFamily: theme.fonts.bold,
+      fontSize: 35,
+      letterSpacing: 3,
+      textShadowColor: theme.colors.dividerStrong,
+      textShadowOffset: { width: 0, height: 0 },
+      textShadowRadius: 15,
+    },
+    brandTagline: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.display,
+      fontSize: 12,
+      letterSpacing: 2.05,
+      textAlign: 'center',
+    },
     backButton: { alignItems: 'center', flexDirection: 'row', gap: 4, minHeight: 40, paddingHorizontal: 4 },
     backButtonText: { color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: 9, letterSpacing: 1 },
     billingOption: { alignItems: 'center', borderRadius: 10, flex: 1, gap: 2, justifyContent: 'center', minHeight: 44 },
@@ -797,7 +796,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     migrationIcon: { alignItems: 'center', backgroundColor: theme.colors.iconSurfaceCyan, borderRadius: 11, height: 36, justifyContent: 'center', width: 36 },
     migrationNotice: { backgroundColor: theme.colors.iconSurfaceCyan, borderColor: theme.colors.accentCyanBorder, borderRadius: 14, borderWidth: 1, flexDirection: 'row', gap: 10, padding: 12 },
     migrationTitle: { color: theme.colors.cream, fontFamily: theme.fonts.bold, fontSize: 15, lineHeight: 20 },
-    panel: {gap: 16, maxWidth: 620, width: '100%' },
+    panel: { gap: 16, maxWidth: 620, width: '100%' },
     planList: { gap: 9 },
     planOption: { backgroundColor: theme.colors.cardSoft, borderColor: theme.colors.divider, borderRadius: 15, borderWidth: 1, gap: 7, padding: 12 },
     planTrial: { color: theme.colors.scannerCyan, fontFamily: theme.fonts.radar, fontSize: 8, letterSpacing: 0.8 },

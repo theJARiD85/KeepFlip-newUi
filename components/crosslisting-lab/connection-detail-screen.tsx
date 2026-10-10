@@ -8,12 +8,14 @@ import { KeepFlipText as Text, KeepFlipTextInput as TextInput } from '@/componen
 import { brand } from '@/components/crosslisting-lab/brand';
 import { channels, type MarketplaceId } from '@/components/crosslisting-lab/types';
 import { disconnectMarketplace, listConnections, saveApiConnection, saveBrowserConnection } from '@/services/crosslisting-lab-api';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 function errorText(error: unknown): string {
   return error instanceof Error ? error.message.replaceAll('_', ' ') : 'Could not save this connection.';
 }
 
 export function ConnectionDetailScreen({ platform }: { platform: string }) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const router = useRouter();
   const { status: authStatus } = useKeepFlipAuth();
   const channel = channels.find((item) => item.id === platform);
@@ -35,7 +37,7 @@ export function ConnectionDetailScreen({ platform }: { platform: string }) {
   }, [authStatus, channel]);
 
   if (!channel) {
-    return <SafeAreaView style={styles.safeArea}><Text style={styles.title}>Unknown marketplace</Text></SafeAreaView>;
+    return <SafeAreaView style={responsiveStyles.safeArea}><Text style={responsiveStyles.title}>Unknown marketplace</Text></SafeAreaView>;
   }
 
   const isApi = channel.id === 'ebay' || channel.id === 'shopify';
@@ -95,39 +97,39 @@ export function ConnectionDetailScreen({ platform }: { platform: string }) {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <View style={styles.content}>
-          <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.backButton}><Text style={styles.backText}>← Marketplaces</Text></Pressable>
-          <Text style={styles.eyebrow}>KEEPFLIP / CROSSLISTING LAB</Text>
-          <Text style={styles.title}>{channel.name}</Text>
-          <Text style={styles.subtitle}>{isApi ? 'Save an official API token for a test listing.' : 'Save a signed-in browser storage state for the prototype adapter.'}</Text>
+    <SafeAreaView style={responsiveStyles.safeArea}>
+      <ScrollView contentContainerStyle={responsiveStyles.scroll} keyboardShouldPersistTaps="handled">
+        <View style={responsiveStyles.content}>
+          <Pressable accessibilityRole="button" onPress={() => router.back()} style={responsiveStyles.backButton}><Text style={responsiveStyles.backText}>← Marketplaces</Text></Pressable>
+          <Text style={responsiveStyles.eyebrow}>KEEPFLIP / CROSSLISTING LAB</Text>
+          <Text style={responsiveStyles.title}>{channel.name}</Text>
+          <Text style={responsiveStyles.subtitle}>{isApi ? 'Save an official API token for a test listing.' : 'Save a signed-in browser storage state for the prototype adapter.'}</Text>
 
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>{connected ? 'Replace saved access' : 'Save test access'}</Text>
-            <Text style={styles.cardBody}>The API encrypts the value before it reaches the private credentials table. A saved value does not prove that publishing will succeed.</Text>
-            <Text style={styles.label}>{channel.id === 'shopify' ? 'STORE DOMAIN' : 'ACCOUNT LABEL (OPTIONAL)'}</Text>
-            <TextInput accessibilityLabel={channel.id === 'shopify' ? 'Shopify store domain' : 'Account label'} autoCapitalize="none" autoCorrect={false} onChangeText={setAccountLabel} placeholder={channel.id === 'shopify' ? 'your-store.myshopify.com' : 'Seller account'} placeholderTextColor={brand.colors.textMuted} style={styles.input} value={accountLabel} />
+          <View style={responsiveStyles.card}>
+            <Text style={responsiveStyles.cardTitle}>{connected ? 'Replace saved access' : 'Save test access'}</Text>
+            <Text style={responsiveStyles.cardBody}>The API encrypts the value before it reaches the private credentials table. A saved value does not prove that publishing will succeed.</Text>
+            <Text style={responsiveStyles.label}>{channel.id === 'shopify' ? 'STORE DOMAIN' : 'ACCOUNT LABEL (OPTIONAL)'}</Text>
+            <TextInput accessibilityLabel={channel.id === 'shopify' ? 'Shopify store domain' : 'Account label'} autoCapitalize="none" autoCorrect={false} onChangeText={setAccountLabel} placeholder={channel.id === 'shopify' ? 'your-store.myshopify.com' : 'Seller account'} placeholderTextColor={brand.colors.textMuted} style={responsiveStyles.input} value={accountLabel} />
             {isApi ? (
               <>
-                <Text style={styles.label}>{channel.id === 'ebay' ? 'EBAY ACCESS TOKEN' : 'SHOPIFY ADMIN API TOKEN'}</Text>
-                <TextInput accessibilityLabel="Marketplace access token" autoCapitalize="none" autoCorrect={false} onChangeText={setAccessToken} placeholder="Paste access token" placeholderTextColor={brand.colors.textMuted} secureTextEntry style={styles.input} value={accessToken} />
-                <Text style={styles.hint}>The prototype does not refresh OAuth tokens yet. Use a test account and replace expired access here.</Text>
+                <Text style={responsiveStyles.label}>{channel.id === 'ebay' ? 'EBAY ACCESS TOKEN' : 'SHOPIFY ADMIN API TOKEN'}</Text>
+                <TextInput accessibilityLabel="Marketplace access token" autoCapitalize="none" autoCorrect={false} onChangeText={setAccessToken} placeholder="Paste access token" placeholderTextColor={brand.colors.textMuted} secureTextEntry style={responsiveStyles.input} value={accessToken} />
+                <Text style={responsiveStyles.hint}>The prototype does not refresh OAuth tokens yet. Use a test account and replace expired access here.</Text>
               </>
             ) : (
               <>
-                <Text style={styles.label}>PLAYWRIGHT STORAGE STATE JSON</Text>
-                <TextInput accessibilityLabel="Browser storage state JSON" autoCapitalize="none" autoCorrect={false} multiline onChangeText={setStorageState} placeholder={'{"cookies":[],"origins":[]}'} placeholderTextColor={brand.colors.textMuted} style={[styles.input, styles.jsonInput]} textAlignVertical="top" value={storageState} />
-                <Text style={styles.hint}>Export storageState after signing in to {channel.name} in your own browser. Paste the JSON here with cookies and origins from that marketplace only. Do not enter a password.</Text>
+                <Text style={responsiveStyles.label}>PLAYWRIGHT STORAGE STATE JSON</Text>
+                <TextInput accessibilityLabel="Browser storage state JSON" autoCapitalize="none" autoCorrect={false} multiline onChangeText={setStorageState} placeholder={'{"cookies":[],"origins":[]}'} placeholderTextColor={brand.colors.textMuted} style={[responsiveStyles.input, responsiveStyles.jsonInput]} textAlignVertical="top" value={storageState} />
+                <Text style={responsiveStyles.hint}>Export storageState after signing in to {channel.name} in your own browser. Paste the JSON here with cookies and origins from that marketplace only. Do not enter a password.</Text>
               </>
             )}
-            {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
-            {success ? <Text accessibilityRole="alert" style={styles.success}>{success}</Text> : null}
-            <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy || authStatus !== 'signed-in' }} disabled={busy || authStatus !== 'signed-in'} onPress={() => { void save(channel); }} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed, busy && styles.disabled]}>
+            {error ? <Text accessibilityRole="alert" style={responsiveStyles.error}>{error}</Text> : null}
+            {success ? <Text accessibilityRole="alert" style={responsiveStyles.success}>{success}</Text> : null}
+            <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy || authStatus !== 'signed-in' }} disabled={busy || authStatus !== 'signed-in'} onPress={() => { void save(channel); }} style={({ pressed }) => [responsiveStyles.primaryButton, pressed && responsiveStyles.pressed, busy && responsiveStyles.disabled]}>
               {busy ? <ActivityIndicator color={brand.colors.background} size="small" /> : null}
-              <Text style={styles.primaryText}>{busy ? 'Saving…' : 'Save access'}</Text>
+              <Text style={responsiveStyles.primaryText}>{busy ? 'Saving…' : 'Save access'}</Text>
             </Pressable>
-            {connected ? <Pressable accessibilityRole="button" disabled={busy} onPress={() => { void disconnect(channel); }} style={styles.disconnectButton}><Text style={styles.disconnectText}>Remove saved access</Text></Pressable> : null}
+            {connected ? <Pressable accessibilityRole="button" disabled={busy} onPress={() => { void disconnect(channel); }} style={responsiveStyles.disconnectButton}><Text style={responsiveStyles.disconnectText}>Remove saved access</Text></Pressable> : null}
           </View>
         </View>
       </ScrollView>
@@ -160,3 +162,100 @@ const styles = StyleSheet.create({
   disconnectButton: { alignSelf: 'center', padding: 10 },
   disconnectText: { color: brand.colors.danger, fontSize: 12, fontWeight: '800' },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    scroll: {
+      ...styles["scroll"],
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(40) : 40,
+    },
+    content: {
+      ...styles["content"],
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(760) : 760,
+    },
+    backButton: {
+      ...styles["backButton"],
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(10) : 10,
+      marginBottom: layout.isWeb ? layout.webResponsiveHeight(12) : 12,
+    },
+    backText: {
+      ...styles["backText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+    eyebrow: {
+      ...styles["eyebrow"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(9) : 9,
+    },
+    title: {
+      ...styles["title"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(29) : 29,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(6) : 6,
+    },
+    subtitle: {
+      ...styles["subtitle"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(19) : 19,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(7) : 7,
+      marginBottom: layout.isWeb ? layout.webResponsiveHeight(22) : 22,
+    },
+    card: {
+      ...styles["card"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+    },
+    cardTitle: {
+      ...styles["cardTitle"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(17) : 17,
+    },
+    cardBody: {
+      ...styles["cardBody"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : 18,
+    },
+    label: {
+      ...styles["label"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(9) : 9,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(8) : 8,
+    },
+    input: {
+      ...styles["input"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(48) : 48,
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(10) : 10,
+    },
+    jsonInput: {
+      ...styles["jsonInput"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(155) : 155,
+    },
+    hint: {
+      ...styles["hint"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(17) : 17,
+    },
+    error: {
+      ...styles["error"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : 18,
+    },
+    success: {
+      ...styles["success"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : 18,
+    },
+    primaryButton: {
+      ...styles["primaryButton"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(48) : 48,
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(8) : 8,
+    },
+    primaryText: {
+      ...styles["primaryText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+    },
+    disconnectText: {
+      ...styles["disconnectText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+  });
+}

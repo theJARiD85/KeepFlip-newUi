@@ -9,6 +9,7 @@ import {
   WebTextLink,
 } from '@/components/web/web-public-page';
 import { KEEPFLIP_GOOGLE_PLAY_URL, KEEPFLIP_SITE_URL } from '@/constants/keepflip-public-site';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 const metadata = {
   canonicalPath: '/changelog',
@@ -24,6 +25,7 @@ const metadata = {
 } as const;
 
 export default function ChangelogPage() {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   return (
     <WebMarketingPage
       metadata={metadata}
@@ -32,7 +34,7 @@ export default function ChangelogPage() {
       intro="A public update log for resellers who want to know when KeepFlip changes."
     >
       <WebContentSection title="Latest public app update.">
-        <View style={styles.card}>
+        <View style={responsiveStyles.card}>
           <WebInfoCard title="Version 2.1.7 · September 26, 2026">
             <WebCopy>
               Google Play lists version 2.1.7 as the current release and shows September 26, 2026 as its last update date.
@@ -56,3 +58,13 @@ export default function ChangelogPage() {
 const styles = StyleSheet.create({
   card: { alignSelf: 'flex-start', maxWidth: 570, width: '100%' },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    card: {
+      ...styles["card"],
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(570) : 570,
+    },
+  });
+}

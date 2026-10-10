@@ -10,6 +10,7 @@ import {
   type CrosslistingMarketplace,
   type CrosslistingPayload,
 } from '@/services/crosslisting-service';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 type ListingData = {
   title: string;
@@ -36,6 +37,7 @@ export const CrosslistActionButton: React.FC<CrosslistActionProps> = ({
   listing,
   platform,
 }) => {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const [sessionPayload, setSessionPayload] = useState<CrosslistingPayload | null>(null);
   const [notice, setNotice] = useState('');
 
@@ -90,17 +92,17 @@ export const CrosslistActionButton: React.FC<CrosslistActionProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={responsiveStyles.container}>
       <Pressable
         accessibilityRole="button"
         onPress={() => void handleCrosslistExecution()}
-        style={styles.button}
+        style={responsiveStyles.button}
       >
-        <Text style={styles.buttonText}>
+        <Text style={responsiveStyles.buttonText}>
           List to {CROSSLISTING_DESTINATIONS[platform].label}
         </Text>
       </Pressable>
-      {notice ? <Text selectable style={styles.notice}>{notice}</Text> : null}
+      {notice ? <Text selectable style={responsiveStyles.notice}>{notice}</Text> : null}
       {sessionPayload ? (
         <MarketplaceAuthModal
           onClose={() => setSessionPayload(null)}
@@ -140,3 +142,27 @@ const styles = StyleSheet.create({
     lineHeight: 17,
   },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    container: {
+      ...styles["container"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+    },
+    button: {
+      ...styles["button"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(44) : 44,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(20) : 20,
+    },
+    buttonText: {
+      ...styles["buttonText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
+    },
+    notice: {
+      ...styles["notice"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(17) : 17,
+    },
+  });
+}

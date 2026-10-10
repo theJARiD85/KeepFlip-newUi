@@ -12,7 +12,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useEbayConnection } from '@/components/ebay/ebay-connection-context';
 import { EbayShoppingBagIcon } from '@/components/ebay/ebay-shopping-bag-icon';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
@@ -186,7 +185,7 @@ export default function EbayConnectScreen() {
             {BENEFITS.map((benefit) => (
               <View key={benefit.title} style={styles.benefitRow}>
                 <View style={styles.benefitIcon}>
-                  <IconSymbol
+                  <Ionicons
                     color={theme.colors.scannerCyan}
                     name={benefit.icon}
                     size={22}
@@ -202,7 +201,7 @@ export default function EbayConnectScreen() {
         </View>
 
         <View style={styles.permissionNote}>
-          <IconSymbol
+          <Ionicons
             color={theme.colors.goldBright}
             name="checkmark.shield.fill"
             size={21}
@@ -279,20 +278,20 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   const staticStyles = StyleSheet.create({
     content: {
       width: '100%',
-      maxWidth: 720,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(720) : 720,
       alignSelf: 'center',
-      gap: 15,
-      paddingHorizontal: 20,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(15) : 15,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(20) : 20,
     },
     topBar: {
-      minHeight: 44,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(44) : 44,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
     },
     backButton: {
-      width: 44,
-      height: 44,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(44) : 44,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(44) : 44,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: theme.radii.pill,
@@ -305,28 +304,28 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     topLabel: {
       color: theme.colors.textMuted,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: '900',
       letterSpacing: 1.8,
     },
     topSpacer: {
-      width: 44,
-      height: 44,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(44) : 44,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(44) : 44,
     },
     pressed: {
       opacity: 0.72,
     },
     hero: {
       alignItems: 'center',
-      gap: 7,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
     },
     logoShell: {
-      width: 108,
-      height: 108,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(108) : 108,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(108) : 108,
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: 6,
-      borderRadius: 30,
+      marginBottom: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : 6,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(30) : 30,
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
       backgroundColor: theme.colors.card,
@@ -334,39 +333,39 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     eyebrow: {
       color: theme.colors.gold,
-      fontSize: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
       fontWeight: '900',
       letterSpacing: 2.4,
     },
     title: {
       color: theme.colors.cream,
-      fontSize: 31,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(31) : 31,
       fontWeight: '900',
       textAlign: 'center',
     },
     subtitle: {
-      maxWidth: 560,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(560) : 560,
       color: theme.colors.textMuted,
-      fontSize: 14,
-      lineHeight: 21,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(21) : 21,
       textAlign: 'center',
     },
     section: {
-      gap: 11,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : 11,
     },
     sectionEyebrow: {
       color: theme.colors.goldMuted,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: '900',
       letterSpacing: 1.8,
     },
     benefitList: {
-      gap: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
     },
     benefitRow: {
       flexDirection: 'row',
       alignItems: 'flex-start',
-      gap: 13,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(13) : 13,
       padding: 15,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
@@ -374,8 +373,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.surfaceInset,
     },
     benefitIcon: {
-      width: 42,
-      height: 42,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(42) : 42,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(42) : 42,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: theme.radii.medium,
@@ -386,22 +385,22 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     benefitCopy: {
       minWidth: 0,
       flex: 1,
-      gap: 4,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
     },
     benefitTitle: {
       color: theme.colors.cream,
-      fontSize: 15,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15,
       fontWeight: '800',
     },
     benefitDescription: {
       color: theme.colors.textMuted,
-      fontSize: 12,
-      lineHeight: 18,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : 18,
     },
     permissionNote: {
       flexDirection: 'row',
       alignItems: 'flex-start',
-      gap: 11,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : 11,
       padding: 14,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
@@ -412,12 +411,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       minWidth: 0,
       flex: 1,
       color: theme.colors.textMuted,
-      fontSize: 12,
-      lineHeight: 18,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : 18,
       fontFamily: theme.fonts.body,
     },
     resultCard: {
-      gap: 4,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
       padding: 14,
       borderRadius: theme.radii.medium,
       borderWidth: 1,
@@ -434,34 +433,34 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     resultTitle: {
       color: theme.colors.cream,
-      fontSize: 14,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14,
       fontWeight: '900',
     },
     resultBody: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.body,
-      fontSize: 12,
-      lineHeight: 18,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : 18,
     },
     actions: {
-      gap: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       paddingTop: 2,
     },
     environmentLabel: {
       fontFamily: theme.fonts.radar,
       color: theme.colors.scannerCyan,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 1.5,
       textAlign: 'center',
     },
     connectButton: {
-      minHeight: 58,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(58) : 58,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 12,
-      paddingHorizontal: 18,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(18) : 18,
       borderRadius: theme.radii.medium,
       backgroundColor: theme.colors.goldBright,
       boxShadow: '0 12px 28px rgba(215, 168, 74, 0.16)',
@@ -475,19 +474,19 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     connectButtonText: {
       color: theme.colors.textOnAccent,
-      fontSize: 12,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
       fontWeight: '900',
       letterSpacing: 1.15,
     },
     notNowButton: {
-      minHeight: 44,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(44) : 44,
       alignItems: 'center',
       justifyContent: 'center',
     },
     notNowText: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.display,
-      fontSize: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
       fontWeight: '900',
       letterSpacing: 1.5,
     },

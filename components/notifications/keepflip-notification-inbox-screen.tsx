@@ -1,3 +1,16 @@
+import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
+import { KeepFlipBackground } from '@/components/ui/keepflip-background';
+import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
+import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
+import {
+  listKeepFlipNotifications,
+  markAllKeepFlipNotificationsRead,
+  markKeepFlipNotificationRead,
+  subscribeToKeepFlipNotifications,
+  type KeepFlipNotification,
+} from '@/services/keepflip-notification-inbox-service';
+import { useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -8,21 +21,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import { type Href, useRouter } from 'expo-router';
-import { KeepFlipBackground } from '@/components/ui/keepflip-background';
-import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
-import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  listKeepFlipNotifications,
-  markAllKeepFlipNotificationsRead,
-  markKeepFlipNotificationRead,
-  subscribeToKeepFlipNotifications,
-  type KeepFlipNotification,
-} from '@/services/keepflip-notification-inbox-service';
 
 function errorMessage(cause: unknown) {
   return cause instanceof Error && cause.message.trim()
@@ -126,8 +125,8 @@ export function KeepFlipNotificationInboxScreen() {
   return (
     <KeepFlipBackground>
       <ScrollView
-          contentContainerStyle={[styles.content, { paddingTop: insets.top + 15, paddingBottom: insets.bottom + 30}, Platform.OS === 'web' ? { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter } : undefined, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
-          style={[styles.page, {marginTop: insets.top, marginBottom: insets.bottom}, Platform.OS === 'web' ? { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter } : undefined, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + 15, paddingBottom: insets.bottom + 30 }, Platform.OS === 'web' ? { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter } : undefined, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+        style={[styles.page, { marginTop: insets.top, marginBottom: insets.bottom }, Platform.OS === 'web' ? { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter } : undefined, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         refreshControl={
           <RefreshControl
             colors={[theme.colors.scannerCyan]}
@@ -136,10 +135,10 @@ export function KeepFlipNotificationInboxScreen() {
             tintColor={theme.colors.scannerCyan}
           />
         }
-        >
+      >
         <View style={styles.header}>
           <View style={styles.headerCopy}>
-            <Text style={[styles.eyebrow, { fontFamily: theme.fonts.display, fontSize: responsiveFont(10)}]}>
+            <Text style={[styles.eyebrow, { fontFamily: theme.fonts.display, fontSize: responsiveFont(10) }]}>
               KEEPFLIP INBOX
             </Text>
             <Text style={[styles.title, { fontFamily: theme.fonts.bold, fontSize: responsiveFont(26) }]}>
@@ -174,7 +173,7 @@ export function KeepFlipNotificationInboxScreen() {
 
         {!loading && !error && notifications.length === 0 ? (
           <View style={styles.emptyCard}>
-            <IconSymbol color={theme.colors.goldMuted} name="checkmark.shield.fill" size={30} />
+            <Ionicons color={theme.colors.goldMuted} name="checkmark.shield.fill" size={30} />
             <Text style={[styles.emptyTitle, { fontSize: responsiveFont(18) }]}>You’re all caught up</Text>
             <Text style={[styles.stateText, { fontSize: responsiveFont(14) }]}>New KeepFlip updates will appear here.</Text>
           </View>
@@ -204,7 +203,7 @@ export function KeepFlipNotificationInboxScreen() {
                 {notification.source.replaceAll('_', ' ')} · {new Date(notification.createdAt).toLocaleString()}
               </Text>
             </View>
-            {notification.url ? <IconSymbol color={theme.colors.goldMuted} name="chevron.right" size={18} /> : null}
+            {notification.url ? <Ionicons color={theme.colors.goldMuted} name="chevron.right" size={18} /> : null}
           </Pressable>
         ))}
       </ScrollView>
@@ -215,10 +214,10 @@ export function KeepFlipNotificationInboxScreen() {
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
   const { responsiveFont, responsiveHeight, responsiveWidth } = responsiveLayout;
   return StyleSheet.create({
-    page: { flex: 1},
+    page: { flex: 1 },
     content: {
       width: '100%',
-      maxWidth: 760,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(760) : 760,
       alignSelf: 'center',
       paddingHorizontal: responsiveWidth(18),
       paddingTop: responsiveHeight(74),
@@ -235,35 +234,35 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     headerCopy: { flex: 1, gap: responsiveHeight(6) },
     eyebrow: { color: theme.colors.goldBright, fontSize: responsiveFont(10), fontWeight: '900', letterSpacing: 2.2 },
     title: { color: theme.colors.cream, fontSize: responsiveFont(30), fontWeight: '900' },
-    subtitle: { color: theme.colors.textMuted, fontSize: responsiveFont(14), lineHeight: 20 },
+    subtitle: { color: theme.colors.textMuted, fontSize: responsiveFont(14), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(20) : 20 },
     headerIcon: {
       width: responsiveWidth(52),
       height: responsiveWidth(52),
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: 18,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(18) : 18,
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
       backgroundColor: theme.colors.iconSurfaceGold,
     },
-    badge: { position: 'absolute', top: -5, right: -5, minWidth: 20, height: 20, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: theme.colors.danger },
+    badge: { position: 'absolute', top: -5, right: -5, minWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(20) : 20, height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(20) : 20, paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4, alignItems: 'center', justifyContent: 'center', borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10, backgroundColor: theme.colors.danger },
     badgeText: { color: theme.colors.cream, fontSize: responsiveFont(9), fontWeight: '900' },
-    markAll: { alignSelf: 'flex-end', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: theme.colors.accentCyanBorder },
+    markAll: { alignSelf: 'flex-end', paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12, paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(8) : 8, borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10, borderWidth: 1, borderColor: theme.colors.accentCyanBorder },
     markAllText: { color: theme.colors.scannerCyan, fontSize: responsiveFont(12), fontWeight: '800' },
-    stateCard: { alignItems: 'center', justifyContent: 'center', gap: 10, minHeight: 120, borderRadius: 18, backgroundColor: theme.colors.surfaceSoft },
-    stateText: { color: theme.colors.textMuted, fontSize: responsiveFont(14), lineHeight: 20 },
-    emptyCard: { alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 180, padding: 24, borderRadius: 18, borderWidth: 1, borderColor: theme.colors.divider, backgroundColor: theme.colors.surfaceSoft },
+    stateCard: { alignItems: 'center', justifyContent: 'center', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10, minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(120) : 120, borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(18) : 18, backgroundColor: theme.colors.surfaceSoft },
+    stateText: { color: theme.colors.textMuted, fontSize: responsiveFont(14), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(20) : 20 },
+    emptyCard: { alignItems: 'center', justifyContent: 'center', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8, minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(180) : 180, padding: 24, borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(18) : 18, borderWidth: 1, borderColor: theme.colors.divider, backgroundColor: theme.colors.surfaceSoft },
     emptyTitle: { color: theme.colors.cream, fontSize: responsiveFont(18), fontWeight: '800' },
-    error: { color: theme.colors.danger, lineHeight: 19 },
-    notification: { flexDirection: 'row', alignItems: 'center', gap: 12, overflow: 'hidden', minHeight: 96, paddingRight: 14, borderRadius: 18, borderWidth: 1, borderColor: theme.colors.divider, backgroundColor: theme.colors.card },
+    error: { color: theme.colors.danger, lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(19) : 19 },
+    notification: { flexDirection: 'row', alignItems: 'center', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12, overflow: 'hidden', minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(96) : 96, paddingRight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14, borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(18) : 18, borderWidth: 1, borderColor: theme.colors.divider, backgroundColor: theme.colors.card },
     notificationUnread: { borderColor: theme.colors.accentCyanBorder, backgroundColor: theme.colors.iconSurfaceCyan },
-    severityRail: { alignSelf: 'stretch', width: 4 },
-    notificationCopy: { flex: 1, gap: 5, paddingVertical: 14 },
-    notificationHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    severityRail: { alignSelf: 'stretch', width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4 },
+    notificationCopy: { flex: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5, paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(14) : 14 },
+    notificationHeader: { flexDirection: 'row', alignItems: 'center', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8 },
     notificationTitle: { flex: 1, color: theme.colors.cream, fontSize: responsiveFont(16), fontWeight: '800' },
-    notificationBody: { color: theme.colors.text, fontSize: responsiveFont(13), lineHeight: 19 },
+    notificationBody: { color: theme.colors.text, fontSize: responsiveFont(13), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(19) : 19 },
     notificationMeta: { color: theme.colors.textMuted, fontSize: responsiveFont(10), textTransform: 'capitalize' },
-    unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: theme.colors.scannerCyan },
+    unreadDot: { width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8, height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(8) : 8, borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4, backgroundColor: theme.colors.scannerCyan },
     pressed: { opacity: 0.72 },
   });
 }

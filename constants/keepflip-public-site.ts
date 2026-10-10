@@ -4,6 +4,7 @@ import { getKeepFlipThemeColors } from '@/constants/keepflip-theme';
 export const KEEPFLIP_PUBLIC_COLORS = getKeepFlipThemeColors('dark');
 
 export const KEEPFLIP_SITE_URL = 'https://keep-flip.com';
+export const KEEPFLIP_SIGNUP_URL = 'https://keep-flip.com/meet-flip';
 export const KEEPFLIP_GOOGLE_PLAY_URL =
   'https://play.google.com/store/apps/details?id=com.keepflip.app';
 export const KEEPFLIP_FREE_SCANS_PER_MONTH = 10;

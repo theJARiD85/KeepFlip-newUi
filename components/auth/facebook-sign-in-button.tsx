@@ -18,12 +18,14 @@ import {
   getKeepFlipFacebookCallbackUri,
   KEEPFLIP_FACEBOOK_CALLBACK_ROUTE,
 } from '@/services/keepflip-facebook-oauth-service';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 type FacebookSignInButtonProps = {
   disabled?: boolean;
 };
 
 export function FacebookSignInButton({ disabled = false }: FacebookSignInButtonProps) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const router = useRouter();
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const colors = getKeepFlipThemeColors(effectiveColorScheme);
@@ -85,7 +87,7 @@ export function FacebookSignInButton({ disabled = false }: FacebookSignInButtonP
   };
 
   return (
-    <View style={styles.container}>
+    <View style={responsiveStyles.container}>
       <Pressable
         accessibilityLabel="Sign in with Facebook"
         accessibilityRole="button"
@@ -93,9 +95,9 @@ export function FacebookSignInButton({ disabled = false }: FacebookSignInButtonP
         disabled={disabled || isOpening}
         onPress={() => void handlePress()}
         style={({ pressed }) => [
-          styles.button,
-          (disabled || isOpening) && styles.disabled,
-          pressed && !disabled && !isOpening && styles.pressed,
+          responsiveStyles.button,
+          (disabled || isOpening) && responsiveStyles.disabled,
+          pressed && !disabled && !isOpening && responsiveStyles.pressed,
         ]}>
         {isOpening ? (
           <ActivityIndicator color="#FFFFFF" size="small" />
@@ -107,11 +109,11 @@ export function FacebookSignInButton({ disabled = false }: FacebookSignInButtonP
             />
           </Svg>
         )}
-        <Text style={styles.buttonText}>Sign in with Facebook</Text>
+        <Text style={responsiveStyles.buttonText}>Sign in with Facebook</Text>
       </Pressable>
 
       {errorMessage ? (
-        <Text accessibilityLiveRegion="polite" style={[styles.errorText, { color: colors.danger }]}>
+        <Text accessibilityLiveRegion="polite" style={[responsiveStyles.errorText, { color: colors.danger }]}>
           {errorMessage}
         </Text>
       ) : null}
@@ -146,3 +148,30 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    container: {
+      ...styles["container"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(12) : 12,
+    },
+    button: {
+      ...styles["button"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
+      gap: layout.isWeb ? layout.webResponsiveWidth(11) : 11,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(52) : 52,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(18) : 18,
+    },
+    buttonText: {
+      ...styles["buttonText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+    },
+    errorText: {
+      ...styles["errorText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : 18,
+    },
+  });
+}

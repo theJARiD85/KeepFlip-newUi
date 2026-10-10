@@ -20,7 +20,7 @@ import {
   KEEPFLIP_SITE_URL,
 } from '@/constants/keepflip-public-site';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import { useResponsiveLayout , useResponsiveStyles} from '@/hooks/use-responsive-layout';
 
 export type PublicPageMetadata = {
   canonicalPath: string;
@@ -112,6 +112,7 @@ export function WebMarketingPage({
   metadata: PublicPageMetadata;
   title: string;
 }) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const colors = KEEPFLIP_PUBLIC_COLORS;
   const { width, webPageGutter } = useResponsiveLayout();
   const scrollRef = useRef<ScrollView>(null);
@@ -137,18 +138,18 @@ export function WebMarketingPage({
       <KeepFlipBackground colorScheme="dark">
         <ScrollView
           ref={scrollRef}
-          contentContainerStyle={[styles.scrollContent, contentSizing]}
+          contentContainerStyle={[responsiveStyles.scrollContent, contentSizing]}
           showsVerticalScrollIndicator={false}
         >
-          <View style={[styles.page, width < 480 && styles.pagePhone]}>
+          <View style={[responsiveStyles.page, width < 480 && responsiveStyles.pagePhone]}>
             <WebSiteHeader colorScheme="dark" label="TOOLS FOR SOLO RESELLERS" showMarketingLinks />
-            <View style={styles.hero}>
-              <Text style={[styles.eyebrow, { color: colors.goldBright }]}>{eyebrow}</Text>
-              <SemanticHeading level={1} style={[styles.title, width < 480 && styles.titlePhone, { color: colors.text }]}>
+            <View style={responsiveStyles.hero}>
+              <Text style={[responsiveStyles.eyebrow, { color: colors.goldBright }]}>{eyebrow}</Text>
+              <SemanticHeading level={1} style={[responsiveStyles.title, width < 480 && responsiveStyles.titlePhone, { color: colors.text }]}>
                 {title}
               </SemanticHeading>
-              <Text style={[styles.intro, { color: colors.textMuted }]}>{intro}</Text>
-              {heroMeta ? <View style={styles.heroMeta}>{heroMeta}</View> : null}
+              <Text style={[responsiveStyles.intro, { color: colors.textMuted }]}>{intro}</Text>
+              {heroMeta ? <View style={responsiveStyles.heroMeta}>{heroMeta}</View> : null}
             </View>
             {children}
             <WebSiteFooter colorScheme="dark" inFlow showMarketingLinks />
@@ -170,14 +171,15 @@ export function WebContentSection({
   id?: string;
   title: string;
 }) {
+  const responsiveStyles2 = useResponsiveStyles(createStylesWebResponsive);
   const colors = KEEPFLIP_PUBLIC_COLORS;
 
   return (
-    <View nativeID={id} style={styles.section}>
+    <View nativeID={id} style={responsiveStyles2.section}>
       {eyebrow ? (
-        <Text style={[styles.sectionEyebrow, { color: colors.goldBright }]}>{eyebrow}</Text>
+        <Text style={[responsiveStyles2.sectionEyebrow, { color: colors.goldBright }]}>{eyebrow}</Text>
       ) : null}
-      <SemanticHeading level={2} style={[styles.sectionTitle, { color: colors.text }]}>
+      <SemanticHeading level={2} style={[responsiveStyles2.sectionTitle, { color: colors.text }]}>
         {title}
       </SemanticHeading>
       {children}
@@ -186,19 +188,21 @@ export function WebContentSection({
 }
 
 export function WebCopy({ children }: { children: ReactNode }) {
+  const responsiveStyles3 = useResponsiveStyles(createStylesWebResponsive);
   const colors = KEEPFLIP_PUBLIC_COLORS;
-  return <Text style={[styles.copy, { color: colors.textMuted }]}>{children}</Text>;
+  return <Text style={[responsiveStyles3.copy, { color: colors.textMuted }]}>{children}</Text>;
 }
 
 export function WebBulletList({ items }: { items: readonly string[] }) {
+  const responsiveStyles4 = useResponsiveStyles(createStylesWebResponsive);
   const colors = KEEPFLIP_PUBLIC_COLORS;
 
   return (
-    <View style={styles.list}>
+    <View style={responsiveStyles4.list}>
       {items.map((item) => (
-        <View key={item} style={styles.listItem}>
-          <View style={[styles.listDot, { backgroundColor: colors.goldBright }]} />
-          <Text style={[styles.listText, { color: colors.textMuted }]}>{item}</Text>
+        <View key={item} style={responsiveStyles4.listItem}>
+          <View style={[responsiveStyles4.listDot, { backgroundColor: colors.goldBright }]} />
+          <Text style={[responsiveStyles4.listText, { color: colors.textMuted }]}>{item}</Text>
         </View>
       ))}
     </View>
@@ -212,11 +216,12 @@ export function WebInfoCard({
   children: ReactNode;
   title: string;
 }) {
+  const responsiveStyles5 = useResponsiveStyles(createStylesWebResponsive);
   const colors = KEEPFLIP_PUBLIC_COLORS;
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
-      <SemanticHeading level={3} style={[styles.cardTitle, { color: colors.text }]}>
+    <View style={[responsiveStyles5.card, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
+      <SemanticHeading level={3} style={[responsiveStyles5.cardTitle, { color: colors.text }]}>
         {title}
       </SemanticHeading>
       {children}
@@ -233,6 +238,7 @@ export function WebActionLink({
   label: string;
   secondary?: boolean;
 }) {
+  const responsiveStyles6 = useResponsiveStyles(createStylesWebResponsive);
   const { width } = useResponsiveLayout();
   const colors = KEEPFLIP_PUBLIC_COLORS;
   if (Platform.OS === 'web') {
@@ -269,14 +275,14 @@ export function WebActionLink({
     <Pressable
       accessibilityRole="link"
       style={({ pressed }) => [
-        styles.action,
+        responsiveStyles6.action,
         secondary
           ? { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }
           : { backgroundColor: colors.gold, borderColor: colors.gold },
-        pressed && styles.pressed,
+        pressed && responsiveStyles6.pressed,
       ]}
     >
-      <Text style={[styles.actionText, { color: secondary ? colors.text : colors.textOnAccent }]}>
+      <Text style={[responsiveStyles6.actionText, { color: secondary ? colors.text : colors.textOnAccent }]}>
         {label}
       </Text>
     </Pressable>
@@ -288,14 +294,14 @@ export function WebActionLink({
         accessibilityRole="link"
         onPress={() => void Linking.openURL(href)}
         style={({ pressed }) => [
-          styles.action,
+          responsiveStyles6.action,
           secondary
             ? { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }
             : { backgroundColor: colors.gold, borderColor: colors.gold },
-          pressed && styles.pressed,
+          pressed && responsiveStyles6.pressed,
         ]}
       >
-        <Text style={[styles.actionText, { color: secondary ? colors.text : colors.textOnAccent }]}>
+        <Text style={[responsiveStyles6.actionText, { color: secondary ? colors.text : colors.textOnAccent }]}>
           {label}
         </Text>
       </Pressable>
@@ -312,8 +318,9 @@ export function WebTextLink({
   href: string;
   label: string;
 }) {
+  const responsiveStyles7 = useResponsiveStyles(createStylesWebResponsive);
   const colors = KEEPFLIP_PUBLIC_COLORS;
-  const linkText = <Text style={[styles.inlineLinkText, { color: colors.goldBright }]}>{label}</Text>;
+  const linkText = <Text style={[responsiveStyles7.inlineLinkText, { color: colors.goldBright }]}>{label}</Text>;
 
   if (href.startsWith('http') || href.startsWith('mailto:')) {
     if (Platform.OS === 'web') {
@@ -467,3 +474,119 @@ const styles = StyleSheet.create({
     opacity: 0.76,
   },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    scrollContent: {
+      ...styles["scrollContent"],
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(40) : 40,
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(24) : 24,
+    },
+    page: {
+      ...styles["page"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(50) : 50,
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(8) : 8,
+    },
+    pagePhone: {
+      ...styles["pagePhone"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(27) : 27,
+    },
+    hero: {
+      ...styles["hero"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(960) : 960,
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(28) : 28,
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(20) : 20,
+    },
+    eyebrow: {
+      ...styles["eyebrow"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(9) : 9,
+    },
+    title: {
+      ...styles["title"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(43) : 43,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(52) : 52,
+    },
+    titlePhone: {
+      ...styles["titlePhone"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(33) : 33,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(41) : 41,
+    },
+    intro: {
+      ...styles["intro"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(17) : 17,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(27) : 27,
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(720) : 720,
+    },
+    heroMeta: {
+      ...styles["heroMeta"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(8) : 8,
+    },
+    section: {
+      ...styles["section"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(13) : 13,
+    },
+    sectionEyebrow: {
+      ...styles["sectionEyebrow"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : 8,
+    },
+    sectionTitle: {
+      ...styles["sectionTitle"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(28) : 28,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(36) : 36,
+    },
+    copy: {
+      ...styles["copy"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(22) : 22,
+    },
+    list: {
+      ...styles["list"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
+    },
+    listItem: {
+      ...styles["listItem"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+    },
+    listDot: {
+      ...styles["listDot"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(4) : 4,
+      height: layout.isWeb ? layout.webResponsiveHeight(7) : 7,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(7) : 7,
+      width: layout.isWeb ? layout.webResponsiveWidth(7) : 7,
+    },
+    listText: {
+      ...styles["listText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(22) : 22,
+    },
+    card: {
+      ...styles["card"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(18) : 18,
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      minWidth: layout.isWeb ? layout.webResponsiveWidth(240) : 240,
+    },
+    cardTitle: {
+      ...styles["cardTitle"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(17) : 17,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(24) : 24,
+    },
+    action: {
+      ...styles["action"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(48) : 48,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(17) : 17,
+    },
+    actionText: {
+      ...styles["actionText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
+    },
+    inlineLinkText: {
+      ...styles["inlineLinkText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(22) : 22,
+    },
+  });
+}

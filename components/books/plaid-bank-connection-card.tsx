@@ -8,10 +8,10 @@ import {
   View,
 } from 'react-native';
 
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { PlaidBankLinkButton } from '@/components/books/plaid-bank-link-button';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import { useResponsiveLayout , useResponsiveStyles} from '@/hooks/use-responsive-layout';
 import {
   disconnectPlaidBankConnection,
   getPlaidBankStatus,
@@ -20,7 +20,6 @@ import {
   type PlaidBankConnection,
   type PlaidBankLinkResult,
 } from '@/services/plaid-bank-service';
-import { PlaidBankLinkButton } from '@/components/books/plaid-bank-link-button';
 
 type PlaidBankConnectionCardProps = {
   automationAllowed: boolean;
@@ -46,6 +45,7 @@ export function PlaidBankConnectionCard({
   automationAllowed,
   onBooksChanged,
 }: PlaidBankConnectionCardProps) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const { responsiveFont, responsiveHeight } = useResponsiveLayout();
   const [connections, setConnections] = useState<PlaidBankConnection[]>([]);
   const [automationEnabled, setAutomationEnabled] = useState(false);
@@ -162,18 +162,18 @@ export function PlaidBankConnectionCard({
 
   if (!automationAllowed) {
     return (
-      <View style={styles.card}>
-        <View style={styles.headerRow}>
-          <View style={styles.iconCircle}>
-            <IconSymbol color={theme.colors.goldBright} name="creditcard.fill" size={17} />
+      <View style={responsiveStyles.card}>
+        <View style={responsiveStyles.headerRow}>
+          <View style={responsiveStyles.iconCircle}>
+            <Ionicons color={theme.colors.goldBright} name="creditcard.fill" size={17} />
           </View>
-          <View style={styles.copy}>
-            <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>BANK EXPENSES</Text>
-            <Text style={[styles.title, { fontSize: responsiveFont(16) }]}>Automate the money out</Text>
+          <View style={responsiveStyles.copy}>
+            <Text style={[responsiveStyles.eyebrow, { fontSize: responsiveFont(8) }]}>BANK EXPENSES</Text>
+            <Text style={[responsiveStyles.title, { fontSize: responsiveFont(16) }]}>Automate the money out</Text>
           </View>
-          <IconSymbol color={theme.colors.goldBright} name="exclamationmark.triangle.fill" size={15} />
+          <Ionicons color={theme.colors.goldBright} name="exclamationmark.triangle.fill" size={15} />
         </View>
-        <Text style={[styles.body, { fontSize: responsiveFont(11), lineHeight: responsiveHeight(16) }]}>
+        <Text style={[responsiveStyles.body, { fontSize: responsiveFont(11), lineHeight: responsiveHeight(16) }]}>
           KeepFlip could not verify access to Books automation. Refresh the app and try again.
         </Text>
       </View>
@@ -181,67 +181,67 @@ export function PlaidBankConnectionCard({
   }
 
   return (
-    <View style={styles.card}>
-      <View style={styles.headerRow}>
-        <View style={styles.iconCircle}>
-          <IconSymbol color={theme.colors.scannerCyan} name="creditcard.fill" size={17} />
+    <View style={responsiveStyles.card}>
+      <View style={responsiveStyles.headerRow}>
+        <View style={responsiveStyles.iconCircle}>
+          <Ionicons color={theme.colors.scannerCyan} name="creditcard.fill" size={17} />
         </View>
-        <View style={styles.copy}>
-          <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>BANK EXPENSES</Text>
-          <Text style={[styles.title, { fontSize: responsiveFont(16) }]}>Automate the money out</Text>
+        <View style={responsiveStyles.copy}>
+          <Text style={[responsiveStyles.eyebrow, { fontSize: responsiveFont(8) }]}>BANK EXPENSES</Text>
+          <Text style={[responsiveStyles.title, { fontSize: responsiveFont(16) }]}>Automate the money out</Text>
         </View>
         {loading ? <ActivityIndicator color={theme.colors.scannerCyan} size="small" /> : null}
       </View>
 
-      <Text style={[styles.body, { fontSize: responsiveFont(11), lineHeight: responsiveHeight(16) }]}>
+      <Text style={[responsiveStyles.body, { fontSize: responsiveFont(11), lineHeight: responsiveHeight(16) }]}>
         KeepFlip imports outgoing business transactions into Books as recorded cash expenses. Pending items, transfers, deposits, refunds, and income stay out of expense totals.
       </Text>
 
       {connections.map((connection) => (
-        <View key={connection.connectionId} style={styles.connectionRow}>
-          <View style={styles.connectionCopy}>
-            <Text style={[styles.connectionName, { fontSize: responsiveFont(12) }]}>
+        <View key={connection.connectionId} style={responsiveStyles.connectionRow}>
+          <View style={responsiveStyles.connectionCopy}>
+            <Text style={[responsiveStyles.connectionName, { fontSize: responsiveFont(12) }]}>
               {connection.institutionName}
             </Text>
-            <Text style={[styles.connectionDetail, { fontSize: responsiveFont(10) }]}>
+            <Text style={[responsiveStyles.connectionDetail, { fontSize: responsiveFont(10) }]}>
               {accountLabel(connection)} · {shortDate(connection.lastSyncedAt)}
             </Text>
             {connection.lastError ? (
-              <Text style={[styles.warningText, { fontSize: responsiveFont(10) }]}>
+              <Text style={[responsiveStyles.warningText, { fontSize: responsiveFont(10) }]}>
                 Last sync issue: {connection.lastError}
               </Text>
             ) : null}
           </View>
-          <View style={styles.connectionActions}>
+          <View style={responsiveStyles.connectionActions}>
             <Pressable
               accessibilityLabel={`Disconnect ${connection.institutionName}`}
               accessibilityRole="button"
               disabled={busy}
               onPress={() => disconnect(connection)}
-              style={({ pressed }) => [styles.iconButton, pressed && styles.pressed, busy && styles.disabled]}>
-              <IconSymbol color={theme.colors.textMuted} name="xmark" size={15} />
+              style={({ pressed }) => [responsiveStyles.iconButton, pressed && responsiveStyles.pressed, busy && responsiveStyles.disabled]}>
+              <Ionicons color={theme.colors.textMuted} name="xmark" size={15} />
             </Pressable>
           </View>
         </View>
       ))}
 
       {automationEnabled ? (
-        <Text style={[styles.automationText, { fontSize: responsiveFont(10) }]}>
+        <Text style={[responsiveStyles.automationText, { fontSize: responsiveFont(10) }]}>
           Background updates are enabled when Plaid sends new transaction data.
         </Text>
       ) : (
-        <Text style={[styles.automationText, { fontSize: responsiveFont(10) }]}>
+        <Text style={[responsiveStyles.automationText, { fontSize: responsiveFont(10) }]}>
           Sync runs when you open Books. Add the server webhook setting to enable background updates.
         </Text>
       )}
 
       {error ? (
-        <Text accessibilityLiveRegion="polite" style={[styles.errorText, { fontSize: responsiveFont(10) }]}>
+        <Text accessibilityLiveRegion="polite" style={[responsiveStyles.errorText, { fontSize: responsiveFont(10) }]}>
           {error}
         </Text>
       ) : null}
       {message ? (
-        <Text accessibilityLiveRegion="polite" style={[styles.messageText, { fontSize: responsiveFont(10) }]}>
+        <Text accessibilityLiveRegion="polite" style={[responsiveStyles.messageText, { fontSize: responsiveFont(10) }]}>
           {message}
         </Text>
       ) : null}
@@ -254,12 +254,12 @@ export function PlaidBankConnectionCard({
           disabled={busy}
           onPress={() => void sync()}
           style={({ pressed }) => [
-            styles.refreshAction,
-            pressed && styles.pressed,
-            busy && styles.disabled,
+            responsiveStyles.refreshAction,
+            pressed && responsiveStyles.pressed,
+            busy && responsiveStyles.disabled,
           ]}>
-          <IconSymbol color={theme.colors.scannerCyan} name="arrow.clockwise" size={14} />
-          <Text style={[styles.refreshActionText, { fontSize: responsiveFont(10) }]}>Refresh connection</Text>
+          <Ionicons color={theme.colors.scannerCyan} name="arrow.clockwise" size={14} />
+          <Text style={[responsiveStyles.refreshActionText, { fontSize: responsiveFont(10) }]}>Refresh connection</Text>
         </Pressable>
       ) : (
         <PlaidBankLinkButton
@@ -356,3 +356,64 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.78 },
   disabled: { opacity: 0.48 },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    card: {
+      ...styles["card"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(13) : 13,
+      gap: layout.isWeb ? layout.webResponsiveWidth(11) : 11,
+    },
+    headerRow: {
+      ...styles["headerRow"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+    },
+    iconCircle: {
+      ...styles["iconCircle"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(20) : 20,
+      height: layout.isWeb ? layout.webResponsiveHeight(36) : 36,
+      width: layout.isWeb ? layout.webResponsiveWidth(36) : 36,
+    },
+    connectionRow: {
+      ...styles["connectionRow"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+    },
+    connectionCopy: {
+      ...styles["connectionCopy"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(3) : 3,
+    },
+    connectionActions: {
+      ...styles["connectionActions"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(3) : 3,
+    },
+    iconButton: {
+      ...styles["iconButton"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+      height: layout.isWeb ? layout.webResponsiveHeight(34) : 34,
+      width: layout.isWeb ? layout.webResponsiveWidth(34) : 34,
+    },
+    automationText: {
+      ...styles["automationText"],
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(15) : 15,
+    },
+    refreshAction: {
+      ...styles["refreshAction"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(6) : 6,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(30) : 30,
+    },
+    warningText: {
+      ...styles["warningText"],
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(15) : 15,
+    },
+    errorText: {
+      ...styles["errorText"],
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(15) : 15,
+    },
+    messageText: {
+      ...styles["messageText"],
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(15) : 15,
+    },
+  });
+}

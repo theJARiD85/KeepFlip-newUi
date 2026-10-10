@@ -15,7 +15,6 @@ import {
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { BooksRecordRow } from '@/components/books/books-record-row';
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import {
   KeepFlipText as Text,
@@ -26,6 +25,7 @@ import {
   useResponsiveLayout,
   useResponsiveStyles,
 } from '@/hooks/use-responsive-layout';
+import { listInventoryItems, type InventoryItem } from '@/services/inventory-service';
 import {
   getBookkeepingOverview,
   isResellerBookkeepingConfigured,
@@ -40,7 +40,6 @@ import {
   type ResellerLedgerEntry,
   type ResellerLedgerEntryType,
 } from '@/services/reseller-ledger-service';
-import { listInventoryItems, type InventoryItem } from '@/services/inventory-service';
 
 type DirectionFilter = 'all' | ResellerLedgerDirection;
 type EntryTypeFilter = 'all' | ResellerLedgerEntryType;
@@ -55,12 +54,12 @@ const ENTRY_TYPE_FILTERS: readonly {
   label: string;
   value: EntryTypeFilter;
 }[] = [
-  { label: 'ALL TYPES', value: 'all' },
-  ...RESELLER_LEDGER_ENTRY_TYPES.map((entryType) => ({
-    label: ledgerEntryDetails(entryType).shortLabel.toUpperCase(),
-    value: entryType,
-  })),
-];
+    { label: 'ALL TYPES', value: 'all' },
+    ...RESELLER_LEDGER_ENTRY_TYPES.map((entryType) => ({
+      label: ledgerEntryDetails(entryType).shortLabel.toUpperCase(),
+      value: entryType,
+    })),
+  ];
 
 function formatMoney(cents: number, currency = 'USD') {
   try {
@@ -365,7 +364,7 @@ export function BooksRecordsScreen() {
             </View>
           ) : entries.length ? (
             <View style={styles.emptyState}>
-              <IconSymbol color={theme.colors.goldBright} name="magnifyingglass" size={22} />
+              <Ionicons color={theme.colors.goldBright} name="magnifyingglass" size={22} />
               <Text style={styles.emptyStateTitle}>No matching records</Text>
               <Text style={styles.emptyStateText}>
                 Try a different search term or clear one of the filters.
@@ -394,7 +393,7 @@ export function BooksRecordsScreen() {
 
             {error ? (
               <View style={styles.errorCard}>
-                <IconSymbol color={theme.colors.danger} name="exclamationmark.triangle.fill" size={18} />
+                <Ionicons color={theme.colors.danger} name="exclamationmark.triangle.fill" size={18} />
                 <Text selectable style={styles.errorText}>{error}</Text>
                 <Pressable
                   accessibilityRole="button"
@@ -407,13 +406,13 @@ export function BooksRecordsScreen() {
 
             {setupNotice ? (
               <View style={styles.noticeCard}>
-                <IconSymbol color={theme.colors.goldBright} name="exclamationmark.triangle.fill" size={18} />
+                <Ionicons color={theme.colors.goldBright} name="exclamationmark.triangle.fill" size={18} />
                 <Text selectable style={styles.noticeText}>{setupNotice}</Text>
               </View>
             ) : null}
 
             <View style={styles.searchBar}>
-              <IconSymbol color={theme.colors.textMuted} name="magnifyingglass" size={18} />
+              <Ionicons color={theme.colors.textMuted} name="magnifyingglass" size={18} />
               <TextInput
                 accessibilityLabel="Search transaction records"
                 autoCapitalize="none"
@@ -430,7 +429,7 @@ export function BooksRecordsScreen() {
                   accessibilityRole="button"
                   onPress={() => setQuery('')}
                   style={styles.clearSearchButton}>
-                  <IconSymbol color={theme.colors.textMuted} name="xmark" size={16} />
+                  <Ionicons color={theme.colors.textMuted} name="xmark" size={16} />
                 </Pressable>
               ) : null}
             </View>
@@ -530,7 +529,7 @@ export function BooksRecordsScreen() {
                   accessibilityRole="button"
                   onPress={() => setSelectedEntry(null)}
                   style={styles.closeButton}>
-                  <IconSymbol color={theme.colors.cream} name="xmark" size={18} />
+                  <Ionicons color={theme.colors.cream} name="xmark" size={18} />
                 </Pressable>
               </View>
 
@@ -606,26 +605,26 @@ function createResponsiveStyles(
 
   return StyleSheet.create({
     content: {
-      gap: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
     },
     headerBlock: {
-      gap: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
     },
     topBar: {
       alignItems: 'center',
       flexDirection: 'row',
       justifyContent: 'space-between',
-      minHeight: 36,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(36) : 36,
     },
     backButton: {
       alignItems: 'center',
       borderColor: theme.colors.accentCyanBorder,
-      borderRadius: 9,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
       borderWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
-      gap: 5,
-      minHeight: 34,
-      paddingHorizontal: 9,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(34) : 34,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
     },
     backButtonPressed: { backgroundColor: theme.colors.iconSurfaceCyan },
     backButtonText: {
@@ -654,22 +653,22 @@ function createResponsiveStyles(
       fontSize: responsiveFont(26),
       fontWeight: '900',
       letterSpacing: -0.65,
-      marginTop: -5,
+      marginTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(-5) : -5,
     },
     subtitle: {
       color: theme.colors.textMuted,
       fontSize: responsiveFont(12),
       lineHeight: responsiveHeight(18),
-      maxWidth: 560,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(560) : 560,
     },
     errorCard: {
       alignItems: 'center',
       backgroundColor: theme.colors.dangerSurface,
       borderColor: theme.colors.danger,
-      borderRadius: 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       borderWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
-      gap: 9,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
       padding: 12,
     },
     errorText: {
@@ -681,11 +680,11 @@ function createResponsiveStyles(
     retryButton: {
       alignItems: 'center',
       borderColor: theme.colors.danger,
-      borderRadius: 8,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
       borderWidth: StyleSheet.hairlineWidth,
-      minHeight: 32,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(32) : 32,
       justifyContent: 'center',
-      paddingHorizontal: 9,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
     },
     retryText: {
       color: theme.colors.text,
@@ -698,10 +697,10 @@ function createResponsiveStyles(
       alignItems: 'flex-start',
       backgroundColor: theme.colors.iconSurfaceGold,
       borderColor: theme.colors.accentGoldBorder,
-      borderRadius: 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       borderWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
-      gap: 9,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
       padding: 12,
     },
     noticeText: {
@@ -714,25 +713,25 @@ function createResponsiveStyles(
       alignItems: 'center',
       backgroundColor: theme.colors.card,
       borderColor: theme.colors.accentCyanBorder,
-      borderRadius: 11,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : 11,
       borderWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
-      gap: 8,
-      minHeight: 47,
-      paddingHorizontal: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(47) : 47,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
     },
     searchInput: {
       color: theme.colors.text,
       flex: 1,
       fontSize: responsiveFont(12),
-      minHeight: 42,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(42) : 42,
       paddingVertical: 0,
     },
     clearSearchButton: {
       alignItems: 'center',
-      height: 32,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(32) : 32,
       justifyContent: 'center',
-      width: 32,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(32) : 32,
     },
     filterLabel: {
       color: theme.colors.gold,
@@ -743,18 +742,18 @@ function createResponsiveStyles(
       marginTop: 2,
     },
     filterRow: {
-      gap: 7,
-      paddingRight: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
+      paddingRight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
     },
     filterChip: {
       alignItems: 'center',
       backgroundColor: theme.colors.cardSoft,
       borderColor: theme.colors.divider,
-      borderRadius: 999,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(999) : 999,
       borderWidth: StyleSheet.hairlineWidth,
       justifyContent: 'center',
-      minHeight: 32,
-      paddingHorizontal: 11,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(32) : 32,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : 11,
     },
     filterChipSelected: {
       backgroundColor: theme.colors.iconSurfaceCyan,
@@ -776,9 +775,9 @@ function createResponsiveStyles(
       borderTopColor: theme.colors.dividerStrong,
       borderTopWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
-      gap: 9,
-      marginTop: 3,
-      minHeight: 32,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
+      marginTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(3) : 3,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(32) : 32,
       paddingHorizontal: 2,
     },
     tableHeaderText: {
@@ -795,17 +794,17 @@ function createResponsiveStyles(
       borderBottomColor: theme.colors.divider,
       borderBottomWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
-      gap: 9,
-      minHeight: 70,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(70) : 70,
       paddingHorizontal: 2,
-      paddingVertical: 9,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(9) : 9,
     },
     recordRowPressed: { backgroundColor: theme.colors.cardSoft },
-    recordMarker: { borderRadius: 2, height: 30, width: 3 },
+    recordMarker: { borderRadius: 2, height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(30) : 30, width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3 },
     recordMarkerIncome: { backgroundColor: theme.colors.scannerCyan },
     recordMarkerExpense: { backgroundColor: theme.colors.gold },
     recordDateColumn: {
-      gap: 3,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3,
       width: responsiveWidth(74),
     },
     recordDate: {
@@ -820,7 +819,7 @@ function createResponsiveStyles(
       fontWeight: '900',
       letterSpacing: 0.65,
     },
-    recordCopy: { flex: 1, gap: 3, minWidth: 0 },
+    recordCopy: { flex: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3, minWidth: 0 },
     recordTitle: {
       color: theme.colors.cream,
       fontSize: responsiveFont(12),
@@ -832,7 +831,7 @@ function createResponsiveStyles(
     },
     recordAmountColumn: {
       alignItems: 'flex-end',
-      gap: 3,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3,
       minWidth: responsiveWidth(84),
     },
     recordAmount: {
@@ -853,11 +852,11 @@ function createResponsiveStyles(
       alignItems: 'center',
       backgroundColor: theme.colors.card,
       borderColor: theme.colors.divider,
-      borderRadius: 12,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
       borderWidth: StyleSheet.hairlineWidth,
-      gap: 7,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
       justifyContent: 'center',
-      minHeight: 160,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(160) : 160,
       padding: 18,
     },
     emptyStateTitle: {
@@ -870,7 +869,7 @@ function createResponsiveStyles(
       color: theme.colors.textMuted,
       fontSize: responsiveFont(11),
       lineHeight: responsiveHeight(16),
-      maxWidth: 440,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(440) : 440,
       textAlign: 'center',
     },
     modalRoot: {
@@ -885,21 +884,21 @@ function createResponsiveStyles(
       borderTopLeftRadius: 18,
       borderTopRightRadius: 18,
       borderWidth: StyleSheet.hairlineWidth,
-      gap: 15,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(15) : 15,
       maxHeight: '86%',
-      maxWidth: 720,
-      paddingHorizontal: 18,
-      paddingTop: 17,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(720) : 720,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(18) : 18,
+      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(17) : 17,
       width: '100%',
     },
     detailScrollContent: {
-      gap: 15,
-      paddingBottom: 4,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(15) : 15,
+      paddingBottom: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(4) : 4,
     },
     detailHeader: {
       alignItems: 'center',
       flexDirection: 'row',
-      gap: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
       justifyContent: 'space-between',
     },
     detailHeaderCopy: { flex: 1, gap: 2 },
@@ -918,16 +917,16 @@ function createResponsiveStyles(
     },
     closeButton: {
       alignItems: 'center',
-      height: 36,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(36) : 36,
       justifyContent: 'center',
-      width: 36,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(36) : 36,
     },
     detailAmountCard: {
       backgroundColor: theme.colors.iconSurfaceCyan,
       borderColor: theme.colors.accentCyanBorder,
-      borderRadius: 12,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
       borderWidth: StyleSheet.hairlineWidth,
-      gap: 4,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
       padding: 14,
     },
     detailAmountLabel: {
@@ -949,8 +948,8 @@ function createResponsiveStyles(
     detailSection: {
       borderTopColor: theme.colors.divider,
       borderTopWidth: StyleSheet.hairlineWidth,
-      gap: 10,
-      paddingTop: 13,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(13) : 13,
     },
     detailSectionTitle: {
       color: theme.colors.gold,
@@ -962,7 +961,7 @@ function createResponsiveStyles(
     detailRow: {
       alignItems: 'flex-start',
       flexDirection: 'row',
-      gap: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
     },
     detailLabel: {
       color: theme.colors.textMuted,

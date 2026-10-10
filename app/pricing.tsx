@@ -22,6 +22,7 @@ import {
   KEEPFLIP_SITE_URL,
 } from '@/constants/keepflip-public-site';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 const pricingMetadata = {
   canonicalPath: '/pricing',
@@ -54,6 +55,7 @@ const pricingMetadata = {
 } as const;
 
 export default function PricingPage() {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const [cadence, setCadence] = useState<'monthly' | 'annual'>('monthly');
   const colors = KEEPFLIP_PUBLIC_COLORS;
   const displayedPrice =
@@ -72,13 +74,13 @@ export default function PricingPage() {
           <WebCopy>
             There is one paid plan because the research, buy decision, inventory, and profit tools are meant to work together. You do not have to pick through feature gates.
           </WebCopy>
-          <View style={[styles.planCard, { backgroundColor: colors.backgroundRaised, borderColor: colors.accentGoldBorder }]}>
-            <View style={styles.planTop}>
-              <View style={styles.planTitle}>
-                <Text style={[styles.planEyebrow, { color: colors.goldBright }]}>ONLY PAID PLAN</Text>
-                <SemanticHeading level={3} style={[styles.planName, { color: colors.text }]}>Serious Reseller</SemanticHeading>
+          <View style={[responsiveStyles.planCard, { backgroundColor: colors.backgroundRaised, borderColor: colors.accentGoldBorder }]}>
+            <View style={responsiveStyles.planTop}>
+              <View style={responsiveStyles.planTitle}>
+                <Text style={[responsiveStyles.planEyebrow, { color: colors.goldBright }]}>ONLY PAID PLAN</Text>
+                <SemanticHeading level={3} style={[responsiveStyles.planName, { color: colors.text }]}>Serious Reseller</SemanticHeading>
               </View>
-              <View style={[styles.billingToggle, { backgroundColor: colors.surfaceInset, borderColor: colors.divider }]}>
+              <View style={[responsiveStyles.billingToggle, { backgroundColor: colors.surfaceInset, borderColor: colors.divider }]}>
                 {(['monthly', 'annual'] as const).map((option) => {
                   const selected = cadence === option;
                   return (
@@ -88,11 +90,11 @@ export default function PricingPage() {
                       accessibilityState={{ selected }}
                       onPress={() => setCadence(option)}
                       style={[
-                        styles.billingOption,
+                        responsiveStyles.billingOption,
                         selected && { backgroundColor: colors.gold },
                       ]}
                     >
-                      <Text style={[styles.billingText, { color: selected ? colors.textOnAccent : colors.textMuted }]}>
+                      <Text style={[responsiveStyles.billingText, { color: selected ? colors.textOnAccent : colors.textMuted }]}>
                         {option === 'monthly' ? 'Monthly' : 'Annual'}
                       </Text>
                     </Pressable>
@@ -100,9 +102,9 @@ export default function PricingPage() {
                 })}
               </View>
             </View>
-            <View style={styles.priceRow}>
-              <Text style={[styles.price, { color: colors.text }]}>${displayedPrice}</Text>
-              <Text style={[styles.period, { color: colors.textMuted }]}>{cadence === 'annual' ? 'per year' : 'per month'}</Text>
+            <View style={responsiveStyles.priceRow}>
+              <Text style={[responsiveStyles.price, { color: colors.text }]}>${displayedPrice}</Text>
+              <Text style={[responsiveStyles.period, { color: colors.textMuted }]}>{cadence === 'annual' ? 'per year' : 'per month'}</Text>
             </View>
             {cadence === 'annual' ? (
               <WebCopy>
@@ -154,7 +156,7 @@ export default function PricingPage() {
         </WebContentSection>
 
         <WebContentSection eyebrow="BEFORE YOU BUY" title="A few direct answers.">
-          <View style={styles.answerGrid}>
+          <View style={responsiveStyles.answerGrid}>
             <WebInfoCard title="Is there a free trial?">
               <WebCopy>
                 KeepFlip has no timed trial. The Free tier is available as soon as you create an account.
@@ -181,6 +183,7 @@ function BillingComparisonTable({
 }: {
   colors: ReturnType<typeof getKeepFlipThemeColors>;
 }) {
+  const responsiveStyles2 = useResponsiveStyles(createStylesWebResponsive);
   const monthly = KEEPFLIP_PUBLIC_PRICING_USD.web.monthly;
   const annual = KEEPFLIP_PUBLIC_PRICING_USD.web.annual;
   const annualSavings = KEEPFLIP_PUBLIC_PRICING_USD.web.annualSavings;
@@ -195,12 +198,12 @@ function BillingComparisonTable({
 
   if (Platform.OS !== 'web') {
     return (
-      <View style={styles.billingRows}>
+      <View style={responsiveStyles2.billingRows}>
         {rows.map(([billing, amount, total]) => (
-          <View key={billing} style={[styles.billingRow, { borderColor: colors.divider }]}>
-            <Text style={[styles.billingHeader, { color: colors.text }]}>{billing}</Text>
-            <Text style={[styles.billingCopy, { color: colors.textMuted }]}>{amount}</Text>
-            <Text style={[styles.billingCopy, { color: colors.textMuted }]}>{total}</Text>
+          <View key={billing} style={[responsiveStyles2.billingRow, { borderColor: colors.divider }]}>
+            <Text style={[responsiveStyles2.billingHeader, { color: colors.text }]}>{billing}</Text>
+            <Text style={[responsiveStyles2.billingCopy, { color: colors.textMuted }]}>{amount}</Text>
+            <Text style={[responsiveStyles2.billingCopy, { color: colors.textMuted }]}>{total}</Text>
           </View>
         ))}
       </View>
@@ -275,3 +278,84 @@ const styles = StyleSheet.create({
   billingHeader: { fontSize: 14, fontWeight: '700' },
   billingCopy: { fontSize: 13, lineHeight: 20 },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    planCard: {
+      ...styles["planCard"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(18) : 18,
+      gap: layout.isWeb ? layout.webResponsiveWidth(15) : 15,
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(720) : 720,
+    },
+    planTop: {
+      ...styles["planTop"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(13) : 13,
+    },
+    planTitle: {
+      ...styles["planTitle"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(5) : 5,
+      minWidth: layout.isWeb ? layout.webResponsiveWidth(180) : 180,
+    },
+    planEyebrow: {
+      ...styles["planEyebrow"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(9) : 9,
+    },
+    planName: {
+      ...styles["planName"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(22) : 22,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(29) : 29,
+    },
+    billingToggle: {
+      ...styles["billingToggle"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
+    },
+    billingOption: {
+      ...styles["billingOption"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(11) : 11,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(38) : 38,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
+    },
+    billingText: {
+      ...styles["billingText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
+    },
+    priceRow: {
+      ...styles["priceRow"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+    },
+    price: {
+      ...styles["price"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(34) : 34,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(41) : 41,
+    },
+    period: {
+      ...styles["period"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(15) : 15,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(21) : 21,
+    },
+    answerGrid: {
+      ...styles["answerGrid"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+    },
+    billingRows: {
+      ...styles["billingRows"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
+    },
+    billingRow: {
+      ...styles["billingRow"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(5) : 5,
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(12) : 12,
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(7) : 7,
+    },
+    billingHeader: {
+      ...styles["billingHeader"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+    },
+    billingCopy: {
+      ...styles["billingCopy"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(20) : 20,
+    },
+  });
+}

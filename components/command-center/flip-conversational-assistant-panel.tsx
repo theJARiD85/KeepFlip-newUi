@@ -1,19 +1,6 @@
-import { Image } from 'expo-image';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Keyboard,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
-import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
-import { FlipCompanion, useFlipCompanion } from '@/components/flip';
 import { useFlipGuidance } from '@/components/command-center/flip-guidance-overlay';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { FlipCompanion, useFlipCompanion } from '@/components/flip';
 import { KeepFlipControlRow } from '@/components/ui/keepflip-control-row';
 import {
   KeepFlipText as Text,
@@ -21,6 +8,17 @@ import {
 } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
+import {
+  getInventoryItem,
+  listInventoryItemsForAssistant,
+  updateInventoryItemNumber,
+  type InventoryItem,
+  type InventoryNumberField,
+} from '@/services/inventory-service';
+import {
+  KEEPFLIP_ANALYTICS_EVENTS,
+  trackKeepFlipEvent,
+} from '@/services/keepflip-analytics';
 import {
   ASSISTANT_CONVERSATION_PAGE_SIZE,
   completeAssistantTask,
@@ -42,22 +40,21 @@ import {
   type AssistantWorkspaceContext,
 } from '@/services/keepflip-assistant-service';
 import {
-  getInventoryItem,
-  listInventoryItemsForAssistant,
-  updateInventoryItemNumber,
-  type InventoryItem,
-  type InventoryNumberField,
-} from '@/services/inventory-service';
-import {
   cancelKeepFlipTaskReminder,
   scheduleKeepFlipTaskReminder,
 } from '@/services/keepflip-notification-service';
 import { getResellerBuyRules } from '@/services/user-profile-onboarding-service';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  KEEPFLIP_ANALYTICS_EVENTS,
-  trackKeepFlipEvent,
-} from '@/services/keepflip-analytics';
-import { InstancedMesh } from 'three';
+  ActivityIndicator,
+  Keyboard,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
+import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const FLIP_MASCOT_IMAGE = require('@/assets/images/flip-mascot.png');
 const OPTIMISTIC_USER_MESSAGE_PREFIX = 'local-user-';
@@ -111,6 +108,7 @@ function AdvisoryCard({
   responsiveFont: (size: number) => number;
   styles: ReturnType<typeof createResponsiveStyles>;
 }) {
+  const responsiveLayout2 = useResponsiveLayout();
   return (
     <View accessibilityLabel="Flip strategic read" style={styles.advisoryCard}>
       <View style={styles.advisoryHeader}>
@@ -121,7 +119,7 @@ function AdvisoryCard({
           {advisory.confidence.toUpperCase()} CONFIDENCE
         </Text>
       </View>
-      <Text selectable style={[styles.advisoryRecommendation, { fontSize: responsiveFont(10), lineHeight: 14 }]}>
+      <Text selectable style={[styles.advisoryRecommendation, { fontSize: responsiveFont(10), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(14) : 14 }]}>
         {advisory.recommendation}
       </Text>
       {advisory.evidence.length ? (
@@ -140,12 +138,12 @@ function AdvisoryCard({
       ) : null}
       <View style={styles.advisoryNextAction}>
         <Text style={[styles.advisoryNextLabel, { fontSize: responsiveFont(7) }]}>NEXT MOVE</Text>
-        <Text selectable style={[styles.advisoryNextText, { fontSize: responsiveFont(9), lineHeight: 13 }]}>
+        <Text selectable style={[styles.advisoryNextText, { fontSize: responsiveFont(9), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(13) : 13 }]}>
           {advisory.nextAction}
         </Text>
       </View>
       {advisory.unknowns.length ? (
-        <Text selectable style={[styles.advisoryUnknowns, { fontSize: responsiveFont(8), lineHeight: 12 }]}>
+        <Text selectable style={[styles.advisoryUnknowns, { fontSize: responsiveFont(8), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(12) : 12 }]}>
           {`Watch-outs: ${advisory.unknowns.slice(0, 2).join(' · ')}`}
         </Text>
       ) : null}
@@ -238,13 +236,14 @@ function PendingInventoryUpdateCard({
   responsiveFont: (size: number) => number;
   styles: ReturnType<typeof createResponsiveStyles>;
 }) {
+  const responsiveLayout3 = useResponsiveLayout();
   const currentValue = inventoryItemNumber(pending.item, pending.field);
   return (
     <Animated.View entering={FadeInDown.duration(180)} style={styles.inventoryUpdateCard}>
       <View style={styles.inventoryUpdateHeader}>
         <View style={styles.inventoryUpdateCopy}>
           <Text style={[styles.inventoryUpdateLabel, { fontSize: responsiveFont(7) }]}>REVIEW BEFORE SAVING</Text>
-          <Text numberOfLines={2} style={[styles.inventoryUpdateTitle, { fontSize: responsiveFont(12), lineHeight: 16 }]}>
+          <Text numberOfLines={2} style={[styles.inventoryUpdateTitle, { fontSize: responsiveFont(12), lineHeight: responsiveLayout3.isWeb ? responsiveLayout3.webResponsiveFont(16) : 16 }]}>
             {pending.item.title}
           </Text>
         </View>
@@ -270,7 +269,7 @@ function PendingInventoryUpdateCard({
           </Text>
         </View>
       </View>
-      <Text style={[styles.inventoryUpdateNote, { fontSize: responsiveFont(8), lineHeight: 12 }]}>
+      <Text style={[styles.inventoryUpdateNote, { fontSize: responsiveFont(8), lineHeight: responsiveLayout3.isWeb ? responsiveLayout3.webResponsiveFont(12) : 12 }]}>
         This works for imported, incomplete, and review-flagged records. A Books review, if related, still needs its own confirmation.
       </Text>
       <View style={styles.inventoryUpdateActions}>
@@ -336,11 +335,11 @@ function mergeConversationMessage(
   const merged =
     matchedIndex >= 0
       ? withoutWelcome.map((message, index) => {
-          if (index !== matchedIndex) return message;
-          return nextIncludesAdvisory || !message.advisory
-            ? next
-            : { ...next, advisory: message.advisory };
-        })
+        if (index !== matchedIndex) return message;
+        return nextIncludesAdvisory || !message.advisory
+          ? next
+          : { ...next, advisory: message.advisory };
+      })
       : [...withoutWelcome, next];
 
   return merged.sort(
@@ -376,6 +375,7 @@ export function FlipConversationalAssistantPanel({
   overlayConversationMaxHeight?: number;
   presentation?: FlipAssistantPresentation;
 }) {
+  const responsiveLayout4 = useResponsiveLayout();
   const styles = useResponsiveStyles(createResponsiveStyles);
   const responsiveLayout = useResponsiveLayout();
   const responsiveFont = (size: number, factor?: number) =>
@@ -830,7 +830,7 @@ export function FlipConversationalAssistantPanel({
       setPendingInventoryUpdate(null);
       const booksFollowUp =
         pending.field === 'acquisition_cost_cents' ||
-        pending.field === 'inventory_cost_cents_on_hand'
+          pending.field === 'inventory_cost_cents_on_hand'
           ? ' If this is tied to a Books cost review, Books still needs its own confirmation.'
           : '';
       setMessages((current) => [
@@ -997,7 +997,7 @@ export function FlipConversationalAssistantPanel({
                   </Text>
                 </View>
                 <View style={styles.chevronButton}>
-                  <IconSymbol color={theme.colors.scannerCyan} name="chevron.right" size={16} />
+                  <Ionicons color={theme.colors.scannerCyan} name="chevron.right" size={16} />
                 </View>
               </>
             ) : null}
@@ -1012,9 +1012,9 @@ export function FlipConversationalAssistantPanel({
             styles.expandedContent,
             fillAvailableHeight && styles.fillAvailableHeightExpandedContent,
             isOverlay && styles.overlayExpandedContent,
-            { paddingBottom: isExpanded ? 60 : insets.bottom}
+            { paddingBottom: isExpanded ? 60 : insets.bottom }
           ]}>
-          <View style={[styles.heading, isOverlay && styles.overlayHeading, { width: '95%', paddingLeft: 10}]}>
+          <View style={[styles.heading, isOverlay && styles.overlayHeading, { width: '95%', paddingLeft: responsiveLayout4.isWeb ? responsiveLayout4.webResponsiveWidth(10) : 10 }]}>
             <View style={styles.headingAvatar}>
               <FlipCompanion size={44} />
             </View>
@@ -1041,7 +1041,7 @@ export function FlipConversationalAssistantPanel({
                   isMemoryOpen && styles.menuButtonOpen,
                   pressed && styles.menuButtonPressed,
                 ]}>
-                <IconSymbol color={theme.colors.scannerCyan} name="ellipsis" size={18} />
+                <Ionicons color={theme.colors.scannerCyan} name="ellipsis" size={18} />
               </Pressable>
               <Pressable
                 accessibilityLabel="Collapse Flip assistant"
@@ -1052,7 +1052,7 @@ export function FlipConversationalAssistantPanel({
                   styles.closeButton,
                   pressed && styles.closeButtonPressed,
                 ]}>
-                <IconSymbol color={theme.colors.textMuted} name="xmark" size={17} />
+                <Ionicons color={theme.colors.textMuted} name="xmark" size={17} />
               </Pressable>
             </View>
           </View>
@@ -1162,7 +1162,7 @@ export function FlipConversationalAssistantPanel({
                     {entry.role === 'assistant' ? (
                       <View style={styles.assistantMessageStack}>
                         <View style={[styles.messageBubble, styles.assistantBubble]}>
-                          <Text selectable style={[styles.messageText, { fontSize: responsiveFont(14), lineHeight: 21 }]}>
+                          <Text selectable style={[styles.messageText, { fontSize: responsiveFont(14), lineHeight: responsiveLayout4.isWeb ? responsiveLayout4.webResponsiveFont(21) : 21 }]}>
                             {entry.content}
                           </Text>
                         </View>
@@ -1176,7 +1176,7 @@ export function FlipConversationalAssistantPanel({
                       </View>
                     ) : (
                       <View style={[styles.messageBubble, styles.userBubble]}>
-                        <Text selectable style={[styles.messageText, { fontSize: responsiveFont(14), lineHeight: 21 }]}>
+                        <Text selectable style={[styles.messageText, { fontSize: responsiveFont(14), lineHeight: responsiveLayout4.isWeb ? responsiveLayout4.webResponsiveFont(21) : 21 }]}>
                           {entry.content}
                         </Text>
                       </View>
@@ -1254,7 +1254,7 @@ export function FlipConversationalAssistantPanel({
                       styles.refreshButton,
                       pressed && styles.refreshButtonPressed,
                     ]}>
-                    <IconSymbol
+                    <Ionicons
                       color={theme.colors.textMuted}
                       name="arrow.clockwise"
                       size={14}
@@ -1287,7 +1287,7 @@ export function FlipConversationalAssistantPanel({
             </>
           )}
 
-          {error ? <Text style={[styles.error, { fontSize: responsiveFont(10), lineHeight: 14 }]}>{error}</Text> : null}
+          {error ? <Text style={[styles.error, { fontSize: responsiveFont(10), lineHeight: responsiveLayout4.isWeb ? responsiveLayout4.webResponsiveFont(14) : 14 }]}>{error}</Text> : null}
 
           {userId ? (
             <View style={styles.inputRow}>
@@ -1330,7 +1330,7 @@ export function FlipConversationalAssistantPanel({
                 {isInteractionLocked ? (
                   <ActivityIndicator color={theme.colors.background} size="small" />
                 ) : (
-                  <IconSymbol color={theme.colors.background} name="paperplane.fill" size={16} />
+                  <Ionicons color={theme.colors.background} name="paperplane.fill" size={16} />
                 )}
               </Pressable>
             </View>
@@ -1361,7 +1361,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       overflow: 'hidden',
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
-      borderRadius: 16,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.card,
     },
@@ -1398,125 +1398,125 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       right: 0,
     },
     overlaySurfaceCollapsed: {
-      width: 60,
-      height: 60,
-      borderRadius: 999,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(60) : 60,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(60) : 60,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(999) : 999,
       opacity: 0.74,
     },
     collapsedBar: {
-      minHeight: 70,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(70) : 70,
       flexDirection: 'row',
       alignItems: 'center',
     },
     overlayCollapsedBar: {
-      width: 60,
-      height: 60,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(60) : 60,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(60) : 60,
       minHeight: 0,
       justifyContent: 'center',
       gap: 0,
-      paddingHorizontal: 4,
-      paddingVertical: 4,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(4) : 4,
     },
     collapsedBarPressed: { backgroundColor: theme.colors.iconSurfaceCyan },
     collapsedAvatar: {
-      width: 55,
-      height: 55,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(55) : 55,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(55) : 55,
       overflow: 'hidden',
       justifyContent: 'center',
       alignItems: 'center',
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
-      borderRadius: 28,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(28) : 28,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.iconSurfaceGold,
     },
     overlayCollapsedAvatar: {
-      width: 55,
-      height: 55,
-      borderRadius: 28,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(55) : 55,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(55) : 55,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(28) : 28,
     },
     overlayStatusDot: {
       position: 'absolute',
       right: 0,
       bottom: 0,
-      width: 8,
-      height: 8,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(8) : 8,
       borderWidth: 1,
       borderColor: theme.colors.background,
-      borderRadius: 4,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
       backgroundColor: theme.colors.scannerCyan,
       zIndex: 2,
     },
-    collapsedCopy: { flex: 1, minWidth: 0, gap: 4 },
-    searchMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', width: '100%', gap: 5 },
+    collapsedCopy: { flex: 1, minWidth: 0, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4 },
+    searchMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', width: '100%', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5 },
     searchLabel: {
       color: theme.colors.scannerCyan,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 1.4,
     },
     onlineDot: {
-      width: 5,
-      height: 5,
-      borderRadius: 3,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(5) : 5,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3,
       backgroundColor: theme.colors.scannerCyan,
     },
     onlineText: {
       color: theme.colors.textMuted,
-      fontSize: 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
       fontWeight: '900',
       letterSpacing: 0.9,
     },
-    searchPlaceholder: { color: theme.colors.text, fontSize: 12, fontWeight: '700' },
+    searchPlaceholder: { color: theme.colors.text, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12, fontWeight: '700' },
     chevronButton: {
-      width: 32,
-      height: 32,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(32) : 32,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(32) : 32,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
-      borderRadius: 16,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.iconSurfaceCyan,
     },
-    expandedContent: { gap: 12, paddingHorizontal: 5, paddingTop: 20, width: '100%'},
+    expandedContent: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12, paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5, paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(20) : 20, width: '100%' },
     overlayExpandedContent: {
       minHeight: 0,
       height: '100%',
       width: '100%'
     },
-    heading: {width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+    heading: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10 },
     // The always-visible navigation trigger occupies the top-right corner of
     // the overlay. Keep the assistant actions out of its hit area when open.
     overlayHeading: { paddingRight: 0 },
     headingAvatar: {
-      width: 56,
-      height: 56,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(56) : 56,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(56) : 56,
       overflow: 'hidden',
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
-      borderRadius: 28,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(28) : 28,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.iconSurfaceGold,
     },
-    headingCopy: { gap: 3, width: '50%' },
-    headingActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    headingCopy: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3, width: '50%' },
+    headingActions: { flexDirection: 'row', alignItems: 'center', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6 },
     eyebrow: {
       color: theme.colors.scannerCyan,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 1.5,
     },
-    title: { width: 150,color: theme.colors.cream, fontSize: 17, fontFamily: theme.fonts.bold, fontWeight: '900' },
-    subtitle: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 14 },
+    title: { width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(150) : 150, color: theme.colors.cream, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : 17, fontFamily: theme.fonts.bold, fontWeight: '900' },
+    subtitle: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10, lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14 },
     menuButton: {
-      width: 32,
-      height: 32,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(32) : 32,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(32) : 32,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
-      borderRadius: 16,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.iconSurfaceCyan,
     },
@@ -1526,13 +1526,13 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     menuButtonPressed: { opacity: 0.72 },
     closeButton: {
-      width: 32,
-      height: 32,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(32) : 32,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(32) : 32,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
       borderColor: theme.colors.dividerStrong,
-      borderRadius: 16,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.cardSoft,
     },
@@ -1540,12 +1540,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     conversation: {
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
-      borderRadius: 12,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.cardSoft,
     },
     conversationContent: {
-      gap: 9,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
       padding: 5,
     },
     overlayConversation: {
@@ -1556,10 +1556,10 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       alignSelf: 'center',
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
-      borderRadius: 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       borderCurve: 'continuous',
-      paddingHorizontal: 9,
-      paddingVertical: 6,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : 6,
       backgroundColor: theme.colors.iconSurfaceCyan,
     },
     historyLoadButtonPressed: { opacity: 0.68 },
@@ -1567,50 +1567,50 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 7,
-      paddingVertical: 4,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(4) : 4,
     },
     historyLoadText: {
       color: theme.colors.scannerCyan,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 0.8,
     },
     loadingConversation: {
-      minHeight: 66,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(66) : 66,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
     },
     messageRow: {
       flexDirection: 'row',
       alignItems: 'flex-end',
       justifyContent: 'space-between',
       width: '100%',
-      gap: 7,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
     },
     messageRowUser: { justifyContent: 'flex-end', paddingLeft: '15%', width: '100%' },
     messageAvatar: {
-      width: 24,
-      height: 24,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(24) : 24,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(24) : 24,
       overflow: 'hidden',
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
-      borderRadius: 12,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
       borderCurve: 'continuous',
     },
     messageBubble: {
       maxWidth: '100%',
-      paddingHorizontal: 11,
-      paddingVertical: 9,
-      borderRadius: 13,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : 11,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(9) : 9,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(13) : 13,
       borderCurve: 'continuous',
     },
     assistantMessageStack: {
       maxWidth: '85%',
       minWidth: 0,
-      gap: 6,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
     },
     assistantBubble: {
       borderWidth: 1,
@@ -1624,15 +1624,15 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     messageText: {
       color: theme.colors.text,
-      fontSize: 11,
-      lineHeight: 16,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16,
     },
     advisoryCard: {
-      gap: 7,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
       padding: 10,
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
-      borderRadius: 12,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.iconSurfaceGold,
       boxShadow: '0 3px 10px rgba(0, 0, 0, 0.18)',
@@ -1641,75 +1641,75 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      gap: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
     },
     advisoryLabel: {
       color: theme.colors.goldBright,
-      fontSize: 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
       fontWeight: '900',
       letterSpacing: 1.1,
     },
     advisoryConfidence: {
       color: theme.colors.textMuted,
-      fontSize: 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
       fontWeight: '800',
       letterSpacing: 0.7,
     },
     advisoryRecommendation: {
       color: theme.colors.cream,
-      fontSize: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
       fontWeight: '800',
     },
     advisoryEvidence: {
-      gap: 4,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
       paddingTop: 2,
     },
     advisoryEvidenceRow: {
       flexDirection: 'row',
       alignItems: 'flex-start',
       justifyContent: 'space-between',
-      gap: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
     },
     advisoryEvidenceLabel: {
       flex: 1,
       color: theme.colors.textMuted,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
     },
     advisoryEvidenceValue: {
       flexShrink: 1,
       color: theme.colors.text,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '800',
       textAlign: 'right',
     },
     advisoryNextAction: {
       gap: 2,
-      paddingTop: 5,
+      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(5) : 5,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderColor: theme.colors.dividerStrong,
     },
     advisoryNextLabel: {
       color: theme.colors.scannerCyan,
-      fontSize: 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
       fontWeight: '900',
       letterSpacing: 1,
     },
     advisoryNextText: {
       color: theme.colors.text,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: '700',
     },
     advisoryUnknowns: {
       color: theme.colors.textMuted,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontStyle: 'italic',
     },
     inventoryUpdateCard: {
-      gap: 9,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
       padding: 11,
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
-      borderRadius: 13,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(13) : 13,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.iconSurfaceGold,
       boxShadow: '0 5px 16px rgba(0, 0, 0, 0.22)',
@@ -1718,159 +1718,159 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: 'row',
       alignItems: 'flex-start',
       justifyContent: 'space-between',
-      gap: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
     },
-    inventoryUpdateCopy: { flex: 1, gap: 3 },
+    inventoryUpdateCopy: { flex: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3 },
     inventoryUpdateLabel: {
       color: theme.colors.goldBright,
-      fontSize: 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
       fontWeight: '900',
       letterSpacing: 1.2,
     },
     inventoryUpdateTitle: {
       color: theme.colors.cream,
-      fontSize: 12,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
       fontWeight: '900',
     },
     inventoryUpdateBadge: {
       color: theme.colors.scannerCyan,
-      fontSize: 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
       fontWeight: '900',
       letterSpacing: 0.9,
     },
     inventoryUpdateValues: {
       flexDirection: 'row',
-      gap: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
     },
     inventoryUpdateValueBlock: {
       flex: 1,
-      gap: 3,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3,
       minWidth: 0,
     },
     inventoryUpdateValueLabel: {
       color: theme.colors.textMuted,
-      fontSize: 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
       fontWeight: '900',
       letterSpacing: 0.8,
     },
     inventoryUpdateValue: {
       color: theme.colors.text,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: '700',
     },
     inventoryUpdateProposed: {
       color: theme.colors.goldBright,
-      fontSize: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
       fontWeight: '900',
     },
     inventoryUpdateNote: {
       color: theme.colors.textMuted,
-      fontSize: 8,
-      lineHeight: 12,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
     },
     inventoryUpdateActions: {
       flexDirection: 'row',
       justifyContent: 'flex-end',
-      gap: 7,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
     },
     inventoryUpdateCancel: {
       alignItems: 'center',
       justifyContent: 'center',
-      minHeight: 34,
-      paddingHorizontal: 9,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(34) : 34,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
       borderWidth: 1,
       borderColor: theme.colors.dividerStrong,
-      borderRadius: 9,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.cardSoft,
     },
     inventoryUpdateCancelText: {
       color: theme.colors.textMuted,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 0.7,
     },
     inventoryUpdateConfirm: {
       alignItems: 'center',
       justifyContent: 'center',
-      minHeight: 34,
-      minWidth: 104,
-      paddingHorizontal: 11,
-      borderRadius: 9,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(34) : 34,
+      minWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(104) : 104,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : 11,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.goldBright,
     },
     inventoryUpdateConfirmText: {
       color: theme.colors.textOnAccent,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 0.7,
     },
     inventoryUpdatePressed: { opacity: 0.72 },
     inventoryUpdateDisabled: { opacity: 0.45 },
-    typingRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+    typingRow: { flexDirection: 'row', alignItems: 'center', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7 },
     typingBubble: {
-      minHeight: 34,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(34) : 34,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 7,
-      paddingHorizontal: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
-      borderRadius: 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       backgroundColor: theme.colors.iconSurfaceCyan,
     },
-    typingText: { color: theme.colors.textMuted, fontSize: 10 },
-    promptRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+    typingText: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10 },
+    promptRow: { flexDirection: 'row', flexWrap: 'wrap', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6 },
     promptChip: {
-      paddingHorizontal: 9,
-      paddingVertical: 7,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(7) : 7,
       borderWidth: 1,
       borderColor: theme.colors.dividerStrong,
-      borderRadius: 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.iconSurfaceGold,
     },
     promptChipPressed: { backgroundColor: theme.colors.iconSurfaceGold },
-    promptText: { color: theme.colors.goldMuted, fontSize: 9, fontWeight: '700' },
-    inputRow: { flexDirection: 'row', alignItems: 'stretch', gap: 8 },
+    promptText: { color: theme.colors.goldMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9, fontWeight: '700' },
+    inputRow: { flexDirection: 'row', alignItems: 'stretch', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8 },
     inputShell: {
-      minHeight: 48,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(48) : 48,
       flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
-      paddingHorizontal: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       borderWidth: 1,
       borderColor: theme.colors.dividerStrong,
-      borderRadius: 12,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.surfaceInset,
     },
     inputAvatar: {
-      width: 25,
-      height: 25,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(25) : 25,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(25) : 25,
       overflow: 'hidden',
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
-      borderRadius: 13,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(13) : 13,
       borderCurve: 'continuous',
     },
     input: {
-      minHeight: 44,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(44) : 44,
       flex: 1,
       paddingHorizontal: 0,
-      paddingVertical: 8,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(8) : 8,
       color: theme.colors.text,
-      fontSize: 14,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14,
     },
     sendButton: {
-      width: 44,
-      height: 44,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(44) : 44,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(44) : 44,
       alignSelf: 'center',
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: 12,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.goldBright,
     },
@@ -1880,52 +1880,52 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      gap: 10,
-      paddingHorizontal: 10,
-      paddingVertical: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(8) : 8,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
-      borderRadius: 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.iconSurfaceCyan,
     },
     memoryCopy: { flex: 1, gap: 2 },
     memoryLabel: {
       color: theme.colors.scannerCyan,
-      fontSize: 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
       fontWeight: '900',
       letterSpacing: 1.2,
     },
-    memoryText: { color: theme.colors.textMuted, fontSize: 10 },
+    memoryText: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10 },
     refreshButton: {
-      width: 28,
-      height: 28,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(28) : 28,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(28) : 28,
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: 14,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14,
     },
     refreshButtonPressed: { backgroundColor: theme.colors.iconSurfaceCyan },
-    taskSection: { gap: 7 },
+    taskSection: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7 },
     taskHeader: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      gap: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
     },
     taskLabel: {
       color: theme.colors.goldBright,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 1.3,
     },
-    taskHint: { color: theme.colors.textMuted, fontSize: 8 },
+    taskHint: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8 },
     taskList: {
-      gap: 4,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderColor: theme.colors.dividerStrong,
     },
-    empty: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 15 },
-    error: { color: theme.colors.danger, fontSize: 10, lineHeight: 14 },
+    empty: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11, lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15 },
+    error: { color: theme.colors.danger, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10, lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14 },
   });
   return {
     ...staticStyles,

@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { type Href, useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -11,21 +11,19 @@ import {
   View,
 } from 'react-native';
 import Animated, { FadeInDown, useAnimatedStyle } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   LineChart,
   LineChartDimensionsContext,
   useLineChart,
 } from 'react-native-wagmi-charts';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import type { SellerOrderPerformanceInput } from '@/lib/seller-performance';
 import {
   buildSellerAnalyticsGroups,
   buildSellerAnalyticsMargins,
@@ -33,17 +31,18 @@ import {
   type SellerAnalyticsGroup,
   type SellerAnalyticsMetric,
 } from '@/lib/seller-analytics';
-import { checkKeepFlipCapabilitiesAccess } from '@/services/keepflip-subscription-service';
+import type { SellerOrderPerformanceInput } from '@/lib/seller-performance';
+import { getEbayOAuthEnvironment } from '@/services/ebayConnectionService';
 import {
   listInventoryItemsForAnalytics,
   type InventoryItem,
 } from '@/services/inventory-service';
+import { checkKeepFlipCapabilitiesAccess } from '@/services/keepflip-subscription-service';
 import {
   isResellerBooksConfigured,
   listResellerLedgerEntries,
   type ResellerLedgerEntry,
 } from '@/services/reseller-ledger-service';
-import { getEbayOAuthEnvironment } from '@/services/ebayConnectionService';
 import {
   fetchEbaySellerOrders,
   listManualSellerOrders,
@@ -52,7 +51,6 @@ import {
   type SellerOrder,
 } from '@/services/seller-order-service';
 
-import responsiveFont from '@/lib/responsiveFont';
 const MAX_EBAY_ORDER_PAGES = 5;
 
 const DIMENSIONS: { id: SellerAnalyticsDimension; label: string }[] = [
@@ -67,31 +65,31 @@ const METRICS: {
   description: string;
   accent: 'scannerCyan' | 'goldBright' | 'scannerViolet' | 'goldMuted';
 }[] = [
-  {
-    id: 'roi',
-    label: 'Average ROI',
-    description: 'Average realized return on recorded acquisition cost.',
-    accent: 'scannerCyan',
-  },
-  {
-    id: 'profit',
-    label: 'Net profit',
-    description: 'Realized profit across cost-confirmed items.',
-    accent: 'goldBright',
-  },
-  {
-    id: 'listingDays',
-    label: 'Days listed',
-    description: 'Time from listing to sale, or current listing age.',
-    accent: 'scannerViolet',
-  },
-  {
-    id: 'soldUnits',
-    label: 'Units sold',
-    description: 'Units in matched manual and eBay orders.',
-    accent: 'goldMuted',
-  },
-];
+    {
+      id: 'roi',
+      label: 'Average ROI',
+      description: 'Average realized return on recorded acquisition cost.',
+      accent: 'scannerCyan',
+    },
+    {
+      id: 'profit',
+      label: 'Net profit',
+      description: 'Realized profit across cost-confirmed items.',
+      accent: 'goldBright',
+    },
+    {
+      id: 'listingDays',
+      label: 'Days listed',
+      description: 'Time from listing to sale, or current listing age.',
+      accent: 'scannerViolet',
+    },
+    {
+      id: 'soldUnits',
+      label: 'Units sold',
+      description: 'Units in matched manual and eBay orders.',
+      accent: 'goldMuted',
+    },
+  ];
 
 type AnalyticsLoadState = 'checking' | 'ready' | 'locked' | 'error';
 type FinancialDataState = 'ready' | 'unavailable' | 'error';
@@ -416,7 +414,7 @@ function ChartCard({
         </View>
       ) : (
         <View style={styles.chartEmpty}>
-          <IconSymbol color={theme.colors.textMuted} name="chart.bar.fill" size={19} />
+          <Ionicons color={theme.colors.textMuted} name="chart.bar.fill" size={19} />
           <Text style={styles.chartEmptyText}>
             {metric.id === 'roi' || metric.id === 'profit'
               ? 'No reconciled Books records with a known acquisition cost yet.'
@@ -449,11 +447,11 @@ export function MetricsAnalyticsScreen({ embedded = false }: { embedded?: boolea
   const webContentSizing =
     Platform.OS === 'web'
       ? {
-          width: webContentWidth,
-          maxWidth: webContentMaxWidth,
-          alignSelf: 'center' as const,
-          paddingHorizontal: webPageGutter,
-        }
+        width: webContentWidth,
+        maxWidth: webContentMaxWidth,
+        alignSelf: 'center' as const,
+        paddingHorizontal: webPageGutter,
+      }
       : undefined;
   const { user } = useKeepFlipAuth();
   const ownerId = user?.$id;
@@ -623,210 +621,210 @@ export function MetricsAnalyticsScreen({ embedded = false }: { embedded?: boolea
   const activeListings = inventory.filter((item) => item.isListed).length;
 
   const analyticsContent = (
-      <ScrollView
-        contentContainerStyle={[styles.content,
-          {
-            paddingBottom: insets.bottom + 30,
-            paddingTop: embedded ? 15 : insets.top + 15,
-          }, webContentSizing, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
-        contentInsetAdjustmentBehavior={embedded ? 'never' : 'automatic'}
-        style={embedded ? undefined : { marginBottom: insets.bottom, marginTop: insets.top }}
-        showsVerticalScrollIndicator={false}>
-        {loadState === 'checking' || loading ? (
-          <View style={styles.loadingCard}>
-            <ActivityIndicator color={theme.colors.scannerCyan} />
-            <Text style={[styles.loadingText, webFontStyle(12)]}>Loading your saved inventory and sales history…</Text>
-          </View>
-        ) : null}
+    <ScrollView
+      contentContainerStyle={[styles.content,
+      {
+        paddingBottom: insets.bottom + 30,
+        paddingTop: embedded ? 15 : insets.top + 15,
+      }, webContentSizing, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+      contentInsetAdjustmentBehavior={embedded ? 'never' : 'automatic'}
+      style={embedded ? undefined : { marginBottom: insets.bottom, marginTop: insets.top }}
+      showsVerticalScrollIndicator={false}>
+      {loadState === 'checking' || loading ? (
+        <View style={styles.loadingCard}>
+          <ActivityIndicator color={theme.colors.scannerCyan} />
+          <Text style={[styles.loadingText, webFontStyle(12)]}>Loading your saved inventory and sales history…</Text>
+        </View>
+      ) : null}
 
-        {loadState === 'error' ? (
-          <View style={styles.messageCard}>
-            <Text style={[styles.errorText, webFontStyle(12)]}>{loadError || accessError || 'Analytics could not be loaded.'}</Text>
-            <Pressable accessibilityRole="button" onPress={() => void loadAnalytics()} style={styles.actionButton}>
-              <Text style={[styles.actionButtonText, webFontStyle(12)]}>Try again</Text>
-            </Pressable>
-          </View>
-        ) : null}
+      {loadState === 'error' ? (
+        <View style={styles.messageCard}>
+          <Text style={[styles.errorText, webFontStyle(12)]}>{loadError || accessError || 'Analytics could not be loaded.'}</Text>
+          <Pressable accessibilityRole="button" onPress={() => void loadAnalytics()} style={styles.actionButton}>
+            <Text style={[styles.actionButtonText, webFontStyle(12)]}>Try again</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
-        {loadState === 'locked' ? (
-          <View style={styles.lockedCard}>
-            <View style={styles.lockIcon}>
-              <IconSymbol color={theme.colors.goldBright} name="lock.fill" size={20} />
+      {loadState === 'locked' ? (
+        <View style={styles.lockedCard}>
+          <View style={styles.lockIcon}>
+            <Ionicons color={theme.colors.goldBright} name="lock.fill" size={20} />
+          </View>
+          <Text accessibilityRole="header" style={[styles.lockedTitle, webFontStyle(18)]}>A clearer view of your flips</Text>
+          <Text style={[styles.lockedCopy, webFontStyle(12)]}>KeepFlip could not verify access to performance charts. Refresh and try again.</Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => void loadAnalytics()}
+            style={styles.actionButton}>
+            <Text style={[styles.actionButtonText, webFontStyle(12)]}>Try again</Text>
+            <Ionicons color={theme.colors.backgroundDeep} name="arrow.clockwise" size={16} />
+          </Pressable>
+        </View>
+      ) : null}
+
+      {loadState === 'ready' && !loading ? (
+        <>
+          {warnings.map((warning) => (
+            <View key={warning} style={styles.warningCard}>
+              <Ionicons color={theme.colors.goldBright} name="exclamationmark.triangle.fill" size={16} />
+              <Text style={[styles.warningText, webFontStyle(10)]}>{warning}</Text>
             </View>
-            <Text accessibilityRole="header" style={[styles.lockedTitle, webFontStyle(18)]}>A clearer view of your flips</Text>
-            <Text style={[styles.lockedCopy, webFontStyle(12)]}>KeepFlip could not verify access to performance charts. Refresh and try again.</Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => void loadAnalytics()}
-              style={styles.actionButton}>
-              <Text style={[styles.actionButtonText, webFontStyle(12)]}>Try again</Text>
-              <IconSymbol color={theme.colors.backgroundDeep} name="arrow.clockwise" size={16} />
-            </Pressable>
-          </View>
-        ) : null}
+          ))}
 
-        {loadState === 'ready' && !loading ? (
-          <>
-            {warnings.map((warning) => (
-              <View key={warning} style={styles.warningCard}>
-                <IconSymbol color={theme.colors.goldBright} name="exclamationmark.triangle.fill" size={16} />
-                <Text style={[styles.warningText, webFontStyle(10)]}>{warning}</Text>
-              </View>
-            ))}
-
-            <View style={styles.summaryRow}>
-              <View style={styles.summaryCard}>
-                <Text style={[styles.summaryLabel, webFontStyle(7)]}>ITEMS LOADED</Text>
-                <Text selectable style={[styles.summaryValue, { fontSize: responsiveFont(20) }]}>{inventory.length}</Text>
-              </View>
-              <View style={styles.summaryCard}>
-                <Text style={[styles.summaryLabel, webFontStyle(7)]}>ACTIVE LISTINGS</Text>
-                <Text selectable style={[styles.summaryValue, { fontSize: responsiveFont(20) }]}>{activeListings}</Text>
-              </View>
-              <View style={styles.summaryCard}>
-                <Text style={[styles.summaryLabel, webFontStyle(7)]}>LINKED UNITS SOLD</Text>
-                <Text selectable style={[styles.summaryValue, { fontSize: responsiveFont(20) }]}>{totalSoldUnits}</Text>
-              </View>
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryCard}>
+              <Text style={[styles.summaryLabel, webFontStyle(7)]}>ITEMS LOADED</Text>
+              <Text selectable style={[styles.summaryValue, { fontSize: responsiveFont(20) }]}>{inventory.length}</Text>
             </View>
+            <View style={styles.summaryCard}>
+              <Text style={[styles.summaryLabel, webFontStyle(7)]}>ACTIVE LISTINGS</Text>
+              <Text selectable style={[styles.summaryValue, { fontSize: responsiveFont(20) }]}>{activeListings}</Text>
+            </View>
+            <View style={styles.summaryCard}>
+              <Text style={[styles.summaryLabel, webFontStyle(7)]}>LINKED UNITS SOLD</Text>
+              <Text selectable style={[styles.summaryValue, { fontSize: responsiveFont(20) }]}>{totalSoldUnits}</Text>
+            </View>
+          </View>
 
-            {inventory.length === 0 ? (
-              <View style={styles.messageCard}>
-                <Text style={[styles.chartEmptyText, webFontStyle(10)]}>Save your first item to start comparing performance across your inventory.</Text>
-                <Pressable accessibilityRole="button" onPress={() => router.push('/scanner' as Href)} style={styles.actionButton}>
-                  <Text style={[styles.actionButtonText, webFontStyle(12)]}>Open scanner</Text>
-                  <IconSymbol color={theme.colors.backgroundDeep} name="chevron.right" size={16} />
-                </Pressable>
-              </View>
-            ) : null}
+          {inventory.length === 0 ? (
+            <View style={styles.messageCard}>
+              <Text style={[styles.chartEmptyText, webFontStyle(10)]}>Save your first item to start comparing performance across your inventory.</Text>
+              <Pressable accessibilityRole="button" onPress={() => router.push('/scanner' as Href)} style={styles.actionButton}>
+                <Text style={[styles.actionButtonText, webFontStyle(12)]}>Open scanner</Text>
+                <Ionicons color={theme.colors.backgroundDeep} name="chevron.right" size={16} />
+              </Pressable>
+            </View>
+          ) : null}
 
-            <View style={styles.controlsCard}>
-              <Text style={[styles.sectionEyebrow, webFontStyle(8)]}>CHOOSE YOUR VIEW</Text>
-              <Text accessibilityRole="header" style={[styles.sectionTitle, webFontStyle(14)]}>Break down by</Text>
-              <View style={styles.pillWrap}>
-                {DIMENSIONS.map((option) => (
-                  <MetricPill
-                    key={option.id}
-                    selected={dimension === option.id}
-                    title={option.label}
-                    onPress={() => {
-                      hapticSelection();
-                      setDimension(option.id);
-                    }}
-                  />
-                ))}
-              </View>
-
-              <View style={styles.divider} />
-              <Text style={[styles.sectionEyebrow, webFontStyle(8)]}>FILTER CATEGORY</Text>
-              <ScrollView horizontal contentContainerStyle={styles.horizontalPills} showsHorizontalScrollIndicator={false}>
+          <View style={styles.controlsCard}>
+            <Text style={[styles.sectionEyebrow, webFontStyle(8)]}>CHOOSE YOUR VIEW</Text>
+            <Text accessibilityRole="header" style={[styles.sectionTitle, webFontStyle(14)]}>Break down by</Text>
+            <View style={styles.pillWrap}>
+              {DIMENSIONS.map((option) => (
                 <MetricPill
-                  selected={categoryFilter === null}
-                  title="All"
+                  key={option.id}
+                  selected={dimension === option.id}
+                  title={option.label}
                   onPress={() => {
                     hapticSelection();
-                    setCategoryFilter(null);
+                    setDimension(option.id);
                   }}
                 />
-                {categories.map((category) => (
-                  <MetricPill
-                    key={category}
-                    selected={categoryFilter === category}
-                    title={category}
-                    onPress={() => {
-                      hapticSelection();
-                      setCategoryFilter(category);
-                    }}
-                  />
-                ))}
-              </ScrollView>
+              ))}
+            </View>
 
-              <View style={styles.divider} />
-              <Text style={[styles.sectionEyebrow, webFontStyle(8)]}>CHART</Text>
-              <Text accessibilityRole="header" style={[styles.sectionTitle, webFontStyle(14)]}>Choose a metric</Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityState={{ expanded: metricPickerOpen }}
-                onPress={() => setMetricPickerOpen((open) => !open)}
-                style={({ pressed }) => [
-                  styles.metricPickerTrigger,
-                  pressed && styles.pillPressed,
-                ]}
-              >
-                <View style={styles.metricPickerCopy}>
-                  <View style={[styles.metricPickerDot, { backgroundColor: getMetricAccent(activeMetricDefinition) }]} />
-                  <View style={styles.metricPickerTextBlock}>
-                    <Text style={[styles.metricPickerLabel, webFontStyle(11)]}>{activeMetricDefinition.label}</Text>
-                    <Text style={[styles.metricPickerDescription, webFontStyle(9)]}>{activeMetricDefinition.description}</Text>
-                  </View>
-                </View>
-                <IconSymbol
-                  color={theme.colors.textMuted}
-                  name="chevron.right"
-                  size={16}
-                  style={metricPickerOpen ? { transform: [{ rotate: '90deg' }] } : undefined}
+            <View style={styles.divider} />
+            <Text style={[styles.sectionEyebrow, webFontStyle(8)]}>FILTER CATEGORY</Text>
+            <ScrollView horizontal contentContainerStyle={styles.horizontalPills} showsHorizontalScrollIndicator={false}>
+              <MetricPill
+                selected={categoryFilter === null}
+                title="All"
+                onPress={() => {
+                  hapticSelection();
+                  setCategoryFilter(null);
+                }}
+              />
+              {categories.map((category) => (
+                <MetricPill
+                  key={category}
+                  selected={categoryFilter === category}
+                  title={category}
+                  onPress={() => {
+                    hapticSelection();
+                    setCategoryFilter(category);
+                  }}
                 />
-              </Pressable>
-              {metricPickerOpen ? (
-                <View style={styles.metricPickerMenu}>
-                  {METRICS.map((metric) => {
-                    const selected = activeMetric === metric.id;
-                    return (
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityState={{ selected }}
-                        key={metric.id}
-                        onPress={() => {
-                          hapticSelection();
-                          setActiveMetric(metric.id);
-                          setMetricPickerOpen(false);
-                        }}
-                        style={({ pressed }) => [
-                          styles.metricPickerOption,
-                          selected && styles.metricPickerOptionSelected,
-                          pressed && styles.pillPressed,
-                        ]}
-                      >
-                        <View style={[styles.metricPickerDot, { backgroundColor: getMetricAccent(metric) }]} />
-                        <View style={styles.metricPickerTextBlock}>
-                          <Text style={styles.metricPickerOptionTitle}>{metric.label}</Text>
-                          <Text style={styles.metricPickerDescription}>{metric.description}</Text>
-                        </View>
-                        {selected ? (
-                          <IconSymbol color={theme.colors.scannerCyan} name="checkmark" size={16} />
-                        ) : null}
-                      </Pressable>
-                    );
-                  })}
+              ))}
+            </ScrollView>
+
+            <View style={styles.divider} />
+            <Text style={[styles.sectionEyebrow, webFontStyle(8)]}>CHART</Text>
+            <Text accessibilityRole="header" style={[styles.sectionTitle, webFontStyle(14)]}>Choose a metric</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ expanded: metricPickerOpen }}
+              onPress={() => setMetricPickerOpen((open) => !open)}
+              style={({ pressed }) => [
+                styles.metricPickerTrigger,
+                pressed && styles.pillPressed,
+              ]}
+            >
+              <View style={styles.metricPickerCopy}>
+                <View style={[styles.metricPickerDot, { backgroundColor: getMetricAccent(activeMetricDefinition) }]} />
+                <View style={styles.metricPickerTextBlock}>
+                  <Text style={[styles.metricPickerLabel, webFontStyle(11)]}>{activeMetricDefinition.label}</Text>
+                  <Text style={[styles.metricPickerDescription, webFontStyle(9)]}>{activeMetricDefinition.description}</Text>
                 </View>
-              ) : null}
-            </View>
+              </View>
+              <Ionicons
+                color={theme.colors.textMuted}
+                name="chevron.right"
+                size={16}
+                style={metricPickerOpen ? { transform: [{ rotate: '90deg' }] } : undefined}
+              />
+            </Pressable>
+            {metricPickerOpen ? (
+              <View style={styles.metricPickerMenu}>
+                {METRICS.map((metric) => {
+                  const selected = activeMetric === metric.id;
+                  return (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      key={metric.id}
+                      onPress={() => {
+                        hapticSelection();
+                        setActiveMetric(metric.id);
+                        setMetricPickerOpen(false);
+                      }}
+                      style={({ pressed }) => [
+                        styles.metricPickerOption,
+                        selected && styles.metricPickerOptionSelected,
+                        pressed && styles.pillPressed,
+                      ]}
+                    >
+                      <View style={[styles.metricPickerDot, { backgroundColor: getMetricAccent(metric) }]} />
+                      <View style={styles.metricPickerTextBlock}>
+                        <Text style={styles.metricPickerOptionTitle}>{metric.label}</Text>
+                        <Text style={styles.metricPickerDescription}>{metric.description}</Text>
+                      </View>
+                      {selected ? (
+                        <Ionicons color={theme.colors.scannerCyan} name="checkmark" size={16} />
+                      ) : null}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
+          </View>
 
-            <ChartCard
-              metric={activeMetricDefinition}
-              groups={groups}
-              responsiveFont={responsiveFont}
-            />
+          <ChartCard
+            metric={activeMetricDefinition}
+            groups={groups}
+            responsiveFont={responsiveFont}
+          />
 
-            <View style={styles.dataNote}>
-              <IconSymbol color={theme.colors.scannerCyan} name="checkmark.shield.fill" size={16} />
-              <Text style={[styles.dataNoteText, webFontStyle(9)]}>
-                ROI and net profit use reconciled Books records and known acquisition costs only. Days listed uses the saved listing date through sale, or through today for an active listing. Estimated resale values are not counted as earned revenue.
-              </Text>
-            </View>
-            <Text style={[styles.footerText, webFontStyle(9)]}>
-              {inventoryTruncated
-                ? `Charts use the ${inventory.length.toLocaleString()} most recent of ${inventoryTotal.toLocaleString()} items; older inventory is not included.`
-                : ebayOrdersTruncated
-                  ? 'The eBay order history is capped at its latest 500 records.'
-                : financialDataState === 'ready'
-                ? 'Saved-history view · Refresh to check for newer inventory, Books, and order records.'
-                : financialDataState === 'error'
-                  ? 'Books history is temporarily unavailable; refresh to try again.'
-                  : 'Saved-history view · ROI and net-profit records are unavailable until Books is ready.'}
+          <View style={styles.dataNote}>
+            <Ionicons color={theme.colors.scannerCyan} name="checkmark.shield.fill" size={16} />
+            <Text style={[styles.dataNoteText, webFontStyle(9)]}>
+              ROI and net profit use reconciled Books records and known acquisition costs only. Days listed uses the saved listing date through sale, or through today for an active listing. Estimated resale values are not counted as earned revenue.
             </Text>
-          </>
-        ) : null}
-      </ScrollView>
+          </View>
+          <Text style={[styles.footerText, webFontStyle(9)]}>
+            {inventoryTruncated
+              ? `Charts use the ${inventory.length.toLocaleString()} most recent of ${inventoryTotal.toLocaleString()} items; older inventory is not included.`
+              : ebayOrdersTruncated
+                ? 'The eBay order history is capped at its latest 500 records.'
+                : financialDataState === 'ready'
+                  ? 'Saved-history view · Refresh to check for newer inventory, Books, and order records.'
+                  : financialDataState === 'error'
+                    ? 'Books history is temporarily unavailable; refresh to try again.'
+                    : 'Saved-history view · ROI and net-profit records are unavailable until Books is ready.'}
+          </Text>
+        </>
+      ) : null}
+    </ScrollView>
   );
 
   return embedded ? analyticsContent : <KeepFlipBackground>{analyticsContent}</KeepFlipBackground>;
@@ -834,267 +832,267 @@ export function MetricsAnalyticsScreen({ embedded = false }: { embedded?: boolea
 
 function createMetricsStyles() {
   return StyleSheet.create({
-  content: {
-    flexGrow: 1,
-    gap: 14,
-    paddingHorizontal: 12,
-  },
-  header: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 2,
-  },
-  headerCopy: { flex: 1, gap: 2 },
-  backButton: {
-    alignItems: 'center',
-    backgroundColor: theme.colors.iconSurfaceGold,
-    borderColor: theme.colors.accentGoldBorder,
-    borderCurve: 'continuous',
-    borderRadius: 13,
-    borderWidth: 1,
-    height: 42,
-    justifyContent: 'center',
-    width: 42,
-  },
-  refreshButton: {
-    alignItems: 'center',
-    borderColor: theme.colors.accentGoldBorder,
-    borderCurve: 'continuous',
-    borderRadius: 13,
-    borderWidth: 1,
-    height: 42,
-    justifyContent: 'center',
-    width: 42,
-  },
-  eyebrow: { color: theme.colors.scannerCyan, fontSize: 9, fontWeight: '900', letterSpacing: 1.3 },
-  title: { color: theme.colors.text, fontWeight: '900', letterSpacing: -0.4 },
-  intro: { color: theme.colors.textMuted, fontFamily: theme.fonts.display, lineHeight: 19, maxWidth: 360 },
-  loadingCard: {
-    alignItems: 'center',
-    backgroundColor: theme.colors.card,
-    borderColor: theme.colors.accentCyanBorder,
-    borderCurve: 'continuous',
-    borderRadius: 17,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 11,
-    padding: 16,
-  },
-  loadingText: { color: theme.colors.textMuted, flex: 1, fontSize: 12, lineHeight: 18 },
-  messageCard: {
-    alignItems: 'flex-start',
-    backgroundColor: theme.colors.cardSoft,
-    borderColor: theme.colors.divider,
-    borderCurve: 'continuous',
-    borderRadius: 17,
-    borderWidth: 1,
-    gap: 12,
-    padding: 16,
-  },
-  errorText: { color: theme.colors.danger, fontSize: 12, lineHeight: 18 },
-  lockedCard: {
-    alignItems: 'flex-start',
-    backgroundColor: theme.colors.iconSurfaceGold,
-    borderColor: theme.colors.dividerStrong,
-    borderCurve: 'continuous',
-    borderRadius: 18,
-    borderWidth: 1,
-    gap: 12,
-    padding: 18,
-  },
-  lockIcon: {
-    alignItems: 'center',
-    backgroundColor: theme.colors.iconSurfaceGold,
-    borderRadius: 11,
-    height: 42,
-    justifyContent: 'center',
-    width: 42,
-  },
-  lockedTitle: { color: theme.colors.text, fontSize: 18, fontWeight: '900' },
-  lockedCopy: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 18 },
-  actionButton: {
-    alignItems: 'center',
-    backgroundColor: theme.colors.goldBright,
-    borderCurve: 'continuous',
-    borderRadius: 11,
-    flexDirection: 'row',
-    gap: 7,
-    justifyContent: 'center',
-    minHeight: 42,
-    paddingHorizontal: 14,
-  },
-  actionButtonText: { color: theme.colors.backgroundDeep, fontSize: 12, fontWeight: '900' },
-  warningCard: {
-    alignItems: 'flex-start',
-    backgroundColor: theme.colors.iconSurfaceGold,
-    borderColor: theme.colors.divider,
-    borderCurve: 'continuous',
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 9,
-    padding: 11,
-  },
-  warningText: { color: theme.colors.textMuted, flex: 1, fontSize: 10, lineHeight: 15 },
-  summaryRow: { flexDirection: 'row', gap: 8 },
-  summaryCard: {
-    backgroundColor: theme.colors.cardSoft,
-    borderColor: theme.colors.divider,
-    borderCurve: 'continuous',
-    borderRadius: 14,
-    borderWidth: 1,
-    flex: 1,
-    gap: 5,
-    minHeight: 77,
-    padding: 10,
-  },
-  summaryLabel: { color: theme.colors.textMuted, fontSize: 7, fontWeight: '900', letterSpacing: 0.7 },
-  summaryValue: { color: theme.colors.text, fontVariant: ['tabular-nums'], fontWeight: '900' },
-  controlsCard: {
-    backgroundColor: theme.colors.cardSoft,
-    borderColor: theme.colors.divider,
-    borderCurve: 'continuous',
-    borderRadius: 17,
-    borderWidth: 1,
-    gap: 9,
-    padding: 14,
-  },
-  sectionEyebrow: { color: theme.colors.goldMuted, fontSize: 8, fontWeight: '900', letterSpacing: 1.05 },
-  sectionTitle: { color: theme.colors.text, fontSize: 14, fontWeight: '900' },
-  pillWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
-  horizontalPills: { gap: 7, paddingRight: 4 },
-  pill: {
-    alignItems: 'center',
-    backgroundColor: theme.colors.surfaceInset,
-    borderColor: theme.colors.divider,
-    borderCurve: 'continuous',
-    borderRadius: 999,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 5,
-    minHeight: 34,
-    paddingHorizontal: 11,
-  },
-  pillSelected: { backgroundColor: theme.colors.iconSurfaceGold, borderColor: theme.colors.accentGoldBorder },
-  pillPressed: { opacity: 0.78 },
-  pillText: { color: theme.colors.textMuted, fontSize: 10, fontWeight: '700' },
-  pillTextSelected: { color: theme.colors.text },
-  pillDetail: { color: theme.colors.textMuted, fontSize: 9 },
-  divider: { backgroundColor: theme.colors.divider, height: StyleSheet.hairlineWidth, marginVertical: 2 },
-  metricPickerTrigger: {
-    alignItems: 'center',
-    backgroundColor: theme.colors.surfaceInset,
-    borderColor: theme.colors.dividerStrong,
-    borderCurve: 'continuous',
-    borderRadius: 13,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 9,
-    justifyContent: 'space-between',
-    minHeight: 56,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-  },
-  metricPickerCopy: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 9 },
-  metricPickerTextBlock: { flex: 1, gap: 2 },
-  metricPickerDot: { borderRadius: 5, height: 10, width: 10 },
-  metricPickerLabel: { color: theme.colors.text, fontSize: 11, fontWeight: '900' },
-  metricPickerDescription: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 13 },
-  metricPickerMenu: {
-    backgroundColor: theme.colors.surfaceOverlay,
-    borderColor: theme.colors.dividerStrong,
-    borderRadius: 13,
-    borderWidth: 1,
-    gap: 4,
-    padding: 5,
-  },
-  metricPickerOption: {
-    alignItems: 'center',
-    borderRadius: 9,
-    flexDirection: 'row',
-    gap: 9,
-    minHeight: 48,
-    paddingHorizontal: 9,
-    paddingVertical: 7,
-  },
-  metricPickerOptionSelected: { backgroundColor: theme.colors.iconSurfaceCyan },
-  metricPickerOptionTitle: { color: theme.colors.text, fontSize: 10, fontWeight: '800' },
-  metricSelectionHeading: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
-  selectionCount: { color: theme.colors.scannerCyan, fontSize: 10, fontVariant: ['tabular-nums'], fontWeight: '800' },
-  selectionHint: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 14 },
-  chartCard: {
-    backgroundColor: theme.colors.cardSoft,
-    borderColor: theme.colors.divider,
-    borderCurve: 'continuous',
-    borderRadius: 17,
-    borderWidth: 1,
-    gap: 9,
-    padding: 14,
-  },
-  chartHeading: { alignItems: 'center', flexDirection: 'row', gap: 9 },
-  metricMark: { borderRadius: 4, height: 10, width: 10 },
-  chartTitleBlock: { flex: 1, gap: 2 },
-  chartTitle: { color: theme.colors.text, fontWeight: '900' },
-  chartSummary: { color: theme.colors.text, fontSize: 10, fontVariant: ['tabular-nums'], fontWeight: '800' },
-  chartDescription: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 14 },
-  chartRows: { gap: 10, paddingTop: 4 },
-  wagmiChart: {
-    backgroundColor: theme.colors.card,
-    borderRadius: 13,
-    overflow: 'hidden',
-  },
-  chartAxisLabels: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, paddingHorizontal: 4 },
-  chartAxisLabel: { color: theme.colors.textMuted, flex: 1, fontSize: 8 },
-  chartAxisLabelCenter: { textAlign: 'center' },
-  chartAxisLabelRight: { textAlign: 'right' },
-  selectedPointCard: {
-    backgroundColor: theme.colors.surfaceInset,
-    borderColor: theme.colors.dividerStrong,
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 2,
-    paddingHorizontal: 11,
-    paddingVertical: 9,
-  },
-  selectedPointLabel: { color: theme.colors.goldMuted, fontSize: 8, fontWeight: '900', letterSpacing: 0.6 },
-  selectedPointValue: { color: theme.colors.text, fontVariant: ['tabular-nums'], fontWeight: '900' },
-  selectedPointDetail: { color: theme.colors.textMuted, fontSize: 9 },
-  chartRow: { alignItems: 'center', flexDirection: 'row', gap: 7, minHeight: 25 },
-  chartLabel: { color: theme.colors.textMuted, fontSize: 9, width: 78 },
-  track: {
-    backgroundColor: theme.colors.cardSoft,
-    borderRadius: 4,
-    flex: 1,
-    height: 13,
-    overflow: 'hidden',
-  },
-  trackCenter: { backgroundColor: theme.colors.dividerStrong, height: '100%', left: '50%', position: 'absolute', width: StyleSheet.hairlineWidth },
-  bar: { borderRadius: 4, height: '100%', position: 'absolute' },
-  chartValue: { color: theme.colors.text, fontVariant: ['tabular-nums'], fontWeight: '800', textAlign: 'right', width: 72 },
-  axisRow: { flexDirection: 'row', justifyContent: 'space-between', paddingLeft: 84, paddingRight: 79 },
-  axisText: { color: theme.colors.textMuted, fontSize: 8, fontVariant: ['tabular-nums'] },
-  chartFootnote: { color: theme.colors.textMuted, fontSize: 9, textAlign: 'right' },
-  chartEmpty: {
-    alignItems: 'center',
-    backgroundColor: theme.colors.card,
-    borderRadius: 12,
-    flexDirection: 'row',
-    gap: 9,
-    padding: 12,
-  },
-  chartEmptyText: { color: theme.colors.textMuted, flex: 1, fontSize: 10, lineHeight: 15 },
-  dataNote: {
-    alignItems: 'flex-start',
-    backgroundColor: theme.colors.cardSoft,
-    borderColor: theme.colors.accentCyanBorder,
-    borderCurve: 'continuous',
-    borderRadius: 13,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 9,
-    padding: 12,
-  },
-  dataNoteText: { color: theme.colors.textMuted, flex: 1, fontSize: 9, lineHeight: 14 },
-  footerText: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 14, textAlign: 'center' },
+    content: {
+      flexGrow: 1,
+      gap: 14,
+      paddingHorizontal: 12,
+    },
+    header: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: 2,
+    },
+    headerCopy: { flex: 1, gap: 2 },
+    backButton: {
+      alignItems: 'center',
+      backgroundColor: theme.colors.iconSurfaceGold,
+      borderColor: theme.colors.accentGoldBorder,
+      borderCurve: 'continuous',
+      borderRadius: 13,
+      borderWidth: 1,
+      height: 42,
+      justifyContent: 'center',
+      width: 42,
+    },
+    refreshButton: {
+      alignItems: 'center',
+      borderColor: theme.colors.accentGoldBorder,
+      borderCurve: 'continuous',
+      borderRadius: 13,
+      borderWidth: 1,
+      height: 42,
+      justifyContent: 'center',
+      width: 42,
+    },
+    eyebrow: { color: theme.colors.scannerCyan, fontSize: 9, fontWeight: '900', letterSpacing: 1.3 },
+    title: { color: theme.colors.text, fontWeight: '900', letterSpacing: -0.4 },
+    intro: { color: theme.colors.textMuted, fontFamily: theme.fonts.display, lineHeight: 19, maxWidth: 360 },
+    loadingCard: {
+      alignItems: 'center',
+      backgroundColor: theme.colors.card,
+      borderColor: theme.colors.accentCyanBorder,
+      borderCurve: 'continuous',
+      borderRadius: 17,
+      borderWidth: 1,
+      flexDirection: 'row',
+      gap: 11,
+      padding: 16,
+    },
+    loadingText: { color: theme.colors.textMuted, flex: 1, fontSize: 12, lineHeight: 18 },
+    messageCard: {
+      alignItems: 'flex-start',
+      backgroundColor: theme.colors.cardSoft,
+      borderColor: theme.colors.divider,
+      borderCurve: 'continuous',
+      borderRadius: 17,
+      borderWidth: 1,
+      gap: 12,
+      padding: 16,
+    },
+    errorText: { color: theme.colors.danger, fontSize: 12, lineHeight: 18 },
+    lockedCard: {
+      alignItems: 'flex-start',
+      backgroundColor: theme.colors.iconSurfaceGold,
+      borderColor: theme.colors.dividerStrong,
+      borderCurve: 'continuous',
+      borderRadius: 18,
+      borderWidth: 1,
+      gap: 12,
+      padding: 18,
+    },
+    lockIcon: {
+      alignItems: 'center',
+      backgroundColor: theme.colors.iconSurfaceGold,
+      borderRadius: 11,
+      height: 42,
+      justifyContent: 'center',
+      width: 42,
+    },
+    lockedTitle: { color: theme.colors.text, fontSize: 18, fontWeight: '900' },
+    lockedCopy: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 18 },
+    actionButton: {
+      alignItems: 'center',
+      backgroundColor: theme.colors.goldBright,
+      borderCurve: 'continuous',
+      borderRadius: 11,
+      flexDirection: 'row',
+      gap: 7,
+      justifyContent: 'center',
+      minHeight: 42,
+      paddingHorizontal: 14,
+    },
+    actionButtonText: { color: theme.colors.backgroundDeep, fontSize: 12, fontWeight: '900' },
+    warningCard: {
+      alignItems: 'flex-start',
+      backgroundColor: theme.colors.iconSurfaceGold,
+      borderColor: theme.colors.divider,
+      borderCurve: 'continuous',
+      borderRadius: 12,
+      borderWidth: 1,
+      flexDirection: 'row',
+      gap: 9,
+      padding: 11,
+    },
+    warningText: { color: theme.colors.textMuted, flex: 1, fontSize: 10, lineHeight: 15 },
+    summaryRow: { flexDirection: 'row', gap: 8 },
+    summaryCard: {
+      backgroundColor: theme.colors.cardSoft,
+      borderColor: theme.colors.divider,
+      borderCurve: 'continuous',
+      borderRadius: 14,
+      borderWidth: 1,
+      flex: 1,
+      gap: 5,
+      minHeight: 77,
+      padding: 10,
+    },
+    summaryLabel: { color: theme.colors.textMuted, fontSize: 7, fontWeight: '900', letterSpacing: 0.7 },
+    summaryValue: { color: theme.colors.text, fontVariant: ['tabular-nums'], fontWeight: '900' },
+    controlsCard: {
+      backgroundColor: theme.colors.cardSoft,
+      borderColor: theme.colors.divider,
+      borderCurve: 'continuous',
+      borderRadius: 17,
+      borderWidth: 1,
+      gap: 9,
+      padding: 14,
+    },
+    sectionEyebrow: { color: theme.colors.goldMuted, fontSize: 8, fontWeight: '900', letterSpacing: 1.05 },
+    sectionTitle: { color: theme.colors.text, fontSize: 14, fontWeight: '900' },
+    pillWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
+    horizontalPills: { gap: 7, paddingRight: 4 },
+    pill: {
+      alignItems: 'center',
+      backgroundColor: theme.colors.surfaceInset,
+      borderColor: theme.colors.divider,
+      borderCurve: 'continuous',
+      borderRadius: 999,
+      borderWidth: 1,
+      flexDirection: 'row',
+      gap: 5,
+      minHeight: 34,
+      paddingHorizontal: 11,
+    },
+    pillSelected: { backgroundColor: theme.colors.iconSurfaceGold, borderColor: theme.colors.accentGoldBorder },
+    pillPressed: { opacity: 0.78 },
+    pillText: { color: theme.colors.textMuted, fontSize: 10, fontWeight: '700' },
+    pillTextSelected: { color: theme.colors.text },
+    pillDetail: { color: theme.colors.textMuted, fontSize: 9 },
+    divider: { backgroundColor: theme.colors.divider, height: StyleSheet.hairlineWidth, marginVertical: 2 },
+    metricPickerTrigger: {
+      alignItems: 'center',
+      backgroundColor: theme.colors.surfaceInset,
+      borderColor: theme.colors.dividerStrong,
+      borderCurve: 'continuous',
+      borderRadius: 13,
+      borderWidth: 1,
+      flexDirection: 'row',
+      gap: 9,
+      justifyContent: 'space-between',
+      minHeight: 56,
+      paddingHorizontal: 12,
+      paddingVertical: 9,
+    },
+    metricPickerCopy: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 9 },
+    metricPickerTextBlock: { flex: 1, gap: 2 },
+    metricPickerDot: { borderRadius: 5, height: 10, width: 10 },
+    metricPickerLabel: { color: theme.colors.text, fontSize: 11, fontWeight: '900' },
+    metricPickerDescription: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 13 },
+    metricPickerMenu: {
+      backgroundColor: theme.colors.surfaceOverlay,
+      borderColor: theme.colors.dividerStrong,
+      borderRadius: 13,
+      borderWidth: 1,
+      gap: 4,
+      padding: 5,
+    },
+    metricPickerOption: {
+      alignItems: 'center',
+      borderRadius: 9,
+      flexDirection: 'row',
+      gap: 9,
+      minHeight: 48,
+      paddingHorizontal: 9,
+      paddingVertical: 7,
+    },
+    metricPickerOptionSelected: { backgroundColor: theme.colors.iconSurfaceCyan },
+    metricPickerOptionTitle: { color: theme.colors.text, fontSize: 10, fontWeight: '800' },
+    metricSelectionHeading: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+    selectionCount: { color: theme.colors.scannerCyan, fontSize: 10, fontVariant: ['tabular-nums'], fontWeight: '800' },
+    selectionHint: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 14 },
+    chartCard: {
+      backgroundColor: theme.colors.cardSoft,
+      borderColor: theme.colors.divider,
+      borderCurve: 'continuous',
+      borderRadius: 17,
+      borderWidth: 1,
+      gap: 9,
+      padding: 14,
+    },
+    chartHeading: { alignItems: 'center', flexDirection: 'row', gap: 9 },
+    metricMark: { borderRadius: 4, height: 10, width: 10 },
+    chartTitleBlock: { flex: 1, gap: 2 },
+    chartTitle: { color: theme.colors.text, fontWeight: '900' },
+    chartSummary: { color: theme.colors.text, fontSize: 10, fontVariant: ['tabular-nums'], fontWeight: '800' },
+    chartDescription: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 14 },
+    chartRows: { gap: 10, paddingTop: 4 },
+    wagmiChart: {
+      backgroundColor: theme.colors.card,
+      borderRadius: 13,
+      overflow: 'hidden',
+    },
+    chartAxisLabels: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, paddingHorizontal: 4 },
+    chartAxisLabel: { color: theme.colors.textMuted, flex: 1, fontSize: 8 },
+    chartAxisLabelCenter: { textAlign: 'center' },
+    chartAxisLabelRight: { textAlign: 'right' },
+    selectedPointCard: {
+      backgroundColor: theme.colors.surfaceInset,
+      borderColor: theme.colors.dividerStrong,
+      borderRadius: 12,
+      borderWidth: 1,
+      gap: 2,
+      paddingHorizontal: 11,
+      paddingVertical: 9,
+    },
+    selectedPointLabel: { color: theme.colors.goldMuted, fontSize: 8, fontWeight: '900', letterSpacing: 0.6 },
+    selectedPointValue: { color: theme.colors.text, fontVariant: ['tabular-nums'], fontWeight: '900' },
+    selectedPointDetail: { color: theme.colors.textMuted, fontSize: 9 },
+    chartRow: { alignItems: 'center', flexDirection: 'row', gap: 7, minHeight: 25 },
+    chartLabel: { color: theme.colors.textMuted, fontSize: 9, width: 78 },
+    track: {
+      backgroundColor: theme.colors.cardSoft,
+      borderRadius: 4,
+      flex: 1,
+      height: 13,
+      overflow: 'hidden',
+    },
+    trackCenter: { backgroundColor: theme.colors.dividerStrong, height: '100%', left: '50%', position: 'absolute', width: StyleSheet.hairlineWidth },
+    bar: { borderRadius: 4, height: '100%', position: 'absolute' },
+    chartValue: { color: theme.colors.text, fontVariant: ['tabular-nums'], fontWeight: '800', textAlign: 'right', width: 72 },
+    axisRow: { flexDirection: 'row', justifyContent: 'space-between', paddingLeft: 84, paddingRight: 79 },
+    axisText: { color: theme.colors.textMuted, fontSize: 8, fontVariant: ['tabular-nums'] },
+    chartFootnote: { color: theme.colors.textMuted, fontSize: 9, textAlign: 'right' },
+    chartEmpty: {
+      alignItems: 'center',
+      backgroundColor: theme.colors.card,
+      borderRadius: 12,
+      flexDirection: 'row',
+      gap: 9,
+      padding: 12,
+    },
+    chartEmptyText: { color: theme.colors.textMuted, flex: 1, fontSize: 10, lineHeight: 15 },
+    dataNote: {
+      alignItems: 'flex-start',
+      backgroundColor: theme.colors.cardSoft,
+      borderColor: theme.colors.accentCyanBorder,
+      borderCurve: 'continuous',
+      borderRadius: 13,
+      borderWidth: 1,
+      flexDirection: 'row',
+      gap: 9,
+      padding: 12,
+    },
+    dataNoteText: { color: theme.colors.textMuted, flex: 1, fontSize: 9, lineHeight: 14 },
+    footerText: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 14, textAlign: 'center' },
   });
 }

@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Ionicons } from "@/components/ui/icon-symbol";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import type { ScanProofAssessment } from "@/services/scan-proof-service";
@@ -12,7 +12,6 @@ import {
 } from "@/components/scanner/value-radar-chrome.native.android";
 import { useValueRadar } from "@/components/scanner/value-radar-visual.native";
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import { responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 export type {
@@ -176,7 +175,7 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
 
             <View pointerEvents="none" style={styles.markerHeading}>
               <View style={styles.markerIcon}>
-                <IconSymbol
+                <Ionicons
                   color={theme.colors.scannerCyan}
                   name="viewfinder"
                   size={16}

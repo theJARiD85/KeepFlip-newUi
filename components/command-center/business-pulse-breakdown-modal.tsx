@@ -1,19 +1,18 @@
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import {
   useResponsiveLayout,
   useResponsiveStyles,
 } from '@/hooks/use-responsive-layout';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type {
   BusinessCashTiedUpItem,
   BusinessMoneyBreakdownEntry,
   ResellerBusinessOverview,
 } from '@/services/reseller-business-overview';
 import Modal from 'react-native-modal';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export type BusinessPulseMetric = 'money-in' | 'costs' | 'cash-tied-up';
 
 type BusinessPulseBreakdownModalProps = {
@@ -79,6 +78,7 @@ export function BusinessPulseBreakdownModal({
   overview,
   visible,
 }: BusinessPulseBreakdownModalProps) {
+  const responsiveLayout = useResponsiveLayout();
   const insets = useSafeAreaInsets();
   const styles = useResponsiveStyles(createResponsiveStyles);
   const { responsiveFont } = useResponsiveLayout();
@@ -108,29 +108,29 @@ export function BusinessPulseBreakdownModal({
     },
     ...(countedInventoryItems.length
       ? countedInventoryItems.map((item): CashBreakdownRow => ({
-          key: `counted:${item.id}`,
-          type: 'item',
-          item,
-        }))
+        key: `counted:${item.id}`,
+        type: 'item',
+        item,
+      }))
       : [{
-          key: 'counted-empty',
-          type: 'empty' as const,
-          text: 'No on-hand items with a positive saved cost are included yet.',
-        }]),
+        key: 'counted-empty',
+        type: 'empty' as const,
+        text: 'No on-hand items with a positive saved cost are included yet.',
+      }]),
     ...(missingCostItems.length
       ? [
-          {
-            key: 'missing-heading',
-            type: 'heading' as const,
-            title: 'NOT COUNTED · NO POSITIVE COST',
-            count: missingCostItems.length,
-          },
-          ...missingCostItems.map((item): CashBreakdownRow => ({
-            key: `missing:${item.id}`,
-            type: 'item',
-            item,
-          })),
-        ]
+        {
+          key: 'missing-heading',
+          type: 'heading' as const,
+          title: 'NOT COUNTED · NO POSITIVE COST',
+          count: missingCostItems.length,
+        },
+        ...missingCostItems.map((item): CashBreakdownRow => ({
+          key: `missing:${item.id}`,
+          type: 'item',
+          item,
+        })),
+      ]
       : []),
   ];
   const isCashTiedUp = metric === 'cash-tied-up';
@@ -143,57 +143,57 @@ export function BusinessPulseBreakdownModal({
       backdropOpacity={0.05}
       onBackdropPress={onClose}
       isVisible={visible}
-      style={{position: 'absolute', bottom: insets.bottom, top: insets.top * 2, left: -18, right: -18}}
+      style={{ position: 'absolute', bottom: insets.bottom, top: insets.top * 2, left: -18, right: -18 }}
     >
-        <View
-          style={[
-            styles.panel,
-            {
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              top: insets.top * 2,
-              marginBottom: insets.bottom,
-              marginTop: insets.top * 2,
-            },
-          ]}
-        >
-          <View style={[styles.header, { paddingTop: insets.top }]}>
-            <View style={styles.headingCopy}>
-              <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>BUSINESS PULSE</Text>
-              <Text style={[styles.title, { fontSize: responsiveFont(18), lineHeight: 23 }]}>
-                {metricTitle(metric)} breakdown
-              </Text>
-            </View>
-            <Pressable
-              accessibilityLabel="Close breakdown"
-              accessibilityRole="button"
-              onPress={onClose}
-              style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
-            >
-              <IconSymbol color={theme.colors.text} name="xmark" size={19} />
-            </Pressable>
+      <View
+        style={[
+          styles.panel,
+          {
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            top: insets.top * 2,
+            marginBottom: insets.bottom,
+            marginTop: insets.top * 2,
+          },
+        ]}
+      >
+        <View style={[styles.header, { paddingTop: insets.top }]}>
+          <View style={styles.headingCopy}>
+            <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>BUSINESS PULSE</Text>
+            <Text style={[styles.title, { fontSize: responsiveFont(18), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(23) : 23 }]}>
+              {metricTitle(metric)} breakdown
+            </Text>
           </View>
-
-          {isCashTiedUp ? (
-            <CashTiedUpBreakdown
-              notice={notice}
-              responsiveFont={responsiveFont}
-              rows={cashRows}
-              totalCents={metricTotal(metric, overview)}
-              unlinkedPurchaseCents={overview.attention.unlinkedInventoryCostCents}
-            />
-          ) : (
-            <MoneyEntriesBreakdown
-              entries={sortedMoneyEntries}
-              isIncome={metric === 'money-in'}
-              notice={notice}
-              responsiveFont={responsiveFont}
-              totalCents={metricTotal(metric, overview)}
-            />
-          )}
+          <Pressable
+            accessibilityLabel="Close breakdown"
+            accessibilityRole="button"
+            onPress={onClose}
+            style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
+          >
+            <Ionicons color={theme.colors.text} name="xmark" size={19} />
+          </Pressable>
         </View>
+
+        {isCashTiedUp ? (
+          <CashTiedUpBreakdown
+            notice={notice}
+            responsiveFont={responsiveFont}
+            rows={cashRows}
+            totalCents={metricTotal(metric, overview)}
+            unlinkedPurchaseCents={overview.attention.unlinkedInventoryCostCents}
+          />
+        ) : (
+          <MoneyEntriesBreakdown
+            entries={sortedMoneyEntries}
+            isIncome={metric === 'money-in'}
+            notice={notice}
+            responsiveFont={responsiveFont}
+            totalCents={metricTotal(metric, overview)}
+          />
+        )}
+      </View>
     </Modal>
   );
 }
@@ -207,6 +207,7 @@ function BreakdownTotal({
   responsiveFont: (size: number) => number;
   totalCents: number;
 }) {
+  const responsiveLayout2 = useResponsiveLayout();
   const styles = useResponsiveStyles(createResponsiveStyles);
 
   return (
@@ -215,7 +216,7 @@ function BreakdownTotal({
         <Text style={[styles.totalLabel, { fontSize: responsiveFont(8) }]}>
           {isCashTiedUp ? 'CURRENT INVENTORY' : 'CURRENT MONTH TO DATE'}
         </Text>
-        <Text selectable style={[styles.totalValue, { fontSize: responsiveFont(25), lineHeight: 31 }]}>
+        <Text selectable style={[styles.totalValue, { fontSize: responsiveFont(25), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(31) : 31 }]}>
           {exactMoney(totalCents)}
         </Text>
       </View>
@@ -237,6 +238,7 @@ function MoneyEntriesBreakdown({
   responsiveFont: (size: number) => number;
   totalCents: number;
 }) {
+  const responsiveLayout3 = useResponsiveLayout();
   const styles = useResponsiveStyles(createResponsiveStyles);
 
   return (
@@ -247,7 +249,7 @@ function MoneyEntriesBreakdown({
       initialNumToRender={12}
       keyExtractor={(entry) => entry.id}
       ListEmptyComponent={(
-        <Text style={[styles.emptyText, { fontSize: responsiveFont(10), lineHeight: 15 }]}>
+        <Text style={[styles.emptyText, { fontSize: responsiveFont(10), lineHeight: responsiveLayout3.isWeb ? responsiveLayout3.webResponsiveFont(15) : 15 }]}>
           No eligible {isIncome ? 'income' : 'cost'} entries have been recorded this month.
         </Text>
       )}
@@ -259,16 +261,16 @@ function MoneyEntriesBreakdown({
             totalCents={totalCents}
           />
           <View style={styles.introSection}>
-            <Text style={[styles.description, { fontSize: responsiveFont(10), lineHeight: 15 }]}>
+            <Text style={[styles.description, { fontSize: responsiveFont(10), lineHeight: responsiveLayout3.isWeb ? responsiveLayout3.webResponsiveFont(15) : 15 }]}>
               {isIncome
                 ? 'Money in adds eligible income entries recorded this calendar month.'
                 : 'Costs adds eligible expense and adjustment entries recorded this calendar month.'}
             </Text>
-            <Text style={[styles.filterNote, { fontSize: responsiveFont(9), lineHeight: 14 }]}>
+            <Text style={[styles.filterNote, { fontSize: responsiveFont(9), lineHeight: responsiveLayout3.isWeb ? responsiveLayout3.webResponsiveFont(14) : 14 }]}>
               Only active USD records with a positive amount are counted. Voided records, other currencies, and entries from other months are left out.
             </Text>
             {notice ? (
-              <Text style={[styles.unlinkedNote, { fontSize: responsiveFont(9), lineHeight: 14 }]}>
+              <Text style={[styles.unlinkedNote, { fontSize: responsiveFont(9), lineHeight: responsiveLayout3.isWeb ? responsiveLayout3.webResponsiveFont(14) : 14 }]}>
                 {notice}
               </Text>
             ) : null}
@@ -298,6 +300,7 @@ function MoneyEntryRow({
   entry: BusinessMoneyBreakdownEntry;
   responsiveFont: (size: number) => number;
 }) {
+  const responsiveLayout4 = useResponsiveLayout();
   const styles = useResponsiveStyles(createResponsiveStyles);
 
   return (
@@ -310,17 +313,17 @@ function MoneyEntryRow({
       </View>
       <Text style={[styles.entryMeta, { fontSize: responsiveFont(9) }]}>{dateLabel(entry.occurredAt)}</Text>
       {entry.itemTitle ? (
-        <Text style={[styles.entryDetail, { fontSize: responsiveFont(9), lineHeight: 14 }]}>
+        <Text style={[styles.entryDetail, { fontSize: responsiveFont(9), lineHeight: responsiveLayout4.isWeb ? responsiveLayout4.webResponsiveFont(14) : 14 }]}>
           Item · {entry.itemTitle}
         </Text>
       ) : null}
       {entry.channel ? (
-        <Text style={[styles.entryDetail, { fontSize: responsiveFont(9), lineHeight: 14 }]}>
+        <Text style={[styles.entryDetail, { fontSize: responsiveFont(9), lineHeight: responsiveLayout4.isWeb ? responsiveLayout4.webResponsiveFont(14) : 14 }]}>
           Source · {entry.channel}
         </Text>
       ) : null}
       {entry.notes ? (
-        <Text selectable style={[styles.entryDetail, { fontSize: responsiveFont(9), lineHeight: 14 }]}>
+        <Text selectable style={[styles.entryDetail, { fontSize: responsiveFont(9), lineHeight: responsiveLayout4.isWeb ? responsiveLayout4.webResponsiveFont(14) : 14 }]}>
           Note · {entry.notes}
         </Text>
       ) : null}
@@ -341,6 +344,7 @@ function CashTiedUpBreakdown({
   totalCents: number;
   unlinkedPurchaseCents: number;
 }) {
+  const responsiveLayout5 = useResponsiveLayout();
   const styles = useResponsiveStyles(createResponsiveStyles);
 
   return (
@@ -352,7 +356,7 @@ function CashTiedUpBreakdown({
       keyExtractor={(row) => row.key}
       ListFooterComponent={
         unlinkedPurchaseCents > 0 ? (
-          <Text style={[styles.unlinkedNote, { fontSize: responsiveFont(9), lineHeight: 14 }]}>
+          <Text style={[styles.unlinkedNote, { fontSize: responsiveFont(9), lineHeight: responsiveLayout5.isWeb ? responsiveLayout5.webResponsiveFont(14) : 14 }]}>
             Across all saved records, not included: {exactMoney(unlinkedPurchaseCents)} in inventory purchases are not linked to an item, so they cannot be assigned to this total.
           </Text>
         ) : null
@@ -365,11 +369,11 @@ function CashTiedUpBreakdown({
             totalCents={totalCents}
           />
           <View style={styles.introSection}>
-            <Text style={[styles.description, { fontSize: responsiveFont(10), lineHeight: 15 }]}>
+            <Text style={[styles.description, { fontSize: responsiveFont(10), lineHeight: responsiveLayout5.isWeb ? responsiveLayout5.webResponsiveFont(15) : 15 }]}>
               Cash tied up adds the positive saved cost for each item currently counted as on hand. Quantity is shown for context; it is not used as a multiplier.
             </Text>
             {notice ? (
-              <Text style={[styles.unlinkedNote, { fontSize: responsiveFont(9), lineHeight: 14 }]}>
+              <Text style={[styles.unlinkedNote, { fontSize: responsiveFont(9), lineHeight: responsiveLayout5.isWeb ? responsiveLayout5.webResponsiveFont(14) : 14 }]}>
                 {notice}
               </Text>
             ) : null}
@@ -389,7 +393,7 @@ function CashTiedUpBreakdown({
         }
         if (item.type === 'empty') {
           return (
-            <Text style={[styles.emptyText, { fontSize: responsiveFont(10), lineHeight: 15 }]}>
+            <Text style={[styles.emptyText, { fontSize: responsiveFont(10), lineHeight: responsiveLayout5.isWeb ? responsiveLayout5.webResponsiveFont(15) : 15 }]}>
               {item.text}
             </Text>
           );

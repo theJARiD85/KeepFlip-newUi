@@ -1,9 +1,8 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import { useResponsiveLayout , useResponsiveStyles} from '@/hooks/use-responsive-layout';
 import { ledgerEntryDetails, type ResellerLedgerEntry } from '@/services/reseller-ledger-service';
 
 function shortDate(value: string) {
@@ -25,6 +24,7 @@ export function BooksRecordRow({ entry, itemName, onPress }: {
   itemName: string | null;
   onPress: () => void;
 }) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const { responsiveFont, responsiveWidth } = useResponsiveLayout();
   const details = ledgerEntryDetails(entry.entryType);
   const isIncome = entry.direction === 'income';
@@ -36,23 +36,23 @@ export function BooksRecordRow({ entry, itemName, onPress }: {
       accessibilityLabel={`${details.label}, ${formatMoney(entry.amountCents, entry.currency)}`}
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
-      <View style={[styles.marker, { backgroundColor: isIncome ? theme.colors.scannerCyan : theme.colors.gold }]} />
-      <View style={[styles.dateColumn, { width: responsiveWidth(74) }]}>
-        <Text style={[styles.date, { fontSize: responsiveFont(10) }]}>{shortDate(entry.occurredAt)}</Text>
-        <Text style={[styles.source, { fontSize: responsiveFont(8) }]}>{entry.source.toUpperCase()}</Text>
+      style={({ pressed }) => [responsiveStyles.row, pressed && responsiveStyles.pressed]}>
+      <View style={[responsiveStyles.marker, { backgroundColor: isIncome ? theme.colors.scannerCyan : theme.colors.gold }]} />
+      <View style={[responsiveStyles.dateColumn, { width: responsiveWidth(74) }]}>
+        <Text style={[responsiveStyles.date, { fontSize: responsiveFont(10) }]}>{shortDate(entry.occurredAt)}</Text>
+        <Text style={[responsiveStyles.source, { fontSize: responsiveFont(8) }]}>{entry.source.toUpperCase()}</Text>
       </View>
-      <View style={styles.copy}>
-        <Text numberOfLines={1} style={[styles.title, { fontSize: responsiveFont(12) }]}>{details.label}</Text>
-        <Text numberOfLines={1} style={[styles.secondary, { fontSize: responsiveFont(10) }]}>{entry.notes || secondary || 'Recorded Books transaction'}</Text>
+      <View style={responsiveStyles.copy}>
+        <Text numberOfLines={1} style={[responsiveStyles.title, { fontSize: responsiveFont(12) }]}>{details.label}</Text>
+        <Text numberOfLines={1} style={[responsiveStyles.secondary, { fontSize: responsiveFont(10) }]}>{entry.notes || secondary || 'Recorded Books transaction'}</Text>
       </View>
-      <View style={[styles.amountColumn, { minWidth: responsiveWidth(84) }]}>
-        <Text style={[styles.amount, { color: isIncome ? theme.colors.scannerCyan : theme.colors.goldBright, fontSize: responsiveFont(11) }]}>
+      <View style={[responsiveStyles.amountColumn, { minWidth: responsiveWidth(84) }]}>
+        <Text style={[responsiveStyles.amount, { color: isIncome ? theme.colors.scannerCyan : theme.colors.goldBright, fontSize: responsiveFont(11) }]}>
           {isIncome ? '+' : '−'}{formatMoney(entry.amountCents, entry.currency)}
         </Text>
-        <Text style={styles.direction}>{isIncome ? 'IN' : 'OUT'}</Text>
+        <Text style={responsiveStyles.direction}>{isIncome ? 'IN' : 'OUT'}</Text>
       </View>
-      <IconSymbol color={theme.colors.textMuted} name="chevron.right" size={14} />
+      <Ionicons color={theme.colors.textMuted} name="chevron.right" size={14} />
     </Pressable>
   );
 }
@@ -71,3 +71,37 @@ const styles = StyleSheet.create({
   amount: { fontVariant: ['tabular-nums'], fontWeight: '700' },
   direction: { color: theme.colors.textMuted, fontFamily: theme.fonts.radar, fontSize: 8 },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    row: {
+      ...styles["row"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(62) : 62,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(9) : 9,
+    },
+    marker: {
+      ...styles["marker"],
+      height: layout.isWeb ? layout.webResponsiveHeight(30) : 30,
+      width: layout.isWeb ? layout.webResponsiveWidth(3) : 3,
+    },
+    dateColumn: {
+      ...styles["dateColumn"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(3) : 3,
+    },
+    copy: {
+      ...styles["copy"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(3) : 3,
+    },
+    amountColumn: {
+      ...styles["amountColumn"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(3) : 3,
+    },
+    direction: {
+      ...styles["direction"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : 8,
+    },
+  });
+}

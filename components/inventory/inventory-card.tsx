@@ -1,4 +1,4 @@
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Ionicons } from "@/components/ui/icon-symbol";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
@@ -338,7 +338,7 @@ export function InventoryCard({
                       />
                     ) : (
                       <View style={styles.coverFallback}>
-                        <IconSymbol
+                        <Ionicons
                           color={theme.colors.goldBright}
                           name="photo.on.rectangle.angled"
                           size={36}
@@ -354,7 +354,7 @@ export function InventoryCard({
             </ScrollView>
           ) : (
             <View style={styles.coverFallback}>
-              <IconSymbol
+              <Ionicons
                 color={theme.colors.goldBright}
                 name="photo.on.rectangle.angled"
                 size={36}
@@ -374,7 +374,7 @@ export function InventoryCard({
             ) : <View />}
             {photoPageKeys.length > 1 ? (
               <View style={styles.photoPill}>
-                <IconSymbol
+                <Ionicons
                   color={theme.colors.scannerCyan}
                   name="photo.on.rectangle.angled"
                   size={14}
@@ -480,7 +480,7 @@ export function InventoryCard({
             <Text style={styles.itemActionsToggleLabel}>
               {actionsExpanded ? "Close" : "Actions"}
             </Text>
-            <IconSymbol
+            <Ionicons
               color={theme.colors.scannerCyan}
               name="ellipsis"
               size={21}
@@ -512,7 +512,7 @@ export function InventoryCard({
                     style={StyleSheet.absoluteFill}
                   />
                   <View style={styles.listingGuideButtonIcon}>
-                    <IconSymbol
+                    <Ionicons
                       color={theme.colors.scannerCyan}
                       name="tag.fill"
                       size={17}
@@ -521,7 +521,7 @@ export function InventoryCard({
                   <View style={styles.listingGuideButtonCopy}>
                     <Text style={styles.listingGuideButtonLabel}>List</Text>
                   </View>
-                  <IconSymbol
+                  <Ionicons
                     color={theme.colors.goldBright}
                     name="arrow.right"
                     size={18}
@@ -542,7 +542,7 @@ export function InventoryCard({
                   ]}
                 >
                   <View style={styles.listingGuideButtonIcon}>
-                    <IconSymbol
+                    <Ionicons
                       color={theme.colors.scannerCyan}
                       name="photo.on.rectangle.angled"
                       size={17}
@@ -551,7 +551,7 @@ export function InventoryCard({
                   <View style={styles.listingGuideButtonCopy}>
                     <Text style={styles.listingGuideButtonLabel}>Photos</Text>
                   </View>
-                  <IconSymbol
+                  <Ionicons
                     color={theme.colors.scannerCyan}
                     name="arrow.right"
                     size={18}
@@ -572,7 +572,7 @@ export function InventoryCard({
                   ]}
                 >
                   <View style={styles.listingGuideButtonIcon}>
-                    <IconSymbol
+                    <Ionicons
                       color={theme.colors.scannerCyan}
                       name="photo.on.rectangle.angled"
                       size={17}
@@ -581,7 +581,7 @@ export function InventoryCard({
                   <View style={styles.listingGuideButtonCopy}>
                     <Text style={styles.listingGuideButtonLabel}>Remove background</Text>
                   </View>
-                  <IconSymbol
+                  <Ionicons
                     color={theme.colors.scannerCyan}
                     name="arrow.right"
                     size={18}
@@ -602,7 +602,7 @@ export function InventoryCard({
                   ]}
                 >
                   <View style={[styles.listingGuideButtonIcon, styles.markSoldButtonIcon]}>
-                    <IconSymbol
+                    <Ionicons
                       color={theme.colors.goldBright}
                       name="checkmark.circle.fill"
                       size={17}
@@ -611,7 +611,7 @@ export function InventoryCard({
                   <View style={styles.listingGuideButtonCopy}>
                     <Text style={[styles.listingGuideButtonLabel, styles.markSoldButtonLabel]}>Mark sold</Text>
                   </View>
-                  <IconSymbol
+                  <Ionicons
                     color={theme.colors.goldBright}
                     name="arrow.right"
                     size={18}
@@ -643,7 +643,7 @@ export function InventoryCard({
                   ]}
                 >
                   <View style={[styles.listingGuideButtonIcon, styles.deleteButtonIcon]}>
-                    <IconSymbol
+                    <Ionicons
                       color={theme.colors.danger}
                       name="trash.fill"
                       size={17}
@@ -687,21 +687,21 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       transform: [{ scale: 0.985 }],
     },
     hero: {
-      height: 190,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(190) : 190,
       backgroundColor: theme.colors.surfaceInset,
     },
     details: {
-      gap: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
       padding: 14,
       backgroundColor: theme.colors.card,
     },
     compactDetails: {
-      gap: 9,
-      paddingHorizontal: 11,
-      paddingVertical: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : 11,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : 10,
     },
     identity: {
-      gap: 3,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3,
       minWidth: 0,
     },
     itemTitle: {
@@ -709,24 +709,24 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.bold,
       fontSize: responsiveFont(16),
       fontWeight: "800",
-      lineHeight: 20,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(20) : 20,
     },
     compactTitle: {
       fontSize: responsiveFont(12),
-      lineHeight: 16,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16,
     },
     meta: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.body,
       fontSize: responsiveFont(10),
-      lineHeight: 14,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14,
     },
     compactValuation: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      gap: 6,
-      paddingTop: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
+      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(8) : 8,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: theme.colors.divider,
     },
@@ -745,8 +745,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontVariant: ["tabular-nums"],
     },
     valuationSummary: {
-      paddingHorizontal: 12,
-      paddingVertical: 10,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : 10,
       borderRadius: theme.radii.small,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: theme.colors.divider,
@@ -754,7 +754,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     medianBlock: {
       alignItems: "flex-start",
-      gap: 3,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3,
     },
     medianLabel: {
       color: theme.colors.textMuted,
@@ -767,7 +767,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.goldBright,
       fontFamily: theme.fonts.numbers,
       fontSize: responsiveFont(24),
-      lineHeight: 30,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(30) : 30,
       fontWeight: "900",
       fontVariant: ["tabular-nums"],
     },
@@ -807,7 +807,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       left: 0,
       alignItems: "center",
       justifyContent: "center",
-      gap: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
       backgroundColor: theme.colors.surfaceInset,
       experimental_backgroundImage:
         "radial-gradient(circle at 50% 26%, rgba(141, 114, 255, 0.28) 0%, transparent 34%), radial-gradient(circle at 74% 72%, rgba(88, 223, 232, 0.16) 0%, transparent 38%), linear-gradient(145deg, #100B18 0%, #030305 76%)",
@@ -827,17 +827,17 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      minHeight: 42,
-      paddingHorizontal: 10,
-      paddingTop: 10,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(42) : 42,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : 10,
       zIndex: 1,
     },
     photoPill: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 5,
-      paddingHorizontal: 8,
-      paddingVertical: 6,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : 6,
       borderRadius: theme.radii.pill,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: theme.colors.accentCyanBorder,
@@ -852,8 +852,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     conditionPill: {
       maxWidth: "58%",
-      paddingHorizontal: 8,
-      paddingVertical: 5,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(5) : 5,
       borderRadius: theme.radii.small,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: theme.colors.dividerStrong,
@@ -870,20 +870,20 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     recordStrip: {
       flexDirection: "row",
       alignItems: "flex-start",
-      gap: 10,
-      paddingTop: 11,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
+      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(11) : 11,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: theme.colors.divider,
     },
     recordMetric: {
       flex: 1,
       minWidth: 0,
-      gap: 4,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
     },
     recordMetricStorage: {
       flex: 1.15,
       minWidth: 0,
-      gap: 4,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4,
     },
     recordLabel: {
       color: theme.colors.textMuted,
@@ -908,14 +908,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.surfaceInset,
     },
     itemActionsToggle: {
-      minHeight: 40,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(40) : 40,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "flex-end",
-      gap: 8,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
       alignSelf: "flex-end",
-      paddingHorizontal: 13,
-      paddingVertical: 8,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(13) : 13,
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(8) : 8,
     },
     itemActionsToggleLabel: {
       color: theme.colors.scannerCyan,
@@ -929,11 +929,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     listingGuideButton: {
       position: "relative",
-      minHeight: 53,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(53) : 53,
       flexDirection: "row",
       alignItems: "center",
-      gap: 11,
-      paddingHorizontal: 15,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : 11,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(15) : 15,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: theme.colors.accentCyanBorder,
       backgroundColor: theme.colors.surfaceInset,
@@ -980,21 +980,21 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      gap: 5,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5,
     },
     photoIndicator: {
-      width: 5,
-      height: 5,
-      borderRadius: 3,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(5) : 5,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3,
       backgroundColor: theme.colors.cardSoft,
     },
     photoIndicatorActive: {
-      width: 16,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16,
       backgroundColor: theme.colors.goldBright,
     },
     listingGuideButtonIcon: {
-      width: 34,
-      height: 34,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(34) : 34,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(34) : 34,
       alignItems: "center",
       justifyContent: "center",
       borderRadius: theme.radii.small,

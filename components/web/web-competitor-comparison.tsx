@@ -12,6 +12,7 @@ import {
   WebTextLink,
 } from '@/components/web/web-public-page';
 import { KEEPFLIP_PUBLIC_COLORS, KEEPFLIP_PUBLIC_PRICING_USD, KEEPFLIP_SITE_URL } from '@/constants/keepflip-public-site';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 export type CompetitorComparison = {
   canonicalPath: string;
@@ -31,6 +32,7 @@ export type CompetitorComparison = {
 };
 
 export function WebCompetitorComparison({ comparison }: { comparison: CompetitorComparison }) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const faq = [
     {
       question: `Is KeepFlip a replacement for ${comparison.competitor}?`,
@@ -96,14 +98,14 @@ export function WebCompetitorComparison({ comparison }: { comparison: Competitor
         <WebCopy>
           US web checkout is ${KEEPFLIP_PUBLIC_PRICING_USD.web.monthly} per month or ${KEEPFLIP_PUBLIC_PRICING_USD.web.annual} per year. It includes every KeepFlip feature and up to 250 active listings total. The web checkout does not currently offer a free trial.
         </WebCopy>
-        <View style={styles.actions}>
+        <View style={responsiveStyles.actions}>
           <WebActionLink href="/pricing" label="See KeepFlip pricing" />
           <WebActionLink href="/features" label="See how it works" secondary />
         </View>
       </WebContentSection>
 
       <WebContentSection title="Questions resellers ask.">
-        <View style={styles.faqList}>
+        <View style={responsiveStyles.faqList}>
           {faq.map((item) => (
             <WebInfoCard key={item.question} title={item.question}>
               <WebCopy>{item.answer}</WebCopy>
@@ -116,16 +118,17 @@ export function WebCompetitorComparison({ comparison }: { comparison: Competitor
 }
 
 function WebComparisonTable({ comparison }: { comparison: CompetitorComparison }) {
+  const responsiveStyles2 = useResponsiveStyles(createStylesWebResponsive);
   const colors = KEEPFLIP_PUBLIC_COLORS;
 
   if (Platform.OS !== 'web') {
     return (
-      <View style={styles.mobileRows}>
+      <View style={responsiveStyles2.mobileRows}>
         {comparison.rows.map((row) => (
           <WebInfoCard key={row.area} title={row.area}>
-            <Text style={styles.cellHeading}>KeepFlip</Text>
+            <Text style={responsiveStyles2.cellHeading}>KeepFlip</Text>
             <WebCopy>{row.keepFlip}</WebCopy>
-            <Text style={styles.cellHeading}>{comparison.competitor}</Text>
+            <Text style={responsiveStyles2.cellHeading}>{comparison.competitor}</Text>
             <WebCopy>{row.competitor}</WebCopy>
           </WebInfoCard>
         ))}
@@ -200,3 +203,25 @@ const styles = StyleSheet.create({
   mobileRows: { gap: 12 },
   cellHeading: { fontSize: 12, fontWeight: '700' },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    actions: {
+      ...styles["actions"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+    },
+    faqList: {
+      ...styles["faqList"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+    },
+    mobileRows: {
+      ...styles["mobileRows"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+    },
+    cellHeading: {
+      ...styles["cellHeading"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+    },
+  });
+}

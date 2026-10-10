@@ -3,11 +3,13 @@ import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { View, Button, StyleSheet } from 'react-native';
 import { StripeCheckoutProps } from '@/types/stripe';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 // Initializing loadStripe returns a Promise containing Stripe or null
 const stripePromise: Promise<Stripe | null> = loadStripe('pk_live_51Pc7h6RvtjovWZmE45BTyGTCCtJ7iZZJBCVvvAWwQ2dGzgo05KzvTt3xCl9YBxIfgEUX7akXAj7lQJLQNqBwbdR100OTG4CFOt');
 
 function CheckoutForm({ clientSecret }: StripeCheckoutProps): React.JSX.Element {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const stripe = useStripe();
   const elements = useElements();
 
@@ -31,7 +33,7 @@ function CheckoutForm({ clientSecret }: StripeCheckoutProps): React.JSX.Element 
   };
 
   return (
-    <View style={styles.container}>
+    <View style={responsiveStyles.container}>
       {/* Stripe elements require a DOM framework on web */}
       <div style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '4px', marginBottom: '15px' }}>
         <CardElement options={{ style: { base: { fontSize: '16px' } } }} />
@@ -52,3 +54,13 @@ export default function StripeCheckout({ clientSecret }: StripeCheckoutProps): R
 const styles = StyleSheet.create({
   container: { padding: 20, maxWidth: 400, width: '100%' },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    container: {
+      ...styles["container"],
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(400) : 400,
+    },
+  });
+}

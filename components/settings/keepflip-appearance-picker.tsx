@@ -1,10 +1,9 @@
 import * as Haptics from 'expo-haptics';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 import type { KeepFlipAppearancePreference } from '@/services/keepflip-appearance-service';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,25 +14,25 @@ const APPEARANCE_OPTIONS: {
   label: string;
   preference: KeepFlipAppearancePreference;
 }[] = [
-  {
-    description: 'Follow the appearance setting on this device.',
-    icon: 'circle.lefthalf.filled',
-    label: 'System',
-    preference: 'system',
-  },
-  {
-    description: 'Use the warm light palette throughout KeepFlip.',
-    icon: 'sun.max.fill',
-    label: 'Light',
-    preference: 'light',
-  },
-  {
-    description: 'Keep the current dark glass-circuit palette.',
-    icon: 'moon.fill',
-    label: 'Dark',
-    preference: 'dark',
-  },
-];
+    {
+      description: 'Follow the appearance setting on this device.',
+      icon: 'circle.lefthalf.filled',
+      label: 'System',
+      preference: 'system',
+    },
+    {
+      description: 'Use the warm light palette throughout KeepFlip.',
+      icon: 'sun.max.fill',
+      label: 'Light',
+      preference: 'light',
+    },
+    {
+      description: 'Keep the current dark glass-circuit palette.',
+      icon: 'moon.fill',
+      label: 'Dark',
+      preference: 'dark',
+    },
+  ];
 
 function hapticSelection() {
   if (process.env.EXPO_OS === 'ios') {
@@ -50,6 +49,7 @@ export function KeepFlipAppearancePicker({
   onClose,
   visible,
 }: KeepFlipAppearancePickerProps) {
+  const responsiveLayout2 = useResponsiveLayout();
   const styles = useResponsiveStyles(createResponsiveStyles);
   const { responsiveFont } = useResponsiveLayout();
   const insets = useSafeAreaInsets();
@@ -99,7 +99,7 @@ export function KeepFlipAppearancePicker({
             <View style={styles.headerCopy}>
               <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>KEEPFLIP / APPEARANCE</Text>
               <Text style={[styles.title, { fontSize: responsiveFont(20) }]}>Choose your look</Text>
-              <Text style={[styles.subtitle, { fontSize: responsiveFont(10), lineHeight: 15 }]}>KeepFlip follows your device by default, or you can choose a mode that stays fixed.</Text>
+              <Text style={[styles.subtitle, { fontSize: responsiveFont(10), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(15) : 15 }]}>KeepFlip follows your device by default, or you can choose a mode that stays fixed.</Text>
             </View>
             <Pressable
               accessibilityLabel="Close appearance settings"
@@ -107,7 +107,7 @@ export function KeepFlipAppearancePicker({
               hitSlop={8}
               onPress={onClose}
               style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}>
-              <IconSymbol color={theme.colors.textMuted} name="xmark" size={17} />
+              <Ionicons color={theme.colors.textMuted} name="xmark" size={17} />
             </Pressable>
           </View>
 
@@ -133,7 +133,7 @@ export function KeepFlipAppearancePicker({
                     pressed && styles.pressed,
                   ]}>
                   <View style={[styles.optionIcon, selected && styles.optionIconSelected]}>
-                    <IconSymbol
+                    <Ionicons
                       color={selected ? theme.colors.goldBright : theme.colors.textMuted}
                       name={option.icon}
                       size={18}
@@ -144,10 +144,10 @@ export function KeepFlipAppearancePicker({
                       <Text style={[styles.optionTitle, { fontSize: responsiveFont(12) }]}>{option.label}</Text>
                       {selected ? <Text style={[styles.selectedLabel, { fontSize: responsiveFont(7) }]}>SELECTED</Text> : null}
                     </View>
-                    <Text style={[styles.optionDescription, { fontSize: responsiveFont(9), lineHeight: 14 }]}>{option.description}</Text>
+                    <Text style={[styles.optionDescription, { fontSize: responsiveFont(9), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(14) : 14 }]}>{option.description}</Text>
                     {effective ? <Text style={[styles.effectiveLabel, { fontSize: responsiveFont(7) }]}>ACTIVE NOW: {effective.toUpperCase()}</Text> : null}
                   </View>
-                  <IconSymbol
+                  <Ionicons
                     color={selected ? theme.colors.goldBright : theme.colors.textMuted}
                     name={selected ? 'checkmark.circle.fill' : 'circle'}
                     size={18}
@@ -179,56 +179,56 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     card: {
       width: '100%',
-      gap: 16,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16,
       padding: 16,
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
-      borderRadius: 18,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(18) : 18,
       backgroundColor: theme.colors.surface,
     },
     header: {
       flexDirection: 'row',
       alignItems: 'flex-start',
-      gap: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
     },
-    headerCopy: { flex: 1, gap: 3 },
+    headerCopy: { flex: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : 3 },
     eyebrow: {
       color: theme.colors.gold,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 1.4,
     },
     title: {
       color: theme.colors.text,
-      fontSize: 20,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(20) : 20,
       fontWeight: '900',
       letterSpacing: -0.25,
     },
     subtitle: {
       color: theme.colors.textMuted,
-      fontSize: 10,
-      lineHeight: 15,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15,
     },
     closeButton: {
       alignItems: 'center',
       justifyContent: 'center',
-      width: 32,
-      height: 32,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(32) : 32,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(32) : 32,
       borderWidth: 1,
       borderColor: theme.colors.dividerStrong,
-      borderRadius: 10,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       backgroundColor: theme.colors.iconSurfaceGold,
     },
-    optionList: { gap: 8 },
+    optionList: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8 },
     option: {
-      minHeight: 70,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(70) : 70,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       padding: 10,
       borderWidth: 1,
       borderColor: theme.colors.divider,
-      borderRadius: 13,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(13) : 13,
       backgroundColor: theme.colors.backgroundRaised,
     },
     optionSelected: {
@@ -238,9 +238,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     optionIcon: {
       alignItems: 'center',
       justifyContent: 'center',
-      width: 34,
-      height: 34,
-      borderRadius: 10,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(34) : 34,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(34) : 34,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10,
       backgroundColor: theme.colors.iconSurface,
     },
     optionIconSelected: { backgroundColor: theme.colors.iconSurfaceGold },
@@ -248,34 +248,34 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     optionTitleLine: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 7,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
     },
     optionTitle: {
       color: theme.colors.text,
-      fontSize: 12,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12,
       fontWeight: '800',
     },
     selectedLabel: {
       color: theme.colors.gold,
-      fontSize: 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
       fontWeight: '900',
       letterSpacing: 0.65,
     },
     optionDescription: {
       color: theme.colors.textMuted,
-      fontSize: 9,
-      lineHeight: 14,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14,
     },
     effectiveLabel: {
       color: theme.colors.scannerCyan,
-      fontSize: 7,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : 7,
       fontWeight: '900',
       letterSpacing: 0.65,
     },
     error: {
       color: theme.colors.danger,
-      fontSize: 9,
-      lineHeight: 14,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14,
     },
     pressed: { opacity: 0.72 },
   });

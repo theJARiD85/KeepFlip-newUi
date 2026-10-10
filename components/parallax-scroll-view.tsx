@@ -10,6 +10,7 @@ import Animated, {
 import { ThemedView } from '@/components/themed-view';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 const HEADER_HEIGHT = 250;
 
@@ -23,6 +24,7 @@ export default function ParallaxScrollView({
   headerImage,
   headerBackgroundColor,
 }: Props) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const backgroundColor = useThemeColor({}, 'background');
   const colorScheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
@@ -51,13 +53,13 @@ export default function ParallaxScrollView({
       scrollEventThrottle={16}>
       <Animated.View
         style={[
-          styles.header,
+          responsiveStyles.header,
           { backgroundColor: headerBackgroundColor[colorScheme] },
           headerAnimatedStyle,
         ]}>
         {headerImage}
       </Animated.View>
-      <ThemedView style={styles.content}>{children}</ThemedView>
+      <ThemedView style={responsiveStyles.content}>{children}</ThemedView>
     </Animated.ScrollView>
   );
 }
@@ -74,3 +76,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    content: {
+      ...styles["content"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(16) : 16,
+    },
+  });
+}

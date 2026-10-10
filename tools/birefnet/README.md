@@ -13,18 +13,41 @@ recommends for compatibility cases.
 ## Run from Colab
 
 The ONNX graph is about 224 MB. Run the conversion in Colab rather than on a
-low-memory developer machine. In the BiRefNet notebook, add a code cell and
-install the converter and its validation tools:
+low-memory developer machine. Start from a clean Colab runtime. If a previous
+install left package versions mismatched, choose **Runtime > Disconnect and
+delete runtime**, reconnect, then add a code cell to the BiRefNet notebook.
+This resets temporary runtime files, so upload the exporter again after setup.
+
+Install the converter and its validation tools with the versions used by
+onnx2tf 2.6.9:
 
 ```python
-%pip install -q "onnx2tf[tensorflow]==2.6.9" huggingface_hub
+%pip install -q "onnx2tf[tensorflow]==2.6.9" "numpy==2.2.6" "protobuf==7.35.1" huggingface_hub
 ```
 
 This installs the optional TensorFlow Lite Converter dependencies as well as
-onnx2tf's pinned ONNX Runtime and LiteRT packages. The notebook already
-selected Python 3.13, which this converter version supports. Restart the Colab
-session if it prompts you to do so, then reupload the exporter if it is no
-longer listed in `/content`.
+onnx2tf's pinned NumPy, Protobuf, ONNX Runtime, and LiteRT packages. The
+notebook already selected Python 3.13, which this converter version supports.
+After installation finishes, choose **Runtime > Restart session** before
+importing TensorFlow. A resolver warning about Colab's preinstalled `ydf`
+requiring protobuf below version 7 is expected; `ydf` is not used by this
+converter. Verify the package imports before conversion:
+
+```python
+import importlib.metadata as metadata
+import google.protobuf
+import numpy
+
+print("onnx2tf:", metadata.version("onnx2tf"))
+print("NumPy package/loaded:", metadata.version("numpy"), numpy.__version__)
+print("Protobuf package/loaded:", metadata.version("protobuf"), google.protobuf.__version__)
+
+import tensorflow as tf
+print("TensorFlow:", tf.__version__)
+```
+
+The package and loaded NumPy/Protobuf versions should match, and TensorFlow
+should import without an exception.
 
 Upload `export_birefnet_lite_tflite.py` from this folder with Colab's file
 picker, then run:

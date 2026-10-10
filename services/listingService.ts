@@ -24,6 +24,7 @@ export type ListingMarketplaceJson = {
     location: string | null;
   }>;
   ebay: MarketplaceListingTree<{
+    category: string | null;
     categoryId: string | null;
     merchantLocationKey: string | null;
     fulfillmentPolicyId: string | null;
@@ -100,9 +101,10 @@ type ListingGeneratorReadyResult = {
   readiness: ListingReadiness;
   listing: {
     title: string;
+    category?: string | null;
     subtitle: string;
     priceRange: { quickSale: number; targetPrice: number; highAsk: number };
-    conditionLabel: "new" | "like_new" | "good" | "fair" | "for_parts_or_repair";
+    conditionLabel: "new" | "like_new" | "good" | "fair" | "poor" | "for_parts_or_repair";
     sellingStrategy: "sell_as_is" | "clean_and_list" | "repair_first" | "bundle" | "part_out";
     description: string;
     shortDescription: string;
@@ -214,6 +216,7 @@ function normalizeMarketplaceListings(
       ...base("ebay"),
       subtitle: readText(draft("ebay").subtitle, ebaySubtitle),
       fields: {
+        category: readNullableText(fields("ebay").category),
         categoryId: readNullableText(fields("ebay").categoryId),
         merchantLocationKey: readNullableText(fields("ebay").merchantLocationKey),
         fulfillmentPolicyId: readNullableText(fields("ebay").fulfillmentPolicyId),

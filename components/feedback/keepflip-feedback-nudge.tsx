@@ -19,7 +19,6 @@ import {
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
@@ -29,7 +28,6 @@ import {
   openKeepFlipFeedbackEmail,
   openKeepFlipGooglePlayReviews,
 } from '@/lib/keepflip-feedback';
-import { responsiveWidth } from '@/lib/responsiveFont';
 
 import { useResponsiveStyles } from '@/hooks/use-responsive-layout';
 type FeedbackPromptPreference = {
@@ -145,6 +143,7 @@ function FeedbackPrompt({
   onOpenReview: () => void;
   visible: boolean;
 }) {
+  const responsiveLayout2 = useResponsiveLayout();
   const styles = useResponsiveStyles(createResponsiveStyles);
   const {
     responsiveFont
@@ -169,18 +168,18 @@ function FeedbackPrompt({
 
           <View style={styles.promptHeading}>
             <View style={styles.promptIcon}>
-              <IconSymbol color={theme.colors.goldBright} name="bubble.left.and.bubble.right.fill" size={20} />
+              <Ionicons color={theme.colors.goldBright} name="bubble.left.and.bubble.right.fill" size={20} />
             </View>
             <View style={styles.promptCopy}>
-              <Text style={[styles.promptTitle, { fontSize: responsiveFont(20), lineHeight: 24 }]}>Help shape what comes next.</Text>
-              <Text style={[styles.promptBody, { fontSize: responsiveFont(13), lineHeight: 19 }]}>
+              <Text style={[styles.promptTitle, { fontSize: responsiveFont(20), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(24) : 24 }]}>Help shape what comes next.</Text>
+              <Text style={[styles.promptBody, { fontSize: responsiveFont(13), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(19) : 19 }]}>
                 A quick note about what worked—or what got in your way—helps KeepFlip get more useful for real resellers.
               </Text>
             </View>
           </View>
 
           {errorMessage ? (
-            <Text accessibilityLiveRegion="polite" selectable style={[styles.promptError, { fontSize: responsiveFont(11), lineHeight: 16 }]}>
+            <Text accessibilityLiveRegion="polite" selectable style={[styles.promptError, { fontSize: responsiveFont(11), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(16) : 16 }]}>
               {errorMessage}
             </Text>
           ) : null}
@@ -199,7 +198,7 @@ function FeedbackPrompt({
               {busyAction === 'feedback' ? (
                 <ActivityIndicator color={theme.colors.textOnAccent} size="small" />
               ) : (
-                <IconSymbol color={theme.colors.textOnAccent} name="paperplane.fill" size={16} />
+                <Ionicons color={theme.colors.textOnAccent} name="paperplane.fill" size={16} />
               )}
               <Text style={[styles.primaryActionText, { fontSize: responsiveFont(10) }]}>SHARE FEEDBACK</Text>
             </Pressable>
@@ -217,7 +216,7 @@ function FeedbackPrompt({
               {busyAction === 'review' ? (
                 <ActivityIndicator color={theme.colors.goldBright} size="small" />
               ) : (
-                <IconSymbol color={theme.colors.goldBright} name="star.fill" size={16} />
+                <Ionicons color={theme.colors.goldBright} name="star.fill" size={16} />
               )}
               <Text style={[styles.secondaryActionText, { fontSize: responsiveFont(10) }]}>RATE ON GOOGLE PLAY</Text>
             </Pressable>
@@ -465,10 +464,10 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     promptSurface: {
       width: '100%',
-      maxWidth: 430,
-      gap: 16,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(430) : 430,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16,
       padding: 20,
-      borderRadius: 16,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16,
       borderCurve: 'continuous',
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
@@ -478,78 +477,78 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     promptSignalRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 7,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : 7,
     },
     promptSignal: {
-      width: 6,
-      height: 6,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : 6,
       borderRadius: theme.radii.pill,
       backgroundColor: theme.colors.scannerCyan,
     },
     promptEyebrow: {
       color: theme.colors.goldBright,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8,
       fontWeight: '900',
       letterSpacing: 1.35,
     },
     promptHeading: {
       flexDirection: 'row',
       alignItems: 'flex-start',
-      gap: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
     },
     promptIcon: {
-      width: 38,
-      height: 38,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(38) : 38,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(38) : 38,
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: 12,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12,
       borderCurve: 'continuous',
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
       backgroundColor: theme.colors.iconSurfaceGold,
     },
-    promptCopy: { flex: 1, gap: 5 },
+    promptCopy: { flex: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5 },
     promptTitle: {
       color: theme.colors.cream,
-      fontSize: 20,
-      lineHeight: 24,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(20) : 20,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(24) : 24,
       fontWeight: '900',
       letterSpacing: -0.2,
     },
     promptBody: {
       color: theme.colors.textMuted,
-      fontSize: 13,
-      lineHeight: 19,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : 13,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(19) : 19,
     },
     promptError: {
       color: theme.colors.danger,
-      fontSize: 11,
-      lineHeight: 16,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16,
     },
-    promptActions: { gap: 9 },
+    promptActions: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : 9 },
     primaryAction: {
-      minHeight: 48,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(48) : 48,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 8,
-      borderRadius: 11,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : 11,
       borderCurve: 'continuous',
       backgroundColor: theme.colors.goldBright,
     },
     primaryActionText: {
       color: theme.colors.textOnAccent,
-      fontSize: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
       fontWeight: '900',
       letterSpacing: 0.9,
     },
     secondaryAction: {
-      minHeight: 46,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(46) : 46,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 8,
-      borderRadius: 11,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : 11,
       borderCurve: 'continuous',
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
@@ -557,21 +556,21 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     secondaryActionText: {
       color: theme.colors.goldBright,
-      fontSize: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10,
       fontWeight: '900',
       letterSpacing: 0.82,
     },
     actionDisabled: { opacity: 0.55 },
     actionPressed: { opacity: 0.76, transform: [{ scale: 0.988 }] },
     dismissAction: {
-      minHeight: 38,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(38) : 38,
       alignItems: 'center',
       justifyContent: 'center',
     },
     dismissActionPressed: { opacity: 0.62 },
     dismissActionText: {
       color: theme.colors.textMuted,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9,
       fontWeight: '900',
       letterSpacing: 1.1,
     },

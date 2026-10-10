@@ -14,7 +14,6 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import {
   KeepFlipText as Text,
@@ -26,7 +25,6 @@ import {
   KEEPFLIP_ANALYTICS_EVENTS,
   trackKeepFlipEvent,
 } from '@/services/keepflip-analytics';
-import { responsiveWidth } from '@/lib/responsiveFont';
 import {
   calculateProfitEstimate,
   MARKETPLACE_FEE_PRESETS,
@@ -299,7 +297,7 @@ export function MarketResearchScreen() {
                 {isSearching ? (
                   <ActivityIndicator color={theme.colors.textOnAccent} size="small" />
                 ) : (
-                  <IconSymbol color={theme.colors.textOnAccent} name="magnifyingglass" size={22} />
+                  <Ionicons color={theme.colors.textOnAccent} name="magnifyingglass" size={22} />
                 )}
               </Pressable>
             </View>
@@ -353,7 +351,7 @@ export function MarketResearchScreen() {
                       <Image contentFit="cover" source={{ uri: comp.imageUrl }} style={styles.compImage} />
                     ) : (
                       <View style={[styles.compImage, styles.compImagePlaceholder]}>
-                        <IconSymbol color={theme.colors.goldMuted} name="tag.fill" size={28} />
+                        <Ionicons color={theme.colors.goldMuted} name="tag.fill" size={28} />
                       </View>
                     )}
                     <View style={styles.compContent}>
@@ -436,77 +434,77 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   const { responsiveFont, responsiveHeight, responsiveWidth } = responsiveLayout;
   const staticStyles = StyleSheet.create({
     flex: { flex: 1 },
-    content: { alignSelf: 'center', width: '100%', gap: 24 },
-    header: { gap: 8 },
-    eyebrow: { color: theme.colors.gold, fontSize: 11, fontWeight: '700', letterSpacing: 2.1 },
-    title: { color: theme.colors.text, fontSize: 38, fontWeight: '700', letterSpacing: -1.4, lineHeight: 42 },
-    subtitle: { color: theme.colors.textMuted, fontSize: 15, lineHeight: 22, maxWidth: 520 },
-    searchCard: { backgroundColor: theme.colors.backgroundRaised, borderColor: theme.colors.accentGoldBorder, borderRadius: theme.radii.medium, borderWidth: 1, padding: 16, gap: 10 },
-    inputLabel: { color: theme.colors.textMuted, fontSize: 10, fontWeight: '700', letterSpacing: 1.25 },
-    searchRow: { alignItems: 'center', flexDirection: 'row', gap: 10 },
-    searchInput: { backgroundColor: theme.colors.surface, borderColor: theme.colors.surfaceSoft, borderRadius: 14, borderWidth: 1, color: theme.colors.text, flex: 1, fontSize: 15, minHeight: 50, paddingHorizontal: 14 },
-    searchButton: { alignItems: 'center', backgroundColor: theme.colors.goldBright, borderRadius: 14, height: 50, justifyContent: 'center', width: 50 },
+    content: { alignSelf: 'center', width: '100%', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(24) : 24 },
+    header: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8 },
+    eyebrow: { color: theme.colors.gold, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11, fontWeight: '700', letterSpacing: 2.1 },
+    title: { color: theme.colors.text, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(38) : 38, fontWeight: '700', letterSpacing: -1.4, lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(42) : 42 },
+    subtitle: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15, lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(22) : 22, maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(520) : 520 },
+    searchCard: { backgroundColor: theme.colors.backgroundRaised, borderColor: theme.colors.accentGoldBorder, borderRadius: theme.radii.medium, borderWidth: 1, padding: 16, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10 },
+    inputLabel: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10, fontWeight: '700', letterSpacing: 1.25 },
+    searchRow: { alignItems: 'center', flexDirection: 'row', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10 },
+    searchInput: { backgroundColor: theme.colors.surface, borderColor: theme.colors.surfaceSoft, borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14, borderWidth: 1, color: theme.colors.text, flex: 1, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15, minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(50) : 50, paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14 },
+    searchButton: { alignItems: 'center', backgroundColor: theme.colors.goldBright, borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14, height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(50) : 50, justifyContent: 'center', width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(50) : 50 },
     pressed: { opacity: 0.72, transform: [{ scale: 0.985 }] },
     disabled: { opacity: 0.55 },
-    sourceNote: { color: theme.colors.textMuted, fontSize: 11 },
-    errorText: { color: theme.colors.danger, fontSize: 12, lineHeight: 18 },
-    resultsSection: { gap: 16 },
-    resultHeader: { alignItems: 'flex-start', flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
-    resultHeaderCopy: { flex: 1, gap: 4 },
-    sectionEyebrow: { color: theme.colors.gold, fontSize: 10, fontWeight: '700', letterSpacing: 1.7 },
-    sectionTitle: { color: theme.colors.text, fontSize: 22, fontWeight: '700', letterSpacing: -0.5 },
-    sectionDescription: { color: theme.colors.textMuted, fontSize: 13, lineHeight: 20 },
-    liveBadge: { alignItems: 'center', backgroundColor: theme.colors.iconSurfaceCyan, borderColor: theme.colors.accentCyanBorder, borderRadius: 99, borderWidth: 1, flexDirection: 'row', gap: 6, paddingHorizontal: 10, paddingVertical: 6 },
-    liveDot: { backgroundColor: theme.colors.scannerCyan, borderRadius: 4, height: 6, width: 6 },
-    liveText: { color: theme.colors.scannerCyan, fontSize: 9, fontWeight: '700', letterSpacing: 1 },
-    metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    metricCard: { backgroundColor: theme.colors.backgroundRaised, borderColor: theme.colors.surfaceSoft, borderRadius: 16, borderWidth: 1, flexBasis: '47%', flexGrow: 1, minHeight: 104, padding: 14 },
-    metricLabel: { color: theme.colors.textMuted, fontSize: 10, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase' },
-    metricValue: { color: theme.colors.text, fontSize: 20, fontWeight: '700', marginTop: 9 },
-    metricDetail: { color: theme.colors.gold, fontSize: 10, marginTop: 5 },
-    chartCard: { backgroundColor: theme.colors.backgroundRaised, borderColor: theme.colors.surfaceSoft, borderRadius: theme.radii.medium, borderWidth: 1, gap: 16, padding: 16 },
-    sectionHeadingRow: { alignItems: 'flex-end', flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
-    chartCaption: { color: theme.colors.textMuted, fontSize: 10 },
-    chart: { alignItems: 'flex-end', flexDirection: 'row', height: 155, justifyContent: 'space-between', gap: 5 },
-    chartColumn: { alignItems: 'center', flex: 1, gap: 5 },
-    chartValue: { color: theme.colors.textMuted, fontSize: 8 },
-    chartTrack: { alignItems: 'center', height: 108, justifyContent: 'flex-end', width: '100%' },
-    chartBar: { backgroundColor: theme.colors.gold, borderRadius: 5, maxWidth: 34, minWidth: 12, width: '62%' },
-    chartLabel: { color: theme.colors.textMuted, fontSize: 9 },
+    sourceNote: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : 11 },
+    errorText: { color: theme.colors.danger, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12, lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : 18 },
+    resultsSection: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16 },
+    resultHeader: { alignItems: 'flex-start', flexDirection: 'row', justifyContent: 'space-between', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12 },
+    resultHeaderCopy: { flex: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4 },
+    sectionEyebrow: { color: theme.colors.gold, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10, fontWeight: '700', letterSpacing: 1.7 },
+    sectionTitle: { color: theme.colors.text, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(22) : 22, fontWeight: '700', letterSpacing: -0.5 },
+    sectionDescription: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : 13, lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(20) : 20 },
+    liveBadge: { alignItems: 'center', backgroundColor: theme.colors.iconSurfaceCyan, borderColor: theme.colors.accentCyanBorder, borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(99) : 99, borderWidth: 1, flexDirection: 'row', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6, paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10, paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : 6 },
+    liveDot: { backgroundColor: theme.colors.scannerCyan, borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : 4, height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : 6, width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6 },
+    liveText: { color: theme.colors.scannerCyan, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9, fontWeight: '700', letterSpacing: 1 },
+    metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10 },
+    metricCard: { backgroundColor: theme.colors.backgroundRaised, borderColor: theme.colors.surfaceSoft, borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16, borderWidth: 1, flexBasis: '47%', flexGrow: 1, minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(104) : 104, padding: 14 },
+    metricLabel: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase' },
+    metricValue: { color: theme.colors.text, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(20) : 20, fontWeight: '700', marginTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(9) : 9 },
+    metricDetail: { color: theme.colors.gold, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10, marginTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(5) : 5 },
+    chartCard: { backgroundColor: theme.colors.backgroundRaised, borderColor: theme.colors.surfaceSoft, borderRadius: theme.radii.medium, borderWidth: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16, padding: 16 },
+    sectionHeadingRow: { alignItems: 'flex-end', flexDirection: 'row', justifyContent: 'space-between', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12 },
+    chartCaption: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10 },
+    chart: { alignItems: 'flex-end', flexDirection: 'row', height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(155) : 155, justifyContent: 'space-between', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5 },
+    chartColumn: { alignItems: 'center', flex: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5 },
+    chartValue: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : 8 },
+    chartTrack: { alignItems: 'center', height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(108) : 108, justifyContent: 'flex-end', width: '100%' },
+    chartBar: { backgroundColor: theme.colors.gold, borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : 5, maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(34) : 34, minWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12, width: '62%' },
+    chartLabel: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9 },
     compsScroller: { marginHorizontal: -2 },
-    compCard: { backgroundColor: theme.colors.backgroundRaised, borderColor: theme.colors.surfaceSoft, borderRadius: 16, borderWidth: 1, marginRight: 10, overflow: 'hidden', width: 180 },
-    compImage: { backgroundColor: theme.colors.surface, height: 112, width: '100%' },
+    compCard: { backgroundColor: theme.colors.backgroundRaised, borderColor: theme.colors.surfaceSoft, borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : 16, borderWidth: 1, marginRight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10, overflow: 'hidden', width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(180) : 180 },
+    compImage: { backgroundColor: theme.colors.surface, height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(112) : 112, width: '100%' },
     compImagePlaceholder: { alignItems: 'center', justifyContent: 'center' },
-    compContent: { gap: 6, padding: 12 },
-    compTitle: { color: theme.colors.text, fontSize: 12, fontWeight: '600', lineHeight: 17, minHeight: 34 },
-    compPrice: { color: theme.colors.goldBright, fontSize: 18, fontWeight: '700' },
-    compMeta: { color: theme.colors.textMuted, fontSize: 9 },
-    calculatorSection: { gap: 14, paddingTop: 8 },
+    compContent: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6, padding: 12 },
+    compTitle: { color: theme.colors.text, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12, fontWeight: '600', lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : 17, minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(34) : 34 },
+    compPrice: { color: theme.colors.goldBright, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : 18, fontWeight: '700' },
+    compMeta: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9 },
+    calculatorSection: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : 14, paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(8) : 8 },
     platformScroller: { marginHorizontal: -2 },
-    platformPill: { backgroundColor: theme.colors.surface, borderColor: theme.colors.surfaceSoft, borderRadius: 99, borderWidth: 1, marginRight: 8, paddingHorizontal: 15, paddingVertical: 10 },
+    platformPill: { backgroundColor: theme.colors.surface, borderColor: theme.colors.surfaceSoft, borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(99) : 99, borderWidth: 1, marginRight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : 8, paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(15) : 15, paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : 10 },
     platformPillSelected: { backgroundColor: theme.colors.goldBright, borderColor: theme.colors.goldBright },
-    platformText: { color: theme.colors.textMuted, fontSize: 12, fontWeight: '700' },
+    platformText: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12, fontWeight: '700' },
     platformTextSelected: { color: theme.colors.textOnAccent },
-    calculatorCard: { backgroundColor: theme.colors.backgroundRaised, borderColor: theme.colors.accentGoldBorder, borderRadius: theme.radii.medium, borderWidth: 1, gap: 18, padding: 16 },
-    inputGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    inputGroup: { flexBasis: '47%', flexGrow: 1, gap: 6 },
-    numberInputShell: { alignItems: 'center', backgroundColor: theme.colors.surface, borderColor: theme.colors.surfaceSoft, borderRadius: 12, borderWidth: 1, flexDirection: 'row', minHeight: 46 },
-    numberInput: { color: theme.colors.text, flex: 1, fontSize: 15, paddingHorizontal: 12, paddingVertical: 10 },
-    inputSuffix: { color: theme.colors.gold, fontSize: 13, fontWeight: '700', paddingRight: 12 },
-    feeNote: { color: theme.colors.textMuted, fontSize: 10, lineHeight: 15 },
-    profitHero: { alignItems: 'center', backgroundColor: theme.colors.iconSurfaceGold, borderColor: theme.colors.accentGoldBorder, borderRadius: 18, borderWidth: 1, padding: 20 },
-    profitLabel: { color: theme.colors.gold, fontSize: 10, fontWeight: '700', letterSpacing: 1.6 },
-    profitValue: { color: theme.colors.goldBright, fontSize: 38, fontWeight: '700', letterSpacing: -1, marginTop: 7 },
+    calculatorCard: { backgroundColor: theme.colors.backgroundRaised, borderColor: theme.colors.accentGoldBorder, borderRadius: theme.radii.medium, borderWidth: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(18) : 18, padding: 16 },
+    inputGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : 10 },
+    inputGroup: { flexBasis: '47%', flexGrow: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : 6 },
+    numberInputShell: { alignItems: 'center', backgroundColor: theme.colors.surface, borderColor: theme.colors.surfaceSoft, borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12, borderWidth: 1, flexDirection: 'row', minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(46) : 46 },
+    numberInput: { color: theme.colors.text, flex: 1, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15, paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12, paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : 10 },
+    inputSuffix: { color: theme.colors.gold, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : 13, fontWeight: '700', paddingRight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : 12 },
+    feeNote: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10, lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15 },
+    profitHero: { alignItems: 'center', backgroundColor: theme.colors.iconSurfaceGold, borderColor: theme.colors.accentGoldBorder, borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(18) : 18, borderWidth: 1, padding: 20 },
+    profitLabel: { color: theme.colors.gold, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : 10, fontWeight: '700', letterSpacing: 1.6 },
+    profitValue: { color: theme.colors.goldBright, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(38) : 38, fontWeight: '700', letterSpacing: -1, marginTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(7) : 7 },
     negative: { color: theme.colors.danger },
-    profitSubline: { color: theme.colors.textMuted, fontSize: 12, marginTop: 5 },
-    breakdown: { gap: 11 },
+    profitSubline: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12, marginTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(5) : 5 },
+    breakdown: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : 11 },
     breakdownRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
-    breakdownLabel: { color: theme.colors.textMuted, fontSize: 12 },
-    breakdownValue: { color: theme.colors.text, fontSize: 12, fontWeight: '600' },
-    breakEvenRow: { borderTopColor: theme.colors.surfaceSoft, borderTopWidth: 1, marginTop: 2, paddingTop: 13 },
-    breakEvenLabel: { color: theme.colors.text, fontSize: 13, fontWeight: '700' },
-    breakEvenValue: { color: theme.colors.scannerCyan, fontSize: 15, fontWeight: '700' },
-    disclaimer: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 14, textAlign: 'center' },
+    breakdownLabel: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12 },
+    breakdownValue: { color: theme.colors.text, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : 12, fontWeight: '600' },
+    breakEvenRow: { borderTopColor: theme.colors.surfaceSoft, borderTopWidth: 1, marginTop: 2, paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(13) : 13 },
+    breakEvenLabel: { color: theme.colors.text, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : 13, fontWeight: '700' },
+    breakEvenValue: { color: theme.colors.scannerCyan, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : 15, fontWeight: '700' },
+    disclaimer: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : 9, lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : 14, textAlign: 'center' },
   });
   return {
     ...staticStyles,

@@ -13,8 +13,10 @@ import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { getAppwriteCoreServices } from '@/lib/appwrite';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 export function FacebookDashboardScreen() {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const router = useRouter();
   const { signOut, status } = useKeepFlipAuth();
   const { effectiveColorScheme } = useKeepFlipAppearance();
@@ -68,34 +70,34 @@ export function FacebookDashboardScreen() {
 
   if (status !== 'signed-in' || !user) {
     return (
-      <View style={[styles.root, { backgroundColor: colors.backgroundDeep }]}>
-        <View style={[styles.card, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
+      <View style={[responsiveStyles.root, { backgroundColor: colors.backgroundDeep }]}>
+        <View style={[responsiveStyles.card, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
           <ActivityIndicator color={colors.scannerCyan} />
-          <Text style={[styles.subtitle, { color: colors.textMuted }]}>Checking your Appwrite session…</Text>
+          <Text style={[responsiveStyles.subtitle, { color: colors.textMuted }]}>Checking your Appwrite session…</Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.backgroundDeep }]}>
-      <View style={[styles.card, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
-        <Text style={[styles.eyebrow, { color: colors.goldBright }]}>KEEPFLIP / DASHBOARD</Text>
-        <Text style={[styles.title, { color: colors.text }]}>You’re signed in.</Text>
-        <Text style={[styles.subtitle, { color: colors.textMuted }]}>Your Appwrite account is ready.</Text>
+    <View style={[responsiveStyles.root, { backgroundColor: colors.backgroundDeep }]}>
+      <View style={[responsiveStyles.card, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
+        <Text style={[responsiveStyles.eyebrow, { color: colors.goldBright }]}>KEEPFLIP / DASHBOARD</Text>
+        <Text style={[responsiveStyles.title, { color: colors.text }]}>You’re signed in.</Text>
+        <Text style={[responsiveStyles.subtitle, { color: colors.textMuted }]}>Your Appwrite account is ready.</Text>
 
-        <View style={[styles.userCard, { backgroundColor: colors.surfaceInset, borderColor: colors.divider }]}>
-          <Text style={[styles.userLabel, { color: colors.textMuted }]}>SIGNED IN AS</Text>
-          <Text style={[styles.userName, { color: colors.text }]}>
+        <View style={[responsiveStyles.userCard, { backgroundColor: colors.surfaceInset, borderColor: colors.divider }]}>
+          <Text style={[responsiveStyles.userLabel, { color: colors.textMuted }]}>SIGNED IN AS</Text>
+          <Text style={[responsiveStyles.userName, { color: colors.text }]}>
             {user.name.trim() || user.email || 'KeepFlip user'}
           </Text>
           {user.email ? (
-            <Text style={[styles.userEmail, { color: colors.textMuted }]}>{user.email}</Text>
+            <Text style={[responsiveStyles.userEmail, { color: colors.textMuted }]}>{user.email}</Text>
           ) : null}
         </View>
 
         {errorMessage ? (
-          <Text accessibilityLiveRegion="polite" style={[styles.errorText, { color: colors.danger }]}>
+          <Text accessibilityLiveRegion="polite" style={[responsiveStyles.errorText, { color: colors.danger }]}>
             {errorMessage}
           </Text>
         ) : null}
@@ -106,13 +108,13 @@ export function FacebookDashboardScreen() {
           disabled={isSigningOut}
           onPress={() => void handleSignOut()}
           style={({ pressed }) => [
-            styles.signOutButton,
+            responsiveStyles.signOutButton,
             { backgroundColor: colors.gold },
-            isSigningOut && styles.disabled,
-            pressed && !isSigningOut && styles.pressed,
+            isSigningOut && responsiveStyles.disabled,
+            pressed && !isSigningOut && responsiveStyles.pressed,
           ]}>
           {isSigningOut ? <ActivityIndicator color={colors.textOnAccent} size="small" /> : null}
-          <Text style={[styles.signOutText, { color: colors.textOnAccent }]}>Sign out</Text>
+          <Text style={[responsiveStyles.signOutText, { color: colors.textOnAccent }]}>Sign out</Text>
         </Pressable>
       </View>
     </View>
@@ -135,3 +137,65 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.55 },
   pressed: { opacity: 0.82 },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    card: {
+      ...styles["card"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(22) : 22,
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+      maxWidth: layout.isWeb ? layout.webResponsiveWidth(540) : 540,
+    },
+    eyebrow: {
+      ...styles["eyebrow"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+    },
+    title: {
+      ...styles["title"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(30) : 30,
+    },
+    subtitle: {
+      ...styles["subtitle"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(21) : 21,
+    },
+    userCard: {
+      ...styles["userCard"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(15) : 15,
+      gap: layout.isWeb ? layout.webResponsiveWidth(6) : 6,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(8) : 8,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(100) : 100,
+    },
+    userLabel: {
+      ...styles["userLabel"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
+    },
+    userName: {
+      ...styles["userName"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(19) : 19,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(26) : 26,
+    },
+    userEmail: {
+      ...styles["userEmail"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : 13,
+    },
+    errorText: {
+      ...styles["errorText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : 18,
+    },
+    signOutButton: {
+      ...styles["signOutButton"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(14) : 14,
+      gap: layout.isWeb ? layout.webResponsiveWidth(9) : 9,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(8) : 8,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(50) : 50,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(16) : 16,
+    },
+    signOutText: {
+      ...styles["signOutText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : 14,
+    },
+  });
+}

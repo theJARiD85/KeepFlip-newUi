@@ -52,23 +52,23 @@ import {
   getScannerTools,
   type ScannerToolId,
 } from "@/components/scanner/scanner-tool-carousel";
-import { useKeepFlipAppearance } from "@/components/settings/keepflip-appearance-context";
 import {
   ValueRadarOverlay,
   useValueRadar,
   type ValueRadarViewport,
 } from "@/components/scanner/value-radar.native";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { useKeepFlipAppearance } from "@/components/settings/keepflip-appearance-context";
+import { Ionicons } from "@/components/ui/icon-symbol";
 import { KeepFlipBackground } from "@/components/ui/keepflip-background";
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
 import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { useResponsiveLayout, useResponsiveStyles } from "@/hooks/use-responsive-layout";
-import { checkKeepFlipAiValuationAccess } from "@/services/keepflip-subscription-service";
-import { reportKeepFlipLimitReached } from "@/services/keepflip-limit-alert-service";
 import { lookupBarcodeWithEbay } from "@/services/ebaySoldCompsService";
 import { MAX_ANALYSIS_PHOTOS } from "@/services/item-analysis-service";
-import { neutralizeMarketplaceBrand } from "@/services/market-copy";
 import { KEEPFLIP_ANALYTICS_EVENTS, trackKeepFlipEvent } from "@/services/keepflip-analytics";
+import { reportKeepFlipLimitReached } from "@/services/keepflip-limit-alert-service";
+import { checkKeepFlipAiValuationAccess } from "@/services/keepflip-subscription-service";
+import { neutralizeMarketplaceBrand } from "@/services/market-copy";
 import {
   createScanId,
   saveScannerPhoto,
@@ -219,7 +219,7 @@ export default function ScannerScreen() {
     width: screenWidth,
     contentMaxWidth
   } = useResponsiveLayout();
-  const [ isVisible, setIsVisible ] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   const torchButtonSize = moderateScale(35, 0.65);
   const permissionCardWidth = Math.min(contentWidth, 480);
   const analysisButtonWidth = Math.min(controlDockWidth, 360);
@@ -1493,7 +1493,7 @@ export default function ScannerScreen() {
                 },
               ]}
             >
-              <IconSymbol
+              <Ionicons
                 name="camera.fill"
                 size={Math.round(moderateScale(30, 0.6))}
                 color={theme.colors.goldBright}
@@ -1537,7 +1537,7 @@ export default function ScannerScreen() {
                 isPickingPhoto && styles.buttonDisabled,
               ]}
             >
-              <IconSymbol
+              <Ionicons
                 name="photo.on.rectangle.angled"
                 size={20}
                 color={theme.colors.cream}
@@ -1610,7 +1610,7 @@ export default function ScannerScreen() {
                 isPickingPhoto && styles.buttonDisabled,
               ]}
             >
-              <IconSymbol
+              <Ionicons
                 name="photo.on.rectangle.angled"
                 size={20}
                 color={theme.colors.cream}
@@ -1811,11 +1811,11 @@ export default function ScannerScreen() {
                     : selectedToolHeader.title}
                 </Text>
                 <View style={styles.headerHintRow}>
-                  <IconSymbol
+                  <Ionicons
                     color={selectedToolAppearance.accent}
                     name={selectedToolAppearance.icon}
                     size={16}
-                    style={{alignItems: 'center', justifyContent: 'center', top: 6}}
+                    style={{ alignItems: 'center', justifyContent: 'center', top: 6 }}
                   />
                   <Text
                     numberOfLines={2}
@@ -1872,7 +1872,7 @@ export default function ScannerScreen() {
                 styles.iconButtonDisabled,
               ]}
             >
-              <IconSymbol
+              <Ionicons
                 name={torchEnabled ? "bolt.fill" : "bolt.slash.fill"}
                 size={Math.round(moderateScale(22, 0.6))}
                 color={
@@ -2046,24 +2046,24 @@ export default function ScannerScreen() {
           </Animated.View>
         </Animated.View>
       </View>
-    { isVisible ? (
-      <Pressable
+      {isVisible ? (
+        <Pressable
           accessibilityLabel="Open AR measuring tool"
           accessibilityRole="button"
           onPress={() => router.push("/ar-measure-test" as Href)}
           testID="keepflip-open-ar-measure"
-            style={{
-              position: "absolute",
-              right: 50,
-              top: 200,
-              paddingHorizontal: 12,
-              paddingVertical: 8,
-              borderRadius: 10,
-              borderWidth: 1,
-              borderColor: theme.colors.goldBright,
-              backgroundColor: "rgba(0,0,0,0.75)",
-              zIndex: 100,
-            }}
+          style={{
+            position: "absolute",
+            right: 50,
+            top: 200,
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            borderRadius: 10,
+            borderWidth: 1,
+            borderColor: theme.colors.goldBright,
+            backgroundColor: "rgba(0,0,0,0.75)",
+            zIndex: 100,
+          }}
         >
           <Text
             style={{
@@ -2078,7 +2078,7 @@ export default function ScannerScreen() {
       ) : (
         null
       )
-    }
+      }
     </View>
   );
 }

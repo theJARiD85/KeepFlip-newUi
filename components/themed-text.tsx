@@ -40,26 +40,26 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   const { responsiveFont } = responsiveLayout;
   const staticStyles = StyleSheet.create({
     default: {
-      fontSize: 16,
-      lineHeight: 24,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(24) : 24,
     },
     defaultSemiBold: {
-      fontSize: 16,
-      lineHeight: 24,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(24) : 24,
       fontWeight: '600',
     },
     title: {
-      fontSize: 32,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(32) : 32,
       fontWeight: 'bold',
-      lineHeight: 32,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(32) : 32,
     },
     subtitle: {
-      fontSize: 20,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(20) : 20,
       fontWeight: 'bold',
     },
     link: {
-      lineHeight: 30,
-      fontSize: 16,
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(30) : 30,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : 16,
       color: theme.colors.scannerCyan,
     },
   });

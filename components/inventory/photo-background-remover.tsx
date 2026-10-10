@@ -7,6 +7,7 @@ import { keepFlipTheme as theme } from "@/constants/keepflip-theme";
 import { releasePhotoBackgroundPreview, removePhotoBackground } from "@/services/photo-background-removal.native";
 import { releaseInventoryCoverImageUri, resolveInventoryCoverImageUri } from "@/services/inventory-cover-image";
 import { getItemPhotos, saveBackgroundRemovedItemPhoto, type ItemPhoto } from "@/services/itemPhotoService";
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 type Props = {
   itemId: string;
@@ -16,6 +17,7 @@ type Props = {
 };
 
 export function PhotoBackgroundRemover({ itemId, ownerId, photoCount, onSaved }: Props) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const [photos, setPhotos] = useState<ItemPhoto[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [source, setSource] = useState<{ fileId: string; uri: string } | null>(null);
@@ -130,35 +132,35 @@ export function PhotoBackgroundRemover({ itemId, ownerId, photoCount, onSaved }:
   const displayedUri = previewUri && !showOriginal ? previewUri : sourceUri;
 
   return (
-    <View style={styles.panel}>
-      <Text style={styles.eyebrow}>PHOTO BACKGROUND</Text>
-      <Text style={styles.description}>
+    <View style={responsiveStyles.panel}>
+      <Text style={responsiveStyles.eyebrow}>PHOTO BACKGROUND</Text>
+      <Text style={responsiveStyles.description}>
         Pick a saved photo, remove its background, then review the cutout before saving it.
       </Text>
       {loading ? (
-        <ActivityIndicator color={theme.colors.scannerCyan} style={styles.loader} />
+        <ActivityIndicator color={theme.colors.scannerCyan} style={responsiveStyles.loader} />
       ) : photos.length === 0 ? (
-        <Text style={styles.helper}>Add an item photo above to make a cutout.</Text>
+        <Text style={responsiveStyles.helper}>Add an item photo above to make a cutout.</Text>
       ) : (
         <>
-          <View style={styles.previewRow}>
+          <View style={responsiveStyles.previewRow}>
             <Pressable
               accessibilityLabel="Previous item photo"
               accessibilityRole="button"
               accessibilityState={{ disabled: busy || photos.length < 2 }}
               disabled={busy || photos.length < 2}
               onPress={() => choosePhoto(-1)}
-              style={({ pressed }) => [styles.photoArrow, pressed && styles.pressed]}
+              style={({ pressed }) => [responsiveStyles.photoArrow, pressed && responsiveStyles.pressed]}
             >
-              <Text style={styles.arrowText}>‹</Text>
+              <Text style={responsiveStyles.arrowText}>‹</Text>
             </Pressable>
-            <View style={styles.previewFrame}>
+            <View style={responsiveStyles.previewFrame}>
               {displayedUri ? (
                 <Image
                   accessibilityLabel={previewUri && !showOriginal ? "Background removed preview" : "Original item photo"}
                   contentFit="contain"
                   source={{ uri: displayedUri }}
-                  style={styles.previewImage}
+                  style={responsiveStyles.previewImage}
                 />
               ) : (
                 <ActivityIndicator color={theme.colors.scannerCyan} />
@@ -170,12 +172,12 @@ export function PhotoBackgroundRemover({ itemId, ownerId, photoCount, onSaved }:
               accessibilityState={{ disabled: busy || photos.length < 2 }}
               disabled={busy || photos.length < 2}
               onPress={() => choosePhoto(1)}
-              style={({ pressed }) => [styles.photoArrow, pressed && styles.pressed]}
+              style={({ pressed }) => [responsiveStyles.photoArrow, pressed && responsiveStyles.pressed]}
             >
-              <Text style={styles.arrowText}>›</Text>
+              <Text style={responsiveStyles.arrowText}>›</Text>
             </Pressable>
           </View>
-          <Text style={styles.helper}>
+          <Text style={responsiveStyles.helper}>
             Photo {selectedIndex + 1} of {photos.length} · {previewUri && !showOriginal ? "Cutout preview" : "Original"}
           </Text>
           {previewUri ? (
@@ -183,21 +185,21 @@ export function PhotoBackgroundRemover({ itemId, ownerId, photoCount, onSaved }:
               accessibilityRole="button"
               accessibilityLabel={showOriginal ? "Show background removed preview" : "Show original photo"}
               onPress={() => setShowOriginal((current) => !current)}
-              style={({ pressed }) => [styles.compareButton, pressed && styles.pressed]}
+              style={({ pressed }) => [responsiveStyles.compareButton, pressed && responsiveStyles.pressed]}
             >
-              <Text style={styles.compareText}>{showOriginal ? "SHOW CUTOUT" : "SHOW ORIGINAL"}</Text>
+              <Text style={responsiveStyles.compareText}>{showOriginal ? "SHOW CUTOUT" : "SHOW ORIGINAL"}</Text>
             </Pressable>
           ) : null}
           {previewUri ? (
-            <View style={styles.actions}>
+            <View style={responsiveStyles.actions}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Discard cutout preview"
                 disabled={busy}
                 onPress={() => { setPreviewUri(null); setShowOriginal(false); }}
-                style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}
+                style={({ pressed }) => [responsiveStyles.secondaryButton, pressed && responsiveStyles.pressed]}
               >
-                <Text style={styles.secondaryText}>DISCARD</Text>
+                <Text style={responsiveStyles.secondaryText}>DISCARD</Text>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
@@ -205,9 +207,9 @@ export function PhotoBackgroundRemover({ itemId, ownerId, photoCount, onSaved }:
                 accessibilityState={{ disabled: busy || photoCount >= 10 }}
                 disabled={busy || photoCount >= 10}
                 onPress={() => void saveCutout()}
-                style={({ pressed }) => [styles.primaryButton, (pressed || busy || photoCount >= 10) && styles.dimmed]}
+                style={({ pressed }) => [responsiveStyles.primaryButton, (pressed || busy || photoCount >= 10) && responsiveStyles.dimmed]}
               >
-                {saving ? <ActivityIndicator color={theme.colors.textOnAccent} /> : <Text style={styles.primaryText}>SAVE NEW PHOTO</Text>}
+                {saving ? <ActivityIndicator color={theme.colors.textOnAccent} /> : <Text style={responsiveStyles.primaryText}>SAVE NEW PHOTO</Text>}
               </Pressable>
             </View>
           ) : (
@@ -217,19 +219,19 @@ export function PhotoBackgroundRemover({ itemId, ownerId, photoCount, onSaved }:
               accessibilityState={{ disabled: busy || !sourceUri }}
               disabled={busy || !sourceUri}
               onPress={() => void removeBackground()}
-              style={({ pressed }) => [styles.primaryButton, (pressed || busy || !sourceUri) && styles.dimmed]}
+              style={({ pressed }) => [responsiveStyles.primaryButton, (pressed || busy || !sourceUri) && responsiveStyles.dimmed]}
             >
-              {processing ? <ActivityIndicator color={theme.colors.textOnAccent} /> : <Text style={styles.primaryText}>REMOVE BACKGROUND</Text>}
+              {processing ? <ActivityIndicator color={theme.colors.textOnAccent} /> : <Text style={responsiveStyles.primaryText}>REMOVE BACKGROUND</Text>}
             </Pressable>
           )}
           {photoCount >= 10 && previewUri ? (
-            <Text style={styles.helper}>This item has 10 photos. Remove one before saving the cutout.</Text>
+            <Text style={responsiveStyles.helper}>This item has 10 photos. Remove one before saving the cutout.</Text>
           ) : null}
-          {processing ? <Text style={styles.helper}>Removing the background on this device…</Text> : null}
+          {processing ? <Text style={responsiveStyles.helper}>Removing the background on this device…</Text> : null}
         </>
       )}
-      {error ? <Text selectable style={styles.error}>{error}</Text> : null}
-      {notice ? <Text style={styles.notice}>{notice}</Text> : null}
+      {error ? <Text selectable style={responsiveStyles.error}>{error}</Text> : null}
+      {notice ? <Text style={responsiveStyles.notice}>{notice}</Text> : null}
     </View>
   );
 }
@@ -297,3 +299,94 @@ const styles = StyleSheet.create({
   error: { color: theme.colors.goldBright, fontSize: 12, lineHeight: 18 },
   notice: { color: theme.colors.scannerCyan, fontSize: 12, lineHeight: 18 },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    panel: {
+      ...styles["panel"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      marginTop: layout.isWeb ? layout.webResponsiveHeight(16) : 16,
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(16) : 16,
+    },
+    eyebrow: {
+      ...styles["eyebrow"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
+    },
+    description: {
+      ...styles["description"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : 18,
+    },
+    helper: {
+      ...styles["helper"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : 11,
+    },
+    loader: {
+      ...styles["loader"],
+      marginVertical: layout.isWeb ? layout.webResponsiveHeight(20) : 20,
+    },
+    previewRow: {
+      ...styles["previewRow"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+    },
+    previewFrame: {
+      ...styles["previewFrame"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(10) : 10,
+      height: layout.isWeb ? layout.webResponsiveHeight(230) : 230,
+    },
+    photoArrow: {
+      ...styles["photoArrow"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+      height: layout.isWeb ? layout.webResponsiveHeight(42) : 42,
+      width: layout.isWeb ? layout.webResponsiveWidth(34) : 34,
+    },
+    arrowText: {
+      ...styles["arrowText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(28) : 28,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(32) : 32,
+    },
+    actions: {
+      ...styles["actions"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+    },
+    primaryButton: {
+      ...styles["primaryButton"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(40) : 40,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+    },
+    primaryText: {
+      ...styles["primaryText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
+    },
+    secondaryButton: {
+      ...styles["secondaryButton"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(8) : 8,
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(40) : 40,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(12) : 12,
+    },
+    secondaryText: {
+      ...styles["secondaryText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
+    },
+    compareButton: {
+      ...styles["compareButton"],
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(4) : 4,
+    },
+    compareText: {
+      ...styles["compareText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : 10,
+    },
+    error: {
+      ...styles["error"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : 18,
+    },
+    notice: {
+      ...styles["notice"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : 12,
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : 18,
+    },
+  });
+}
