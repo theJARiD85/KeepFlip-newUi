@@ -52,7 +52,7 @@ export default function WebAppShellLayout() {
     <SafeAreaProvider>
       <EbayConnectionProvider>
         <ItemAnalysisResultProvider>
-          <WebAppShellLayoutProvider>
+          <WebAppShellLayoutProvider sidebarWidth={0}>
             <KeepFlipWebShell>
               <WebWalkthroughAutoLauncher />
               <Stack

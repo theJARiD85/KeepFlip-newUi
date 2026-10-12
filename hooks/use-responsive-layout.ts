@@ -10,11 +10,13 @@ const BASE_PHONE_HEIGHT = 844;
 // 1. Double check or increase your maximum desktop bounds if needed
 const WEB_PUBLIC_CONTENT_MAX_WIDTH = 1920; // Changed from 1366 to match full 1080p monitors
 const WEB_SIDEBAR_WIDTH = 264;
+const WebAppShellLayoutContext = createContext<number | null>(null);
 
-const WebAppShellLayoutContext = createContext(false);
-
-export function WebAppShellLayoutProvider({ children }: PropsWithChildren) {
-  return createElement(WebAppShellLayoutContext.Provider, { value: true }, children);
+export function WebAppShellLayoutProvider({
+  children,
+  sidebarWidth = WEB_SIDEBAR_WIDTH,
+}: PropsWithChildren<{ sidebarWidth?: number }>) {
+  return createElement(WebAppShellLayoutContext.Provider, { value: sidebarWidth }, children);
 }
 
 // Utilities
@@ -29,7 +31,8 @@ const scaleWithWidth = (value: number, factor: number, scale: number) => {
 export function useResponsiveLayout() {
   const { width, height, fontScale, scale: pixelRatio } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const isInsideWebAppShell = useContext(WebAppShellLayoutContext);
+  const sidebarWidth = useContext(WebAppShellLayoutContext);
+  const isInsideWebAppShell = sidebarWidth !== null;
 
   const isWeb = Platform.OS === 'web';
   
@@ -58,7 +61,7 @@ export function useResponsiveLayout() {
     const nativeContentWidth = Math.min(Math.max(0, layoutWidth - nativePageGutter * 2), nativeContentMaxWidth);
 
     const webPageGutter = layoutWidth >= 1440 ? 32 : layoutWidth >= 980 ? 24 : layoutWidth >= 600 ? 20 : isCompactWidth ? 8 : 12;
-    const webSidebarReserve = isWeb && isInsideWebAppShell && layoutWidth >= 980 ? WEB_SIDEBAR_WIDTH : 0;
+    const webSidebarReserve = isWeb && layoutWidth >= 980 ? (sidebarWidth ?? 0) : 0;
     const webAvailableWidth = Math.max(0, layoutWidth - webSidebarReserve);
     const webContentMaxWidth = isInsideWebAppShell
     ? webAvailableWidth  // Inside application shell -> Take up 100% of remaining screen
@@ -152,7 +155,7 @@ export function useResponsiveLayout() {
       scannerWheelRadius,
       gridColumns: isWeb ? webGridColumns : isWideTablet ? 3 : 2,
     };
-  }, [width, height, fontScale, pixelRatio, insets, isInsideWebAppShell, isWeb]);
+  }, [width, height, fontScale, pixelRatio, insets, isInsideWebAppShell, isWeb, sidebarWidth]);
 }
 
 export function useResponsiveStyles<T>(

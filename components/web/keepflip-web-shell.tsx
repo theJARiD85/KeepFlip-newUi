@@ -1,13 +1,21 @@
 import { Image } from 'expo-image';
 import { type Href, usePathname, useRouter } from 'expo-router';
-import { type ComponentProps, type PropsWithChildren } from 'react';
+import { useEffect, useState, type ComponentProps, type PropsWithChildren } from 'react';
 import {
   Pressable,
   ScrollView,
   StyleSheet,
   View,
+  type ViewStyle,
 } from 'react-native';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
@@ -17,6 +25,11 @@ import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keep
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
+
+const DRAWER_WIDTH = 304;
+const DRAWER_ANIMATION_MS = 240;
+// This shell only renders on web. Fixed positioning keeps the drawer visible while a page scrolls.
+const fixedDrawerPosition = { position: 'fixed' } as unknown as ViewStyle;
 
 type NavItem = {
   label: string;
@@ -193,8 +206,52 @@ export function KeepFlipWebShell({ children }: PropsWithChildren) {
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const colors = getKeepFlipThemeColors(effectiveColorScheme);
   const userInitials = initials(user?.name);
+  const prefersReducedMotion = useReducedMotion();
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isDrawerMounted, setIsDrawerMounted] = useState(false);
+  const drawerProgress = useSharedValue(0);
+  const drawerAnimationDuration = prefersReducedMotion ? 0 : DRAWER_ANIMATION_MS;
+
+  useEffect(() => {
+    if (!isDrawerMounted) return;
+
+    drawerProgress.value = withTiming(isDrawerOpen ? 1 : 0, {
+      duration: drawerAnimationDuration,
+      easing: Easing.out(Easing.cubic),
+    });
+    if (isDrawerOpen) return;
+
+    const unmountTimer = setTimeout(() => setIsDrawerMounted(false), drawerAnimationDuration);
+    return () => clearTimeout(unmountTimer);
+  }, [drawerAnimationDuration, drawerProgress, isDrawerMounted, isDrawerOpen]);
+
+  useEffect(() => {
+    if (!isDrawerOpen) return;
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsDrawerOpen(false);
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [isDrawerOpen]);
+
+  useEffect(() => {
+    if (isWide) return;
+    const frame = requestAnimationFrame(() => setIsDrawerOpen(false));
+    return () => cancelAnimationFrame(frame);
+  }, [isWide]);
+
+  const animatedDrawerStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: DRAWER_WIDTH * (1 - drawerProgress.value) }],
+  }));
+
+  const toggleDrawer = () => {
+    if (!isDrawerOpen) setIsDrawerMounted(true);
+    setIsDrawerOpen((open) => !open);
+  };
 
   const navigate = (href: Href) => {
+    setIsDrawerOpen(false);
     router.push(href);
   };
 
@@ -225,42 +282,7 @@ export function KeepFlipWebShell({ children }: PropsWithChildren) {
 
   return (
     <View style={[responsiveStyles3.root]}>
-      {isWide ? (
-        <View style={[responsiveStyles3.sidebar, { backgroundColor: colors.backgroundRaised, borderRightColor: colors.divider }]}>
-          <Brand />
-          <ScrollView
-            contentContainerStyle={responsiveStyles3.sidebarNavigation}
-            showsVerticalScrollIndicator={false}>
-            {navigation}
-          </ScrollView>
-          <View style={[responsiveStyles3.sidebarFooter, { borderTopColor: colors.divider }]}>
-            <Pressable
-              accessibilityLabel="Open account settings"
-              accessibilityRole="button"
-              onPress={() => navigate('/account')}
-              style={({ pressed }) => [responsiveStyles3.profileButton, pressed && responsiveStyles3.navButtonPressed]}>
-              <View style={[responsiveStyles3.avatar, { backgroundColor: colors.iconSurfaceGold, borderColor: colors.accentGoldBorder }]}>
-                <Text style={[responsiveStyles3.avatarText, { color: colors.goldBright }]}>{userInitials}</Text>
-              </View>
-              <View style={responsiveStyles3.profileCopy}>
-                <Text numberOfLines={1} style={[responsiveStyles3.profileName, { color: colors.text }]}>
-                  {user?.name?.trim() || 'KeepFlip seller'}
-                </Text>
-                <Text style={[responsiveStyles3.profileMeta, { color: colors.textMuted }]}>VIEW ACCOUNT</Text>
-              </View>
-              <Ionicons color={colors.textMuted} name="chevron-forward" size={16} />
-            </Pressable>
-            <Pressable
-              accessibilityLabel="Sign out"
-              accessibilityRole="button"
-              onPress={() => void signOut()}
-              style={({ pressed }) => [responsiveStyles3.signOutButton, pressed && responsiveStyles3.navButtonPressed]}>
-              <Ionicons color={colors.textMuted} name="log-out" size={16} />
-              <Text style={[responsiveStyles3.signOutLabel, { color: theme.colors.danger, opacity: 1 }]}>SIGN OUT</Text>
-            </Pressable>
-          </View>
-        </View>
-      ) : (
+      {!isWide ? (
         <View style={[responsiveStyles3.mobileChrome, isPhone && responsiveStyles3.mobileChromePhone, { backgroundColor: colors.background, borderBottomColor: colors.divider }]}>
           <View style={responsiveStyles3.mobileTopRow}>
             <Brand compact />
@@ -301,19 +323,77 @@ export function KeepFlipWebShell({ children }: PropsWithChildren) {
             ))}
           </ScrollView>
         </View>
-      )}
+      ) : null}
 
       <View style={[responsiveStyles3.main, !isWide && responsiveStyles3.mainMobile, isPhone && responsiveStyles3.mainMobilePhone]}>
         <View style={[responsiveStyles3.topbar, !isWide && responsiveStyles3.topbarMobile, { borderBottomColor: colors.divider }]}>
-          <View>
-            <Text style={[responsiveStyles3.topbarEyebrow, { color: colors.textMuted }]}>{displaySection(pathname)}</Text>
-            <Text style={[responsiveStyles3.topbarTitle, { color: colors.text }]}>KeepFlip workspace</Text>
+          <View style={responsiveStyles3.topbarLeading}>
+            <Text numberOfLines={1} style={[responsiveStyles3.topbarEyebrow, { color: colors.goldMuted }]}>{displaySection(pathname)}</Text>
+            {isWide ? (
+              <Pressable
+                accessibilityLabel={isDrawerOpen ? 'Close navigation menu' : 'Open navigation menu'}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: isDrawerOpen }}
+                onPress={toggleDrawer}
+                style={({ pressed }) => [
+                  responsiveStyles3.drawerToggle,
+                  { backgroundColor: isDrawerOpen ? colors.iconSurfaceGold : colors.backgroundRaised, borderColor: isDrawerOpen ? colors.accentGoldBorder : colors.divider },
+                  pressed && responsiveStyles3.navButtonPressed,
+                ]}>
+                <Ionicons color={colors.goldBright} name={isDrawerOpen ? 'close' : 'menu'} size={25} />
+              </Pressable>
+            ) : null}
           </View>
           <View style={responsiveStyles3.topbarStatus}>
             <View style={[responsiveStyles3.statusDot, { backgroundColor: colors.success }]} />
             <Text style={[responsiveStyles3.topbarStatusText, { color: colors.textMuted }]}>PRIVATE WORKSPACE</Text>
           </View>
         </View>
+        {isWide && isDrawerMounted ? (
+          <Animated.View
+            accessibilityLabel="Workspace navigation"
+            importantForAccessibility={isDrawerOpen ? 'auto' : 'no-hide-descendants'}
+            style={[
+              responsiveStyles3.sidebar,
+              fixedDrawerPosition,
+              animatedDrawerStyle,
+              { backgroundColor: colors.background, borderLeftColor: colors.divider },
+            ]}>
+            <Brand />
+            <ScrollView
+              contentContainerStyle={responsiveStyles3.sidebarNavigation}
+              style={responsiveStyles3.sidebarScroll}
+              showsVerticalScrollIndicator={false}>
+              {navigation}
+            </ScrollView>
+            <View style={[responsiveStyles3.sidebarFooter, { borderTopColor: colors.divider }]}>
+              <Pressable
+                accessibilityLabel="Open account settings"
+                accessibilityRole="button"
+                onPress={() => navigate('/account')}
+                style={({ pressed }) => [responsiveStyles3.profileButton, pressed && responsiveStyles3.navButtonPressed]}>
+                <View style={[responsiveStyles3.avatar, { backgroundColor: colors.iconSurfaceGold, borderColor: colors.accentGoldBorder }]}>
+                  <Text style={[responsiveStyles3.avatarText, { color: colors.goldBright }]}>{userInitials}</Text>
+                </View>
+                <View style={responsiveStyles3.profileCopy}>
+                  <Text numberOfLines={1} style={[responsiveStyles3.profileName, { color: colors.text }]}>
+                    {user?.name?.trim() || 'KeepFlip seller'}
+                  </Text>
+                  <Text style={[responsiveStyles3.profileMeta, { color: colors.textMuted }]}>VIEW ACCOUNT</Text>
+                </View>
+                <Ionicons color={colors.textMuted} name="chevron-forward" size={16} />
+              </Pressable>
+              <Pressable
+                accessibilityLabel="Sign out"
+                accessibilityRole="button"
+                onPress={() => { setIsDrawerOpen(false); void signOut(); }}
+                style={({ pressed }) => [responsiveStyles3.signOutButton, pressed && responsiveStyles3.navButtonPressed]}>
+                <Ionicons color={colors.danger} name="log-out" size={20} />
+                <Text style={[responsiveStyles3.signOutLabel, { color: colors.danger }]}>SIGN OUT</Text>
+              </Pressable>
+            </View>
+          </Animated.View>
+        ) : null}
         <View style={responsiveStyles3.routeContent}>{children}</View>
         <WebSiteFooter />
       </View>
@@ -331,12 +411,19 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   sidebar: {
-    width: 264,
-    minHeight: '100%',
-    borderRightWidth: 1,
+    width: DRAWER_WIDTH,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 20,
+    borderLeftWidth: 1,
     paddingHorizontal: 16,
     paddingTop: 24,
     paddingBottom: 16,
+  },
+  sidebarScroll: {
+    flex: 1,
+    minHeight: 0,
   },
   brand: {
     flexDirection: 'row',
@@ -470,14 +557,13 @@ const styles = StyleSheet.create({
     minHeight: 32,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 15,
     opacity: 0.25,
     paddingHorizontal: 10,
     borderRadius: 9,
   },
   signOutLabel: {
     fontFamily: theme.fonts.display,
-    backgroundColor: theme.colors.danger,
     fontSize: 8,
     letterSpacing: 1.2,
   },
@@ -505,7 +591,23 @@ const styles = StyleSheet.create({
   topbarMobile: {
     display: 'none',
   },
+  topbarLeading: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexShrink: 1,
+    gap: 12,
+    minWidth: 0,
+  },
+  drawerToggle: {
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
+  },
   topbarEyebrow: {
+    flexShrink: 1,
     fontFamily: theme.fonts.bold,
     fontSize: 8,
     letterSpacing: 1.5,
@@ -620,8 +722,8 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     ...styles,
     sidebar: {
       ...styles["sidebar"],
-      width: layout.isWeb ? layout.webResponsiveWidth(200) : layout.responsiveWidth(200),
-      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(5) : layout.responsiveWidth(5),
+      width: DRAWER_WIDTH,
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(16) : layout.responsiveWidth(16),
       paddingTop: layout.isWeb ? layout.webResponsiveHeight(24) : layout.responsiveHeight(24),
       paddingBottom: layout.isWeb ? layout.webResponsiveHeight(24) : layout.responsiveHeight(24),
     },
@@ -737,7 +839,7 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     },
     signOutLabel: {
       ...styles["signOutLabel"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : layout.responsiveFont(8),
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : layout.responsiveFont(11),
     },
     mainMobile: {
       ...styles["mainMobile"],
@@ -749,13 +851,13 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     },
     topbar: {
       ...styles["topbar"],
-      minHeight: layout.isWeb ? layout.webResponsiveHeight(78) : layout.responsiveHeight(78),
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(60) : layout.responsiveHeight(60),
       gap: layout.isWeb ? layout.webResponsiveWidth(20) : layout.responsiveWidth(20),
       paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(30) : layout.responsiveWidth(30),
     },
     topbarEyebrow: {
       ...styles["topbarEyebrow"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : layout.responsiveFont(8),
+      fontSize: layout.isWeb ? layout.webResponsiveFont(26) : layout.responsiveFont(26),
     },
     topbarTitle: {
       ...styles["topbarTitle"],

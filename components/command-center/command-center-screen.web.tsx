@@ -344,14 +344,14 @@ export function CommandCenterScreen() {
   const navigate = (href: Href) => router.push(href);
 
   return (
-    <View style={[responsiveStyles4.root, { backgroundColor: colors.backgroundDeep }]}>
+    <View style={[responsiveStyles4.root]}>
       <KeepFlipShader isLight={effectiveColorScheme === 'light'} />
       <ScrollView
         style={responsiveStyles4.scrollView}
         contentContainerStyle={[responsiveStyles4.content,
         {
           paddingHorizontal: isWide ? 42 : isMedium ? 28 : 18,
-          paddingTop: isWide ? 38 : 26,
+          paddingTop: isWide ? 10 : 26,
           paddingBottom: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(48) : responsiveLayout.responsiveHeight(48),
         }, { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
         contentInsetAdjustmentBehavior="automatic"

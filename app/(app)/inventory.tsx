@@ -367,16 +367,7 @@ export default function InventoryScreen() {
             Scanned and manually added items, purchase costs, and market
             estimates in one place.
           </Text>
-          <View style={{ marginTop: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveHeight(14) : responsiveLayout2.responsiveHeight(14) }}>
-            <KeepFlipControlRow
-              accent="cyan"
-              actionLabel="ADD ITEM"
-              accessibilityHint="Add inventory without a scan or resale valuation."
-              description="Add an item manually and record what you paid for Books and COGS."
-              icon="cube-outline"
-              label="Add inventory item manually"
-              onPress={() => setManualAddOpen(true)}
-            />
+          <View style={{ marginTop: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveHeight(10) : responsiveLayout2.responsiveHeight(14) }}>
           </View>
         </View>
         <View

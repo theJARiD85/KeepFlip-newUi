@@ -149,7 +149,7 @@ function WebRootContent() {
   };
 
   return (
-    <KeepFlipAppearanceProvider>
+    <>
       <Head>
         <meta name="theme-color" content={colors.backgroundDeep} />
         <meta name="color-scheme" content={effectiveColorScheme} />
@@ -168,15 +168,17 @@ function WebRootContent() {
           </FlipCompanionProvider>
         </KeepFlipAuthProvider>
       </ThemeProvider>
-      </KeepFlipAppearanceProvider>
+    </>
   );
 }
 
 export default function WebRootLayout() {
   return (
+    <KeepFlipAppearanceProvider>
       <WebAppShellLayoutProvider>
         <WebRootContent />
       </WebAppShellLayoutProvider>
+    </KeepFlipAppearanceProvider>
   );
 }
 

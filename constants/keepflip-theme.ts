@@ -1,7 +1,7 @@
 export type KeepFlipColorScheme = 'light' | 'dark';
 
 const darkColors = {
-  background: '#130e0cff',
+  background: '#1e1612',
   backgroundRaised: 'rgba(11, 10, 14, 0.75)',
   scrim: 'rgba(99, 81, 54, 0.16)',
   surface: '#211404ff',

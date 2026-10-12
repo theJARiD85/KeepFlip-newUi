@@ -434,7 +434,7 @@ export function InventoryCard({
 
               <View style={styles.recordStrip}>
                 <View style={styles.recordMetric}>
-                  <Text style={styles.recordLabel}>COST ON HAND</Text>
+                  <Text style={styles.recordLabel}>ASSET COST</Text>
                   <Text numberOfLines={1} style={styles.recordValue}>
                     {formatCost(costOnHand, item.currency)}
                   </Text>
@@ -465,6 +465,17 @@ export function InventoryCard({
 
       {onListingGuidePress || onAddPhotosPress || onRemoveBackgroundPress || onMarkSoldPress || onDeletePress ? (
         <View style={styles.itemActions}>
+          <LinearGradient
+            colors={[
+              "rgba(149, 125, 255, 0.61)",
+              "rgba(43, 255, 255, 0.5)",
+              "rgba(255, 204, 85, 0.5)",
+            ]}
+            end={{ x: 0.5, y: 0.5 }}
+            pointerEvents="none"
+                    start={{ x: 0.5, y: 0.5 }}
+                    style={StyleSheet.absoluteFill}
+                  />
           <Pressable
             accessibilityHint={`${actionsExpanded ? "Hides" : "Shows"} the listing, photo, sale, and delete actions for ${item.title}`}
             accessibilityLabel={`${actionsExpanded ? "Hide" : "Show"} item actions for ${item.title}`}
@@ -482,7 +493,7 @@ export function InventoryCard({
             </Text>
             <Ionicons
               color={theme.colors.scannerCyan}
-              name="ellipsis-horizontal"
+              name="chevron-down"
               size={21}
             />
           </Pressable>
@@ -882,11 +893,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     recordMetricStorage: {
       flex: 1.15,
+      alignItems: 'flex-end',
       minWidth: 0,
       gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
     },
     recordLabel: {
-      color: theme.colors.textMuted,
+      color: theme.colors.goldMuted,
       fontFamily: theme.fonts.body,
       fontSize: responsiveFont(8),
       fontWeight: "900",

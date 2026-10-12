@@ -274,17 +274,7 @@ export function KeepFlipSubscriptionScreen({
 
         {!accountHasActivePlan ? (
           <>
-            <div ref={paywallHostRef} style={{ minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(520) : responsiveLayout.responsiveHeight(520), width: '100%' }} />
-            <Pressable
-              accessibilityRole="button"
-              disabled={!configuration.configured || isPresenting}
-              onPress={() => void openRevenueCatPaywall()}
-              style={({ pressed }) => [responsiveStyles.primaryButton, { backgroundColor: colors.gold }, (!configuration.configured || isPresenting) && responsiveStyles.disabled, pressed && responsiveStyles.pressed]}>
-              {isPresenting ? <ActivityIndicator color={colors.textOnAccent} /> : null}
-              <Text style={[responsiveStyles.buttonText, { color: colors.textOnAccent }]}>
-                {isPresenting ? 'OPENING REVENUECAT PAYWALL…' : 'OPEN SUBSCRIPTION PAYWALL'}
-              </Text>
-            </Pressable>
+            <div ref={paywallHostRef} style={{ minHeight: '100%', width: '100%' }} />
           </>
         ) : null}
 
