@@ -86,7 +86,6 @@ function ProtectedRootStack() {
     <Stack
       screenOptions={{
         animation: 'fade',
-        contentStyle: { backgroundColor: colors.backgroundDeep },
         headerShown: false,
       }}>
       <Stack.Screen name="index" />
@@ -150,7 +149,7 @@ function WebRootContent() {
   };
 
   return (
-    <>
+    <KeepFlipAppearanceProvider>
       <Head>
         <meta name="theme-color" content={colors.backgroundDeep} />
         <meta name="color-scheme" content={effectiveColorScheme} />
@@ -169,17 +168,15 @@ function WebRootContent() {
           </FlipCompanionProvider>
         </KeepFlipAuthProvider>
       </ThemeProvider>
-    </>
+      </KeepFlipAppearanceProvider>
   );
 }
 
 export default function WebRootLayout() {
   return (
-    <WebAppShellLayoutProvider>
-      <KeepFlipAppearanceProvider>
+      <WebAppShellLayoutProvider>
         <WebRootContent />
-      </KeepFlipAppearanceProvider>
-    </WebAppShellLayoutProvider>
+      </WebAppShellLayoutProvider>
   );
 }
 

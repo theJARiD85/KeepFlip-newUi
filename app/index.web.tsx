@@ -1,6 +1,5 @@
 import { type Href, useRouter } from 'expo-router';
 import { useEffect } from 'react';
-
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
 import { KeepFlipHomeStructuredData } from '@/components/web/keepflip-home-structured-data';

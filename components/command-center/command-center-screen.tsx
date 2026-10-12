@@ -715,7 +715,7 @@ export function CommandCenterScreen() {
       <View style={{ marginBottom: isWeb ? 500 : insets.bottom, marginTop: insets.top }}>
         <ScrollView
           contentContainerStyle={[styles.content,
-          { paddingHorizontal: pageGutter, paddingTop: insets.top + 15, paddingBottom: insets.bottom + 30 }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+          { marginRight: isCompactWeb ? 250 : 0, paddingHorizontal: pageGutter, paddingTop: insets.top + 15, paddingBottom: insets.bottom + 30 }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
           contentInsetAdjustmentBehavior="automatic"
           showsVerticalScrollIndicator={false}>
           <Animated.View entering={FadeInDown.duration(260)} style={styles.header}>

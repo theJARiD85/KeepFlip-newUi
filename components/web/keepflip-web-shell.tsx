@@ -224,9 +224,9 @@ export function KeepFlipWebShell({ children }: PropsWithChildren) {
   );
 
   return (
-    <View style={[responsiveStyles3.root, { backgroundColor: colors.backgroundDeep }]}>
+    <View style={[responsiveStyles3.root]}>
       {isWide ? (
-        <View style={[responsiveStyles3.sidebar, { backgroundColor: colors.background, borderRightColor: colors.divider }]}>
+        <View style={[responsiveStyles3.sidebar, { backgroundColor: colors.backgroundRaised, borderRightColor: colors.divider }]}>
           <Brand />
           <ScrollView
             contentContainerStyle={responsiveStyles3.sidebarNavigation}
@@ -256,7 +256,7 @@ export function KeepFlipWebShell({ children }: PropsWithChildren) {
               onPress={() => void signOut()}
               style={({ pressed }) => [responsiveStyles3.signOutButton, pressed && responsiveStyles3.navButtonPressed]}>
               <Ionicons color={colors.textMuted} name="log-out" size={16} />
-              <Text style={[responsiveStyles3.signOutLabel, { color: colors.textMuted }]}>SIGN OUT</Text>
+              <Text style={[responsiveStyles3.signOutLabel, { color: theme.colors.danger, opacity: 1 }]}>SIGN OUT</Text>
             </Pressable>
           </View>
         </View>
@@ -471,11 +471,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    opacity: 0.25,
     paddingHorizontal: 10,
     borderRadius: 9,
   },
   signOutLabel: {
-    fontFamily: theme.fonts.bold,
+    fontFamily: theme.fonts.display,
+    backgroundColor: theme.colors.danger,
     fontSize: 8,
     letterSpacing: 1.2,
   },
@@ -492,7 +494,7 @@ const styles = StyleSheet.create({
     paddingTop: 110,
   },
   topbar: {
-    minHeight: 78,
+    minHeight: 40,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -618,10 +620,10 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     ...styles,
     sidebar: {
       ...styles["sidebar"],
-      width: layout.isWeb ? layout.webResponsiveWidth(264) : layout.responsiveWidth(264),
-      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(16) : layout.responsiveWidth(16),
+      width: layout.isWeb ? layout.webResponsiveWidth(200) : layout.responsiveWidth(200),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(5) : layout.responsiveWidth(5),
       paddingTop: layout.isWeb ? layout.webResponsiveHeight(24) : layout.responsiveHeight(24),
-      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(16) : layout.responsiveHeight(16),
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(24) : layout.responsiveHeight(24),
     },
     brand: {
       ...styles["brand"],
@@ -647,7 +649,7 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     },
     brandTagline: {
       ...styles["brandTagline"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(7) : layout.responsiveFont(7),
+      fontSize: layout.isWeb ? layout.webResponsiveFont(6) : layout.responsiveFont(6), maxWidth: layout.isWeb ? layout.webResponsiveWidth(100) : layout.responsiveWidth(100),
     },
     sidebarNavigation: {
       ...styles["sidebarNavigation"],
@@ -656,13 +658,13 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     },
     navGroupLabel: {
       ...styles["navGroupLabel"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : layout.responsiveFont(12),
-      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : layout.responsiveFont(11),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(5) : layout.responsiveWidth(5),
       paddingBottom: layout.isWeb ? layout.webResponsiveHeight(7) : layout.responsiveHeight(7),
     },
     navGroupLabelSpaced: {
       ...styles["navGroupLabelSpaced"],
-      paddingTop: layout.isWeb ? layout.webResponsiveHeight(22) : layout.responsiveHeight(22),
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(10) : layout.responsiveHeight(10),
     },
     navButton: {
       ...styles["navButton"],
@@ -729,8 +731,9 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
       ...styles["signOutButton"],
       minHeight: layout.isWeb ? layout.webResponsiveHeight(32) : layout.responsiveHeight(32),
       gap: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
-      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(10) : layout.responsiveWidth(10),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(15) : layout.responsiveWidth(10),
       borderRadius: layout.isWeb ? layout.webResponsiveWidth(9) : layout.responsiveWidth(9),
+
     },
     signOutLabel: {
       ...styles["signOutLabel"],
