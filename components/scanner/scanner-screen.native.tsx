@@ -219,7 +219,7 @@ export default function ScannerScreen() {
     width: screenWidth,
     contentMaxWidth
   } = useResponsiveLayout();
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const torchButtonSize = moderateScale(35, 0.65);
   const permissionCardWidth = Math.min(contentWidth, 480);
   const analysisButtonWidth = Math.min(controlDockWidth, 360);

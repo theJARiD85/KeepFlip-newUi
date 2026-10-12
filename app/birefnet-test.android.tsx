@@ -130,7 +130,7 @@ export default function BiRefNetTestScreen() {
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Run BiRefNet Lite using the Android GPU"
+        accessibilityLabel="Run BiRefNet Lite using Android NNAPI"
         accessibilityState={{ disabled: !sourceUri || Boolean(runningModel) }}
         disabled={!sourceUri || Boolean(runningModel)}
         onPress={() => void runModel("BiRefNet Lite")}
@@ -139,7 +139,7 @@ export default function BiRefNetTestScreen() {
         {runningModel === "BiRefNet Lite" ? (
           <ActivityIndicator color={theme.colors.textOnAccent} />
         ) : (
-          <Text style={styles.primaryText}>RUN BIREFNET LITE · ANDROID GPU</Text>
+          <Text style={styles.primaryText}>RUN BIREFNET LITE · ANDROID NNAPI</Text>
         )}
       </Pressable>
 
@@ -147,7 +147,7 @@ export default function BiRefNetTestScreen() {
       {error ? <Text selectable style={styles.error}>{error}</Text> : null}
       {runningModel ? (
         <Text style={styles.helper}>
-          {runningModel === "BiRefNet Lite" ? "Loading and running the float16 model on the Android GPU…" : "Running the current cutout model on this phone…"}
+          {runningModel === "BiRefNet Lite" ? "Loading and running the float16 model through Android NNAPI…" : "Running the current cutout model on this phone…"}
         </Text>
       ) : null}
 

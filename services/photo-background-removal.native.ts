@@ -33,7 +33,7 @@ const BIREFNET_INPUT_SIZE = 1024;
 const BIREFNET_OUTPUT_LONG_EDGE = 1280;
 const BIREFNET_MEAN = [0.485, 0.456, 0.406] as const;
 const BIREFNET_STD = [0.229, 0.224, 0.225] as const;
-const BIREFNET_DELEGATES: TensorflowModelDelegate[] = ["android-gpu"];
+const BIREFNET_DELEGATES: TensorflowModelDelegate[] = ["nnapi"];
 
 const FLOAT32_SCRATCH = new Float32Array(1);
 const FLOAT32_SCRATCH_BITS = new Uint32Array(FLOAT32_SCRATCH.buffer);
@@ -315,7 +315,7 @@ export async function removePhotoBackground(sourceUri: string): Promise<string> 
 }
 
 /**
- * Runs the temporary BiRefNet Lite float16 artifact on Android GPU and returns
+ * Runs the temporary BiRefNet Lite float16 artifact through Android NNAPI and returns
  * a transparent PNG preview plus on-device timing details. It never saves or
  * uploads the photo.
  */
