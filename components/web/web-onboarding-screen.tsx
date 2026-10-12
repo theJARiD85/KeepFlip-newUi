@@ -1,5 +1,4 @@
 import { FlipCompanion } from '@/components/flip';
-import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import {
   SemanticHeading,
@@ -88,7 +87,11 @@ export function WebOnboardingScreen() {
 
 
                 <View style={[responsiveStyles.hero, isWide && responsiveStyles.heroWide]}>
+                <View style={{width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', maxWidth: webContentMaxWidth, gap: 40, marginRight: webPageGutter}}>
+
                   <View style={responsiveStyles.heroCopy}>
+                  <View style={{flexDirection: 'column', justifyContent: 'space-between', alignItems:'flex-start', gap: 20, height: '100%'}}>
+
                     <View style={responsiveStyles.eyebrowRow}>
                       <Text style={[responsiveStyles.eyebrow, { color: colors.goldBright }]}>
                         KEEPFLIP / RESELLER OPERATIONS
@@ -98,31 +101,26 @@ export function WebOnboardingScreen() {
                         <Text style={[responsiveStyles.livePillText, { color: colors.scannerCyan }]}>BUILT FOR FLIPPERS</Text>
                       </View>
                     </View>
-                    <SemanticHeading
-                      level={1}
-                      style={[responsiveStyles.heroTitle, isPhone && responsiveStyles.heroTitlePhone, { color: colors.text }]}
-                    >
-                      KeepFlip is your go-to reseller assistant that shows you exactly how much every flip costs.
-                    </SemanticHeading>
-                    <Text style={[responsiveStyles.heroBody, { color: colors.textMuted }]}>
-                      KeepFlip tracks every item from the shelf to the sale. Scan a find, see your estimated net after fees before you spend, then follow it through inventory and into the books. No spreadsheet. No tab chaos.
-                    </Text>
-                    <Text style={[responsiveStyles.freeEntryNote, { color: colors.textMuted }]}>
-                      Free includes every KeepFlip feature except Flip Assistant on Android and web, with up to 10 saved inventory items, {KEEPFLIP_FREE_SCANS_PER_MONTH} AI scans, and {KEEPFLIP_FREE_LISTING_GENERATIONS_PER_MONTH} listing generations each month. Books and insights are included. Serious adds unlimited saved inventory, 200 scans per month, unlimited listing generations, and Flip for $13/month or $130/year. No card or timed trial is required.
-                    </Text>
-                    <View style={responsiveStyles.heroProof}>
-                      <ProofItem colors={colors} label="SOURCE" detail="Scan with the Android app" />
-                      <ProofItem colors={colors} label="DECIDE" detail="Know the numbers before you buy" />
-                      <ProofItem colors={colors} label="TRACK" detail="See what you kept after the sale" />
-                    </View>
-                  </View>
-                  <View style={[responsiveStyles.flipStrip, { backgroundColor: colors.iconSurfaceViolet, borderColor: colors.accentVioletBorder }]}>
-                    <FlipCompanion cropToSquare={false} size={isWide ? 78 : 64} />
+                          <SemanticHeading
+                            level={1}
+                            style={[responsiveStyles.heroTitle, isPhone && responsiveStyles.heroTitlePhone, { color: colors.text }]}
+                          >
+                            KeepFlip is your go-to reseller assistant that shows you exactly how much every flip costs.
+                          </SemanticHeading>
+                          <Text style={[responsiveStyles.heroBody, { color: colors.textMuted }]}>
+                              KeepFlip tracks every item from the shelf to the sale. Scan a find, see your estimated net after fees before you spend, then follow it through inventory and into the books. No spreadsheet. No tab chaos.
+                          </Text>
+                        </View>
+
+                    <View style={[responsiveStyles.flipStrip, { backgroundColor: colors.iconSurfaceViolet, borderColor: colors.accentVioletBorder, height: 160}]}>
+                    <FlipCompanion cropToSquare={false} size={isWide ? 220 : 150} />
                     <View style={responsiveStyles.flipStripCopy}>
                       <Text style={[responsiveStyles.flipStripEyebrow, { color: colors.scannerViolet }]}>FLIP KEEPS THE NEXT MOVE CLEAR</Text>
                       <Text style={[responsiveStyles.flipStripText, { color: colors.textMuted }]}>Less guesswork. Less cash stuck in the wrong inventory.</Text>
                     </View>
                   </View>
+                  </View>
+
 
                   <View style={[responsiveStyles.heroVisual, !isWide && responsiveStyles.heroVisualStacked, isPhone && responsiveStyles.heroVisualPhone, { backgroundColor: colors.card, borderColor: colors.divider }]}>
                     <View style={[responsiveStyles.heroVisualHeader, isPhone && responsiveStyles.heroVisualHeaderPhone]}>
@@ -158,7 +156,14 @@ export function WebOnboardingScreen() {
                       Illustrative example. Actual estimates depend on the item, condition, market evidence, and your costs.
                     </Text>
                   </View>
+                  
                 </View>
+                </View>
+                <View style={responsiveStyles.heroProof}>
+                      <ProofItem colors={colors} label="SOURCE" detail="Scan with the Android app" />
+                      <ProofItem colors={colors} label="DECIDE" detail="Know the numbers before you buy" />
+                      <ProofItem colors={colors} label="TRACK" detail="See what you kept after the sale" />
+                  </View>
 
                 <View style={[responsiveStyles.promiseBand, isPhone && responsiveStyles.promiseBandPhone, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
                   <View style={responsiveStyles.promiseCopy}>
@@ -381,7 +386,7 @@ function ProofItem({
   const responsiveStyles2 = useResponsiveStyles(createStylesWebResponsive);
   return (
     <View style={responsiveStyles2.proofItem}>
-      <View style={[responsiveStyles2.proofDot, { backgroundColor: colors.goldBright }]} />
+      <Image source={require('@/assets/images/source.png')} style={{width: 28, height: 30}} />
       <View style={responsiveStyles2.proofCopy}>
         <Text style={[responsiveStyles2.proofLabel, { color: colors.text }]}>{label}</Text>
         <Text style={[responsiveStyles2.proofDetail, { color: colors.textMuted }]}>{detail}</Text>
@@ -655,12 +660,12 @@ const styles = StyleSheet.create({
   scopeCopy: { fontFamily: theme.fonts.body, fontSize: 12, lineHeight: 18, maxWidth: 600 },
   downloadProof: { alignSelf: 'flex-start' },
   exampleNote: { fontFamily: theme.fonts.body, fontSize: 9, lineHeight: 14 },
-  heroProof: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 4 },
+  heroProof: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', width: '100%', gap: 16, marginTop: 4 },
   proofItem: { alignItems: 'flex-start', flexDirection: 'row', gap: 7, maxWidth: 180 },
-  proofDot: { borderRadius: 3, height: 6, marginTop: 5, width: 6 },
+  proofDot: { borderRadius: 5, height: 10, marginTop: 5, width: 10 },
   proofCopy: { gap: 3 },
-  proofLabel: { fontFamily: theme.fonts.bold, fontSize: 8, letterSpacing: 1.1 },
-  proofDetail: { fontFamily: theme.fonts.body, fontSize: 10, lineHeight: 14 },
+  proofLabel: { fontFamily: theme.fonts.radar, fontSize: 20, letterSpacing: 1.1 },
+  proofDetail: { fontFamily: theme.fonts.body, fontSize: 12, lineHeight: 25 },
   heroVisual: {
     borderRadius: 24,
     borderWidth: 1,
@@ -759,7 +764,7 @@ const styles = StyleSheet.create({
   ctaBody: { fontFamily: theme.fonts.body, fontSize: 13, lineHeight: 20, maxWidth: 650 },
 });
 
-function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>, isWide: boolean) {
   return StyleSheet.create({
     ...styles,
     scrollContent: {
@@ -812,7 +817,7 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     },
     heroTitle: {
       ...styles["heroTitle"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(35) : responsiveFont(35),
+      fontSize: layout.isWeb && isWide ? layout.webResponsiveFont(35) : !isWide ? layout.responsiveFont(28) : responsiveFont(35),
       maxWidth: layout.isWeb ? layout.webResponsiveWidth(730) : layout.responsiveWidth(730),
       lineHeight: layout.isWeb ? layout.webResponsiveFont(40) : layout.responsiveFont(40),
     },
@@ -823,7 +828,7 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     },
     heroBody: {
       ...styles["heroBody"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(15) : layout.responsiveFont(15),
+      fontSize: layout.isWeb && isWide ? layout.webResponsiveFont(15) : !isWide ? layout.responsiveFont(12) : responsiveFont(15),
       lineHeight: layout.isWeb ? layout.webResponsiveFont(25) : layout.responsiveFont(25),
       maxWidth: layout.isWeb ? layout.webResponsiveWidth(650) : layout.responsiveWidth(650),
     },
@@ -861,10 +866,10 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     },
     proofDot: {
       ...styles["proofDot"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(3) : layout.responsiveWidth(3),
-      height: layout.isWeb ? layout.webResponsiveHeight(6) : layout.responsiveHeight(6),
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(5) : layout.responsiveWidth(5),
+      height: layout.isWeb ? layout.webResponsiveHeight(10) : layout.responsiveHeight(10),
       marginTop: layout.isWeb ? layout.webResponsiveHeight(5) : layout.responsiveHeight(5),
-      width: layout.isWeb ? layout.webResponsiveWidth(6) : layout.responsiveWidth(6),
+      width: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
     },
     proofCopy: {
       ...styles["proofCopy"],
@@ -872,11 +877,11 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     },
     proofLabel: {
       ...styles["proofLabel"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : layout.responsiveFont(8),
+      fontSize: layout.isWeb && isWide ? layout.webResponsiveFont(20) : !isWide ? layout.webResponsiveFont(14) : layout.responsiveFont(20),
     },
     proofDetail: {
       ...styles["proofDetail"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : layout.responsiveFont(10),
+      fontSize: layout.isWeb && isWide ? layout.webResponsiveFont(15) : !isWide ? layout.webResponsiveFont(12) : layout.responsiveFont(15),
       lineHeight: layout.isWeb ? layout.webResponsiveFont(14) : layout.responsiveFont(14),
     },
     heroVisual: {
@@ -963,7 +968,7 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
       borderRadius: layout.isWeb ? layout.webResponsiveWidth(14) : layout.responsiveWidth(14),
       gap: layout.isWeb ? layout.webResponsiveWidth(9) : layout.responsiveWidth(9),
       minHeight: layout.isWeb ? layout.webResponsiveHeight(72) : layout.responsiveHeight(72),
-      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(10) : layout.responsiveWidth(10),
+      paddingHorizontal: layout.isWeb && isWide ? layout.webResponsiveWidth(10) : !isWide ? layout.webResponsiveWidth(5) : layout.responsiveWidth(10),
     },
     flipStripCopy: {
       ...styles["flipStripCopy"],
@@ -971,7 +976,7 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     },
     flipStripEyebrow: {
       ...styles["flipStripEyebrow"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : layout.responsiveFont(8),
+      fontSize: layout.isWeb && isWide ? layout.webResponsiveFont(15) : !isWide ? layout.webResponsiveFont(8) : layout.responsiveFont(8),
     },
     flipStripText: {
       ...styles["flipStripText"],

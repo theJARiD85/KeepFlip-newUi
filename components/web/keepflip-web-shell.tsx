@@ -22,14 +22,13 @@ import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { WebSiteFooter } from '@/components/web/web-site-chrome';
 import { CROSSLISTING_LAB_ENABLED } from '@/constants/crosslisting-lab';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
+import { WebAppShellLayoutProvider, useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
 const DRAWER_WIDTH = 304;
 const DRAWER_ANIMATION_MS = 240;
-// This shell only renders on web. Fixed positioning keeps the drawer visible while a page scrolls.
-const fixedDrawerPosition = { position: 'fixed' } as unknown as ViewStyle;
+const stickySidebarPosition = { position: 'sticky' } as unknown as ViewStyle;
 
 type NavItem = {
   label: string;
@@ -197,7 +196,7 @@ function NavButton({
 
 export function KeepFlipWebShell({ children }: PropsWithChildren) {
   const responsiveStyles3 = useResponsiveStyles(createStylesWebResponsive);
-  const { width } = useResponsiveLayout();
+  const { width, height } = useResponsiveLayout();
   const isWide = width >= 980;
   const isPhone = width < 480;
   const pathname = usePathname();
@@ -242,7 +241,10 @@ export function KeepFlipWebShell({ children }: PropsWithChildren) {
   }, [isWide]);
 
   const animatedDrawerStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: DRAWER_WIDTH * (1 - drawerProgress.value) }],
+    width: DRAWER_WIDTH * drawerProgress.value,
+  }));
+  const animatedDrawerContentStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: -DRAWER_WIDTH * (1 - drawerProgress.value) }],
   }));
 
   const toggleDrawer = () => {
@@ -325,39 +327,18 @@ export function KeepFlipWebShell({ children }: PropsWithChildren) {
         </View>
       ) : null}
 
-      <View style={[responsiveStyles3.main, !isWide && responsiveStyles3.mainMobile, isPhone && responsiveStyles3.mainMobilePhone]}>
-        <View style={[responsiveStyles3.topbar, !isWide && responsiveStyles3.topbarMobile, { borderBottomColor: colors.divider }]}>
-          <View style={responsiveStyles3.topbarLeading}>
-            <Text numberOfLines={1} style={[responsiveStyles3.topbarEyebrow, { color: colors.goldMuted }]}>{displaySection(pathname)}</Text>
-            {isWide ? (
-              <Pressable
-                accessibilityLabel={isDrawerOpen ? 'Close navigation menu' : 'Open navigation menu'}
-                accessibilityRole="button"
-                accessibilityState={{ expanded: isDrawerOpen }}
-                onPress={toggleDrawer}
-                style={({ pressed }) => [
-                  responsiveStyles3.drawerToggle,
-                  { backgroundColor: isDrawerOpen ? colors.iconSurfaceGold : colors.backgroundRaised, borderColor: isDrawerOpen ? colors.accentGoldBorder : colors.divider },
-                  pressed && responsiveStyles3.navButtonPressed,
-                ]}>
-                <Ionicons color={colors.goldBright} name={isDrawerOpen ? 'close' : 'menu'} size={25} />
-              </Pressable>
-            ) : null}
-          </View>
-          <View style={responsiveStyles3.topbarStatus}>
-            <View style={[responsiveStyles3.statusDot, { backgroundColor: colors.success }]} />
-            <Text style={[responsiveStyles3.topbarStatusText, { color: colors.textMuted }]}>PRIVATE WORKSPACE</Text>
-          </View>
-        </View>
-        {isWide && isDrawerMounted ? (
+      {isWide && isDrawerMounted ? (
+        <Animated.View
+          accessibilityLabel="Workspace navigation"
+          aria-hidden={!isDrawerOpen}
+          importantForAccessibility={isDrawerOpen ? 'auto' : 'no-hide-descendants'}
+          pointerEvents={isDrawerOpen ? 'auto' : 'none'}
+          style={[responsiveStyles3.sidebarTrack, stickySidebarPosition, { height }, animatedDrawerStyle]}>
           <Animated.View
-            accessibilityLabel="Workspace navigation"
-            importantForAccessibility={isDrawerOpen ? 'auto' : 'no-hide-descendants'}
             style={[
               responsiveStyles3.sidebar,
-              fixedDrawerPosition,
-              animatedDrawerStyle,
-              { backgroundColor: colors.background, borderLeftColor: colors.divider },
+              animatedDrawerContentStyle,
+              { backgroundColor: colors.background, borderRightColor: colors.divider },
             ]}>
             <Brand />
             <ScrollView
@@ -393,8 +374,37 @@ export function KeepFlipWebShell({ children }: PropsWithChildren) {
               </Pressable>
             </View>
           </Animated.View>
-        ) : null}
-        <View style={responsiveStyles3.routeContent}>{children}</View>
+        </Animated.View>
+      ) : null}
+
+      <View style={[responsiveStyles3.main, !isWide && responsiveStyles3.mainMobile, isPhone && responsiveStyles3.mainMobilePhone]}>
+        <View style={[responsiveStyles3.topbar, !isWide && responsiveStyles3.topbarMobile, { borderBottomColor: colors.divider }]}>
+          <View style={responsiveStyles3.topbarLeading}>
+            {isWide ? (
+                <Pressable
+                  accessibilityLabel={isDrawerOpen ? 'Close navigation menu' : 'Open navigation menu'}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: isDrawerOpen }}
+                  onPress={toggleDrawer}
+                  style={({ pressed }) => [
+                    responsiveStyles3.drawerToggle,
+                    { backgroundColor: isDrawerOpen ? colors.iconSurfaceGold : colors.backgroundRaised, borderColor: isDrawerOpen ? colors.accentGoldBorder : colors.divider },
+                    pressed && responsiveStyles3.navButtonPressed,
+                  ]}>
+                  <Ionicons color={colors.goldBright} name={isDrawerOpen ? 'close' : 'menu'} size={25} />
+                </Pressable>
+              ) : null}
+            <Text numberOfLines={1} style={[responsiveStyles3.topbarEyebrow, { color: colors.goldMuted }]}>{displaySection(pathname)}</Text>
+
+          </View>
+          <View style={responsiveStyles3.topbarStatus}>
+            <View style={[responsiveStyles3.statusDot, { backgroundColor: colors.success }]} />
+            <Text style={[responsiveStyles3.topbarStatusText, { color: colors.textMuted }]}>PRIVATE WORKSPACE</Text>
+          </View>
+        </View>
+        <WebAppShellLayoutProvider sidebarWidth={isWide && isDrawerOpen ? DRAWER_WIDTH : 0}>
+          <View style={responsiveStyles3.routeContent}>{children}</View>
+        </WebAppShellLayoutProvider>
         <WebSiteFooter />
       </View>
     </View>
@@ -410,13 +420,16 @@ const styles = StyleSheet.create({
     minHeight: '100%',
     width: '100%',
   },
+  sidebarTrack: {
+    alignSelf: 'flex-start',
+    flexShrink: 0,
+    overflow: 'hidden',
+    top: 0,
+  },
   sidebar: {
     width: DRAWER_WIDTH,
-    top: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 20,
-    borderLeftWidth: 1,
+    height: '100%',
+    borderRightWidth: 1,
     paddingHorizontal: 16,
     paddingTop: 24,
     paddingBottom: 16,
@@ -459,6 +472,7 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.medium,
     fontSize: 7,
     letterSpacing: 1.5,
+    maxWidth: 100,
   },
   sidebarNavigation: {
     gap: 5,
@@ -718,7 +732,7 @@ const styles = StyleSheet.create({
 });
 
 function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
-  return StyleSheet.create({
+  return StyleSheet.create<typeof styles>({
     ...styles,
     sidebar: {
       ...styles["sidebar"],

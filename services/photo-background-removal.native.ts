@@ -22,10 +22,9 @@ import {
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const MODEL_ASSET = require("@/assets/models/yolov8n-seg-trained.tflite");
-// Temporary Android-only evaluation asset. Remove after the device comparison
-// unless BiRefNet is selected for product use.
+// Temporary Android-only evaluation asset with float16 weights and float32 tensors.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const BIREFNET_MODEL_ASSET = require("@/assets/models/birefnet_lite_float16.tflite");
+const BIREFNET_MODEL_ASSET = require("@/assets/models/birefnet_lite_fp16_weights_fp32_io.tflite");
 const OUTPUT_LONG_EDGE = 1280;
 const MODEL_BACKGROUND = Skia.Color("#727272");
 const RGBA_BYTES_PER_PIXEL = 4;
@@ -33,10 +32,7 @@ const BIREFNET_INPUT_SIZE = 1024;
 const BIREFNET_OUTPUT_LONG_EDGE = 1280;
 const BIREFNET_MEAN = [0.485, 0.456, 0.406] as const;
 const BIREFNET_STD = [0.229, 0.224, 0.225] as const;
-const BIREFNET_DELEGATES: TensorflowModelDelegate[] = ["nnapi"];
-
-const FLOAT32_SCRATCH = new Float32Array(1);
-const FLOAT32_SCRATCH_BITS = new Uint32Array(FLOAT32_SCRATCH.buffer);
+const BIREFNET_DELEGATES: TensorflowModelDelegate[] = [];
 
 let modelPromise: Promise<TfliteModel> | null = null;
 let birefnetModelPromise: Promise<TfliteModel> | null = null;
@@ -73,54 +69,6 @@ function getBiRefNetModel(): Promise<TfliteModel> {
       });
   }
   return birefnetModelPromise;
-}
-
-function float32ToFloat16(value: number) {
-  FLOAT32_SCRATCH[0] = value;
-  const bits = FLOAT32_SCRATCH_BITS[0];
-  const sign = (bits >>> 16) & 0x8000;
-  const exponent = (bits >>> 23) & 0xff;
-  let mantissa = bits & 0x7fffff;
-
-  if (exponent === 0xff) return sign | (mantissa === 0 ? 0x7c00 : 0x7e00);
-  if (exponent === 0) return sign;
-
-  let halfExponent = exponent - 127 + 15;
-  if (halfExponent >= 31) return sign | 0x7c00;
-  if (halfExponent <= 0) {
-    if (halfExponent < -10) return sign;
-    mantissa |= 0x800000;
-    const shift = 14 - halfExponent;
-    let halfMantissa = mantissa >>> shift;
-    const remainder = mantissa & ((1 << shift) - 1);
-    const halfway = 1 << (shift - 1);
-    if (remainder > halfway || (remainder === halfway && (halfMantissa & 1) === 1)) {
-      halfMantissa += 1;
-    }
-    return sign | halfMantissa;
-  }
-
-  let halfMantissa = mantissa >>> 13;
-  const remainder = mantissa & 0x1fff;
-  if (remainder > 0x1000 || (remainder === 0x1000 && (halfMantissa & 1) === 1)) {
-    halfMantissa += 1;
-    if (halfMantissa === 0x400) {
-      halfMantissa = 0;
-      halfExponent += 1;
-      if (halfExponent >= 31) return sign | 0x7c00;
-    }
-  }
-
-  return sign | (halfExponent << 10) | halfMantissa;
-}
-
-function float16ToFloat32(value: number) {
-  const sign = (value & 0x8000) === 0 ? 1 : -1;
-  const exponent = (value >>> 10) & 0x1f;
-  const mantissa = value & 0x3ff;
-  if (exponent === 0) return sign * mantissa * 2 ** -24;
-  if (exponent === 0x1f) return mantissa === 0 ? sign * Infinity : Number.NaN;
-  return sign * (1 + mantissa / 1024) * 2 ** (exponent - 15);
 }
 
 function bilinearBiRefNetMaskAlpha(mask: Float32Array, modelX: number, modelY: number) {
@@ -346,22 +294,22 @@ export async function removePhotoBackgroundWithBiRefNet(sourceUri: string): Prom
   });
   const modelPixels = rgbaPixels(modelImage, BIREFNET_INPUT_SIZE, BIREFNET_INPUT_SIZE);
   const planeLength = BIREFNET_INPUT_SIZE * BIREFNET_INPUT_SIZE;
-  const input = new Uint16Array(planeLength * 3);
+  const input = new Float32Array(planeLength * 3);
 
   for (let index = 0; index < planeLength; index += 1) {
     const pixel = index * RGBA_BYTES_PER_PIXEL;
     const inputPixel = index * 3;
-    input[inputPixel] = float32ToFloat16((modelPixels[pixel] / 255 - BIREFNET_MEAN[0]) / BIREFNET_STD[0]);
-    input[inputPixel + 1] = float32ToFloat16((modelPixels[pixel + 1] / 255 - BIREFNET_MEAN[1]) / BIREFNET_STD[1]);
-    input[inputPixel + 2] = float32ToFloat16((modelPixels[pixel + 2] / 255 - BIREFNET_MEAN[2]) / BIREFNET_STD[2]);
+    input[inputPixel] = (modelPixels[pixel] / 255 - BIREFNET_MEAN[0]) / BIREFNET_STD[0];
+    input[inputPixel + 1] = (modelPixels[pixel + 1] / 255 - BIREFNET_MEAN[1]) / BIREFNET_STD[1];
+    input[inputPixel + 2] = (modelPixels[pixel + 2] / 255 - BIREFNET_MEAN[2]) / BIREFNET_STD[2];
   }
 
   if (
     model.inputs.length !== 1 ||
-    model.inputs[0].dataType !== "float16" ||
+    model.inputs[0].dataType !== "float32" ||
     model.inputs[0].shape.join(",") !== `1,${BIREFNET_INPUT_SIZE},${BIREFNET_INPUT_SIZE},3` ||
     model.outputs.length !== 1 ||
-    model.outputs[0].dataType !== "float16" ||
+    model.outputs[0].dataType !== "float32" ||
     model.outputs[0].shape.join(",") !== `1,${BIREFNET_INPUT_SIZE},${BIREFNET_INPUT_SIZE},1`
   ) {
     throw new Error("The BiRefNet test model has an unexpected tensor format.");
@@ -370,16 +318,16 @@ export async function removePhotoBackgroundWithBiRefNet(sourceUri: string): Prom
   const inferenceStartedAt = Date.now();
   const outputs = await model.run([input.buffer]);
   const inferenceMs = Date.now() - inferenceStartedAt;
-  if (!outputs[0] || outputs[0].byteLength !== planeLength * 2) {
+  if (!outputs[0] || outputs[0].byteLength !== planeLength * Float32Array.BYTES_PER_ELEMENT) {
     throw new Error("BiRefNet Lite returned an unexpected mask size.");
   }
 
-  const halfLogits = new Uint16Array(outputs[0]);
+  const logits = new Float32Array(outputs[0]);
   const mask = new Float32Array(planeLength);
   let maskMinimum = Infinity;
   let maskMaximum = -Infinity;
   for (let index = 0; index < planeLength; index += 1) {
-    const logit = float16ToFloat32(halfLogits[index]);
+    const logit = logits[index];
     const probability = 1 / (1 + Math.exp(-logit));
     mask[index] = probability;
     if (probability < maskMinimum) maskMinimum = probability;

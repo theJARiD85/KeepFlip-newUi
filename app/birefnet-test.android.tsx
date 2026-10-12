@@ -1,7 +1,7 @@
 import { Asset } from "expo-asset";
 import { Image } from "expo-image";
-import { useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 import { KeepFlipText as Text } from "@/components/ui/keepflip-text";
@@ -18,6 +18,8 @@ type ModelChoice = "Current KeepFlip" | "BiRefNet Lite";
 
 export default function BiRefNetTestScreen() {
   const router = useRouter();
+  const { autoRunBiRefNet } = useLocalSearchParams<{ autoRunBiRefNet?: string }>();
+  const autoRunStarted = useRef(false);
   const [sourceUri, setSourceUri] = useState<string | null>(null);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [showOriginal, setShowOriginal] = useState(false);
@@ -62,8 +64,13 @@ export default function BiRefNetTestScreen() {
         setPreviewUri(result.uri);
         setPreviewModel(modelChoice);
         setDetails(
-          `${modelChoice} · ${result.delegates.join(", ") || "CPU"} · ${(result.inferenceMs / 1000).toFixed(1)}s inference · ${(result.totalMs / 1000).toFixed(1)}s total`,
+          `${modelChoice} · FP16 weights / FP32 tensors · ${result.delegates.join(", ") || "CPU"} · ${(result.inferenceMs / 1000).toFixed(1)}s inference · ${(result.totalMs / 1000).toFixed(1)}s total`,
         );
+        console.info("[BiRefNet test] completed", {
+          delegates: result.delegates,
+          inferenceMs: result.inferenceMs,
+          totalMs: result.totalMs,
+        });
       } else {
         const uri = await removePhotoBackground(sourceUri);
         setPreviewUri(uri);
@@ -71,11 +78,21 @@ export default function BiRefNetTestScreen() {
         setDetails(`${modelChoice} · ${((Date.now() - startedAt) / 1000).toFixed(1)}s total`);
       }
     } catch (caughtError) {
+      console.error(
+        "[BiRefNet test] failed",
+        caughtError instanceof Error ? caughtError.message : caughtError,
+      );
       setError(caughtError instanceof Error ? caughtError.message : `${modelChoice} could not process this photo.`);
     } finally {
       setRunningModel(null);
     }
   }, [runningModel, sourceUri]);
+
+  useEffect(() => {
+    if (autoRunBiRefNet !== "1" || !sourceUri || autoRunStarted.current) return;
+    autoRunStarted.current = true;
+    void runModel("BiRefNet Lite");
+  }, [autoRunBiRefNet, runModel, sourceUri]);
 
   const displayedUri = previewUri && !showOriginal ? previewUri : sourceUri;
 
@@ -130,7 +147,7 @@ export default function BiRefNetTestScreen() {
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Run BiRefNet Lite using Android NNAPI"
+        accessibilityLabel="Run BiRefNet Lite using the Android CPU runtime"
         accessibilityState={{ disabled: !sourceUri || Boolean(runningModel) }}
         disabled={!sourceUri || Boolean(runningModel)}
         onPress={() => void runModel("BiRefNet Lite")}
@@ -139,7 +156,7 @@ export default function BiRefNetTestScreen() {
         {runningModel === "BiRefNet Lite" ? (
           <ActivityIndicator color={theme.colors.textOnAccent} />
         ) : (
-          <Text style={styles.primaryText}>RUN BIREFNET LITE · ANDROID NNAPI</Text>
+          <Text style={styles.primaryText}>RUN BIREFNET LITE · ANDROID CPU</Text>
         )}
       </Pressable>
 
@@ -147,7 +164,7 @@ export default function BiRefNetTestScreen() {
       {error ? <Text selectable style={styles.error}>{error}</Text> : null}
       {runningModel ? (
         <Text style={styles.helper}>
-          {runningModel === "BiRefNet Lite" ? "Loading and running the float16 model through Android NNAPI…" : "Running the current cutout model on this phone…"}
+          {runningModel === "BiRefNet Lite" ? "Loading and running the FP16-weight model through Android CPU…" : "Running the current cutout model on this phone…"}
         </Text>
       ) : null}
 

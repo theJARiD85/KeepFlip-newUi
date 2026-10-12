@@ -1,0 +1,30 @@
+{
+  "model_source": "ZhengPeng7/BiRefNet_lite",
+  "license": "MIT",
+  "transform": "FP16 constant weights with DEQUANTIZE to FP32; runtime activations remain FP32",
+  "model": {
+    "file": "birefnet_lite_fp16_weights_fp32_io.tflite",
+    "bytes": 121417644,
+    "sha256": "5b3897fda9b659ed06b2abd88584ec3dffef45af7cad7c1c8b599607846313a4",
+    "precision": "float16 weights / float32 activations",
+    "input_shape": [
+      1,
+      1024,
+      1024,
+      3
+    ],
+    "input_dtype": "float32",
+    "output_shape": [
+      1,
+      1024,
+      1024,
+      1
+    ],
+    "output_dtype": "float32"
+  },
+  "source": "assets\\models\\birefnet_lite_float16.tflite",
+  "source_bytes": 121360940,
+  "source_sha256": "404e2a0a090fd321bd14377f067ba8398be92b4ff1f0729402a8cfbbaa9aa3fa",
+  "float16_constants_dequantized": 527,
+  "dequantize_operators": 527
+}

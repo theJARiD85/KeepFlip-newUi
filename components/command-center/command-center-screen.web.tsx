@@ -27,7 +27,6 @@ import {
   ScrollView,
   StyleSheet,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring } from 'react-native-reanimated';
 
@@ -280,9 +279,8 @@ export function CommandCenterScreen() {
     pageGutter
   } = useResponsiveLayout();
 
-  const { width } = useWindowDimensions();
-  const isWide = width >= 1180;
-  const isMedium = width >= 720;
+  const isWide = webContentMaxWidth >= 1180;
+  const isMedium = webContentMaxWidth >= 720;
   const router = useRouter();
   const { user } = useKeepFlipAuth();
   const { effectiveColorScheme } = useKeepFlipAppearance();
