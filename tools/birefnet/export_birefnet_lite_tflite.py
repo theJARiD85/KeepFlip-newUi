@@ -12,11 +12,16 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.metadata
+import importlib.util
 import json
+import os
+import py_compile
 import shutil
 import subprocess
 import sys
 import tempfile
+from contextlib import nullcontext
 from pathlib import Path
 
 import numpy as np
@@ -50,6 +55,67 @@ ONNX2TF_PARAMETER_REPLACEMENTS = {
         for split_index in SPLITS_WITH_CHANNEL_LAST_AXIS_BUG
     ],
 }
+
+
+def prepare_direct_clipfix(temp_dir: Path) -> Path:
+    """Copy and repair onnx2tf 2.6.9's integer Clip lowering in isolation.
+
+    This model's ONNX Clip inputs are INT64, but the direct backend converts
+    the index input to INT32 while keeping its Clip output INT64. Without an
+    explicit cast back, its MAXIMUM/MINIMUM operations have mixed dtypes.
+    """
+    version = importlib.metadata.version("onnx2tf")
+    if version != "2.6.9":
+        raise RuntimeError(
+            f"The isolated Clip repair is pinned to onnx2tf 2.6.9; got {version}."
+        )
+    spec = importlib.util.find_spec("onnx2tf")
+    if spec is None or not spec.submodule_search_locations:
+        raise RuntimeError("Could not locate the installed onnx2tf package.")
+
+    package_root = Path(next(iter(spec.submodule_search_locations)))
+    overlay_dir = temp_dir / "onnx2tf_clipfix"
+    patched_root = overlay_dir / "onnx2tf"
+    shutil.copytree(
+        package_root, patched_root, ignore=shutil.ignore_patterns("__pycache__")
+    )
+    builder_path = patched_root / "tflite_builder" / "op_builders" / "elementwise.py"
+    source = builder_path.read_text(encoding="utf-8")
+    start = source.index("def build_clip_op(node: Any, ctx: Any) -> None:")
+    end = source.find("\ndef ", start + 1)
+    if end < 0:
+        end = len(source)
+    body = source[start:end]
+    expected = {
+        "    clip_np_dtype = _numpy_dtype_for_tensor(input_dtype)": 1,
+        "        current_name = input_name": 1,
+        "dst_dtype=input_dtype,": 2,
+        "        output_dtype = ctx.get_tensor_dtype(output_name)\n": 1,
+    }
+    if any(body.count(snippet) != count for snippet, count in expected.items()):
+        raise RuntimeError(
+            "The installed onnx2tf Clip builder differs from the pinned patch; "
+            "refusing to modify it."
+        )
+    body = body.replace(
+        "    clip_np_dtype = _numpy_dtype_for_tensor(input_dtype)",
+        "    output_dtype = str(ctx.get_tensor_dtype(output_name)).upper()\n"
+        "    clip_np_dtype = _numpy_dtype_for_tensor(output_dtype)",
+    )
+    body = body.replace(
+        "        current_name = input_name",
+        "        current_name = _cast_tensor_if_needed(\n"
+        "            ctx=ctx,\n"
+        "            src_name=input_name,\n"
+        "            dst_dtype=output_dtype,\n"
+        '            base_name=f"{node.name}_clip_input_cast",\n'
+        "        )",
+    )
+    body = body.replace("dst_dtype=input_dtype,", "dst_dtype=output_dtype,")
+    body = body.replace("        output_dtype = ctx.get_tensor_dtype(output_name)\n", "")
+    builder_path.write_text(source[:start] + body + source[end:], encoding="utf-8")
+    py_compile.compile(str(builder_path), doraise=True)
+    return overlay_dir
 
 
 def load_interpreter():
@@ -142,14 +208,37 @@ def convert(args: argparse.Namespace) -> None:
             "or remove that generated model yourself."
         )
 
-    with tempfile.TemporaryDirectory(prefix="birefnet-lite-tflite-") as temp_name:
+    if args.keep_converted_dir is None:
+        conversion_dir_context = tempfile.TemporaryDirectory(
+            prefix="birefnet-lite-tflite-"
+        )
+    else:
+        retained_dir = args.keep_converted_dir.expanduser().resolve()
+        if retained_dir.exists():
+            raise FileExistsError(
+                f"Refusing to overwrite retained conversion directory {retained_dir}; "
+                "choose a new directory."
+            )
+        retained_dir.mkdir(parents=True)
+        conversion_dir_context = nullcontext(str(retained_dir))
+
+    with conversion_dir_context as temp_name:
         temp_dir = Path(temp_name)
         converted_dir = temp_dir / "converted"
         replacement_path = temp_dir / "param_replacements.json"
         replacement_path.write_text(
             json.dumps(ONNX2TF_PARAMETER_REPLACEMENTS), encoding="utf-8"
         )
-        subprocess.run(
+        converter_env = os.environ.copy()
+        if args.tflite_backend == "flatbuffer_direct":
+            overlay_dir = prepare_direct_clipfix(temp_dir)
+            converter_env["PYTHONPATH"] = os.pathsep.join(
+                value
+                for value in (str(overlay_dir), converter_env.get("PYTHONPATH", ""))
+                if value
+            )
+            print(f"Using isolated onnx2tf Clip repair at: {overlay_dir}")
+        result = subprocess.run(
             [
                 onnx2tf,
                 "-i",
@@ -161,10 +250,18 @@ def convert(args: argparse.Namespace) -> None:
                 "-prf",
                 str(replacement_path),
                 "--tflite_backend",
-                "tf_converter",
+                args.tflite_backend,
             ],
-            check=True,
+            check=False,
+            env=converter_env,
         )
+        if result.returncode != 0:
+            message = f"onnx2tf exited with status {result.returncode}."
+            if args.keep_converted_dir is not None:
+                message += f" Partial converter output was retained at {converted_dir}."
+            raise RuntimeError(message)
+        if args.keep_converted_dir is not None:
+            print(f"Raw converter output retained at: {converted_dir}")
 
         requested_candidates = sorted(
             converted_dir.rglob(f"*_{args.precision}.tflite")
@@ -255,6 +352,13 @@ def convert(args: argparse.Namespace) -> None:
         union = int(np.logical_or(onnx_binary, tflite_binary).sum())
         intersection = int(np.logical_and(onnx_binary, tflite_binary).sum())
         mask_iou = 1.0 if union == 0 else intersection / union
+        if max_abs > 0.01 or mean_abs > 0.001 or mask_iou < 0.99:
+            raise RuntimeError(
+                "Float32 TFLite output disagrees with ONNX Runtime on the "
+                "random-input parity probe: "
+                f"max_abs={max_abs:.6g}, mean_abs={mean_abs:.6g}, "
+                f"mask_iou={mask_iou:.6f}."
+            )
 
         if requested_model == cpu_validation_model:
             model_input_details = cpu_input_details
@@ -263,13 +367,26 @@ def convert(args: argparse.Namespace) -> None:
             model_interpreter = Interpreter(
                 model_path=str(requested_model), num_threads=4
             )
-            model_interpreter.allocate_tensors()
+            # Colab's CPU kernels cannot prepare this float16 model. Its
+            # static tensor contract is available before allocation.
             model_input_details = model_interpreter.get_input_details()
             model_output_details = model_interpreter.get_output_details()
             if len(model_input_details) != 1 or len(model_output_details) != 1:
                 raise RuntimeError(
                     "Expected the requested model to have one image input and "
                     "one mask output."
+                )
+            min_max_mismatches = [
+                op["index"]
+                for op in model_interpreter._get_ops_details()
+                if op["op_name"] in ("MINIMUM", "MAXIMUM")
+                and len(op["operand_types"]) == 2
+                and op["operand_types"][0] != op["operand_types"][1]
+            ]
+            if min_max_mismatches:
+                raise RuntimeError(
+                    "The requested model still has mixed-dtype MINIMUM/MAXIMUM "
+                    f"ops at indices {min_max_mismatches[:10]}."
                 )
 
         tflite_shape = [int(value) for value in model_input_details[0]["shape"]]
@@ -292,7 +409,12 @@ def convert(args: argparse.Namespace) -> None:
             "onnx_source": f"{MODEL_REPO}@{MODEL_REVISION}/{MODEL_FILENAME}",
             "license": "MIT",
             "converter": "onnx2tf",
-            "converter_backend": "tf_converter",
+            "converter_backend": args.tflite_backend,
+            "converter_patch": (
+                "onnx2tf 2.6.9 integer Clip dtype repair"
+                if args.tflite_backend == "flatbuffer_direct"
+                else None
+            ),
             "precision": args.precision,
             "input": {
                 "name": onnx_input_name,
@@ -367,6 +489,23 @@ def main() -> None:
         choices=("float16", "float32"),
         default="float16",
         help="Choose the TFLite artifact produced by onnx2tf (default: float16).",
+    )
+    parser.add_argument(
+        "--tflite-backend",
+        choices=("flatbuffer_direct", "tf_converter"),
+        default="flatbuffer_direct",
+        help=(
+            "onnx2tf backend (default: flatbuffer_direct). The legacy "
+            "tf_converter path can use substantially more memory."
+        ),
+    )
+    parser.add_argument(
+        "--keep-converted-dir",
+        type=Path,
+        help=(
+            "Retain raw onnx2tf outputs in this new directory, including when "
+            "the TFLite interpreter smoke test fails."
+        ),
     )
     args = parser.parse_args()
     if args.output.suffix.lower() != ".tflite":

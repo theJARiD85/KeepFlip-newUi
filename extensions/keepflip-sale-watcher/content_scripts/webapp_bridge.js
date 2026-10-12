@@ -8,9 +8,7 @@
     'http://127.0.0.1:8081',
   ]);
   if (!allowed.has(location.origin)) return;
-  const crosslistingOnlyOrigins = new Set(['https://keep-flip.com', 'https://www.keep-flip.com']);
-  const isCrosslistingPage = () => location.pathname === '/crosslisting' || location.pathname.startsWith('/crosslisting/');
-  const isAllowedPage = () => !crosslistingOnlyOrigins.has(location.origin) || isCrosslistingPage();
+  const isAllowedPage = () => true;
 
   function postResponse(requestId, reply) {
     try {

@@ -5,11 +5,10 @@
     depop: { host: 'depop.com', createUrl: 'https://www.depop.com/products/create/' },
     poshmark: { host: 'poshmark.com', createUrl: 'https://poshmark.com/create-listing' },
     mercari: { host: 'mercari.com', createUrl: 'https://www.mercari.com/sell/' },
-    facebookMarketplace: { host: 'facebook.com', createUrl: 'https://www.facebook.com/marketplace/create/' },
+    facebookMarketplace: { host: 'facebook.com', createUrl: 'https://www.facebook.com/marketplace/create/item' },
     offerUp: { host: 'offerup.com', createUrl: 'https://offerup.com/' },
   };
   const WEB_ORIGINS = new Set(['https://keep-flip.com', 'https://www.keep-flip.com', 'https://app.keep-flip.com', 'http://localhost:8081', 'http://127.0.0.1:8081']);
-  const CROSSLISTING_ONLY_ORIGINS = new Set(['https://keep-flip.com', 'https://www.keep-flip.com']);
   const textFields = ['title', 'description', 'price', 'category', 'condition', 'brand', 'size', 'color'];
 
   function urlFor(value) {
@@ -18,9 +17,7 @@
 
   function isWebTab(sender) {
     const url = urlFor(sender.url);
-    const isCrosslistingPath = url && (url.pathname === '/crosslisting' || url.pathname.startsWith('/crosslisting/'));
-    return Boolean(sender.tab?.id && url && WEB_ORIGINS.has(url.origin) &&
-      (!CROSSLISTING_ONLY_ORIGINS.has(url.origin) || isCrosslistingPath));
+    return Boolean(sender.tab?.id && url && WEB_ORIGINS.has(url.origin));
   }
 
   function isMarketplaceUrl(value, marketplace) {
@@ -33,9 +30,9 @@
     if (!isMarketplaceUrl(value, marketplace)) return false;
     const pathname = urlFor(value).pathname;
     return ({
-      depop: /^\/products\/[^/]+\/?$/i,
+      depop: /^\/(?:[a-zA-Z0-9_-]+\/)?products\/[^/]+\/?$/i,
       poshmark: /^\/listing\/[^/]+\/?$/i,
-      mercari: /^\/us\/item\/[^/]+\/?$/i,
+      mercari: /^\/(?:us\/)?item\/[^/]+\/?$/i,
       facebookMarketplace: /^\/marketplace\/item\/\d+\/?$/i,
       offerUp: /^\/item\/detail\/[^/]+\/?$/i,
     })[marketplace].test(pathname);

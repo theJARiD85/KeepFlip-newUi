@@ -146,6 +146,7 @@ function ProtectedRootStack() {
       <Stack.Screen name="terms" />
       <Stack.Screen name="privacy" />
       <Stack.Screen name="facebook-oauth-callback" />
+      <Stack.Screen name="birefnet-test" />
     </Stack>
   );
 }

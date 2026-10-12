@@ -24,14 +24,61 @@
     color: /color/i,
   };
   const selectors = {
-    title: ['input[data-qa-id="listing-title-input"]', 'input[name*="title" i]', 'input[placeholder*="title" i]', 'input[aria-label*="title" i]'],
-    description: ['textarea[data-qa-id="listing-description-input"]', 'textarea[name*="description" i]', 'textarea[placeholder*="description" i]', '[contenteditable="true"][aria-label*="description" i]'],
-    price: ['input[data-qa-id="listing-price-input"]', 'input[name*="price" i]', 'input[placeholder*="price" i]', 'input[aria-label*="price" i]'],
-    category: ['select[name*="category" i]', 'input[name*="category" i]', 'input[placeholder*="category" i]'],
-    condition: ['select[name*="condition" i]', 'input[name*="condition" i]', 'input[placeholder*="condition" i]'],
-    brand: ['input[name*="brand" i]', 'input[placeholder*="brand" i]'],
-    size: ['select[name*="size" i]', 'input[name*="size" i]', 'input[placeholder*="size" i]'],
-    color: ['select[name*="color" i]', 'input[name*="color" i]', 'input[placeholder*="color" i]'],
+    title: [
+      'input[data-qa-id="listing-title-input"]',
+      'input[data-testid="TitleInput"]',
+      'input[name*="title" i]',
+      'input[placeholder*="title" i]',
+      'input[aria-label*="title" i]',
+      'input[id*="title" i]',
+    ],
+    description: [
+      'textarea[data-qa-id="listing-description-input"]',
+      'textarea[data-testid="DescriptionInput"]',
+      'textarea[data-testid="description-input"]',
+      'textarea[name*="description" i]',
+      'textarea[placeholder*="description" i]',
+      'textarea[aria-label*="description" i]',
+      '[contenteditable="true"][aria-label*="description" i]',
+      '[contenteditable="true"][data-testid*="description" i]',
+    ],
+    price: [
+      'input[data-qa-id="listing-price-input"]',
+      'input[data-testid="PriceInput"]',
+      'input[data-testid="price-input"]',
+      'input[name*="price" i]',
+      'input[placeholder*="price" i]',
+      'input[aria-label*="price" i]',
+    ],
+    category: [
+      'select[name*="category" i]',
+      'input[name*="category" i]',
+      'input[placeholder*="category" i]',
+      '[data-qa-id="category-dropdown"]',
+      '[data-testid="CategorySelector"]',
+    ],
+    condition: [
+      'select[name*="condition" i]',
+      'input[name*="condition" i]',
+      'input[placeholder*="condition" i]',
+    ],
+    brand: [
+      'input[data-qa-id="listing-brand-input"]',
+      'input[data-testid="BrandInput"]',
+      'input[data-testid="brand-input"]',
+      'input[name*="brand" i]',
+      'input[placeholder*="brand" i]',
+    ],
+    size: [
+      'select[name*="size" i]',
+      'input[name*="size" i]',
+      'input[placeholder*="size" i]',
+    ],
+    color: [
+      'select[name*="color" i]',
+      'input[name*="color" i]',
+      'input[placeholder*="color" i]',
+    ],
   };
   const core = ['title', 'description', 'price'];
   let assignment = null;
@@ -92,13 +139,16 @@
 
   function turnOffFacebookMetaAiDrafts() {
     if (marketplace !== 'facebookMarketplace') return true;
-    const toggle = document.querySelector('input[type="checkbox"][role="switch"][aria-label="Draft listings with Meta AI"]');
-    if (!toggle || toggle.disabled) return false;
-    if (toggle.checked && !facebookMetaAiSwitchClickRequested) {
+    const toggle = document.querySelector('input[type="checkbox"][role="switch"][aria-label="Draft listings with Meta AI"]') ||
+      document.querySelector('input[type="checkbox"][role="switch"][aria-label*="Meta AI" i]') ||
+      document.querySelector('[role="switch"][aria-label*="Meta AI" i]');
+    if (!toggle) return true;
+    if (toggle.disabled) return false;
+    if ((toggle.checked || toggle.getAttribute('aria-checked') === 'true') && !facebookMetaAiSwitchClickRequested) {
       facebookMetaAiSwitchClickRequested = true;
       toggle.click();
     }
-    return !toggle.checked;
+    return !toggle.checked && toggle.getAttribute('aria-checked') !== 'true';
   }
 
   function expandFacebookMoreDetails(fields) {
@@ -203,12 +253,14 @@
     const wanted = normalizeChoiceLabel(value).replace(/\s+/g, '_');
     const option = normalizeChoiceLabel(optionLabel);
     if (!option) return false;
-    if (wanted === 'new') return /^(?:brand )?new(?: with tags| without tags)?$|^unused$/.test(option);
-    if (wanted === 'like_new') return /\blike new\b|\bexcellent\b/.test(option);
-    if (wanted === 'good') return /\bgood\b/.test(option);
-    if (wanted === 'fair') return /\bfair\b/.test(option);
-    if (wanted === 'poor') return /\bpoor\b/.test(option);
-    if (wanted === 'for_parts_or_repair') return /\bfor parts\b|\brepair\b/.test(option);
+    if (wanted.startsWith('new') || wanted === 'brand_new') {
+      return /^(?:brand )?new(?: with tags| without tags)?$|^unused$|^new$/i.test(option) || (/\bnew\b/i.test(option) && !/\blike new\b/i.test(option));
+    }
+    if (wanted === 'like_new' || wanted === 'excellent') return /\blike new\b|\bexcellent\b/i.test(option);
+    if (wanted === 'good') return /\bgood\b/i.test(option);
+    if (wanted === 'fair') return /\bfair\b/i.test(option);
+    if (wanted === 'poor') return /\bpoor\b/i.test(option);
+    if (wanted.includes('part') || wanted.includes('repair')) return /\bfor parts\b|\brepair\b/i.test(option);
     return option === normalizeChoiceLabel(value);
   }
 
@@ -585,23 +637,195 @@
     const value = String(raw).trim();
     if (!value) return false;
     const current = String(element.value ?? element.textContent ?? '').trim();
-    if (current && current !== value) return false;
+    if (current && current === value) return true;
     if (element instanceof HTMLSelectElement) {
       const option = Array.from(element.options).find((entry) =>
         entry.value.toLowerCase() === value.toLowerCase() || entry.textContent.trim().toLowerCase() === value.toLowerCase());
       if (!option) return false;
       element.value = option.value;
     } else if (element.isContentEditable) {
-      element.textContent = value;
+      element.focus();
+      try {
+        document.execCommand('selectAll', false, null);
+        document.execCommand('insertText', false, value);
+      } catch {
+        element.textContent = value;
+      }
     } else {
-      const setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(element), 'value')?.set;
-      if (setter) setter.call(element, element.maxLength > 0 ? value.slice(0, element.maxLength) : value);
-      else element.value = value;
+      const proto = element instanceof HTMLTextAreaElement ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
+      const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(element), 'value')?.set;
+      const nextValue = element.maxLength > 0 ? value.slice(0, element.maxLength) : value;
+      if (setter) setter.call(element, nextValue);
+      else element.value = nextValue;
+      if (element._valueTracker) {
+        element._valueTracker.setValue('');
+      }
     }
-    element.dispatchEvent(new Event('input', { bubbles: true }));
+    try {
+      element.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: value }));
+    } catch {
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    }
     element.dispatchEvent(new Event('change', { bubbles: true }));
     element.blur();
     return true;
+  }
+
+  async function fillPoshmarkSpecifics(fields, platformFields, payload) {
+    if (!filledFields.includes('originalPrice')) {
+      const origInput = document.querySelector('input[data-qa-id="original-price-input"], input[name*="originalPrice" i], input[placeholder*="original price" i]');
+      if (origInput && usable(origInput, 'price')) {
+        const origVal = platformFields.originalPrice || platformFields.msrp || '0';
+        if (setField(origInput, origVal)) filledFields.push('originalPrice');
+      }
+    }
+    if (fields.brand && !filledFields.includes('brand')) {
+      const brandInput = document.querySelector('input[data-qa-id="listing-brand-input"], input[name*="brand" i]');
+      if (brandInput && usable(brandInput, 'brand')) {
+        if (setField(brandInput, fields.brand)) {
+          filledFields.push('brand');
+          await new Promise((resolve) => setTimeout(resolve, 200));
+          const suggestion = document.querySelector('.dropdown-menu .dropdown-item, [data-qa-id="brand-suggestion"], [role="listbox"] [role="option"]');
+          if (suggestion && visible(suggestion)) suggestion.click();
+        }
+      }
+    }
+    if (fields.condition && !filledFields.includes('condition')) {
+      const isNew = /^(?:brand )?new(?: with tags)?$/i.test(fields.condition.trim());
+      const nwtContainer = document.querySelector('[data-qa-id="nwt-toggle"], .listing-editor__nwt, [data-testid="nwt-section"]');
+      if (nwtContainer) {
+        const buttons = Array.from(nwtContainer.querySelectorAll('button, [role="radio"], [role="button"]')).filter(visible);
+        const targetBtn = buttons.find((btn) => {
+          const text = (btn.innerText || btn.textContent || '').trim().toLowerCase();
+          return isNew ? text === 'yes' : text === 'no';
+        });
+        if (targetBtn) {
+          targetBtn.click();
+          filledFields.push('condition');
+        }
+      }
+    }
+    if (fields.size && !filledFields.includes('size')) {
+      const sizeOptions = Array.from(document.querySelectorAll('.size-selector [role="button"], .size-chips button, [data-qa-id*="size-item"]')).filter(visible);
+      if (sizeOptions.length) {
+        const wantedSize = normalizeChoiceLabel(fields.size);
+        const match = sizeOptions.find((btn) => normalizeChoiceLabel(btn.innerText || btn.textContent || '') === wantedSize);
+        if (match) {
+          match.click();
+          filledFields.push('size');
+        }
+      }
+    }
+    if (fields.category && !filledFields.includes('category')) {
+      const catOptions = Array.from(document.querySelectorAll('.category-selector [role="button"], [data-qa-id*="category-item"]')).filter(visible);
+      if (catOptions.length) {
+        const wantedCat = normalizeChoiceLabel(fields.category);
+        const match = catOptions.find((btn) => normalizeChoiceLabel(btn.innerText || btn.textContent || '').includes(wantedCat));
+        if (match) {
+          match.click();
+          filledFields.push('category');
+        }
+      }
+    }
+  }
+
+  async function fillMercariSpecifics(fields, platformFields, payload) {
+    if (fields.condition && !filledFields.includes('condition')) {
+      const conditionButtons = Array.from(document.querySelectorAll('button[data-testid*="Condition"], [role="group"] button, .condition-chips button')).filter(visible);
+      if (conditionButtons.length) {
+        const wanted = normalizeChoiceLabel(fields.condition).replace(/\s+/g, '_');
+        const target = conditionButtons.find((btn) => {
+          const label = normalizeChoiceLabel(btn.innerText || btn.textContent || '');
+          if (wanted.startsWith('new') && /\bnew\b/i.test(label) && !/\blike new\b/i.test(label)) return true;
+          if ((wanted === 'like_new' || wanted === 'excellent') && /\blike new\b/i.test(label)) return true;
+          if (wanted === 'good' && /\bgood\b/i.test(label)) return true;
+          if (wanted === 'fair' && /\bfair\b/i.test(label)) return true;
+          if (wanted === 'poor' && /\bpoor\b/i.test(label)) return true;
+          return label === normalizeChoiceLabel(fields.condition);
+        });
+        if (target) {
+          target.click();
+          filledFields.push('condition');
+        }
+      }
+    }
+    if (fields.category && !filledFields.includes('category')) {
+      const suggestedChips = Array.from(document.querySelectorAll('[data-testid*="SuggestedCategory"], button[aria-label*="category" i]')).filter(visible);
+      if (suggestedChips.length) {
+        const wanted = normalizeChoiceLabel(fields.category);
+        const target = suggestedChips.find((chip) => {
+          const text = normalizeChoiceLabel(chip.innerText || chip.textContent || '');
+          return text.includes(wanted) || wanted.includes(text);
+        }) || suggestedChips[0];
+        if (target) {
+          target.click();
+          filledFields.push('category');
+        }
+      }
+    }
+    if (fields.brand && !filledFields.includes('brand')) {
+      const brandInput = document.querySelector('input[data-testid="BrandInput"], input[name="brand"]');
+      if (brandInput && usable(brandInput, 'brand')) {
+        if (setField(brandInput, fields.brand)) {
+          filledFields.push('brand');
+          await new Promise((resolve) => setTimeout(resolve, 200));
+          const suggestion = document.querySelector('[data-testid*="BrandSuggestion"], [role="listbox"] [role="option"]');
+          if (suggestion && visible(suggestion)) suggestion.click();
+        }
+      }
+    }
+  }
+
+  async function fillDepopSpecifics(fields, platformFields, payload) {
+    if (fields.condition && !filledFields.includes('condition')) {
+      const condControls = Array.from(document.querySelectorAll('button[data-testid*="condition" i], [role="radiogroup"] [role="radio"], [data-testid*="Condition"]')).filter(visible);
+      if (condControls.length) {
+        const wanted = normalizeChoiceLabel(fields.condition).replace(/\s+/g, '_');
+        const target = condControls.find((ctrl) => {
+          const text = normalizeChoiceLabel(ctrl.innerText || ctrl.textContent || '');
+          if (wanted.startsWith('new') && /\b(?:brand )?new\b/i.test(text) && !/\blike new\b/i.test(text)) return true;
+          if ((wanted === 'like_new' || wanted === 'excellent') && /\b(?:like new|excellent)\b/i.test(text)) return true;
+          if (wanted === 'good' && /\bgood\b/i.test(text)) return true;
+          if (wanted === 'fair' && /\bfair\b/i.test(text)) return true;
+          return text === normalizeChoiceLabel(fields.condition);
+        });
+        if (target) {
+          target.click();
+          filledFields.push('condition');
+        }
+      }
+    }
+    if (fields.brand && !filledFields.includes('brand')) {
+      const brandInput = document.querySelector('input[data-testid="brand-input"], input[placeholder*="brand" i]');
+      if (brandInput && usable(brandInput, 'brand')) {
+        if (setField(brandInput, fields.brand)) filledFields.push('brand');
+      }
+    }
+    if (!filledFields.includes('title')) {
+      filledFields.push('title');
+    }
+  }
+
+  async function fillOfferUpSpecifics(fields, platformFields, payload) {
+    if (fields.condition && !filledFields.includes('condition')) {
+      const condButtons = Array.from(document.querySelectorAll('button[data-testid*="condition" i], [role="group"] button')).filter(visible);
+      if (condButtons.length) {
+        const wanted = normalizeChoiceLabel(fields.condition).replace(/\s+/g, '_');
+        const target = condButtons.find((btn) => {
+          const text = normalizeChoiceLabel(btn.innerText || btn.textContent || '');
+          if (wanted.startsWith('new') && /\bnew\b/i.test(text)) return true;
+          if ((wanted === 'like_new' || wanted === 'open_box') && /\bopen box\b|\blike new\b/i.test(text)) return true;
+          if (wanted === 'good' && /\bnormal wear\b|\bgood\b/i.test(text)) return true;
+          if (wanted === 'fair' && /\bnormal wear\b|\bfair\b/i.test(text)) return true;
+          if (wanted.includes('part') && /\bparts\b/i.test(text)) return true;
+          return text === normalizeChoiceLabel(fields.condition);
+        });
+        if (target) {
+          target.click();
+          filledFields.push('condition');
+        }
+      }
+    }
   }
 
   async function attachPhotos(photos) {
@@ -609,8 +833,22 @@
     if (typeof DataTransfer === 'undefined') return 0;
     const fileInputs = Array.from(document.querySelectorAll('input[type="file"]'));
     const input = fileInputs.find((candidate) => candidate.closest('main,form,[role="dialog"]') &&
-      /image/i.test(candidate.getAttribute('accept') || '')) || fileInputs.find((candidate) => /image/i.test(candidate.getAttribute('accept') || '')) || null;
-    const dropZone = document.querySelector('main .dz-clickable,main #co-uploader,main [data-testid="uploader-dropzone"],main [class*="dropzone" i],[role="dialog"] [class*="dropzone" i]');
+      /image/i.test(candidate.getAttribute('accept') || '')) ||
+      fileInputs.find((candidate) => /image/i.test(candidate.getAttribute('accept') || '')) ||
+      fileInputs[0] || null;
+    const dropZone = document.querySelector([
+      'main .dz-clickable',
+      'main #co-uploader',
+      'main [data-testid="uploader-dropzone"]',
+      'main [data-testid="img-upload-input"]',
+      'main [class*="dropzone" i]',
+      '[role="dialog"] [class*="dropzone" i]',
+      '[aria-label*="Add photos" i]',
+      '[aria-label*="Add photo" i]',
+      '[aria-label*="Upload photos" i]',
+      '[data-qa-id="img-upload-dropzone"]',
+      'div[role="button"][tabindex="0"][aria-label*="photo" i]',
+    ].join(','));
     if (!input && !dropZone) return 0;
     const selected = photos.slice(0, input && !input.multiple && !dropZone ? 1 : 8);
     const files = await Promise.all(selected.map(async (photo) => {
@@ -638,9 +876,9 @@
   function liveListingUrl() {
     const pathname = location.pathname;
     return ({
-      depop: /^\/products\/[^/]+\/?$/i,
+      depop: /^\/(?:[a-zA-Z0-9_-]+\/)?products\/[^/]+\/?$/i,
       poshmark: /^\/listing\/[^/]+\/?$/i,
-      mercari: /^\/us\/item\/[^/]+\/?$/i,
+      mercari: /^\/(?:us\/)?item\/[^/]+\/?$/i,
       facebookMarketplace: /^\/marketplace\/item\/\d+\/?$/i,
       offerUp: /^\/item\/detail\/[^/]+\/?$/i,
     })[marketplace].test(pathname);
@@ -684,6 +922,15 @@
         composerOpenRequested = openComposerIfNeeded() || composerOpenRequested;
       }
       expandFacebookMoreDetails(fields);
+      if (marketplace === 'poshmark') {
+        await fillPoshmarkSpecifics(fields, platformFields, payload);
+      } else if (marketplace === 'mercari') {
+        await fillMercariSpecifics(fields, platformFields, payload);
+      } else if (marketplace === 'depop') {
+        await fillDepopSpecifics(fields, platformFields, payload);
+      } else if (marketplace === 'offerUp') {
+        await fillOfferUpSpecifics(fields, platformFields, payload);
+      }
       for (const [key, value] of Object.entries(fields)) {
         if (filledFields.includes(key) || !value) continue;
         if (marketplace === 'facebookMarketplace' && key === 'category') {
@@ -705,7 +952,7 @@
       }
       const facebookFormReady = marketplace !== 'facebookMarketplace' ||
         ['category', 'condition'].every((key) => Boolean(fields[key]) && filledFields.includes(key));
-      if (assignment.photos.length && uploadedPhotoCount === 0 && filledFields.includes('title')) {
+      if (assignment.photos.length && uploadedPhotoCount === 0 && (filledFields.includes('title') || marketplace === 'depop')) {
         try { uploadedPhotoCount = await attachPhotos(assignment.photos); } catch { /* Report for review below. */ }
       }
       if (core.every((key) => filledFields.includes(key)) &&
@@ -907,6 +1154,7 @@
     const label = (button) => (button.innerText || button.textContent || button.value || '').trim();
     const listingArea = (button) => button.closest('main,form,[role="dialog"]');
     const button = buttons.find((candidate) => listingArea(candidate) && /^(post|post item|post listing|publish|list|list item|create listing|submit listing)$/i.test(label(candidate))) ||
+      buttons.find((candidate) => candidate.getAttribute('data-qa-id') === 'submit-listing-btn' || candidate.getAttribute('data-testid') === 'ListButton' || candidate.getAttribute('data-testid') === 'post-button') ||
       buttons.find((candidate) => listingArea(candidate) && candidate.type === 'submit' && !/^(next|continue|review)$/i.test(label(candidate)));
     if (button) {
       button.click();
