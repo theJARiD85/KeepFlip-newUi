@@ -4,6 +4,10 @@ import android.Manifest
 import android.media.Image
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.ImageFormat
+import android.graphics.Rect
+import android.graphics.YuvImage
+import android.net.Uri
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
@@ -51,6 +55,8 @@ import expo.modules.kotlin.views.ExpoView
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
+import java.io.ByteArrayOutputStream
+import java.io.File
 import java.util.IdentityHashMap
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
@@ -72,6 +78,7 @@ private val onError by EventDispatcher()
 private val onMeasurementGeometry by EventDispatcher()
 private val onBoxMeasurement by EventDispatcher()
 private val onItemMeasurement by EventDispatcher()
+private val onBiRefNetTapFrame by EventDispatcher()
 
   private val glSurfaceView =
     GLSurfaceView(context)
@@ -132,10 +139,24 @@ private class ItemScanState {
   var tapX = 0f
   var tapY = 0f
   var tapPending = false
+  var awaitingBiRefNetMask = false
+  var tapMaskRequestId = 0
+  var pendingTapSeed: FloatArray? = null
+  var pendingTapCameraPose: Pose? = null
 }
+
+private data class BiRefNetTapFrame(
+  val file: File,
+  val width: Int,
+  val height: Int,
+  val tapImageX: Float,
+  val tapImageY: Float
+)
 
 private var measurementMode =
   "item"
+
+private var biRefNetTapValidationEnabled = false
 
 private var itemExtentModel:
   ItemExtentEstimate? = null
@@ -373,7 +394,8 @@ private val maximumLostCornerFrames =
             !disposed &&
             measurementMode == "item" &&
             !measurementComplete &&
-            itemScan.seedPoint == null
+            itemScan.seedPoint == null &&
+            !itemScan.awaitingBiRefNetMask
           ) {
             itemScan.tapX = tapX
             itemScan.tapY = tapY
@@ -1084,6 +1106,71 @@ fun setMeasurementMode(mode: String?) {
 
   measurementMode = normalized
   resetMeasurement()
+}
+
+fun setBiRefNetTapValidation(enabled: Boolean?) {
+  val validationEnabled = enabled == true
+  glSurfaceView.queueEvent {
+    biRefNetTapValidationEnabled = validationEnabled
+  }
+}
+
+fun setTapMaskDecision(value: String?) {
+  val parts = value?.split(":", limit = 2) ?: return
+  val requestId = parts.getOrNull(0)?.toIntOrNull() ?: return
+  val decision = parts.getOrNull(1) ?: return
+
+  glSurfaceView.queueEvent {
+    if (
+      !itemScan.awaitingBiRefNetMask ||
+      itemScan.tapMaskRequestId != requestId
+    ) {
+      return@queueEvent
+    }
+
+    itemScan.awaitingBiRefNetMask = false
+    val pendingSeed = itemScan.pendingTapSeed
+    val pendingCameraPose = itemScan.pendingTapCameraPose
+    itemScan.pendingTapSeed = null
+    itemScan.pendingTapCameraPose = null
+
+    when (decision) {
+      "accept" -> {
+        if (pendingSeed == null || pendingCameraPose == null) {
+          emitError(
+            "BIREFNET_TAP_STATE_LOST",
+            "KeepFlip lost the BiRefNet tap-check context. The AR depth measurement is continuing from your tap."
+          )
+          emitTargetState(
+            if (measurementComplete) "complete" else "scanning_item",
+            if (measurementComplete) 1f else 0f
+          )
+          return@queueEvent
+        }
+
+        emitTargetState(
+          if (measurementComplete) "complete" else "scanning_item",
+          if (measurementComplete) 1f else 0f
+        )
+      }
+
+      "reject" -> {
+        resetMeasurement()
+        emitTargetState("tap_not_foreground", 0f)
+      }
+
+      else -> {
+        emitError(
+          "BIREFNET_TAP_MASK_FAILED",
+          "BiRefNet could not check this tap. ARCore depth measurement continued from your tap."
+        )
+        emitTargetState(
+          if (measurementComplete) "complete" else "scanning_item",
+          if (measurementComplete) 1f else 0f
+        )
+      }
+    }
+  }
 }
 
 fun resetMeasurement() {
@@ -3038,6 +3125,51 @@ private fun handleAutoItemMeasurement(
     emitTargetState("item_depth_required", 0f)
     return
   }
+
+  if (itemScan.tapPending && biRefNetTapValidationEnabled) {
+    val tapSeed = poseToPoint(centerHit.hitPose)
+    val now = System.nanoTime()
+    itemScan.seedPoint = tapSeed
+    itemScan.scanStartNs = now
+    itemScan.lastCameraPose = cameraPose
+    itemScan.cameraMotionMeters = 0f
+    itemScan.sampleFrames = 0
+    itemScan.depthWarningEmitted = false
+    itemScan.tapPending = false
+
+    val tapFrame = try {
+      captureBiRefNetTapFrame(frame, itemScan.tapX, itemScan.tapY)
+    } catch (_: Exception) {
+      null
+    }
+
+    if (tapFrame == null) {
+      emitError(
+        "BIREFNET_TAP_CAPTURE_FAILED",
+        "KeepFlip could not capture the BiRefNet check frame. ARCore depth measurement is continuing."
+      )
+    } else {
+      itemScan.tapMaskRequestId += 1
+      val requestId = itemScan.tapMaskRequestId
+      itemScan.pendingTapSeed = tapSeed
+      itemScan.pendingTapCameraPose = cameraPose
+      itemScan.awaitingBiRefNetMask = true
+
+      post {
+        onBiRefNetTapFrame(
+          mapOf(
+            "requestId" to requestId,
+            "imageUri" to Uri.fromFile(tapFrame.file).toString(),
+            "imageWidth" to tapFrame.width,
+            "imageHeight" to tapFrame.height,
+            "tapImageX" to tapFrame.tapImageX,
+            "tapImageY" to tapFrame.tapImageY
+          )
+        )
+      }
+    }
+  }
+
   itemScan.tapPending = false
   itemScan.depthWarningEmitted = false
   val now = System.nanoTime()
@@ -3112,6 +3244,105 @@ private fun findDepthPointHit(
   } catch (ignored: Exception) {
     null
   }
+}
+
+private fun captureBiRefNetTapFrame(
+  frame: Frame,
+  viewX: Float,
+  viewY: Float
+): BiRefNetTapFrame? {
+  val tapImagePoint = FloatArray(2)
+  frame.transformCoordinates2d(
+    Coordinates2d.VIEW,
+    floatArrayOf(viewX, viewY),
+    Coordinates2d.IMAGE_PIXELS,
+    tapImagePoint
+  )
+
+  val image = try {
+    frame.acquireCameraImage()
+  } catch (ignored: NotYetAvailableException) {
+    return null
+  }
+
+  try {
+    if (
+      image.format != ImageFormat.YUV_420_888 ||
+      image.width % 2 != 0 ||
+      image.height % 2 != 0
+    ) {
+      throw IllegalStateException("The AR camera frame is not a supported YUV image.")
+    }
+    if (
+      tapImagePoint[0] < 0f || tapImagePoint[1] < 0f ||
+      tapImagePoint[0] >= image.width || tapImagePoint[1] >= image.height
+    ) {
+      throw IllegalArgumentException("The tap is outside the AR camera image. Tap the item again.")
+    }
+
+    val nv21 = cameraImageToNv21(image)
+    val jpegBytes = ByteArrayOutputStream().use { output ->
+      val yuvImage = YuvImage(nv21, ImageFormat.NV21, image.width, image.height, null)
+      val compressed = yuvImage.compressToJpeg(
+        Rect(0, 0, image.width, image.height),
+        90,
+        output
+      )
+      if (!compressed) {
+        throw IllegalStateException("KeepFlip could not encode the AR camera frame.")
+      }
+      output.toByteArray()
+    }
+
+    val file = File(
+      context.cacheDir,
+      "keepflip-ar-birefnet-tap-${System.nanoTime()}.jpg"
+    )
+    file.writeBytes(jpegBytes)
+    return BiRefNetTapFrame(
+      file = file,
+      width = image.width,
+      height = image.height,
+      tapImageX = tapImagePoint[0],
+      tapImageY = tapImagePoint[1]
+    )
+  } finally {
+    image.close()
+  }
+}
+
+private fun cameraImageToNv21(image: Image): ByteArray {
+  val width = image.width
+  val height = image.height
+  val yPlane = image.planes[0]
+  val uPlane = image.planes[1]
+  val vPlane = image.planes[2]
+  val yBuffer = yPlane.buffer.duplicate()
+  val uBuffer = uPlane.buffer.duplicate()
+  val vBuffer = vPlane.buffer.duplicate()
+  val output = ByteArray(width * height + (width * height / 2))
+
+  for (row in 0 until height) {
+    val rowOffset = row * yPlane.rowStride
+    val outputOffset = row * width
+    for (column in 0 until width) {
+      output[outputOffset + column] =
+        yBuffer.get(rowOffset + column * yPlane.pixelStride)
+    }
+  }
+
+  var chromaOffset = width * height
+  for (row in 0 until height / 2) {
+    val uRowOffset = row * uPlane.rowStride
+    val vRowOffset = row * vPlane.rowStride
+    for (column in 0 until width / 2) {
+      output[chromaOffset++] =
+        vBuffer.get(vRowOffset + column * vPlane.pixelStride)
+      output[chromaOffset++] =
+        uBuffer.get(uRowOffset + column * uPlane.pixelStride)
+    }
+  }
+  return output
 }
 
 private fun poseToPoint(pose: Pose): FloatArray {
@@ -5282,6 +5513,10 @@ private fun clearItemScan() {
   itemScan.tapX = 0f
   itemScan.tapY = 0f
   itemScan.tapPending = false
+  itemScan.awaitingBiRefNetMask = false
+  itemScan.tapMaskRequestId += 1
+  itemScan.pendingTapSeed = null
+  itemScan.pendingTapCameraPose = null
 }
   private fun createExternalCameraTexture():
     Int {

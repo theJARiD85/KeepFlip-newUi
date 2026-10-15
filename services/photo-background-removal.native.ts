@@ -32,7 +32,7 @@ const BIREFNET_INPUT_SIZE = 1024;
 const BIREFNET_OUTPUT_LONG_EDGE = 1280;
 const BIREFNET_MEAN = [0.485, 0.456, 0.406] as const;
 const BIREFNET_STD = [0.229, 0.224, 0.225] as const;
-const BIREFNET_DELEGATES: TensorflowModelDelegate[] = [];
+const BIREFNET_DELEGATES: TensorflowModelDelegate[] = ["android-gpu"];
 
 let modelPromise: Promise<TfliteModel> | null = null;
 let birefnetModelPromise: Promise<TfliteModel> | null = null;
@@ -263,15 +263,20 @@ export async function removePhotoBackground(sourceUri: string): Promise<string> 
 }
 
 /**
- * Runs the temporary BiRefNet Lite float16 artifact through Android NNAPI and returns
+ * Runs the temporary BiRefNet Lite float16-weight artifact through Android GPU and returns
  * a transparent PNG preview plus on-device timing details. It never saves or
  * uploads the photo.
  */
-export async function removePhotoBackgroundWithBiRefNet(sourceUri: string): Promise<{
+export async function removePhotoBackgroundWithBiRefNet(
+  sourceUri: string,
+  tapPoint?: { x: number; y: number },
+): Promise<{
   uri: string;
   inferenceMs: number;
   totalMs: number;
   delegates: string[];
+  tapForeground?: boolean;
+  tapMaskAlpha?: number;
 }> {
   const totalStartedAt = Date.now();
   const sourceFile = new File(sourceUri);
@@ -339,6 +344,23 @@ export async function removePhotoBackgroundWithBiRefNet(sourceUri: string): Prom
 
   const sourceWidth = source.width();
   const sourceHeight = source.height();
+  let tapMaskAlpha: number | undefined;
+  if (tapPoint) {
+    const insideSource =
+      Number.isFinite(tapPoint.x) &&
+      Number.isFinite(tapPoint.y) &&
+      tapPoint.x >= 0 &&
+      tapPoint.y >= 0 &&
+      tapPoint.x < sourceWidth &&
+      tapPoint.y < sourceHeight;
+    tapMaskAlpha = insideSource
+      ? bilinearBiRefNetMaskAlpha(
+          mask,
+          ((tapPoint.x + 0.5) / sourceWidth) * BIREFNET_INPUT_SIZE,
+          ((tapPoint.y + 0.5) / sourceHeight) * BIREFNET_INPUT_SIZE,
+        )
+      : 0;
+  }
   const outputScale = Math.min(
     1,
     BIREFNET_OUTPUT_LONG_EDGE / Math.max(sourceWidth, sourceHeight),
@@ -392,6 +414,8 @@ export async function removePhotoBackgroundWithBiRefNet(sourceUri: string): Prom
     inferenceMs,
     totalMs: Date.now() - totalStartedAt,
     delegates: model.delegates,
+    tapForeground: tapMaskAlpha === undefined ? undefined : tapMaskAlpha >= 128,
+    tapMaskAlpha,
   };
 }
 

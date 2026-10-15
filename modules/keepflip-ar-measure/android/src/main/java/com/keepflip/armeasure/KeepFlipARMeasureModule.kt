@@ -28,10 +28,19 @@ class KeepFlipARMeasureModule : Module() {
         "onMeasurementGeometry",
         "onBoxMeasurement",
         "onItemMeasurement",
+        "onBiRefNetTapFrame",
         "onError"
       )
       Prop("measurementMode") { view: KeepFlipARMeasureView, mode: String? ->
         view.setMeasurementMode(mode)
+      }
+
+      Prop("biRefNetTapValidation") { view: KeepFlipARMeasureView, enabled: Boolean? ->
+        view.setBiRefNetTapValidation(enabled)
+      }
+
+      Prop("tapMaskDecision") { view: KeepFlipARMeasureView, decision: String? ->
+        view.setTapMaskDecision(decision)
       }
 
       AsyncFunction("resetMeasurement") {

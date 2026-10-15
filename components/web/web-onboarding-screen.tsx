@@ -9,6 +9,9 @@ import {
 } from '@/components/web/web-public-page';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
 import { WebSiteFooter, WebSiteHeader } from '@/components/web/web-site-chrome';
+import sourceProofIcon from '@/assets/images/source.png';
+import decideProofIcon from '@/assets/images/decide.png';
+import trackProofIcon from '@/assets/images/track.png';
 import {
   KEEPFLIP_EBAY_CONNECTION_COPY,
   KEEPFLIP_FREE_LISTING_GENERATIONS_PER_MONTH,
@@ -160,9 +163,9 @@ export function WebOnboardingScreen() {
                 </View>
                 </View>
                 <View style={responsiveStyles.heroProof}>
-                      <ProofItem colors={colors} label="SOURCE" detail="Scan with the Android app" />
-                      <ProofItem colors={colors} label="DECIDE" detail="Know the numbers before you buy" />
-                      <ProofItem colors={colors} label="TRACK" detail="See what you kept after the sale" />
+                      <ProofItem colors={colors} label="SOURCE" detail="Scan with the Android app" icon={sourceProofIcon} />
+                      <ProofItem colors={colors} label="DECIDE" detail="Know the numbers before you buy" icon={decideProofIcon} />
+                      <ProofItem colors={colors} label="TRACK" detail="See what you kept after the sale" icon={trackProofIcon} />
                   </View>
 
                 <View style={[responsiveStyles.promiseBand, isPhone && responsiveStyles.promiseBandPhone, { backgroundColor: colors.backgroundRaised, borderColor: colors.divider }]}>
@@ -171,7 +174,7 @@ export function WebOnboardingScreen() {
                     <SemanticHeading level={2} style={[responsiveStyles.promiseTitle, { color: colors.text }]}>One place to make better seller decisions.</SemanticHeading>
                   </View>
                   <View style={[responsiveStyles.promiseStats, isPhone && responsiveStyles.promiseStatsPhone]}>
-                    <PromiseStat colors={colors} value="01" label="SOURCE" />
+                    <PromiseStat colors={colors} value="01" label="SOURCE"/>
                     <PromiseStat colors={colors} value="02" label="DECIDE" />
                     <PromiseStat colors={colors} value="03" label="TRACK" />
                     <PromiseStat colors={colors} value="04" label="LEARN" />
@@ -377,16 +380,18 @@ export function WebOnboardingScreen() {
 function ProofItem({
   colors,
   detail,
+  icon,
   label,
 }: {
   colors: ReturnType<typeof getKeepFlipThemeColors>;
   detail: string;
+      icon: ComponentProps<typeof Image>["source"];
   label: string;
 }) {
   const responsiveStyles2 = useResponsiveStyles(createStylesWebResponsive);
   return (
     <View style={responsiveStyles2.proofItem}>
-      <Image source={require('@/assets/images/source.png')} style={{width: 28, height: 30}} />
+      <Image source={icon} style={{width: 28, height: 30}} />
       <View style={responsiveStyles2.proofCopy}>
         <Text style={[responsiveStyles2.proofLabel, { color: colors.text }]}>{label}</Text>
         <Text style={[responsiveStyles2.proofDetail, { color: colors.textMuted }]}>{detail}</Text>
@@ -579,11 +584,13 @@ function CompareCard({
 function MiniMetric({
   accent,
   colors,
+  icon,
   label,
   value,
 }: {
   accent?: string;
   colors: ReturnType<typeof getKeepFlipThemeColors>;
+  icon: string;
   label: string;
   value: string;
 }) {
@@ -764,7 +771,8 @@ const styles = StyleSheet.create({
   ctaBody: { fontFamily: theme.fonts.body, fontSize: 13, lineHeight: 20, maxWidth: 650 },
 });
 
-function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>, isWide: boolean) {
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  const isWide = layout.width >= 1040;
   return StyleSheet.create({
     ...styles,
     scrollContent: {

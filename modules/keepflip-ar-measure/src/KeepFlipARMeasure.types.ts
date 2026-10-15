@@ -16,10 +16,24 @@ export type ItemMeasurementEvent = {
   cameraMotionMeters: number;
 };
 
+export type BiRefNetTapFrameEvent = {
+  requestId: number;
+  imageUri: string;
+  imageWidth: number;
+  imageHeight: number;
+  tapImageX: number;
+  tapImageY: number;
+};
+
 export type KeepFlipARMeasureViewProps = ViewProps & {
   measurementMode?: MeasurementMode;
+  biRefNetTapValidation?: boolean;
+  tapMaskDecision?: string;
   style?: StyleProp<ViewStyle>;
   onItemMeasurement?: (event: {
     nativeEvent: ItemMeasurementEvent;
+  }) => void;
+  onBiRefNetTapFrame?: (event: {
+    nativeEvent: BiRefNetTapFrameEvent;
   }) => void;
 };

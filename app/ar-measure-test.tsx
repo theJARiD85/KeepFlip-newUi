@@ -2,7 +2,7 @@ import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import * as Haptics from "expo-haptics";
 import { requireNativeViewManager } from "expo-modules-core";
-import { useRef, useState, type Ref } from "react";
+import { useCallback, useRef, useState, type Ref } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -11,6 +11,10 @@ import {
   type ViewProps,
 } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  releasePhotoBackgroundPreview,
+  removePhotoBackgroundWithBiRefNet,
+} from "@/services/photo-background-removal.native";
 type TrackingEvent = {
   state: string;
   reason?: string;
@@ -45,6 +49,8 @@ type TargetEvent = {
   | "searching"
   | "searching_corner"
   | "searching_item"
+  | "checking_tap_foreground"
+  | "tap_not_foreground"
   | "item_depth_required"
   | "scanning_item"
   | "move_around_item"
@@ -64,6 +70,15 @@ type ErrorEvent = {
   message: string;
 };
 
+type BiRefNetTapFrameEvent = {
+  requestId: number;
+  imageUri: string;
+  imageWidth: number;
+  imageHeight: number;
+  tapImageX: number;
+  tapImageY: number;
+};
+
 type ARMeasureRef = {
   resetMeasurement(): Promise<void>;
 };
@@ -71,6 +86,8 @@ type ARMeasureRef = {
 type ARMeasureProps = ViewProps & {
   ref?: Ref<ARMeasureRef>;
   measurementMode?: "item" | "box";
+  biRefNetTapValidation?: boolean;
+  tapMaskDecision?: string;
   onTrackingState?: (event: {
     nativeEvent: TrackingEvent;
   }) => void;
@@ -93,6 +110,10 @@ type ARMeasureProps = ViewProps & {
 
   onError?: (event: {
     nativeEvent: ErrorEvent;
+  }) => void;
+
+  onBiRefNetTapFrame?: (event: {
+    nativeEvent: BiRefNetTapFrameEvent;
   }) => void;
 };
 
@@ -127,10 +148,55 @@ export default function ARMeasureTestScreen() {
   const [error, setError] =
     useState<ErrorEvent | null>(null);
 
+  const [tapMaskDecision, setTapMaskDecision] = useState<string | undefined>();
+  const [tapAnalysis, setTapAnalysis] = useState<string | null>(null);
+  const [tapAnalysisBusy, setTapAnalysisBusy] = useState(false);
+  const activeTapRequestId = useRef<number | null>(null);
+
+  const handleBiRefNetTapFrame = useCallback(async (event: { nativeEvent: BiRefNetTapFrameEvent }) => {
+    const { requestId, imageUri, tapImageX, tapImageY } = event.nativeEvent;
+    activeTapRequestId.current = requestId;
+    setTapAnalysisBusy(true);
+    setTapAnalysis("BiRefNet is checking the tap in the background. Keep scanning while ARCore measures the item.");
+    let resultUri: string | null = null;
+    try {
+      const result = await removePhotoBackgroundWithBiRefNet(imageUri, {
+        x: tapImageX,
+        y: tapImageY,
+      });
+      resultUri = result.uri;
+      if (activeTapRequestId.current !== requestId) return;
+      const accepted = result.tapForeground === true;
+      if (!accepted) {
+        setPointCount(0);
+        setMeasurement(null);
+      }
+      setTapMaskDecision(`${requestId}:${accepted ? "accept" : "reject"}`);
+      setTapAnalysis(
+        `BiRefNet tap: ${accepted ? "foreground" : "background"} · mask alpha ${result.tapMaskAlpha ?? 0}/255 · ${(result.inferenceMs / 1000).toFixed(1)}s · ${result.delegates.length ? result.delegates.join(", ") : "CPU"}`,
+      );
+    } catch (tapError) {
+      if (activeTapRequestId.current === requestId) {
+        setTapMaskDecision(`${requestId}:error`);
+        setTapAnalysis(
+          `BiRefNet tap check failed: ${tapError instanceof Error ? tapError.message : String(tapError)}`,
+        );
+      }
+    } finally {
+      releasePhotoBackgroundPreview(resultUri);
+      releasePhotoBackgroundPreview(imageUri);
+      if (activeTapRequestId.current === requestId) setTapAnalysisBusy(false);
+    }
+  }, []);
+
   const targetLabel = (() => {
     switch (target.state) {
       case "searching_item":
         return "TAP OBJECT TO START";
+      case "checking_tap_foreground":
+        return "CHECKING TAP WITH BIREFNET";
+      case "tap_not_foreground":
+        return "TAP THE ITEM FOREGROUND";
       case "item_depth_required":
         return "MOVE CLOSER / ADD LIGHT";
       case "scanning_item":
@@ -168,6 +234,9 @@ export default function ARMeasureTestScreen() {
         ref={arRef}
         style={StyleSheet.absoluteFill}
         measurementMode="item"
+        biRefNetTapValidation
+        tapMaskDecision={tapMaskDecision}
+        onBiRefNetTapFrame={handleBiRefNetTapFrame}
         onTrackingState={(event) => {
           const next = event.nativeEvent;
           setTracking(
@@ -244,6 +313,15 @@ export default function ARMeasureTestScreen() {
             Mode: silhouette wireframe scan
           </Text>
 
+          <Text style={[styles.status, { fontSize: responsiveFont(13) }]}>
+            BiRefNet checks the tap; ARCore depth supplies the dimensions.
+          </Text>
+          {tapAnalysis ? (
+            <Text selectable style={[styles.status, { fontSize: responsiveFont(13) }]}>
+              {tapAnalysisBusy ? "CHECKING · " : ""}{tapAnalysis}
+            </Text>
+          ) : null}
+
           {measurement ? (
             <>
               <Text style={styles.measurement}>
@@ -277,6 +355,10 @@ export default function ARMeasureTestScreen() {
               setPointCount(0);
               setMeasurement(null);
               setError(null);
+              activeTapRequestId.current = null;
+              setTapAnalysisBusy(false);
+              setTapAnalysis(null);
+              setTapMaskDecision(undefined);
             }}
           >
             <Text style={styles.buttonText}>
