@@ -177,9 +177,22 @@
   async function handleTabReady(sender) {
     const run = await readRun();
     const job = run?.jobs.find((candidate) => candidate.tabId === sender.tab?.id);
-    if (!job || !isMarketplaceUrl(sender.url, job.marketplace) || job.status === 'confirmed') return { ok: false };
-    return { ok: true, runId: run.id, jobStatus: job.status, submittedAt: job.submittedAt || 0, payload: job.payload, photos: run.photos,
-      unavailablePhotoCount: run.unavailablePhotoCount };
+    
+    // Allow tab readiness if it belongs to the run and is loading/on the marketplace domain or create URL
+    const senderUrl = urlFor(sender.url);
+    const isReadyUrl = senderUrl && (senderUrl.protocol === 'about:' || isMarketplaceUrl(sender.url, job?.marketplace));
+    
+    if (!job || !isReadyUrl || job.status === 'confirmed') return { ok: false };
+    
+    return { 
+      ok: true, 
+      runId: run.id, 
+      jobStatus: job.status, 
+      submittedAt: job.submittedAt || 0, 
+      payload: job.payload, 
+      photos: run.photos,
+      unavailablePhotoCount: run.unavailablePhotoCount 
+    };
   }
 
   async function handleTabInitializationError(message, sender) {

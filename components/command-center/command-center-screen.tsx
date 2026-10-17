@@ -712,7 +712,7 @@ export function CommandCenterScreen() {
 
   return (
     <KeepFlipBackground>
-      <View style={{ marginBottom: isWeb ? 500 : insets.bottom, marginTop: insets.top }}>
+      <View style={{ marginBottom: insets.bottom, marginTop: insets.top }}>
         <ScrollView
           contentContainerStyle={[styles.content,
           { paddingHorizontal: pageGutter, paddingTop: insets.top + 15, paddingBottom: insets.bottom + 30 }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}

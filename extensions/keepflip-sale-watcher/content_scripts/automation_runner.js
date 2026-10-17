@@ -93,10 +93,10 @@
   let facebookSubmissionInProgress = false;
   let facebookShippingLabelOpenRequested = false;
   let facebookShippingOptionsSaved = false;
-  const facebookItemForSaleSelector = '#mount_0_0_pZ > div > div:nth-child(1) > div > div.x9f619.x1n2onr6.x1ja2u2z > div > div > div.x78zum5.xdt5ytf.x1t2pt76.x1n2onr6.x1ja2u2z.x10cihs4 > div.x9f619.x2lah0s.x1nhvcw1.x1qjc9v5.xozqiw3.x1q0g3np.x78zum5.x1iyjqo2.x1t2pt76.x1n2onr6.x1ja2u2z.xvrxa7q > div.x9f619.x1n2onr6.x1ja2u2z.xdt5ytf.x193iq5w.xeuugli.x1r8uery.x1iyjqo2.xs83m0k.x78zum5.x1t2pt76 > div > div > div.xamitd3.x78zum5.x1q0g3np.x1a02dak.x1e56ztr.x2fvf9.x14vqqas.xh8yej3.x1ni0lre.x1pz0773.xnkmj2t > div:nth-child(1) > div > span > div > div';
-  const facebookShippingLabelSelector = '#mount_0_0_jK > div > div:nth-child(1) > div > div.x9f619.x1n2onr6.x1ja2u2z > div > div > div.x78zum5.xdt5ytf.x1t2pt76.x1n2onr6.x1ja2u2z.x10cihs4 > div.x9f619.x2lah0s.x1nhvcw1.x1qjc9v5.xozqiw3.x1q0g3np.x78zum5.x1iyjqo2.x1t2pt76.x1n2onr6.x1ja2u2z > div.x9f619.x1n2onr6.x78zum5.xdt5ytf.x193iq5w.xeuugli.x2lah0s.x1t2pt76.x1xzczws.x1cvmir6.x1vjfegm.xwn1f64 > div > div.xb57i2i.x1q594ok.x5lxg6s.x78zum5.xdt5ytf.x6ikm8r.x1ja2u2z.x1pq812k.x1rohswg.xfk6m8.x1yqm8si.xjx87ck.x1l7klhg.x1iyjqo2.xs83m0k.x2lwn1j.xx8ngbg.xwo3gff.x1oyok0e.x1odjw0f.x1n2onr6.xq1qtft > div.x78zum5.xdt5ytf.x1iyjqo2.x1n2onr6 > div.x1xmf6yo.x78zum5.xdt5ytf.x1iyjqo2 > div > div > div.xyri2b.x1c1uobl.x1y1aw1k > div > div > div.x1n2onr6.x1ja2u2z.xjbqb8w.xw5cjc7.x1dmpuos.x1vsv7so.xau1kf4.x9f619.xh8yej3.x6ikm8r.x10wlt62 > div > div > div > div';
-  const facebookPackageWeightSelector = '#mount_0_0_jK > div > div:nth-child(1) > div > div:nth-child(5) > div > div > div.x9f619.x1n2onr6.x1ja2u2z > div > div.x1uvtmcs.x4k7w5x.x1h91t0o.x1beo9mf.xaigb6o.x12ejxvf.x3igimt.xarpa2k.xedcshv.x1lytzrv.x1t2pt76.x7ja8zs.x1n2onr6.x1qrby5j.x1jfb8zj > div > div > div > div:nth-child(4) > div > div > div > div';
-  const facebookExactWeightButtonSelector = '#mount_0_0_jK > div > div:nth-child(1) > div > div:nth-child(5) > div > div > div.x9f619.x1n2onr6.x1ja2u2z > div > div:nth-child(3) > div > div > div.xu96u03.xm80bdy.x10l6tqk.x13vifvy > div.x1uvtmcs.x4k7w5x.x1h91t0o.x1beo9mf.xaigb6o.x12ejxvf.x3igimt.xarpa2k.xedcshv.x1lytzrv.x1t2pt76.x7ja8zs.x1n2onr6.x1qrby5j.x1jfb8zj > div > div > div > span > div > div > div > div > div:nth-child(3) > div > div';
+  const facebookItemForSaleSelector = '[id^="mount_0_0_"] > div > div:nth-child(1) > div > div.x9f619.x1n2onr6.x1ja2u2z > div > div > div.x78zum5.xdt5ytf.x1t2pt76.x1n2onr6.x1ja2u2z.x10cihs4 > div.x9f619.x2lah0s.x1nhvcw1.x1qjc9v5.xozqiw3.x1q0g3np.x78zum5.x1iyjqo2.x1t2pt76.x1n2onr6.x1ja2u2z.xvrxa7q > div.x9f619.x1n2onr6.x1ja2u2z.xdt5ytf.x193iq5w.xeuugli.x1r8uery.x1iyjqo2.xs83m0k.x78zum5.x1t2pt76 > div > div > div.xamitd3.x78zum5.x1q0g3np.x1a02dak.x1e56ztr.x2fvf9.x14vqqas.xh8yej3.x1ni0lre.x1pz0773.xnkmj2t > div:nth-child(1) > div > span > div > div';
+  const facebookShippingLabelSelector = '[id^="mount_0_0_"] > div > div:nth-child(1) > div > div.x9f619.x1n2onr6.x1ja2u2z > div > div > div.x78zum5.xdt5ytf.x1t2pt76.x1n2onr6.x1ja2u2z.x10cihs4 > div.x9f619.x2lah0s.x1nhvcw1.x1qjc9v5.xozqiw3.x1q0g3np.x78zum5.x1iyjqo2.x1t2pt76.x1n2onr6.x1ja2u2z > div.x9f619.x1n2onr6.x78zum5.xdt5ytf.x193iq5w.xeuugli.x2lah0s.x1t2pt76.x1xzczws.x1cvmir6.x1vjfegm.xwn1f64 > div > div.xb57i2i.x1q594ok.x5lxg6s.x78zum5.xdt5ytf.x6ikm8r.x1ja2u2z.x1pq812k.x1rohswg.xfk6m8.x1yqm8si.xjx87ck.x1l7klhg.x1iyjqo2.xs83m0k.x2lwn1j.xx8ngbg.xwo3gff.x1oyok0e.x1odjw0f.x1n2onr6.xq1qtft > div.x78zum5.xdt5ytf.x1iyjqo2.x1n2onr6 > div.x1xmf6yo.x78zum5.xdt5ytf.x1iyjqo2 > div > div > div.xyri2b.x1c1uobl.x1y1aw1k > div > div > div.x1n2onr6.x1ja2u2z.xjbqb8w.xw5cjc7.x1dmpuos.x1vsv7so.xau1kf4.x9f619.xh8yej3.x6ikm8r.x10wlt62 > div > div > div > div';
+  const facebookPackageWeightSelector = '[id^="mount_0_0_"] > div > div:nth-child(1) > div > div:nth-child(5) > div > div > div.x9f619.x1n2onr6.x1ja2u2z > div > div.x1uvtmcs.x4k7w5x.x1h91t0o.x1beo9mf.xaigb6o.x12ejxvf.x3igimt.xarpa2k.xedcshv.x1lytzrv.x1t2pt76.x7ja8zs.x1n2onr6.x1qrby5j.x1jfb8zj > div > div > div > div:nth-child(4) > div > div > div > div';
+  const facebookExactWeightButtonSelector = '[id^="mount_0_0_"] > div > div:nth-child(1) > div > div:nth-child(5) > div > div > div.x9f619.x1n2onr6.x1ja2u2z > div > div:nth-child(3) > div > div > div.xu96u03.xm80bdy.x10l6tqk.x13vifvy > div.x1uvtmcs.x4k7w5x.x1h91t0o.x1beo9mf.xaigb6o.x12ejxvf.x3igimt.xarpa2k.xedcshv.x1lytzrv.x1t2pt76.x7ja8zs.x1n2onr6.x1qrby5j.x1jfb8zj > div > div > div > span > div > div > div > div > div:nth-child(3) > div > div';
 
   async function sendMessageQuietly(message) {
     try { return await chrome.runtime.sendMessage(message); } catch { /* The extension may be reloading. */ }
@@ -151,7 +151,7 @@
     if (toggle.disabled) return false;
     if ((toggle.checked || toggle.getAttribute('aria-checked') === 'true') && !facebookMetaAiSwitchClickRequested) {
       facebookMetaAiSwitchClickRequested = true;
-      toggle.click();
+      clickMarketplaceControl(toggle);
     }
     return !toggle.checked && toggle.getAttribute('aria-checked') !== 'true';
   }
@@ -165,7 +165,7 @@
       if (!/^more details(?:\s|$)/i.test(label) || control.getAttribute('aria-expanded') !== 'false' ||
         facebookMoreDetailsClickRequested) continue;
       facebookMoreDetailsClickRequested = true;
-      control.click();
+      clickMarketplaceControl(control);
       return;
     }
   }
@@ -227,7 +227,7 @@
       : [];
     let target = bestFacebookCategoryCandidate(suggestions, value, context);
     if (target) {
-      target.click();
+      clickMarketplaceControl(target);
       return true;
     }
 
@@ -238,14 +238,14 @@
 
     if (combo.getAttribute('aria-expanded') !== 'true' && !facebookCategoryPickerOpenRequested) {
       facebookCategoryPickerOpenRequested = true;
-      combo.click();
+      clickMarketplaceControl(combo);
       await new Promise((resolve) => setTimeout(resolve, 150));
     }
     const options = Array.from(document.querySelectorAll('[role="option"], [role="menuitem"], [role="button"]'))
       .filter(visible);
     target = bestFacebookCategoryCandidate(options, value, context);
     if (!target) return false;
-    target.click();
+    clickMarketplaceControl(target);
     return true;
   }
 
@@ -331,12 +331,12 @@
       if (wanted === selected) continue;
       currentCombo = findFacebookCombobox('delivery method') || currentCombo;
       if (currentCombo.getAttribute('aria-expanded') !== 'true') {
-        currentCombo.click();
+        clickMarketplaceControl(currentCombo);
         await new Promise((resolve) => setTimeout(resolve, 120));
       }
       const option = findFacebookDeliveryOption(method);
       if (!option) return { ok: false, message: `Facebook's ${method === 'local_pickup' ? 'local pickup' : 'shipping'} option was not found. Choose the delivery method in Facebook.` };
-      option.click();
+      clickMarketplaceControl(option);
       await new Promise((resolve) => setTimeout(resolve, 150));
       currentCombo = findFacebookCombobox('delivery method') || currentCombo;
       selection = facebookDeliverySelection(currentCombo);
@@ -356,6 +356,29 @@
   }
 
   function findFacebookShippingLabelButton() {
+    const textSpan = Array.from(document.querySelectorAll('span')).find((element) =>
+      visible(element) && String(element.textContent || '').trim() === 'Select shipping label');
+    const pressableButton = textSpan?.closest?.('[role="button"]');
+    if (pressableButton && visible(pressableButton)) return pressableButton;
+
+    const textXPaths = [
+      "//span[normalize-space(.)='Select shipping label']/ancestor::*[@role='button' or self::button][1]",
+      "//span[contains(normalize-space(.), 'Select shipping label')]/ancestor::*[@role='button' or @role='combobox' or @tabindex='0'][1]",
+    ];
+    for (const xpath of textXPaths) {
+      try {
+        const resultType = typeof XPathResult === 'undefined' ? 7 : XPathResult.ORDERED_NODE_SNAPSHOT_TYPE;
+        const matches = document.evaluate(xpath, document, null, resultType, null);
+        const targets = matches?.snapshotItem
+          ? Array.from({ length: matches.snapshotLength }, (_, index) => matches.snapshotItem(index))
+          : [matches?.singleNodeValue].filter(Boolean);
+        for (const target of targets) {
+          const action = target?.closest?.('button,[role="button"]') || target;
+          if (action && visible(action)) return action;
+        }
+      } catch { /* Use accessible and dynamic-root selector fallbacks below. */ }
+    }
+
     let directTarget = null;
     try { directTarget = document.querySelector(facebookShippingLabelSelector); } catch { /* Fall back to the visible label. */ }
     const directAction = directTarget?.closest?.('button,[role="button"]') || directTarget;
@@ -372,6 +395,85 @@
       ].map(normalizeChoiceLabel).filter(Boolean);
       return labels.includes(targetLabel);
     }) || null;
+  }
+
+  function clickFacebookShippingLabelButton(button) {
+    if (!button || !visible(button)) return false;
+    const rect = button.getBoundingClientRect();
+    const pageWindow = typeof window === 'undefined' ? null : window;
+    const mouseEventConstructor = typeof MouseEvent === 'function' ? MouseEvent : pageWindow?.MouseEvent;
+    if (typeof button.dispatchEvent !== 'function' || typeof mouseEventConstructor !== 'function') {
+      return clickMarketplaceControl(button);
+    }
+
+    const x = Number.isFinite(rect.x) ? rect.x : Number(rect.left) || 0;
+    const y = Number.isFinite(rect.y) ? rect.y : Number(rect.top) || 0;
+    const options = {
+      bubbles: true,
+      cancelable: true,
+      view: pageWindow || undefined,
+      buttons: 1,
+      clientX: x + 10,
+      clientY: y + 10,
+    };
+    try {
+      for (const eventType of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) {
+        button.dispatchEvent(new mouseEventConstructor(eventType, options));
+      }
+      return true;
+    } catch {
+      return clickMarketplaceControl(button);
+    }
+  }
+
+  async function waitForFacebookShippingLabelButton() {
+    // Wait for Facebook to finish rendering the row after the delivery menu closes.
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      if (findFacebookShippingOptionsDialog()) return null;
+      const button = findFacebookShippingLabelButton();
+      if (button) return button;
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+    return findFacebookShippingLabelButton();
+  }
+
+  function clickMarketplaceControl(control) {
+    if (!control) return false;
+    const controlType = String(control.type || control.getAttribute?.('type') || '').toLowerCase();
+    if (['checkbox', 'radio'].includes(controlType)) {
+      try { control.click(); return true; } catch { return false; }
+    }
+    if (typeof control.getBoundingClientRect === 'function' && !visible(control)) return false;
+    if (typeof control.getBoundingClientRect !== 'function') {
+      try { control.click(); return true; } catch { return false; }
+    }
+
+    try { control.scrollIntoView?.({ block: 'center', inline: 'center' }); } catch { /* Continue with the visible control. */ }
+    try { control.focus?.({ preventScroll: true }); } catch { /* Marketplace controls may not be focusable. */ }
+    const rect = control.getBoundingClientRect();
+    const clientX = Number.isFinite(rect.left + rect.width / 2) ? rect.left + rect.width / 2 : 0;
+    const clientY = Number.isFinite(rect.top + rect.height / 2) ? rect.top + rect.height / 2 : 0;
+    const pageWindow = typeof window === 'undefined' ? null : window;
+    const mouseEventConstructor = typeof MouseEvent === 'function' ? MouseEvent : pageWindow?.MouseEvent;
+    const pointerEventConstructor = typeof PointerEvent === 'function' ? PointerEvent : pageWindow?.PointerEvent;
+    if (typeof control.dispatchEvent === 'function' && typeof mouseEventConstructor === 'function') {
+      const eventSequence = [['pointerdown', 1], ['mousedown', 1], ['pointerup', 0], ['mouseup', 0], ['click', 0]];
+      try {
+        for (const [type, buttons] of eventSequence) {
+          const options = { bubbles: true, cancelable: true, composed: true, view: pageWindow || undefined,
+            button: 0, buttons, clientX, clientY, detail: type === 'click' ? 1 : 0 };
+          const EventConstructor = type.startsWith('pointer') && typeof pointerEventConstructor === 'function'
+            ? pointerEventConstructor
+            : mouseEventConstructor;
+          control.dispatchEvent(new EventConstructor(type, type.startsWith('pointer')
+            ? { ...options, pointerId: 1, pointerType: 'mouse', isPrimary: true }
+            : options));
+        }
+        return true;
+      } catch { /* Use the native click method if event construction is unavailable. */ }
+    }
+    try { control.click(); return true; } catch { return false; }
   }
 
   function findFacebookShippingOptionsDialog() {
@@ -566,7 +668,7 @@
     let inputs = findFacebookExactWeightInputs(dialog);
     const button = findFacebookExactWeightButton(dialog);
     if (!inputs && button) {
-      button.click();
+      clickMarketplaceControl(button);
       for (let attempt = 0; attempt < 12 && !inputs; attempt += 1) {
         await new Promise((resolve) => setTimeout(resolve, 120));
         dialog = findFacebookShippingOptionsDialog() || dialog;
@@ -603,7 +705,7 @@
       return { supported: true, ready: false, dialog, message: 'Facebook did not show the Done button for the exact package weight.' };
     }
     if (doneButton) {
-      doneButton.click();
+      clickMarketplaceControl(doneButton);
       let doneStillVisible = Boolean(findFacebookExactWeightDoneButton(dialog));
       for (let attempt = 0; doneStillVisible && attempt < 12; attempt += 1) {
         await new Promise((resolve) => setTimeout(resolve, 120));
@@ -627,7 +729,7 @@
     // click bubbles into Facebook's combobox handler; the labeled control remains fallback.
     if (combo.getAttribute?.('aria-expanded') !== 'true') {
       const clickTarget = selectorTarget && visible(selectorTarget) ? selectorTarget : combo;
-      clickTarget.click();
+      clickMarketplaceControl(clickTarget);
     }
     let radios = facebookPackageWeightRadios(dialog);
     for (let attempt = 0; attempt < 12 && radios.length === 0; attempt += 1) {
@@ -731,7 +833,7 @@
       const target = radios.find((radio) =>
         normalizeChoiceLabel(facebookPackageWeightRadioLabel(radio)) === normalizeChoiceLabel(expectedRange));
       if (!target) return { ready: false, message: `KeepFlip could not find Facebook’s ${expectedRange} package-weight option. Choose the shipping weight in Facebook.` };
-      target.click();
+      clickMarketplaceControl(target);
       await new Promise((resolve) => setTimeout(resolve, 120));
       dialog = findFacebookShippingOptionsDialog() || dialog;
       selectedRadio = facebookSelectedPackageWeight(dialog);
@@ -753,7 +855,7 @@
         return { ready: false, message: 'KeepFlip could not find Facebook’s “Cover the shipping cost so buyers see free shipping” option.' };
       }
       if (facebookShippingPaidBySellerIsChecked(sellerShippingControl) !== sellerPaysShipping) {
-        sellerShippingControl.click();
+        clickMarketplaceControl(sellerShippingControl);
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
       if (facebookShippingPaidBySellerIsChecked(sellerShippingControl) !== sellerPaysShipping) {
@@ -763,7 +865,7 @@
 
     const updateButton = findFacebookDialogUpdateButton(dialog);
     if (!updateButton) return { ready: false, message: 'KeepFlip could not find Facebook’s Update button to save shipping info.' };
-    updateButton.click();
+    clickMarketplaceControl(updateButton);
     let dialogStillOpen = Boolean(findFacebookShippingOptionsDialog());
     for (let attempt = 0; dialogStillOpen && attempt < 10; attempt += 1) {
       await new Promise((resolve) => setTimeout(resolve, 150));
@@ -797,7 +899,7 @@
     } else {
       if (!combo) return { ready: false, message: 'Facebook opened the delivery step, but KeepFlip could not find its delivery method menu.' };
       if (combo.getAttribute('aria-expanded') !== 'true') {
-        combo.click();
+        clickMarketplaceControl(combo);
         await new Promise((resolve) => setTimeout(resolve, 120));
         combo = findFacebookCombobox('delivery method') || combo;
       }
@@ -814,17 +916,21 @@
       }
 
       if (combo.getAttribute('aria-expanded') === 'true') {
-        combo.click();
+        clickMarketplaceControl(combo);
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
     }
 
     if (selection.shipping) {
       if (facebookShippingOptionsSaved && !shippingOptionsDialog) return { ready: true, selection };
-      const shippingLabelButton = findFacebookShippingLabelButton();
+      let shippingLabelButton = null;
+      if (!shippingOptionsDialog) {
+        shippingLabelButton = await waitForFacebookShippingLabelButton();
+        shippingOptionsDialog = findFacebookShippingOptionsDialog() || shippingOptionsDialog;
+      }
       if (!shippingOptionsDialog && shippingLabelButton && !facebookShippingLabelOpenRequested) {
         facebookShippingLabelOpenRequested = true;
-        shippingLabelButton.click();
+        clickFacebookShippingLabelButton(shippingLabelButton);
         for (let attempt = 0; attempt < 30 && !shippingOptionsDialog; attempt += 1) {
           await new Promise((resolve) => setTimeout(resolve, 150));
           shippingOptionsDialog = findFacebookShippingOptionsDialog();
@@ -868,7 +974,7 @@
       option.getAttribute('aria-label') || option.innerText || option.textContent,
     ));
     if (!selected && combo.getAttribute('aria-expanded') !== 'true') {
-      combo.click();
+      clickMarketplaceControl(combo);
       await new Promise((resolve) => setTimeout(resolve, 100));
       options = Array.from(document.querySelectorAll('[role="listbox"] [role="option"], [role="option"]'))
         .filter(visible);
@@ -879,7 +985,7 @@
       ));
     }
     if (!selected) return false;
-    selected.click();
+    clickMarketplaceControl(selected);
     return true;
   }
 
@@ -940,7 +1046,7 @@
           filledFields.push('brand');
           await new Promise((resolve) => setTimeout(resolve, 200));
           const suggestion = document.querySelector('.dropdown-menu .dropdown-item, [data-qa-id="brand-suggestion"], [role="listbox"] [role="option"]');
-          if (suggestion && visible(suggestion)) suggestion.click();
+          if (suggestion && visible(suggestion)) clickMarketplaceControl(suggestion);
         }
       }
     }
@@ -954,7 +1060,7 @@
           return isNew ? text === 'yes' : text === 'no';
         });
         if (targetBtn) {
-          targetBtn.click();
+          clickMarketplaceControl(targetBtn);
           filledFields.push('condition');
         }
       }
@@ -965,7 +1071,7 @@
         const wantedSize = normalizeChoiceLabel(fields.size);
         const match = sizeOptions.find((btn) => normalizeChoiceLabel(btn.innerText || btn.textContent || '') === wantedSize);
         if (match) {
-          match.click();
+          clickMarketplaceControl(match);
           filledFields.push('size');
         }
       }
@@ -976,7 +1082,7 @@
         const wantedCat = normalizeChoiceLabel(fields.category);
         const match = catOptions.find((btn) => normalizeChoiceLabel(btn.innerText || btn.textContent || '').includes(wantedCat));
         if (match) {
-          match.click();
+          clickMarketplaceControl(match);
           filledFields.push('category');
         }
       }
@@ -998,7 +1104,7 @@
           return label === normalizeChoiceLabel(fields.condition);
         });
         if (target) {
-          target.click();
+          clickMarketplaceControl(target);
           filledFields.push('condition');
         }
       }
@@ -1012,7 +1118,7 @@
           return text.includes(wanted) || wanted.includes(text);
         }) || suggestedChips[0];
         if (target) {
-          target.click();
+          clickMarketplaceControl(target);
           filledFields.push('category');
         }
       }
@@ -1024,7 +1130,7 @@
           filledFields.push('brand');
           await new Promise((resolve) => setTimeout(resolve, 200));
           const suggestion = document.querySelector('[data-testid*="BrandSuggestion"], [role="listbox"] [role="option"]');
-          if (suggestion && visible(suggestion)) suggestion.click();
+          if (suggestion && visible(suggestion)) clickMarketplaceControl(suggestion);
         }
       }
     }
@@ -1044,7 +1150,7 @@
           return text === normalizeChoiceLabel(fields.condition);
         });
         if (target) {
-          target.click();
+          clickMarketplaceControl(target);
           filledFields.push('condition');
         }
       }
@@ -1075,7 +1181,7 @@
           return text === normalizeChoiceLabel(fields.condition);
         });
         if (target) {
-          target.click();
+          clickMarketplaceControl(target);
           filledFields.push('condition');
         }
       }
@@ -1314,14 +1420,14 @@
       for (const control of postItemAction) {
         const label = (control.innerText || control.textContent || '').replace(/\s+/g, ' ').trim();
         if (visible(control) && /^(post an item|post item|sell an item|sell item|item for sale|start selling)$/i.test(label)) {
-          control.click();
+          clickMarketplaceControl(control);
           return true;
         }
       }
       const sellButton = document.querySelector('[data-testid="HeaderSellButton"]') ||
         document.querySelector('button[aria-label="Sell"]');
       if (!sellButton || !visible(sellButton) || offerUpSellMenuOpened) return false;
-      sellButton.click();
+      clickMarketplaceControl(sellButton);
       offerUpSellMenuOpened = true;
       return true;
     }
@@ -1339,7 +1445,7 @@
       for (const dialog of dialogs) {
         for (const control of dialog.querySelectorAll('a,button,[role="button"]')) {
           if (visible(control) && isItemForSaleChoice(control)) {
-            control.click();
+            clickMarketplaceControl(control);
             return true;
           }
         }
@@ -1348,7 +1454,7 @@
       // Prefer the item card over the surrounding "Create new listing" navigation link.
       for (const control of controls) {
         if (visible(control) && isItemForSaleChoice(control)) {
-          control.click();
+          clickMarketplaceControl(control);
           return true;
         }
       }
@@ -1357,7 +1463,7 @@
       if (/^\/marketplace\/create\/?$/i.test(location.pathname)) {
         const itemForSaleCard = document.querySelector(facebookItemForSaleSelector);
         if (itemForSaleCard && visible(itemForSaleCard)) {
-          itemForSaleCard.click();
+          clickMarketplaceControl(itemForSaleCard);
           return true;
         }
       }
@@ -1371,7 +1477,7 @@
     for (const control of controls) {
       const label = (control.innerText || control.textContent || '').replace(/\s+/g, ' ').trim();
       if (visible(control) && expected.test(label)) {
-        control.click();
+        clickMarketplaceControl(control);
         return true;
       }
     }
@@ -1422,7 +1528,7 @@
           return;
         }
         facebookNextClicked = true;
-        nextButton.click();
+        clickMarketplaceControl(nextButton);
       } else if (isFacebookDeliveryStep()) {
         facebookNextClicked = true;
       }
@@ -1442,7 +1548,7 @@
           }
           const deliveryNextButton = findFacebookNextButton();
           if (deliveryNextButton) {
-            deliveryNextButton.click();
+            clickMarketplaceControl(deliveryNextButton);
             await report('filled', { fields: filledFields, uploadedPhotoCount,
               message: 'Facebook delivery settings are ready. Advanced to the final listing step.' });
           }
@@ -1451,7 +1557,7 @@
         }
         const publishButton = findFacebookFinalSubmitButton();
         if (publishButton) {
-          publishButton.click();
+          clickMarketplaceControl(publishButton);
           await report('submit_clicked', { fields: filledFields, uploadedPhotoCount,
             message: 'Facebook’s final Post/Publish action was clicked. Checking for the live listing…' });
           watchForLiveListing();
@@ -1481,7 +1587,7 @@
       buttons.find((candidate) => candidate.getAttribute('data-qa-id') === 'submit-listing-btn' || candidate.getAttribute('data-testid') === 'ListButton' || candidate.getAttribute('data-testid') === 'post-button') ||
       buttons.find((candidate) => listingArea(candidate) && candidate.type === 'submit' && !/^(next|continue|review)$/i.test(label(candidate)));
     if (button) {
-      button.click();
+      clickMarketplaceControl(button);
       await report('submit_clicked', { fields: filledFields, uploadedPhotoCount, message: 'Post was clicked. Checking for a live listing.' });
       let checks = 0;
       const timer = setInterval(() => {
@@ -1493,7 +1599,7 @@
     }
     const advance = buttons.find((candidate) => listingArea(candidate) && /^(next|continue|review)$/i.test(label(candidate)));
     if (advance) {
-      advance.click();
+      clickMarketplaceControl(advance);
       await report('filled', { fields: filledFields, uploadedPhotoCount, message: 'Advanced to the next step. Review and select Post again.' });
       return;
     }

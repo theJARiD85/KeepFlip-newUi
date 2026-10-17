@@ -2,7 +2,6 @@ import type { PropsWithChildren } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
-import KeepFlipShader from '@/components/ui/keepflip-shader';
 import {
   getKeepFlipThemeColors,
   type KeepFlipColorScheme,
@@ -33,7 +32,6 @@ export function KeepFlipBackground({
             : styles.ambientGradientLight,
         ]}
       />
-      <KeepFlipShader isLight={resolvedColorScheme === 'light'} />
       <View style={[styles.content, contentStyle]}>{children}</View>
     </View>
   );

@@ -1,6 +1,5 @@
 import { useEventListener } from 'expo';
-import { Image } from 'expo-image';
-import { VideoView, useVideoPlayer } from 'expo-video';
+import { VideoView, type VideoPlayer } from 'expo-video';
 import { useCallback, useEffect, useRef } from 'react';
 import {
   Platform,
@@ -19,6 +18,7 @@ import {
   FLIP_VIDEO_SOURCES,
 } from '@/components/flip/flip-assets';
 import { useFlipCompanion } from '@/components/flip/flip-companion-provider';
+import { useFlipVideoPlayer } from '@/components/flip/use-flip-video-player';
 import { FLIP_LOOPING_STATES } from '@/components/flip/flip-types';
 import type {
   FlipCompanionState,
@@ -53,7 +53,7 @@ const PRELOAD_SETTLE_MS = 150;
 const FIRST_RENDERED_FRAME_TIME = 0.015;
 const VIDEO_FADE_MS = 180;
 
-function configurePlayer(videoPlayer: ReturnType<typeof useVideoPlayer>) {
+function configurePlayer(videoPlayer: VideoPlayer) {
   videoPlayer.muted = true;
   videoPlayer.loop = true;
   /*
@@ -83,11 +83,11 @@ export function FlipCompanion({
   const firstOpacity = useSharedValue(1);
   const secondOpacity = useSharedValue(0);
 
-  const playerA = useVideoPlayer(FLIP_VIDEO_SOURCES.idle, (videoPlayer) => {
+  const playerA = useFlipVideoPlayer(FLIP_VIDEO_SOURCES.idle, (videoPlayer) => {
     configurePlayer(videoPlayer);
     videoPlayer.play();
   });
-  const playerB = useVideoPlayer(FLIP_VIDEO_SOURCES.idle, (videoPlayer) => {
+  const playerB = useFlipVideoPlayer(FLIP_VIDEO_SOURCES.idle, (videoPlayer) => {
     configurePlayer(videoPlayer);
   });
 
