@@ -12,11 +12,16 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
-
+import { SemanticHeading, WebActionLink, WebPageHead } from '@/components/web/web-public-page';
 import {
   KeepFlipAuthError,
   useKeepFlipAuth,
 } from '@/components/auth/keepflip-auth-context';
+import {
+  KEEPFLIP_HOME_DESCRIPTION,
+  KEEPFLIP_HOME_FAQS,
+  KEEPFLIP_HOME_TITLE,
+} from '@/constants/keepflip-public-site';
 import { FacebookSignInButton } from '@/components/auth/facebook-sign-in-button';
 import { KeepFlipMfaChallenge } from '@/components/auth/keepflip-mfa-challenge';
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
@@ -208,6 +213,11 @@ export function WebAuthScreen({
   return (
     <KeepFlipBackground colorScheme="dark">
     <KeyboardAvoidingView behavior="padding" style={responsiveStyles.root}>
+      <WebPageHead
+        canonicalPath="/"
+        description={KEEPFLIP_HOME_DESCRIPTION}
+        title={KEEPFLIP_HOME_TITLE}
+      />
       <ScrollView
         contentContainerStyle={[responsiveStyles.scrollContent, webContentSizing]}
         keyboardShouldPersistTaps="handled"

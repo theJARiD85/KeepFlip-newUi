@@ -84,6 +84,7 @@
   let assignment = null;
   let filledFields = [];
   let uploadedPhotoCount = 0;
+  let photoUploadAttempted = false;
   let offerUpSellMenuOpened = false;
   let facebookMetaAiSwitchClickRequested = false;
   let facebookMoreDetailsClickRequested = false;
@@ -142,7 +143,7 @@
     const toggle = document.querySelector('input[type="checkbox"][role="switch"][aria-label="Draft listings with Meta AI"]') ||
       document.querySelector('input[type="checkbox"][role="switch"][aria-label*="Meta AI" i]') ||
       document.querySelector('[role="switch"][aria-label*="Meta AI" i]');
-    if (!toggle) return true;
+    if (!toggle) return Boolean(findField('title'));
     if (toggle.disabled) return false;
     if ((toggle.checked || toggle.getAttribute('aria-checked') === 'true') && !facebookMetaAiSwitchClickRequested) {
       facebookMetaAiSwitchClickRequested = true;
@@ -828,9 +829,35 @@
     }
   }
 
+  function facebookAttachedPhotoCount() {
+    if (marketplace !== 'facebookMarketplace') return null;
+    const pageText = document.body?.innerText || document.body?.textContent || '';
+    const counter = /\bphotos?\s+(\d+)\s*\/\s*\d+\b/i.exec(pageText) ||
+      /\b(\d+)\s+photos?\s+attached\b/i.exec(pageText);
+    const counterCount = counter ? Number(counter[1]) : 0;
+    const blobPreviewCount = document.querySelectorAll(
+      'main img[src^="blob:"], [role="dialog"] img[src^="blob:"]',
+    ).length;
+    return Math.max(counterCount, blobPreviewCount);
+  }
+
+  async function waitForFacebookPhotos(expectedCount) {
+    let attachedCount = facebookAttachedPhotoCount();
+    for (let attempt = 0; attempt < 25; attempt += 1) {
+      if (attachedCount >= expectedCount) return attachedCount;
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      attachedCount = facebookAttachedPhotoCount();
+    }
+    return attachedCount;
+  }
+
   async function attachPhotos(photos) {
     if (!photos.length) return 0;
     if (typeof DataTransfer === 'undefined') return 0;
+    const startingFacebookPhotoCount = facebookAttachedPhotoCount();
+    if (startingFacebookPhotoCount !== null && startingFacebookPhotoCount >= photos.length) {
+      return photos.length;
+    }
     const fileInputs = Array.from(document.querySelectorAll('input[type="file"]'));
     const input = fileInputs.find((candidate) => candidate.closest('main,form,[role="dialog"]') &&
       /image/i.test(candidate.getAttribute('accept') || '')) ||
@@ -850,7 +877,9 @@
       'div[role="button"][tabindex="0"][aria-label*="photo" i]',
     ].join(','));
     if (!input && !dropZone) return 0;
-    const selected = photos.slice(0, input && !input.multiple && !dropZone ? 1 : 8);
+    const selected = marketplace === 'facebookMarketplace'
+      ? photos.slice(Math.min(startingFacebookPhotoCount, photos.length))
+      : photos.slice(0, input && !input.multiple && !dropZone ? 1 : 8);
     const files = await Promise.all(selected.map(async (photo) => {
       const response = await fetch(photo.dataUrl);
       if (!response.ok) throw new Error('KeepFlip could not read a saved photo.');
@@ -859,6 +888,27 @@
     }));
     const transfer = new DataTransfer();
     files.forEach((file) => transfer.items.add(file));
+    if (marketplace === 'facebookMarketplace') {
+      const expectedFacebookCount = startingFacebookPhotoCount + files.length;
+      if (input) {
+        try {
+          input.files = transfer.files;
+          if (input.files?.length === files.length) {
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+            return Math.min(photos.length, await waitForFacebookPhotos(expectedFacebookCount));
+          }
+        } catch { /* Facebook did not accept a file-list assignment; try its drop area. */ }
+      }
+      if (dropZone && typeof DragEvent !== 'undefined') {
+        try {
+          const options = { bubbles: true, cancelable: true, composed: true, dataTransfer: transfer };
+          for (const type of ['dragenter', 'dragover', 'drop']) dropZone.dispatchEvent(new DragEvent(type, options));
+          return Math.min(photos.length, await waitForFacebookPhotos(expectedFacebookCount));
+        } catch { /* A visible photo count is still required before continuing. */ }
+      }
+      return 0;
+    }
     if (dropZone && typeof DragEvent !== 'undefined') {
       try {
         const options = { bubbles: true, cancelable: true, composed: true, dataTransfer: transfer };
@@ -952,11 +1002,15 @@
       }
       const facebookFormReady = marketplace !== 'facebookMarketplace' ||
         ['category', 'condition'].every((key) => Boolean(fields[key]) && filledFields.includes(key));
-      if (assignment.photos.length && uploadedPhotoCount === 0 && (filledFields.includes('title') || marketplace === 'depop')) {
+      if (assignment.photos.length && !photoUploadAttempted && (filledFields.includes('title') || marketplace === 'depop')) {
+        photoUploadAttempted = true;
         try { uploadedPhotoCount = await attachPhotos(assignment.photos); } catch { /* Report for review below. */ }
       }
       if (core.every((key) => filledFields.includes(key)) &&
         (!assignment.photos.length || uploadedPhotoCount === assignment.photos.length) &&
+        facebookMetaAiDraftsOff && facebookFormReady) break;
+      if (marketplace === 'facebookMarketplace' && photoUploadAttempted &&
+        uploadedPhotoCount < assignment.photos.length && core.every((key) => filledFields.includes(key)) &&
         facebookMetaAiDraftsOff && facebookFormReady) break;
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
@@ -978,8 +1032,10 @@
           ? 'Facebook did not offer a category that matches this item. Choose the correct category in the Facebook tab before continuing.'
           : marketplace === 'facebookMarketplace' && !fields.condition
             ? 'Add this item’s condition in KeepFlip, then retry the Facebook form.'
-            : marketplace === 'facebookMarketplace' && !filledFields.includes('condition')
+              : marketplace === 'facebookMarketplace' && !filledFields.includes('condition')
               ? 'Facebook’s condition menu did not show a matching option. Choose the item condition in the Facebook tab before continuing.'
+                : marketplace === 'facebookMarketplace' && assignment.photos.length > uploadedPhotoCount
+                  ? 'Facebook did not confirm the item photos. Check the photo count in the Facebook tab, then retry the upload.'
               : 'Some required fields or photos need attention in this marketplace tab.' };
     await report(status, marketplace === 'facebookMarketplace' && status === 'filled'
       ? { ...details, message: 'Facebook listing details and photos are ready. Moving to the next listing step…' }
@@ -1178,7 +1234,11 @@
 
   chrome.runtime.onMessage.addListener((message) => {
     if (message?.type === 'KEEPFLIP_LISTING_SUBMIT' && assignment?.runId === message.runId && marketplace === message.marketplace) void submit();
-    if (message?.type === 'KEEPFLIP_LISTING_RETRY' && assignment?.runId === message.runId && marketplace === message.marketplace) void fill();
+    if (message?.type === 'KEEPFLIP_LISTING_RETRY' && assignment?.runId === message.runId && marketplace === message.marketplace) {
+      photoUploadAttempted = false;
+      uploadedPhotoCount = 0;
+      void fill();
+    }
   });
 
   let requests = 0;

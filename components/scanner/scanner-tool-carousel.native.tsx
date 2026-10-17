@@ -786,7 +786,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       right: -2,
       alignItems: "center",
       justifyContent: "center",
-      paddingHorizontal: 5,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5),
       borderRadius: theme.radii.pill,
       borderWidth: 3,
       backgroundColor: "rgba(3, 7, 12, 0.9)",
@@ -795,7 +795,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     badgeText: {
       color: theme.colors.cream,
-      fontSize: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: "900",
       fontVariant: ["tabular-nums"],
     },

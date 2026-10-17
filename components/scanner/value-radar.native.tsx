@@ -35,6 +35,7 @@ function clamp(value: number, minimum: number, maximum: number) {
 }
 
 export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
+  const responsiveLayout2 = useResponsiveLayout();
   const styles = useResponsiveStyles(createResponsiveStyles);
   const {
     responsiveFont
@@ -181,8 +182,8 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
                   size={16}
                 />
               </View>
-              <Text style={[styles.markerEyebrow, { fontSize: responsiveFont(9), lineHeight: 12 }]}>POTENTIAL FIND</Text>
-              <Text style={[styles.confidenceText, { fontSize: responsiveFont(8), lineHeight: 10 }]}>
+              <Text style={[styles.markerEyebrow, { fontSize: responsiveFont(9), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(12) : responsiveLayout2.responsiveFont(12) }]}>POTENTIAL FIND</Text>
+              <Text style={[styles.confidenceText, { fontSize: responsiveFont(8), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(10) : responsiveLayout2.responsiveFont(10) }]}>
                 {Math.round(marker.score * 100)
                   .toString()
                   .padStart(2, "0")}
@@ -191,14 +192,14 @@ export function ValueRadarOverlay(props: ValueRadarOverlayProps) {
             </View>
 
             <View pointerEvents="none" style={styles.markerContent}>
-              <Text numberOfLines={1} style={[styles.markerLabel, { fontSize: responsiveFont(18), lineHeight: 22 }]}>
+              <Text numberOfLines={1} style={[styles.markerLabel, { fontSize: responsiveFont(18), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(22) : responsiveLayout2.responsiveFont(22) }]}>
                 {marker.label}
               </Text>
 
               {proof ? (
                 <View style={styles.proofRow}>
                   <View style={styles.proofSignal} />
-                  <Text numberOfLines={1} style={[styles.proofLabel, { fontSize: responsiveFont(6.5), lineHeight: 8 }]}>
+                  <Text numberOfLines={1} style={[styles.proofLabel, { fontSize: responsiveFont(6.5), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(8) : responsiveLayout2.responsiveFont(8) }]}>
                     AI EVIDENCE // {proof.evidenceDetail.toUpperCase()}
                   </Text>
                 </View>
@@ -233,7 +234,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     markerPanel: {
       flex: 1,
       overflow: "hidden",
-      borderRadius: 8,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
       borderCurve: "continuous",
       borderWidth: 1,
       borderColor: "rgba(88, 223, 232, 0.46)",
@@ -250,33 +251,33 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       top: 0,
       bottom: 0,
       left: 0,
-      width: 3,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3),
       backgroundColor: theme.colors.scannerCyan,
       boxShadow: "0 0 12px rgba(88, 223, 232, 0.78)",
     },
     markerContent: {
       flex: 1,
       justifyContent: "center",
-      gap: 7,
-      paddingHorizontal: 13,
-      paddingVertical: 10,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(13) : responsiveLayout.responsiveWidth(13),
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : responsiveLayout.responsiveHeight(10),
     },
     markerHeading: {
-      height: 38,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(38) : responsiveLayout.responsiveHeight(38),
       flexDirection: "row",
       alignItems: "center",
-      gap: 8,
-      paddingLeft: 11,
-      paddingRight: 12,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
+      paddingLeft: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : responsiveLayout.responsiveWidth(11),
+      paddingRight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: theme.colors.divider,
     },
     markerIcon: {
-      width: 25,
-      height: 25,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(25) : responsiveLayout.responsiveWidth(25),
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(25) : responsiveLayout.responsiveHeight(25),
       alignItems: "center",
       justifyContent: "center",
-      borderRadius: 13,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(13) : responsiveLayout.responsiveWidth(13),
       borderWidth: 1,
       borderColor: "rgba(88, 223, 232, 0.38)",
       backgroundColor: "rgba(88, 223, 232, 0.1)",
@@ -286,44 +287,44 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       minWidth: 0,
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.radar,
-      fontSize: 9,
-      lineHeight: 12,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12),
       fontWeight: "900",
       letterSpacing: 1.25,
     },
     confidenceText: {
       color: theme.colors.goldBright,
       fontFamily: theme.fonts.radar,
-      fontSize: 8,
-      lineHeight: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
       fontWeight: "900",
       fontVariant: ["tabular-nums"],
       letterSpacing: 0.45,
     },
     markerLabel: {
       color: theme.colors.text,
-      fontSize: 18,
-      lineHeight: 22,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : responsiveLayout.responsiveFont(18),
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(22) : responsiveLayout.responsiveFont(22),
       fontWeight: "800",
       letterSpacing: -0.3,
     },
     markerFooter: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 6,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : responsiveLayout.responsiveWidth(6),
     },
     proofRow: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 6,
-      paddingTop: 5,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : responsiveLayout.responsiveWidth(6),
+      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(5) : responsiveLayout.responsiveHeight(5),
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: theme.colors.divider,
     },
     proofSignal: {
-      width: 5,
-      height: 5,
-      borderRadius: 3,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5),
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(5) : responsiveLayout.responsiveHeight(5),
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3),
       backgroundColor: theme.colors.goldBright,
       boxShadow: "0 0 8px rgba(242, 211, 138, 0.78)",
     },
@@ -331,15 +332,15 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flex: 1,
       color: "rgba(247, 242, 232, 0.72)",
       fontFamily: theme.fonts.radar,
-      fontSize: 6.5,
-      lineHeight: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(6.5) : responsiveLayout.responsiveFont(6.5),
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: "800",
       letterSpacing: 0.44,
     },
     markerFooterSignal: {
-      width: 6,
-      height: 6,
-      borderRadius: 3,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : responsiveLayout.responsiveWidth(6),
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : responsiveLayout.responsiveHeight(6),
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3),
       backgroundColor: theme.colors.scannerViolet,
       boxShadow: "0 0 8px rgba(141, 114, 255, 0.82)",
     },
@@ -348,14 +349,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       minWidth: 0,
       color: "rgba(247, 242, 232, 0.64)",
       fontFamily: theme.fonts.radar,
-      fontSize: 6.5,
-      lineHeight: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(6.5) : responsiveLayout.responsiveFont(6.5),
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       letterSpacing: 0.5,
     },
     markerChevron: {
       color: theme.colors.scannerViolet,
-      fontSize: 18,
-      lineHeight: 18,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : responsiveLayout.responsiveFont(18),
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : responsiveLayout.responsiveFont(18),
       fontWeight: "800",
     },
     markerPanelPressed: {

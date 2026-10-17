@@ -273,7 +273,7 @@ export default function ARMeasureTestScreen() {
         }}
       />
       <View
-        pointerEvents="none"
+        
         style={styles.reticleContainer}
       >
         <View
@@ -297,7 +297,6 @@ export default function ARMeasureTestScreen() {
         </Text>
       </View>
       <SafeAreaView
-        pointerEvents="box-none"
         style={styles.overlay}
       >
         <View style={styles.statusCard}>
@@ -381,6 +380,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
 
     overlay: {
       ...StyleSheet.absoluteFill,
+      pointerEvents: "box-none",
       justifyContent: "flex-end",
       padding: 20,
     },
@@ -445,6 +445,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     reticleContainer: {
       position: "absolute",
+      pointerEvents: "none",
       left: 0,
       right: 0,
       top: "42%",

@@ -321,6 +321,7 @@ async function loadInventoryResult(
 }
 
 export function ItemAnalysisResultScreen() {
+  const responsiveLayout2 = useResponsiveLayout();
   const styles = useResponsiveStyles(createResponsiveStyles);
   const {
     responsiveFont
@@ -935,19 +936,19 @@ export function ItemAnalysisResultScreen() {
           {loading ? (
             <>
               <ActivityIndicator color={theme.colors.scannerCyan} />
-              <Text style={[styles.centerTitle, { fontSize: responsiveFont(22), lineHeight: 27 }]}>
+              <Text style={[styles.centerTitle, { fontSize: responsiveFont(22), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(27) : responsiveLayout2.responsiveFont(27) }]}>
                 Reconstructing item intelligence
               </Text>
-              <Text style={[styles.centerBody, { fontSize: responsiveFont(12), lineHeight: 18 }]}>
+              <Text style={[styles.centerBody, { fontSize: responsiveFont(12), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(18) : responsiveLayout2.responsiveFont(18) }]}>
                 Loading the cover evidence and analysis snapshot.
               </Text>
             </>
           ) : (
             <>
-              <Text style={[styles.centerTitle, { fontSize: responsiveFont(22), lineHeight: 27 }]}>
+              <Text style={[styles.centerTitle, { fontSize: responsiveFont(22), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(27) : responsiveLayout2.responsiveFont(27) }]}>
                 Analysis unavailable
               </Text>
-              <Text selectable style={[styles.centerBody, { fontSize: responsiveFont(12), lineHeight: 18 }]}>
+              <Text selectable style={[styles.centerBody, { fontSize: responsiveFont(12), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(18) : responsiveLayout2.responsiveFont(18) }]}>
                 {resolvedError}
               </Text>
               {itemId ? (
@@ -1140,18 +1141,18 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       alignSelf: 'center',
       zIndex: 5,
       maxWidth: '90%',
-      paddingHorizontal: 16,
-      paddingVertical: 10,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16),
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : responsiveLayout.responsiveHeight(10),
       borderWidth: 1,
       borderColor: 'rgba(88, 223, 232, 0.42)',
-      borderRadius: 16,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16),
       backgroundColor: 'rgba(7, 17, 20, 0.92)',
     },
     freeScanNoticeText: {
       color: theme.colors.cream,
       fontFamily: theme.fonts.body,
-      fontSize: 13,
-      lineHeight: 18,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : responsiveLayout.responsiveFont(13),
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : responsiveLayout.responsiveFont(18),
       textAlign: 'center',
     },
     centerState: {
@@ -1159,39 +1160,39 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       zIndex: 2,
       alignItems: "center",
       justifyContent: "center",
-      gap: 13,
-      paddingHorizontal: 30,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(13) : responsiveLayout.responsiveWidth(13),
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(30) : responsiveLayout.responsiveWidth(30),
     },
     centerEyebrow: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.numbers,
-      fontSize: 8,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: "900",
       letterSpacing: 1.8,
     },
     centerTitle: {
       color: theme.colors.cream,
       fontFamily: theme.fonts.radar,
-      fontSize: 22,
-      lineHeight: 27,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(22) : responsiveLayout.responsiveFont(22),
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(27) : responsiveLayout.responsiveFont(27),
       fontWeight: "900",
       textAlign: "center",
     },
     centerBody: {
-      maxWidth: 420,
+      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(420) : responsiveLayout.responsiveWidth(420),
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.radar,
-      fontSize: 12,
-      lineHeight: 18,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12),
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : responsiveLayout.responsiveFont(18),
       textAlign: "center",
     },
     stateButton: {
-      minWidth: 150,
-      minHeight: 42,
+      minWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(150) : responsiveLayout.responsiveWidth(150),
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(42) : responsiveLayout.responsiveHeight(42),
       alignItems: "center",
       justifyContent: "center",
-      marginTop: 4,
-      paddingHorizontal: 18,
+      marginTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(4) : responsiveLayout.responsiveHeight(4),
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(18) : responsiveLayout.responsiveWidth(18),
       borderWidth: 1,
       borderColor: "rgba(88, 223, 232, 0.42)",
       backgroundColor: "rgba(88, 223, 232, 0.08)",
@@ -1199,7 +1200,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     stateButtonText: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.numbers,
-      fontSize: 11,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11),
       fontWeight: "900",
       letterSpacing: 1.1,
     },

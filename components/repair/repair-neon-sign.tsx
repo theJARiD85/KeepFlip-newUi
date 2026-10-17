@@ -98,7 +98,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     sign: {
       width: "70%",
       height: "70%",
-      filter: "drop-shadow(0 0 24px rgba(0, 255, 255, 0.7)) drop-shadow(0 0 38px rgba(141, 114, 255, 0.45))",
+      filter: "boxhadow(0 0 24px rgba(0, 255, 255, 0.7)), boxShadow(0 0 38px rgba(141, 114, 255, 0.45))",
     },
   });
   return {

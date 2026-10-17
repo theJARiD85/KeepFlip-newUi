@@ -13,6 +13,7 @@ import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive
 import { responsiveHeight, responsiveWidth } from '@/lib/responsiveFont';
 type WebSiteHeaderProps = {
   colorScheme?: KeepFlipColorScheme;
+  landing?: boolean;
   label?: string;
   onGetStarted?: () => void;
   onHowItWorks?: () => void;
@@ -24,6 +25,7 @@ type WebSiteHeaderProps = {
 
 export function WebSiteHeader({
   colorScheme,
+  landing = false,
   onGetStarted,
   onHowItWorks,
   onSignIn,
@@ -43,7 +45,7 @@ export function WebSiteHeader({
   const goToGetStarted = onGetStarted ?? (() => router.push('/meet-flip' as Href));
 
   return (
-    <View style={[responsiveStyles.header, isCompact && responsiveStyles.headerCompact, isPhone && responsiveStyles.headerPhone, { borderBottomColor: colors.divider }]}>
+    <View style={[responsiveStyles.header, isCompact && responsiveStyles.headerCompact, isPhone && responsiveStyles.headerPhone, landing && responsiveStyles.landingHeader, { borderBottomColor: colors.divider }]}>
       <Link href="/welcome" asChild style={responsiveStyles.brand}>
         <Pressable
           accessibilityLabel="KeepFlip home"
@@ -55,14 +57,12 @@ export function WebSiteHeader({
               accessibilityLabel="KeepFlip"
               contentFit="contain"
               source={require('@/assets/images/icon3.png')}
-              style={responsiveStyles.brandMark}
+              style={[responsiveStyles.brandMark, landing && responsiveStyles.landingBrandMark]}
             />
           </View>
           <View style={responsiveStyles.brandCopy}>
-            <Text style={[responsiveStyles.brandName, { color: colors.text }]}>KEEPFLIP</Text>
-            <Text style={[responsiveStyles.brandTagline, { color: colors.goldBright }]}>
-              Know what every flip costs.
-            </Text>
+            <Text style={[responsiveStyles.brandName, landing && responsiveStyles.landingBrandName, { color: colors.text }]}>KEEPFLIP</Text>
+            <Text style={[responsiveStyles.brandTagline, landing && responsiveStyles.landingBrandTagline, { color: colors.goldBright }]}>RESELLER ASSISTANT</Text>
           </View>
         </Pressable>
       </Link>
@@ -97,10 +97,10 @@ export function WebSiteHeader({
             ) : null}
             {showMarketingLinks ? (
               <>
-                <HeaderRouteLink colors={colors} href="/features" label="HOW IT WORKS" />
+                <HeaderRouteLink colors={colors} href="/features" label={landing ? 'FEATURES' : 'HOW IT WORKS'} />
                 <HeaderRouteLink colors={colors} href="/pricing" label="PRICING" />
-                <HeaderRouteLink colors={colors} href="/about" label="ABOUT" />
-                <WebBlogMenu colors={colors} isPhone={isPhone} width={width} />
+                {!landing ? <HeaderRouteLink colors={colors} href="/about" label="ABOUT" /> : null}
+                {!landing || !isPhone ? <WebBlogMenu colors={colors} isPhone={isPhone} width={width} /> : null}
               </>
             ) : onHowItWorks ? (
               <Pressable
@@ -435,6 +435,7 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingBottom: 14,
   },
+  landingHeader: { paddingBottom: 10 },
   brand: {
     alignItems: 'center',
     justifyContent: 'flex-start',
@@ -446,8 +447,9 @@ const styles = StyleSheet.create({
     height: 75,
     width: 75,
   },
+  landingBrandMark: { height: 51, width: 51 },
   brandCopy: {
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'center',
     minWidth: 0,
     flexShrink: 1,
@@ -458,17 +460,19 @@ const styles = StyleSheet.create({
     fontSize: 35,
     letterSpacing: 1.8,
   },
+  landingBrandName: { fontFamily: theme.fonts.bold, fontSize: 25, letterSpacing: 1.3 },
   brandTagline: {
     fontFamily: theme.fonts.bold,
     fontSize: 12,
     letterSpacing: 0.75,
   },
+  landingBrandTagline: { fontFamily: theme.fonts.display, fontSize: 10, letterSpacing: 1.1 },
   headerRight: {
     alignItems: 'flex-end',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     marginLeft: 'auto',
     flexShrink: 1,
-    gap: 9,
+    gap: 25,
     minWidth: 0,
   },
   headerRightCompact: {
@@ -489,6 +493,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   headerLabelPhone: {
+    fontFamily: theme.fonts.display,
     textAlign: 'left',
   },
   headerActions: {
@@ -649,6 +654,8 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.72,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 
@@ -657,12 +664,12 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     ...styles,
     header: {
       ...styles["header"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(18) : layout.responsiveWidth(18),
+      gap: layout.isWeb ? layout.webResponsiveWidth(20) : layout.responsiveWidth(18),
       paddingBottom: layout.isWeb ? layout.webResponsiveHeight(16) : layout.responsiveHeight(16),
     },
     headerCompact: {
       ...styles["headerCompact"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
+      gap: layout.isWeb ? layout.webResponsiveWidth(3) : layout.responsiveWidth(8),
     },
     headerPhone: {
       ...styles["headerPhone"],
@@ -671,8 +678,8 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     },
     brandMark: {
       ...styles["brandMark"],
-      height: layout.isWeb ? layout.webResponsiveHeight(75) : layout.responsiveHeight(75),
-      width: layout.isWeb ? layout.webResponsiveWidth(75) : layout.responsiveWidth(75),
+      height: layout.isWeb ? layout.webResponsiveHeight(100) : layout.responsiveHeight(75),
+      width: layout.isWeb ? layout.webResponsiveWidth(100) : layout.responsiveWidth(75),
     },
     brandName: {
       ...styles["brandName"],
@@ -680,7 +687,20 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     },
     brandTagline: {
       ...styles["brandTagline"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : layout.responsiveFont(12),
+      fontSize: layout.isWeb ? layout.webResponsiveFont(15) : layout.responsiveFont(12),
+    },
+    landingBrandMark: {
+      ...styles["landingBrandMark"],
+      height: layout.isWeb ? layout.webResponsiveHeight(90) : layout.responsiveHeight(75),
+      width: layout.isWeb ? layout.webResponsiveWidth(75) : layout.responsiveWidth(75),
+    },
+    landingBrandName: {
+      ...styles["landingBrandName"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(35) : layout.responsiveFont(35),
+    },
+    landingBrandTagline: {
+      ...styles["landingBrandTagline"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(15) : layout.responsiveFont(12),
     },
     headerRight: {
       ...styles["headerRight"],
@@ -723,7 +743,7 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     },
     headerLinkText: {
       ...styles["headerLinkText"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : layout.responsiveFont(12),
+      fontSize: layout.isWeb ? layout.webResponsiveFont(18) : layout.responsiveFont(12),
     },
     headerCta: {
       ...styles["headerCta"],
@@ -732,7 +752,7 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     },
     headerCtaText: {
       ...styles["headerCtaText"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : layout.responsiveFont(11),
+      fontSize: layout.isWeb ? layout.webResponsiveFont(18) : layout.responsiveFont(11),
     },
     footer: {
       ...styles["footer"],

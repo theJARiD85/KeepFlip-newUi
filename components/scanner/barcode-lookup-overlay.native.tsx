@@ -44,6 +44,7 @@ export function BarcodeLookupOverlay({
   state,
   topInset,
 }: BarcodeLookupOverlayProps) {
+  const responsiveLayout2 = useResponsiveLayout();
   const styles = useResponsiveStyles(createResponsiveStyles);
   const {
     responsiveFont
@@ -114,7 +115,7 @@ export function BarcodeLookupOverlay({
               <ActivityIndicator color={theme.colors.scannerCyan} />
             </View>
             <Text style={[styles.title, { fontSize: responsiveFont(21) }]}>Finding the matching product</Text>
-            <Text style={[styles.body, { fontSize: responsiveFont(14), lineHeight: 21 }]}>
+            <Text style={[styles.body, { fontSize: responsiveFont(14), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(21) : responsiveLayout2.responsiveFont(21) }]}>
               KeepFlip is checking this code against current market evidence. Your photo-analysis tools remain separate from this search.
             </Text>
           </View>
@@ -140,7 +141,7 @@ export function BarcodeLookupOverlay({
               <Text selectable style={[styles.title, { fontSize: responsiveFont(21) }]}>
                 {neutralizeMarketplaceBrand(product.title)}
               </Text>
-              <Text selectable style={[styles.body, { fontSize: responsiveFont(14), lineHeight: 21 }]}>
+              <Text selectable style={[styles.body, { fontSize: responsiveFont(14), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(21) : responsiveLayout2.responsiveFont(21) }]}>
                 {neutralizeMarketplaceBrand(product.description)}
               </Text>
             </View>
@@ -176,7 +177,7 @@ export function BarcodeLookupOverlay({
             <Text style={[styles.title, { fontSize: responsiveFont(21) }]}>
               {state.phase === "error" ? "Lookup needs another try" : "No product match yet"}
             </Text>
-            <Text style={[styles.body, { fontSize: responsiveFont(14), lineHeight: 21 }]}>
+            <Text style={[styles.body, { fontSize: responsiveFont(14), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(21) : responsiveLayout2.responsiveFont(21) }]}>
               {state.phase === "error"
                 ? neutralizeMarketplaceBrand(state.message)
                 : "Scan the full code again in bright, even light. UPC, EAN, ISBN, and product codes work best."}
@@ -220,7 +221,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     root: {
       ...StyleSheet.absoluteFill,
       justifyContent: "space-between",
-      paddingHorizontal: 20,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(20) : responsiveLayout.responsiveWidth(20),
       backgroundColor: "rgba(3, 3, 7, 0.98)",
     },
     atmosphere: {
@@ -235,62 +236,62 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      gap: 16,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16),
     },
-    headerCopy: { flex: 1, gap: 3 },
+    headerCopy: { flex: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3) },
     eyebrow: {
       color: theme.colors.scannerViolet,
-      fontSize: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
       fontWeight: "900",
       letterSpacing: 2.1,
     },
-    headerTitle: { color: theme.colors.cream, fontSize: 23, fontWeight: "800" },
+    headerTitle: { color: theme.colors.cream, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(23) : responsiveLayout.responsiveFont(23), fontWeight: "800" },
     closeButton: {
-      width: 42,
-      height: 42,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(42) : responsiveLayout.responsiveWidth(42),
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(42) : responsiveLayout.responsiveHeight(42),
       alignItems: "center",
       justifyContent: "center",
-      borderRadius: 21,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(21) : responsiveLayout.responsiveWidth(21),
       borderWidth: 1,
       borderColor: "rgba(247, 242, 232, 0.22)",
       backgroundColor: "rgba(247, 242, 232, 0.07)",
     },
-    content: { flex: 1, justifyContent: "center", gap: 22, paddingVertical: 20 },
+    content: { flex: 1, justifyContent: "center", gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(22) : responsiveLayout.responsiveWidth(22), paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(20) : responsiveLayout.responsiveHeight(20) },
     codePill: {
       alignSelf: "center",
       flexDirection: "row",
       alignItems: "center",
-      gap: 8,
-      paddingHorizontal: 13,
-      paddingVertical: 9,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(13) : responsiveLayout.responsiveWidth(13),
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(9) : responsiveLayout.responsiveHeight(9),
       borderRadius: theme.radii.pill,
       borderWidth: 1,
       borderColor: "rgba(141, 114, 255, 0.40)",
       backgroundColor: "rgba(141, 114, 255, 0.12)",
     },
-    codeText: { color: theme.colors.cream, fontSize: 12, fontWeight: "800", letterSpacing: 0.7 },
-    loadingState: { alignItems: "center", gap: 12, paddingHorizontal: 18 },
+    codeText: { color: theme.colors.cream, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12), fontWeight: "800", letterSpacing: 0.7 },
+    loadingState: { alignItems: "center", gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12), paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(18) : responsiveLayout.responsiveWidth(18) },
     loadingIcon: {
-      width: 72,
-      height: 72,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(72) : responsiveLayout.responsiveWidth(72),
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(72) : responsiveLayout.responsiveHeight(72),
       alignItems: "center",
       justifyContent: "center",
-      borderRadius: 36,
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(36) : responsiveLayout.responsiveWidth(36),
       borderWidth: 1,
       borderColor: "rgba(88, 223, 232, 0.42)",
       backgroundColor: "rgba(88, 223, 232, 0.09)",
       boxShadow: "0 0 30px rgba(88, 223, 232, 0.18)",
     },
-    resultState: { alignItems: "center", gap: 16 },
+    resultState: { alignItems: "center", gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16) },
     productImage: {
-      width: 146,
-      height: 146,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(146) : responsiveLayout.responsiveWidth(146),
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(146) : responsiveLayout.responsiveHeight(146),
       borderRadius: theme.radii.large,
       backgroundColor: "rgba(247, 242, 232, 0.06)",
     },
     productImageFallback: {
-      width: 112,
-      height: 112,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(112) : responsiveLayout.responsiveWidth(112),
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(112) : responsiveLayout.responsiveHeight(112),
       alignItems: "center",
       justifyContent: "center",
       borderRadius: theme.radii.large,
@@ -298,9 +299,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderColor: "rgba(88, 223, 232, 0.34)",
       backgroundColor: "rgba(88, 223, 232, 0.08)",
     },
-    productCopy: { width: "100%", alignItems: "center", gap: 8 },
-    title: { color: theme.colors.cream, fontSize: 21, fontWeight: "800", textAlign: "center" },
-    body: { color: theme.colors.textMuted, fontSize: 14, lineHeight: 21, textAlign: "center" },
+    productCopy: { width: "100%", alignItems: "center", gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8) },
+    title: { color: theme.colors.cream, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(21) : responsiveLayout.responsiveFont(21), fontWeight: "800", textAlign: "center" },
+    body: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : responsiveLayout.responsiveFont(14), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(21) : responsiveLayout.responsiveFont(21), textAlign: "center" },
     details: {
       width: "100%",
       gap: 1,
@@ -314,27 +315,27 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: "row",
       alignItems: "baseline",
       justifyContent: "space-between",
-      gap: 14,
-      paddingHorizontal: 14,
-      paddingVertical: 11,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
+      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(11) : responsiveLayout.responsiveHeight(11),
       backgroundColor: "rgba(7, 7, 12, 0.74)",
     },
-    detailLabel: { color: theme.colors.scannerCyan, fontSize: 11, fontWeight: "800", letterSpacing: 0.8 },
-    detailValue: { flex: 1, color: theme.colors.cream, fontSize: 13, fontWeight: "700", textAlign: "right" },
-    evidenceNote: { color: theme.colors.goldBright, fontSize: 12, fontWeight: "700", lineHeight: 18, textAlign: "center" },
-    actions: { gap: 10 },
+    detailLabel: { color: theme.colors.scannerCyan, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11), fontWeight: "800", letterSpacing: 0.8 },
+    detailValue: { flex: 1, color: theme.colors.cream, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : responsiveLayout.responsiveFont(13), fontWeight: "700", textAlign: "right" },
+    evidenceNote: { color: theme.colors.goldBright, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12), fontWeight: "700", lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : responsiveLayout.responsiveFont(18), textAlign: "center" },
+    actions: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10) },
     primaryAction: {
-      minHeight: 54,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(54) : responsiveLayout.responsiveHeight(54),
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      gap: 9,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
       borderRadius: theme.radii.medium,
       backgroundColor: theme.colors.scannerViolet,
     },
-    primaryActionText: { color: theme.colors.background, fontSize: 15, fontWeight: "900" },
-    secondaryAction: { minHeight: 48, alignItems: "center", justifyContent: "center", borderRadius: theme.radii.medium, borderWidth: 1, borderColor: "rgba(247, 242, 232, 0.20)" },
-    secondaryActionText: { color: theme.colors.cream, fontSize: 14, fontWeight: "800" },
+    primaryActionText: { color: theme.colors.background, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : responsiveLayout.responsiveFont(15), fontWeight: "900" },
+    secondaryAction: { minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(48) : responsiveLayout.responsiveHeight(48), alignItems: "center", justifyContent: "center", borderRadius: theme.radii.medium, borderWidth: 1, borderColor: "rgba(247, 242, 232, 0.20)" },
+    secondaryActionText: { color: theme.colors.cream, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : responsiveLayout.responsiveFont(14), fontWeight: "800" },
     disabled: { opacity: 0.42 },
     pressed: { opacity: 0.76, transform: [{ scale: 0.98 }] },
   });

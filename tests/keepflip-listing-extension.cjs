@@ -391,7 +391,7 @@ test('OfferUp opens its Sell popup before filling the listing form', async () =>
     chrome,
     document,
     location: { protocol: 'https:', hostname: 'offerup.com', pathname: '/' },
-    Event: class TestEvent { constructor(type) { this.type = type; } },
+    Event: class TestEvent {},
     HTMLSelectElement: class HTMLSelectElement {},
     File: class TestFile {
       constructor(parts, name, options) { this.parts = parts; this.name = name; this.type = options.type; }
@@ -419,7 +419,7 @@ test('OfferUp opens its Sell popup before filling the listing form', async () =>
   assert.ok(messages.some((message) => message.type === 'KEEPFLIP_LISTING_TAB_STATUS'));
 });
 
-test('Facebook selects a stroller category and advances when optional fields are unavailable', async () => {
+async function runFacebookStrollerScenario({ photoMode = 'none' } = {}) {
   let composerOpen = false;
   let createNewListingClicks = 0;
   let itemForSaleClicks = 0;
@@ -438,6 +438,11 @@ test('Facebook selects a stroller category and advances when optional fields are
   let facebookNextClicks = 0;
   let facebookPublishClicks = 0;
   let fieldsReadyWhenNextClicked = false;
+  let attachedPhotoCount = 0;
+  let photoChangeEvents = 0;
+  let dropEvents = 0;
+  const hasPhoto = photoMode !== 'none';
+  const acknowledgePhoto = photoMode === 'accepted';
   let facebookLocation = { protocol: 'https:', hostname: 'www.facebook.com', pathname: '/marketplace/create/', href: 'https://www.facebook.com/marketplace/create/' };
   const statuses = [];
   const makeField = (name, tagName, placeholder = '') => ({
@@ -454,6 +459,24 @@ test('Facebook selects a stroller category and advances when optional fields are
     makeField('description', 'TEXTAREA', 'Description'),
     makeField('price', 'INPUT', 'Price'),
   ];
+  const fileInput = {
+    accept: 'image/*',
+    multiple: true,
+    files: [],
+    getAttribute: (attribute) => attribute === 'accept' ? 'image/*' : null,
+    closest: () => ({}),
+    dispatchEvent: (event) => {
+      if (event.type === 'change') {
+        photoChangeEvents += 1;
+        if (acknowledgePhoto) attachedPhotoCount = 1;
+      }
+    },
+  };
+  const photoDropZone = {
+    getAttribute: (attribute) => attribute === 'aria-label' ? 'Add photos or drag and drop' : null,
+    getBoundingClientRect: () => ({ width: 220, height: 90 }),
+    dispatchEvent: () => { dropEvents += 1; },
+  };
   const detailFields = [
     makeField('material', 'INPUT', 'Material'),
   ];
@@ -570,11 +593,14 @@ test('Facebook selects a stroller category and advances when optional fields are
     querySelector: (selector) => {
       if (selector === 'input[type="checkbox"][role="switch"][aria-label="Draft listings with Meta AI"]' && composerOpen) return metaAiSwitch;
       if (selector === '[aria-label="Suggested categories"]' && composerOpen) return suggestedCategories;
+      if (hasPhoto && composerOpen && selector.includes('[aria-label*="Add photos" i]')) return photoDropZone;
       return null;
     },
+    body: { get innerText() { return `Photos ${attachedPhotoCount} / 10 Videos 0 / 1 ${attachedPhotoCount} photo${attachedPhotoCount === 1 ? '' : 's'} attached`; } },
     getElementById: (id) => ({ textContent: id === 'category-label' ? 'Category'
       : id === 'Condition-label' ? 'Condition' : id === 'Color-label' ? 'Color' : '' }),
     querySelectorAll: (selector) => {
+      if (selector === 'input[type="file"]') return hasPhoto && composerOpen ? [fileInput] : [];
       if (selector === '[role="dialog"]') return composerOpen ? [] : [listingTypeDialog];
       if (selector === '[role="combobox"]') return composerOpen ? [categoryCombo, conditionCombo, colorCombo] : [];
       if (selector === '[role="listbox"] [role="option"], [role="option"]') {
@@ -611,8 +637,8 @@ test('Facebook selects a stroller category and advances when optional fields are
     runId: 'facebook-run-123456',
     payload: { title: 'Evenflo Transformer Stroller', description: 'New Evenflo stroller, factory sealed.', price: '450',
       category: 'Baby & Toddler Gear', condition: 'New', brand: 'Evenflo', size: 'One Size', color: 'Champagne',
-      photoCount: 0, platformFields: { material: 'Plastic', era: 'Modern' } },
-    photos: [],
+      photoCount: hasPhoto ? 1 : 0, platformFields: { material: 'Plastic', era: 'Modern' } },
+    photos: hasPhoto ? [{ name: 'stroller.jpg', dataUrl: 'data:image/jpeg;base64,AAAA' }] : [],
     unavailablePhotoCount: 0,
   };
   const chrome = {
@@ -632,37 +658,87 @@ test('Facebook selects a stroller category and advances when optional fields are
     chrome,
     document,
     location: facebookLocation,
-    Event: class TestEvent {},
+    window: { HTMLInputElement: class HTMLInputElement {}, HTMLTextAreaElement: class HTMLTextAreaElement {} },
+    HTMLTextAreaElement: class HTMLTextAreaElement {},
+    Event: class TestEvent { constructor(type) { this.type = type; } },
     HTMLSelectElement: class HTMLSelectElement {},
     setTimeout: (callback) => { queueMicrotask(callback); return 1; },
     clearTimeout: () => undefined,
     setInterval: (callback) => { queueMicrotask(callback); return 1; },
     clearInterval: () => undefined,
+    DataTransfer: class TestDataTransfer {
+      constructor() {
+        this.files = [];
+        this.items = { add: (file) => this.files.push(file) };
+      }
+    },
+    DragEvent: class TestDragEvent {
+      constructor(type) { this.type = type; }
+    },
+    File: class TestFile {
+      constructor(parts, name, options) { this.parts = parts; this.name = name; this.type = options.type; }
+    },
+    fetch: async () => ({ ok: true, blob: async () => ({ type: 'image/jpeg' }) }),
     console,
   });
 
   await new Promise((resolve) => setTimeout(resolve, 0));
-  assert.equal(createNewListingClicks, 0);
-  assert.equal(itemForSaleClicks, 1);
-  assert.equal(vehicleForSaleClicks, 0);
-  assert.equal(moreDetailsClicks, 1);
-  assert.equal(metaAiSwitchClicks, 1);
-  assert.equal(metaAiSwitch.checked, false);
-  assert.equal(householdCategoryClicks, 0);
-  assert.equal(babyCategoryClicks, 1);
-  assert.equal(selectedCategory, 'Baby & Kids');
-  assert.equal(selectedCondition, 'New');
-  assert.equal(selectedColor, 'Champagne');
-  assert.deepEqual(fields.map((field) => field.value), [
+  return { createNewListingClicks, itemForSaleClicks, vehicleForSaleClicks, moreDetailsClicks,
+    metaAiSwitchClicks, metaAiSwitch, householdCategoryClicks, babyCategoryClicks, selectedCategory,
+    selectedCondition, selectedColor, fields, fieldsReadyWhenNextClicked, facebookNextClicks,
+    facebookPublishClicks, facebookLocation, statuses, fileInput, photoChangeEvents, dropEvents,
+    attachedPhotoCount };
+}
+
+test('Facebook selects a stroller category and advances when optional fields are unavailable', async () => {
+  const result = await runFacebookStrollerScenario();
+  const { statuses, facebookLocation } = result;
+  assert.equal(result.createNewListingClicks, 0);
+  assert.equal(result.itemForSaleClicks, 1);
+  assert.equal(result.vehicleForSaleClicks, 0);
+  assert.equal(result.moreDetailsClicks, 1);
+  assert.equal(result.metaAiSwitchClicks, 1);
+  assert.equal(result.metaAiSwitch.checked, false);
+  assert.equal(result.householdCategoryClicks, 0);
+  assert.equal(result.babyCategoryClicks, 1);
+  assert.equal(result.selectedCategory, 'Baby & Kids');
+  assert.equal(result.selectedCondition, 'New');
+  assert.equal(result.selectedColor, 'Champagne');
+  assert.deepEqual(result.fields.map((field) => field.value), [
     'Evenflo Transformer Stroller', 'New Evenflo stroller, factory sealed.', '450', 'Plastic',
   ]);
-  assert.equal(fieldsReadyWhenNextClicked, true);
-  assert.equal(facebookNextClicks, 1);
-  assert.equal(facebookPublishClicks, 1);
+  assert.equal(result.fieldsReadyWhenNextClicked, true);
+  assert.equal(result.facebookNextClicks, 1);
+  assert.equal(result.facebookPublishClicks, 1);
   assert.ok(statuses.some((status) => status.status === 'filled'));
   assert.ok(statuses.some((status) => status.status === 'submit_clicked'));
   assert.equal(statuses.at(-1)?.status, 'confirmed');
   assert.equal(statuses.at(-1)?.externalUrl, facebookLocation.href);
+});
+
+test('Facebook adds selected image files and waits for the photo count before advancing', async () => {
+  const result = await runFacebookStrollerScenario({ photoMode: 'accepted' });
+  assert.equal(result.fileInput.files.length, 1);
+  assert.equal(result.fileInput.files[0].name, 'stroller.jpg');
+  assert.equal(result.photoChangeEvents, 1);
+  assert.equal(result.attachedPhotoCount, 1);
+  assert.equal(result.dropEvents, 0);
+  assert.equal(result.facebookNextClicks, 1);
+  assert.equal(result.statuses.find((status) => status.status === 'filled')?.uploadedPhotoCount, 1);
+  assert.equal(result.statuses.at(-1)?.status, 'confirmed');
+});
+
+test('Facebook does not report success or advance when its photo upload remains at zero', async () => {
+  const result = await runFacebookStrollerScenario({ photoMode: 'ignored' });
+  assert.equal(result.fileInput.files.length, 1);
+  assert.equal(result.photoChangeEvents, 1);
+  assert.equal(result.attachedPhotoCount, 0);
+  assert.equal(result.dropEvents, 0);
+  assert.equal(result.facebookNextClicks, 0);
+  assert.equal(result.facebookPublishClicks, 0);
+  assert.equal(result.statuses.at(-1)?.status, 'needs_review');
+  assert.equal(result.statuses.at(-1)?.uploadedPhotoCount, 0);
+  assert.match(result.statuses.at(-1)?.message || '', /did not confirm the item photos/i);
 });
 
 test('Facebook applies an explicit shipping and pickup choice, then opens the shipping label picker', async () => {

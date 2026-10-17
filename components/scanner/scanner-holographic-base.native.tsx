@@ -6,6 +6,7 @@ import Animated, {
   type SharedValue,
   useAnimatedStyle,
 } from "react-native-reanimated";
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 type HolographicToolBaseProps = {
   accents: readonly string[];
@@ -43,6 +44,7 @@ const HolographicTick = memo(function HolographicTick({
   radiusX,
   radiusY,
 }: TickProps) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const isMajor = index % 6 === 0;
   const isMedium = !isMajor && index % 3 === 0;
   const tickHeight = isMajor ? 9 : isMedium ? 6 : 4;
@@ -122,7 +124,7 @@ const HolographicTick = memo(function HolographicTick({
     <View
       pointerEvents="none"
       style={[
-        styles.tickCarrier,
+        responsiveStyles.tickCarrier,
         {
           height: tickHeight,
           left,
@@ -132,7 +134,7 @@ const HolographicTick = memo(function HolographicTick({
         },
       ]}
     >
-      <Animated.View style={[styles.tick, animatedStyle]} />
+      <Animated.View style={[responsiveStyles.tick, animatedStyle]} />
     </View>
   );
 });
@@ -143,6 +145,7 @@ export const HolographicToolBase = memo(function HolographicToolBase({
   position,
   width,
 }: HolographicToolBaseProps) {
+  const responsiveStyles2 = useResponsiveStyles(createStylesWebResponsive);
   const centerX = width / 2;
   const centerY = height / 2;
   const radiusX = Math.max(0, width / 2 - 10);
@@ -152,7 +155,7 @@ export const HolographicToolBase = memo(function HolographicToolBase({
     <View
       pointerEvents="none"
       style={[
-        styles.root,
+        responsiveStyles2.root,
         {
           height,
           width,
@@ -193,3 +196,13 @@ const styles = StyleSheet.create<Record<"root" | "tick" | "tickCarrier", ViewSty
     borderRadius: 999,
   },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    tick: {
+      ...styles["tick"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(999) : layout.responsiveWidth(999),
+    },
+  });
+}

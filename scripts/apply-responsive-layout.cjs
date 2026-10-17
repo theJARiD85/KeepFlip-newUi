@@ -8,8 +8,9 @@
  * they can be connected to a component: inline JSX styles, a responsive style
  * factory, or a module-level StyleSheet used by a component. Both web and
  * native branches use the responsive helpers from use-responsive-layout.
- * Geometry expressed as formulas, percentages, transforms, and
- * platform-specific native files is left for manual review.
+ * Platform-specific .web, .native, .ios, and .android source files are
+ * included. Geometry expressed as formulas, percentages, and transforms is
+ * left for manual review.
  *
  * npm run responsive:ui           # inspect the plan
  * npm run responsive:ui:apply     # write the plan
@@ -29,7 +30,6 @@ const SKIP_DIRECTORIES = new Set([
   'build', 'coverage', 'backup', 'backups',
 ]);
 const SKIP_FILE_PATTERN = /(?:\.backup(?:[-.]|$)|\.bak(?:[-.]|$)|\.orig(?:[-.]|$)|\.secret(?:[-.]|$))/i;
-const NATIVE_ONLY_PATTERN = /\.(?:native|android|ios)\.[jt]sx?$/i;
 
 // Only values that represent UI dimensions are mapped. Unitless values such
 // as flex, opacity, zIndex, fontWeight, borderWidth, and animation data stay put.
@@ -371,8 +371,6 @@ function planFile(filePath, root) {
     const diagnostic = sourceFile.parseDiagnostics[0];
     throw new Error(`${name}: ${ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ')}`);
   }
-  if (NATIVE_ONLY_PATTERN.test(filePath)) return { filePath, file: name, next: source, inlineValues: 0, stylesheetValues: 0, reason: 'native-only' };
-
   const eol = eolOf(source);
   const components = componentsIn(sourceFile);
   const sheets = topLevelStyleSheets(sourceFile);

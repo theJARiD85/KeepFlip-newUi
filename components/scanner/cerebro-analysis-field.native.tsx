@@ -932,6 +932,7 @@ function valuationPosition(valuation: CerebroValuation) {
 }
 
 function ValuationGauge({ valuation }: { valuation: CerebroValuation }) {
+  const responsiveLayout2 = useResponsiveLayout();
   const styles = useResponsiveStyles(createResponsiveStyles);
   const {
     responsiveFont
@@ -997,7 +998,7 @@ function ValuationGauge({ valuation }: { valuation: CerebroValuation }) {
     <Animated.View pointerEvents="none" style={[styles.gauge, panelStyle]}>
       <View style={styles.gaugeHeader}>
         <View style={styles.successSignal} />
-        <Text style={[styles.gaugeEyebrow, { fontSize: responsiveFont(8), lineHeight: 10 }]}>VALUATION SIGNAL ACQUIRED</Text>
+        <Text style={[styles.gaugeEyebrow, { fontSize: responsiveFont(8), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(10) : responsiveLayout2.responsiveFont(10) }]}>VALUATION SIGNAL ACQUIRED</Text>
       </View>
 
       <View style={styles.arc}>
@@ -1041,13 +1042,13 @@ function ValuationGauge({ valuation }: { valuation: CerebroValuation }) {
         <View style={styles.needleHub} />
       </View>
 
-      <Text style={[styles.valueLabel, { fontSize: responsiveFont(7), lineHeight: 9 }]}>ESTIMATED RESALE VALUE</Text>
-      <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.valueText, { fontSize: responsiveFont(38), lineHeight: 43 }]}>
+      <Text style={[styles.valueLabel, { fontSize: responsiveFont(7), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(9) : responsiveLayout2.responsiveFont(9) }]}>ESTIMATED RESALE VALUE</Text>
+      <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.valueText, { fontSize: responsiveFont(38), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(43) : responsiveLayout2.responsiveFont(43) }]}>
         {formatMoney(valuation.median, currency)}
       </Text>
 
       {finiteNumber(valuation.low) && finiteNumber(valuation.high) ? (
-        <Text style={[styles.rangeText, { fontSize: responsiveFont(10), lineHeight: 13 }]}>
+        <Text style={[styles.rangeText, { fontSize: responsiveFont(10), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(13) : responsiveLayout2.responsiveFont(13) }]}>
           {formatMoney(valuation.low!, currency)} — {formatMoney(valuation.high!, currency)}
         </Text>
       ) : null}
@@ -1220,12 +1221,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       right: 18,
       bottom: 42,
       left: 18,
-      minHeight: 210,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(210) : responsiveLayout.responsiveHeight(210),
       alignItems: "center",
-      paddingHorizontal: 18,
-      paddingTop: 13,
-      paddingBottom: 16,
-      borderRadius: 14,
+      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(18) : responsiveLayout.responsiveWidth(18),
+      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(13) : responsiveLayout.responsiveHeight(13),
+      paddingBottom: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(16) : responsiveLayout.responsiveHeight(16),
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
       borderCurve: "continuous",
       borderWidth: 1,
       borderColor: "rgba(0, 255, 136, 0.38)",
@@ -1237,48 +1238,48 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       alignSelf: "stretch",
       flexDirection: "row",
       alignItems: "center",
-      gap: 7,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
     },
     successSignal: {
-      width: 7,
-      height: 7,
-      borderRadius: 4,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(7) : responsiveLayout.responsiveHeight(7),
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
       backgroundColor: "#00FF88",
       boxShadow: "0 0 10px rgba(0,255,136,0.90)",
     },
     gaugeEyebrow: {
       color: "#00FF88",
-      fontSize: 8,
-      lineHeight: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
       fontWeight: "900",
       letterSpacing: 1.05,
     },
     arc: {
-      width: 138,
-      height: 82,
-      marginTop: 7,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(138) : responsiveLayout.responsiveWidth(138),
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(82) : responsiveLayout.responsiveHeight(82),
+      marginTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(7) : responsiveLayout.responsiveHeight(7),
       alignItems: "center",
       justifyContent: "flex-end",
     },
     segment: {
       position: "absolute",
       bottom: 5,
-      width: 3,
-      height: 13,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3),
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(13) : responsiveLayout.responsiveHeight(13),
       borderRadius: 2,
       transformOrigin: "50% 49px",
     },
     needle: {
       position: "absolute",
       bottom: 6,
-      width: 4,
-      height: 48,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(48) : responsiveLayout.responsiveHeight(48),
       alignItems: "center",
       transformOrigin: "50% 100%",
     },
     needleLine: {
-      width: 3,
-      height: 43,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3),
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(43) : responsiveLayout.responsiveHeight(43),
       borderRadius: 2,
       backgroundColor: "#F2D38A",
       boxShadow: "0 0 10px rgba(242,211,138,0.90)",
@@ -1286,25 +1287,25 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     needleHub: {
       position: "absolute",
       bottom: 0,
-      width: 13,
-      height: 13,
-      borderRadius: 7,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(13) : responsiveLayout.responsiveWidth(13),
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(13) : responsiveLayout.responsiveHeight(13),
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
       borderWidth: 2,
       borderColor: "#F2D38A",
       backgroundColor: "#05040A",
     },
     valueLabel: {
       color: "rgba(255,255,255,0.48)",
-      fontSize: 7,
-      lineHeight: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: "900",
       letterSpacing: 1.15,
     },
     valueText: {
       maxWidth: "100%",
       color: "#FFFFFF",
-      fontSize: 38,
-      lineHeight: 43,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(38) : responsiveLayout.responsiveFont(38),
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(43) : responsiveLayout.responsiveFont(43),
       fontWeight: "900",
       fontVariant: ["tabular-nums"],
       textShadowColor: "rgba(0,255,136,0.44)",
@@ -1313,8 +1314,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     rangeText: {
       color: "rgba(242,211,138,0.82)",
-      fontSize: 10,
-      lineHeight: 13,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : responsiveLayout.responsiveFont(13),
       fontWeight: "900",
       fontVariant: ["tabular-nums"],
       letterSpacing: 0.35,

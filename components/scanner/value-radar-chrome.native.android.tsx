@@ -83,6 +83,7 @@ export function ValueRadarBubble({
   style,
   width = 194,
 }: ValueRadarBubbleProps) {
+  const responsiveLayout2 = useResponsiveLayout();
   const styles = useResponsiveStyles(createResponsiveStyles);
   const {
     responsiveFont
@@ -101,7 +102,7 @@ export function ValueRadarBubble({
           { backgroundColor: cue.color, boxShadow: cue.glow },
         ]}
       />
-      <Text style={[styles.readinessName, { fontSize: responsiveFont(8.5), lineHeight: 10 }]}>VALUE RADAR</Text>
+      <Text style={[styles.readinessName, { fontSize: responsiveFont(8.5), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(10) : responsiveLayout2.responsiveFont(10) }]}>VALUE RADAR</Text>
       <Text style={styles.readinessSeparator}>{"//"}</Text>
       <Text style={[styles.readinessState, { color: cue.color }]}>
         {cue.label}
@@ -121,6 +122,7 @@ export function ValueRadarBar({
   style,
   width = 224,
 }: ValueRadarBarProps) {
+  const responsiveLayout3 = useResponsiveLayout();
   const styles = useResponsiveStyles(createResponsiveStyles);
   const {
     responsiveFont
@@ -149,7 +151,7 @@ export function ValueRadarBar({
           { backgroundColor: cue.color, boxShadow: cue.glow },
         ]}
       />
-      <Text numberOfLines={1} style={[styles.modelCueText, { fontSize: responsiveFont(7), lineHeight: 9 }]}>
+      <Text numberOfLines={1} style={[styles.modelCueText, { fontSize: responsiveFont(7), lineHeight: responsiveLayout3.isWeb ? responsiveLayout3.webResponsiveFont(9) : responsiveLayout3.responsiveFont(9) }]}>
         {targetCopy} {"//"} {cue.label}
       </Text>
     </View>
@@ -279,38 +281,38 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   const { responsiveWidth, responsiveHeight, responsiveFont } = responsiveLayout;
   const staticStyles = StyleSheet.create({
     readinessCue: {
-      minHeight: 18,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(18) : responsiveLayout.responsiveHeight(18),
       flexDirection: "row",
       alignItems: "center",
-      gap: 5,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5),
     },
     readinessLight: {
-      width: 7,
-      height: 7,
-      borderRadius: 4,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(7) : responsiveLayout.responsiveHeight(7),
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
     },
     readinessName: {
       color: theme.colors.text,
       fontFamily: theme.fonts.radar,
-      fontSize: 8.5,
-      lineHeight: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8.5) : responsiveLayout.responsiveFont(8.5),
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
       letterSpacing: 1.15,
     },
     readinessSeparator: {
       color: theme.colors.scannerViolet,
       fontFamily: theme.fonts.radar,
-      fontSize: 8,
-      lineHeight: 10,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
     },
     readinessState: {
       fontFamily: theme.fonts.radar,
-      fontSize: 7.5,
-      lineHeight: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7.5) : responsiveLayout.responsiveFont(7.5),
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       letterSpacing: 0.8,
     },
     signalBars: {
       marginLeft: 2,
-      height: 10,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : responsiveLayout.responsiveHeight(10),
       flexDirection: "row",
       alignItems: "flex-end",
       gap: 2,
@@ -320,44 +322,44 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderRadius: 1,
     },
     signalBarLow: {
-      height: 3,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(3) : responsiveLayout.responsiveHeight(3),
       opacity: 0.45,
     },
     signalBarMid: {
-      height: 6,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : responsiveLayout.responsiveHeight(6),
       opacity: 0.7,
     },
     signalBarHigh: {
-      height: 9,
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(9) : responsiveLayout.responsiveHeight(9),
     },
     modelCue: {
-      minHeight: 18,
+      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(18) : responsiveLayout.responsiveHeight(18),
       flexDirection: "row",
       alignItems: "center",
-      gap: 7,
+      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
     },
     modelCueIndex: {
       fontFamily: theme.fonts.radar,
-      fontSize: 7.5,
-      lineHeight: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7.5) : responsiveLayout.responsiveFont(7.5),
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       letterSpacing: 0.8,
     },
     modelCueLine: {
-      width: 25,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(25) : responsiveLayout.responsiveWidth(25),
       height: 1,
       backgroundColor: "rgba(88, 223, 232, 0.42)",
     },
     modelCueLight: {
-      width: 7,
-      height: 7,
-      borderRadius: 4,
+      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
+      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(7) : responsiveLayout.responsiveHeight(7),
+      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
     },
     modelCueText: {
       flexShrink: 1,
       color: "rgba(247, 242, 232, 0.7)",
       fontFamily: theme.fonts.radar,
-      fontSize: 7,
-      lineHeight: 9,
+      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
+      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       letterSpacing: 0.72,
     },
     flashButtonHost: {

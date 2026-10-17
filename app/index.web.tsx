@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
 import { useKeepFlipSubscription } from '@/components/subscription/keepflip-subscription-context';
 import { KeepFlipHomeStructuredData } from '@/components/web/keepflip-home-structured-data';
-import { WebOnboardingScreen } from '@/components/web/web-onboarding-screen';
+import { WebLandingScreen } from '@/components/web/web-landing-screen';
 import { areKeepFlipSubscriptionsEnforced } from '@/services/keepflip-subscription-service';
 
 export default function WebHomeScreen() {
@@ -27,7 +27,7 @@ export default function WebHomeScreen() {
   return (
     <>
       <KeepFlipHomeStructuredData />
-      <WebOnboardingScreen />
+      <WebLandingScreen />
     </>
   );
 }

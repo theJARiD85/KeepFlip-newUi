@@ -121,6 +121,7 @@ app-example
 !/scripts/
 scripts/*
 !/scripts/apply-responsive-layout.cjs
+!/scripts/test-apply-responsive-layout.cjs
 !/scripts/make-ui-values-responsive.cjs
 !/scripts/test-make-ui-values-responsive.cjs
 !/scripts/provision-crosslisting-form-configs.ps1

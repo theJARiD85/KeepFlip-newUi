@@ -120,6 +120,7 @@ function WebRootContent() {
     PlusJakartaSansBold: require('@/assets/fonts/PlusJakartaSansBold.otf'),
     PlusJakartaSansMedium: require('@/assets/fonts/PlusJakartaSansMedium.otf'),
     PlusJakartaSansSemiBold: require('@/assets/fonts/PlusJakartaSansSemiBold.otf'),
+    SpaceGroteskBold: require('@/assets/fonts/SpaceGroteskBold.otf'),
   });
 
   useEffect(() => {

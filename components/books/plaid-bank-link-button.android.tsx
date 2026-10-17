@@ -6,6 +6,7 @@ import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { linkPlaidBankAccount } from '@/services/plaid-bank-link.android';
 import type { PlaidBankLinkResult } from '@/services/plaid-bank-service';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 type PlaidBankLinkButtonProps = {
   busy: boolean;
@@ -26,6 +27,7 @@ export function PlaidBankLinkButton({
   onLinked,
   onStart,
 }: PlaidBankLinkButtonProps) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const [opening, setOpening] = useState(false);
 
   const start = async () => {
@@ -53,13 +55,13 @@ export function PlaidBankLinkButton({
       accessibilityState={{ busy: busy || opening, disabled: busy || opening || disabled }}
       disabled={busy || opening || disabled}
       onPress={() => void start()}
-      style={({ pressed }) => [styles.button, pressed && styles.pressed, (busy || opening || disabled) && styles.disabled]}>
+      style={({ pressed }) => [responsiveStyles.button, pressed && responsiveStyles.pressed, (busy || opening || disabled) && responsiveStyles.disabled]}>
       {busy || opening ? (
         <ActivityIndicator color={theme.colors.textOnAccent} size="small" />
       ) : (
         <Ionicons color={theme.colors.textOnAccent} name="arrow-forward" size={15} />
       )}
-      <Text style={[styles.label, { fontSize }]}>CONNECT BUSINESS BANK</Text>
+      <Text style={[responsiveStyles.label, { fontSize }]}>CONNECT BUSINESS BANK</Text>
     </Pressable>
   );
 }
@@ -84,3 +86,16 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.78 },
   disabled: { opacity: 0.48 },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    button: {
+      ...styles["button"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(9) : layout.responsiveWidth(9),
+      gap: layout.isWeb ? layout.webResponsiveWidth(7) : layout.responsiveWidth(7),
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(41) : layout.responsiveHeight(41),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
+    },
+  });
+}

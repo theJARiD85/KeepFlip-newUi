@@ -16,12 +16,14 @@ import {
 } from '@/services/crosslisting-service';
 import { confirmMarketplaceListing, parseSavedListingDraft } from '@/services/listing-draft-service';
 import { getMarketplaceSelections } from '@/services/marketplace-selections-service';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 const MARKETPLACES = CROSSLISTING_RUN_MARKETPLACES;
 
 type RunStatus = 'prepared' | 'submit_tapped' | 'confirmed';
 
 export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onListingConfirmed, onBeforeStart, initialSelections }: CrosslistingRunProps) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const confirmedMarketplaces = useMemo(() => parseSavedListingDraft(item.listingJson)?.confirmedMarketplaces ?? {}, [item.listingJson]);
   const [selected, setSelected] = useState<CrosslistingMarketplace[]>(() => MARKETPLACES.filter((marketplace) => initialSelections?.includes(marketplace) && !confirmedMarketplaces[marketplace]));
   const selectedAvailable = selected.filter((marketplace) => !confirmedMarketplaces[marketplace]);
@@ -123,17 +125,17 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.headingRow}>
-        <View style={styles.headingCopy}>
-          <Text style={styles.eyebrow}>CROSSLISTING RUN</Text>
-          <Text style={styles.title}>Pick where this item goes</Text>
+    <View style={responsiveStyles.container}>
+      <View style={responsiveStyles.headingRow}>
+        <View style={responsiveStyles.headingCopy}>
+          <Text style={responsiveStyles.eyebrow}>CROSSLISTING RUN</Text>
+          <Text style={responsiveStyles.title}>Pick where this item goes</Text>
         </View>
-        <View style={styles.countBadge}><Text style={styles.countText}>{selectedAvailable.length} SELECTED</Text></View>
+        <View style={responsiveStyles.countBadge}><Text style={responsiveStyles.countText}>{selectedAvailable.length} SELECTED</Text></View>
       </View>
-      <Text style={styles.body}>One run, one marketplace at a time. KeepFlip opens each seller page, fills the draft and tries to attach saved photos. You can review each listing before submitting.</Text>
-      {runError ? <Text accessibilityRole="alert" style={styles.finished}>{runError}</Text> : null}
-      <View style={styles.marketplaces}>
+      <Text style={responsiveStyles.body}>One run, one marketplace at a time. KeepFlip opens each seller page, fills the draft and tries to attach saved photos. You can review each listing before submitting.</Text>
+      {runError ? <Text accessibilityRole="alert" style={responsiveStyles.finished}>{runError}</Text> : null}
+      <View style={responsiveStyles.marketplaces}>
         {MARKETPLACES.map((marketplace) => {
           const checked = selected.includes(marketplace);
           const status = statuses[marketplace];
@@ -146,34 +148,34 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
               accessibilityState={{ checked: checked || alreadyListed, disabled: runTargets.length > 0 || alreadyListed }}
               disabled={runTargets.length > 0 || alreadyListed}
               onPress={() => toggle(marketplace)}
-              style={[styles.marketplace, (checked || alreadyListed) && styles.marketplaceSelected]}
+              style={[responsiveStyles.marketplace, (checked || alreadyListed) && responsiveStyles.marketplaceSelected]}
             >
-              <Ionicons color={checked || alreadyListed ? theme.colors.scannerCyan : theme.colors.textMuted} name={checked || alreadyListed ? 'checkmark-circle' : 'add'} size={19} style={[styles.check, (checked || alreadyListed) && styles.checkSelected]} />
-              <Text style={[styles.marketplaceName, (checked || alreadyListed) && styles.marketplaceNameSelected]}>{CROSSLISTING_DESTINATIONS[marketplace].label}</Text>
-              {status || alreadyListed ? <Text style={styles.marketplaceStatus}>{alreadyListed || status === 'confirmed' ? 'LISTED' : status === 'submit_tapped' ? 'SUBMIT TAPPED' : 'DRAFT FILLED'}</Text> : null}
+              <Ionicons color={checked || alreadyListed ? theme.colors.scannerCyan : theme.colors.textMuted} name={checked || alreadyListed ? 'checkmark-circle' : 'add'} size={19} style={[responsiveStyles.check, (checked || alreadyListed) && responsiveStyles.checkSelected]} />
+              <Text style={[responsiveStyles.marketplaceName, (checked || alreadyListed) && responsiveStyles.marketplaceNameSelected]}>{CROSSLISTING_DESTINATIONS[marketplace].label}</Text>
+              {status || alreadyListed ? <Text style={responsiveStyles.marketplaceStatus}>{alreadyListed || status === 'confirmed' ? 'LISTED' : status === 'submit_tapped' ? 'SUBMIT TAPPED' : 'DRAFT FILLED'}</Text> : null}
             </Pressable>
           );
         })}
       </View>
-      {finished ? <Text accessibilityRole="alert" style={styles.finished}>You reached the end of this run. Check each marketplace page for its own posting confirmation.</Text> : null}
+      {finished ? <Text accessibilityRole="alert" style={responsiveStyles.finished}>You reached the end of this run. Check each marketplace page for its own posting confirmation.</Text> : null}
       {runTargets.length ? (
-        <View style={styles.runControls}>
-          <Text style={styles.progress}>STOP {runIndex + 1} OF {runTargets.length} · {CROSSLISTING_DESTINATIONS[runTargets[runIndex]].label}</Text>
-          <Pressable accessibilityRole="button" onPress={() => setActive(runTargets[runIndex])} style={styles.startButton}>
-            <Text style={styles.startText}>{active ? 'Marketplace open' : 'Return to marketplace'}</Text>
+        <View style={responsiveStyles.runControls}>
+          <Text style={responsiveStyles.progress}>STOP {runIndex + 1} OF {runTargets.length} · {CROSSLISTING_DESTINATIONS[runTargets[runIndex]].label}</Text>
+          <Pressable accessibilityRole="button" onPress={() => setActive(runTargets[runIndex])} style={responsiveStyles.startButton}>
+            <Text style={responsiveStyles.startText}>{active ? 'Marketplace open' : 'Return to marketplace'}</Text>
           </Pressable>
           <Pressable accessibilityRole="button" onPress={() => {
             if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
             transitionTimerRef.current = null;
             setActive(null);
             setRunTargets([]);
-          }} style={styles.endButton}>
-            <Text style={styles.endText}>End run</Text>
+          }} style={responsiveStyles.endButton}>
+            <Text style={responsiveStyles.endText}>End run</Text>
           </Pressable>
         </View>
       ) : (
-        <Pressable accessibilityRole="button" accessibilityState={{ disabled: selectedAvailable.length === 0 || starting }} disabled={selectedAvailable.length === 0 || starting} onPress={() => { void start(); }} style={[styles.startButton, (selectedAvailable.length === 0 || starting) && styles.disabled]}>
-          <Text style={styles.startText}>{starting ? 'Preparing your run…' : <>Start crosslisting <Ionicons color={theme.colors.textOnAccent} name="arrow-forward" size={14} /></>}</Text>
+        <Pressable accessibilityRole="button" accessibilityState={{ disabled: selectedAvailable.length === 0 || starting }} disabled={selectedAvailable.length === 0 || starting} onPress={() => { void start(); }} style={[responsiveStyles.startButton, (selectedAvailable.length === 0 || starting) && responsiveStyles.disabled]}>
+          <Text style={responsiveStyles.startText}>{starting ? 'Preparing your run…' : <>Start crosslisting <Ionicons color={theme.colors.textOnAccent} name="arrow-forward" size={14} /></>}</Text>
         </Pressable>
       )}
       {active && payload ? (
@@ -223,3 +225,99 @@ const styles = StyleSheet.create({
   endText: { color: theme.colors.textMuted, fontSize: 11, fontWeight: '800' },
   finished: { color: theme.colors.scannerCyan, fontSize: 12, lineHeight: 18 },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    container: {
+      ...styles["container"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(10) : layout.responsiveWidth(10),
+    },
+    headingRow: {
+      ...styles["headingRow"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
+    },
+    headingCopy: {
+      ...styles["headingCopy"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(4) : layout.responsiveWidth(4),
+    },
+    eyebrow: {
+      ...styles["eyebrow"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(9) : layout.responsiveFont(9),
+    },
+    title: {
+      ...styles["title"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(17) : layout.responsiveFont(17),
+    },
+    countBadge: {
+      ...styles["countBadge"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(20) : layout.responsiveWidth(20),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(9) : layout.responsiveWidth(9),
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(6) : layout.responsiveHeight(6),
+    },
+    countText: {
+      ...styles["countText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(9) : layout.responsiveFont(9),
+    },
+    body: {
+      ...styles["body"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : layout.responsiveFont(12),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : layout.responsiveFont(18),
+    },
+    marketplaces: {
+      ...styles["marketplaces"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
+    },
+    marketplace: {
+      ...styles["marketplace"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(42) : layout.responsiveHeight(42),
+      gap: layout.isWeb ? layout.webResponsiveWidth(6) : layout.responsiveWidth(6),
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(10) : layout.responsiveWidth(10),
+    },
+    check: {
+      ...styles["check"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(15) : layout.responsiveFont(15),
+    },
+    marketplaceName: {
+      ...styles["marketplaceName"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : layout.responsiveFont(11),
+    },
+    marketplaceStatus: {
+      ...styles["marketplaceStatus"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : layout.responsiveFont(8),
+    },
+    startButton: {
+      ...styles["startButton"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(48) : layout.responsiveHeight(48),
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
+    },
+    startText: {
+      ...styles["startText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : layout.responsiveFont(13),
+    },
+    runControls: {
+      ...styles["runControls"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
+    },
+    progress: {
+      ...styles["progress"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : layout.responsiveFont(10),
+    },
+    endButton: {
+      ...styles["endButton"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(36) : layout.responsiveHeight(36),
+    },
+    endText: {
+      ...styles["endText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : layout.responsiveFont(11),
+    },
+    finished: {
+      ...styles["finished"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : layout.responsiveFont(12),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : layout.responsiveFont(18),
+    },
+  });
+}

@@ -510,7 +510,7 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     },
     titlePhone: {
       ...styles["titlePhone"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(33) : layout.responsiveFont(33),
+      fontSize: layout.isWeb ? layout.webResponsiveFont(26) : layout.responsiveFont(33),
       lineHeight: layout.isWeb ? layout.webResponsiveFont(41) : layout.responsiveFont(41),
     },
     intro: {
@@ -530,11 +530,11 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     },
     sectionEyebrow: {
       ...styles["sectionEyebrow"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : layout.responsiveFont(8),
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : layout.responsiveFont(8),
     },
     sectionTitle: {
       ...styles["sectionTitle"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(28) : layout.responsiveFont(28),
+      fontSize: layout.isWeb ? layout.webResponsiveFont(24) : layout.responsiveFont(28),
       lineHeight: layout.isWeb ? layout.webResponsiveFont(36) : layout.responsiveFont(36),
     },
     copy: {
@@ -559,7 +559,7 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     },
     listText: {
       ...styles["listText"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : layout.responsiveFont(14),
+      fontSize: layout.isWeb ? layout.webResponsiveFont(18) : layout.responsiveFont(14),
       lineHeight: layout.isWeb ? layout.webResponsiveFont(22) : layout.responsiveFont(22),
     },
     card: {
@@ -581,7 +581,7 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     },
     actionText: {
       ...styles["actionText"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : layout.responsiveFont(13),
+      fontSize: layout.isWeb ? layout.webResponsiveFont(18) : layout.responsiveFont(13),
     },
     inlineLinkText: {
       ...styles["inlineLinkText"],

@@ -29,6 +29,7 @@ import {
   hasMarketplaceWebViewSession,
   rememberMarketplaceWebViewSession,
 } from '@/services/marketplace-webview-session';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 const WEBVIEW_LOAD_STALL_TIMEOUT_MS = 45_000;
 const MAX_WEBVIEW_PHOTOS = 8;
@@ -184,6 +185,7 @@ export function MarketplaceAuthModal({
   photoFileIds,
   photoBucketId,
 }: MarketplaceAuthModalProps) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const webViewRef = useRef<WebViewInstance>(null);
   const fillRequestRef = useRef(0);
   const [sourceUrl, setSourceUrl] = useState('');
@@ -467,28 +469,28 @@ export function MarketplaceAuthModal({
       onRequestClose={onClose}
       visible={visible}
     >
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Pressable accessibilityRole="button" onPress={onClose} style={styles.headerAction}>
-            <Text style={styles.headerActionText}>Close</Text>
+      <SafeAreaView style={responsiveStyles.container}>
+        <View style={responsiveStyles.header}>
+          <Pressable accessibilityRole="button" onPress={onClose} style={responsiveStyles.headerAction}>
+            <Text style={responsiveStyles.headerActionText}>Close</Text>
           </Pressable>
-          <Text style={styles.title}>{progressLabel ? `${progressLabel} · ` : ''}{destination.label} listing</Text>
+          <Text style={responsiveStyles.title}>{progressLabel ? `${progressLabel} · ` : ''}{destination.label} listing</Text>
           <Pressable
             accessibilityRole="button"
             disabled={savingSession || restoringSession || forgettingSession}
             onPress={() => void handleSaveSession()}
-            style={[styles.headerAction, (savingSession || restoringSession || forgettingSession) && styles.disabled]}
+            style={[responsiveStyles.headerAction, (savingSession || restoringSession || forgettingSession) && responsiveStyles.disabled]}
           >
-            <Text style={styles.headerActionText}>
+            <Text style={responsiveStyles.headerActionText}>
               {savingSession ? 'Opening…' : sessionSaved ? 'Open listing form' : 'Continue to listing'}
             </Text>
           </Pressable>
         </View>
-        <Text selectable style={styles.status}>{status}</Text>
-        {error ? <Text selectable style={styles.error}>{error}</Text> : null}
+        <Text selectable style={responsiveStyles.status}>{status}</Text>
+        {error ? <Text selectable style={responsiveStyles.error}>{error}</Text> : null}
         {onNext ? (
-          <Pressable accessibilityRole="button" onPress={onNext} style={styles.nextButton}>
-            <Text style={styles.nextButtonText}>{nextLabel === 'Finish run' ? 'Finish run' : `Next: ${nextLabel ?? 'marketplace'}`} <Ionicons color={theme.colors.textOnAccent} name="arrow-forward" size={14} /></Text>
+          <Pressable accessibilityRole="button" onPress={onNext} style={responsiveStyles.nextButton}>
+            <Text style={responsiveStyles.nextButtonText}>{nextLabel === 'Finish run' ? 'Finish run' : `Next: ${nextLabel ?? 'marketplace'}`} <Ionicons color={theme.colors.textOnAccent} name="arrow-forward" size={14} /></Text>
           </Pressable>
         ) : null}
         {onConfirmed && sessionSaved ? (
@@ -499,52 +501,52 @@ export function MarketplaceAuthModal({
               { text: 'Keep checking', style: 'cancel' },
               { text: 'Yes, it is live', onPress: () => onConfirmed(isMarketplaceHost(currentUrl, platform) ? currentUrl : undefined) },
             ],
-          )} style={styles.nextButton}>
-            <Text style={styles.nextButtonText}>I SEE MY LIVE LISTING <Ionicons color={theme.colors.textOnAccent} name="checkmark-circle" size={14} /></Text>
+          )} style={responsiveStyles.nextButton}>
+            <Text style={responsiveStyles.nextButtonText}>I SEE MY LIVE LISTING <Ionicons color={theme.colors.textOnAccent} name="checkmark-circle" size={14} /></Text>
           </Pressable>
         ) : null}
         {sessionSaved ? (
-          <View style={styles.sessionActions}>
+          <View style={responsiveStyles.sessionActions}>
             <Pressable
               accessibilityRole="button"
               onPress={handleFillCurrentPage}
-              style={styles.fillButton}
+              style={responsiveStyles.fillButton}
             >
-              <Text style={styles.fillButtonText}>Fill draft on this page</Text>
+              <Text style={responsiveStyles.fillButtonText}>Fill draft on this page</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
               disabled={forgettingSession}
               onPress={() => void handleForgetSession()}
-              style={[styles.forgetButton, forgettingSession && styles.disabled]}
+              style={[responsiveStyles.forgetButton, forgettingSession && responsiveStyles.disabled]}
             >
-              <Text style={styles.forgetButtonText}>
+              <Text style={responsiveStyles.forgetButtonText}>
                 {forgettingSession ? 'Removing…' : 'Forget saved session'}
               </Text>
             </Pressable>
           </View>
         ) : null}
         {readyToSubmit ? (
-          <View style={styles.submitPanel}>
-            <Text style={styles.submitNotice}>
+          <View style={responsiveStyles.submitPanel}>
+            <Text style={responsiveStyles.submitNotice}>
               Review the listing and confirm its photos are attached before submitting.
             </Text>
             <Pressable
               accessibilityRole="button"
               disabled={submitting}
               onPress={handleSubmitReviewedListing}
-              style={[styles.submitButton, submitting && styles.disabled]}
+              style={[responsiveStyles.submitButton, submitting && responsiveStyles.disabled]}
             >
               {submitting ? (
                 <ActivityIndicator color={theme.colors.textOnAccent} size="small" />
               ) : null}
-              <Text style={styles.submitButtonText}>
+              <Text style={responsiveStyles.submitButtonText}>
                 {submitting ? 'Continuing…' : `Continue listing on ${destination.label}`}
               </Text>
             </Pressable>
           </View>
         ) : null}
-        <View style={styles.webViewContainer}>
+        <View style={responsiveStyles.webViewContainer}>
           {sourceUrl ? (
             <WebView
               ref={webViewRef}
@@ -581,7 +583,7 @@ export function MarketplaceAuthModal({
             />
           ) : null}
           {restoringSession || webViewLoading ? (
-            <View pointerEvents="none" style={styles.loadingOverlay}>
+            <View pointerEvents="none" style={responsiveStyles.loadingOverlay}>
               <ActivityIndicator color={theme.colors.scannerCyan} size="large" />
             </View>
           ) : null}
@@ -708,3 +710,96 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    header: {
+      ...styles["header"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(58) : layout.responsiveHeight(58),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
+    },
+    headerAction: {
+      ...styles["headerAction"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(40) : layout.responsiveHeight(40),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(6) : layout.responsiveWidth(6),
+    },
+    headerActionText: {
+      ...styles["headerActionText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : layout.responsiveFont(10),
+    },
+    title: {
+      ...styles["title"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : layout.responsiveFont(13),
+    },
+    status: {
+      ...styles["status"],
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(16) : layout.responsiveWidth(16),
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(10) : layout.responsiveHeight(10),
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : layout.responsiveFont(12),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : layout.responsiveFont(18),
+    },
+    nextButton: {
+      ...styles["nextButton"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(36) : layout.responsiveHeight(36),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(16) : layout.responsiveWidth(16),
+    },
+    nextButtonText: {
+      ...styles["nextButtonText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : layout.responsiveFont(10),
+    },
+    error: {
+      ...styles["error"],
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(16) : layout.responsiveWidth(16),
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(8) : layout.responsiveHeight(8),
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : layout.responsiveFont(12),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(17) : layout.responsiveFont(17),
+    },
+    sessionActions: {
+      ...styles["sessionActions"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(10) : layout.responsiveWidth(10),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(16) : layout.responsiveWidth(16),
+      paddingBottom: layout.isWeb ? layout.webResponsiveHeight(8) : layout.responsiveHeight(8),
+    },
+    submitPanel: {
+      ...styles["submitPanel"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
+      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(8) : layout.responsiveHeight(8),
+    },
+    submitNotice: {
+      ...styles["submitNotice"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : layout.responsiveFont(12),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(17) : layout.responsiveFont(17),
+    },
+    submitButton: {
+      ...styles["submitButton"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(42) : layout.responsiveHeight(42),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(14) : layout.responsiveWidth(14),
+      gap: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
+    },
+    submitButtonText: {
+      ...styles["submitButtonText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : layout.responsiveFont(10),
+    },
+    fillButton: {
+      ...styles["fillButton"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(36) : layout.responsiveHeight(36),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
+    },
+    fillButtonText: {
+      ...styles["fillButtonText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(9) : layout.responsiveFont(9),
+    },
+    forgetButton: {
+      ...styles["forgetButton"],
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(36) : layout.responsiveHeight(36),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
+    },
+    forgetButtonText: {
+      ...styles["forgetButtonText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(9) : layout.responsiveFont(9),
+    },
+  });
+}

@@ -11,12 +11,14 @@ import {
   removePhotoBackground,
   removePhotoBackgroundWithBiRefNet,
 } from "@/services/photo-background-removal.native";
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 const DEMO_PHOTO_ASSET = require("@/assets/images/walkthrough-coach-bag.jpeg");
 
 type ModelChoice = "Current KeepFlip" | "BiRefNet Lite";
 
 export default function BiRefNetTestScreen() {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const router = useRouter();
   const { autoRunBiRefNet } = useLocalSearchParams<{ autoRunBiRefNet?: string }>();
   const autoRunStarted = useRef(false);
@@ -97,26 +99,26 @@ export default function BiRefNetTestScreen() {
   const displayedUri = previewUri && !showOriginal ? previewUri : sourceUri;
 
   return (
-    <ScrollView contentContainerStyle={styles.content} style={styles.screen}>
-      <Text style={styles.eyebrow}>ON-DEVICE MODEL CHECK</Text>
-      <Text style={styles.title}>BiRefNet Lite</Text>
-      <Text style={styles.description}>
+    <ScrollView contentContainerStyle={responsiveStyles.content} style={responsiveStyles.screen}>
+      <Text style={responsiveStyles.eyebrow}>ON-DEVICE MODEL CHECK</Text>
+      <Text style={responsiveStyles.title}>BiRefNet Lite</Text>
+      <Text style={responsiveStyles.description}>
         This test uses a bundled handbag demo photo. Processing stays on this phone; the preview is not saved or uploaded.
       </Text>
 
-      <View style={styles.previewFrame}>
+      <View style={responsiveStyles.previewFrame}>
         {displayedUri ? (
           <Image
             accessibilityLabel={previewUri && !showOriginal ? `${previewModel ?? "Cutout"} preview` : "Bundled handbag demo photo"}
             contentFit="contain"
             source={{ uri: displayedUri }}
-            style={styles.previewImage}
+            style={responsiveStyles.previewImage}
           />
         ) : (
           <ActivityIndicator color={theme.colors.scannerCyan} />
         )}
       </View>
-      <Text style={styles.helper}>
+      <Text style={responsiveStyles.helper}>
         {previewUri && !showOriginal ? `${previewModel ?? "Cutout"} preview` : "Bundled Coach bag demo photo"}
       </Text>
 
@@ -124,9 +126,9 @@ export default function BiRefNetTestScreen() {
         <Pressable
           accessibilityRole="button"
           onPress={() => setShowOriginal((current) => !current)}
-          style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}
+          style={({ pressed }) => [responsiveStyles.secondaryButton, pressed && responsiveStyles.pressed]}
         >
-          <Text style={styles.secondaryText}>{showOriginal ? "SHOW CUTOUT" : "SHOW ORIGINAL"}</Text>
+          <Text style={responsiveStyles.secondaryText}>{showOriginal ? "SHOW CUTOUT" : "SHOW ORIGINAL"}</Text>
         </Pressable>
       ) : null}
 
@@ -136,12 +138,12 @@ export default function BiRefNetTestScreen() {
         accessibilityState={{ disabled: !sourceUri || Boolean(runningModel) }}
         disabled={!sourceUri || Boolean(runningModel)}
         onPress={() => void runModel("Current KeepFlip")}
-        style={({ pressed }) => [styles.secondaryButton, (pressed || Boolean(runningModel) || !sourceUri) && styles.dimmed]}
+        style={({ pressed }) => [responsiveStyles.secondaryButton, (pressed || Boolean(runningModel) || !sourceUri) && responsiveStyles.dimmed]}
       >
         {runningModel === "Current KeepFlip" ? (
           <ActivityIndicator color={theme.colors.scannerCyan} />
         ) : (
-          <Text style={styles.secondaryText}>RUN CURRENT KEEPFLIP MODEL</Text>
+          <Text style={responsiveStyles.secondaryText}>RUN CURRENT KEEPFLIP MODEL</Text>
         )}
       </Pressable>
 
@@ -151,19 +153,19 @@ export default function BiRefNetTestScreen() {
         accessibilityState={{ disabled: !sourceUri || Boolean(runningModel) }}
         disabled={!sourceUri || Boolean(runningModel)}
         onPress={() => void runModel("BiRefNet Lite")}
-        style={({ pressed }) => [styles.primaryButton, (pressed || Boolean(runningModel) || !sourceUri) && styles.dimmed]}
+        style={({ pressed }) => [responsiveStyles.primaryButton, (pressed || Boolean(runningModel) || !sourceUri) && responsiveStyles.dimmed]}
       >
         {runningModel === "BiRefNet Lite" ? (
           <ActivityIndicator color={theme.colors.textOnAccent} />
         ) : (
-          <Text style={styles.primaryText}>RUN BIREFNET LITE · ANDROID CPU</Text>
+          <Text style={responsiveStyles.primaryText}>RUN BIREFNET LITE · ANDROID CPU</Text>
         )}
       </Pressable>
 
-      {details ? <Text selectable style={styles.notice}>{details}</Text> : null}
-      {error ? <Text selectable style={styles.error}>{error}</Text> : null}
+      {details ? <Text selectable style={responsiveStyles.notice}>{details}</Text> : null}
+      {error ? <Text selectable style={responsiveStyles.error}>{error}</Text> : null}
       {runningModel ? (
-        <Text style={styles.helper}>
+        <Text style={responsiveStyles.helper}>
           {runningModel === "BiRefNet Lite" ? "Loading and running the FP16-weight model through Android CPU…" : "Running the current cutout model on this phone…"}
         </Text>
       ) : null}
@@ -171,9 +173,9 @@ export default function BiRefNetTestScreen() {
       <Pressable
         accessibilityRole="button"
         onPress={() => router.back()}
-        style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
+        style={({ pressed }) => [responsiveStyles.closeButton, pressed && responsiveStyles.pressed]}
       >
-        <Text style={styles.closeText}>CLOSE TEST</Text>
+        <Text style={responsiveStyles.closeText}>CLOSE TEST</Text>
       </Pressable>
     </ScrollView>
   );
@@ -223,3 +225,69 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.74 },
   dimmed: { opacity: 0.5 },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    content: {
+      ...styles["content"],
+      gap: layout.isWeb ? layout.webResponsiveWidth(14) : layout.responsiveWidth(14),
+      paddingTop: layout.isWeb ? layout.webResponsiveHeight(30) : layout.responsiveHeight(30),
+    },
+    eyebrow: {
+      ...styles["eyebrow"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : layout.responsiveFont(11),
+    },
+    title: {
+      ...styles["title"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(26) : layout.responsiveFont(26),
+    },
+    description: {
+      ...styles["description"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : layout.responsiveFont(13),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(19) : layout.responsiveFont(19),
+    },
+    previewFrame: {
+      ...styles["previewFrame"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
+      height: layout.isWeb ? layout.webResponsiveHeight(390) : layout.responsiveHeight(390),
+    },
+    helper: {
+      ...styles["helper"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : layout.responsiveFont(12),
+    },
+    primaryButton: {
+      ...styles["primaryButton"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(48) : layout.responsiveHeight(48),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
+    },
+    primaryText: {
+      ...styles["primaryText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : layout.responsiveFont(11),
+    },
+    secondaryButton: {
+      ...styles["secondaryButton"],
+      borderRadius: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
+      minHeight: layout.isWeb ? layout.webResponsiveHeight(44) : layout.responsiveHeight(44),
+      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
+    },
+    secondaryText: {
+      ...styles["secondaryText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : layout.responsiveFont(11),
+    },
+    notice: {
+      ...styles["notice"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : layout.responsiveFont(12),
+    },
+    error: {
+      ...styles["error"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : layout.responsiveFont(12),
+      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : layout.responsiveFont(18),
+    },
+    closeText: {
+      ...styles["closeText"],
+      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : layout.responsiveFont(11),
+    },
+  });
+}
