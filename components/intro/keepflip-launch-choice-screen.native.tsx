@@ -1,4 +1,5 @@
 import { LANDING_BENEFITS, LANDING_STEPS } from '@/components/landing/landing-copy';
+import { LandingHostageStory } from '@/components/landing/landing-hostage-story';
 import { MatchedWidthHeadline } from '@/components/landing/matched-width-headline.native';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
@@ -140,6 +141,8 @@ export function KeepFlipLaunchChoiceScreen({
               ))}
             </View>
           </View>
+
+          <LandingHostageStory />
 
           <View style={responsiveStyles.section}>
             <Text style={responsiveStyles.sectionEyebrow}>STOP ADMIN FROM STEALING YOUR PROFIT.</Text>

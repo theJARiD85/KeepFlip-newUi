@@ -419,10 +419,11 @@ test('OfferUp opens its Sell popup before filling the listing form', async () =>
   assert.ok(messages.some((message) => message.type === 'KEEPFLIP_LISTING_TAB_STATUS'));
 });
 
-async function runFacebookStrollerScenario({ photoMode = 'none' } = {}) {
+async function runFacebookStrollerScenario({ photoMode = 'none', facebookSelectorFallback = false } = {}) {
   let composerOpen = false;
   let createNewListingClicks = 0;
   let itemForSaleClicks = 0;
+  let facebookSelectorFallbackUsed = false;
   let vehicleForSaleClicks = 0;
   let metaAiSwitchClicks = 0;
   let moreDetailsClicks = 0;
@@ -577,6 +578,7 @@ async function runFacebookStrollerScenario({ photoMode = 'none' } = {}) {
   const itemForSaleButton = makeChoice(
     'Item for sale\nCreate a single listing for one or more items to sell.',
     () => { itemForSaleClicks += 1; composerOpen = true; },
+    facebookSelectorFallback ? 'Create listing choice' : null,
   );
   const vehicleForSaleButton = makeChoice(
     'Vehicle for sale\nSell a car, truck or other type of vehicle.',
@@ -591,6 +593,10 @@ async function runFacebookStrollerScenario({ photoMode = 'none' } = {}) {
   };
   const document = {
     querySelector: (selector) => {
+      if (facebookSelectorFallback && selector.startsWith('#mount_0_0_pZ') && !composerOpen) {
+        facebookSelectorFallbackUsed = true;
+        return itemForSaleButton;
+      }
       if (selector === 'input[type="checkbox"][role="switch"][aria-label="Draft listings with Meta AI"]' && composerOpen) return metaAiSwitch;
       if (selector === '[aria-label="Suggested categories"]' && composerOpen) return suggestedCategories;
       if (hasPhoto && composerOpen && selector.includes('[aria-label*="Add photos" i]')) return photoDropZone;
@@ -683,7 +689,7 @@ async function runFacebookStrollerScenario({ photoMode = 'none' } = {}) {
   });
 
   await new Promise((resolve) => setTimeout(resolve, 0));
-  return { createNewListingClicks, itemForSaleClicks, vehicleForSaleClicks, moreDetailsClicks,
+  return { createNewListingClicks, itemForSaleClicks, facebookSelectorFallbackUsed, vehicleForSaleClicks, moreDetailsClicks,
     metaAiSwitchClicks, metaAiSwitch, householdCategoryClicks, babyCategoryClicks, selectedCategory,
     selectedCondition, selectedColor, fields, fieldsReadyWhenNextClicked, facebookNextClicks,
     facebookPublishClicks, facebookLocation, statuses, fileInput, photoChangeEvents, dropEvents,
@@ -714,6 +720,16 @@ test('Facebook selects a stroller category and advances when optional fields are
   assert.ok(statuses.some((status) => status.status === 'submit_clicked'));
   assert.equal(statuses.at(-1)?.status, 'confirmed');
   assert.equal(statuses.at(-1)?.externalUrl, facebookLocation.href);
+});
+
+test('Facebook clicks the supplied item-for-sale card selector when its semantic label is unavailable', async () => {
+  const result = await runFacebookStrollerScenario({ facebookSelectorFallback: true });
+  assert.equal(result.facebookSelectorFallbackUsed, true);
+  assert.equal(result.itemForSaleClicks, 1);
+  assert.equal(result.vehicleForSaleClicks, 0);
+  assert.equal(result.facebookNextClicks, 1);
+  assert.equal(result.facebookPublishClicks, 1);
+  assert.equal(result.statuses.at(-1)?.status, 'confirmed');
 });
 
 test('Facebook adds selected image files and waits for the photo count before advancing', async () => {
@@ -869,7 +885,10 @@ async function runFacebookShippingOptionsScenario({ runId, platformFields, selec
   shippingDialogInitiallyOpen = false, hideDeliveryMenuWhileDialogOpen = false,
   shippingDialogFoundByFallback = false, shippingLabelAriaLabel = 'Select shipping label',
   shippingDialogOpensAfterChecks = 0, weightOptionsOpenAfterChecks = 0,
-  exactWeightEntry = false, exactWeightInputAppearsAfterChecks = 0 }) {
+  exactWeightEntry = false, exactWeightInputAppearsAfterChecks = 0,
+  shippingLabelSelectorFallback = false, shippingLabelVisibleText = 'Select shipping label',
+  packageWeightSelectorFallback = false, exactWeightSelectorFallback = false,
+  exactWeightButtonLabel = 'Enter exact weight' }) {
   let deliveryMenuOpen = false;
   let weightMenuOpen = false;
   let shippingDialogOpen = shippingDialogInitiallyOpen;
@@ -879,13 +898,19 @@ async function runFacebookShippingOptionsScenario({ runId, platformFields, selec
   let exactWeightModeOpen = false;
   let exactWeightInputLookupChecks = 0;
   let exactWeightClicks = 0;
+  let exactWeightDoneClicks = 0;
+  let exactWeightSelectorUsed = false;
+  let exactWeightInputsWhenDone = null;
   let packageWeightClicks = 0;
+  let packageWeightSelectorUsed = false;
+  let packageWeightTargetClicks = 0;
   let shippingLabelClicks = 0;
   let shippingCostChecked = false;
   let shippingCostClicks = 0;
   let updateClicks = 0;
   let nextClicks = 0;
   const shippingActions = [];
+  const weightWorkflowActions = [];
   const statuses = [];
   const deliveryCombo = {
     disabled: false,
@@ -907,7 +932,12 @@ async function runFacebookShippingOptionsScenario({ runId, platformFields, selec
       : attribute === 'aria-expanded' ? String(weightMenuOpen) : null,
     getBoundingClientRect: () => ({ width: 260, height: 44 }),
     closest: () => null,
-    click: () => { packageWeightClicks += 1; weightMenuOpen = !weightMenuOpen; },
+    click: () => { packageWeightClicks += 1; weightWorkflowActions.push('Package weight'); weightMenuOpen = !weightMenuOpen; },
+  };
+  const packageWeightNestedTarget = {
+    getBoundingClientRect: () => ({ width: 240, height: 40 }),
+    closest: (selector) => selector === '[role="combobox"]' ? packageWeightCombo : null,
+    click: () => { packageWeightTargetClicks += 1; packageWeightCombo.click(); },
   };
   Object.defineProperty(packageWeightCombo, 'innerText', { get: () => 'Package weight' });
   Object.defineProperty(packageWeightCombo, 'textContent', { get: () => 'Package weight' });
@@ -950,19 +980,17 @@ async function runFacebookShippingOptionsScenario({ runId, platformFields, selec
     click: () => { updateClicks += 1; shippingActions.push('Update'); shippingDialogOpen = false; },
   };
   class MockHTMLInputElement {
-    constructor() {
-      this.type = 'number';
-      this.id = 'exact-package-weight';
-      this.name = 'exactPackageWeight';
+    constructor(id, unit) {
+      this.type = 'text';
+      this.id = id;
+      this.name = '';
       this.value = '';
       this.disabled = false;
-      this.inputMode = 'decimal';
+      this.parentElement = { innerText: unit, textContent: unit };
     }
     getAttribute(attribute) {
-      return attribute === 'aria-label' ? 'Exact package weight in lbs'
-        : attribute === 'type' ? this.type
-          : attribute === 'id' ? this.id
-            : attribute === 'name' ? this.name : null;
+      return attribute === 'type' ? this.type : attribute === 'id' ? this.id
+        : attribute === 'name' ? this.name : null;
     }
     getBoundingClientRect() { return { width: 160, height: 40 }; }
     closest() { return null; }
@@ -970,14 +998,33 @@ async function runFacebookShippingOptionsScenario({ runId, platformFields, selec
     blur() {}
     focus() {}
   }
-  const exactWeightInput = new MockHTMLInputElement();
+  const exactWeightPoundsInput = new MockHTMLInputElement('facebook-weight-lb', 'lb');
+  const exactWeightOuncesInput = new MockHTMLInputElement('facebook-weight-oz', 'oz');
   const exactWeightButton = {
     disabled: false,
-    getAttribute: (attribute) => attribute === 'aria-label' ? 'Enter exact weight' : null,
+    getAttribute: (attribute) => attribute === 'aria-label' ? exactWeightButtonLabel : null,
     getBoundingClientRect: () => ({ width: 240, height: 44 }),
-    innerText: 'Enter exact weight',
-    textContent: 'Enter exact weight',
-    click: () => { exactWeightClicks += 1; exactWeightModeOpen = true; },
+    innerText: exactWeightButtonLabel,
+    textContent: exactWeightButtonLabel,
+    click: () => { exactWeightClicks += 1; weightWorkflowActions.push('Enter exact weight'); exactWeightModeOpen = true; },
+  };
+  const exactWeightNestedTarget = {
+    getBoundingClientRect: () => ({ width: 220, height: 40 }),
+    closest: (selector) => selector === 'button,[role="button"]' ? exactWeightButton : null,
+  };
+  const exactWeightDoneButton = {
+    disabled: false,
+    getAttribute: (attribute) => attribute === 'aria-label' ? 'Done' : null,
+    getBoundingClientRect: () => ({ width: 100, height: 44 }),
+    innerText: 'Done',
+    textContent: 'Done',
+    click: () => {
+      exactWeightDoneClicks += 1;
+      weightWorkflowActions.push('Done');
+      exactWeightInputsWhenDone = [exactWeightPoundsInput.value, exactWeightOuncesInput.value];
+      exactWeightModeOpen = false;
+      weightMenuOpen = false;
+    },
   };
   const shippingDialog = {
     getAttribute: () => null,
@@ -990,7 +1037,7 @@ async function runFacebookShippingOptionsScenario({ runId, platformFields, selec
         exactWeightInputLookupChecks += 1;
         const exactInputReady = exactWeightInputAppearsAfterChecks <= 0 ||
           exactWeightInputLookupChecks >= exactWeightInputAppearsAfterChecks;
-        return [...weightRadios, ...(exactInputReady ? [exactWeightInput] : [])];
+        return [...weightRadios, ...(exactInputReady ? [exactWeightPoundsInput, exactWeightOuncesInput] : [])];
       }
       if (selector === 'input[type="radio"][name="package_weight_range"]') {
         if (weightMenuOpen && weightOptionsOpenAfterChecks > 0) {
@@ -1001,7 +1048,10 @@ async function runFacebookShippingOptionsScenario({ runId, platformFields, selec
         return weightMenuOpen || weightChoiceCommitted ? weightRadios : [];
       }
       if (selector === '[role="checkbox"]') return [sellerShippingControl];
-      if (selector === 'button,[role="button"]') return [...(exactWeightEntry ? [exactWeightButton] : []), updateButton];
+      if (selector === 'button,[role="button"]') return [
+        ...(exactWeightEntry && weightMenuOpen && !exactWeightModeOpen ? [exactWeightButton] : []),
+        ...(exactWeightModeOpen ? [exactWeightDoneButton] : []), updateButton,
+      ];
       return [];
     },
   };
@@ -1009,9 +1059,13 @@ async function runFacebookShippingOptionsScenario({ runId, platformFields, selec
     disabled: false,
     getAttribute: (attribute) => attribute === 'aria-label' ? shippingLabelAriaLabel : null,
     getBoundingClientRect: () => ({ width: 260, height: 44 }),
-    innerText: 'Select shipping label',
-    textContent: 'Select shipping label',
+    innerText: shippingLabelVisibleText,
+    textContent: shippingLabelVisibleText,
     click: () => { shippingLabelClicks += 1; shippingDialogOpen = true; },
+  };
+  const shippingLabelNestedTarget = {
+    getBoundingClientRect: () => ({ width: 240, height: 40 }),
+    closest: (selector) => selector === 'button,[role="button"]' ? shippingLabelButton : null,
   };
   const nextButton = {
     disabled: false,
@@ -1024,8 +1078,19 @@ async function runFacebookShippingOptionsScenario({ runId, platformFields, selec
   const document = {
     getElementById: (id) => ({ textContent: id === 'delivery-label' ? 'Delivery method'
       : id === 'weight-label' ? 'Package weight' : '' }),
-    querySelector: (selector) => selector.includes('Package weight and shipping options') && shippingDialogOpen && !shippingDialogFoundByFallback
-      ? shippingDialog : null,
+    querySelector: (selector) => {
+      if (selector.includes('Package weight and shipping options') && shippingDialogOpen && !shippingDialogFoundByFallback) return shippingDialog;
+      if (exactWeightSelectorFallback && selector.includes('xu96u03.xm80bdy') && shippingDialogOpen && weightMenuOpen && !exactWeightModeOpen) {
+        exactWeightSelectorUsed = true;
+        return exactWeightNestedTarget;
+      }
+      if (packageWeightSelectorFallback && selector.startsWith('#mount_0_0_jK') && selector.includes('div:nth-child(5)') && shippingDialogOpen) {
+        packageWeightSelectorUsed = true;
+        return packageWeightNestedTarget;
+      }
+      if (shippingLabelSelectorFallback && selector.startsWith('#mount_0_0_jK') && !shippingDialogOpen) return shippingLabelNestedTarget;
+      return null;
+    },
     querySelectorAll: (selector) => {
       if (selector.includes('[role="dialog"]')) {
         if (shippingLabelClicks > 0 && !shippingDialogOpen && shippingDialogOpensAfterChecks > 0) {
@@ -1089,8 +1154,8 @@ async function runFacebookShippingOptionsScenario({ runId, platformFields, selec
   });
 
   await new Promise((resolve) => setTimeout(resolve, 0));
-  return { statuses, weightRadios, packageWeightClicks, shippingLabelClicks, shippingCostChecked,
-    exactWeightClicks, exactWeightInput,
+  return { statuses, weightRadios, packageWeightClicks, packageWeightSelectorUsed, packageWeightTargetClicks, shippingLabelClicks, shippingCostChecked,
+    exactWeightClicks, exactWeightDoneClicks, exactWeightSelectorUsed, exactWeightInputsWhenDone, exactWeightPoundsInput, exactWeightOuncesInput, weightWorkflowActions,
     shippingCostClicks, updateClicks, nextClicks, shippingActions };
 }
 
@@ -1121,6 +1186,49 @@ test('Facebook finds the visible Select shipping label text and waits for its po
   });
 
   assert.equal(result.shippingLabelClicks, 1);
+  assert.equal(result.updateClicks, 1);
+  assert.equal(result.nextClicks, 1);
+  assert.deepEqual(result.shippingActions, ['Update', 'Next']);
+  assert.equal(result.statuses.at(-1)?.status, 'confirmed');
+});
+
+test('Facebook uses the supplied shipping-label selector when its visible text changes', async () => {
+  const result = await runFacebookShippingOptionsScenario({
+    runId: 'facebook-shipping-label-selector-run-123456',
+    platformFields: {
+      deliveryMethod: 'shipping_and_local_pickup',
+      shippingWeight: '24 lbs',
+      sellerPaysShipping: 'false',
+    },
+    selectedWeight: '10-70 lbs',
+    shippingLabelAriaLabel: 'Delivery settings',
+    shippingLabelVisibleText: 'Choose a shipping label',
+    shippingLabelSelectorFallback: true,
+  });
+
+  assert.equal(result.shippingLabelClicks, 1);
+  assert.equal(result.updateClicks, 1);
+  assert.equal(result.nextClicks, 1);
+  assert.deepEqual(result.shippingActions, ['Update', 'Next']);
+  assert.equal(result.statuses.at(-1)?.status, 'confirmed');
+});
+
+test('Facebook clicks the supplied package-weight dropdown selector inside the shipping popup', async () => {
+  const result = await runFacebookShippingOptionsScenario({
+    runId: 'facebook-package-weight-selector-run-123456',
+    platformFields: {
+      deliveryMethod: 'shipping_and_local_pickup',
+      shippingWeight: '24 lbs',
+      sellerPaysShipping: 'false',
+    },
+    selectedWeight: '10-70 lbs',
+    packageWeightSelectorFallback: true,
+  });
+
+  assert.equal(result.packageWeightSelectorUsed, true);
+  assert.equal(result.packageWeightTargetClicks, 1);
+  assert.equal(result.packageWeightClicks, 1);
+  assert.equal(result.weightRadios.find((radio) => radio.value === '10-70 lbs')?.checked, true);
   assert.equal(result.updateClicks, 1);
   assert.equal(result.nextClicks, 1);
   assert.deepEqual(result.shippingActions, ['Update', 'Next']);
@@ -1198,10 +1306,16 @@ test('Facebook enters the generated approximate weight through Enter exact weigh
     },
     exactWeightEntry: true,
     exactWeightInputAppearsAfterChecks: 3,
+    exactWeightSelectorFallback: true,
+    exactWeightButtonLabel: 'Set custom package weight',
   });
 
+  assert.equal(result.packageWeightClicks, 1);
   assert.equal(result.exactWeightClicks, 1);
-  assert.equal(result.exactWeightInput.value, '1.5');
+  assert.equal(result.exactWeightSelectorUsed, true);
+  assert.equal(result.exactWeightDoneClicks, 1);
+  assert.deepEqual(result.exactWeightInputsWhenDone, ['1', '8']);
+  assert.deepEqual(result.weightWorkflowActions, ['Package weight', 'Enter exact weight', 'Done']);
   assert.equal(result.updateClicks, 1);
   assert.equal(result.nextClicks, 1);
   assert.deepEqual(result.shippingActions, ['Update', 'Next']);

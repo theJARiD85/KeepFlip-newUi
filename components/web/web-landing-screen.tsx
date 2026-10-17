@@ -1,4 +1,5 @@
 import { LANDING_BENEFITS, LANDING_STEPS } from '@/components/landing/landing-copy';
+import { LandingHostageStory } from '@/components/landing/landing-hostage-story';
 import { MatchedWidthHeadline } from '@/components/landing/matched-width-headline.web';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { SemanticHeading, WebActionLink, WebPageHead } from '@/components/web/web-public-page';
@@ -12,7 +13,6 @@ import KeepFlipShader from '@/components/ui/keepflip-shader.web';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import type { ComponentProps } from 'react';
 import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
@@ -133,6 +133,8 @@ export function WebLandingScreen() {
                 ))}
               </View>
             </View>
+
+            <LandingHostageStory />
 
             <View style={[responsiveStyles.showcase, compact && responsiveStyles.showcaseCompact]}>
               <View style={responsiveStyles.showcaseCopy}>

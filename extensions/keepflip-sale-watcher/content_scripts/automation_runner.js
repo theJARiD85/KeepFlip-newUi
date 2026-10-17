@@ -93,6 +93,10 @@
   let facebookSubmissionInProgress = false;
   let facebookShippingLabelOpenRequested = false;
   let facebookShippingOptionsSaved = false;
+  const facebookItemForSaleSelector = '#mount_0_0_pZ > div > div:nth-child(1) > div > div.x9f619.x1n2onr6.x1ja2u2z > div > div > div.x78zum5.xdt5ytf.x1t2pt76.x1n2onr6.x1ja2u2z.x10cihs4 > div.x9f619.x2lah0s.x1nhvcw1.x1qjc9v5.xozqiw3.x1q0g3np.x78zum5.x1iyjqo2.x1t2pt76.x1n2onr6.x1ja2u2z.xvrxa7q > div.x9f619.x1n2onr6.x1ja2u2z.xdt5ytf.x193iq5w.xeuugli.x1r8uery.x1iyjqo2.xs83m0k.x78zum5.x1t2pt76 > div > div > div.xamitd3.x78zum5.x1q0g3np.x1a02dak.x1e56ztr.x2fvf9.x14vqqas.xh8yej3.x1ni0lre.x1pz0773.xnkmj2t > div:nth-child(1) > div > span > div > div';
+  const facebookShippingLabelSelector = '#mount_0_0_jK > div > div:nth-child(1) > div > div.x9f619.x1n2onr6.x1ja2u2z > div > div > div.x78zum5.xdt5ytf.x1t2pt76.x1n2onr6.x1ja2u2z.x10cihs4 > div.x9f619.x2lah0s.x1nhvcw1.x1qjc9v5.xozqiw3.x1q0g3np.x78zum5.x1iyjqo2.x1t2pt76.x1n2onr6.x1ja2u2z > div.x9f619.x1n2onr6.x78zum5.xdt5ytf.x193iq5w.xeuugli.x2lah0s.x1t2pt76.x1xzczws.x1cvmir6.x1vjfegm.xwn1f64 > div > div.xb57i2i.x1q594ok.x5lxg6s.x78zum5.xdt5ytf.x6ikm8r.x1ja2u2z.x1pq812k.x1rohswg.xfk6m8.x1yqm8si.xjx87ck.x1l7klhg.x1iyjqo2.xs83m0k.x2lwn1j.xx8ngbg.xwo3gff.x1oyok0e.x1odjw0f.x1n2onr6.xq1qtft > div.x78zum5.xdt5ytf.x1iyjqo2.x1n2onr6 > div.x1xmf6yo.x78zum5.xdt5ytf.x1iyjqo2 > div > div > div.xyri2b.x1c1uobl.x1y1aw1k > div > div > div.x1n2onr6.x1ja2u2z.xjbqb8w.xw5cjc7.x1dmpuos.x1vsv7so.xau1kf4.x9f619.xh8yej3.x6ikm8r.x10wlt62 > div > div > div > div';
+  const facebookPackageWeightSelector = '#mount_0_0_jK > div > div:nth-child(1) > div > div:nth-child(5) > div > div > div.x9f619.x1n2onr6.x1ja2u2z > div > div.x1uvtmcs.x4k7w5x.x1h91t0o.x1beo9mf.xaigb6o.x12ejxvf.x3igimt.xarpa2k.xedcshv.x1lytzrv.x1t2pt76.x7ja8zs.x1n2onr6.x1qrby5j.x1jfb8zj > div > div > div > div:nth-child(4) > div > div > div > div';
+  const facebookExactWeightButtonSelector = '#mount_0_0_jK > div > div:nth-child(1) > div > div:nth-child(5) > div > div > div.x9f619.x1n2onr6.x1ja2u2z > div > div:nth-child(3) > div > div > div.xu96u03.xm80bdy.x10l6tqk.x13vifvy > div.x1uvtmcs.x4k7w5x.x1h91t0o.x1beo9mf.xaigb6o.x12ejxvf.x3igimt.xarpa2k.xedcshv.x1lytzrv.x1t2pt76.x7ja8zs.x1n2onr6.x1qrby5j.x1jfb8zj > div > div > div > span > div > div > div > div > div:nth-child(3) > div > div';
 
   async function sendMessageQuietly(message) {
     try { return await chrome.runtime.sendMessage(message); } catch { /* The extension may be reloading. */ }
@@ -352,6 +356,11 @@
   }
 
   function findFacebookShippingLabelButton() {
+    let directTarget = null;
+    try { directTarget = document.querySelector(facebookShippingLabelSelector); } catch { /* Fall back to the visible label. */ }
+    const directAction = directTarget?.closest?.('button,[role="button"]') || directTarget;
+    if (directAction && visible(directAction)) return directAction;
+
     const targetLabel = 'select shipping label';
     return Array.from(document.querySelectorAll('button,[role="button"]')).find((control) => {
       if (!visible(control)) return false;
@@ -443,7 +452,17 @@
 
   function facebookPackageWeightHint(payload) {
     const measurement = facebookPackageWeightMeasurement(payload);
-    return measurement ? facebookPackageWeightRangeForPounds(measurement.pounds) : null;
+    if (measurement) return facebookPackageWeightRangeForPounds(measurement.pounds);
+    const platformFields = payload?.platformFields && typeof payload.platformFields === 'object'
+      ? payload.platformFields
+      : {};
+    const values = [
+      ...Object.entries(platformFields).filter(([key]) => /weight/i.test(key)).map(([, value]) => value),
+      ...['packageWeight', 'shippingWeight', 'weight', 'packageWeightOz', 'shippingWeightOz']
+        .map((key) => payload?.[key]).filter((value) => value !== undefined && value !== null),
+    ];
+    return values.map((value) => facebookPackageWeightRanges.find((range) =>
+      normalizeChoiceLabel(range) === normalizeChoiceLabel(value))).find(Boolean) || null;
   }
 
   function facebookPackageWeightRadios(dialog) {
@@ -453,6 +472,11 @@
   }
 
   function findFacebookExactWeightButton(dialog) {
+    let directTarget = null;
+    try { directTarget = document.querySelector(facebookExactWeightButtonSelector); } catch { /* Fall back to the visible label. */ }
+    const directAction = directTarget?.closest?.('button,[role="button"]') || directTarget;
+    if (directAction && visible(directAction)) return directAction;
+
     return Array.from(dialog?.querySelectorAll('button,[role="button"]') || []).find((control) => {
       if (!visible(control)) return false;
       const labels = [control.getAttribute('aria-label'), control.innerText, control.textContent, control.value]
@@ -466,7 +490,8 @@
     const global = Array.from(document.querySelectorAll('input'));
     const allInputs = Array.from(new Set([...scoped, ...global])).filter((input) => {
       const type = String(input.type || input.getAttribute('type') || 'text').toLowerCase();
-      return visible(input) && !['button', 'checkbox', 'file', 'hidden', 'password', 'radio', 'submit'].includes(type);
+      return !['button', 'checkbox', 'file', 'hidden', 'password', 'radio', 'submit'].includes(type) &&
+        typeof input.getBoundingClientRect === 'function' && visible(input);
     });
     const labelForInput = (input) => [
       labelFor(input), input.getAttribute('aria-label'), input.getAttribute('placeholder'),
@@ -478,7 +503,8 @@
 
     const scopedNumeric = scoped.filter((input) => {
       const type = String(input.type || input.getAttribute('type') || '').toLowerCase();
-      return visible(input) && !['button', 'checkbox', 'file', 'hidden', 'password', 'radio', 'submit'].includes(type) &&
+      return !['button', 'checkbox', 'file', 'hidden', 'password', 'radio', 'submit'].includes(type) &&
+        typeof input.getBoundingClientRect === 'function' && visible(input) &&
         (type === 'number' || input.inputMode === 'decimal' || input.getAttribute('inputmode') === 'decimal');
     });
     if (scopedNumeric.length === 1) return scopedNumeric[0];
@@ -487,6 +513,42 @@
       return type === 'number' || input.inputMode === 'decimal' || input.getAttribute('inputmode') === 'decimal';
     });
     return globalNumeric.length === 1 ? globalNumeric[0] : null;
+  }
+
+  function findFacebookExactWeightInputs(dialog) {
+    const scoped = Array.from(dialog?.querySelectorAll('input') || []);
+    const global = Array.from(document.querySelectorAll('input'));
+    const inputs = Array.from(new Set([...scoped, ...global])).filter((input) => {
+      const type = String(input.type || input.getAttribute('type') || 'text').toLowerCase();
+      return !['button', 'checkbox', 'file', 'hidden', 'password', 'radio', 'submit'].includes(type) &&
+        typeof input.getBoundingClientRect === 'function' && visible(input);
+    });
+    const unitLabel = (input) => {
+      const parent = input.parentElement;
+      return normalizeChoiceLabel([
+        labelFor(input), input.getAttribute('aria-label'), input.getAttribute('placeholder'),
+        input.getAttribute('name'), input.getAttribute('id'),
+        input.closest('label')?.innerText, input.closest('label')?.textContent,
+        parent?.innerText, parent?.textContent,
+      ].filter(Boolean).join(' '));
+    };
+    const ounces = inputs.find((input) => /\b(?:oz|ounce|ounces)\b/i.test(unitLabel(input)));
+    const pounds = inputs.find((input) => /\b(?:lb|lbs|pound|pounds)\b/i.test(unitLabel(input)));
+    if (ounces && (pounds || inputs.length === 2)) {
+      return { pounds: pounds || inputs.find((input) => input !== ounces), ounces };
+    }
+    if (inputs.length === 2) return { pounds: inputs[0], ounces: inputs[1] };
+    const single = findFacebookExactWeightInput(dialog);
+    return single ? { single } : null;
+  }
+
+  function findFacebookExactWeightDoneButton(dialog) {
+    return Array.from(dialog?.querySelectorAll('button,[role="button"]') || []).find((control) => {
+      if (!visible(control)) return false;
+      const labels = [control.getAttribute('aria-label'), control.innerText, control.textContent, control.value]
+        .map(normalizeChoiceLabel).filter(Boolean);
+      return labels.includes('done');
+    }) || null;
   }
 
   function facebookExactWeightInputValue(measurement, input) {
@@ -501,40 +563,79 @@
   }
 
   async function enterFacebookExactWeight(dialog, measurement) {
-    let input = findFacebookExactWeightInput(dialog);
+    let inputs = findFacebookExactWeightInputs(dialog);
     const button = findFacebookExactWeightButton(dialog);
-    if (!input && button) {
+    if (!inputs && button) {
       button.click();
-      for (let attempt = 0; attempt < 12 && !input; attempt += 1) {
+      for (let attempt = 0; attempt < 12 && !inputs; attempt += 1) {
         await new Promise((resolve) => setTimeout(resolve, 120));
         dialog = findFacebookShippingOptionsDialog() || dialog;
-        input = findFacebookExactWeightInput(dialog);
+        inputs = findFacebookExactWeightInputs(dialog);
       }
     }
-    if (!button && !input) return { supported: false, dialog };
-    if (!input) return { supported: true, ready: false, dialog };
+    if (!button && !inputs) return { supported: false, dialog };
+    if (!inputs) return { supported: true, ready: false, dialog };
 
-    const value = facebookExactWeightInputValue(measurement, input);
-    if (!setField(input, value) || String(input.value ?? '').trim() !== value) {
-      return { supported: true, ready: false, dialog };
+    if (inputs.pounds && inputs.ounces) {
+      const totalOunces = Math.max(0, Math.round(measurement.pounds * 16));
+      const poundsValue = String(Math.floor(totalOunces / 16));
+      const ouncesValue = String(totalOunces % 16);
+      if (!setField(inputs.pounds, poundsValue) || String(inputs.pounds.value ?? '').trim() !== poundsValue ||
+        !setField(inputs.ounces, ouncesValue) || String(inputs.ounces.value ?? '').trim() !== ouncesValue) {
+        return { supported: true, ready: false, dialog };
+      }
+    } else {
+      const input = inputs.single;
+      const value = facebookExactWeightInputValue(measurement, input);
+      if (!setField(input, value) || String(input.value ?? '').trim() !== value) {
+        return { supported: true, ready: false, dialog };
+      }
+    }
+
+    let doneButton = findFacebookExactWeightDoneButton(dialog);
+    const needsDone = Boolean(inputs.pounds && inputs.ounces);
+    for (let attempt = 0; needsDone && !doneButton && attempt < 12; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 120));
+      dialog = findFacebookShippingOptionsDialog() || dialog;
+      doneButton = findFacebookExactWeightDoneButton(dialog);
+    }
+    if (needsDone && !doneButton) {
+      return { supported: true, ready: false, dialog, message: 'Facebook did not show the Done button for the exact package weight.' };
+    }
+    if (doneButton) {
+      doneButton.click();
+      let doneStillVisible = Boolean(findFacebookExactWeightDoneButton(dialog));
+      for (let attempt = 0; doneStillVisible && attempt < 12; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 120));
+        dialog = findFacebookShippingOptionsDialog() || dialog;
+        doneStillVisible = Boolean(findFacebookExactWeightDoneButton(dialog));
+      }
+      if (doneStillVisible) return { supported: true, ready: false, dialog, message: 'Facebook’s exact weight editor is still open after Done.' };
     }
     return { supported: true, ready: true, dialog };
   }
 
   async function openFacebookPackageWeightOptions(dialog, packageWeightCombo) {
-    let combo = findFacebookCombobox('package weight') || packageWeightCombo;
+    let selectorTarget = null;
+    try { selectorTarget = document.querySelector(facebookPackageWeightSelector); } catch { /* Fall back to the labeled combobox. */ }
+    let combo = findFacebookCombobox('package weight') || packageWeightCombo ||
+      selectorTarget?.closest?.('[role="combobox"]') || selectorTarget;
     if (!combo) return { dialog, combo, radios: [] };
 
-    // This is the labeled Package weight combobox in Facebook's shipping panel.
-    // Click it only while collapsed, then wait for the menu's radio options to render.
-    if (combo.getAttribute('aria-expanded') !== 'true') combo.click();
+    // Click Facebook's current Package weight target while collapsed, then wait for
+    // the menu's radio options to render. The selector targets a nested child, so its
+    // click bubbles into Facebook's combobox handler; the labeled control remains fallback.
+    if (combo.getAttribute?.('aria-expanded') !== 'true') {
+      const clickTarget = selectorTarget && visible(selectorTarget) ? selectorTarget : combo;
+      clickTarget.click();
+    }
     let radios = facebookPackageWeightRadios(dialog);
     for (let attempt = 0; attempt < 12 && radios.length === 0; attempt += 1) {
       await new Promise((resolve) => setTimeout(resolve, 120));
       dialog = findFacebookShippingOptionsDialog() || dialog;
       combo = findFacebookCombobox('package weight') || combo;
       radios = facebookPackageWeightRadios(dialog);
-      if (combo.getAttribute('aria-expanded') !== 'true') break;
+      if (combo.getAttribute?.('aria-expanded') === 'false') break;
     }
     return { dialog, combo, radios };
   }
@@ -603,7 +704,10 @@
     const payload = assignment?.payload || {};
     const measurement = facebookPackageWeightMeasurement(payload);
     const expectedRange = facebookPackageWeightHint(payload);
-    let radios = facebookPackageWeightRadios(dialog);
+    const opened = await openFacebookPackageWeightOptions(dialog, packageWeightCombo);
+    dialog = opened.dialog;
+    packageWeightCombo = opened.combo;
+    let radios = opened.radios;
     let selectedRadio = facebookSelectedPackageWeight(dialog);
     let selectedLabel = selectedRadio ? facebookPackageWeightRadioLabel(selectedRadio) : '';
     let exactWeightApplied = false;
@@ -612,7 +716,7 @@
       const exactWeight = await enterFacebookExactWeight(dialog, measurement);
       if (exactWeight.supported) {
         if (!exactWeight.ready) {
-          return { ready: false, message: 'Facebook opened exact package-weight entry, but KeepFlip could not find its weight field. Enter the item’s approximate packaged weight in Facebook, then click Try filling again in KeepFlip.' };
+          return { ready: false, message: exactWeight.message || 'Facebook opened exact package-weight entry, but KeepFlip could not find its weight field. Enter the item’s approximate packaged weight in Facebook, then click Try filling again in KeepFlip.' };
         }
         dialog = exactWeight.dialog;
         exactWeightApplied = true;
@@ -721,7 +825,7 @@
       if (!shippingOptionsDialog && shippingLabelButton && !facebookShippingLabelOpenRequested) {
         facebookShippingLabelOpenRequested = true;
         shippingLabelButton.click();
-        for (let attempt = 0; attempt < 12 && !shippingOptionsDialog; attempt += 1) {
+        for (let attempt = 0; attempt < 30 && !shippingOptionsDialog; attempt += 1) {
           await new Promise((resolve) => setTimeout(resolve, 150));
           shippingOptionsDialog = findFacebookShippingOptionsDialog();
         }
@@ -1113,11 +1217,17 @@
     let attempts = 0;
     let composerOpenRequested = false;
     let facebookMetaAiDraftsOff = marketplace !== 'facebookMarketplace';
+    if (marketplace === 'facebookMarketplace' && /^\/marketplace\/create\/?$/i.test(location.pathname)) {
+      // Make the item-type choice the first automation action on Facebook's create screen.
+      composerOpenRequested = openComposerIfNeeded();
+    }
     while (attempts < 24) {
       attempts += 1;
       if (!facebookMetaAiDraftsOff) facebookMetaAiDraftsOff = turnOffFacebookMetaAiDrafts();
       const retryComposerEntry = marketplace === 'offerUp' || !composerOpenRequested;
-      if (attempts >= 5 && retryComposerEntry && !findField('title')) {
+      const shouldTryFacebookItemChoice = marketplace === 'facebookMarketplace' &&
+        /^\/marketplace\/create\/?$/i.test(location.pathname) && !composerOpenRequested;
+      if ((shouldTryFacebookItemChoice || (attempts >= 5 && retryComposerEntry)) && !findField('title')) {
         composerOpenRequested = openComposerIfNeeded() || composerOpenRequested;
       }
       expandFacebookMoreDetails(fields);
@@ -1239,6 +1349,15 @@
       for (const control of controls) {
         if (visible(control) && isItemForSaleChoice(control)) {
           control.click();
+          return true;
+        }
+      }
+      // The Marketplace create chooser is a React card with unstable class names.
+      // Use the seller-provided current selector only as a fallback to the semantic label.
+      if (/^\/marketplace\/create\/?$/i.test(location.pathname)) {
+        const itemForSaleCard = document.querySelector(facebookItemForSaleSelector);
+        if (itemForSaleCard && visible(itemForSaleCard)) {
+          itemForSaleCard.click();
           return true;
         }
       }
