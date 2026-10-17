@@ -571,6 +571,23 @@ export function ListingCreationGuideScreen({ itemIdOverride, onBack, selectedMar
     [],
   );
 
+  const updateFacebookPackageWeight = useCallback((value: string) => {
+    setEditRevision((current) => current + 1);
+    setGeneratedListing((current) => current ? {
+      ...current,
+      marketplaceListings: {
+        ...current.marketplaceListings,
+        facebookMarketplace: {
+          ...current.marketplaceListings.facebookMarketplace,
+          fields: {
+            ...current.marketplaceListings.facebookMarketplace.fields,
+            shippingWeight: value.trim() || null,
+          },
+        },
+      },
+    } : current);
+  }, []);
+
   const updateGeneratedPlatformCopy = useCallback(
     (platform: ListingPlatform, value: string) => {
       setEditRevision((current) => current + 1);
@@ -1358,6 +1375,19 @@ export function ListingCreationGuideScreen({ itemIdOverride, onBack, selectedMar
                     value={targetPriceInput}
                   />
                   {priceEditError ? <Text accessibilityRole="alert" style={styles.generatorWarning}>{priceEditError}</Text> : null}
+                  <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>APPROX. PACKAGED WEIGHT · FACEBOOK</Text>
+                  <TextInput
+                    accessibilityLabel="Edit approximate packaged shipping weight"
+                    autoCapitalize="none"
+                    onChangeText={updateFacebookPackageWeight}
+                    placeholder="Example: Approx. 24 oz packaged"
+                    placeholderTextColor={theme.colors.textMuted}
+                    style={[styles.generatedEditorInput, styles.generatedTitleInput, { fontSize: responsiveFont(13) }]}
+                    value={generatedListing.marketplaceListings.facebookMarketplace.fields.shippingWeight ?? ''}
+                  />
+                  <Text style={[styles.generatedBody, { fontSize: responsiveFont(10), lineHeight: responsiveFont(14) }]}>
+                    KeepFlip’s estimate is approximate. Weigh the item after packing it before you buy a shipping label. You can replace the estimate here.
+                  </Text>
                   <Text style={[styles.fieldLabel, { fontSize: responsiveFont(9) }]}>PLATFORM COPY</Text>
                   <View style={styles.platformTabs}>
                     {(

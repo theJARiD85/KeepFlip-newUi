@@ -22,6 +22,7 @@ export type ListingMarketplaceJson = {
     category: string | null;
     condition: string | null;
     location: string | null;
+    shippingWeight: string | null;
   }>;
   ebay: MarketplaceListingTree<{
     category: string | null;
@@ -210,6 +211,7 @@ function normalizeMarketplaceListings(
         category: readNullableText(fields("facebookMarketplace").category),
         condition: readNullableText(fields("facebookMarketplace").condition),
         location: readNullableText(fields("facebookMarketplace").location),
+        shippingWeight: readNullableText(fields("facebookMarketplace").shippingWeight),
       },
     },
     ebay: {

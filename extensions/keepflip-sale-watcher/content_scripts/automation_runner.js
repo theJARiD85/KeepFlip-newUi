@@ -352,13 +352,33 @@
   }
 
   function findFacebookShippingLabelButton() {
-    return Array.from(document.querySelectorAll('button,[role="button"]')).find((control) =>
-      visible(control) && /^select shipping label$/i.test(facebookButtonLabel(control))) || null;
+    const targetLabel = 'select shipping label';
+    return Array.from(document.querySelectorAll('button,[role="button"]')).find((control) => {
+      if (!visible(control)) return false;
+      const labels = [
+        control.getAttribute('aria-label'),
+        control.innerText,
+        control.textContent,
+        control.value,
+      ].map(normalizeChoiceLabel).filter(Boolean);
+      return labels.includes(targetLabel);
+    }) || null;
   }
 
   function findFacebookShippingOptionsDialog() {
-    const dialog = document.querySelector('[role="dialog"][aria-label*="Package weight and shipping options"]');
-    return dialog && visible(dialog) ? dialog : null;
+    const explicit = document.querySelector('[role="dialog"][aria-label*="Package weight and shipping options"]');
+    if (explicit && visible(explicit)) return explicit;
+
+    const candidates = Array.from(document.querySelectorAll(
+      '[role="dialog"], [aria-modal="true"], [aria-label*="Package weight and shipping options"], [aria-label*="Change shipping method"]',
+    )).filter(visible);
+    return candidates.find((dialog) => {
+      const text = normalizeChoiceLabel([
+        dialog.getAttribute('aria-label'), dialog.innerText, dialog.textContent,
+      ].filter(Boolean).join(' '));
+      return text.includes('package weight') && text.includes('update') &&
+        (text.includes('shipping option') || text.includes('change shipping method'));
+    }) || null;
   }
 
   const facebookPackageWeightRanges = [
@@ -376,7 +396,7 @@
     return null;
   }
 
-  function facebookPackageWeightHint(payload) {
+  function facebookPackageWeightMeasurement(payload) {
     const platformFields = payload?.platformFields && typeof payload.platformFields === 'object'
       ? payload.platformFields
       : {};
@@ -392,7 +412,7 @@
       if (!value) continue;
       const directRange = facebookPackageWeightRanges.find((range) =>
         normalizeChoiceLabel(range) === normalizeChoiceLabel(value));
-      if (directRange) return directRange;
+      if (directRange) continue;
 
       const amount = value.match(/\d+(?:\.\d+)?/);
       if (!amount) continue;
@@ -401,18 +421,122 @@
       const normalizedKey = key.toLowerCase().replace(/[^a-z]/g, '');
       const unit = textUnit || keyUnit || (/^(package|shipping)weight$/.test(normalizedKey) ? 'lbs' : '');
       if (!unit) continue;
-      let pounds = Number(amount[0]);
-      if (/^(oz|ounce|ounces)$/.test(unit)) pounds /= 16;
-      else if (/^(kg|kilogram|kilograms)$/.test(unit)) pounds *= 2.2046226218;
-      else if (/^(g|gram|grams)$/.test(unit)) pounds /= 453.59237;
-      const range = facebookPackageWeightRangeForPounds(pounds);
-      if (range) return range;
+      const numericAmount = Number(amount[0]);
+      let pounds = numericAmount;
+      let normalizedUnit = 'lbs';
+      if (/^(oz|ounce|ounces)$/.test(unit)) {
+        pounds /= 16;
+        normalizedUnit = 'oz';
+      } else if (/^(kg|kilogram|kilograms)$/.test(unit)) {
+        pounds *= 2.2046226218;
+        normalizedUnit = 'kg';
+      } else if (/^(g|gram|grams)$/.test(unit)) {
+        pounds /= 453.59237;
+        normalizedUnit = 'g';
+      }
+      if (pounds > 0 && Number.isFinite(pounds)) {
+        return { amount: numericAmount, unit: normalizedUnit, pounds };
+      }
     }
     return null;
   }
 
+  function facebookPackageWeightHint(payload) {
+    const measurement = facebookPackageWeightMeasurement(payload);
+    return measurement ? facebookPackageWeightRangeForPounds(measurement.pounds) : null;
+  }
+
   function facebookPackageWeightRadios(dialog) {
-    return Array.from(dialog?.querySelectorAll('input[type="radio"][name="package_weight_range"]') || []);
+    const selector = 'input[type="radio"][name="package_weight_range"]';
+    const scoped = Array.from(dialog?.querySelectorAll(selector) || []);
+    return scoped.length ? scoped : Array.from(document.querySelectorAll(selector));
+  }
+
+  function findFacebookExactWeightButton(dialog) {
+    return Array.from(dialog?.querySelectorAll('button,[role="button"]') || []).find((control) => {
+      if (!visible(control)) return false;
+      const labels = [control.getAttribute('aria-label'), control.innerText, control.textContent, control.value]
+        .map(normalizeChoiceLabel).filter(Boolean);
+      return labels.includes('enter exact weight');
+    }) || null;
+  }
+
+  function findFacebookExactWeightInput(dialog) {
+    const scoped = Array.from(dialog?.querySelectorAll('input') || []);
+    const global = Array.from(document.querySelectorAll('input'));
+    const allInputs = Array.from(new Set([...scoped, ...global])).filter((input) => {
+      const type = String(input.type || input.getAttribute('type') || 'text').toLowerCase();
+      return visible(input) && !['button', 'checkbox', 'file', 'hidden', 'password', 'radio', 'submit'].includes(type);
+    });
+    const labelForInput = (input) => [
+      labelFor(input), input.getAttribute('aria-label'), input.getAttribute('placeholder'),
+      input.getAttribute('name'), input.getAttribute('id'),
+      input.closest('label')?.innerText, input.closest('label')?.textContent,
+    ].filter(Boolean).join(' ');
+    const labeled = allInputs.filter((input) => /weight/i.test(labelForInput(input)));
+    if (labeled.length === 1) return labeled[0];
+
+    const scopedNumeric = scoped.filter((input) => {
+      const type = String(input.type || input.getAttribute('type') || '').toLowerCase();
+      return visible(input) && !['button', 'checkbox', 'file', 'hidden', 'password', 'radio', 'submit'].includes(type) &&
+        (type === 'number' || input.inputMode === 'decimal' || input.getAttribute('inputmode') === 'decimal');
+    });
+    if (scopedNumeric.length === 1) return scopedNumeric[0];
+    const globalNumeric = allInputs.filter((input) => {
+      const type = String(input.type || input.getAttribute('type') || '').toLowerCase();
+      return type === 'number' || input.inputMode === 'decimal' || input.getAttribute('inputmode') === 'decimal';
+    });
+    return globalNumeric.length === 1 ? globalNumeric[0] : null;
+  }
+
+  function facebookExactWeightInputValue(measurement, input) {
+    const fieldLabel = normalizeChoiceLabel([
+      labelFor(input), input.getAttribute('aria-label'), input.getAttribute('placeholder'),
+    ].filter(Boolean).join(' '));
+    let value = measurement.pounds;
+    if (/\b(oz|ounce|ounces)\b/.test(fieldLabel)) value *= 16;
+    else if (/\b(kg|kilogram|kilograms)\b/.test(fieldLabel)) value /= 2.2046226218;
+    else if (/\b(g|gram|grams)\b/.test(fieldLabel)) value *= 453.59237;
+    return String(Number(value.toFixed(3)));
+  }
+
+  async function enterFacebookExactWeight(dialog, measurement) {
+    let input = findFacebookExactWeightInput(dialog);
+    const button = findFacebookExactWeightButton(dialog);
+    if (!input && button) {
+      button.click();
+      for (let attempt = 0; attempt < 12 && !input; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 120));
+        dialog = findFacebookShippingOptionsDialog() || dialog;
+        input = findFacebookExactWeightInput(dialog);
+      }
+    }
+    if (!button && !input) return { supported: false, dialog };
+    if (!input) return { supported: true, ready: false, dialog };
+
+    const value = facebookExactWeightInputValue(measurement, input);
+    if (!setField(input, value) || String(input.value ?? '').trim() !== value) {
+      return { supported: true, ready: false, dialog };
+    }
+    return { supported: true, ready: true, dialog };
+  }
+
+  async function openFacebookPackageWeightOptions(dialog, packageWeightCombo) {
+    let combo = findFacebookCombobox('package weight') || packageWeightCombo;
+    if (!combo) return { dialog, combo, radios: [] };
+
+    // This is the labeled Package weight combobox in Facebook's shipping panel.
+    // Click it only while collapsed, then wait for the menu's radio options to render.
+    if (combo.getAttribute('aria-expanded') !== 'true') combo.click();
+    let radios = facebookPackageWeightRadios(dialog);
+    for (let attempt = 0; attempt < 12 && radios.length === 0; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 120));
+      dialog = findFacebookShippingOptionsDialog() || dialog;
+      combo = findFacebookCombobox('package weight') || combo;
+      radios = facebookPackageWeightRadios(dialog);
+      if (combo.getAttribute('aria-expanded') !== 'true') break;
+    }
+    return { dialog, combo, radios };
   }
 
   function facebookPackageWeightRadioLabel(radio) {
@@ -477,19 +601,29 @@
 
   async function saveFacebookShippingOptions(dialog, packageWeightCombo) {
     const payload = assignment?.payload || {};
+    const measurement = facebookPackageWeightMeasurement(payload);
     const expectedRange = facebookPackageWeightHint(payload);
     let radios = facebookPackageWeightRadios(dialog);
     let selectedRadio = facebookSelectedPackageWeight(dialog);
     let selectedLabel = selectedRadio ? facebookPackageWeightRadioLabel(selectedRadio) : '';
+    let exactWeightApplied = false;
 
-    if (expectedRange && normalizeChoiceLabel(selectedLabel) !== normalizeChoiceLabel(expectedRange)) {
-      if (packageWeightCombo?.getAttribute('aria-expanded') !== 'true') {
-        packageWeightCombo?.click();
-        await new Promise((resolve) => setTimeout(resolve, 120));
-        dialog = findFacebookShippingOptionsDialog() || dialog;
-        packageWeightCombo = findFacebookCombobox('package weight') || packageWeightCombo;
+    if (measurement) {
+      const exactWeight = await enterFacebookExactWeight(dialog, measurement);
+      if (exactWeight.supported) {
+        if (!exactWeight.ready) {
+          return { ready: false, message: 'Facebook opened exact package-weight entry, but KeepFlip could not find its weight field. Enter the item’s approximate packaged weight in Facebook, then click Try filling again in KeepFlip.' };
+        }
+        dialog = exactWeight.dialog;
+        exactWeightApplied = true;
       }
-      radios = facebookPackageWeightRadios(dialog);
+    }
+
+    if (!exactWeightApplied && expectedRange && normalizeChoiceLabel(selectedLabel) !== normalizeChoiceLabel(expectedRange)) {
+      const opened = await openFacebookPackageWeightOptions(dialog, packageWeightCombo);
+      dialog = opened.dialog;
+      packageWeightCombo = opened.combo;
+      radios = opened.radios;
       const target = radios.find((radio) =>
         normalizeChoiceLabel(facebookPackageWeightRadioLabel(radio)) === normalizeChoiceLabel(expectedRange));
       if (!target) return { ready: false, message: `KeepFlip could not find Facebook’s ${expectedRange} package-weight option. Choose the shipping weight in Facebook.` };
@@ -503,12 +637,9 @@
       }
     }
 
-    if (!selectedRadio && !facebookComboboxValue(packageWeightCombo)) {
-      if (packageWeightCombo?.getAttribute('aria-expanded') !== 'true') {
-        packageWeightCombo?.click();
-        await new Promise((resolve) => setTimeout(resolve, 120));
-      }
-      return { ready: false, message: 'Choose the item’s total package weight in Facebook, then resume the listing in KeepFlip.' };
+    if (!exactWeightApplied && !selectedRadio && !facebookComboboxValue(packageWeightCombo)) {
+      await openFacebookPackageWeightOptions(dialog, packageWeightCombo);
+      return { ready: false, message: 'Choose the item’s total package weight in Facebook, then click Try filling again in KeepFlip.' };
     }
 
     const sellerPaysShipping = facebookSellerPaysShippingPreference(payload);
@@ -542,40 +673,58 @@
   }
 
   async function prepareFacebookDeliveryStep() {
-    let combo = findFacebookCombobox('delivery method');
-    if (!combo) return { ready: false, message: 'Facebook opened the delivery step, but KeepFlip could not find its delivery method menu.' };
-    if (combo.getAttribute('aria-expanded') !== 'true') {
-      combo.click();
-      await new Promise((resolve) => setTimeout(resolve, 120));
-      combo = findFacebookCombobox('delivery method') || combo;
-    }
-
     const preference = facebookDeliveryPreference();
-    if (preference) {
-      const result = await applyFacebookDeliveryPreference(combo, preference);
-      if (!result.ok) return result;
-      combo = findFacebookCombobox('delivery method') || combo;
-    }
+    let shippingOptionsDialog = findFacebookShippingOptionsDialog();
+    let combo = findFacebookCombobox('delivery method');
+    let selection;
 
-    let selection = facebookDeliverySelection(combo);
-    if (!selection.shipping && !selection.localPickup) {
-      return { ready: false, message: 'Choose Shipping, Local pickup, or both in Facebook before continuing.' };
-    }
+    // Facebook hides the delivery method combobox while its shipping settings
+    // dialog is open. Resume that dialog directly instead of reporting that
+    // the delivery menu is missing.
+    if (shippingOptionsDialog) {
+      if (preference && !preference.includes('shipping')) {
+        return { ready: false, message: 'Facebook’s shipping settings are open, but this listing is set for local pickup only. Close the shipping dialog and resume the listing.' };
+      }
+      selection = {
+        value: 'shipping settings open',
+        shipping: true,
+        localPickup: Boolean(preference?.includes('local_pickup')),
+      };
+    } else {
+      if (!combo) return { ready: false, message: 'Facebook opened the delivery step, but KeepFlip could not find its delivery method menu.' };
+      if (combo.getAttribute('aria-expanded') !== 'true') {
+        combo.click();
+        await new Promise((resolve) => setTimeout(resolve, 120));
+        combo = findFacebookCombobox('delivery method') || combo;
+      }
 
-    if (combo.getAttribute('aria-expanded') === 'true') {
-      combo.click();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      if (preference) {
+        const result = await applyFacebookDeliveryPreference(combo, preference);
+        if (!result.ok) return result;
+        combo = findFacebookCombobox('delivery method') || combo;
+      }
+
+      selection = facebookDeliverySelection(combo);
+      if (!selection.shipping && !selection.localPickup) {
+        return { ready: false, message: 'Choose Shipping, Local pickup, or both in Facebook before continuing.' };
+      }
+
+      if (combo.getAttribute('aria-expanded') === 'true') {
+        combo.click();
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
     }
 
     if (selection.shipping) {
-      if (facebookShippingOptionsSaved) return { ready: true, selection };
-      let shippingOptionsDialog = findFacebookShippingOptionsDialog();
+      if (facebookShippingOptionsSaved && !shippingOptionsDialog) return { ready: true, selection };
       const shippingLabelButton = findFacebookShippingLabelButton();
       if (!shippingOptionsDialog && shippingLabelButton && !facebookShippingLabelOpenRequested) {
         facebookShippingLabelOpenRequested = true;
         shippingLabelButton.click();
-        await new Promise((resolve) => setTimeout(resolve, 150));
-        shippingOptionsDialog = findFacebookShippingOptionsDialog();
+        for (let attempt = 0; attempt < 12 && !shippingOptionsDialog; attempt += 1) {
+          await new Promise((resolve) => setTimeout(resolve, 150));
+          shippingOptionsDialog = findFacebookShippingOptionsDialog();
+        }
       }
       if (!shippingOptionsDialog) {
         if (!shippingLabelButton) return { ready: false, message: 'Shipping is selected, but Facebook’s Select shipping label button was not found.' };

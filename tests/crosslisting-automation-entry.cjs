@@ -35,7 +35,7 @@ async function main() {
     marketplaceListings: {
       poshmark: { title: 'Poshmark jacket', description: 'Vintage jacket', fields: { size: 'L' } },
       mercari: { title: 'Mercari jacket', description: 'Leather jacket', fields: { brand: 'Harley Davidson' } },
-      facebookMarketplace: { title: 'Facebook jacket', description: 'Vintage leather jacket', fields: { shippingWeight: '24 lbs' } },
+      facebookMarketplace: { title: 'Facebook jacket', description: 'Vintage leather jacket', fields: { shippingWeight: 'Approx. 24 oz packaged' } },
     },
   };
   const plan = planService.createCrosslistingAutomationPlan({
@@ -46,7 +46,7 @@ async function main() {
   assert.equal(plan.jobs[0].payload.title, 'Poshmark jacket');
   assert.equal(plan.jobs[1].payload.title, 'Mercari jacket');
   assert.equal(plan.jobs[0].payload.price, '85.00');
-  assert.equal(plan.jobs[2].payload.platformFields.shippingWeight, '24 lbs');
+  assert.equal(plan.jobs[2].payload.platformFields.shippingWeight, 'Approx. 24 oz packaged');
   assert.equal(plan.jobs[2].payload.platformFields.sellerPaysShipping, 'true');
   assert.throws(() => planService.createCrosslistingAutomationPlan({ item, listing, marketplaces: [] }), /Choose at least one/);
 
