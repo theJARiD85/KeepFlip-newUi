@@ -4,7 +4,7 @@ The same extension now handles desktop listing runs from KeepFlip's **Listing** 
 
 ## Desktop listing run
 
-1. In Chrome, open `chrome://extensions`, turn on **Developer mode**, and **Load unpacked** from `extensions/keepflip-sale-watcher` in this checkout. If already loaded, choose **Reload**.
+1. In Chrome, open `chrome://extensions`, turn on **Developer mode**, and **Load unpacked** from `extensions/keepflip-sale-watcher` in this checkout. If already loaded, choose **Reload**, refresh the KeepFlip tab, and start a new listing run so Facebook receives the updated content script.
 2. Open KeepFlip at `https://keep-flip.com` (or the local Expo web development server) and sign in. In **Listing → Not listed**, open an item with saved photos and generate its listing.
 3. Select marketplaces and choose **Start listing**. KeepFlip opens the marketplace tabs. Sign in on a marketplace if asked, return to KeepFlip, and choose **Resume form** for that marketplace.
 4. Check the fields and photo thumbnails in each marketplace tab. Choose **Post listing** in KeepFlip when the draft is ready. KeepFlip records a live listing when the marketplace reaches a recognized listing URL; otherwise use **I see it live** after verifying the post yourself.
@@ -12,6 +12,8 @@ The same extension now handles desktop listing runs from KeepFlip's **Listing** 
 `items.listingJson` must be a large string column and `user_profiles.marketplaceSelections` must be an enum array with the marketplace IDs already used by KeepFlip. The extension keeps one active run in `chrome.storage.session`; starting another run replaces that temporary tab handoff. Refreshing the KeepFlip tab can restore a run in the same browser tab. Marketplace layouts and upload controls change, so a draft can stop at **Check form**. The extension reports that state instead of claiming a listing was published. Synthetic file drops are not guaranteed to be accepted by every marketplace. Appwrite authentication uses a browser-managed session cookie; the extension does not copy passwords or cookies into extension storage or logs.
 
 KeepFlip sends listing commands through Chrome's external messaging API, restricted to KeepFlip's production origins and localhost development origins. The content script relays live status updates when Chrome grants site access; Listing also refreshes the active run from the extension. The existing Sale Watcher popup and Gmail flow remain available. The extension has no `cookies` or `scripting` permission because the declared content scripts and the seller's browser session provide what this flow needs.
+
+On Facebook's delivery step, KeepFlip reads the selected delivery method before touching its menu. If shipping is selected, it clicks the visible **Select shipping label** button and waits for the **Change shipping method** dialog. The dialog must confirm package weight before KeepFlip presses **Update** and advances. Reload the unpacked extension and start a fresh listing run after updating this code; an already open marketplace tab keeps its previous content script until it is refreshed.
 
 This local extension watches only an expanded message in an open Gmail tab. It recognizes sale wording from Depop, Poshmark, and Mercari, then extracts a visible listing title, an explicitly labeled SKU, and a labeled sale amount. It stores those extracted fields in `chrome.storage.local`; it never stores or sends the email body.
 

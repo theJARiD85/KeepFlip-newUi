@@ -91,12 +91,8 @@
   let facebookCategoryPickerOpenRequested = false;
   let facebookNextClicked = false;
   let facebookSubmissionInProgress = false;
-  let facebookShippingLabelOpenRequested = false;
   let facebookShippingOptionsSaved = false;
   const facebookItemForSaleSelector = '[id^="mount_0_0_"] > div > div:nth-child(1) > div > div.x9f619.x1n2onr6.x1ja2u2z > div > div > div.x78zum5.xdt5ytf.x1t2pt76.x1n2onr6.x1ja2u2z.x10cihs4 > div.x9f619.x2lah0s.x1nhvcw1.x1qjc9v5.xozqiw3.x1q0g3np.x78zum5.x1iyjqo2.x1t2pt76.x1n2onr6.x1ja2u2z.xvrxa7q > div.x9f619.x1n2onr6.x1ja2u2z.xdt5ytf.x193iq5w.xeuugli.x1r8uery.x1iyjqo2.xs83m0k.x78zum5.x1t2pt76 > div > div > div.xamitd3.x78zum5.x1q0g3np.x1a02dak.x1e56ztr.x2fvf9.x14vqqas.xh8yej3.x1ni0lre.x1pz0773.xnkmj2t > div:nth-child(1) > div > span > div > div';
-  const facebookShippingLabelSelector = '[id^="mount_0_0_"] > div > div:nth-child(1) > div > div.x9f619.x1n2onr6.x1ja2u2z > div > div > div.x78zum5.xdt5ytf.x1t2pt76.x1n2onr6.x1ja2u2z.x10cihs4 > div.x9f619.x2lah0s.x1nhvcw1.x1qjc9v5.xozqiw3.x1q0g3np.x78zum5.x1iyjqo2.x1t2pt76.x1n2onr6.x1ja2u2z > div.x9f619.x1n2onr6.x78zum5.xdt5ytf.x193iq5w.xeuugli.x2lah0s.x1t2pt76.x1xzczws.x1cvmir6.x1vjfegm.xwn1f64 > div > div.xb57i2i.x1q594ok.x5lxg6s.x78zum5.xdt5ytf.x6ikm8r.x1ja2u2z.x1pq812k.x1rohswg.xfk6m8.x1yqm8si.xjx87ck.x1l7klhg.x1iyjqo2.xs83m0k.x2lwn1j.xx8ngbg.xwo3gff.x1oyok0e.x1odjw0f.x1n2onr6.xq1qtft > div.x78zum5.xdt5ytf.x1iyjqo2.x1n2onr6 > div.x1xmf6yo.x78zum5.xdt5ytf.x1iyjqo2 > div > div > div.xyri2b.x1c1uobl.x1y1aw1k > div > div > div.x1n2onr6.x1ja2u2z.xjbqb8w.xw5cjc7.x1dmpuos.x1vsv7so.xau1kf4.x9f619.xh8yej3.x6ikm8r.x10wlt62 > div > div > div > div';
-  const facebookPackageWeightSelector = '[id^="mount_0_0_"] > div > div:nth-child(1) > div > div:nth-child(5) > div > div > div.x9f619.x1n2onr6.x1ja2u2z > div > div.x1uvtmcs.x4k7w5x.x1h91t0o.x1beo9mf.xaigb6o.x12ejxvf.x3igimt.xarpa2k.xedcshv.x1lytzrv.x1t2pt76.x7ja8zs.x1n2onr6.x1qrby5j.x1jfb8zj > div > div > div > div:nth-child(4) > div > div > div > div';
-  const facebookExactWeightButtonSelector = '[id^="mount_0_0_"] > div > div:nth-child(1) > div > div:nth-child(5) > div > div > div.x9f619.x1n2onr6.x1ja2u2z > div > div:nth-child(3) > div > div > div.xu96u03.xm80bdy.x10l6tqk.x13vifvy > div.x1uvtmcs.x4k7w5x.x1h91t0o.x1beo9mf.xaigb6o.x12ejxvf.x3igimt.xarpa2k.xedcshv.x1lytzrv.x1t2pt76.x7ja8zs.x1n2onr6.x1qrby5j.x1jfb8zj > div > div > div > span > div > div > div > div > div:nth-child(3) > div > div';
 
   async function sendMessageQuietly(message) {
     try { return await chrome.runtime.sendMessage(message); } catch { /* The extension may be reloading. */ }
@@ -192,7 +188,9 @@
 
   function facebookCategoryScore(value, label, context = '') {
     const normalizedValue = normalizeChoiceLabel(value);
-    const normalizedLabel = normalizeChoiceLabel(String(label || '').replace(/^Suggested category:\s*/i, ''));
+    const normalizedLabel = normalizeChoiceLabel(String(label || '')
+      .replace(/^Suggested category:\s*/i, '')
+      .replace(/\s+Shipping available\s*$/i, ''));
     if (!normalizedLabel) return 0;
     if (normalizedLabel === normalizedValue) return 120;
 
@@ -219,6 +217,15 @@
     return ranked[0]?.element || null;
   }
 
+  async function waitForFacebookCategory(value, context) {
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const combo = findFacebookCategoryCombobox();
+      if (combo && facebookCategoryScore(value, facebookComboboxValue(combo), context) > 0) return true;
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+    return false;
+  }
+
   async function selectFacebookSuggestedCategory(value, context = '') {
     if (marketplace !== 'facebookMarketplace' || !value) return false;
     const group = document.querySelector('[aria-label="Suggested categories"]');
@@ -228,7 +235,7 @@
     let target = bestFacebookCategoryCandidate(suggestions, value, context);
     if (target) {
       clickMarketplaceControl(target);
-      return true;
+      return waitForFacebookCategory(value, context);
     }
 
     const combo = findFacebookCategoryCombobox();
@@ -246,7 +253,7 @@
     target = bestFacebookCategoryCandidate(options, value, context);
     if (!target) return false;
     clickMarketplaceControl(target);
-    return true;
+    return waitForFacebookCategory(value, context);
   }
 
   function findFacebookCombobox(key) {
@@ -357,34 +364,18 @@
 
   function findFacebookShippingLabelButton() {
     const textSpan = Array.from(document.querySelectorAll('span')).find((element) =>
-      visible(element) && String(element.textContent || '').trim() === 'Select shipping label');
+      visible(element) && normalizeChoiceLabel(element.textContent) === 'select shipping label');
     const pressableButton = textSpan?.closest?.('[role="button"]');
     if (pressableButton && visible(pressableButton)) return pressableButton;
 
-    const textXPaths = [
-      "//span[normalize-space(.)='Select shipping label']/ancestor::*[@role='button' or self::button][1]",
-      "//span[contains(normalize-space(.), 'Select shipping label')]/ancestor::*[@role='button' or @role='combobox' or @tabindex='0'][1]",
-    ];
-    for (const xpath of textXPaths) {
-      try {
-        const resultType = typeof XPathResult === 'undefined' ? 7 : XPathResult.ORDERED_NODE_SNAPSHOT_TYPE;
-        const matches = document.evaluate(xpath, document, null, resultType, null);
-        const targets = matches?.snapshotItem
-          ? Array.from({ length: matches.snapshotLength }, (_, index) => matches.snapshotItem(index))
-          : [matches?.singleNodeValue].filter(Boolean);
-        for (const target of targets) {
-          const action = target?.closest?.('button,[role="button"]') || target;
-          if (action && visible(action)) return action;
-        }
-      } catch { /* Use accessible and dynamic-root selector fallbacks below. */ }
-    }
-
-    let directTarget = null;
-    try { directTarget = document.querySelector(facebookShippingLabelSelector); } catch { /* Fall back to the visible label. */ }
-    const directAction = directTarget?.closest?.('button,[role="button"]') || directTarget;
-    if (directAction && visible(directAction)) return directAction;
-
-    const targetLabel = 'select shipping label';
+    const matchesShippingLabel = (label) => {
+      const normalized = normalizeChoiceLabel(label);
+      return normalized === 'select shipping label' ||
+        /^(?:choose|select) (?:a )?shipping label$/.test(normalized) ||
+        // Facebook replaces the placeholder with the selected service. The
+        // same button reopens the dialog after a paused or retried run.
+        /^prepaid label\b/.test(normalized);
+    };
     return Array.from(document.querySelectorAll('button,[role="button"]')).find((control) => {
       if (!visible(control)) return false;
       const labels = [
@@ -392,43 +383,82 @@
         control.innerText,
         control.textContent,
         control.value,
-      ].map(normalizeChoiceLabel).filter(Boolean);
-      return labels.includes(targetLabel);
+      ].filter(Boolean);
+      return labels.some(matchesShippingLabel);
     }) || null;
   }
 
   function clickFacebookShippingLabelButton(button) {
     if (!button || !visible(button)) return false;
+    try { button.scrollIntoView?.({ block: 'center', inline: 'center' }); } catch { /* Continue with the visible button. */ }
+    try { button.focus?.({ preventScroll: true }); } catch { /* The marketplace may not expose focus. */ }
+    try { button.click(); return true; } catch { /* Fall back to pointer and mouse events. */ }
     const rect = button.getBoundingClientRect();
     const pageWindow = typeof window === 'undefined' ? null : window;
     const mouseEventConstructor = typeof MouseEvent === 'function' ? MouseEvent : pageWindow?.MouseEvent;
-    if (typeof button.dispatchEvent !== 'function' || typeof mouseEventConstructor !== 'function') {
-      return clickMarketplaceControl(button);
-    }
-
+    const pointerEventConstructor = typeof PointerEvent === 'function' ? PointerEvent : pageWindow?.PointerEvent;
     const x = Number.isFinite(rect.x) ? rect.x : Number(rect.left) || 0;
     const y = Number.isFinite(rect.y) ? rect.y : Number(rect.top) || 0;
     const options = {
       bubbles: true,
       cancelable: true,
+      composed: true,
       view: pageWindow || undefined,
-      buttons: 1,
+      button: 0,
+      buttons: 0,
       clientX: x + 10,
       clientY: y + 10,
+      detail: 1,
     };
-    try {
-      for (const eventType of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) {
-        button.dispatchEvent(new mouseEventConstructor(eventType, options));
-      }
-      return true;
-    } catch {
+    if (typeof button.dispatchEvent === 'function' && typeof mouseEventConstructor === 'function') {
+      try {
+        for (const eventType of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) {
+          const EventConstructor = eventType.startsWith('pointer') && typeof pointerEventConstructor === 'function'
+            ? pointerEventConstructor
+            : mouseEventConstructor;
+          const eventOptions = { ...options, buttons: /down$/.test(eventType) ? 1 : 0 };
+          button.dispatchEvent(new EventConstructor(eventType, eventType.startsWith('pointer')
+            ? { ...eventOptions, pointerId: 1, pointerType: 'mouse', isPrimary: true }
+            : eventOptions));
+        }
+        return true;
+      } catch { /* Fall through to the DOM activation method. */ }
+    }
+    try { button.click(); return true; } catch {
       return clickMarketplaceControl(button);
     }
   }
 
+  async function waitForFacebookShippingOptionsDialog(maxAttempts = 40) {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const dialog = findFacebookShippingOptionsDialog();
+      if (dialog) return dialog;
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+    return findFacebookShippingOptionsDialog();
+  }
+
+  async function openFacebookShippingOptions(button) {
+    let activationMethod = 'dom_click';
+    clickFacebookShippingLabelButton(button);
+    let dialog = await waitForFacebookShippingOptionsDialog();
+    if (dialog) return { dialog, activationMethod };
+
+    // Reacquire the current row after React renders; a click only counts when
+    // Facebook shows its shipping settings dialog.
+    const liveButton = findFacebookShippingLabelButton() || button;
+    if (liveButton && visible(liveButton) && typeof liveButton.dispatchEvent === 'function') {
+      activationMethod = 'pointer_mouse_fallback';
+      clickMarketplaceControl(liveButton);
+      dialog = await waitForFacebookShippingOptionsDialog();
+    }
+    return { dialog, activationMethod };
+  }
+
   async function waitForFacebookShippingLabelButton() {
-    // Wait for Facebook to finish rendering the row after the delivery menu closes.
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const ready = findFacebookShippingLabelButton();
+    if (ready) return ready;
+    // Facebook may render this row after it commits the delivery selection.
     for (let attempt = 0; attempt < 40; attempt += 1) {
       if (findFacebookShippingOptionsDialog()) return null;
       const button = findFacebookShippingLabelButton();
@@ -447,6 +477,13 @@
     if (typeof control.getBoundingClientRect === 'function' && !visible(control)) return false;
     if (typeof control.getBoundingClientRect !== 'function') {
       try { control.click(); return true; } catch { return false; }
+    }
+
+    // Facebook's accessible controls are React-backed divs and labels. Their
+    // native DOM click activates the live form; synthetic pointer sequences can
+    // report success while leaving the control unchanged.
+    if (marketplace === 'facebookMarketplace') {
+      try { control.click(); return true; } catch { /* Try pointer events below. */ }
     }
 
     try { control.scrollIntoView?.({ block: 'center', inline: 'center' }); } catch { /* Continue with the visible control. */ }
@@ -477,8 +514,13 @@
   }
 
   function findFacebookShippingOptionsDialog() {
-    const explicit = document.querySelector('[role="dialog"][aria-label*="Package weight and shipping options"]');
+    const explicit = document.querySelector('[role="dialog"][aria-label="Change shipping method"]');
     if (explicit && visible(explicit)) return explicit;
+
+    const olderLayout = document.querySelector('[role="dialog"][aria-label*="Package weight and shipping options"]');
+    if (olderLayout && visible(olderLayout) && /\bupdate\b/i.test(olderLayout.innerText || olderLayout.textContent || '')) {
+      return olderLayout;
+    }
 
     const candidates = Array.from(document.querySelectorAll(
       '[role="dialog"], [aria-modal="true"], [aria-label*="Package weight and shipping options"], [aria-label*="Change shipping method"]',
@@ -488,7 +530,7 @@
         dialog.getAttribute('aria-label'), dialog.innerText, dialog.textContent,
       ].filter(Boolean).join(' '));
       return text.includes('package weight') && text.includes('update') &&
-        (text.includes('shipping option') || text.includes('change shipping method'));
+        (text.includes('shipping') || text.includes('delivery'));
     }) || null;
   }
 
@@ -524,6 +566,13 @@
       const directRange = facebookPackageWeightRanges.find((range) =>
         normalizeChoiceLabel(range) === normalizeChoiceLabel(value));
       if (directRange) continue;
+
+      const poundsPart = value.match(/(\d+(?:\.\d+)?)\s*(?:lb|lbs|pound|pounds)\b/i);
+      const ouncesPart = value.match(/(\d+(?:\.\d+)?)\s*(?:oz|ounce|ounces)\b/i);
+      if (poundsPart && ouncesPart) {
+        const pounds = Number(poundsPart[1]) + Number(ouncesPart[1]) / 16;
+        if (pounds > 0 && Number.isFinite(pounds)) return { amount: pounds, unit: 'lbs', pounds };
+      }
 
       const amount = value.match(/\d+(?:\.\d+)?/);
       if (!amount) continue;
@@ -573,13 +622,16 @@
     return scoped.length ? scoped : Array.from(document.querySelectorAll(selector));
   }
 
-  function findFacebookExactWeightButton(dialog) {
-    let directTarget = null;
-    try { directTarget = document.querySelector(facebookExactWeightButtonSelector); } catch { /* Fall back to the visible label. */ }
-    const directAction = directTarget?.closest?.('button,[role="button"]') || directTarget;
-    if (directAction && visible(directAction)) return directAction;
+  function findFacebookWeightDialog(shippingDialog) {
+    const weightDialog = document.querySelector('[role="dialog"][aria-label="Package weight and shipping options"]');
+    if (weightDialog && visible(weightDialog)) return weightDialog;
+    // Older layouts can render the weight controls inside the shipping dialog.
+    return shippingDialog || null;
+  }
 
-    return Array.from(dialog?.querySelectorAll('button,[role="button"]') || []).find((control) => {
+  function findFacebookExactWeightButton(dialog) {
+    const weightDialog = findFacebookWeightDialog(dialog);
+    return Array.from(weightDialog?.querySelectorAll('button,[role="button"]') || []).find((control) => {
       if (!visible(control)) return false;
       const labels = [control.getAttribute('aria-label'), control.innerText, control.textContent, control.value]
         .map(normalizeChoiceLabel).filter(Boolean);
@@ -588,9 +640,9 @@
   }
 
   function findFacebookExactWeightInput(dialog) {
-    const scoped = Array.from(dialog?.querySelectorAll('input') || []);
-    const global = Array.from(document.querySelectorAll('input'));
-    const allInputs = Array.from(new Set([...scoped, ...global])).filter((input) => {
+    const weightDialog = findFacebookWeightDialog(dialog);
+    const scoped = Array.from(weightDialog?.querySelectorAll('input') || []);
+    const allInputs = scoped.filter((input) => {
       const type = String(input.type || input.getAttribute('type') || 'text').toLowerCase();
       return !['button', 'checkbox', 'file', 'hidden', 'password', 'radio', 'submit'].includes(type) &&
         typeof input.getBoundingClientRect === 'function' && visible(input);
@@ -618,9 +670,9 @@
   }
 
   function findFacebookExactWeightInputs(dialog) {
-    const scoped = Array.from(dialog?.querySelectorAll('input') || []);
-    const global = Array.from(document.querySelectorAll('input'));
-    const inputs = Array.from(new Set([...scoped, ...global])).filter((input) => {
+    const weightDialog = findFacebookWeightDialog(dialog);
+    const scoped = Array.from(weightDialog?.querySelectorAll('input') || []);
+    const inputs = scoped.filter((input) => {
       const type = String(input.type || input.getAttribute('type') || 'text').toLowerCase();
       return !['button', 'checkbox', 'file', 'hidden', 'password', 'radio', 'submit'].includes(type) &&
         typeof input.getBoundingClientRect === 'function' && visible(input);
@@ -645,8 +697,9 @@
   }
 
   function findFacebookExactWeightDoneButton(dialog) {
-    return Array.from(dialog?.querySelectorAll('button,[role="button"]') || []).find((control) => {
-      if (!visible(control)) return false;
+    const weightDialog = findFacebookWeightDialog(dialog);
+    return Array.from(weightDialog?.querySelectorAll('button,[role="button"]') || []).find((control) => {
+      if (!visible(control) || control.disabled || control.getAttribute('aria-disabled') === 'true') return false;
       const labels = [control.getAttribute('aria-label'), control.innerText, control.textContent, control.value]
         .map(normalizeChoiceLabel).filter(Boolean);
       return labels.includes('done');
@@ -669,8 +722,8 @@
     const button = findFacebookExactWeightButton(dialog);
     if (!inputs && button) {
       clickMarketplaceControl(button);
-      for (let attempt = 0; attempt < 12 && !inputs; attempt += 1) {
-        await new Promise((resolve) => setTimeout(resolve, 120));
+      for (let attempt = 0; attempt < 30 && !inputs; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 150));
         dialog = findFacebookShippingOptionsDialog() || dialog;
         inputs = findFacebookExactWeightInputs(dialog);
       }
@@ -696,8 +749,8 @@
 
     let doneButton = findFacebookExactWeightDoneButton(dialog);
     const needsDone = Boolean(inputs.pounds && inputs.ounces);
-    for (let attempt = 0; needsDone && !doneButton && attempt < 12; attempt += 1) {
-      await new Promise((resolve) => setTimeout(resolve, 120));
+    for (let attempt = 0; needsDone && !doneButton && attempt < 30; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 150));
       dialog = findFacebookShippingOptionsDialog() || dialog;
       doneButton = findFacebookExactWeightDoneButton(dialog);
     }
@@ -707,8 +760,8 @@
     if (doneButton) {
       clickMarketplaceControl(doneButton);
       let doneStillVisible = Boolean(findFacebookExactWeightDoneButton(dialog));
-      for (let attempt = 0; doneStillVisible && attempt < 12; attempt += 1) {
-        await new Promise((resolve) => setTimeout(resolve, 120));
+      for (let attempt = 0; doneStillVisible && attempt < 30; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 150));
         dialog = findFacebookShippingOptionsDialog() || dialog;
         doneStillVisible = Boolean(findFacebookExactWeightDoneButton(dialog));
       }
@@ -718,22 +771,17 @@
   }
 
   async function openFacebookPackageWeightOptions(dialog, packageWeightCombo) {
-    let selectorTarget = null;
-    try { selectorTarget = document.querySelector(facebookPackageWeightSelector); } catch { /* Fall back to the labeled combobox. */ }
-    let combo = findFacebookCombobox('package weight') || packageWeightCombo ||
-      selectorTarget?.closest?.('[role="combobox"]') || selectorTarget;
+    let combo = findFacebookCombobox('package weight') || packageWeightCombo;
     if (!combo) return { dialog, combo, radios: [] };
 
-    // Click Facebook's current Package weight target while collapsed, then wait for
-    // the menu's radio options to render. The selector targets a nested child, so its
-    // click bubbles into Facebook's combobox handler; the labeled control remains fallback.
+    // The weight menu is a separate dialog. Find its labeled combobox instead
+    // of a generated mount ID or a positional chain of Facebook classes.
     if (combo.getAttribute?.('aria-expanded') !== 'true') {
-      const clickTarget = selectorTarget && visible(selectorTarget) ? selectorTarget : combo;
-      clickMarketplaceControl(clickTarget);
+      clickMarketplaceControl(combo);
     }
     let radios = facebookPackageWeightRadios(dialog);
-    for (let attempt = 0; attempt < 12 && radios.length === 0; attempt += 1) {
-      await new Promise((resolve) => setTimeout(resolve, 120));
+    for (let attempt = 0; attempt < 40 && radios.length === 0; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 150));
       dialog = findFacebookShippingOptionsDialog() || dialog;
       combo = findFacebookCombobox('package weight') || combo;
       radios = facebookPackageWeightRadios(dialog);
@@ -750,6 +798,16 @@
   function facebookSelectedPackageWeight(dialog) {
     return facebookPackageWeightRadios(dialog).find((radio) =>
       radio.checked || radio.getAttribute('aria-checked') === 'true') || null;
+  }
+
+  function facebookExactWeightMatches(combo, measurement) {
+    if (!combo) return false;
+    const value = facebookComboboxValue(combo);
+    const pounds = /\b(\d+)\s*(?:lb|lbs|pound|pounds)\b/.exec(value);
+    const ounces = /\b(\d+)\s*(?:oz|ounce|ounces)\b/.exec(value);
+    if (!pounds && !ounces) return false;
+    const actualOunces = Number(pounds?.[1] || 0) * 16 + Number(ounces?.[1] || 0);
+    return actualOunces === Math.round(measurement.pounds * 16);
   }
 
   function facebookSellerPaysShippingPreference(payload) {
@@ -799,7 +857,8 @@
 
   function findFacebookDialogUpdateButton(dialog) {
     return Array.from(dialog?.querySelectorAll('button,[role="button"]') || []).find((control) =>
-      visible(control) && /^update$/i.test(facebookButtonLabel(control))) || null;
+      visible(control) && !control.disabled && control.getAttribute('aria-disabled') !== 'true' &&
+      /^update$/i.test(facebookButtonLabel(control))) || null;
   }
 
   async function saveFacebookShippingOptions(dialog, packageWeightCombo) {
@@ -822,6 +881,14 @@
         }
         dialog = exactWeight.dialog;
         exactWeightApplied = true;
+        for (let attempt = 0; attempt < 20; attempt += 1) {
+          packageWeightCombo = findFacebookCombobox('package weight') || packageWeightCombo;
+          if (facebookExactWeightMatches(packageWeightCombo, measurement)) break;
+          await new Promise((resolve) => setTimeout(resolve, 150));
+        }
+        if (!facebookExactWeightMatches(packageWeightCombo, measurement)) {
+          return { ready: false, message: 'Facebook did not confirm the item’s exact packaged weight. Check Package weight before continuing.' };
+        }
       }
     }
 
@@ -838,7 +905,9 @@
       dialog = findFacebookShippingOptionsDialog() || dialog;
       selectedRadio = facebookSelectedPackageWeight(dialog);
       selectedLabel = selectedRadio ? facebookPackageWeightRadioLabel(selectedRadio) : '';
-      if (normalizeChoiceLabel(selectedLabel) !== normalizeChoiceLabel(expectedRange)) {
+      packageWeightCombo = findFacebookCombobox('package weight') || packageWeightCombo;
+      if (normalizeChoiceLabel(selectedLabel) !== normalizeChoiceLabel(expectedRange) &&
+          facebookComboboxValue(packageWeightCombo) !== normalizeChoiceLabel(expectedRange)) {
         return { ready: false, message: `Facebook did not confirm the ${expectedRange} package weight. Choose it in Facebook before continuing.` };
       }
     }
@@ -846,6 +915,17 @@
     if (!exactWeightApplied && !selectedRadio && !facebookComboboxValue(packageWeightCombo)) {
       await openFacebookPackageWeightOptions(dialog, packageWeightCombo);
       return { ready: false, message: 'Choose the item’s total package weight in Facebook, then click Try filling again in KeepFlip.' };
+    }
+
+    // Facebook calculates a carrier after the weight is committed. Update may
+    // remain visible while that calculation is still loading.
+    let carrier = findFacebookCombobox('shipping carrier');
+    for (let attempt = 0; attempt < 20 && (!carrier || !facebookComboboxValue(carrier)); attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      carrier = findFacebookCombobox('shipping carrier');
+    }
+    if (!carrier || !facebookComboboxValue(carrier)) {
+      return { ready: false, message: 'Facebook has not selected a shipping carrier yet. Choose a carrier in its shipping dialog, then retry.' };
     }
 
     const sellerPaysShipping = facebookSellerPaysShippingPreference(payload);
@@ -856,7 +936,10 @@
       }
       if (facebookShippingPaidBySellerIsChecked(sellerShippingControl) !== sellerPaysShipping) {
         clickMarketplaceControl(sellerShippingControl);
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        for (let attempt = 0; attempt < 20; attempt += 1) {
+          if (facebookShippingPaidBySellerIsChecked(sellerShippingControl) === sellerPaysShipping) break;
+          await new Promise((resolve) => setTimeout(resolve, 150));
+        }
       }
       if (facebookShippingPaidBySellerIsChecked(sellerShippingControl) !== sellerPaysShipping) {
         return { ready: false, message: 'Facebook did not confirm the requested seller-paid shipping setting. Check the shipping option.' };
@@ -898,12 +981,6 @@
       };
     } else {
       if (!combo) return { ready: false, message: 'Facebook opened the delivery step, but KeepFlip could not find its delivery method menu.' };
-      if (combo.getAttribute('aria-expanded') !== 'true') {
-        clickMarketplaceControl(combo);
-        await new Promise((resolve) => setTimeout(resolve, 120));
-        combo = findFacebookCombobox('delivery method') || combo;
-      }
-
       if (preference) {
         const result = await applyFacebookDeliveryPreference(combo, preference);
         if (!result.ok) return result;
@@ -924,23 +1001,22 @@
     if (selection.shipping) {
       if (facebookShippingOptionsSaved && !shippingOptionsDialog) return { ready: true, selection };
       let shippingLabelButton = null;
+      let activationMethod = null;
       if (!shippingOptionsDialog) {
         shippingLabelButton = await waitForFacebookShippingLabelButton();
         shippingOptionsDialog = findFacebookShippingOptionsDialog() || shippingOptionsDialog;
       }
-      if (!shippingOptionsDialog && shippingLabelButton && !facebookShippingLabelOpenRequested) {
-        facebookShippingLabelOpenRequested = true;
-        clickFacebookShippingLabelButton(shippingLabelButton);
-        for (let attempt = 0; attempt < 30 && !shippingOptionsDialog; attempt += 1) {
-          await new Promise((resolve) => setTimeout(resolve, 150));
-          shippingOptionsDialog = findFacebookShippingOptionsDialog();
-        }
+      if (!shippingOptionsDialog && shippingLabelButton) {
+        const opened = await openFacebookShippingOptions(shippingLabelButton);
+        shippingOptionsDialog = opened.dialog;
+        activationMethod = opened.activationMethod;
       }
       if (!shippingOptionsDialog) {
         if (!shippingLabelButton) return { ready: false, message: 'Shipping is selected, but Facebook’s Select shipping label button was not found.' };
-        if (!facebookShippingLabelOpenRequested) return { ready: false, message: 'Facebook’s shipping options could not be opened. Try again from the marketplace tab.' };
-        facebookShippingLabelOpenRequested = false;
-        return { ready: false, message: 'KeepFlip pressed Select shipping label. Facebook’s shipping options did not open yet; resume the listing to retry.' };
+        const attemptedWith = activationMethod === 'pointer_mouse_fallback'
+          ? 'a DOM click and pointer/mouse fallback'
+          : 'a DOM click';
+        return { ready: false, message: `KeepFlip found Select shipping label and tried ${attemptedWith}, but Facebook’s shipping options did not appear. The control is still available in the marketplace tab; click it there, then try filling again.` };
       }
 
       const packageWeightCombo = findFacebookCombobox('package weight');
@@ -986,7 +1062,12 @@
     }
     if (!selected) return false;
     clickMarketplaceControl(selected);
-    return true;
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const currentCombo = findFacebookCombobox(key) || combo;
+      if (facebookComboboxMatches(key, value, facebookComboboxValue(currentCombo))) return true;
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+    return false;
   }
 
   async function selectFacebookCondition(value) {
@@ -1490,13 +1571,39 @@
   }
 
   function findFacebookNextButton() {
-    const controls = Array.from(document.querySelectorAll('button,[role="button"]')).filter(visible);
+    const controls = Array.from(document.querySelectorAll('button,[role="button"]')).filter((control) =>
+      visible(control) && !control.disabled && control.getAttribute('aria-disabled') !== 'true');
     return controls.find((control) => (control.getAttribute('aria-label') || '').trim().toLowerCase() === 'next') ||
       controls.find((control) => facebookButtonLabel(control).toLowerCase() === 'next') || null;
   }
 
+  async function waitForFacebookNextButton() {
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      const button = findFacebookNextButton();
+      if (button) return button;
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+    return findFacebookNextButton();
+  }
+
+  function facebookStepIdentity() {
+    const heading = document.querySelector('main h1,main [role="heading"][aria-level="1"]');
+    const progress = document.querySelector('img[alt^="Progress, currently on step"]');
+    return [location.href, heading?.textContent || '', progress?.getAttribute('alt') || ''].join('|');
+  }
+
+  async function waitForFacebookStepChange(previousStep, wasDeliveryStep) {
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      if (liveListingUrl() || facebookStepIdentity() !== previousStep ||
+          (wasDeliveryStep && !isFacebookDeliveryStep())) return true;
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+    return false;
+  }
+
   function findFacebookFinalSubmitButton() {
-    const controls = Array.from(document.querySelectorAll('button,input[type="submit"],[role="button"]')).filter(visible);
+    const controls = Array.from(document.querySelectorAll('button,input[type="submit"],[role="button"]')).filter((control) =>
+      visible(control) && !control.disabled && control.getAttribute('aria-disabled') !== 'true');
     const candidates = controls.filter((control) => /^(post|post item|post listing|publish|list|list item|create listing|submit listing)$/i.test(facebookButtonLabel(control)));
     const scoped = candidates.filter((control) => control.closest('main,form,[role="dialog"]'));
     if (scoped.length) return scoped[0];
@@ -1517,14 +1624,10 @@
     facebookSubmissionInProgress = true;
     try {
       if (!facebookNextClicked && !isFacebookDeliveryStep()) {
-        let nextButton = null;
-        for (let attempt = 0; attempt < 20 && !nextButton; attempt += 1) {
-          nextButton = findFacebookNextButton();
-          if (!nextButton) await new Promise((resolve) => setTimeout(resolve, 250));
-        }
+        const nextButton = await waitForFacebookNextButton();
         if (!nextButton) {
           await report('needs_review', { fields: filledFields, uploadedPhotoCount,
-            message: 'Facebook has the listing details, but its Next button was not found. Open the Facebook tab to continue.' });
+            message: 'Facebook has the listing details, but Next is still disabled or missing. Check the required fields and photos in the Facebook tab.' });
           return;
         }
         facebookNextClicked = true;
@@ -1546,13 +1649,21 @@
             await report('needs_review', { fields: filledFields, uploadedPhotoCount, message: delivery.message });
             return;
           }
-          const deliveryNextButton = findFacebookNextButton();
-          if (deliveryNextButton) {
-            clickMarketplaceControl(deliveryNextButton);
-            await report('filled', { fields: filledFields, uploadedPhotoCount,
-              message: 'Facebook delivery settings are ready. Advanced to the final listing step.' });
+          const deliveryNextButton = await waitForFacebookNextButton();
+          if (!deliveryNextButton) {
+            await report('needs_review', { fields: filledFields, uploadedPhotoCount,
+              message: 'Facebook saved the shipping options, but Next is still disabled. Check the delivery step in Facebook.' });
+            return;
           }
-          await new Promise((resolve) => setTimeout(resolve, 500));
+          const previousStep = facebookStepIdentity();
+          clickMarketplaceControl(deliveryNextButton);
+          if (!await waitForFacebookStepChange(previousStep, true)) {
+            await report('needs_review', { fields: filledFields, uploadedPhotoCount,
+              message: 'Facebook did not advance past Delivery method after Next. Review that step in Facebook.' });
+            return;
+          }
+          await report('filled', { fields: filledFields, uploadedPhotoCount,
+            message: 'Facebook delivery settings were saved and the listing advanced.' });
           continue;
         }
         const publishButton = findFacebookFinalSubmitButton();
@@ -1562,6 +1673,17 @@
             message: 'Facebook’s final Post/Publish action was clicked. Checking for the live listing…' });
           watchForLiveListing();
           return;
+        }
+        const nextButton = findFacebookNextButton();
+        if (nextButton) {
+          const previousStep = facebookStepIdentity();
+          clickMarketplaceControl(nextButton);
+          if (!await waitForFacebookStepChange(previousStep, false)) {
+            await report('needs_review', { fields: filledFields, uploadedPhotoCount,
+              message: 'Facebook did not advance after Next. Review the current listing step.' });
+            return;
+          }
+          continue;
         }
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
