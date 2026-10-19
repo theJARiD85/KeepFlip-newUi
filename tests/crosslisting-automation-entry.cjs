@@ -35,7 +35,7 @@ async function main() {
     marketplaceListings: {
       poshmark: { title: 'Poshmark jacket', description: 'Vintage jacket', fields: { size: 'L' } },
       mercari: { title: 'Mercari jacket', description: 'Leather jacket', fields: { brand: 'Harley Davidson' } },
-      facebookMarketplace: { title: 'Facebook jacket', description: 'Vintage leather jacket', fields: { shippingWeight: 'Approx. 24 oz packaged' } },
+      facebookMarketplace: { title: 'Facebook jacket', description: 'Vintage leather jacket', price: 85, fields: { shippingWeight: 'Approx. 24 oz packaged' } },
     },
   };
   const plan = planService.createCrosslistingAutomationPlan({
@@ -48,6 +48,21 @@ async function main() {
   assert.equal(plan.jobs[0].payload.price, '85.00');
   assert.equal(plan.jobs[2].payload.platformFields.shippingWeight, 'Approx. 24 oz packaged');
   assert.equal(plan.jobs[2].payload.platformFields.sellerPaysShipping, 'true');
+  assert.equal(plan.jobs[2].payload.platformFields.allowOffers, 'false');
+  const withOffers = planService.createCrosslistingAutomationPlan({
+    item, listing, marketplaces: ['facebookMarketplace'], facebookMinimumOfferPrice: 60,
+  });
+  assert.equal(withOffers.jobs[0].payload.platformFields.allowOffers, 'true');
+  assert.equal(withOffers.jobs[0].payload.platformFields.minimumOfferPrice, '60');
+  const manyDetails = { ...item, itemSpecifics: Object.fromEntries(Array.from({ length: 40 }, (_, index) => [`detail${index}`, 'value'])) };
+  const bounded = planService.createCrosslistingAutomationPlan({
+    item: manyDetails, listing, marketplaces: ['facebookMarketplace'], sellerPaysShipping: true,
+    facebookMinimumOfferPrice: 60,
+  });
+  assert.ok(Object.keys(bounded.jobs[0].payload.platformFields).length <= 30);
+  assert.throws(() => planService.createCrosslistingAutomationPlan({
+    item, listing, marketplaces: ['facebookMarketplace'], facebookMinimumOfferPrice: 40,
+  }), /minimum Facebook offer/);
   assert.throws(() => planService.createCrosslistingAutomationPlan({ item, listing, marketplaces: [] }), /Choose at least one/);
 
   const sent = [];

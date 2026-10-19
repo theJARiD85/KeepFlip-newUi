@@ -1380,7 +1380,7 @@
       report('login_required', { message: 'Sign in on this marketplace, then return to KeepFlip and choose Resume.' });
       return;
     }
-    if (isFacebookDeliveryStep()) {
+    if (facebookCreationStep()) {
       facebookNextClicked = true;
       await submitFacebookListing();
       return;
@@ -1483,10 +1483,11 @@
                 : marketplace === 'facebookMarketplace' && assignment.photos.length > uploadedPhotoCount
                   ? 'Facebook did not confirm the item photos. Check the photo count in the Facebook tab, then retry the upload.'
               : 'Some required fields or photos need attention in this marketplace tab.' };
-    await report(status, marketplace === 'facebookMarketplace' && status === 'filled'
-      ? { ...details, message: 'Facebook listing details and photos are ready. Moving to the next listing step…' }
-      : details);
-    if (marketplace === 'facebookMarketplace' && status === 'filled') await submitFacebookListing();
+    if (marketplace === 'facebookMarketplace' && status === 'filled') {
+      await submitFacebookListing();
+      return;
+    }
+    await report(status, details);
   }
 
   function visible(element) {
@@ -1592,6 +1593,72 @@
     return [location.href, heading?.textContent || '', progress?.getAttribute('alt') || ''].join('|');
   }
 
+  function facebookCreationStep() {
+    if (marketplace !== 'facebookMarketplace' || !/^\/marketplace\/create\/item\/?$/i.test(location.pathname)) return '';
+    const step = /(?:^|[?&])step=(delivery|offer|audience)(?:&|$)/i.exec(location.search || '')?.[1]?.toLowerCase();
+    if (['delivery', 'offer', 'audience'].includes(step)) return step;
+    const heading = normalizeChoiceLabel(document.querySelector('main h1,main [role="heading"][aria-level="1"]')?.textContent);
+    if (heading === 'delivery method') return 'delivery';
+    if (heading === 'allow offers') return 'offer';
+    if (heading === 'list in more places') return 'audience';
+    return '';
+  }
+
+  function facebookOffersSwitch() {
+    return Array.from(document.querySelectorAll('[role="switch"]')).find((control) =>
+      visible(control) && /let buyers negotiate a price equal to or above the minimum price you set/i.test(
+        control.getAttribute('aria-label') || labelFor(control),
+      )) || null;
+  }
+
+  function facebookSwitchIsChecked(control) {
+    return Boolean(control?.checked || control?.getAttribute('aria-checked') === 'true');
+  }
+
+  function facebookMinimumOfferInput() {
+    return Array.from(document.querySelectorAll('input[type="text"]')).find((input) =>
+      visible(input) && /minimum price you.ll consider/i.test(labelFor(input))) || null;
+  }
+
+  async function prepareFacebookOfferStep() {
+    const offerSwitch = facebookOffersSwitch();
+    if (!offerSwitch) return { ready: false, message: 'Facebook did not show the buyer-offers control. Review the Allow offers step in its tab.' };
+    const platformFields = assignment.payload.platformFields || {};
+    const allowOffers = normalizeChoiceLabel(platformFields.allowOffers) === 'true';
+    const minimumPrice = Number(platformFields.minimumOfferPrice);
+    const listingPrice = Number(assignment.payload.price);
+    if (allowOffers && (!Number.isFinite(minimumPrice) || !Number.isFinite(listingPrice) ||
+      minimumPrice < listingPrice / 2 || minimumPrice >= listingPrice)) {
+      return { ready: false, message: 'The saved minimum offer is invalid. Review the Facebook offer amount before continuing.' };
+    }
+    if (facebookSwitchIsChecked(offerSwitch) !== allowOffers) {
+      clickMarketplaceControl(offerSwitch);
+      for (let attempt = 0; attempt < 20 && facebookSwitchIsChecked(facebookOffersSwitch()) !== allowOffers; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 150));
+      }
+    }
+    if (facebookSwitchIsChecked(facebookOffersSwitch()) !== allowOffers) {
+      return { ready: false, message: 'Facebook did not confirm the buyer-offers setting. Check the offer step before continuing.' };
+    }
+    if (allowOffers) {
+      let input = facebookMinimumOfferInput();
+      for (let attempt = 0; attempt < 20 && !input; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 150));
+        input = facebookMinimumOfferInput();
+      }
+      if (!input || !setField(input, String(minimumPrice))) {
+        return { ready: false, message: 'Facebook did not show the minimum offer field. Review the offer amount in its tab.' };
+      }
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        const shownPrice = Number(String(facebookMinimumOfferInput()?.value || '').replace(/[$,\s]/g, ''));
+        if (Math.abs(shownPrice - minimumPrice) < 0.01) return { ready: true };
+        await new Promise((resolve) => setTimeout(resolve, 150));
+      }
+      return { ready: false, message: 'Facebook did not confirm the minimum offer amount. Review it before continuing.' };
+    }
+    return { ready: true };
+  }
+
   async function waitForFacebookStepChange(previousStep, wasDeliveryStep) {
     for (let attempt = 0; attempt < 40; attempt += 1) {
       if (liveListingUrl() || facebookStepIdentity() !== previousStep ||
@@ -1615,7 +1682,11 @@
     const timer = setInterval(() => {
       checks += 1;
       if (liveListingUrl()) { clearInterval(timer); void report('confirmed', { externalUrl: location.href }); }
-      else if (checks >= 30) clearInterval(timer);
+      else if (checks >= 30) {
+        clearInterval(timer);
+        void report('needs_review', { fields: filledFields, uploadedPhotoCount,
+          message: 'Facebook did not open a live listing after Publish. Check its tab for an error or confirmation.' });
+      }
     }, 1000);
   }
 
@@ -1662,16 +1733,37 @@
               message: 'Facebook did not advance past Delivery method after Next. Review that step in Facebook.' });
             return;
           }
-          await report('filled', { fields: filledFields, uploadedPhotoCount,
-            message: 'Facebook delivery settings were saved and the listing advanced.' });
           continue;
         }
-        const publishButton = findFacebookFinalSubmitButton();
-        if (publishButton) {
-          clickMarketplaceControl(publishButton);
-          await report('submit_clicked', { fields: filledFields, uploadedPhotoCount,
-            message: 'Facebook’s final Post/Publish action was clicked. Checking for the live listing…' });
-          watchForLiveListing();
+        if (facebookCreationStep() === 'offer') {
+          const offers = await prepareFacebookOfferStep();
+          if (!offers.ready) {
+            await report('needs_review', { fields: filledFields, uploadedPhotoCount, message: offers.message });
+            return;
+          }
+          const offerNextButton = await waitForFacebookNextButton();
+          if (!offerNextButton) {
+            await report('needs_review', { fields: filledFields, uploadedPhotoCount,
+              message: 'Facebook did not show Next after buyer offers were turned off.' });
+            return;
+          }
+          const previousStep = facebookStepIdentity();
+          clickMarketplaceControl(offerNextButton);
+          if (!await waitForFacebookStepChange(previousStep, false)) {
+            await report('needs_review', { fields: filledFields, uploadedPhotoCount,
+              message: 'Facebook did not advance past Allow offers. Review that step in Facebook.' });
+            return;
+          }
+          continue;
+        }
+        if (facebookCreationStep() === 'audience') {
+          if (!findFacebookFinalSubmitButton()) {
+            await report('needs_review', { fields: filledFields, uploadedPhotoCount,
+              message: 'Facebook reached the final review, but Publish is unavailable. Check the listing in its tab.' });
+            return;
+          }
+          await report('filled', { fields: filledFields, uploadedPhotoCount,
+            message: 'Facebook is ready at the final review. Check the preview and choose Post listing in KeepFlip to publish.' });
           return;
         }
         const nextButton = findFacebookNextButton();
@@ -1694,11 +1786,32 @@
     }
   }
 
+  async function publishFacebookListing() {
+    if (facebookCreationStep() !== 'audience') {
+      await report('needs_review', { fields: filledFields, uploadedPhotoCount,
+        message: 'Facebook is not at the final review. Open its tab and finish the remaining steps before posting.' });
+      return;
+    }
+    const publishButton = findFacebookFinalSubmitButton();
+    if (!publishButton) {
+      await report('needs_review', { fields: filledFields, uploadedPhotoCount,
+        message: 'Facebook’s Publish button is unavailable. Review the final listing step.' });
+      return;
+    }
+    if (!clickMarketplaceControl(publishButton)) {
+      await report('needs_review', { fields: filledFields, uploadedPhotoCount,
+        message: 'KeepFlip could not press Facebook’s Publish button. Review the final listing step.' });
+      return;
+    }
+    await report('submit_clicked', { fields: filledFields, uploadedPhotoCount,
+      message: 'Facebook’s Publish action was clicked. Checking for the live listing…' });
+    watchForLiveListing();
+  }
+
   async function submit() {
     if (!assignment) return;
     if (marketplace === 'facebookMarketplace') {
-      if (!isFacebookDeliveryStep() && !core.every((key) => filledFields.includes(key))) return;
-      await submitFacebookListing();
+      await publishFacebookListing();
       return;
     }
     if (!core.every((key) => filledFields.includes(key))) return;

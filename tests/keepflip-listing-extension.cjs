@@ -485,7 +485,8 @@ async function runFacebookStrollerScenario({ photoMode = 'none', facebookSelecto
   let dropEvents = 0;
   const hasPhoto = photoMode !== 'none';
   const acknowledgePhoto = photoMode === 'accepted';
-  let facebookLocation = { protocol: 'https:', hostname: 'www.facebook.com', pathname: '/marketplace/create/', href: 'https://www.facebook.com/marketplace/create/' };
+  let facebookLocation = { protocol: 'https:', hostname: 'www.facebook.com', pathname: '/marketplace/create/',
+    search: '', href: 'https://www.facebook.com/marketplace/create/' };
   const statuses = [];
   const makeField = (name, tagName, placeholder = '') => ({
     name, id: name, type: 'text', value: '', tagName, placeholder, labels: [], disabled: false, readOnly: false,
@@ -600,6 +601,9 @@ async function runFacebookStrollerScenario({ photoMode = 'none', facebookSelecto
       facebookNextClicks += 1;
       fieldsReadyWhenNextClicked = coreFields.every((field) => field.value) &&
         selectedCategory === 'Baby & Kids' && selectedCondition === 'New';
+      facebookLocation.pathname = '/marketplace/create/item';
+      facebookLocation.search = '?step=audience';
+      facebookLocation.href = 'https://www.facebook.com/marketplace/create/item?step=audience';
     },
   };
   const publishButton = {
@@ -756,11 +760,11 @@ test('Facebook selects a stroller category and advances when optional fields are
   ]);
   assert.equal(result.fieldsReadyWhenNextClicked, true);
   assert.equal(result.facebookNextClicks, 1);
-  assert.equal(result.facebookPublishClicks, 1);
+  assert.equal(result.facebookPublishClicks, 0);
   assert.ok(statuses.some((status) => status.status === 'filled'));
-  assert.ok(statuses.some((status) => status.status === 'submit_clicked'));
-  assert.equal(statuses.at(-1)?.status, 'confirmed');
-  assert.equal(statuses.at(-1)?.externalUrl, facebookLocation.href);
+  assert.ok(!statuses.some((status) => status.status === 'submit_clicked'));
+  assert.equal(statuses.at(-1)?.status, 'filled');
+  assert.equal(facebookLocation.search, '?step=audience');
 });
 
 test('Facebook clicks the supplied item-for-sale card selector when its semantic label is unavailable', async () => {
@@ -769,8 +773,8 @@ test('Facebook clicks the supplied item-for-sale card selector when its semantic
   assert.equal(result.itemForSaleClicks, 1);
   assert.equal(result.vehicleForSaleClicks, 0);
   assert.equal(result.facebookNextClicks, 1);
-  assert.equal(result.facebookPublishClicks, 1);
-  assert.equal(result.statuses.at(-1)?.status, 'confirmed');
+  assert.equal(result.facebookPublishClicks, 0);
+  assert.equal(result.statuses.at(-1)?.status, 'filled');
 });
 
 test('Facebook adds selected image files and waits for the photo count before advancing', async () => {
@@ -782,7 +786,7 @@ test('Facebook adds selected image files and waits for the photo count before ad
   assert.equal(result.dropEvents, 0);
   assert.equal(result.facebookNextClicks, 1);
   assert.equal(result.statuses.find((status) => status.status === 'filled')?.uploadedPhotoCount, 1);
-  assert.equal(result.statuses.at(-1)?.status, 'confirmed');
+  assert.equal(result.statuses.at(-1)?.status, 'filled');
 });
 
 test('Facebook does not report success or advance when its photo upload remains at zero', async () => {
@@ -796,6 +800,129 @@ test('Facebook does not report success or advance when its photo upload remains 
   assert.equal(result.statuses.at(-1)?.status, 'needs_review');
   assert.equal(result.statuses.at(-1)?.uploadedPhotoCount, 0);
   assert.match(result.statuses.at(-1)?.message || '', /did not confirm the item photos/i);
+});
+
+async function runFacebookFinalStepsScenario(startStep = 'offer', minimumOfferPrice = null) {
+  const statuses = [];
+  const listeners = [];
+  const location = { protocol: 'https:', hostname: 'www.facebook.com', pathname: '/marketplace/create/item',
+    search: `?step=${startStep}`, href: `https://www.facebook.com/marketplace/create/item?step=${startStep}` };
+  let offersChecked = true;
+  let offerClicks = 0;
+  let nextClicks = 0;
+  let publishClicks = 0;
+  const rect = () => ({ width: 180, height: 44 });
+  const offerSwitch = {
+    get checked() { return offersChecked; },
+    getAttribute: (key) => key === 'aria-label' ? 'Let buyers negotiate a price equal to or above the minimum price you set.'
+      : key === 'aria-checked' ? String(offersChecked) : null,
+    getBoundingClientRect: rect,
+    click: () => { offersChecked = !offersChecked; offerClicks += 1; },
+  };
+  const offerInput = {
+    type: 'text', tagName: 'INPUT', value: '$138', labels: [], disabled: false, readOnly: false,
+    getAttribute: () => null,
+    getBoundingClientRect: rect,
+    closest: (selector) => selector === 'label' ? { textContent: "Minimum price you'll consider" } : null,
+    dispatchEvent: () => undefined,
+    blur: () => undefined,
+  };
+  const nextButton = {
+    disabled: false,
+    getAttribute: (key) => key === 'aria-label' ? 'Next' : null,
+    getBoundingClientRect: rect,
+    click: () => {
+      nextClicks += 1;
+      location.search = '?step=audience';
+      location.href = 'https://www.facebook.com/marketplace/create/item?step=audience';
+    },
+  };
+  const publishButton = {
+    disabled: false,
+    getAttribute: (key) => key === 'aria-label' ? 'Publish' : null,
+    getBoundingClientRect: rect,
+    closest: () => ({}),
+    click: () => { publishClicks += 1; },
+  };
+  const document = {
+    querySelector: () => null,
+    getElementById: () => null,
+    querySelectorAll: (selector) => {
+      if (selector === '[role="switch"]') return location.search === '?step=offer' ? [offerSwitch] : [];
+      if (selector === 'input[type="text"]') return location.search === '?step=offer' && offersChecked ? [offerInput] : [];
+      if (selector === 'button,[role="button"]') return location.search === '?step=offer' ? [nextButton] : [publishButton];
+      if (selector === 'button,input[type="submit"],[role="button"]') return location.search === '?step=audience' ? [publishButton] : [];
+      return [];
+    },
+  };
+  const payload = listingPayload('facebookMarketplace');
+  payload.platformFields.allowOffers = String(minimumOfferPrice != null);
+  if (minimumOfferPrice != null) payload.platformFields.minimumOfferPrice = String(minimumOfferPrice);
+  const assignment = { ok: true, runId: 'facebook-final-run-123456', jobStatus: 'opened',
+    payload, photos: [], unavailablePhotoCount: 0 };
+  const chrome = { runtime: {
+    onMessage: { addListener: (listener) => listeners.push(listener) },
+    sendMessage: async (message) => message.type === 'KEEPFLIP_LISTING_TAB_READY'
+      ? assignment : (statuses.push(message), { ok: true }),
+  } };
+  const runnerPath = path.join(__dirname, '..', 'extensions', 'keepflip-sale-watcher', 'content_scripts', 'automation_runner.js');
+  vm.runInNewContext(fs.readFileSync(runnerPath, 'utf8'), {
+    chrome, document, location, console,
+    HTMLSelectElement: class HTMLSelectElement {},
+    HTMLTextAreaElement: class HTMLTextAreaElement {},
+    window: { HTMLInputElement: class HTMLInputElement {}, HTMLTextAreaElement: class HTMLTextAreaElement {} },
+    Event: class TestEvent { constructor(type) { this.type = type; } },
+    setTimeout: (callback) => { queueMicrotask(callback); return 1; },
+    setInterval: () => 1,
+    clearInterval: () => undefined,
+  });
+  for (let attempt = 0; attempt < 20 && !statuses.some((status) => status.status === 'filled'); attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  return {
+    statuses, location,
+    get offersChecked() { return offersChecked; },
+    get offerClicks() { return offerClicks; },
+    get minimumOfferValue() { return offerInput.value; },
+    get nextClicks() { return nextClicks; },
+    get publishClicks() { return publishClicks; },
+    submit: async () => {
+      listeners[0]({ type: 'KEEPFLIP_LISTING_SUBMIT', runId: assignment.runId, marketplace: 'facebookMarketplace' });
+      for (let attempt = 0; attempt < 20 && !statuses.some((status) => status.status === 'submit_clicked'); attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+    },
+  };
+}
+
+test('Facebook disables default half-price offers and stops at final review without publishing', async () => {
+  const result = await runFacebookFinalStepsScenario();
+  assert.equal(result.offersChecked, false);
+  assert.equal(result.offerClicks, 1);
+  assert.equal(result.nextClicks, 1);
+  assert.equal(result.location.search, '?step=audience');
+  assert.equal(result.publishClicks, 0);
+  assert.equal(result.statuses.at(-1)?.status, 'filled');
+  assert.match(result.statuses.at(-1)?.message || '', /final review/i);
+});
+
+test('Facebook publishes only after KeepFlip sends the separate Post listing action', async () => {
+  const result = await runFacebookFinalStepsScenario('audience');
+  assert.equal(result.publishClicks, 0);
+  assert.equal(result.statuses.at(-1)?.status, 'filled');
+  await result.submit();
+  assert.equal(result.publishClicks, 1);
+  assert.equal(result.statuses.at(-1)?.status, 'submit_clicked');
+});
+
+test('Facebook keeps offers enabled only when KeepFlip provides a valid minimum', async () => {
+  const result = await runFacebookFinalStepsScenario('offer', 70);
+  assert.equal(result.offersChecked, true);
+  assert.equal(result.offerClicks, 0);
+  assert.equal(result.minimumOfferValue, '70');
+  assert.equal(result.nextClicks, 1);
+  assert.equal(result.publishClicks, 0);
+  assert.equal(result.statuses.at(-1)?.status, 'filled');
 });
 
 test('Facebook applies an explicit shipping and pickup choice, then opens the shipping label picker', async () => {

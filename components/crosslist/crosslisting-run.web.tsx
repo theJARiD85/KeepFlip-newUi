@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 
 import type { CrosslistingRunProps } from '@/components/crosslist/crosslisting-run.types';
-import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
+import { KeepFlipText as Text, KeepFlipTextInput as TextInput } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { dispatchToAutomationEngine } from '@/services/crosslisting-automation-dispatch.web';
 import { CROSSLISTING_RUN_MARKETPLACES } from '@/services/crosslisting-automation-plan';
@@ -33,6 +33,8 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
   const confirmed = useMemo(() => parseSavedListingDraft(item.listingJson)?.confirmedMarketplaces ?? {}, [item.listingJson]);
   const [selected, setSelected] = useState<CrosslistingMarketplace[]>(() => MARKETPLACES.filter((value) => initialSelections?.includes(value) && !confirmed[value]));
   const [sellerPaysShipping, setSellerPaysShipping] = useState(false);
+  const [allowFacebookOffers, setAllowFacebookOffers] = useState(false);
+  const [minimumFacebookOffer, setMinimumFacebookOffer] = useState('');
   const [extensionReady, setExtensionReady] = useState<boolean | null>(null);
   const [jobs, setJobs] = useState<ExtensionJob[]>([]);
   const [recorded, setRecorded] = useState<Set<CrosslistingMarketplace>>(() => new Set());
@@ -135,11 +137,22 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
       if (onBeforeStart && !await onBeforeStart()) {
         throw new Error('Save the listing draft before starting this run.');
       }
+      const facebookPrice = listing.marketplaceListings.facebookMarketplace.price;
+      const minimumOffer = Number(minimumFacebookOffer.replace(/[$,\s]/g, ''));
+      if (selected.includes('facebookMarketplace') && allowFacebookOffers &&
+        (!Number.isFinite(facebookPrice) || facebookPrice <= 0)) {
+        throw new Error('Save a Facebook listing price before setting a minimum offer.');
+      }
+      if (selected.includes('facebookMarketplace') && allowFacebookOffers &&
+        (!Number.isFinite(minimumOffer) || minimumOffer < facebookPrice / 2 || minimumOffer >= facebookPrice)) {
+        throw new Error(`Enter a minimum Facebook offer from $${(facebookPrice / 2).toFixed(2)} up to less than $${facebookPrice.toFixed(2)}.`);
+      }
       const runId = globalThis.crypto?.randomUUID?.() ?? `run-${Date.now()}-${Math.random().toString(36).slice(2)}`;
       runIdRef.current = runId;
       const dispatchedJobs = await dispatchToAutomationEngine({
         ownerId: userId, item, listing, marketplaces: available, runId,
         sellerPaysShipping: selected.includes('facebookMarketplace') ? sellerPaysShipping : undefined,
+        facebookMinimumOfferPrice: selected.includes('facebookMarketplace') && allowFacebookOffers ? minimumOffer : null,
         onPhotosReady: () => setNotice('Opening your marketplace tabs…'),
       });
       setJobs((current) => dispatchedJobs.map((job) => {
@@ -199,6 +212,25 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
       onPress={() => setSellerPaysShipping((current) => !current)}
       style={[responsiveStyles.shippingPreference, sellerPaysShipping && responsiveStyles.shippingPreferenceSelected]}
     ><Text style={[responsiveStyles.shippingPreferenceText, sellerPaysShipping && responsiveStyles.choiceTextSelected]}><Ionicons color={sellerPaysShipping ? theme.colors.scannerCyan : theme.colors.textMuted} name={sellerPaysShipping ? 'checkmark-circle' : 'ellipse-outline'} size={15} />{' '}Cover shipping cost so buyers see free shipping</Text></Pressable> : null}
+    {selected.includes('facebookMarketplace') ? <View style={responsiveStyles.offerPreferences}>
+      <Pressable
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: allowFacebookOffers, disabled: jobs.length > 0 || busy }}
+        disabled={jobs.length > 0 || busy}
+        onPress={() => setAllowFacebookOffers((current) => !current)}
+        style={[responsiveStyles.shippingPreference, allowFacebookOffers && responsiveStyles.shippingPreferenceSelected]}
+      ><Text style={[responsiveStyles.shippingPreferenceText, allowFacebookOffers && responsiveStyles.choiceTextSelected]}><Ionicons color={allowFacebookOffers ? theme.colors.scannerCyan : theme.colors.textMuted} name={allowFacebookOffers ? 'checkmark-circle' : 'ellipse-outline'} size={15} />{' '}Allow buyer offers</Text></Pressable>
+      {allowFacebookOffers ? <TextInput
+        accessibilityLabel="Minimum Facebook offer"
+        editable={!jobs.length && !busy}
+        keyboardType="decimal-pad"
+        onChangeText={setMinimumFacebookOffer}
+        placeholder="Minimum offer ($)"
+        placeholderTextColor={theme.colors.textMuted}
+        style={responsiveStyles.offerInput}
+        value={minimumFacebookOffer}
+      /> : null}
+    </View> : null}
     {error ? <Text accessibilityRole="alert" style={responsiveStyles.error}>{error}</Text> : null}
     {notice ? <Text style={responsiveStyles.notice}>{notice}</Text> : null}
     {!jobs.length ? <Pressable accessibilityRole="button" accessibilityState={{ disabled: !available.length || busy }} disabled={!available.length || busy} onPress={() => { void start(); }} style={[responsiveStyles.primary, (!available.length || busy) && responsiveStyles.disabled]}><Text style={responsiveStyles.primaryText}>{busy ? 'Preparing your run…' : <>Start listing <Ionicons color={theme.colors.textOnAccent} name="arrow-forward" size={14} /></>}</Text></Pressable> :
@@ -214,7 +246,7 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
             <Pressable accessibilityRole="button" onPress={() => { void action('LISTING_FOCUS', job.marketplace); }} style={responsiveStyles.smallButton}><Text style={responsiveStyles.smallText}>Open tab</Text></Pressable>
             {job.status === 'login_required' ? <Pressable accessibilityRole="button" onPress={() => { void action('LISTING_RESUME', job.marketplace); }} style={responsiveStyles.smallButton}><Text style={responsiveStyles.smallText}>Resume form</Text></Pressable> : null}
             {job.status === 'needs_review' ? <Pressable accessibilityRole="button" onPress={() => { void action('LISTING_RETRY', job.marketplace); }} style={responsiveStyles.smallButton}><Text style={responsiveStyles.smallText}>Try filling again</Text></Pressable> : null}
-            {job.status === 'filled' && job.marketplace !== 'facebookMarketplace' ? <Pressable accessibilityRole="button" onPress={() => { void action('LISTING_SUBMIT', job.marketplace); }} style={responsiveStyles.postButton}><Text style={responsiveStyles.postText}>Post listing</Text></Pressable> : null}
+            {job.status === 'filled' ? <Pressable accessibilityRole="button" onPress={() => { void action('LISTING_SUBMIT', job.marketplace); }} style={responsiveStyles.postButton}><Text style={responsiveStyles.postText}>Post listing</Text></Pressable> : null}
             {job.status === 'submit_clicked' || job.status === 'needs_review' || job.status === 'confirmed' ? <Pressable accessibilityRole="button" onPress={() => { void markListed(job.marketplace); }} style={responsiveStyles.smallButton}><Text style={responsiveStyles.smallText}>{job.status === 'confirmed' ? 'Save as listed' : 'I see it live'}</Text></Pressable> : null}
           </View> : null}
         </View>;
@@ -235,6 +267,9 @@ const styles = StyleSheet.create({
   shippingPreference: { minHeight: 38, justifyContent: 'center', borderWidth: 1, borderColor: theme.colors.dividerStrong, borderRadius: 8, backgroundColor: theme.colors.surfaceInset, paddingHorizontal: 10 },
   shippingPreferenceSelected: { borderColor: theme.colors.scannerCyan, backgroundColor: theme.colors.iconSurfaceCyan },
   shippingPreferenceText: { color: theme.colors.textMuted, fontSize: 11, fontWeight: '800' },
+  offerPreferences: { gap: 8 },
+  offerInput: { minHeight: 38, borderWidth: 1, borderColor: theme.colors.dividerStrong, borderRadius: 8,
+    backgroundColor: theme.colors.surfaceInset, color: theme.colors.text, paddingHorizontal: 10, fontSize: 12 },
   choice: { minHeight: 38, justifyContent: 'center', borderWidth: 1, borderColor: theme.colors.dividerStrong, borderRadius: 8, backgroundColor: theme.colors.surfaceInset, paddingHorizontal: 10 },
   choiceSelected: { borderColor: theme.colors.scannerCyan, backgroundColor: theme.colors.iconSurfaceCyan },
   choiceText: { color: theme.colors.textMuted, fontSize: 11, fontWeight: '800' },

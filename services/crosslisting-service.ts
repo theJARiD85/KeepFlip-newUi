@@ -164,8 +164,9 @@ export function createGeneratedCrosslistingPayload({
         ? firstWord.toLowerCase() + remainingWords.map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join('')
         : '';
       const value = typeof rawValue === 'string' ? rawValue.trim() : '';
+      // Leave room for delivery and offer choices added by the desktop run.
       if (!key || !value || key.length > 64 || Object.prototype.hasOwnProperty.call(platformFields, key) ||
-        Object.keys(platformFields).length >= 30) continue;
+        Object.keys(platformFields).length >= 27) continue;
       platformFields[key] = value;
     }
   }
