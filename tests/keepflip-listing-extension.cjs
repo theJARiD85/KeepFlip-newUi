@@ -1085,7 +1085,7 @@ async function runFacebookShippingOptionsScenario({ runId, platformFields, selec
   shippingDialogOpensOnSyntheticClick = true, shippingDialogOpensOnDomClick = true,
   packageWeightSelectorFallback = false, exactWeightSelectorFallback = false,
   exactWeightButtonLabel = 'Enter exact weight', carrierAvailable = true,
-  nextDisabled = false }) {
+  shippingDialogClosesAfterMs = 0, nextDisabled = false }) {
   let deliveryMenuOpen = false;
   let deliveryMenuClicks = 0;
   let weightMenuOpen = false;
@@ -1113,8 +1113,15 @@ async function runFacebookShippingOptionsScenario({ runId, platformFields, selec
   let shippingCostChecked = false;
   let shippingCostClicks = 0;
   let updateClicks = 0;
+  let shippingUpdateClickMs = null;
   let nextClicks = 0;
   let simulatedWaitMs = 0;
+  function shippingDialogIsOpen() {
+    if (shippingUpdateClickMs !== null && simulatedWaitMs - shippingUpdateClickMs >= shippingDialogClosesAfterMs) {
+      shippingDialogOpen = false;
+    }
+    return shippingDialogOpen;
+  }
   const shippingActions = [];
   const weightWorkflowActions = [];
   const statuses = [];
@@ -1190,7 +1197,12 @@ async function runFacebookShippingOptionsScenario({ runId, platformFields, selec
     getBoundingClientRect: () => ({ width: 90, height: 44 }),
     innerText: 'Update',
     textContent: 'Update',
-    click: () => { updateClicks += 1; shippingActions.push('Update'); shippingDialogOpen = false; },
+    click: () => {
+      updateClicks += 1;
+      shippingActions.push('Update');
+      shippingUpdateClickMs = simulatedWaitMs;
+      if (shippingDialogClosesAfterMs <= 0) shippingDialogOpen = false;
+    },
   };
   class MockHTMLInputElement {
     constructor(id, unit) {
@@ -1322,8 +1334,8 @@ async function runFacebookShippingOptionsScenario({ runId, platformFields, selec
     getElementById: (id) => ({ textContent: id === 'delivery-label' ? 'Delivery method'
       : id === 'weight-label' ? 'Package weight' : id === 'carrier-label' ? 'Shipping carrier' : '' }),
     querySelector: (selector) => {
-      if (selector.includes('Change shipping method') && shippingDialogOpen && !shippingDialogFoundByFallback) return shippingDialog;
-      if (selector.includes('Package weight and shipping options') && shippingDialogOpen && weightMenuOpen) return weightDialog;
+      if (selector.includes('Change shipping method') && shippingDialogIsOpen() && !shippingDialogFoundByFallback) return shippingDialog;
+      if (selector.includes('Package weight and shipping options') && shippingDialogIsOpen() && weightMenuOpen) return weightDialog;
       return null;
     },
     querySelectorAll: (selector) => {
@@ -1338,23 +1350,23 @@ async function runFacebookShippingOptionsScenario({ runId, platformFields, selec
         shippingLabelLookupChecks += 1;
         const shippingLabelReady = shippingLabelAppearsAfterChecks <= 0 ||
           shippingLabelLookupChecks >= shippingLabelAppearsAfterChecks;
-        return shippingLabelReady && !shippingDialogOpen && shippingLabelVisibleText.trim() === 'Select shipping label'
+        return shippingLabelReady && !shippingDialogIsOpen() && shippingLabelVisibleText.trim() === 'Select shipping label'
           ? [shippingLabelTextSpan]
           : [];
       }
       if (selector.includes('[role="dialog"]')) {
-        if (shippingLabelClicks > 0 && !shippingDialogOpen && shippingDialogOpensAfterChecks > 0) {
+        if (shippingLabelClicks > 0 && !shippingDialogIsOpen() && shippingDialogOpensAfterChecks > 0 && updateClicks === 0) {
           shippingDialogLookupChecks += 1;
           if (shippingDialogLookupChecks >= shippingDialogOpensAfterChecks) shippingDialogOpen = true;
         }
-        if (shippingDialogOpen && shippingDialogFoundByFallback) return [shippingDialog];
+        if (shippingDialogIsOpen() && shippingDialogFoundByFallback) return [shippingDialog];
       }
       if (selector === '[role="combobox"]') {
-        if (shippingDialogOpen && hideDeliveryMenuWhileDialogOpen) return hidePackageWeightCombobox ? [carrierCombo] : [packageWeightCombo, carrierCombo];
+        if (shippingDialogIsOpen() && hideDeliveryMenuWhileDialogOpen) return hidePackageWeightCombobox ? [carrierCombo] : [packageWeightCombo, carrierCombo];
         deliveryComboLookupChecks += 1;
         const deliveryComboReady = deliveryComboAppearsAfterChecks <= 0 ||
           deliveryComboLookupChecks >= deliveryComboAppearsAfterChecks;
-        return [...(deliveryComboReady ? [deliveryCombo] : []), ...(shippingDialogOpen
+        return [...(deliveryComboReady ? [deliveryCombo] : []), ...(shippingDialogIsOpen()
           ? hidePackageWeightCombobox ? [carrierCombo] : [packageWeightCombo, carrierCombo]
           : [])];
       }
@@ -1511,6 +1523,21 @@ test('Facebook reopens a previously selected prepaid label when resuming', async
   assert.equal(result.shippingLabelClicks, 1);
   assert.equal(result.updateClicks, 1);
   assert.equal(result.nextClicks, 1);
+});
+
+test('Facebook waits for the shipping Update dialog to finish saving before clicking Next', async () => {
+  const result = await runFacebookShippingOptionsScenario({
+    runId: 'facebook-delayed-shipping-update-run-123456',
+    platformFields: { deliveryMethod: 'shipping_and_local_pickup', shippingWeight: '8 oz' },
+    selectedWeight: '0.5-1 lbs',
+    shippingDialogClosesAfterMs: 2400,
+  });
+
+  assert.equal(result.updateClicks, 1);
+  assert.ok(result.simulatedWaitMs >= 2400);
+  assert.equal(result.nextClicks, 1);
+  assert.deepEqual(result.shippingActions, ['Update', 'Next']);
+  assert.equal(result.statuses.at(-1)?.status, 'confirmed');
 });
 
 test('Facebook targets the visible label span and its semantic button', async () => {

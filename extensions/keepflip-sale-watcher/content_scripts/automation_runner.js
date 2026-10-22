@@ -964,9 +964,11 @@
     const updateButton = findFacebookDialogUpdateButton(dialog);
     if (!updateButton) return { ready: false, message: 'KeepFlip could not find Facebook’s Update button to save shipping info.' };
     clickMarketplaceControl(updateButton);
+    // Facebook can keep the shipping dialog mounted while it saves the carrier
+    // and calculates the label price. Do not report a failure during that save.
     let dialogStillOpen = Boolean(findFacebookShippingOptionsDialog());
-    for (let attempt = 0; dialogStillOpen && attempt < 10; attempt += 1) {
-      await new Promise((resolve) => setTimeout(resolve, 150));
+    for (let attempt = 0; dialogStillOpen && attempt < 75; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 200));
       dialogStillOpen = Boolean(findFacebookShippingOptionsDialog());
     }
     if (dialogStillOpen) {

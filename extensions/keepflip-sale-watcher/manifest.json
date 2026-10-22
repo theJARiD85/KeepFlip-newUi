@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "KeepFlip Assistant",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Prepare marketplace listings from KeepFlip and review sales detected in an open Gmail message.",
   "permissions": ["storage", "tabs"],
   "host_permissions": [
