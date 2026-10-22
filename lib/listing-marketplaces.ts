@@ -11,5 +11,7 @@ export const MARKETPLACE_CHOICES: { id: ListingPlatform; label: string }[] = [
 
 export function normalizeMarketplaceSelections(value: unknown): ListingPlatform[] {
   if (!Array.isArray(value)) return [];
-  return MARKETPLACE_CHOICES.map((choice) => choice.id).filter((id) => value.includes(id));
+  // Older Appwrite rows used the all-lowercase OfferUp enum value.
+  const selections = value.map((id) => id === 'offerup' ? 'offerUp' : id);
+  return MARKETPLACE_CHOICES.map((choice) => choice.id).filter((id) => selections.includes(id));
 }

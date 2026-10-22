@@ -4,6 +4,7 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 
+import { MarketplaceShippingDefaultsCard } from '@/components/crosslist/marketplace-shipping-defaults-card';
 import { KeepFlipText as Text, KeepFlipTextInput as TextInput } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { MARKETPLACE_CHOICES } from '@/lib/listing-marketplaces';
@@ -16,6 +17,8 @@ import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive
 type ListingTab = 'listed' | 'not-listed';
 
 type Props = {
+  userId: string;
+  displayName?: string | null;
   items: InventoryItem[];
   loading: boolean;
   loadingMore: boolean;
@@ -61,7 +64,7 @@ function ListingItemCard({ item, onPress }: { item: InventoryItem; onPress: () =
   );
 }
 
-export function ListingHubScreen({ items, loading, loadingMore, hasMore, error, selections, savingSelections, selectionError, onSaveSelections, onOpenItem, onLoadMore, onRefresh, onAddItem }: Props) {
+export function ListingHubScreen({ userId, displayName, items, loading, loadingMore, hasMore, error, selections, savingSelections, selectionError, onSaveSelections, onOpenItem, onLoadMore, onRefresh, onAddItem }: Props) {
   const responsiveStyles2 = useResponsiveStyles(createStylesWebResponsive);
   const [tab, setTab] = useState<ListingTab>('not-listed');
   const [query, setQuery] = useState('');
@@ -106,6 +109,7 @@ export function ListingHubScreen({ items, loading, loadingMore, hasMore, error, 
             </View> : null}
             {selectionError ? <Text accessibilityRole="alert" style={responsiveStyles2.errorText}>{selectionError}</Text> : null}
           </View>
+          <MarketplaceShippingDefaultsCard key={`${userId}:${selections.join(',')}`} userId={userId} displayName={displayName} selections={selections} />
           <View style={responsiveStyles2.tabs} accessibilityRole="tablist">
             <Pressable accessibilityRole="tab" accessibilityState={{ selected: tab === 'not-listed' }} onPress={() => setTab('not-listed')} style={[responsiveStyles2.tab, tab === 'not-listed' && responsiveStyles2.activeTab]}><Text style={[responsiveStyles2.tabText, tab === 'not-listed' && responsiveStyles2.activeTabText]}>Not listed · {notListedCount}</Text></Pressable>
             <Pressable accessibilityRole="tab" accessibilityState={{ selected: tab === 'listed' }} onPress={() => setTab('listed')} style={[responsiveStyles2.tab, tab === 'listed' && responsiveStyles2.activeTab]}><Text style={[responsiveStyles2.tabText, tab === 'listed' && responsiveStyles2.activeTabText]}>Listed · {listedCount}</Text></Pressable>

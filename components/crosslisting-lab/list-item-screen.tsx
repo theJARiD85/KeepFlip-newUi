@@ -9,9 +9,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 
 import { useKeepFlipAuth } from '@/components/auth/keepflip-auth-context';
+import { ListingShippingReview } from '@/components/crosslist/marketplace-shipping-choice';
+import { useListingShippingReview } from '@/components/crosslist/use-listing-shipping-review';
 import { KeepFlipText as Text, KeepFlipTextInput as TextInput } from '@/components/ui/keepflip-text';
 import { MarketplaceAuthModal } from '@/components/connections/marketplace-auth-modal';
 import { CROSSLISTING_DESTINATIONS, createCrosslistingPayload, type CrosslistingMarketplace, type CrosslistingPayload } from '@/services/crosslisting-service';
+import { applyShippingPreferenceToPayload } from '@/services/crosslisting-automation-plan';
 import { brand } from '@/components/crosslisting-lab/brand';
 import type {
   InventoryProduct,
@@ -65,6 +68,7 @@ export function ListItemScreen({ productId }: { productId: string }) {
   const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const router = useRouter();
   const { user } = useKeepFlipAuth();
+  const shipping = useListingShippingReview(user?.$id ?? '');
   const [product, setProduct] = useState<InventoryProduct | null>(null);
   const [connections, setConnections] = useState<Partial<Record<MarketplaceId, MarketplaceConnectionStatus>>>({});
   const [jobs, setJobs] = useState<ListingJob[]>([]);
@@ -172,6 +176,13 @@ export function ListItemScreen({ productId }: { productId: string }) {
     const webViewMarketplace = toWebViewMarketplace(platform);
     if (webViewMarketplace) {
       if (!user?.$id) { setError('Sign in to KeepFlip before preparing a marketplace listing.'); return; }
+      let shippingPreferences;
+      try {
+        shippingPreferences = await shipping.prepareForRun([webViewMarketplace]);
+      } catch (cause) {
+        setError(messageFrom(cause));
+        return;
+      }
       const values = stringFields(platformFields);
       const payload = createCrosslistingPayload({
         marketplace: webViewMarketplace,
@@ -186,6 +197,7 @@ export function ListItemScreen({ productId }: { productId: string }) {
         photoCount: photos.length,
         platformFields: values,
       });
+      applyShippingPreferenceToPayload(payload, shippingPreferences);
 
       if (Platform.OS === 'web') {
         if (typeof window === 'undefined' || !navigator.clipboard?.writeText) {
@@ -257,7 +269,7 @@ export function ListItemScreen({ productId }: { productId: string }) {
             <Text style={responsiveStyles.cardTitle}>Marketplace</Text>
             <Text style={responsiveStyles.body}>Choose a marketplace. KeepFlip opens a visible listing page for browser marketplaces; eBay and Shopify use their connected APIs.</Text>
             <View style={responsiveStyles.channelRow}>{channels.map((channel) => (
-              <Pressable key={channel.id} accessibilityRole="radio" accessibilityState={{ checked: platform === channel.id }} onPress={() => { setPlatform(channel.id); setFieldsJson('{}'); pendingKey.current = null; }} style={[responsiveStyles.channelChip, platform === channel.id && responsiveStyles.channelChipActive]}>
+              <Pressable key={channel.id} accessibilityRole="radio" accessibilityState={{ checked: platform === channel.id }} onPress={() => { setPlatform(channel.id); setFieldsJson('{}'); shipping.resetConfirmation(); pendingKey.current = null; }} style={[responsiveStyles.channelChip, platform === channel.id && responsiveStyles.channelChipActive]}>
                 <Text style={[responsiveStyles.channelText, platform === channel.id && responsiveStyles.channelTextActive]}>{channel.name}</Text>
               </Pressable>
             ))}</View>
@@ -271,6 +283,18 @@ export function ListItemScreen({ productId }: { productId: string }) {
               <Text style={responsiveStyles.label}>MARKETPLACE FIELDS / JSON</Text>
               <Text style={responsiveStyles.hint}>Required keys: {requiredFields[platform].join(', ')}. Use IDs and values from your seller account.</Text>
               <TextInput accessibilityLabel="Marketplace fields JSON" autoCapitalize="none" autoCorrect={false} multiline onChangeText={(value) => { setFieldsJson(value); pendingKey.current = null; }} placeholder="{}" placeholderTextColor={brand.colors.textMuted} style={[responsiveStyles.input, responsiveStyles.jsonInput]} textAlignVertical="top" value={fieldsJson} />
+              <ListingShippingReview
+                selected={platform === 'facebook_marketplace' ? ['facebookMarketplace'] : platform === 'offerup' ? ['offerUp'] : []}
+                choices={shipping.choices}
+                defaults={shipping.defaults}
+                confirmed={shipping.confirmed}
+                disabled={saving}
+                loading={shipping.loading}
+                error={shipping.error}
+                onChange={shipping.setChoice}
+                onConfirm={shipping.toggleConfirmed}
+                onRetry={() => { shipping.reload(); }}
+              />
               <Text style={responsiveStyles.hint}>{toWebViewMarketplace(platform) ? 'KeepFlip will open the marketplace here, fill supported fields, and try to attach saved photos. Review the draft and post it on the marketplace.' : 'Submitting queues an eBay or Shopify listing through the connected API account.'}</Text>
               <Pressable accessibilityRole="button" accessibilityState={{ disabled: saving }} disabled={saving} onPress={() => { void submit(); }} style={({ pressed }) => [responsiveStyles.primaryButton, pressed && responsiveStyles.pressed, saving && responsiveStyles.disabled]}>
                 {saving ? <ActivityIndicator color={brand.colors.background} size="small" /> : null}

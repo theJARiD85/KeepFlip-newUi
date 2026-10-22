@@ -196,8 +196,8 @@ function NavButton({
 
 export function KeepFlipWebShell({ children }: PropsWithChildren) {
   const responsiveStyles3 = useResponsiveStyles(createStylesWebResponsive);
-  const { width, height } = useResponsiveLayout();
-  const isWide = width >= 980;
+  const { width, height, isWideWeb } = useResponsiveLayout();
+  const isWide = isWideWeb;
   const isPhone = width < 480;
   const pathname = usePathname();
   const router = useRouter();

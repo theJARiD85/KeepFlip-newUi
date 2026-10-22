@@ -5,6 +5,8 @@ import { Ionicons } from '@react-native-vector-icons/ionicons';
 
 import { MarketplaceAuthModal } from '@/components/connections/marketplace-auth-modal';
 import type { CrosslistingRunProps } from '@/components/crosslist/crosslisting-run.types';
+import { ListingShippingReview } from '@/components/crosslist/marketplace-shipping-choice';
+import { useListingShippingReview } from '@/components/crosslist/use-listing-shipping-review';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { dispatchToAutomationEngine } from '@/services/crosslisting-automation-dispatch.native';
@@ -26,6 +28,7 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
   const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const confirmedMarketplaces = useMemo(() => parseSavedListingDraft(item.listingJson)?.confirmedMarketplaces ?? {}, [item.listingJson]);
   const [selected, setSelected] = useState<CrosslistingMarketplace[]>(() => MARKETPLACES.filter((marketplace) => initialSelections?.includes(marketplace) && !confirmedMarketplaces[marketplace]));
+  const shipping = useListingShippingReview(userId);
   const selectedAvailable = selected.filter((marketplace) => !confirmedMarketplaces[marketplace]);
   const [runTargets, setRunTargets] = useState<CrosslistingMarketplace[]>([]);
   const [runIndex, setRunIndex] = useState(0);
@@ -54,6 +57,7 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
 
   function toggle(marketplace: CrosslistingMarketplace) {
     if (runTargets.length || confirmedMarketplaces[marketplace]) return;
+    shipping.resetConfirmation();
     setSelected((current) => current.includes(marketplace)
       ? current.filter((value) => value !== marketplace)
       : MARKETPLACES.filter((value) => value === marketplace || current.includes(value)));
@@ -68,7 +72,8 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
       if (onBeforeStart && !await onBeforeStart()) {
         throw new Error('Save the listing draft before starting this run.');
       }
-      dispatchToAutomationEngine({ item, listing, marketplaces: selectedAvailable }, (plan) => {
+      const shippingPreferences = await shipping.prepareForRun(selectedAvailable);
+      dispatchToAutomationEngine({ item, listing, marketplaces: selectedAvailable, shippingPreferences }, (plan) => {
         const targets = plan.jobs.map((job) => job.marketplace);
         setRunPayloads(Object.fromEntries(plan.jobs.map((job) => [job.marketplace, job.payload])));
         setRunPhotoFileIds(plan.photoFileIds);
@@ -157,6 +162,18 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
           );
         })}
       </View>
+      <ListingShippingReview
+        selected={selectedAvailable}
+        choices={shipping.choices}
+        defaults={shipping.defaults}
+        confirmed={shipping.confirmed}
+        disabled={runTargets.length > 0 || starting}
+        loading={shipping.loading}
+        error={shipping.error}
+        onChange={shipping.setChoice}
+        onConfirm={shipping.toggleConfirmed}
+        onRetry={() => { void shipping.reload(); }}
+      />
       {finished ? <Text accessibilityRole="alert" style={responsiveStyles.finished}>You reached the end of this run. Check each marketplace page for its own posting confirmation.</Text> : null}
       {runTargets.length ? (
         <View style={responsiveStyles.runControls}>

@@ -36,6 +36,7 @@ async function main() {
       poshmark: { title: 'Poshmark jacket', description: 'Vintage jacket', fields: { size: 'L' } },
       mercari: { title: 'Mercari jacket', description: 'Leather jacket', fields: { brand: 'Harley Davidson' } },
       facebookMarketplace: { title: 'Facebook jacket', description: 'Vintage leather jacket', price: 85, fields: { shippingWeight: 'Approx. 24 oz packaged' } },
+      offerUp: { title: 'OfferUp jacket', description: 'Vintage leather jacket', fields: {} },
     },
   };
   const plan = planService.createCrosslistingAutomationPlan({
@@ -49,6 +50,19 @@ async function main() {
   assert.equal(plan.jobs[2].payload.platformFields.shippingWeight, 'Approx. 24 oz packaged');
   assert.equal(plan.jobs[2].payload.platformFields.sellerPaysShipping, 'true');
   assert.equal(plan.jobs[2].payload.platformFields.allowOffers, 'false');
+  const shippingChoices = planService.createCrosslistingAutomationPlan({
+    item, listing, marketplaces: ['facebookMarketplace', 'offerUp'],
+    shippingPreferences: { facebookMarketplace: 'buyerPays', offerUp: 'sellerPays' },
+  });
+  assert.equal(shippingChoices.jobs[0].payload.platformFields.deliveryMethod, 'both');
+  assert.equal(shippingChoices.jobs[0].payload.platformFields.sellerPaysShipping, 'false');
+  assert.equal(shippingChoices.jobs[1].payload.platformFields.shippingPreference, 'sellerPays');
+  const pickup = planService.createCrosslistingAutomationPlan({
+    item, listing, marketplaces: ['facebookMarketplace'],
+    shippingPreferences: { facebookMarketplace: 'pickupOnly' },
+  });
+  assert.equal(pickup.jobs[0].payload.platformFields.deliveryMethod, 'local pickup');
+  assert.equal(pickup.jobs[0].payload.platformFields.sellerPaysShipping, undefined);
   const withOffers = planService.createCrosslistingAutomationPlan({
     item, listing, marketplaces: ['facebookMarketplace'], facebookMinimumOfferPrice: 60,
   });

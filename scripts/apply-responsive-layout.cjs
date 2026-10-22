@@ -6,8 +6,8 @@
  * Add platform-responsive values to React styles under app/ and components/.
  * Every nested source file is parsed. Numeric UI values are changed only when
  * they can be connected to a component: inline JSX styles, a responsive style
- * factory, or a module-level StyleSheet used by a component. Both web and
- * native branches use the responsive helpers from use-responsive-layout.
+ * factory, or a module-level StyleSheet used by a component. Wide web and
+ * compact/native branches use the responsive helpers from use-responsive-layout.
  * Platform-specific .web, .native, .ios, and .android source files are
  * included. Geometry expressed as formulas, percentages, and transforms is
  * left for manual review.
@@ -15,6 +15,7 @@
  * npm run responsive:ui           # inspect the plan
  * npm run responsive:ui:apply     # write the plan
  * node scripts/apply-responsive-layout.cjs --json --root=PATH
+ * node scripts/apply-responsive-layout.cjs --wide-web-only [--write]
  */
 
 const fs = require('node:fs');
@@ -53,13 +54,14 @@ const NATIVE_HELPER = new Map([
 ]);
 
 function parseOptions(args) {
-  const options = { root: DEFAULT_ROOT, write: false, json: false };
+  const options = { root: DEFAULT_ROOT, write: false, json: false, wideWebOnly: false };
   for (const arg of args) {
     if (arg === '--write') options.write = true;
     else if (arg === '--json') options.json = true;
+    else if (arg === '--wide-web-only') options.wideWebOnly = true;
     else if (arg.startsWith('--root=')) options.root = path.resolve(arg.slice(7));
     else if (arg === '--help' || arg === '-h') {
-      console.log('Usage: node scripts/apply-responsive-layout.cjs [--write] [--json] [--root=PATH]');
+      console.log('Usage: node scripts/apply-responsive-layout.cjs [--write] [--json] [--wide-web-only] [--root=PATH]');
       process.exit(0);
     } else throw new Error(`Unknown argument: ${arg}`);
   }
@@ -136,7 +138,7 @@ function isWebCondition(node, helper) {
   const whenFalse = unwrap(node.whenFalse);
   if (!condition || !whenTrue || !whenFalse
     || !ts.isPropertyAccessExpression(condition)
-    || condition.name.text !== 'isWeb'
+    || !['isWeb', 'isWideWeb'].includes(condition.name.text)
     || !ts.isIdentifier(condition.expression)
     || !ts.isCallExpression(whenTrue)
     || !ts.isPropertyAccessExpression(whenTrue.expression)
@@ -164,15 +166,12 @@ function responsiveStyleValue(receiver, helper, node, sourceFile) {
 
   const literal = node.getText(sourceFile);
   if (numericValue(node) !== null) {
-    return `${receiver}.isWeb ? ${receiver}.${helper}(${literal}) : ${receiver}.${nativeHelper}(${literal})`;
+    return `${receiver}.isWideWeb ? ${receiver}.${helper}(${literal}) : ${receiver}.${nativeHelper}(${literal})`;
   }
 
   const existing = isWebCondition(node, helper);
   if (!existing) return null;
-  const original = node.getText(sourceFile);
-  const falseStart = existing.falseBranch.getStart(sourceFile) - node.getStart(sourceFile);
-  const falseEnd = existing.falseBranch.end - node.getStart(sourceFile);
-  return `${original.slice(0, falseStart)}${existing.receiver}.${nativeHelper}(${existing.argument})${original.slice(falseEnd)}`;
+  return `${existing.receiver}.isWideWeb ? ${existing.receiver}.${helper}(${existing.argument}) : ${existing.receiver}.${nativeHelper}(${existing.argument})`;
 }
 
 function isStyleSheetCreate(node) {
@@ -363,6 +362,55 @@ function applyTextEdits(source, edits) {
   return next;
 }
 
+function planWideWebFile(filePath, root) {
+  const source = fs.readFileSync(filePath, 'utf8');
+  const sourceFile = parse(filePath, source);
+  const name = relative(root, filePath);
+  if (sourceFile.parseDiagnostics.length) {
+    const diagnostic = sourceFile.parseDiagnostics[0];
+    throw new Error(`${name}: ${ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ')}`);
+  }
+
+  const edits = [];
+  function visit(node) {
+    if (ts.isConditionalExpression(node)) {
+      const condition = unwrap(node.condition);
+      const whenTrue = unwrap(node.whenTrue);
+      const whenFalse = unwrap(node.whenFalse);
+      if (condition && ts.isPropertyAccessExpression(condition)
+        && condition.name.text === 'isWeb'
+        && whenTrue && ts.isCallExpression(whenTrue)
+        && ts.isPropertyAccessExpression(whenTrue.expression)
+        && whenFalse && ts.isCallExpression(whenFalse)
+        && ts.isPropertyAccessExpression(whenFalse.expression)) {
+        const webHelper = whenTrue.expression.name.text;
+        const receiver = condition.expression.getText(sourceFile);
+        if (NATIVE_HELPER.get(webHelper) === whenFalse.expression.name.text
+          && whenTrue.expression.expression.getText(sourceFile) === receiver
+          && whenFalse.expression.expression.getText(sourceFile) === receiver) {
+          edits.push({
+            start: condition.name.getStart(sourceFile),
+            end: condition.name.end,
+            replacement: 'isWideWeb',
+          });
+        }
+      }
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(sourceFile);
+
+  const next = edits.length ? applyTextEdits(source, edits) : source;
+  if (edits.length && parse(filePath, next).parseDiagnostics.length) {
+    throw new Error(`${name}: wide web migration failed to parse`);
+  }
+  return {
+    filePath, file: name, next, inlineValues: 0, stylesheetValues: 0,
+    wideWebBranches: edits.length,
+    reason: edits.length ? null : 'no-eligible-branches',
+  };
+}
+
 function planFile(filePath, root) {
   const source = fs.readFileSync(filePath, 'utf8');
   const sourceFile = parse(filePath, source);
@@ -503,7 +551,7 @@ function planFile(filePath, root) {
     const overrides = sheet.entries.map((entry) => {
       const key = /^[A-Za-z_$][\w$]*$/.test(entry.name) ? entry.name : JSON.stringify(entry.name);
       const fields = entry.values.map(({ field, helper, literal }) =>
-        `      ${field}: layout.isWeb ? layout.${helper}(${literal}) : layout.${NATIVE_HELPER.get(helper)}(${literal}),`).join(eol);
+        `      ${field}: layout.isWideWeb ? layout.${helper}(${literal}) : layout.${NATIVE_HELPER.get(helper)}(${literal}),`).join(eol);
       return `    ${key}: {${eol}      ...${sheet.name}[${JSON.stringify(entry.name)}],${eol}${fields}${eol}    },`;
     }).join(eol);
     const declaration = [
@@ -548,37 +596,44 @@ function planFile(filePath, root) {
       throw new Error(`${name}:${line}: generated code failed to parse: ${ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ')}`);
     }
   }
-  return { filePath, file: name, next, inlineValues, stylesheetValues, reason: next === source ? 'no-eligible-values' : null };
+  return { filePath, file: name, next, inlineValues, stylesheetValues, wideWebBranches: 0, reason: next === source ? 'no-eligible-values' : null };
 }
 
 function main() {
   const options = parseOptions(process.argv.slice(2));
   const { files, counts } = walk(options.root);
-  const plans = files.map((filePath) => planFile(filePath, options.root));
+  const eligibleFiles = options.wideWebOnly
+    ? files.filter((filePath) => !/\.(?:native|android|ios)\.[jt]sx?$/i.test(filePath))
+    : files;
+  const plans = eligibleFiles.map((filePath) => options.wideWebOnly
+    ? planWideWebFile(filePath, options.root)
+    : planFile(filePath, options.root));
   const changed = plans.filter((plan) => plan.reason === null);
   const report = {
     applied: options.write,
     directoriesVisited: counts.directories,
     filesVisited: counts.files,
-    sourceFilesScanned: files.length,
+    sourceFilesScanned: eligibleFiles.length,
     nonSourceFiles: counts.nonSourceFiles,
-    changedFiles: changed.map(({ file, inlineValues, stylesheetValues }) => ({ file, inlineValues, stylesheetValues })),
+    changedFiles: changed.map(({ file, inlineValues, stylesheetValues, wideWebBranches }) => ({ file, inlineValues, stylesheetValues, wideWebBranches })),
     unchangedFiles: plans.filter((plan) => plan.reason).map(({ file, reason }) => ({ file, reason })),
     totals: {
       files: changed.length,
       inlineValues: changed.reduce((sum, plan) => sum + plan.inlineValues, 0),
       stylesheetValues: changed.reduce((sum, plan) => sum + plan.stylesheetValues, 0),
+      wideWebBranches: changed.reduce((sum, plan) => sum + plan.wideWebBranches, 0),
     },
   };
   // Planning and syntax validation finish for every file before any write.
   if (options.write) for (const plan of changed) fs.writeFileSync(plan.filePath, plan.next, 'utf8');
   if (options.json) console.log(JSON.stringify(report, null, 2));
   else {
-    console.log(`Responsive layout ${options.write ? 'applied' : 'dry run'}`);
+    console.log(`Responsive layout${options.wideWebOnly ? ' wide web migration' : ''} ${options.write ? 'applied' : 'dry run'}`);
     console.log(`Directories visited: ${report.directoriesVisited}; files visited: ${report.filesVisited}`);
     console.log(`Source files scanned: ${report.sourceFilesScanned}; files with edits: ${report.totals.files}`);
     console.log(`Inline values: ${report.totals.inlineValues}; StyleSheet values: ${report.totals.stylesheetValues}`);
-    for (const item of report.changedFiles) console.log(`  ${item.file} (${item.inlineValues} inline, ${item.stylesheetValues} StyleSheet)`);
+    if (options.wideWebOnly) console.log(`Wide web branches: ${report.totals.wideWebBranches}`);
+    for (const item of report.changedFiles) console.log(`  ${item.file} (${item.inlineValues} inline, ${item.stylesheetValues} StyleSheet, ${item.wideWebBranches} wide web)`);
     if (!options.write) console.log('Use --write to apply these edits. --json lists every scanned source file.');
   }
 }

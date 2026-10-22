@@ -10,6 +10,7 @@ const BASE_PHONE_HEIGHT = 844;
 // 1. Double check or increase your maximum desktop bounds if needed
 const WEB_PUBLIC_CONTENT_MAX_WIDTH = 1920; // Changed from 1366 to match full 1080p monitors
 const WEB_SIDEBAR_WIDTH = 264;
+export const WEB_WIDE_BREAKPOINT = 980;
 const WebAppShellLayoutContext = createContext<number | null>(null);
 
 export function WebAppShellLayoutProvider({
@@ -45,6 +46,7 @@ export function useResponsiveLayout() {
     // Fix static/SSR zero-dimension edge cases
     const layoutWidth = isWeb && webViewportWidth <= 0 ? BASE_PHONE_WIDTH : webViewportWidth;
     const layoutHeight = isWeb && height <= 0 ? BASE_PHONE_HEIGHT : height;
+    const isWideWeb = isWeb && layoutWidth >= WEB_WIDE_BREAKPOINT;
 
     const shortestSide = Math.min(layoutWidth, layoutHeight);
     const longestSide = Math.max(layoutWidth, layoutHeight);
@@ -60,8 +62,8 @@ export function useResponsiveLayout() {
     const nativeContentMaxWidth = width - (nativePageGutter * 2);
     const nativeContentWidth = Math.min(Math.max(0, layoutWidth - nativePageGutter * 2), nativeContentMaxWidth);
 
-    const webPageGutter = layoutWidth >= 1440 ? 32 : layoutWidth >= 980 ? 24 : layoutWidth >= 600 ? 20 : isCompactWidth ? 8 : 12;
-    const webSidebarReserve = isWeb && layoutWidth >= 980 ? (sidebarWidth ?? 0) : 0;
+    const webPageGutter = layoutWidth >= 1440 ? 32 : isWideWeb ? 24 : layoutWidth >= 600 ? 20 : isCompactWidth ? 8 : 12;
+    const webSidebarReserve = isWideWeb ? (sidebarWidth ?? 0) : 0;
     const webAvailableWidth = Math.max(0, layoutWidth - webSidebarReserve);
     const webContentMaxWidth = isInsideWebAppShell
     ? webAvailableWidth  // Inside application shell -> Take up 100% of remaining screen
@@ -84,7 +86,7 @@ export function useResponsiveLayout() {
     const pageGutter = isWeb ? webPageGutter : nativePageGutter;
     const contentMaxWidth = isWeb ? webContentMaxWidth : nativeContentMaxWidth;
     const contentWidth = isWeb ? webContentWidth : nativeContentWidth;
-    const widthScale = isWeb ? webWidthScale : nativeWidthScale;
+    const widthScale = isWideWeb ? webWidthScale : nativeWidthScale;
     const heightScale = isWeb ? webHeightScale : nativeHeightScale;
 
     // Dynamic Sizers
@@ -92,11 +94,11 @@ export function useResponsiveLayout() {
     const verticalScale = (value: number, factor = 1) => scaleWithWidth(value, factor, heightScale);
 
     const responsiveFont = (value: number, factor = 0.35) => scaleWithWidth(value, factor, widthScale);
-    const webResponsiveFont = (value: number, factor = 0.35) => scaleWithWidth(value, factor, webWidthScale);
+    const webResponsiveFont = (value: number, factor = 0.35) => scaleWithWidth(value, factor, widthScale);
     const responsiveWidth = (value: number, factor = 0.5) => scaleWithWidth(value, factor, widthScale);
     const responsiveHeight = (value: number, factor = 1) => scaleWithWidth(value, factor, heightScale);
-    const webResponsiveWidth = (value: number, factor = 0.5) => scaleWithWidth(value, factor, webWidthScale);
-    const webResponsiveHeight = (value: number, factor = 1) => scaleWithWidth(value, factor, webHeightScale);
+    const webResponsiveWidth = (value: number, factor = 0.5) => scaleWithWidth(value, factor, widthScale);
+    const webResponsiveHeight = (value: number, factor = 1) => scaleWithWidth(value, factor, heightScale);
 
     // Contextual Component Computations (Scoped UI layout anchors)
     const scannerWidth = clamp(contentWidth * (isTablet ? 0.72 : 0.88), isCompactWidth ? 250 : 280, isTablet ? 460 : 360);
@@ -126,6 +128,7 @@ export function useResponsiveLayout() {
       isCompactHeight,
       isTallPhone,
       isWeb,
+      isWideWeb,
       pageGutter,
       contentMaxWidth,
       contentWidth,

@@ -3,6 +3,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 
 import type { CrosslistingRunProps } from '@/components/crosslist/crosslisting-run.types';
+import { ListingShippingReview } from '@/components/crosslist/marketplace-shipping-choice';
+import { useListingShippingReview } from '@/components/crosslist/use-listing-shipping-review';
 import { KeepFlipText as Text, KeepFlipTextInput as TextInput } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import { dispatchToAutomationEngine } from '@/services/crosslisting-automation-dispatch.web';
@@ -32,7 +34,7 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
   const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const confirmed = useMemo(() => parseSavedListingDraft(item.listingJson)?.confirmedMarketplaces ?? {}, [item.listingJson]);
   const [selected, setSelected] = useState<CrosslistingMarketplace[]>(() => MARKETPLACES.filter((value) => initialSelections?.includes(value) && !confirmed[value]));
-  const [sellerPaysShipping, setSellerPaysShipping] = useState(false);
+  const shipping = useListingShippingReview(userId);
   const [allowFacebookOffers, setAllowFacebookOffers] = useState(false);
   const [minimumFacebookOffer, setMinimumFacebookOffer] = useState('');
   const [extensionReady, setExtensionReady] = useState<boolean | null>(null);
@@ -123,6 +125,7 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
 
   function toggle(marketplace: CrosslistingMarketplace) {
     if (jobs.length || confirmed[marketplace]) return;
+    shipping.resetConfirmation();
     setSelected((current) => current.includes(marketplace)
       ? current.filter((value) => value !== marketplace)
       : MARKETPLACES.filter((value) => value === marketplace || current.includes(value)));
@@ -137,6 +140,7 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
       if (onBeforeStart && !await onBeforeStart()) {
         throw new Error('Save the listing draft before starting this run.');
       }
+      const shippingPreferences = await shipping.prepareForRun(available);
       const facebookPrice = listing.marketplaceListings.facebookMarketplace.price;
       const minimumOffer = Number(minimumFacebookOffer.replace(/[$,\s]/g, ''));
       if (selected.includes('facebookMarketplace') && allowFacebookOffers &&
@@ -151,7 +155,7 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
       runIdRef.current = runId;
       const dispatchedJobs = await dispatchToAutomationEngine({
         ownerId: userId, item, listing, marketplaces: available, runId,
-        sellerPaysShipping: selected.includes('facebookMarketplace') ? sellerPaysShipping : undefined,
+        shippingPreferences,
         facebookMinimumOfferPrice: selected.includes('facebookMarketplace') && allowFacebookOffers ? minimumOffer : null,
         onPhotosReady: () => setNotice('Opening your marketplace tabs…'),
       });
@@ -205,13 +209,18 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
       const checked = selected.includes(marketplace) || listed;
       return <Pressable key={marketplace} accessibilityRole="checkbox" accessibilityState={{ checked, disabled: listed || jobs.length > 0 }} disabled={listed || jobs.length > 0} onPress={() => toggle(marketplace)} style={[responsiveStyles.choice, checked && responsiveStyles.choiceSelected]}><Text style={[responsiveStyles.choiceText, checked && responsiveStyles.choiceTextSelected]}><Ionicons color={checked ? theme.colors.scannerCyan : theme.colors.textMuted} name={checked ? 'checkmark-circle' : 'add'} size={15} />{' '}{CROSSLISTING_DESTINATIONS[marketplace].label}</Text></Pressable>;
     })}</View>
-    {selected.includes('facebookMarketplace') ? <Pressable
-      accessibilityRole="checkbox"
-      accessibilityState={{ checked: sellerPaysShipping, disabled: jobs.length > 0 || busy }}
+    <ListingShippingReview
+      selected={available}
+      choices={shipping.choices}
+      defaults={shipping.defaults}
+      confirmed={shipping.confirmed}
       disabled={jobs.length > 0 || busy}
-      onPress={() => setSellerPaysShipping((current) => !current)}
-      style={[responsiveStyles.shippingPreference, sellerPaysShipping && responsiveStyles.shippingPreferenceSelected]}
-    ><Text style={[responsiveStyles.shippingPreferenceText, sellerPaysShipping && responsiveStyles.choiceTextSelected]}><Ionicons color={sellerPaysShipping ? theme.colors.scannerCyan : theme.colors.textMuted} name={sellerPaysShipping ? 'checkmark-circle' : 'ellipse-outline'} size={15} />{' '}Cover shipping cost so buyers see free shipping</Text></Pressable> : null}
+      loading={shipping.loading}
+      error={shipping.error}
+      onChange={shipping.setChoice}
+      onConfirm={shipping.toggleConfirmed}
+      onRetry={() => { void shipping.reload(); }}
+    />
     {selected.includes('facebookMarketplace') ? <View style={responsiveStyles.offerPreferences}>
       <Pressable
         accessibilityRole="checkbox"

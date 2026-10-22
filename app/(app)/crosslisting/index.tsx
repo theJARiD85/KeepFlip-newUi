@@ -87,6 +87,8 @@ export default function ListingRoute() {
   }
 
   return <ListingHubScreen
+    userId={user?.$id ?? ''}
+    displayName={user?.name}
     items={items}
     loading={loading}
     loadingMore={loadingMore}

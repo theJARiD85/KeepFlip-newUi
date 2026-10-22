@@ -688,7 +688,7 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     },
     heroTitle: {
       ...styles["heroTitle"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(34) : layout.responsiveFont(34),
+      fontSize: layout.isWeb ? layout.webResponsiveFont(34) && isWide ? layout.webResponsiveFont(34) : layout.responsiveFont(34),
     },
     heroSubtitle: {
       ...styles["heroSubtitle"],

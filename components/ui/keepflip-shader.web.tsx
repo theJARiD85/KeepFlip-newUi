@@ -125,7 +125,7 @@ export default function KeepFlipShader({ isLight = false }: { isLight?: boolean 
 
     host.style.background = isLight
       ? 'transparent'
-      : 'radial-gradient(ellipse at 25% 8%, #020d0e 0 15%, transparent 42%), radial-gradient(ellipse at 24% 62%, #070609 0 18%, transparent 48%), #010302';
+      : 'radial-gradient(ellipse at 25% 8%, #020d0e 0 15%, transparent 42%), radial-gradient(ellipse at 24% 62%, #0e0b13ff 0 18%, transparent 48%), #010302';
 
     const canvas = document.createElement('canvas');
     const gl = canvas.getContext('webgl', {

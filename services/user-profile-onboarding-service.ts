@@ -23,10 +23,12 @@ type UserProfileRow = {
   defaultCurrency?: string;
   displayName?: string | null;
   ebaySellerProfileId?: string | null;
+  facebookShippingDefault?: string | null;
   isTrialing?: boolean;
   onboardingCompletedAt?: string | null;
   resellerBuyRulesJson?: string | null;
   marketplaceSelections?: ListingPlatform[] | null;
+  offerUpShippingDefault?: string | null;
   trialDeviceIdHash?: string | null;
   trialEndDate?: string | null;
   updatedAt?: string;
