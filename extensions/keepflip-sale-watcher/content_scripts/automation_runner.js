@@ -468,6 +468,21 @@
     return findFacebookShippingLabelButton();
   }
 
+  async function waitForFacebookDeliveryControls() {
+    // Facebook changes the step URL before mounting the delivery form. A
+    // missing combobox at that instant is a loading state, not a failed form.
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+      const dialog = findFacebookShippingOptionsDialog();
+      const combo = findFacebookCombobox('delivery method');
+      if (dialog || combo) return { dialog, combo };
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+    return {
+      dialog: findFacebookShippingOptionsDialog(),
+      combo: findFacebookCombobox('delivery method'),
+    };
+  }
+
   function clickMarketplaceControl(control) {
     if (!control) return false;
     const controlType = String(control.type || control.getAttribute?.('type') || '').toLowerCase();
@@ -963,8 +978,9 @@
 
   async function prepareFacebookDeliveryStep() {
     const preference = facebookDeliveryPreference();
-    let shippingOptionsDialog = findFacebookShippingOptionsDialog();
-    let combo = findFacebookCombobox('delivery method');
+    const controls = await waitForFacebookDeliveryControls();
+    let shippingOptionsDialog = controls.dialog;
+    let combo = controls.combo;
     let selection;
 
     // Facebook hides the delivery method combobox while its shipping settings
@@ -1611,6 +1627,15 @@
       )) || null;
   }
 
+  async function waitForFacebookOffersSwitch() {
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+      const control = facebookOffersSwitch();
+      if (control) return control;
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+    return facebookOffersSwitch();
+  }
+
   function facebookSwitchIsChecked(control) {
     return Boolean(control?.checked || control?.getAttribute('aria-checked') === 'true');
   }
@@ -1621,7 +1646,7 @@
   }
 
   async function prepareFacebookOfferStep() {
-    const offerSwitch = facebookOffersSwitch();
+    const offerSwitch = await waitForFacebookOffersSwitch();
     if (!offerSwitch) return { ready: false, message: 'Facebook did not show the buyer-offers control. Review the Allow offers step in its tab.' };
     const platformFields = assignment.payload.platformFields || {};
     const allowOffers = normalizeChoiceLabel(platformFields.allowOffers) === 'true';
@@ -1675,6 +1700,15 @@
     const scoped = candidates.filter((control) => control.closest('main,form,[role="dialog"]'));
     if (scoped.length) return scoped[0];
     return candidates.length === 1 ? candidates[0] : null;
+  }
+
+  async function waitForFacebookFinalSubmitButton() {
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+      const button = findFacebookFinalSubmitButton();
+      if (button) return button;
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+    return findFacebookFinalSubmitButton();
   }
 
   function watchForLiveListing() {
@@ -1757,7 +1791,7 @@
           continue;
         }
         if (facebookCreationStep() === 'audience') {
-          if (!findFacebookFinalSubmitButton()) {
+          if (!await waitForFacebookFinalSubmitButton()) {
             await report('needs_review', { fields: filledFields, uploadedPhotoCount,
               message: 'Facebook reached the final review, but Publish is unavailable. Check the listing in its tab.' });
             return;

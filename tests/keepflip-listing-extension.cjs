@@ -802,7 +802,8 @@ test('Facebook does not report success or advance when its photo upload remains 
   assert.match(result.statuses.at(-1)?.message || '', /did not confirm the item photos/i);
 });
 
-async function runFacebookFinalStepsScenario(startStep = 'offer', minimumOfferPrice = null) {
+async function runFacebookFinalStepsScenario(startStep = 'offer', minimumOfferPrice = null,
+  { offerSwitchAppearsAfterChecks = 0, publishButtonAppearsAfterChecks = 0 } = {}) {
   const statuses = [];
   const listeners = [];
   const location = { protocol: 'https:', hostname: 'www.facebook.com', pathname: '/marketplace/create/item',
@@ -811,6 +812,8 @@ async function runFacebookFinalStepsScenario(startStep = 'offer', minimumOfferPr
   let offerClicks = 0;
   let nextClicks = 0;
   let publishClicks = 0;
+  let offerSwitchLookupChecks = 0;
+  let publishButtonLookupChecks = 0;
   const rect = () => ({ width: 180, height: 44 });
   const offerSwitch = {
     get checked() { return offersChecked; },
@@ -848,10 +851,16 @@ async function runFacebookFinalStepsScenario(startStep = 'offer', minimumOfferPr
     querySelector: () => null,
     getElementById: () => null,
     querySelectorAll: (selector) => {
-      if (selector === '[role="switch"]') return location.search === '?step=offer' ? [offerSwitch] : [];
+      if (selector === '[role="switch"]') {
+        offerSwitchLookupChecks += 1;
+        return location.search === '?step=offer' && offerSwitchLookupChecks >= offerSwitchAppearsAfterChecks ? [offerSwitch] : [];
+      }
       if (selector === 'input[type="text"]') return location.search === '?step=offer' && offersChecked ? [offerInput] : [];
       if (selector === 'button,[role="button"]') return location.search === '?step=offer' ? [nextButton] : [publishButton];
-      if (selector === 'button,input[type="submit"],[role="button"]') return location.search === '?step=audience' ? [publishButton] : [];
+      if (selector === 'button,input[type="submit"],[role="button"]') {
+        publishButtonLookupChecks += 1;
+        return location.search === '?step=audience' && publishButtonLookupChecks >= publishButtonAppearsAfterChecks ? [publishButton] : [];
+      }
       return [];
     },
   };
@@ -881,6 +890,8 @@ async function runFacebookFinalStepsScenario(startStep = 'offer', minimumOfferPr
   }
   return {
     statuses, location,
+    get offerSwitchLookupChecks() { return offerSwitchLookupChecks; },
+    get publishButtonLookupChecks() { return publishButtonLookupChecks; },
     get offersChecked() { return offersChecked; },
     get offerClicks() { return offerClicks; },
     get minimumOfferValue() { return offerInput.value; },
@@ -904,6 +915,19 @@ test('Facebook disables default half-price offers and stops at final review with
   assert.equal(result.publishClicks, 0);
   assert.equal(result.statuses.at(-1)?.status, 'filled');
   assert.match(result.statuses.at(-1)?.message || '', /final review/i);
+});
+
+test('Facebook waits for offer and final review controls after each URL change', async () => {
+  const result = await runFacebookFinalStepsScenario('offer', null, {
+    offerSwitchAppearsAfterChecks: 5,
+    publishButtonAppearsAfterChecks: 5,
+  });
+
+  assert.ok(result.offerSwitchLookupChecks >= 5);
+  assert.ok(result.publishButtonLookupChecks >= 5);
+  assert.equal(result.nextClicks, 1);
+  assert.equal(result.publishClicks, 0);
+  assert.equal(result.statuses.at(-1)?.status, 'filled');
 });
 
 test('Facebook publishes only after KeepFlip sends the separate Post listing action', async () => {
@@ -1052,6 +1076,7 @@ test('Facebook applies an explicit shipping and pickup choice, then opens the sh
 async function runFacebookShippingOptionsScenario({ runId, platformFields, selectedWeight = null,
   shippingDialogInitiallyOpen = false, hideDeliveryMenuWhileDialogOpen = false,
   shippingDialogFoundByFallback = false, shippingLabelAriaLabel = 'Select shipping label',
+  deliveryComboAppearsAfterChecks = 0,
   shippingLabelAppearsAfterChecks = 0,
   shippingDialogOpensAfterChecks = 0, weightOptionsOpenAfterChecks = 0,
   hidePackageWeightCombobox = false,
@@ -1081,6 +1106,7 @@ async function runFacebookShippingOptionsScenario({ runId, platformFields, selec
   let shippingLabelClicks = 0;
   let shippingLabelDomClicks = 0;
   let shippingLabelLookupChecks = 0;
+  let deliveryComboLookupChecks = 0;
   const shippingLabelEventTypes = [];
   const shippingLabelEventDetails = [];
   const shippingLabelClosestSelectors = [];
@@ -1325,7 +1351,10 @@ async function runFacebookShippingOptionsScenario({ runId, platformFields, selec
       }
       if (selector === '[role="combobox"]') {
         if (shippingDialogOpen && hideDeliveryMenuWhileDialogOpen) return hidePackageWeightCombobox ? [carrierCombo] : [packageWeightCombo, carrierCombo];
-        return [deliveryCombo, ...(shippingDialogOpen
+        deliveryComboLookupChecks += 1;
+        const deliveryComboReady = deliveryComboAppearsAfterChecks <= 0 ||
+          deliveryComboLookupChecks >= deliveryComboAppearsAfterChecks;
+        return [...(deliveryComboReady ? [deliveryCombo] : []), ...(shippingDialogOpen
           ? hidePackageWeightCombobox ? [carrierCombo] : [packageWeightCombo, carrierCombo]
           : [])];
       }
@@ -1386,7 +1415,7 @@ async function runFacebookShippingOptionsScenario({ runId, platformFields, selec
   await new Promise((resolve) => setTimeout(resolve, 0));
   return { statuses, weightRadios, deliveryMenuClicks, packageWeightClicks, packageWeightSelectorUsed, packageWeightTargetClicks, shippingLabelClicks, shippingLabelDomClicks, shippingCostChecked,
     shippingLabelEventTypes, shippingLabelEventDetails, shippingLabelClosestSelectors,
-    shippingLabelLookupChecks, simulatedWaitMs,
+    shippingLabelLookupChecks, deliveryComboLookupChecks, simulatedWaitMs,
     exactWeightClicks, exactWeightDoneClicks, exactWeightSelectorUsed, exactWeightInputsWhenDone, exactWeightPoundsInput, exactWeightOuncesInput, weightWorkflowActions,
     shippingCostClicks, updateClicks, nextClicks, shippingActions };
 }
@@ -1403,6 +1432,26 @@ test('Facebook opens the shipping options before opening the Package weight drop
   assert.equal(result.updateClicks, 0);
   assert.equal(result.statuses.at(-1)?.status, 'needs_review');
   assert.match(result.statuses.at(-1)?.message || '', /total package weight/i);
+});
+
+test('Facebook waits for the delivery menu after the URL advances before opening the shipping label', async () => {
+  const result = await runFacebookShippingOptionsScenario({
+    runId: 'facebook-delayed-delivery-menu-run-123456',
+    platformFields: {
+      deliveryMethod: 'shipping_and_local_pickup',
+      shippingWeight: '24 lbs',
+      sellerPaysShipping: 'false',
+    },
+    deliveryComboAppearsAfterChecks: 5,
+    selectedWeight: '10-70 lbs',
+  });
+
+  assert.ok(result.deliveryComboLookupChecks >= 5);
+  assert.ok(result.simulatedWaitMs >= 600);
+  assert.equal(result.shippingLabelClicks, 1);
+  assert.equal(result.updateClicks, 1);
+  assert.equal(result.nextClicks, 1);
+  assert.equal(result.statuses.at(-1)?.status, 'confirmed');
 });
 
 test('Facebook pauses and retries until the Select shipping label control renders', async () => {
