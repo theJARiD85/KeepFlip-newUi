@@ -96,7 +96,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     laserBeam: {
       position: 'absolute',
-      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(40) : responsiveLayout.responsiveHeight(40),
+      height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(40) : responsiveLayout.responsiveHeight(40),
       backgroundColor: 'rgba(0, 240, 255, 0.15)',
       shadowColor: '#00f0ff',
       shadowOffset: { width: 0, height: 0 },
@@ -116,8 +116,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     corner: {
       position: 'absolute',
-      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(15) : responsiveLayout.responsiveWidth(15),
-      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(15) : responsiveLayout.responsiveHeight(15),
+      width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(15) : responsiveLayout.responsiveWidth(15),
+      height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(15) : responsiveLayout.responsiveHeight(15),
       borderColor: '#00f0ff',
       shadowColor: '#00f0ff',
       shadowOffset: { width: 0, height: 0 },

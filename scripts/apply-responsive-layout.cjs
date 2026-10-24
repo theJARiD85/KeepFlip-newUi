@@ -8,6 +8,8 @@
  * they can be connected to a component: inline JSX styles, a responsive style
  * factory, or a module-level StyleSheet used by a component. Wide web and
  * compact/native branches use the responsive helpers from use-responsive-layout.
+ * The normal run also upgrades existing responsive isWeb branches in shared
+ * and .web source to isWideWeb.
  * Platform-specific .web, .native, .ios, and .android source files are
  * included. Geometry expressed as formulas, percentages, and transforms is
  * left for manual review.
@@ -26,6 +28,7 @@ const DEFAULT_ROOT = path.resolve(__dirname, '..');
 const DIRECTORIES = ['app', 'components'];
 const MODULE = '@/hooks/use-responsive-layout';
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx']);
+const NON_WEB_PLATFORM_FILE_PATTERN = /(?:\.(?:native|android|ios))+\.[jt]sx?$/i;
 const SKIP_DIRECTORIES = new Set([
   '.git', '.expo', '.next', 'android', 'ios', 'node_modules', 'dist',
   'build', 'coverage', 'backup', 'backups',
@@ -362,15 +365,7 @@ function applyTextEdits(source, edits) {
   return next;
 }
 
-function planWideWebFile(filePath, root) {
-  const source = fs.readFileSync(filePath, 'utf8');
-  const sourceFile = parse(filePath, source);
-  const name = relative(root, filePath);
-  if (sourceFile.parseDiagnostics.length) {
-    const diagnostic = sourceFile.parseDiagnostics[0];
-    throw new Error(`${name}: ${ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ')}`);
-  }
-
+function collectWideWebBranchEdits(sourceFile) {
   const edits = [];
   function visit(node) {
     if (ts.isConditionalExpression(node)) {
@@ -399,7 +394,19 @@ function planWideWebFile(filePath, root) {
     ts.forEachChild(node, visit);
   }
   visit(sourceFile);
+  return edits;
+}
 
+function planWideWebFile(filePath, root) {
+  const source = fs.readFileSync(filePath, 'utf8');
+  const sourceFile = parse(filePath, source);
+  const name = relative(root, filePath);
+  if (sourceFile.parseDiagnostics.length) {
+    const diagnostic = sourceFile.parseDiagnostics[0];
+    throw new Error(`${name}: ${ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ')}`);
+  }
+
+  const edits = collectWideWebBranchEdits(sourceFile);
   const next = edits.length ? applyTextEdits(source, edits) : source;
   if (edits.length && parse(filePath, next).parseDiagnostics.length) {
     throw new Error(`${name}: wide web migration failed to parse`);
@@ -422,7 +429,13 @@ function planFile(filePath, root) {
   const eol = eolOf(source);
   const components = componentsIn(sourceFile);
   const sheets = topLevelStyleSheets(sourceFile);
-  const edits = [];
+  // Keep older web-responsive pairs current during the normal run too.
+  // Native-only files still receive new responsive values below, but their
+  // existing platform checks do not need a web-width migration.
+  const wideWebEdits = NON_WEB_PLATFORM_FILE_PATTERN.test(filePath)
+    ? []
+    : collectWideWebBranchEdits(sourceFile);
+  const edits = [...wideWebEdits];
   const usedNames = allIdentifiers(sourceFile);
   const details = new Map();
   const sheetByName = new Map(sheets.map((sheet) => [sheet.name, sheet]));
@@ -596,14 +609,14 @@ function planFile(filePath, root) {
       throw new Error(`${name}:${line}: generated code failed to parse: ${ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ')}`);
     }
   }
-  return { filePath, file: name, next, inlineValues, stylesheetValues, wideWebBranches: 0, reason: next === source ? 'no-eligible-values' : null };
+  return { filePath, file: name, next, inlineValues, stylesheetValues, wideWebBranches: wideWebEdits.length, reason: next === source ? 'no-eligible-values' : null };
 }
 
 function main() {
   const options = parseOptions(process.argv.slice(2));
   const { files, counts } = walk(options.root);
   const eligibleFiles = options.wideWebOnly
-    ? files.filter((filePath) => !/\.(?:native|android|ios)\.[jt]sx?$/i.test(filePath))
+    ? files.filter((filePath) => !NON_WEB_PLATFORM_FILE_PATTERN.test(filePath))
     : files;
   const plans = eligibleFiles.map((filePath) => options.wideWebOnly
     ? planWideWebFile(filePath, options.root)
@@ -632,7 +645,7 @@ function main() {
     console.log(`Directories visited: ${report.directoriesVisited}; files visited: ${report.filesVisited}`);
     console.log(`Source files scanned: ${report.sourceFilesScanned}; files with edits: ${report.totals.files}`);
     console.log(`Inline values: ${report.totals.inlineValues}; StyleSheet values: ${report.totals.stylesheetValues}`);
-    if (options.wideWebOnly) console.log(`Wide web branches: ${report.totals.wideWebBranches}`);
+    console.log(`Wide web branches: ${report.totals.wideWebBranches}`);
     for (const item of report.changedFiles) console.log(`  ${item.file} (${item.inlineValues} inline, ${item.stylesheetValues} StyleSheet, ${item.wideWebBranches} wide web)`);
     if (!options.write) console.log('Use --write to apply these edits. --json lists every scanned source file.');
   }

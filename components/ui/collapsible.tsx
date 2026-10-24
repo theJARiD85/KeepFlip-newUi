@@ -50,12 +50,12 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     ...styles,
     heading: {
       ...styles["heading"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(6) : layout.responsiveWidth(6),
+      gap: layout.isWideWeb ? layout.webResponsiveWidth(6) : layout.responsiveWidth(6),
     },
     content: {
       ...styles["content"],
-      marginTop: layout.isWeb ? layout.webResponsiveHeight(6) : layout.responsiveHeight(6),
-      marginLeft: layout.isWeb ? layout.webResponsiveWidth(24) : layout.responsiveWidth(24),
+      marginTop: layout.isWideWeb ? layout.webResponsiveHeight(6) : layout.responsiveHeight(6),
+      marginLeft: layout.isWideWeb ? layout.webResponsiveWidth(24) : layout.responsiveWidth(24),
     },
   });
 }

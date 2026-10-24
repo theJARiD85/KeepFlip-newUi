@@ -13,6 +13,7 @@ import {
   type ShippingMarketplace,
 } from '@/services/marketplace-shipping-preferences-service';
 import type { ListingPlatform } from '@/services/listingService';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 const EMPTY_PREFERENCES: MarketplaceShippingPreferences = { facebookMarketplace: null, offerUp: null };
 
@@ -21,6 +22,7 @@ export function MarketplaceShippingDefaultsCard({ userId, displayName, selection
   displayName?: string | null;
   selections: readonly ListingPlatform[];
 }) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const selected = SHIPPING_MARKETPLACES.filter((marketplace) => selections.includes(marketplace));
   const selectedKey = selected.join(',');
   const [draft, setDraft] = useState<MarketplaceShippingPreferences>(EMPTY_PREFERENCES);
@@ -68,10 +70,10 @@ export function MarketplaceShippingDefaultsCard({ userId, displayName, selection
     }
   }
 
-  return <View style={styles.card}>
-    <Text style={styles.title}>Shipping defaults</Text>
-    <Text style={styles.body}>How do you usually want to handle shipping? These choices prefill each listing, and you can change them for an individual item.</Text>
-    {loading ? <Text style={styles.body}>Loading your choices…</Text> : selected.map((marketplace) =>
+  return <View style={responsiveStyles.card}>
+    <Text style={responsiveStyles.title}>Shipping defaults</Text>
+    <Text style={responsiveStyles.body}>How do you usually want to handle shipping? These choices prefill each listing, and you can change them for an individual item.</Text>
+    {loading ? <Text style={responsiveStyles.body}>Loading your choices…</Text> : selected.map((marketplace) =>
       <MarketplaceShippingChoice
         key={marketplace}
         marketplace={marketplace}
@@ -84,10 +86,10 @@ export function MarketplaceShippingDefaultsCard({ userId, displayName, selection
         }}
       />,
     )}
-    {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
-    {notice ? <Text style={styles.notice}>{notice}</Text> : null}
-    <Pressable accessibilityRole="button" accessibilityState={{ disabled: loading || saving }} disabled={loading || saving} onPress={() => { void save(); }} style={[styles.save, (loading || saving) && styles.disabled]}>
-      <Text style={styles.saveText}>{saving ? 'Saving…' : 'Save shipping defaults'}</Text>
+    {error ? <Text accessibilityRole="alert" style={responsiveStyles.error}>{error}</Text> : null}
+    {notice ? <Text style={responsiveStyles.notice}>{notice}</Text> : null}
+    <Pressable accessibilityRole="button" accessibilityState={{ disabled: loading || saving }} disabled={loading || saving} onPress={() => { void save(); }} style={[responsiveStyles.save, (loading || saving) && responsiveStyles.disabled]}>
+      <Text style={responsiveStyles.saveText}>{saving ? 'Saving…' : 'Save shipping defaults'}</Text>
     </Pressable>
   </View>;
 }
@@ -102,3 +104,40 @@ const styles = StyleSheet.create({
   saveText: { color: theme.colors.textOnAccent, fontSize: 12, fontWeight: '900' },
   disabled: { opacity: 0.6 },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    card: {
+      ...styles["card"],
+      gap: layout.isWideWeb ? layout.webResponsiveWidth(10) : layout.responsiveWidth(10),
+      borderRadius: layout.isWideWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
+    },
+    title: {
+      ...styles["title"],
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(14) : layout.responsiveFont(14),
+    },
+    body: {
+      ...styles["body"],
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(11) : layout.responsiveFont(11),
+      lineHeight: layout.isWideWeb ? layout.webResponsiveFont(17) : layout.responsiveFont(17),
+    },
+    error: {
+      ...styles["error"],
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(11) : layout.responsiveFont(11),
+    },
+    notice: {
+      ...styles["notice"],
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(11) : layout.responsiveFont(11),
+    },
+    save: {
+      ...styles["save"],
+      minHeight: layout.isWideWeb ? layout.webResponsiveHeight(42) : layout.responsiveHeight(42),
+      borderRadius: layout.isWideWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
+    },
+    saveText: {
+      ...styles["saveText"],
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(12) : layout.responsiveFont(12),
+    },
+  });
+}

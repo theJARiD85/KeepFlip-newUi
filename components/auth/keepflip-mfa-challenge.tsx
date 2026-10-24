@@ -109,18 +109,18 @@ export function KeepFlipMfaChallenge({
   }
 
   return (
-    <View style={{ gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14), paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(12) : responsiveLayout.responsiveHeight(12) }}>
-      <View style={{ gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5) }}>
+    <View style={{ gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14), paddingTop: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(12) : responsiveLayout.responsiveHeight(12) }}>
+      <View style={{ gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5) }}>
         <Text style={{ color: colors.text, fontSize: responsiveFont(20), fontWeight: '700' }}>
           Verify it’s you
         </Text>
-        <Text style={{ color: colors.textMuted, fontSize: responsiveFont(12), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : responsiveLayout.responsiveFont(18) }}>
+        <Text style={{ color: colors.textMuted, fontSize: responsiveFont(12), lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(18) : responsiveLayout.responsiveFont(18) }}>
           {instructions}
         </Text>
       </View>
 
       {methods.length > 1 ? (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8) }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8) }}>
           {methods.map((method) => (
             <Pressable
               accessibilityRole="button"
@@ -131,11 +131,11 @@ export function KeepFlipMfaChallenge({
               style={({ pressed }) => ({
                 backgroundColor: method.factor === pending.factor ? colors.iconSurfaceCyan : colors.surfaceInset,
                 borderColor: method.factor === pending.factor ? colors.scannerCyan : colors.divider,
-                borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(999) : responsiveLayout.responsiveWidth(999),
+                borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(999) : responsiveLayout.responsiveWidth(999),
                 borderWidth: 1,
                 opacity: pressed || isBusy ? 0.7 : 1,
-                paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
-                paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(8) : responsiveLayout.responsiveHeight(8),
+                paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
+                paddingVertical: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(8) : responsiveLayout.responsiveHeight(8),
               })}
             >
               <Text style={{ color: method.factor === pending.factor ? colors.scannerCyan : colors.textMuted, fontSize: responsiveFont(10), fontWeight: '700' }}>
@@ -146,7 +146,7 @@ export function KeepFlipMfaChallenge({
         </View>
       ) : null}
 
-      <View style={{ gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7) }}>
+      <View style={{ gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7) }}>
         <Text style={{ color: colors.textMuted, fontSize: responsiveFont(10), fontWeight: '700' }}>
           {isRecoveryCode ? 'RECOVERY CODE' : 'VERIFICATION CODE'}
         </Text>
@@ -168,13 +168,13 @@ export function KeepFlipMfaChallenge({
           style={{
             backgroundColor: colors.surfaceInset,
             borderColor: colors.divider,
-            borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
+            borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
             borderWidth: 1,
             color: colors.text,
             fontSize: responsiveFont(16),
             letterSpacing: isRecoveryCode ? 1 : 5,
-            minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(54) : responsiveLayout.responsiveHeight(54),
-            paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
+            minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(54) : responsiveLayout.responsiveHeight(54),
+            paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
             textAlign: isRecoveryCode ? 'left' : 'center',
           }}
           value={code}
@@ -188,7 +188,7 @@ export function KeepFlipMfaChallenge({
           accessibilityRole="button"
           disabled={isBusy}
           onPress={() => void selectMethod(pending.factor)}
-          style={({ pressed }) => ({ alignSelf: 'flex-start', opacity: pressed || isBusy ? 0.65 : 1, paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(5) : responsiveLayout.responsiveHeight(5) })}
+          style={({ pressed }) => ({ alignSelf: 'flex-start', opacity: pressed || isBusy ? 0.65 : 1, paddingVertical: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(5) : responsiveLayout.responsiveHeight(5) })}
         >
           <Text style={{ color: colors.scannerCyan, fontSize: responsiveFont(10), fontWeight: '700' }}>
             {pending.factor === AuthenticationFactor.Email
@@ -208,13 +208,13 @@ export function KeepFlipMfaChallenge({
         style={({ pressed }) => ({
           alignItems: 'center',
           backgroundColor: colors.gold,
-          borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
+          borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
           flexDirection: 'row',
-          gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
+          gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
           justifyContent: 'center',
-          minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(52) : responsiveLayout.responsiveHeight(52),
+          minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(52) : responsiveLayout.responsiveHeight(52),
           opacity: isBusy || !code.trim() ? 0.55 : pressed ? 0.78 : 1,
-          paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16),
+          paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16),
         })}
       >
         {isBusy ? <ActivityIndicator color={colors.textOnAccent} /> : null}

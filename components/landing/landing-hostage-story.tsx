@@ -2,6 +2,7 @@ import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme } from '@/constants/keepflip-theme';
 import { Image } from 'expo-image';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 const colors = keepFlipTheme.colors;
 
@@ -30,30 +31,31 @@ const scenes = [
 ] as const;
 
 export function LandingHostageStory() {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const { width } = useWindowDimensions();
   const wide = width >= 960;
 
   return (
-    <View style={styles.section}>
-      <View style={styles.heading}>
-        <Text style={styles.eyebrow}>THE PILE HAS YOUR CASH.</Text>
-        <Text accessibilityRole="header" style={styles.title}>Find it. Price it. Move it.</Text>
-        <Text style={styles.intro}>Flip helps you see what is tied up and decide which item to work on next.</Text>
+    <View style={responsiveStyles.section}>
+      <View style={responsiveStyles.heading}>
+        <Text style={responsiveStyles.eyebrow}>THE PILE HAS YOUR CASH.</Text>
+        <Text accessibilityRole="header" style={responsiveStyles.title}>Find it. Price it. Move it.</Text>
+        <Text style={responsiveStyles.intro}>Flip helps you see what is tied up and decide which item to work on next.</Text>
       </View>
-      <View style={[styles.cards, !wide && styles.cardsStacked]}>
+      <View style={[responsiveStyles.cards, !wide && responsiveStyles.cardsStacked]}>
         {scenes.map((scene) => (
-          <View key={scene.number} style={[styles.card, wide ? styles.cardWide : styles.cardStacked]}>
+          <View key={scene.number} style={[responsiveStyles.card, wide ? responsiveStyles.cardWide : responsiveStyles.cardStacked]}>
             <Image
               accessibilityLabel={scene.alt}
               alt={scene.alt}
               contentFit="cover"
               source={scene.image}
-              style={styles.image}
+              style={responsiveStyles.image}
             />
-            <View style={styles.cardCopy}>
-              <Text style={styles.number}>{scene.number}</Text>
-              <Text style={styles.cardTitle}>{scene.title}</Text>
-              <Text style={styles.detail}>{scene.detail}</Text>
+            <View style={responsiveStyles.cardCopy}>
+              <Text style={responsiveStyles.number}>{scene.number}</Text>
+              <Text style={responsiveStyles.cardTitle}>{scene.title}</Text>
+              <Text style={responsiveStyles.detail}>{scene.detail}</Text>
             </View>
           </View>
         ))}
@@ -86,3 +88,57 @@ const styles = StyleSheet.create({
   cardTitle: { color: colors.text, fontFamily: keepFlipTheme.fonts.bold, fontSize: 18, lineHeight: 22 },
   detail: { color: colors.campaignMuted, fontFamily: keepFlipTheme.fonts.body, fontSize: 13, lineHeight: 19 },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    section: {
+      ...styles["section"],
+      gap: layout.isWideWeb ? layout.webResponsiveWidth(20) : layout.responsiveWidth(20),
+      paddingBottom: layout.isWideWeb ? layout.webResponsiveHeight(38) : layout.responsiveHeight(38),
+      paddingHorizontal: layout.isWideWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
+      paddingTop: layout.isWideWeb ? layout.webResponsiveHeight(34) : layout.responsiveHeight(34),
+    },
+    heading: {
+      ...styles["heading"],
+      gap: layout.isWideWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
+      maxWidth: layout.isWideWeb ? layout.webResponsiveWidth(680) : layout.responsiveWidth(680),
+    },
+    eyebrow: {
+      ...styles["eyebrow"],
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(13) : layout.responsiveFont(13),
+    },
+    title: {
+      ...styles["title"],
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(30) : layout.responsiveFont(30),
+      lineHeight: layout.isWideWeb ? layout.webResponsiveFont(36) : layout.responsiveFont(36),
+    },
+    intro: {
+      ...styles["intro"],
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(15) : layout.responsiveFont(15),
+      lineHeight: layout.isWideWeb ? layout.webResponsiveFont(22) : layout.responsiveFont(22),
+    },
+    cards: {
+      ...styles["cards"],
+      gap: layout.isWideWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
+    },
+    cardCopy: {
+      ...styles["cardCopy"],
+      gap: layout.isWideWeb ? layout.webResponsiveWidth(5) : layout.responsiveWidth(5),
+    },
+    number: {
+      ...styles["number"],
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(13) : layout.responsiveFont(13),
+    },
+    cardTitle: {
+      ...styles["cardTitle"],
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(18) : layout.responsiveFont(18),
+      lineHeight: layout.isWideWeb ? layout.webResponsiveFont(22) : layout.responsiveFont(22),
+    },
+    detail: {
+      ...styles["detail"],
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(13) : layout.responsiveFont(13),
+      lineHeight: layout.isWideWeb ? layout.webResponsiveFont(19) : layout.responsiveFont(19),
+    },
+  });
+}

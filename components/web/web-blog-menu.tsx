@@ -162,39 +162,39 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     ...styles,
     trigger: {
       ...styles["trigger"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(4) : layout.responsiveWidth(4),
-      minHeight: layout.isWeb ? layout.webResponsiveHeight(38) : layout.responsiveHeight(38),
-      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(6) : layout.responsiveWidth(6),
+      gap: layout.isWideWeb ? layout.webResponsiveWidth(4) : layout.responsiveWidth(4),
+      minHeight: layout.isWideWeb ? layout.webResponsiveHeight(38) : layout.responsiveHeight(38),
+      paddingHorizontal: layout.isWideWeb ? layout.webResponsiveWidth(6) : layout.responsiveWidth(6),
     },
     triggerText: {
       ...styles["triggerText"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : layout.responsiveFont(12),
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(12) : layout.responsiveFont(12),
     },
     panel: {
       ...styles["panel"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(16) : layout.responsiveWidth(16),
-      width: layout.isWeb ? layout.webResponsiveWidth(310) : layout.responsiveWidth(310),
+      borderRadius: layout.isWideWeb ? layout.webResponsiveWidth(16) : layout.responsiveWidth(16),
+      width: layout.isWideWeb ? layout.webResponsiveWidth(310) : layout.responsiveWidth(310),
     },
     eyebrow: {
       ...styles["eyebrow"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : layout.responsiveFont(10),
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(10) : layout.responsiveFont(10),
     },
     divider: {
       ...styles["divider"],
-      marginVertical: layout.isWeb ? layout.webResponsiveHeight(4) : layout.responsiveHeight(4),
+      marginVertical: layout.isWideWeb ? layout.webResponsiveHeight(4) : layout.responsiveHeight(4),
     },
     nativeLink: {
       ...styles["nativeLink"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(10) : layout.responsiveWidth(10),
-      gap: layout.isWeb ? layout.webResponsiveWidth(5) : layout.responsiveWidth(5),
+      borderRadius: layout.isWideWeb ? layout.webResponsiveWidth(10) : layout.responsiveWidth(10),
+      gap: layout.isWideWeb ? layout.webResponsiveWidth(5) : layout.responsiveWidth(5),
     },
     linkTitle: {
       ...styles["linkTitle"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : layout.responsiveFont(14),
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(14) : layout.responsiveFont(14),
     },
     linkSubtitle: {
       ...styles["linkSubtitle"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : layout.responsiveFont(12),
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(12) : layout.responsiveFont(12),
     },
   });
 }

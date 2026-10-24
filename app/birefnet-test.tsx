@@ -32,15 +32,15 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     ...styles,
     screen: {
       ...styles["screen"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
+      gap: layout.isWideWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
     },
     title: {
       ...styles["title"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(22) : layout.responsiveFont(22),
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(22) : layout.responsiveFont(22),
     },
     body: {
       ...styles["body"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(13) : layout.responsiveFont(13),
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(13) : layout.responsiveFont(13),
     },
   });
 }

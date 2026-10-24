@@ -171,15 +171,15 @@ function FeedbackPrompt({
               <Ionicons color={theme.colors.goldBright} name="chatbubble" size={20} />
             </View>
             <View style={styles.promptCopy}>
-              <Text style={[styles.promptTitle, { fontSize: responsiveFont(20), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(24) : responsiveLayout2.responsiveFont(24) }]}>Help shape what comes next.</Text>
-              <Text style={[styles.promptBody, { fontSize: responsiveFont(13), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(19) : responsiveLayout2.responsiveFont(19) }]}>
+              <Text style={[styles.promptTitle, { fontSize: responsiveFont(20), lineHeight: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveFont(24) : responsiveLayout2.responsiveFont(24) }]}>Help shape what comes next.</Text>
+              <Text style={[styles.promptBody, { fontSize: responsiveFont(13), lineHeight: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveFont(19) : responsiveLayout2.responsiveFont(19) }]}>
                 A quick note about what worked—or what got in your way—helps KeepFlip get more useful for real resellers.
               </Text>
             </View>
           </View>
 
           {errorMessage ? (
-            <Text accessibilityLiveRegion="polite" selectable style={[styles.promptError, { fontSize: responsiveFont(11), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(16) : responsiveLayout2.responsiveFont(16) }]}>
+            <Text accessibilityLiveRegion="polite" selectable style={[styles.promptError, { fontSize: responsiveFont(11), lineHeight: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveFont(16) : responsiveLayout2.responsiveFont(16) }]}>
               {errorMessage}
             </Text>
           ) : null}
@@ -464,10 +464,10 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     promptSurface: {
       width: '100%',
-      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(430) : responsiveLayout.responsiveWidth(430),
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16),
+      maxWidth: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(430) : responsiveLayout.responsiveWidth(430),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16),
       padding: 20,
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16),
+      borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16),
       borderCurve: 'continuous',
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
@@ -477,78 +477,78 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     promptSignalRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
     },
     promptSignal: {
-      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : responsiveLayout.responsiveWidth(6),
-      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : responsiveLayout.responsiveHeight(6),
+      width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(6) : responsiveLayout.responsiveWidth(6),
+      height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(6) : responsiveLayout.responsiveHeight(6),
       borderRadius: theme.radii.pill,
       backgroundColor: theme.colors.scannerCyan,
     },
     promptEyebrow: {
       color: theme.colors.goldBright,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '900',
       letterSpacing: 1.35,
     },
     promptHeading: {
       flexDirection: 'row',
       alignItems: 'flex-start',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
     },
     promptIcon: {
-      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(38) : responsiveLayout.responsiveWidth(38),
-      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(38) : responsiveLayout.responsiveHeight(38),
+      width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(38) : responsiveLayout.responsiveWidth(38),
+      height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(38) : responsiveLayout.responsiveHeight(38),
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
+      borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
       borderCurve: 'continuous',
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
       backgroundColor: theme.colors.iconSurfaceGold,
     },
-    promptCopy: { flex: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5) },
+    promptCopy: { flex: 1, gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5) },
     promptTitle: {
       color: theme.colors.cream,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(20) : responsiveLayout.responsiveFont(20),
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(24) : responsiveLayout.responsiveFont(24),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(20) : responsiveLayout.responsiveFont(20),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(24) : responsiveLayout.responsiveFont(24),
       fontWeight: '900',
       letterSpacing: -0.2,
     },
     promptBody: {
       color: theme.colors.textMuted,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : responsiveLayout.responsiveFont(13),
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(19) : responsiveLayout.responsiveFont(19),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(13) : responsiveLayout.responsiveFont(13),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(19) : responsiveLayout.responsiveFont(19),
     },
     promptError: {
       color: theme.colors.danger,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11),
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : responsiveLayout.responsiveFont(16),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(16) : responsiveLayout.responsiveFont(16),
     },
-    promptActions: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9) },
+    promptActions: { gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9) },
     primaryAction: {
-      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(48) : responsiveLayout.responsiveHeight(48),
+      minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(48) : responsiveLayout.responsiveHeight(48),
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : responsiveLayout.responsiveWidth(11),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
+      borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(11) : responsiveLayout.responsiveWidth(11),
       borderCurve: 'continuous',
       backgroundColor: theme.colors.goldBright,
     },
     primaryActionText: {
       color: theme.colors.textOnAccent,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
       fontWeight: '900',
       letterSpacing: 0.9,
     },
     secondaryAction: {
-      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(46) : responsiveLayout.responsiveHeight(46),
+      minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(46) : responsiveLayout.responsiveHeight(46),
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : responsiveLayout.responsiveWidth(11),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
+      borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(11) : responsiveLayout.responsiveWidth(11),
       borderCurve: 'continuous',
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
@@ -556,21 +556,21 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     secondaryActionText: {
       color: theme.colors.goldBright,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
       fontWeight: '900',
       letterSpacing: 0.82,
     },
     actionDisabled: { opacity: 0.55 },
     actionPressed: { opacity: 0.76, transform: [{ scale: 0.988 }] },
     dismissAction: {
-      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(38) : responsiveLayout.responsiveHeight(38),
+      minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(38) : responsiveLayout.responsiveHeight(38),
       alignItems: 'center',
       justifyContent: 'center',
     },
     dismissActionPressed: { opacity: 0.62 },
     dismissActionText: {
       color: theme.colors.textMuted,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: '900',
       letterSpacing: 1.1,
     },

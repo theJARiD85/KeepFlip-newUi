@@ -100,7 +100,7 @@ export function KeepFlipAppearancePicker({
             <View style={styles.headerCopy}>
               <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>KEEPFLIP / APPEARANCE</Text>
               <Text style={[styles.title, { fontSize: responsiveFont(20) }]}>Choose your look</Text>
-              <Text style={[styles.subtitle, { fontSize: responsiveFont(10), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(15) : responsiveLayout2.responsiveFont(15) }]}>KeepFlip follows your device by default, or you can choose a mode that stays fixed.</Text>
+              <Text style={[styles.subtitle, { fontSize: responsiveFont(10), lineHeight: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveFont(15) : responsiveLayout2.responsiveFont(15) }]}>KeepFlip follows your device by default, or you can choose a mode that stays fixed.</Text>
             </View>
             <Pressable
               accessibilityLabel="Close appearance settings"
@@ -145,7 +145,7 @@ export function KeepFlipAppearancePicker({
                       <Text style={[styles.optionTitle, { fontSize: responsiveFont(12) }]}>{option.label}</Text>
                       {selected ? <Text style={[styles.selectedLabel, { fontSize: responsiveFont(7) }]}>SELECTED</Text> : null}
                     </View>
-                    <Text style={[styles.optionDescription, { fontSize: responsiveFont(9), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(14) : responsiveLayout2.responsiveFont(14) }]}>{option.description}</Text>
+                    <Text style={[styles.optionDescription, { fontSize: responsiveFont(9), lineHeight: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveFont(14) : responsiveLayout2.responsiveFont(14) }]}>{option.description}</Text>
                     {effective ? <Text style={[styles.effectiveLabel, { fontSize: responsiveFont(7) }]}>ACTIVE NOW: {effective.toUpperCase()}</Text> : null}
                   </View>
                   <Ionicons
@@ -180,56 +180,56 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     card: {
       width: '100%',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16),
       padding: 16,
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(18) : responsiveLayout.responsiveWidth(18),
+      borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(18) : responsiveLayout.responsiveWidth(18),
       backgroundColor: theme.colors.surface,
     },
     header: {
       flexDirection: 'row',
       alignItems: 'flex-start',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
     },
-    headerCopy: { flex: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3) },
+    headerCopy: { flex: 1, gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3) },
     eyebrow: {
       color: theme.colors.gold,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '900',
       letterSpacing: 1.4,
     },
     title: {
       color: theme.colors.text,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(20) : responsiveLayout.responsiveFont(20),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(20) : responsiveLayout.responsiveFont(20),
       fontWeight: '900',
       letterSpacing: -0.25,
     },
     subtitle: {
       color: theme.colors.textMuted,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : responsiveLayout.responsiveFont(15),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(15) : responsiveLayout.responsiveFont(15),
     },
     closeButton: {
       alignItems: 'center',
       justifyContent: 'center',
-      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(32) : responsiveLayout.responsiveWidth(32),
-      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(32) : responsiveLayout.responsiveHeight(32),
+      width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(32) : responsiveLayout.responsiveWidth(32),
+      height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(32) : responsiveLayout.responsiveHeight(32),
       borderWidth: 1,
       borderColor: theme.colors.dividerStrong,
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
+      borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       backgroundColor: theme.colors.iconSurfaceGold,
     },
-    optionList: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8) },
+    optionList: { gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8) },
     option: {
-      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(70) : responsiveLayout.responsiveHeight(70),
+      minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(70) : responsiveLayout.responsiveHeight(70),
       flexDirection: 'row',
       alignItems: 'center',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       padding: 10,
       borderWidth: 1,
       borderColor: theme.colors.divider,
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(13) : responsiveLayout.responsiveWidth(13),
+      borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(13) : responsiveLayout.responsiveWidth(13),
       backgroundColor: theme.colors.backgroundRaised,
     },
     optionSelected: {
@@ -239,9 +239,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     optionIcon: {
       alignItems: 'center',
       justifyContent: 'center',
-      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(34) : responsiveLayout.responsiveWidth(34),
-      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(34) : responsiveLayout.responsiveHeight(34),
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
+      width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(34) : responsiveLayout.responsiveWidth(34),
+      height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(34) : responsiveLayout.responsiveHeight(34),
+      borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       backgroundColor: theme.colors.iconSurface,
     },
     optionIconSelected: { backgroundColor: theme.colors.iconSurfaceGold },
@@ -249,34 +249,34 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     optionTitleLine: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
     },
     optionTitle: {
       color: theme.colors.text,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12),
       fontWeight: '800',
     },
     selectedLabel: {
       color: theme.colors.gold,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: '900',
       letterSpacing: 0.65,
     },
     optionDescription: {
       color: theme.colors.textMuted,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : responsiveLayout.responsiveFont(14),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(14) : responsiveLayout.responsiveFont(14),
     },
     effectiveLabel: {
       color: theme.colors.scannerCyan,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: '900',
       letterSpacing: 0.65,
     },
     error: {
       color: theme.colors.danger,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : responsiveLayout.responsiveFont(14),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(14) : responsiveLayout.responsiveFont(14),
     },
     pressed: { opacity: 0.72 },
   });

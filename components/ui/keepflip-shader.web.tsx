@@ -12,6 +12,7 @@ const vertexShader = `
 
 const fragmentShader = `
   precision highp float;
+
   uniform vec2 u_resolution;
   uniform vec2 u_pointer;
   uniform float u_time;
@@ -64,6 +65,7 @@ const fragmentShader = `
     float t = u_time * 0.012;
     vec2 pointer = (u_pointer - 0.5) * vec2(aspect, 1.0);
     float pull = 0.22 * exp(-5.0 * length(p * 0.45 - pointer));
+
     vec2 q = vec2(
       fbm(p + vec2(0.0, t)),
       fbm(p + vec2(5.2, -t * 0.7))
@@ -76,6 +78,7 @@ const fragmentShader = `
     float field = fbm(p + 4.25 * r + pull * vec2(0.8, -0.65));
     field += 0.12 * sin((p.y + r.x * 2.5) * 3.2);
     field = clamp(field, 0.0, 1.0);
+
     float stepped = floor(field * 8.0) / 8.0;
     float blend = smoothstep(0.38, 0.62, fract(field * 8.0));
     float bands = mix(stepped, stepped + 1.0 / 8.0, blend * 0.6);
@@ -92,6 +95,7 @@ const fragmentShader = `
     float violetSpeck =
       smoothstep(0.91, 0.975, violetMap) *
       smoothstep(0.60, 0.78, fbm(p * 1.3 + vec2(6.0, -3.0)));
+
     color = mix(color, vec3(0.00, 0.48, 0.50), fineLine * 0.014);
     color = mix(color, vec3(0.58, 0.42, 0.15), hotLine * 0.009);
     color = mix(color, vec3(0.82, 0.56, 0.18), goldBurst * 0.32);
@@ -102,7 +106,7 @@ const fragmentShader = `
     color *= 0.90 + 0.06 * (1.0 - length(uv - 0.5));
     gl_FragColor = vec4(color, 1.0);
   }
-`;
+`
 
 function compileShader(gl: WebGLRenderingContext, type: number, source: string) {
   const shader = gl.createShader(type);

@@ -60,9 +60,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     `,
     },
     core: {
-      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(120) : responsiveLayout.responsiveWidth(120),
-      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(120) : responsiveLayout.responsiveHeight(120),
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(60) : responsiveLayout.responsiveWidth(60),
+      width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(120) : responsiveLayout.responsiveWidth(120),
+      height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(120) : responsiveLayout.responsiveHeight(120),
+      borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(60) : responsiveLayout.responsiveWidth(60),
       borderWidth: 1,
       backgroundColor: "rgba(0, 255, 255, 0.06)",
     },

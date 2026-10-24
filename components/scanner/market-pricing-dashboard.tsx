@@ -348,7 +348,7 @@ function PriceMetric({
   return (
     <View style={styles.priceMetric}>
       <Text style={[styles.metricLabel, { fontSize: responsiveFont(7) }]}>{label}</Text>
-      <Text selectable style={[styles.priceValue, { fontSize: responsiveFont(19), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(23) : responsiveLayout2.responsiveFont(23) }]}>
+      <Text selectable style={[styles.priceValue, { fontSize: responsiveFont(19), lineHeight: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveFont(23) : responsiveLayout2.responsiveFont(23) }]}>
         {formatMoney(value, currency)}
       </Text>
     </View>
@@ -399,7 +399,7 @@ function PriceTrend({
       <View style={styles.sectionHeader}>
         <View style={styles.sectionCopy}>
           <Text style={[styles.sectionLabel, { fontSize: responsiveFont(7) }]}>DATED SOLD-PRICE TREND</Text>
-          <Text selectable style={[styles.sectionSubcopy, { fontSize: responsiveFont(8), lineHeight: responsiveLayout3.isWeb ? responsiveLayout3.webResponsiveFont(11) : responsiveLayout3.responsiveFont(11) }]}>
+          <Text selectable style={[styles.sectionSubcopy, { fontSize: responsiveFont(8), lineHeight: responsiveLayout3.isWideWeb ? responsiveLayout3.webResponsiveFont(11) : responsiveLayout3.responsiveFont(11) }]}>
             Returned completed sales with reliable dates
           </Text>
         </View>
@@ -437,7 +437,7 @@ function PriceTrend({
                   ]}
                 />
               </View>
-              <Text selectable style={[styles.trendDate, { fontSize: responsiveFont(6), lineHeight: responsiveLayout3.isWeb ? responsiveLayout3.webResponsiveFont(8) : responsiveLayout3.responsiveFont(8) }]}>
+              <Text selectable style={[styles.trendDate, { fontSize: responsiveFont(6), lineHeight: responsiveLayout3.isWideWeb ? responsiveLayout3.webResponsiveFont(8) : responsiveLayout3.responsiveFont(8) }]}>
                 {formatDate(point.date)}
               </Text>
             </View>
@@ -474,7 +474,7 @@ function ConditionVariance({
       <View style={styles.sectionHeader}>
         <View style={styles.sectionCopy}>
           <Text style={[styles.sectionLabel, { fontSize: responsiveFont(7) }]}>CONDITION VARIANCE</Text>
-          <Text selectable style={[styles.sectionSubcopy, { fontSize: responsiveFont(8), lineHeight: responsiveLayout4.isWeb ? responsiveLayout4.webResponsiveFont(11) : responsiveLayout4.responsiveFont(11) }]}>
+          <Text selectable style={[styles.sectionSubcopy, { fontSize: responsiveFont(8), lineHeight: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveFont(11) : responsiveLayout4.responsiveFont(11) }]}>
             Price ranges from the returned sold sample
           </Text>
         </View>
@@ -544,7 +544,7 @@ function SupplyDemand({
       <View style={styles.sectionHeader}>
         <View style={styles.sectionCopy}>
           <Text style={[styles.sectionLabel, { fontSize: responsiveFont(7) }]}>SUPPLY / DEMAND SNAPSHOT</Text>
-          <Text selectable style={[styles.sectionSubcopy, { fontSize: responsiveFont(8), lineHeight: responsiveLayout5.isWeb ? responsiveLayout5.webResponsiveFont(11) : responsiveLayout5.responsiveFont(11) }]}>
+          <Text selectable style={[styles.sectionSubcopy, { fontSize: responsiveFont(8), lineHeight: responsiveLayout5.isWideWeb ? responsiveLayout5.webResponsiveFont(11) : responsiveLayout5.responsiveFont(11) }]}>
             Current active listings paired with returned sold results
           </Text>
         </View>
@@ -564,7 +564,7 @@ function SupplyDemand({
         the current active snapshot.
       </Text>
       {ratioNote ? (
-        <Text selectable style={[styles.evidenceText, { fontSize: responsiveFont(8), lineHeight: responsiveLayout5.isWeb ? responsiveLayout5.webResponsiveFont(12) : responsiveLayout5.responsiveFont(12) }]}>
+        <Text selectable style={[styles.evidenceText, { fontSize: responsiveFont(8), lineHeight: responsiveLayout5.isWideWeb ? responsiveLayout5.webResponsiveFont(12) : responsiveLayout5.responsiveFont(12) }]}>
           {ratioNote}
         </Text>
       ) : null}
@@ -615,12 +615,12 @@ function MarketTiming({
       {seasonality ? (
         <View style={styles.seasonality}>
           {seasonality.peakMonths.length ? (
-            <Text selectable style={[styles.seasonalityText, { fontSize: responsiveFont(7), lineHeight: responsiveLayout6.isWeb ? responsiveLayout6.webResponsiveFont(11) : responsiveLayout6.responsiveFont(11) }]}>
+            <Text selectable style={[styles.seasonalityText, { fontSize: responsiveFont(7), lineHeight: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveFont(11) : responsiveLayout6.responsiveFont(11) }]}>
               PEAK MONTHS · {seasonality.peakMonths.join(", ")}
             </Text>
           ) : null}
           {seasonality.slowMonths.length ? (
-            <Text selectable style={[styles.seasonalityText, { fontSize: responsiveFont(7), lineHeight: responsiveLayout6.isWeb ? responsiveLayout6.webResponsiveFont(11) : responsiveLayout6.responsiveFont(11) }]}>
+            <Text selectable style={[styles.seasonalityText, { fontSize: responsiveFont(7), lineHeight: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveFont(11) : responsiveLayout6.responsiveFont(11) }]}>
               SLOW MONTHS · {seasonality.slowMonths.join(", ")}
             </Text>
           ) : null}
@@ -715,7 +715,7 @@ export function MarketPricingDashboard({
       <View style={styles.header}>
         <View style={styles.headerCopy}>
           <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>LIVE MARKET DASHBOARD</Text>
-          <Text selectable style={[styles.title, { fontSize: responsiveFont(15), lineHeight: responsiveLayout7.isWeb ? responsiveLayout7.webResponsiveFont(19) : responsiveLayout7.responsiveFont(19) }]}>
+          <Text selectable style={[styles.title, { fontSize: responsiveFont(15), lineHeight: responsiveLayout7.isWideWeb ? responsiveLayout7.webResponsiveFont(19) : responsiveLayout7.responsiveFont(19) }]}>
             {title?.trim() || "Current item"}
           </Text>
           {normalizedQuery ? (
@@ -750,7 +750,7 @@ export function MarketPricingDashboard({
       </View>
 
       {refreshError ? (
-        <Text selectable style={[styles.error, { fontSize: responsiveFont(8), lineHeight: responsiveLayout7.isWeb ? responsiveLayout7.webResponsiveFont(12) : responsiveLayout7.responsiveFont(12) }]}>
+        <Text selectable style={[styles.error, { fontSize: responsiveFont(8), lineHeight: responsiveLayout7.isWideWeb ? responsiveLayout7.webResponsiveFont(12) : responsiveLayout7.responsiveFont(12) }]}>
           {refreshError}
         </Text>
       ) : null}
@@ -758,7 +758,7 @@ export function MarketPricingDashboard({
       {!dashboard ? (
         <View style={styles.emptyState}>
           <Text style={[styles.emptyTitle, { fontSize: responsiveFont(8) }]}>NO LIVE COMPS LOADED</Text>
-          <Text selectable style={[styles.emptyCopy, { fontSize: responsiveFont(9), lineHeight: responsiveLayout7.isWeb ? responsiveLayout7.webResponsiveFont(13) : responsiveLayout7.responsiveFont(13) }]}>
+          <Text selectable style={[styles.emptyCopy, { fontSize: responsiveFont(9), lineHeight: responsiveLayout7.isWideWeb ? responsiveLayout7.webResponsiveFont(13) : responsiveLayout7.responsiveFont(13) }]}>
             Refresh live comps when you want a new sold-market snapshot. It
             will not run automatically.
           </Text>
@@ -807,7 +807,7 @@ export function MarketPricingDashboard({
           )}
 
           {dashboard.evidenceNote ? (
-            <Text selectable style={[styles.evidenceText, { fontSize: responsiveFont(8), lineHeight: responsiveLayout7.isWeb ? responsiveLayout7.webResponsiveFont(12) : responsiveLayout7.responsiveFont(12) }]}>
+            <Text selectable style={[styles.evidenceText, { fontSize: responsiveFont(8), lineHeight: responsiveLayout7.isWideWeb ? responsiveLayout7.webResponsiveFont(12) : responsiveLayout7.responsiveFont(12) }]}>
               {dashboard.evidenceNote}
             </Text>
           ) : null}
@@ -861,8 +861,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   const { responsiveFont, responsiveHeight } = responsiveLayout;
   const staticStyles = StyleSheet.create({
     shell: {
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(13) : responsiveLayout.responsiveWidth(13),
-      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(16) : responsiveLayout.responsiveHeight(16),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(13) : responsiveLayout.responsiveWidth(13),
+      paddingTop: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(16) : responsiveLayout.responsiveHeight(16),
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: theme.colors.divider,
     },
@@ -870,46 +870,46 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: "row",
       alignItems: "flex-start",
       justifyContent: "space-between",
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
     },
     headerCopy: {
       flex: 1,
       minWidth: 0,
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3),
     },
     eyebrow: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.numbers,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: "900",
       letterSpacing: 1.02,
     },
     title: {
       color: "#FFFFFF",
       fontFamily: theme.fonts.radar,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : responsiveLayout.responsiveFont(15),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(15) : responsiveLayout.responsiveFont(15),
       fontWeight: "900",
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(19) : responsiveLayout.responsiveFont(19),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(19) : responsiveLayout.responsiveFont(19),
     },
     query: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.numbers,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: "900",
       letterSpacing: 0.35,
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11),
     },
     refreshButton: {
-      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(32) : responsiveLayout.responsiveHeight(32),
-      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(120) : responsiveLayout.responsiveWidth(120),
+      minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(32) : responsiveLayout.responsiveHeight(32),
+      maxWidth: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(120) : responsiveLayout.responsiveWidth(120),
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5),
-      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5),
+      paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: "rgba(0, 255, 255, 0.62)",
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
+      borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
       backgroundColor: "rgba(0, 255, 255, 0.07)",
     },
     refreshButtonDisabled: {
@@ -922,7 +922,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     refreshButtonText: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.numbers,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: "900",
       letterSpacing: 0.5,
       textAlign: "center",
@@ -931,16 +931,16 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       padding: 9,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: "rgba(232, 97, 88, 0.44)",
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
+      borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
       color: "#FFD8D5",
       fontFamily: theme.fonts.radar,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: "900",
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12),
     },
     emptyState: {
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : responsiveLayout.responsiveWidth(6),
-      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : responsiveLayout.responsiveHeight(10),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(6) : responsiveLayout.responsiveWidth(6),
+      paddingVertical: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(10) : responsiveLayout.responsiveHeight(10),
       borderTopWidth: StyleSheet.hairlineWidth,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderColor: theme.colors.divider,
@@ -948,38 +948,38 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     emptyTitle: {
       color: "rgba(255, 255, 255, 0.72)",
       fontFamily: theme.fonts.numbers,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: "900",
       letterSpacing: 0.78,
     },
     emptyCopy: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.radar,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : responsiveLayout.responsiveFont(13),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(13) : responsiveLayout.responsiveFont(13),
     },
     snapshotHeader: {
       flexDirection: "row",
       alignItems: "flex-start",
       justifyContent: "space-between",
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
-      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(8) : responsiveLayout.responsiveHeight(8),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
+      paddingVertical: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(8) : responsiveLayout.responsiveHeight(8),
       borderTopWidth: StyleSheet.hairlineWidth,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderColor: theme.colors.divider,
     },
     snapshotCopy: {
-      marginTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(3) : responsiveLayout.responsiveHeight(3),
+      marginTop: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(3) : responsiveLayout.responsiveHeight(3),
       color: "rgba(247, 242, 232, 0.58)",
       fontFamily: theme.fonts.numbers,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: "900",
       letterSpacing: 0.42,
     },
     snapshotStatus: {
       color: theme.colors.goldBright,
       fontFamily: theme.fonts.numbers,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: "900",
       letterSpacing: 0.56,
       textAlign: "right",
@@ -987,52 +987,52 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     priceGrid: {
       flexDirection: "row",
       flexWrap: "wrap",
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
     },
     priceMetric: {
       flexGrow: 1,
       flexBasis: "42%",
-      minWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(116) : responsiveLayout.responsiveWidth(116),
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3),
-      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(7) : responsiveLayout.responsiveHeight(7),
+      minWidth: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(116) : responsiveLayout.responsiveWidth(116),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3),
+      paddingVertical: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(7) : responsiveLayout.responsiveHeight(7),
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: theme.colors.divider,
     },
     metricLabel: {
       color: "rgba(247, 242, 232, 0.49)",
       fontFamily: theme.fonts.numbers,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: "900",
       letterSpacing: 0.58,
     },
     priceValue: {
       color: "#FFFFFF",
       fontFamily: theme.fonts.radar,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(19) : responsiveLayout.responsiveFont(19),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(19) : responsiveLayout.responsiveFont(19),
       fontWeight: "900",
       fontVariant: ["tabular-nums"],
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(23) : responsiveLayout.responsiveFont(23),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(23) : responsiveLayout.responsiveFont(23),
     },
     evidenceText: {
       color: "rgba(247, 242, 232, 0.56)",
       fontFamily: theme.fonts.radar,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12),
     },
     unavailable: {
-      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(7) : responsiveLayout.responsiveHeight(7),
+      paddingVertical: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(7) : responsiveLayout.responsiveHeight(7),
       color: "rgba(247, 242, 232, 0.5)",
       fontFamily: theme.fonts.radar,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12),
     },
     trendSection: {
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
       paddingTop: 2,
     },
     section: {
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
-      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(11) : responsiveLayout.responsiveHeight(11),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
+      paddingTop: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(11) : responsiveLayout.responsiveHeight(11),
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: theme.colors.divider,
     },
@@ -1040,39 +1040,39 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: "row",
       alignItems: "flex-start",
       justifyContent: "space-between",
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
     },
     sectionCopy: {
       flex: 1,
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3),
     },
     sectionLabel: {
       color: "rgba(247, 242, 232, 0.54)",
       fontFamily: theme.fonts.numbers,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: "900",
       letterSpacing: 0.86,
     },
     sectionSubcopy: {
       color: "rgba(247, 242, 232, 0.46)",
       fontFamily: theme.fonts.radar,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11),
     },
     sectionValue: {
       color: theme.colors.goldBright,
       fontFamily: theme.fonts.numbers,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: "900",
       letterSpacing: 0.56,
     },
     trendChart: {
-      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(116) : responsiveLayout.responsiveHeight(116),
+      minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(116) : responsiveLayout.responsiveHeight(116),
       flexDirection: "row",
       alignItems: "flex-end",
       gap: 2,
       paddingTop: 2,
-      paddingBottom: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(3) : responsiveLayout.responsiveHeight(3),
+      paddingBottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(3) : responsiveLayout.responsiveHeight(3),
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: theme.colors.dividerStrong,
     },
@@ -1080,61 +1080,61 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flex: 1,
       minWidth: 0,
       alignItems: "center",
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3),
     },
     trendPriceSlot: {
-      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(16) : responsiveLayout.responsiveHeight(16),
+      height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(16) : responsiveLayout.responsiveHeight(16),
       justifyContent: "flex-end",
     },
     trendPrice: {
       color: theme.colors.goldBright,
       fontFamily: theme.fonts.numbers,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(6) : responsiveLayout.responsiveFont(6),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(6) : responsiveLayout.responsiveFont(6),
       fontWeight: "900",
       fontVariant: ["tabular-nums"],
     },
     trendBarSlot: {
       width: "100%",
-      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(80) : responsiveLayout.responsiveHeight(80),
+      height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(80) : responsiveLayout.responsiveHeight(80),
       justifyContent: "flex-end",
       paddingHorizontal: 1,
     },
     trendBar: {
       width: "100%",
-      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(4) : responsiveLayout.responsiveHeight(4),
+      minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(4) : responsiveLayout.responsiveHeight(4),
       borderRadius: 2,
       backgroundColor: theme.colors.scannerCyan,
     },
     trendDate: {
-      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(18) : responsiveLayout.responsiveHeight(18),
+      minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(18) : responsiveLayout.responsiveHeight(18),
       color: "rgba(247, 242, 232, 0.45)",
       fontFamily: theme.fonts.numbers,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(6) : responsiveLayout.responsiveFont(6),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(6) : responsiveLayout.responsiveFont(6),
       fontWeight: "900",
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       textAlign: "center",
     },
     trendAxis: {
       flexDirection: "row",
       justifyContent: "space-between",
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
     },
     trendAxisText: {
       color: "rgba(247, 242, 232, 0.45)",
       fontFamily: theme.fonts.numbers,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(6) : responsiveLayout.responsiveFont(6),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(6) : responsiveLayout.responsiveFont(6),
       fontWeight: "900",
       letterSpacing: 0.35,
     },
     conditionRows: {
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
     },
     conditionRow: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
-      paddingBottom: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(7) : responsiveLayout.responsiveHeight(7),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
+      paddingBottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(7) : responsiveLayout.responsiveHeight(7),
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: theme.colors.divider,
     },
@@ -1146,13 +1146,13 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     conditionName: {
       color: "rgba(255, 255, 255, 0.86)",
       fontFamily: theme.fonts.radar,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
       fontWeight: "900",
     },
     conditionCount: {
       color: "rgba(247, 242, 232, 0.42)",
       fontFamily: theme.fonts.numbers,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(6) : responsiveLayout.responsiveFont(6),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(6) : responsiveLayout.responsiveFont(6),
       fontWeight: "900",
       letterSpacing: 0.38,
     },
@@ -1163,61 +1163,61 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     conditionMedian: {
       color: "#FFFFFF",
       fontFamily: theme.fonts.radar,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11),
       fontWeight: "900",
       fontVariant: ["tabular-nums"],
     },
     conditionDelta: {
       fontFamily: theme.fonts.numbers,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(6) : responsiveLayout.responsiveFont(6),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(6) : responsiveLayout.responsiveFont(6),
       fontWeight: "900",
       letterSpacing: 0.32,
     },
     detailMetricRow: {
       flexDirection: "row",
       flexWrap: "wrap",
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
     },
     detailMetric: {
       flexGrow: 1,
       flexBasis: "29%",
-      minWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(88) : responsiveLayout.responsiveWidth(88),
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3),
+      minWidth: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(88) : responsiveLayout.responsiveWidth(88),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3),
     },
     detailValue: {
       color: "#FFFFFF",
       fontFamily: theme.fonts.radar,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : responsiveLayout.responsiveFont(15),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(15) : responsiveLayout.responsiveFont(15),
       fontWeight: "900",
       fontVariant: ["tabular-nums"],
     },
     caveat: {
       color: theme.colors.goldBright,
       fontFamily: theme.fonts.numbers,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(6) : responsiveLayout.responsiveFont(6),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(6) : responsiveLayout.responsiveFont(6),
       fontWeight: "900",
       letterSpacing: 0.43,
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
     },
     seasonality: {
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
     },
     seasonalityText: {
       color: "rgba(247, 242, 232, 0.61)",
       fontFamily: theme.fonts.numbers,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: "900",
       letterSpacing: 0.35,
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11),
     },
     disclaimer: {
-      paddingTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(4) : responsiveLayout.responsiveHeight(4),
+      paddingTop: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(4) : responsiveLayout.responsiveHeight(4),
       color: "rgba(247, 242, 232, 0.42)",
       fontFamily: theme.fonts.numbers,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(6) : responsiveLayout.responsiveFont(6),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(6) : responsiveLayout.responsiveFont(6),
       fontWeight: "900",
       letterSpacing: 0.35,
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
     },
   });
   return {

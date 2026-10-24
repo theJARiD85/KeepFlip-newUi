@@ -13,6 +13,9 @@ const root = fs.mkdtempSync(path.join(os.tmpdir(), 'keepflip-responsive-layout-'
 const nested = path.join(root, 'components', 'nested', 'deeper', 'card.tsx');
 const route = path.join(root, 'app', '(app)', 'home.web.tsx');
 const existing = path.join(root, 'app', '(app)', 'already-responsive.tsx');
+const paired = path.join(root, 'components', 'nested', 'paired.tsx');
+const pairedWeb = path.join(root, 'components', 'nested', 'paired.web.tsx');
+const pairedNative = path.join(root, 'components', 'nested', 'paired.native.android.tsx');
 const generated = path.join(root, 'components', 'nested', 'generated.tsx');
 const native = path.join(root, 'components', 'nested', 'camera.native.tsx');
 const nativeRoute = path.join(root, 'app', '(app)', 'profile.native.tsx');
@@ -59,6 +62,22 @@ try {
     '  return <Text style={{ width: layout.isWeb ? layout.webResponsiveWidth(120) : 120 }}>Already responsive</Text>;',
     '}',
   ].join('\n'), 'utf8');
+  fs.writeFileSync(pairedWeb, [
+    "import { Text } from 'react-native';",
+    "import { useResponsiveLayout } from '@/hooks/use-responsive-layout';",
+    'export function PairedWeb() {',
+    '  const layout = useResponsiveLayout();',
+    '  return <Text style={{ paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(15) : layout.responsiveWidth(10) }}>Paired web</Text>;',
+    '}',
+  ].join('\n'), 'utf8');
+  fs.writeFileSync(pairedNative, [
+    "import { Text } from 'react-native';",
+    "import { useResponsiveLayout } from '@/hooks/use-responsive-layout';",
+    'export function PairedNative() {',
+    '  const layout = useResponsiveLayout();',
+    '  return <Text style={{ paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(15) : layout.responsiveWidth(10) }}>Paired native</Text>;',
+    '}',
+  ].join('\n'), 'utf8');
   fs.writeFileSync(generated, [
     "import { StyleSheet } from 'react-native';",
     "import { useResponsiveLayout } from '@/hooks/use-responsive-layout';",
@@ -93,14 +112,16 @@ try {
   const preview = run();
   assert.equal(preview.applied, false);
   assert.equal(preview.directoriesVisited, 5);
-  assert.equal(preview.sourceFilesScanned, 10);
+  assert.equal(preview.sourceFilesScanned, 12);
   assert.equal(preview.nonSourceFiles, 1);
-  assert.equal(preview.totals.files, 10);
-  for (const file of [route, native, nativeRoute, webComponent, android, ios]) {
+  assert.equal(preview.totals.files, 11);
+  assert.equal(preview.totals.wideWebBranches, 1);
+  for (const file of [route, native, nativeRoute, webComponent, pairedWeb, android, ios]) {
     const name = path.relative(root, file).split(path.sep).join('/');
     assert.ok(preview.changedFiles.some((item) => item.file === name), `${name} was not checked`);
   }
   assert.equal(fs.readFileSync(nested, 'utf8'), before);
+  assert.match(fs.readFileSync(pairedWeb, 'utf8'), /layout\.isWeb \?/);
 
   const written = run('--write');
   assert.equal(written.applied, true);
@@ -109,25 +130,49 @@ try {
   const alreadyResponsive = fs.readFileSync(existing, 'utf8');
   const generatedFactory = fs.readFileSync(generated, 'utf8');
   assert.match(card, /useResponsiveStyles\(createStylesWebResponsive\)/);
-  assert.match(card, /layout\.isWeb \? layout\.webResponsiveFont\(20\) : layout\.responsiveFont\(20\)/);
-  assert.match(card, /layout\.isWeb \? layout\.webResponsiveWidth\(200\) : layout\.responsiveWidth\(200\)/);
-  assert.match(card, /layout\.isWeb \? layout\.webResponsiveHeight\(44\) : layout\.responsiveHeight\(44\)/);
-  assert.match(card, /responsiveLayout\.isWeb \? responsiveLayout\.webResponsiveHeight\(10\) : responsiveLayout\.responsiveHeight\(10\)/);
-  assert.match(card, /layout\.isWeb \? layout\.webResponsiveFont\(16\) : layout\.responsiveFont\(16\)/);
-  assert.match(card, /layout\.isWeb \? layout\.webResponsiveHeight\(6\) : layout\.responsiveHeight\(6\)/);
+  assert.match(card, /layout\.isWideWeb \? layout\.webResponsiveFont\(20\) : layout\.responsiveFont\(20\)/);
+  assert.match(card, /layout\.isWideWeb \? layout\.webResponsiveWidth\(200\) : layout\.responsiveWidth\(200\)/);
+  assert.match(card, /layout\.isWideWeb \? layout\.webResponsiveHeight\(44\) : layout\.responsiveHeight\(44\)/);
+  assert.match(card, /responsiveLayout\.isWideWeb \? responsiveLayout\.webResponsiveHeight\(10\) : responsiveLayout\.responsiveHeight\(10\)/);
+  assert.match(card, /layout\.isWideWeb \? layout\.webResponsiveFont\(16\) : layout\.responsiveFont\(16\)/);
+  assert.match(card, /layout\.isWideWeb \? layout\.webResponsiveHeight\(6\) : layout\.responsiveHeight\(6\)/);
   assert.match(card, /opacity: 0\.5/);
   assert.match(card, /borderWidth: 1/);
-  assert.match(home, /responsiveLayout\.isWeb \? responsiveLayout\.webResponsiveFont\(14\) : responsiveLayout\.responsiveFont\(14\)/);
-  assert.match(alreadyResponsive, /layout\.isWeb \? layout\.webResponsiveWidth\(120\) : layout\.responsiveWidth\(120\)/);
+  assert.match(home, /responsiveLayout\.isWideWeb \? responsiveLayout\.webResponsiveFont\(14\) : responsiveLayout\.responsiveFont\(14\)/);
+  assert.match(fs.readFileSync(pairedWeb, 'utf8'), /layout\.isWideWeb \? layout\.webResponsiveWidth\(15\) : layout\.responsiveWidth\(10\)/);
+  assert.match(fs.readFileSync(pairedNative, 'utf8'), /layout\.isWeb \? layout\.webResponsiveWidth\(15\) : layout\.responsiveWidth\(10\)/);
+  assert.match(alreadyResponsive, /layout\.isWideWeb \? layout\.webResponsiveWidth\(120\) : layout\.responsiveWidth\(120\)/);
   assert.equal((alreadyResponsive.match(/useResponsiveLayout\(\)/g) || []).length, 1);
-  assert.match(generatedFactory, /layout\.isWeb \? layout\.webResponsiveWidth\(100\) : layout\.responsiveWidth\(100\)/);
+  assert.match(generatedFactory, /layout\.isWideWeb \? layout\.webResponsiveWidth\(100\) : layout\.responsiveWidth\(100\)/);
   assert.match(fs.readFileSync(legacy, 'utf8'), /function createStylesWebResponsive\(layout\)/);
-  assert.match(fs.readFileSync(legacy, 'utf8'), /layout\.isWeb \? layout\.webResponsiveWidth\(90\) : layout\.responsiveWidth\(90\)/);
+  assert.match(fs.readFileSync(legacy, 'utf8'), /layout\.isWideWeb \? layout\.webResponsiveWidth\(90\) : layout\.responsiveWidth\(90\)/);
   for (const file of [native, nativeRoute, webComponent, android, ios]) {
-    assert.match(fs.readFileSync(file, 'utf8'), /responsiveLayout\.isWeb \? responsiveLayout\.webResponsiveFont\(14\) : responsiveLayout\.responsiveFont\(14\)/);
+    assert.match(fs.readFileSync(file, 'utf8'), /responsiveLayout\.isWideWeb \? responsiveLayout\.webResponsiveFont\(14\) : responsiveLayout\.responsiveFont\(14\)/);
   }
+  fs.writeFileSync(paired, [
+    "import { Text } from 'react-native';",
+    "import { useResponsiveLayout } from '@/hooks/use-responsive-layout';",
+    'export function Paired() {',
+    '  const layout = useResponsiveLayout();',
+    '  return <Text style={{ paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(15) : layout.responsiveWidth(10) }}>Paired</Text>;',
+    '}',
+  ].join('\n'), 'utf8');
+  const wideWebPreview = run('--wide-web-only');
+  assert.equal(wideWebPreview.applied, false);
+  assert.equal(wideWebPreview.totals.wideWebBranches, 1);
+  assert.match(fs.readFileSync(paired, 'utf8'), /layout\.isWeb \?/);
+  const wideWebWritten = run('--wide-web-only', '--write');
+  assert.equal(wideWebWritten.totals.wideWebBranches, 1);
+  assert.match(fs.readFileSync(paired, 'utf8'), /layout\.isWideWeb \? layout\.webResponsiveWidth\(15\) : layout\.responsiveWidth\(10\)/);
+  assert.match(fs.readFileSync(pairedNative, 'utf8'), /layout\.isWeb \?/);
+  assert.equal(run('--wide-web-only', '--write').totals.wideWebBranches, 0);
   assert.equal(run('--write').totals.files, 0);
   console.log('Responsive layout recursive write and idempotence fixtures passed.');
 } finally {
-  fs.rmSync(root, { recursive: true, force: true });
+  const fixtureRoot = fs.realpathSync(root);
+  if (path.dirname(fixtureRoot) !== fs.realpathSync(os.tmpdir())
+    || !path.basename(fixtureRoot).startsWith('keepflip-responsive-layout-')) {
+    throw new Error(`Refusing to remove unexpected fixture path: ${fixtureRoot}`);
+  }
+  fs.rmSync(fixtureRoot, { recursive: true, force: true });
 }

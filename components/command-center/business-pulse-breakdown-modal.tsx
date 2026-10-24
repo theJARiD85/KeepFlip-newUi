@@ -163,7 +163,7 @@ export function BusinessPulseBreakdownModal({
         <View style={[styles.header, { paddingTop: insets.top }]}>
           <View style={styles.headingCopy}>
             <Text style={[styles.eyebrow, { fontSize: responsiveFont(8) }]}>BUSINESS PULSE</Text>
-            <Text style={[styles.title, { fontSize: responsiveFont(18), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(23) : responsiveLayout.responsiveFont(23) }]}>
+            <Text style={[styles.title, { fontSize: responsiveFont(18), lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(23) : responsiveLayout.responsiveFont(23) }]}>
               {metricTitle(metric)} breakdown
             </Text>
           </View>
@@ -217,7 +217,7 @@ function BreakdownTotal({
         <Text style={[styles.totalLabel, { fontSize: responsiveFont(8) }]}>
           {isCashTiedUp ? 'CURRENT INVENTORY' : 'CURRENT MONTH TO DATE'}
         </Text>
-        <Text selectable style={[styles.totalValue, { fontSize: responsiveFont(25), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(31) : responsiveLayout2.responsiveFont(31) }]}>
+        <Text selectable style={[styles.totalValue, { fontSize: responsiveFont(25), lineHeight: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveFont(31) : responsiveLayout2.responsiveFont(31) }]}>
           {exactMoney(totalCents)}
         </Text>
       </View>
@@ -250,7 +250,7 @@ function MoneyEntriesBreakdown({
       initialNumToRender={12}
       keyExtractor={(entry) => entry.id}
       ListEmptyComponent={(
-        <Text style={[styles.emptyText, { fontSize: responsiveFont(10), lineHeight: responsiveLayout3.isWeb ? responsiveLayout3.webResponsiveFont(15) : responsiveLayout3.responsiveFont(15) }]}>
+        <Text style={[styles.emptyText, { fontSize: responsiveFont(10), lineHeight: responsiveLayout3.isWideWeb ? responsiveLayout3.webResponsiveFont(15) : responsiveLayout3.responsiveFont(15) }]}>
           No eligible {isIncome ? 'income' : 'cost'} entries have been recorded this month.
         </Text>
       )}
@@ -262,16 +262,16 @@ function MoneyEntriesBreakdown({
             totalCents={totalCents}
           />
           <View style={styles.introSection}>
-            <Text style={[styles.description, { fontSize: responsiveFont(10), lineHeight: responsiveLayout3.isWeb ? responsiveLayout3.webResponsiveFont(15) : responsiveLayout3.responsiveFont(15) }]}>
+            <Text style={[styles.description, { fontSize: responsiveFont(10), lineHeight: responsiveLayout3.isWideWeb ? responsiveLayout3.webResponsiveFont(15) : responsiveLayout3.responsiveFont(15) }]}>
               {isIncome
                 ? 'Money in adds eligible income entries recorded this calendar month.'
                 : 'Costs adds eligible expense and adjustment entries recorded this calendar month.'}
             </Text>
-            <Text style={[styles.filterNote, { fontSize: responsiveFont(9), lineHeight: responsiveLayout3.isWeb ? responsiveLayout3.webResponsiveFont(14) : responsiveLayout3.responsiveFont(14) }]}>
+            <Text style={[styles.filterNote, { fontSize: responsiveFont(9), lineHeight: responsiveLayout3.isWideWeb ? responsiveLayout3.webResponsiveFont(14) : responsiveLayout3.responsiveFont(14) }]}>
               Only active USD records with a positive amount are counted. Voided records, other currencies, and entries from other months are left out.
             </Text>
             {notice ? (
-              <Text style={[styles.unlinkedNote, { fontSize: responsiveFont(9), lineHeight: responsiveLayout3.isWeb ? responsiveLayout3.webResponsiveFont(14) : responsiveLayout3.responsiveFont(14) }]}>
+              <Text style={[styles.unlinkedNote, { fontSize: responsiveFont(9), lineHeight: responsiveLayout3.isWideWeb ? responsiveLayout3.webResponsiveFont(14) : responsiveLayout3.responsiveFont(14) }]}>
                 {notice}
               </Text>
             ) : null}
@@ -314,17 +314,17 @@ function MoneyEntryRow({
       </View>
       <Text style={[styles.entryMeta, { fontSize: responsiveFont(9) }]}>{dateLabel(entry.occurredAt)}</Text>
       {entry.itemTitle ? (
-        <Text style={[styles.entryDetail, { fontSize: responsiveFont(9), lineHeight: responsiveLayout4.isWeb ? responsiveLayout4.webResponsiveFont(14) : responsiveLayout4.responsiveFont(14) }]}>
+        <Text style={[styles.entryDetail, { fontSize: responsiveFont(9), lineHeight: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveFont(14) : responsiveLayout4.responsiveFont(14) }]}>
           Item · {entry.itemTitle}
         </Text>
       ) : null}
       {entry.channel ? (
-        <Text style={[styles.entryDetail, { fontSize: responsiveFont(9), lineHeight: responsiveLayout4.isWeb ? responsiveLayout4.webResponsiveFont(14) : responsiveLayout4.responsiveFont(14) }]}>
+        <Text style={[styles.entryDetail, { fontSize: responsiveFont(9), lineHeight: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveFont(14) : responsiveLayout4.responsiveFont(14) }]}>
           Source · {entry.channel}
         </Text>
       ) : null}
       {entry.notes ? (
-        <Text selectable style={[styles.entryDetail, { fontSize: responsiveFont(9), lineHeight: responsiveLayout4.isWeb ? responsiveLayout4.webResponsiveFont(14) : responsiveLayout4.responsiveFont(14) }]}>
+        <Text selectable style={[styles.entryDetail, { fontSize: responsiveFont(9), lineHeight: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveFont(14) : responsiveLayout4.responsiveFont(14) }]}>
           Note · {entry.notes}
         </Text>
       ) : null}
@@ -357,7 +357,7 @@ function CashTiedUpBreakdown({
       keyExtractor={(row) => row.key}
       ListFooterComponent={
         unlinkedPurchaseCents > 0 ? (
-          <Text style={[styles.unlinkedNote, { fontSize: responsiveFont(9), lineHeight: responsiveLayout5.isWeb ? responsiveLayout5.webResponsiveFont(14) : responsiveLayout5.responsiveFont(14) }]}>
+          <Text style={[styles.unlinkedNote, { fontSize: responsiveFont(9), lineHeight: responsiveLayout5.isWideWeb ? responsiveLayout5.webResponsiveFont(14) : responsiveLayout5.responsiveFont(14) }]}>
             Across all saved records, not included: {exactMoney(unlinkedPurchaseCents)} in inventory purchases are not linked to an item, so they cannot be assigned to this total.
           </Text>
         ) : null
@@ -370,11 +370,11 @@ function CashTiedUpBreakdown({
             totalCents={totalCents}
           />
           <View style={styles.introSection}>
-            <Text style={[styles.description, { fontSize: responsiveFont(10), lineHeight: responsiveLayout5.isWeb ? responsiveLayout5.webResponsiveFont(15) : responsiveLayout5.responsiveFont(15) }]}>
+            <Text style={[styles.description, { fontSize: responsiveFont(10), lineHeight: responsiveLayout5.isWideWeb ? responsiveLayout5.webResponsiveFont(15) : responsiveLayout5.responsiveFont(15) }]}>
               Cash tied up adds the positive saved cost for each item currently counted as on hand. Quantity is shown for context; it is not used as a multiplier.
             </Text>
             {notice ? (
-              <Text style={[styles.unlinkedNote, { fontSize: responsiveFont(9), lineHeight: responsiveLayout5.isWeb ? responsiveLayout5.webResponsiveFont(14) : responsiveLayout5.responsiveFont(14) }]}>
+              <Text style={[styles.unlinkedNote, { fontSize: responsiveFont(9), lineHeight: responsiveLayout5.isWideWeb ? responsiveLayout5.webResponsiveFont(14) : responsiveLayout5.responsiveFont(14) }]}>
                 {notice}
               </Text>
             ) : null}
@@ -394,7 +394,7 @@ function CashTiedUpBreakdown({
         }
         if (item.type === 'empty') {
           return (
-            <Text style={[styles.emptyText, { fontSize: responsiveFont(10), lineHeight: responsiveLayout5.isWeb ? responsiveLayout5.webResponsiveFont(15) : responsiveLayout5.responsiveFont(15) }]}>
+            <Text style={[styles.emptyText, { fontSize: responsiveFont(10), lineHeight: responsiveLayout5.isWideWeb ? responsiveLayout5.webResponsiveFont(15) : responsiveLayout5.responsiveFont(15) }]}>
               {item.text}
             </Text>
           );

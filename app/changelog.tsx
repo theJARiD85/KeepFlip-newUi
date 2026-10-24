@@ -64,7 +64,7 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     ...styles,
     card: {
       ...styles["card"],
-      maxWidth: layout.isWeb ? layout.webResponsiveWidth(570) : layout.responsiveWidth(570),
+      maxWidth: layout.isWideWeb ? layout.webResponsiveWidth(570) : layout.responsiveWidth(570),
     },
   });
 }

@@ -415,7 +415,7 @@ export function ItemAnalysisResultScreen() {
         {loading ? (
           <ActivityIndicator color={theme.colors.scannerCyan} />
         ) : (
-          <Text selectable style={[styles.message, { fontSize: responsiveFont(13), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(19) : responsiveLayout2.responsiveFont(19) }]}>
+          <Text selectable style={[styles.message, { fontSize: responsiveFont(13), lineHeight: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveFont(19) : responsiveLayout2.responsiveFont(19) }]}>
             {resolvedError ?? "No analysis result was supplied."}
           </Text>
         )}
@@ -497,27 +497,27 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flex: 1,
       alignItems: "center",
       justifyContent: "center",
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16),
       padding: 28,
       backgroundColor: theme.colors.backgroundDeep,
     },
     message: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.radar,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : responsiveLayout.responsiveFont(13),
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(19) : responsiveLayout.responsiveFont(19),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(13) : responsiveLayout.responsiveFont(13),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(19) : responsiveLayout.responsiveFont(19),
       textAlign: "center",
     },
     backButton: {
-      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(18) : responsiveLayout.responsiveWidth(18),
-      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(12) : responsiveLayout.responsiveHeight(12),
+      paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(18) : responsiveLayout.responsiveWidth(18),
+      paddingVertical: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(12) : responsiveLayout.responsiveHeight(12),
       borderWidth: 1,
       borderColor: "rgba(88, 223, 232, 0.42)",
     },
     backButtonText: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.radar,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: "900",
       letterSpacing: 1.1,
     },

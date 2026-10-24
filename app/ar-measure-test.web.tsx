@@ -100,34 +100,34 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     ...styles,
     card: {
       ...styles["card"],
-      maxWidth: layout.isWeb ? layout.webResponsiveWidth(580) : layout.responsiveWidth(580),
+      maxWidth: layout.isWideWeb ? layout.webResponsiveWidth(580) : layout.responsiveWidth(580),
     },
     eyebrow: {
       ...styles["eyebrow"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(10) : layout.responsiveFont(10),
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(10) : layout.responsiveFont(10),
     },
     title: {
       ...styles["title"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(30) : layout.responsiveFont(30),
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(37) : layout.responsiveFont(37),
-      marginTop: layout.isWeb ? layout.webResponsiveHeight(10) : layout.responsiveHeight(10),
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(30) : layout.responsiveFont(30),
+      lineHeight: layout.isWideWeb ? layout.webResponsiveFont(37) : layout.responsiveFont(37),
+      marginTop: layout.isWideWeb ? layout.webResponsiveHeight(10) : layout.responsiveHeight(10),
     },
     copy: {
       ...styles["copy"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(15) : layout.responsiveFont(15),
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(23) : layout.responsiveFont(23),
-      marginTop: layout.isWeb ? layout.webResponsiveHeight(13) : layout.responsiveHeight(13),
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(15) : layout.responsiveFont(15),
+      lineHeight: layout.isWideWeb ? layout.webResponsiveFont(23) : layout.responsiveFont(23),
+      marginTop: layout.isWideWeb ? layout.webResponsiveHeight(13) : layout.responsiveHeight(13),
     },
     button: {
       ...styles["button"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(14) : layout.responsiveWidth(14),
-      marginTop: layout.isWeb ? layout.webResponsiveHeight(24) : layout.responsiveHeight(24),
-      minHeight: layout.isWeb ? layout.webResponsiveHeight(50) : layout.responsiveHeight(50),
-      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(18) : layout.responsiveWidth(18),
+      borderRadius: layout.isWideWeb ? layout.webResponsiveWidth(14) : layout.responsiveWidth(14),
+      marginTop: layout.isWideWeb ? layout.webResponsiveHeight(24) : layout.responsiveHeight(24),
+      minHeight: layout.isWideWeb ? layout.webResponsiveHeight(50) : layout.responsiveHeight(50),
+      paddingHorizontal: layout.isWideWeb ? layout.webResponsiveWidth(18) : layout.responsiveWidth(18),
     },
     buttonText: {
       ...styles["buttonText"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : layout.responsiveFont(14),
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(14) : layout.responsiveFont(14),
     },
   });
 }

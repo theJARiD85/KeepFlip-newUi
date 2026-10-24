@@ -388,8 +388,8 @@ export function SourcingTripControl() {
               <View style={styles.modalHeader}>
                 <View style={styles.modalHeaderCopy}>
                   <Text style={[styles.modalEyebrow, { fontSize: responsiveFont(9) }]}>SOURCE ONCE · SAVE AS YOU GO</Text>
-                  <Text style={[styles.modalTitle, { fontSize: responsiveFont(24), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(29) : responsiveLayout2.responsiveFont(29) }]}>Start a sourcing trip</Text>
-                  <Text style={[styles.modalBody, { fontSize: responsiveFont(13), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(18) : responsiveLayout2.responsiveFont(18) }]}>
+                  <Text style={[styles.modalTitle, { fontSize: responsiveFont(24), lineHeight: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveFont(29) : responsiveLayout2.responsiveFont(29) }]}>Start a sourcing trip</Text>
+                  <Text style={[styles.modalBody, { fontSize: responsiveFont(13), lineHeight: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveFont(18) : responsiveLayout2.responsiveFont(18) }]}>
                     Keep each find, its actual cost, and the shared receipt connected without turning the scanner into a spreadsheet.
                   </Text>
                 </View>
@@ -400,7 +400,7 @@ export function SourcingTripControl() {
                   onPress={() => setDialog(null)}
                   style={styles.closeButton}
                 >
-                  <Text style={[styles.closeText, { fontSize: responsiveFont(24), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(26) : responsiveLayout2.responsiveFont(26) }]}>×</Text>
+                  <Text style={[styles.closeText, { fontSize: responsiveFont(24), lineHeight: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveFont(26) : responsiveLayout2.responsiveFont(26) }]}>×</Text>
                 </Pressable>
               </View>
 
@@ -461,7 +461,7 @@ export function SourcingTripControl() {
                   <Ionicons color={theme.colors.scannerCyan} name="location" size={20} />
                   <View style={styles.locationNoticeCopy}>
                     <Text style={[styles.locationNoticeTitle, { fontSize: responsiveFont(9) }]}>LOCATION · ACTIVE TRIP ONLY</Text>
-                    <Text style={[styles.locationNoticeBody, { fontSize: responsiveFont(11), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(16) : responsiveLayout2.responsiveFont(16) }]}>KeepFlip asks for location permission only when you start this trip. Background location may continue while you travel so the app can calculate business mileage until you close the trip.</Text>
+                    <Text style={[styles.locationNoticeBody, { fontSize: responsiveFont(11), lineHeight: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveFont(16) : responsiveLayout2.responsiveFont(16) }]}>KeepFlip asks for location permission only when you start this trip. Background location may continue while you travel so the app can calculate business mileage until you close the trip.</Text>
                   </View>
                 </View>
                 <View>
@@ -528,8 +528,8 @@ export function SourcingTripControl() {
               <View style={styles.modalHeader}>
                 <View style={styles.modalHeaderCopy}>
                   <Text style={[styles.modalEyebrow, { fontSize: responsiveFont(9) }]}>LOCATION PERMISSION · ACTIVE TRIP ONLY</Text>
-                  <Text style={[styles.modalTitle, { fontSize: responsiveFont(24), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(29) : responsiveLayout2.responsiveFont(29) }]}>Location for your sourcing trip</Text>
-                  <Text style={[styles.modalBody, { fontSize: responsiveFont(13), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(18) : responsiveLayout2.responsiveFont(18) }]}>KeepFlip collects location data to measure distance and calculate business mileage for this active sourcing trip, even when the app is in the background or not in use.</Text>
+                  <Text style={[styles.modalTitle, { fontSize: responsiveFont(24), lineHeight: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveFont(29) : responsiveLayout2.responsiveFont(29) }]}>Location for your sourcing trip</Text>
+                  <Text style={[styles.modalBody, { fontSize: responsiveFont(13), lineHeight: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveFont(18) : responsiveLayout2.responsiveFont(18) }]}>KeepFlip collects location data to measure distance and calculate business mileage for this active sourcing trip, even when the app is in the background or not in use.</Text>
                 </View>
                 <Pressable
                   accessibilityLabel="Close location disclosure"
@@ -538,7 +538,7 @@ export function SourcingTripControl() {
                   onPress={() => setDialog('start')}
                   style={styles.closeButton}
                 >
-                  <Text style={[styles.closeText, { fontSize: responsiveFont(24), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(26) : responsiveLayout2.responsiveFont(26) }]}>×</Text>
+                  <Text style={[styles.closeText, { fontSize: responsiveFont(24), lineHeight: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveFont(26) : responsiveLayout2.responsiveFont(26) }]}>×</Text>
                 </Pressable>
               </View>
 
@@ -547,10 +547,10 @@ export function SourcingTripControl() {
                   <Ionicons color={theme.colors.scannerCyan} name="location" size={23} />
                   <View style={styles.locationDisclosureCopy}>
                     <Text style={[styles.locationDisclosureTitle, { fontSize: responsiveFont(10) }]}>HOW LOCATION IS USED</Text>
-                    <Text style={[styles.locationDisclosureBody, { fontSize: responsiveFont(12), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(17) : responsiveLayout2.responsiveFont(17) }]}>Location points are processed and temporarily stored on this device while the trip is active. KeepFlip saves the trip mileage total, point count, and trip details to your account; it does not upload GPS coordinates or a route history. Tracking stops when you end the trip.</Text>
+                    <Text style={[styles.locationDisclosureBody, { fontSize: responsiveFont(12), lineHeight: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveFont(17) : responsiveLayout2.responsiveFont(17) }]}>Location points are processed and temporarily stored on this device while the trip is active. KeepFlip saves the trip mileage total, point count, and trip details to your account; it does not upload GPS coordinates or a route history. Tracking stops when you end the trip.</Text>
                   </View>
                 </View>
-                <Text style={[styles.modalBody, { fontSize: responsiveFont(13), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(18) : responsiveLayout2.responsiveFont(18) }]}>Choose Allow &amp; Start Trip to continue to Android&apos;s location permission prompts. Choose Not Now to leave the trip unopened without requesting location permission.</Text>
+                <Text style={[styles.modalBody, { fontSize: responsiveFont(13), lineHeight: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveFont(18) : responsiveLayout2.responsiveFont(18) }]}>Choose Allow &amp; Start Trip to continue to Android&apos;s location permission prompts. Choose Not Now to leave the trip unopened without requesting location permission.</Text>
                 <View style={styles.actions}>
                   <Pressable
                     accessibilityRole="button"
@@ -605,8 +605,8 @@ export function SourcingTripControl() {
                 <View style={styles.modalHeader}>
                   <View style={styles.modalHeaderCopy}>
                     <Text style={[styles.modalEyebrow, { fontSize: responsiveFont(9) }]}>ACTIVE SOURCE TRIP</Text>
-                    <Text style={[styles.modalTitle, { fontSize: responsiveFont(24), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(29) : responsiveLayout2.responsiveFont(29) }]}>{activeName}</Text>
-                    <Text style={[styles.modalBody, { fontSize: responsiveFont(13), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(18) : responsiveLayout2.responsiveFont(18) }]}>
+                    <Text style={[styles.modalTitle, { fontSize: responsiveFont(24), lineHeight: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveFont(29) : responsiveLayout2.responsiveFont(29) }]}>{activeName}</Text>
+                    <Text style={[styles.modalBody, { fontSize: responsiveFont(13), lineHeight: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveFont(18) : responsiveLayout2.responsiveFont(18) }]}>
                       {activeTrip.findCount} saved find{activeTrip.findCount === 1 ? '' : 's'} · {money(activeTrip.allocatedCostCents)} allocated
                     </Text>
                   </View>
@@ -617,7 +617,7 @@ export function SourcingTripControl() {
                     onPress={() => setDialog(null)}
                     style={styles.closeButton}
                   >
-                    <Text style={[styles.closeText, { fontSize: responsiveFont(24), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(26) : responsiveLayout2.responsiveFont(26) }]}>×</Text>
+                    <Text style={[styles.closeText, { fontSize: responsiveFont(24), lineHeight: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveFont(26) : responsiveLayout2.responsiveFont(26) }]}>×</Text>
                   </Pressable>
                 </View>
 
@@ -695,7 +695,7 @@ export function SourcingTripControl() {
                               ? 'RECEIPT ALREADY ATTACHED'
                               : 'ADD SHARED RECEIPT'}
                         </Text>
-                        <Text style={[styles.receiptSubtitle, { fontSize: responsiveFont(11), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(15) : responsiveLayout2.responsiveFont(15) }]}>
+                        <Text style={[styles.receiptSubtitle, { fontSize: responsiveFont(11), lineHeight: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveFont(15) : responsiveLayout2.responsiveFont(15) }]}>
                           {receiptReference
                             ? 'Tap to replace this photo before closing'
                             : activeTrip.trip.receiptFileId
@@ -760,12 +760,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   const staticStyles = StyleSheet.create({
     tripButton: {
       width: '100%',
-      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(54) : responsiveLayout.responsiveHeight(54),
+      minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(54) : responsiveLayout.responsiveHeight(54),
       flexDirection: 'row',
       alignItems: 'center',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(11) : responsiveLayout.responsiveWidth(11),
-      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
-      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(8) : responsiveLayout.responsiveHeight(8),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(11) : responsiveLayout.responsiveWidth(11),
+      paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
+      paddingVertical: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(8) : responsiveLayout.responsiveHeight(8),
       borderRadius: theme.radii.medium,
       borderWidth: 1,
       borderColor: theme.colors.dividerStrong,
@@ -783,12 +783,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     tripButtonTitle: {
       color: theme.colors.cream,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : responsiveLayout.responsiveFont(13),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(13) : responsiveLayout.responsiveFont(13),
       fontWeight: '800',
     },
     tripButtonDetail: {
       color: theme.colors.textMuted,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: '900',
       letterSpacing: 1.2,
     },
@@ -800,7 +800,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     modalScroll: {
       flexGrow: 1,
       justifyContent: 'center',
-      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16),
+      paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16),
     },
     modalSurface: {
       overflow: 'hidden',
@@ -812,87 +812,87 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     modalHeader: {
       flexDirection: 'row',
       alignItems: 'flex-start',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
       padding: 19,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: theme.colors.divider,
     },
-    modalHeaderCopy: { flex: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5) },
+    modalHeaderCopy: { flex: 1, gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5) },
     modalEyebrow: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.radar,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: '900',
       letterSpacing: 1.05,
     },
     modalTitle: {
       color: theme.colors.cream,
       fontFamily: theme.fonts.display,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(24) : responsiveLayout.responsiveFont(24),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(24) : responsiveLayout.responsiveFont(24),
       fontWeight: '800',
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(29) : responsiveLayout.responsiveFont(29),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(29) : responsiveLayout.responsiveFont(29),
     },
     modalBody: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.body,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : responsiveLayout.responsiveFont(13),
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(18) : responsiveLayout.responsiveFont(18),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(13) : responsiveLayout.responsiveFont(13),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(18) : responsiveLayout.responsiveFont(18),
     },
     locationNotice: {
       color: theme.colors.goldMuted,
       fontFamily: theme.fonts.body,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : responsiveLayout.responsiveFont(14),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(14) : responsiveLayout.responsiveFont(14),
     },
     locationNoticeCard: {
       flexDirection: 'row',
       alignItems: 'flex-start',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       padding: 12,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
       backgroundColor: theme.colors.iconSurfaceCyan,
     },
-    locationNoticeCopy: { flex: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3) },
+    locationNoticeCopy: { flex: 1, gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3) },
     locationNoticeTitle: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.radar,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: '900',
       letterSpacing: 0.75,
     },
     locationNoticeBody: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.body,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11),
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : responsiveLayout.responsiveFont(16),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(16) : responsiveLayout.responsiveFont(16),
     },
     locationDisclosureCard: {
       flexDirection: 'row',
       alignItems: 'flex-start',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
       padding: 14,
       borderWidth: 1,
       borderColor: theme.colors.scannerCyan,
       backgroundColor: theme.colors.iconSurfaceCyan,
     },
-    locationDisclosureCopy: { flex: 1, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4) },
+    locationDisclosureCopy: { flex: 1, gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4) },
     locationDisclosureTitle: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.radar,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
       fontWeight: '900',
       letterSpacing: 0.8,
     },
     locationDisclosureBody: {
       color: theme.colors.cream,
       fontFamily: theme.fonts.body,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12),
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : responsiveLayout.responsiveFont(17),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(17) : responsiveLayout.responsiveFont(17),
     },
     closeButton: {
-      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(30) : responsiveLayout.responsiveWidth(30),
-      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(30) : responsiveLayout.responsiveHeight(30),
+      width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(30) : responsiveLayout.responsiveWidth(30),
+      height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(30) : responsiveLayout.responsiveHeight(30),
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
@@ -900,76 +900,76 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     closeText: {
       color: theme.colors.text,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(24) : responsiveLayout.responsiveFont(24),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(24) : responsiveLayout.responsiveFont(24),
       fontWeight: '300',
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(26) : responsiveLayout.responsiveFont(26),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(26) : responsiveLayout.responsiveFont(26),
     },
-    formContent: { gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12), padding: 19 },
+    formContent: { gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12), padding: 19 },
     fieldLabel: {
-      marginBottom: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : responsiveLayout.responsiveHeight(6),
+      marginBottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(6) : responsiveLayout.responsiveHeight(6),
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.radar,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: '900',
       letterSpacing: 0.75,
     },
     input: {
-      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(44) : responsiveLayout.responsiveHeight(44),
-      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
-      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : responsiveLayout.responsiveHeight(6),
+      minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(44) : responsiveLayout.responsiveHeight(44),
+      paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
+      paddingVertical: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(6) : responsiveLayout.responsiveHeight(6),
       borderWidth: 1,
       borderColor: theme.colors.divider,
       backgroundColor: theme.colors.cardSoft,
       color: theme.colors.text,
       fontFamily: theme.fonts.body,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : responsiveLayout.responsiveFont(15),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(15) : responsiveLayout.responsiveFont(15),
     },
-    notesInput: { minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(76) : responsiveLayout.responsiveHeight(76), textAlignVertical: 'top' },
+    notesInput: { minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(76) : responsiveLayout.responsiveHeight(76), textAlignVertical: 'top' },
     helper: {
-      marginTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(5) : responsiveLayout.responsiveHeight(5),
+      marginTop: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(5) : responsiveLayout.responsiveHeight(5),
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.body,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11),
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : responsiveLayout.responsiveFont(16),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(16) : responsiveLayout.responsiveFont(16),
     },
-    twoColumn: { flexDirection: 'row', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10) },
+    twoColumn: { flexDirection: 'row', gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10) },
     column: { flex: 1.2, minWidth: 0 },
     dateColumn: { flex: 1, minWidth: 0 },
-    actions: { flexDirection: 'row', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10), marginTop: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : responsiveLayout.responsiveHeight(6) },
+    actions: { flexDirection: 'row', gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10), marginTop: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(6) : responsiveLayout.responsiveHeight(6) },
     cancelButton: {
-      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(46) : responsiveLayout.responsiveHeight(46),
+      minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(46) : responsiveLayout.responsiveHeight(46),
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(13) : responsiveLayout.responsiveWidth(13),
+      paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(13) : responsiveLayout.responsiveWidth(13),
       borderWidth: 1,
       borderColor: theme.colors.dividerStrong,
     },
     primaryButton: {
       flex: 1,
-      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(46) : responsiveLayout.responsiveHeight(46),
+      minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(46) : responsiveLayout.responsiveHeight(46),
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
+      paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
       backgroundColor: theme.colors.goldBright,
     },
     cancelText: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.radar,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: '900',
       letterSpacing: 0.65,
     },
     primaryButtonText: {
       color: theme.colors.textOnAccent,
       fontFamily: theme.fonts.radar,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
       fontWeight: '900',
       letterSpacing: 0.65,
     },
-    summaryGrid: { flexDirection: 'row', gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7) },
+    summaryGrid: { flexDirection: 'row', gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7) },
     summaryCell: {
       flex: 1,
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
       padding: 11,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
@@ -978,63 +978,63 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     summaryLabel: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.radar,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: '900',
       letterSpacing: 0.65,
     },
     summaryValue: {
       color: theme.colors.cream,
       fontFamily: theme.fonts.numbers,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : responsiveLayout.responsiveFont(17),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(17) : responsiveLayout.responsiveFont(17),
       fontWeight: '900',
     },
     caution: {
       color: theme.colors.goldBright,
       fontFamily: theme.fonts.body,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11),
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(16) : responsiveLayout.responsiveFont(16),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(16) : responsiveLayout.responsiveFont(16),
     },
     receiptButton: {
-      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(60) : responsiveLayout.responsiveHeight(60),
+      minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(60) : responsiveLayout.responsiveHeight(60),
       flexDirection: 'row',
       alignItems: 'center',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
-      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
-      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(8) : responsiveLayout.responsiveHeight(8),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
+      paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
+      paddingVertical: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(8) : responsiveLayout.responsiveHeight(8),
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
       backgroundColor: theme.colors.iconSurfaceCyan,
     },
     receiptPreview: {
-      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(43) : responsiveLayout.responsiveWidth(43),
-      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(43) : responsiveLayout.responsiveHeight(43),
+      width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(43) : responsiveLayout.responsiveWidth(43),
+      height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(43) : responsiveLayout.responsiveHeight(43),
       borderWidth: 1,
       borderColor: theme.colors.divider,
     },
-    receiptCopy: { flex: 1, minWidth: 0, gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3) },
+    receiptCopy: { flex: 1, minWidth: 0, gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3) },
     receiptTitle: {
       color: theme.colors.scannerCyan,
       fontFamily: theme.fonts.radar,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: '900',
       letterSpacing: 0.7,
     },
     receiptSubtitle: {
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.body,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11),
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(15) : responsiveLayout.responsiveFont(15),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(15) : responsiveLayout.responsiveFont(15),
     },
     receiptArrow: {
       color: theme.colors.scannerCyan,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(24) : responsiveLayout.responsiveFont(24),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(24) : responsiveLayout.responsiveFont(24),
       fontWeight: '300',
     },
     reconcile: {
       color: theme.colors.goldBright,
       fontFamily: theme.fonts.body,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12),
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : responsiveLayout.responsiveFont(17),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(17) : responsiveLayout.responsiveFont(17),
     },
     reconcileBalanced: { color: theme.colors.scannerCyan },
     pressed: { opacity: 0.76 },

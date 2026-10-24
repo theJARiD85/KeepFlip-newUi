@@ -57,7 +57,7 @@ export function SmartEvidenceCaptureGuide({
             ? "Evidence set ready"
             : `${plan.categoryLabel} · Next: ${currentStep?.title ?? "proof photo"}`}
         </Text>
-        <Text numberOfLines={1} style={[styles.prompt, { fontSize: responsiveFont(9), lineHeight: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveFont(12) : responsiveLayout2.responsiveFont(12) }]}>
+        <Text numberOfLines={1} style={[styles.prompt, { fontSize: responsiveFont(9), lineHeight: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveFont(12) : responsiveLayout2.responsiveFont(12) }]}>
           {prompt}
         </Text>
       </Animated.View>
@@ -73,8 +73,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       top: 10,
       right: 10,
       left: 10,
-      paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
-      paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(7) : responsiveLayout.responsiveHeight(7),
+      paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
+      paddingVertical: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(7) : responsiveLayout.responsiveHeight(7),
       borderRadius: theme.radii.small,
       borderWidth: 1,
       borderColor: "rgba(88, 223, 232, 0.32)",
@@ -89,26 +89,26 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     eyebrow: {
       color: theme.colors.scannerCyan,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: "900",
       letterSpacing: 1.2,
     },
     count: {
       color: theme.colors.goldBright,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: "900",
       fontVariant: ["tabular-nums"],
     },
     title: {
       color: theme.colors.cream,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12),
       fontWeight: "900",
     },
     prompt: {
       color: theme.colors.textMuted,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: "700",
-      lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12),
+      lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12),
     },
   });
   return {

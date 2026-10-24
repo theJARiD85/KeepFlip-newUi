@@ -53,22 +53,22 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   const staticStyles = StyleSheet.create({
     content: {
       width: '100%',
-      maxWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(760) : responsiveLayout.responsiveWidth(760),
+      maxWidth: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(760) : responsiveLayout.responsiveWidth(760),
       alignSelf: 'center',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
     },
     topBar: {
-      minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(34) : responsiveLayout.responsiveHeight(34),
+      minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(34) : responsiveLayout.responsiveHeight(34),
       flexDirection: 'row',
       alignItems: 'center',
-      gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
     },
     backButton: {
-      width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(34) : responsiveLayout.responsiveWidth(34),
-      height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(34) : responsiveLayout.responsiveHeight(34),
+      width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(34) : responsiveLayout.responsiveWidth(34),
+      height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(34) : responsiveLayout.responsiveHeight(34),
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
+      borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
       backgroundColor: theme.colors.iconSurfaceGold,
@@ -76,7 +76,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     backIcon: { transform: [{ rotate: '180deg' }] },
     topLabel: {
       color: theme.colors.goldMuted,
-      fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: '900',
       letterSpacing: 1.25,
     },

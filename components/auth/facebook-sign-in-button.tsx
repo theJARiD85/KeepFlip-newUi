@@ -154,24 +154,24 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     ...styles,
     container: {
       ...styles["container"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
-      marginTop: layout.isWeb ? layout.webResponsiveHeight(12) : layout.responsiveHeight(12),
+      gap: layout.isWideWeb ? layout.webResponsiveWidth(8) : layout.responsiveWidth(8),
+      marginTop: layout.isWideWeb ? layout.webResponsiveHeight(12) : layout.responsiveHeight(12),
     },
     button: {
       ...styles["button"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(14) : layout.responsiveWidth(14),
-      gap: layout.isWeb ? layout.webResponsiveWidth(11) : layout.responsiveWidth(11),
-      minHeight: layout.isWeb ? layout.webResponsiveHeight(52) : layout.responsiveHeight(52),
-      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(18) : layout.responsiveWidth(18),
+      borderRadius: layout.isWideWeb ? layout.webResponsiveWidth(14) : layout.responsiveWidth(14),
+      gap: layout.isWideWeb ? layout.webResponsiveWidth(11) : layout.responsiveWidth(11),
+      minHeight: layout.isWideWeb ? layout.webResponsiveHeight(52) : layout.responsiveHeight(52),
+      paddingHorizontal: layout.isWideWeb ? layout.webResponsiveWidth(18) : layout.responsiveWidth(18),
     },
     buttonText: {
       ...styles["buttonText"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : layout.responsiveFont(14),
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(14) : layout.responsiveFont(14),
     },
     errorText: {
       ...styles["errorText"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(12) : layout.responsiveFont(12),
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(18) : layout.responsiveFont(18),
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(12) : layout.responsiveFont(12),
+      lineHeight: layout.isWideWeb ? layout.webResponsiveFont(18) : layout.responsiveFont(18),
     },
   });
 }

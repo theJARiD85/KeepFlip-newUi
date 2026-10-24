@@ -60,7 +60,7 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     ...styles,
     container: {
       ...styles["container"],
-      maxWidth: layout.isWeb ? layout.webResponsiveWidth(400) : layout.responsiveWidth(400),
+      maxWidth: layout.isWideWeb ? layout.webResponsiveWidth(400) : layout.responsiveWidth(400),
     },
   });
 }

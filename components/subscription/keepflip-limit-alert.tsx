@@ -179,49 +179,49 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     ...styles,
     card: {
       ...styles["card"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(20) : layout.responsiveWidth(20),
-      gap: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
-      maxWidth: layout.isWeb ? layout.webResponsiveWidth(440) : layout.responsiveWidth(440),
+      borderRadius: layout.isWideWeb ? layout.webResponsiveWidth(20) : layout.responsiveWidth(20),
+      gap: layout.isWideWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
+      maxWidth: layout.isWideWeb ? layout.webResponsiveWidth(440) : layout.responsiveWidth(440),
     },
     eyebrow: {
       ...styles["eyebrow"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(11) : layout.responsiveFont(11),
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(11) : layout.responsiveFont(11),
     },
     title: {
       ...styles["title"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(21) : layout.responsiveFont(21),
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(21) : layout.responsiveFont(21),
     },
     body: {
       ...styles["body"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(15) : layout.responsiveFont(15),
-      lineHeight: layout.isWeb ? layout.webResponsiveFont(22) : layout.responsiveFont(22),
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(15) : layout.responsiveFont(15),
+      lineHeight: layout.isWideWeb ? layout.webResponsiveFont(22) : layout.responsiveFont(22),
     },
     price: {
       ...styles["price"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(14) : layout.responsiveFont(14),
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(14) : layout.responsiveFont(14),
     },
     actions: {
       ...styles["actions"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(10) : layout.responsiveWidth(10),
-      marginTop: layout.isWeb ? layout.webResponsiveHeight(6) : layout.responsiveHeight(6),
+      gap: layout.isWideWeb ? layout.webResponsiveWidth(10) : layout.responsiveWidth(10),
+      marginTop: layout.isWideWeb ? layout.webResponsiveHeight(6) : layout.responsiveHeight(6),
     },
     okButton: {
       ...styles["okButton"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
-      minHeight: layout.isWeb ? layout.webResponsiveHeight(48) : layout.responsiveHeight(48),
+      borderRadius: layout.isWideWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
+      minHeight: layout.isWideWeb ? layout.webResponsiveHeight(48) : layout.responsiveHeight(48),
     },
     okText: {
       ...styles["okText"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(15) : layout.responsiveFont(15),
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(15) : layout.responsiveFont(15),
     },
     subscribeButton: {
       ...styles["subscribeButton"],
-      borderRadius: layout.isWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
-      minHeight: layout.isWeb ? layout.webResponsiveHeight(48) : layout.responsiveHeight(48),
+      borderRadius: layout.isWideWeb ? layout.webResponsiveWidth(12) : layout.responsiveWidth(12),
+      minHeight: layout.isWideWeb ? layout.webResponsiveHeight(48) : layout.responsiveHeight(48),
     },
     subscribeText: {
       ...styles["subscribeText"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(15) : layout.responsiveFont(15),
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(15) : layout.responsiveFont(15),
     },
   });
 }

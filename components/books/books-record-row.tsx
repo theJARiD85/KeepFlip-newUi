@@ -78,31 +78,31 @@ function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout
     ...styles,
     row: {
       ...styles["row"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(10) : layout.responsiveWidth(10),
-      minHeight: layout.isWeb ? layout.webResponsiveHeight(62) : layout.responsiveHeight(62),
-      paddingHorizontal: layout.isWeb ? layout.webResponsiveWidth(10) : layout.responsiveWidth(10),
-      paddingVertical: layout.isWeb ? layout.webResponsiveHeight(9) : layout.responsiveHeight(9),
+      gap: layout.isWideWeb ? layout.webResponsiveWidth(10) : layout.responsiveWidth(10),
+      minHeight: layout.isWideWeb ? layout.webResponsiveHeight(62) : layout.responsiveHeight(62),
+      paddingHorizontal: layout.isWideWeb ? layout.webResponsiveWidth(10) : layout.responsiveWidth(10),
+      paddingVertical: layout.isWideWeb ? layout.webResponsiveHeight(9) : layout.responsiveHeight(9),
     },
     marker: {
       ...styles["marker"],
-      height: layout.isWeb ? layout.webResponsiveHeight(30) : layout.responsiveHeight(30),
-      width: layout.isWeb ? layout.webResponsiveWidth(3) : layout.responsiveWidth(3),
+      height: layout.isWideWeb ? layout.webResponsiveHeight(30) : layout.responsiveHeight(30),
+      width: layout.isWideWeb ? layout.webResponsiveWidth(3) : layout.responsiveWidth(3),
     },
     dateColumn: {
       ...styles["dateColumn"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(3) : layout.responsiveWidth(3),
+      gap: layout.isWideWeb ? layout.webResponsiveWidth(3) : layout.responsiveWidth(3),
     },
     copy: {
       ...styles["copy"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(3) : layout.responsiveWidth(3),
+      gap: layout.isWideWeb ? layout.webResponsiveWidth(3) : layout.responsiveWidth(3),
     },
     amountColumn: {
       ...styles["amountColumn"],
-      gap: layout.isWeb ? layout.webResponsiveWidth(3) : layout.responsiveWidth(3),
+      gap: layout.isWideWeb ? layout.webResponsiveWidth(3) : layout.responsiveWidth(3),
     },
     direction: {
       ...styles["direction"],
-      fontSize: layout.isWeb ? layout.webResponsiveFont(8) : layout.responsiveFont(8),
+      fontSize: layout.isWideWeb ? layout.webResponsiveFont(8) : layout.responsiveFont(8),
     },
   });
 }
