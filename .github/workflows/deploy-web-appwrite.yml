@@ -1,78 +1,78 @@
-name: Deploy prebuilt site to Appwrite
-env:
-  APPWRITE_ENDPOINT: ${{ secrets.APPWRITE_ENDPOINT }}
-  APPWRITE_PROJECT_ID: ${{ secrets.APPWRITE_PROJECT_ID }}
-  APPWRITE_SITE_ID: ${{ secrets.APPWRITE_SITE_ID }}
-  APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
-run: |
-  set -euo pipefail
+      - name: Deploy prebuilt site to Appwrite
+        env:
+          APPWRITE_ENDPOINT: ${{ secrets.APPWRITE_ENDPOINT }}
+          APPWRITE_PROJECT_ID: ${{ secrets.APPWRITE_PROJECT_ID }}
+          APPWRITE_SITE_ID: ${{ secrets.APPWRITE_SITE_ID }}
+          APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
+        run: |
+          set -euo pipefail
 
-  for name in APPWRITE_ENDPOINT APPWRITE_PROJECT_ID APPWRITE_SITE_ID APPWRITE_API_KEY; do
-    if [ -z "${!name}" ]; then
-      echo "Missing GitHub Actions secret: ${name}"
-      exit 1
-    fi
-  done
+          for name in APPWRITE_ENDPOINT APPWRITE_PROJECT_ID APPWRITE_SITE_ID APPWRITE_API_KEY; do
+            if [ -z "${!name}" ]; then
+              echo "Missing GitHub Actions secret: ${name}"
+              exit 1
+            fi
+          done
 
-  endpoint="${APPWRITE_ENDPOINT%/}"
-  deployment_url="$endpoint/sites/$APPWRITE_SITE_ID/deployments"
-  auth_headers=(
-    -H "X-Appwrite-Project: $APPWRITE_PROJECT_ID"
-    -H "X-Appwrite-Key: $APPWRITE_API_KEY"
-  )
+          endpoint="${APPWRITE_ENDPOINT%/}"
+          deployment_url="$endpoint/sites/$APPWRITE_SITE_ID/deployments"
+          auth_headers=(
+            -H "X-Appwrite-Project: $APPWRITE_PROJECT_ID"
+            -H "X-Appwrite-Key: $APPWRITE_API_KEY"
+          )
 
-  created_deployment=""
-  for attempt in 1 2 3 4 5; do
-    if created_deployment="$(curl --http1.1 --connect-timeout 30 --max-time 600 \
-      --fail-with-body --silent --show-error \
-      "${auth_headers[@]}" \
-      -F 'activate=true' \
-      -F 'code=@code.tar.gz;type=application/gzip' \
-      "$deployment_url" 2> /tmp/appwrite_upload.log)"; then
-      break
-    fi
+          created_deployment=""
+          for attempt in 1 2 3 4 5; do
+            if created_deployment="$(curl --http1.1 --connect-timeout 30 --max-time 600 \
+              --fail-with-body --silent --show-error \
+              "${auth_headers[@]}" \
+              -F 'activate=true' \
+              -F 'code=@code.tar.gz;type=application/gzip' \
+              "$deployment_url" 2> /tmp/appwrite_upload.log)"; then
+              break
+            fi
 
-    echo "Appwrite upload attempt $attempt failed:"
-    cat /tmp/appwrite_upload.log || true
+            echo "Appwrite upload attempt $attempt failed:"
+            cat /tmp/appwrite_upload.log || true
 
-    if [ "$attempt" -eq 5 ]; then
-      echo "Appwrite upload failed after 5 attempts."
-      exit 1
-    fi
+            if [ "$attempt" -eq 5 ]; then
+              echo "Appwrite upload failed after 5 attempts."
+              exit 1
+            fi
 
-    sleep 15
-  done
+            sleep 15
+          done
 
-  deployment_id="$(jq -r '."$id" // empty' <<< "$created_deployment")"
-  if [ -z "$deployment_id" ]; then
-    echo "Appwrite accepted no deployment ID in its response:"
-    echo "$created_deployment"
-    exit 1
-  fi
+          deployment_id="$(jq -r '."$id" // empty' <<< "$created_deployment")"
+          if [ -z "$deployment_id" ]; then
+            echo "Appwrite accepted no deployment ID in its response:"
+            echo "$created_deployment"
+            exit 1
+          fi
 
-  echo "Appwrite deployment created: $deployment_id"
+          echo "Appwrite deployment created: $deployment_id"
 
-  for attempt in {1..180}; do
-    deployment="$(curl --http1.1 --connect-timeout 30 --max-time 600 \
-      --fail-with-body --silent --show-error \
-      "${auth_headers[@]}" \
-      "$deployment_url/$deployment_id")"
+          for attempt in {1..180}; do
+            deployment="$(curl --http1.1 --connect-timeout 30 --max-time 600 \
+              --fail-with-body --silent --show-error \
+              "${auth_headers[@]}" \
+              "$deployment_url/$deployment_id")"
 
-    status="$(jq -r '.status // empty' <<< "$deployment")"
-    echo "Appwrite deployment status: ${status:-unknown}"
+            status="$(jq -r '.status // empty' <<< "$deployment")"
+            echo "Appwrite deployment status: ${status:-unknown}"
 
-    case "$status" in
-      active|ready)
-        exit 0
-        ;;
-      failed)
-        echo "Appwrite marked deployment $deployment_id as failed. Check its deployment logs in the Appwrite Console."
-        exit 1
-        ;;
-    esac
+            case "$status" in
+              active|ready)
+                exit 0
+                ;;
+              failed)
+                echo "Appwrite marked deployment $deployment_id as failed. Check its deployment logs in the Appwrite Console."
+                exit 1
+                ;;
+            esac
 
-    sleep 10
-  done
+            sleep 10
+          done
 
-  echo "Timed out waiting for Appwrite deployment $deployment_id to finish. Check its status in the Appwrite Console."
-  exit 1
+          echo "Timed out waiting for Appwrite deployment $deployment_id to finish. Check its status in the Appwrite Console."
+          exit 1
