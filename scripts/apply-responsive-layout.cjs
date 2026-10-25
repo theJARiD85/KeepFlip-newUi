@@ -188,7 +188,7 @@ function isStyleSheetCreate(node) {
 }
 
 function isIdentifierCall(node, name) {
-  return ts.isCallExpression(node)
+  return Boolean(node) && ts.isCallExpression(node)
     && ts.isIdentifier(node.expression)
     && node.expression.text === name;
 }
@@ -207,9 +207,34 @@ function hasStyleSheetCreate(node) {
   return found;
 }
 
+function hasResponsiveStyleValues(node, sourceFile) {
+  let found = false;
+  function visit(child) {
+    if (found) return;
+    if (isStyleSheetCreate(child)) {
+      const styles = child.arguments[0];
+      for (const style of styles.properties) {
+        if (!ts.isPropertyAssignment(style) || !ts.isObjectLiteralExpression(style.initializer)) continue;
+        for (const property of style.initializer.properties) {
+          if (ts.isPropertyAssignment(property)
+            && styleValueHelper(propertyName(property), property.initializer)) {
+            found = true;
+            return;
+          }
+        }
+      }
+      return;
+    }
+    ts.forEachChild(child, visit);
+  }
+  if (node.body) visit(node.body);
+  return found;
+}
+
 function appendLayoutParameter(functionNode, name, sourceFile, edits) {
-  const parameter = ts.isIdentifier(functionNode.parameters[0]?.name)
-    ? functionNode.parameters[0].name.text
+  const firstParameterName = functionNode.parameters[0]?.name;
+  const parameter = firstParameterName && ts.isIdentifier(firstParameterName)
+    ? firstParameterName.text
     : null;
   if (parameter) return parameter;
   if (functionNode.parameters.length > 0) return null;
