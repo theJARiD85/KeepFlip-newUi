@@ -3,9 +3,9 @@ import { BusinessPulse } from '@/components/command-center/business-pulse';
 import {
   BusinessPulseBreakdownModal,
   type BusinessPulseMetric,
-} from '@/components/command-center/business-pulse-breakdown-modal';
-import KeepFlipShader from '@/components/ui/keepflip-shader';
+} from '@/components/command-center/business-pulse-breakdown-modal.native';
 import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance-context';
+import KeepFlipShader from '@/components/ui/keepflip-shader';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { getKeepFlipThemeColors, keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import {
@@ -341,6 +341,25 @@ export function CommandCenterScreen() {
 
   const navigate = (href: Href) => router.push(href);
 
+  function getTimeOfDay(date = new Date()) {
+    // Use Intl to safely extract the hour in the user's local system timezone
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      hour12: false
+    });
+
+    const hour = parseInt(formatter.format(date), 10);
+
+    // Define time ranges
+    if (hour >= 5 && hour < 12) {
+      return 'morning';
+    } else if (hour >= 12 && hour < 17) {
+      return 'afternoon';
+    } else {
+      return 'evening';
+    }
+  }
+
   return (
     <View style={[responsiveStyles4.root]}>
       <KeepFlipShader isLight={effectiveColorScheme === 'light'} />
@@ -348,34 +367,17 @@ export function CommandCenterScreen() {
         style={responsiveStyles4.scrollView}
         contentContainerStyle={[responsiveStyles4.content,
         {
-          paddingHorizontal: isWide ? 42 : isMedium ? 28 : 18,
-          paddingTop: isWide ? 10 : 26,
-          paddingBottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(48) : responsiveLayout.responsiveHeight(48),
-        }, { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter }, { width: contentWidth, maxWidth: contentMaxWidth, alignSelf: 'center', paddingHorizontal: pageGutter }]}
+          paddingTop: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(15) : responsiveLayout.responsiveHeight(20),
+          paddingBottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(100) : responsiveLayout.responsiveHeight(100),
+        }, { width: webContentWidth, maxWidth: webContentMaxWidth, alignSelf: 'center', paddingHorizontal: webPageGutter }, { alignSelf: 'center', paddingHorizontal: pageGutter }]}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}>
         <View style={[responsiveStyles4.hero, isWide && responsiveStyles4.heroWide]}>
           <View style={responsiveStyles4.heroCopy}>
-            <View style={responsiveStyles4.heroEyebrowRow}>
-              <Text style={[responsiveStyles4.heroEyebrow, { color: colors.scannerCyan }]}>KEEPFLIP / COMMAND CENTER</Text>
-              <View style={[responsiveStyles4.livePill, { backgroundColor: colors.successSurface, borderColor: `${colors.success}66` }]}>
-                <View style={[responsiveStyles4.liveDot, { backgroundColor: colors.success }]} />
-                <Text style={[responsiveStyles4.livePillText, { color: colors.success }]}>LIVE WORKSPACE</Text>
-              </View>
-            </View>
-            <Text selectable style={[responsiveStyles4.heroTitle, { color: colors.text }]}>Good morning, {firstName(user?.name)}.</Text>
+            <Text selectable style={[responsiveStyles4.heroTitle, { color: colors.text }]}>Good {getTimeOfDay()}, {firstName(user?.name)}.</Text>
             <Text style={[responsiveStyles4.heroSubtitle, { color: colors.textMuted }]}>Make the next buy with the numbers, evidence, and work queue in view.</Text>
           </View>
           <View style={responsiveStyles4.heroActions}>
-            <ActionButton
-              accent={colors.scannerCyan}
-              colors={colors}
-              detail="Use the Android app for live capture"
-              icon="scan-outline"
-              label="Scan an item"
-              onPress={() => navigate('/scanner')}
-              primary
-            />
             <ActionButton
               accent={colors.goldBright}
               colors={colors}

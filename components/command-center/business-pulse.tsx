@@ -19,7 +19,7 @@ import {
 import {
   BusinessPulseBreakdownModal,
   type BusinessPulseMetric,
-} from '@/components/command-center/business-pulse-breakdown-modal';
+} from '@/components/command-center/business-pulse-breakdown-modal.native';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
 import {

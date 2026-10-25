@@ -18,6 +18,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
+import ActionTabGradience from '@/components/ui/action-tab-gradience';
 
 type CoverImageSource = ImageSource | number | string;
 const PROVIDED_COVER_IMAGE_KEY = "__provided-cover-image__";
@@ -465,17 +466,7 @@ export function InventoryCard({
 
       {onListingGuidePress || onAddPhotosPress || onRemoveBackgroundPress || onMarkSoldPress || onDeletePress ? (
         <View style={styles.itemActions}>
-          <LinearGradient
-            colors={[
-              "rgba(149, 125, 255, 0.61)",
-              "rgba(43, 255, 255, 0.5)",
-              "rgba(255, 204, 85, 0.5)",
-            ]}
-            end={{ x: 0.5, y: 0.5 }}
-            pointerEvents="none"
-                    start={{ x: 0.5, y: 0.5 }}
-                    style={StyleSheet.absoluteFill}
-                  />
+          <ActionTabGradience pointerEvents="none" style={StyleSheet.absoluteFill} />
           <Pressable
             accessibilityHint={`${actionsExpanded ? "Hides" : "Shows"} the listing, photo, sale, and delete actions for ${item.title}`}
             accessibilityLabel={`${actionsExpanded ? "Hide" : "Show"} item actions for ${item.title}`}

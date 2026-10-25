@@ -1,7 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
 
-import { BooksReviewScreen } from '@/components/books/books-review-screen';
-import { BooksScreen } from '@/components/books/books-screen';
+import { BooksReviewScreen } from '@/components/books/books-review-screen.native';
+import { BooksScreen } from '@/components/books/books-screen.native';
 
 export default function BooksRoute() {
   const params = useLocalSearchParams<{ reviewId?: string | string[] }>();

@@ -159,6 +159,9 @@ function RootLayoutContent() {
     fontsLoaded,
     fontError,
   ] = useFonts({
+    Ionicons:
+      require("@react-native-vector-icons/ionicons/fonts/Ionicons.ttf"),
+
     LucidaConsole:
       require("@/assets/fonts/LucidaConsole.ttf"),
 

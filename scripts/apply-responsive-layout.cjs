@@ -187,6 +187,63 @@ function isStyleSheetCreate(node) {
     && ts.isObjectLiteralExpression(node.arguments[0]);
 }
 
+function isIdentifierCall(node, name) {
+  return ts.isCallExpression(node)
+    && ts.isIdentifier(node.expression)
+    && node.expression.text === name;
+}
+
+function hasStyleSheetCreate(node) {
+  let found = false;
+  function visit(child) {
+    if (found) return;
+    if (isStyleSheetCreate(child)) {
+      found = true;
+      return;
+    }
+    ts.forEachChild(child, visit);
+  }
+  if (node.body) visit(node.body);
+  return found;
+}
+
+function appendLayoutParameter(functionNode, name, sourceFile, edits) {
+  const parameter = ts.isIdentifier(functionNode.parameters[0]?.name)
+    ? functionNode.parameters[0].name.text
+    : null;
+  if (parameter) return parameter;
+  if (functionNode.parameters.length > 0) return null;
+  const annotation = /\.tsx?$/.test(sourceFile.fileName)
+    ? `${name}: ReturnType<typeof useResponsiveLayout>`
+    : name;
+  edits.push({ start: functionNode.parameters.end, end: functionNode.parameters.end, replacement: annotation });
+  return name;
+}
+
+function appendMemoDependency(node, name, sourceFile, edits) {
+  for (let parent = node.parent; parent; parent = parent.parent) {
+    if (!isIdentifierCall(parent, 'useMemo')) continue;
+    const dependencies = parent.arguments[1];
+    if (dependencies && ts.isArrayLiteralExpression(dependencies)) {
+      if (dependencies.elements.some((element) => ts.isIdentifier(element) && element.text === name)) return;
+      const beforeClose = sourceFile.text.slice(dependencies.elements.end, dependencies.end - 1);
+      const separator = dependencies.elements.length === 0 ? '' : /,\s*$/.test(beforeClose) ? ' ' : ', ';
+      edits.push({
+        start: dependencies.end - 1,
+        end: dependencies.end - 1,
+        replacement: `${separator}${name}`,
+      });
+    } else if (!dependencies) {
+      edits.push({
+        start: parent.arguments.end,
+        end: parent.arguments.end,
+        replacement: `, [${name}]`,
+      });
+    }
+    return;
+  }
+}
+
 function styleEntries(object) {
   const entries = [];
   for (const style of object.properties) {
@@ -237,7 +294,7 @@ function componentsIn(sourceFile) {
     if ((ts.isFunctionDeclaration(node) || ts.isFunctionExpression(node) || ts.isArrowFunction(node))
       && node.body && ts.isBlock(node.body)) {
       const name = functionName(node);
-      if (name && (name === '<default>' || /^[A-Z]/.test(name))) components.add(node);
+      if (name && (name === '<default>' || /^[A-Z]/.test(name) || /^use[A-Z]/.test(name))) components.add(node);
     }
     ts.forEachChild(node, visit);
   }
@@ -440,6 +497,8 @@ function planFile(filePath, root) {
   const details = new Map();
   const sheetByName = new Map(sheets.map((sheet) => [sheet.name, sheet]));
   const sheetUsers = new Map(sheets.map((sheet) => [sheet, new Map()]));
+  const responsiveFactoryReceivers = new Map();
+  let needsResponsiveLayoutImport = false;
   let inlineValues = 0;
   let stylesheetValues = 0;
 
@@ -448,6 +507,106 @@ function planFile(filePath, root) {
       inline: false, layoutName: null, sheetAliases: new Map(),
     });
     return details.get(component);
+  }
+
+  function existingLayoutBinding(component) {
+    let binding = null;
+    function visit(node) {
+      if (binding) return;
+      if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)
+        && isIdentifierCall(unwrap(node.initializer), 'useResponsiveLayout')) {
+        binding = node.name.text;
+        return;
+      }
+      ts.forEachChild(node, visit);
+    }
+    visit(component.body);
+    return binding;
+  }
+
+  function layoutFor(component) {
+    const info = detail(component);
+    if (!info.layoutName) {
+      info.layoutName = existingLayoutBinding(component) || uniqueName('responsiveLayout', usedNames);
+      info.inline = !existingLayoutBinding(component);
+    }
+    return info.layoutName;
+  }
+
+  const functions = [];
+  const functionsByName = new Map();
+  const responsiveStyleCallbacks = new Set();
+  const responsiveStyleCallbackNames = new Set();
+  function collectFunctions(node) {
+    if (ts.isFunctionDeclaration(node) || ts.isFunctionExpression(node) || ts.isArrowFunction(node)) {
+      functions.push(node);
+      const name = functionName(node);
+      if (name) {
+        if (!functionsByName.has(name)) functionsByName.set(name, []);
+        functionsByName.get(name).push(node);
+      }
+    }
+    if (isIdentifierCall(node, 'useResponsiveStyles')) {
+      for (const argument of node.arguments) {
+        if (ts.isIdentifier(argument)) responsiveStyleCallbackNames.add(argument.text);
+        if (ts.isFunctionExpression(argument) || ts.isArrowFunction(argument)) responsiveStyleCallbacks.add(argument);
+      }
+    }
+    ts.forEachChild(node, collectFunctions);
+  }
+  collectFunctions(sourceFile);
+
+  // Style factories passed directly to useResponsiveStyles receive their
+  // layout from the hook. Add that parameter even when the factory was
+  // originally written with no arguments.
+  for (const styleFactory of functions) {
+    const factoryName = functionName(styleFactory);
+    const isHookFactoryCallback = responsiveStyleCallbacks.has(styleFactory)
+      || (factoryName && responsiveStyleCallbackNames.has(factoryName));
+    if (!isHookFactoryCallback || !hasStyleSheetCreate(styleFactory)) continue;
+    const receiver = appendLayoutParameter(
+      styleFactory,
+      uniqueName('responsiveLayout', usedNames),
+      sourceFile,
+      edits,
+    );
+    if (receiver) {
+      responsiveFactoryReceivers.set(styleFactory, receiver);
+      needsResponsiveLayoutImport = true;
+    }
+  }
+
+  // A plain create*Styles() helper can also be used from a component or a
+  // custom hook. Thread the responsive layout through that call and include it
+  // in a surrounding useMemo dependency list when present.
+  for (const [factoryName, factoryFunctions] of functionsByName) {
+    if (!/^create.*(?:Styles|Responsive)$/i.test(factoryName)
+      || !factoryFunctions.some(hasStyleSheetCreate)
+      || responsiveStyleCallbackNames.has(factoryName)) continue;
+    for (const styleFactory of factoryFunctions) {
+      if (styleFactory.parameters.length !== 0) continue;
+      let receiver = null;
+      function findFactoryCalls(node) {
+        if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)
+          && node.expression.text === factoryName && node.arguments.length === 0) {
+          const owner = ownerOf(node, components);
+          if (owner) {
+            receiver ||= layoutFor(owner);
+            edits.push({ start: node.end - 1, end: node.end - 1, replacement: receiver });
+            appendMemoDependency(node, receiver, sourceFile, edits);
+          }
+        }
+        ts.forEachChild(node, findFactoryCalls);
+      }
+      findFactoryCalls(sourceFile);
+      if (receiver) {
+        const parameter = appendLayoutParameter(styleFactory, receiver, sourceFile, edits);
+        if (parameter) {
+          responsiveFactoryReceivers.set(styleFactory, parameter);
+          needsResponsiveLayoutImport = true;
+        }
+      }
+    }
   }
 
   // Inline style literals can refer directly to the layout hook at render time.
@@ -465,12 +624,7 @@ function planFile(filePath, root) {
             if (!helper) continue;
             const existing = isWebCondition(property.initializer, helper);
             let receiver = existing?.receiver;
-            if (!receiver) {
-              const info = detail(owner);
-              if (!info.layoutName) info.layoutName = uniqueName('responsiveLayout', usedNames);
-              info.inline = true;
-              receiver = info.layoutName;
-            }
+            if (!receiver) receiver = layoutFor(owner);
             const replacement = responsiveStyleValue(receiver, helper, property.initializer, sourceFile);
             if (!replacement) continue;
             edits.push({
@@ -494,6 +648,10 @@ function planFile(filePath, root) {
       let factory = null;
       for (let parent = node.parent; parent; parent = parent.parent) {
         if (ts.isFunctionDeclaration(parent) || ts.isArrowFunction(parent) || ts.isFunctionExpression(parent)) {
+          if (responsiveFactoryReceivers.has(parent)) {
+            factory = responsiveFactoryReceivers.get(parent);
+            break;
+          }
           const name = functionName(parent);
           const parameter = parent.parameters[0];
           const parameterName = parameter && ts.isIdentifier(parameter.name) ? parameter.name.text : null;
@@ -509,10 +667,7 @@ function planFile(filePath, root) {
       const owner = factory ? null : ownerOf(node, components);
       let receiver = factory;
       if (!receiver && owner) {
-        const info = detail(owner);
-        if (!info.layoutName) info.layoutName = uniqueName('responsiveLayout', usedNames);
-        info.inline = true;
-        receiver = info.layoutName;
+        receiver = layoutFor(owner);
       }
       if (receiver) {
         for (const style of node.arguments[0].properties) {
@@ -597,6 +752,7 @@ function planFile(filePath, root) {
   if ([...details.values()].some((info) => info.inline || info.sheetAliases.size) || [...sheets].some((sheet) => sheetUsers.get(sheet).size)) {
     imports.add('useResponsiveLayout');
   }
+  if (needsResponsiveLayoutImport) imports.add('useResponsiveLayout');
   if ([...sheets].some((sheet) => sheetUsers.get(sheet).size)) imports.add('useResponsiveStyles');
   addImport(sourceFile, source, imports, edits, eol);
 
