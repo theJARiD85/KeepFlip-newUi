@@ -53,6 +53,10 @@ jobs:
       - name: Export web app
         run: npx expo export --platform web
 
+      - name: Debloat excess files
+        run: rm -rf dist/*.map
+          
+
       - name: Package prebuilt site output
         run: tar -czf code.tar.gz -C dist .
 
@@ -81,12 +85,12 @@ jobs:
 
           created_deployment=""
           for attempt in 1 2 3 4 5; do
-            if created_deployment="$(curl --http1.1 --connect-timeout 30 --max-time 600 \
-              --fail-with-body --silent --show-error \
-              "${auth_headers[@]}" \
-              -F 'activate=true' \
-              -F 'code=@code.tar.gz;type=application/gzip' \
-              "$deployment_url" 2> /tmp/appwrite_upload.log)"; then
+            if created_deployment="$(curl --http1.1 --fail --show-error --location \
+            --header "X-Appwrite-Project: $APPWRITE_PROJECT_ID" \
+            --header "X-Appwrite-Key: $APPWRITE_API_KEY" \
+            --form "activate=true" \
+            --form "code=@code.tar.gz;type=application/gzip" \
+            "$APPWRITE_ENDPOINT/sites/$APPWRITE_SITE_ID/deployments" 2> /tmp/appwrite_upload.log)"; then
               break
             fi
 
