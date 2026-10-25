@@ -20,9 +20,9 @@ jobs:
         working-directory: appwrite/functions/keepflip-subscription-police
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.4.0
       - name: Use Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v4.4.0
         with:
           node-version: '22'
           cache: npm
