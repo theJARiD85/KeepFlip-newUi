@@ -9,6 +9,7 @@ import {
 import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useDerivedValue, useReducedMotion } from 'react-native-reanimated';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 const ANIMATION_DURATION_MS = 60_000;
 const ANIMATION_TIME_SPAN = 3_000;
@@ -107,6 +108,7 @@ export function AdvancedHoloOverlay({
   height,
   width,
 }: AdvancedHoloOverlayProps) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const clock = useClock();
   const reduceMotion = useReducedMotion();
   const effect = useMemo(
@@ -125,7 +127,7 @@ export function AdvancedHoloOverlay({
   if (!effect || width <= 0 || height <= 0) return null;
 
   return (
-    <View pointerEvents="none" style={[styles.container, bounds]}>
+    <View pointerEvents="none" style={[responsiveStyles.container, bounds]}>
       <Canvas pointerEvents="none" style={bounds}>
         <Rect x={0} y={0} width={width} height={height}>
           <Shader source={effect} uniforms={uniforms} />
@@ -145,3 +147,14 @@ const styles = StyleSheet.create({
     mixBlendMode: 'screen',
   },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    container: {
+      ...styles["container"],
+      top: 0,
+      left: 0,
+    },
+  });
+}

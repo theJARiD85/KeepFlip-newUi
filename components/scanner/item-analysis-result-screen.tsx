@@ -519,7 +519,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: "900",
-      letterSpacing: 1.1,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.1) : responsiveLayout.responsiveFont(1.1),
     },
   });
   return {

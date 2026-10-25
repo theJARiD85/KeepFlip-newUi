@@ -238,6 +238,7 @@ function HeaderRouteLink({
   label: string;
   primary?: boolean;
 }) {
+  const responsiveLayout = useResponsiveLayout();
   const responsiveStyles3 = useResponsiveStyles(createStylesWebResponsive);
   if (Platform.OS === 'web') {
     const anchorStyle: CSSProperties = {
@@ -249,10 +250,10 @@ function HeaderRouteLink({
       color: primary ? colors.textOnAccent : colors.textMuted,
       display: 'inline-flex',
       fontFamily: theme.fonts.bold,
-      fontSize: primary ? 11 : 12,
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(primary ? 11 : 12) : responsiveLayout.responsiveFont(primary ? 11 : 12),
       justifyContent: 'center',
-      letterSpacing: primary ? 0.85 : 0.9,
-      minHeight: 38,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(primary ? 0.85 : 0.9) : responsiveLayout.responsiveFont(primary ? 0.85 : 0.9),
+      minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(38) : responsiveLayout.responsiveHeight(38),
       padding: primary ? '0 12px' : '0 6px',
       textDecoration: 'none',
     };
@@ -295,6 +296,7 @@ function FooterRouteLink({
   href: string;
   label: string;
 }) {
+  const responsiveLayout2 = useResponsiveLayout();
   const responsiveStyles4 = useResponsiveStyles(createStylesWebResponsive);
   if (Platform.OS === 'web') {
     return createElement(
@@ -309,10 +311,10 @@ function FooterRouteLink({
           color: accent ? colors.textOnAccent : colors.textMuted,
           display: 'inline-flex',
           fontFamily: theme.fonts.semibold,
-          fontSize: 12,
+          fontSize: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveFont(12) : responsiveLayout2.responsiveFont(12),
           justifyContent: 'center',
-          minHeight: 31,
-          padding: '0 10px',
+          minHeight: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveHeight(31) : responsiveLayout2.responsiveHeight(31),
+          padding: `0 ${responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveWidth(10) : responsiveLayout2.responsiveWidth(10)}px`,
           textDecoration: 'none',
         },
       },
@@ -345,6 +347,7 @@ function FooterExternalLink({
   href: string;
   label: string;
 }) {
+  const responsiveLayout3 = useResponsiveLayout();
   const responsiveStyles5 = useResponsiveStyles(createStylesWebResponsive);
   if (Platform.OS === 'web') {
     return createElement(
@@ -359,10 +362,10 @@ function FooterExternalLink({
           color: colors.textMuted,
           display: 'inline-flex',
           fontFamily: theme.fonts.semibold,
-          fontSize: 12,
+          fontSize: responsiveLayout3.isWideWeb ? responsiveLayout3.webResponsiveFont(12) : responsiveLayout3.responsiveFont(12),
           justifyContent: 'center',
-          minHeight: 31,
-          padding: '0 10px',
+          minHeight: responsiveLayout3.isWideWeb ? responsiveLayout3.webResponsiveHeight(31) : responsiveLayout3.responsiveHeight(31),
+          padding: `0 ${responsiveLayout3.isWideWeb ? responsiveLayout3.webResponsiveWidth(10) : responsiveLayout3.responsiveWidth(10)}px`,
           textDecoration: 'none',
         },
       },

@@ -26,7 +26,7 @@
     const request = event.data;
     if (!request || request.source !== 'keepflip-webapp' || request.protocol !== 1 ||
       typeof request.requestId !== 'string' || request.requestId.length > 100 ||
-      !['HELLO', 'LISTING_START', 'LISTING_FOCUS', 'LISTING_RESUME', 'LISTING_RETRY', 'LISTING_SUBMIT'].includes(request.action)) return;
+      !['HELLO', 'LISTING_START', 'LISTING_FOCUS', 'LISTING_RESUME', 'LISTING_RETRY', 'LISTING_SUBMIT', 'LISTING_USE_BUYER_PAID_SHIPPING'].includes(request.action)) return;
 
     try {
       const runtime = chrome.runtime;

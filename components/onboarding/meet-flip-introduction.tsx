@@ -36,9 +36,10 @@ const INTRO = [
 ] as const;
 
 export function MeetFlipIntroduction({ onBack, onContinue }: MeetFlipIntroductionProps) {
+  const responsiveLayout2 = useResponsiveLayout();
   const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const insets = useSafeAreaInsets();
-  const { contentMaxWidth, contentWidth, pageGutter, responsiveFont, responsiveHeight, responsiveWidth } = useResponsiveLayout();
+  const { contentMaxWidth, contentWidth, pageGutter, responsiveFont, responsiveHeight, responsiveWidth } = responsiveLayout2;
   const [step, setStep] = useState(0);
   const current = INTRO[step];
   const isLast = step === INTRO.length - 1;
@@ -62,7 +63,7 @@ export function MeetFlipIntroduction({ onBack, onContinue }: MeetFlipIntroductio
             {INTRO.map((item, index) => <View key={item.eyebrow} style={[responsiveStyles.progressSegment, index <= step && responsiveStyles.progressActive]} />)}
           </View>
           <Animated.View key={`flip-${step}`} entering={FadeInDown.duration(300)} style={responsiveStyles.flipStage}>
-            <View style={[responsiveStyles.flipHalo, { borderRadius: isWeb ? 190 : 85, height: isWeb ? 250 : 112, width: isWeb ? 250 : 112 }]}><FlipCompanion size={isWeb ? 250 : 112} /></View>
+            <View style={[responsiveStyles.flipHalo, { borderRadius: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveWidth(isWeb ? 190 : 85) : responsiveLayout2.responsiveWidth(isWeb ? 190 : 85), height: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveHeight(isWeb ? 250 : 112) : responsiveLayout2.responsiveHeight(isWeb ? 250 : 112), width: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveWidth(isWeb ? 250 : 112) : responsiveLayout2.responsiveWidth(isWeb ? 250 : 112) }]}><FlipCompanion size={isWeb ? 250 : 112} /></View>
             <View style={responsiveStyles.onlineRow}><View style={responsiveStyles.onlineDot} /><Text style={responsiveStyles.onlineText}>FLIP IS HERE</Text></View>
           </Animated.View>
 

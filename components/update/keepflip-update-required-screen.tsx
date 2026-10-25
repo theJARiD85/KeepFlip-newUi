@@ -254,7 +254,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   eyebrow: {
     color: theme.colors.gold,
     fontWeight: '900',
-    letterSpacing: 1.6,
+    letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.6) : responsiveLayout.responsiveFont(1.6),
     textAlign: 'center',
   },
   title: {
@@ -294,7 +294,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   versionLabel: {
     color: theme.colors.textMuted,
     fontWeight: '800',
-    letterSpacing: 1.2,
+    letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.2) : responsiveLayout.responsiveFont(1.2),
   },
   versionValue: {
     color: theme.colors.text,
@@ -316,7 +316,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   updateButtonText: {
     color: theme.colors.textOnAccent,
     fontWeight: '900',
-    letterSpacing: 1.1,
+    letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.1) : responsiveLayout.responsiveFont(1.1),
   },
   buttonDisabled: {
     opacity: 0.58,
@@ -333,7 +333,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   retryButtonText: {
     color: theme.colors.scannerCyan,
     fontWeight: '800',
-    letterSpacing: 0.8,
+    letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.8) : responsiveLayout.responsiveFont(0.8),
     textAlign: 'center',
   },
   retryButtonPressed: {

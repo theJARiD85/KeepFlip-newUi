@@ -429,7 +429,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.scannerViolet,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '900',
-      letterSpacing: 1.2,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.2) : responsiveLayout.responsiveFont(1.2),
     },
     title: {
       color: theme.colors.cream,
@@ -448,13 +448,13 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.scannerCyan,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: '900',
-      letterSpacing: 0.55,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.55) : responsiveLayout.responsiveFont(0.55),
     },
     intro: { color: theme.colors.textMuted },
     privateNote: {
       color: theme.colors.goldBright,
       fontWeight: '900',
-      letterSpacing: 0.55,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.55) : responsiveLayout.responsiveFont(0.55),
     },
     sectionCard: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
@@ -475,7 +475,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.goldBright,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '900',
-      letterSpacing: 1.25,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.25) : responsiveLayout.responsiveFont(1.25),
     },
     sectionTitle: {
       color: theme.colors.text,
@@ -514,7 +514,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.scannerViolet,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: '900',
-      letterSpacing: 0.45,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.45) : responsiveLayout.responsiveFont(0.45),
     },
     removeButton: {
       width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(30) : responsiveLayout.responsiveWidth(30),
@@ -549,7 +549,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.scannerCyan,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '900',
-      letterSpacing: 1.1,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.1) : responsiveLayout.responsiveFont(1.1),
     },
     categoryList: { gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(6) : responsiveLayout.responsiveWidth(6), paddingRight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3) },
     categoryOption: {
@@ -605,7 +605,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.textOnAccent,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '900',
-      letterSpacing: 0.7,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.7) : responsiveLayout.responsiveFont(0.7),
     },
     saveButton: {
       minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(48) : responsiveLayout.responsiveHeight(48),
@@ -621,7 +621,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.textOnAccent,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: '900',
-      letterSpacing: 0.8,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.8) : responsiveLayout.responsiveFont(0.8),
     },
     messageCardError: {
       flexDirection: 'row',
@@ -648,7 +648,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.goldBright,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '900',
-      letterSpacing: 0.6,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.6) : responsiveLayout.responsiveFont(0.6),
     },
     loadingCard: {
       minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(120) : responsiveLayout.responsiveHeight(120),

@@ -1168,7 +1168,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.numbers,
       fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: "900",
-      letterSpacing: 1.8,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.8) : responsiveLayout.responsiveFont(1.8),
     },
     centerTitle: {
       color: theme.colors.cream,
@@ -1202,7 +1202,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.numbers,
       fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11),
       fontWeight: "900",
-      letterSpacing: 1.1,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.1) : responsiveLayout.responsiveFont(1.1),
     },
     pressed: {
       opacity: 0.7,

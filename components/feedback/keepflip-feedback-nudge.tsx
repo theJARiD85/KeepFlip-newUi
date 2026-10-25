@@ -489,7 +489,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.goldBright,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '900',
-      letterSpacing: 1.35,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.35) : responsiveLayout.responsiveFont(1.35),
     },
     promptHeading: {
       flexDirection: 'row',
@@ -513,7 +513,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(20) : responsiveLayout.responsiveFont(20),
       lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(24) : responsiveLayout.responsiveFont(24),
       fontWeight: '900',
-      letterSpacing: -0.2,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(-0.2) : responsiveLayout.responsiveFont(-0.2),
     },
     promptBody: {
       color: theme.colors.textMuted,
@@ -540,7 +540,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.textOnAccent,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
       fontWeight: '900',
-      letterSpacing: 0.9,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.9) : responsiveLayout.responsiveFont(0.9),
     },
     secondaryAction: {
       minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(46) : responsiveLayout.responsiveHeight(46),
@@ -558,7 +558,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.goldBright,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
       fontWeight: '900',
-      letterSpacing: 0.82,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.82) : responsiveLayout.responsiveFont(0.82),
     },
     actionDisabled: { opacity: 0.55 },
     actionPressed: { opacity: 0.76, transform: [{ scale: 0.988 }] },
@@ -572,7 +572,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.textMuted,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: '900',
-      letterSpacing: 1.1,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.1) : responsiveLayout.responsiveFont(1.1),
     },
   });
   return {

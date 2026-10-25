@@ -31,7 +31,7 @@ export function KeepFlipSecurityScreen() {
   const { user, refresh } = useKeepFlipAuth();
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const colors = getKeepFlipThemeColors(effectiveColorScheme);
-  const { contentMaxWidth, pageGutter, responsiveFont } = useResponsiveLayout();
+  const { contentMaxWidth, pageGutter, responsiveFont } = responsiveLayout;
   const [isLoading, setIsLoading] = useState(true);
   const [isBusy, setIsBusy] = useState(false);
   const [mfaEnabled, setMfaEnabled] = useState(Boolean(user?.mfa));
@@ -263,7 +263,7 @@ export function KeepFlipSecurityScreen() {
         </Pressable>
 
         <View style={{ gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(6) : responsiveLayout.responsiveWidth(6) }}>
-          <Text style={{ color: colors.goldBright, fontSize: responsiveFont(9), fontWeight: '700', letterSpacing: 1.3 }}>KEEPFLIP / SECURITY</Text>
+          <Text style={{ color: colors.goldBright, fontSize: responsiveFont(9), fontWeight: '700', letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.3) : responsiveLayout.responsiveFont(1.3) }}>KEEPFLIP / SECURITY</Text>
           <Text style={{ color: colors.text, fontSize: responsiveFont(27), fontWeight: '800' }}>
             Two-step verification
           </Text>
@@ -468,7 +468,7 @@ function RecoveryCodeSetup({
       </Text>
       <View style={[responsiveStyles2.recoveryGrid, { backgroundColor: colors.surfaceInset, borderColor: colors.divider }]}>
         {codes.map((code) => (
-          <Text key={code} selectable style={{ color: colors.text, fontFamily: 'monospace', fontSize: responsiveFont(12), letterSpacing: 1 }}>
+          <Text key={code} selectable style={{ color: colors.text, fontFamily: 'monospace', fontSize: responsiveFont(12), letterSpacing: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveFont(1) : responsiveLayout2.responsiveFont(1) }}>
             {code}
           </Text>
         ))}

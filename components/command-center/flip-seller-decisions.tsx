@@ -567,7 +567,7 @@ function createLocalStylesResponsiveStyles(responsiveLayout: ReturnType<typeof u
       color: theme.colors.scannerCyan,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '900',
-      letterSpacing: 1.5,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.5) : responsiveLayout.responsiveFont(1.5),
     },
     greeting: {
       color: theme.colors.cream,
@@ -624,7 +624,7 @@ function createLocalStylesResponsiveStyles(responsiveLayout: ReturnType<typeof u
       color: theme.colors.goldBright,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '900',
-      letterSpacing: 1.2,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.2) : responsiveLayout.responsiveFont(1.2),
     },
     backButton: { paddingVertical: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(5) : responsiveLayout.responsiveHeight(5), paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7) },
     backText: {

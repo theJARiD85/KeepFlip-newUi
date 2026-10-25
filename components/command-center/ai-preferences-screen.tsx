@@ -78,7 +78,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.goldMuted,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: '900',
-      letterSpacing: 1.25,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.25) : responsiveLayout.responsiveFont(1.25),
     },
     topSpacer: { flex: 1 },
     pressed: { opacity: 0.72 },

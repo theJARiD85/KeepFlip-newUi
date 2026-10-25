@@ -3,7 +3,7 @@ import { useKeepFlipAppearance } from '@/components/settings/keepflip-appearance
 import { KeepFlipBackground } from '@/components/ui/keepflip-background';
 import { KeepFlipText as Text } from '@/components/ui/keepflip-text';
 import { keepFlipTheme as theme } from '@/constants/keepflip-theme';
-import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import { useResponsiveLayout , useResponsiveStyles} from '@/hooks/use-responsive-layout';
 import {
   buildSellerAnalyticsGroups,
   buildSellerAnalyticsMargins,
@@ -254,7 +254,19 @@ const chartTrackerStyles = StyleSheet.create({
   },
 });
 
+function createChartTrackerStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...chartTrackerStyles,
+    host: {
+      ...chartTrackerStyles["host"],
+      left: 0,
+      top: 0,
+    },
+  });
+}
+
 function ChartTrackerDot({ color, index }: { color: string; index: number }) {
+  const responsiveChartTrackerStyles = useResponsiveStyles(createChartTrackerStylesWebResponsive);
   const { currentX, currentY, data, isActive, yDomain } = useLineChart();
   const { chartDrawingHeight, gutter, width } = useContext(LineChartDimensionsContext);
   const dataLength = data?.length ?? 0;
@@ -284,9 +296,9 @@ function ChartTrackerDot({ color, index }: { color: string; index: number }) {
   );
 
   return (
-    <Animated.View pointerEvents="none" style={[chartTrackerStyles.host, animatedStyle]}>
-      <View style={[chartTrackerStyles.outer, { backgroundColor: color }]} />
-      <View style={[chartTrackerStyles.core, { backgroundColor: color }]} />
+    <Animated.View pointerEvents="none" style={[responsiveChartTrackerStyles.host, animatedStyle]}>
+      <View style={[responsiveChartTrackerStyles.outer, { backgroundColor: color }]} />
+      <View style={[responsiveChartTrackerStyles.core, { backgroundColor: color }]} />
     </Animated.View>
   );
 }
@@ -865,8 +877,8 @@ function createMetricsStyles(responsiveLayout: ReturnType<typeof useResponsiveLa
       justifyContent: 'center',
       width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(42) : responsiveLayout.responsiveWidth(42),
     },
-    eyebrow: { color: theme.colors.scannerCyan, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9), fontWeight: '900', letterSpacing: 1.3 },
-    title: { color: theme.colors.text, fontWeight: '900', letterSpacing: -0.4 },
+    eyebrow: { color: theme.colors.scannerCyan, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9), fontWeight: '900', letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.3) : responsiveLayout.responsiveFont(1.3) },
+    title: { color: theme.colors.text, fontWeight: '900', letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(-0.4) : responsiveLayout.responsiveFont(-0.4) },
     intro: { color: theme.colors.textMuted, fontFamily: theme.fonts.display, lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(19) : responsiveLayout.responsiveFont(19), maxWidth: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(360) : responsiveLayout.responsiveWidth(360) },
     loadingCard: {
       alignItems: 'center',
@@ -947,7 +959,7 @@ function createMetricsStyles(responsiveLayout: ReturnType<typeof useResponsiveLa
       minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(77) : responsiveLayout.responsiveHeight(77),
       padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
     },
-    summaryLabel: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7), fontWeight: '900', letterSpacing: 0.7 },
+    summaryLabel: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7), fontWeight: '900', letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.7) : responsiveLayout.responsiveFont(0.7) },
     summaryValue: { color: theme.colors.text, fontVariant: ['tabular-nums'], fontWeight: '900' },
     controlsCard: {
       backgroundColor: theme.colors.cardSoft,
@@ -958,7 +970,7 @@ function createMetricsStyles(responsiveLayout: ReturnType<typeof useResponsiveLa
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
       padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
     },
-    sectionEyebrow: { color: theme.colors.goldMuted, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8), fontWeight: '900', letterSpacing: 1.05 },
+    sectionEyebrow: { color: theme.colors.goldMuted, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8), fontWeight: '900', letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.05) : responsiveLayout.responsiveFont(1.05) },
     sectionTitle: { color: theme.colors.text, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(14) : responsiveLayout.responsiveFont(14), fontWeight: '900' },
     pillWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7) },
     horizontalPills: { gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7), paddingRight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4) },
@@ -1055,7 +1067,7 @@ function createMetricsStyles(responsiveLayout: ReturnType<typeof useResponsiveLa
       paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(11) : responsiveLayout.responsiveWidth(11),
       paddingVertical: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(9) : responsiveLayout.responsiveHeight(9),
     },
-    selectedPointLabel: { color: theme.colors.goldMuted, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8), fontWeight: '900', letterSpacing: 0.6 },
+    selectedPointLabel: { color: theme.colors.goldMuted, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8), fontWeight: '900', letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.6) : responsiveLayout.responsiveFont(0.6) },
     selectedPointValue: { color: theme.colors.text, fontVariant: ['tabular-nums'], fontWeight: '900' },
     selectedPointDetail: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9) },
     chartRow: { alignItems: 'center', flexDirection: 'row', gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7), minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(25) : responsiveLayout.responsiveHeight(25) },

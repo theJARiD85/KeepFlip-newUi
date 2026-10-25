@@ -145,7 +145,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.scannerCyan,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: '900',
-      letterSpacing: 1.5,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.5) : responsiveLayout.responsiveFont(1.5),
     },
     corner: {
       position: 'absolute',
@@ -222,13 +222,13 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.gold,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
       fontWeight: '900',
-      letterSpacing: 2.2,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(2.2) : responsiveLayout.responsiveFont(2.2),
     },
     title: {
       color: theme.colors.cream,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(25) : responsiveLayout.responsiveFont(25),
       fontWeight: '800',
-      letterSpacing: -0.5,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(-0.5) : responsiveLayout.responsiveFont(-0.5),
       textAlign: 'center',
     },
     body: {
@@ -253,7 +253,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.text,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: '800',
-      letterSpacing: 0.8,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.8) : responsiveLayout.responsiveFont(0.8),
       textAlign: 'center',
     },
   });

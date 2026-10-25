@@ -312,7 +312,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.scannerCyan,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
       fontWeight: '900',
-      letterSpacing: 1.8,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.8) : responsiveLayout.responsiveFont(1.8),
     },
     reviewTitle: { color: theme.colors.cream, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(26) : responsiveLayout.responsiveFont(26), fontWeight: '800' },
     doneButton: {

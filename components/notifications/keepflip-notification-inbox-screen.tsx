@@ -233,7 +233,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       paddingBottom: responsiveHeight(8),
     },
     headerCopy: { flex: 1, gap: responsiveHeight(6) },
-    eyebrow: { color: theme.colors.goldBright, fontSize: responsiveFont(10), fontWeight: '900', letterSpacing: 2.2 },
+    eyebrow: { color: theme.colors.goldBright, fontSize: responsiveFont(10), fontWeight: '900', letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(2.2) : responsiveLayout.responsiveFont(2.2) },
     title: { color: theme.colors.cream, fontSize: responsiveFont(30), fontWeight: '900' },
     subtitle: { color: theme.colors.textMuted, fontSize: responsiveFont(14), lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(20) : responsiveLayout.responsiveFont(20) },
     headerIcon: {

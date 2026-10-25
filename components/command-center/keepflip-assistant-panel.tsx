@@ -417,7 +417,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: '900',
-      letterSpacing: 1.4,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.4) : responsiveLayout.responsiveFont(1.4),
     },
     onlineDot: {
       width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5),
@@ -430,7 +430,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '900',
-      letterSpacing: 0.9,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.9) : responsiveLayout.responsiveFont(0.9),
     },
     searchPlaceholder: { color: theme.colors.text, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(14) : responsiveLayout.responsiveFont(14), fontWeight: '700', fontFamily: theme.fonts.body },
     searchIcon: {
@@ -451,7 +451,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.scannerCyan,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '900',
-      letterSpacing: 1.5,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.5) : responsiveLayout.responsiveFont(1.5),
     },
     title: { color: theme.colors.cream, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(18) : responsiveLayout.responsiveFont(18), fontWeight: '900' },
     subtitle: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11), lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(15) : responsiveLayout.responsiveFont(15) },
@@ -509,7 +509,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     sendButtonDisabled: { opacity: 0.42 },
     sendButtonPressed: { opacity: 0.75 },
-    sendText: { color: theme.colors.background, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9), fontWeight: '900', letterSpacing: 0.8 },
+    sendText: { color: theme.colors.background, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9), fontWeight: '900', letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.8) : responsiveLayout.responsiveFont(0.8) },
     quickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(6) : responsiveLayout.responsiveWidth(6) },
     quickChip: {
       paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
@@ -525,8 +525,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     message: { color: theme.colors.scannerCyan, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10), lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(14) : responsiveLayout.responsiveFont(14) },
     error: { color: theme.colors.danger, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10), lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(14) : responsiveLayout.responsiveFont(14) },
     taskHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    taskLabel: { color: theme.colors.goldBright, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8), fontWeight: '900', letterSpacing: 1.3 },
-    refresh: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8), fontWeight: '900', letterSpacing: 0.7 },
+    taskLabel: { color: theme.colors.goldBright, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8), fontWeight: '900', letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.3) : responsiveLayout.responsiveFont(1.3) },
+    refresh: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8), fontWeight: '900', letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.7) : responsiveLayout.responsiveFont(0.7) },
     taskList: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.colors.divider },
     empty: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11), lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(15) : responsiveLayout.responsiveFont(15) },
   });

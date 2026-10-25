@@ -63,6 +63,7 @@ const contents = [
 ] as const;
 
 export function WebEbayBlogArticle() {
+  const responsiveLayout = useResponsiveLayout();
   const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   return (
     <WebMarketingPage
@@ -88,7 +89,7 @@ export function WebEbayBlogArticle() {
           <View style={responsiveStyles.contentsLinks}>
             {contents.map(([id, label]) =>
               Platform.OS === 'web'
-                ? createElement('a', { key: id, href: `#${id}`, style: { color: colors.goldBright, fontFamily: theme.fonts.semibold, fontSize: 13, textDecoration: 'none' } }, label)
+                ? createElement('a', { key: id, href: `#${id}`, style: { color: colors.goldBright, fontFamily: theme.fonts.semibold, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(13) : responsiveLayout.responsiveFont(13), textDecoration: 'none' } }, label)
                 : <Text key={id} style={responsiveStyles.contentsLink}>{label}</Text>,
             )}
           </View>

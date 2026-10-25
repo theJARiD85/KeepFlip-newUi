@@ -164,21 +164,21 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: colors.gold,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
       fontWeight: "900",
-      letterSpacing: 2,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(2) : responsiveLayout.responsiveFont(2),
     },
     title: {
       color: colors.cream,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(34) : responsiveLayout.responsiveFont(34),
       lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(40) : responsiveLayout.responsiveFont(40),
       fontWeight: "900",
-      letterSpacing: -0.65,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(-0.65) : responsiveLayout.responsiveFont(-0.65),
     },
     effectiveDate: {
       color: colors.scannerCyan,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontFamily: theme.fonts.body,
       fontWeight: "800",
-      letterSpacing: 0.85,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.85) : responsiveLayout.responsiveFont(0.85),
       marginBottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(10) : responsiveLayout.responsiveHeight(10),
     },
     intro: {
@@ -203,7 +203,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: colors.gold,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
       fontWeight: "900",
-      letterSpacing: 1,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1) : responsiveLayout.responsiveFont(1),
     },
     sectionTitle: {
       flex: 1,
@@ -233,7 +233,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: colors.scannerCyan,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: "900",
-      letterSpacing: 1.4,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.4) : responsiveLayout.responsiveFont(1.4),
     },
     contactText: {
       color: colors.text,

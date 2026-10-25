@@ -217,7 +217,7 @@ export function FlipDailyBriefingLauncher() {
   const { canUse } = useKeepFlipSubscription();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
-  const { height, responsiveFont, width } = useResponsiveLayout();
+  const { height, responsiveFont, width } = responsiveLayout3;
   const styles = useBriefingStyles();
   const { react } = useFlipCompanion();
   const [visible, setVisible] = useState(false);

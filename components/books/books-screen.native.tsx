@@ -1603,13 +1603,13 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: '900',
-      letterSpacing: 1.8,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.8) : responsiveLayout.responsiveFont(1.8),
     },
     title: {
       color: theme.colors.cream,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(28) : responsiveLayout.responsiveFont(28),
       fontWeight: '900',
-      letterSpacing: -0.65,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(-0.65) : responsiveLayout.responsiveFont(-0.65),
     },
     subtitle: {
       color: theme.colors.textMuted,
@@ -1646,7 +1646,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: '900',
-      letterSpacing: 0.95,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.95) : responsiveLayout.responsiveFont(0.95),
     },
     secondaryAction: {
       alignItems: 'center',
@@ -1666,7 +1666,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: '900',
-      letterSpacing: 0.95,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.95) : responsiveLayout.responsiveFont(0.95),
     },
     actionDisabled: { opacity: 0.42 },
     setupNotice: {
@@ -1685,7 +1685,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: '900',
-      letterSpacing: 1,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1) : responsiveLayout.responsiveFont(1),
     },
     noticeText: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12), lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(17) : responsiveLayout.responsiveFont(17) },
     errorCard: {
@@ -1703,7 +1703,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: '900',
-      letterSpacing: 1,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1) : responsiveLayout.responsiveFont(1),
     },
     errorText: { color: theme.colors.text, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12), lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(17) : responsiveLayout.responsiveFont(17) },
     retryButton: {
@@ -1720,7 +1720,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '900',
-      letterSpacing: 0.8,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.8) : responsiveLayout.responsiveFont(0.8),
     },
     statusMessage: { color: theme.colors.scannerCyan, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12), lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(17) : responsiveLayout.responsiveFont(17) },
     section: {
@@ -1741,13 +1741,13 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '900',
-      letterSpacing: 1.25,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.25) : responsiveLayout.responsiveFont(1.25),
     },
     sectionTitle: {
       color: theme.colors.cream,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(17) : responsiveLayout.responsiveFont(17),
       fontWeight: '800',
-      letterSpacing: -0.2,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(-0.2) : responsiveLayout.responsiveFont(-0.2),
     },
     loadingLine: {
       alignItems: 'center',
@@ -1774,14 +1774,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '900',
-      letterSpacing: 0.95,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.95) : responsiveLayout.responsiveFont(0.95),
     },
     metricValue: {
       color: theme.colors.cream,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(21) : responsiveLayout.responsiveFont(21),
       fontVariant: ['tabular-nums'],
       fontWeight: '800',
-      letterSpacing: -0.45,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(-0.45) : responsiveLayout.responsiveFont(-0.45),
       marginTop: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(5) : responsiveLayout.responsiveHeight(5),
     },
     metricDetail: {
@@ -1820,7 +1820,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '900',
-      letterSpacing: 0.8,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.8) : responsiveLayout.responsiveFont(0.8),
     },
     transactionList: {
       borderTopColor: theme.colors.divider,
@@ -1855,7 +1855,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: '900',
-      letterSpacing: 0.7,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.7) : responsiveLayout.responsiveFont(0.7),
     },
     emptyLedger: {
       alignItems: 'flex-start',
@@ -1915,7 +1915,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.cream,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(22) : responsiveLayout.responsiveFont(22),
       fontWeight: '900',
-      letterSpacing: -0.4,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(-0.4) : responsiveLayout.responsiveFont(-0.4),
     },
     transactionDetailContent: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
@@ -1934,13 +1934,13 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '900',
-      letterSpacing: 1,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1) : responsiveLayout.responsiveFont(1),
     },
     transactionDetailAmount: {
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(27) : responsiveLayout.responsiveFont(27),
       fontVariant: ['tabular-nums'],
       fontWeight: '900',
-      letterSpacing: -0.5,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(-0.5) : responsiveLayout.responsiveFont(-0.5),
     },
     transactionDetailDirection: {
       color: theme.colors.textMuted,
@@ -1958,7 +1958,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '900',
-      letterSpacing: 1,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1) : responsiveLayout.responsiveFont(1),
       paddingBottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(7) : responsiveLayout.responsiveHeight(7),
       paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
       paddingTop: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(11) : responsiveLayout.responsiveHeight(11),
@@ -1975,7 +1975,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: '900',
-      letterSpacing: 0.75,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.75) : responsiveLayout.responsiveFont(0.75),
       textTransform: 'uppercase',
     },
     transactionDetailValue: {
@@ -2010,7 +2010,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.cream,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(22) : responsiveLayout.responsiveFont(22),
       fontWeight: '900',
-      letterSpacing: -0.4,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(-0.4) : responsiveLayout.responsiveFont(-0.4),
     },
     closeButton: {
       alignItems: 'center',
@@ -2029,7 +2029,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '900',
-      letterSpacing: 1,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1) : responsiveLayout.responsiveFont(1),
     },
     typeOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(6) : responsiveLayout.responsiveWidth(6) },
     typeOption: {
@@ -2050,7 +2050,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: '900',
-      letterSpacing: 0.6,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.6) : responsiveLayout.responsiveFont(0.6),
     },
     typeOptionTextSelected: { color: theme.colors.scannerCyan },
     typeHelp: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11) },
@@ -2160,7 +2160,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
       fontWeight: '900',
-      letterSpacing: 1,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1) : responsiveLayout.responsiveFont(1),
     },
   });
   return {

@@ -118,6 +118,7 @@ export function WebCompetitorComparison({ comparison }: { comparison: Competitor
 }
 
 function WebComparisonTable({ comparison }: { comparison: CompetitorComparison }) {
+  const responsiveLayout = useResponsiveLayout();
   const responsiveStyles2 = useResponsiveStyles(createStylesWebResponsive);
   const colors = KEEPFLIP_PUBLIC_COLORS;
 
@@ -140,7 +141,7 @@ function WebComparisonTable({ comparison }: { comparison: CompetitorComparison }
     borderCollapse: 'collapse',
     color: colors.text,
     fontFamily: theme.fonts.body,
-    minWidth: '680px',
+    minWidth: `${responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(680) : responsiveLayout.responsiveWidth(680)}px`,
     tableLayout: 'fixed',
     width: '100%',
   };
@@ -149,22 +150,22 @@ function WebComparisonTable({ comparison }: { comparison: CompetitorComparison }
     borderBottom: `1px solid ${colors.divider}`,
     color: colors.goldBright,
     fontWeight: 700,
-    padding: '12px 14px',
+    padding: `${responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(12) : responsiveLayout.responsiveHeight(12)}px ${responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14)}px`,
     textAlign: 'left',
     verticalAlign: 'top',
   };
   const cellStyle: CSSProperties = {
     borderBottom: `1px solid ${colors.divider}`,
     color: colors.textMuted,
-    lineHeight: 1.55,
-    padding: '13px 14px',
+    lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.55) : responsiveLayout.responsiveFont(1.55),
+    padding: `${responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(13) : responsiveLayout.responsiveHeight(13)}px ${responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14)}px`,
     textAlign: 'left',
     verticalAlign: 'top',
   };
 
   return createElement(
     'div',
-    { style: { border: `1px solid ${colors.divider}`, borderRadius: 14, maxWidth: '100%', overflowX: 'auto' } },
+    { style: { border: `1px solid ${colors.divider}`, borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14), maxWidth: '100%', overflowX: 'auto' } },
     createElement(
       'table',
       { style: tableStyle },

@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, View, type ViewProps } from 'react-native';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 
 export interface ActionTabGradienceProps extends ViewProps {
   width?: number;
@@ -50,6 +51,7 @@ export default function ActionTabGradience({
   style,
   ...viewProps
 }: ActionTabGradienceProps) {
+  const responsiveLayout = useResponsiveLayout();
   useEffect(() => {
     ensureKeyframes();
   }, []);

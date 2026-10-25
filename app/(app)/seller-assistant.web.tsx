@@ -13,6 +13,7 @@ import { useResponsiveLayout , useResponsiveStyles} from '@/hooks/use-responsive
 import type { AssistantRoute } from '@/services/keepflip-assistant-service';
 
 function WebFlipAssistantScreen() {
+  const responsiveLayout2 = useResponsiveLayout();
   const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const pathname = usePathname();
   const router = useRouter();
@@ -25,7 +26,7 @@ function WebFlipAssistantScreen() {
     contentMaxWidth,
     contentWidth,
     pageGutter
-  } = useResponsiveLayout();
+  } = responsiveLayout2;
 
   if (!canUse('flip_assistant')) {
     return (

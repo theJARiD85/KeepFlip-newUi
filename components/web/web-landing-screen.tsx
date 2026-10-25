@@ -25,6 +25,7 @@ const SCAN_SCREEN = require('@/assets/google-play/keepflip-play-scanner.png');
 const colors = theme.colors;
 
 export function WebLandingScreen() {
+  const responsiveLayout3 = useResponsiveLayout();
   const responsiveStyles4 = useResponsiveStyles(createStylesWebResponsive2);
   const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const { width } = useWindowDimensions();
@@ -69,7 +70,7 @@ export function WebLandingScreen() {
                   FREE UP CASH TIED IN INVENTORY.
                 </Text>
                 <MatchedWidthHeadline
-                  bottomStyle={{ color: colors.campaignGold, fontFamily: theme.fonts.bold, fontSize: phone ? 39 : compact ? 65 : 72, letterSpacing: phone ? -1 : 1 }}
+                  bottomStyle={{ color: colors.campaignGold, fontFamily: theme.fonts.bold, fontSize: responsiveLayout3.isWideWeb ? responsiveLayout3.webResponsiveFont(phone ? 39 : compact ? 65 : 72) : responsiveLayout3.responsiveFont(phone ? 39 : compact ? 65 : 72), letterSpacing: responsiveLayout3.isWideWeb ? responsiveLayout3.webResponsiveFont(phone ? -1 : 1) : responsiveLayout3.responsiveFont(phone ? -1 : 1) }}
                   bottomText="IN THE BINS"
                   headingStyle={heroTitleStyle}
                   topStyle={{ color: colors.text, fontFamily: theme.fonts.bold, fontSize: heroTitleTypography.fontSize, letterSpacing: phone ? responsiveStyles4.heroTitlePhone.letterSpacing : responsiveStyles4.heroTitle.letterSpacing }}

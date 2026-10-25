@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import * as THREE from 'three';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 type KeepFlipAuroraShaderProps = {
   isLight?: boolean;
@@ -106,6 +107,7 @@ const fragmentShader = `
 `;
 
 export function KeepFlipAuroraShader({ isLight = false }: KeepFlipAuroraShaderProps) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const hostRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -249,7 +251,7 @@ export function KeepFlipAuroraShader({ isLight = false }: KeepFlipAuroraShaderPr
         hostRef.current = node as unknown as HTMLElement | null;
       }}
       accessible={false}
-      style={styles.layer}
+      style={responsiveStyles.layer}
     />
   );
 }
@@ -265,3 +267,16 @@ const styles = StyleSheet.create({
     zIndex: 0,
   },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    layer: {
+      ...styles["layer"],
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0,
+    },
+  });
+}

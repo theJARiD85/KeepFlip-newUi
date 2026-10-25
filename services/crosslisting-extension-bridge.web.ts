@@ -16,12 +16,13 @@ export type ExtensionStatus = {
   missingFields?: string[];
   uploadedPhotoCount?: number;
   message?: string;
+  reason?: 'shipping_payout_too_low';
   externalUrl?: string;
 };
 
 type ExtensionReply = { ok: boolean; error?: string; run?: { id: string; jobs: ExtensionJob[] } | null };
 type ExtensionRequest = {
-  action: 'HELLO' | 'LISTING_START' | 'LISTING_FOCUS' | 'LISTING_RESUME' | 'LISTING_RETRY' | 'LISTING_SUBMIT';
+  action: 'HELLO' | 'LISTING_START' | 'LISTING_FOCUS' | 'LISTING_RESUME' | 'LISTING_RETRY' | 'LISTING_SUBMIT' | 'LISTING_USE_BUYER_PAID_SHIPPING';
   ownerId: string;
   itemId?: string;
   runId?: string;

@@ -521,7 +521,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.cream,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(22) : responsiveLayout.responsiveFont(22),
       fontWeight: '900',
-      letterSpacing: 2.6,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(2.6) : responsiveLayout.responsiveFont(2.6),
     },
     brandDescriptorContainer: {
       maxWidth: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(150) : responsiveLayout.responsiveWidth(150),
@@ -530,7 +530,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.gold,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: '800',
-      letterSpacing: 1.8,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.8) : responsiveLayout.responsiveFont(1.8),
     },
     closeButton: {
       width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(46) : responsiveLayout.responsiveWidth(46),
@@ -576,7 +576,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.textMuted,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: '900',
-      letterSpacing: 2.2,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(2.2) : responsiveLayout.responsiveFont(2.2),
     },
     destinationList: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
@@ -634,7 +634,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.textMuted,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '800',
-      letterSpacing: 1.35,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.35) : responsiveLayout.responsiveFont(1.35),
     },
     activeIndicator: {
       width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
@@ -650,7 +650,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: 'rgba(242, 211, 138, 0.055)',
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(38) : responsiveLayout.responsiveFont(38),
       fontWeight: '900',
-      letterSpacing: -2,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(-2) : responsiveLayout.responsiveFont(-2),
     },
     ebayLink: {
       minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(48) : responsiveLayout.responsiveHeight(48),
@@ -685,7 +685,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.textMuted,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: '900',
-      letterSpacing: 1.2,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.2) : responsiveLayout.responsiveFont(1.2),
     },
     systemStatus: {
       minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(54) : responsiveLayout.responsiveHeight(54),
@@ -714,19 +714,19 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.textMuted,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: '800',
-      letterSpacing: 1.35,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.35) : responsiveLayout.responsiveFont(1.35),
     },
     systemStatusValue: {
       color: theme.colors.scannerCyan,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
       fontWeight: '900',
-      letterSpacing: 1.2,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.2) : responsiveLayout.responsiveFont(1.2),
     },
     systemStatusCode: {
       color: theme.colors.goldMuted,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: '800',
-      letterSpacing: 1,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1) : responsiveLayout.responsiveFont(1),
     },
     triggerWrap: {
       position: 'absolute',

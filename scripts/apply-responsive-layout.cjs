@@ -5,7 +5,8 @@
 /**
  * Add platform-responsive values to React styles under app/ and components/.
  * Every nested source file is parsed. Numeric UI values are changed only when
- * they can be connected to a component: inline JSX styles, a responsive style
+ * they can be connected to a component: inline JSX/createElement styles, local
+ * style objects, a responsive style
  * factory, or a module-level StyleSheet used by a component. Wide web and
  * compact/native branches use the responsive helpers from use-responsive-layout.
  * The normal run also upgrades existing responsive isWeb branches in shared
@@ -30,7 +31,7 @@ const MODULE = '@/hooks/use-responsive-layout';
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx']);
 const NON_WEB_PLATFORM_FILE_PATTERN = /(?:\.(?:native|android|ios))+\.[jt]sx?$/i;
 const SKIP_DIRECTORIES = new Set([
-  '.git', '.expo', '.next', 'android', 'ios', 'node_modules', 'dist',
+  '.git', '.expo', '.next', 'node_modules', 'dist',
   'build', 'coverage', 'backup', 'backups',
 ]);
 const SKIP_FILE_PATTERN = /(?:\.backup(?:[-.]|$)|\.bak(?:[-.]|$)|\.orig(?:[-.]|$)|\.secret(?:[-.]|$))/i;
@@ -38,7 +39,7 @@ const SKIP_FILE_PATTERN = /(?:\.backup(?:[-.]|$)|\.bak(?:[-.]|$)|\.orig(?:[-.]|$
 // Only values that represent UI dimensions are mapped. Unitless values such
 // as flex, opacity, zIndex, fontWeight, borderWidth, and animation data stay put.
 const PROPERTY_HELPER = new Map([
-  ...['fontSize', 'lineHeight'].map((name) => [name, 'webResponsiveFont']),
+  ...['fontSize', 'lineHeight', 'letterSpacing'].map((name) => [name, 'webResponsiveFont']),
   ...[
     'width', 'minWidth', 'maxWidth', 'left', 'right', 'start', 'end',
     'padding', 'paddingHorizontal', 'paddingLeft', 'paddingRight', 'paddingStart', 'paddingEnd',
@@ -143,47 +144,171 @@ function valueHelper(property, node) {
   return helper;
 }
 
-function isWebCondition(node, helper) {
-  if (!ts.isConditionalExpression(node) || !helper) return null;
-  const condition = unwrap(node.condition);
-  const whenTrue = unwrap(node.whenTrue);
-  const whenFalse = unwrap(node.whenFalse);
-  if (!condition || !whenTrue || !whenFalse
-    || !ts.isPropertyAccessExpression(condition)
-    || !['isWeb', 'isWideWeb'].includes(condition.name.text)
-    || !ts.isIdentifier(condition.expression)
-    || !ts.isCallExpression(whenTrue)
-    || !ts.isPropertyAccessExpression(whenTrue.expression)
-    || whenTrue.expression.name.text !== helper
-    || whenTrue.expression.expression.getText() !== condition.expression.text
-    || whenTrue.arguments.length !== 1
-    || numericValue(whenFalse) === null
-    || numericValue(whenTrue.arguments[0]) !== numericValue(whenFalse)) return null;
-  return {
-    receiver: condition.expression.text,
-    argument: whenTrue.arguments[0].getText(),
-    falseBranch: whenFalse,
-  };
+function numericStyleExpression(node) {
+  const value = unwrap(node);
+  if (numericValue(value) !== null) return true;
+  return ts.isConditionalExpression(value)
+    && numericStyleExpression(value.whenTrue)
+    && numericStyleExpression(value.whenFalse);
 }
 
-function styleValueHelper(property, node) {
+function hasResponsiveNumericValue(node) {
+  const value = unwrap(node);
+  if (numericValue(value) !== null) return numericValue(value) !== 0;
+  return ts.isConditionalExpression(value)
+    && (hasResponsiveNumericValue(value.whenTrue) || hasResponsiveNumericValue(value.whenFalse));
+}
+
+function isOnePixelValue(node) {
+  const value = unwrap(node);
+  if (numericValue(value) === 1) return true;
+  return ts.isConditionalExpression(value)
+    && isOnePixelValue(value.whenTrue)
+    && isOnePixelValue(value.whenFalse);
+}
+
+function isVisuallyHiddenStyle(object) {
+  if (!object || !ts.isObjectLiteralExpression(object)) return false;
+  const values = new Map();
+  for (const property of object.properties) {
+    if (ts.isPropertyAssignment(property)) values.set(propertyName(property), unwrap(property.initializer));
+  }
+  const textValue = (name) => {
+    const value = values.get(name);
+    return value && (ts.isStringLiteral(value) || ts.isNoSubstitutionTemplateLiteral(value)) ? value.text : null;
+  };
+  return textValue('clip')?.startsWith('rect(') === true
+    && textValue('clipPath')?.startsWith('inset(') === true
+    && textValue('position') === 'absolute'
+    && textValue('overflow') === 'hidden';
+}
+
+function responsiveBranchValues(node, helper) {
+  const value = unwrap(node);
+  if (!ts.isConditionalExpression(value) || !helper) return null;
+  const condition = unwrap(value.condition);
+  if (!ts.isPropertyAccessExpression(condition)
+    || !['isWeb', 'isWideWeb'].includes(condition.name.text)
+    || !ts.isIdentifier(condition.expression)) return null;
+  const receiver = condition.expression.text;
+  const branchArgument = (branch, expectedHelper) => {
+    const candidate = unwrap(branch);
+    if (numericStyleExpression(candidate)) return candidate.getText();
+    if (!ts.isCallExpression(candidate) || !ts.isPropertyAccessExpression(candidate.expression)
+      || candidate.expression.name.text !== expectedHelper
+      || !ts.isIdentifier(candidate.expression.expression)
+      || candidate.expression.expression.text !== receiver
+      || candidate.arguments.length !== 1
+      || !numericStyleExpression(candidate.arguments[0])) return null;
+    return candidate.arguments[0].getText();
+  };
+  const webArgument = branchArgument(value.whenTrue, helper);
+  const mobileArgument = branchArgument(value.whenFalse, NATIVE_HELPER.get(helper));
+  if (webArgument === null || mobileArgument === null) return null;
+  return { receiver, webArgument, mobileArgument };
+}
+
+function isResponsiveHelperPair(node, helper) {
+  const value = unwrap(node);
+  if (!ts.isConditionalExpression(value)) return false;
+  const condition = unwrap(value.condition);
+  if (!ts.isPropertyAccessExpression(condition)
+    || !['isWeb', 'isWideWeb'].includes(condition.name.text)
+    || !ts.isIdentifier(condition.expression)) return false;
+  const receiver = condition.expression.text;
+  const isHelperCall = (branch, expectedHelper) => {
+    const candidate = unwrap(branch);
+    return ts.isCallExpression(candidate)
+      && ts.isPropertyAccessExpression(candidate.expression)
+      && candidate.expression.name.text === expectedHelper
+      && ts.isIdentifier(candidate.expression.expression)
+      && candidate.expression.expression.text === receiver
+      && candidate.arguments.length === 1
+      && numericStyleExpression(candidate.arguments[0]);
+  };
+  return isHelperCall(value.whenTrue, helper)
+    && isHelperCall(value.whenFalse, NATIVE_HELPER.get(helper));
+}
+
+function styleValueHelper(property, node, styleObject = null) {
   const helper = PROPERTY_HELPER.get(property);
+  if (!helper) return null;
+  const branches = responsiveBranchValues(node, helper);
+  if (isVisuallyHiddenStyle(styleObject)
+    && ['width', 'height'].includes(property)
+    && (isOnePixelValue(node) || (branches
+      && Number(branches.webArgument) === 1 && Number(branches.mobileArgument) === 1))) return null;
   if (valueHelper(property, node)) return helper;
-  return helper && isWebCondition(node, helper) ? helper : null;
+  if (branches && (Number(branches.webArgument) !== 0 || Number(branches.mobileArgument) !== 0)) return helper;
+  return numericStyleExpression(node) && hasResponsiveNumericValue(node) ? helper : null;
+}
+
+function isZeroResponsiveStyleValue(property, node) {
+  const helper = PROPERTY_HELPER.get(property);
+  if (!helper) return false;
+  const branches = responsiveBranchValues(node, helper);
+  return Boolean(branches && isResponsiveHelperPair(node, helper)
+    && Number(branches.webArgument) === 0 && Number(branches.mobileArgument) === 0);
 }
 
 function responsiveStyleValue(receiver, helper, node, sourceFile) {
   const nativeHelper = NATIVE_HELPER.get(helper);
   if (!nativeHelper) return null;
 
-  const literal = node.getText(sourceFile);
-  if (numericValue(node) !== null) {
-    return `${receiver}.isWideWeb ? ${receiver}.${helper}(${literal}) : ${receiver}.${nativeHelper}(${literal})`;
+  const branches = responsiveBranchValues(node, helper);
+  if (branches) {
+    const webValue = Number(branches.webArgument) === 0 ? branches.webArgument : `${branches.receiver}.${helper}(${branches.webArgument})`;
+    const mobileValue = Number(branches.mobileArgument) === 0 ? branches.mobileArgument : `${branches.receiver}.${nativeHelper}(${branches.mobileArgument})`;
+    return `${branches.receiver}.isWideWeb ? ${webValue} : ${mobileValue}`;
   }
+  if (!numericStyleExpression(node)) return null;
+  const literal = node.getText(sourceFile);
+  return `${receiver}.isWideWeb ? ${receiver}.${helper}(${literal}) : ${receiver}.${nativeHelper}(${literal})`;
+}
 
-  const existing = isWebCondition(node, helper);
-  if (!existing) return null;
-  return `${existing.receiver}.isWideWeb ? ${existing.receiver}.${helper}(${existing.argument}) : ${existing.receiver}.${nativeHelper}(${existing.argument})`;
+function cssLengthTokens(node) {
+  const value = unwrap(node);
+  if (!ts.isStringLiteral(value) && !ts.isNoSubstitutionTemplateLiteral(value)) return null;
+  const source = value.text.trim();
+  if (!source || source.includes('/') || /calc\(|var\(|%|auto/i.test(source)) return null;
+  const tokens = source.split(/\s+/);
+  if (tokens.length > 4) return null;
+  const parsed = tokens.map((token) => {
+    const match = /^([+-]?(?:\d+(?:\.\d+)?|\.\d+))(px)?$/i.exec(token);
+    if (!match) return null;
+    const number = Number(match[1]);
+    if (!Number.isFinite(number) || (!match[2] && number !== 0)) return null;
+    return { literal: match[1], unit: match[2] || '', number };
+  });
+  return parsed.some((token) => token === null) ? null : parsed;
+}
+
+function cssShorthandHelper(property, index, count) {
+  const horizontal = PROPERTY_HELPER.get(property) || 'webResponsiveWidth';
+  const vertical = 'webResponsiveHeight';
+  if (['padding', 'margin'].includes(property)) {
+    if (count === 1) return horizontal;
+    if (count === 2) return index === 0 ? vertical : horizontal;
+    if (count === 3) return index === 1 ? horizontal : vertical;
+    return index % 2 === 0 ? vertical : horizontal;
+  }
+  if (property === 'gap' && count === 2) return index === 0 ? vertical : horizontal;
+  return horizontal;
+}
+
+function responsiveCssStyleValue(receiver, property, node, styleObject = null) {
+  const tokens = cssLengthTokens(node);
+  if (!tokens || !PROPERTY_HELPER.has(property) || !tokens.some((token) => token.number !== 0)) return null;
+  if (isVisuallyHiddenStyle(styleObject) && ['width', 'height'].includes(property)
+    && tokens.length === 1 && tokens[0].number === 1) return null;
+  const parts = tokens.map((token, index) => {
+    if (token.number === 0) return token.literal + token.unit;
+    const helper = cssShorthandHelper(property, index, tokens.length);
+    const nativeHelper = NATIVE_HELPER.get(helper);
+    const value = `${receiver}.isWideWeb ? ${receiver}.${helper}(${token.literal}) : ${receiver}.${nativeHelper}(${token.literal})`;
+    return `\${${value}}${token.unit || 'px'}`;
+  });
+  return `\`${parts.join(' ')}\``;
 }
 
 function isStyleSheetCreate(node) {
@@ -212,7 +337,7 @@ function hasResponsiveStyleValues(node) {
         if (!ts.isPropertyAssignment(style) || !ts.isObjectLiteralExpression(style.initializer)) continue;
         for (const property of style.initializer.properties) {
           if (ts.isPropertyAssignment(property)
-            && styleValueHelper(propertyName(property), property.initializer)) {
+            && styleValueHelper(propertyName(property), property.initializer, style.initializer)) {
             found = true;
             return;
           }
@@ -264,18 +389,20 @@ function appendMemoDependency(node, name, sourceFile, edits) {
   }
 }
 
-function styleEntries(object) {
+function styleEntries(object, sourceFile) {
   const entries = [];
   for (const style of object.properties) {
     if (!ts.isPropertyAssignment(style) || !ts.isObjectLiteralExpression(style.initializer)) continue;
     const name = propertyName(style);
-    if (!name || style.initializer.properties.some((item) => ts.isSpreadAssignment(item))) continue;
+    if (!name) continue;
     const values = [];
     for (const property of style.initializer.properties) {
       if (!ts.isPropertyAssignment(property)) continue;
       const field = propertyName(property);
-      const helper = valueHelper(field, property.initializer);
-      if (helper) values.push({ field, helper, literal: property.initializer.getText() });
+      const helper = styleValueHelper(field, property.initializer, style.initializer);
+      if (helper && !isResponsiveHelperPair(property.initializer, helper)) {
+        values.push({ field, helper, literal: property.initializer.getText(sourceFile), node: property });
+      }
     }
     if (values.length > 0) entries.push({ name, values });
   }
@@ -288,7 +415,7 @@ function topLevelStyleSheets(sourceFile) {
     if (!ts.isVariableStatement(statement)) continue;
     for (const declaration of statement.declarationList.declarations) {
       if (!ts.isIdentifier(declaration.name) || !declaration.initializer || !isStyleSheetCreate(declaration.initializer)) continue;
-      const entries = styleEntries(declaration.initializer.arguments[0]);
+      const entries = styleEntries(declaration.initializer.arguments[0], sourceFile);
       if (entries.length > 0) sheets.push({ name: declaration.name.text, statement, entries });
     }
   }
@@ -374,22 +501,50 @@ function unwrap(node) {
   return current;
 }
 
-function collectInlineObjects(expression, result) {
+function findLocalVariableInitializer(name, reference, owner, components) {
+  for (let scope = reference.parent; scope; scope = scope.parent) {
+    if (!ts.isBlock(scope)) continue;
+    for (const statement of scope.statements) {
+      if (!ts.isVariableStatement(statement)) continue;
+      for (const declaration of statement.declarationList.declarations) {
+        if (ts.isIdentifier(declaration.name) && declaration.name.text === name
+          && declaration.initializer && ownerOf(declaration, components) === owner) {
+          return declaration.initializer;
+        }
+      }
+    }
+    if (scope === owner.body) break;
+  }
+  return null;
+}
+
+function collectInlineObjects(expression, result, sourceFile, owner, components, seen = new Set()) {
   const node = unwrap(expression);
   if (!node) return;
-  if (ts.isObjectLiteralExpression(node)) result.push(node);
+  if (ts.isIdentifier(node)) {
+    if (seen.has(node.text)) return;
+    const initializer = findLocalVariableInitializer(node.text, node, owner, components);
+    if (initializer) {
+      seen.add(node.text);
+      collectInlineObjects(initializer, result, sourceFile, owner, components, seen);
+    }
+  } else if (ts.isObjectLiteralExpression(node)) result.push(node);
   else if (ts.isArrayLiteralExpression(node)) {
-    for (const item of node.elements) if (!ts.isSpreadElement(item)) collectInlineObjects(item, result);
+    for (const item of node.elements) {
+      if (!ts.isSpreadElement(item)) collectInlineObjects(item, result, sourceFile, owner, components, seen);
+    }
   } else if (ts.isConditionalExpression(node)) {
-    collectInlineObjects(node.whenTrue, result);
-    collectInlineObjects(node.whenFalse, result);
+    collectInlineObjects(node.whenTrue, result, sourceFile, owner, components, seen);
+    collectInlineObjects(node.whenFalse, result, sourceFile, owner, components, seen);
   } else if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken) {
-    collectInlineObjects(node.right, result);
+    collectInlineObjects(node.right, result, sourceFile, owner, components, seen);
   } else if (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) {
-    if (!ts.isBlock(node.body)) collectInlineObjects(node.body, result);
+    if (!ts.isBlock(node.body)) collectInlineObjects(node.body, result, sourceFile, owner, components, seen);
     else {
       function returns(child) {
-        if (ts.isReturnStatement(child)) collectInlineObjects(child.expression, result);
+        if (ts.isReturnStatement(child)) {
+          collectInlineObjects(child.expression, result, sourceFile, owner, components, seen);
+        }
         else if (child === node.body || !(ts.isArrowFunction(child) || ts.isFunctionExpression(child))) ts.forEachChild(child, returns);
       }
       returns(node.body);
@@ -449,6 +604,9 @@ function collectWideWebBranchEdits(sourceFile) {
       const condition = unwrap(node.condition);
       const whenTrue = unwrap(node.whenTrue);
       const whenFalse = unwrap(node.whenFalse);
+      const parent = node.parent;
+      if (ts.isPropertyAssignment(parent) && parent.initializer === node
+        && isZeroResponsiveStyleValue(propertyName(parent), node)) return;
       if (condition && ts.isPropertyAccessExpression(condition)
         && condition.name.text === 'isWeb'
         && whenTrue && ts.isCallExpression(whenTrue)
@@ -518,6 +676,7 @@ function planFile(filePath, root) {
   const sheetByName = new Map(sheets.map((sheet) => [sheet.name, sheet]));
   const sheetUsers = new Map(sheets.map((sheet) => [sheet, new Map()]));
   const responsiveFactoryReceivers = new Map();
+  const processedInlineProperties = new Set();
   let needsResponsiveLayoutImport = false;
   let inlineValues = 0;
   let stylesheetValues = 0;
@@ -530,12 +689,29 @@ function planFile(filePath, root) {
   }
 
   function existingLayoutBinding(component) {
+    let directBinding = null;
+    const destructuredBindings = [];
     for (const statement of component.body.statements) {
       if (!ts.isVariableStatement(statement)) continue;
       for (const declaration of statement.declarationList.declarations) {
-        if (ts.isIdentifier(declaration.name)
-          && isIdentifierCall(unwrap(declaration.initializer), 'useResponsiveLayout')) return declaration.name.text;
+        const initializer = unwrap(declaration.initializer);
+        if (!isIdentifierCall(initializer, 'useResponsiveLayout')) continue;
+        if (ts.isIdentifier(declaration.name)) directBinding ||= declaration.name.text;
+        else if (ts.isObjectBindingPattern(declaration.name)) destructuredBindings.push(initializer);
       }
+    }
+    if (directBinding) {
+      for (const initializer of destructuredBindings) {
+        edits.push({ start: initializer.getStart(sourceFile), end: initializer.end, replacement: directBinding });
+      }
+      return { name: directBinding, needsDeclaration: false };
+    }
+    if (destructuredBindings.length) {
+      const name = uniqueName('responsiveLayout', usedNames);
+      for (const initializer of destructuredBindings) {
+        edits.push({ start: initializer.getStart(sourceFile), end: initializer.end, replacement: name });
+      }
+      return { name, needsDeclaration: true };
     }
     return null;
   }
@@ -543,8 +719,9 @@ function planFile(filePath, root) {
   function layoutFor(component) {
     const info = detail(component);
     if (!info.layoutName) {
-      info.layoutName = existingLayoutBinding(component) || uniqueName('responsiveLayout', usedNames);
-      info.inline = !existingLayoutBinding(component);
+      const binding = existingLayoutBinding(component);
+      info.layoutName = binding?.name || uniqueName('responsiveLayout', usedNames);
+      info.inline = !binding || binding.needsDeclaration;
     }
     return info.layoutName;
   }
@@ -625,36 +802,77 @@ function planFile(filePath, root) {
     }
   }
 
-  // Inline style literals can refer directly to the layout hook at render time.
+  // Inline style objects can refer directly to the layout hook at render time.
+  function inspectStyleExpression(expression, owner, allowCssStrings = false) {
+    if (!owner) return;
+    const objects = [];
+    collectInlineObjects(expression, objects, sourceFile, owner, components);
+    for (const object of objects) {
+      for (const property of object.properties) {
+        if (!ts.isPropertyAssignment(property) || processedInlineProperties.has(property)) continue;
+        if (isZeroResponsiveStyleValue(propertyName(property), property.initializer)) {
+          edits.push({
+            start: property.initializer.getStart(sourceFile), end: property.initializer.end,
+            replacement: '0',
+          });
+          processedInlineProperties.add(property);
+          inlineValues += 1;
+          continue;
+        }
+        const helper = styleValueHelper(propertyName(property), property.initializer, object);
+        if (helper && isResponsiveHelperPair(property.initializer, helper)) continue;
+        const field = propertyName(property);
+        let replacement = null;
+        if (helper) {
+          const existing = responsiveBranchValues(property.initializer, helper);
+          const receiver = existing?.receiver || layoutFor(owner);
+          replacement = responsiveStyleValue(receiver, helper, property.initializer, sourceFile);
+        } else if (allowCssStrings
+          && responsiveCssStyleValue('responsiveLayout', field, property.initializer, object)) {
+          replacement = responsiveCssStyleValue(layoutFor(owner), field, property.initializer, object);
+        }
+        if (!replacement) continue;
+        edits.push({
+          start: property.initializer.getStart(sourceFile), end: property.initializer.end,
+          replacement,
+        });
+        processedInlineProperties.add(property);
+        inlineValues += 1;
+      }
+    }
+  }
+
   function inspectJsx(node) {
     if (ts.isJsxAttribute(node) && /style$/i.test(node.name.getText(sourceFile))
       && node.initializer && ts.isJsxExpression(node.initializer)) {
       const owner = ownerOf(node, components);
-      if (owner) {
-        const objects = [];
-        collectInlineObjects(node.initializer.expression, objects);
-        for (const object of objects) {
-          for (const property of object.properties) {
-            if (!ts.isPropertyAssignment(property)) continue;
-            const helper = styleValueHelper(propertyName(property), property.initializer);
-            if (!helper) continue;
-            const existing = isWebCondition(property.initializer, helper);
-            let receiver = existing?.receiver;
-            if (!receiver) receiver = layoutFor(owner);
-            const replacement = responsiveStyleValue(receiver, helper, property.initializer, sourceFile);
-            if (!replacement) continue;
-            edits.push({
-              start: property.initializer.getStart(sourceFile), end: property.initializer.end,
-              replacement,
-            });
-            inlineValues += 1;
-          }
-        }
-      }
+      const opening = node.parent.parent;
+      const tagName = (ts.isJsxOpeningElement(opening) || ts.isJsxSelfClosingElement(opening))
+        ? opening.tagName.getText(sourceFile) : '';
+      inspectStyleExpression(node.initializer.expression, owner, /^[a-z]/.test(tagName));
     }
     ts.forEachChild(node, inspectJsx);
   }
   inspectJsx(sourceFile);
+
+  // React.createElement styles use a props object instead of a JSX attribute.
+  function inspectCreateElement(node) {
+    if (ts.isCallExpression(node)
+      && ((ts.isIdentifier(node.expression) && node.expression.text === 'createElement')
+        || (ts.isPropertyAccessExpression(node.expression) && node.expression.name.text === 'createElement'))
+      && node.arguments.length > 1 && ts.isObjectLiteralExpression(unwrap(node.arguments[1]))) {
+      const owner = ownerOf(node, components);
+      const tag = unwrap(node.arguments[0]);
+      const allowCssStrings = ts.isStringLiteral(tag) && /^[a-z]/.test(tag.text);
+      for (const prop of unwrap(node.arguments[1]).properties) {
+        if (ts.isPropertyAssignment(prop) && propertyName(prop) === 'style') {
+          inspectStyleExpression(prop.initializer, owner, allowCssStrings);
+        }
+      }
+    }
+    ts.forEachChild(node, inspectCreateElement);
+  }
+  inspectCreateElement(sourceFile);
 
   // Existing responsive style factories already have a layout argument. Edit
   // their StyleSheet values in place instead of adding another hook or copy.
@@ -690,8 +908,17 @@ function planFile(filePath, root) {
           if (!ts.isPropertyAssignment(style) || !ts.isObjectLiteralExpression(style.initializer)) continue;
           for (const property of style.initializer.properties) {
             if (!ts.isPropertyAssignment(property)) continue;
-            const helper = styleValueHelper(propertyName(property), property.initializer);
+            if (isZeroResponsiveStyleValue(propertyName(property), property.initializer)) {
+              edits.push({
+                start: property.initializer.getStart(sourceFile), end: property.initializer.end,
+                replacement: '0',
+              });
+              stylesheetValues += 1;
+              continue;
+            }
+            const helper = styleValueHelper(propertyName(property), property.initializer, style.initializer);
             if (!helper) continue;
+            if (isResponsiveHelperPair(property.initializer, helper)) continue;
             const replacement = responsiveStyleValue(receiver, helper, property.initializer, sourceFile);
             if (!replacement) continue;
             edits.push({
@@ -734,8 +961,8 @@ function planFile(filePath, root) {
     sheet.factory = factory;
     const overrides = sheet.entries.map((entry) => {
       const key = /^[A-Za-z_$][\w$]*$/.test(entry.name) ? entry.name : JSON.stringify(entry.name);
-      const fields = entry.values.map(({ field, helper, literal }) =>
-        `      ${field}: layout.isWideWeb ? layout.${helper}(${literal}) : layout.${NATIVE_HELPER.get(helper)}(${literal}),`).join(eol);
+      const fields = entry.values.map(({ field, helper, node }) =>
+        `      ${field}: ${responsiveStyleValue('layout', helper, node.initializer, sourceFile)},`).join(eol);
       return `    ${key}: {${eol}      ...${sheet.name}[${JSON.stringify(entry.name)}],${eol}${fields}${eol}    },`;
     }).join(eol);
     const declaration = [

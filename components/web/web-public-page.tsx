@@ -69,6 +69,7 @@ export function SemanticHeading({
   level: 1 | 2 | 3;
   style?: StyleProp<TextStyle>;
 }) {
+  const responsiveLayout4 = useResponsiveLayout();
   if (Platform.OS !== 'web') {
     return (
       <Text accessibilityRole="header" style={style}>
@@ -112,9 +113,10 @@ export function WebMarketingPage({
   metadata: PublicPageMetadata;
   title: string;
 }) {
+  const responsiveLayout = useResponsiveLayout();
   const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const colors = KEEPFLIP_PUBLIC_COLORS;
-  const { width, webPageGutter, isWideWeb } = useResponsiveLayout();
+  const { width, webPageGutter, isWideWeb } = responsiveLayout;
   const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -125,7 +127,7 @@ export function WebMarketingPage({
     Platform.OS === 'web'
       ? {
           alignSelf: 'center' as const,
-          maxWidth: 1560,
+          maxWidth: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(1560) : responsiveLayout.responsiveWidth(1560),
           minWidth: 0,
           paddingHorizontal: webPageGutter,
           width: '100%' as const,
@@ -238,8 +240,9 @@ export function WebActionLink({
   label: string;
   secondary?: boolean;
 }) {
+  const responsiveLayout2 = useResponsiveLayout();
   const responsiveStyles6 = useResponsiveStyles(createStylesWebResponsive);
-  const { width } = useResponsiveLayout();
+  const { width } = responsiveLayout2;
   const colors = KEEPFLIP_PUBLIC_COLORS;
   if (Platform.OS === 'web') {
     const external = href.startsWith('http') || href.startsWith('mailto:');
@@ -254,15 +257,15 @@ export function WebActionLink({
           alignSelf: isPhone ? 'stretch' : 'flex-start',
           backgroundColor: secondary ? colors.backgroundRaised : colors.gold,
           border: `1px solid ${secondary ? colors.divider : colors.gold}`,
-          borderRadius: 14,
+          borderRadius: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveWidth(14) : responsiveLayout2.responsiveWidth(14),
           boxSizing: 'border-box',
           color: secondary ? colors.text : colors.textOnAccent,
           display: 'inline-flex',
           fontFamily: theme.fonts.semibold,
-          fontSize: 13,
+          fontSize: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveFont(13) : responsiveLayout2.responsiveFont(13),
           justifyContent: 'center',
-          minHeight: 48,
-          padding: '0 17px',
+          minHeight: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveHeight(48) : responsiveLayout2.responsiveHeight(48),
+          padding: `0 ${responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveWidth(17) : responsiveLayout2.responsiveWidth(17)}px`,
           textDecoration: 'none',
           width: isPhone ? '100%' : undefined,
         },

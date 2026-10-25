@@ -59,14 +59,15 @@ export function WebAuthScreen({
   onAuthenticated,
   onBack,
 }: WebAuthScreenProps) {
+  const responsiveLayout = useResponsiveLayout();
   const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
-  const { width, webPageGutter } = useResponsiveLayout();
+  const { width, webPageGutter } = responsiveLayout;
   const isWide = width >= 900;
   const webContentSizing =
     Platform.OS === 'web'
       ? {
           width: '100%' as const,
-          maxWidth: 1560,
+          maxWidth: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(1560) : responsiveLayout.responsiveWidth(1560),
           minWidth: 0,
           alignSelf: 'center' as const,
           paddingHorizontal: webPageGutter,

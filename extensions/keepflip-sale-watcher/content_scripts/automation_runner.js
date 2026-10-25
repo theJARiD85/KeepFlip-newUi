@@ -325,6 +325,18 @@
       matches[0] || null;
   }
 
+  function dispatchFacebookDeliveryPointerClick(control) {
+    if (!control || typeof MouseEvent !== 'function' || typeof control.dispatchEvent !== 'function') return;
+    const rect = control.getBoundingClientRect();
+    const options = { bubbles: true, cancelable: true, composed: true, view: window,
+      button: 0, clientX: (rect.left ?? rect.x ?? 0) + rect.width / 2,
+      clientY: (rect.top ?? rect.y ?? 0) + rect.height / 2 };
+    for (const [type, buttons] of [['pointerdown', 1], ['mousedown', 1], ['pointerup', 0], ['mouseup', 0], ['click', 0]]) {
+      const EventType = type.startsWith('pointer') && typeof PointerEvent === 'function' ? PointerEvent : MouseEvent;
+      control.dispatchEvent(new EventType(type, { ...options, buttons, detail: type === 'click' ? 1 : 0 }));
+    }
+  }
+
   async function applyFacebookDeliveryPreference(combo, preference) {
     let currentCombo = combo;
     let selection = facebookDeliverySelection(currentCombo);
@@ -344,9 +356,24 @@
       const option = findFacebookDeliveryOption(method);
       if (!option) return { ok: false, message: `Facebook's ${method === 'local_pickup' ? 'local pickup' : 'shipping'} option was not found. Choose the delivery method in Facebook.` };
       clickMarketplaceControl(option);
-      await new Promise((resolve) => setTimeout(resolve, 150));
-      currentCombo = findFacebookCombobox('delivery method') || currentCombo;
-      selection = facebookDeliverySelection(currentCombo);
+      for (let check = 0; check < 15; check += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        currentCombo = findFacebookCombobox('delivery method') || currentCombo;
+        selection = facebookDeliverySelection(currentCombo);
+        if (method === 'shipping' ? selection.shipping === wanted : selection.localPickup === wanted) break;
+      }
+      if (method === 'shipping' ? selection.shipping !== wanted : selection.localPickup !== wanted) {
+        // A DOM click can be ignored by Facebook's delivery menu even while
+        // the option remains mounted. Try the same pointer sequence used for
+        // its other React controls, then verify the resulting combobox value.
+        dispatchFacebookDeliveryPointerClick(option);
+        for (let check = 0; check < 15; check += 1) {
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          currentCombo = findFacebookCombobox('delivery method') || currentCombo;
+          selection = facebookDeliverySelection(currentCombo);
+          if (method === 'shipping' ? selection.shipping === wanted : selection.localPickup === wanted) break;
+        }
+      }
       if (method === 'shipping' && selection.shipping !== wanted) {
         return { ok: false, message: 'Facebook did not confirm the requested shipping selection. Check the delivery menu.' };
       }
@@ -461,6 +488,8 @@
     // Facebook may render this row after it commits the delivery selection.
     for (let attempt = 0; attempt < 40; attempt += 1) {
       if (findFacebookShippingOptionsDialog()) return null;
+      const combo = findFacebookCombobox('delivery method');
+      if (combo && !facebookDeliverySelection(combo).shipping) return null;
       const button = findFacebookShippingLabelButton();
       if (button) return button;
       await new Promise((resolve) => setTimeout(resolve, 300));
@@ -1000,9 +1029,22 @@
     } else {
       if (!combo) return { ready: false, message: 'Facebook opened the delivery step, but KeepFlip could not find its delivery method menu.' };
       if (preference) {
-        const result = await applyFacebookDeliveryPreference(combo, preference);
-        if (!result.ok) return result;
-        combo = findFacebookCombobox('delivery method') || combo;
+        let confirmed = false;
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          const result = await applyFacebookDeliveryPreference(combo, preference);
+          if (!result.ok) return result;
+          combo = findFacebookCombobox('delivery method') || combo;
+          if (combo.getAttribute('aria-expanded') === 'true') clickMarketplaceControl(combo);
+          // Facebook may show the new label before its delivery choice commits.
+          // Read it again after the menu closes and the form has rendered.
+          await new Promise((resolve) => setTimeout(resolve, 400));
+          combo = findFacebookCombobox('delivery method') || combo;
+          const settled = facebookDeliverySelection(combo);
+          confirmed = settled.shipping === preference.includes('shipping') &&
+            settled.localPickup === preference.includes('local_pickup');
+          if (confirmed) break;
+        }
+        if (!confirmed) return { ready: false, message: 'Facebook reverted the delivery selection. Choose Shipping in Facebook, then try filling again.' };
       }
 
       selection = facebookDeliverySelection(combo);
@@ -1023,6 +1065,12 @@
       if (!shippingOptionsDialog) {
         shippingLabelButton = await waitForFacebookShippingLabelButton();
         shippingOptionsDialog = findFacebookShippingOptionsDialog() || shippingOptionsDialog;
+      }
+      if (!shippingOptionsDialog && !shippingLabelButton && preference?.includes('shipping')) {
+        const settledCombo = findFacebookCombobox('delivery method');
+        if (settledCombo && !facebookDeliverySelection(settledCombo).shipping) {
+          return { ready: false, message: 'Facebook reverted Shipping to Local pickup before its label form loaded. Try filling again or choose Shipping in Facebook.' };
+        }
       }
       if (!shippingOptionsDialog && shippingLabelButton) {
         const opened = await openFacebookShippingOptions(shippingLabelButton);
@@ -1596,6 +1644,20 @@
       controls.find((control) => facebookButtonLabel(control).toLowerCase() === 'next') || null;
   }
 
+  function facebookDeliveryNextBlockedReason() {
+    const next = Array.from(document.querySelectorAll('button,[role="button"]')).find((control) =>
+      control.getBoundingClientRect().width > 0 && control.getBoundingClientRect().height > 0 &&
+      facebookButtonLabel(control).toLowerCase() === 'next');
+    if (!next || (!next.disabled && next.getAttribute('aria-disabled') !== 'true') ||
+      facebookSellerPaysShippingPreference(assignment?.payload) !== true) return null;
+    const text = document.body?.innerText || '';
+    const payout = /(?:your\s+)?estimated payout\s*:?\s*\$\s*([\d,]+(?:\.\d{1,2})?)/i.exec(text);
+    if (!payout || Number(payout[1].replace(/,/g, '')) >= 1) return null;
+    const price = assignment?.payload?.price;
+    return { reason: 'shipping_payout_too_low',
+      message: `Facebook shows a $${payout[1]} estimated payout for this $${price} listing with seller-paid shipping and keeps Next disabled. Choose buyer-paid shipping for this run or raise the listing price.` };
+  }
+
   async function waitForFacebookNextButton() {
     for (let attempt = 0; attempt < 40; attempt += 1) {
       const button = findFacebookNextButton();
@@ -1758,8 +1820,10 @@
           }
           const deliveryNextButton = await waitForFacebookNextButton();
           if (!deliveryNextButton) {
+            const blocked = facebookDeliveryNextBlockedReason();
             await report('needs_review', { fields: filledFields, uploadedPhotoCount,
-              message: 'Facebook saved the shipping options, but Next is still disabled. Check the delivery step in Facebook.' });
+              reason: blocked?.reason,
+              message: blocked?.message || 'Facebook saved the shipping options, but Next is still disabled. Check the delivery step in Facebook.' });
             return;
           }
           const previousStep = facebookStepIdentity();
@@ -1883,6 +1947,13 @@
       photoUploadAttempted = false;
       uploadedPhotoCount = 0;
       void fill();
+    }
+    if (message?.type === 'KEEPFLIP_LISTING_USE_BUYER_PAID_SHIPPING' &&
+      assignment?.runId === message.runId && marketplace === 'facebookMarketplace' &&
+      message.marketplace === marketplace) {
+      assignment.payload.platformFields.sellerPaysShipping = 'false';
+      facebookShippingOptionsSaved = false;
+      void submitFacebookListing();
     }
   });
 

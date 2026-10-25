@@ -155,7 +155,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
           : "monospace",
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: "800",
-      letterSpacing: 1.05,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.05) : responsiveLayout.responsiveFont(1.05),
     },
 
     statusText: {
@@ -166,7 +166,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
           : "monospace",
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: "900",
-      letterSpacing: 1,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1) : responsiveLayout.responsiveFont(1),
     },
 
     divider: {
@@ -210,7 +210,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
           : "monospace",
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11),
       fontWeight: "800",
-      letterSpacing: 0.7,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.7) : responsiveLayout.responsiveFont(0.7),
     },
 
     dots: {
@@ -227,7 +227,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
           : "monospace",
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12),
-      letterSpacing: 0.35,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.35) : responsiveLayout.responsiveFont(0.35),
     },
 
     footer: {
@@ -247,7 +247,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
           : "monospace",
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(6) : responsiveLayout.responsiveFont(6),
       fontWeight: "800",
-      letterSpacing: 0.9,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.9) : responsiveLayout.responsiveFont(0.9),
     },
 
     cursor: {

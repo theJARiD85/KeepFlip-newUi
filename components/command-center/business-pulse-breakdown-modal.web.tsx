@@ -82,7 +82,7 @@ export function BusinessPulseBreakdownModal({
   const responsiveLayout = useResponsiveLayout();
   const insets = useSafeAreaInsets();
   const styles = useResponsiveStyles(createResponsiveStyles);
-  const { responsiveFont } = useResponsiveLayout();
+  const { responsiveFont } = responsiveLayout;
 
   if (!visible || !metric || !overview) return null;
 
@@ -464,7 +464,7 @@ function createResponsiveStyles(responsiveLayout6: ReturnType<typeof useResponsi
     eyebrow: {
       color: theme.colors.goldBright,
       fontWeight: '900',
-      letterSpacing: 1.2,
+      letterSpacing: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveFont(1.2) : responsiveLayout6.responsiveFont(1.2),
     },
     title: { color: theme.colors.cream, fontWeight: '900' },
     closeButton: {
@@ -491,7 +491,7 @@ function createResponsiveStyles(responsiveLayout6: ReturnType<typeof useResponsi
       padding: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(12) : responsiveLayout6.responsiveWidth(12),
     },
     totalCopy: { gap: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(4) : responsiveLayout6.responsiveWidth(4) },
-    totalLabel: { color: theme.colors.textMuted, fontWeight: '900', letterSpacing: 1 },
+    totalLabel: { color: theme.colors.textMuted, fontWeight: '900', letterSpacing: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveFont(1) : responsiveLayout6.responsiveFont(1) },
     totalValue: { color: theme.colors.cream, fontWeight: '900', fontVariant: ['tabular-nums'] },
     totalCount: { color: theme.colors.textMuted, fontWeight: '700', paddingBottom: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveHeight(4) : responsiveLayout6.responsiveHeight(4) },
     introSection: { gap: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(9) : responsiveLayout6.responsiveWidth(9) },
@@ -503,7 +503,7 @@ function createResponsiveStyles(responsiveLayout6: ReturnType<typeof useResponsi
       justifyContent: 'space-between',
       marginTop: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveHeight(5) : responsiveLayout6.responsiveHeight(5),
     },
-    sectionTitle: { color: theme.colors.goldBright, fontWeight: '900', letterSpacing: 1 },
+    sectionTitle: { color: theme.colors.goldBright, fontWeight: '900', letterSpacing: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveFont(1) : responsiveLayout6.responsiveFont(1) },
     sectionCount: { color: theme.colors.textMuted, fontWeight: '700' },
     entryCard: {
       backgroundColor: theme.colors.surfaceInset,

@@ -24,6 +24,9 @@ const nativeRoute = path.join(root, 'app', '(app)', 'profile.native.tsx');
 const webComponent = path.join(root, 'components', 'nested', 'banner.web.tsx');
 const android = path.join(root, 'components', 'nested', 'camera.android.tsx');
 const ios = path.join(root, 'components', 'nested', 'camera.ios.tsx');
+const createElementStyles = path.join(root, 'components', 'nested', 'create-element-styles.tsx');
+const androidDirectoryFile = path.join(root, 'components', 'android', 'hardware.tsx');
+const iosDirectoryFile = path.join(root, 'app', 'ios', 'preview.tsx');
 const legacy = path.join(root, 'components', 'legacy.jsx');
 
 function run(...options) {
@@ -39,12 +42,13 @@ try {
     "import { StyleSheet, Text, View } from 'react-native';",
     '',
     'const styles = StyleSheet.create({',
-    '  title: { fontSize: 20, lineHeight: 26, opacity: 0.5 },',
+    '  title: { fontSize: 20, lineHeight: 26, letterSpacing: 0.5, opacity: 0.5 },',
     '  card: { width: 200, minHeight: 44, paddingHorizontal: 12, gap: 8, borderWidth: 1 },',
+    '  spreadCard: { ...{ padding: 4 }, width: 120 },',
     '});',
     '',
     'export function Card() {',
-    '  return <View style={[styles.card, { marginTop: 10, opacity: 0.8 }]}><Text style={styles.title}>Hi</Text></View>;',
+    '  return <View><View style={[styles.card, { marginTop: 10, opacity: 0.8 }]}><Text style={styles.title}>Hi</Text></View><View style={styles.spreadCard} /></View>;',
     '}',
     '',
     'function createResponsiveStyles(layout: ReturnType<typeof useResponsiveLayout>) {',
@@ -61,7 +65,7 @@ try {
     "import { useResponsiveLayout } from '@/hooks/use-responsive-layout';",
     'export function Existing() {',
     '  const layout = useResponsiveLayout();',
-    '  return <Text style={{ width: layout.isWeb ? layout.webResponsiveWidth(120) : 120 }}>Already responsive</Text>;',
+    '  return <Text style={{ width: layout.isWeb ? layout.webResponsiveWidth(120) : 120, left: layout.isWideWeb ? layout.webResponsiveWidth(0) : layout.responsiveWidth(0) }}>Already responsive</Text>;',
     '}',
   ].join('\n'), 'utf8');
   fs.writeFileSync(pairedWeb, [
@@ -135,18 +139,38 @@ try {
     'const styles = StyleSheet.create({ tile: { width: 90 } });',
     'export function Legacy() { return <View style={styles.tile} />; }',
   ].join('\n'), 'utf8');
+  fs.writeFileSync(createElementStyles, [
+    "import { createElement } from 'react';",
+    "import { useResponsiveLayout } from '@/hooks/use-responsive-layout';",
+    'export function CreateElementStyles() {',
+    '  const { width } = useResponsiveLayout();',
+    "  const titleStyle = { fontSize: width > 500 ? 12 : 10, padding: '8px 6px' };",
+    "  return createElement('div', { style: titleStyle }, createElement('span', { style: { paddingHorizontal: 6 } }, 'Hi'), createElement('span', { style: { clip: 'rect(0 0 0 0)', clipPath: 'inset(50%)', height: 1, overflow: 'hidden', position: 'absolute', width: 1 } }, 'Accessible label'));",
+    '}',
+  ].join('\n'), 'utf8');
+  fs.mkdirSync(path.dirname(androidDirectoryFile), { recursive: true });
+  fs.writeFileSync(androidDirectoryFile, [
+    "import { Text } from 'react-native';",
+    'export function AndroidFolderSource() { return <Text style={{ padding: 8 }}>Android folder</Text>; }',
+  ].join('\n'), 'utf8');
+  fs.mkdirSync(path.dirname(iosDirectoryFile), { recursive: true });
+  fs.writeFileSync(iosDirectoryFile, [
+    "import { Text } from 'react-native';",
+    'export function IosFolderSource() { return <Text style={{ marginTop: 8 }}>iOS folder</Text>; }',
+  ].join('\n'), 'utf8');
   fs.writeFileSync(path.join(root, 'components', 'nested', 'README.md'), 'not source', 'utf8');
 
   const before = fs.readFileSync(nested, 'utf8');
   const preview = run();
   assert.equal(preview.applied, false);
-  assert.equal(preview.directoriesVisited, 5);
-  assert.equal(preview.sourceFilesScanned, 14);
+  assert.equal(preview.directoriesVisited, 7);
+  assert.equal(preview.sourceFilesScanned, 17);
   assert.equal(preview.nonSourceFiles, 1);
-  assert.equal(preview.totals.files, 13);
+  assert.equal(preview.totals.files, 16);
   assert.equal(preview.totals.wideWebBranches, 1);
-  assert.deepEqual(preview.platformFileCounts, { shared: 6, web: 3, native: 2, android: 2, ios: 1 });
-  for (const file of [route, native, nativeRoute, webComponent, pairedWeb, android, ios]) {
+  assert.deepEqual(preview.platformFileCounts, { shared: 9, web: 3, native: 2, android: 2, ios: 1 });
+  for (const file of [route, native, nativeRoute, webComponent, pairedWeb, android, ios,
+    createElementStyles, androidDirectoryFile, iosDirectoryFile]) {
     const name = path.relative(root, file).split(path.sep).join('/');
     assert.ok(preview.changedFiles.some((item) => item.file === name), `${name} was not checked`);
   }
@@ -161,9 +185,12 @@ try {
   const generatedFactory = fs.readFileSync(generated, 'utf8');
   const callbackFactorySource = fs.readFileSync(callbackFactory, 'utf8');
   const memoFactorySource = fs.readFileSync(memoFactory, 'utf8');
+  const createElementSource = fs.readFileSync(createElementStyles, 'utf8');
   assert.match(card, /useResponsiveStyles\(createStylesWebResponsive\)/);
   assert.match(card, /layout\.isWideWeb \? layout\.webResponsiveFont\(20\) : layout\.responsiveFont\(20\)/);
+  assert.match(card, /layout\.isWideWeb \? layout\.webResponsiveFont\(0\.5\) : layout\.responsiveFont\(0\.5\)/);
   assert.match(card, /layout\.isWideWeb \? layout\.webResponsiveWidth\(200\) : layout\.responsiveWidth\(200\)/);
+  assert.match(card, /layout\.isWideWeb \? layout\.webResponsiveWidth\(120\) : layout\.responsiveWidth\(120\)/);
   assert.match(card, /layout\.isWideWeb \? layout\.webResponsiveHeight\(44\) : layout\.responsiveHeight\(44\)/);
   assert.match(card, /responsiveLayout\.isWideWeb \? responsiveLayout\.webResponsiveHeight\(10\) : responsiveLayout\.responsiveHeight\(10\)/);
   assert.match(card, /layout\.isWideWeb \? layout\.webResponsiveFont\(16\) : layout\.responsiveFont\(16\)/);
@@ -174,6 +201,8 @@ try {
   assert.match(fs.readFileSync(pairedWeb, 'utf8'), /layout\.isWideWeb \? layout\.webResponsiveWidth\(15\) : layout\.responsiveWidth\(10\)/);
   assert.match(fs.readFileSync(pairedNative, 'utf8'), /layout\.isWeb \? layout\.webResponsiveWidth\(15\) : layout\.responsiveWidth\(10\)/);
   assert.match(alreadyResponsive, /layout\.isWideWeb \? layout\.webResponsiveWidth\(120\) : layout\.responsiveWidth\(120\)/);
+  assert.match(alreadyResponsive, /left: 0/);
+  assert.doesNotMatch(alreadyResponsive, /responsiveWidth\(0\)/);
   assert.equal((alreadyResponsive.match(/useResponsiveLayout\(\)/g) || []).length, 1);
   assert.match(generatedFactory, /layout\.isWideWeb \? layout\.webResponsiveWidth\(100\) : layout\.responsiveWidth\(100\)/);
   assert.match(callbackFactorySource, /function createResponsiveStyles\(responsiveLayout: ReturnType<typeof useResponsiveLayout>\)/);
@@ -185,6 +214,17 @@ try {
   assert.match(memoFactorySource, /responsiveLayout\.isWideWeb \? responsiveLayout\.webResponsiveWidth\(12\) : responsiveLayout\.responsiveWidth\(12\)/);
   assert.match(fs.readFileSync(legacy, 'utf8'), /function createStylesWebResponsive\(layout\)/);
   assert.match(fs.readFileSync(legacy, 'utf8'), /layout\.isWideWeb \? layout\.webResponsiveWidth\(90\) : layout\.responsiveWidth\(90\)/);
+  assert.match(createElementSource, /const responsiveLayout = useResponsiveLayout\(\);/);
+  assert.match(createElementSource, /const \{ width \} = responsiveLayout;/);
+  assert.equal((createElementSource.match(/useResponsiveLayout\(\)/g) || []).length, 1);
+  assert.match(createElementSource, /responsiveLayout\.isWideWeb \? responsiveLayout\.webResponsiveFont\(width > 500 \? 12 : 10\) : responsiveLayout\.responsiveFont\(width > 500 \? 12 : 10\)/);
+  assert.match(createElementSource, /padding: `\$\{responsiveLayout\.isWideWeb \? responsiveLayout\.webResponsiveHeight\(8\) : responsiveLayout\.responsiveHeight\(8\)\}px \$\{responsiveLayout\.isWideWeb \? responsiveLayout\.webResponsiveWidth\(6\) : responsiveLayout\.responsiveWidth\(6\)\}px`/);
+  assert.match(createElementSource, /responsiveLayout\.isWideWeb \? responsiveLayout\.webResponsiveWidth\(6\) : responsiveLayout\.responsiveWidth\(6\)/);
+  assert.match(createElementSource, /height: 1/);
+  assert.match(createElementSource, /width: 1/);
+  assert.doesNotMatch(createElementSource, /responsiveHeight\(1\)|responsiveWidth\(1\)/);
+  assert.match(fs.readFileSync(androidDirectoryFile, 'utf8'), /responsiveLayout\.isWideWeb \? responsiveLayout\.webResponsiveWidth\(8\) : responsiveLayout\.responsiveWidth\(8\)/);
+  assert.match(fs.readFileSync(iosDirectoryFile, 'utf8'), /responsiveLayout\.isWideWeb \? responsiveLayout\.webResponsiveHeight\(8\) : responsiveLayout\.responsiveHeight\(8\)/);
   for (const file of [native, nativeRoute, webComponent, android, ios]) {
     assert.match(fs.readFileSync(file, 'utf8'), /responsiveLayout\.isWideWeb \? responsiveLayout\.webResponsiveFont\(14\) : responsiveLayout\.responsiveFont\(14\)/);
   }

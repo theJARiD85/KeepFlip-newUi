@@ -737,7 +737,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.body,
       fontSize: responsiveFont(8),
       fontWeight: "800",
-      letterSpacing: 0.65,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.65) : responsiveLayout.responsiveFont(0.65),
     },
     compactValuationValue: {
       color: theme.colors.goldBright,
@@ -763,7 +763,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.body,
       fontSize: responsiveFont(8),
       fontWeight: "900",
-      letterSpacing: 0.8,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.8) : responsiveLayout.responsiveFont(0.8),
     },
     medianValue: {
       color: theme.colors.goldBright,
@@ -819,7 +819,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.body,
       fontSize: responsiveFont(8),
       fontWeight: "900",
-      letterSpacing: 1.1,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.1) : responsiveLayout.responsiveFont(1.1),
     },
     heroTopRail: {
       position: "absolute",
@@ -850,7 +850,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.body,
       fontSize: responsiveFont(8),
       fontWeight: "900",
-      letterSpacing: 0.75,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.75) : responsiveLayout.responsiveFont(0.75),
     },
     conditionPill: {
       maxWidth: "58%",
@@ -866,7 +866,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.body,
       fontSize: responsiveFont(8),
       fontWeight: "900",
-      letterSpacing: 0.8,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.8) : responsiveLayout.responsiveFont(0.8),
       textTransform: "uppercase",
     },
     recordStrip: {
@@ -893,7 +893,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.body,
       fontSize: responsiveFont(8),
       fontWeight: "900",
-      letterSpacing: 0.55,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.55) : responsiveLayout.responsiveFont(0.55),
     },
     recordValue: {
       color: theme.colors.cream,
@@ -925,7 +925,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.body,
       fontSize: responsiveFont(9),
       fontWeight: "900",
-      letterSpacing: 0.5,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.5) : responsiveLayout.responsiveFont(0.5),
     },
     itemActionsToggleExpanded: {
       backgroundColor: theme.colors.cardSoft,
@@ -1015,7 +1015,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.bold,
       fontSize: responsiveFont(15),
       fontWeight: "900",
-      letterSpacing: -0.12,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(-0.12) : responsiveLayout.responsiveFont(-0.12),
     },
   });
   return {

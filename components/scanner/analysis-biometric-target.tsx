@@ -116,7 +116,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderLeftColor: theme.colors.goldBright,
       backgroundColor: "rgba(0, 4, 11, 0.8)",
     },
-    calloutLabel: { color: theme.colors.goldBright, fontFamily: monoFont, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(6) : responsiveLayout.responsiveFont(6), fontWeight: "900", letterSpacing: 1 },
+    calloutLabel: { color: theme.colors.goldBright, fontFamily: monoFont, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(6) : responsiveLayout.responsiveFont(6), fontWeight: "900", letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1) : responsiveLayout.responsiveFont(1) },
     calloutValue: { color: "#FFFFFF", fontFamily: monoFont, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9), fontWeight: "900" },
     progressTrack: { position: "absolute", right: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10), bottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(9) : responsiveLayout.responsiveHeight(9), left: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10), height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(3) : responsiveLayout.responsiveHeight(3), backgroundColor: "rgba(0, 255, 255, 0.12)" },
     progressFill: { height: "100%", backgroundColor: theme.colors.goldBright },

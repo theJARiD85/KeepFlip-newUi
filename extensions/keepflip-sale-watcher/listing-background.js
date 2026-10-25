@@ -164,6 +164,34 @@
       await chrome.tabs.sendMessage(job.tabId, { type: 'KEEPFLIP_LISTING_RETRY', runId: run.id, marketplace: job.marketplace });
       return { ok: true };
     }
+    if (request.action === 'LISTING_USE_BUYER_PAID_SHIPPING') {
+      if (job.marketplace !== 'facebookMarketplace' || job.status !== 'needs_review' ||
+        job.details?.reason !== 'shipping_payout_too_low') {
+        return { ok: false, error: 'Buyer-paid shipping is available only for the blocked Facebook delivery draft.' };
+      }
+      const tab = await chrome.tabs.get(job.tabId);
+      if (!isMarketplaceUrl(tab.url, job.marketplace)) {
+        return { ok: false, error: 'The Facebook listing tab is on an unexpected website.' };
+      }
+      const previousValue = job.payload.platformFields.sellerPaysShipping;
+      const previousDetails = job.details;
+      job.payload.platformFields.sellerPaysShipping = 'false';
+      job.details = { message: 'Using buyer-paid shipping for this Facebook listing run.' };
+      await writeRun(run);
+      await notifyWeb(run, job, job.details);
+      try {
+        await chrome.tabs.sendMessage(job.tabId, {
+          type: 'KEEPFLIP_LISTING_USE_BUYER_PAID_SHIPPING', runId: run.id, marketplace: job.marketplace,
+        });
+      } catch {
+        job.payload.platformFields.sellerPaysShipping = previousValue;
+        job.details = previousDetails;
+        await writeRun(run);
+        await notifyWeb(run, job, job.details || {});
+        return { ok: false, error: 'Could not reach the Facebook listing tab. Reload it, then retry.' };
+      }
+      return { ok: true };
+    }
     if (request.action === 'LISTING_SUBMIT') {
       if (job.status !== 'filled') return { ok: false, error: 'The draft must fill its required fields before posting.' };
       const tab = await chrome.tabs.get(job.tabId);
@@ -218,6 +246,7 @@
       missingFields: Array.isArray(message.missingFields) ? message.missingFields.filter((value) => textFields.includes(value)) : [],
       uploadedPhotoCount: Number.isInteger(message.uploadedPhotoCount) ? Math.max(0, Math.min(8, message.uploadedPhotoCount)) : 0,
       message: typeof message.message === 'string' ? message.message.slice(0, 240) : undefined,
+      reason: message.reason === 'shipping_payout_too_low' ? message.reason : undefined,
       externalUrl: isListingUrl(sender.url, job.marketplace) ? sender.url.split('#', 1)[0].split('?', 1)[0] : undefined,
     };
     if (status === 'confirmed' && (job.status !== 'submit_clicked' || !details.externalUrl)) status = 'needs_review';

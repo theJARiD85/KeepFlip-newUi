@@ -1252,7 +1252,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
       fontWeight: "900",
-      letterSpacing: 1.05,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.05) : responsiveLayout.responsiveFont(1.05),
     },
     arc: {
       width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(138) : responsiveLayout.responsiveWidth(138),
@@ -1299,7 +1299,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       fontWeight: "900",
-      letterSpacing: 1.15,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.15) : responsiveLayout.responsiveFont(1.15),
     },
     valueText: {
       maxWidth: "100%",
@@ -1318,7 +1318,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(13) : responsiveLayout.responsiveFont(13),
       fontWeight: "900",
       fontVariant: ["tabular-nums"],
-      letterSpacing: 0.35,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.35) : responsiveLayout.responsiveFont(0.35),
     },
     edgeFade: {
       ...StyleSheet.absoluteFill,

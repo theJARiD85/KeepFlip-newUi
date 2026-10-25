@@ -34,7 +34,7 @@ export function KeepFlipMfaChallenge({
   } = useKeepFlipAuth();
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const colors = getKeepFlipThemeColors(effectiveColorScheme);
-  const { responsiveFont } = useResponsiveLayout();
+  const { responsiveFont } = responsiveLayout;
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -172,7 +172,7 @@ export function KeepFlipMfaChallenge({
             borderWidth: 1,
             color: colors.text,
             fontSize: responsiveFont(16),
-            letterSpacing: isRecoveryCode ? 1 : 5,
+            letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(isRecoveryCode ? 1 : 5) : responsiveLayout.responsiveFont(isRecoveryCode ? 1 : 5),
             minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(54) : responsiveLayout.responsiveHeight(54),
             paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
             textAlign: isRecoveryCode ? 'left' : 'center',

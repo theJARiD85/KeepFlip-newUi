@@ -1,4 +1,5 @@
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 type EbayShoppingBagIconProps = {
   size?: number;
@@ -14,6 +15,7 @@ export function EbayShoppingBagIcon({
   size = 32,
   style,
 }: EbayShoppingBagIconProps) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const handleWidth = size * 0.56;
   const handleHeight = size * 0.32;
   const handleThickness = Math.max(2, size * 0.075);
@@ -24,10 +26,10 @@ export function EbayShoppingBagIcon({
     <View
       accessibilityElementsHidden
       importantForAccessibility="no"
-      style={[styles.root, { width: size, height: size }, style]}>
+      style={[responsiveStyles.root, { width: size, height: size }, style]}>
       <View
         style={[
-          styles.handle,
+          responsiveStyles.handle,
           {
             width: handleWidth,
             height: handleHeight,
@@ -42,7 +44,7 @@ export function EbayShoppingBagIcon({
 
       <View
         style={[
-          styles.bag,
+          responsiveStyles.bag,
           {
             top: bodyTop,
             width: size,
@@ -51,10 +53,10 @@ export function EbayShoppingBagIcon({
             borderBottomRightRadius: size * 0.085,
           },
         ]}>
-        <View style={[styles.stripe, styles.red]} />
-        <View style={[styles.stripe, styles.blue]} />
-        <View style={[styles.stripe, styles.yellow]} />
-        <View style={[styles.stripe, styles.green]} />
+        <View style={[responsiveStyles.stripe, responsiveStyles.red]} />
+        <View style={[responsiveStyles.stripe, responsiveStyles.blue]} />
+        <View style={[responsiveStyles.stripe, responsiveStyles.yellow]} />
+        <View style={[responsiveStyles.stripe, responsiveStyles.green]} />
       </View>
     </View>
   );
@@ -93,3 +95,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#86BD18',
   },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    handle: {
+      ...styles["handle"],
+      top: 0,
+    },
+    bag: {
+      ...styles["bag"],
+      left: 0,
+    },
+  });
+}

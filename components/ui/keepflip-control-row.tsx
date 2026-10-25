@@ -226,7 +226,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.goldBright,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: '900',
-      letterSpacing: 0.65,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.65) : responsiveLayout.responsiveFont(0.65),
     },
     rowChevron: { marginLeft: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(1) : responsiveLayout.responsiveWidth(1) },
     rowSpinner: { marginHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4) },
@@ -235,7 +235,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.goldMuted,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: '900',
-      letterSpacing: 0.6,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.6) : responsiveLayout.responsiveFont(0.6),
       textAlign: 'right',
     },
     statusBadge: {
@@ -280,7 +280,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     statusBadgeText: {
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
       fontWeight: '900',
-      letterSpacing: 0.62,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.62) : responsiveLayout.responsiveFont(0.62),
     },
     statusBadgeTextActive: { color: theme.colors.scannerCyan },
     statusBadgeTextMuted: { color: theme.colors.goldMuted },

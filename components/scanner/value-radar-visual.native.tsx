@@ -1112,7 +1112,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
       lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11),
-      letterSpacing: 1.2,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.2) : responsiveLayout.responsiveFont(1.2),
     },
     statusSeparator: {
       color: "rgba(141, 114, 255, 0.78)",
@@ -1126,7 +1126,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
-      letterSpacing: 0.9,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.9) : responsiveLayout.responsiveFont(0.9),
     },
     statusStateLoading: {
       color: theme.colors.goldBright,
@@ -1146,7 +1146,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(6.5) : responsiveLayout.responsiveFont(6.5),
       lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
-      letterSpacing: 0.72,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.72) : responsiveLayout.responsiveFont(0.72),
     },
     signalBars: {
       height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : responsiveLayout.responsiveHeight(10),
@@ -1234,7 +1234,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(6.5) : responsiveLayout.responsiveFont(6.5),
       lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
-      letterSpacing: 0.66,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.66) : responsiveLayout.responsiveFont(0.66),
     },
     targetHost: {
       zIndex: 8,
@@ -1356,7 +1356,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(6) : responsiveLayout.responsiveFont(6),
       lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),
-      letterSpacing: 0.6,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.6) : responsiveLayout.responsiveFont(0.6),
     },
     markerPanelHost: {
       position: "absolute",
@@ -1416,7 +1416,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(7.5) : responsiveLayout.responsiveFont(7.5),
       lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9),
-      letterSpacing: 1.1,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.1) : responsiveLayout.responsiveFont(1.1),
     },
     confidencePill: {
       paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5),
@@ -1432,14 +1432,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(6.5) : responsiveLayout.responsiveFont(6.5),
       lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontVariant: ["tabular-nums"],
-      letterSpacing: 0.35,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.35) : responsiveLayout.responsiveFont(0.35),
     },
     markerLabel: {
       color: theme.colors.text,
       fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(17) : responsiveLayout.responsiveFont(17),
       lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(21) : responsiveLayout.responsiveFont(21),
       fontWeight: "800",
-      letterSpacing: -0.25,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(-0.25) : responsiveLayout.responsiveFont(-0.25),
     },
     markerPanelFooter: {
       flexDirection: "row",
@@ -1453,7 +1453,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(6.5) : responsiveLayout.responsiveFont(6.5),
       lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
-      letterSpacing: 0.48,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.48) : responsiveLayout.responsiveFont(0.48),
     },
     markerChevron: {
       color: theme.colors.scannerViolet,

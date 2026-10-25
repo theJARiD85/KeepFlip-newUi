@@ -2212,7 +2212,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     title: {
       color: theme.colors.cream,
       fontWeight: "800",
-      letterSpacing: -0.6,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(-0.6) : responsiveLayout.responsiveFont(-0.6),
     },
     headerHintRow: {
       minHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(32) : responsiveLayout.responsiveHeight(32),
@@ -2283,7 +2283,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.scannerCyan,
       fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
       fontWeight: "900",
-      letterSpacing: 1,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1) : responsiveLayout.responsiveFont(1),
     },
     zoomPresetRow: {
       flexDirection: "row",
@@ -2370,7 +2370,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       color: theme.colors.scannerMagenta,
       fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10),
       fontWeight: "900",
-      letterSpacing: 2,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(2) : responsiveLayout.responsiveFont(2),
     },
     frameColorWash: {
       position: "absolute",
@@ -2428,7 +2428,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     analyzeButtonEyebrow: {
       color: theme.colors.scannerCyan,
       fontWeight: "900",
-      letterSpacing: 1.25,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.25) : responsiveLayout.responsiveFont(1.25),
     },
     analyzeButtonText: {
       color: theme.colors.cream,

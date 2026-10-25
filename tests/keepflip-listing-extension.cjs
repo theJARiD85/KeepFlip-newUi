@@ -346,6 +346,32 @@ test('the extension binds a listing run to KeepFlip and its marketplace tabs', a
   assert.ok(app.sent.some(({ id, message }) => id === 7 && message.status?.status === 'confirmed'));
 });
 
+test('a low-payout Facebook run accepts only an explicit buyer-paid override from its owner', async () => {
+  const app = harness();
+  const payload = listingPayload('facebookMarketplace');
+  payload.platformFields = { deliveryMethod: 'both', sellerPaysShipping: 'true' };
+  const base = { source: 'keepflip-webapp', protocol: 1, ownerId: 'owner-1', runId: 'run-facebook-shipping-123456' };
+  const webSender = { url: 'https://app.keep-flip.com/crosslisting', tab: { id: 7 } };
+  const started = await app.dispatch({ type: 'KEEPFLIP_LISTING_PAGE', request: {
+    ...base, action: 'LISTING_START', itemId: 'item-1', jobs: [{ marketplace: 'facebookMarketplace', payload }],
+    photos: [], unavailablePhotoCount: 0,
+  } }, webSender);
+  assert.equal(started.ok, true);
+  const facebookSender = { url: 'https://www.facebook.com/marketplace/create/item?step=delivery', tab: { id: 100 } };
+  await app.dispatch({ type: 'KEEPFLIP_LISTING_TAB_STATUS', runId: base.runId, marketplace: 'facebookMarketplace',
+    status: 'needs_review', reason: 'shipping_payout_too_low', message: 'Facebook shows a $0.03 payout.' }, facebookSender);
+  const action = { ...base, action: 'LISTING_USE_BUYER_PAID_SHIPPING', marketplace: 'facebookMarketplace' };
+  const denied = await app.dispatch({ type: 'KEEPFLIP_LISTING_PAGE', request: { ...action, ownerId: 'other-owner' } }, webSender);
+  assert.equal(denied.ok, false);
+  assert.equal(app.records.get('keepflipListingRun').jobs[0].payload.platformFields.sellerPaysShipping, 'true');
+  const accepted = await app.dispatch({ type: 'KEEPFLIP_LISTING_PAGE', request: action }, webSender);
+  assert.equal(accepted.ok, true);
+  assert.equal(app.records.get('keepflipListingRun').jobs[0].payload.platformFields.sellerPaysShipping, 'false');
+  assert.ok(app.sent.some(({ id, message }) => id === 100 && message.type === 'KEEPFLIP_LISTING_USE_BUYER_PAID_SHIPPING'));
+  const duplicate = await app.dispatch({ type: 'KEEPFLIP_LISTING_PAGE', request: action }, webSender);
+  assert.equal(duplicate.ok, false);
+});
+
 test('OfferUp opens its Sell popup before filling the listing form', async () => {
   let sellMenuOpen = false;
   let popupOpen = false;
@@ -949,8 +975,10 @@ test('Facebook keeps offers enabled only when KeepFlip provides a valid minimum'
   assert.equal(result.statuses.at(-1)?.status, 'filled');
 });
 
-test('Facebook applies an explicit shipping and pickup choice, then opens the shipping label picker', async () => {
+test('Facebook reselects Shipping if it reverts to Local pickup after the menu closes', async () => {
   let deliveryMenuOpen = false;
+  let revertedOnce = false;
+  let pointerFallbackUsed = false;
   let shippingSelected = false;
   let localPickupSelected = false;
   let shippingOptionClicks = 0;
@@ -970,7 +998,13 @@ test('Facebook applies an explicit shipping and pickup choice, then opens the sh
       : attribute === 'aria-expanded' ? String(deliveryMenuOpen) : null,
     getBoundingClientRect: () => ({ width: 260, height: 44 }),
     closest: () => null,
-    click: () => { deliveryMenuOpen = !deliveryMenuOpen; },
+    click: () => {
+      deliveryMenuOpen = !deliveryMenuOpen;
+      if (!deliveryMenuOpen && shippingSelected && localPickupSelected && !revertedOnce) {
+        shippingSelected = false;
+        revertedOnce = true;
+      }
+    },
   };
   Object.defineProperty(deliveryCombo, 'innerText', { get: () => `Delivery method ${currentDeliveryText()}` });
   Object.defineProperty(deliveryCombo, 'textContent', { get: () => `Delivery method ${currentDeliveryText()}` });
@@ -980,7 +1014,11 @@ test('Facebook applies an explicit shipping and pickup choice, then opens the sh
     textContent: 'Shipping. Buyers pay for shipping. We provide the prepaid shipping labels.',
     getAttribute: (attribute) => attribute === 'role' ? 'option' : null,
     getBoundingClientRect: () => ({ width: 260, height: 48 }),
-    click: () => { shippingOptionClicks += 1; shippingSelected = !shippingSelected; },
+    click: () => { shippingOptionClicks += 1; if (pointerFallbackUsed) shippingSelected = !shippingSelected; },
+    dispatchEvent: (event) => {
+      if (event.type === 'click') { pointerFallbackUsed = true; shippingSelected = true; }
+      return true;
+    },
   };
   const localPickupOption = {
     disabled: false,
@@ -1053,7 +1091,10 @@ test('Facebook applies an explicit shipping and pickup choice, then opens the sh
     document,
     location,
     Event: class TestEvent {},
+    MouseEvent: class TestMouseEvent { constructor(type) { this.type = type; } },
+    PointerEvent: class TestPointerEvent { constructor(type) { this.type = type; } },
     HTMLSelectElement: class HTMLSelectElement {},
+    window: {},
     setTimeout: (callback) => { queueMicrotask(callback); return 1; },
     clearTimeout: () => undefined,
     setInterval: (callback) => { queueMicrotask(callback); return 1; },
@@ -1064,7 +1105,8 @@ test('Facebook applies an explicit shipping and pickup choice, then opens the sh
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.equal(shippingSelected, true);
   assert.equal(localPickupSelected, true);
-  assert.equal(shippingOptionClicks, 1);
+  assert.equal(shippingOptionClicks, 2);
+  assert.equal(pointerFallbackUsed, true);
   assert.equal(localPickupOptionClicks, 1);
   assert.equal(deliveryMenuOpen, false);
   assert.equal(shippingLabelClicks, 1);
@@ -1085,7 +1127,8 @@ async function runFacebookShippingOptionsScenario({ runId, platformFields, selec
   shippingDialogOpensOnSyntheticClick = true, shippingDialogOpensOnDomClick = true,
   packageWeightSelectorFallback = false, exactWeightSelectorFallback = false,
   exactWeightButtonLabel = 'Enter exact weight', carrierAvailable = true,
-  shippingDialogClosesAfterMs = 0, nextDisabled = false }) {
+  shippingDialogClosesAfterMs = 0, nextDisabled = false, nextDisabledWhenSellerPays = false,
+  estimatedPayout = null, price = '80' }) {
   let deliveryMenuOpen = false;
   let deliveryMenuClicks = 0;
   let weightMenuOpen = false;
@@ -1125,6 +1168,7 @@ async function runFacebookShippingOptionsScenario({ runId, platformFields, selec
   const shippingActions = [];
   const weightWorkflowActions = [];
   const statuses = [];
+  const messageListeners = [];
   const deliveryCombo = {
     disabled: false,
     name: '',
@@ -1298,14 +1342,14 @@ async function runFacebookShippingOptionsScenario({ runId, platformFields, selec
     click: () => {
       shippingLabelClicks += 1;
       shippingLabelDomClicks += 1;
-      if (shippingDialogOpensOnDomClick) shippingDialogOpen = true;
+      if (shippingDialogOpensOnDomClick) { shippingDialogOpen = true; shippingUpdateClickMs = null; }
     },
     dispatchEvent: (event) => {
       shippingLabelEventTypes.push(event.type);
       shippingLabelEventDetails.push(event.options || {});
       if (event.type === 'click') {
         shippingLabelClicks += 1;
-        if (shippingDialogOpensOnSyntheticClick) shippingDialogOpen = true;
+        if (shippingDialogOpensOnSyntheticClick) { shippingDialogOpen = true; shippingUpdateClickMs = null; }
       }
       return true;
     },
@@ -1324,13 +1368,14 @@ async function runFacebookShippingOptionsScenario({ runId, platformFields, selec
   const nextButton = {
     disabled: false,
     getAttribute: (attribute) => attribute === 'aria-label' ? 'Next'
-      : attribute === 'aria-disabled' ? String(nextDisabled) : null,
+      : attribute === 'aria-disabled' ? String(nextDisabled || (nextDisabledWhenSellerPays && shippingCostChecked)) : null,
     getBoundingClientRect: () => ({ width: 260, height: 44 }),
     innerText: 'Next',
     textContent: 'Next',
     click: () => { nextClicks += 1; shippingActions.push('Next'); location.pathname = '/marketplace/item/123456789'; },
   };
   const document = {
+    body: { innerText: estimatedPayout === null ? '' : `Your estimated payout: $${estimatedPayout}` },
     getElementById: (id) => ({ textContent: id === 'delivery-label' ? 'Delivery method'
       : id === 'weight-label' ? 'Package weight' : id === 'carrier-label' ? 'Shipping carrier' : '' }),
     querySelector: (selector) => {
@@ -1382,7 +1427,7 @@ async function runFacebookShippingOptionsScenario({ runId, platformFields, selec
     ok: true,
     jobStatus: 'opened',
     runId,
-    payload: { title: 'Baby stroller', description: 'Stroller in good condition.', price: '80', photoCount: 0,
+    payload: { title: 'Baby stroller', description: 'Stroller in good condition.', price, photoCount: 0,
       platformFields },
     photos: [],
     unavailablePhotoCount: 0,
@@ -1390,7 +1435,7 @@ async function runFacebookShippingOptionsScenario({ runId, platformFields, selec
   const chrome = {
     runtime: {
       lastError: undefined,
-      onMessage: { addListener: () => undefined },
+      onMessage: { addListener: (listener) => messageListeners.push(listener) },
       sendMessage: (message) => {
         if (message.type === 'KEEPFLIP_LISTING_TAB_READY') return Promise.resolve(assignment);
         if (message.type === 'KEEPFLIP_LISTING_TAB_STATUS') statuses.push(message);
@@ -1429,7 +1474,15 @@ async function runFacebookShippingOptionsScenario({ runId, platformFields, selec
     shippingLabelEventTypes, shippingLabelEventDetails, shippingLabelClosestSelectors,
     shippingLabelLookupChecks, deliveryComboLookupChecks, simulatedWaitMs,
     exactWeightClicks, exactWeightDoneClicks, exactWeightSelectorUsed, exactWeightInputsWhenDone, exactWeightPoundsInput, exactWeightOuncesInput, weightWorkflowActions,
-    shippingCostClicks, updateClicks, nextClicks, shippingActions };
+    shippingCostClicks, updateClicks, nextClicks, shippingActions,
+    useBuyerPaidShipping: async () => {
+      messageListeners[0]({ type: 'KEEPFLIP_LISTING_USE_BUYER_PAID_SHIPPING', runId, marketplace: 'facebookMarketplace' });
+      for (let attempt = 0; attempt < 20 && !statuses.some((status) => status.status === 'confirmed'); attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+      return { sellerPaysShipping: assignment.payload.platformFields.sellerPaysShipping,
+        shippingCostChecked, nextClicks, status: statuses.at(-1)?.status };
+    } };
 }
 
 test('Facebook opens the shipping options before opening the Package weight dropdown', async () => {
@@ -1705,6 +1758,33 @@ test('Facebook does not click a disabled Next button after shipping settings sav
   assert.equal(result.nextClicks, 0);
   assert.equal(result.statuses.at(-1)?.status, 'needs_review');
   assert.match(result.statuses.at(-1)?.message || '', /Next is still disabled/i);
+});
+
+test('Facebook reports a low payout block without changing the reviewed seller-paid choice', async () => {
+  const result = await runFacebookShippingOptionsScenario({
+    runId: 'facebook-low-payout-run-123456',
+    platformFields: { deliveryMethod: 'shipping_and_local_pickup', shippingWeight: '8 oz', sellerPaysShipping: 'true' },
+    selectedWeight: '0.5-1 lbs', nextDisabled: true, estimatedPayout: '0.03', price: '9',
+  });
+
+  assert.equal(result.shippingCostChecked, true);
+  assert.equal(result.nextClicks, 0);
+  assert.equal(result.statuses.at(-1)?.reason, 'shipping_payout_too_low', JSON.stringify(result.statuses.at(-1)));
+  assert.match(result.statuses.at(-1)?.message || '', /\$0\.03 estimated payout.*\$9 listing/i);
+});
+
+test('Facebook resumes the blocked draft after the seller chooses buyer-paid shipping for this run', async () => {
+  const result = await runFacebookShippingOptionsScenario({
+    runId: 'facebook-buyer-paid-override-run-123456',
+    platformFields: { deliveryMethod: 'shipping_and_local_pickup', shippingWeight: '8 oz', sellerPaysShipping: 'true' },
+    selectedWeight: '0.5-1 lbs', nextDisabledWhenSellerPays: true, estimatedPayout: '0.03', price: '9',
+  });
+  assert.equal(result.statuses.at(-1)?.reason, 'shipping_payout_too_low');
+  const resumed = await result.useBuyerPaidShipping();
+  assert.equal(resumed.sellerPaysShipping, 'false');
+  assert.equal(resumed.shippingCostChecked, false, JSON.stringify({ resumed, statuses: result.statuses.slice(-3) }));
+  assert.equal(resumed.nextClicks, 1);
+  assert.equal(resumed.status, 'confirmed');
 });
 
 test('Facebook enters the generated approximate weight through Enter exact weight', async () => {

@@ -9,6 +9,7 @@ import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive
 const stripePromise: Promise<Stripe | null> = loadStripe('pk_live_51Pc7h6RvtjovWZmE45BTyGTCCtJ7iZZJBCVvvAWwQ2dGzgo05KzvTt3xCl9YBxIfgEUX7akXAj7lQJLQNqBwbdR100OTG4CFOt');
 
 function CheckoutForm({ clientSecret }: StripeCheckoutProps): React.JSX.Element {
+  const responsiveLayout2 = useResponsiveLayout();
   const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const stripe = useStripe();
   const elements = useElements();
@@ -35,7 +36,7 @@ function CheckoutForm({ clientSecret }: StripeCheckoutProps): React.JSX.Element 
   return (
     <View style={responsiveStyles.container}>
       {/* Stripe elements require a DOM framework on web */}
-      <div style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '4px', marginBottom: '15px' }}>
+      <div style={{ padding: `${responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveWidth(10) : responsiveLayout2.responsiveWidth(10)}px`, border: '1px solid #ccc', borderRadius: `${responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveWidth(4) : responsiveLayout2.responsiveWidth(4)}px`, marginBottom: `${responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveHeight(15) : responsiveLayout2.responsiveHeight(15)}px` }}>
         <CardElement options={{ style: { base: { fontSize: '16px' } } }} />
       </div>
       <Button title="Pay Now" onPress={handlePay} />

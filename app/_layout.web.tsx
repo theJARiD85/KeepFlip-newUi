@@ -23,7 +23,7 @@ import {
   initializeKeepFlipFirebaseAnalytics,
   trackKeepFlipFirebaseWebScreen,
 } from '@/services/keepflip-firebase-analytics';
-import { WebAppShellLayoutProvider } from '@/hooks/use-responsive-layout';
+import { WebAppShellLayoutProvider , useResponsiveLayout, useResponsiveStyles} from '@/hooks/use-responsive-layout';
 import { areKeepFlipSubscriptionsEnforced } from '@/services/keepflip-subscription-service';
 
 analytics.init({
@@ -113,6 +113,7 @@ function ProtectedRootStack() {
 }
 
 function WebRootContent() {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const colors = getKeepFlipThemeColors(effectiveColorScheme);
   const [fontsLoaded, fontError] = useFonts({
@@ -161,7 +162,7 @@ function WebRootContent() {
           <FlipCompanionProvider>
             <KeepFlipSubscriptionProvider>
               <KeepFlipFeedbackNudgeProvider>
-                <View style={styles.webRoot}>
+                <View style={responsiveStyles.webRoot}>
                   <ProtectedRootStack />
                 </View>
               </KeepFlipFeedbackNudgeProvider>
@@ -191,3 +192,13 @@ const styles = StyleSheet.create({
     width: '100%',
   },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    webRoot: {
+      ...styles["webRoot"],
+      minWidth: 0,
+    },
+  });
+}

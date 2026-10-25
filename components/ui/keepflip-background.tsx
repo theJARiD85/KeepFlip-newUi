@@ -6,6 +6,7 @@ import {
   getKeepFlipThemeColors,
   type KeepFlipColorScheme,
 } from '@/constants/keepflip-theme';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 type KeepFlipBackgroundProps = PropsWithChildren<{
   contentStyle?: StyleProp<ViewStyle>;
@@ -17,22 +18,23 @@ export function KeepFlipBackground({
   contentStyle,
   colorScheme,
 }: KeepFlipBackgroundProps) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   const { effectiveColorScheme } = useKeepFlipAppearance();
   const resolvedColorScheme = colorScheme ?? effectiveColorScheme;
   const colors = getKeepFlipThemeColors(resolvedColorScheme);
 
   return (
-    <View style={[styles.root, StyleSheet.absoluteFill, { backgroundColor: colors.backgroundDeep }]}>
+    <View style={[responsiveStyles.root, StyleSheet.absoluteFill, { backgroundColor: colors.backgroundDeep }]}>
       <View
         pointerEvents="none"
         style={[
-          styles.ambientGradient,
+          responsiveStyles.ambientGradient,
           resolvedColorScheme === 'dark'
-            ? styles.ambientGradientDark
-            : styles.ambientGradientLight,
+            ? responsiveStyles.ambientGradientDark
+            : responsiveStyles.ambientGradientLight,
         ]}
       />
-      <View style={[styles.content, contentStyle]}>{children}</View>
+      <View style={[responsiveStyles.content, contentStyle]}>{children}</View>
     </View>
   );
 }
@@ -72,3 +74,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    ambientGradient: {
+      ...styles["ambientGradient"],
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+    },
+  });
+}

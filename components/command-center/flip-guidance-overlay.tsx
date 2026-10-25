@@ -296,7 +296,7 @@ function createStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) 
     color: theme.colors.scannerCyan,
     fontFamily: theme.fonts.radar,
     fontWeight: '900',
-    letterSpacing: 1.1,
+    letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.1) : responsiveLayout.responsiveFont(1.1),
   },
   title: {
     color: theme.colors.cream,
@@ -325,13 +325,13 @@ function createStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) 
     color: theme.colors.goldBright,
     fontFamily: theme.fonts.radar,
     fontWeight: '900',
-    letterSpacing: 0.8,
+    letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.8) : responsiveLayout.responsiveFont(0.8),
   },
   routeLabel: {
     color: theme.colors.textMuted,
     fontFamily: theme.fonts.radar,
     fontWeight: '900',
-    letterSpacing: 0.6,
+    letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.6) : responsiveLayout.responsiveFont(0.6),
     maxWidth: '56%',
   },
   progressTrack: {
@@ -374,7 +374,7 @@ function createStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) 
     color: theme.colors.textMuted,
     fontFamily: theme.fonts.radar,
     fontWeight: '900',
-    letterSpacing: 0.6,
+    letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.6) : responsiveLayout.responsiveFont(0.6),
   },
   screenButton: {
     alignItems: 'center',
@@ -390,7 +390,7 @@ function createStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) 
     color: theme.colors.scannerCyan,
     fontFamily: theme.fonts.radar,
     fontWeight: '900',
-    letterSpacing: 0.6,
+    letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.6) : responsiveLayout.responsiveFont(0.6),
   },
   primaryButton: {
     alignItems: 'center',
@@ -404,7 +404,7 @@ function createStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) 
     color: theme.colors.backgroundDeep,
     fontFamily: theme.fonts.radar,
     fontWeight: '900',
-    letterSpacing: 0.6,
+    letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.6) : responsiveLayout.responsiveFont(0.6),
   },
   pressed: {
     opacity: 0.72,

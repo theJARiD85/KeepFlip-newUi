@@ -314,7 +314,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     heading: {
       color: theme.colors.text,
       fontWeight: '800',
-      letterSpacing: -0.1,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(-0.1) : responsiveLayout.responsiveFont(-0.1),
     },
     liveBadge: {
       paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
@@ -327,7 +327,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     liveBadgeText: {
       color: theme.colors.scannerCyan,
       fontWeight: '900',
-      letterSpacing: 1,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1) : responsiveLayout.responsiveFont(1),
     },
     muted: {
       color: theme.colors.textMuted,
@@ -370,7 +370,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     label: {
       color: theme.colors.goldBright,
       fontWeight: '900',
-      letterSpacing: 1,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1) : responsiveLayout.responsiveFont(1),
     },
     levelValue: {
       color: theme.colors.goldBright,
@@ -424,7 +424,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     buttonText: {
       color: theme.colors.text,
       fontWeight: '800',
-      letterSpacing: 0.4,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.4) : responsiveLayout.responsiveFont(0.4),
     },
     dashboardLink: {
       alignSelf: 'flex-start',
@@ -434,7 +434,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     dashboardLinkText: {
       color: theme.colors.scannerCyan,
       fontWeight: '800',
-      letterSpacing: 0.3,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(0.3) : responsiveLayout.responsiveFont(0.3),
     },
     disabled: {
       opacity: 0.44,

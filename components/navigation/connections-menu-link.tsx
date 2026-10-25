@@ -90,7 +90,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     detail: {
       color: theme.colors.textMuted,
       fontWeight: '900',
-      letterSpacing: 1.1,
+      letterSpacing: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(1.1) : responsiveLayout.responsiveFont(1.1),
     },
   });
 }

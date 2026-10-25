@@ -89,17 +89,18 @@ function DropdownLink({
   onNavigate: () => void;
   subtitle?: string;
 }) {
+  const responsiveLayout = useResponsiveLayout();
   const responsiveStyles2 = useResponsiveStyles(createStylesWebResponsive);
   if (Platform.OS === 'web') {
     const linkStyle: CSSProperties = {
-      borderRadius: 10,
+      borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       color: colors.text,
       display: 'flex',
       flexDirection: 'column',
       fontFamily: theme.fonts.semibold,
-      fontSize: 14,
-      gap: 5,
-      padding: '10px 8px',
+      fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(14) : responsiveLayout.responsiveFont(14),
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5),
+      padding: `${responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(10) : responsiveLayout.responsiveHeight(10)}px ${responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8)}px`,
       textDecoration: 'none',
     };
     return createElement(
@@ -107,7 +108,7 @@ function DropdownLink({
       { href, onClick: onNavigate, style: linkStyle },
       createElement('span', null, label),
       subtitle
-        ? createElement('span', { style: { color: colors.textMuted, fontFamily: theme.fonts.body, fontSize: 12 } }, subtitle)
+        ? createElement('span', { style: { color: colors.textMuted, fontFamily: theme.fonts.body, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12) } }, subtitle)
         : null,
     );
   }

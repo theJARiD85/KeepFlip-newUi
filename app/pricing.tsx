@@ -183,6 +183,7 @@ function BillingComparisonTable({
 }: {
   colors: ReturnType<typeof getKeepFlipThemeColors>;
 }) {
+  const responsiveLayout = useResponsiveLayout();
   const responsiveStyles2 = useResponsiveStyles(createStylesWebResponsive);
   const monthly = KEEPFLIP_PUBLIC_PRICING_USD.web.monthly;
   const annual = KEEPFLIP_PUBLIC_PRICING_USD.web.annual;
@@ -215,22 +216,22 @@ function BillingComparisonTable({
     borderBottom: `1px solid ${colors.divider}`,
     color: colors.text,
     fontWeight: 700,
-    padding: '12px 14px',
+    padding: `${responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(12) : responsiveLayout.responsiveHeight(12)}px ${responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14)}px`,
     textAlign: 'left',
   };
   const cellStyle: CSSProperties = {
     borderBottom: `1px solid ${colors.divider}`,
     color: colors.textMuted,
-    padding: '12px 14px',
+    padding: `${responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(12) : responsiveLayout.responsiveHeight(12)}px ${responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14)}px`,
     textAlign: 'left',
   };
 
   return createElement(
     'div',
-    { style: { border: `1px solid ${colors.divider}`, borderRadius: 14, maxWidth: '100%', overflowX: 'auto' } },
+    { style: { border: `1px solid ${colors.divider}`, borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14), maxWidth: '100%', overflowX: 'auto' } },
     createElement(
       'table',
-      { style: { borderCollapse: 'collapse', fontFamily: theme.fonts.body, minWidth: '520px', width: '100%' } },
+      { style: { borderCollapse: 'collapse', fontFamily: theme.fonts.body, minWidth: `${responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(520) : responsiveLayout.responsiveWidth(520)}px`, width: '100%' } },
       createElement('caption', { style: { clip: 'rect(0 0 0 0)', clipPath: 'inset(50%)', height: 1, overflow: 'hidden', position: 'absolute', whiteSpace: 'nowrap', width: 1 } }, 'Compare monthly and annual billing for Serious Reseller'),
       createElement(
         'thead',
