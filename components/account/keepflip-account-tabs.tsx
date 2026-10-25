@@ -87,7 +87,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
-      padding: 4,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
     },
   });
   return {

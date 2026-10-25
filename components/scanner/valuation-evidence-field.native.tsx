@@ -710,7 +710,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       position: "absolute",
       width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(84) : responsiveLayout.responsiveWidth(84),
       alignItems: "center",
-      gap: 2,
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
     },
     rangeCellCenter: {
       width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(96) : responsiveLayout.responsiveWidth(96),
@@ -737,7 +737,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       zIndex: 4,
       width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(156) : responsiveLayout.responsiveWidth(156),
       alignItems: "center",
-      gap: 2,
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
       paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : responsiveLayout.responsiveHeight(6),
       paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
       borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : responsiveLayout.responsiveWidth(6),

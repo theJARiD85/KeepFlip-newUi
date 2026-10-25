@@ -311,15 +311,15 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       letterSpacing: 0.8,
     },
     signalBars: {
-      marginLeft: 2,
+      marginLeft: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
       height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : responsiveLayout.responsiveHeight(10),
       flexDirection: "row",
       alignItems: "flex-end",
-      gap: 2,
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
     },
     signalBar: {
-      width: 2,
-      borderRadius: 1,
+      width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
+      borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(1) : responsiveLayout.responsiveWidth(1),
     },
     signalBarLow: {
       height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(3) : responsiveLayout.responsiveHeight(3),
@@ -346,7 +346,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     modelCueLine: {
       width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(25) : responsiveLayout.responsiveWidth(25),
-      height: 1,
+      height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(1) : responsiveLayout.responsiveHeight(1),
       backgroundColor: "rgba(88, 223, 232, 0.42)",
     },
     modelCueLight: {

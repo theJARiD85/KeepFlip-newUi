@@ -56,7 +56,7 @@ export default function SubscriptionCheckScreen() {
 function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
   const { responsiveFont, responsiveHeight, responsiveWidth } = responsiveLayout;
   const staticStyles = StyleSheet.create({
-    content: { alignItems: 'center', justifyContent: 'center', padding: 24 },
+    content: { alignItems: 'center', justifyContent: 'center', padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(24) : responsiveLayout.responsiveWidth(24) },
     lockup: { width: '100%', maxWidth: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(360) : responsiveLayout.responsiveWidth(360), alignItems: 'center', gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(22) : responsiveLayout.responsiveWidth(22) },
     logoHalo: {
       width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(148) : responsiveLayout.responsiveWidth(148),

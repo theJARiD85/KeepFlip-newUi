@@ -48,15 +48,15 @@ export function ConnectionsMenuLink({
   );
 }
 
-function createResponsiveStyles() {
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
   return StyleSheet.create({
     link: {
-      minHeight: 58,
+      minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(58) : responsiveLayout.responsiveHeight(58),
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 11,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(11) : responsiveLayout.responsiveWidth(11),
+      paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
+      paddingVertical: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(8) : responsiveLayout.responsiveHeight(8),
       borderRadius: theme.radii.medium,
       borderWidth: 1,
       borderColor: theme.colors.divider,
@@ -69,8 +69,8 @@ function createResponsiveStyles() {
     linkDisabled: { opacity: 0.56 },
     linkPressed: { opacity: 0.76 },
     iconShell: {
-      width: 34,
-      height: 34,
+      width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(34) : responsiveLayout.responsiveWidth(34),
+      height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(34) : responsiveLayout.responsiveHeight(34),
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: theme.radii.small,
@@ -82,7 +82,7 @@ function createResponsiveStyles() {
       borderColor: theme.colors.accentCyanBorder,
       backgroundColor: theme.colors.iconSurfaceCyan,
     },
-    copy: { minWidth: 0, flex: 1, gap: 3 },
+    copy: { minWidth: 0, flex: 1, gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3) },
     label: {
       color: theme.colors.cream,
       fontWeight: '800',

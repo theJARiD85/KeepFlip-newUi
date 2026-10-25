@@ -175,13 +175,13 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     backdrop: {
       flex: 1,
       justifyContent: 'flex-end',
-      padding: 12,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
       backgroundColor: theme.colors.scrim,
     },
     card: {
       width: '100%',
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16),
-      padding: 16,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16),
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
       borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(18) : responsiveLayout.responsiveWidth(18),
@@ -226,7 +226,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: 'row',
       alignItems: 'center',
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
-      padding: 10,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       borderWidth: 1,
       borderColor: theme.colors.divider,
       borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(13) : responsiveLayout.responsiveWidth(13),
@@ -245,7 +245,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.iconSurface,
     },
     optionIconSelected: { backgroundColor: theme.colors.iconSurfaceGold },
-    optionCopy: { flex: 1, gap: 2 },
+    optionCopy: { flex: 1, gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2) },
     optionTitleLine: {
       flexDirection: 'row',
       alignItems: 'center',

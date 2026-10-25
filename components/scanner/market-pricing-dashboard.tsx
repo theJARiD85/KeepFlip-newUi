@@ -928,7 +928,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       textAlign: "center",
     },
     error: {
-      padding: 9,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: "rgba(232, 97, 88, 0.44)",
       borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
@@ -1028,7 +1028,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     trendSection: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
-      paddingTop: 2,
+      paddingTop: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(2) : responsiveLayout.responsiveHeight(2),
     },
     section: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
@@ -1070,8 +1070,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(116) : responsiveLayout.responsiveHeight(116),
       flexDirection: "row",
       alignItems: "flex-end",
-      gap: 2,
-      paddingTop: 2,
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
+      paddingTop: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(2) : responsiveLayout.responsiveHeight(2),
       paddingBottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(3) : responsiveLayout.responsiveHeight(3),
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: theme.colors.dividerStrong,
@@ -1097,12 +1097,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       width: "100%",
       height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(80) : responsiveLayout.responsiveHeight(80),
       justifyContent: "flex-end",
-      paddingHorizontal: 1,
+      paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(1) : responsiveLayout.responsiveWidth(1),
     },
     trendBar: {
       width: "100%",
       minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(4) : responsiveLayout.responsiveHeight(4),
-      borderRadius: 2,
+      borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
       backgroundColor: theme.colors.scannerCyan,
     },
     trendDate: {
@@ -1141,7 +1141,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     conditionLead: {
       flex: 1,
       minWidth: 0,
-      gap: 2,
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
     },
     conditionName: {
       color: "rgba(255, 255, 255, 0.86)",
@@ -1158,7 +1158,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     conditionValues: {
       alignItems: "flex-end",
-      gap: 2,
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
     },
     conditionMedian: {
       color: "#FFFFFF",

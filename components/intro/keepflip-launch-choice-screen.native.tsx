@@ -200,7 +200,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       alignItems: 'center',
       alignSelf: 'center',
       maxWidth: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(500) : responsiveLayout.responsiveWidth(500),
-      padding: 22,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(22) : responsiveLayout.responsiveWidth(22),
       width: '100%',
     },
     content: {

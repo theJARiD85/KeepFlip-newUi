@@ -367,7 +367,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: 'row',
       alignItems: 'flex-start',
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(13) : responsiveLayout.responsiveWidth(13),
-      padding: 15,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(15) : responsiveLayout.responsiveWidth(15),
       borderRadius: theme.radii.medium,
       borderWidth: 1,
       borderColor: theme.colors.divider,
@@ -402,7 +402,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: 'row',
       alignItems: 'flex-start',
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(11) : responsiveLayout.responsiveWidth(11),
-      padding: 14,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
       borderRadius: theme.radii.medium,
       borderWidth: 1,
       borderColor: theme.colors.dividerStrong,
@@ -418,7 +418,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     resultCard: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
-      padding: 14,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
       borderRadius: theme.radii.medium,
       borderWidth: 1,
       borderColor: theme.colors.dividerStrong,
@@ -445,7 +445,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     actions: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
-      paddingTop: 2,
+      paddingTop: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(2) : responsiveLayout.responsiveHeight(2),
     },
     environmentLabel: {
       fontFamily: theme.fonts.radar,

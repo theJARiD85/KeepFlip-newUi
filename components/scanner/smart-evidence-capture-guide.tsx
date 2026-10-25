@@ -70,9 +70,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   const staticStyles = StyleSheet.create({
     root: {
       position: "absolute",
-      top: 10,
-      right: 10,
-      left: 10,
+      top: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(10) : responsiveLayout.responsiveHeight(10),
+      right: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
+      left: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       paddingVertical: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(7) : responsiveLayout.responsiveHeight(7),
       borderRadius: theme.radii.small,
@@ -81,7 +81,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: "rgba(4, 7, 11, 0.76)",
       boxShadow: "0 5px 16px rgba(0, 0, 0, 0.34)",
     },
-    copy: { gap: 1 },
+    copy: { gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(1) : responsiveLayout.responsiveWidth(1) },
     headerRow: {
       flexDirection: "row",
       alignItems: "center",

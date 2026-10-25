@@ -754,7 +754,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderWidth: 1,
       flexDirection: "row",
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
-      padding: 4,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
     },
     viewTab: {
       alignItems: "center",
@@ -968,7 +968,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: "row",
       alignItems: "center",
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
-      padding: 14,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
       borderRadius: theme.radii.medium,
       borderWidth: 1,
       borderColor: theme.colors.danger,
@@ -997,7 +997,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       alignItems: "center",
       justifyContent: "center",
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
-      padding: 24,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(24) : responsiveLayout.responsiveWidth(24),
     },
     emptyIcon: {
       width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(74) : responsiveLayout.responsiveWidth(74),

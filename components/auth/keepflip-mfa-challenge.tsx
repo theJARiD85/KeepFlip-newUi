@@ -227,7 +227,7 @@ export function KeepFlipMfaChallenge({
         accessibilityRole="button"
         disabled={isBusy}
         onPress={() => void backToPassword()}
-        style={({ pressed }) => ({ alignSelf: 'center', opacity: pressed || isBusy ? 0.65 : 1, padding: 8 })}
+        style={({ pressed }) => ({ alignSelf: 'center', opacity: pressed || isBusy ? 0.65 : 1, padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8) })}
       >
         <Text style={{ color: colors.scannerCyan, fontSize: responsiveFont(10), fontWeight: '700' }}>
           BACK TO PASSWORD SIGN IN

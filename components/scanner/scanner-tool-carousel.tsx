@@ -507,10 +507,10 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     focusGlow: {
       position: 'absolute',
-      top: -1,
-      right: -1,
-      bottom: -1,
-      left: -1,
+      top: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(-1) : responsiveLayout.responsiveHeight(-1),
+      right: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(-1) : responsiveLayout.responsiveWidth(-1),
+      bottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(-1) : responsiveLayout.responsiveHeight(-1),
+      left: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(-1) : responsiveLayout.responsiveWidth(-1),
       borderWidth: 3,
     },
     controlCore: {
@@ -520,8 +520,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     badge: {
       position: 'absolute',
-      top: -2,
-      right: -2,
+      top: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(-2) : responsiveLayout.responsiveHeight(-2),
+      right: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(-2) : responsiveLayout.responsiveWidth(-2),
       alignItems: 'center',
       justifyContent: 'center',
       paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5),

@@ -304,7 +304,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     body: { color: theme.colors.textMuted, fontSize: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(14) : responsiveLayout.responsiveFont(14), lineHeight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveFont(21) : responsiveLayout.responsiveFont(21), textAlign: "center" },
     details: {
       width: "100%",
-      gap: 1,
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(1) : responsiveLayout.responsiveWidth(1),
       overflow: "hidden",
       borderRadius: theme.radii.medium,
       borderWidth: 1,

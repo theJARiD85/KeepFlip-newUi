@@ -670,7 +670,7 @@ function createResponsiveStyles(
       borderWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
-      padding: 12,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
     },
     errorText: {
       color: theme.colors.text,
@@ -702,7 +702,7 @@ function createResponsiveStyles(
       borderWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
-      padding: 12,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
     },
     noticeText: {
       color: theme.colors.textMuted,
@@ -740,7 +740,7 @@ function createResponsiveStyles(
       fontSize: responsiveFont(8),
       fontWeight: '900',
       letterSpacing: 1.1,
-      marginTop: 2,
+      marginTop: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(2) : responsiveLayout.responsiveHeight(2),
     },
     filterRow: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
@@ -779,7 +779,7 @@ function createResponsiveStyles(
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
       marginTop: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(3) : responsiveLayout.responsiveHeight(3),
       minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(32) : responsiveLayout.responsiveHeight(32),
-      paddingHorizontal: 2,
+      paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
     },
     tableHeaderText: {
       color: theme.colors.textMuted,
@@ -797,11 +797,11 @@ function createResponsiveStyles(
       flexDirection: 'row',
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
       minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(70) : responsiveLayout.responsiveHeight(70),
-      paddingHorizontal: 2,
+      paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
       paddingVertical: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(9) : responsiveLayout.responsiveHeight(9),
     },
     recordRowPressed: { backgroundColor: theme.colors.cardSoft },
-    recordMarker: { borderRadius: 2, height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(30) : responsiveLayout.responsiveHeight(30), width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3) },
+    recordMarker: { borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2), height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(30) : responsiveLayout.responsiveHeight(30), width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3) },
     recordMarkerIncome: { backgroundColor: theme.colors.scannerCyan },
     recordMarkerExpense: { backgroundColor: theme.colors.gold },
     recordDateColumn: {
@@ -858,7 +858,7 @@ function createResponsiveStyles(
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
       justifyContent: 'center',
       minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(160) : responsiveLayout.responsiveHeight(160),
-      padding: 18,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(18) : responsiveLayout.responsiveWidth(18),
     },
     emptyStateTitle: {
       color: theme.colors.cream,
@@ -882,8 +882,8 @@ function createResponsiveStyles(
       alignSelf: 'center',
       backgroundColor: theme.colors.surfaceOverlay,
       borderColor: theme.colors.accentCyanBorder,
-      borderTopLeftRadius: 18,
-      borderTopRightRadius: 18,
+      borderTopLeftRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(18) : responsiveLayout.responsiveWidth(18),
+      borderTopRightRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(18) : responsiveLayout.responsiveWidth(18),
       borderWidth: StyleSheet.hairlineWidth,
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(15) : responsiveLayout.responsiveWidth(15),
       maxHeight: '86%',
@@ -902,7 +902,7 @@ function createResponsiveStyles(
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
       justifyContent: 'space-between',
     },
-    detailHeaderCopy: { flex: 1, gap: 2 },
+    detailHeaderCopy: { flex: 1, gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2) },
     detailEyebrow: {
       color: theme.colors.gold,
       fontFamily: theme.fonts.radar,
@@ -928,7 +928,7 @@ function createResponsiveStyles(
       borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
       borderWidth: StyleSheet.hairlineWidth,
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
-      padding: 14,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
     },
     detailAmountLabel: {
       color: theme.colors.textMuted,
@@ -970,7 +970,7 @@ function createResponsiveStyles(
       fontSize: responsiveFont(7),
       fontWeight: '900',
       letterSpacing: 0.65,
-      paddingTop: 2,
+      paddingTop: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(2) : responsiveLayout.responsiveHeight(2),
       width: responsiveWidth(86),
     },
     detailValue: {

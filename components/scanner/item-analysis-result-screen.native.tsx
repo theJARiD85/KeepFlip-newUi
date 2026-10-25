@@ -1120,9 +1120,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       alignItems: "center",
       justifyContent: "center",
       position: "absolute",
-      top: 80,
-      left: 8,
-      right: 8,
+      top: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(80) : responsiveLayout.responsiveHeight(80),
+      left: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
+      right: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
     },
     resultScrim: {
       ...StyleSheet.absoluteFill,

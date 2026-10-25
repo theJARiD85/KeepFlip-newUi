@@ -1048,7 +1048,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   const staticStyles = StyleSheet.create({
     overlayRoot: {
       ...StyleSheet.absoluteFill,
-      bottom: 40
+      bottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(40) : responsiveLayout.responsiveHeight(40)
     },
     statusModule: {
       position: "absolute",
@@ -1072,11 +1072,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     statusAccent: {
       position: "absolute",
-      top: 7,
-      bottom: 7,
+      top: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(7) : responsiveLayout.responsiveHeight(7),
+      bottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(7) : responsiveLayout.responsiveHeight(7),
       left: 0,
-      width: 2,
-      borderRadius: 2,
+      width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
+      borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
       backgroundColor: theme.colors.scannerCyan,
       boxShadow: "0 0 8px rgba(88, 223, 232, 0.82)",
     },
@@ -1152,11 +1152,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(10) : responsiveLayout.responsiveHeight(10),
       flexDirection: "row",
       alignItems: "flex-end",
-      gap: 2,
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
     },
     signalBar: {
-      width: 2,
-      borderRadius: 1,
+      width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
+      borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(1) : responsiveLayout.responsiveWidth(1),
       backgroundColor: theme.colors.scannerCyan,
     },
     signalBarLow: {
@@ -1211,12 +1211,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       justifyContent: "center",
     },
     acquisitionTrackLine: {
-      height: 1,
+      height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(1) : responsiveLayout.responsiveHeight(1),
       backgroundColor: "rgba(88, 223, 232, 0.34)",
     },
     acquisitionTrackNode: {
       position: "absolute",
-      left: 9,
+      left: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
       width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(6) : responsiveLayout.responsiveWidth(6),
       height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(6) : responsiveLayout.responsiveHeight(6),
       borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3),
@@ -1304,14 +1304,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       position: "absolute",
       left: "31%",
       right: "31%",
-      height: 1,
+      height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(1) : responsiveLayout.responsiveHeight(1),
       backgroundColor: "rgba(88, 223, 232, 0.42)",
     },
     crosshairVertical: {
       position: "absolute",
       top: "31%",
       bottom: "31%",
-      width: 1,
+      width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(1) : responsiveLayout.responsiveWidth(1),
       backgroundColor: "rgba(88, 223, 232, 0.42)",
     },
     targetCore: {
@@ -1328,24 +1328,24 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     targetCoreDot: {
       width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3),
       height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(3) : responsiveLayout.responsiveHeight(3),
-      borderRadius: 2,
+      borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
       backgroundColor: theme.colors.goldBright,
     },
     targetScanBeam: {
       position: "absolute",
       top: 0,
-      right: 5,
-      left: 5,
-      height: 1,
+      right: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5),
+      left: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5),
+      height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(1) : responsiveLayout.responsiveHeight(1),
       backgroundColor: theme.colors.scannerCyan,
       boxShadow: "0 0 8px rgba(88, 223, 232, 0.82)",
     },
     targetId: {
       position: "absolute",
-      top: 5,
-      left: 6,
+      top: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(5) : responsiveLayout.responsiveHeight(5),
+      left: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(6) : responsiveLayout.responsiveWidth(6),
       paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
-      paddingVertical: 2,
+      paddingVertical: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(2) : responsiveLayout.responsiveHeight(2),
       borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3),
       backgroundColor: "rgba(3, 7, 12, 0.76)",
       borderWidth: 0.5,
@@ -1381,11 +1381,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     markerPanelAccent: {
       position: "absolute",
-      top: 9,
-      bottom: 9,
+      top: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(9) : responsiveLayout.responsiveHeight(9),
+      bottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(9) : responsiveLayout.responsiveHeight(9),
       left: 0,
-      width: 2,
-      borderRadius: 2,
+      width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
+      borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
       backgroundColor: theme.colors.scannerCyan,
       boxShadow: "0 0 8px rgba(88, 223, 232, 0.82)",
     },
@@ -1420,7 +1420,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     confidencePill: {
       paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5),
-      paddingVertical: 2,
+      paddingVertical: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(2) : responsiveLayout.responsiveHeight(2),
       borderRadius: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3),
       borderWidth: 0.5,
       borderColor: "rgba(242, 211, 138, 0.38)",

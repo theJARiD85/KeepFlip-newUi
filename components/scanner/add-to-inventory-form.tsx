@@ -152,7 +152,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontWeight: "300",
       lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(26) : responsiveLayout.responsiveFont(26),
     },
-    content: { gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8), padding: 20, paddingBottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(34) : responsiveLayout.responsiveHeight(34) },
+    content: { gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8), padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(20) : responsiveLayout.responsiveWidth(20), paddingBottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(34) : responsiveLayout.responsiveHeight(34) },
     fieldLabel: {
       marginVertical: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(5) : responsiveLayout.responsiveHeight(5),
       color: theme.colors.textMuted,
@@ -210,7 +210,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     notesInput: { minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(76) : responsiveLayout.responsiveHeight(76), textAlignVertical: "top" },
     helper: {
-      marginTop: -2,
+      marginTop: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(-2) : responsiveLayout.responsiveHeight(-2),
       color: theme.colors.textMuted,
       fontFamily: theme.fonts.body,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12),

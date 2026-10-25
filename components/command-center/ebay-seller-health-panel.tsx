@@ -296,7 +296,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
   const staticStyles = StyleSheet.create({
     card: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
-      padding: 14,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
       borderRadius: theme.radii.medium,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
@@ -360,7 +360,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexBasis: '46%',
       minWidth: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(145) : responsiveLayout.responsiveWidth(145),
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5),
-      padding: 11,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(11) : responsiveLayout.responsiveWidth(11),
       borderRadius: theme.radii.small,
       backgroundColor: theme.colors.iconSurfaceGold,
     },
@@ -386,7 +386,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexBasis: '46%',
       minWidth: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(145) : responsiveLayout.responsiveWidth(145),
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
-      padding: 10,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       borderRadius: theme.radii.small,
       borderWidth: 1,
       borderColor: theme.colors.divider,
@@ -402,7 +402,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     returnCard: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(6) : responsiveLayout.responsiveWidth(6),
-      padding: 11,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(11) : responsiveLayout.responsiveWidth(11),
       borderRadius: theme.radii.small,
       backgroundColor: theme.colors.iconSurfaceGold,
     },
@@ -429,7 +429,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     dashboardLink: {
       alignSelf: 'flex-start',
       paddingVertical: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(4) : responsiveLayout.responsiveHeight(4),
-      paddingHorizontal: 2,
+      paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
     },
     dashboardLinkText: {
       color: theme.colors.scannerCyan,

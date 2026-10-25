@@ -164,14 +164,14 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       maxWidth: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(850) : responsiveLayout.responsiveWidth(850),
       alignSelf: 'center',
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
-      padding: 16,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16),
       paddingBottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(44) : responsiveLayout.responsiveHeight(44),
     },
     section: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
     },
     sectionHeading: {
-      gap: 2,
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
     },
     sectionEyebrow: {
       color: theme.colors.goldBright,
@@ -187,7 +187,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     sectionSurface: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
-      padding: 10,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       borderRadius: theme.radii.medium,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
@@ -215,7 +215,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     formSurface: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
-      padding: 10,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       borderRadius: theme.radii.small,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,

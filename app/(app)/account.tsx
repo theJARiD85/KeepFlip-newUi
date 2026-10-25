@@ -599,7 +599,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: 'row',
       alignItems: 'center',
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
-      padding: 15,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(15) : responsiveLayout.responsiveWidth(15),
       borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16),
       borderCurve: 'continuous',
       borderWidth: 1,
@@ -657,7 +657,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     verificationTextPending: { color: theme.colors.scannerAmber },
     section: { gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7) },
-    sectionHeading: { gap: 2 },
+    sectionHeading: { gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2) },
     sectionEyebrow: {
       color: theme.colors.goldBright,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
@@ -706,7 +706,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: 'row',
       alignItems: 'center',
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(6) : responsiveLayout.responsiveWidth(6),
-      paddingTop: 1,
+      paddingTop: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(1) : responsiveLayout.responsiveHeight(1),
     },
     versionDot: {
       width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),

@@ -410,7 +410,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       overflow: 'hidden',
     },
     flipAvatarImage: { width: '100%', height: '100%' },
-    searchCopy: { flex: 1, minWidth: 0, gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3), padding: 5, justifyContent: 'flex-start', alignItems: 'flex-start', height: '90%' },
+    searchCopy: { flex: 1, minWidth: 0, gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3), padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5), justifyContent: 'flex-start', alignItems: 'flex-start', height: '90%' },
     searchMeta: { flexDirection: 'row', alignItems: 'center', gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5) },
     searchLabel: {
       color: theme.colors.gold,
@@ -444,7 +444,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderCurve: 'continuous',
       backgroundColor: theme.colors.iconSurfaceCyan,
     },
-    expandedContent: { gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12), padding: 14 },
+    expandedContent: { gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12), padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14) },
     heading: { flexDirection: 'row', alignItems: 'center', gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12) },
     headingCopy: { flex: 1, gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3) },
     eyebrow: {

@@ -54,13 +54,14 @@ function FrameCorner({
   horizontal: "left" | "right";
   vertical: "top" | "bottom";
 }) {
+  const responsiveLayout3 = useResponsiveLayout();
   const styles = useResponsiveStyles(createResponsiveStyles);
   return (
     <View
       style={[
         styles.frameCorner,
-        horizontal === "left" ? { left: 7 } : { right: 7 },
-        vertical === "top" ? { top: 7 } : { bottom: 7 },
+        horizontal === "left" ? { left: responsiveLayout3.isWideWeb ? responsiveLayout3.webResponsiveWidth(7) : responsiveLayout3.responsiveWidth(7) } : { right: responsiveLayout3.isWideWeb ? responsiveLayout3.webResponsiveWidth(7) : responsiveLayout3.responsiveWidth(7) },
+        vertical === "top" ? { top: responsiveLayout3.isWideWeb ? responsiveLayout3.webResponsiveHeight(7) : responsiveLayout3.responsiveHeight(7) } : { bottom: responsiveLayout3.isWideWeb ? responsiveLayout3.webResponsiveHeight(7) : responsiveLayout3.responsiveHeight(7) },
       ]}
     >
       <View style={styles.cornerHorizontal} />
@@ -343,9 +344,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       position: "absolute",
       zIndex: 8,
       top: 0,
-      right: 2,
-      left: 2,
-      height: 2,
+      right: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
+      left: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
+      height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(2) : responsiveLayout.responsiveHeight(2),
       backgroundColor: theme.colors.scannerCyan,
       boxShadow: "0 0 12px rgba(0, 255, 255, 0.96), 0 0 26px rgba(0, 255, 255, 0.44)",
     },
@@ -354,7 +355,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       zIndex: 12,
       maxWidth: "58%",
       minWidth: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(112) : responsiveLayout.responsiveWidth(112),
-      gap: 1,
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(1) : responsiveLayout.responsiveWidth(1),
       paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
       paddingVertical: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(5) : responsiveLayout.responsiveHeight(5),
       borderLeftWidth: 2,
@@ -362,11 +363,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     calloutSignal: {
       position: "absolute",
-      top: 5,
-      right: 5,
+      top: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(5) : responsiveLayout.responsiveHeight(5),
+      right: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5),
       width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
       height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(4) : responsiveLayout.responsiveHeight(4),
-      borderRadius: 2,
+      borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
     },
     calloutLabel: {
       paddingRight: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
@@ -396,23 +397,23 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       top: 0,
       left: 0,
       width: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(22) : responsiveLayout.responsiveWidth(22),
-      height: 2,
+      height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(2) : responsiveLayout.responsiveHeight(2),
       backgroundColor: theme.colors.scannerCyan,
     },
     cornerVertical: {
       position: "absolute",
       top: 0,
       left: 0,
-      width: 2,
+      width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
       height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(22) : responsiveLayout.responsiveHeight(22),
       backgroundColor: theme.colors.scannerCyan,
     },
     telemetryHeader: {
       position: "absolute",
       zIndex: 12,
-      top: 10,
-      right: 12,
-      left: 12,
+      top: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(10) : responsiveLayout.responsiveHeight(10),
+      right: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
+      left: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
@@ -434,9 +435,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     progressTrack: {
       position: "absolute",
       zIndex: 12,
-      right: 10,
-      bottom: 9,
-      left: 10,
+      right: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
+      bottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(9) : responsiveLayout.responsiveHeight(9),
+      left: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       height: responsiveLayout.isWeb ? responsiveLayout.webResponsiveHeight(3) : responsiveLayout.responsiveHeight(3),
       overflow: "hidden",
       backgroundColor: "rgba(0, 255, 255, 0.12)",

@@ -710,8 +710,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     topChrome: {
       position: 'absolute',
       top: 0,
-      right: 16,
-      left: 16,
+      right: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16),
+      left: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16),
       zIndex: 4,
       minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(58) : responsiveLayout.responsiveHeight(58),
       flexDirection: 'row',

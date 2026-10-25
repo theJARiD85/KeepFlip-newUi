@@ -694,7 +694,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     details: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
-      padding: 14,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
       backgroundColor: theme.colors.card,
     },
     compactDetails: {
@@ -978,7 +978,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     photoIndicators: {
       position: "absolute",
       right: 0,
-      bottom: 14,
+      bottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(14) : responsiveLayout.responsiveHeight(14),
       left: 0,
       flexDirection: "row",
       alignItems: "center",
@@ -1008,7 +1008,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     listingGuideButtonCopy: {
       flex: 1,
-      gap: 2,
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
     },
     listingGuideButtonLabel: {
       color: theme.colors.cream,

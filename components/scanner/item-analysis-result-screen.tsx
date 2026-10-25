@@ -498,7 +498,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       alignItems: "center",
       justifyContent: "center",
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16),
-      padding: 28,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(28) : responsiveLayout.responsiveWidth(28),
       backgroundColor: theme.colors.backgroundDeep,
     },
     message: {

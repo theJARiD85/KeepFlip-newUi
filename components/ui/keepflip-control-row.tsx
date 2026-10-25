@@ -193,7 +193,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     rowCopy: {
       minWidth: 0,
       flex: 1,
-      gap: 2,
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
     },
     rowTitleLine: {
       flexDirection: 'row',
@@ -228,7 +228,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontWeight: '900',
       letterSpacing: 0.65,
     },
-    rowChevron: { marginLeft: 1 },
+    rowChevron: { marginLeft: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(1) : responsiveLayout.responsiveWidth(1) },
     rowSpinner: { marginHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4) },
     rowStaticLabel: {
       maxWidth: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(68) : responsiveLayout.responsiveWidth(68),

@@ -382,7 +382,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       ...StyleSheet.absoluteFill,
       pointerEvents: "box-none",
       justifyContent: "flex-end",
-      padding: 20,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(20) : responsiveLayout.responsiveWidth(20),
     },
 
     statusCard: {
@@ -390,7 +390,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderColor: theme.colors.accentGoldBorder,
       borderWidth: 1,
       borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(20) : responsiveLayout.responsiveWidth(20),
-      padding: 18,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(18) : responsiveLayout.responsiveWidth(18),
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(6) : responsiveLayout.responsiveWidth(6),
     },
 

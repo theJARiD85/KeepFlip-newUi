@@ -144,7 +144,7 @@ export function BusinessPulseBreakdownModal({
       backdropOpacity={0.05}
       onBackdropPress={onClose}
       isVisible={visible}
-      style={{ position: 'absolute', bottom: insets.bottom * 2, top: insets.top * 2, left: -18, right: -18 }}
+      style={{ position: 'absolute', bottom: insets.bottom * 2, top: insets.top * 2, left: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(-18) : responsiveLayout.responsiveWidth(-18), right: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(-18) : responsiveLayout.responsiveWidth(-18) }}
     >
       <View
         style={[
@@ -435,32 +435,32 @@ function InventoryCostRow({
   );
 }
 
-function createResponsiveStyles() {
+function createResponsiveStyles(responsiveLayout6: ReturnType<typeof useResponsiveLayout>) {
   return StyleSheet.create({
     backdrop: {
       backgroundColor: 'rgba(3, 8, 17, 0.88)',
       flex: 1,
       justifyContent: 'center',
-      paddingHorizontal: 10,
+      paddingHorizontal: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(10) : responsiveLayout6.responsiveWidth(10),
     },
     panel: {
       backgroundColor: theme.colors.card,
       borderColor: theme.colors.accentCyanBorder,
-      borderTopLeftRadius: 18,
-      borderTopRightRadius: 18,
+      borderTopLeftRadius: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(18) : responsiveLayout6.responsiveWidth(18),
+      borderTopRightRadius: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(18) : responsiveLayout6.responsiveWidth(18),
       borderWidth: 1,
       flex: 1,
-      gap: 14,
-      maxHeight: 900,
-      padding: 14,
+      gap: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(14) : responsiveLayout6.responsiveWidth(14),
+      maxHeight: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveHeight(900) : responsiveLayout6.responsiveHeight(900),
+      padding: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(14) : responsiveLayout6.responsiveWidth(14),
     },
     header: {
       alignItems: 'center',
       flexDirection: 'row',
-      gap: 12,
+      gap: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(12) : responsiveLayout6.responsiveWidth(12),
       justifyContent: 'space-between',
     },
-    headingCopy: { flex: 1, gap: 3 },
+    headingCopy: { flex: 1, gap: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(3) : responsiveLayout6.responsiveWidth(3) },
     eyebrow: {
       color: theme.colors.goldBright,
       fontWeight: '900',
@@ -471,49 +471,49 @@ function createResponsiveStyles() {
       alignItems: 'center',
       backgroundColor: theme.colors.cardSoft,
       borderColor: theme.colors.dividerStrong,
-      borderRadius: 10,
+      borderRadius: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(10) : responsiveLayout6.responsiveWidth(10),
       borderWidth: 1,
-      height: 40,
+      height: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveHeight(40) : responsiveLayout6.responsiveHeight(40),
       justifyContent: 'center',
-      width: 40,
+      width: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(40) : responsiveLayout6.responsiveWidth(40),
     },
     list: { flex: 1 },
-    content: { flexGrow: 1, gap: 9, paddingBottom: 4 },
-    listHeader: { gap: 12 },
+    content: { flexGrow: 1, gap: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(9) : responsiveLayout6.responsiveWidth(9), paddingBottom: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveHeight(4) : responsiveLayout6.responsiveHeight(4) },
+    listHeader: { gap: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(12) : responsiveLayout6.responsiveWidth(12) },
     totalCard: {
       alignItems: 'flex-end',
       backgroundColor: theme.colors.cardSoft,
       borderColor: theme.colors.accentCyanBorder,
-      borderRadius: 12,
+      borderRadius: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(12) : responsiveLayout6.responsiveWidth(12),
       borderWidth: 1,
       flexDirection: 'row',
       justifyContent: 'space-between',
-      padding: 12,
+      padding: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(12) : responsiveLayout6.responsiveWidth(12),
     },
-    totalCopy: { gap: 4 },
+    totalCopy: { gap: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(4) : responsiveLayout6.responsiveWidth(4) },
     totalLabel: { color: theme.colors.textMuted, fontWeight: '900', letterSpacing: 1 },
     totalValue: { color: theme.colors.cream, fontWeight: '900', fontVariant: ['tabular-nums'] },
-    totalCount: { color: theme.colors.textMuted, fontWeight: '700', paddingBottom: 4 },
-    introSection: { gap: 9 },
+    totalCount: { color: theme.colors.textMuted, fontWeight: '700', paddingBottom: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveHeight(4) : responsiveLayout6.responsiveHeight(4) },
+    introSection: { gap: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(9) : responsiveLayout6.responsiveWidth(9) },
     description: { color: theme.colors.text, fontWeight: '700' },
     filterNote: { color: theme.colors.textMuted },
     sectionHeading: {
       alignItems: 'center',
       flexDirection: 'row',
       justifyContent: 'space-between',
-      marginTop: 5,
+      marginTop: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveHeight(5) : responsiveLayout6.responsiveHeight(5),
     },
     sectionTitle: { color: theme.colors.goldBright, fontWeight: '900', letterSpacing: 1 },
     sectionCount: { color: theme.colors.textMuted, fontWeight: '700' },
     entryCard: {
       backgroundColor: theme.colors.surfaceInset,
       borderColor: theme.colors.divider,
-      borderRadius: 10,
+      borderRadius: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(10) : responsiveLayout6.responsiveWidth(10),
       borderWidth: 1,
-      gap: 4,
-      padding: 10,
+      gap: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(4) : responsiveLayout6.responsiveWidth(4),
+      padding: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(10) : responsiveLayout6.responsiveWidth(10),
     },
-    entryHeading: { alignItems: 'flex-start', flexDirection: 'row', gap: 10, justifyContent: 'space-between' },
+    entryHeading: { alignItems: 'flex-start', flexDirection: 'row', gap: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(10) : responsiveLayout6.responsiveWidth(10), justifyContent: 'space-between' },
     entryLabel: { color: theme.colors.text, flex: 1, fontWeight: '800' },
     entryAmount: { color: theme.colors.scannerCyan, fontWeight: '900', fontVariant: ['tabular-nums'] },
     missingAmount: { color: theme.colors.textMuted, fontWeight: '900', fontVariant: ['tabular-nums'] },
@@ -522,18 +522,18 @@ function createResponsiveStyles() {
     emptyText: {
       backgroundColor: theme.colors.surfaceInset,
       borderColor: theme.colors.divider,
-      borderRadius: 10,
+      borderRadius: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(10) : responsiveLayout6.responsiveWidth(10),
       borderWidth: 1,
       color: theme.colors.textMuted,
-      padding: 12,
+      padding: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(12) : responsiveLayout6.responsiveWidth(12),
     },
     unlinkedNote: {
       backgroundColor: theme.colors.iconSurfaceGold,
       borderColor: theme.colors.accentGoldBorder,
-      borderRadius: 10,
+      borderRadius: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(10) : responsiveLayout6.responsiveWidth(10),
       borderWidth: 1,
       color: theme.colors.text,
-      padding: 11,
+      padding: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(11) : responsiveLayout6.responsiveWidth(11),
     },
     pressed: { opacity: 0.78, transform: [{ scale: 0.96 }] },
   });

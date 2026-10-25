@@ -214,7 +214,7 @@ export function KeepFlipUpdateRequiredScreen({
   );
 }
 
-function createResponsiveStyles() {
+function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
   return StyleSheet.create({
   backgroundContent: {
     alignItems: 'center',
@@ -232,8 +232,8 @@ function createResponsiveStyles() {
     borderRadius: theme.radii.large,
     borderWidth: 1,
     boxShadow: '0 18px 52px rgba(0, 0, 0, 0.56), 0 0 24px rgba(0, 255, 255, 0.08)',
-    gap: 24,
-    padding: 24,
+    gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(24) : responsiveLayout.responsiveWidth(24),
+    padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(24) : responsiveLayout.responsiveWidth(24),
   },
   logoHalo: {
     alignItems: 'center',
@@ -249,7 +249,7 @@ function createResponsiveStyles() {
   },
   copyBlock: {
     alignItems: 'center',
-    gap: 10,
+    gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
   },
   eyebrow: {
     color: theme.colors.gold,
@@ -264,7 +264,7 @@ function createResponsiveStyles() {
   },
   body: {
     color: theme.colors.textMuted,
-    lineHeight: 21,
+    lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(21) : responsiveLayout.responsiveFont(21),
     textAlign: 'center',
   },
   versionCard: {
@@ -276,20 +276,20 @@ function createResponsiveStyles() {
     borderRadius: theme.radii.medium,
     borderWidth: 1,
     flexDirection: 'row',
-    gap: 18,
+    gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(18) : responsiveLayout.responsiveWidth(18),
     justifyContent: 'center',
-    paddingHorizontal: 18,
-    paddingVertical: 15,
+    paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(18) : responsiveLayout.responsiveWidth(18),
+    paddingVertical: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(15) : responsiveLayout.responsiveHeight(15),
   },
   versionColumn: {
     alignItems: 'center',
     flex: 1,
-    gap: 4,
+    gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
   },
   versionDivider: {
     backgroundColor: theme.colors.dividerStrong,
-    height: 34,
-    width: 1,
+    height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(34) : responsiveLayout.responsiveHeight(34),
+    width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(1) : responsiveLayout.responsiveWidth(1),
   },
   versionLabel: {
     color: theme.colors.textMuted,
@@ -310,8 +310,8 @@ function createResponsiveStyles() {
     borderCurve: 'continuous',
     borderRadius: theme.radii.medium,
     justifyContent: 'center',
-    minHeight: 56,
-    paddingHorizontal: 20,
+    minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(56) : responsiveLayout.responsiveHeight(56),
+    paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(20) : responsiveLayout.responsiveWidth(20),
   },
   updateButtonText: {
     color: theme.colors.textOnAccent,
@@ -326,9 +326,9 @@ function createResponsiveStyles() {
   },
   retryButton: {
     alignItems: 'center',
-    minHeight: 34,
+    minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(34) : responsiveLayout.responsiveHeight(34),
     justifyContent: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
   },
   retryButtonText: {
     color: theme.colors.scannerCyan,
@@ -345,7 +345,7 @@ function createResponsiveStyles() {
   },
   footer: {
     color: theme.colors.textMuted,
-    lineHeight: 16,
+    lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(16) : responsiveLayout.responsiveFont(16),
     textAlign: 'center',
   },
   });

@@ -779,7 +779,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     tripButtonCopy: {
       minWidth: 0,
       flex: 1,
-      gap: 2,
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
     },
     tripButtonTitle: {
       color: theme.colors.cream,
@@ -813,7 +813,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: 'row',
       alignItems: 'flex-start',
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
-      padding: 19,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(19) : responsiveLayout.responsiveWidth(19),
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: theme.colors.divider,
     },
@@ -848,7 +848,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: 'row',
       alignItems: 'flex-start',
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
-      padding: 12,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
       backgroundColor: theme.colors.iconSurfaceCyan,
@@ -871,7 +871,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: 'row',
       alignItems: 'flex-start',
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
-      padding: 14,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
       borderWidth: 1,
       borderColor: theme.colors.scannerCyan,
       backgroundColor: theme.colors.iconSurfaceCyan,
@@ -904,7 +904,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontWeight: '300',
       lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(26) : responsiveLayout.responsiveFont(26),
     },
-    formContent: { gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12), padding: 19 },
+    formContent: { gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12), padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(19) : responsiveLayout.responsiveWidth(19) },
     fieldLabel: {
       marginBottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(6) : responsiveLayout.responsiveHeight(6),
       color: theme.colors.textMuted,
@@ -970,7 +970,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     summaryCell: {
       flex: 1,
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
-      padding: 11,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(11) : responsiveLayout.responsiveWidth(11),
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
       backgroundColor: theme.colors.iconSurfaceCyan,

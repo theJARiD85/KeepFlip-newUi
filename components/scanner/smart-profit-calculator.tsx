@@ -676,7 +676,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       fontWeight: "900",
       lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(19) : responsiveLayout.responsiveFont(19),
     },
-    rangeReadout: { alignItems: "flex-end", gap: 2 },
+    rangeReadout: { alignItems: "flex-end", gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2) },
     rangeLabel: {
       color: "rgba(255, 255, 255, 0.46)",
       fontFamily: theme.fonts.numbers,
@@ -720,7 +720,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     preset: {
       flexGrow: 1,
       minWidth: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(96) : responsiveLayout.responsiveWidth(96),
-      gap: 2,
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
       paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
       paddingVertical: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(8) : responsiveLayout.responsiveHeight(8),
       borderWidth: StyleSheet.hairlineWidth,
@@ -767,7 +767,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     shippingNote: { color: "rgba(255, 255, 255, 0.54)", fontFamily: theme.fonts.radar, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8), lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(12) : responsiveLayout.responsiveFont(12) },
     persistSection: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
-      padding: 10,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: "rgba(70, 245, 162, 0.30)",
       borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
@@ -817,7 +817,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     selectedProjection: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
-      padding: 11,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(11) : responsiveLayout.responsiveWidth(11),
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: "rgba(242, 211, 138, 0.30)",
       borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
@@ -836,7 +836,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     legendDot: { color: BAR_COST },
     legendFee: { color: theme.colors.danger },
     legendProfit: { color: POSITIVE_PROFIT },
-    comparisonSummary: { alignItems: "flex-end", gap: 2 },
+    comparisonSummary: { alignItems: "flex-end", gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2) },
     summaryLabel: { color: "rgba(255, 255, 255, 0.45)", fontFamily: theme.fonts.numbers, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(6) : responsiveLayout.responsiveFont(6), fontWeight: "900", letterSpacing: 0.55 },
     summaryValue: { color: theme.colors.goldBright, fontFamily: theme.fonts.radar, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(9) : responsiveLayout.responsiveFont(9), fontWeight: "900", fontVariant: ["tabular-nums"], textAlign: "right" },
     summaryRoi: { color: "rgba(255, 255, 255, 0.56)", fontFamily: theme.fonts.numbers, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(6) : responsiveLayout.responsiveFont(6), fontWeight: "900", letterSpacing: 0.35, textAlign: "right" },
@@ -847,7 +847,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     marketFee: { flexShrink: 1, color: "rgba(255, 255, 255, 0.42)", fontFamily: theme.fonts.numbers, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(6) : responsiveLayout.responsiveFont(6), fontWeight: "900", letterSpacing: 0.25, textAlign: "right" },
     marketBarAndValue: { flexDirection: "row", alignItems: "center", gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8) },
     marketBarTrack: { height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(18) : responsiveLayout.responsiveHeight(18), flex: 1, flexDirection: "row", overflow: "hidden", borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(3) : responsiveLayout.responsiveWidth(3), backgroundColor: "rgba(255, 255, 255, 0.06)" },
-    barSegment: { minWidth: 2, height: "100%" },
+    barSegment: { minWidth: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2), height: "100%" },
     marketNet: { width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(68) : responsiveLayout.responsiveWidth(68), fontFamily: theme.fonts.radar, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10), fontWeight: "900", fontVariant: ["tabular-nums"], textAlign: "right" },
     disclaimer: { color: "rgba(255, 255, 255, 0.42)", fontFamily: theme.fonts.numbers, fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(6) : responsiveLayout.responsiveFont(6), fontWeight: "900", lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(10) : responsiveLayout.responsiveFont(10), letterSpacing: 0.36 },
   });

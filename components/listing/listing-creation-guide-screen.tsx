@@ -1948,7 +1948,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     errorCard: {
       alignItems: "center",
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
-      padding: 24,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(24) : responsiveLayout.responsiveWidth(24),
       borderRadius: theme.radii.large,
       borderWidth: 1,
       borderColor: theme.colors.danger,
@@ -1992,7 +1992,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     itemCard: {
       overflow: "hidden",
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
-      padding: 20,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(20) : responsiveLayout.responsiveWidth(20),
       borderRadius: theme.radii.large,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
@@ -2004,7 +2004,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       top: 0,
       right: 0,
       left: 0,
-      height: 2,
+      height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(2) : responsiveLayout.responsiveHeight(2),
       backgroundColor: theme.colors.scannerCyan,
     },
     sectionEyebrow: {
@@ -2060,7 +2060,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     draftCard: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
-      padding: 20,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(20) : responsiveLayout.responsiveWidth(20),
       borderRadius: theme.radii.large,
       borderWidth: 1,
       borderColor: theme.colors.accentVioletBorder,
@@ -2116,7 +2116,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     generatorCard: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
-      padding: 20,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(20) : responsiveLayout.responsiveWidth(20),
       borderRadius: theme.radii.large,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
@@ -2124,7 +2124,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     generatorHeading: {
       flex: 1,
-      gap: 2,
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
     },
     generatorBadge: {
       paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
@@ -2172,7 +2172,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     listingQuestionsCard: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
-      padding: 16,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16),
       borderRadius: theme.radii.medium,
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
@@ -2195,7 +2195,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     listingEvidenceCard: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(6) : responsiveLayout.responsiveWidth(6),
-      padding: 15,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(15) : responsiveLayout.responsiveWidth(15),
       borderRadius: theme.radii.medium,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
@@ -2370,7 +2370,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     crosslistCard: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
-      padding: 20,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(20) : responsiveLayout.responsiveWidth(20),
       borderRadius: theme.radii.large,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
@@ -2398,7 +2398,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     bookmarkletSetup: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
-      padding: 12,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
       backgroundColor: theme.colors.iconSurfaceCyan,
@@ -2544,7 +2544,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: "row",
       alignItems: "flex-start",
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
-      padding: 12,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
       borderRadius: theme.radii.medium,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
@@ -2637,7 +2637,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: "row",
       alignItems: "flex-start",
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
-      padding: 12,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
       backgroundColor: theme.colors.iconSurfaceCyan,
@@ -2685,7 +2685,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     progressCard: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(15) : responsiveLayout.responsiveWidth(15),
-      padding: 20,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(20) : responsiveLayout.responsiveWidth(20),
       borderRadius: theme.radii.large,
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
@@ -2731,7 +2731,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: "row",
       alignItems: "center",
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
-      padding: 13,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(13) : responsiveLayout.responsiveWidth(13),
       borderRadius: theme.radii.medium,
       borderWidth: 1,
       borderColor: theme.colors.divider,
@@ -2780,7 +2780,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: "row",
       alignItems: "flex-start",
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(11) : responsiveLayout.responsiveWidth(11),
-      padding: 16,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16),
       borderRadius: theme.radii.medium,
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,

@@ -1,4 +1,5 @@
 import { StyleSheet, View } from 'react-native';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 export interface AdvancedHoloOverlayProps {
   width: number;
@@ -14,13 +15,14 @@ export function AdvancedHoloOverlay({
   height,
   width,
 }: AdvancedHoloOverlayProps) {
+  const responsiveStyles = useResponsiveStyles(createStylesWebResponsive);
   if (width <= 0 || height <= 0) return null;
 
   return (
-    <View pointerEvents="none" style={[styles.container, { height, width }]}>
-      <View style={styles.vignette} />
-      <View style={styles.scanlines} />
-      <View style={styles.glow} />
+    <View pointerEvents="none" style={[responsiveStyles.container, { height, width }]}>
+      <View style={responsiveStyles.vignette} />
+      <View style={responsiveStyles.scanlines} />
+      <View style={responsiveStyles.glow} />
     </View>
   );
 }
@@ -65,3 +67,13 @@ const styles = StyleSheet.create({
       '0 0 18px rgba(75, 235, 246, 0.94), 0 0 42px rgba(75, 235, 246, 0.55)',
   },
 });
+
+function createStylesWebResponsive(layout: ReturnType<typeof useResponsiveLayout>) {
+  return StyleSheet.create({
+    ...styles,
+    glow: {
+      ...styles["glow"],
+      height: layout.isWideWeb ? layout.webResponsiveHeight(2) : layout.responsiveHeight(2),
+    },
+  });
+}

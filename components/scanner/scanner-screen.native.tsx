@@ -1809,7 +1809,7 @@ export default function ScannerScreen() {
                     color={selectedToolAppearance.accent}
                     name={selectedToolAppearance.icon}
                     size={16}
-                    style={{ alignItems: 'center', justifyContent: 'center', top: 6 }}
+                    style={{ alignItems: 'center', justifyContent: 'center', top: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveHeight(6) : responsiveLayout2.responsiveHeight(6) }}
                   />
                   <Text
                     numberOfLines={2}
@@ -2048,8 +2048,8 @@ export default function ScannerScreen() {
           testID="keepflip-open-ar-measure"
           style={{
             position: "absolute",
-            right: 50,
-            top: 200,
+            right: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveWidth(50) : responsiveLayout2.responsiveWidth(50),
+            top: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveHeight(200) : responsiveLayout2.responsiveHeight(200),
             paddingHorizontal: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveWidth(12) : responsiveLayout2.responsiveWidth(12),
             paddingVertical: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveHeight(8) : responsiveLayout2.responsiveHeight(8),
             borderRadius: responsiveLayout2.isWeb ? responsiveLayout2.webResponsiveWidth(10) : responsiveLayout2.responsiveWidth(10),
@@ -2105,7 +2105,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flex: 1,
       alignItems: "center",
       justifyContent: "center",
-      padding: 24,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(24) : responsiveLayout.responsiveWidth(24),
     },
     cameraScrim: {
       position: "absolute",
@@ -2122,7 +2122,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     radarOverlayHost: {
       ...StyleSheet.absoluteFill,
       zIndex: 14,
-      bottom: 60,
+      bottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(60) : responsiveLayout.responsiveHeight(60),
     },
     permissionCard: {
       alignItems: "center",
@@ -2220,7 +2220,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       alignItems: "flex-start",
       justifyContent: "center",
       gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
-      paddingTop: 1,
+      paddingTop: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(1) : responsiveLayout.responsiveHeight(1),
     },
     headerHint: {
       flex: 1,
@@ -2229,8 +2229,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     iconButton: {
       position: 'absolute',
-      top: -30,
-      left: 10,
+      top: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(-30) : responsiveLayout.responsiveHeight(-30),
+      left: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 1,
@@ -2242,8 +2242,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     iconButtonDisabled: { opacity: 0.42 },
     zoomControlAnchor: {
       position: "absolute",
-      top: -30,
-      right: 10,
+      top: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(-30) : responsiveLayout.responsiveHeight(-30),
+      right: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       zIndex: 4,
     },
     zoomControlRow: {
@@ -2272,7 +2272,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flexDirection: "row",
       alignItems: "center",
       gap: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5),
-      padding: 4,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
       borderWidth: 1,
       borderRightWidth: 0,
       borderColor: "rgba(88, 223, 232, 0.34)",
@@ -2322,9 +2322,9 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     analysisActionAnchor: {
       position: "absolute",
-      right: 12,
-      bottom: 18,
-      left: 12,
+      right: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
+      bottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(18) : responsiveLayout.responsiveHeight(18),
+      left: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
       zIndex: 15,
       alignItems: "center",
     },
@@ -2424,7 +2424,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       backgroundColor: theme.colors.goldBright,
       boxShadow: "0 0 10px rgba(242, 211, 138, 0.92)",
     },
-    analyzeButtonCopy: { flex: 1, gap: 2 },
+    analyzeButtonCopy: { flex: 1, gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2) },
     analyzeButtonEyebrow: {
       color: theme.colors.scannerCyan,
       fontWeight: "900",
@@ -2444,8 +2444,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     photoStackSidecar: {
       position: "absolute",
-      top: 16,
-      right: -6,
+      top: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(16) : responsiveLayout.responsiveHeight(16),
+      right: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(-6) : responsiveLayout.responsiveWidth(-6),
       zIndex: 40,
       elevation: 40,
     },

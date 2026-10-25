@@ -1001,7 +1001,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     accountCard: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16),
-      padding: 17,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(17) : responsiveLayout.responsiveWidth(17),
       borderRadius: theme.radii.large,
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
@@ -1070,7 +1070,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     settingsCard: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
-      padding: 16,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(16) : responsiveLayout.responsiveWidth(16),
       borderRadius: theme.radii.medium,
       borderWidth: 1,
       borderColor: theme.colors.dividerStrong,
@@ -1290,7 +1290,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     emptyCard: {
       alignItems: 'stretch',
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
-      padding: 17,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(17) : responsiveLayout.responsiveWidth(17),
       borderRadius: theme.radii.large,
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
@@ -1325,7 +1325,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       letterSpacing: 1.05,
     },
     messageCard: {
-      padding: 13,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(13) : responsiveLayout.responsiveWidth(13),
       borderRadius: theme.radii.medium,
       borderWidth: 1,
     },

@@ -557,7 +557,7 @@ function createLocalStylesResponsiveStyles(responsiveLayout: ReturnType<typeof u
     wrap: { gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12) },
     flipDialogue: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
-      padding: 12,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
       borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
@@ -593,7 +593,7 @@ function createLocalStylesResponsiveStyles(responsiveLayout: ReturnType<typeof u
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(18) : responsiveLayout.responsiveFont(18),
       lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(18) : responsiveLayout.responsiveFont(18),
     },
-    decisionCopy: { flex: 1, gap: 2 },
+    decisionCopy: { flex: 1, gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2) },
     decisionTitle: {
       color: theme.colors.text,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(11) : responsiveLayout.responsiveFont(11),

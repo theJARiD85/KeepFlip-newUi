@@ -268,7 +268,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     compactMetric: {
       flex: 1,
       minWidth: 0,
-      gap: 2,
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
     },
     compactLabel: {
       color: "rgba(255,255,255,0.48)",

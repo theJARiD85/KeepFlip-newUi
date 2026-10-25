@@ -115,8 +115,8 @@ export function FlipGuidanceOverlay() {
   const { appliedColorScheme } = useKeepFlipAppearance();
   const styles = useMemo(() => {
     void appliedColorScheme;
-    return createStyles();
-  }, [appliedColorScheme]);
+    return createStyles(responsiveLayout);
+  }, [appliedColorScheme, responsiveLayout]);
   const { react } = useFlipCompanion();
   const {
     activeGuide,
@@ -242,7 +242,7 @@ export function FlipGuidanceOverlay() {
   );
 }
 
-function createStyles() {
+function createStyles(responsiveLayout: ReturnType<typeof useResponsiveLayout>) {
   return StyleSheet.create({
   root: {
     bottom: 0,
@@ -255,41 +255,41 @@ function createStyles() {
   },
   dock: {
     alignItems: 'center',
-    left: 12,
+    left: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
     position: 'absolute',
-    right: 12,
+    right: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
   },
   card: {
     backgroundColor: theme.colors.surfaceOverlay,
     borderColor: theme.colors.accentCyanBorder,
     borderCurve: 'continuous',
-    borderRadius: 20,
+    borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(20) : responsiveLayout.responsiveWidth(20),
     borderWidth: 1,
     boxShadow: '0 14px 34px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 255, 255, 0.08)',
-    gap: 10,
-    maxWidth: 560,
-    padding: 14,
+    gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
+    maxWidth: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(560) : responsiveLayout.responsiveWidth(560),
+    padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
     width: '100%',
   },
   header: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 10,
+    gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
   },
   avatar: {
     alignItems: 'center',
     backgroundColor: theme.colors.iconSurfaceCyan,
     borderColor: theme.colors.accentCyanBorder,
-    borderRadius: 13,
+    borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(13) : responsiveLayout.responsiveWidth(13),
     borderWidth: 1,
-    height: 48,
+    height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(48) : responsiveLayout.responsiveHeight(48),
     justifyContent: 'center',
     overflow: 'hidden',
-    width: 48,
+    width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(48) : responsiveLayout.responsiveWidth(48),
   },
   headingCopy: {
     flex: 1,
-    gap: 2,
+    gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
     minWidth: 0,
   },
   eyebrow: {
@@ -306,15 +306,15 @@ function createStyles() {
   closeButton: {
     alignItems: 'center',
     borderColor: theme.colors.dividerStrong,
-    borderRadius: 999,
+    borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(999) : responsiveLayout.responsiveWidth(999),
     borderWidth: 1,
-    height: 30,
+    height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(30) : responsiveLayout.responsiveHeight(30),
     justifyContent: 'center',
-    width: 30,
+    width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(30) : responsiveLayout.responsiveWidth(30),
   },
   closeText: {
     color: theme.colors.textMuted,
-    lineHeight: 18,
+    lineHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(18) : responsiveLayout.responsiveFont(18),
   },
   progressRow: {
     alignItems: 'center',
@@ -336,14 +336,14 @@ function createStyles() {
   },
   progressTrack: {
     backgroundColor: theme.colors.cardSoft,
-    borderRadius: 999,
-    height: 4,
+    borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(999) : responsiveLayout.responsiveWidth(999),
+    height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(4) : responsiveLayout.responsiveHeight(4),
     overflow: 'hidden',
     width: '100%',
   },
   progressFill: {
     backgroundColor: theme.colors.scannerCyan,
-    borderRadius: 999,
+    borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(999) : responsiveLayout.responsiveWidth(999),
     height: '100%',
   },
   stepTitle: {
@@ -358,17 +358,17 @@ function createStyles() {
   actions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 7,
+    gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
     justifyContent: 'flex-end',
   },
   secondaryButton: {
     alignItems: 'center',
     borderColor: theme.colors.dividerStrong,
-    borderRadius: 9,
+    borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
     borderWidth: 1,
     justifyContent: 'center',
-    minHeight: 36,
-    paddingHorizontal: 11,
+    minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(36) : responsiveLayout.responsiveHeight(36),
+    paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(11) : responsiveLayout.responsiveWidth(11),
   },
   secondaryButtonText: {
     color: theme.colors.textMuted,
@@ -380,11 +380,11 @@ function createStyles() {
     alignItems: 'center',
     backgroundColor: theme.colors.iconSurfaceCyan,
     borderColor: theme.colors.accentCyanBorder,
-    borderRadius: 9,
+    borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
     borderWidth: 1,
     justifyContent: 'center',
-    minHeight: 36,
-    paddingHorizontal: 11,
+    minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(36) : responsiveLayout.responsiveHeight(36),
+    paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(11) : responsiveLayout.responsiveWidth(11),
   },
   screenButtonText: {
     color: theme.colors.scannerCyan,
@@ -395,10 +395,10 @@ function createStyles() {
   primaryButton: {
     alignItems: 'center',
     backgroundColor: theme.colors.goldBright,
-    borderRadius: 9,
+    borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
     justifyContent: 'center',
-    minHeight: 36,
-    paddingHorizontal: 15,
+    minHeight: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(36) : responsiveLayout.responsiveHeight(36),
+    paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(15) : responsiveLayout.responsiveWidth(15),
   },
   primaryButtonText: {
     color: theme.colors.backgroundDeep,

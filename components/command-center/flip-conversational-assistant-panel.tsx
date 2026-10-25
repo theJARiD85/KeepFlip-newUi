@@ -1381,8 +1381,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     overlaySurface: {
       width: '100%',
       height: '100%',
-      borderTopRightRadius: 30,
-      borderTopLeftRadius: 30,
+      borderTopRightRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(30) : responsiveLayout.responsiveWidth(30),
+      borderTopLeftRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(30) : responsiveLayout.responsiveWidth(30),
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: theme.colors.card,
@@ -1393,7 +1393,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       flex: 1,
       minHeight: 0,
       position: 'absolute',
-      top: 60,
+      top: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(60) : responsiveLayout.responsiveHeight(60),
       bottom: 0,
       left: 0,
       right: 0,
@@ -1547,7 +1547,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     conversationContent: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
-      padding: 5,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5),
     },
     overlayConversation: {
       flex: 1,
@@ -1616,11 +1616,11 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     assistantBubble: {
       borderWidth: 1,
       borderColor: theme.colors.accentCyanBorder,
-      borderBottomLeftRadius: 4,
+      borderBottomLeftRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
       backgroundColor: theme.colors.iconSurfaceCyan,
     },
     userBubble: {
-      borderBottomRightRadius: 4,
+      borderBottomRightRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
       backgroundColor: theme.colors.iconSurfaceGold,
     },
     messageText: {
@@ -1630,7 +1630,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     advisoryCard: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(7) : responsiveLayout.responsiveWidth(7),
-      padding: 10,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
       borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(12) : responsiveLayout.responsiveWidth(12),
@@ -1663,7 +1663,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     advisoryEvidence: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(4) : responsiveLayout.responsiveWidth(4),
-      paddingTop: 2,
+      paddingTop: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(2) : responsiveLayout.responsiveHeight(2),
     },
     advisoryEvidenceRow: {
       flexDirection: 'row',
@@ -1684,7 +1684,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       textAlign: 'right',
     },
     advisoryNextAction: {
-      gap: 2,
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
       paddingTop: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(5) : responsiveLayout.responsiveHeight(5),
       borderTopWidth: StyleSheet.hairlineWidth,
       borderColor: theme.colors.dividerStrong,
@@ -1707,7 +1707,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     inventoryUpdateCard: {
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
-      padding: 11,
+      padding: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(11) : responsiveLayout.responsiveWidth(11),
       borderWidth: 1,
       borderColor: theme.colors.accentGoldBorder,
       borderRadius: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(13) : responsiveLayout.responsiveWidth(13),
@@ -1890,7 +1890,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       borderCurve: 'continuous',
       backgroundColor: theme.colors.iconSurfaceCyan,
     },
-    memoryCopy: { flex: 1, gap: 2 },
+    memoryCopy: { flex: 1, gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2) },
     memoryLabel: {
       color: theme.colors.scannerCyan,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(7) : responsiveLayout.responsiveFont(7),

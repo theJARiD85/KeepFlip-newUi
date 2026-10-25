@@ -475,7 +475,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     panelContent: {
       flexGrow: 1,
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(15) : responsiveLayout.responsiveWidth(15),
-      top: 14,
+      top: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(14) : responsiveLayout.responsiveHeight(14),
       paddingHorizontal: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(20) : responsiveLayout.responsiveWidth(20),
       paddingBottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(30) : responsiveLayout.responsiveHeight(30),
     },
@@ -515,7 +515,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     brandCopy: {
       minWidth: 0,
       gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5),
-      bottom: 5,
+      bottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(5) : responsiveLayout.responsiveHeight(5),
     },
     brandName: {
       color: theme.colors.cream,
@@ -561,7 +561,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       transform: [{ scale: 0.95 }],
     },
     goldRail: {
-      height: 1,
+      height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(1) : responsiveLayout.responsiveHeight(1),
       experimental_backgroundImage:
         'linear-gradient(90deg, transparent 0%, rgba(215, 168, 74, 0.55) 20%, rgba(242, 211, 138, 0.92) 50%, rgba(215, 168, 74, 0.55) 80%, transparent 100%)',
       boxShadow: '0 0 12px rgba(215, 168, 74, 0.24)',
@@ -645,8 +645,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     destinationNumber: {
       position: 'absolute',
-      right: 8,
-      bottom: -6,
+      right: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(8) : responsiveLayout.responsiveWidth(8),
+      bottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(-6) : responsiveLayout.responsiveHeight(-6),
       color: 'rgba(242, 211, 138, 0.055)',
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(38) : responsiveLayout.responsiveFont(38),
       fontWeight: '900',
@@ -674,7 +674,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     ebayLinkCopy: {
       minWidth: 0,
       flex: 1,
-      gap: 2,
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(2) : responsiveLayout.responsiveWidth(2),
     },
     ebayLinkText: {
       color: theme.colors.cream,
@@ -708,7 +708,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     systemStatusCopy: {
       flex: 1,
-      gap: 1,
+      gap: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(1) : responsiveLayout.responsiveWidth(1),
     },
     systemStatusLabel: {
       color: theme.colors.textMuted,
@@ -730,7 +730,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     triggerWrap: {
       position: 'absolute',
-      right: 20,
+      right: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(20) : responsiveLayout.responsiveWidth(20),
       zIndex: 10002,
       elevation: 10002,
     },
@@ -747,8 +747,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     triggerStatusDot: {
       position: 'absolute',
-      right: 5,
-      bottom: 5,
+      right: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5),
+      bottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(5) : responsiveLayout.responsiveHeight(5),
       width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5),
       height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(5) : responsiveLayout.responsiveHeight(5),
       borderRadius: theme.radii.pill,

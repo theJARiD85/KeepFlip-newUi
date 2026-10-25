@@ -748,7 +748,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     platterHost: {
       position: "absolute",
       zIndex: 0,
-      top: 5
+      top: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(5) : responsiveLayout.responsiveHeight(5)
     },
     controlPosition: {
       position: "absolute",
@@ -782,8 +782,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     badge: {
       position: "absolute",
-      top: -2,
-      right: -2,
+      top: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(-2) : responsiveLayout.responsiveHeight(-2),
+      right: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(-2) : responsiveLayout.responsiveWidth(-2),
       alignItems: "center",
       justifyContent: "center",
       paddingHorizontal: responsiveLayout.isWeb ? responsiveLayout.webResponsiveWidth(5) : responsiveLayout.responsiveWidth(5),

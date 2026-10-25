@@ -40,13 +40,15 @@ const SKIP_FILE_PATTERN = /(?:\.backup(?:[-.]|$)|\.bak(?:[-.]|$)|\.orig(?:[-.]|$
 const PROPERTY_HELPER = new Map([
   ...['fontSize', 'lineHeight'].map((name) => [name, 'webResponsiveFont']),
   ...[
-    'width', 'minWidth', 'maxWidth', 'paddingHorizontal', 'paddingLeft',
-    'paddingRight', 'marginHorizontal', 'marginLeft', 'marginRight',
-    'gap', 'columnGap', 'borderRadius',
+    'width', 'minWidth', 'maxWidth', 'left', 'right', 'start', 'end',
+    'padding', 'paddingHorizontal', 'paddingLeft', 'paddingRight', 'paddingStart', 'paddingEnd',
+    'margin', 'marginHorizontal', 'marginLeft', 'marginRight', 'marginStart', 'marginEnd',
+    'gap', 'columnGap', 'borderRadius', 'borderTopLeftRadius', 'borderTopRightRadius',
+    'borderBottomLeftRadius', 'borderBottomRightRadius', 'flexBasis', 'insetHorizontal',
   ].map((name) => [name, 'webResponsiveWidth']),
   ...[
-    'height', 'minHeight', 'maxHeight', 'paddingVertical', 'paddingTop',
-    'paddingBottom', 'marginVertical', 'marginTop', 'marginBottom', 'rowGap',
+    'height', 'minHeight', 'maxHeight', 'top', 'bottom', 'paddingVertical', 'paddingTop',
+    'paddingBottom', 'marginVertical', 'marginTop', 'marginBottom', 'rowGap', 'insetVertical',
   ].map((name) => [name, 'webResponsiveHeight']),
 ]);
 
@@ -73,6 +75,12 @@ function parseOptions(args) {
 
 function relative(root, filePath) {
   return path.relative(root, filePath).split(path.sep).join('/');
+}
+
+function platformFor(filePath) {
+  const stem = path.basename(filePath).replace(/\.[^.]+$/, '').toLowerCase();
+  const suffix = stem.split('.').at(-1);
+  return ['web', 'native', 'android', 'ios'].includes(suffix) ? suffix : 'shared';
 }
 
 function walk(root) {
@@ -129,8 +137,9 @@ function numericValue(node) {
 function valueHelper(property, node) {
   const helper = PROPERTY_HELPER.get(property);
   const value = numericValue(node);
-  // Tiny values are often hairlines, indicator geometry, or deliberate zeros.
-  if (!helper || value === null || !Number.isFinite(value) || Math.abs(value) < 3) return null;
+  // Zero remains unchanged; nonzero spacing and geometry values can scale even
+  // when they are small (for example, a 2px gap or compact padding).
+  if (!helper || value === null || !Number.isFinite(value) || value === 0) return null;
   return helper;
 }
 
@@ -193,21 +202,7 @@ function isIdentifierCall(node, name) {
     && node.expression.text === name;
 }
 
-function hasStyleSheetCreate(node) {
-  let found = false;
-  function visit(child) {
-    if (found) return;
-    if (isStyleSheetCreate(child)) {
-      found = true;
-      return;
-    }
-    ts.forEachChild(child, visit);
-  }
-  if (node.body) visit(node.body);
-  return found;
-}
-
-function hasResponsiveStyleValues(node, sourceFile) {
+function hasResponsiveStyleValues(node) {
   let found = false;
   function visit(child) {
     if (found) return;
@@ -535,18 +530,14 @@ function planFile(filePath, root) {
   }
 
   function existingLayoutBinding(component) {
-    let binding = null;
-    function visit(node) {
-      if (binding) return;
-      if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)
-        && isIdentifierCall(unwrap(node.initializer), 'useResponsiveLayout')) {
-        binding = node.name.text;
-        return;
+    for (const statement of component.body.statements) {
+      if (!ts.isVariableStatement(statement)) continue;
+      for (const declaration of statement.declarationList.declarations) {
+        if (ts.isIdentifier(declaration.name)
+          && isIdentifierCall(unwrap(declaration.initializer), 'useResponsiveLayout')) return declaration.name.text;
       }
-      ts.forEachChild(node, visit);
     }
-    visit(component.body);
-    return binding;
+    return null;
   }
 
   function layoutFor(component) {
@@ -588,7 +579,7 @@ function planFile(filePath, root) {
     const factoryName = functionName(styleFactory);
     const isHookFactoryCallback = responsiveStyleCallbacks.has(styleFactory)
       || (factoryName && responsiveStyleCallbackNames.has(factoryName));
-    if (!isHookFactoryCallback || !hasStyleSheetCreate(styleFactory)) continue;
+    if (!isHookFactoryCallback || !hasResponsiveStyleValues(styleFactory)) continue;
     const receiver = appendLayoutParameter(
       styleFactory,
       uniqueName('responsiveLayout', usedNames),
@@ -606,7 +597,7 @@ function planFile(filePath, root) {
   // in a surrounding useMemo dependency list when present.
   for (const [factoryName, factoryFunctions] of functionsByName) {
     if (!/^create.*(?:Styles|Responsive)$/i.test(factoryName)
-      || !factoryFunctions.some(hasStyleSheetCreate)
+      || !factoryFunctions.some(hasResponsiveStyleValues)
       || responsiveStyleCallbackNames.has(factoryName)) continue;
     for (const styleFactory of factoryFunctions) {
       if (styleFactory.parameters.length !== 0) continue;
@@ -796,6 +787,8 @@ function planFile(filePath, root) {
 function main() {
   const options = parseOptions(process.argv.slice(2));
   const { files, counts } = walk(options.root);
+  const platformFileCounts = { shared: 0, web: 0, native: 0, android: 0, ios: 0 };
+  for (const filePath of files) platformFileCounts[platformFor(filePath)] += 1;
   const eligibleFiles = options.wideWebOnly
     ? files.filter((filePath) => !NON_WEB_PLATFORM_FILE_PATTERN.test(filePath))
     : files;
@@ -809,6 +802,7 @@ function main() {
     filesVisited: counts.files,
     sourceFilesScanned: eligibleFiles.length,
     nonSourceFiles: counts.nonSourceFiles,
+    platformFileCounts,
     changedFiles: changed.map(({ file, inlineValues, stylesheetValues, wideWebBranches }) => ({ file, inlineValues, stylesheetValues, wideWebBranches })),
     unchangedFiles: plans.filter((plan) => plan.reason).map(({ file, reason }) => ({ file, reason })),
     totals: {
@@ -825,6 +819,7 @@ function main() {
     console.log(`Responsive layout${options.wideWebOnly ? ' wide web migration' : ''} ${options.write ? 'applied' : 'dry run'}`);
     console.log(`Directories visited: ${report.directoriesVisited}; files visited: ${report.filesVisited}`);
     console.log(`Source files scanned: ${report.sourceFilesScanned}; files with edits: ${report.totals.files}`);
+    console.log(`Source files by platform: ${Object.entries(report.platformFileCounts).map(([platform, count]) => `${platform} ${count}`).join(', ')}`);
     console.log(`Inline values: ${report.totals.inlineValues}; StyleSheet values: ${report.totals.stylesheetValues}`);
     console.log(`Wide web branches: ${report.totals.wideWebBranches}`);
     for (const item of report.changedFiles) console.log(`  ${item.file} (${item.inlineValues} inline, ${item.stylesheetValues} StyleSheet, ${item.wideWebBranches} wide web)`);

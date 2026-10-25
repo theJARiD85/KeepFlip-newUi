@@ -251,8 +251,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     stackButtonDisabled: { opacity: 0.48 },
     stackPhoto: {
       position: 'absolute',
-      right: 14,
-      bottom: 14,
+      right: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(14) : responsiveLayout.responsiveWidth(14),
+      bottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(14) : responsiveLayout.responsiveHeight(14),
       width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(20) : responsiveLayout.responsiveWidth(20),
       height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(20) : responsiveLayout.responsiveHeight(20),
       overflow: 'hidden',
@@ -350,8 +350,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     photoNumber: {
       position: 'absolute',
-      left: 10,
-      bottom: 10,
+      left: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10),
+      bottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(10) : responsiveLayout.responsiveHeight(10),
       minWidth: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(26) : responsiveLayout.responsiveWidth(26),
       height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(26) : responsiveLayout.responsiveHeight(26),
       alignItems: 'center',
@@ -370,8 +370,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     deleteButton: {
       position: 'absolute',
-      top: 9,
-      right: 9,
+      top: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(9) : responsiveLayout.responsiveHeight(9),
+      right: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(9) : responsiveLayout.responsiveWidth(9),
       width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(42) : responsiveLayout.responsiveWidth(42),
       height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(42) : responsiveLayout.responsiveHeight(42),
       alignItems: 'center',

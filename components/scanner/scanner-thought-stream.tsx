@@ -776,12 +776,12 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
     },
     signalNotch: {
       position: "absolute",
-      top: -2,
+      top: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(-2) : responsiveLayout.responsiveHeight(-2),
       width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(18) : responsiveLayout.responsiveWidth(18),
-      height: 2,
+      height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(2) : responsiveLayout.responsiveHeight(2),
     },
-    signalNotchLeft: { left: -1 },
-    signalNotchRight: { right: -1 },
+    signalNotchLeft: { left: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(-1) : responsiveLayout.responsiveWidth(-1) },
+    signalNotchRight: { right: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(-1) : responsiveLayout.responsiveWidth(-1) },
     label: {
       fontFamily: theme.fonts.radar,
       fontSize: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveFont(8) : responsiveLayout.responsiveFont(8),
@@ -827,8 +827,8 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       position: "absolute",
       top: 0,
       left: 0,
-      width: 1,
-      height: 1,
+      width: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(1) : responsiveLayout.responsiveWidth(1),
+      height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(1) : responsiveLayout.responsiveHeight(1),
       opacity: 0,
     },
   });

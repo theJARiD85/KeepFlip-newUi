@@ -409,7 +409,7 @@ export function FlipDailyBriefingLauncher() {
               bottom: insets.bottom * 3,
               left: 0,
               right: 0,
-              top: 50,
+              top: responsiveLayout3.isWideWeb ? responsiveLayout3.webResponsiveHeight(50) : responsiveLayout3.responsiveHeight(50),
               marginBottom: modalBottomMargin,
               marginTop: modalTopMargin,
               maxHeight: modalMaxHeight,
@@ -506,25 +506,26 @@ export function FlipDailyBriefingLauncher() {
 }
 
 function useBriefingStyles() {
+  const responsiveLayout4 = useResponsiveLayout();
   const { appliedColorScheme } = useKeepFlipAppearance();
-  return useMemo(() => createBriefingStyles(), [appliedColorScheme]);
+  return useMemo(() => createBriefingStyles(responsiveLayout4), [appliedColorScheme, responsiveLayout4]);
 }
 
-function createBriefingStyles() {
+function createBriefingStyles(responsiveLayout4: ReturnType<typeof useResponsiveLayout>) {
   return StyleSheet.create({
   backdrop: {
     alignItems: 'center',
     backgroundColor: theme.colors.scrim,
     flex: 1,
     justifyContent: 'center',
-    padding: 14,
+    padding: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(14) : responsiveLayout4.responsiveWidth(14),
   },
   modalCard: {
     position: 'absolute',
     backgroundColor: theme.colors.surfaceOverlay,
     borderColor: theme.colors.accentGoldBorder,
     borderCurve: 'continuous',
-    borderRadius: 26,
+    borderRadius: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(26) : responsiveLayout4.responsiveWidth(26),
     borderWidth: 1,
     boxShadow: '0 18px 52px rgba(0, 0, 0, 0.56), 0 0 24px rgba(0, 255, 255, 0.08)',
     flexShrink: 1,
@@ -536,21 +537,21 @@ function createBriefingStyles() {
     borderBottomWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 18,
+    padding: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(18) : responsiveLayout4.responsiveWidth(18),
   },
   identityBlock: {
     alignItems: 'center',
     flexDirection: 'row',
     flex: 1,
-    gap: 12,
+    gap: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(12) : responsiveLayout4.responsiveWidth(12),
   },
   companion: {
-    height: 58,
-    width: 58,
+    height: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveHeight(58) : responsiveLayout4.responsiveHeight(58),
+    width: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(58) : responsiveLayout4.responsiveWidth(58),
   },
   headerCopy: {
     flex: 1,
-    gap: 4,
+    gap: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(4) : responsiveLayout4.responsiveWidth(4),
   },
   eyebrow: {
     color: theme.colors.scannerCyan,
@@ -564,20 +565,20 @@ function createBriefingStyles() {
   closeButton: {
     alignItems: 'center',
     borderColor: theme.colors.divider,
-    borderRadius: 999,
+    borderRadius: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(999) : responsiveLayout4.responsiveWidth(999),
     borderWidth: 1,
-    height: 32,
+    height: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveHeight(32) : responsiveLayout4.responsiveHeight(32),
     justifyContent: 'center',
-    marginLeft: 10,
-    width: 32,
+    marginLeft: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(10) : responsiveLayout4.responsiveWidth(10),
+    width: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(32) : responsiveLayout4.responsiveWidth(32),
   },
   closeText: {
     color: theme.colors.textMuted,
-    lineHeight: 20,
+    lineHeight: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveFont(20) : responsiveLayout4.responsiveFont(20),
   },
   scrollContent: {
-    gap: 12,
-    padding: 18,
+    gap: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(12) : responsiveLayout4.responsiveWidth(12),
+    padding: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(18) : responsiveLayout4.responsiveWidth(18),
   },
   scroll: {
     flexShrink: 1,
@@ -586,16 +587,16 @@ function createBriefingStyles() {
     backgroundColor: theme.colors.iconSurfaceCyan,
     borderColor: theme.colors.accentCyanBorder,
     borderCurve: 'continuous',
-    borderRadius: 18,
+    borderRadius: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(18) : responsiveLayout4.responsiveWidth(18),
     borderWidth: 1,
-    gap: 10,
-    padding: 15,
+    gap: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(10) : responsiveLayout4.responsiveWidth(10),
+    padding: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(15) : responsiveLayout4.responsiveWidth(15),
   },
   readHeader: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(12) : responsiveLayout4.responsiveWidth(12),
   },
   sectionEyebrow: {
     color: theme.colors.goldBright,
@@ -615,16 +616,16 @@ function createBriefingStyles() {
     backgroundColor: theme.colors.iconSurfaceViolet,
     borderColor: theme.colors.accentVioletBorder,
     borderCurve: 'continuous',
-    borderRadius: 18,
+    borderRadius: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(18) : responsiveLayout4.responsiveWidth(18),
     borderWidth: 1,
-    gap: 12,
-    padding: 15,
+    gap: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(12) : responsiveLayout4.responsiveWidth(12),
+    padding: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(15) : responsiveLayout4.responsiveWidth(15),
   },
   advisoryHeader: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(12) : responsiveLayout4.responsiveWidth(12),
   },
   confidence: {
     color: theme.colors.textMuted,
@@ -638,11 +639,11 @@ function createBriefingStyles() {
   evidenceList: {
     borderTopColor: theme.colors.divider,
     borderTopWidth: 1,
-    gap: 8,
-    paddingTop: 10,
+    gap: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(8) : responsiveLayout4.responsiveWidth(8),
+    paddingTop: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveHeight(10) : responsiveLayout4.responsiveHeight(10),
   },
   evidenceRow: {
-    gap: 2,
+    gap: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(2) : responsiveLayout4.responsiveWidth(2),
   },
   evidenceLabel: {
     color: theme.colors.textMuted,
@@ -658,10 +659,10 @@ function createBriefingStyles() {
     backgroundColor: theme.colors.iconSurfaceGold,
     borderColor: theme.colors.dividerStrong,
     borderCurve: 'continuous',
-    borderRadius: 13,
+    borderRadius: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(13) : responsiveLayout4.responsiveWidth(13),
     borderWidth: 1,
-    gap: 4,
-    padding: 11,
+    gap: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(4) : responsiveLayout4.responsiveWidth(4),
+    padding: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(11) : responsiveLayout4.responsiveWidth(11),
   },
   nextMoveLabel: {
     color: theme.colors.goldBright,
@@ -680,26 +681,26 @@ function createBriefingStyles() {
     backgroundColor: theme.colors.cardSoft,
     borderColor: theme.colors.divider,
     borderCurve: 'continuous',
-    borderRadius: 18,
+    borderRadius: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(18) : responsiveLayout4.responsiveWidth(18),
     borderWidth: 1,
-    gap: 10,
-    padding: 15,
+    gap: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(10) : responsiveLayout4.responsiveWidth(10),
+    padding: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(15) : responsiveLayout4.responsiveWidth(15),
   },
   openWorkRow: {
     alignItems: 'flex-start',
     flexDirection: 'row',
-    gap: 9,
+    gap: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(9) : responsiveLayout4.responsiveWidth(9),
   },
   openWorkDot: {
     backgroundColor: theme.colors.scannerCyan,
-    borderRadius: 999,
-    height: 7,
-    marginTop: 4,
-    width: 7,
+    borderRadius: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(999) : responsiveLayout4.responsiveWidth(999),
+    height: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveHeight(7) : responsiveLayout4.responsiveHeight(7),
+    marginTop: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveHeight(4) : responsiveLayout4.responsiveHeight(4),
+    width: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(7) : responsiveLayout4.responsiveWidth(7),
   },
   openWorkCopy: {
     flex: 1,
-    gap: 2,
+    gap: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(2) : responsiveLayout4.responsiveWidth(2),
   },
   openWorkTitle: {
     color: theme.colors.text,
@@ -711,10 +712,10 @@ function createBriefingStyles() {
   },
   loadingState: {
     alignItems: 'center',
-    gap: 12,
+    gap: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(12) : responsiveLayout4.responsiveWidth(12),
     justifyContent: 'center',
-    minHeight: 220,
-    padding: 22,
+    minHeight: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveHeight(220) : responsiveLayout4.responsiveHeight(220),
+    padding: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(22) : responsiveLayout4.responsiveWidth(22),
   },
   loadingTitle: {
     color: theme.colors.text,
@@ -724,15 +725,15 @@ function createBriefingStyles() {
   loadingText: {
     color: theme.colors.textMuted,
     fontFamily: theme.fonts.body,
-    maxWidth: 290,
+    maxWidth: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(290) : responsiveLayout4.responsiveWidth(290),
     textAlign: 'center',
   },
   footer: {
     borderTopColor: theme.colors.divider,
-    height: 145,
+    height: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveHeight(145) : responsiveLayout4.responsiveHeight(145),
     borderTopWidth: 1,
-    gap: 10,
-    padding: 12,
+    gap: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(10) : responsiveLayout4.responsiveWidth(10),
+    padding: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(12) : responsiveLayout4.responsiveWidth(12),
   },
   footerHint: {
     color: theme.colors.textMuted,
@@ -743,10 +744,10 @@ function createBriefingStyles() {
     alignItems: 'center',
     backgroundColor: theme.colors.gold,
     borderCurve: 'continuous',
-    borderRadius: 13,
-    minHeight: 46,
+    borderRadius: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(13) : responsiveLayout4.responsiveWidth(13),
+    minHeight: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveHeight(46) : responsiveLayout4.responsiveHeight(46),
     justifyContent: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: responsiveLayout4.isWideWeb ? responsiveLayout4.webResponsiveWidth(16) : responsiveLayout4.responsiveWidth(16),
   },
   closeActionText: {
     color: theme.colors.textOnAccent,

@@ -36,6 +36,7 @@ export function LegalDocumentScreen({
   sections,
   title,
 }: LegalDocumentScreenProps) {
+  const responsiveLayout2 = useResponsiveLayout();
   const styles = useResponsiveStyles(createResponsiveStyles);
   const {
     contentMaxWidth,
@@ -66,7 +67,7 @@ export function LegalDocumentScreen({
           <View style={[styles.headerRow]}>
           <View style={styles.headerColumn2}>
             <Text style={[styles.eyebrow, { fontSize: responsiveFont(10), fontFamily: theme.fonts.display }]}>KEEPFLIP / LEGAL</Text>
-            <Text selectable style={[styles.title, { fontSize: responsiveFont(26), fontFamily: theme.fonts.bold, marginBottom: 2 }]}>
+            <Text selectable style={[styles.title, { fontSize: responsiveFont(26), fontFamily: theme.fonts.bold, marginBottom: responsiveLayout2.isWideWeb ? responsiveLayout2.webResponsiveHeight(2) : responsiveLayout2.responsiveHeight(2) }]}>
               {title}
             </Text>
             <Text style={[styles.effectiveDate, { fontSize: responsiveFont(10), fontFamily: theme.fonts.body }]}>

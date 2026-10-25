@@ -104,7 +104,7 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       shadowRadius: 15,
     },
     laserCore: {
-      height: 2,
+      height: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(2) : responsiveLayout.responsiveHeight(2),
       backgroundColor: '#ffffff',
       width: '100%',
       position: 'absolute',
@@ -124,10 +124,10 @@ function createResponsiveStyles(responsiveLayout: ReturnType<typeof useResponsiv
       shadowOpacity: 1,
       shadowRadius: 4,
     },
-    topLeft: { top: 10, left: 10, borderTopWidth: 3, borderLeftWidth: 3 },
-    topRight: { top: 10, right: 10, borderTopWidth: 3, borderRightWidth: 3 },
-    bottomLeft: { bottom: 10, left: 10, borderBottomWidth: 3, borderLeftWidth: 3 },
-    bottomRight: { bottom: 10, right: 10, borderBottomWidth: 3, borderRightWidth: 3 },
+    topLeft: { top: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(10) : responsiveLayout.responsiveHeight(10), left: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10), borderTopWidth: 3, borderLeftWidth: 3 },
+    topRight: { top: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(10) : responsiveLayout.responsiveHeight(10), right: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10), borderTopWidth: 3, borderRightWidth: 3 },
+    bottomLeft: { bottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(10) : responsiveLayout.responsiveHeight(10), left: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10), borderBottomWidth: 3, borderLeftWidth: 3 },
+    bottomRight: { bottom: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveHeight(10) : responsiveLayout.responsiveHeight(10), right: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(10) : responsiveLayout.responsiveWidth(10), borderBottomWidth: 3, borderRightWidth: 3 },
   });
   return {
     ...staticStyles,
