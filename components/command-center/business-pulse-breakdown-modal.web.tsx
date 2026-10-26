@@ -141,7 +141,7 @@ export function BusinessPulseBreakdownModal({
       animationIn="fadeIn"
       animationOut="fadeOut"
       backdropColor={theme.colors.backgroundRaised}
-      backdropOpacity={0.05}
+      backdropOpacity={0.5}
       onBackdropPress={onClose}
       isVisible={visible}
       style={{ position: 'absolute', bottom: insets.bottom * 2, top: insets.top * 2, left: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(-18) : responsiveLayout.responsiveWidth(-18), right: responsiveLayout.isWideWeb ? responsiveLayout.webResponsiveWidth(-18) : responsiveLayout.responsiveWidth(-18) }}
@@ -155,7 +155,7 @@ export function BusinessPulseBreakdownModal({
             left: 0,
             right: 0,
             top: insets.top * 2,
-            marginBottom: insets.bottom,
+            marginBottom: insets.bottom * 2,
             marginTop: insets.top * 2,
           },
         ]}
@@ -446,12 +446,11 @@ function createResponsiveStyles(responsiveLayout6: ReturnType<typeof useResponsi
     panel: {
       backgroundColor: theme.colors.card,
       borderColor: theme.colors.accentCyanBorder,
-      borderTopLeftRadius: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(18) : responsiveLayout6.responsiveWidth(18),
-      borderTopRightRadius: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(18) : responsiveLayout6.responsiveWidth(18),
+      borderRadius: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(18) : responsiveLayout6.responsiveWidth(18),
       borderWidth: 1,
       flex: 1,
       gap: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(14) : responsiveLayout6.responsiveWidth(14),
-      maxHeight: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveHeight(900) : responsiveLayout6.responsiveHeight(900),
+      maxHeight: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveHeight(750) : responsiveLayout6.responsiveHeight(600),
       padding: responsiveLayout6.isWideWeb ? responsiveLayout6.webResponsiveWidth(14) : responsiveLayout6.responsiveWidth(14),
     },
     header: {

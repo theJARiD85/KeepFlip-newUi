@@ -16,6 +16,14 @@ import {
 export const USER_PROFILE_BUY_RULES_COLUMN = 'resellerBuyRulesJson';
 export const USER_PROFILE_TRIALING_COLUMN = 'isTrialing';
 export const USER_PROFILE_TRIAL_END_DATE_COLUMN = 'trialEndDate';
+export const USER_PROFILE_FACEBOOK_ALLOW_OFFERS_COLUMN = 'facebookAllowOffers';
+export const USER_PROFILE_FACEBOOK_OFFER_DISCOUNT_COLUMN = 'facebookMinimumOfferDiscountPercent';
+export const DEFAULT_FACEBOOK_MINIMUM_OFFER_DISCOUNT_PERCENT = 10;
+
+export type FacebookOfferPreferences = {
+  allowOffers: boolean;
+  minimumOfferDiscountPercent: number;
+};
 
 type UserProfileRow = {
   $id: string;
@@ -23,6 +31,8 @@ type UserProfileRow = {
   defaultCurrency?: string;
   displayName?: string | null;
   ebaySellerProfileId?: string | null;
+  facebookAllowOffers?: boolean | null;
+  facebookMinimumOfferDiscountPercent?: number | null;
   facebookShippingDefault?: string | null;
   isTrialing?: boolean;
   onboardingCompletedAt?: string | null;
@@ -91,6 +101,8 @@ function isProfileSchemaError(error: unknown) {
     details.includes(USER_PROFILE_BUY_RULES_COLUMN.toLowerCase()) ||
     details.includes(USER_PROFILE_TRIALING_COLUMN.toLowerCase()) ||
     details.includes(USER_PROFILE_TRIAL_END_DATE_COLUMN.toLowerCase()) ||
+    details.includes(USER_PROFILE_FACEBOOK_ALLOW_OFFERS_COLUMN.toLowerCase()) ||
+    details.includes(USER_PROFILE_FACEBOOK_OFFER_DISCOUNT_COLUMN.toLowerCase()) ||
     /(?:row|document)_invalid_structure|unknown_(?:attribute|column)/i.test(
       type,
     )
@@ -100,7 +112,7 @@ function isProfileSchemaError(error: unknown) {
 function userProfileSchemaMigrationError(cause: unknown) {
   const error = new Error(
     "KeepFlip's user_profiles table is missing a required profile column. " +
-      'It needs resellerBuyRulesJson, isTrialing, trialEndDate, and marketplaceSelections (enum array) to be Available before the app can save this profile. ' +
+      'It needs resellerBuyRulesJson, isTrialing, trialEndDate, marketplaceSelections (enum array), facebookAllowOffers (boolean), and facebookMinimumOfferDiscountPercent (integer) to be Available before the app can save this profile. ' +
       'Follow docs/USER_PROFILE_TRIAL_APPWRITE_SCHEMA.md, then retry.',
   );
   error.name = 'UserProfileSchemaMigrationError';
@@ -198,6 +210,8 @@ export async function ensureUserProfile({
         // new accounts start on the Free tier without a timed trial.
         isTrialing: false,
         trialEndDate: now,
+        facebookAllowOffers: false,
+        facebookMinimumOfferDiscountPercent: DEFAULT_FACEBOOK_MINIMUM_OFFER_DISCOUNT_PERCENT,
         updatedAt: now,
       },
       permissions: profilePermissions(cleanUserId),
@@ -233,6 +247,54 @@ export async function getResellerBuyRules(
   return parseResellerBuyRules(row.resellerBuyRulesJson);
 }
 
+function normalizeFacebookOfferPreferences(value?: Partial<FacebookOfferPreferences> | null): FacebookOfferPreferences {
+  const discount = Number(value?.minimumOfferDiscountPercent);
+  return {
+    allowOffers: value?.allowOffers === true,
+    minimumOfferDiscountPercent: Number.isInteger(discount) && discount >= 1 && discount <= 50
+      ? discount
+      : DEFAULT_FACEBOOK_MINIMUM_OFFER_DISCOUNT_PERCENT,
+  };
+}
+
+export async function getFacebookOfferPreferences(userId: string, displayName?: string | null) {
+  const row = await ensureUserProfile({ userId, displayName });
+  return normalizeFacebookOfferPreferences({
+    allowOffers: row.facebookAllowOffers === true,
+    minimumOfferDiscountPercent: row.facebookMinimumOfferDiscountPercent ?? undefined,
+  });
+}
+
+export async function saveFacebookOfferPreferences(
+  userId: string,
+  preferences: FacebookOfferPreferences,
+  displayName?: string | null,
+) {
+  if (typeof preferences.allowOffers !== 'boolean' ||
+    !Number.isInteger(preferences.minimumOfferDiscountPercent) ||
+    preferences.minimumOfferDiscountPercent < 1 || preferences.minimumOfferDiscountPercent > 50) {
+    throw new Error('Choose a minimum Facebook offer from 1% to 50% below asking price.');
+  }
+  const row = await ensureUserProfile({ userId, displayName });
+  const normalized = normalizeFacebookOfferPreferences(preferences);
+  try {
+    const updated = await tablesDB.updateRow({
+      databaseId: APPWRITE.databaseId,
+      tableId: APPWRITE.userProfilesTableId,
+      rowId: row.$id,
+      data: {
+        facebookAllowOffers: normalized.allowOffers,
+        facebookMinimumOfferDiscountPercent: normalized.minimumOfferDiscountPercent,
+        updatedAt: new Date().toISOString(),
+      },
+    });
+    return normalizeFacebookOfferPreferences(updated as unknown as FacebookOfferPreferences);
+  } catch (error) {
+    if (isProfileSchemaError(error)) throw userProfileSchemaMigrationError(error);
+    throw error;
+  }
+}
+
 export async function hasCompletedScanInventoryWalkthrough(
   userId: string,
   displayName?: string | null,
@@ -254,6 +316,7 @@ export async function completeScanInventoryWalkthrough(
   displayName?: string | null,
   buyRules?: ResellerBuyRulesInput,
   marketplaceSelections: readonly ListingPlatform[] = [],
+  facebookOfferPreferences?: FacebookOfferPreferences,
 ) {
   const row = await ensureUserProfile({ displayName, userId });
   const normalizedBuyRules = normalizeResellerBuyRules(buyRules);
@@ -262,6 +325,15 @@ export async function completeScanInventoryWalkthrough(
   }
 
   const completedAt = new Date().toISOString();
+  const normalizedOffers = facebookOfferPreferences
+    ? normalizeFacebookOfferPreferences(facebookOfferPreferences)
+    : null;
+  if (facebookOfferPreferences && (typeof facebookOfferPreferences.allowOffers !== 'boolean' ||
+    !Number.isInteger(facebookOfferPreferences.minimumOfferDiscountPercent) ||
+    facebookOfferPreferences.minimumOfferDiscountPercent < 1 ||
+    facebookOfferPreferences.minimumOfferDiscountPercent > 50)) {
+    throw new Error('Choose a minimum Facebook offer from 1% to 50% below asking price.');
+  }
   try {
     await tablesDB.updateRow({
       databaseId: APPWRITE.databaseId,
@@ -275,6 +347,10 @@ export async function completeScanInventoryWalkthrough(
             : completedAt,
         [USER_PROFILE_BUY_RULES_COLUMN]: JSON.stringify(normalizedBuyRules),
         marketplaceSelections: normalizeMarketplaceSelections(marketplaceSelections),
+        ...(normalizedOffers ? {
+          facebookAllowOffers: normalizedOffers.allowOffers,
+          facebookMinimumOfferDiscountPercent: normalizedOffers.minimumOfferDiscountPercent,
+        } : {}),
         updatedAt: completedAt,
       },
     });

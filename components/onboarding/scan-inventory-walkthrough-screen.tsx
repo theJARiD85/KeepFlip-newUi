@@ -26,7 +26,10 @@ import {
   DEFAULT_RESELLER_BUY_RULES,
   type ResellerBuyRules,
 } from "@/services/reseller-buy-rules-service";
-import { completeScanInventoryWalkthrough } from "@/services/user-profile-onboarding-service";
+import {
+  completeScanInventoryWalkthrough,
+  DEFAULT_FACEBOOK_MINIMUM_OFFER_DISCOUNT_PERCENT,
+} from "@/services/user-profile-onboarding-service";
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 
 type FlipIcon =
@@ -254,6 +257,12 @@ const FLIP_QUESTIONS: FlipQuestion[] = [
     message: 'Great. I can have listing drafts ready for the places you use most.',
     prompt: 'Which marketplaces do you usually sell on?',
   },
+  {
+    eyebrow: 'FACEBOOK OFFERS',
+    id: 'offers',
+    message: 'I can set a floor so buyers can make offers without dropping below what feels right to you.',
+    prompt: 'Do you want to accept offers on Facebook Marketplace?',
+  },
 ];
 
 function selectionHaptic() {
@@ -373,6 +382,10 @@ export function ScanInventoryWalkthroughScreen() {
   }));
   const [profitInput, setProfitInput] = useState(() => String(DEFAULT_RESELLER_BUY_RULES.minimumNetProfitCents / 100));
   const [marketplaceSelections, setMarketplaceSelections] = useState<ListingPlatform[]>([]);
+  const [allowFacebookOffers, setAllowFacebookOffers] = useState(false);
+  const [facebookOfferDiscountPercent, setFacebookOfferDiscountPercent] = useState(
+    String(DEFAULT_FACEBOOK_MINIMUM_OFFER_DISCOUNT_PERCENT),
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const tourScreen = FLIP_QUESTIONS.length + 2;
@@ -400,8 +413,11 @@ export function ScanInventoryWalkthroughScreen() {
       marketplaces: marketplaceSelections.length
         ? MARKETPLACE_CHOICES.filter((choice) => marketplaceSelections.includes(choice.id)).map((choice) => choice.label).join(', ')
         : 'Choose marketplaces later in Listing',
+      offers: allowFacebookOffers
+        ? `Facebook offers on · minimum ${facebookOfferDiscountPercent}% below asking`
+        : 'Facebook offers off',
     };
-  }, [marketplaceSelections, rules]);
+  }, [allowFacebookOffers, facebookOfferDiscountPercent, marketplaceSelections, rules]);
 
   const goBack = useCallback(() => {
     if (saving || screen === 0) return;
@@ -436,6 +452,18 @@ export function ScanInventoryWalkthroughScreen() {
     setScreen((current) => Math.min(FLIP_QUESTIONS.length + 1, current + 1));
   }, [profitInput]);
 
+  const continueFromFacebookOffers = useCallback(() => {
+    const discount = Number(facebookOfferDiscountPercent.replace(/%\s*/g, '').trim());
+    if (!Number.isInteger(discount) || discount < 1 || discount > 50) {
+      setError('Choose a minimum offer from 1% to 50% below asking price.');
+      return;
+    }
+    selectionHaptic();
+    setError(null);
+    setFacebookOfferDiscountPercent(String(discount));
+    setScreen((current) => Math.min(FLIP_QUESTIONS.length + 1, current + 1));
+  }, [facebookOfferDiscountPercent]);
+
   const finish = useCallback(async () => {
     if (saving) return;
 
@@ -443,7 +471,10 @@ export function ScanInventoryWalkthroughScreen() {
     setError(null);
     try {
       if (!user) throw new Error("Sign in before finishing your Flip profile.");
-      await completeScanInventoryWalkthrough(user.$id, user.name, rules, marketplaceSelections);
+      await completeScanInventoryWalkthrough(user.$id, user.name, rules, marketplaceSelections, {
+        allowOffers: allowFacebookOffers,
+        minimumOfferDiscountPercent: Number(facebookOfferDiscountPercent),
+      });
       completionHaptic();
 
       router.replace("/(app)" as Href);
@@ -456,7 +487,7 @@ export function ScanInventoryWalkthroughScreen() {
     } finally {
       setSaving(false);
     }
-  }, [marketplaceSelections, router, rules, saving, user]);
+  }, [allowFacebookOffers, facebookOfferDiscountPercent, marketplaceSelections, router, rules, saving, user]);
 
   return (
     <KeepFlipBackground>
@@ -549,6 +580,45 @@ export function ScanInventoryWalkthroughScreen() {
                     <Ionicons color={theme.colors.backgroundDeep} name="arrow-forward" size={21} />
                   </Pressable>
                 </View>
+              ) : question.id === 'offers' ? (
+                <View style={styles.choiceList}>
+                  <Text style={[styles.body, { fontSize: responsiveFont(14) }]}>This is your saved default. You can confirm or change it each time you prepare a Facebook listing.</Text>
+                  <Pressable
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: !allowFacebookOffers }}
+                    onPress={() => { selectionHaptic(); setAllowFacebookOffers(false); setError(null); }}
+                    style={({ pressed }) => [styles.choiceCard, !allowFacebookOffers && styles.choiceCardSelected, pressed && styles.pressed]}
+                  ><Text style={[styles.choiceTitle, !allowFacebookOffers && styles.choiceTitleSelected]}><Ionicons color={!allowFacebookOffers ? theme.colors.scannerCyan : theme.colors.textMuted} name={!allowFacebookOffers ? 'checkmark-circle' : 'ellipse-outline'} size={16} />{'  '}Keep offers off</Text></Pressable>
+                  <Pressable
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: allowFacebookOffers }}
+                    onPress={() => { selectionHaptic(); setAllowFacebookOffers(true); setError(null); }}
+                    style={({ pressed }) => [styles.choiceCard, allowFacebookOffers && styles.choiceCardSelected, pressed && styles.pressed]}
+                  ><Text style={[styles.choiceTitle, allowFacebookOffers && styles.choiceTitleSelected]}><Ionicons color={allowFacebookOffers ? theme.colors.scannerCyan : theme.colors.textMuted} name={allowFacebookOffers ? 'checkmark-circle' : 'ellipse-outline'} size={16} />{'  '}Accept offers</Text></Pressable>
+                  {allowFacebookOffers ? <>
+                    <Text style={[styles.nameLabel, { fontSize: responsiveFont(11) }]}>MINIMUM OFFER DISCOUNT</Text>
+                    <View style={{ alignItems: 'center', flexDirection: 'row', gap: 8 }}>
+                      <TextInput
+                        accessibilityLabel="Minimum offer percent below asking price"
+                        keyboardType="number-pad"
+                        onChangeText={(value) => { setFacebookOfferDiscountPercent(value.replace(/[^0-9]/g, '')); setError(null); }}
+                        placeholder="10"
+                        placeholderTextColor={theme.colors.textMuted}
+                        returnKeyType="done"
+                        selectTextOnFocus
+                        style={[styles.nameInput, { flex: 1 }]}
+                        value={facebookOfferDiscountPercent}
+                      />
+                      <Text style={{ color: theme.colors.goldBright, fontFamily: theme.fonts.bold, fontSize: responsiveFont(20) }}>% below asking</Text>
+                    </View>
+                    <Text style={[styles.body, { fontSize: responsiveFont(13) }]}>A 10% discount sets a $90 minimum on a $100 listing. Facebook requires the minimum to be at least half the asking price.</Text>
+                  </> : null}
+                  {error ? <Text selectable style={[styles.errorText, { fontSize: responsiveFont(13) }]}>{error}</Text> : null}
+                  <Pressable accessibilityRole="button" onPress={continueFromFacebookOffers} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}>
+                    <Text style={[styles.primaryButtonText, { fontSize: responsiveFont(15) }]}>Continue</Text>
+                    <Ionicons color={theme.colors.backgroundDeep} name="arrow-forward" size={21} />
+                  </Pressable>
+                </View>
               ) : question.id === "profit" ? (
                 <>
                   <Text style={[styles.body, { fontSize: responsiveFont(15) }]}>Set the minimum profit you need after the flip&apos;s costs.</Text>
@@ -601,6 +671,7 @@ export function ScanInventoryWalkthroughScreen() {
                 <Text selectable style={[styles.summaryPrimary, { fontSize: responsiveFont(16) }]}>{summary.line}</Text>
                 <Text selectable style={[styles.summarySecondary, { fontSize: responsiveFont(13) }]}>{summary.details}</Text>
                 <Text selectable style={[styles.summarySecondary, { fontSize: responsiveFont(13) }]}>Listing: {summary.marketplaces}</Text>
+                <Text selectable style={[styles.summarySecondary, { fontSize: responsiveFont(13) }]}>{summary.offers}</Text>
               </View>
               <Text style={[styles.body, { fontSize: responsiveFont(15) }]}>
                 Your buy rules are ready. KeepFlip can use them alongside market evidence, and you can change them later. Now let me show you how an item moves through the app.

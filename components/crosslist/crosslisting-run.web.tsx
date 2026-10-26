@@ -21,6 +21,10 @@ import {
 } from '@/services/crosslisting-extension-bridge.web';
 import { confirmMarketplaceListing, parseSavedListingDraft } from '@/services/listing-draft-service';
 import { getMarketplaceSelections } from '@/services/marketplace-selections-service';
+import {
+  DEFAULT_FACEBOOK_MINIMUM_OFFER_DISCOUNT_PERCENT,
+  getFacebookOfferPreferences,
+} from '@/services/user-profile-onboarding-service';
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/use-responsive-layout';
 
 const MARKETPLACES = CROSSLISTING_RUN_MARKETPLACES;
@@ -36,7 +40,12 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
   const [selected, setSelected] = useState<CrosslistingMarketplace[]>(() => MARKETPLACES.filter((value) => initialSelections?.includes(value) && !confirmed[value]));
   const shipping = useListingShippingReview(userId);
   const [allowFacebookOffers, setAllowFacebookOffers] = useState(false);
-  const [minimumFacebookOffer, setMinimumFacebookOffer] = useState('');
+  const [facebookOfferDiscountPercent, setFacebookOfferDiscountPercent] = useState(String(DEFAULT_FACEBOOK_MINIMUM_OFFER_DISCOUNT_PERCENT));
+  const [profileAllowsFacebookOffers, setProfileAllowsFacebookOffers] = useState(false);
+  const [profileFacebookOfferDiscountPercent, setProfileFacebookOfferDiscountPercent] = useState(DEFAULT_FACEBOOK_MINIMUM_OFFER_DISCOUNT_PERCENT);
+  const [facebookOfferPreferencesUserId, setFacebookOfferPreferencesUserId] = useState<string | null>(null);
+  const [facebookOfferLoadError, setFacebookOfferLoadError] = useState<string | null>(null);
+  const [facebookOfferChoiceConfirmed, setFacebookOfferChoiceConfirmed] = useState(false);
   const [extensionReady, setExtensionReady] = useState<boolean | null>(null);
   const [jobs, setJobs] = useState<ExtensionJob[]>([]);
   const [recorded, setRecorded] = useState<Set<CrosslistingMarketplace>>(() => new Set());
@@ -47,6 +56,7 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
   const preparedRef = useRef<Set<CrosslistingMarketplace>>(new Set());
   const confirmedRef = useRef<Set<CrosslistingMarketplace>>(new Set());
   const available = selected.filter((marketplace) => !confirmed[marketplace] && !recorded.has(marketplace));
+  const facebookOfferPreferencesLoaded = facebookOfferPreferencesUserId === userId;
 
   useEffect(() => {
     let mounted = true;
@@ -56,6 +66,23 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
     }).catch(() => undefined);
     return () => { mounted = false; };
   }, [confirmed, initialSelections, userId]);
+
+  useEffect(() => {
+    let mounted = true;
+    void getFacebookOfferPreferences(userId).then((preferences) => {
+      if (!mounted) return;
+      setAllowFacebookOffers(preferences.allowOffers);
+      setFacebookOfferDiscountPercent(String(preferences.minimumOfferDiscountPercent));
+      setProfileAllowsFacebookOffers(preferences.allowOffers);
+      setProfileFacebookOfferDiscountPercent(preferences.minimumOfferDiscountPercent);
+      setFacebookOfferLoadError(null);
+    }).catch((caught: unknown) => {
+      if (mounted) setFacebookOfferLoadError(caught instanceof Error ? caught.message : 'Could not load Facebook offer preferences.');
+    }).finally(() => {
+      if (mounted) setFacebookOfferPreferencesUserId(userId);
+    });
+    return () => { mounted = false; };
+  }, [userId]);
 
   useEffect(() => {
     let mounted = true;
@@ -142,21 +169,30 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
       }
       const shippingPreferences = await shipping.prepareForRun(available);
       const facebookPrice = listing.marketplaceListings.facebookMarketplace.price;
-      const minimumOffer = Number(minimumFacebookOffer.replace(/[$,\s]/g, ''));
-      if (selected.includes('facebookMarketplace') && allowFacebookOffers &&
+      const facebookDiscount = Number(facebookOfferDiscountPercent);
+      if (available.includes('facebookMarketplace') && !facebookOfferPreferencesLoaded) {
+        throw new Error('Wait for Facebook offer preferences to load before starting this run.');
+      }
+      if (available.includes('facebookMarketplace') && !facebookOfferChoiceConfirmed) {
+        throw new Error('Confirm the Facebook offer setting for this item before starting the listing run.');
+      }
+      if (available.includes('facebookMarketplace') && allowFacebookOffers &&
         (!Number.isFinite(facebookPrice) || facebookPrice <= 0)) {
         throw new Error('Save a Facebook listing price before setting a minimum offer.');
       }
-      if (selected.includes('facebookMarketplace') && allowFacebookOffers &&
-        (!Number.isFinite(minimumOffer) || minimumOffer < facebookPrice / 2 || minimumOffer >= facebookPrice)) {
-        throw new Error(`Enter a minimum Facebook offer from $${(facebookPrice / 2).toFixed(2)} up to less than $${facebookPrice.toFixed(2)}.`);
+      if (available.includes('facebookMarketplace') && allowFacebookOffers &&
+        (!Number.isInteger(facebookDiscount) || facebookDiscount < 1 || facebookDiscount > 50)) {
+        throw new Error('Choose a minimum Facebook offer from 1% to 50% below asking price.');
       }
+      const minimumOffer = allowFacebookOffers
+        ? Math.round(Math.round(facebookPrice * 100) * (100 - facebookDiscount) / 100) / 100
+        : null;
       const runId = globalThis.crypto?.randomUUID?.() ?? `run-${Date.now()}-${Math.random().toString(36).slice(2)}`;
       runIdRef.current = runId;
       const dispatchedJobs = await dispatchToAutomationEngine({
         ownerId: userId, item, listing, marketplaces: available, runId,
         shippingPreferences,
-        facebookMinimumOfferPrice: selected.includes('facebookMarketplace') && allowFacebookOffers ? minimumOffer : null,
+        facebookMinimumOfferPrice: available.includes('facebookMarketplace') ? minimumOffer : null,
         onPhotosReady: () => setNotice('Opening your marketplace tabs…'),
       });
       setJobs((current) => dispatchedJobs.map((job) => {
@@ -221,24 +257,39 @@ export function CrosslistingRun({ item, listing, userId, onDraftPrepared, onList
       onConfirm={shipping.toggleConfirmed}
       onRetry={() => { void shipping.reload(); }}
     />
-    {selected.includes('facebookMarketplace') ? <View style={responsiveStyles.offerPreferences}>
+    {available.includes('facebookMarketplace') ? <View style={responsiveStyles.offerPreferences}>
+      <Text style={responsiveStyles.offerHeading}>Facebook offers for this item</Text>
+      {facebookOfferLoadError ? <Text accessibilityRole="alert" style={responsiveStyles.hint}>{facebookOfferLoadError} Choose the setting below for this run.</Text> : null}
       <Pressable
         accessibilityRole="checkbox"
-        accessibilityState={{ checked: allowFacebookOffers, disabled: jobs.length > 0 || busy }}
-        disabled={jobs.length > 0 || busy}
-        onPress={() => setAllowFacebookOffers((current) => !current)}
+        accessibilityState={{ checked: allowFacebookOffers, disabled: jobs.length > 0 || busy || !facebookOfferPreferencesLoaded }}
+        disabled={jobs.length > 0 || busy || !facebookOfferPreferencesLoaded}
+        onPress={() => { setAllowFacebookOffers((current) => !current); setFacebookOfferChoiceConfirmed(false); }}
         style={[responsiveStyles.shippingPreference, allowFacebookOffers && responsiveStyles.shippingPreferenceSelected]}
-      ><Text style={[responsiveStyles.shippingPreferenceText, allowFacebookOffers && responsiveStyles.choiceTextSelected]}><Ionicons color={allowFacebookOffers ? theme.colors.scannerCyan : theme.colors.textMuted} name={allowFacebookOffers ? 'checkmark-circle' : 'ellipse-outline'} size={15} />{' '}Allow buyer offers</Text></Pressable>
-      {allowFacebookOffers ? <TextInput
-        accessibilityLabel="Minimum Facebook offer"
-        editable={!jobs.length && !busy}
-        keyboardType="decimal-pad"
-        onChangeText={setMinimumFacebookOffer}
-        placeholder="Minimum offer ($)"
-        placeholderTextColor={theme.colors.textMuted}
-        style={responsiveStyles.offerInput}
-        value={minimumFacebookOffer}
-      /> : null}
+      ><Text style={[responsiveStyles.shippingPreferenceText, allowFacebookOffers && responsiveStyles.choiceTextSelected]}><Ionicons color={allowFacebookOffers ? theme.colors.scannerCyan : theme.colors.textMuted} name={allowFacebookOffers ? 'checkmark-circle' : 'ellipse-outline'} size={15} />{' '}{allowFacebookOffers ? 'Accept buyer offers' : 'Keep buyer offers off'}</Text></Pressable>
+      {allowFacebookOffers ? <View style={responsiveStyles.offerInputRow}>
+        <TextInput
+          accessibilityLabel="Minimum offer percent below asking price"
+          editable={!jobs.length && !busy && facebookOfferPreferencesLoaded}
+          keyboardType="number-pad"
+          onChangeText={(value) => { setFacebookOfferDiscountPercent(value.replace(/[^0-9]/g, '')); setFacebookOfferChoiceConfirmed(false); }}
+          placeholder="10"
+          placeholderTextColor={theme.colors.textMuted}
+          style={responsiveStyles.offerInput}
+          value={facebookOfferDiscountPercent}
+        />
+        <Text style={responsiveStyles.offerSuffix}>% below asking price</Text>
+      </View> : null}
+      <Text style={responsiveStyles.offerHint}>{facebookOfferPreferencesLoaded
+        ? `Saved profile default: ${profileAllowsFacebookOffers ? `offers on, ${profileFacebookOfferDiscountPercent}% below asking` : 'offers off'}. This item: ${allowFacebookOffers ? `offers on, ${facebookOfferDiscountPercent}% below asking` : 'offers off'}. Confirm this choice before listing.`
+        : 'Loading your saved Facebook offer preference…'}</Text>
+      <Pressable
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: facebookOfferChoiceConfirmed, disabled: jobs.length > 0 || busy || !facebookOfferPreferencesLoaded }}
+        disabled={jobs.length > 0 || busy || !facebookOfferPreferencesLoaded}
+        onPress={() => setFacebookOfferChoiceConfirmed((current) => !current)}
+        style={[responsiveStyles.shippingPreference, facebookOfferChoiceConfirmed && responsiveStyles.shippingPreferenceSelected]}
+      ><Text style={[responsiveStyles.shippingPreferenceText, facebookOfferChoiceConfirmed && responsiveStyles.choiceTextSelected]}><Ionicons color={facebookOfferChoiceConfirmed ? theme.colors.scannerCyan : theme.colors.textMuted} name={facebookOfferChoiceConfirmed ? 'checkmark-circle' : 'ellipse-outline'} size={15} />{' '}I confirmed the Facebook offer setting for this item</Text></Pressable>
     </View> : null}
     {error ? <Text accessibilityRole="alert" style={responsiveStyles.error}>{error}</Text> : null}
     {notice ? <Text style={responsiveStyles.notice}>{notice}</Text> : null}
@@ -280,8 +331,12 @@ const styles = StyleSheet.create({
   shippingPreferenceSelected: { borderColor: theme.colors.scannerCyan, backgroundColor: theme.colors.iconSurfaceCyan },
   shippingPreferenceText: { color: theme.colors.textMuted, fontSize: 11, fontWeight: '800' },
   offerPreferences: { gap: 8 },
-  offerInput: { minHeight: 38, borderWidth: 1, borderColor: theme.colors.dividerStrong, borderRadius: 8,
+  offerHeading: { color: theme.colors.text, fontSize: 12, fontWeight: '900' },
+  offerInputRow: { alignItems: 'center', flexDirection: 'row', gap: 8 },
+  offerInput: { minHeight: 38, width: 74, borderWidth: 1, borderColor: theme.colors.dividerStrong, borderRadius: 8,
     backgroundColor: theme.colors.surfaceInset, color: theme.colors.text, paddingHorizontal: 10, fontSize: 12 },
+  offerSuffix: { color: theme.colors.textMuted, fontSize: 11 },
+  offerHint: { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 },
   choice: { minHeight: 38, justifyContent: 'center', borderWidth: 1, borderColor: theme.colors.dividerStrong, borderRadius: 8, backgroundColor: theme.colors.surfaceInset, paddingHorizontal: 10 },
   choiceSelected: { borderColor: theme.colors.scannerCyan, backgroundColor: theme.colors.iconSurfaceCyan },
   choiceText: { color: theme.colors.textMuted, fontSize: 11, fontWeight: '800' },

@@ -14,7 +14,7 @@ const darkColors = {
   iconSurfaceCyan: 'rgba(88, 223, 232, 0.12)',
   iconSurfaceGold: 'rgba(215, 168, 74, 0.12)',
   iconSurfaceViolet: 'rgba(141, 114, 255, 0.12)',
-  accentCyanBorder: 'rgba(88, 223, 232, 0.35',
+  accentCyanBorder: 'rgba(88, 223, 232, 0.75',
   accentGoldBorder: 'rgba(242, 211, 138, 0.35',
   accentVioletBorder: 'rgba(141, 114, 255, 0.35',
   success: '#46F5A2',
