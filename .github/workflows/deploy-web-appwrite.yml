@@ -69,13 +69,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          for name in APPWRITE_ENDPOINT APPWRITE_PROJECT_ID APPWRITE_SITE_ID APPWRITE_API_KEY; do
-            if [ -z "${!name}" ]; then
-              echo "Missing GitHub Actions secret: ${name}"
-              exit 1
-            fi
-          done
-
           endpoint="${APPWRITE_ENDPOINT%/}"
           deployment_url="$endpoint/sites/$APPWRITE_SITE_ID/deployments"
           auth_headers=(
@@ -83,39 +76,12 @@ jobs:
             -H "X-Appwrite-Key: $APPWRITE_API_KEY"
           )
 
-          created_deployment=""
-          for attempt in 1 2 3 4 5; do
-            if created_deployment="$(curl --http1.1 --fail --show-error --location \
-            --header "X-Appwrite-Project: $APPWRITE_PROJECT_ID" \
-            --header "X-Appwrite-Key: $APPWRITE_API_KEY" \
-            --form "activate=true" \
-            --form "code=@code.tar.gz;type=application/gzip" \
-            "$APPWRITE_ENDPOINT/sites/$APPWRITE_SITE_ID/deployments" 2> /tmp/appwrite_upload.log)"; then
-              break
-            fi
-
-            echo "Appwrite upload attempt $attempt failed:"
-            cat /tmp/appwrite_upload.log || true
-
-            if [ "$attempt" -eq 5 ]; then
-              echo "Appwrite upload failed after 5 attempts."
-              exit 1
-            fi
-
-            sleep 15
-          done
-
-          deployment_id="$(jq -r '."$id" // empty' <<< "$created_deployment")"
-          if [ -z "$deployment_id" ]; then
-            echo "Appwrite accepted no deployment ID in its response:"
-            echo "$created_deployment"
-            exit 1
-          fi
+          deployment_id="$(node scripts/upload-appwrite-site.cjs)"
 
           echo "Appwrite deployment created: $deployment_id"
 
           for attempt in {1..180}; do
-            deployment="$(curl --http1.1 --connect-timeout 30 --max-time 600 \
+            deployment="$(curl --http1.1 --max-time 600 \
               --fail-with-body --silent --show-error \
               "${auth_headers[@]}" \
               "$deployment_url/$deployment_id")"

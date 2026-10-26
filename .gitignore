@@ -125,6 +125,8 @@ scripts/*
 !/scripts/make-ui-values-responsive.cjs
 !/scripts/test-make-ui-values-responsive.cjs
 !/scripts/provision-crosslisting-form-configs.ps1
+!/scripts/upload-appwrite-site.cjs
+!/scripts/test-upload-appwrite-site.cjs
 /runs
 /output
 /modules/keepflip-ar-measure/android/build
